@@ -18,8 +18,8 @@
 //!
 //! ## 1-A. Extract an RLWE coefficient as an LWE
 //!
-//! Since there are **several RLWE ciphertexts** inside an [RLWE](super::super::pro_api::RLWE) instance, we will need to specify in **which ciphertexts** we want to extract in addition of **which coefficient** we are looking for.
-//! To do so, we use the [extract_1_lwe](super::super::pro_api::RLWE::extract_1_lwe) function that extract one coefficient from one RLWE ciphertext contained in the RLWE structure.
+//! Since there are **several RLWE ciphertexts** inside an [VectorRLWE](super::super::crypto_api::VectorRLWE) instance, we will need to specify in **which ciphertexts** we want to extract in addition of **which coefficient** we are looking for.
+//! To do so, we use the [extract_1_lwe](super::super::crypto_api::VectorRLWE::extract_1_lwe) function that extract one coefficient from one RLWE ciphertext contained in the RLWE structure.
 //! Here is an example.
 //!
 //! ```rust
@@ -37,8 +37,8 @@
 //!     let messages: Vec<f64> = vec![-6.276, 4.3, 0.12, -1.1, 7.78];
 //!
 //!     // encode and encrypt
-//!     let plaintext = Plaintext::new_encode(&messages, &encoder).unwrap();
-//!     let rlwe_ct = RLWE::new_encrypt_1_ciphertext(&secret_key, &plaintext).unwrap();
+//!     let plaintext = Plaintext::encode(&messages, &encoder).unwrap();
+//!     let rlwe_ct = VectorRLWE::encrypt_packed(&secret_key, &plaintext).unwrap();
 //!
 //!     // extraction of the coefficient indexed by 2 (0.12)
 //!     // in the RLWE ciphertext indexed by 0
@@ -61,7 +61,7 @@
 //! Isn't it magic?
 //! This way of converting the RLWE secret key into an LWE secret key must be followed by the RLWE ciphertext extraction algorithm.
 //!
-//! You can easily convert an [RLWESecretKey](super::super::pro_api::RLWESecretKey) instance into an [LWESecretKey](super::super::pro_api::LWESecretKey) with the [to_lwe_secret_key](super::super::pro_api::RLWESecretKey::to_lwe_secret_key) method.
+//! You can easily convert an [RLWESecretKey](super::super::crypto_api::RLWESecretKey) instance into an [LWESecretKey](super::super::crypto_api::LWESecretKey) with the [to_lwe_secret_key](super::super::crypto_api::RLWESecretKey::to_lwe_secret_key) method.
 //!
 //! ```rust
 //! /// file: main.rs
@@ -96,15 +96,15 @@
 //!     let messages: Vec<f64> = vec![-6.276, 4.3, 0.12, -1.1, 7.78];
 //!
 //!     // encode and encrypt
-//!     let plaintext = Plaintext::new_encode(&messages, &encoder).unwrap();
-//!     let rlwe_ct = RLWE::new_encrypt_1_ciphertext(&rlwe_sk, &plaintext).unwrap();
+//!     let plaintext = Plaintext::encode(&messages, &encoder).unwrap();
+//!     let rlwe_ct = VectorRLWE::encrypt_packed(&rlwe_sk, &plaintext).unwrap();
 //!
 //!     // extraction of the coefficient indexed by 2 (0.12)
 //!     // in the RLWE ciphertext indexed by 0
 //!     let lwe_ct = rlwe_ct.extract_1_lwe(2, 0).unwrap();
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = lwe_ct.decrypt(&lwe_sk).unwrap();
+//!     let decryptions: Vec<f64> = lwe_ct.decrypt_decode(&lwe_sk).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     if (decryptions[0] - messages[2]).abs() > encoder.get_granularity() / 2. {
@@ -118,7 +118,7 @@
 //!
 //! ## 1-C. Convert an LWE secret key into an RLWE secret key
 //!
-//! It works almost the same, the only difference is that you have to **specify the polynomial size** when you use the [to_rlwe_secret_key](super::super::pro_api::LWESecretKey::to_rlwe_secret_key) method.
+//! It works almost the same, the only difference is that you have to **specify the polynomial size** when you use the [to_rlwe_secret_key](super::super::crypto_api::LWESecretKey::to_rlwe_secret_key) method.
 //! Obviously it has to **divide the dimension** of the LWE secret key and be a **power of two**.
 //!
 //! ```rust
@@ -166,14 +166,14 @@
 //!     let messages_2: Vec<f64> = vec![-4.9, 1.02, 4.6, 5.6, -3.2];
 //!
 //!     // encode and encrypt
-//!     let plaintext_1 = Plaintext::new_encode(&messages_1, &encoder).unwrap();
-//!     let mut ciphertext = LWE::new_encrypt(&secret_key, &plaintext_1).unwrap();
+//!     let plaintext_1 = Plaintext::encode(&messages_1, &encoder).unwrap();
+//!     let mut ciphertext = VectorLWE::encrypt(&secret_key, &plaintext_1).unwrap();
 //!
 //!     // addition between ciphertext and messages_2
 //!     ciphertext.add_constant_static_encoder_inplace(&messages_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after) in
@@ -187,9 +187,9 @@
 //! }
 //! ```
 //!
-//! As you can see, we used the [add_constant_static_encoder_inplace](super::super::pro_api::LWE::add_constant_static_encoder_inplace) method that only takes for argument the messages.
+//! As you can see, we used the [add_constant_static_encoder_inplace](super::super::crypto_api::VectorLWE::add_constant_static_encoder_inplace) method that only takes for argument the messages.
 //!
-//! It works exactly the same with **RLWE ciphertexts** with the [add_constant_static_encoder_inplace](super::super::pro_api::RLWE::add_constant_static_encoder_inplace) method.
+//! It works exactly the same with **RLWE ciphertexts** with the [add_constant_static_encoder_inplace](super::super::crypto_api::VectorRLWE::add_constant_static_encoder_inplace) method.
 //!
 //! ```rust
 //! use concrete_lib::*;
@@ -208,14 +208,14 @@
 //!     let messages_2: Vec<f64> = vec![-4.9, 1.02, 4.6, 5.6, -3.2];
 //!
 //!     // encode and encrypt
-//!     let plaintext_1 = Plaintext::new_encode(&messages_1, &encoder).unwrap();
-//!     let mut ciphertext = RLWE::new_encrypt_1_ciphertext(&secret_key, &plaintext_1).unwrap();
+//!     let plaintext_1 = Plaintext::encode(&messages_1, &encoder).unwrap();
+//!     let mut ciphertext = VectorRLWE::encrypt_packed(&secret_key, &plaintext_1).unwrap();
 //!
 //!     // addition between ciphertext and messages_2
 //!     ciphertext.add_constant_static_encoder_inplace(&messages_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after) in
@@ -254,14 +254,14 @@
 //!     let messages_2: Vec<f64> = vec![3017.3, -49.1, -93.33, 86., -3.2];
 //!
 //!     // encode and encrypt
-//!     let plaintext_1 = Plaintext::new_encode(&messages_1, &encoder).unwrap();
-//!     let mut ciphertext = LWE::new_encrypt(&secret_key, &plaintext_1).unwrap();
+//!     let plaintext_1 = Plaintext::encode(&messages_1, &encoder).unwrap();
+//!     let mut ciphertext = VectorLWE::encrypt(&secret_key, &plaintext_1).unwrap();
 //!
 //!     // addition between ciphertext and messages_2
 //!     ciphertext.add_constant_dynamic_encoder_inplace(&messages_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after) in
@@ -275,9 +275,9 @@
 //! }
 //! ```
 //!
-//! As you can see, we used the [add_constant_dynamic_encoder_inplace](super::super::pro_api::LWE::add_constant_dynamic_encoder_inplace) method that takes as input only the messages.
+//! As you can see, we used the [add_constant_dynamic_encoder_inplace](super::super::crypto_api::VectorLWE::add_constant_dynamic_encoder_inplace) method that takes as input only the messages.
 //!
-//! Now with **RLWE** ciphertext, we also use the [add_constant_dynamic_encoder_inplace](super::super::pro_api::RLWE::add_constant_dynamic_encoder_inplace) method.
+//! Now with **RLWE** ciphertext, we also use the [add_constant_dynamic_encoder_inplace](super::super::crypto_api::VectorRLWE::add_constant_dynamic_encoder_inplace) method.
 //!
 //! ```rust
 //! use concrete_lib::*;
@@ -296,14 +296,14 @@
 //!     let messages_2: Vec<f64> = vec![3017.3, -49.1, -93.33, 86., -3.2];
 //!
 //!     // encode and encrypt
-//!     let plaintext_1 = Plaintext::new_encode(&messages_1, &encoder).unwrap();
-//!     let mut ciphertext = RLWE::new_encrypt_1_ciphertext(&secret_key, &plaintext_1).unwrap();
+//!     let plaintext_1 = Plaintext::encode(&messages_1, &encoder).unwrap();
+//!     let mut ciphertext = VectorRLWE::encrypt_packed(&secret_key, &plaintext_1).unwrap();
 //!
 //!     // addition between ciphertext and messages_2
 //!     ciphertext.add_constant_dynamic_encoder_inplace(&messages_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after) in
@@ -325,7 +325,7 @@
 //!
 //! A simple homomorphic operation is the computation of the **opposite**.
 //! Meaning that if you have a ciphertext of a message m in the interval [min,max], you can **easily convert** it into a new ciphertext of a message -m in the interval [-max,-min] :-)
-//! To do so we have the [opposite_nth_inplace](super::super::pro_api::LWE::opposite_nth_inplace) method that takes as argument the index of the ciphertext you want to compute the opposite and modify directly in the structure.
+//! To do so we have the [opposite_nth_inplace](super::super::crypto_api::VectorLWE::opposite_nth_inplace) method that takes as argument the index of the ciphertext you want to compute the opposite and modify directly in the structure.
 //! Let's see now with an example.
 //!
 //! ```rust
@@ -344,13 +344,13 @@
 //!     let messages: Vec<f64> = vec![66.65, 84.87, 95.46];
 //!
 //!     // encode and encrypt
-//!     let mut ciphertext = LWE::new_encode_encrypt(&secret_key, &messages, &encoder).unwrap();
+//!     let mut ciphertext = VectorLWE::encode_encrypt(&secret_key, &messages, &encoder).unwrap();
 //!
 //!     // compute the opposite of the second ciphertext
 //!     ciphertext.opposite_nth_inplace(1);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     if (messages[1] + decryptions[1]).abs() > encoder.get_granularity() / 2. {
@@ -395,14 +395,14 @@
 //!         vec![-18.00952927821479, -15.095226956064629, -16.952167875620457];
 //!
 //!     // encode and encrypt
-//!     let mut ciphertext_1 = LWE::new_encode_encrypt(&secret_key, &messages_1, &encoder_1).unwrap();
-//!     let ciphertext_2 = LWE::new_encode_encrypt(&secret_key, &messages_2, &encoder_2).unwrap();
+//!     let mut ciphertext_1 = VectorLWE::encode_encrypt(&secret_key, &messages_1, &encoder_1).unwrap();
+//!     let ciphertext_2 = VectorLWE::encode_encrypt(&secret_key, &messages_2, &encoder_2).unwrap();
 //!
 //!     // addition between ciphertext_1 and ciphertext_2
 //!     ciphertext_1.add_centered_inplace(&ciphertext_2); // the new interval will be centered in 105-17=88
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext_1.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext_1.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after) in
@@ -418,13 +418,13 @@
 //! }
 //! ```
 //!
-//! Here we used the [add_centered](super::super::pro_api::LWE::add_centered) method that will **automatically** compute a new interval defined by (new_center,radius) from the two input intervals (center1,radius) and (center2,radius) as follow: new_center=center1+center2.
+//! Here we used the [add_centered](super::super::crypto_api::VectorLWE::add_centered) method that will **automatically** compute a new interval defined by (new_center,radius) from the two input intervals (center1,radius) and (center2,radius) as follow: new_center=center1+center2.
 //! Note that this way of adding ciphertexts is convenient when you deal with normal distribution as messages :-)
 //!
 //! Obviously they all **share the same radius** since the length of the interval has to be the same.
-//! There are **other ways** to compute this sum with more flexibility regarding the new interval such as the [add_with_new_min](super::super::pro_api::LWE::add_with_new_min) method, where you directly provide **new min values** for the output interval.
+//! There are **other ways** to compute this sum with more flexibility regarding the new interval such as the [add_with_new_min](super::super::crypto_api::VectorLWE::add_with_new_min) method, where you directly provide **new min values** for the output interval.
 //!
-//! It actually works pretty the same with the **RLWE ciphertexts** with the [add_centered_inplace](super::super::pro_api::RLWE::add_centered_inplace) method.
+//! It actually works pretty the same with the **RLWE ciphertexts** with the [add_centered_inplace](super::super::crypto_api::VectorRLWE::add_centered_inplace) method.
 //!
 //! ```rust
 //! use itertools::izip;
@@ -448,15 +448,15 @@
 //!
 //!     // encode and encrypt
 //!     let mut ciphertext_1 =
-//!         RLWE::new_encode_encrypt_1_ciphertext(&secret_key, &messages_1, &encoder_1).unwrap();
+//!         VectorRLWE::encode_encrypt_packed(&secret_key, &messages_1, &encoder_1).unwrap();
 //!     let ciphertext_2 =
-//!         RLWE::new_encode_encrypt_1_ciphertext(&secret_key, &messages_2, &encoder_2).unwrap();
+//!         VectorRLWE::encode_encrypt_packed(&secret_key, &messages_2, &encoder_2).unwrap();
 //!
 //!     // addition between ciphertext_1 and ciphertext_2
 //!     ciphertext_1.add_centered_inplace(&ciphertext_2).unwrap(); // the new interval will be centered in 105-17=88
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext_1.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext_1.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after,enc1) in
@@ -500,14 +500,14 @@
 //!     let messages: Vec<f64> = vec![106.276, 104.3, 100.12, 101.1, 107.78];
 //!
 //!     // encode and encrypt
-//!     let mut ciphertext_1 = LWE::new_encode_encrypt(&secret_key, &messages, &encoder).unwrap();
-//!     let ciphertext_2 = LWE::new_encode_encrypt(&secret_key, &messages, &encoder).unwrap();
+//!     let mut ciphertext_1 = VectorLWE::encode_encrypt(&secret_key, &messages, &encoder).unwrap();
+//!     let ciphertext_2 = VectorLWE::encode_encrypt(&secret_key, &messages, &encoder).unwrap();
 //!
 //!     // addition between ciphertext and messages_2
 //!     ciphertext_1.add_with_padding_inplace(&ciphertext_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext_1.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext_1.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after, enc) in izip!(
@@ -527,9 +527,9 @@
 //! }
 //! ```
 //!
-//! In the previous example, we encrypted twice the same messages, and add them together thanks to the [add_with_padding_inplace](super::super::pro_api::LWE::add_with_padding_inplace) method.
+//! In the previous example, we encrypted twice the same messages, and add them together thanks to the [add_with_padding_inplace](super::super::crypto_api::VectorLWE::add_with_padding_inplace) method.
 //!
-//! It works the same with **RLWE** ciphertexts and the [add_with_padding_inplace](super::super::pro_api::RLWE::add_with_padding_inplace) method.
+//! It works the same with **RLWE** ciphertexts and the [add_with_padding_inplace](super::super::crypto_api::VectorRLWE::add_with_padding_inplace) method.
 //!
 //! ```rust
 //! use concrete_lib::*;
@@ -548,15 +548,15 @@
 //!
 //!     // encode and encrypt
 //!     let mut ciphertext_1 =
-//!         RLWE::new_encode_encrypt_1_ciphertext(&secret_key, &messages, &encoder).unwrap();
+//!         VectorRLWE::encode_encrypt_packed(&secret_key, &messages, &encoder).unwrap();
 //!     let ciphertext_2 =
-//!         RLWE::new_encode_encrypt_1_ciphertext(&secret_key, &messages, &encoder).unwrap();
+//!         VectorRLWE::encode_encrypt_packed(&secret_key, &messages, &encoder).unwrap();
 //!
 //!     // addition between ciphertext and messages_2
 //!     ciphertext_1.add_with_padding_inplace(&ciphertext_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext_1.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext_1.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after, enc) in izip!(
@@ -599,14 +599,14 @@
 //!
 //!     // encode and encrypt
 //!     let mut ciphertext_1 =
-//!         LWE::new_encode_encrypt(&secret_key, &messages_1, &encoder_1).unwrap();
-//!     let ciphertext_2 = LWE::new_encode_encrypt(&secret_key, &messages_2, &encoder_2).unwrap();
+//!         VectorLWE::encode_encrypt(&secret_key, &messages_1, &encoder_1).unwrap();
+//!     let ciphertext_2 = VectorLWE::encode_encrypt(&secret_key, &messages_2, &encoder_2).unwrap();
 //!
 //!     // subtraction between ciphertext and messages_2
 //!     ciphertext_1.sub_with_padding_inplace(&ciphertext_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext_1.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext_1.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after, enc) in izip!(
@@ -623,9 +623,9 @@
 //! }
 //! ```
 //!
-//! In the previous example, we encrypted twice the same messages, and add them together thanks to the [add_with_padding_inplace](super::super::pro_api::RLWE::add_with_padding_inplace) method.
+//! In the previous example, we encrypted twice the same messages, and add them together thanks to the [add_with_padding_inplace](super::super::crypto_api::VectorRLWE::add_with_padding_inplace) method.
 //!
-//! It works the same with **RLWE** ciphertexts and the [sub_with_padding_inplace](super::super::pro_api::RLWE::sub_with_padding_inplace) method.
+//! It works the same with **RLWE** ciphertexts and the [sub_with_padding_inplace](super::super::crypto_api::VectorRLWE::sub_with_padding_inplace) method.
 //!
 //! ```rust
 //! use concrete_lib::*;
@@ -644,15 +644,15 @@
 //!
 //!     // encode and encrypt
 //!     let mut ciphertext_1 =
-//!         RLWE::new_encode_encrypt_1_ciphertext(&secret_key, &messages, &encoder).unwrap();
+//!         VectorRLWE::encode_encrypt_packed(&secret_key, &messages, &encoder).unwrap();
 //!     let ciphertext_2 =
-//!         RLWE::new_encode_encrypt_1_ciphertext(&secret_key, &messages, &encoder).unwrap();
+//!         VectorRLWE::encode_encrypt_packed(&secret_key, &messages, &encoder).unwrap();
 //!
 //!     // subtraction between ciphertext and messages_2
 //!     ciphertext_1.sub_with_padding_inplace(&ciphertext_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext_1.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext_1.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after, enc) in izip!(
@@ -697,14 +697,14 @@
 //!     let messages_2: Vec<i32> = vec![-4, 6, 20, -2, 3];
 //!
 //!     // encode and encrypt
-//!     let plaintext_1 = Plaintext::new_encode(&messages_1, &encoder).unwrap();
-//!     let mut ciphertext = LWE::new_encrypt(&secret_key, &plaintext_1).unwrap();
+//!     let plaintext_1 = Plaintext::encode(&messages_1, &encoder).unwrap();
+//!     let mut ciphertext = VectorLWE::encrypt(&secret_key, &plaintext_1).unwrap();
 //!
 //!     // multiplication between ciphertext and messages_2
 //!     ciphertext.mul_constant_static_encoder_inplace(&messages_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after) in
@@ -718,9 +718,9 @@
 //! }
 //! ```
 //!
-//! In the previous example, we use the [mul_constant_static_encoder_inplace](super::super::pro_api::RLWE::mul_constant_static_encoder_inplace) method.
+//! In the previous example, we use the [mul_constant_static_encoder_inplace](super::super::crypto_api::VectorRLWE::mul_constant_static_encoder_inplace) method.
 //!
-//! It works the same with **RLWE** ciphertexts and the [mul_constant_static_encoder_inplace](super::super::pro_api::RLWE::mul_constant_static_encoder_inplace) method.
+//! It works the same with **RLWE** ciphertexts and the [mul_constant_static_encoder_inplace](super::super::crypto_api::VectorRLWE::mul_constant_static_encoder_inplace) method.
 //!
 //!
 //! ```rust
@@ -741,13 +741,13 @@
 //!
 //!     // encode and encrypt
 //!     let mut ciphertext =
-//!         RLWE::new_encode_encrypt_1_ciphertext(&secret_key, &messages_1, &encoder).unwrap();
+//!         VectorRLWE::encode_encrypt_packed(&secret_key, &messages_1, &encoder).unwrap();
 //!
 //!     // multiplication between ciphertexts and an integers
 //!     ciphertext.mul_constant_static_encoder_inplace(&message_2);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, after) in izip!(messages_1.iter(), decryptions.iter()) {
@@ -763,7 +763,7 @@
 //!
 //! We can also compute a **multiplication** between a ciphertext and any real constant (up to a certain **precision**) by eating bits of padding.
 //! The number of bits of padding consumed **represents the precision** for the real constant.
-//! We use the [mul_constant_with_padding_inplace](super::super::pro_api::LWE::mul_constant_with_padding_inplace) method to compute such multiplication, and it takes as upper bound of the constant, in absolute value.
+//! We use the [mul_constant_with_padding_inplace](super::super::crypto_api::VectorLWE::mul_constant_with_padding_inplace) method to compute such multiplication, and it takes as upper bound of the constant, in absolute value.
 //! This upper bound will be used to determine the **new interval** for the output encoding, so if we have several input with the same encoding and if we use the same upper bound each time, we will end up with several identical output interval :-) useful for adding them together for instance.
 //! Obviously, if the constant is negative we have the opposite interval, but still with the **same size**!
 //!
@@ -784,7 +784,7 @@
 //!     let messages_2: Vec<f64> = vec![-2., -1., 3., 2.5, 1.5];
 //!
 //!     // encode and encrypt
-//!     let mut ciphertext = LWE::new_encode_encrypt(&secret_key, &messages_1, &encoder).unwrap();
+//!     let mut ciphertext = VectorLWE::encode_encrypt(&secret_key, &messages_1, &encoder).unwrap();
 //!
 //!     // multiplication between ciphertext and messages_2
 //!     let max_constant: f64 = 3.;
@@ -794,7 +794,7 @@
 //!         .unwrap();
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext.decrypt(&secret_key).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before_1, before_2, after, enc) in izip!(
@@ -832,7 +832,7 @@
 //!
 //!     // encode and encrypt
 //!     let mut ciphertext =
-//!         RLWE::new_encode_encrypt_on_cst(&secret_key, &messages_1, &encoder).unwrap();
+//!         VectorRLWE::encode_encrypt(&secret_key, &messages_1, &encoder).unwrap();
 //!
 //!     // multiplication between ciphertext and messages_2
 //!     let max_constant: f64 = 3.;

@@ -16,8 +16,8 @@
 //! ## 1-A. Generate a key switching key
 //!
 //! First we explain how to generate a **key switching key**.
-//! We need to create two secret keys with the same [LWEParams](super::super::pro_api::LWEParams) or two different.
-//! Then we can call the [new](super::super::pro_api::LWEKSK::new) method to get a new [LWEKSK](super::super::pro_api::LWEKSK) structure.
+//! We need to create two secret keys with the same [LWEParams](super::super::crypto_api::LWEParams) or two different.
+//! Then we can call the [new](super::super::crypto_api::LWEKSK::new) method to get a new [LWEKSK](super::super::crypto_api::LWEKSK) structure.
 //! This function takes as input what is called `base_log` and `level`.
 //! Those two inputs will contribute to the **amount of noise** inside the output LWE ciphertext, to the **precision of the output message**, to the **computation cost** of the whole procedure and also the **size** of the key switching key.
 //! Those trade-offs can be **tricky**, and it is important to find a **good balance**.
@@ -36,7 +36,7 @@
 //!     let secret_key_after = LWESecretKey::new(&LWE128_630);
 //!
 //!     // generate the key switching key
-//!     let ksk = pro_api::LWEKSK::new(&secret_key_before, &secret_key_after, 8, 3);
+//!     let ksk = crypto_api::LWEKSK::new(&secret_key_before, &secret_key_after, 8, 3);
 //!
 //!     println!("Well done :-)");
 //! }
@@ -61,18 +61,18 @@
 //!     let secret_key_after = LWESecretKey::new(&LWE128_630);
 //!
 //!     // generate the key switching key
-//!     let ksk = pro_api::LWEKSK::new(&secret_key_before, &secret_key_after, 8, 3);
+//!     let ksk = crypto_api::LWEKSK::new(&secret_key_before, &secret_key_after, 8, 3);
 //!
 //!     // a list of messages that we encrypt
 //!     let messages: Vec<f64> = vec![106.276, 104.3, 100.12, 101.1, 107.78];
 //!     let mut ciphertext_before =
-//!         LWE::new_encode_encrypt(&secret_key_before, &messages, &encoder).unwrap();
+//!         VectorLWE::encode_encrypt(&secret_key_before, &messages, &encoder).unwrap();
 //!
 //!     // key switch
 //!     let ciphertext_after = ciphertext_before.keyswitch(&ksk);
 //!
 //!     // decryption
-//!     let decryptions: Vec<f64> = ciphertext_before.decrypt(&secret_key_before).unwrap();
+//!     let decryptions: Vec<f64> = ciphertext_before.decrypt_decode(&secret_key_before).unwrap();
 //!
 //!     // check the precision loss related to the encryption
 //!     for (before, after) in messages.iter().zip(decryptions.iter()) {
@@ -84,8 +84,8 @@
 //! }
 //! ```
 //!
-//! We used the [keyswitch](super::super::pro_api::LWE::keyswitch) method that output a new [LWE](super::super::pro_api::LWE) structure.
-//! There are **other functions** for the key switch such as [keyswitch](super::super::pro_api::LWE::keyswitch) that takes as input both the before and after [LWE](super::super::pro_api::LWE) structures.
+//! We used the [keyswitch](super::super::crypto_api::VectorLWE::keyswitch) method that output a new [VectorLWE](super::super::crypto_api::VectorLWE) structure.
+//! There are **other functions** for the key switch such as [keyswitch](super::super::crypto_api::VectorLWE::keyswitch) that takes as input both the before and after [VectorLWE](super::super::crypto_api::VectorLWE) structures.
 //!
 //! We went from a dimension of 1024 to a dimension of 630!
 //!
@@ -113,8 +113,8 @@
 //! With a bootstrapping, it is also possible to **change the dimension** of the LWE mask and the **secret key**: we have as input an LWE ciphertext with a dimension d_before and a secret key sk_before, and we end up after bootstrapping it, with an LWE ciphertext (of the same message) with a dimension d_after and a secret key sk_after.
 //! If we want to **go back** to the d_before dimension and the sk_before secret key, we can simply perform a **key switch** procedure right after the bootstrap.
 //!
-//! We can call the [new](super::super::pro_api::LWEBSK::new) method to get a new [LWEBSK](super::super::pro_api::LWEBSK) structure.
-//! The [new](super::super::pro_api::LWEBSK::new) function, generates a bootstrapping key, by taking as input `base_log` and `level` among others.
+//! We can call the [new](super::super::crypto_api::LWEBSK::new) method to get a new [LWEBSK](super::super::crypto_api::LWEBSK) structure.
+//! The [new](super::super::crypto_api::LWEBSK::new) function, generates a bootstrapping key, by taking as input `base_log` and `level` among others.
 //! Those two inputs along with the mask size of the output LWE, will contribute to the **amount of noise** inside the output LWE ciphertext, to the **precision of the output message**, to the **computation cost** of the whole procedure and also the **size** of the bootstrapping key.
 //! Those trade-offs can also be **tricky**, and it is important to find a **good balance**.
 //! Generally, we try to keep a small `level` value, and an output LWE mask size greater or equal to 1024.
@@ -148,8 +148,8 @@
 //!
 //! ## 1-B. Bootstrap a ciphertext
 //!
-//! We are now able to compute a **bootstrap**, thanks to our [bootstrapping key](super::super::pro_api::LWEBSK) and the [bootstrap_nth](super::super::pro_api::LWE::bootstrap_nth) method.
-//! It output a new [LWE](super::super::pro_api::LWE) instance with the result.
+//! We are now able to compute a **bootstrap**, thanks to our [bootstrapping key](super::super::crypto_api::LWEBSK) and the [bootstrap_nth](super::super::crypto_api::VectorLWE::bootstrap_nth) method.
+//! It output a new [VectorLWE](super::super::crypto_api::VectorLWE) instance with the result.
 //!
 //! It is **essential** to have at least **one bit of padding** in the input LWE plaintext.
 //! It is related to the **cyclotomic ring** and the negative sign popping after multiplication.
@@ -176,7 +176,7 @@
 //!
 //!     // encode and encrypt
 //!     let ciphertext_input =
-//!         LWE::new_encode_encrypt(&secret_key_input, &message, &encoder_input).unwrap();
+//!         VectorLWE::encode_encrypt(&secret_key_input, &message, &encoder_input).unwrap();
 //!
 //!     // bootstrap
 //!     let ciphertext_output = ciphertext_input
@@ -184,7 +184,7 @@
 //!         .unwrap();
 //!
 //!     // decrypt
-//!     let decryption = ciphertext_output.decrypt(&secret_key_output).unwrap();
+//!     let decryption = ciphertext_output.decrypt_decode(&secret_key_output).unwrap();
 //!
 //!     if (decryption[0] - message[0]).abs() > encoder_input.get_granularity() {
 //!         panic!(
@@ -217,9 +217,9 @@
 //!
 //! It is **essential** to have at least **one bit of padding** in the input LWE plaintext.
 //!
-//! We can perform a **bootstrap** that also evaluate a function over the message, thanks to our [bootstrapping key](super::super::pro_api::LWEBSK) and the [bootstrap_nth_with_function](super::super::pro_api::LWE::bootstrap_nth_with_function) method.
+//! We can perform a **bootstrap** that also evaluate a function over the message, thanks to our [bootstrapping key](super::super::crypto_api::LWEBSK) and the [bootstrap_nth_with_function](super::super::crypto_api::VectorLWE::bootstrap_nth_with_function) method.
 //! We need to **provide a function** taking a ``f64`` as input and output a ``f64``.
-//! The bootstrap output a new [LWE](super::super::pro_api::LWE) instance with the result.
+//! The bootstrap output a new [VectorLWE](super::super::crypto_api::VectorLWE) instance with the result.
 //!
 //! In the following example, we encrypt the message ``-5`` with **one bit of padding**, we bootstrap it (the 0-th ciphertext in the structure) and evaluate the **square function**, so we end up with a LWE ciphertext of the message ``25``.
 //! The input encoding works in the interval [-10,10] and since we evaluate the square function, the **output interval** has to be [0,100].
@@ -247,7 +247,7 @@
 //!
 //!     // encode and encrypt
 //!     let ciphertext_input =
-//!         LWE::new_encode_encrypt(&secret_key_input, &message, &encoder_input).unwrap();
+//!         VectorLWE::encode_encrypt(&secret_key_input, &message, &encoder_input).unwrap();
 //!
 //!     // bootstrap
 //!     let ciphertext_output = ciphertext_input
@@ -255,7 +255,7 @@
 //!         .unwrap();
 //!
 //!     // decrypt
-//!     let decryption = ciphertext_output.decrypt(&secret_key_output).unwrap();
+//!     let decryption = ciphertext_output.decrypt_decode(&secret_key_output).unwrap();
 //!
 //!     if (decryption[0] - message[0] * message[0]).abs() > encoder_output.get_granularity() {
 //!         panic!(
@@ -277,13 +277,13 @@
 //!
 //! One of the most exciting homomorphic operation is the **multiplication of two ciphertexts**.
 //! We can compute this multiplication with two bootstrapping procedures.
-//! It means that we have to generate a [bootstrapping key](super::super::pro_api::LWEBSK).
+//! It means that we have to generate a [bootstrapping key](super::super::crypto_api::LWEBSK).
 //! Note that there are some constraints about the 2 different input encodings:
 //! - they should work in **two intervals** with the **same size**
 //! - they should both have the **same number of bits of padding**
 //! - they should both have **at least 2 bits of padding**
 //!
-//! In the following example we will **multiply** the first ciphertext of our 2 [LWE key](super::super::pro_api::LWE) structures and obtain a **new [LWE key](super::super::pro_api::LWE) structure** filled with only one ciphertext which is the **expected result**.
+//! In the following example we will **multiply** the first ciphertext of our 2 [VectorLWE key](super::super::crypto_api::VectorLWE) structures and obtain a **new [VectorLWE key](super::super::crypto_api::VectorLWE) structure** filled with only one ciphertext which is the **expected result**.
 //!
 //! ```rust
 //! use concrete_lib::*;
@@ -309,17 +309,17 @@
 //!
 //!     // encode and encrypt
 //!     let ciphertext_1 =
-//!         LWE::new_encode_encrypt(&secret_key_input, &messages_1, &encoder_1).unwrap();
+//!         VectorLWE::encode_encrypt(&secret_key_input, &messages_1, &encoder_1).unwrap();
 //!     let ciphertext_2 =
-//!         LWE::new_encode_encrypt(&secret_key_input, &messages_2, &encoder_2).unwrap();
+//!         VectorLWE::encode_encrypt(&secret_key_input, &messages_2, &encoder_2).unwrap();
 //!
 //!     // multiplication
 //!     let ciphertext_res = ciphertext_1
-//!         .mul_with_bootstrap_nth(ciphertext_2, &bsk, 0, 0)
+//!         .mul_from_bootstrap_nth(&ciphertext_2, &bsk, 0, 0)
 //!         .unwrap();
 //!
 //!     // decrypt
-//!     let decryption = ciphertext_res.decrypt(&secret_key_output).unwrap();
+//!     let decryption = ciphertext_res.decrypt_decode(&secret_key_output).unwrap();
 //!
 //!     if (decryption[0] - messages_1[0] * messages_2[0]).abs()
 //!         > ciphertext_res.encoders[0].get_granularity()

@@ -207,7 +207,7 @@ impl_trait_npe_cross!(u64, "type Torus = u64;");
 /// # Output
 /// * Return the variance of the error
 pub fn drift_index_lut(lwe_dimension: usize) -> f64 {
-    return (lwe_dimension as f64) / 16.0;
+    (lwe_dimension as f64) / 16.0
 }
 
 #[warn(dead_code)]
@@ -231,7 +231,7 @@ pub fn bootstrap_then_key_switch(
         * f64::powi(2., log_base_ks as i32 - 1)
         * f64::powi(stdev_ks, 2);
     let res: f64 = res_1 + res_2 + res_3 + res_4;
-    return res;
+    res
 }
 
 #[cfg(test)]

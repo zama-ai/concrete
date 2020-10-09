@@ -2,11 +2,12 @@
 //! We provide some tutorials in the documentation of the tutorial module.
 
 #[macro_use]
-pub mod operators;
+pub mod core_api;
 pub mod guide;
 pub mod npe;
 #[macro_use]
-pub mod pro_api;
+pub mod crypto_api;
+pub mod traits;
 pub mod types;
 
 pub use types::Types;
@@ -16,8 +17,4 @@ extern crate itertools;
 extern crate kolmogorov_smirnov;
 
 // for the rust lib
-pub use pro_api::*;
-
-pub use operators::crypto::cross::get_bootstrapping_key_size;
-pub use operators::crypto::lwe::get_ksk_size;
-// pub use pro_api::python_wrapping::*;
+pub use crypto_api::*;

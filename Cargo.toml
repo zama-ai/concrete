@@ -1,6 +1,6 @@
 [package]
 name = "concrete_lib"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 build = "build.rs"
 authors = ["D. Ligier","S. Tap", "Zama team"]
@@ -42,8 +42,5 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 gpu = ["cmake"]
-torus-u32 = []
-torus-u64 = []
 cloud-computing = []
-fft-f32 = []
-fft-f64 = []
+unsafe = []

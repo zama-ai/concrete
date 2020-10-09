@@ -82,7 +82,7 @@ macro_rules! impl_trait_types {
                 res += b;
 
                 // put back the MSB where they belong
-                res = res << shift;
+                res <<= shift;
                 return res;
             }
 
@@ -112,9 +112,9 @@ macro_rules! impl_trait_types {
                     tmp = (val >> (Self::TORUS_BIT - base_log * (i + 1))) & block_bit_mask;
                     carry = tmp & msb_block_mask;
                     tmp = tmp.wrapping_add(previous_carry);
-                    carry = carry | (tmp & msb_block_mask); // 0000...0001000 or 0000...0000000
+                    carry |= (tmp & msb_block_mask); // 0000...0001000 or 0000...0000000
                     res[i] = ((tmp as Self::STorus) - ((carry << 1) as Self::STorus)) as $T; // res[i] = (tmp as i32) - b;
-                    carry = carry >> (base_log - 1); // 000...0001 or 000...0000
+                    carry >>= (base_log - 1); // 000...0001 or 000...0000
                 }
             }
 
@@ -140,9 +140,9 @@ macro_rules! impl_trait_types {
                     (value >> (Self::TORUS_BIT - base_log * (level + 1))) & block_bit_mask;
                 let mut carry: $T = tmp & msb_block_mask; // 0000...0001000 or 0000...0000000
                 tmp = tmp.wrapping_add(previous_carry); //
-                carry = carry | (tmp & msb_block_mask); // 0000...0001000 or 0000...0000000
+                carry |= (tmp & msb_block_mask); // 0000...0001000 or 0000...0000000
                 let res = (tmp as Self::STorus) - ((carry << 1) as Self::STorus); // res[i] = (tmp as i32) - b;
-                carry = carry >> (base_log - 1); // 000...0001 or 000...0000
+                carry >>= (base_log - 1); // 000...0001 or 000...0000
                 return (res as $T, carry);
             }
 
@@ -174,7 +174,7 @@ macro_rules! impl_trait_types {
             fn set_val_at_level_l(val: $T, base_log: usize, level_l: usize) -> $T {
                 let mut res: $T = 0;
                 let shift: usize = Self::TORUS_BIT - (base_log * (level_l + 1));
-                res = res + ((val as $T) << (shift));
+                res += ((val as $T) << (shift));
                 return res;
             }
 

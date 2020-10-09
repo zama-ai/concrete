@@ -172,7 +172,7 @@ impl_trait_npe_lwe!(u64, "type Torus = u64;");
 /// Output
 /// * the sum of the variances
 pub fn add_2_uncorrelated(variance_0: f64, variance_1: f64) -> f64 {
-    return variance_0 + variance_1;
+    variance_0 + variance_1
 }
 
 /// Computes the variance of the error distribution after an addition of n uncorrelated ciphertexts
@@ -186,7 +186,7 @@ pub fn add_n_uncorrelated(variances: &[f64]) -> f64 {
     for var in variances.iter() {
         new_variance += *var;
     }
-    return new_variance;
+    new_variance
 }
 
 /// Computes an upper bound for the number of 1 in a secret key
@@ -196,7 +196,7 @@ pub fn upper_bound_hw_secret_key(n: usize) -> usize {
     let sigma: f64 = f64::sqrt(n_f) / 2.;
     let mean: f64 = n_f / 2.;
     let z: f64 = 3.;
-    return (mean + z * sigma).round() as usize;
+    (mean + z * sigma).round() as usize
 }
 
 /// Computes an upper bound for the log2 of the rounding noise
@@ -209,5 +209,5 @@ pub fn log2_rounding_noise(n: usize) -> f64 {
     let bound_sup: f64 = upper_bound_hw_secret_key(n) as f64;
     let sigma: f64 = f64::sqrt(bound_sup / 12.);
     let z: f64 = 3.;
-    return f64::log2(sigma * z);
+    f64::log2(sigma * z)
 }

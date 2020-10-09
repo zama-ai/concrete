@@ -16,7 +16,7 @@ pub use rlwe::RLWE;
 /// Output
 /// * the variance of the sum of the first and the second ciphertext
 pub fn add_ciphertexts(var_ct1: f64, var_ct2: f64) -> f64 {
-    return var_ct1 + var_ct2;
+    var_ct1 + var_ct2
 }
 
 /// Computes the number of bits affected by the noise with a variance var describing a normal distribution
@@ -30,8 +30,8 @@ pub fn nb_bit_from_variance_99(var: f64, torus_bit: usize) -> usize {
     let tmp = torus_bit as f64 + f64::log2(sigma * z);
     if tmp < 0. {
         // means no bits are affected by the noise in the integer representation (discrete space)
-        return 0usize;
+        0usize
     } else {
-        return tmp.ceil() as usize;
+        tmp.ceil() as usize
     }
 }

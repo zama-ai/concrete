@@ -1,7 +1,7 @@
 macro_rules! types_test_mod {
     ($T:ty,$MN:ident) => {
         mod $MN {
-            use crate::operators::math::Random;
+            use crate::core_api::math::Random;
             use crate::types::FTorus;
             use crate::Types;
             use itertools::enumerate;
@@ -99,9 +99,8 @@ macro_rules! types_test_mod {
                 // recompose the Torus element
                 let mut recomp_x: i64 = 0;
                 for (i, di) in enumerate(decomp_x.iter()) {
-                    recomp_x = recomp_x
-                        + ((*di as <Torus as Types>::STorus) as i64)
-                            * (Types::set_val_at_level_l(1 as Torus, log_b, i) as i64);
+                    recomp_x += ((*di as <Torus as Types>::STorus) as i64)
+                        * (Types::set_val_at_level_l(1 as Torus, log_b, i) as i64);
                 }
                 let recomp_res: Torus;
                 // deal with the negative sign of the recomposition

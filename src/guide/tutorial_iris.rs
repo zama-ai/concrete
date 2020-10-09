@@ -180,12 +180,12 @@
 //!
 //! # 6. Setup the crypto
 //!
-//! We have to write a function that **generates everything we need for the crypto**: a [secret key](super::super::pro_api::LWESecretKey) to encrypt/decrypt and a [bootstrapping key](super::super::pro_api::LWEBSK) to compute complex homomorphic operations.
+//! We have to write a function that **generates everything we need for the crypto**: a [secret key](super::super::crypto_api::LWESecretKey) to encrypt/decrypt and a [bootstrapping key](super::super::crypto_api::LWEBSK) to compute complex homomorphic operations.
 //!
 //! Once again we have to **pick some settings**: the LWE parameters, a base_log and a level.
 //! They will all have an **impact on the precision** we can have at most, so they are very important.
 //!
-//! The creation of the bootstrapping key takes some time so for now we used the [zero](super::super::pro_api::LWEBSK::zero) function which only allocates instead of the [new](super::super::pro_api::LWEBSK::new) function.
+//! The creation of the bootstrapping key takes some time so for now we used the [zero](super::super::crypto_api::LWEBSK::zero) function which only allocates instead of the [new](super::super::crypto_api::LWEBSK::new) function.
 //!
 //! ```rust
 //! /// file: main.rs
@@ -247,13 +247,13 @@
 //! const NB_BIT_PRECISION_WEIGHTS: usize = 5;
 //! const NB_BIT_PADDING: usize = NB_BIT_PRECISION_WEIGHTS + 2 + 1;
 //!
-//! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> LWE {
+//! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> VectorLWE {
 //!     // generate an encoder
 //!     let encoder =
 //!         Encoder::new(MIN_INTERVAL, MAX_INTERVAL, NB_BIT_PRECISION, NB_BIT_PADDING).unwrap();
 //!
 //!     // encode and encrypt
-//!     let ciphertexts = LWE::new_encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
+//!     let ciphertexts = VectorLWE::encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
 //!
 //!     ciphertexts
 //! }
@@ -267,9 +267,9 @@
 //! /// file: main.rs
 //! use concrete_lib::*;
 //!
-//! fn decrypt_inference(ciphertexts: &LWE, lwe_secret_key: &LWESecretKey) -> usize {
+//! fn decrypt_inference(ciphertexts: &VectorLWE, lwe_secret_key: &LWESecretKey) -> usize {
 //!     // decrypt
-//!     let decryptions = ciphertexts.decrypt(lwe_secret_key).unwrap();
+//!     let decryptions = ciphertexts.decrypt_decode(lwe_secret_key).unwrap();
 //!
 //!     // find the argmax
 //!     let mut res: usize = 0;
@@ -309,7 +309,7 @@
 //! const MAX_WEIGHT: f64 = 11.;
 //!
 //! fn homomorphic_perceptron(
-//!     ciphertexts: &mut LWE,
+//!     ciphertexts: &mut VectorLWE,
 //!     key_switching_key: &LWEKSK,
 //!     bootstrapping_key: &LWEBSK,
 //!     weights: &[f64],
@@ -336,7 +336,7 @@
 //! /// file: main.rs
 //! use concrete_lib::*;
 //!
-//! fn add_4(ciphertexts: &LWE) -> LWE {
+//! fn add_4(ciphertexts: &VectorLWE) -> VectorLWE {
 //!     // first addition
 //!     let mut c0 = ciphertexts.extract_nth(0).unwrap();
 //!     let c1 = ciphertexts.extract_nth(1).unwrap();
@@ -370,7 +370,7 @@
 //! const NB_BIT_PRECISION: usize = 5;
 //! const NB_BIT_PRECISION_WEIGHTS: usize = 5;
 //!
-//! fn mockup_bootstrap(ciphertext_input: &mut LWE, bootstrapping_key: &LWEBSK, bias: f64) {
+//! fn mockup_bootstrap(ciphertext_input: &mut VectorLWE, bootstrapping_key: &LWEBSK, bias: f64) {
 //!     // output interval
 //!     let encoder_output = Encoder::new(0., 1., NB_BIT_PRECISION, 0).unwrap();
 //!
@@ -400,9 +400,9 @@
 //! const WEIGHTS: [f64; 12] = [0.; 12];
 //! const BIASES: [f64; 3] = [0.; 3];
 //!
-//! fn homomorphic_inference(input_ciphertexts: &mut LWE, bootstrapping_key: &LWEBSK) -> LWE {
+//! fn homomorphic_inference(input_ciphertexts: &mut VectorLWE, bootstrapping_key: &LWEBSK) -> VectorLWE {
 //!     // allocation of the result with zeros
-//!     let mut result = LWE::zero(
+//!     let mut result = VectorLWE::zero(
 //!         bootstrapping_key.dimension * bootstrapping_key.polynomial_size,
 //!         NB_PERCEPTRON,
 //!     )
@@ -422,13 +422,13 @@
 //! }
 //!
 //! fn homomorphic_perceptron(
-//!     ciphertexts: &mut LWE,
+//!     ciphertexts: &mut VectorLWE,
 //!     bootstrapping_key: &LWEBSK,
 //!     weights: &[f64],
 //!     bias: f64,
-//! ) -> LWE {
+//! ) -> VectorLWE {
 //!     // some code
-//!     return LWE::zero(1, 1).unwrap();
+//!     return VectorLWE::zero(1, 1).unwrap();
 //! }
 //! ```
 //!
@@ -582,20 +582,20 @@ pub mod full_code_2 {
     //!     (lwe_key_input, bootstrapping_key, lwe_key_output)
     //! }
     //!
-    //! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> LWE {
+    //! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> VectorLWE {
     //!     // generate an encoder
     //!     let encoder =
     //!         Encoder::new(MIN_INTERVAL, MAX_INTERVAL, NB_BIT_PRECISION, NB_BIT_PADDING).unwrap();
     //!
     //!     // encode and encrypt
-    //!     let ciphertexts = LWE::new_encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
+    //!     let ciphertexts = VectorLWE::encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
     //!
     //!     ciphertexts
     //! }
     //!
-    //! fn decrypt_inference(ciphertexts: &LWE, lwe_secret_key: &LWESecretKey) -> usize {
+    //! fn decrypt_inference(ciphertexts: &VectorLWE, lwe_secret_key: &LWESecretKey) -> usize {
     //!     // decrypt
-    //!     let decryptions = ciphertexts.decrypt(lwe_secret_key).unwrap();
+    //!     let decryptions = ciphertexts.decrypt_decode(lwe_secret_key).unwrap();
     //!
     //!     // find the argmax
     //!     let mut res: usize = 0;
@@ -716,20 +716,20 @@ pub mod full_code_3 {
     //!     (lwe_key_input, bootstrapping_key, lwe_key_output)
     //! }
     //!
-    //! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> LWE {
+    //! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> VectorLWE {
     //!     // generate an encoder
     //!     let encoder =
     //!         Encoder::new(MIN_INTERVAL, MAX_INTERVAL, NB_BIT_PRECISION, NB_BIT_PADDING).unwrap();
     //!
     //!     // encode and encrypt
-    //!     let ciphertexts = LWE::new_encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
+    //!     let ciphertexts = VectorLWE::encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
     //!
     //!     ciphertexts
     //! }
     //!
-    //! fn decrypt_inference(ciphertexts: &LWE, lwe_secret_key: &LWESecretKey) -> usize {
+    //! fn decrypt_inference(ciphertexts: &VectorLWE, lwe_secret_key: &LWESecretKey) -> usize {
     //!     // decrypt
-    //!     let decryptions = ciphertexts.decrypt(lwe_secret_key).unwrap();
+    //!     let decryptions = ciphertexts.decrypt_decode(lwe_secret_key).unwrap();
     //!
     //!     // find the argmax
     //!     let mut res: usize = 0;
@@ -744,12 +744,12 @@ pub mod full_code_3 {
     //! }
     //!
     //! fn homomorphic_perceptron(
-    //!     ciphertexts: &mut LWE,
+    //!     ciphertexts: &mut VectorLWE,
     //!     key_switching_key: &LWEKSK,
     //!     bootstrapping_key: &LWEBSK,
     //!     weights: &[f64],
     //!     bias: f64,
-    //! ) -> LWE {
+    //! ) -> VectorLWE {
     //!     // clone the ciphertexts
     //!     let mut ct = ciphertexts.clone();
     //!
@@ -765,7 +765,7 @@ pub mod full_code_3 {
     //!     sum
     //! }
     //!
-    //! fn add_4(ciphertexts: &LWE) -> LWE {
+    //! fn add_4(ciphertexts: &VectorLWE) -> VectorLWE {
     //!     // first addition
     //!     let mut c0 = ciphertexts.extract_nth(0).unwrap();
     //!     let c1 = ciphertexts.extract_nth(1).unwrap();
@@ -872,20 +872,20 @@ pub mod full_code_4 {
     //!     (lwe_key_input, bootstrapping_key, lwe_key_output)
     //! }
     //!
-    //! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> LWE {
+    //! fn encrypt_input(input: &[f64], lwe_secret_key: &LWESecretKey) -> VectorLWE {
     //!     // generate an encoder
     //!     let encoder =
     //!         Encoder::new(MIN_INTERVAL, MAX_INTERVAL, NB_BIT_PRECISION, NB_BIT_PADDING).unwrap();
     //!
     //!     // encode and encrypt
-    //!     let ciphertexts = LWE::new_encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
+    //!     let ciphertexts = VectorLWE::encode_encrypt(lwe_secret_key, input, &encoder).unwrap();
     //!
     //!     ciphertexts
     //! }
     //!
-    //! fn decrypt_inference(ciphertexts: &LWE, lwe_secret_key: &LWESecretKey) -> usize {
+    //! fn decrypt_inference(ciphertexts: &VectorLWE, lwe_secret_key: &LWESecretKey) -> usize {
     //!     // decrypt
-    //!     let decryptions = ciphertexts.decrypt(lwe_secret_key).unwrap();
+    //!     let decryptions = ciphertexts.decrypt_decode(lwe_secret_key).unwrap();
     //!
     //!     // find the argmax
     //!     let mut res: usize = 0;
@@ -899,11 +899,11 @@ pub mod full_code_4 {
     //! }
     //!
     //! fn homomorphic_perceptron(
-    //!     ciphertexts: &LWE,
+    //!     ciphertexts: &VectorLWE,
     //!     bootstrapping_key: &LWEBSK,
     //!     weights: &[f64],
     //!     bias: f64,
-    //! ) -> LWE {
+    //! ) -> VectorLWE {
     //!     // clone the ciphertexts
     //!     let mut ct = ciphertexts.clone();
     //!
@@ -930,7 +930,7 @@ pub mod full_code_4 {
     //!     result
     //! }
     //!
-    //! fn add_4(ciphertexts: &LWE) -> LWE {
+    //! fn add_4(ciphertexts: &VectorLWE) -> VectorLWE {
     //!     // first addition
     //!     let mut c0 = ciphertexts.extract_nth(0).unwrap();
     //!     let c1 = ciphertexts.extract_nth(1).unwrap();
@@ -947,9 +947,9 @@ pub mod full_code_4 {
     //!     c0
     //! }
     //!
-    //! fn homomorphic_inference(input_ciphertexts: &LWE, bootstrapping_key: &LWEBSK) -> LWE {
+    //! fn homomorphic_inference(input_ciphertexts: &VectorLWE, bootstrapping_key: &LWEBSK) -> VectorLWE {
     //!     // allocation of the result with zeros
-    //!     let mut result = LWE::zero(
+    //!     let mut result = VectorLWE::zero(
     //!         bootstrapping_key.dimension * bootstrapping_key.polynomial_size,
     //!         NB_PERCEPTRON,
     //!     )

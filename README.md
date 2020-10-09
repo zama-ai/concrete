@@ -5,6 +5,11 @@ Concrete is based on the [Learning With Errors (LWE)](https://cims.nyu.edu/~rege
 
 To use Concrete, you must install [Rust](https://www.rust-lang.org), [FFTW](http://www.fftw.org) and add [concrete](https://github.com/zama-ai/concrete) to the list of dependencies.
 
+## Links
+
+- [documentation](https://concrete.zama.ai)
+- [whitepaper](http://whitepaper.zama.ai)
+
 ## Rust installation
 
 To install rust on Linux or Macos, you can do the following:
@@ -87,9 +92,9 @@ cargo test --release
 
 ```rust
 use concrete_lib::*;
-use pro_api::error::ProAPIError;
+use crypto_api::error::CryptoAPIError;
 
-fn main() -> Result<(), ProAPIError> {
+fn main() -> Result<(), CryptoAPIError> {
     // generate a secret key
     let secret_key = LWESecretKey::new(&LWE128_630);
 
@@ -106,14 +111,14 @@ fn main() -> Result<(), ProAPIError> {
     let p2 = encoder.encode_single(m2)?;
 
     // encrypt plaintexts
-    let mut c1 = LWE::new_encrypt(&secret_key, &p1)?;
-    let c2 = LWE::new_encrypt(&secret_key, &p2)?;
+    let mut c1 = VectorLWE::encrypt(&secret_key, &p1)?;
+    let c2 = VectorLWE::encrypt(&secret_key, &p2)?;
 
     // add the two ciphertexts homomorphically
     c1.add_with_padding_inplace(&c2)?;
 
     // decrypt and decode the result
-    let m3 = c1.decrypt(&secret_key)?;
+    let m3 = c1.decrypt_decode(&secret_key)?;
 
     // print the result and compare to non-FHE addition
     println!("Real: {} + {} = {}", m1, m2, m1 + m2);

@@ -72,7 +72,7 @@
 //!
 //! # Step 4: Import the main API module
 //!
-//! The last thing to do in order to use the Concrete library is to **import the ``pro_api`` module**.
+//! The last thing to do in order to use the Concrete library is to **import the ``crypto_api`` module**.
 //! We can do that by writing ``use concrete_lib;``
 //!
 //! As an **example** you can use the your empty project from the previous step, here is the file ``main.rs``:
