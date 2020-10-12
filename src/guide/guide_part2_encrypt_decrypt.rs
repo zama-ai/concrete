@@ -91,7 +91,7 @@
 //! As you can see, we have **a list of 5 floating numbers** in our interval (our messages), and we are encoding them inside **an instance of [Plaintext](super::super::pro_api::Plaintext)** thanks to our **[Encoder](super::super::pro_api::Encoder)**.
 //!
 //! Note that we could have created 5 different instances of Plaintext to store one plaintext at a time.
-//!  
+//!
 //!
 //! # Step 3: Let's encrypt plaintexts with LWE ciphertexts
 //!
@@ -129,7 +129,7 @@
 //! let lwe80_688 = LWEParams::new(690, -26);
 //! ```
 //!
-//! As you can see, there is a **trade-off** between the dimension and the standard deviation: the **larger the dimension** is, the **smaller the standard deviation** has to be to keep the same level of security.
+//! As you can see, there is a **trade-off** between the dimension and the standard deviation: the **smaller the standard deviation** is, the **larger the dimension** has to be to keep the same level of security.
 //! This trade-off has some consequences.
 //! The bigger the dimension, the more computation has to be done for each cryptographic operation (**slow down**), but also the bigger are every ciphertexts (**size overhead**).
 //! However, the smaller the standard deviation is, the smaller the noise is, the **more bits** we have for the **precision** of the messages!
