@@ -62,7 +62,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-concrete-lib = "0.1.0"
+concrete_lib = "0.1.0"
 ```
 
 Now, you can **compile** your project with the `cargo build` command, which will fetch the Concrete library.
