@@ -39,7 +39,7 @@ macro_rules! encoding_test_mod {
                     if <$T as Types>::TORUS_BIT == 32 {
                         assert_delta_scalar!(m, decoding, 1);
                     } else {
-                        assert_delta_scalar!(m, decoding, 1 << 10);
+                        assert_delta_scalar!(m, decoding, 1 << 11);
                     }
                 }
             }

@@ -505,6 +505,78 @@ impl VectorRLWE {
         Ok(result)
     }
 
+    /// Compute the decryption of each ciphertext in a rounding setting
+    ///
+    /// # Argument
+    /// * `sk` - an rlwe secret key
+    ///
+    /// # Output
+    /// * an array of f64
+    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are differents
+    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
+    ///
+    /// # Example
+    /// ```rust
+    /// use concrete_lib::*;
+    /// // generate a secret key
+    /// let dimension: usize = 1;
+    /// let polynomial_size: usize = 1024;
+    /// let log_std_dev: i32 = -20;
+    /// let sk = crypto_api::RLWESecretKey::new(&RLWE128_1024_1);
+    ///
+    /// // random settings for the encoder and some random messages
+    /// let (min, max) = (-43., -10.);
+    /// let (precision, padding) = (5, 2);
+    /// let encoder = crypto_api::Encoder::new(min, max, precision, padding).unwrap();
+    /// let messages: Vec<f64> = vec![-39.69, -19.37, -40.74, -41.26, -35.77];
+    ///
+    /// // encode
+    /// let enc_messages = encoder.encode(&messages).unwrap();
+    ///
+    /// // encrypt and decrypt
+    /// let ct = crypto_api::VectorRLWE::encrypt(&sk, &enc_messages).unwrap();
+    /// let res = ct.decrypt_decode(&sk).unwrap();
+    /// ```
+    pub fn decrypt_decode_round(
+        &self,
+        sk: &crypto_api::RLWESecretKey,
+    ) -> Result<Vec<f64>, CryptoAPIError> {
+        if sk.polynomial_size != self.polynomial_size {
+            return Err(PolynomialSizeError!(
+                sk.polynomial_size,
+                self.polynomial_size
+            ));
+        } else if sk.dimension != self.dimension {
+            return Err(DimensionError!(sk.dimension, self.dimension));
+        }
+
+        let mut result: Vec<f64> = vec![0.; self.nb_valid()];
+
+        // create a vec with the good size for the plaintexts
+        let mut tmp_pt: Vec<Torus> = vec![0; self.polynomial_size * self.nb_ciphertexts];
+
+        // compute the phase for all ciphertext
+        crypto::RLWE::compute_phase(
+            &mut tmp_pt,
+            &sk.val,
+            &self.ciphertexts,
+            self.dimension,
+            self.polynomial_size,
+        );
+
+        // decode as soon as the encoding is valid
+        let mut i: usize = 0;
+        for (pt, encoder) in izip!(tmp_pt.iter(), self.encoders.iter()) {
+            if encoder.is_valid() {
+                let mut encoder_round = encoder.clone();
+                encoder_round.round = true;
+                result[i] = encoder_round.decode_single(*pt)?;
+                i += 1;
+            }
+        }
+        Ok(result)
+    }
+
     /// Compute the decryption of each ciphertext and returns also the associated encoder
     /// if nb=3 we return the coefficient 0 of the ciphertext 0,
     /// the coefficient 1 of the ciphertext 0 and the coefficient 2 of the ciphertext 0

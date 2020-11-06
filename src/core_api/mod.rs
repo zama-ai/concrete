@@ -64,24 +64,37 @@ macro_rules! assert_noise_distribution {
         let std_dev = f64::sqrt($variance);
         let confidence = 0.95;
         let n_slots = $messages.len();
+
+        // allocate 2 slices: one for the error samples obtained, the second for fresh samples according to the std_dev computed
         let mut sdk_samples: Vec<f64> = vec![0.; n_slots];
         let mut theoretical_samples = vec![0.; n_slots];
+
+        // recover the errors from each ciphertexts
         Tensor::compute_signed_modular_distance(&mut sdk_samples, &$messages, &$new_messages);
-        // rng_float_normal(&mut theoretical_samples, 0., std_dev);
+
+        // fill the theoretical sample vector according to std_dev
         vectorial_openssl_float_normal(&mut theoretical_samples, 0., std_dev);
+
+        // compute the kolmogorov smirnov test
         let result = kolmogorov_smirnov::test_f64(&sdk_samples, &theoretical_samples, confidence);
+
+
         if result.is_rejected {
+            // compute the mean of our errors
             let mut mean: f64 = sdk_samples.iter().sum() ;
             mean /= sdk_samples.len() as f64 ;
-            // test if theoritical_std_dev > sdk_std_dev
+
+            // compute the variance of the errors
             let mut sdk_variance: f64 = sdk_samples.iter().map(|x| f64::powi(x - mean, 2) ).sum() ;
             sdk_variance /= (sdk_samples.len() - 1) as f64;
-            let sdk_std_log2 = f64::log2(f64::sqrt(sdk_variance)).round() ;
-            // sdk_variance = (sdk_variance * f64::powi(2.,2* 52)).round() *  f64::powi(2.,- 2* 52) ;
-            // let variance_r = ($variance * f64::powi(2.,2 * 52)).round() *  f64::powi(2.,-2*52) ;
-            let th_std_log2 = f64::log2(std_dev).round() ;
+
+            // compute the standard deviation
+            let sdk_std_log2 = f64::log2(f64::sqrt(sdk_variance)).round();
+            let th_std_log2 = f64::log2(std_dev).round();
+
+            // test if theoretical_std_dev > sdk_std_dev
             if  (sdk_std_log2 > th_std_log2) {
-                panic!("\n Statistical test failed : \n -> inputs are not from the same distribution with a probability {} \n -> sdk_std = {} ; th_std {}", result.reject_probability, sdk_std_log2, th_std_log2);
+                panic!("\n Statistical test failed : \n -> inputs are not from the same distribution with a probability {} \n -> sdk_std = {} ; th_std {}.\n -> {}", result.reject_probability, sdk_std_log2, th_std_log2,$op_name);
             }
         }
     };

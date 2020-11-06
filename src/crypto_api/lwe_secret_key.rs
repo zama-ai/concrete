@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct LWESecretKey {
     pub val: Vec<Torus>,
     pub dimension: usize,

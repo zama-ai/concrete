@@ -19,6 +19,7 @@ macro_rules! fft_test_mod {
                 let mut b_2: Vec<Torus> = vec![0; big_n];
                 let mut rng = rand::thread_rng();
 
+                // fill ai and b1 with random numbers < 1024
                 for i in 0..big_n {
                     a_1[i] = rng.gen::<Torus>().rem_euclid(1024);
                     b_1[i] = rng.gen::<Torus>().rem_euclid(1024);

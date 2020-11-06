@@ -382,6 +382,7 @@ impl VectorLWE {
     }
 
     /// Decrypt the list of ciphertexts, meaning compute the phase and directly decode the output
+    ///
     /// # Arguments
     /// * `sk` - an LWE secret key
     /// # Output
@@ -417,16 +418,76 @@ impl VectorLWE {
             return Err(DimensionError!(self.dimension, sk.dimension));
         }
 
+        // allocate the result
         let mut result: Vec<f64> = vec![0.; self.nb_ciphertexts];
 
         // create a temporary variable to store the result of the phase computation
         let mut tmp: Vec<Torus> = vec![0; self.nb_ciphertexts];
+
         // compute the phase
         crypto::LWE::compute_phase(&mut tmp, &sk.val, &self.ciphertexts, self.dimension);
+
         // decode
         for (r, pt, enc) in izip!(result.iter_mut(), tmp.iter(), self.encoders.iter()) {
             *r = enc.decode_single(*pt)?;
         }
+
+        Ok(result)
+    }
+
+    /// Decrypt the list of ciphertexts, meaning compute the phase and directly decode the output as if the encoder was set in round mode
+    ///
+    /// # Arguments
+    /// * `sk` - an LWE secret key
+    /// # Output
+    /// * `result` - a list of messages as f64
+    /// * DimensionError - if the ciphertext and the key have incompatible dimensions
+    /// ```rust
+    /// use concrete_lib::*;
+    ///
+    /// // create an Encoder instance where messages are in the interval [-5, 5[
+    /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
+    ///
+    /// // create a list of messages in our interval
+    /// let messages: Vec<f64> = vec![-3.2, 4.3, 0.12, -1.1, 2.78];
+    ///
+    /// // create a new Plaintext instance filled with the plaintexts we want
+    /// let pt = Plaintext::encode(&messages, &encoder).unwrap();
+    ///
+    /// // create an LWESecretKey
+    /// let sk = LWESecretKey::new(&LWE128_630);
+    ///
+    /// // create a new VectorLWE that encrypts pt
+    /// let mut ct = VectorLWE::zero(sk.dimension, messages.len()).unwrap();
+    /// ct.encrypt_inplace(&sk, &pt).unwrap();
+    ///
+    /// let res = ct.decrypt_decode(&sk).unwrap();
+    /// ```
+    pub fn decrypt_decode_round(
+        &self,
+        sk: &crypto_api::LWESecretKey,
+    ) -> Result<Vec<f64>, CryptoAPIError> {
+        // check dimensions
+        if sk.dimension != self.dimension {
+            return Err(DimensionError!(self.dimension, sk.dimension));
+        }
+
+        // allocate the result
+        let mut result: Vec<f64> = vec![0.; self.nb_ciphertexts];
+
+        // create a temporary variable to store the result of the phase computation
+        let mut tmp: Vec<Torus> = vec![0; self.nb_ciphertexts];
+
+        // compute the phase
+        crypto::LWE::compute_phase(&mut tmp, &sk.val, &self.ciphertexts, self.dimension);
+
+        // decode
+        for (r, pt, enc) in izip!(result.iter_mut(), tmp.iter(), self.encoders.iter()) {
+            let mut tmp = enc.clone();
+            tmp.round = true;
+            *r = enc.decode_single(*pt)?;
+        }
+
         Ok(result)
     }
 

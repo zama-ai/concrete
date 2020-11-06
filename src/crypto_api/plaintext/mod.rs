@@ -170,7 +170,6 @@ impl Plaintext {
             result.iter_mut()
         ) {
             *r = encoder.decode_operators(*pt)?;
-            println!("dec {}", r)
         }
         Ok(result)
     }

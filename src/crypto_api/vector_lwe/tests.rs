@@ -37,7 +37,7 @@ fn test_encode_encrypt_x_copy_in_nth_nth_inplace_x_decrypt() {
     ct1.copy_in_nth_nth_inplace(index1, &ct2, index2).unwrap();
 
     // decryption
-    let decryptions = ct1.decrypt_decode(&sk).unwrap();
+    let decryptions = ct1.decrypt_decode_round(&sk).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -84,7 +84,7 @@ fn test_encrypt_x_extract_nth_x_decrypt() {
     let ct_extracted = ct.extract_nth(index).unwrap();
 
     // decryption
-    let decryptions = ct_extracted.decrypt_decode(&sk).unwrap();
+    let decryptions = ct_extracted.decrypt_decode_round(&sk).unwrap();
 
     // test
     assert_eq_granularity!(messages[index], decryptions[0], ct_extracted.encoders[0]);
@@ -112,7 +112,7 @@ fn test_encrypt_x_decrypt() {
     let ciphertext = crypto_api::VectorLWE::encrypt(&secret_key, &plaintext).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&secret_key).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -155,7 +155,7 @@ fn test_encrypt_x_add_constant_static_encoder_inplace_x_decrypt() {
         .unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&secret_key).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -200,7 +200,7 @@ fn test_new_encode_encrypt_x_add_constant_dynamic_encoder_decrypt() {
         .unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&secret_key).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -247,7 +247,7 @@ fn test_encode_encrypt_x_opposite_nth_inplace_x_decrypt() {
     ciphertext.opposite_nth_inplace(index).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&secret_key).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -272,25 +272,24 @@ fn test_encode_encrypt_x_opposite_nth_inplace_x_decrypt() {
 fn test_encode_encrypt_x_add_centered_inplace_x_decrypt() {
     // random settings
     let (min, max) = generate_random_interval!();
+    let (min2, _) = generate_random_interval!();
     let (precision, padding) = generate_precision_padding!(8, 8);
     let nb_messages: usize = random_index!(30) + 10;
 
     // encoders
-    let encoder1 = crypto_api::Encoder::new(min - 100., max + 100., precision, padding).unwrap();
-    let encoder2 = crypto_api::Encoder::new(
-        -(max - min) / 2. - 100.,
-        (max - min) / 2. + 100.,
-        precision,
-        padding,
-    )
-    .unwrap();
+    let encoder1 = crypto_api::Encoder::new(min, max, precision, padding).unwrap();
+    let max2 = min2 + max - min;
+    let encoder2 = crypto_api::Encoder::new(min2, max2, precision, padding).unwrap();
 
     // generate a secret key
     let secret_key = crypto_api::LWESecretKey::new(&crypto_api::LWE128_1024);
 
     // two lists of messages
-    let messages1: Vec<f64> = random_messages!(min, max, nb_messages);
-    let messages2: Vec<f64> = random_messages!(-100., 100., nb_messages);
+    let delta = (max - min) / 4. + encoder1.get_granularity() / 2.;
+    let messages1: Vec<f64> =
+        random_messages!(min + delta, min + encoder1.delta - delta, nb_messages);
+    let messages2: Vec<f64> =
+        random_messages!(min2 + delta, min2 + encoder2.delta - delta, nb_messages);
 
     // encode and encrypt
     let mut ciphertext1 =
@@ -302,7 +301,7 @@ fn test_encode_encrypt_x_add_centered_inplace_x_decrypt() {
     ciphertext1.add_centered_inplace(&ciphertext2).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext1.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext1.decrypt_decode_round(&secret_key).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
@@ -350,7 +349,7 @@ fn test_encode_encrypt_x_add_with_padding_inplace_x_decrypt() {
     ciphertext1.add_with_padding_inplace(&ciphertext2).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext1.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext1.decrypt_decode_round(&secret_key).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
@@ -398,7 +397,7 @@ fn test_encode_encrypt_x_sub_with_padding_inplace_x_decrypt() {
     ciphertext1.sub_with_padding_inplace(&ciphertext2).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext1.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext1.decrypt_decode_round(&secret_key).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
@@ -447,7 +446,7 @@ fn test_encode_encrypt_x_mul_constant_static_encoder_inplace_x_decrypt() {
         .unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&secret_key).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
@@ -494,7 +493,7 @@ fn test_encode_encrypt_x_mul_constant_with_padding_inplace_x_decrypt() {
         .unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&secret_key).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&secret_key).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
@@ -539,7 +538,7 @@ fn test_encode_encrypt_x_keyswitch_x_decrypt() {
 
     // decryption
     let decryptions: Vec<f64> = ciphertext_before
-        .decrypt_decode(&secret_key_before)
+        .decrypt_decode_round(&secret_key_before)
         .unwrap();
 
     let mut cpt: usize = 0;
@@ -595,7 +594,7 @@ fn test_encode_encrypt_x_bootstrap_nth_x_decrypt() {
 
             // decrypt
             let decryption2 = ciphertext_output
-                .decrypt_decode(&secret_key_output)
+                .decrypt_decode_round(&secret_key_output)
                 .unwrap();
             assert_eq_granularity!(
                 message[index],
@@ -649,7 +648,9 @@ fn test_encode_encrypt_x_mul_from_bootstrap_nth_nth_x_decrypt() {
         .unwrap();
 
     // decrypt
-    let decryption = ciphertext_res.decrypt_decode(&secret_key_output).unwrap();
+    let decryption = ciphertext_res
+        .decrypt_decode_round(&secret_key_output)
+        .unwrap();
 
     // test
     assert_eq_granularity!(
@@ -696,7 +697,7 @@ fn test_encode_encrypt_x_add_with_new_min_inplace_x_decrypt() {
         .unwrap();
 
     // decryption
-    let decryptions = ciphertext_1.decrypt_decode(&secret_key).unwrap();
+    let decryptions = ciphertext_1.decrypt_decode_round(&secret_key).unwrap();
 
     // test
     let mut cpt: usize = 0;

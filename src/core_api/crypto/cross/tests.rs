@@ -248,27 +248,27 @@ macro_rules! cross_test_mod {
 
             #[test]
             pub fn test_external_product() {
-                let n_tests = 10;
+                let n_tests = 1000;
 
                 for _n in 0..n_tests {
                     // fix different polynomial degrees
-                    let degrees = vec![512, 1024, 2048];
+                    let degrees = vec![1024, 2048, 512];
                     for polynomial_size in degrees {
                         // fix a set of parameters
                         let dimension: usize = 1;
-                        let n_slots = 1;
+                        let n_slots = 1; // number of RLWE to test ??
                         let level = 6;
                         let base_log = 4;
-                        let std_dev_bsk = f64::powi(2., -25);
+                        let std_dev_bsk = f64::powi(2., -25); // rgsw
                         let std_dev_rlwe = f64::powi(2., -20);
 
-                        // compute the length of rlwe secret key
+                        // generate a random RLWE secret key
                         let rlwe_sk_len: usize =
                             <Torus as SecretKey>::get_secret_key_length(dimension, polynomial_size);
                         let mut rlwe_sk: Vec<Torus> = vec![0; rlwe_sk_len];
                         Tensor::uniform_random_default(&mut rlwe_sk);
 
-                        // we create a lwe secret key with one bit set to one
+                        // we create a lwe secret key containing only one bit set to 1 (to compute only 1 external product)
                         let lwe_sk: Vec<Torus> = vec![1 << (<Torus as Types>::TORUS_BIT - 1)];
 
                         // create the polynomial to encrypt
@@ -278,7 +278,7 @@ macro_rules! cross_test_mod {
                         // allocate space for the decrypted polynomial
                         let mut new_messages: Vec<Torus> = vec![0; n_slots * polynomial_size];
 
-                        // allocation for the bootstrapping key
+                        // allocation of the RGSW ciphertext for the external product
                         let mut trgsw: Vec<CTorus> = vec![
                             CTorus::zero();
                             cross::get_bootstrapping_key_size(
@@ -289,6 +289,7 @@ macro_rules! cross_test_mod {
                             )
                         ];
 
+                        // fill the RGSW ciphertext -> RGSW(1)
                         RGSW::create_fourier_bootstrapping_key(
                             &mut trgsw,
                             base_log,
@@ -303,12 +304,10 @@ macro_rules! cross_test_mod {
                         // allocate vectors for rlwe ciphertexts (inputs)
                         let mut ciphertexts: Vec<Torus> =
                             vec![0; n_slots * (dimension + 1) * polynomial_size];
-                        // let mut body_ciphertexts: Vec<Torus> = vec![0; n_slots * polynomial_size];
 
                         // allocate vectors for rlwe ciphertexts (output)
                         let mut res: Vec<Torus> =
                             vec![0; n_slots * (dimension + 1) * polynomial_size];
-                        // let mut body_res: Vec<Torus> = vec![0; n_slots * polynomial_size];
 
                         // encrypt the polynomial
                         RLWE::sk_encrypt(
@@ -341,6 +340,8 @@ macro_rules! cross_test_mod {
                             AlignedVec::new(polynomial_size);
                         let mut mask_res_fft: AlignedVec<CTorus> = AlignedVec::new(polynomial_size);
                         let mut body_res_fft: AlignedVec<CTorus> = AlignedVec::new(polynomial_size);
+
+                        // compute the external product
                         Cross::external_product_inplace_one_dimension(
                             &mut res,
                             &trgsw,
@@ -355,6 +356,8 @@ macro_rules! cross_test_mod {
                             &mut mask_res_fft,
                             &mut body_res_fft,
                         );
+
+                        // decryption
                         RLWE::compute_phase(
                             &mut new_messages,
                             &rlwe_sk,
@@ -377,8 +380,8 @@ macro_rules! cross_test_mod {
 
                         // test
                         assert_noise_distribution!(
-                            new_messages,
                             messages,
+                            new_messages,
                             output_variance,
                             &format!("externalproduct-degree={}", polynomial_size)
                         );
@@ -511,9 +514,6 @@ macro_rules! cross_test_mod {
 
                     // test
                     println!("sqrt(max_var) = {}", f64::sqrt(output_variance));
-                    for (elt0, elt1) in m0.iter().zip(new_messages.iter()) {
-                        println!("{} - {}", *elt0, *elt1);
-                    }
                     assert_noise_distribution!(
                         new_messages,
                         m0,

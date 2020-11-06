@@ -29,6 +29,8 @@ pub struct Encoder {
 
 impl Encoder {
     /// Instantiate a new Encoder with the provided interval as [min,max[
+    /// This encoder is meant to be use in an approximate context.
+    ///
     /// # Arguments
     /// * `min`- the minimum real value of the interval
     /// * `max`- the maximum real value of the interval
@@ -50,6 +52,54 @@ impl Encoder {
     /// let encoder = Encoder::new(min, max, nb_bit_precision, nb_bit_padding).unwrap();
     /// ```
     pub fn new(
+        min: f64,
+        max: f64,
+        nb_bit_precision: usize,
+        nb_bit_padding: usize,
+    ) -> Result<Encoder, CryptoAPIError> {
+        if min >= max {
+            return Err(MinMaxError!(min, max));
+        }
+        if nb_bit_precision == 0 {
+            return Err(PrecisionError!());
+        }
+
+        let margin: f64 = (max - min) / (f64::powi(2., nb_bit_precision as i32) - 1.);
+
+        Ok(Encoder {
+            o: min,
+            delta: max - min + margin,
+            nb_bit_precision: nb_bit_precision,
+            nb_bit_padding: nb_bit_padding,
+            round: false,
+        })
+    }
+
+    /// Instantiate a new Encoder with the provided interval as [min,max[
+    /// This encoder is meant to be use in an exact computation context.
+    /// It will round at encode and at decode.
+    ///
+    /// # Arguments
+    /// * `min`- the minimum real value of the interval
+    /// * `max`- the maximum real value of the interval
+    /// * `nb_bit_precision` - number of bits to represent a plaintext
+    /// * `nb_bit_padding` - number of bits for left padding with zeros
+    /// # Output
+    /// * a new instantiation of an Encoder
+    /// # Example
+    /// ```rust
+    /// use concrete_lib::crypto_api::Encoder;
+    ///
+    /// // parameters
+    /// let min: f64 = 0.2;
+    /// let max: f64 = 0.8;
+    /// let nb_bit_precision = 8;
+    /// let nb_bit_padding = 4;
+    ///
+    /// // instantiation
+    /// let encoder = Encoder::new(min, max, nb_bit_precision, nb_bit_padding).unwrap();
+    /// ```
+    pub fn new_rounding_context(
         min: f64,
         max: f64,
         nb_bit_precision: usize,
@@ -239,7 +289,7 @@ impl Encoder {
             delta: 0.,
             nb_bit_precision: 0,
             nb_bit_padding: 0,
-            round: true,
+            round: false,
         }
     }
 
@@ -436,17 +486,29 @@ impl Encoder {
     /// let plaintext = encoder.encode_outside_interval_operators(m).unwrap();
     /// ```
     pub fn encode_outside_interval_operators(&self, m: f64) -> Result<Torus, CryptoAPIError> {
+        // check if the encoder is valid
         if !self.is_valid() {
             return Err(InvalidEncoderError!(self.nb_bit_precision, self.delta));
         }
+
+        // call core_api module to encode
         let mut res = crypto::Encoding::encode(m, self.o, self.delta);
+
+        // round if in rounding context
+        if self.round {
+            res = Types::round_to_closest_multiple(res, self.nb_bit_precision, 1);
+        }
+
+        // shift if there is some padding
         if self.nb_bit_padding > 0 {
             res >>= self.nb_bit_padding;
         }
+
         Ok(res)
     }
 
     /// Wrap the core_api decode function with the padding and the rounding
+    ///
     /// # Argument
     /// * `pt` - the noisy plaintext
     /// ```rust
@@ -467,24 +529,22 @@ impl Encoder {
     /// let new_message = encoder.decode_operators(plaintext).unwrap();
     /// ```
     pub fn decode_operators(&self, pt: Torus) -> Result<f64, CryptoAPIError> {
+        // check valid encoder
         if !self.is_valid() {
             return Err(InvalidEncoderError!(self.nb_bit_precision, self.delta));
         }
-        let mut tmp: Torus;
-        if self.round {
-            tmp = Types::round_to_closest_multiple(
-                pt,
-                self.nb_bit_precision + self.nb_bit_padding,
-                1,
-            );
-        } else {
-            tmp = pt;
-        }
 
+        // round if asked
+        let mut tmp: Torus = if self.round {
+            Types::round_to_closest_multiple(pt, self.nb_bit_precision + self.nb_bit_padding, 1)
+        } else {
+            pt
+        };
+
+        // remove padding
         if self.nb_bit_padding > 0 {
             tmp <<= self.nb_bit_padding;
         }
-        // let padding: f64 = self.delta / f64::powi(2., self.nb_bit_precision as i32 + 1);
 
         Ok(crypto::Encoding::decode(tmp, self.o, self.delta))
     }
@@ -546,6 +606,7 @@ impl fmt::Display for Encoder {
             -> nb bit precision = {}
             -> granularity = {}
             -> nb bit padding = {}
+            -> round = {}
         }}
             ",
             self.o,
@@ -554,7 +615,8 @@ impl fmt::Display for Encoder {
             self.delta / 2.,
             self.nb_bit_precision,
             self.get_granularity(),
-            self.nb_bit_padding
+            self.nb_bit_padding,
+            self.round
         )
     }
 }

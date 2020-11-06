@@ -63,7 +63,7 @@ impl LWEBSK {
             return Err(PrecisionError!());
         }
 
-        // check that te input encoder has at least 1 bit of padding
+        // check that the input encoder has at least 1 bit of padding
         if encoder_input.nb_bit_padding == 0 {
             return Err(NotEnoughPaddingError!(encoder_input.nb_bit_padding, 1));
         }
@@ -76,14 +76,10 @@ impl LWEBSK {
 
         for (i, res) in result.iter_mut().enumerate() {
             // create a valid encoding from i
-            // let shift: usize = <Torus as Types>::TORUS_BIT - self.get_polynomial_size_log();
             let shift: usize = <Torus as Types>::TORUS_BIT - self.get_polynomial_size_log() - 1;
-
             let encoded: Torus = (i as Torus) << shift;
 
-            // decode the encoding without rounding (there is no noise)
-            // let decoded: f64 =
-            //     crypto::Encoding::decode(encoded, encoder_input_clone.o, encoder_input_clone.delta);
+            // decode the encoding
             let decoded: f64 = encoder_input_clone.decode_operators(encoded)?;
 
             // apply the function

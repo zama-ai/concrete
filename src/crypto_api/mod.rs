@@ -9,6 +9,8 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
+pub use crate::traits::GenericAdd;
+
 pub type Torus = u64;
 
 #[allow(unused_macros)]
@@ -117,8 +119,9 @@ macro_rules! random_messages {
 macro_rules! deltas_eq {
     ($delta1: expr, $delta2: expr) => {{
         let tmp = ($delta1 - $delta2).abs() / $delta1.max($delta2);
-        let limit = f64::powi(2., -45);
-        tmp < limit
+        let limit1 = $delta1 / f64::powi(2., -40);
+        let limit2 = $delta2 / f64::powi(2., -40);
+        tmp < limit1 && tmp <limit2
     }};
 }
 

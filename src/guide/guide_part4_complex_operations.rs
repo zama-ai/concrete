@@ -231,8 +231,8 @@
 //!
 //! fn main() {
 //!     // encoders
-//!     let encoder_input = Encoder::new(-10., 10., 6, 1).unwrap();
-//!     let encoder_output = Encoder::new(0., 100., 6, 0).unwrap();
+//!     let encoder_input = Encoder::new(-10., 10., 4, 1).unwrap();
+//!     let encoder_output = Encoder::new(0., 100., 4, 0).unwrap();
 //!
 //!     // secret keys
 //!     let rlwe_secret_key = RLWESecretKey::new(&RLWE128_1024_1);

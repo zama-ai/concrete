@@ -32,19 +32,19 @@ pub struct LWE {
 }
 
 impl GenericAdd<f64, CryptoAPIError> for LWE {
-    fn add(self, right: f64) -> Result<LWE, CryptoAPIError> {
+    fn add(&self, right: f64) -> Result<LWE, CryptoAPIError> {
         self.add_constant_dynamic_encoder(right)
     }
-    fn add_inplace(mut self, right: f64) -> Result<(), CryptoAPIError> {
+    fn add_inplace(&mut self, right: f64) -> Result<(), CryptoAPIError> {
         self.add_constant_dynamic_encoder_inplace(right)
     }
 }
 
 impl GenericAdd<&LWE, CryptoAPIError> for LWE {
-    fn add(self, right: &LWE) -> Result<LWE, CryptoAPIError> {
+    fn add(&self, right: &LWE) -> Result<LWE, CryptoAPIError> {
         self.add_with_padding(right)
     }
-    fn add_inplace(mut self, right: &LWE) -> Result<(), CryptoAPIError> {
+    fn add_inplace(&mut self, right: &LWE) -> Result<(), CryptoAPIError> {
         self.add_with_padding_inplace(right)
     }
 }
@@ -182,6 +182,7 @@ impl LWE {
     }
 
     /// Decrypt the ciphertext, meaning compute the phase and directly decode the output
+    ///
     /// # Arguments
     /// * `sk` - an LWE secret key
     /// # Output
@@ -219,6 +220,56 @@ impl LWE {
 
         // decode
         let result: f64 = self.encoder.decode_single(tmp[0])?;
+
+        Ok(result)
+    }
+
+    /// Decrypt the ciphertext, meaning compute the phase and directly decode the output as if the encoder was in a rounding context
+    ///
+    /// # Arguments
+    /// * `sk` - an LWE secret key
+    /// # Output
+    /// * `result` - a f64
+    /// * DimensionError - if the ciphertext and the key have incompatible dimensions
+    /// ```rust
+    /// use concrete_lib::*;
+    ///
+    /// // create an Encoder instance where messages are in the interval [-5, 5[
+    /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
+    ///
+    /// // create a list of messages in our interval
+    /// let message: f64 = -3.2;
+    ///
+    /// // create an LWESecretKey
+    /// let sk = LWESecretKey::new(&LWE128_630);
+    ///
+    /// // create a new LWE that encrypts pt
+    /// let mut ct = LWE::encode_encrypt(&sk,message, &encoder).unwrap();
+    ///
+    /// // decryption
+    /// let res = ct.decrypt_decode(&sk).unwrap();
+    /// ```
+    pub fn decrypt_decode_round(
+        &self,
+        sk: &crypto_api::LWESecretKey,
+    ) -> Result<f64, CryptoAPIError> {
+        // check dimensions
+        if sk.dimension != self.dimension {
+            return Err(DimensionError!(self.dimension, sk.dimension));
+        }
+
+        // create a temporary variable to store the result of the phase computation
+        let mut tmp: Vec<Torus> = vec![0; 1];
+
+        // compute the phase
+        crypto::LWE::compute_phase(&mut tmp, &sk.val, &self.ciphertext, self.dimension);
+
+        // round context
+        let mut enc_round = self.encoder.clone();
+        enc_round.round = true;
+
+        // decode
+        let result: f64 = enc_round.decode_single(tmp[0])?;
 
         Ok(result)
     }

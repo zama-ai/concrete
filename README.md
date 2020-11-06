@@ -76,7 +76,7 @@ It is also possible to build the library from source by cloning this repository 
 
 ```bash
 cd concrete
-cargo build --release
+make build
 ```
 
 # Tests
@@ -85,7 +85,7 @@ To run the tests, you can do the following
 
 ```bash
 cd concrete
-cargo test --release
+make test
 ```
 
 # Example

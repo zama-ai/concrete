@@ -14,6 +14,6 @@ pub trait HomomorphicMul<T, U> {
 }
 
 pub trait GenericAdd<T, E>: Sized {
-    fn add(self, right: T) -> Result<Self, E>;
-    fn add_inplace(self, right: T) -> Result<(), E>;
+    fn add(&self, right: T) -> Result<Self, E>;
+    fn add_inplace(&mut self, right: T) -> Result<(), E>;
 }

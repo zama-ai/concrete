@@ -140,6 +140,41 @@ fn test_new_x_encode_single_x_copy_x_decode_single() {
 }
 
 #[test]
+fn test_new_rounding_context_x_encode_single_x_decode_single() {
+    // create an encoder with a granularity = 1
+    let (min, _) = generate_random_interval!();
+    let (precision, padding) = generate_precision_padding!(8, 8);
+    let max = min + f64::powi(2., precision as i32) - 1.;
+    let encoder = crypto_api::Encoder::new_rounding_context(min, max, precision, padding).unwrap();
+
+    for _ in 0..100 {
+        // generates a random message
+        let m: f64 = random_index!((f64::powi(2., precision as i32)) as usize) as f64; // [0,2**prec[ + min
+        let m1 = m + min;
+
+        // encode and decode
+        let plaintext = encoder.encode_single(m1).unwrap();
+        let decoding = encoder.decode_single(plaintext.plaintexts[0]).unwrap();
+
+        // message with error in [-0.5,0.5]
+        let m2: f64 = m1
+            + if m == 0. {
+                random_message!(0., 0.5)
+            } else {
+                random_message!(-0.5, 0.5)
+            };
+
+        // encode and decode
+        let plaintext2 = encoder.encode_single(m2).unwrap();
+        let decoding2 = encoder.decode_single(plaintext2.plaintexts[0]).unwrap();
+
+        // tests
+        assert_eq!(m1, decoding);
+        assert_eq!(m1, decoding2);
+    }
+}
+
+#[test]
 fn margins_with_integers() {
     let power: usize = random_index!(5) + 2;
     let nb_messages: usize = (1 << power) - 1;
@@ -155,23 +190,40 @@ fn margins_with_integers() {
 
     // create an encoder
     let encoder = crypto_api::Encoder::new(min, max, power, padding).unwrap();
+    let encoder_round =
+        crypto_api::Encoder::new_rounding_context(min, max, power, padding).unwrap();
 
     // encode
-    let mut plaintext = encoder.encode(&messages).unwrap();
+    let mut plaintext = encoder_round.encode(&messages).unwrap();
 
     // add some error
     let random_errors = random_messages!(0., 0.5, nb_messages);
     let plaintext_error = encoder.encode(&random_errors).unwrap();
-    if random_index!(2) == 0 {
-        Tensor::add_inplace(&mut plaintext.plaintexts, &plaintext_error.plaintexts);
-    } else {
-        Tensor::sub_inplace(&mut plaintext.plaintexts, &plaintext_error.plaintexts);
-    }
+    Tensor::add_inplace(&mut plaintext.plaintexts, &plaintext_error.plaintexts);
 
+    // decode
     let decoding = plaintext.decode().unwrap();
 
     // test
-    for (m, d, e) in izip!(messages.iter(), decoding.iter(), plaintext.encoders.iter()) {
-        assert_eq_granularity!(m, d, e);
+    for (m, d, e) in izip!(messages.iter(), decoding.iter(), random_errors.iter()) {
+        println!("m {} d {} e {} ", m, d, e);
+        assert_eq!(m, d);
+    }
+
+    // encode
+    let mut plaintext = encoder_round.encode(&messages).unwrap();
+
+    // sub some error
+    let random_errors = random_messages!(0., 0.5, nb_messages);
+    let plaintext_error = encoder.encode(&random_errors).unwrap();
+    Tensor::sub_inplace(&mut plaintext.plaintexts, &plaintext_error.plaintexts);
+
+    // decode
+    let decoding = plaintext.decode().unwrap();
+
+    // test
+    for (m, d, e) in izip!(messages.iter(), decoding.iter(), random_errors.iter()) {
+        println!("m {} d {} e {} ", m, d, e);
+        assert_eq!(m, d);
     }
 }

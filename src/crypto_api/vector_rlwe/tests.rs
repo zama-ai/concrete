@@ -2,7 +2,7 @@ use crate::core_api::math::Random;
 use crate::crypto_api;
 
 #[test]
-fn test_encode_encrypt_1_ciphertext_x_decrypt() {
+fn test_encode_encrypt_packed_x_decrypt() {
     // generate a secret key
     let dimension: usize = random_index!(4) + 1;
     let polynomial_size: usize = 1024;
@@ -21,7 +21,7 @@ fn test_encode_encrypt_1_ciphertext_x_decrypt() {
 
     // encode and encrypt and decrypt
     let ct = crypto_api::VectorRLWE::encode_encrypt_packed(&sk, &messages, &encoder).unwrap();
-    let decryptions = ct.decrypt_decode(&sk).unwrap();
+    let decryptions = ct.decrypt_decode_round(&sk).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -56,7 +56,7 @@ fn test_encrypt_1_ciphertext_x_decrypt() {
 
     // encrypt and decrypt
     let ct = crypto_api::VectorRLWE::encrypt_packed(&sk, &enc_messages).unwrap();
-    let decryptions = ct.decrypt_decode(&sk).unwrap();
+    let decryptions = ct.decrypt_decode_round(&sk).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -88,7 +88,7 @@ fn test_encode_encrypt_on_cst_x_decrypt() {
 
     // encode and encrypt and decrypt
     let ct = crypto_api::VectorRLWE::encode_encrypt(&sk, &messages, &encoder).unwrap();
-    let decryptions = ct.decrypt_decode(&sk).unwrap();
+    let decryptions = ct.decrypt_decode_round(&sk).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -127,7 +127,7 @@ fn test_encrypt_on_cst_x_decrypt() {
 
     // encrypt and decrypt
     let ct = crypto_api::VectorRLWE::encrypt(&sk, &enc_messages).unwrap();
-    let decryptions = ct.decrypt_decode(&sk).unwrap();
+    let decryptions = ct.decrypt_decode_round(&sk).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -144,7 +144,7 @@ fn test_encrypt_on_cst_x_decrypt() {
 }
 
 #[test]
-fn test_encode_encrypt_1_ciphertext_x_extract_1_lwe() {
+fn test_encode_encrypt_packed_x_extract_1_lwe() {
     // generate a secret key
     let dimension: usize = random_index!(4) + 1;
     let polynomial_size: usize = 1024;
@@ -172,7 +172,7 @@ fn test_encode_encrypt_1_ciphertext_x_extract_1_lwe() {
     let ext1 = ct.extract_1_lwe(index1, 0).unwrap();
 
     // test
-    let d1 = ext1.decrypt_decode(&lwe_sk).unwrap();
+    let d1 = ext1.decrypt_decode_round(&lwe_sk).unwrap();
     assert_eq_granularity!(messages[index1], d1[0], ext1.encoders[0]);
     assert_eq!(precision1, ext1.encoders[0].nb_bit_precision);
 }
@@ -212,13 +212,13 @@ fn test_encrypt_on_cst_x_extract_1_lwe() {
     // println!("rlwe key {}", sk);
 
     // test
-    let d1 = ext1.decrypt_decode(&lwe_sk).unwrap();
+    let d1 = ext1.decrypt_decode_round(&lwe_sk).unwrap();
     assert_eq_granularity!(messages[index1], d1[0], ext1.encoders[0]);
     assert_eq!(precision1, ext1.encoders[0].nb_bit_precision);
 }
 
 #[test]
-fn test_encode_encrypt_1_ciphertext_x_add_constant_static_encoder_inplace_x_decrypt() {
+fn test_encode_encrypt_packed_x_add_constant_static_encoder_inplace_x_decrypt() {
     // generate a secret key
     let dimension: usize = random_index!(4) + 1;
     let polynomial_size: usize = 1024;
@@ -248,7 +248,7 @@ fn test_encode_encrypt_1_ciphertext_x_add_constant_static_encoder_inplace_x_decr
         .unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&sk).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&sk).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -297,7 +297,7 @@ fn test_encrypt_1_ciphertext_x_add_constant_dynamic_encoder_inplace_x_decrypt() 
         .unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext.decrypt_decode(&sk).unwrap();
+    let decryptions: Vec<f64> = ciphertext.decrypt_decode_round(&sk).unwrap();
 
     // test
     let mut cpt: usize = 0;
@@ -315,39 +315,33 @@ fn test_encrypt_1_ciphertext_x_add_constant_dynamic_encoder_inplace_x_decrypt() 
 }
 
 #[test]
-fn test_encode_encrypt_1_ciphertext_x_add_centered_inplace_x_decrypt() {
+fn test_encode_encrypt_packed_x_add_centered_inplace_x_decrypt() {
     // generate a secret key
     let dimension: usize = random_index!(4) + 1;
     let polynomial_size: usize = 1024;
     let log_std_dev: i32 = -(random_index!(40) as i32 + 20);
     let params = crypto_api::RLWEParams::new(polynomial_size, dimension, log_std_dev).unwrap();
+
+    // generate a secret key
     let sk = crypto_api::RLWESecretKey::new(&params);
 
     // random settings
     let (min, max) = generate_random_interval!();
+    let (min2, _) = generate_random_interval!();
     let (precision, padding) = generate_precision_padding!(8, 8);
-    let nb_messages: usize = random_index!(polynomial_size - 1) + 1;
+    let nb_messages: usize = random_index!(polynomial_size * 5) + 1;
 
     // encoders
-    let encoder1 = crypto_api::Encoder::new(min - 100., max + 100., precision, padding);
-    let encoder1 = match encoder1 {
-        Ok(a) => a,
-        Err(e) => panic!("{}", e),
-    };
-    let encoder2 = crypto_api::Encoder::new(
-        -(max - min) / 2. - 100.,
-        (max - min) / 2. + 100.,
-        precision,
-        padding,
-    );
-    let encoder2 = match encoder2 {
-        Ok(a) => a,
-        Err(e) => panic!("{}", e),
-    };
+    let encoder1 = crypto_api::Encoder::new(min, max, precision, padding).unwrap();
+    let max2 = min2 + max - min;
+    let encoder2 = crypto_api::Encoder::new(min2, max2, precision, padding).unwrap();
 
     // two lists of messages
-    let messages1: Vec<f64> = random_messages!(min, max, nb_messages);
-    let messages2: Vec<f64> = random_messages!(-100., 100., nb_messages);
+    let delta = (max - min) / 4. + encoder1.get_granularity() / 2.;
+    let messages1: Vec<f64> =
+        random_messages!(min + delta, min + encoder1.delta - delta, nb_messages);
+    let messages2: Vec<f64> =
+        random_messages!(min2 + delta, min2 + encoder2.delta - delta, nb_messages);
 
     // encode and encrypt
     let mut ciphertext1 =
@@ -359,7 +353,7 @@ fn test_encode_encrypt_1_ciphertext_x_add_centered_inplace_x_decrypt() {
     ciphertext1.add_centered_inplace(&ciphertext2).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext1.decrypt_decode(&sk).unwrap();
+    let decryptions: Vec<f64> = ciphertext1.decrypt_decode_round(&sk).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
@@ -377,7 +371,7 @@ fn test_encode_encrypt_1_ciphertext_x_add_centered_inplace_x_decrypt() {
 }
 
 #[test]
-fn test_encode_encrypt_1_ciphertext_x_add_with_padding_inplace_x_decrypt() {
+fn test_encode_encrypt_packed_x_add_with_padding_inplace_x_decrypt() {
     // generate a secret key
     let dimension: usize = random_index!(4) + 1;
     let polynomial_size: usize = 1024;
@@ -411,7 +405,7 @@ fn test_encode_encrypt_1_ciphertext_x_add_with_padding_inplace_x_decrypt() {
     ciphertext1.add_with_padding_inplace(&ciphertext2).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext1.decrypt_decode(&sk).unwrap();
+    let decryptions: Vec<f64> = ciphertext1.decrypt_decode_round(&sk).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
@@ -429,7 +423,7 @@ fn test_encode_encrypt_1_ciphertext_x_add_with_padding_inplace_x_decrypt() {
 }
 
 #[test]
-fn test_encode_encrypt_1_ciphertext_x_sub_with_padding_inplace_x_decrypt() {
+fn test_encode_encrypt_packed_x_sub_with_padding_inplace_x_decrypt() {
     // generate a secret key
     let dimension: usize = random_index!(4) + 1;
     let polynomial_size: usize = 1024;
@@ -463,7 +457,7 @@ fn test_encode_encrypt_1_ciphertext_x_sub_with_padding_inplace_x_decrypt() {
     ciphertext1.sub_with_padding_inplace(&ciphertext2).unwrap();
 
     // decryption
-    let decryptions: Vec<f64> = ciphertext1.decrypt_decode(&sk).unwrap();
+    let decryptions: Vec<f64> = ciphertext1.decrypt_decode_round(&sk).unwrap();
 
     // check the precision loss related to the encryption
     let mut cpt: usize = 0;
