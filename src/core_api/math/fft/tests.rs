@@ -49,17 +49,23 @@ macro_rules! fft_test_mod {
                     &mut ifft,
                 );
                 for (a, b) in a_1.iter().zip(a_2.iter()) {
-                    if ((*a as f64 - *b as f64).abs() > 10.)
-                        || ((*a as f64 - *b as f64).abs() > 10.)
-                    {
-                        panic!("{} != {}", *a, *b);
+                    let tmp = if a.wrapping_sub(*b) < b.wrapping_sub(*a) {
+                        a.wrapping_sub(*b)
+                    } else {
+                        b.wrapping_sub(*a)
+                    };
+                    if tmp > 10 {
+                        panic!("panic1: {} != {}", *a, *b);
                     }
                 }
                 for (a, b) in b_1.iter().zip(b_2.iter()) {
-                    if ((*a as f64 - *b as f64).abs() > 10.)
-                        || ((*a as f64 - *b as f64).abs() > 10.)
-                    {
-                        panic!("{} != {}", *a, *b);
+                    let tmp = if a.wrapping_sub(*b) < b.wrapping_sub(*a) {
+                        a.wrapping_sub(*b)
+                    } else {
+                        b.wrapping_sub(*a)
+                    };
+                    if tmp > 10 {
+                        panic!("panic2: {} != {}", *a, *b);
                     }
                 }
             }

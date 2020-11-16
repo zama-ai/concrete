@@ -63,7 +63,7 @@
 //! # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 //!
 //! [dependencies]
-//! concrete_lib = "0.1.0"
+//! concrete_lib = "0.1"
 //! itertools = "0.9.0"
 //! ```
 //! We also added ``itertools`` because we will use it in the next parts of the guide.

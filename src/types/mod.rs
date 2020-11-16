@@ -161,7 +161,11 @@ macro_rules! impl_trait_types {
             /// # Output
             /// * a Torus element
             fn f64_to_torus(item: f64) -> $T {
-                return (item * (f64::powi(2.0, Self::TORUS_BIT as i32))).round() as $T;
+                return unsafe {
+                    f64::to_int_unchecked::<$T>(
+                        (item * (f64::powi(2.0, Self::TORUS_BIT as i32))).round(),
+                    )
+                };
             }
 
             /// Returns a Torus element with a some bits a the right place according to the base_log and level decomposition

@@ -47,9 +47,9 @@ macro_rules! encoding_test_mod {
             #[test]
             fn test_several_encoding_decoding() {
                 //! Encodes and decodes random messages
-                let n_tests = 1000;
+                let n_tests = 1000; // number of encode decode tests
 
-                // the real interval is [int_o,int_beta]
+                // we generate n_tests random intervals [int_o,int_beta[
                 let mut int_os: Vec<Torus> = vec![0 as Torus; n_tests];
                 Tensor::uniform_random_default(&mut int_os);
                 let mut int_betas: Vec<Torus> = vec![0 as Torus; n_tests];
@@ -93,7 +93,7 @@ macro_rules! encoding_test_mod {
                 if <$T as Types>::TORUS_BIT == 32 {
                     assert_delta!(messages, decodings, 1);
                 } else {
-                    assert_delta!(messages, decodings, 1 << 10);
+                    assert_delta!(messages, decodings, 1 << 11);
                 }
             }
 

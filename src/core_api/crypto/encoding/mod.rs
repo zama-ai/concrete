@@ -50,7 +50,7 @@ macro_rules! impl_trait_encoding {
             /// let enc: Torus = Encoding::encode(m, o, delta);
             /// ```
             fn encode(message: f64, o: f64, delta: f64) -> $T {
-                return (((message - o) / delta) * f64::powi(2.0, <$T as Types>::TORUS_BIT as i32)) as $T;
+                return <$T as Types>::f64_to_torus(((message - o) / delta));
             }
 
             /// Encode several messages with different real encodings
@@ -76,7 +76,7 @@ macro_rules! impl_trait_encoding {
             /// ```
             fn several_encode(encoded: &mut [Self], messages: &[f64], os: &[f64], deltas: &[f64]){
                 for (enc, m, o, delta) in izip!(encoded.iter_mut(), messages.iter(), os.iter(), deltas.iter()) {
-                    *enc = (((m - o) / delta) * f64::powi(2.0, <$T as Types>::TORUS_BIT as i32)) as $T;
+                    *enc = <$T as Types>::f64_to_torus(((m - o) / delta));
                 }
             }
 
@@ -103,7 +103,7 @@ macro_rules! impl_trait_encoding {
             /// ```
             fn several_encode_with_same_parameters(encoded: &mut [Self], messages: &[f64], o: f64, delta: f64){
                 for (enc, m,) in izip!(encoded.iter_mut(), messages.iter()) {
-                    *enc = (((m - o) / delta) * f64::powi(2.0, <$T as Types>::TORUS_BIT as i32)) as $T;
+                    *enc = <$T as Types>::f64_to_torus(((m - o) / delta));
                 }
             }
 

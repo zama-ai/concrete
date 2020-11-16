@@ -6,8 +6,7 @@ macro_rules! assert_delta {
     ($A:expr, $B:expr, $d:expr) => {
         for (x, y) in $A.iter().zip($B) {
             if (*x as i64 - y as i64).abs() > $d {
-                println!("{} != {} ", *x, y);
-                panic!();
+                panic!("{} != {} ", *x, y);
             }
         }
     };
@@ -51,8 +50,7 @@ macro_rules! assert_delta_std_dev {
             let torus_distance =
                 distance as f64 / f64::powi(2., <Torus as Types>::TORUS_BIT as i32);
             if torus_distance > 5. * $d {
-                println!("{} != {} ", x, y);
-                panic!();
+                panic!("{} != {} ", x, y);
             }
         }
     };
