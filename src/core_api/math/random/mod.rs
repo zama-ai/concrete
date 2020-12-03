@@ -32,7 +32,7 @@ macro_rules! impl_trait_random {
             /// * `n` - number of bit to fill with random
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // allocation of a torus
@@ -54,7 +54,7 @@ macro_rules! impl_trait_random {
             /// * `n` - number of bit to fill with random
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // allocation of a torus
@@ -75,7 +75,7 @@ macro_rules! impl_trait_random {
             /// * `k` - a Torus tensor (output)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // allocation of a torus
@@ -96,7 +96,7 @@ macro_rules! impl_trait_random {
             /// * `k` - a Torus tensor (output)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // allocation of a torus
@@ -120,9 +120,9 @@ macro_rules! impl_trait_random {
             /// * `probability` - the probability for an element to be uniformly random
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
-            /// use concrete_lib::Types;
+            /// use concrete::Types;
             ///
             /// // allocation of a torus
             /// let mut t: Vec<Torus> = vec![0; 100];
@@ -151,7 +151,7 @@ macro_rules! impl_trait_random {
             /// * `std_dev` - standard deviation of the normal distribution
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // settings
@@ -178,7 +178,7 @@ macro_rules! impl_trait_random {
             /// * `std_dev` - standard deviation of the normal distribution
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // settings
@@ -216,7 +216,7 @@ macro_rules! impl_trait_random {
             /// * returns the Torus element sampled from the desired distribution
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // settings
@@ -241,7 +241,7 @@ macro_rules! impl_trait_random {
             /// * returns the Torus element sampled from the desired distribution
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // settings
@@ -281,7 +281,7 @@ macro_rules! impl_trait_random {
             /// * returns the Torus element sampled from the desired distribution
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Random;
+            /// use concrete::core_api::math::Random;
             #[doc = $DOC]
             ///
             /// // settings
@@ -327,7 +327,7 @@ macro_rules! impl_trait_random {
 /// * returns the Torus element sampled from the desired distribution
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::random;
+/// use concrete::core_api::math::random;
 ///
 /// // settings
 /// let std_dev: f64 = f64::powi(2., -20);
@@ -366,7 +366,7 @@ pub fn openssl_float_normal_couple(mean: f64, std_dev: f64) -> (f64, f64) {
 /// * `std_dev` - standard deviation of the normal distribution
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::random;
+/// use concrete::core_api::math::random;
 ///
 /// // settings
 /// let std_dev: f64 = f64::powi(2., -20);
@@ -394,7 +394,7 @@ pub fn vectorial_rng_float_normal(k: &mut [f64], mean: f64, std_dev: f64) {
 /// * Return the sample
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::random;
+/// use concrete::core_api::math::random;
 ///
 /// // settings
 /// let std_dev: f64 = f64::powi(2., -20);
@@ -414,7 +414,7 @@ pub fn rng_float_normal(mean: f64, std_dev: f64) -> f64 {
 /// * `std_dev` - standard deviation of the normal distribution
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::random;
+/// use concrete::core_api::math::random;
 ///
 /// // settings
 /// let std_dev: f64 = f64::powi(2., -20);

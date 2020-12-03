@@ -24,7 +24,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -65,7 +65,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // generate a fresh secret key
@@ -82,7 +82,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -123,7 +123,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // generate a fresh secret key
@@ -150,7 +150,7 @@
 //! Here is an example of how to compute this kind of addition in the interval [100,110], and for instance, we will start with an LWE ciphertext of the message 106.276, and add to it the message -4.9, so **the result is still in the interval**.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -192,7 +192,7 @@
 //! It works exactly the same with **RLWE ciphertexts** with the [add_constant_static_encoder_inplace](super::super::crypto_api::VectorRLWE::add_constant_static_encoder_inplace) method.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -238,7 +238,7 @@
 //! Here is an example.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -280,7 +280,7 @@
 //! Now with **RLWE** ciphertext, we also use the [add_constant_dynamic_encoder_inplace](super::super::crypto_api::VectorRLWE::add_constant_dynamic_encoder_inplace) method.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -330,7 +330,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //! use itertools::izip;
 //!
 //! fn main() {
@@ -377,7 +377,7 @@
 //! ```rust
 //! use itertools::izip;
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoders
@@ -429,7 +429,7 @@
 //! ```rust
 //! use itertools::izip;
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoders
@@ -485,7 +485,7 @@
 //! Note that there is **no risk** of losing correctness with this operation.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -532,7 +532,7 @@
 //! It works the same with **RLWE** ciphertexts and the [add_with_padding_inplace](super::super::crypto_api::VectorRLWE::add_with_padding_inplace) method.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -581,7 +581,7 @@
 //! Note that there is **no risk** of losing correctness with this operation.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -628,7 +628,7 @@
 //! It works the same with **RLWE** ciphertexts and the [sub_with_padding_inplace](super::super::crypto_api::VectorRLWE::sub_with_padding_inplace) method.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -681,7 +681,7 @@
 //! The constant has to be small to stay in the same interval, so it means that we can **lose correctness** with this operation if we actually go beyond the interval.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -724,7 +724,7 @@
 //!
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -768,7 +768,7 @@
 //! Obviously, if the constant is negative we have the opposite interval, but still with the **same size**!
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -816,7 +816,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     use itertools::izip;

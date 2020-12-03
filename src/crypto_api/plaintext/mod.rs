@@ -30,7 +30,7 @@ impl Plaintext {
     /// * a new instantiation of an empty Plaintext (set to zero) of a certain size
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Plaintext;
+    /// use concrete::crypto_api::Plaintext;
     /// let nb_ct: usize = 100;
     /// let plaintexts = Plaintext::zero(nb_ct);
     /// ```
@@ -50,7 +50,7 @@ impl Plaintext {
     /// * a new instance of Plaintext containing the plaintext of each message with respect to encoder
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::{Encoder, Plaintext};
+    /// use concrete::crypto_api::{Encoder, Plaintext};
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -84,7 +84,7 @@ impl Plaintext {
     /// * the decoded value as a f64
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::{Encoder, Plaintext};
+    /// use concrete::crypto_api::{Encoder, Plaintext};
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -110,7 +110,7 @@ impl Plaintext {
     /// * `messages` - a list of messages as f64
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::{Encoder, Plaintext};
+    /// use concrete::crypto_api::{Encoder, Plaintext};
     ///
     /// // create a list of 5 Encoder instances where messages are in the interval [-5, 5[
     /// let encoders = vec![Encoder::new(-5., 5., 8, 0).unwrap(); 5];
@@ -141,7 +141,7 @@ impl Plaintext {
             self.encoders.iter_mut(),
             messages.iter()
         ) {
-            *pt = encoder.encode_operators(*m)?;
+            *pt = encoder.encode_core(*m)?;
         }
         Ok(())
     }
@@ -149,7 +149,7 @@ impl Plaintext {
     /// Decode every plaintexts in this Plaintext instance according to its list of Encoders
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::{Encoder, Plaintext};
+    /// use concrete::crypto_api::{Encoder, Plaintext};
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -169,7 +169,7 @@ impl Plaintext {
             self.encoders.iter(),
             result.iter_mut()
         ) {
-            *r = encoder.decode_operators(*pt)?;
+            *r = encoder.decode_core(*pt)?;
         }
         Ok(result)
     }
@@ -179,7 +179,7 @@ impl Plaintext {
     /// * `encoders` - a list of Encoder elements
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::{Encoder, Plaintext};
+    /// use concrete::crypto_api::{Encoder, Plaintext};
     ///
     /// let nb_ct = 100;
     /// let mut pt = Plaintext::zero(nb_ct);
@@ -202,7 +202,7 @@ impl Plaintext {
     /// * `encoder` - an Encoder
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::{Encoder, Plaintext};
+    /// use concrete::crypto_api::{Encoder, Plaintext};
     ///
     /// let nb_ct = 100;
     /// let mut pt = Plaintext::zero(nb_ct);
@@ -221,7 +221,7 @@ impl Plaintext {
     /// * `encoder` - an Encoder
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::{Encoder, Plaintext};
+    /// use concrete::crypto_api::{Encoder, Plaintext};
     ///
     /// let nb_ct = 100;
     /// let mut pt = Plaintext::zero(nb_ct);

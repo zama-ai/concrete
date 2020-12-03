@@ -49,7 +49,7 @@
 //! # Step 3: Add Concrete to your dependencies
 //!
 //! First thing first, you need to **add the Concrete library as a dependency** in your Rust project.
-//! To do so, simply write ``concrete_lib = "0.1.0"`` in the ``Cargo.toml`` file.
+//! To do so, simply write ``concrete = "0.1.0"`` in the ``Cargo.toml`` file.
 //!
 //! Here is a **simple example**:
 //!
@@ -63,7 +63,7 @@
 //! # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 //!
 //! [dependencies]
-//! concrete_lib = "0.1"
+//! concrete = "0.1"
 //! itertools = "0.9.0"
 //! ```
 //! We also added ``itertools`` because we will use it in the next parts of the guide.
@@ -73,13 +73,13 @@
 //! # Step 4: Import the main API module
 //!
 //! The last thing to do in order to use the Concrete library is to **import the ``crypto_api`` module**.
-//! We can do that by writing ``use concrete_lib;``
+//! We can do that by writing ``use concrete;``
 //!
 //! As an **example** you can use the your empty project from the previous step, here is the file ``main.rs``:
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     println!("Hello, world!");

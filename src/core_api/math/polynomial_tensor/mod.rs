@@ -62,8 +62,8 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - the size of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::PolynomialTensor ;
-            /// use concrete_lib::core_api::crypto::SecretKey ;
+            /// use concrete::core_api::math::PolynomialTensor ;
+            /// use concrete::core_api::crypto::SecretKey ;
             #[doc = $DOC]
             /// let n: usize = 100 ;
             /// let polynomial_size: usize = 1024 ;
@@ -125,8 +125,8 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - the size of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
-            /// use concrete_lib::core_api::math::PolynomialTensor;
+            /// use concrete::core_api::crypto::SecretKey;
+            /// use concrete::core_api::math::PolynomialTensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -199,8 +199,8 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - the size of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
-            /// use concrete_lib::core_api::math::PolynomialTensor;
+            /// use concrete::core_api::crypto::SecretKey;
+            /// use concrete::core_api::math::PolynomialTensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -324,7 +324,7 @@ macro_rules! impl_trait_polynomial_tensor {
             ///  REFACTOR
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::PolynomialTensor;
+            /// use concrete::core_api::math::PolynomialTensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -375,7 +375,7 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - nnumber of coefficients of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::PolynomialTensor;
+            /// use concrete::core_api::math::PolynomialTensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -421,7 +421,7 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - the size of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::{PolynomialTensor, Tensor};
+            /// use concrete::core_api::math::{PolynomialTensor, Tensor};
             #[doc = $DOC]
             ///
             /// // settings
@@ -453,7 +453,7 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - the size of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::{PolynomialTensor, Tensor};
+            /// use concrete::core_api::math::{PolynomialTensor, Tensor};
             #[doc = $DOC]
             ///
             /// // settings
@@ -496,7 +496,7 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - the size of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::{PolynomialTensor, Tensor};
+            /// use concrete::core_api::math::{PolynomialTensor, Tensor};
             #[doc = $DOC]
             ///
             /// // settings
@@ -546,7 +546,7 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `polynomial_size` - the size of the polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::{PolynomialTensor, Tensor};
+            /// use concrete::core_api::math::{PolynomialTensor, Tensor};
             #[doc = $DOC]
             ///
             /// // settings
@@ -593,7 +593,7 @@ macro_rules! impl_trait_polynomial_tensor {
             /// * `dec_level` - level of the decomposition wanted
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::PolynomialTensor;
+            /// use concrete::core_api::math::PolynomialTensor;
             #[doc = $DOC]
             ///
             /// // settings

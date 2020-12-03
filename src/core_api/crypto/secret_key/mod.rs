@@ -30,7 +30,7 @@ macro_rules! impl_trait_secret_key {
             /// * the n-th bit of k as a boolean
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
+            /// use concrete::core_api::crypto::SecretKey;
             #[doc = $DOC]
             ///
             /// // settings
@@ -71,7 +71,7 @@ macro_rules! impl_trait_secret_key {
             /// * the bit coefficient (as a boolean) of the degree monomial_degree monomial of the mask_index-th polynomial in binary_key
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
+            /// use concrete::core_api::crypto::SecretKey;
             #[doc = $DOC]
             ///
             /// // settings
@@ -107,7 +107,7 @@ macro_rules! impl_trait_secret_key {
             /// * `sk_nb_bits` - the number of bits in the secret key
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{secret_key, SecretKey};
+            /// use concrete::core_api::crypto::{secret_key, SecretKey};
             #[doc = $DOC]
             ///
             /// // settings
@@ -144,8 +144,8 @@ macro_rules! impl_trait_secret_key {
             /// * `polynomial_size` - number of coefficients in polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{secret_key, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{secret_key, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -185,8 +185,8 @@ macro_rules! impl_trait_secret_key {
             /// * `polynomial_size` - number of coefficients in polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{secret_key, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{secret_key, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -242,7 +242,7 @@ macro_rules! impl_trait_secret_key {
             /// * the length of the Torus slice we need to store this kind of binary key
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
+            /// use concrete::core_api::crypto::SecretKey;
             ///
             /// type Torus = u32; // or u64
             ///

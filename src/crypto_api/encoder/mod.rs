@@ -40,7 +40,7 @@ impl Encoder {
     /// * a new instantiation of an Encoder
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -88,7 +88,7 @@ impl Encoder {
     /// * a new instantiation of an Encoder
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -130,7 +130,7 @@ impl Encoder {
     /// * return the number of bits of precision affected by the noise
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -182,7 +182,7 @@ impl Encoder {
     /// * a new instantiation of an Encoder
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let center: f64 = 0.;
@@ -220,7 +220,7 @@ impl Encoder {
     /// * a new instantiation of an Plaintext containing only one encoded value (the one we just computed with this function)
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -241,7 +241,7 @@ impl Encoder {
         }
         Ok(crypto_api::Plaintext {
             encoders: vec![self.clone(); 1],
-            plaintexts: vec![self.encode_operators(message)?; 1],
+            plaintexts: vec![self.encode_core(message)?; 1],
             nb_plaintexts: 1,
         })
     }
@@ -253,7 +253,7 @@ impl Encoder {
     /// * the decoded value as a f64
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -272,7 +272,7 @@ impl Encoder {
     /// let new_message = encoder.decode_single(m.plaintexts[0]).unwrap();
     /// ```
     pub fn decode_single(&self, ec: Torus) -> Result<f64, CryptoAPIError> {
-        self.decode_operators(ec)
+        self.decode_core(ec)
     }
 
     /// Instantiate a new empty Encoder (set to zero)
@@ -280,7 +280,7 @@ impl Encoder {
     /// * a new instantiation of an empty Encoder (set to zero)
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     /// let encoder = Encoder::zero();
     /// ```
     pub fn zero() -> Encoder {
@@ -299,7 +299,7 @@ impl Encoder {
     /// * `messages`- a list of messages as a f64
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     /// // parameters
     /// let (min, max): (f64, f64) = (0.2, 0.4);
     /// let (precision, padding): (usize, usize) = (8, 4);
@@ -326,7 +326,7 @@ impl Encoder {
             result.encoders.iter_mut(),
             messages.iter()
         ) {
-            *pt = self.encode_operators(*m)?;
+            *pt = self.encode_core(*m)?;
             encoder.copy(self);
         }
         Ok(result)
@@ -354,7 +354,7 @@ impl Encoder {
     /// * `encoder`- the encoder to be copied
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     /// // parameters
     /// let (min, max): (f64, f64) = (0.2, 0.4);
     /// let (precision, padding): (usize, usize) = (8, 4);
@@ -375,7 +375,7 @@ impl Encoder {
     /// * `nb_bit_padding`- number of bits for left padding with zeros
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -443,7 +443,7 @@ impl Encoder {
     /// * `m` - the message to encode
     /// # Example
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -456,9 +456,9 @@ impl Encoder {
     /// // instantiation
     /// let encoder = Encoder::new(min, max, nb_bit_precision, nb_bit_padding).unwrap();
     ///
-    /// let plaintext = encoder.encode_operators(m).unwrap();
+    /// let plaintext = encoder.encode_core(m).unwrap();
     /// ```
-    pub fn encode_operators(&self, m: f64) -> Result<Torus, CryptoAPIError> {
+    pub fn encode_core(&self, m: f64) -> Result<Torus, CryptoAPIError> {
         if m < self.o || m >= self.o + self.delta {
             return Err(MessageOutsideIntervalError!(m, self.o, self.delta));
         }
@@ -470,7 +470,7 @@ impl Encoder {
     /// # Argument
     /// * `m` - the message to encode
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -512,7 +512,7 @@ impl Encoder {
     /// # Argument
     /// * `pt` - the noisy plaintext
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;
@@ -525,10 +525,10 @@ impl Encoder {
     /// // instantiation
     /// let encoder = Encoder::new(min, max, nb_bit_precision, nb_bit_padding).unwrap();
     ///
-    /// let plaintext = encoder.encode_operators(m).unwrap();
-    /// let new_message = encoder.decode_operators(plaintext).unwrap();
+    /// let plaintext = encoder.encode_core(m).unwrap();
+    /// let new_message = encoder.decode_core(plaintext).unwrap();
     /// ```
-    pub fn decode_operators(&self, pt: Torus) -> Result<f64, CryptoAPIError> {
+    pub fn decode_core(&self, pt: Torus) -> Result<f64, CryptoAPIError> {
         // check valid encoder
         if !self.is_valid() {
             return Err(InvalidEncoderError!(self.nb_bit_precision, self.delta));
@@ -545,6 +545,15 @@ impl Encoder {
         if self.nb_bit_padding > 0 {
             tmp <<= self.nb_bit_padding;
         }
+
+        // round if round is set to false and if in the security margin
+        let starting_value_security_margin: Torus = ((1 << (self.nb_bit_precision + 1)) - 1)
+            << (<Torus as Types>::TORUS_BIT - self.nb_bit_precision);
+        tmp = if tmp > starting_value_security_margin {
+            Types::round_to_closest_multiple(tmp, self.nb_bit_precision, 1)
+        } else {
+            tmp
+        };
 
         Ok(crypto::Encoding::decode(tmp, self.o, self.delta))
     }
@@ -571,7 +580,7 @@ impl Encoder {
 
     /// Modify the encoding to be use after an homomorphic opposite
     /// ```rust
-    /// use concrete_lib::crypto_api::Encoder;
+    /// use concrete::crypto_api::Encoder;
     ///
     /// // parameters
     /// let min: f64 = 0.2;

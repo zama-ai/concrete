@@ -50,7 +50,7 @@ macro_rules! impl_trait_npe_cross {
             /// * only correct for the external product inside a bootstrap
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::Cross ;
+            /// use concrete::npe::Cross ;
             #[doc = $DOC]
             /// // settings
             /// let dimension: usize = 3 ;
@@ -106,7 +106,7 @@ macro_rules! impl_trait_npe_cross {
             /// * only correct for the cmux inside a bootstrap
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::Cross ;
+            /// use concrete::npe::Cross ;
             #[doc = $DOC]
             /// // settings
             /// let dimension: usize = 3 ;
@@ -154,7 +154,7 @@ macro_rules! impl_trait_npe_cross {
             /// * Returns the variance of the output RLWE
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::Cross ;
+            /// use concrete::npe::Cross ;
             #[doc = $DOC]
             /// // settings
             /// let rlwe_dimension: usize = 3 ;

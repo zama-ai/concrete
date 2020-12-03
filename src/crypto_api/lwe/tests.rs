@@ -560,7 +560,7 @@ fn test_encode_encrypt_x_bootstrap_x_decrypt() {
     let bootstrapping_key =
         crypto_api::LWEBSK::new(&secret_key_input, &rlwe_secret_key, base_log, level);
 
-    for _ in 0..20 {
+    for _ in 0..200 {
         // a random message
         let message: f64 = random_message!(min, max);
 
@@ -573,7 +573,7 @@ fn test_encode_encrypt_x_bootstrap_x_decrypt() {
 
         // decrypt
         let decryption2 = ciphertext_output
-            .decrypt_decode_round(&secret_key_output)
+            .decrypt_decode(&secret_key_output)
             .unwrap();
         assert_eq_granularity!(message, decryption2, ciphertext_output.encoder);
     }
@@ -666,5 +666,68 @@ fn test_encode_encrypt_x_add_with_new_min_inplace_x_decrypt() {
         // test
         assert_eq_granularity!(message_1 + message_2, decryption, ciphertext_1.encoder);
         assert_eq!(precision, ciphertext_1.encoder.nb_bit_precision);
+    }
+}
+
+#[test]
+fn test_valid_lookup_table() {
+    // generate a random encoder and encode the min value, encrypt it
+    // use a constant function in a bootstrapp
+    // check the error is the decrypted
+    // also do the same thing with a random message
+
+    // random settings
+    let (min, max) = generate_random_interval!();
+    let padding: usize = random_index!(3) + 1;
+    let precision: usize = random_index!(3) + 1;
+    let base_log: usize = random_index!(3) + 7;
+    let level: usize = random_index!(1) + 3;
+
+    // encoders
+    let encoder_input = crypto_api::Encoder::new(min, max, precision, padding).unwrap();
+    let encoder_output = crypto_api::Encoder::new(0., 7., 3, 0).unwrap();
+
+    // secret keys
+    let rlwe_secret_key = crypto_api::RLWESecretKey::new(&crypto_api::RLWE128_1024_1);
+    let secret_key_input = crypto_api::LWESecretKey::new(&crypto_api::LWE128_630);
+    let secret_key_output = rlwe_secret_key.to_lwe_secret_key();
+
+    // bootstrapping key
+    let bootstrapping_key =
+        crypto_api::LWEBSK::new(&secret_key_input, &rlwe_secret_key, base_log, level);
+
+    for _ in 0..100 {
+        // a random message
+        let zero: f64 = min;
+        let message: f64 = random_message!(min, max);
+
+        // a random constant
+        let cst: f64 = random_message!(0., 7.).round();
+
+        // encode and encrypt
+        let ciphertext_zero =
+            crypto_api::LWE::encode_encrypt(&secret_key_input, zero, &encoder_input).unwrap();
+        let ciphertext_input =
+            crypto_api::LWE::encode_encrypt(&secret_key_input, message, &encoder_input).unwrap();
+
+        // bootstrap
+        let ciphertext_output_zero = ciphertext_zero
+            .bootstrap_with_function(&bootstrapping_key, |_| cst, &encoder_output)
+            .unwrap();
+        let ciphertext_output = ciphertext_input
+            .bootstrap_with_function(&bootstrapping_key, |_| cst, &encoder_output)
+            .unwrap();
+
+        // decrypt
+        let decryption2 = ciphertext_output
+            .decrypt_decode_round(&secret_key_output)
+            .unwrap();
+        assert_eq_granularity!(cst, decryption2, ciphertext_output.encoder);
+
+        // decrypt
+        let decryption_zero = ciphertext_output_zero
+            .decrypt_decode_round(&secret_key_output)
+            .unwrap();
+        assert_eq_granularity!(cst, decryption_zero, ciphertext_output_zero.encoder);
     }
 }

@@ -112,10 +112,10 @@ macro_rules! impl_trait_cross {
             /// use fftw::plan::C2CPlan;
             /// use fftw::types::{Flag, Sign};
             /// use num_traits::Zero;
-            /// use concrete_lib::core_api::crypto::{Cross, SecretKey, RGSW, RLWE};
-            /// use concrete_lib::core_api::math::Tensor;
-            /// use concrete_lib::types::{C2CPlanTorus, CTorus};
-            /// use concrete_lib::Types;
+            /// use concrete::core_api::crypto::{Cross, SecretKey, RGSW, RLWE};
+            /// use concrete::core_api::math::Tensor;
+            /// use concrete::types::{C2CPlanTorus, CTorus};
+            /// use concrete::Types;
             #[doc = $DOC]
             ///
             /// // settings
@@ -388,10 +388,10 @@ macro_rules! impl_trait_cross {
             /// use fftw::plan::C2CPlan;
             /// use fftw::types::{Flag, Sign};
             /// use num_traits::Zero;
-            /// use concrete_lib::core_api::crypto::{Cross, SecretKey, RGSW, RLWE};
-            /// use concrete_lib::core_api::math::Tensor;
-            /// use concrete_lib::types::{C2CPlanTorus, CTorus};
-            /// use concrete_lib::Types;
+            /// use concrete::core_api::crypto::{Cross, SecretKey, RGSW, RLWE};
+            /// use concrete::core_api::math::Tensor;
+            /// use concrete::types::{C2CPlanTorus, CTorus};
+            /// use concrete::Types;
             #[doc = $DOC]
             ///
             /// // settings
@@ -602,9 +602,9 @@ macro_rules! impl_trait_cross {
             /// use fftw::plan::C2CPlan;
             /// use fftw::types::{Flag, Sign};
             /// use num_traits::Zero;
-            /// use concrete_lib::core_api::crypto::{Cross, SecretKey, RGSW, RLWE};
-            /// use concrete_lib::core_api::math::Tensor;
-            /// use concrete_lib::types::{C2CPlanTorus, CTorus};
+            /// use concrete::core_api::crypto::{Cross, SecretKey, RGSW, RLWE};
+            /// use concrete::core_api::math::Tensor;
+            /// use concrete::types::{C2CPlanTorus, CTorus};
             #[doc = $DOC]
             ///
             /// // settings
@@ -771,9 +771,9 @@ macro_rules! impl_trait_cross {
             /// use fftw::plan::C2CPlan;
             /// use fftw::types::{Flag, Sign};
             /// use num_traits::Zero;
-            /// use concrete_lib::core_api::crypto::{cross, rgsw, rlwe, secret_key, Cross};
-            /// use concrete_lib::core_api::math::tensor;
-            /// use concrete_lib::types::{C2CPlanTorus, CTorus};
+            /// use concrete::core_api::crypto::{cross, rgsw, rlwe, secret_key, Cross};
+            /// use concrete::core_api::math::tensor;
+            /// use concrete::types::{C2CPlanTorus, CTorus};
             #[doc = $DOC]
             ///
             /// // settings
@@ -913,7 +913,7 @@ macro_rules! impl_trait_cross {
             /// * `polynomial_size` - max degree of the polynomials + 1
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{Cross, rlwe, secret_key};
+            /// use concrete::core_api::crypto::{Cross, rlwe, secret_key};
             #[doc = $DOC]
             ///
             /// // settings
@@ -974,8 +974,8 @@ macro_rules! impl_trait_cross {
             /// Example
             /// ```rust
             /// use num_traits::Zero;
-            /// use concrete_lib::core_api::crypto::{cross, rgsw, rlwe, secret_key, Cross};
-            /// use concrete_lib::types::CTorus;
+            /// use concrete::core_api::crypto::{cross, rgsw, rlwe, secret_key, Cross};
+            /// use concrete::types::CTorus;
             #[doc = $DOC]
             ///
             /// // settings
@@ -1085,7 +1085,7 @@ impl_trait_cross!(u64, "type Torus = u64;");
 /// * the size
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::crypto::cross;
+/// use concrete::core_api::crypto::cross;
 ///
 /// // settings
 /// let polynomial_size = 512;

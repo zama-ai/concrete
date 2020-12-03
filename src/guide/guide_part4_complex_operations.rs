@@ -26,7 +26,7 @@
 //! Here is an **example** with 3 `levels` and a `base_log` of 8.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -48,7 +48,7 @@
 //! Now we can easily **key switch** some ciphertexts :-)
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -125,7 +125,7 @@
 //! Here is an **example** with 3 `levels` and a `base_log` of 5.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -155,7 +155,7 @@
 //! It is related to the **cyclotomic ring** and the negative sign popping after multiplication.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -225,7 +225,7 @@
 //! The input encoding works in the interval [-10,10] and since we evaluate the square function, the **output interval** has to be [0,100].
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!
@@ -286,7 +286,7 @@
 //! In the following example we will **multiply** the first ciphertext of our 2 [VectorLWE key](super::super::crypto_api::VectorLWE) structures and obtain a **new [VectorLWE key](super::super::crypto_api::VectorLWE) structure** filled with only one ciphertext which is the **expected result**.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //! /// file: main.rs
 //! use itertools::izip;
 //!

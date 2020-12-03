@@ -1,11 +1,9 @@
-use super::{read_from_file, write_to_file};
 use crate::core_api::crypto;
 use crate::core_api::math::Tensor;
 use crate::crypto_api;
 use crate::crypto_api::Torus;
 use crate::Types;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use std::fmt;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -88,15 +86,8 @@ impl LWEKSK {
             variance: f64::powi(sk_after.std_dev, 2),
         }
     }
-    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
-        write_to_file(path, self)
-    }
 
-    pub fn load(path: &str) -> Result<LWEKSK, Box<dyn Error>> {
-        read_from_file(path)
-    }
-
-    pub fn write_in_file_bytes(&self, path: &str) {
+    pub fn save(&self, path: &str) {
         let mut tensor: Vec<u64> = vec![0; self.ciphertexts.len() + 6];
 
         tensor[0] = self.variance.to_bits();
@@ -115,7 +106,7 @@ impl LWEKSK {
         Tensor::write_in_file(&tensor, path).unwrap();
     }
 
-    pub fn read_in_file_bytes(path: &str) -> crypto_api::LWEKSK {
+    pub fn load(path: &str) -> crypto_api::LWEKSK {
         let mut tensor_1: Vec<u64> = vec![0; 6];
         let mut file = OpenOptions::new()
             .read(true)

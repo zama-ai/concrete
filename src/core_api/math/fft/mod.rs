@@ -110,8 +110,8 @@ macro_rules! impl_trait_fft {
             /// * `big_n` - length of the slice s
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::FFT;
-            /// use concrete_lib::types::CTorus;
+            /// use concrete::core_api::math::FFT;
+            /// use concrete::types::CTorus;
             #[doc = $DOC]
             ///
             /// let big_n: usize = 1024 ;
@@ -144,8 +144,8 @@ macro_rules! impl_trait_fft {
             /// * `big_n` - length of the slice s
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::FFT;
-            /// use concrete_lib::types::CTorus;
+            /// use concrete::core_api::math::FFT;
+            /// use concrete::types::CTorus;
             #[doc = $DOC]
             ///
             /// let big_n: usize = 1024 ;
@@ -175,8 +175,8 @@ macro_rules! impl_trait_fft {
             /// * `big_n` - length of the slice s
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::FFT;
-            /// use concrete_lib::types::CTorus;
+            /// use concrete::core_api::math::FFT;
+            /// use concrete::types::CTorus;
             #[doc = $DOC]
             ///
             /// let big_n: usize = 1024 ;
@@ -207,13 +207,13 @@ macro_rules! impl_trait_fft {
             /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -268,13 +268,13 @@ macro_rules! impl_trait_fft {
             /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -333,13 +333,13 @@ macro_rules! impl_trait_fft {
             /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -446,13 +446,13 @@ macro_rules! impl_trait_fft {
             /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -560,13 +560,13 @@ macro_rules! impl_trait_fft {
             /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -699,13 +699,13 @@ macro_rules! impl_trait_fft {
              /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::INVERSE_TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::INVERSE_TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -780,13 +780,13 @@ macro_rules! impl_trait_fft {
              /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::INVERSE_TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::INVERSE_TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -879,13 +879,13 @@ macro_rules! impl_trait_fft {
              /// # Example
             /// ```rust
             /// #[macro_use]
-            /// use concrete_lib;
+            /// use concrete;
             /// use fftw::array::AlignedVec;
             /// use fftw::types::{Flag, Sign};
             /// use fftw::plan::C2CPlan;
-            /// use concrete_lib::core_api::math::{Tensor, FFT} ;
-            /// use concrete_lib::types::{CTorus, C2CPlanTorus};
-            /// use concrete_lib::INVERSE_TWIDDLES_TORUS_external;
+            /// use concrete::core_api::math::{Tensor, FFT} ;
+            /// use concrete::types::{CTorus, C2CPlanTorus};
+            /// use concrete::INVERSE_TWIDDLES_TORUS_external;
             ///
             #[doc = $DOC]
             ///
@@ -1049,9 +1049,9 @@ impl_trait_fft!(u64, "type Torus = u64;");
 /// # Example
 /// ```rust
 /// #[macro_use]
-/// use concrete_lib;
-/// use concrete_lib::core_api::math::fft;
-/// use concrete_lib::types::{C2CPlanTorus, CTorus};
+/// use concrete;
+/// use concrete::core_api::math::fft;
+/// use concrete::types::{C2CPlanTorus, CTorus};
 /// use fftw::array::AlignedVec;
 ///
 /// let big_n: usize = 1024;
@@ -1082,9 +1082,9 @@ pub fn mac(
 /// # Example
 /// ```rust
 /// #[macro_use]
-/// use concrete_lib;
-/// use concrete_lib::core_api::math::fft;
-/// use concrete_lib::types::{C2CPlanTorus, CTorus};
+/// use concrete;
+/// use concrete::core_api::math::fft;
+/// use concrete::types::{C2CPlanTorus, CTorus};
 /// use fftw::array::AlignedVec;
 ///
 /// let big_n: usize = 1024;
@@ -1147,9 +1147,9 @@ pub fn mac(
 /// # Example
 /// ```rust
 /// #[macro_use]
-/// use concrete_lib;
-/// use concrete_lib::core_api::math::fft;
-/// use concrete_lib::types::{C2CPlanTorus, CTorus};
+/// use concrete;
+/// use concrete::core_api::math::fft;
+/// use concrete::types::{C2CPlanTorus, CTorus};
 /// use fftw::array::AlignedVec;
 ///
 /// let big_n: usize = 1024;
@@ -1221,9 +1221,9 @@ pub fn two_double_mac(
 /// # Example
 /// ```rust
 /// #[macro_use]
-/// use concrete_lib;
-/// use concrete_lib::core_api::math::fft;
-/// use concrete_lib::types::{C2CPlanTorus, CTorus};
+/// use concrete;
+/// use concrete::core_api::math::fft;
+/// use concrete::types::{C2CPlanTorus, CTorus};
 /// use fftw::array::AlignedVec;
 ///
 /// let big_n: usize = 1024;
@@ -1366,9 +1366,9 @@ pub fn two_double_mac(
 /// # Example
 /// ```rust
 /// #[macro_use]
-/// use concrete_lib;
-/// use concrete_lib::core_api::math::fft;
-/// use concrete_lib::types::{C2CPlanTorus, CTorus};
+/// use concrete;
+/// use concrete::core_api::math::fft;
+/// use concrete::types::{C2CPlanTorus, CTorus};
 /// use fftw::array::AlignedVec;
 ///
 /// let big_n: usize = 1024;
@@ -1411,9 +1411,9 @@ pub fn double_mac(
 /// # Example
 /// ```rust
 /// #[macro_use]
-/// use concrete_lib;
-/// use concrete_lib::core_api::math::fft;
-/// use concrete_lib::types::{C2CPlanTorus, CTorus};
+/// use concrete;
+/// use concrete::core_api::math::fft;
+/// use concrete::types::{C2CPlanTorus, CTorus};
 /// use fftw::array::AlignedVec;
 ///
 /// let big_n: usize = 1024;

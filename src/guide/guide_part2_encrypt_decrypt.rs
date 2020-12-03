@@ -36,7 +36,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // create an Encoder instance where messages are in the interval [-10, 10] with 8 bits of precision
@@ -57,7 +57,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // create an Encoder instance where messages are in the interval [-10, 10] with 8 bits of precision
@@ -72,7 +72,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // create an Encoder instance where messages are in the interval [-10, 10] with 8 bits of precision
@@ -110,7 +110,7 @@
 //! There are also a few sets of parameters for LWE ciphertexts which were estimated with the [LWE estimator](https://bitbucket.org/malb/lwe-estimator/src/master/) on September 15th 2020.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! // 128 bits of security:
 //! // - with a dimension of 630
@@ -139,7 +139,7 @@
 //! There are also **more LWE sets of parameters** defined as constants in the [lwe_params](super::super::crypto_api::lwe_params) module, so we can call an LWE set of parameters with 128 bits of security and a mask size of 630 like that:
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     let lwe_params = LWE128_630;
@@ -159,7 +159,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // settle for a set of LWE parameters
@@ -179,7 +179,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -205,7 +205,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -237,7 +237,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -299,7 +299,7 @@
 //! Note that the sizes of the polynomials are powers of two.
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! // 128 bits of security:
 //! // - with a polynomial size of 256 and a mask size of 4
@@ -328,7 +328,7 @@
 //! There is also **more RLWE sets of parameters** defined as constants in the [rlwe_params](super::super::crypto_api::rlwe_params) module, so we can call an RLWE set of parameters with 128 bits of security, a polynomial size set to 1024 and a mask size of 1 like that:
 //!
 //! ```rust
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     let rlwe_params = RLWE128_1024_1;
@@ -348,7 +348,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // settle for a set of RLWE parameters
@@ -371,7 +371,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -397,7 +397,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -428,7 +428,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // encoder
@@ -467,7 +467,7 @@
 //!
 //! ```rust
 //! /// file: main.rs
-//! use concrete_lib::*;
+//! use concrete::*;
 //!
 //! fn main() {
 //!     // generate a secret key

@@ -85,7 +85,6 @@ macro_rules! types_test_mod {
 
                 // generate a random Torus element x and round it
                 let mut x: Torus = rng.gen();
-                // let mut x: Torus = rng.gen::<Torus>().rem_euclid(1 << 30);
 
                 if <Torus as Types>::TORUS_BIT > level_max * log_b {
                     // round x to keep only the bits used it the signed decomposition
@@ -97,22 +96,12 @@ macro_rules! types_test_mod {
                 Types::torus_small_sign_decompose(&mut decomp_x, x, log_b);
 
                 // recompose the Torus element
-                let mut recomp_x: i64 = 0;
+                let mut recomp_x: Torus = 0;
                 for (i, di) in enumerate(decomp_x.iter()) {
-                    recomp_x += ((*di as <Torus as Types>::STorus) as i64)
-                        * (Types::set_val_at_level_l(1 as Torus, log_b, i) as i64);
+                    let scale = Types::set_val_at_level_l(1 as Torus, log_b, i);
+                    recomp_x = recomp_x.wrapping_add(scale.wrapping_mul(*di));
                 }
-                let recomp_res: Torus;
-                // deal with the negative sign of the recomposition
-                if recomp_x < 0 {
-                    let tmp: f64 =
-                        f64::powi(2.0, <Torus as Types>::TORUS_BIT as i32) + (recomp_x as f64);
-                    recomp_res = tmp as Torus;
-                } else {
-                    recomp_res = recomp_x as Torus;
-                }
-                // assert the equality between the rounded element and its recomposition
-                assert_eq!(recomp_res, x);
+                assert_eq!(recomp_x, x);
             }
 
             #[test]

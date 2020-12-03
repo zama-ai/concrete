@@ -92,7 +92,7 @@ macro_rules! impl_trait_lwe {
             /// * `dimension_after` - size of the LWE masks after key switching (typical value: n=630)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, lwe};
+            /// use concrete::core_api::crypto::{LWE, lwe};
             #[doc = $DOC]
             ///
             /// // parameters
@@ -174,7 +174,7 @@ macro_rules! impl_trait_lwe {
             /// * `dimension_after` - size of the LWE mask after key switching (typical value: n=630)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, lwe};
+            /// use concrete::core_api::crypto::{LWE, lwe};
             #[doc = $DOC]
             ///
             /// // parameters
@@ -253,8 +253,8 @@ macro_rules! impl_trait_lwe {
             /// * `std_dev` - standard deviation of the normal distribution for the error added in the encryption
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{LWE, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -311,8 +311,8 @@ macro_rules! impl_trait_lwe {
             /// * `std_dev` - standard deviation of the normal distribution for the error added in the encryption
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{LWE, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -367,8 +367,8 @@ macro_rules! impl_trait_lwe {
             /// * `std_dev` - standard deviation of the normal distribution
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, secret_key};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{LWE, secret_key};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -424,8 +424,8 @@ macro_rules! impl_trait_lwe {
             /// * `dimension` - size of each mask
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{LWE, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -478,7 +478,7 @@ macro_rules! impl_trait_lwe {
             /// * `t_w` - Torus slice containing the signed weights as Torus elements
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::LWE;
+            /// use concrete::core_api::crypto::LWE;
             #[doc = $DOC]
             ///
             /// // settings
@@ -533,7 +533,7 @@ macro_rules! impl_trait_lwe {
             /// * `w` - Torus element containing the signed weight as Torus elements
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::LWE;
+            /// use concrete::core_api::crypto::LWE;
             #[doc = $DOC]
             ///
             /// // settings
@@ -579,8 +579,8 @@ macro_rules! impl_trait_lwe {
             /// * `dimension` - Size of the LWE mask
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::LWE;
-            /// use concrete_lib::Types;
+            /// use concrete::core_api::crypto::LWE;
+            /// use concrete::Types;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -643,8 +643,8 @@ macro_rules! impl_trait_lwe {
             /// * `t_bias` - Torus element containing every bias values
             /// * `dimension` - size of the lwe mask
             /// ```rust
-            /// use concrete_lib::core_api::crypto::LWE;
-            /// use concrete_lib::Types;
+            /// use concrete::core_api::crypto::LWE;
+            /// use concrete::Types;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -703,8 +703,8 @@ macro_rules! impl_trait_lwe {
             /// * `sk_after`: secret key after the kef switch, i.e. output ciphertexts of the key switch
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, lwe, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{LWE, lwe, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -782,8 +782,8 @@ macro_rules! impl_trait_lwe {
             /// * `sk_after`: secret key after the kef switch, i.e. output ciphertexts of the key switch
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{LWE, lwe, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{LWE, lwe, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // parameters
@@ -866,7 +866,7 @@ impl_trait_lwe!(u64, "type Torus = u64;");
 /// * the desired length
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::crypto::lwe;
+/// use concrete::core_api::crypto::lwe;
 /// type Torus = u32; // or u64
 ///
 /// // parameters

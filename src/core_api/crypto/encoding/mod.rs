@@ -36,7 +36,7 @@ macro_rules! impl_trait_encoding {
             /// * a Torus element encoding the message
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::Encoding;
+            /// use concrete::core_api::crypto::Encoding;
             #[doc = $DOC]
             ///
             /// // we want to work in [-10,30[
@@ -60,7 +60,7 @@ macro_rules! impl_trait_encoding {
             /// * `deltas` - deltas of the encoding
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::Encoding;
+            /// use concrete::core_api::crypto::Encoding;
             #[doc = $DOC]
             ///
             /// // we want to work in [-10,30[ and [-20, 20]
@@ -87,7 +87,7 @@ macro_rules! impl_trait_encoding {
             /// * `delta` - delta of the encoding
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::Encoding;
+            /// use concrete::core_api::crypto::Encoding;
             #[doc = $DOC]
             ///
             /// // we want to work in [-10,30[ and [-20, 20]
@@ -116,7 +116,7 @@ macro_rules! impl_trait_encoding {
             /// * a f64 message that was encoded in encoding
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::Encoding;
+            /// use concrete::core_api::crypto::Encoding;
             #[doc = $DOC]
             ///
             /// // we want to work in [-10,30[
@@ -143,7 +143,7 @@ macro_rules! impl_trait_encoding {
             /// * `deltas` - deltas of the encoding
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::Encoding;
+            /// use concrete::core_api::crypto::Encoding;
             #[doc = $DOC]
             ///
             /// // we want to work in [-10,30[ and [-20., 20.]
@@ -173,7 +173,7 @@ macro_rules! impl_trait_encoding {
             /// * `deltas` - deltas of the encoding
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::Encoding;
+            /// use concrete::core_api::crypto::Encoding;
             #[doc = $DOC]
             ///
             /// // we want to work in [-10,30[ and [-20., 20.]

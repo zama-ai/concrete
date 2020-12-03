@@ -48,7 +48,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // creates a list of 5 empty LWE ciphertexts with a dimension of 630
     /// let empty_ciphertexts = VectorLWE::zero(630, 5).unwrap();
@@ -85,7 +85,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // creates a list of 5 empty LWE ciphertexts with a dimension of 630
     /// let mut ct1 = VectorLWE::zero(630, 5).unwrap();
     /// // creates a list of 8 empty LWE ciphertexts with a dimension of 630
@@ -149,7 +149,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // creates a list of 6 empty LWE ciphertexts with a dimension of 630
     /// let ct = VectorLWE::zero(630, 6).unwrap();
@@ -188,7 +188,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -225,7 +225,7 @@ impl VectorLWE {
     /// an VectorLWE structure
     ///
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder = Encoder::new(-2., 6., 4, 4).unwrap();
@@ -246,7 +246,7 @@ impl VectorLWE {
     ) -> Result<VectorLWE, CryptoAPIError> {
         let mut plaintexts: Vec<Torus> = vec![0; messages.len()];
         for (pt, m) in plaintexts.iter_mut().zip(messages.iter()) {
-            *pt = encoder.encode_operators(*m)?;
+            *pt = encoder.encode_core(*m)?;
         }
         let mut result_encoder: crypto_api::Encoder = encoder.clone();
         let nb_bit_overlap: usize =
@@ -282,7 +282,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -336,7 +336,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -389,7 +389,7 @@ impl VectorLWE {
     /// * `result` - a list of messages as f64
     /// * DimensionError - if the ciphertext and the key have incompatible dimensions
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -443,7 +443,7 @@ impl VectorLWE {
     /// * `result` - a list of messages as f64
     /// * DimensionError - if the ciphertext and the key have incompatible dimensions
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // create an Encoder instance where messages are in the interval [-5, 5[
     /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
@@ -501,7 +501,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder = Encoder::new(100., 110., 8, 0).unwrap();
@@ -536,7 +536,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder = Encoder::new(100., 110., 8, 0).unwrap();
@@ -592,7 +592,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder = Encoder::new(100., 110., 8, 0).unwrap();
@@ -632,7 +632,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder = Encoder::new(100., 110., 8, 0).unwrap();
@@ -684,7 +684,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder_1 = Encoder::new(100., 110., 8, 0).unwrap();
@@ -733,7 +733,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder_1 = Encoder::new(100., 110., 8, 0).unwrap();
@@ -818,7 +818,7 @@ impl VectorLWE {
     /// # Output
     /// * a new VectorLWE
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// let min_1: f64 = 85.;
     /// let min_2: f64 = -2.;
@@ -869,7 +869,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// let min_1: f64 = 85.;
     /// let min_2: f64 = -2.;
@@ -926,7 +926,7 @@ impl VectorLWE {
         {
             let mut tmp_enc = enc1.clone();
             tmp_enc.o = 0.;
-            let correction: Torus = tmp_enc.encode_operators(enc1.delta / 2.)?;
+            let correction: Torus = tmp_enc.encode_core(enc1.delta / 2.)?;
             ciphertext[self.dimension] = ciphertext[self.dimension].wrapping_sub(correction);
         }
 
@@ -964,7 +964,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder_1 = Encoder::new(100., 110., 8, 1).unwrap();
@@ -1005,7 +1005,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder_1 = Encoder::new(100., 110., 8, 1).unwrap();
@@ -1090,7 +1090,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder_1 = Encoder::new(100., 110., 8, 1).unwrap();
@@ -1131,7 +1131,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // encoder
     /// let encoder_1 = Encoder::new(100., 110., 8, 1).unwrap();
@@ -1219,7 +1219,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1257,7 +1257,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1332,7 +1332,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1384,7 +1384,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1458,7 +1458,7 @@ impl VectorLWE {
                 (c_abs / max_constant * f64::powi(2., nb_bit_padding as i32)).round() as Torus;
 
             // encode 0 and subtract it
-            let tmp_sub = encoder.encode_operators(0.)?;
+            let tmp_sub = encoder.encode_core(0.)?;
             ciphertext[self.dimension] = ciphertext[self.dimension].wrapping_sub(tmp_sub);
 
             // scalar multiplication
@@ -1516,7 +1516,7 @@ impl VectorLWE {
             }
 
             // encode 0 with the new encoder
-            let tmp_add = encoder.encode_operators(0.)?;
+            let tmp_add = encoder.encode_core(0.)?;
             ciphertext[self.dimension] = ciphertext[self.dimension].wrapping_add(tmp_add);
 
             if negative {
@@ -1556,7 +1556,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1593,7 +1593,7 @@ impl VectorLWE {
     /// * InvalidEncoderError - if the encoder of the requested ciphertext is not valid (i.e. with nb_bit_precision = 0 or delta = 0)
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1672,7 +1672,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1772,7 +1772,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -1830,7 +1830,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min, max): (f64, f64) = (-150., 204.);
@@ -2021,7 +2021,7 @@ impl VectorLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // params
     /// let (min_1, max_1): (f64, f64) = (-150., 204.);

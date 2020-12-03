@@ -1,5 +1,4 @@
 use super::{deserialize_vec_ctorus, serialize_vec_ctorus};
-use super::{read_from_file, write_to_file};
 use crate::core_api::crypto;
 use crate::core_api::math::Tensor;
 use crate::crypto_api;
@@ -11,7 +10,6 @@ use backtrace::Backtrace;
 use colored::Colorize;
 use num_traits::Zero;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use std::fmt;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -72,7 +70,12 @@ impl LWEBSK {
         let mut encoder_input_clone = encoder_input.clone();
         encoder_input_clone.nb_bit_padding = 1;
 
+        // allocation of the result
         let mut result: Vec<Torus> = vec![0; self.polynomial_size];
+
+        // find the right index to start storing -val_i instead of val_i
+        let minus_start_index: usize =
+            self.polynomial_size - (self.polynomial_size >> (1 + encoder_input.nb_bit_precision));
 
         for (i, res) in result.iter_mut().enumerate() {
             // create a valid encoding from i
@@ -80,7 +83,7 @@ impl LWEBSK {
             let encoded: Torus = (i as Torus) << shift;
 
             // decode the encoding
-            let decoded: f64 = encoder_input_clone.decode_operators(encoded)?;
+            let decoded: f64 = encoder_input_clone.decode_core(encoded)?;
 
             // apply the function
             let f_decoded: f64 = f(decoded);
@@ -89,7 +92,11 @@ impl LWEBSK {
             let output_encoded: Torus =
                 encoder_output.encode_outside_interval_operators(f_decoded)?;
 
-            *res = output_encoded;
+            *res = if i < minus_start_index {
+                output_encoded
+            } else {
+                output_encoded.wrapping_neg()
+            };
         }
         Ok(result)
     }
@@ -192,15 +199,7 @@ impl LWEBSK {
         }
     }
 
-    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
-        write_to_file(path, self)
-    }
-
-    pub fn load(path: &str) -> Result<LWEBSK, Box<dyn Error>> {
-        read_from_file(path)
-    }
-
-    pub fn write_in_file_bytes(&self, path: &str) {
+    pub fn save(&self, path: &str) {
         let mut tensor: Vec<u64> = vec![0; self.ciphertexts.len() * 2 + 6];
 
         tensor[0] = self.variance.to_bits();
@@ -220,7 +219,7 @@ impl LWEBSK {
         Tensor::write_in_file(&tensor, path).unwrap();
     }
 
-    pub fn read_in_file_bytes(path: &str) -> crypto_api::LWEBSK {
+    pub fn load(path: &str) -> crypto_api::LWEBSK {
         let mut tensor_1: Vec<u64> = vec![0; 6];
         let mut file = OpenOptions::new()
             .read(true)

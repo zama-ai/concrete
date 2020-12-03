@@ -227,3 +227,37 @@ fn margins_with_integers() {
         assert_eq!(m, d);
     }
 }
+
+#[test]
+fn margins_with_reals() {
+    let nb_messages: usize = 400;
+    let (min, max) = generate_random_interval!();
+    let padding = random_index!(3);
+    let precision = random_index!(3) + 2;
+
+    // generates a random message
+    let mut messages: Vec<f64> = random_messages!(min, max, nb_messages);
+    messages[0] = min;
+    messages[1] = max;
+
+    // create an encoder
+    let encoder = crypto_api::Encoder::new(min, max, precision, padding).unwrap();
+
+    // encode
+    let mut plaintext = encoder.encode(&messages).unwrap();
+
+    // add some error
+    let mut random_errors: Vec<u64> = vec![0; nb_messages];
+    Tensor::normal_random_default(&mut random_errors, 0., f64::powi(2., -25));
+    Tensor::add_inplace(&mut plaintext.plaintexts, &random_errors);
+
+    // decode
+    let decoding = plaintext.decode().unwrap();
+
+    // test
+    for (m, d) in izip!(messages.iter(), decoding.iter()) {
+        if f64::abs(m - d) > encoder.get_granularity() {
+            panic!("error: m {} d {} ", m, d);
+        }
+    }
+}

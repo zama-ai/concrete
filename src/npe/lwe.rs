@@ -36,7 +36,7 @@ macro_rules! impl_trait_npe_lwe {
             /// `var_input` - variance of the input LWE
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::LWE ;
+            /// use concrete::npe::LWE ;
             #[doc = $DOC]
             /// // settings
             /// let dimension_before: usize = 630 ;
@@ -76,7 +76,7 @@ macro_rules! impl_trait_npe_lwe {
             /// * the output variance
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::LWE ;
+            /// use concrete::npe::LWE ;
             #[doc = $DOC]
             /// // parameters
             /// let variance: f64 = f64::powi(2., -48) ;
@@ -98,7 +98,7 @@ macro_rules! impl_trait_npe_lwe {
             /// * the output variance
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::LWE ;
+            /// use concrete::npe::LWE ;
             #[doc = $DOC]
             /// // parameters
             /// let variances: Vec<f64> = vec![f64::powi(2., -30), f64::powi(2., -32)] ;
@@ -123,7 +123,7 @@ macro_rules! impl_trait_npe_lwe {
             /// * `t` - a slice of signed integer
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::LWE ;
+            /// use concrete::npe::LWE ;
             #[doc = $DOC]
             /// // parameters
             /// let var_in: Vec<f64> = vec![f64::powi(2., -30), f64::powi(2., -32)] ;
@@ -144,7 +144,7 @@ macro_rules! impl_trait_npe_lwe {
             /// * `t` - a slice of signed integer
             /// # Example
             /// ```rust
-            /// use concrete_lib::npe::LWE ;
+            /// use concrete::npe::LWE ;
             #[doc = $DOC]
             /// // parameters
             /// let mut var: Vec<f64> = vec![f64::powi(2., -30), f64::powi(2., -32)] ;

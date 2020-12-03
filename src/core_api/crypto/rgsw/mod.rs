@@ -67,8 +67,8 @@ macro_rules! impl_trait_rgsw {
             /// * `rlwe_sk`: secret key used to encrypt the RGSW
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{rgsw, SecretKey, RGSW};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{rgsw, SecretKey, RGSW};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -168,9 +168,9 @@ macro_rules! impl_trait_rgsw {
             /// # Example
             /// ```rust
             /// use num_traits::Zero;
-            /// use concrete_lib::core_api::crypto::{rgsw, SecretKey, RGSW};
-            /// use concrete_lib::core_api::math::Tensor;
-            /// use concrete_lib::types::{CTorus};
+            /// use concrete::core_api::crypto::{rgsw, SecretKey, RGSW};
+            /// use concrete::core_api::math::Tensor;
+            /// use concrete::types::{CTorus};
             ///
             /// type Torus = u32; // or u64
             ///
@@ -284,8 +284,8 @@ macro_rules! impl_trait_rgsw {
             /// * `_lwe_sk_nb_bits` - number of bit of binary key
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{rgsw, SecretKey, RGSW};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{rgsw, SecretKey, RGSW};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -383,9 +383,9 @@ macro_rules! impl_trait_rgsw {
             /// # Example
             /// ```rust
             /// use num_traits::Zero;
-            /// use concrete_lib::core_api::crypto::{rgsw, SecretKey, RGSW};
-            /// use concrete_lib::core_api::math::Tensor;
-            /// use concrete_lib::types::{CTorus};
+            /// use concrete::core_api::crypto::{rgsw, SecretKey, RGSW};
+            /// use concrete::core_api::math::Tensor;
+            /// use concrete::types::{CTorus};
             ///
             /// type Torus = u32; // or u64
             ///
@@ -501,7 +501,7 @@ impl_trait_rgsw!(u64, "type Torus = u64;");
 /// * the computed size as a usize
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::crypto::rgsw;
+/// use concrete::core_api::crypto::rgsw;
 ///
 /// // settings
 /// let n_slots: usize = 10;

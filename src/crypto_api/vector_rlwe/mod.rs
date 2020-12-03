@@ -53,7 +53,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     ///
     /// // creates a list of 3 empty RLWE ciphertexts with a polynomial size of 630 and a dimension of 1
     /// let empty_ciphertexts = VectorRLWE::zero(1024, 1, 3).unwrap();
@@ -94,7 +94,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -175,7 +175,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -212,7 +212,7 @@ impl VectorRLWE {
             res.variances.iter_mut()
         ) {
             // encode messages
-            *pt = encoder.encode_operators(*m)?;
+            *pt = encoder.encode_core(*m)?;
 
             // update the encoders
             encoder_res.copy(encoder);
@@ -251,7 +251,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -332,7 +332,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -369,7 +369,7 @@ impl VectorRLWE {
             res.variances.chunks_mut(sk.polynomial_size)
         ) {
             // encode messages
-            pt[0] = encoder.encode_operators(*m)?;
+            pt[0] = encoder.encode_core(*m)?;
 
             // update the encoders
             encoder_res[0].copy(encoder);
@@ -447,7 +447,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -517,7 +517,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -592,7 +592,7 @@ impl VectorRLWE {
     /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -642,7 +642,7 @@ impl VectorRLWE {
     ///
     /// # Example
     /// ```rust
-    /// use concrete_lib::*;
+    /// use concrete::*;
     /// // generate a secret key
     /// let dimension: usize = 1;
     /// let polynomial_size: usize = 1024;
@@ -946,7 +946,7 @@ impl VectorRLWE {
                 if encoder.is_valid() && encoder_ct.is_valid() {
                     let mut tmp_enc = encoder.clone();
                     tmp_enc.o = 0.;
-                    let correction: Torus = tmp_enc.encode_operators(encoder.delta / 2.)?;
+                    let correction: Torus = tmp_enc.encode_core(encoder.delta / 2.)?;
                     *monomial_coeff = monomial_coeff.wrapping_sub(correction);
                     encoder.o += encoder_ct.o + encoder.delta / 2.;
 
@@ -1342,7 +1342,7 @@ impl VectorRLWE {
                 encoders.iter()
             ) {
                 if encoder.is_valid() {
-                    *b = b.wrapping_sub(encoder.encode_operators(0.)?);
+                    *b = b.wrapping_sub(encoder.encode_core(0.)?);
                 }
             }
 
@@ -1411,7 +1411,7 @@ impl VectorRLWE {
                     encoder.nb_bit_precision = usize::min(encoder.nb_bit_precision, new_precision);
 
                     // encode 0 with the new encoder
-                    let tmp_add = encoder.encode_operators(0.)?;
+                    let tmp_add = encoder.encode_core(0.)?;
                     *b = b.wrapping_add(tmp_add);
                 }
             }

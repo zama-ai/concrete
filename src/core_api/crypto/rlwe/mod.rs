@@ -61,8 +61,8 @@ macro_rules! impl_trait_rlwe {
             /// * `std_dev` - standard deviation of the encryption noise
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{RLWE, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{RLWE, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -123,8 +123,8 @@ macro_rules! impl_trait_rlwe {
             /// * `std_dev` - standard deviation of the encryption noise
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{RLWE, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{RLWE, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -174,8 +174,8 @@ macro_rules! impl_trait_rlwe {
             /// * `polynomial_size` - number of coefficients in polynomials
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{RLWE, SecretKey};
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::{RLWE, SecretKey};
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -233,7 +233,7 @@ macro_rules! impl_trait_rlwe {
             /// * `level` - number of blocks of the gadget matrix
             /// Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::{rgsw, RLWE};
+            /// use concrete::core_api::crypto::{rgsw, RLWE};
             #[doc = $DOC]
             ///
             /// // settings
@@ -340,7 +340,7 @@ impl_trait_rlwe!(u64, "type Torus = u64;");
 /// * the desired size as a usize
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::crypto::rlwe;
+/// use concrete::core_api::crypto::rlwe;
 ///
 /// // settings
 /// let dimension: usize = 128;
@@ -365,7 +365,7 @@ pub fn get_sign_decompose_mask_size(
 /// * the desired size as a usize
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::crypto::rlwe;
+/// use concrete::core_api::crypto::rlwe;
 ///
 /// // settings
 /// let polynomial_size: usize = 256;

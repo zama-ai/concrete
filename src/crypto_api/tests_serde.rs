@@ -46,8 +46,8 @@ fn test_lwebsk_save() {
         base_log: 2,
         level: 7,
     };
-    a.save(filename).unwrap();
-    let b = LWEBSK::load(filename).unwrap();
+    a.save(filename);
+    let b = LWEBSK::load(filename);
     delete_file(filename).unwrap();
     println!("{} \n {}", a, b);
     assert!(a == b, "a != b");
@@ -68,8 +68,8 @@ fn test_lweksk_save() {
         level: 7,
     };
 
-    ksk1.save(filename).unwrap();
-    let ksk2 = LWEKSK::load(filename).unwrap();
+    ksk1.save(filename);
+    let ksk2 = LWEKSK::load(filename);
     delete_file(filename).unwrap();
     println!("{} \n {}", ksk1, ksk2);
     assert!(ksk1 == ksk2, "ksk1 != ksk2");

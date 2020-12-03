@@ -61,7 +61,7 @@ macro_rules! impl_trait_tensor {
             /// * `res` - Torus slice (output)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -88,7 +88,7 @@ macro_rules! impl_trait_tensor {
             /// * `res` - Torus slice (output)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -115,7 +115,7 @@ macro_rules! impl_trait_tensor {
             /// * `probability` - the probability for an element to be uniformly random
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -143,7 +143,7 @@ macro_rules! impl_trait_tensor {
             /// * `std_dev` - standard deviation of the normal distribution
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -170,7 +170,7 @@ macro_rules! impl_trait_tensor {
             /// * return a sample drawn from a normal distribution with the given hyper-parameters(mean,std_dev)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -197,7 +197,7 @@ macro_rules! impl_trait_tensor {
             /// * `t1` - Torus slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -232,7 +232,7 @@ macro_rules! impl_trait_tensor {
             /// * `t`- Torus sclice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -263,7 +263,7 @@ macro_rules! impl_trait_tensor {
             /// * `t1` - Torus slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -297,7 +297,7 @@ macro_rules! impl_trait_tensor {
             /// * `t` - Torus slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -329,7 +329,7 @@ macro_rules! impl_trait_tensor {
             /// * `n` - integer (u32 or u64)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -365,7 +365,7 @@ macro_rules! impl_trait_tensor {
             /// * `n` - integer (u32 or u64)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -397,7 +397,7 @@ macro_rules! impl_trait_tensor {
             /// * `n` - usize
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -429,7 +429,7 @@ macro_rules! impl_trait_tensor {
             /// * `n` - integer (u32 or u64)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -467,7 +467,7 @@ macro_rules! impl_trait_tensor {
             /// * `n` - integer (u32 or u64)
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -506,8 +506,8 @@ macro_rules! impl_trait_tensor {
             /// * a Torus element containing the desired result
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::SecretKey;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -546,8 +546,8 @@ macro_rules! impl_trait_tensor {
             /// * `t_bool` - Torus slice representing a boolean slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::SecretKey;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -593,8 +593,8 @@ macro_rules! impl_trait_tensor {
             /// * `t_bool` - Torus slice representing a boolean slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::SecretKey;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -635,8 +635,8 @@ macro_rules! impl_trait_tensor {
             /// * `t_bool` - Torus slice representing a boolean slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::crypto::SecretKey;
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::crypto::SecretKey;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -683,7 +683,7 @@ macro_rules! impl_trait_tensor {
             /// * `max_level` - the total number of levels
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -731,7 +731,7 @@ macro_rules! impl_trait_tensor {
             /// * `t_int` - Torus slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -763,7 +763,7 @@ macro_rules! impl_trait_tensor {
             /// * `t_float` - float slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -796,7 +796,7 @@ macro_rules! impl_trait_tensor {
             /// * `t_y` - torus slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -832,7 +832,7 @@ macro_rules! impl_trait_tensor {
             /// * `t_y` - torus slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -870,7 +870,7 @@ macro_rules! impl_trait_tensor {
             /// * `tensor` - Torus slice
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -900,7 +900,7 @@ macro_rules! impl_trait_tensor {
             /// * `path` - string containing the path of the file we write in
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // setting
@@ -931,7 +931,7 @@ macro_rules! impl_trait_tensor {
             /// * `path` - string containing the path of the file we read in
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // setting
@@ -968,7 +968,7 @@ macro_rules! impl_trait_tensor {
             /// * `base_log` - size of bit blocks in the binary representation
             /// # Example
             /// ```rust
-            /// use concrete_lib::core_api::math::Tensor;
+            /// use concrete::core_api::math::Tensor;
             #[doc = $DOC]
             ///
             /// // settings
@@ -1005,8 +1005,8 @@ impl_trait_tensor!(u64, "type Torus = u64;");
 /// * `path` - string containing the path of the file we write in
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::tensor;
-/// use concrete_lib::types::FTorus;
+/// use concrete::core_api::math::tensor;
+/// use concrete::types::FTorus;
 ///
 /// // setting
 /// let size: usize = 128;
@@ -1036,8 +1036,8 @@ pub fn write_in_file_ftorus(tensor: &[FTorus], path: &str) -> std::io::Result<()
 /// * `path` - string containing the path of the file we write in
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::tensor;
-/// use concrete_lib::types::CTorus;
+/// use concrete::core_api::math::tensor;
+/// use concrete::types::CTorus;
 /// use num_traits::Zero;
 ///
 /// // setting
@@ -1068,8 +1068,8 @@ pub fn write_in_file_ctorus(tensor: &[CTorus], path: &str) -> std::io::Result<()
 /// * `path` - string containing the path of the file we read in
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::tensor;
-/// use concrete_lib::types::FTorus;
+/// use concrete::core_api::math::tensor;
+/// use concrete::types::FTorus;
 ///
 /// // setting
 /// let size: usize = 128;
@@ -1102,8 +1102,8 @@ pub fn read_in_file_ftorus(tensor: &mut [FTorus], path: &str) -> std::io::Result
 /// * `path` - string containing the path of the file we read in
 /// # Example
 /// ```rust
-/// use concrete_lib::core_api::math::tensor;
-/// use concrete_lib::types::CTorus;
+/// use concrete::core_api::math::tensor;
+/// use concrete::types::CTorus;
 /// use num_traits::Zero;
 ///
 /// // setting

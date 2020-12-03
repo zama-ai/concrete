@@ -118,11 +118,11 @@ macro_rules! TWIDDLES_TORUS {
 macro_rules! TWIDDLES_TORUS_external {
     ($degree:expr) => {
         match $degree {
-            256 => &concrete_lib::core_api::math::twiddles::TWIDDLES_256[..],
-            512 => &concrete_lib::core_api::math::twiddles::TWIDDLES_512[..],
-            1024 => &concrete_lib::core_api::math::twiddles::TWIDDLES_1024[..],
-            2048 => &concrete_lib::core_api::math::twiddles::TWIDDLES_2048[..],
-            4096 => &concrete_lib::core_api::math::twiddles::TWIDDLES_4096[..],
+            256 => &concrete::core_api::math::twiddles::TWIDDLES_256[..],
+            512 => &concrete::core_api::math::twiddles::TWIDDLES_512[..],
+            1024 => &concrete::core_api::math::twiddles::TWIDDLES_1024[..],
+            2048 => &concrete::core_api::math::twiddles::TWIDDLES_2048[..],
+            4096 => &concrete::core_api::math::twiddles::TWIDDLES_4096[..],
             _ => panic!("Degree {} is not yet supported", $degree),
         }
     };
@@ -145,11 +145,11 @@ macro_rules! INVERSE_TWIDDLES_TORUS {
 macro_rules! INVERSE_TWIDDLES_TORUS_external {
     ($degree:expr) => {
         match $degree {
-            256 => &concrete_lib::core_api::math::twiddles::INVERSE_TWIDDLES_256[..],
-            512 => &concrete_lib::core_api::math::twiddles::INVERSE_TWIDDLES_512[..],
-            1024 => &concrete_lib::core_api::math::twiddles::INVERSE_TWIDDLES_1024[..],
-            2048 => &concrete_lib::core_api::math::twiddles::INVERSE_TWIDDLES_2048[..],
-            4096 => &concrete_lib::core_api::math::twiddles::INVERSE_TWIDDLES_4096[..],
+            256 => &concrete::core_api::math::twiddles::INVERSE_TWIDDLES_256[..],
+            512 => &concrete::core_api::math::twiddles::INVERSE_TWIDDLES_512[..],
+            1024 => &concrete::core_api::math::twiddles::INVERSE_TWIDDLES_1024[..],
+            2048 => &concrete::core_api::math::twiddles::INVERSE_TWIDDLES_2048[..],
+            4096 => &concrete::core_api::math::twiddles::INVERSE_TWIDDLES_4096[..],
             _ => panic!("Degree {} is not yet supported", $degree),
         }
     };

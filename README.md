@@ -51,8 +51,23 @@ sudo apt-get update && sudo apt-get install -y libfftw3-dev libssl-dev
 
 If you want to install FFTW directly from source, you can follow the steps described in [FFTW's website](http://www.fftw.org/fftw2_doc/fftw_6.html).
 
+It is also possible to build the library from source by cloning this repository and running:
+
+```bash
+cd concrete
+make build
+```
+
+To run the tests, you can do the following
+
+```bash
+cd concrete
+make test
+```
+
 ## Use `concrete` in your own project
 
+You can use `cargo new play_with_fhe` to create a new project.
 You need to **add the Concrete library as a dependency** in your Rust project.
 
 To do so, simply add the dependency in the `Cargo.toml` file.
@@ -67,32 +82,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-concrete_lib = "0.1"
+concrete = "^0.1"
 ```
 
-Now, you can **compile** your project with the `cargo build` command, which will fetch the Concrete library.
-
-It is also possible to build the library from source by cloning this repository and running:
-
-```bash
-cd concrete
-make build
-```
-
-# Tests
-
-To run the tests, you can do the following
-
-```bash
-cd concrete
-make test
-```
+Now, you can **run** your project with the `RUSTFLAGS="-C target-cpu=native" cargo run --release` command.
 
 # Example
 
 ```rust
-use concrete_lib::*;
-use crypto_api::error::CryptoAPIError;
+use concrete::*;
 
 fn main() -> Result<(), CryptoAPIError> {
     // generate a secret key
@@ -154,6 +152,8 @@ We also use some crates published by `The Rust Project Developers` under the MIT
 - [**num-traits**](https://crates.io/crates/num-traits)
 - [**libc**](https://crates.io/crates/libc)
 - [**num-integer**](https://crates.io/crates/num-integer)
+
+We thank [Daniel May](https://gitlab.com/danieljrmay) for supporting this project and donating the Concrete crate.
 
 # License
 
