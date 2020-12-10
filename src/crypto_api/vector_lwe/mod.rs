@@ -219,11 +219,12 @@ impl VectorLWE {
     /// # Arguments
     /// * `sk` - an LWE secret key
     /// * `messages` -  a list of messages as u64
-    /// * `encoder` - a list of Encoder elements
+    /// * `encoder` - an Encoder
     ///
     /// # Output
     /// an VectorLWE structure
     ///
+    /// # Example
     /// ```rust
     /// use concrete::*;
     ///
@@ -267,6 +268,76 @@ impl VectorLWE {
             dimension: sk.dimension,
             nb_ciphertexts: messages.len(),
             encoders: vec![result_encoder; messages.len()],
+        };
+        res.encrypt_raw(sk, &plaintexts).unwrap();
+
+        Ok(res)
+    }
+
+    /// Encode messages with a different encoder for each message and encrypt them
+    ///
+    /// # Arguments
+    /// * `sk` - an LWE secret key
+    /// * `messages` -  a list of messages as u64
+    /// * `encoders` - a list of Encoder elements
+    ///
+    /// # Output
+    /// an VectorLWE structure
+    ///
+    /// # Example
+    /// ```rust
+    /// use concrete::*;
+    ///
+    /// // a list of encoders
+    /// let encoders = [
+    ///     Encoder::new(-2., 6., 4, 4).unwrap(),
+    ///     Encoder::new(0., 3., 3, 2).unwrap(),
+    ///     Encoder::new(4., 6., 2, 1).unwrap(),
+    ///     Encoder::new(-1., 1., 5, 0).unwrap()];
+    ///
+    /// // generate a secret key
+    /// let secret_key = LWESecretKey::new(&LWE128_1024);
+    ///
+    /// // two lists of messages
+    /// let messages: Vec<f64> = vec![-1., 2., 5., -0.5];
+    ///
+    /// // encode and encrypt
+    /// let mut ciphertext = VectorLWE::encode_encrypt_several_encoders(&secret_key, &messages, &encoders).unwrap();
+    /// ```
+    pub fn encode_encrypt_several_encoders(
+        sk: &crypto_api::LWESecretKey,
+        messages: &[f64],
+        encoders: &[crypto_api::Encoder],
+    ) -> Result<VectorLWE, CryptoAPIError> {
+        let mut plaintexts: Vec<Torus> = vec![0; messages.len()];
+        let mut result_encoders: Vec<crypto_api::Encoder> = encoders.to_vec();
+        for (((pt, m), enc), res_enc) in plaintexts
+            .iter_mut()
+            .zip(messages.iter())
+            .zip(encoders.iter())
+            .zip(result_encoders.iter_mut())
+        {
+            *pt = enc.encode_core(*m)?;
+
+            let nb_bit_overlap: usize =
+                res_enc.update_precision_from_variance(f64::powi(sk.std_dev, 2i32))?;
+
+            // notification of a problem
+            if nb_bit_overlap > 0 {
+                println!(
+                "{}: {} bit(s) with {} bit(s) of message originally. Consider increasing the dimension the reduce the amount of noise needed.",
+                "Loss of precision during encrypt".red().bold(),
+                nb_bit_overlap, enc.nb_bit_precision
+            );
+            }
+        }
+
+        let mut res = VectorLWE {
+            ciphertexts: vec![0; (sk.dimension + 1) * messages.len()],
+            variances: vec![0.; messages.len()],
+            dimension: sk.dimension,
+            nb_ciphertexts: messages.len(),
+            encoders: result_encoders,
         };
         res.encrypt_raw(sk, &plaintexts).unwrap();
 
@@ -435,6 +506,49 @@ impl VectorLWE {
         Ok(result)
     }
 
+    /// Decrypt the list of ciphertexts, meaning compute the phase and directly decode the output
+    ///
+    /// # Arguments
+    /// * `sk` - an LWE secret key
+    /// # Output
+    /// * `result` - a list of messages as f64
+    /// * DimensionError - if the ciphertext and the key have incompatible dimensions
+    /// ```rust
+    /// use concrete::*;
+    ///
+    /// // create an Encoder instance where messages are in the interval [-5, 5[
+    /// let encoder = Encoder::new(-5., 5., 8, 0).unwrap();
+    ///
+    /// // create a list of messages in our interval
+    /// let messages: Vec<f64> = vec![-3.2, 4.3, 0.12, -1.1, 2.78];
+    ///
+    /// // create a new Plaintext instance filled with the plaintexts we want
+    /// let pt = Plaintext::encode(&messages, &encoder).unwrap();
+    ///
+    /// // create an LWESecretKey
+    /// let sk = LWESecretKey::new(&LWE128_630);
+    ///
+    /// // create a new VectorLWE that encrypts pt
+    /// let mut ct = VectorLWE::zero(sk.dimension, messages.len()).unwrap();
+    /// ct.encrypt_inplace(&sk, &pt).unwrap();
+    ///
+    /// let res = ct.decrypt_raw(&sk).unwrap();
+    /// ```
+    pub fn decrypt_raw(&self, sk: &crypto_api::LWESecretKey) -> Result<Vec<u64>, CryptoAPIError> {
+        // check dimensions
+        if sk.dimension != self.dimension {
+            return Err(DimensionError!(self.dimension, sk.dimension));
+        }
+
+        // create a temporary variable to store the result of the phase computation
+        let mut tmp: Vec<u64> = vec![0; self.nb_ciphertexts];
+
+        // compute the phase
+        crypto::LWE::compute_phase(&mut tmp, &sk.val, &self.ciphertexts, self.dimension);
+
+        Ok(tmp)
+    }
+
     /// Decrypt the list of ciphertexts, meaning compute the phase and directly decode the output as if the encoder was set in round mode
     ///
     /// # Arguments
@@ -483,9 +597,9 @@ impl VectorLWE {
 
         // decode
         for (r, pt, enc) in izip!(result.iter_mut(), tmp.iter(), self.encoders.iter()) {
-            let mut tmp = enc.clone();
-            tmp.round = true;
-            *r = enc.decode_single(*pt)?;
+            let mut tmp_enc = enc.clone();
+            tmp_enc.round = true;
+            *r = tmp_enc.decode_single(*pt)?;
         }
 
         Ok(result)
@@ -1846,7 +1960,7 @@ impl VectorLWE {
     /// // generate a secret key
     /// let secret_key = LWESecretKey::new(&LWE128_1024);
     ///
-    /// // two lists of messages
+    /// // a list of messages
     /// let messages: Vec<f64> = vec![-106.276, 104.3, -100.12, 101.1, -107.78];
     ///
     /// // generate secret keys
@@ -2176,6 +2290,159 @@ impl VectorLWE {
             );
         }
         println!();
+    }
+
+    /// Sum all the LWE ciphertexts contained in self into one single ciphertext and output it as a new VectorLWE
+    ///
+    /// # Output
+    /// * A new VectorLWE containing only one ciphertext
+    ///
+    /// # Example
+    /// ```rust
+    /// use concrete::*;
+    ///
+    /// // params
+    /// let (min, max): (f64, f64) = (-150., 204.);
+    /// let precision = 4;
+    /// let padding = 2;
+    /// let level: usize = 3;
+    /// let base_log: usize = 3;
+    ///
+    /// // encoder
+    /// let encoder = Encoder::new(min, max, precision, padding).unwrap();
+    ///
+    /// // generate a secret key
+    /// let secret_key = LWESecretKey::new(&LWE128_1024);
+    ///
+    /// // a list of messages
+    /// let messages: Vec<f64> = vec![-106.276, 104.3, -100.12, 101.1];
+    ///
+    /// // generate a secret key
+    /// let secret_key = LWESecretKey::new(&LWE128_1024);
+    ///
+    /// // a list of messages that we encrypt
+    /// let ciphertext =
+    ///     crypto_api::VectorLWE::encode_encrypt(&secret_key, &messages, &encoder).unwrap();
+    ///
+    /// // sum
+    /// let ciphertext_sum = ciphertext.sum_with_padding().unwrap();
+    /// ```
+    pub fn sum_with_padding(&self) -> Result<crypto_api::VectorLWE, CryptoAPIError> {
+        let nb_bit_padding_consumed: usize =
+            f64::ceil(f64::log2(self.nb_ciphertexts as f64)) as usize;
+        let mut ct: Vec<Torus> = vec![0; self.dimension + 1];
+        let mut new_var: f64 = 0.;
+        let mut new_o: f64 = 0.;
+        let new_delta: f64 = self.encoders[0].delta * f64::powi(2., nb_bit_padding_consumed as i32);
+        let mut new_precision: usize = self.encoders[0].nb_bit_precision;
+
+        for (ct_in, var_in, enc_in) in izip!(
+            self.ciphertexts.chunks(self.dimension + 1),
+            self.variances.iter(),
+            self.encoders.iter()
+        ) {
+            //Find the minimum precision among all the ciphertexts
+            new_precision = usize::min(new_precision, enc_in.nb_bit_precision);
+            //Check same deltas and paddings among all the ciphertexts
+            if !deltas_eq!(self.encoders[0].delta, enc_in.delta) {
+                return Err(DeltaError!(self.encoders[0].delta, enc_in.delta));
+            } else if self.encoders[0].nb_bit_padding != enc_in.nb_bit_padding {
+                return Err(PaddingError!(
+                    self.encoders[0].nb_bit_padding,
+                    enc_in.nb_bit_padding
+                ));
+            }
+            math::Tensor::add_inplace(&mut ct, ct_in);
+            new_var = npe::add_ciphertexts(new_var, *var_in);
+            new_o += enc_in.o;
+        }
+        let mut new_encoder: crypto_api::Encoder = crypto_api::Encoder {
+            o: new_o,
+            delta: new_delta,
+            nb_bit_precision: self.encoders[0].nb_bit_precision,
+            nb_bit_padding: self.encoders[0].nb_bit_padding - nb_bit_padding_consumed,
+            round: self.encoders[0].round,
+        };
+        new_encoder.update_precision_from_variance(new_var)?;
+        Ok(VectorLWE {
+            ciphertexts: ct,
+            variances: vec![new_var],
+            dimension: self.dimension,
+            nb_ciphertexts: 1,
+            encoders: vec![new_encoder],
+        })
+    }
+
+    /// Sum all the LWE ciphertexts contained in self into one single ciphertext and output it as a
+    /// new VectorLWE. The output ciphertext will have an encoder with the same size so we need to
+    /// provide the min of the output interval
+    ///
+    /// # Input
+    /// * `new_min` - an f64 containing the min of the output encoder
+    ///
+    /// # Output
+    /// * A new VectorLWE containing only one ciphertext
+    ///
+    /// # Example
+    /// ```rust
+    /// use concrete::*;
+    ///
+    /// // params
+    /// let (min, max): (f64, f64) = (-150., 204.);
+    /// let precision = 4;
+    /// let padding = 0;
+    /// let level: usize = 3;
+    /// let base_log: usize = 3;
+    ///
+    /// // encoder
+    /// let encoder = Encoder::new(min, max, precision, padding).unwrap();
+    ///
+    /// // generate a secret key
+    /// let secret_key = LWESecretKey::new(&LWE128_1024);
+    ///
+    /// // a list of messages
+    /// let messages: Vec<f64> = vec![-106.276, 104.3, -100.12, 101.1];
+    ///
+    /// // generate a secret key
+    /// let secret_key = LWESecretKey::new(&LWE128_1024);
+    ///
+    /// // a list of messages that we encrypt
+    /// let ciphertext =
+    ///     crypto_api::VectorLWE::encode_encrypt(&secret_key, &messages, &encoder).unwrap();
+    ///
+    /// // sum with a new min
+    /// let ciphertext_sum = ciphertext.sum_with_new_min(-50.).unwrap();
+    /// ```
+    pub fn sum_with_new_min(&self, new_min: f64) -> Result<crypto_api::VectorLWE, CryptoAPIError> {
+        let mut ct: Vec<Torus> = vec![0; self.dimension + 1];
+
+        // add the ciphertexts together
+        for ct_in in izip!(self.ciphertexts.chunks(self.dimension + 1)) {
+            math::Tensor::add_inplace(&mut ct, ct_in);
+        }
+
+        // deal with the resulting encoding and correcting terms
+        let mut new_encoder: crypto_api::Encoder = self.encoders[0].clone();
+        new_encoder.o = new_min;
+        let mut sum_min = 0.;
+        for enc_in in self.encoders.iter() {
+            sum_min += enc_in.o;
+        }
+        let correction = new_encoder.encode_outside_interval_operators(sum_min)?;
+        ct[self.dimension] = ct[self.dimension].wrapping_add(correction);
+
+        // deal with the new variance
+        let new_var = npe::add_several_ciphertexts(&self.variances);
+        new_encoder.update_precision_from_variance(new_var)?;
+
+        // build the output
+        Ok(VectorLWE {
+            ciphertexts: ct,
+            variances: vec![new_var],
+            dimension: self.dimension,
+            nb_ciphertexts: 1,
+            encoders: vec![new_encoder],
+        })
     }
 }
 

@@ -157,15 +157,18 @@ macro_rules! impl_trait_types {
 
             /// Converts a f64 in \[0,1\[ to a Torus element
             /// # Arguments
-            /// * `item` - a f64 in \[0,1\[
+            /// * item - a f64 in \[0,1\[
             /// # Output
             /// * a Torus element
             fn f64_to_torus(item: f64) -> $T {
-                return unsafe {
-                    f64::to_int_unchecked::<$T>(
-                        (item * (f64::powi(2.0, Self::TORUS_BIT as i32))).round(),
-                    )
-                };
+                let mut res = (item * (f64::powi(2.0, Self::TORUS_BIT as i32))).round();
+                if res >= f64::powi(2., Self::TORUS_BIT as i32) || res < 0. {
+                    // do an euclidian div
+                    res = res.rem_euclid(f64::powi(2., Self::TORUS_BIT as i32));
+                    return unsafe { f64::to_int_unchecked::<$T>(res) };
+                } else {
+                    return unsafe { f64::to_int_unchecked::<$T>(res) };
+                }
             }
 
             /// Returns a Torus element with a some bits a the right place according to the base_log and level decomposition

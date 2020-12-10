@@ -19,6 +19,19 @@ pub fn add_ciphertexts(var_ct1: f64, var_ct2: f64) -> f64 {
     var_ct1 + var_ct2
 }
 
+/// Computes the variance of the error distribution after the addition several uncorrelated ciphertexts
+/// Argument
+/// * `var_cts` - noise variance of the ciphertexts
+/// Output
+/// * the variance of the sum of the ciphertexts
+pub fn add_several_ciphertexts(var_cts: &[f64]) -> f64 {
+    let mut res: f64 = 0.;
+    for var in var_cts.iter() {
+        res += *var;
+    }
+    res
+}
+
 /// Computes the number of bits affected by the noise with a variance var describing a normal distribution
 /// takes into account the number of bits of the integers
 pub fn nb_bit_from_variance_99(var: f64, torus_bit: usize) -> usize {

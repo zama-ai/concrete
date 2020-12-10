@@ -714,3 +714,107 @@ fn test_encode_encrypt_x_add_with_new_min_inplace_x_decrypt() {
     }
     assert_eq!(cpt, nb_messages);
 }
+
+#[test]
+fn test_encode_encrypt_several_encoders_x_sum_with_padding_x_decrypt_decode_round() {
+    // random number of messages
+    let nb_messages: usize = random_index!(20) + 1;
+    let precision: usize = 5;
+    let padding: usize = 5;
+
+    // random settings for the first encoder
+    let (min1, max1) = generate_random_interval!();
+    let encoder_1 = crypto_api::Encoder::new(min1, max1, precision, padding).unwrap();
+
+    // generate nb_messages encoders with the same length
+    let mut encoders: Vec<crypto_api::Encoder> = vec![encoder_1.clone(); nb_messages];
+    for enc_in in encoders.iter_mut() {
+        let (new_min, _) = generate_random_interval!();
+        enc_in.o = new_min;
+    }
+
+    // generate messages
+    let mut messages: Vec<f64> = vec![0.; nb_messages];
+    for (m, enc_in) in izip!(messages.iter_mut(), encoders.iter()) {
+        *m = random_message!(enc_in.o, enc_in.o + enc_in.get_size());
+    }
+
+    // generate a secret key
+    let secret_key = crypto_api::LWESecretKey::new(&crypto_api::LWE128_1024);
+
+    // encode and encrypt
+    let ciphertexts =
+        crypto_api::VectorLWE::encode_encrypt_several_encoders(&secret_key, &messages, &encoders)
+            .unwrap();
+
+    // sum all the lwe together
+    let ct_sum = ciphertexts.sum_with_padding().unwrap();
+
+    // decryption
+    let decryptions = ct_sum.decrypt_decode_round(&secret_key).unwrap();
+    let d = decryptions[0];
+
+    // test
+    let mut clear_sum: f64 = 0.;
+    for m in messages.iter() {
+        clear_sum += m;
+    }
+
+    println!("sum {} dec {}", clear_sum, d);
+    assert_eq_granularity!(clear_sum, d, ct_sum.encoders[0]);
+    assert_eq!(precision, ct_sum.encoders[0].nb_bit_precision);
+}
+
+#[test]
+fn test_encode_encrypt_several_encoders_x_sum_with_new_min_x_decrypt_decode_round() {
+    // random number of messages
+    let nb_messages: usize = 300; //random_index!(20) + 1;
+    let precision: usize = 3; //5;
+    let padding: usize = 0;
+
+    // random settings for the first encoder
+    let (min1, max1) = (0., 7.); //generate_random_interval!();
+    let encoder_1 = crypto_api::Encoder::new(min1, max1, precision, padding).unwrap();
+
+    // generate nb_messages encoders with the same length
+    let mut encoders: Vec<crypto_api::Encoder> = vec![encoder_1.clone(); nb_messages];
+    for enc_in in encoders.iter_mut() {
+        let (new_min, _) = generate_random_interval!();
+        enc_in.o = f64::abs(f64::round(new_min));
+    }
+
+    // generate messages
+    let mut messages: Vec<f64> = vec![0.; nb_messages];
+    for (m, enc_in) in izip!(messages.iter_mut(), encoders.iter()) {
+        *m = f64::round(random_message!(enc_in.o, enc_in.o + enc_in.get_size()));
+        println!("message {}", *m);
+    }
+
+    // test
+    let mut clear_sum: f64 = 0.;
+    for m in messages.iter() {
+        clear_sum += m;
+    }
+
+    // generate a new min
+    let new_min = f64::round(clear_sum - random_message!(0., encoder_1.get_size()));
+
+    // generate a secret key
+    let secret_key = crypto_api::LWESecretKey::new(&crypto_api::LWE128_1024);
+
+    // encode and encrypt
+    let ciphertexts =
+        crypto_api::VectorLWE::encode_encrypt_several_encoders(&secret_key, &messages, &encoders)
+            .unwrap();
+
+    // sum all the lwe together
+    let ct_sum = ciphertexts.sum_with_new_min(new_min).unwrap();
+
+    // decryption
+    let decryptions = ct_sum.decrypt_decode_round(&secret_key).unwrap();
+    let d = decryptions[0];
+
+    println!("sum {} dec {}", clear_sum, d);
+    assert_eq_granularity!(clear_sum, d, ct_sum.encoders[0]);
+    assert_eq!(precision, ct_sum.encoders[0].nb_bit_precision);
+}
