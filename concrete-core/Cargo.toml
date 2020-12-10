@@ -1,0 +1,50 @@
+[package]
+name = "concrete-core"
+version = "0.1.6"
+edition = "2018"
+build = "build.rs"
+authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
+license = "AGPL-3.0"
+description = "Concrete is a fully homomorphic encryption (FHE) library that implements Zama's variant of TFHE."
+homepage = "https://crates.io/crates/concrete"
+documentation = "https://concrete.zama.ai"
+repository = "https://github.com/zama-ai/concrete"
+readme = "README.md"
+keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
+
+[build-dependencies]
+cmake = { version = "0.1", optional = true}
+
+[dev-dependencies]
+concrete-npe = "0.1.6"
+criterion = "0.3.4"
+rand = "0.7"
+rand_distr = "0.2.2"
+kolmogorov_smirnov = "1.1.0"
+itertools = "0.10"
+
+[dependencies.fftw]
+version = "^0.5.0"
+default-features = false
+features = ["system"]
+
+[dependencies]
+concrete-csprng={path="../concrete-csprng"}
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"
+
+[lib]
+name = "concrete_core"
+crate-type = ["cdylib", "rlib"]
+bench = false
+
+[features]
+gpu = ["cmake"]
+cloud-computing = []
+
+[[bench]]
+name = "bench"
+harness = false
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "../katex-header.html"]

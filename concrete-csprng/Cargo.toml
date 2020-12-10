@@ -1,0 +1,18 @@
+[package]
+name = "concrete-csprng"
+version = "0.1.6"
+edition = "2018"
+authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
+license = "AGPL-3.0"
+description = "Cryptographically Secure PRNG used in the FHE concrete library."
+homepage = "https://crates.io/crates/concrete"
+documentation = "https://concrete.zama.ai"
+repository = "https://github.com/zama-ai/concrete"
+readme = "README.md"
+keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
+
+[dependencies]
+
+[[bin]]
+name = "generate_random"
+path = "src/generate_random.rs"
