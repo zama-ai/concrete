@@ -1,6 +1,6 @@
 [package]
 name = "concrete-core"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2018"
 build = "build.rs"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
@@ -47,4 +47,4 @@ name = "bench"
 harness = false
 
 [package.metadata.docs.rs]
-rustdoc-args = ["--html-in-header", "../katex-header.html"]
+rustdoc-args = ["--html-in-header", "katex-header.html"]

@@ -1,6 +1,6 @@
 [package]
 name = "concrete"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2018"
 build = "build.rs"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
@@ -16,7 +16,7 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 cmake = { version = "0.1", optional = true}
 
 [dependencies]
-concrete-core = "0.1.6"
+concrete-core = "0.1.7"
 concrete-npe = "0.1.6"
 itertools = "0.9.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -30,4 +30,4 @@ cloud-computing = []
 unsafe = []
 
 [package.metadata.docs.rs]
-rustdoc-args = ["--html-in-header", "../katex-header.html"]
+rustdoc-args = ["--html-in-header", "katex-header.html"]
