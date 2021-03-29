@@ -1,0 +1,31 @@
+name: Build
+
+on: push
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install FFTW
+        run: sudo apt-get install -y libfftw3-dev
+      - name: Build debug
+        run: cargo build --verbose
+      - name: Build release
+        run: cargo build --verbose --release
+      - name: Build native
+        run: RUSTFLAGS="-C target-feature=+aes,+rdseed,+sse2,+avx,+avx2" cargo build --verbose --release
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install FFTW
+        run: brew install fftw
+      - name: Build debug
+        run: cargo build --verbose
+      - name: Build release
+        run: cargo build --verbose --release

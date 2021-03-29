@@ -1,0 +1,25 @@
+name: Long tests
+
+on:
+  pull_request:
+    branches:
+      - master
+      - develop
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install FFTW
+        run: sudo apt-get install -y libfftw3-dev
+      - name: Run `concrete-csprng` tests
+        run: cargo test --no-fail-fast --release --package concrete-npe --features longtest
+      - name: Run `concrete-npe` tests
+        run: cargo test --no-fail-fast --release --package concrete-npe --features longtest
+      - name: Run `concrete-core` tests
+        run: cargo test --no-fail-fast --release --package concrete-core --features longtest
+      - name: Run `concrete` tests
+        run: cargo test --no-fail-fast --release --package concrete --features longtest
