@@ -2,7 +2,6 @@
 name = "concrete"
 version = "0.1.8"
 edition = "2018"
-build = "build.rs"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "AGPL-3.0"
 description = "Concrete is a fully homomorphic encryption (FHE) library that implements Zama's variant of TFHE."
@@ -11,9 +10,6 @@ documentation = "https://concrete.zama.ai"
 repository = "https://github.com/zama-ai/concrete"
 readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
-
-[build-dependencies]
-cmake = { version = "0.1", optional = true}
 
 [dependencies]
 concrete-core = {version = "0.1.8", path = "../concrete-core"}
@@ -25,9 +21,10 @@ backtrace = "0.3"
 colored = "2.0.0"
 
 [features]
-gpu = ["cmake"]
-cloud-computing = []
-unsafe = []
+# This configuration allows to increase the duration of tests. Meant to be used as non-default
+# configuration, that checks the correctness of the implementation, instead of just checking
+# whether it broke or not.
+longtest = []
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "katex-header.html"]

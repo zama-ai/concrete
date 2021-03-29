@@ -13,25 +13,28 @@ use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use crate::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::math::polynomial::PolynomialSize;
-use crate::math::random::RandomGenerator;
+use crate::math::random::{fill_with_random_uniform, fill_with_random_uniform_boolean};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
 use crate::numeric::{CastFrom, CastInto, Numeric};
 use crate::test_tools::{assert_delta_std_dev, assert_noise_distribution};
 
-fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
+fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>(
+    nb_test: usize,
+    sizes: &[PolynomialSize],
+    dimension: LweDimension,
+) {
     //! test that the bootstrapping noise matches the theoretical noise
     //! This test is design to remove the impact of the drift, we only
     //! check the noise added by the external products
 
-    for size in &[512, 1024, 2048] {
+    for size in sizes {
         // fix a set of parameters
-        let nb_test: usize = 2;
-        let polynomial_size = PolynomialSize(*size);
+        let polynomial_size = *size;
         let rlwe_dimension = GlweDimension(1);
-        let lwe_dimension = LweDimension(630);
+        let lwe_dimension = dimension;
         let level = DecompositionLevelCount(3);
         let base_log = DecompositionBaseLog(7);
-        let std = LogStandardDev::from_log_standard_dev(-29.);
+        let std = LogStandardDev::from_log_standard_dev(-25.);
         let mut generator = RandomGenerator::new(None);
 
         // allocate secret keys
@@ -131,8 +134,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
     let n_tests = 100;
     for _n in 0..n_tests {
         // fix different polynomial degrees
-        let degrees = vec![512, 1024, 2048];
-        for polynomial_size in degrees {
+        for polynomial_size in sizes {
             // fix a set of parameters
             let rlwe_dimension = GlweDimension(2);
             let lwe_dimension = LweDimension(1);
@@ -143,9 +145,10 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             let mut generator = RandomGenerator::new(None);
 
             // compute the length of glwe secret key
+
             let mut rlwe_sk = GlweSecretKey::generate(
                 rlwe_dimension,
-                PolynomialSize(polynomial_size),
+                PolynomialSize(*polynomial_size),
                 &mut generator,
             );
             rlwe_sk.as_mut_tensor().fill_with_element(true);
@@ -154,18 +157,18 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             let lwe_sk = LweSecretKey::from_container(vec![true]);
 
             // create the polynomial to encrypt
-            let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
+            let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(*polynomial_size));
             generator.fill_tensor_with_random_uniform(&mut messages);
 
             // allocate space for the decrypted polynomial
             let mut new_messages =
-                PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
+                PlaintextList::allocate(T::ZERO, PlaintextCount(*polynomial_size));
 
             // allocation and generation of the key in coef domain:
             let mut coef_bsk = BootstrapKey::allocate(
                 T::ZERO,
                 rlwe_dimension.to_glwe_size(),
-                PolynomialSize(polynomial_size),
+                PolynomialSize(*polynomial_size),
                 level,
                 base_log,
                 lwe_dimension,
@@ -176,7 +179,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             let mut fourier_bsk = BootstrapKey::allocate(
                 Complex64::new(0., 0.),
                 rlwe_dimension.to_glwe_size(),
-                PolynomialSize(polynomial_size),
+                PolynomialSize(*polynomial_size),
                 level,
                 base_log,
                 lwe_dimension,
@@ -186,14 +189,14 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             // allocate vectors for glwe ciphertexts (inputs)
             let mut ciphertext = GlweCiphertext::allocate(
                 T::ZERO,
-                PolynomialSize(polynomial_size),
+                PolynomialSize(*polynomial_size),
                 rlwe_dimension.to_glwe_size(),
             );
 
             // allocate vectors for glwe ciphertexts (outputs)
             let mut res = GlweCiphertext::allocate(
                 T::ZERO,
-                PolynomialSize(polynomial_size),
+                PolynomialSize(*polynomial_size),
                 rlwe_dimension.to_glwe_size(),
             );
 
@@ -201,21 +204,21 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             rlwe_sk.encrypt_glwe(&mut ciphertext, &messages, std_dev_rlwe, &mut generator);
 
             // unroll FFT Plan using FFTW
-            let mut fft = Fft::new(PolynomialSize(polynomial_size));
+            let mut fft = Fft::new(PolynomialSize(*polynomial_size));
 
             // allocate vectors used as temporary variables inside the external product
             let mut mask_dec_i_fft = FourierPolynomial::allocate(
                 Complex64::new(0., 0.),
-                PolynomialSize(polynomial_size),
+                PolynomialSize(*polynomial_size),
             );
             let mut body_dec_i_fft = FourierPolynomial::allocate(
                 Complex64::new(0., 0.),
-                PolynomialSize(polynomial_size),
+                PolynomialSize(*polynomial_size),
             );
             let mut res_fft = vec![
                 FourierPolynomial::allocate(
                     Complex64::new(0., 0.),
-                    PolynomialSize(polynomial_size)
+                    PolynomialSize(*polynomial_size)
                 );
                 rlwe_dimension.0 + 1
             ];
@@ -239,7 +242,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
                 rlwe_dimension.0,
                 level.0,
                 base_log.0,
-                polynomial_size,
+                *polynomial_size,
                 var_trgsw,
                 var_trlwe,
             );
@@ -536,15 +539,15 @@ fn test_sample_extract<T: UnsignedTorus>() {
     }
 }
 
-fn test_bootstrap_drift<T: UnsignedTorus + Debug>()
-where
+fn test_bootstrap_drift<T: UnsignedTorus + Debug>(
+    nb_test: usize,
+    polynomial_size: PolynomialSize,
+    lwe_dimension: LweDimension,
+) where
     i64: CastFrom<T>,
 {
     // define settings
-    let nb_test: usize = 10;
-    let polynomial_size = PolynomialSize(1024);
     let rlwe_dimension = GlweDimension(1);
-    let lwe_dimension = LweDimension(630);
     let level = DecompositionLevelCount(3);
     let base_log = DecompositionBaseLog(7);
     let std = LogStandardDev::from_log_standard_dev(-29.);
@@ -635,32 +638,66 @@ where
 
 #[test]
 pub fn test_bootstrap_drift_u32() {
-    test_bootstrap_drift::<u32>();
+    #[cfg(feature = "longtest")]
+    test_bootstrap_drift::<u32>(10, PolynomialSize(1024), LweDimension(630));
+    #[cfg(not(feature = "longtest"))]
+    test_bootstrap_drift::<u32>(1, PolynomialSize(512), LweDimension(20));
 }
 
 #[test]
 pub fn test_bootstrap_drift_u64() {
-    test_bootstrap_drift::<u64>();
+    #[cfg(feature = "longtest")]
+    test_bootstrap_drift::<u64>(10, PolynomialSize(1024), LweDimension(630));
+    #[cfg(not(feature = "longtest"))]
+    test_bootstrap_drift::<u64>(1, PolynomialSize(512), LweDimension(20));
 }
 
 #[test]
 pub fn test_bootstrap_noise_u32() {
-    test_bootstrap_noise::<u32>()
+    #[cfg(not(feature = "longtest"))]
+    test_bootstrap_noise::<u32>(2, &[PolynomialSize(512)][..], LweDimension(10));
+    #[cfg(feature = "longtest")]
+    test_bootstrap_noise::<u32>(
+        10,
+        &[
+            PolynomialSize(512),
+            PolynomialSize(1024),
+            PolynomialSize(2048),
+        ][..],
+        LweDimension(630),
+    );
 }
 
 #[test]
 pub fn test_bootstrap_noise_u64() {
-    test_bootstrap_noise::<u64>()
+    #[cfg(not(feature = "longtest"))]
+    test_bootstrap_noise::<u64>(2, &[PolynomialSize(512)][..], LweDimension(10));
+    #[cfg(feature = "longtest")]
+    test_bootstrap_noise::<u64>(
+        10,
+        &[
+            PolynomialSize(512),
+            PolynomialSize(1024),
+            PolynomialSize(2048),
+        ][..],
+        LweDimension(630),
+    );
 }
 
 #[test]
 pub fn test_external_product_generic_u32() {
-    test_external_product_generic::<u32>()
+    #[cfg(not(feature = "longtest"))]
+    test_external_product_generic::<u32>(&[512][..], 10);
+    #[cfg(feature = "longtest")]
+    test_external_product_generic::<u32>(&[512, 1024, 2048][..], 100);
 }
 
 #[test]
 pub fn test_external_product_generic_u64() {
-    test_external_product_generic::<u64>()
+    #[cfg(not(feature = "longtest"))]
+    test_external_product_generic::<u64>(&[512][..], 10);
+    #[cfg(feature = "longtest")]
+    test_external_product_generic::<u64>(&[512, 1024, 2048][..], 100);
 }
 
 #[test]

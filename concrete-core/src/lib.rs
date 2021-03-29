@@ -113,8 +113,6 @@ pub mod utils;
 #[doc(hidden)]
 #[cfg(test)]
 pub mod test_tools {
-    use rand::Rng;
-
     use crate::crypto::{
         CiphertextCount, GlweDimension, LweDimension, PlaintextCount, UnsignedTorus,
     };
@@ -124,6 +122,7 @@ pub mod test_tools {
     use crate::math::random::RandomGenerator;
     use crate::math::tensor::{AsRefSlice, AsRefTensor};
     use crate::numeric::UnsignedInteger;
+    use std::ops::Range;
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
         let d0 = first.wrapping_sub(other);
@@ -222,53 +221,42 @@ pub mod test_tools {
         }
     }
 
-    /// Returns a random plaintext count in [1;max].
-    pub fn random_plaintext_count(max: usize) -> PlaintextCount {
-        assert_ne!(max, 0, "Max cannot be 0");
-        let mut rng = rand::thread_rng();
-        PlaintextCount((rng.gen::<usize>() % (max - 1)) + 1)
+    /// Returns a random plaintext count.
+    pub fn random_plaintext_count(range: Range<usize>) -> PlaintextCount {
+        PlaintextCount(random_usize_between(range))
     }
 
-    /// Returns a random ciphertext count in [1;max].
-    pub fn random_ciphertext_count(max: usize) -> CiphertextCount {
-        assert_ne!(max, 0, "Max cannot be 0");
-        let mut rng = rand::thread_rng();
-        CiphertextCount((rng.gen::<usize>() % (max - 1)) + 1)
+    /// Returns a random ciphertext count.
+    pub fn random_ciphertext_count(range: Range<usize>) -> CiphertextCount {
+        CiphertextCount(random_usize_between(range))
     }
 
-    /// Returns a random LWE dimension in [1;max].
-    pub fn random_lwe_dimension(max: usize) -> LweDimension {
-        assert_ne!(max, 0, "Max cannot be 0");
-        let mut rng = rand::thread_rng();
-        LweDimension((rng.gen::<usize>() % (max - 1)) + 1)
+    /// Returns a random LWE dimension.
+    pub fn random_lwe_dimension(range: Range<usize>) -> LweDimension {
+        LweDimension(random_usize_between(range))
     }
 
-    /// Returns a random GLWE dimension in [1;max].
-    pub fn random_glwe_dimension(max: usize) -> GlweDimension {
-        assert_ne!(max, 0, "Max cannot be 0");
-        let mut rng = rand::thread_rng();
-        GlweDimension((rng.gen::<usize>() % (max - 1)) + 1)
+    /// Returns a random GLWE dimension.
+    pub fn random_glwe_dimension(range: Range<usize>) -> GlweDimension {
+        GlweDimension(random_usize_between(range))
     }
 
-    /// Returns a random polynomial size in [2;max].
-    pub fn random_polynomial_size(max: usize) -> PolynomialSize {
-        assert_ne!(max, 0, "Max cannot be 0");
-        let mut rng = rand::thread_rng();
-        PolynomialSize((rng.gen::<usize>() % (max - 2)) + 2)
+    /// Returns a random polynomial size.
+    pub fn random_polynomial_size(range: Range<usize>) -> PolynomialSize {
+        assert!(range.start >= 2);
+        PolynomialSize(random_usize_between(range))
     }
 
-    /// Returns a random base log in [2;max].
-    pub fn random_base_log(max: usize) -> DecompositionBaseLog {
-        assert_ne!(max, 0, "Max cannot be 0");
-        let mut rng = rand::thread_rng();
-        DecompositionBaseLog((rng.gen::<usize>() % (max - 2)) + 2)
+    /// Returns a random base log.
+    pub fn random_base_log(range: Range<usize>) -> DecompositionBaseLog {
+        assert!(range.start >= 2);
+        DecompositionBaseLog(random_usize_between(range))
     }
 
-    /// Returns a random level count in [2;max].
-    pub fn random_level_count(max: usize) -> DecompositionLevelCount {
-        assert_ne!(max, 0, "Max cannot be 0");
-        let mut rng = rand::thread_rng();
-        DecompositionLevelCount((rng.gen::<usize>() % (max - 2)) + 2)
+    /// Returns a random level count.
+    pub fn random_level_count(range: Range<usize>) -> DecompositionLevelCount {
+        assert!(range.start >= 2);
+        DecompositionLevelCount(random_usize_between(range))
     }
 
     pub fn random_i32_between(range: std::ops::Range<i32>) -> i32 {
@@ -279,6 +267,8 @@ pub mod test_tools {
     }
 
     pub fn random_usize_between(range: std::ops::Range<usize>) -> usize {
+        assert!(range.end > range.start);
+        assert_ne!(range.end, 0);
         use rand::distributions::{Distribution, Uniform};
         let between = Uniform::from(range);
         let mut rng = rand::thread_rng();

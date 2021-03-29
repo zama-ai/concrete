@@ -14,13 +14,16 @@ use crate::test_tools::{
     random_utorus_between,
 };
 
-fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
+fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>(
+    nb_ct: CiphertextCount,
+    dimension_before: LweDimension,
+    dimension_after: LweDimension,
+) {
     //! create a KSK and key switch some LWE samples
     //! warning: not a randomized test for the parameters
     let mut generator = RandomGenerator::new(None);
     // fix a set of parameters
     let n_bit_msg = 8; // bit precision of the plaintext
-    let nb_ct = random_ciphertext_count(100); // number of messages to encrypt
     let base_log = DecompositionBaseLog(3); // a parameter of the gadget matrix
     let level_count = DecompositionLevelCount(8); // a parameter of the gadget matrix
     let messages =
@@ -31,11 +34,9 @@ fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
     let std_ksk = LogStandardDev::from_log_standard_dev(-25.); // standard deviation of the ksk
 
     // set parameters related to the after (stands for 'after the KS')
-    let dimension_after = LweDimension(600);
     let sk_after = LweSecretKey::generate(dimension_after, &mut generator);
 
     // set parameters related to the before (stands for 'before the KS')
-    let dimension_before = LweDimension(1024);
     let sk_before = LweSecretKey::generate(dimension_before, &mut generator);
 
     // create the before ciphertexts and the after ciphertexts
@@ -94,21 +95,25 @@ fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
 
 #[test]
 fn test_keyswitch_u32() {
-    test_keyswitch::<u32>();
+    #[cfg(not(feature = "longtest"))]
+    test_keyswitch::<u32>(CiphertextCount(10), LweDimension(60), LweDimension(120));
+    #[cfg(feature = "longtest")]
+    test_keyswitch::<u32>(CiphertextCount(100), LweDimension(600), LweDimension(1024));
 }
 
 #[test]
 fn test_keyswitch_u64() {
-    test_keyswitch::<u64>();
+    #[cfg(not(feature = "longtest"))]
+    test_keyswitch::<u64>(CiphertextCount(10), LweDimension(60), LweDimension(120));
+    #[cfg(feature = "longtest")]
+    test_keyswitch::<u64>(CiphertextCount(100), LweDimension(600), LweDimension(1024));
 }
 
-fn test_encrypt_decrypt<T: UnsignedTorus>() {
+fn test_encrypt_decrypt<T: UnsignedTorus>(nb_ct: CiphertextCount, dimension: LweDimension) {
     //! encrypts a bunch of messages and decrypts them
     //! warning: std_dev is not randomized
     //! only assert with assert_delta_std_dev
     // generate random settings
-    let nb_ct = random_ciphertext_count(100000);
-    let dimension = random_lwe_dimension(1000);
     let std_dev = LogStandardDev::from_log_standard_dev(-25.);
     let mut generator = RandomGenerator::new(None);
 
@@ -140,12 +145,21 @@ fn test_encrypt_decrypt<T: UnsignedTorus>() {
 
 #[test]
 fn test_encrypt_decrypt_u32() {
-    test_encrypt_decrypt::<u32>()
+    #[cfg(not(feature = "longtest"))]
+    test_encrypt_decrypt::<u32>(CiphertextCount(100), LweDimension(10));
+    #[cfg(feature = "longtest")]
+    test_encrypt_decrypt::<u32>(
+        random_ciphertext_count(10_000..100_000),
+        random_lwe_dimension(500..1000),
+    );
 }
 
 #[test]
 fn test_encrypt_decrypt_u64() {
-    test_encrypt_decrypt::<u64>()
+    #[cfg(not(feature = "longtest"))]
+    test_encrypt_decrypt::<u64>(CiphertextCount(100), LweDimension(10));
+    #[cfg(feature = "longtest")]
+    test_encrypt_decrypt::<u64>(CiphertextCount(100000), LweDimension(1000));
 }
 
 fn test_multisum_npe<T>()
@@ -159,8 +173,8 @@ where
     let mut generator = RandomGenerator::new(None);
 
     // generate random settings
-    let nb_ct = random_ciphertext_count(100);
-    let dimension = random_lwe_dimension(1000);
+    let nb_ct = random_ciphertext_count(1..100);
+    let dimension = random_lwe_dimension(1..1000);
     let std = LogStandardDev::from_log_standard_dev(-25.);
 
     // generate random weights
@@ -319,8 +333,8 @@ where
     //! only assert with assert_delta_std_dev
 
     // settings
-    let nb_ct = random_ciphertext_count(100);
-    let dimension = random_lwe_dimension(1000);
+    let nb_ct = random_ciphertext_count(1..100);
+    let dimension = random_lwe_dimension(1..1000);
     let std_dev = LogStandardDev::from_log_standard_dev(-15.);
     let mut generator = RandomGenerator::new(None);
 

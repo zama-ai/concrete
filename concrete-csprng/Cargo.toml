@@ -19,7 +19,13 @@ rand = "0.8.3"
 criterion = "0.3"
 
 [features]
+# This configuration allows to force the csprng into using the software version, even on
+# accelerated machines.
 slow = []
+# This configuration allows to increase the duration of tests. Meant to be used as non-default
+# configuration, that checks the correctness of the implementation, instead of just checking
+# whether it broke or not.
+longtest = []
 
 [[bench]]
 name = "benchmark"
