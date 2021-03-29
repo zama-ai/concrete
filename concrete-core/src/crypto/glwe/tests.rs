@@ -1,17 +1,20 @@
 use crate::crypto::encoding::PlaintextList;
 use crate::crypto::glwe::GlweList;
 use crate::crypto::secret::GlweSecretKey;
-use crate::crypto::UnsignedTorus;
+use crate::crypto::{CiphertextCount, GlweDimension, UnsignedTorus};
 use crate::math::dispersion::LogStandardDev;
+use crate::math::polynomial::PolynomialSize;
 use crate::math::random;
-use crate::test_tools;
 use crate::test_tools::assert_delta_std_dev;
+#[cfg(feature = "longtest")]
+use crate::test_tools::{random_ciphertext_count, random_glwe_dimension, random_polynomial_size};
 
-fn test_glwe<T: UnsignedTorus>() {
+fn test_glwe<T: UnsignedTorus>(
+    nb_ct: CiphertextCount,
+    dimension: GlweDimension,
+    polynomial_size: PolynomialSize,
+) {
     // random settings
-    let nb_ct = test_tools::random_ciphertext_count(200);
-    let dimension = test_tools::random_glwe_dimension(200);
-    let polynomial_size = test_tools::random_polynomial_size(200);
     let noise_parameter = LogStandardDev::from_log_standard_dev(-20.);
 
     // generates a secret key
@@ -36,10 +39,24 @@ fn test_glwe<T: UnsignedTorus>() {
 
 #[test]
 fn test_glwe_encrypt_decrypt_u32() {
-    test_glwe::<u32>();
+    #[cfg(not(feature = "longtest"))]
+    test_glwe::<u32>(CiphertextCount(10), GlweDimension(20), PolynomialSize(32));
+    #[cfg(feature = "longtest")]
+    test_glwe::<u32>(
+        random_ciphertext_count(100..200),
+        random_glwe_dimension(100..200),
+        random_polynomial_size(100..200),
+    );
 }
 
 #[test]
 fn test_glwe_encrypt_decrypt_u64() {
-    test_glwe::<u64>();
+    #[cfg(not(feature = "longtest"))]
+    test_glwe::<u64>(CiphertextCount(10), GlweDimension(20), PolynomialSize(64));
+    #[cfg(feature = "longtest")]
+    test_glwe::<u64>(
+        random_ciphertext_count(100..200),
+        random_glwe_dimension(100..200),
+        random_polynomial_size(100..200),
+    );
 }

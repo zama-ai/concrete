@@ -50,6 +50,7 @@ fn test_round_to_closest_multiple_u64() {
     test_round_to_closest_multiple::<u64>();
 }
 
+#[allow(unused)]
 fn test_panic_round_to_closest_multiple<T: UnsignedTorus>() {
     //! test that it panics when log_b * level_max==TORUS_BIT
     let log_b: usize = T::BITS / 4;
