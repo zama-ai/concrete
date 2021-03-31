@@ -122,10 +122,7 @@ macro_rules! random_messages {
 
 macro_rules! deltas_eq {
     ($delta1: expr, $delta2: expr) => {{
-        let tmp = ($delta1 - $delta2).abs() / $delta1.max($delta2);
-        let limit1 = $delta1 / f64::powi(2., -40);
-        let limit2 = $delta2 / f64::powi(2., -40);
-        tmp < limit1 && tmp < limit2
+        ($delta1 - $delta2).abs() <= 1e-10f64 * $delta1.abs().max($delta2.abs())
     }};
 }
 

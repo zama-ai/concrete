@@ -1,6 +1,6 @@
 [package]
 name = "concrete-core"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2018"
 build = "build.rs"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
@@ -16,7 +16,7 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 cmake = { version = "0.1", optional = true}
 
 [dev-dependencies]
-concrete-npe = "0.1.6"
+concrete-npe = { version = "0.1.7", path = "../concrete-npe" }
 criterion = "0.3.4"
 rand = "0.7"
 rand_distr = "0.2.2"
