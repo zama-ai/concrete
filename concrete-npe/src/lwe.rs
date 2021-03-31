@@ -53,7 +53,7 @@ macro_rules! impl_trait_npe_lwe {
                 var_ks: f64,
                 var_input: f64,
             ) -> f64 {
-                let q_square = f64::powi(2., (2 * std::mem::size_of::<$T>()) as i32);
+                let q_square = f64::powi(2., (2 * std::mem::size_of::<$T>() * 8) as i32);
                 let res_1: f64 = dimension_before as f64
                     * (1. / 24. * f64::powi(2.0, -2 * (base_log * l_ks) as i32)
                         + 1. / (48. * q_square));
