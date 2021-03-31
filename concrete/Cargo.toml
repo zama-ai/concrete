@@ -1,6 +1,6 @@
 [package]
 name = "concrete"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2018"
 build = "build.rs"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]

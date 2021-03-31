@@ -1,6 +1,6 @@
 [package]
 name = "concrete-npe"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2018"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "AGPL-3.0"
