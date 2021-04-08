@@ -12,6 +12,10 @@ readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 
 [dependencies]
+aes-soft = "0.6.4"
+
+[features]
+slow = []
 
 [[bin]]
 name = "generate_random"
