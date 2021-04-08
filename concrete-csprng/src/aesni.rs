@@ -287,7 +287,13 @@ fn si128arr_to_u8arr(input: [__m128i; 8]) -> [u8; 128] {
     unsafe { transmute(input) }
 }
 
-#[cfg(test)]
+#[cfg(all(
+    test,
+    target_arch = "x86_64",
+    target_feature = "aes",
+    target_feature = "sse2",
+    target_feature = "rdseed"
+))]
 mod test {
     use super::*;
 
