@@ -17,7 +17,9 @@ use concrete_core::{
 use crate::error::CryptoAPIError;
 use crate::Torus;
 
-#[derive(Debug, PartialEq, Clone)]
+use serde::{Deserialize,Serialize};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct LWEBSK {
     // #[serde(
     //     deserialize_with = "deserialize_vec_ctorus",
