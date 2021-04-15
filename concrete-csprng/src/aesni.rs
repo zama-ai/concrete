@@ -3,84 +3,35 @@
 //! This module implements a cryptographically secure pseudorandom number generator
 //! (CS-PRNG), using a fast streamcipher: aes128 in counter-mode (CTR). The implementation
 //! is based on the [intel aesni white paper 323641-001 revision 3.0](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf).
-//!
-//! Notes:
-//! + The initialization vector is generated using the `rdseed` machine instruction.
-//! + The secret key is also generated using the `rdseed` machine instuction.
+use crate::ctr::{AesBatchedGenerator, AesCtr};
+use crate::AesKey;
 use std::arch::x86_64::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_aeskeygenassist_si128, _mm_load_si128,
     _mm_shuffle_epi32, _mm_slli_si128, _mm_store_si128, _mm_xor_si128,
 };
-use std::fmt::{Debug, Display, Formatter, Result};
 use std::mem::transmute;
 
-/// The pseudorandom number generator.
-///
-/// # Internals
-///
-/// When created, the generator is seeded with a random value generated with the `rdseed` machine
-/// instructions. This instruction returns a value sampled from a hardware true random number
-/// generator (TRNG), or an enhanced non-deterministic random number generator (ENRNG).
-///
-/// Then, `rdseed` is used a second time to generate a secret key, that is immediately expanded to
-/// a set of 'round' keys: when using aes, the same operation is applied multiple times with a
-/// different 'round' key. When using 128 bits keys, it is recommended to perform 10 such rounds
-/// (see the intel white paper). This operation is a bit costly, but hopefully performed only once.
-///
-/// After this initialization, the generator can be used to generate random 128-bit words. For
-/// each new block to be generated, the generator state (at first the initialization vector) is
-/// incremented, and this value is used as input to the aes128 cipher. The output is directly given
-/// to the user.
-///
-/// In practice, values are generated eight by eight, which allows to trigger instruction level
-/// parallelism resulting in a faster generation. Indeed, the hardware implementing the `aesni`
-/// instructions is pipelined, which means that it allows to process multiple instructions in
-/// parallel, provided that they do not have computational dependencies. When processing multiple
-/// blocks at once, the pipeline can be filled with independent computations, which consequently
-/// allows to process multiple instructions at once.
-pub struct RandomGenerator {
-    // The state of the generator
-    state: u128,
+#[derive(Clone)]
+pub struct Generator {
     // The set of round keys used for the aes encryption
     round_keys: [__m128i; 11],
     // A buffer containing the 8 last generated values
     generated: [u8; 128],
-    // The index of the last buffer value that was given to the user
-    generated_idx: usize,
 }
 
-// It should not be possible to display the state and round keys of the random generator.
-impl Debug for RandomGenerator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "RandomGenerator")
-    }
-}
-
-impl Display for RandomGenerator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "RandomGenerator")
-    }
-}
-
-impl Default for RandomGenerator {
-    fn default() -> Self {
-        RandomGenerator::new(None, None)
-    }
-}
-
-impl RandomGenerator {
-    pub fn new(key: Option<u128>, state: Option<u128>) -> RandomGenerator {
+impl AesBatchedGenerator for Generator {
+    fn new(key: Option<AesKey>) -> Generator {
         if is_x86_feature_detected!("aes")
             && is_x86_feature_detected!("rdseed")
             && is_x86_feature_detected!("sse2")
         {
-            let state = state.unwrap_or(generate_initialization_vector());
-            let round_keys = generate_round_keys(key.unwrap_or(generate_initialization_vector()));
-            RandomGenerator {
-                state,
+            let round_keys = generate_round_keys(
+                key.map(|AesKey(k)| k)
+                    .unwrap_or(generate_initialization_vector()),
+            );
+            Generator {
                 round_keys,
                 generated: [0u8; 128],
-                generated_idx: 127,
             }
         } else {
             panic!(
@@ -90,32 +41,22 @@ impl RandomGenerator {
         }
     }
 
-    pub fn generate_next(&mut self) -> u8 {
-        if self.generated_idx < 127 {
-            // All the values of the buffer were not yielded.
-            self.generated_idx += 1;
-        } else {
-            // All the values of the buffer were yielded. We generate new ones, and resets the
-            // index.
-            self.update_state();
-            self.generated = si128arr_to_u8arr(aes_encrypt_many(
-                &u128_to_si128(self.state),
-                &u128_to_si128(self.state + 1),
-                &u128_to_si128(self.state + 2),
-                &u128_to_si128(self.state + 3),
-                &u128_to_si128(self.state + 4),
-                &u128_to_si128(self.state + 5),
-                &u128_to_si128(self.state + 6),
-                &u128_to_si128(self.state + 7),
-                &self.round_keys,
-            ));
-            self.generated_idx = 0;
-        }
-        self.generated[self.generated_idx]
+    fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) {
+        self.generated = si128arr_to_u8arr(aes_encrypt_many(
+            &u128_to_si128(aes_ctr),
+            &u128_to_si128(aes_ctr + 1),
+            &u128_to_si128(aes_ctr + 2),
+            &u128_to_si128(aes_ctr + 3),
+            &u128_to_si128(aes_ctr + 4),
+            &u128_to_si128(aes_ctr + 5),
+            &u128_to_si128(aes_ctr + 6),
+            &u128_to_si128(aes_ctr + 7),
+            &self.round_keys,
+        ));
     }
 
-    fn update_state(&mut self) {
-        self.state = self.state.wrapping_add(8);
+    fn get_generated(&self) -> &[u8; 128] {
+        &self.generated
     }
 }
 
@@ -355,33 +296,20 @@ mod test {
     #[test]
     fn test_uniformity() {
         // Checks that the PRNG generates uniform numbers
-        let precision = 10f64.powi(-5);
-        let n_samples = 10_000_000_000_usize;
-        let mut generator = RandomGenerator::new(None, None);
+        let precision = 10f64.powi(-4);
+        let n_samples = 10_000_000_usize;
+        let mut generator = Generator::new(None);
         let mut counts = [0usize; 256];
         let expected_prob: f64 = 1. / 256.;
-        for _ in 0..n_samples {
-            counts[generator.generate_next() as usize] += 1;
+        for counter in 0..n_samples {
+            generator.generate_batch(AesCtr(counter as u128));
+            for i in 0..128 {
+                counts[generator.get_generated()[i] as usize] += 1;
+            }
         }
         counts
             .iter()
-            .map(|a| (*a as f64) / (n_samples as f64))
+            .map(|a| (*a as f64) / ((n_samples * 128) as f64))
             .for_each(|a| assert!((a - expected_prob) < precision))
-    }
-
-    #[test]
-    fn test_generator_determinism() {
-        for _ in 0..100 {
-            let key = generate_initialization_vector();
-            let state = generate_initialization_vector();
-            let mut first_generator = RandomGenerator::new(Some(key), Some(state));
-            let mut second_generator = RandomGenerator::new(Some(key), Some(state));
-            for _ in 0..128 {
-                assert_eq!(
-                    first_generator.generate_next(),
-                    second_generator.generate_next()
-                );
-            }
-        }
     }
 }

@@ -14,8 +14,12 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 [dependencies]
 aes-soft = "0.6.4"
 
+[dev-dependencies]
+rand = "0.8.3"
+
 [features]
 slow = []
+unchecked = []
 
 [[bin]]
 name = "generate_random"
