@@ -7,6 +7,9 @@ use crate::{ck_dim_eq, tensor_traits};
 
 use super::*;
 
+// stop the induction when polynomials have KARATUSBA_STOP elements
+const KARATUSBA_STOP: usize = 32;
+
 /// A dense polynomial.
 ///
 /// This type represent a dense polynomial in $\mathbb{Z}_{2^q}\[X\] / <X^N + 1>$, composed of $N$
@@ -269,6 +272,101 @@ impl<Cont> Polynomial<Cont> {
                 }
             }
         }
+    }
+
+    /// Fills the current polynomial, with the result of the product of two polynomials,
+    /// reduced modulo $(X^N + 1)$ with the Karatsuba algorithm
+    /// Complexity: N^{1.58}
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize, MonomialDegree};
+    /// let lhs = Polynomial::from_container(vec![1_u32; 128]);
+    /// let rhs = Polynomial::from_container(vec![2_u32; 128]);
+    /// let mut res_kara = Polynomial::allocate(0 as u32, PolynomialSize(128));
+    /// let mut res_mul = Polynomial::allocate(0 as u32, PolynomialSize(128));
+    /// res_kara.fill_with_karatsuba_mul(&lhs, &rhs);
+    /// res_mul.fill_with_wrapping_mul(&lhs, &rhs);
+    /// assert_eq!(res_kara,res_mul);
+    /// ```
+    pub fn fill_with_karatsuba_mul<Coef, LhsCont, RhsCont>(
+        &mut self,
+        p: &Polynomial<LhsCont>,
+        q: &Polynomial<RhsCont>,
+    ) where
+        Self: AsMutTensor<Element = Coef>,
+        Polynomial<LhsCont>: AsRefTensor<Element = Coef>,
+        Polynomial<RhsCont>: AsRefTensor<Element = Coef>,
+        Coef: UnsignedInteger,
+    {
+        // check same dimensions
+        ck_dim_eq!(self.polynomial_size() => p.polynomial_size(), q.polynomial_size());
+
+        // check dimensions are a power of 2
+        debug_assert_eq!(
+            f64::floor(f64::log2(p.polynomial_size().0 as f64)),
+            f64::log2(p.polynomial_size().0 as f64)
+        );
+
+        let poly_size = self.polynomial_size().0;
+
+        // allocate slices for the rec
+        let mut a0 = Tensor::allocate(Coef::ZERO, poly_size);
+        let mut a1 = Tensor::allocate(Coef::ZERO, poly_size);
+        let mut a2 = Tensor::allocate(Coef::ZERO, poly_size);
+        let mut input_a2_p = Tensor::allocate(Coef::ZERO, poly_size / 2);
+        let mut input_a2_q = Tensor::allocate(Coef::ZERO, poly_size / 2);
+
+        // prepare for splitting
+        let bottom = 0..(poly_size / 2);
+        let top = (poly_size / 2)..poly_size;
+
+        // induction
+        induction_karatsuba(
+            &mut a0.get_sub_mut(..),
+            &p.as_tensor().get_sub(bottom.clone()),
+            &q.as_tensor().get_sub(bottom.clone()),
+        );
+        induction_karatsuba(
+            &mut a1.get_sub_mut(..),
+            &p.as_tensor().get_sub(top.clone()),
+            &q.as_tensor().get_sub(top.clone()),
+        );
+        input_a2_p.fill_with_wrapping_add(
+            &p.as_tensor().get_sub(bottom.clone()),
+            &p.as_tensor().get_sub(top.clone()),
+        );
+        input_a2_q.fill_with_wrapping_add(
+            &q.as_tensor().get_sub(bottom.clone()),
+            &q.as_tensor().get_sub(top.clone()),
+        );
+        induction_karatsuba(
+            &mut a2.get_sub_mut(..),
+            &input_a2_p.get_sub(..),
+            &input_a2_q.get_sub(..),
+        );
+
+        // rebuild the result
+        self.as_mut_tensor().fill_with_wrapping_sub(&a0, &a1);
+        self.as_mut_tensor()
+            .get_sub_mut(bottom.clone())
+            .update_with_wrapping_sub(&a2.get_sub(top.clone()));
+        self.as_mut_tensor()
+            .get_sub_mut(bottom.clone())
+            .update_with_wrapping_add(&a0.get_sub(top.clone()));
+        self.as_mut_tensor()
+            .get_sub_mut(bottom.clone())
+            .update_with_wrapping_add(&a1.get_sub(top.clone()));
+        self.as_mut_tensor()
+            .get_sub_mut(top.clone())
+            .update_with_wrapping_add(&a2.get_sub(bottom.clone()));
+        self.as_mut_tensor()
+            .get_sub_mut(top.clone())
+            .update_with_wrapping_sub(&a0.get_sub(bottom.clone()));
+        self.as_mut_tensor()
+            .get_sub_mut(top.clone())
+            .update_with_wrapping_sub(&a1.get_sub(bottom.clone()));
     }
 
     /// Fills the current polynomial with the result of the product between an integer polynomial
@@ -684,5 +782,72 @@ impl<Cont> Polynomial<Cont> {
         for poly in coef_list.polynomial_iter() {
             self.update_with_wrapping_sub(&poly);
         }
+    }
+}
+
+/// function used to compute the induction for the karatsuba algorithm
+fn induction_karatsuba<Coef>(
+    res: &mut Tensor<&mut [Coef]>,
+    p: &Tensor<&[Coef]>,
+    q: &Tensor<&[Coef]>,
+) where
+    Coef: UnsignedInteger,
+{
+    if p.len() == KARATUSBA_STOP {
+        // schoolbook algorithm
+        for i in 0..p.len() {
+            for j in 0..q.len() {
+                *res.get_element_mut(i + j) = res
+                    .get_element(i + j)
+                    .wrapping_add(p.get_element(i).wrapping_mul(*q.get_element(j)))
+            }
+        }
+    } else {
+        let poly_size = res.len();
+
+        // allocate slices for the rec
+        let mut a0 = Tensor::allocate(Coef::ZERO, poly_size / 2);
+        let mut a1 = Tensor::allocate(Coef::ZERO, poly_size / 2);
+        let mut a2 = Tensor::allocate(Coef::ZERO, poly_size / 2);
+        let mut input_a2_p = Tensor::allocate(Coef::ZERO, poly_size / 4);
+        let mut input_a2_q = Tensor::allocate(Coef::ZERO, poly_size / 4);
+
+        // prepare for splitting
+        let bottom = 0..(poly_size / 4);
+        let top = (poly_size / 4)..(poly_size / 2);
+
+        // rec
+        induction_karatsuba(
+            &mut a0.get_sub_mut(..),
+            &p.get_sub(bottom.clone()),
+            &q.get_sub(bottom.clone()),
+        );
+        induction_karatsuba(
+            &mut a1.get_sub_mut(..),
+            &p.get_sub(top.clone()),
+            &q.get_sub(top.clone()),
+        );
+        input_a2_p
+            .as_mut_tensor()
+            .fill_with_wrapping_add(&p.get_sub(bottom.clone()), &p.get_sub(top.clone()));
+        input_a2_q
+            .as_mut_tensor()
+            .fill_with_wrapping_add(&q.get_sub(bottom.clone()), &q.get_sub(top.clone()));
+        induction_karatsuba(
+            &mut a2.get_sub_mut(..),
+            &input_a2_p.get_sub(..),
+            &input_a2_q.get_sub(..),
+        );
+
+        // rebuild the result
+        res.get_sub_mut((poly_size / 4)..(3 * poly_size / 4))
+            .as_mut_tensor()
+            .fill_with_wrapping_sub(&a2, &a0);
+        res.get_sub_mut((poly_size / 4)..(3 * poly_size / 4))
+            .update_with_wrapping_sub(&a1);
+        res.get_sub_mut(0..(poly_size / 2))
+            .update_with_wrapping_add(&a0);
+        res.get_sub_mut((poly_size / 2)..poly_size)
+            .update_with_wrapping_add(&a1);
     }
 }
