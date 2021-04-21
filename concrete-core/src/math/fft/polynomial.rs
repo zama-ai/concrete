@@ -387,8 +387,14 @@ fn avx2_uhwap<C1, C2, C3>(
             vec_b = _mm256_permute_pd(vec_b, 0x5);
             vec_b = _mm256_mul_pd(vec_b, neg);
             let vec_ab_bis = _mm256_mul_pd(vec_a, vec_b);
-            let resref: *mut __m256d = coeff_tmp_ref.as_mut_ptr() as *mut __m256d;
-            *resref = _mm256_add_pd(_mm256_hsub_pd(vec_ab, vec_ab_bis), *resref);
+            let resref: __m256d = _mm256_setr_pd(
+                coeff_tmp_ref[0].re,
+                coeff_tmp_ref[0].im,
+                coeff_tmp_ref[1].re,
+                coeff_tmp_ref[1].im,
+            );
+            let resref = _mm256_add_pd(_mm256_hsub_pd(vec_ab, vec_ab_bis), resref);
+            _mm256_storeu_pd(coeff_tmp_ref.as_mut_ptr() as *mut f64, resref);
         }
     }
 }
@@ -467,14 +473,16 @@ fn avx2_uhwatp<C1, C2, C3, C4, C5>(
             let vec_ab_bis = _mm256_mul_pd(vec_a, vec_b);
             let vec_cd_bis = _mm256_mul_pd(vec_c, vec_d);
 
-            let res_ref_avx: *mut __m256d = res_ref.as_mut_ptr() as *mut __m256d;
-            *res_ref_avx = _mm256_add_pd(
+            let resref: __m256d =
+                _mm256_setr_pd(res_ref[0].re, res_ref[0].im, res_ref[1].re, res_ref[1].im);
+            let resref = _mm256_add_pd(
                 _mm256_add_pd(
                     _mm256_hsub_pd(vec_ab, vec_ab_bis),
                     _mm256_hsub_pd(vec_cd, vec_cd_bis),
                 ),
-                *res_ref_avx,
+                resref,
             );
+            _mm256_storeu_pd(res_ref.as_mut_ptr() as *mut f64, resref);
         }
     }
 }
@@ -615,23 +623,26 @@ fn avx2_uthwatp<C1, C2, C3, C4, C5, C6, C7, C8>(
             let vec_c1d_bis: __m256d = _mm256_mul_pd(vec_c1, vec_d);
             let vec_c2d_bis: __m256d = _mm256_mul_pd(vec_c2, vec_d);
 
-            let res_1_ref = res_1_i.as_mut_ptr() as *mut __m256d;
-            *res_1_ref = _mm256_add_pd(
+            let resref: __m256d =
+                _mm256_setr_pd(res_1_i[0].re, res_1_i[0].im, res_1_i[1].re, res_1_i[1].im);
+            let resref = _mm256_add_pd(
                 _mm256_add_pd(
                     _mm256_hsub_pd(vec_a1b, vec_a1b_bis),
                     _mm256_hsub_pd(vec_c1d, vec_c1d_bis),
                 ),
-                *res_1_ref,
+                resref,
             );
-            let res_2_ref = res_2_i.as_mut_ptr() as *mut __m256d;
-
-            *res_2_ref = _mm256_add_pd(
+            _mm256_storeu_pd(res_1_i.as_mut_ptr() as *mut f64, resref);
+            let resref: __m256d =
+                _mm256_setr_pd(res_2_i[0].re, res_2_i[0].im, res_2_i[1].re, res_2_i[1].im);
+            let resref = _mm256_add_pd(
                 _mm256_add_pd(
                     _mm256_hsub_pd(vec_a2b, vec_a2b_bis),
                     _mm256_hsub_pd(vec_c2d, vec_c2d_bis),
                 ),
-                *res_2_ref,
+                resref,
             );
+            _mm256_storeu_pd(res_2_i.as_mut_ptr() as *mut f64, resref);
         }
     }
 }

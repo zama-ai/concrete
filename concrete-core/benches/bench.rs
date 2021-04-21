@@ -24,10 +24,12 @@ use concrete_core::math::tensor::{
 use concrete_core::numeric::{CastFrom, CastInto, Numeric};
 
 mod bootstrap;
+mod fft;
 mod keyswitch;
 mod random;
 
 criterion_group!(bootstrap_b, bootstrap::bench_32, bootstrap::bench_64);
+criterion_group!(fft_b, fft::bench);
 criterion_group!(keyswitch_b, keyswitch::bench_32, keyswitch::bench_64);
 criterion_group!(
     random_b,
@@ -38,4 +40,4 @@ criterion_group!(
     random::bench_128
 );
 
-criterion_main!(bootstrap_b, keyswitch_b, random_b);
+criterion_main!(fft_b, bootstrap_b, keyswitch_b, random_b);
