@@ -163,7 +163,7 @@ fn aes_encrypt_many(
     message_6: &__m128i,
     message_7: &__m128i,
     message_8: &__m128i,
-    keys: &[__m128i],
+    keys: &[__m128i; 11],
 ) -> [__m128i; 8] {
     unsafe {
         let message_1 = _mm_load_si128(message_1 as *const __m128i);
@@ -209,7 +209,7 @@ fn aes_encrypt_many(
 }
 
 #[allow(dead_code)]
-fn aes_encrypt(message: &__m128i, keys: &[__m128i]) -> __m128i {
+fn aes_encrypt(message: &__m128i, keys: &[__m128i; 11]) -> __m128i {
     unsafe {
         let message = _mm_load_si128(message as *const __m128i);
         let mut tmp = _mm_xor_si128(message, keys[0]);
