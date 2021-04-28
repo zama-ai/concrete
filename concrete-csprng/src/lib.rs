@@ -47,15 +47,31 @@ impl Default for RandomGenerator {
 impl RandomGenerator {
     /// Builds a new random generator, optionally using the input keys and state as initial values.
     pub fn new(key: Option<u128>, state: Option<u128>) -> RandomGenerator {
-        if is_x86_feature_detected!("aes")
-            && is_x86_feature_detected!("rdseed")
-            && is_x86_feature_detected!("sse2")
-            && !cfg!(feature = "slow")
-        {
-            RandomGenerator::Hardware(aesni::RandomGenerator::new(key, state))
-        } else {
-            RandomGenerator::Software(software::RandomGenerator::new(key, state))
+        if !cfg!(feature = "slow") {
+            return RandomGenerator::new_software(key, state);
         }
+        RandomGenerator::new_hardware(key, state)
+            .unwrap_or_else(|| RandomGenerator::new_software(key, state))
+    }
+
+    /// Builds a new software random generator, optionally using the input keys and state
+    /// as initial values.
+    pub fn new_software(key: Option<u128>, state: Option<u128>) -> RandomGenerator {
+        RandomGenerator::Software(software::RandomGenerator::new(key, state))
+    }
+
+    /// Tries to build a new hardware random generator, optionally using the input keys and state as
+    /// initial values.
+    pub fn new_hardware(key: Option<u128>, state: Option<u128>) -> Option<RandomGenerator> {
+        if !is_x86_feature_detected!("aes")
+            || !is_x86_feature_detected!("rdseed")
+            || !is_x86_feature_detected!("sse2")
+        {
+            return None;
+        }
+        return Some(RandomGenerator::Hardware(aesni::RandomGenerator::new(
+            key, state,
+        )));
     }
 
     /// Yields the next byte from the generator.
