@@ -47,7 +47,7 @@ impl Default for RandomGenerator {
 impl RandomGenerator {
     /// Builds a new random generator, optionally using the input keys and state as initial values.
     pub fn new(key: Option<u128>, state: Option<u128>) -> RandomGenerator {
-        if !cfg!(feature = "slow") {
+        if cfg!(feature = "slow") {
             return RandomGenerator::new_software(key, state);
         }
         RandomGenerator::new_hardware(key, state)
