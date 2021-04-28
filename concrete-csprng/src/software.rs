@@ -98,15 +98,6 @@ impl Default for RandomGenerator {
 
 impl RandomGenerator {
     pub fn new(key: Option<u128>, state: Option<u128>) -> RandomGenerator {
-        if is_x86_feature_detected!("aes")
-            && is_x86_feature_detected!("rdseed")
-            && is_x86_feature_detected!("sse2")
-        {
-            println!(
-                "WARNING: You are using the slow variant of concrete-csprng, but the current \
-                 platform has all the necessary instruction sets to use the accelerated version."
-            );
-        }
         let state = state.unwrap_or(rdseed());
         let key: [u8; 16] = key.unwrap_or(rdseed()).to_ne_bytes();
         let key = GenericArray::clone_from_slice(&key[..]);
