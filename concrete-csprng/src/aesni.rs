@@ -1,22 +1,19 @@
-//! A module implementing an `aes128-ctr` random number generator, using `aesni` instructions.
+//! A module implementing an `aes128-counter` random number generator, using `aesni` instructions.
 //!
 //! This module implements a cryptographically secure pseudorandom number generator
 //! (CS-PRNG), using a fast streamcipher: aes128 in counter-mode (CTR). The implementation
 //! is based on the [intel aesni white paper 323641-001 revision 3.0](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf).
-use crate::ctr::{AesBatchedGenerator, AesCtr, AesBatch};
-use crate::AesKey;
+use crate::counter::{AesBatchedGenerator, AesCtr, AesKey};
 use std::arch::x86_64::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_aeskeygenassist_si128, _mm_load_si128,
     _mm_shuffle_epi32, _mm_slli_si128, _mm_store_si128, _mm_xor_si128,
 };
 use std::mem::transmute;
 
-type RoundKeys = [__m128i; 11];
-
 #[derive(Clone)]
 pub struct Generator {
     // The set of round keys used for the aes encryption
-    round_keys: RoundKeys,
+    round_keys: [__m128i; 11],
 }
 
 impl AesBatchedGenerator for Generator {
@@ -25,12 +22,9 @@ impl AesBatchedGenerator for Generator {
             && is_x86_feature_detected!("rdseed")
             && is_x86_feature_detected!("sse2")
         {
-            let round_keys = generate_round_keys(
-                key.unwrap_or(generate_initialization_vector()),
-            );
-            Generator {
-                round_keys,
-            }
+            let round_keys =
+                generate_round_keys(key.unwrap_or_else(generate_initialization_vector));
+            Generator { round_keys }
         } else {
             panic!(
                 "One of the `aes`, `rdseed`, or `sse2` instructions set was not fount. It is \
@@ -39,7 +33,7 @@ impl AesBatchedGenerator for Generator {
         }
     }
 
-    fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) -> AesBatch {
+    fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) -> [u8; 128] {
         si128arr_to_u8arr(aes_encrypt_many(
             &u128_to_si128(aes_ctr),
             &u128_to_si128(aes_ctr + 1),
@@ -52,7 +46,6 @@ impl AesBatchedGenerator for Generator {
             &self.round_keys,
         ))
     }
-
 }
 
 fn generate_initialization_vector() -> AesKey {
@@ -60,10 +53,10 @@ fn generate_initialization_vector() -> AesKey {
     AesKey(si128_to_u128(rdseed_random_m128()))
 }
 
-fn generate_round_keys(key: AesKey) -> RoundKeys {
+fn generate_round_keys(key: AesKey) -> [__m128i; 11] {
     // The secret key is a random value from rdseed.
     let key = u128_to_si128(key.0);
-    let mut keys: RoundKeys = [u128_to_si128(0); 11];
+    let mut keys: [__m128i; 11] = [u128_to_si128(0); 11];
     aes_128_key_expansion(key, &mut keys);
     keys
 }
@@ -99,7 +92,7 @@ fn aes_encrypt_many(
     message_6: &__m128i,
     message_7: &__m128i,
     message_8: &__m128i,
-    keys: &RoundKeys,
+    keys: &[__m128i; 11],
 ) -> [__m128i; 8] {
     unsafe {
         let message_1 = _mm_load_si128(message_1 as *const __m128i);
@@ -161,7 +154,7 @@ fn aes_128_assist(temp1: __m128i, temp2: __m128i) -> __m128i {
     temp1
 }
 
-fn aes_128_key_expansion(key: __m128i, keys: &mut RoundKeys) {
+fn aes_128_key_expansion(key: __m128i, keys: &mut [__m128i; 11]) {
     let (mut temp1, mut temp2): (__m128i, __m128i);
     temp1 = key;
     unsafe {
@@ -251,17 +244,6 @@ mod test {
     }
 
     #[test]
-    fn test_encrypt_message() {
-        // Checks the output of the encryption.
-        let message = u128_to_si128(PLAINTEXT);
-        let key = u128_to_si128(CIPHER_KEY);
-        let mut keys: [__m128i; 11] = [u128_to_si128(0); 11];
-        aes_128_key_expansion(key, &mut keys);
-        let ciphertext = aes_encrypt(&message, &keys);
-        assert_eq!(CIPHERTEXT, si128_to_u128(ciphertext));
-    }
-
-    #[test]
     fn test_encrypt_many_messages() {
         // Checks that encrypting many plaintext at the same time gives the correct output.
         let message = u128_to_si128(PLAINTEXT);
@@ -285,7 +267,7 @@ mod test {
         let mut counts = [0usize; 256];
         let expected_prob: f64 = 1. / 256.;
         for counter in 0..n_samples {
-            generated = generator.generate_batch(AesCtr(counter as u128));
+            let generated = generator.generate_batch(AesCtr(counter as u128));
             for i in 0..128 {
                 counts[generated[i] as usize] += 1;
             }

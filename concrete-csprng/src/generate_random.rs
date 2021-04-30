@@ -6,7 +6,7 @@ use std::io::stdout;
 use concrete_csprng::RandomGenerator;
 
 pub fn main() {
-    let mut generator = RandomGenerator::new(None, None);
+    let mut generator = RandomGenerator::new(None);
     let mut stdout = stdout();
     let mut buffer = [0u8; 16];
     loop {
