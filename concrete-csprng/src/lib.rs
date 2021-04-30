@@ -40,7 +40,7 @@ impl RandomGenerator {
         if cfg!(feature = "slow") {
             return RandomGenerator::new_software(key, state);
         }
-        RandomGenerator::new_hardware(key.clone(), state.clone())
+        RandomGenerator::new_hardware(key, state.clone())
             .unwrap_or_else(|| RandomGenerator::new_software(key.clone(), state.clone()))
     }
 
