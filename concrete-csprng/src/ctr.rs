@@ -8,10 +8,10 @@ pub trait AesBatchedGenerator: Clone {
     /// Instantiate a new generator from a secret key.
     fn new(key: Option<AesKey>) -> Self;
     /// Generates the batch corresponding to the given counter.
-    fn generate_batch(&mut self, ctr: AesCtr);
-    /// Borrows the generated values.
-    fn get_generated(&self) -> &[u8; 128];
+    fn generate_batch(&mut self, ctr: AesCtr) -> AesBatch;
 }
+
+pub type AesBatch = [u8; 128];
 
 /// Represents the counter used by the AES block cipher to generate a set of values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -194,6 +194,7 @@ pub struct AesCtrGenerator<G: AesBatchedGenerator> {
     generator: G,
     state: State,
     bound: Option<State>,
+    batch: AesBatch
 }
 
 impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
@@ -210,11 +211,12 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         if let Some(ref actual_bound) = bound {
             debug_assert!(state <= *actual_bound);
         }
-        generator.generate_batch(state.aes_ctr);
+        let batch = generator.generate_batch(state.aes_ctr);
         AesCtrGenerator {
             generator,
             state,
             bound,
+            batch,
         }
     }
 
@@ -240,7 +242,7 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
     /// If the generator is bounded and the bound is reached, it will panic. Note that the bound
     /// checking can be removed using the `unchecked` feature.
     pub fn generate_next(&mut self) -> u8 {
-        let output = self.generator.get_generated()[self.state.get_batch_index()];
+        let output = self.batch[self.state.get_batch_index()];
         #[cfg(not(feature = "unchecked"))]
         {
             if self
@@ -253,7 +255,7 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         }
         match self.state.increment() {
             ShouldGenerateBatch::GenerateBatch => {
-                self.generator.generate_batch(self.state.get_aes_counter());
+                self.batch = self.generator.generate_batch(self.state.get_aes_counter());
             }
             ShouldGenerateBatch::Wait => {}
         }
@@ -286,16 +288,17 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
             let mut new_bound = new_state.clone();
             new_bound.shift(child_bytes.0);
             let mut new_generator = generator.clone();
-            new_generator.generate_batch(new_state.aes_ctr);
+            let batch = new_generator.generate_batch(new_state.aes_ctr);
             AesCtrGenerator {
                 generator: new_generator,
                 state: new_state,
                 bound: Some(new_bound),
+                batch
             }
         });
         let generate = self.state.shift(child_bytes.0 * n_child.0);
         if let ShouldGenerateBatch::GenerateBatch = generate {
-            self.generator.generate_batch(self.state.get_aes_counter())
+            self.batch = self.generator.generate_batch(self.state.get_aes_counter());
         }
         Some(output)
     }
