@@ -21,7 +21,7 @@ studied cryptographic hardness assumptions believed to be secure even against qu
 ## Concrete crates
 
 Concrete is implemented using the [Rust Programming language](https://www.rust-lang.org/), which
-allows very, yet very secure implementations.
+allows very fast, yet very secure implementations.
 
 The ecosystem is composed of several crates (packages in the Rust language):
 
