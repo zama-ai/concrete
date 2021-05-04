@@ -3,7 +3,7 @@ use crate::crypto::glwe::GlweList;
 use crate::crypto::secret::GlweSecretKey;
 use crate::crypto::UnsignedTorus;
 use crate::math::dispersion::LogStandardDev;
-use crate::math::random;
+use crate::math::random::RandomGenerator;
 use crate::test_tools;
 use crate::test_tools::assert_delta_std_dev;
 
@@ -13,21 +13,27 @@ fn test_glwe<T: UnsignedTorus>() {
     let dimension = test_tools::random_glwe_dimension(200);
     let polynomial_size = test_tools::random_polynomial_size(200);
     let noise_parameter = LogStandardDev::from_log_standard_dev(-20.);
+    let mut generator = RandomGenerator::new(None);
 
     // generates a secret key
-    let sk = GlweSecretKey::generate(dimension, polynomial_size);
+    let sk = GlweSecretKey::generate(dimension, polynomial_size, &mut generator);
 
     // generates random plaintexts
     let plaintexts =
-        PlaintextList::from_tensor(random::random_uniform_tensor(nb_ct.0 * polynomial_size.0));
+        PlaintextList::from_tensor(generator.random_uniform_tensor(nb_ct.0 * polynomial_size.0));
 
     // encrypts
     let mut ciphertext = GlweList::allocate(T::ZERO, polynomial_size, dimension, nb_ct);
-    sk.encrypt_glwe_list(&mut ciphertext, &plaintexts, noise_parameter.clone());
+    sk.encrypt_glwe_list(
+        &mut ciphertext,
+        &plaintexts,
+        noise_parameter.clone(),
+        &mut generator,
+    );
 
     // decrypts
     let mut decryptions =
-        PlaintextList::from_tensor(random::random_uniform_tensor(nb_ct.0 * polynomial_size.0));
+        PlaintextList::from_tensor(generator.random_uniform_tensor(nb_ct.0 * polynomial_size.0));
     sk.decrypt_glwe_list(&mut decryptions, &ciphertext);
 
     // test

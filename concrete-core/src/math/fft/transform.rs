@@ -81,16 +81,17 @@ impl Fft {
     /// ```
     /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
-    /// use concrete_core::math::random::{fill_with_random_uniform};
+    /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::crypto::UnsignedTorus;
+    /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly = FourierPolynomial::allocate(
     ///     Complex64::new(0.,0.),
     ///     PolynomialSize(256)
     /// );
     /// let mut poly = Polynomial::allocate(0u32, PolynomialSize(256));
-    /// fill_with_random_uniform(&mut poly);
+    /// generator.fill_tensor_with_random_uniform(&mut poly);
     /// fft.forward_as_torus(&mut fourier_poly, &poly);
     /// let mut out = Polynomial::allocate(0u32, PolynomialSize(256));
     /// fft.add_backward_as_torus(&mut out, &mut fourier_poly);
@@ -120,10 +121,11 @@ impl Fft {
     /// ```
     /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
-    /// use concrete_core::math::random::{fill_with_random_uniform};
+    /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::crypto::UnsignedTorus;
     /// use concrete_core::numeric::UnsignedInteger;
+    /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly_1 = FourierPolynomial::allocate(
     ///     Complex64::new(0.,0.),
@@ -135,8 +137,8 @@ impl Fft {
     /// );
     /// let mut poly_1 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// let mut poly_2 = Polynomial::allocate(0u32, PolynomialSize(256));
-    /// fill_with_random_uniform(&mut poly_1);
-    /// fill_with_random_uniform(&mut poly_2);
+    /// generator.fill_tensor_with_random_uniform(&mut poly_1);
+    /// generator.fill_tensor_with_random_uniform(&mut poly_2);
     /// fft.forward_two_as_torus(&mut fourier_poly_1, &mut fourier_poly_2, &poly_1, &poly_2);
     /// let mut out_1 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// let mut out_2 = Polynomial::allocate(0u32, PolynomialSize(256));
@@ -197,16 +199,17 @@ impl Fft {
     /// ```
     /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
-    /// use concrete_core::math::random::{fill_with_random_uniform};
+    /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::numeric::UnsignedInteger;
+    /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly = FourierPolynomial::allocate(
     ///     Complex64::new(0.,0.),
     ///     PolynomialSize(256)
     /// );
     /// let mut poly = Polynomial::allocate(0u32, PolynomialSize(256));
-    /// fill_with_random_uniform(&mut poly);
+    /// generator.fill_tensor_with_random_uniform(&mut poly);
     /// fft.forward_as_integer(&mut fourier_poly, &poly);
     /// let mut out = Polynomial::allocate(0u32, PolynomialSize(256));
     /// fft.add_backward_as_integer(&mut out, &mut fourier_poly);
@@ -236,9 +239,10 @@ impl Fft {
     /// ```
     /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
-    /// use concrete_core::math::random::{fill_with_random_uniform};
+    /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::numeric::UnsignedInteger;
+    /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly_1 = FourierPolynomial::allocate(
     ///     Complex64::new(0.,0.),
@@ -250,8 +254,8 @@ impl Fft {
     /// );
     /// let mut poly_1 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// let mut poly_2 = Polynomial::allocate(0u32, PolynomialSize(256));
-    /// fill_with_random_uniform(&mut poly_1);
-    /// fill_with_random_uniform(&mut poly_2);
+    /// generator.fill_tensor_with_random_uniform(&mut poly_1);
+    /// generator.fill_tensor_with_random_uniform(&mut poly_2);
     /// fft.forward_two_as_integer(&mut fourier_poly_1, &mut fourier_poly_2, &poly_1, &poly_2);
     /// let mut out_1 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// let mut out_2 = Polynomial::allocate(0u32, PolynomialSize(256));

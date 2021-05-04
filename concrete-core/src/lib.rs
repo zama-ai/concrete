@@ -29,7 +29,10 @@
 //! use concrete_core::crypto::LweDimension;
 //! use concrete_core::crypto::lwe::LweCiphertext;
 //! use concrete_core::math::dispersion::LogStandardDev;
+//! use concrete_core::math::random::RandomGenerator;
 //!
+//! // We initialize a prng that will be used to generate every random samples.
+//! let mut generator = RandomGenerator::new(None);
 //! // We initialize an encoder that will allow us to turn cleartext values into plaintexts.
 //! let encoder = RealEncoder{offset: 0., delta: 100.};
 //! // Our secret value will be 10.,
@@ -40,14 +43,15 @@
 //!
 //! // We generate a new secret key which is used to encrypt the message
 //! let secret_key_size = LweDimension(710);
-//! let secret_key = LweSecretKey::generate(secret_key_size);
+//! let secret_key = LweSecretKey::generate(secret_key_size, &mut generator);
 //!
 //! // We allocate a ciphertext and encrypt the plaintext with a secure parameter
 //! let mut ciphertext = LweCiphertext::allocate(0u32, secret_key_size.to_lwe_size());
 //! secret_key.encrypt_lwe(
 //!     &mut ciphertext,
 //!     &plaintext,
-//!     LogStandardDev::from_log_standard_dev(-17.)
+//!     LogStandardDev::from_log_standard_dev(-17.),
+//!     &mut generator
 //! );
 //!
 //! // We perform the homomorphic operation:
@@ -117,8 +121,7 @@ pub mod test_tools {
     use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     use crate::math::dispersion::DispersionParameter;
     use crate::math::polynomial::PolynomialSize;
-    use crate::math::random;
-    use crate::math::random::random_uniform;
+    use crate::math::random::RandomGenerator;
     use crate::math::tensor::{AsRefSlice, AsRefTensor};
     use crate::numeric::UnsignedInteger;
 
@@ -174,6 +177,7 @@ pub mod test_tools {
         let std_dev = dist.get_standard_dev();
         let confidence = 0.95;
         let n_slots = first.as_tensor().len();
+        let mut generator = RandomGenerator::new(None);
 
         // allocate 2 slices: one for the error samples obtained, the second for fresh samples according to the std_dev computed
         let mut sdk_samples = Tensor::allocate(0. as f64, n_slots);
@@ -184,7 +188,7 @@ pub mod test_tools {
         });
 
         // fill the theoretical sample vector according to std_dev
-        let theoretical_samples = random::random_gaussian_tensor(n_slots, 0., std_dev);
+        let theoretical_samples = generator.random_gaussian_tensor(n_slots, 0., std_dev);
 
         // compute the kolmogorov smirnov test
         let result = kolmogorov_smirnov::test_f64(
@@ -286,11 +290,13 @@ pub mod test_tools {
     }
 
     pub fn random_utorus_between<T: UnsignedTorus>(range: std::ops::Range<T>) -> T {
-        let val: T = random_uniform();
+        let mut generator = RandomGenerator::new(None);
+        let val: T = generator.random_uniform();
         val % (range.end - range.start) + range.start
     }
 
     pub fn any_utorus<T: UnsignedTorus>() -> T {
-        random_uniform()
+        let mut generator = RandomGenerator::new(None);
+        generator.random_uniform()
     }
 }

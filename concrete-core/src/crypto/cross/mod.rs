@@ -364,7 +364,9 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 /// use concrete_core::crypto::lwe::LweCiphertext;
 /// use concrete_core::crypto::glwe::GlweCiphertext;
 /// use concrete_core::crypto::cross::bootstrap;
-/// use concrete_core::math::fft::Complex64;
+/// use concrete_core::math::random::RandomGenerator;
+/// let mut generator = RandomGenerator::new(None); use concrete_core::math::fft::Complex64;
+///
 /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(512));
 /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
 /// let mut bsk = BootstrapKey::allocate(
@@ -375,9 +377,14 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 ///     dec_bl,
 ///     lwe_dim
 /// );
-/// let lwe_sk = LweSecretKey::generate(lwe_dim);
-/// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size);
-/// bsk.fill_with_new_key(&lwe_sk, &glwe_sk, LogStandardDev::from_log_standard_dev(-15.));
+/// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
+/// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+/// bsk.fill_with_new_key(
+///     &lwe_sk,
+///     &glwe_sk,
+///     LogStandardDev::from_log_standard_dev(-15.),
+///     &mut generator
+/// );
 /// let mut frr_bsk = BootstrapKey::allocate_complex(
 ///     Complex64::new(0.,0.),
 ///     glwe_dim.to_glwe_size(),
