@@ -16,6 +16,7 @@
 //! + [`random_uniform_n_msb`]
 //! + [`random_uniform_n_lsb`]
 //! + [`random_gaussian`]
+use crate::math::tensor::{AsMutTensor, Tensor};
 use crate::numeric::{FloatingPoint, Numeric};
 
 #[cfg(test)]
@@ -39,21 +40,35 @@ pub use uniform_with_zeros::*;
 mod uniform_boolean;
 pub use uniform_boolean::*;
 
-/// A trait allowing a type to be randomly generated with a distribution represented by the generic
-/// `D` type.
-///
-/// To implement the trait, the method `sample` must be implemented. It takes a value of type
-/// `D` as input. For instance, when implementing the trait with the [`Gaussian`] distribution type,
-/// the parameters of the distribution can be passed to the `sample` method by using the fields
-/// `std` and `mean` of `Gaussian`.
-pub trait RandomGenerable<D: Distribution> {
-    /// A method which allows to sample a value of type `Self` using the distribution
-    /// `Distribution`.
-    fn sample(distribution: D) -> Self;
+mod generator;
+pub use generator::*;
+
+pub trait RandomGenerable<D: Distribution>
+where
+    Self: Sized,
+{
+    fn generate_one(generator: &mut RandomGenerator, distribution: D) -> Self;
+    fn generate_tensor(
+        generator: &mut RandomGenerator,
+        distribution: D,
+        size: usize,
+    ) -> Tensor<Vec<Self>> {
+        (0..size)
+            .map(|_| Self::generate_one(generator, distribution))
+            .collect()
+    }
+    fn fill_tensor<Tens>(generator: &mut RandomGenerator, distribution: D, tensor: &mut Tens)
+    where
+        Tens: AsMutTensor<Element = Self>,
+    {
+        tensor.as_mut_tensor().iter_mut().for_each(|s| {
+            *s = Self::generate_one(generator, distribution);
+        });
+    }
 }
 
 /// A marker trait for types representing distributions.
-pub trait Distribution: seal::Sealed {}
+pub trait Distribution: seal::Sealed + Copy {}
 mod seal {
     pub trait Sealed {}
     impl Sealed for super::Uniform {}

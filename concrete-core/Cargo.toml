@@ -42,7 +42,6 @@ bench = false
 gpu = ["cmake"]
 cloud-computing = []
 slow-csprng = ["concrete-csprng/slow"]
-unchecked-csprng = ["concrete-csprng/unchecked"]
 
 [[bench]]
 name = "bench"

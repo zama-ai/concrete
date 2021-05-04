@@ -4,7 +4,7 @@ use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweList};
 use crate::crypto::{LweDimension, UnsignedTorus};
 use crate::math::dispersion::DispersionParameter;
-use crate::math::random::{self, Gaussian, RandomGenerable};
+use crate::math::random::{Gaussian, RandomGenerable, RandomGenerator};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::numeric::Numeric;
 use crate::tensor_traits;
@@ -24,12 +24,14 @@ impl LweSecretKey<Vec<bool>> {
     ///
     /// ```rust
     /// use concrete_core::crypto::{*, secret::*};
-    /// let secret_key = LweSecretKey::generate(LweDimension(256));
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
-    pub fn generate(size: LweDimension) -> Self {
+    pub fn generate(size: LweDimension, generator: &mut RandomGenerator) -> Self {
         LweSecretKey {
-            tensor: random::random_uniform_boolean_tensor(size.0),
+            tensor: generator.random_uniform_boolean_tensor(size.0),
         }
     }
 }
@@ -83,15 +85,16 @@ impl<Cont> LweSecretKey<Cont> {
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::dispersion::LogStandardDev;
-    ///
-    /// let secret_key = LweSecretKey::generate(LweDimension(256));
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate(LweDimension(256), &mut generator);
     /// let encoder = RealEncoder{offset: 0. as f32, delta: 10.};
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
     ///
     /// let clear = Cleartext(2. as f32);
     /// let plain: Plaintext<u32> = encoder.encode(clear);
     /// let mut encrypted = LweCiphertext::allocate(0u32, LweSize(257));
-    /// secret_key.encrypt_lwe(&mut encrypted, &plain, noise);
+    /// secret_key.encrypt_lwe(&mut encrypted, &plain, noise, &mut generator);
     ///
     /// let mut decrypted = Plaintext(0u32);
     /// secret_key.decrypt_lwe(&mut decrypted, &encrypted);
@@ -104,6 +107,7 @@ impl<Cont> LweSecretKey<Cont> {
         output: &mut LweCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
+        generator: &mut RandomGenerator,
     ) where
         Self: AsRefTensor<Element = bool>,
         LweCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
@@ -115,13 +119,16 @@ impl<Cont> LweSecretKey<Cont> {
         let length = output_masks.as_tensor().len();
         output_masks
             .as_mut_tensor()
-            .fill_with_one(&random::random_uniform_tensor(length), |m| *m);
+            .fill_with_one(&generator.random_uniform_tensor(length), |m| *m);
 
         // generate an error from the normal distribution described by std_dev
-        output_body.0 = <(Scalar, Scalar)>::sample(Gaussian {
-            mean: 0.,
-            std: noise_parameters.get_standard_dev(),
-        })
+        output_body.0 = <(Scalar, Scalar)>::generate_one(
+            generator,
+            Gaussian {
+                mean: 0.,
+                std: noise_parameters.get_standard_dev(),
+            },
+        )
         .0;
 
         // compute the multisum between the secret key and the mask
@@ -141,9 +148,11 @@ impl<Cont> LweSecretKey<Cont> {
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::dispersion::LogStandardDev;
-    ///
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = LweSecretKey::generate(
     ///     LweDimension(256),
+    ///     &mut generator
     /// );
     /// let encoder = RealEncoder{offset: 0. as f32, delta: 10.};
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -156,7 +165,7 @@ impl<Cont> LweSecretKey<Cont> {
     ///     LweSize(257),
     ///     CiphertextCount(100)
     /// );
-    /// secret_key.encrypt_lwe_list(&mut encrypted_values, &plain_values, noise);
+    /// secret_key.encrypt_lwe_list(&mut encrypted_values, &plain_values, noise, &mut generator);
     ///
     /// let mut decrypted_values = PlaintextList::allocate(0u32, PlaintextCount(100));
     /// secret_key.decrypt_lwe_list(&mut decrypted_values, &encrypted_values);
@@ -171,6 +180,7 @@ impl<Cont> LweSecretKey<Cont> {
         output: &mut LweList<OutputCont>,
         encoded: &PlaintextList<InputCont>,
         noise_parameters: impl DispersionParameter,
+        generator: &mut RandomGenerator,
     ) where
         Self: AsRefTensor<Element = bool>,
         LweList<OutputCont>: AsMutTensor<Element = Scalar>,
@@ -182,7 +192,7 @@ impl<Cont> LweSecretKey<Cont> {
             "Lwe cipher list size and encoded list size are not compatible"
         );
         for (mut cipher, message) in output.ciphertext_iter_mut().zip(encoded.plaintext_iter()) {
-            self.encrypt_lwe(&mut cipher, message, noise_parameters.clone());
+            self.encrypt_lwe(&mut cipher, message, noise_parameters.clone(), generator);
         }
     }
 
@@ -194,9 +204,11 @@ impl<Cont> LweSecretKey<Cont> {
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::dispersion::LogStandardDev;
-    ///
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = LweSecretKey::generate(
     ///     LweDimension(256),
+    ///     &mut generator
     /// );
     /// let encoder = RealEncoder{offset: 0. as f32, delta: 10.};
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -204,7 +216,7 @@ impl<Cont> LweSecretKey<Cont> {
     /// let clear = Cleartext(2. as f32);
     /// let plain: Plaintext<u32> = encoder.encode(clear);
     /// let mut encrypted = LweCiphertext::allocate(0u32, LweSize(257));
-    /// secret_key.trivial_encrypt_lwe(&mut encrypted, &plain, noise);
+    /// secret_key.trivial_encrypt_lwe(&mut encrypted, &plain, noise, &mut generator);
     ///
     /// let mut decrypted = Plaintext(0u32);
     /// secret_key.decrypt_lwe(&mut decrypted, &encrypted);
@@ -217,6 +229,7 @@ impl<Cont> LweSecretKey<Cont> {
         output: &mut LweCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
+        generator: &mut RandomGenerator,
     ) where
         Self: AsRefTensor<Element = bool>,
         LweCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
@@ -230,10 +243,13 @@ impl<Cont> LweSecretKey<Cont> {
             .fill_with_element(<Scalar as Numeric>::ZERO);
 
         // generate an error from the normal distribution described by std_dev
-        output_body.0 = <(Scalar, Scalar)>::sample(Gaussian {
-            mean: 0.,
-            std: noise_parameters.get_standard_dev(),
-        })
+        output_body.0 = <(Scalar, Scalar)>::generate_one(
+            generator,
+            Gaussian {
+                mean: 0.,
+                std: noise_parameters.get_standard_dev(),
+            },
+        )
         .0;
 
         // compute the multisum between the secret key and the mask
@@ -253,9 +269,11 @@ impl<Cont> LweSecretKey<Cont> {
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::dispersion::LogStandardDev;
-    ///
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = LweSecretKey::generate(
     ///     LweDimension(256),
+    ///     &mut generator
     /// );
     /// let encoder = RealEncoder{offset: 0. as f32, delta: 10.};
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -268,7 +286,12 @@ impl<Cont> LweSecretKey<Cont> {
     ///     LweSize(257),
     ///     CiphertextCount(100)
     /// );
-    /// secret_key.trivial_encrypt_lwe_list(&mut encrypted_values, &plain_values, noise);
+    /// secret_key.trivial_encrypt_lwe_list(
+    ///     &mut encrypted_values,
+    ///     &plain_values,
+    ///     noise,
+    ///     &mut generator
+    /// );
     ///
     /// for ciphertext in encrypted_values.ciphertext_iter(){
     ///     for mask in ciphertext.get_mask().mask_element_iter(){
@@ -289,6 +312,7 @@ impl<Cont> LweSecretKey<Cont> {
         output: &mut LweList<OutputCont>,
         encoded: &PlaintextList<InputCont>,
         noise_parameters: impl DispersionParameter,
+        generator: &mut RandomGenerator,
     ) where
         Self: AsRefTensor<Element = bool>,
         LweList<OutputCont>: AsMutTensor<Element = Scalar>,
@@ -300,7 +324,7 @@ impl<Cont> LweSecretKey<Cont> {
             "Lwe cipher list size and encoded list size are not compatible"
         );
         for (mut cipher, message) in output.ciphertext_iter_mut().zip(encoded.plaintext_iter()) {
-            self.trivial_encrypt_lwe(&mut cipher, message, noise_parameters.clone());
+            self.trivial_encrypt_lwe(&mut cipher, message, noise_parameters.clone(), generator);
         }
     }
 

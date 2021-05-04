@@ -1,18 +1,21 @@
 use crate::crypto::UnsignedTorus;
 use crate::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
-use crate::math::random;
+use crate::math::random::RandomGenerator;
 use rand::Rng;
 
 fn test_multiply_divide_unit_monomial<T: UnsignedTorus>() {
     //! tests if multiply_by_monomial and divide_by_monomial cancel each other
     let mut rng = rand::thread_rng();
+    let mut generator = RandomGenerator::new(None);
 
     // settings
     let polynomial_size = (rng.gen::<usize>() % 2048) + 1;
 
     // generates a random Torus polynomial
     let mut poly = Polynomial::from_container(
-        random::random_uniform_tensor::<T>(polynomial_size).into_container(),
+        generator
+            .random_uniform_tensor::<T>(polynomial_size)
+            .into_container(),
     );
 
     // copy this polynomial
@@ -59,13 +62,18 @@ fn test_multiply_karatsuba<T: UnsignedTorus>() {
         // random settings settings
         let polynomial_log = (rng.gen::<usize>() % 7) + 6;
         let polynomial_size = PolynomialSize(1 << polynomial_log);
+        let mut generator = RandomGenerator::new(None);
 
         // generates two random Torus polynomials
         let poly_1 = Polynomial::from_container(
-            random::random_uniform_tensor::<T>(polynomial_size.0).into_container(),
+            generator
+                .random_uniform_tensor::<T>(polynomial_size.0)
+                .into_container(),
         );
         let poly_2 = Polynomial::from_container(
-            random::random_uniform_tensor::<T>(polynomial_size.0).into_container(),
+            generator
+                .random_uniform_tensor::<T>(polynomial_size.0)
+                .into_container(),
         );
 
         // copy this polynomial

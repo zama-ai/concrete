@@ -1,6 +1,6 @@
 use crate::crypto::UnsignedTorus;
 use crate::math::dispersion::LogStandardDev;
-use crate::math::random::fill_with_random_gaussian;
+use crate::math::random::RandomGenerator;
 use crate::math::tensor::Tensor;
 use crate::test_tools::assert_noise_distribution;
 
@@ -11,10 +11,11 @@ fn test_normal_random<T: UnsignedTorus>() {
     let std_dev: f64 = f64::powi(2., -20);
     let mean: f64 = 0.;
     let k = 1_000_000;
+    let mut generator = RandomGenerator::new(None);
 
     // generates normal random
     let mut samples_int = Tensor::allocate(T::ZERO, k);
-    fill_with_random_gaussian(&mut samples_int, mean, std_dev);
+    generator.fill_tensor_with_random_gaussian(&mut samples_int, mean, std_dev);
 
     // converts into float
     let mut samples_float = Tensor::allocate(0f64, k);
@@ -62,11 +63,12 @@ fn test_distribution<T: UnsignedTorus>() {
     let std_dev: f64 = f64::powi(2., -5);
     let mean: f64 = 0.;
     let k = 1_000_000;
+    let mut generator = RandomGenerator::new(None);
 
     // generates normal random
     let first = Tensor::allocate(T::ZERO, k);
     let mut second = Tensor::allocate(T::ZERO, k);
-    fill_with_random_gaussian(&mut second, mean, std_dev);
+    generator.fill_tensor_with_random_gaussian(&mut second, mean, std_dev);
 
     assert_noise_distribution(&first, &second, LogStandardDev(-5.));
 }
