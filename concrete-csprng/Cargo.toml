@@ -21,6 +21,10 @@ criterion = "0.3"
 [features]
 slow = []
 
+[[bench]]
+name = "benchmark"
+harness = false
+
 [[bin]]
 name = "generate_random"
 path = "src/generate_random.rs"
