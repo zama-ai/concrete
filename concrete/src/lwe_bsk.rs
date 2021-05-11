@@ -19,10 +19,6 @@ use crate::Torus;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LWEBSK {
-    // #[serde(
-    //     deserialize_with = "deserialize_vec_ctorus",
-    //     serialize_with = "serialize_vec_ctorus"
-    // )]
     pub ciphertexts: BootstrapKey<Vec<Complex64>>,
     pub variance: f64,
     pub dimension: usize,

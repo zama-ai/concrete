@@ -1,10 +1,11 @@
 use crate::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
-use crate::math::fft::{Complex64, Fft, FourierPolynomial};
+use crate::math::fft::{Complex64, Fft, FourierPolynomial, SerializableComplex64};
 use crate::math::polynomial::{Polynomial, PolynomialSize};
-use crate::math::random::fill_with_random_gaussian;
+use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutTensor, AsRefTensor};
 use crate::numeric::*;
 use fftw::array::AlignedVec;
+use serde_test::{Token, assert_tokens};
 
 #[test]
 fn test_single_forward_backward() {
@@ -34,11 +35,12 @@ fn test_single_forward_backward() {
             *output = (input * corrector).re;
         }
     }
+    let mut generator = RandomGenerator::new(None);
     for _ in 0..100 {
         for size in &[256, 512, 1024, 2048] {
             let mut fft = Fft::new(PolynomialSize(*size));
             let mut poly = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
-            fill_with_random_gaussian(&mut poly, 0., 1.);
+            generator.fill_tensor_with_random_gaussian(&mut poly, 0., 1.);
             let mut fourier_poly =
                 FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(*size));
             fft.forward(&mut fourier_poly, &poly, fw_conv);
@@ -86,13 +88,14 @@ fn test_two_forward_backward() {
             *output2 = interm.im;
         }
     }
+    let mut generator = RandomGenerator::new(None);
     for _ in 0..100 {
         for size in &[256, 512, 1024, 2048] {
             let mut fft = Fft::new(PolynomialSize(*size));
             let mut poly1 = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
-            fill_with_random_gaussian(&mut poly1, 0., 1.);
+            generator.fill_tensor_with_random_gaussian(&mut poly1, 0., 1.);
             let mut poly2 = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
-            fill_with_random_gaussian(&mut poly2, 0., 1.);
+            generator.fill_tensor_with_random_gaussian(&mut poly2, 0., 1.);
             let mut fourier_poly_1 =
                 FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(*size));
             let mut fourier_poly_2 =
@@ -125,4 +128,16 @@ fn test_two_forward_backward() {
                 .for_each(|(exp, out)| assert!((exp - out).abs() < 1e-12f64));
         }
     }
+}
+
+#[test]
+fn test_ser_de_complex64() {
+    let x = SerializableComplex64(Complex64{re:1.234, im:5.678});
+
+    assert_tokens(&x, &[
+        Token::Tuple { len: 2 },
+        Token::F64(1.234),
+        Token::F64(5.678),
+        Token::TupleEnd,
+    ]);
 }

@@ -1,10 +1,9 @@
-//! A module implementing an `aes128-ctr` random number generator, using `aesni` instructions.
+//! A module implementing an `aes128-counter` random number generator, using `aesni` instructions.
 //!
 //! This module implements a cryptographically secure pseudorandom number generator
 //! (CS-PRNG), using a fast streamcipher: aes128 in counter-mode (CTR). The implementation
 //! is based on the [intel aesni white paper 323641-001 revision 3.0](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf).
-use crate::ctr::{AesBatchedGenerator, AesCtr};
-use crate::AesKey;
+use crate::counter::{AesBatchedGenerator, AesCtr, AesKey};
 use std::arch::x86_64::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_aeskeygenassist_si128, _mm_load_si128,
     _mm_shuffle_epi32, _mm_slli_si128, _mm_store_si128, _mm_xor_si128,
@@ -15,8 +14,6 @@ use std::mem::transmute;
 pub struct Generator {
     // The set of round keys used for the aes encryption
     round_keys: [__m128i; 11],
-    // A buffer containing the 8 last generated values
-    generated: [u8; 128],
 }
 
 impl AesBatchedGenerator for Generator {
@@ -25,14 +22,9 @@ impl AesBatchedGenerator for Generator {
             && is_x86_feature_detected!("rdseed")
             && is_x86_feature_detected!("sse2")
         {
-            let round_keys = generate_round_keys(
-                key.map(|AesKey(k)| k)
-                    .unwrap_or(generate_initialization_vector()),
-            );
-            Generator {
-                round_keys,
-                generated: [0u8; 128],
-            }
+            let round_keys =
+                generate_round_keys(key.unwrap_or_else(generate_initialization_vector));
+            Generator { round_keys }
         } else {
             panic!(
                 "One of the `aes`, `rdseed`, or `sse2` instructions set was not fount. It is \
@@ -41,8 +33,8 @@ impl AesBatchedGenerator for Generator {
         }
     }
 
-    fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) {
-        self.generated = si128arr_to_u8arr(aes_encrypt_many(
+    fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) -> [u8; 128] {
+        si128arr_to_u8arr(aes_encrypt_many(
             &u128_to_si128(aes_ctr),
             &u128_to_si128(aes_ctr + 1),
             &u128_to_si128(aes_ctr + 2),
@@ -52,22 +44,18 @@ impl AesBatchedGenerator for Generator {
             &u128_to_si128(aes_ctr + 6),
             &u128_to_si128(aes_ctr + 7),
             &self.round_keys,
-        ));
-    }
-
-    fn get_generated(&self) -> &[u8; 128] {
-        &self.generated
+        ))
     }
 }
 
-fn generate_initialization_vector() -> u128 {
+fn generate_initialization_vector() -> AesKey {
     // The initialization vector is a random value from rdseed
-    si128_to_u128(rdseed_random_m128())
+    AesKey(si128_to_u128(rdseed_random_m128()))
 }
 
-fn generate_round_keys(key: u128) -> [__m128i; 11] {
+fn generate_round_keys(key: AesKey) -> [__m128i; 11] {
     // The secret key is a random value from rdseed.
-    let key = u128_to_si128(key);
+    let key = u128_to_si128(key.0);
     let mut keys: [__m128i; 11] = [u128_to_si128(0); 11];
     aes_128_key_expansion(key, &mut keys);
     keys
@@ -104,7 +92,7 @@ fn aes_encrypt_many(
     message_6: &__m128i,
     message_7: &__m128i,
     message_8: &__m128i,
-    keys: &[__m128i],
+    keys: &[__m128i; 11],
 ) -> [__m128i; 8] {
     unsafe {
         let message_1 = _mm_load_si128(message_1 as *const __m128i);
@@ -149,18 +137,6 @@ fn aes_encrypt_many(
     }
 }
 
-#[allow(dead_code)]
-fn aes_encrypt(message: &__m128i, keys: &[__m128i]) -> __m128i {
-    unsafe {
-        let message = _mm_load_si128(message as *const __m128i);
-        let mut tmp = _mm_xor_si128(message, keys[0]);
-        for key in keys.iter().take(10).skip(1) {
-            tmp = _mm_aesenc_si128(tmp, *key);
-        }
-        _mm_aesenclast_si128(tmp, keys[10])
-    }
-}
-
 fn aes_128_assist(temp1: __m128i, temp2: __m128i) -> __m128i {
     let mut temp3: __m128i;
     let mut temp2 = temp2;
@@ -178,7 +154,7 @@ fn aes_128_assist(temp1: __m128i, temp2: __m128i) -> __m128i {
     temp1
 }
 
-fn aes_128_key_expansion(key: __m128i, keys: &mut [__m128i]) {
+fn aes_128_key_expansion(key: __m128i, keys: &mut [__m128i; 11]) {
     let (mut temp1, mut temp2): (__m128i, __m128i);
     temp1 = key;
     unsafe {
@@ -268,17 +244,6 @@ mod test {
     }
 
     #[test]
-    fn test_encrypt_message() {
-        // Checks the output of the encryption.
-        let message = u128_to_si128(PLAINTEXT);
-        let key = u128_to_si128(CIPHER_KEY);
-        let mut keys: [__m128i; 11] = [u128_to_si128(0); 11];
-        aes_128_key_expansion(key, &mut keys);
-        let ciphertext = aes_encrypt(&message, &keys);
-        assert_eq!(CIPHERTEXT, si128_to_u128(ciphertext));
-    }
-
-    #[test]
     fn test_encrypt_many_messages() {
         // Checks that encrypting many plaintext at the same time gives the correct output.
         let message = u128_to_si128(PLAINTEXT);
@@ -302,9 +267,9 @@ mod test {
         let mut counts = [0usize; 256];
         let expected_prob: f64 = 1. / 256.;
         for counter in 0..n_samples {
-            generator.generate_batch(AesCtr(counter as u128));
+            let generated = generator.generate_batch(AesCtr(counter as u128));
             for i in 0..128 {
-                counts[generator.get_generated()[i] as usize] += 1;
+                counts[generated[i] as usize] += 1;
             }
         }
         counts

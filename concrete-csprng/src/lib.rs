@@ -6,70 +6,60 @@
 //! The implementation is based on the AES blockcipher used in counter (CTR) mode, as presented
 //! in the ISO/IEC 18033-4 document.
 
-use crate::ctr::{BytesPerChild, ChildCount, HardAesCtrGenerator, SoftAesCtrGenerator, State};
-use ctr::AesBatchedGenerator;
-pub use software::set_soft_rdseed_secret;
 use std::fmt::{Debug, Display, Formatter, Result};
 
 mod aesni;
-mod ctr;
+mod counter;
 mod software;
-
-/// Represents a key used in the AES ciphertext.
-#[derive(Clone, Copy)]
-pub struct AesKey(u128);
+use crate::counter::{AesKey, BytesPerChild, ChildCount, HardAesCtrGenerator, SoftAesCtrGenerator};
+pub use software::set_soft_rdseed_secret;
 
 /// The pseudorandom number generator.
 ///
 /// If the correct instructions set are available on the machine, an hardware accelerated version
-/// of the generator will be used. If not, a fallback software implementation is used instead.
-///
-/// # Note
-///
-/// The software version can also be used on accelerated hardware, by enabling the `slow` feature.
+/// of the generator can be used.  
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum RandomGenerator {
+    #[doc(hidden)]
     Software(SoftAesCtrGenerator),
+    #[doc(hidden)]
     Hardware(HardAesCtrGenerator),
 }
 
 impl RandomGenerator {
-    /// Builds a new random generator, optionally using the input keys and state as initial values.
-    pub fn new(key: Option<AesKey>, state: Option<State>) -> RandomGenerator {
+    /// Builds a new random generator, selecting the hardware implementation if available.
+    /// Optionally, a seed can be provided.
+    ///
+    /// # Note
+    ///
+    /// If using the `slow` feature, this function will return the non-accelerated variant, even
+    /// though the right instructions are available.
+    pub fn new(seed: Option<u128>) -> RandomGenerator {
         if cfg!(feature = "slow") {
-            return RandomGenerator::new_software(key, state);
+            return RandomGenerator::new_software(seed);
         }
-        RandomGenerator::new_hardware(key.clone(), state.clone())
-            .unwrap_or_else(|| RandomGenerator::new_software(key.clone(), state.clone()))
+        RandomGenerator::new_hardware(seed).unwrap_or_else(|| RandomGenerator::new_software(seed))
     }
 
-    /// Builds a new software random generator, optionally using the input keys and state
-    /// as initial values.
-    pub fn new_software(key: Option<AesKey>, state: Option<State>) -> RandomGenerator {
-        RandomGenerator::Software(SoftAesCtrGenerator::new(key, state, None))
+    /// Builds a new software random generator, optionally seeding it with a given value.
+    pub fn new_software(seed: Option<u128>) -> RandomGenerator {
+        RandomGenerator::Software(SoftAesCtrGenerator::new(seed.map(AesKey), None, None))
     }
 
-    /// Tries to build a new hardware random generator, optionally using the input keys and state as
-    /// initial values.
-    pub fn new_hardware(key: Option<AesKey>, state: Option<State>) -> Option<RandomGenerator> {
+    /// Tries to build a new hardware random generator, optionally seeding it with a given value.
+    pub fn new_hardware(seed: Option<u128>) -> Option<RandomGenerator> {
         if !is_x86_feature_detected!("aes")
             || !is_x86_feature_detected!("rdseed")
             || !is_x86_feature_detected!("sse2")
         {
             return None;
         }
-        return Some(RandomGenerator::Hardware(HardAesCtrGenerator::new(
-            key, state, None,
-        )));
-    }
-
-    /// Returns the current state of the generator.
-    pub fn get_state(&self) -> &State {
-        match self {
-            Self::Hardware(ref rand) => rand.get_state(),
-            Self::Software(ref rand) => rand.get_state(),
-        }
+        Some(RandomGenerator::Hardware(HardAesCtrGenerator::new(
+            seed.map(AesKey),
+            None,
+            None,
+        )))
     }
 
     /// Yields the next byte from the generator.
@@ -88,6 +78,14 @@ impl RandomGenerator {
         }
     }
 
+    /// Returns the number of remaining bytes, if the generator is bounded.
+    pub fn remaining_bytes(&self) -> Option<usize> {
+        match self {
+            Self::Hardware(rand) => rand.remaining_bytes(),
+            Self::Software(rand) => rand.remaining_bytes(),
+        }
+    }
+
     /// Tries to fork the current generator into `n_child` generators each able to yield
     /// `child_bytes` random bytes.
     ///
@@ -95,16 +93,16 @@ impl RandomGenerator {
     /// `None` is returned. Otherwise, we return an iterator over the children generators.
     pub fn try_fork(
         &mut self,
-        n_child: ChildCount,
-        child_bytes: BytesPerChild,
+        n_child: usize,
+        child_bytes: usize,
     ) -> Option<impl Iterator<Item = RandomGenerator>> {
         match self {
             Self::Hardware(ref mut rand) => rand
-                .try_fork(n_child, child_bytes)
-                .map(|a| GeneratorChildIter::Hardware(a)),
+                .try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .map(GeneratorChildIter::Hardware),
             Self::Software(ref mut rand) => rand
-                .try_fork(n_child, child_bytes)
-                .map(|a| GeneratorChildIter::Software(a)),
+                .try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .map(GeneratorChildIter::Software),
         }
     }
 }
@@ -152,14 +150,13 @@ impl Display for RandomGenerator {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ctr::AesCtr;
 
     #[test]
     fn test_uniformity() {
         // Checks that the PRNG generates uniform numbers
         let precision = 10f64.powi(-4);
         let n_samples = 10_000_000_usize;
-        let mut generator = RandomGenerator::new(None, None);
+        let mut generator = RandomGenerator::new(None);
         let mut counts = [0usize; 256];
         let expected_prob: f64 = 1. / 256.;
         for _ in 0..n_samples {
@@ -176,15 +173,8 @@ mod test {
         // Checks that given a state and a key, the PRNG is determinist.
         for _ in 0..100 {
             let key = software::dev_random();
-            let state = software::dev_random();
-            let mut first_generator = RandomGenerator::new(
-                Some(AesKey(key)),
-                Some(State::from_aes_counter(AesCtr(state))),
-            );
-            let mut second_generator = RandomGenerator::new(
-                Some(AesKey(key)),
-                Some(State::from_aes_counter(AesCtr(state))),
-            );
+            let mut first_generator = RandomGenerator::new(Some(key));
+            let mut second_generator = RandomGenerator::new(Some(key));
             for _ in 0..128 {
                 assert_eq!(
                     first_generator.generate_next(),
@@ -198,12 +188,8 @@ mod test {
     fn test_fork() {
         // Checks that forks returns a bounded child, and that the proper number of bytes can be
         // generated.
-        let mut gen = RandomGenerator::new(None, None);
-        let mut bounded = gen
-            .try_fork(ChildCount(1), BytesPerChild(10))
-            .unwrap()
-            .next()
-            .unwrap();
+        let mut gen = RandomGenerator::new(None);
+        let mut bounded = gen.try_fork(1, 10).unwrap().next().unwrap();
         assert!(bounded.is_bounded());
         assert!(!gen.is_bounded());
         for _ in 0..10 {
@@ -215,46 +201,12 @@ mod test {
     #[should_panic]
     fn test_bounded_panic() {
         // Checks that a bounded prng panics when exceeding the allowed number of bytes.
-        let mut gen = RandomGenerator::new(None, None);
-        let mut bounded = gen
-            .try_fork(ChildCount(1), BytesPerChild(10))
-            .unwrap()
-            .next()
-            .unwrap();
+        let mut gen = RandomGenerator::new(None);
+        let mut bounded = gen.try_fork(1, 10).unwrap().next().unwrap();
         assert!(bounded.is_bounded());
         assert!(!gen.is_bounded());
         for _ in 0..11 {
             bounded.generate_next();
-        }
-    }
-}
-
-#[cfg(all(
-    test,
-    target_arch = "x86_64",
-    target_feature = "aes",
-    target_feature = "sse2",
-    target_feature = "rdseed"
-))]
-mod test_aes {
-    use super::*;
-    use crate::ctr::AesCtr;
-
-    #[test]
-    fn test_soft_hard_eq() {
-        // Checks that both the software and hardware prng outputs the same values.
-        let mut soft = SoftAesCtrGenerator::new(
-            Some(AesKey(0)),
-            Some(State::from_aes_counter(AesCtr(0))),
-            None,
-        );
-        let mut hard = HardAesCtrGenerator::new(
-            Some(AesKey(0)),
-            Some(State::from_aes_counter(AesCtr(0))),
-            None,
-        );
-        for _ in 0..1000 {
-            assert_eq!(soft.generate_next(), hard.generate_next());
         }
     }
 }

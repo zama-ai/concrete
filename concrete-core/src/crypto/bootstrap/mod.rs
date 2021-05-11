@@ -1,6 +1,5 @@
 //! Bootstrapping key
 use fftw::array::AlignedVec;
-use serde::{Deserialize, Serialize};
 
 use crate::crypto::encoding::Plaintext;
 use crate::crypto::{LweDimension, UnsignedTorus};
@@ -15,9 +14,12 @@ use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 use super::ggsw::GgswCiphertext;
 use super::secret::{GlweSecretKey, LweSecretKey};
 use super::GlweSize;
+use crate::math::random::RandomGenerator;
+
+mod serde;
 
 /// A bootstrapping key
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BootstrapKey<Cont> {
     tensor: Tensor<Cont>,
     poly_size: PolynomialSize,
@@ -314,6 +316,8 @@ impl<Cont> BootstrapKey<Cont> {
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::secret::{LweSecretKey, GlweSecretKey};
     /// use concrete_core::math::dispersion::LogStandardDev;
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let mut bsk = BootstrapKey::allocate(
@@ -324,15 +328,21 @@ impl<Cont> BootstrapKey<Cont> {
     ///     dec_bl,
     ///     lwe_dim
     /// );
-    /// let lwe_sk = LweSecretKey::generate(lwe_dim);
-    /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size);
-    /// bsk.fill_with_new_key(&lwe_sk, &glwe_sk, LogStandardDev::from_log_standard_dev(-15.));
+    /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
+    /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+    /// bsk.fill_with_new_key(
+    ///     &lwe_sk,
+    ///     &glwe_sk,
+    ///     LogStandardDev::from_log_standard_dev(-15.),
+    ///     &mut generator
+    /// );
     /// ```
     pub fn fill_with_new_key<LweCont, RlweCont, Scalar>(
         &mut self,
         lwe_secret_key: &LweSecretKey<LweCont>,
         glwe_secret_key: &GlweSecretKey<RlweCont>,
         noise_parameters: impl DispersionParameter,
+        generator: &mut RandomGenerator,
     ) where
         Self: AsMutTensor<Element = Scalar>,
         LweSecretKey<LweCont>: AsRefTensor<Element = bool>,
@@ -348,7 +358,12 @@ impl<Cont> BootstrapKey<Cont> {
             } else {
                 Plaintext(Scalar::ZERO)
             };
-            glwe_secret_key.encrypt_constant_ggsw(&mut rgsw, &encoded, noise_parameters.clone());
+            glwe_secret_key.encrypt_constant_ggsw(
+                &mut rgsw,
+                &encoded,
+                noise_parameters.clone(),
+                generator,
+            );
         }
     }
 
@@ -366,6 +381,8 @@ impl<Cont> BootstrapKey<Cont> {
     /// use concrete_core::math::dispersion::LogStandardDev;
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
     /// let mut bsk = BootstrapKey::allocate(
     ///     9u32,
     ///     glwe_dim.to_glwe_size(),
@@ -374,12 +391,13 @@ impl<Cont> BootstrapKey<Cont> {
     ///     dec_bl,
     ///     lwe_dim
     /// );
-    /// let lwe_sk = LweSecretKey::generate(lwe_dim);
-    /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size);
+    /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
+    /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
     /// bsk.fill_with_new_trivial_key(
     ///     &lwe_sk,
     ///     &glwe_sk,  
-    ///     LogStandardDev::from_log_standard_dev(-15.)
+    ///     LogStandardDev::from_log_standard_dev(-15.),
+    ///     &mut generator
     /// );
     /// ```
     pub fn fill_with_new_trivial_key<LweCont, RlweCont, Scalar>(
@@ -387,6 +405,7 @@ impl<Cont> BootstrapKey<Cont> {
         lwe_secret_key: &LweSecretKey<LweCont>,
         rlwe_secret_key: &GlweSecretKey<RlweCont>,
         noise_parameters: impl DispersionParameter,
+        generator: &mut RandomGenerator,
     ) where
         Self: AsMutTensor<Element = Scalar>,
         LweSecretKey<LweCont>: AsRefTensor<Element = bool>,
@@ -404,6 +423,7 @@ impl<Cont> BootstrapKey<Cont> {
                 &mut rgsw,
                 &encoded,
                 noise_parameters.clone(),
+                generator,
             );
         }
     }

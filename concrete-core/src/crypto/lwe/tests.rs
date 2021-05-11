@@ -6,10 +6,7 @@ use crate::crypto::secret::LweSecretKey;
 use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, PlaintextCount, UnsignedTorus};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use crate::math::random;
-use crate::math::random::{
-    fill_with_random_uniform, random_uniform_n_msb_tensor, RandomGenerable, UniformMsb,
-};
+use crate::math::random::{RandomGenerable, RandomGenerator, UniformMsb};
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
 use crate::numeric::{CastFrom, Numeric, SignedInteger};
 use crate::test_tools::{
@@ -20,12 +17,14 @@ use crate::test_tools::{
 fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
     //! create a KSK and key switch some LWE samples
     //! warning: not a randomized test for the parameters
+    let mut generator = RandomGenerator::new(None);
     // fix a set of parameters
     let n_bit_msg = 8; // bit precision of the plaintext
     let nb_ct = random_ciphertext_count(100); // number of messages to encrypt
     let base_log = DecompositionBaseLog(3); // a parameter of the gadget matrix
     let level_count = DecompositionLevelCount(8); // a parameter of the gadget matrix
-    let messages = PlaintextList::from_tensor(random_uniform_n_msb_tensor(nb_ct.0, n_bit_msg));
+    let messages =
+        PlaintextList::from_tensor(generator.random_uniform_n_msb_tensor(nb_ct.0, n_bit_msg));
     // the set of messages to encrypt
     let std_input = LogStandardDev::from_log_standard_dev(-10.); // standard deviation of the
                                                                  // encrypted messages to KS
@@ -33,11 +32,11 @@ fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
 
     // set parameters related to the after (stands for 'after the KS')
     let dimension_after = LweDimension(600);
-    let sk_after = LweSecretKey::generate(dimension_after);
+    let sk_after = LweSecretKey::generate(dimension_after, &mut generator);
 
     // set parameters related to the before (stands for 'before the KS')
     let dimension_before = LweDimension(1024);
-    let sk_before = LweSecretKey::generate(dimension_before);
+    let sk_before = LweSecretKey::generate(dimension_before, &mut generator);
 
     // create the before ciphertexts and the after ciphertexts
     let mut ciphertexts_before = LweList::allocate(T::ZERO, dimension_before.to_lwe_size(), nb_ct);
@@ -51,10 +50,15 @@ fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
         dimension_before,
         dimension_after,
     );
-    ksk.fill_with_keyswitch_key(&sk_before, &sk_after, std_ksk.clone());
+    ksk.fill_with_keyswitch_key(&sk_before, &sk_after, std_ksk.clone(), &mut generator);
 
     // encrypts with the before key our messages
-    sk_before.encrypt_lwe_list(&mut ciphertexts_before, &messages, std_input.clone());
+    sk_before.encrypt_lwe_list(
+        &mut ciphertexts_before,
+        &messages,
+        std_input.clone(),
+        &mut generator,
+    );
 
     // key switch before -> after
     ksk.keyswitch_list(&mut ciphertexts_after, &ciphertexts_before);
@@ -106,18 +110,19 @@ fn test_encrypt_decrypt<T: UnsignedTorus>() {
     let nb_ct = random_ciphertext_count(100000);
     let dimension = random_lwe_dimension(1000);
     let std_dev = LogStandardDev::from_log_standard_dev(-25.);
+    let mut generator = RandomGenerator::new(None);
 
     // generate the secret key
-    let sk = LweSecretKey::generate(dimension);
+    let sk = LweSecretKey::generate(dimension, &mut generator);
 
     // generate random messages
-    let messages = PlaintextList::from_tensor(random::random_uniform_tensor(nb_ct.0));
+    let messages = PlaintextList::from_tensor(generator.random_uniform_tensor(nb_ct.0));
 
     // creation of tensors for our ciphertexts
     let mut ciphertexts = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);
 
     // encryption
-    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev);
+    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev, &mut generator);
 
     // creation of a tensor for our decrypted messages
     let mut decryptions = PlaintextList::allocate(T::ZERO, PlaintextCount(nb_ct.0));
@@ -151,6 +156,7 @@ where
     //! warning: std_dev is not randomized
     let mut new_msg = Tensor::allocate(T::ZERO, 100);
     let mut msg = Tensor::allocate(T::ZERO, 100);
+    let mut generator = RandomGenerator::new(None);
 
     // generate random settings
     let nb_ct = random_ciphertext_count(100);
@@ -174,19 +180,19 @@ where
     let n_tests = 10;
     for i in 0..n_tests {
         // generate the secret key
-        let sk = LweSecretKey::generate(dimension);
+        let sk = LweSecretKey::generate(dimension, &mut generator);
 
         // generate random messages
         let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(nb_ct.0));
-        fill_with_random_uniform(&mut messages);
+        generator.fill_tensor_with_random_uniform(&mut messages);
 
         // generate trivial encryptions for the witness
         let mut witness = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);
-        sk.trivial_encrypt_lwe_list(&mut witness, &messages, std);
+        sk.trivial_encrypt_lwe_list(&mut witness, &messages, std, &mut generator);
 
         // generate ciphertexts with the secret key
         let mut ciphertext = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);
-        sk.encrypt_lwe_list(&mut ciphertext, &messages, std);
+        sk.encrypt_lwe_list(&mut ciphertext, &messages, std, &mut generator);
 
         // allocation for the results
         let mut ct_res = LweCiphertext::allocate(T::ZERO, dimension.to_lwe_size());
@@ -240,17 +246,18 @@ where
     let nb_ct = CiphertextCount(n_tests);
     let dimension = LweDimension(600);
     let std_dev = LogStandardDev::from_log_standard_dev(-15.);
+    let mut generator = RandomGenerator::new(None);
 
     // generate the secret key
-    let sk = LweSecretKey::generate(dimension);
+    let sk = LweSecretKey::generate(dimension, &mut generator);
 
     // generate random messages
     let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(nb_ct.0));
-    fill_with_random_uniform(&mut messages);
+    generator.fill_tensor_with_random_uniform(&mut messages);
 
     // encryption
     let mut ciphertexts = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);
-    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev);
+    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev, &mut generator);
 
     // generate a random signed weight vector represented as Torus elements
     let weight = Cleartext(
@@ -315,17 +322,18 @@ where
     let nb_ct = random_ciphertext_count(100);
     let dimension = random_lwe_dimension(1000);
     let std_dev = LogStandardDev::from_log_standard_dev(-15.);
+    let mut generator = RandomGenerator::new(None);
 
     // generate the secret key
-    let sk = LweSecretKey::generate(dimension);
+    let sk = LweSecretKey::generate(dimension, &mut generator);
 
     // generate random messages
     let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(nb_ct.0));
-    fill_with_random_uniform(&mut messages);
+    generator.fill_tensor_with_random_uniform(&mut messages);
 
     // encryption
     let mut ciphertexts = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);
-    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev);
+    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev, &mut generator);
 
     // generate a random signed weight vector as Torus elements
     let mut weights = CleartextList::allocate(T::ZERO, CleartextCount(nb_ct.0));
@@ -337,7 +345,7 @@ where
 
     // scalar mul
     let mut ciphertexts_out = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);
-    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev);
+    sk.encrypt_lwe_list(&mut ciphertexts, &messages, std_dev, &mut generator);
 
     for (mut out, (inp, w)) in ciphertexts_out
         .ciphertext_iter_mut()
