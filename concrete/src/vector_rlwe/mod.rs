@@ -255,7 +255,7 @@ impl VectorRLWE {
     }
 
     /// Encode and encrypt n messages with the provided key into n RLWE ciphertext with only the constant coefficient filled with the message
-    /// It means that the polynomial encrypted is P(X)=m with m the the message that have been encoded
+    /// It means that the polynomial encrypted is P(X)=m with m the message that has been encoded
     ///
     /// # Arguments
     /// * `sk` - an LWE secret key
