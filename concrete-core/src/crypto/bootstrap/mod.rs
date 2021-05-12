@@ -14,7 +14,7 @@ use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 use super::ggsw::GgswCiphertext;
 use super::secret::{GlweSecretKey, LweSecretKey};
 use super::GlweSize;
-use crate::math::random::RandomGenerator;
+use crate::math::random::EncryptionRng;
 
 mod serde;
 
@@ -316,7 +316,7 @@ impl<Cont> BootstrapKey<Cont> {
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::secret::{LweSecretKey, GlweSecretKey};
     /// use concrete_core::math::dispersion::LogStandardDev;
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRng};
     /// let mut generator = RandomGenerator::new(None);
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
@@ -330,11 +330,12 @@ impl<Cont> BootstrapKey<Cont> {
     /// );
     /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
     /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+    /// let mut secret_generator = EncryptionRng::new(None);
     /// bsk.fill_with_new_key(
     ///     &lwe_sk,
     ///     &glwe_sk,
     ///     LogStandardDev::from_log_standard_dev(-15.),
-    ///     &mut generator
+    ///     &mut secret_generator
     /// );
     /// ```
     pub fn fill_with_new_key<LweCont, RlweCont, Scalar>(
@@ -342,7 +343,7 @@ impl<Cont> BootstrapKey<Cont> {
         lwe_secret_key: &LweSecretKey<LweCont>,
         glwe_secret_key: &GlweSecretKey<RlweCont>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRng,
     ) where
         Self: AsMutTensor<Element = Scalar>,
         LweSecretKey<LweCont>: AsRefTensor<Element = bool>,
@@ -381,7 +382,7 @@ impl<Cont> BootstrapKey<Cont> {
     /// use concrete_core::math::dispersion::LogStandardDev;
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRng};
     /// let mut generator = RandomGenerator::new(None);
     /// let mut bsk = BootstrapKey::allocate(
     ///     9u32,
@@ -393,11 +394,12 @@ impl<Cont> BootstrapKey<Cont> {
     /// );
     /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
     /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+    /// let mut secret_generator = EncryptionRng::new(None);
     /// bsk.fill_with_new_trivial_key(
     ///     &lwe_sk,
     ///     &glwe_sk,  
     ///     LogStandardDev::from_log_standard_dev(-15.),
-    ///     &mut generator
+    ///     &mut secret_generator
     /// );
     /// ```
     pub fn fill_with_new_trivial_key<LweCont, RlweCont, Scalar>(
@@ -405,7 +407,7 @@ impl<Cont> BootstrapKey<Cont> {
         lwe_secret_key: &LweSecretKey<LweCont>,
         rlwe_secret_key: &GlweSecretKey<RlweCont>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRng,
     ) where
         Self: AsMutTensor<Element = Scalar>,
         LweSecretKey<LweCont>: AsRefTensor<Element = bool>,

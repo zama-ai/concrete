@@ -43,6 +43,9 @@ pub use uniform_boolean::*;
 mod generator;
 pub use generator::*;
 
+mod secret_generator;
+pub use secret_generator::*;
+
 pub trait RandomGenerable<D: Distribution>
 where
     Self: Sized,
