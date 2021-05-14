@@ -1,0 +1,2 @@
+flake8
+sphinx==1.4.4
