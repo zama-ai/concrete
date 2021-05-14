@@ -1531,10 +1531,7 @@ class BKZ:
             10–24).
 
         """
-        # TODO this is somewhat arbitrary
-        if beta <= 90:
-            return BKZ._BDGL16_small(beta, d, B)
-        else:
+        
             return BKZ._BDGL16_asymptotic(beta, d, B)
 
     @staticmethod
