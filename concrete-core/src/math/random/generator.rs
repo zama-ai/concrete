@@ -4,6 +4,8 @@ use crate::math::random::{
 use crate::math::tensor::{AsMutSlice, AsMutTensor, Tensor};
 use crate::numeric::{FloatingPoint, Numeric};
 use concrete_csprng::RandomGenerator as RandomGeneratorImpl;
+#[cfg(feature = "multithread")]
+use rayon::prelude::*;
 
 /// A cryptographically secure random number generator.
 ///
@@ -113,6 +115,34 @@ impl RandomGenerator {
     ) -> Option<impl Iterator<Item = RandomGenerator>> {
         self.0
             .try_fork(n_child, bytes_per_child)
+            .map(|iter| iter.map(Self))
+    }
+
+    /// Tries to fork the current generator into `n_child` generator bounded to `bytes_per_child`,
+    /// as a parallel iterator.
+    ///
+    /// If `n_child*bytes_per_child` exceeds the bound of the current generator, the method
+    /// returns `None`.
+    ///
+    /// # Notes
+    ///
+    /// This method necessitates the "multithread" feature to be used.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut free_generator = RandomGenerator::new(None);
+    /// let children = free_generator.try_fork(5, 50).unwrap().collect::<Vec<_>>();
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_try_fork(
+        &mut self,
+        n_child: usize,
+        bytes_per_child: usize,
+    ) -> Option<impl IndexedParallelIterator<Item = RandomGenerator>> {
+        self.0
+            .par_try_fork(n_child, bytes_per_child)
             .map(|iter| iter.map(Self))
     }
 

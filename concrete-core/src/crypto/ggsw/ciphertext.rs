@@ -10,6 +10,9 @@ use crate::{ck_dim_div, tensor_traits};
 
 use super::GgswLevelMatrix;
 
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
+
 /// A GGSW ciphertext.
 pub struct GgswCiphertext<Cont> {
     tensor: Tensor<Cont>,
@@ -352,6 +355,58 @@ impl<Cont> GgswCiphertext<Cont> {
         let rlwe_size = self.rlwe_size;
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
+            .enumerate()
+            .map(move |(index, tensor)| {
+                GgswLevelMatrix::from_container(
+                    tensor.into_container(),
+                    poly_size,
+                    rlwe_size,
+                    DecompositionLevel(index),
+                )
+            })
+    }
+
+    /// Returns a parallel iterator over mutably borrowed level matrices.
+    ///
+    /// # Notes
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::crypto::ggsw::GgswCiphertext;
+    /// use concrete_core::crypto::GlweSize;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
+    /// use concrete_core::math::polynomial::PolynomialSize;
+    /// let mut ggsw = GgswCiphertext::allocate(
+    ///     9 as u8,
+    ///     PolynomialSize(9),
+    ///     GlweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4)
+    /// );
+    /// ggsw.par_level_matrix_iter_mut().for_each(|mut level_matrix|{
+    ///     for mut rlwe in level_matrix.row_iter_mut() {
+    ///         rlwe.as_mut_tensor().fill_with_element(9);
+    ///     }
+    /// });
+    /// assert!(ggsw.as_tensor().iter().all(|a| *a ==9));
+    /// assert_eq!(ggsw.level_matrix_iter_mut().count(), 3);
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_level_matrix_iter_mut(
+        &mut self,
+    ) -> impl IndexedParallelIterator<Item = GgswLevelMatrix<&mut [<Self as AsRefTensor>::Element]>>
+    where
+        Self: AsMutTensor,
+        <Self as AsMutTensor>::Element: Sync + Send,
+    {
+        let chunks_size = self.poly_size.0 * self.rlwe_size.0 * self.rlwe_size.0;
+        let poly_size = self.poly_size;
+        let rlwe_size = self.rlwe_size;
+        self.as_mut_tensor()
+            .par_subtensor_iter_mut(chunks_size)
             .enumerate()
             .map(move |(index, tensor)| {
                 GgswLevelMatrix::from_container(
