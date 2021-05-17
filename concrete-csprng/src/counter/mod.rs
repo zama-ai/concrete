@@ -1,4 +1,6 @@
 use crate::{aesni, software};
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
 use std::cmp::Ordering;
 
 #[cfg(test)]
@@ -302,17 +304,67 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         n_child: ChildCount,
         child_bytes: BytesPerChild,
     ) -> Option<impl Iterator<Item = AesCtrGenerator<G>>> {
-        // Check that we don't overshoot the bound
+        if !self.is_fork_in_bound(n_child, child_bytes) {
+            return None;
+        }
+        let output = (0..n_child.0).map(self.get_creation_closure(child_bytes));
+        self.regenerate_batch(n_child, child_bytes);
+        Some(output)
+    }
+
+    /// Tries to fork the current generator into `n_child` generators each able to yield
+    /// `child_bytes` random bytes as a parallel iterator.
+    ///
+    /// If the total number of bytes to be generated exceeds the bound of the current generator,
+    /// `None` is returned. Otherwise, we return a parallel iterator over the children generators.
+    ///
+    /// # Notes
+    ///
+    /// This method necessitate the "multithread" feature.
+    #[cfg(feature = "multithread")]
+    pub fn par_try_fork(
+        &mut self,
+        n_child: ChildCount,
+        child_bytes: BytesPerChild,
+    ) -> Option<impl IndexedParallelIterator<Item = AesCtrGenerator<G>>>
+    where
+        G: Send + Sync,
+    {
+        if !self.is_fork_in_bound(n_child, child_bytes) {
+            return None;
+        }
+        let output = (0..n_child.0)
+            .into_par_iter()
+            .map(self.get_creation_closure(child_bytes));
+        self.regenerate_batch(n_child, child_bytes);
+        Some(output)
+    }
+
+    fn regenerate_batch(&mut self, n_child: ChildCount, child_bytes: BytesPerChild) {
+        let generate = self.state.shift(child_bytes.0 * n_child.0);
+        if let ShouldGenerateBatch::GenerateBatch = generate {
+            self.batch = self.generator.generate_batch(self.state.get_aes_counter());
+        }
+    }
+
+    fn is_fork_in_bound(&self, n_child: ChildCount, child_bytes: BytesPerChild) -> bool {
         if let Some(ref actual_bound) = self.bound {
             let mut end = self.state.clone();
             end.shift(n_child.0 * child_bytes.0);
             if end > *actual_bound {
-                return None;
+                return false;
             }
         }
+        true
+    }
+
+    fn get_creation_closure(
+        &self,
+        child_bytes: BytesPerChild,
+    ) -> impl Fn(usize) -> AesCtrGenerator<G> {
         let state = self.state.clone();
         let generator = self.generator.clone();
-        let output = (0..n_child.0).map(move |i| {
+        move |i| {
             let mut new_state = state.clone();
             new_state.shift(child_bytes.0 * i);
             let mut new_bound = new_state.clone();
@@ -326,12 +378,7 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
                 bound: Some(new_bound),
                 batch,
             }
-        });
-        let generate = self.state.shift(child_bytes.0 * n_child.0);
-        if let ShouldGenerateBatch::GenerateBatch = generate {
-            self.batch = self.generator.generate_batch(self.state.get_aes_counter());
         }
-        Some(output)
     }
 }
 

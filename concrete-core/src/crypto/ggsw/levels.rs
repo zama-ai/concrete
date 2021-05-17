@@ -4,6 +4,8 @@ use crate::math::decomposition::DecompositionLevel;
 use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_div, tensor_traits};
+#[cfg(feature = "multithread")]
+use rayon::prelude::*;
 
 /// A matrix containing a single level of gadget decomposition.
 pub struct GgswLevelMatrix<Cont> {
@@ -185,6 +187,47 @@ impl<Cont> GgswLevelMatrix<Cont> {
         let level = self.level;
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
+            .map(move |tens| GgswLevelRow::from_container(tens.into_container(), poly_size, level))
+    }
+
+    /// Returns a parallel iterator over the mutably borrowed rows of the matrix.
+    ///
+    /// # Note
+    ///
+    /// This method uses _rayon_ internally, and is hidden behind the "multithread" feature
+    /// gate.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
+    /// use concrete_core::crypto::GlweSize;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// use concrete_core::math::polynomial::PolynomialSize;
+    /// use concrete_core::math::decomposition::DecompositionLevel;
+    /// let mut level_matrix = GgswLevelMatrix::from_container(
+    ///     vec![0 as u8; 10 * 7 * 7],
+    ///     PolynomialSize(10),
+    ///     GlweSize(7),
+    ///     DecompositionLevel(1)
+    /// );
+    /// level_matrix.par_row_iter_mut().for_each(|mut row|{
+    ///     row.as_mut_tensor().fill_with_element(9);
+    /// });
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_row_iter_mut(
+        &mut self,
+    ) -> impl IndexedParallelIterator<Item = GgswLevelRow<&mut [<Self as AsRefTensor>::Element]>>
+    where
+        Self: AsMutTensor,
+        <Self as AsMutTensor>::Element: Send + Sync,
+    {
+        let chunks_size = self.poly_size.0 * self.glwe_size.0;
+        let poly_size = self.poly_size;
+        let level = self.level;
+        self.as_mut_tensor()
+            .par_subtensor_iter_mut(chunks_size)
             .map(move |tens| GgswLevelRow::from_container(tens.into_container(), poly_size, level))
     }
 }

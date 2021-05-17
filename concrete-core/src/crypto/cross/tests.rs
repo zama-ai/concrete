@@ -13,7 +13,7 @@ use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use crate::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::math::polynomial::PolynomialSize;
-use crate::math::random::RandomGenerator;
+use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
 use crate::numeric::{CastFrom, CastInto, Numeric};
 use crate::test_tools::{assert_delta_std_dev, assert_noise_distribution};
@@ -33,6 +33,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
         let base_log = DecompositionBaseLog(7);
         let std = LogStandardDev::from_log_standard_dev(-29.);
         let mut generator = RandomGenerator::new(None);
+        let mut secret_generator = EncryptionRandomGenerator::new(None);
 
         // allocate secret keys
         let mut rlwe_sk = GlweSecretKey::generate(rlwe_dimension, polynomial_size, &mut generator);
@@ -57,7 +58,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
                 base_log,
                 lwe_dimension,
             );
-            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut generator);
+            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut secret_generator);
 
             // allocation for the bootstrapping key
             let mut fourier_bsk = BootstrapKey::allocate(
@@ -84,7 +85,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
             let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
             let mut lwe_out =
                 LweCiphertext::allocate(T::ZERO, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
-            lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut generator);
+            lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut secret_generator);
             let cst = T::ONE << 29;
             msg.as_mut_slice()[i] = cst;
 
@@ -141,6 +142,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             let std_dev_bsk = LogStandardDev(-25.);
             let std_dev_rlwe = LogStandardDev(-20.);
             let mut generator = RandomGenerator::new(None);
+            let mut secret_generator = EncryptionRandomGenerator::new(None);
 
             // compute the length of glwe secret key
             let mut rlwe_sk = GlweSecretKey::generate(
@@ -170,7 +172,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
                 base_log,
                 lwe_dimension,
             );
-            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut generator);
+            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
 
             // allocation for the bootstrapping key
             let mut fourier_bsk = BootstrapKey::allocate(
@@ -198,7 +200,12 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             );
 
             // // encrypt the polynomial
-            rlwe_sk.encrypt_glwe(&mut ciphertext, &messages, std_dev_rlwe, &mut generator);
+            rlwe_sk.encrypt_glwe(
+                &mut ciphertext,
+                &messages,
+                std_dev_rlwe,
+                &mut secret_generator,
+            );
 
             // unroll FFT Plan using FFTW
             let mut fft = Fft::new(PolynomialSize(polynomial_size));
@@ -262,6 +269,7 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         let std_dev_bsk = LogStandardDev(-20.);
         let std_dev_rlwe = LogStandardDev(-25.);
         let mut generator = RandomGenerator::new(None);
+        let mut secret_generator = EncryptionRandomGenerator::new(None);
 
         // generate the secret keys
         let rlwe_sk = GlweSecretKey::generate(
@@ -289,7 +297,7 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
             base_log,
             lwe_dimension,
         );
-        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut generator);
+        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
 
         // allocation for the bootstrapping key
         let mut fourier_bsk = BootstrapKey::allocate(
@@ -315,8 +323,8 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         );
 
         // // encrypt the polynomial
-        rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut generator);
-        rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut generator);
+        rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut secret_generator);
+        rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut secret_generator);
 
         // unroll FFT Plan using FFTW
         let mut fft = Fft::new(PolynomialSize(polynomial_size));
@@ -377,6 +385,7 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         let std_dev_bsk = LogStandardDev(-20.);
         let std_dev_rlwe = LogStandardDev(-25.);
         let mut generator = RandomGenerator::new(None);
+        let mut secret_generator = EncryptionRandomGenerator::new(None);
 
         // generate the secret keys
         let rlwe_sk = GlweSecretKey::generate(
@@ -404,7 +413,7 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
             base_log,
             lwe_dimension,
         );
-        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut generator);
+        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
 
         // allocation for the bootstrapping key
         let mut fourier_bsk = BootstrapKey::allocate(
@@ -430,8 +439,8 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         );
 
         // // encrypt the polynomial
-        rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut generator);
-        rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut generator);
+        rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut secret_generator);
+        rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut secret_generator);
 
         // unroll FFT Plan using FFTW
         let mut fft = Fft::new(PolynomialSize(polynomial_size));
@@ -485,6 +494,7 @@ fn test_sample_extract<T: UnsignedTorus>() {
     // fix different polynomial degrees
     let degrees = vec![512, 1024, 2048];
     let mut generator = RandomGenerator::new(None);
+    let mut secret_generator = EncryptionRandomGenerator::new(None);
 
     for polynomial_size in degrees {
         // fixa set of parameters
@@ -508,7 +518,7 @@ fn test_sample_extract<T: UnsignedTorus>() {
                 PolynomialSize(polynomial_size),
                 dimension.to_glwe_size(),
             );
-            rlwe_sk.encrypt_glwe(&mut rlwe_ct, &messages, std_dev, &mut generator);
+            rlwe_sk.encrypt_glwe(&mut rlwe_ct, &messages, std_dev, &mut secret_generator);
 
             // allocate LWE ciphertext
             let mut lwe_ct =
@@ -550,6 +560,7 @@ where
     let std = LogStandardDev::from_log_standard_dev(-29.);
     let log_degree = f64::log2(polynomial_size.0 as f64) as i32;
     let mut generator = RandomGenerator::new(None);
+    let mut secret_generator = EncryptionRandomGenerator::new(None);
 
     let mut rlwe_sk = GlweSecretKey::generate(rlwe_dimension, polynomial_size, &mut generator);
     let mut lwe_sk = LweSecretKey::generate(lwe_dimension, &mut generator);
@@ -572,7 +583,7 @@ where
             base_log,
             lwe_dimension,
         );
-        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut generator);
+        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut secret_generator);
 
         // allocation for the bootstrapping key
         let mut fourier_bsk = BootstrapKey::allocate(
@@ -597,7 +608,7 @@ where
         let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
         let mut lwe_out =
             LweCiphertext::allocate(T::ZERO, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
-        lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut generator);
+        lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut secret_generator);
 
         // accumulator is a trivial encryption of [0, 1/2N, 2/2N, ...]
         let mut accumulator =

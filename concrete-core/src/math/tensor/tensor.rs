@@ -13,6 +13,9 @@ use crate::zip;
 
 use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, LoadError, SaveError};
 
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
+
 /// A generic type to perform operations on collections of scalar values.
 ///
 /// See the [module-level](`super`) documentation for more explanations on the logic of this type.
@@ -321,6 +324,28 @@ impl<Container> Tensor<Container> {
         self.as_slice().iter()
     }
 
+    /// Returns a parallel iterator over `&Scalar` elements.
+    ///
+    /// # Notes:
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.par_iter().for_each(|scalar|{
+    ///     assert_eq!(*scalar, 9);
+    /// });
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_iter(&self) -> impl IndexedParallelIterator<Item = &<Self as AsRefSlice>::Element>
+    where
+        Self: AsRefSlice,
+        <Self as AsRefSlice>::Element: Sync,
+    {
+        self.as_slice().as_parallel_slice().par_iter()
+    }
+
     /// Returns an iterator over `&mut T` elements.
     ///
     /// # Example:
@@ -341,6 +366,33 @@ impl<Container> Tensor<Container> {
         Self: AsMutSlice,
     {
         self.as_mut_slice().iter_mut()
+    }
+
+    /// Returns a parallel iterator over `&mut T` elements.
+    ///
+    /// # Notes:
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example:
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.iter_mut().for_each(|mut scalar|{
+    ///     *scalar = 8;
+    /// });
+    /// for scalar in tensor.iter(){
+    ///     assert_eq!(*scalar, 8);
+    /// }
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_iter_mut(
+        &mut self,
+    ) -> impl IndexedParallelIterator<Item = &mut <Self as AsMutSlice>::Element>
+    where
+        Self: AsMutSlice,
+        <Self as AsMutSlice>::Element: Sync + Send,
+    {
+        self.as_mut_slice().as_parallel_slice_mut().par_iter_mut()
     }
 
     /// Returns an iterator over sub tensors `Tensor<&[Scalar]>`.
@@ -365,6 +417,33 @@ impl<Container> Tensor<Container> {
     {
         debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
         self.as_slice().chunks(size).map(Tensor::from_container)
+    }
+
+    /// Returns a parallel iterator over sub tensors `Tensor<&[Scalar]>`.
+    ///
+    /// # Note:
+    /// The length of the sub-tensors must divide the size of the tensor.
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example:
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.par_subtensor_iter(10).for_each(|sub|{
+    ///     assert_eq!(sub.len(), 10);
+    /// });
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_subtensor_iter(
+        &self,
+        size: usize,
+    ) -> impl IndexedParallelIterator<Item = Tensor<&[<Self as AsRefSlice>::Element]>>
+    where
+        Self: AsRefSlice,
+        <Self as AsRefSlice>::Element: Sync,
+    {
+        debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
+        self.as_slice().par_chunks(size).map(Tensor::from_container)
     }
 
     /// Returns an iterator over mutable sub tensors `Tensor<&mut [Scalar]>`.
@@ -395,6 +474,41 @@ impl<Container> Tensor<Container> {
         debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
         self.as_mut_slice()
             .chunks_mut(size)
+            .map(Tensor::from_container)
+    }
+
+    /// Returns a parallel iterator over mutable sub tensors `Tensor<&mut [Scalar]>`.
+    ///
+    /// # Note:
+    ///
+    /// The length of the sub-tensors must divide the size of the tensor.
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example:
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.par_subtensor_iter_mut(10).for_each(|mut sub|{
+    ///     assert_eq!(sub.len(), 10);
+    ///     *sub.get_element_mut(0) = 1;
+    /// });
+    /// for sub in tensor.subtensor_iter(20){
+    ///     assert_eq!(*sub.get_element(0), 1);
+    ///     assert_eq!(*sub.get_element(10), 1);
+    /// }
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_subtensor_iter_mut(
+        &mut self,
+        size: usize,
+    ) -> impl IndexedParallelIterator<Item = Tensor<&mut [<Self as AsMutSlice>::Element]>>
+    where
+        Self: AsMutSlice,
+        <Self as AsMutSlice>::Element: Sync + Send,
+    {
+        debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
+        self.as_mut_slice()
+            .par_chunks_mut(size)
             .map(Tensor::from_container)
     }
 

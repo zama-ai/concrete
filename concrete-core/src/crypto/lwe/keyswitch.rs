@@ -12,7 +12,7 @@ use crate::numeric::{CastFrom, SignedInteger};
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
 use super::{LweCiphertext, LweList};
-use crate::math::random::EncryptionRng;
+use crate::math::random::EncryptionRandomGenerator;
 
 /// An Lwe Keyswithing key.
 ///
@@ -269,14 +269,14 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// let decomp_log_base = DecompositionBaseLog(3);
     /// let decomp_level_count = DecompositionLevelCount(5);
     /// let cipher_size = LweSize(55);
-    /// use concrete_core::math::random::{RandomGenerator, EncryptionRng};
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
     ///
     /// let input_key = LweSecretKey::generate(input_size, &mut generator);
     /// let output_key = LweSecretKey::generate(output_size, &mut generator);
     ///
-    /// let mut secret_generator = EncryptionRng::new(None);
+    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
     /// let mut ksk = LweKeyswitchKey::allocate(
     ///     0 as u32,
     ///     decomp_level_count,
@@ -293,7 +293,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
         before_key: &LweSecretKey<InKeyCont>,
         after_key: &LweSecretKey<OutKeyCont>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut EncryptionRng,
+        generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsMutTensor<Element = Scalar>,
         LweSecretKey<InKeyCont>: AsRefTensor<Element = bool>,
@@ -426,7 +426,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::random::{RandomGenerator, EncryptionRng};
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     ///
     /// let input_size = LweDimension(1024);
     /// let output_size = LweDimension(1024);
@@ -444,7 +444,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///     input_size,
     ///     output_size
     /// );
-    /// let mut secret_generator = EncryptionRng::new(None);
+    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
     /// ksk.fill_with_keyswitch_key(&input_key, &output_key, noise, &mut secret_generator);
     ///
     /// let plaintext: Plaintext<u64> = Plaintext(1432154329994324);
