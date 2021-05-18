@@ -4,6 +4,7 @@ project(zamacompiler LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
 find_package(MLIR REQUIRED CONFIG)
 message(STATUS "Using MLIR cmake file from: ${MLIR_DIR}")
