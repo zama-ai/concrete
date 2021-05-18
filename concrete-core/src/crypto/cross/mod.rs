@@ -407,7 +407,7 @@ pub fn bootstrap<OutCont, InCont, BskCont, AccCont, Scalar>(
 ) where
     LweCiphertext<OutCont>: AsMutTensor<Element = Scalar>,
     LweCiphertext<InCont>: AsRefTensor<Element = Scalar>,
-    BootstrapKey<BskCont>: AsMutTensor<Element = Complex64>,
+    BootstrapKey<BskCont>: AsRefTensor<Element = Complex64>,
     GlweCiphertext<AccCont>: AsMutTensor<Element = Scalar>,
     Scalar: UnsignedTorus,
 {
