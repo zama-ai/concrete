@@ -1193,7 +1193,8 @@ def rinse_and_repeat(
     i = floor(-log(success_probability, 2))
     has_solution = False
     while True:
-        prob = RR(min(2 ** -i, success_probability))
+        # RR() fixes the precision issue, but we still infinite loop via line 1218
+        prob = RR(min(2 ** RR(-i), success_probability))
         try:
             current = f(n, alpha, q, success_probability=prob, m=m, *args, **kwds)
             repeat = amplify(success_probability, prob, majority=decision)
@@ -1531,8 +1532,7 @@ class BKZ:
             10–24).
 
         """
-        
-            return BKZ._BDGL16_asymptotic(beta, d, B)
+        return BKZ._BDGL16_asymptotic(beta, d, B)
 
     @staticmethod
     def LaaMosPol14(beta, d, B=None):
