@@ -243,7 +243,7 @@ concrete_RLWE_params = {
             "k": 1,
             "n": 2048,
             "sd": -82,
-        }
+        },
 
     # dimension 2
 
