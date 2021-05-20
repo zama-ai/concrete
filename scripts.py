@@ -132,13 +132,13 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
 
     # initial estimate, to determine if we are above or below the target security level
     estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                reduction_cost_model=reduction_cost_model, m=oo)
+                                reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
     security_level = get_security_level(estimate)
     z = inequality(security_level, target_security)
 
     while z * security_level < z * target_security:
         estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo)
+                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
         security_level = get_security_level(estimate)
 
         n += 1
@@ -173,7 +173,7 @@ def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=est.BK
 
     # initial estimate, to determine if we are above or below the target security level
     estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                reduction_cost_model=reduction_cost_model, m=oo)
+                                reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
     security_level = get_security_level(estimate)
     z = inequality(security_level, target_security)
 
@@ -182,7 +182,7 @@ def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=est.BK
         sd_ = 2 ** sd * q
         alpha = sqrt(2 * pi) * sd_ / RR(q)
         estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo)
+                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
         security_level = get_security_level(estimate)
 
     # final estimate (we went too far in the above loop)
