@@ -16,10 +16,11 @@ cost_models = [classical, quantum, classical_conservative, quantum_conservative,
 
 # functions to automate parameter selection
 
-def get_security_level(estimate):
+def get_security_level(estimate, decimal_places = 2):
     """ Function to get the security level from an LWE Estimator output, 
     i.e. returns only the bit-security level (without the attack params)
     :param estimate: the input estimate
+    :param decimal_places: the number of decimal places"%.2f" %
 
     EXAMPLE:
     sage: x = estimate_lwe(n = 256, q = 2**32, alpha = RR(8/2**32))
@@ -50,7 +51,7 @@ def get_security_level(estimate):
         pass
 
     # take the minimum attack cost (in bits)
-    security_level = log(min(levels), 2)
+    security_level = round(log(min(levels), 2), decimal_places)
 
     return security_level
 
@@ -91,13 +92,31 @@ def get_all_security_levels(params):
             except:
                 model = model
             estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                        reduction_cost_model=model, m=oo)
+                                        reduction_cost_model=model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
             results.append(get_security_level(estimate))
 
         RESULTS.append(results)
 
     return RESULTS
 
+def latexit(results):
+    """
+    A function which takes the output of get_all_security_levels() and
+    turns it into a latex table
+    :param results: the security levels
+
+    sage: X = get_all_security_levels(concrete_LWE_params)
+    sage: latextit(X)
+    \begin{tabular}{llllll}
+    LWE128_256 & $126.69$ & $117.57$ & $98.7$ & $89.57$ & $217.55$ \\
+    LWE128_512 & $135.77$ & $125.92$ & $106.58$ & $96.73$ & $218.53$ \\
+    LWE128_638 & $135.27$ & $125.49$ & $105.7$ & $95.93$ & $216.81$ \\
+    [...]
+    """
+
+    table(results)
+
+    return latex(table(results))
 
 def inequality(x, y):
     """ A function which compresses the conditions
