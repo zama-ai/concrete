@@ -1,7 +1,9 @@
-import estimator as est
 import matplotlib.pyplot as plt
+import numpy as np
 from sage.stats.distributions.discrete_gaussian_lattice import DiscreteGaussianDistributionIntegerSampler
 from concrete_params import concrete_LWE_params, concrete_RLWE_params
+# easier to just load the estimator
+load("estimator.py")
 
 # define the four cost models used for Concrete (2 classical, 2 quantum)
 # note that classical and quantum are the two models used in the "HE Std"
@@ -10,7 +12,7 @@ classical = lambda beta, d, B: ZZ(2) ** RR(0.292 * beta + 16.4 + log(8 * d, 2)),
 quantum = lambda beta, d, B: ZZ(2) ** RR(0.265 * beta + 16.4 + log(8 * d, 2)),
 classical_conservative = lambda beta, d, B: ZZ(2) ** RR(0.292 * beta),
 quantum_conservative = lambda beta, d, B: ZZ(2) ** RR(0.265 * beta),
-cost_models = [classical, quantum, classical_conservative, quantum_conservative]
+cost_models = [classical, quantum, classical_conservative, quantum_conservative, BKZ.enum]
 
 # functions to automate parameter selection
 
@@ -84,8 +86,11 @@ def get_all_security_levels(params):
         m = oo
 
         for model in cost_models:
-            model = model[0]
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+            try:
+                model = model[0]
+            except:
+                model = model
+            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                         reduction_cost_model=model, m=oo)
             results.append(get_security_level(estimate))
 
@@ -106,7 +111,7 @@ def inequality(x, y):
         return -1
 
 
-def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ.sieve, secret_distribution=(0, 1),
+def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=BKZ.sieve, secret_distribution=(0, 1),
                              target_security=128):
     """ A function used to generate the smallest value of n which allows for 
     target_security bits of security, for the input values of (sd,q)
@@ -131,13 +136,13 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
 
 
     # initial estimate, to determine if we are above or below the target security level
-    estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+    estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                 reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
     security_level = get_security_level(estimate)
     z = inequality(security_level, target_security)
 
     while z * security_level < z * target_security:
-        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+        estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                     reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
         security_level = get_security_level(estimate)
 
@@ -148,7 +153,7 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
     return ZZ(n)
 
 
-def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=est.BKZ.sieve, secret_distribution=(0, 1),
+def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=BKZ.sieve, secret_distribution=(0, 1),
                               target_security=128):
     """ A function used to generate the smallest value of sd which allows for 
     target_security bits of security, for the input values of (n,q)
@@ -172,7 +177,8 @@ def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=est.BK
     alpha = sqrt(2 * pi) * sd_ / RR(q)
 
     # initial estimate, to determine if we are above or below the target security level
-    estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+    print("estimating for n, q, sd = {}".format(log(sd_,2)))
+    estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                 reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
     security_level = get_security_level(estimate)
     z = inequality(security_level, target_security)
@@ -181,17 +187,19 @@ def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=est.BK
         sd += z * 1
         sd_ = 2 ** sd * q
         alpha = sqrt(2 * pi) * sd_ / RR(q)
-        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+        print("estimating for n, q, sd = {}".format(log(sd_,2)))
+        estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                     reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
         security_level = get_security_level(estimate)
 
     # final estimate (we went too far in the above loop)
-    sd -= z * 1
-    sd_ = 2 ** sd * q
-    alpha = sqrt(2 * pi) * sd_ / RR(q)
-    estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                reduction_cost_model=reduction_cost_model, m=oo)
-    security_level = get_security_level(estimate)
+    if security_level < target_security:
+        sd -= z * 1
+        sd_ = 2 ** sd * q
+        alpha = sqrt(2 * pi) * sd_ / RR(q)
+        estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                    reduction_cost_model=reduction_cost_model, m=oo)
+        security_level = get_security_level(estimate)
 
     print("the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(n,
                                                                                                                       sd,
@@ -202,7 +210,7 @@ def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=est.BK
     return sd
 
 
-def generate_parameter_matrix(n_range, sd=None, q=2 ** 32, reduction_cost_model=est.BKZ.sieve,
+def generate_parameter_matrix(n_range, sd=None, q=2 ** 32, reduction_cost_model=BKZ.sieve,
                               secret_distribution=(0, 1), target_security=128):
     """
     :param n_range: a tuple (n_min, n_max) giving the values of n for which to generate parameters
@@ -233,6 +241,9 @@ def generate_parameter_matrix(n_range, sd=None, q=2 ** 32, reduction_cost_model=
                                        secret_distribution=secret_distribution, target_security=target_security)
         sd_ = sd
         RESULTS.append((n, q, sd))
+
+
+
     return RESULTS
 
 
@@ -242,6 +253,11 @@ def generate_parameter_step(results):
     :param results: an output of generate_parameter_matrix
 
     returns: a step plot of chosen parameters
+
+    EXAMPLE:
+    X = generate_parameter_matrix([700, 790])
+    generate_parameter_step(X)
+    plt.show()
     """
 
     N = []
@@ -251,8 +267,7 @@ def generate_parameter_step(results):
         N.append(n)
         SD.append(sd)
 
-    plt.step(N, SD)
-    plt.show()
+    plt.scatter(N, SD)
 
     return plt
 
@@ -288,3 +303,7 @@ def test_rounded_gaussian(sigma, number_samples):
     # sort (values)
     hist.sort(key=lambda x:x[0])
     return hist
+
+
+
+
