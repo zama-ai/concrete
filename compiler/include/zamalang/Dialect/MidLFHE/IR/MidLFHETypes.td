@@ -68,4 +68,48 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
     }];
 }
 
+def GGSWCipherTextType : MidLFHE_Type<"GGSWCipherText"> {
+    let mnemonic = "ggsw";
+
+    let summary = "An GGSW cipher text";
+
+    let description = [{
+        An GGSW cipher text
+    }];
+
+    let parameters = (ins "unsigned":$size, "unsigned":$N, "unsigned": $level, "unsigned":$base_log);
+
+    // We define the printer inline.
+    let printer = [{
+        $_printer << "ggsw<" << getImpl()->size << "," << getImpl()->N << "," << getImpl()->level << "," << getImpl()->base_log << ">";
+    }];
+
+    // The parser is defined here also.
+    let parser = [{
+    if ($_parser.parseLess())
+        return Type();
+    int size;
+    if ($_parser.parseInteger(size))
+        return Type();
+    if ($_parser.parseComma())
+        return Type();
+    int N;
+    if ($_parser.parseInteger(N))
+        return Type();
+    if ($_parser.parseComma())
+        return Type();
+    int level;
+    if ($_parser.parseInteger(level))
+        return Type();
+    if ($_parser.parseComma())
+        return Type();
+    int base_log;
+    if ($_parser.parseInteger(base_log))
+        return Type();
+    if ($_parser.parseGreater())
+        return Type();
+    return get($_ctxt, size, N, level, base_log);
+    }];
+}
+
 #endif

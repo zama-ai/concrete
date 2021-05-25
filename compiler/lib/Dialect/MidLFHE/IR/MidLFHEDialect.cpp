@@ -21,11 +21,12 @@ void MidLFHEDialect::initialize() {
 
 ::mlir::Type MidLFHEDialect::parseType(::mlir::DialectAsmParser &parser) const
 {
-  if(parser.parseOptionalKeyword("glwe").succeeded())
-    return GLWECipherTextType::parse(this->getContext(), parser);
   if(parser.parseOptionalKeyword("lwe").succeeded())
     return LWECipherTextType::parse(this->getContext(), parser);
-
+  if(parser.parseOptionalKeyword("glwe").succeeded())
+    return GLWECipherTextType::parse(this->getContext(), parser);
+  if(parser.parseOptionalKeyword("ggsw").succeeded())
+    return GGSWCipherTextType::parse(this->getContext(), parser);
   return ::mlir::Type();
 }
 
@@ -40,6 +41,11 @@ void MidLFHEDialect::printType(::mlir::Type type,
   mlir::zamalang::MidLFHE::GLWECipherTextType glwe = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GLWECipherTextType>();
   if (glwe != nullptr) {
     glwe.print(printer);
+    return;
+  }
+  mlir::zamalang::MidLFHE::GGSWCipherTextType ggsw = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GGSWCipherTextType>();
+  if (ggsw != nullptr) {
+    ggsw.print(printer);
     return;
   }
   // TODO - What should be done here?
