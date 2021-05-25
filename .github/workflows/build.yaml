@@ -29,3 +29,5 @@ jobs:
         run: cargo build --verbose
       - name: Build release
         run: cargo build --verbose --release
+      - name: Build native
+        run: RUSTFLAGS="-C target-feature=+aes,+rdseed,+sse2,+avx,+avx2" cargo build --verbose --release

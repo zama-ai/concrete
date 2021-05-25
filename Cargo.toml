@@ -12,3 +12,7 @@ opt-level = 3
 debug = true
 lto="thin"
 
+[patch.crates-io]
+concrete-csprng = { path = "concrete-csprng" }
+concrete-core = { path = "concrete-core" }
+concrete-npe = { path = "concrete-npe" }

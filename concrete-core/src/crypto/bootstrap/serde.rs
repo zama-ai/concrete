@@ -245,11 +245,11 @@ mod tests {
         for _ in 0..100 {
             let mut bsk = BootstrapKey::allocate(
                 Complex64::new(0., 0.),
-                test_tools::random_glwe_dimension(5).to_glwe_size(),
-                test_tools::random_polynomial_size(1024),
-                test_tools::random_level_count(5),
-                test_tools::random_base_log(4),
-                test_tools::random_lwe_dimension(5),
+                test_tools::random_glwe_dimension(5..10).to_glwe_size(),
+                test_tools::random_polynomial_size(1024..2048),
+                test_tools::random_level_count(5..6),
+                test_tools::random_base_log(4..5),
+                test_tools::random_lwe_dimension(5..10),
             );
             for mut val in bsk.as_mut_tensor().iter_mut() {
                 let (a, b) = generator.random_gaussian(0., 1.);

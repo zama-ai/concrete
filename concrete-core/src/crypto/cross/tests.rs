@@ -13,7 +13,7 @@ use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use crate::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::math::polynomial::PolynomialSize;
-use crate::math::random::{fill_with_random_uniform, fill_with_random_uniform_boolean};
+use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
 use crate::numeric::{CastFrom, CastInto, Numeric};
 use crate::test_tools::{assert_delta_std_dev, assert_noise_distribution};
@@ -130,9 +130,9 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>(
     }
 }
 
-fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
-    let n_tests = 100;
-    for _n in 0..n_tests {
+fn test_external_product_generic<T: UnsignedTorus + npe::Cross>(sizes: &[usize]) {
+    const N_TESTS: usize = 100;
+    for _n in 0..N_TESTS {
         // fix different polynomial degrees
         for polynomial_size in sizes {
             // fix a set of parameters

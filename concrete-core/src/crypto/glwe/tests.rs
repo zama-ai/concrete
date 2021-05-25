@@ -5,6 +5,7 @@ use crate::crypto::{CiphertextCount, GlweDimension, UnsignedTorus};
 use crate::math::dispersion::LogStandardDev;
 use crate::math::polynomial::PolynomialSize;
 use crate::math::random;
+use crate::math::random::RandomGenerator;
 use crate::test_tools::assert_delta_std_dev;
 #[cfg(feature = "longtest")]
 use crate::test_tools::{random_ciphertext_count, random_glwe_dimension, random_polynomial_size};
