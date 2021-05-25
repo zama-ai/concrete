@@ -48,3 +48,23 @@ func @neg_eint(%arg0: !HLFHE.eint<0>) -> !HLFHE.eint<0> {
   %1 = "HLFHE.neg_eint"(%arg0): (!HLFHE.eint<0>) -> (!HLFHE.eint<0>)
   return %1: !HLFHE.eint<0>
 }
+
+// CHECK-LABEL: func @apply_univariate(%arg0: !HLFHE.eint<0>) -> !HLFHE.eint<0>
+func @apply_univariate(%arg0: !HLFHE.eint<0>) -> !HLFHE.eint<0> {
+  // CHECK-NEXT: %[[V1:.*]] = "HLFHE.apply_univariate"(%arg0) ( {
+  // CHECK-NEXT: ^bb0(%[[V2:.*]]: i32):
+  // CHECK-NEXT: %[[CST:.*]] = constant 5 : i32
+  // CHECK-NEXT: %[[V3:.*]] = muli %[[V2]], %[[CST]] : i32
+  // CHECK-NEXT: "HLFHE.apply_univariate_return"(%[[V3]]) : (i32) -> ()
+  // CHECK-NEXT: }) : (!HLFHE.eint<0>) -> !HLFHE.eint<0>
+  // CHECK-NEXT: return %[[V1]] : !HLFHE.eint<0>
+
+  %0 = "HLFHE.apply_univariate"(%arg0)({
+  ^bb0(%a: i32):
+    %cst = constant 5: i32
+    %res = std.muli %a, %cst : i32
+    "HLFHE.apply_univariate_return"(%res): (i32) -> ()
+  }) : (!HLFHE.eint<0>) -> !HLFHE.eint<0>
+
+  return %0: !HLFHE.eint<0>
+}

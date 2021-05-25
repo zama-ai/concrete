@@ -3,6 +3,9 @@
 
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
+#include <mlir/Interfaces/SideEffectInterfaces.h>
+#include <mlir/Interfaces/ControlFlowInterfaces.h>
+
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
 
 #define GET_OP_CLASSES
