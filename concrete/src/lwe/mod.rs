@@ -500,7 +500,7 @@ impl LWE {
     /// * `new_min` - the min of the interval for the resulting Encoder
     ///
     /// # Output
-    /// ** DimensionError - if the ciphertexts have incompatible dimensions
+    /// * DimensionError - if the ciphertexts have incompatible dimensions
     /// * DeltaError - if the ciphertexts have incompatible deltas
     /// * PaddingError - if the ciphertexts have incompatible paddings
     /// * NotEnoughPaddingError - if nb bit of padding is zero
