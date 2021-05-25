@@ -2,16 +2,30 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sage.stats.distributions.discrete_gaussian_lattice import DiscreteGaussianDistributionIntegerSampler
 from concrete_params import concrete_LWE_params, concrete_RLWE_params
+from pytablewriter import MarkdownTableWriter
 # easier to just load the estimator
 load("estimator.py")
 
 # define the four cost models used for Concrete (2 classical, 2 quantum)
 # note that classical and quantum are the two models used in the "HE Std"
 
-classical = lambda beta, d, B: ZZ(2) ** RR(0.292 * beta + 16.4 + log(8 * d, 2)),
-quantum = lambda beta, d, B: ZZ(2) ** RR(0.265 * beta + 16.4 + log(8 * d, 2)),
-classical_conservative = lambda beta, d, B: ZZ(2) ** RR(0.292 * beta),
-quantum_conservative = lambda beta, d, B: ZZ(2) ** RR(0.265 * beta),
+
+def classical(beta, d, B):
+    return ZZ(2) ** RR(0.292 * beta + 16.4 + log(8 * d, 2))
+
+
+def quantum(beta, d, B):
+    return ZZ(2) ** RR(0.265 * beta + 16.4 + log(8 * d, 2))
+
+
+def classical_conservative(beta, d, B):
+    return ZZ(2) ** RR(0.292 * beta)
+
+
+def quantum_conservative(beta, d, B):
+    return ZZ(2) ** RR(0.265 * beta)
+
+
 cost_models = [classical, quantum, classical_conservative, quantum_conservative, BKZ.enum]
 
 # functions to automate parameter selection
@@ -99,6 +113,7 @@ def get_all_security_levels(params):
 
     return RESULTS
 
+
 def latexit(results):
     """
     A function which takes the output of get_all_security_levels() and
@@ -114,9 +129,31 @@ def latexit(results):
     [...]
     """
 
-    table(results)
-
     return latex(table(results))
+
+
+def markdownit(results, headings = ["Parameter Set", "Classical", "Quantum", "Classical (c)", "Quantum (c)", "Enum"]):
+    """
+    A function which takes the output of get_all_security_levels() and
+    turns it into a markdown table
+    :param results: the security levels
+
+    sage: X = get_all_security_levels(concrete_LWE_params)
+    sage: markdownit(X)
+    # estimates
+    |Parameter Set|Classical|Quantum|Classical (c)|Quantum (c)| Enum |
+    |-------------|---------|-------|-------------|-----------|------|
+    |LWE128_256   |126.69   |117.57 |98.7         |89.57      |217.55|
+    |LWE128_512   |135.77   |125.92 |106.58       |96.73      |218.53|
+    |LWE128_638   |135.27   |125.49 |105.7        |95.93      |216.81|
+    [...]
+    """
+
+    writer = MarkdownTableWriter(value_matrix = results, headers = headings, table_name = "estimates")
+    writer.write_table()
+
+    return writer
+
 
 def inequality(x, y):
     """ A function which compresses the conditions
@@ -135,6 +172,7 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=BKZ.sie
     """ A function used to generate the smallest value of n which allows for 
     target_security bits of security, for the input values of (sd,q)
     :param sd: the standard deviation of the error
+    :param n: an initial value of n to use in optimisation, guessed if None
     :param q: the LWE modulus (q = 2**32, 2**64 in TFHE)
     :param reduction_cost_model: the BKZ cost model considered, BKZ.sieve is default
     :param secret_distribution: the LWE secret distribution
@@ -177,6 +215,7 @@ def automated_param_select_sd(n, sd=None, q=2 ** 32, reduction_cost_model=BKZ.si
     """ A function used to generate the smallest value of sd which allows for 
     target_security bits of security, for the input values of (n,q)
     :param n: the LWE dimension
+    :param sd: an initial value of sd to use in optimisation, guessed if None
     :param q: the LWE modulus (q = 2**32, 2**64 in TFHE)
     :param reduction_cost_model: the BKZ cost model considered, BKZ.sieve is default
     :param secret_distribution: the LWE secret distribution
