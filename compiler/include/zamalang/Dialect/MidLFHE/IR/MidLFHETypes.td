@@ -1,6 +1,8 @@
 #ifndef ZAMALANG_DIALECT_MidLFHE_IR_MidLFHE_TYPES
 #define ZAMALANG_DIALECT_MidLFHE_IR_MidLFHE_TYPES
 
+// TODO: MLWE / GSW
+
 include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.td"
 
 class MidLFHE_Type<string name> : TypeDef<MidLFHE_Dialect, name> { }
@@ -111,5 +113,32 @@ def GGSWCipherTextType : MidLFHE_Type<"GGSWCipherText"> {
     return get($_ctxt, size, N, level, base_log);
     }];
 }
+
+def AnyCipherTextType : MidLFHE_Type<"AnyCipherText"> {
+    let mnemonic = "ciphertext";
+
+    let summary = "Any cipher text";
+
+    let description = [{
+        Any cipher text
+    }];
+
+    // We define the printer inline.
+    let printer = [{
+        $_printer << "ciphertext";
+    }];
+
+    // The parser is defined here also.
+    let parser = [{
+        return get($_ctxt);
+    }];
+}
+
+def CipherTextType: TypeConstraint<Or<[
+    LWECipherTextType.predicate,
+    GLWECipherTextType.predicate,
+    GGSWCipherTextType.predicate,
+    AnyCipherTextType.predicate,
+    ]>, "ciphertext-like">;
 
 #endif
