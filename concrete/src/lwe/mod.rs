@@ -693,8 +693,8 @@ impl LWE {
         Ok(())
     }
 
-    /// Compute an addition between two LWE ciphertexts by eating one bit of padding
-    /// Note tha the number of bits of message stays the same: min(nb1,nb2)
+    /// Compute an addition between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message stays the same: min(nb1,nb2)
     ///
     /// # Argument
     /// * `ct` - an LWE struct
@@ -733,8 +733,8 @@ impl LWE {
         Ok(res)
     }
 
-    /// Compute an addition between two LWE ciphertexts by eating one bit of padding
-    /// Note tha the number of bits of message stays the same: min(nb1,nb2)
+    /// Compute an addition between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message stays the same: min(nb1,nb2)
     ///
     /// # Argument
     /// * `ct` - an LWE struct
@@ -809,8 +809,8 @@ impl LWE {
         Ok(())
     }
 
-    /// Compute an addition between two LWE ciphertexts by eating one bit of padding
-    /// Note tha the number of bits of message increases: max(nb1,nb2) + 1
+    /// Compute an addition between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message increases: max(nb1,nb2) + 1
     ///
     /// # Argument
     /// * `ct` - an LWE struct
@@ -849,8 +849,8 @@ impl LWE {
         Ok(res)
     }
 
-    /// Compute an addition between two LWE ciphertexts by eating one bit of padding.panic
-    /// Note tha the number of bits of message increases: max(nb1,nb2) + 1
+    /// Compute an addition between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message increases: max(nb1,nb2) + 1
     ///
     /// # Argument
     /// * `ct` - an LWE struct
@@ -928,8 +928,8 @@ impl LWE {
         Ok(())
     }
 
-    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding
-    /// Note tha the number of bits of message stays the same: min(nb1,nb2)
+    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message stays the same: min(nb1,nb2)
     ///
     /// # Argument
     /// * `ct` - an LWE struct
@@ -968,8 +968,8 @@ impl LWE {
         Ok(res)
     }
 
-    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding
-    /// Note tha the number of bits of message stays the same: min(nb1,nb2)
+    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message stays the same: min(nb1,nb2)
     ///
     /// # Argument
     /// * `ct` - an LWE struct
@@ -1046,8 +1046,8 @@ impl LWE {
         Ok(())
     }
 
-    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding
-    /// Note tha the number of bits of message increases: max(nb1,nb2) + 1
+    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message increases: max(nb1,nb2) + 1
     ///
     /// # Argument
     /// * `ct` - an LWE struct
@@ -1086,8 +1086,8 @@ impl LWE {
         Ok(res)
     }
 
-    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding
-    /// Note tha the number of bits of message increases: max(nb1,nb2) + 1
+    /// Compute an subtraction between two LWE ciphertexts by eating one bit of padding.
+    /// Note that the number of bits of message increases: max(nb1,nb2) + 1
     ///
     /// # Argument
     /// * `ct` - an LWE struct
