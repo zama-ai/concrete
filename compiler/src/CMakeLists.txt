@@ -4,6 +4,7 @@ llvm_update_compile_flags(zamacompiler)
 target_link_libraries(zamacompiler
   PRIVATE
   MLIRTransforms
+  MidLFHEDialect
   HLFHEDialect)
 
 mlir_check_all_link_libraries(zamacompiler)

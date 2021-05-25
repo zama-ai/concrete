@@ -7,6 +7,8 @@
 
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
+#include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
+#include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 
 struct CommandLineArgs {
     std::vector<std::string> inputs;
@@ -45,6 +47,7 @@ int main(int argc, char **argv) {
     mlir::MLIRContext context;
     // Load our Dialect in this MLIR Context.
     context.getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
+    context.getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
     context.getOrLoadDialect<mlir::StandardOpsDialect>();
 
     // For all input file, parse and dump
