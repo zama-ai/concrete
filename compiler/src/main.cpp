@@ -53,6 +53,9 @@ int main(int argc, char **argv) {
     // For all input file, parse and dump
     for (const auto& fileName: cmdLineArgs.inputs) {
         auto module = mlir::parseSourceFile<mlir::ModuleOp>(fileName, &context);
+        if(!module) {
+            exit(1);
+        }
         module->dump();
     }
     return 0;
