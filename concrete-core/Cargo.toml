@@ -25,7 +25,7 @@ itertools = "0.10"
 serde_test = "1.0.125"
 
 [dependencies.fftw]
-version = "^0.5.0"
+version = "^0.7.0"
 default-features = false
 features = ["system"]
 

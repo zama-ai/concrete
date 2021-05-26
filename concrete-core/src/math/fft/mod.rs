@@ -69,3 +69,5 @@ impl<'de> Deserialize<'de> for SerializableComplex64 {
         deserializer.deserialize_tuple(2, VisitorImpl)
     }
 }
+
+pub use fftw::array::AlignedVec;
