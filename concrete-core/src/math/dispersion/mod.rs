@@ -12,6 +12,9 @@
 //! In any of those cases, the corresponding type implements the `DispersionParameter` trait,
 //! which makes if possible to use any of those representations generically when noise must be
 //! defined.
+
+use serde::{Deserialize, Serialize};
+
 use crate::numeric::UnsignedInteger;
 
 /// A trait for types representing distribution parameters, for a given unsigned integer type.
@@ -115,8 +118,8 @@ impl DispersionParameter for LogStandardDev {
 /// assert_eq!(params.get_modular_log_standard_dev::<u32>(), 32.-25.);
 /// assert_eq!(params.get_modular_variance::<u32>(), 2_f64.powf(32.-25.).powi(2));
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub struct StandardDev(f64);
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct StandardDev(pub f64);
 
 impl StandardDev {
     pub fn from_standard_dev(std: f64) -> StandardDev {
