@@ -41,8 +41,8 @@ impl Fft {
             "The size chosen is not valid ({}). Should be 256, 512, 1024, 2048 or 4096",
             size.0
         );
-        let forward_plan = C2CPlan64::aligned(&[size.0], Sign::Forward, Flag::Measure).unwrap();
-        let backward_plan = C2CPlan64::aligned(&[size.0], Sign::Backward, Flag::Measure).unwrap();
+        let forward_plan = C2CPlan64::aligned(&[size.0], Sign::Forward, Flag::MEASURE).unwrap();
+        let backward_plan = C2CPlan64::aligned(&[size.0], Sign::Backward, Flag::MEASURE).unwrap();
         let temporary = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(size.0));
         let correctors = Correctors::new(size.0);
         Fft {
