@@ -11,7 +11,7 @@ void MidLFHEDialect::initialize() {
   addOperations<
     #define GET_OP_LIST
     #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.cpp.inc"
-      >();
+  >();
 
   addTypes<
     #define GET_TYPEDEF_LIST
