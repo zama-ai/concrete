@@ -29,6 +29,17 @@ def AddPlainOp : MidLFHE_Op<"add_plain"> {
     ];
 }
 
+def MulPlainOp : MidLFHE_Op<"mul_plain"> {
+    let arguments = (ins CipherTextType:$a, AnyInteger:$b);
+    let results = (outs CipherTextType);
+
+    let builders = [
+        OpBuilder<(ins "Value":$a, "Value":$b), [{
+            build($_builder, $_state, a.getType(), a, b);
+        }]>
+    ];
+}
+
 def PBSRegion : Region<
   CPred<"::mlir::zamalang::predPBSRegion($_self)">,
   "pbs region needs one block with one any integer argument">;
