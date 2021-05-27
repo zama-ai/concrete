@@ -5,6 +5,7 @@
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 #include <mlir/Interfaces/ControlFlowInterfaces.h>
+#include <mlir/IR/Builders.h>
 
 
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"

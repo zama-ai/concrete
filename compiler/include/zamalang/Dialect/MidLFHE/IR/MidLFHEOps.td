@@ -45,7 +45,7 @@ def PBSRegion : Region<
   "pbs region needs one block with one any integer argument">;
 
 def PBSOp : MidLFHE_Op<"pbs"> {
-  let arguments = (ins CipherTextType:$x);
+  let arguments = (ins CipherTextType:$x, I32Attr:$big_n, I32Attr:$log_noise, I32Attr:$base_log, I32Attr:$level);
   let results = (outs CipherTextType:$result);
   let regions = (region PBSRegion:$region);
 }

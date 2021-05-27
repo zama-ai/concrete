@@ -6,13 +6,13 @@ func @pbs_ciphertext(%arg0: !MidLFHE.ciphertext, %arg1: i32) -> !MidLFHE.ciphert
   // CHECK-NEXT: ^bb0(%[[V2:.*]]: i32):  // no predecessors
   // CHECK-NEXT:   %[[V4:.*]] = divi_unsigned %[[V2]], %arg1 : i32
   // CHECK-NEXT:   "MidLFHE.pbs_return"(%[[V4]]) : (i32) -> ()
-  // CHECK-NEXT: }) : (!MidLFHE.ciphertext) -> !MidLFHE.ciphertext
+  // CHECK-NEXT: }) {base_log = 8 : i32, big_n = 1024 : i32, level = 2 : i32, log_noise = -20 : i32} : (!MidLFHE.ciphertext) -> !MidLFHE.ciphertext
   // CHECK-NEXT: return %[[V1]] : !MidLFHE.ciphertext
   %0 = "MidLFHE.pbs"(%arg0)({
     ^bb0(%a:i32):
       %1 = std.divi_unsigned %a, %arg1 : i32
       "MidLFHE.pbs_return"(%1) : (i32) -> ()
-  }) : (!MidLFHE.ciphertext) -> !MidLFHE.ciphertext
+  }){big_n=1024: i32, log_noise=-20: i32, base_log=8 : i32, level=2 : i32} : (!MidLFHE.ciphertext) -> !MidLFHE.ciphertext
 
   return %0 : !MidLFHE.ciphertext
 }
