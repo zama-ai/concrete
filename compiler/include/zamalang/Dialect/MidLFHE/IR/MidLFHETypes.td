@@ -134,6 +134,27 @@ def AnyCipherTextType : MidLFHE_Type<"AnyCipherText"> {
     }];
 }
 
+def KeySwitchingKeyType : MidLFHE_Type<"KeySwitchingKey"> {
+    let mnemonic = "ksk";
+
+    let summary = "A KeySwitching key";
+
+    let description = [{
+       A KeySwitching key
+    }];
+
+   // We define the printer inline.
+    let printer = [{
+        $_printer << "ksk";
+    }];
+
+    // The parser is defined here also.
+    let parser = [{
+        return get($_ctxt);
+    }];
+}
+
+
 def CipherTextType: TypeConstraint<Or<[
     LWECipherTextType.predicate,
     GLWECipherTextType.predicate,

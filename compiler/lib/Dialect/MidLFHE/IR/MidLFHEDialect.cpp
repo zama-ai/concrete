@@ -29,6 +29,8 @@ void MidLFHEDialect::initialize() {
     return GGSWCipherTextType::parse(this->getContext(), parser);
   if(parser.parseOptionalKeyword("ciphertext").succeeded())
     return AnyCipherTextType::parse(this->getContext(), parser);
+  if(parser.parseOptionalKeyword("ksk").succeeded())
+    return KeySwitchingKeyType::parse(this->getContext(), parser);
   parser.emitError(parser.getCurrentLocation(), "Unknown MidLFHE type");
   return ::mlir::Type();
 }
@@ -49,6 +51,11 @@ void MidLFHEDialect::printType(::mlir::Type type,
   mlir::zamalang::MidLFHE::GGSWCipherTextType ggsw = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GGSWCipherTextType>();
   if (ggsw != nullptr) {
     ggsw.print(printer);
+    return;
+  }
+  mlir::zamalang::MidLFHE::KeySwitchingKeyType ksk = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::KeySwitchingKeyType>();
+  if (ksk != nullptr) {
+    ksk.print(printer);
     return;
   }
   mlir::zamalang::MidLFHE::AnyCipherTextType any = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::AnyCipherTextType>();

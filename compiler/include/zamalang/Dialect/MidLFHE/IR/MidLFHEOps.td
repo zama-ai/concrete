@@ -56,4 +56,10 @@ def ReturnOp : MidLFHE_Op<"pbs_return", [NoSideEffect, ReturnLike, Terminator]> 
   let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
 }
 
+
+def KeySwitchOp : MidLFHE_Op<"keyswitch"> {
+    let arguments = (ins KeySwitchingKeyType:$ks, CipherTextType:$ct, I32Attr:$base_log, I32Attr:$level);
+    let results = (outs CipherTextType);
+}
+
 #endif
