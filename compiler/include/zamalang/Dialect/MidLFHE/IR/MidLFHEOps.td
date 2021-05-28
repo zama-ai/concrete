@@ -62,4 +62,29 @@ def KeySwitchOp : MidLFHE_Op<"keyswitch"> {
     let results = (outs CipherTextType);
 }
 
+
+def HAddOp : MidLFHE_Op<"h_add"> {
+    let arguments = (ins GLWECipherTextType:$a, GLWECipherTextType:$b);
+    let results = (outs GLWECipherTextType);
+
+    let builders = [
+        OpBuilder<(ins "Value":$a, "Value":$b), [{
+            build($_builder, $_state, a.getType(), a, b);
+        }]>
+    ];
+}
+
+
+def HMulOp : MidLFHE_Op<"h_mul"> {
+    let arguments = (ins GLWECipherTextType:$a, GLWECipherTextType:$b);
+    let results = (outs GLWECipherTextType);
+
+    let builders = [
+        OpBuilder<(ins "Value":$a, "Value":$b), [{
+            build($_builder, $_state, a.getType(), a, b);
+        }]>
+    ];
+}
+
+
 #endif
