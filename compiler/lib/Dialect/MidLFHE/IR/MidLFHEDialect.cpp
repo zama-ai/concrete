@@ -9,56 +9,59 @@ using namespace mlir::zamalang::MidLFHE;
 
 void MidLFHEDialect::initialize() {
   addOperations<
-    #define GET_OP_LIST
-    #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.cpp.inc"
-  >();
+#define GET_OP_LIST
+#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.cpp.inc"
+      >();
 
   addTypes<
-    #define GET_TYPEDEF_LIST
-    #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOpsTypes.cpp.inc"
-  >();
+#define GET_TYPEDEF_LIST
+#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOpsTypes.cpp.inc"
+      >();
 }
 
-::mlir::Type MidLFHEDialect::parseType(::mlir::DialectAsmParser &parser) const
-{
-  if(parser.parseOptionalKeyword("lwe").succeeded())
+::mlir::Type MidLFHEDialect::parseType(::mlir::DialectAsmParser &parser) const {
+  if (parser.parseOptionalKeyword("lwe").succeeded())
     return LWECipherTextType::parse(this->getContext(), parser);
-  if(parser.parseOptionalKeyword("glwe").succeeded())
+  if (parser.parseOptionalKeyword("glwe").succeeded())
     return GLWECipherTextType::parse(this->getContext(), parser);
-  if(parser.parseOptionalKeyword("ggsw").succeeded())
+  if (parser.parseOptionalKeyword("ggsw").succeeded())
     return GGSWCipherTextType::parse(this->getContext(), parser);
-  if(parser.parseOptionalKeyword("ciphertext").succeeded())
+  if (parser.parseOptionalKeyword("ciphertext").succeeded())
     return AnyCipherTextType::parse(this->getContext(), parser);
-  if(parser.parseOptionalKeyword("ksk").succeeded())
+  if (parser.parseOptionalKeyword("ksk").succeeded())
     return KeySwitchingKeyType::parse(this->getContext(), parser);
   parser.emitError(parser.getCurrentLocation(), "Unknown MidLFHE type");
   return ::mlir::Type();
 }
 
 void MidLFHEDialect::printType(::mlir::Type type,
-                             ::mlir::DialectAsmPrinter &printer) const
-{
-  mlir::zamalang::MidLFHE::LWECipherTextType lwe = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::LWECipherTextType>();
+                               ::mlir::DialectAsmPrinter &printer) const {
+  mlir::zamalang::MidLFHE::LWECipherTextType lwe =
+      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::LWECipherTextType>();
   if (lwe != nullptr) {
     lwe.print(printer);
     return;
   }
-  mlir::zamalang::MidLFHE::GLWECipherTextType glwe = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GLWECipherTextType>();
+  mlir::zamalang::MidLFHE::GLWECipherTextType glwe =
+      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GLWECipherTextType>();
   if (glwe != nullptr) {
     glwe.print(printer);
     return;
   }
-  mlir::zamalang::MidLFHE::GGSWCipherTextType ggsw = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GGSWCipherTextType>();
+  mlir::zamalang::MidLFHE::GGSWCipherTextType ggsw =
+      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GGSWCipherTextType>();
   if (ggsw != nullptr) {
     ggsw.print(printer);
     return;
   }
-  mlir::zamalang::MidLFHE::KeySwitchingKeyType ksk = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::KeySwitchingKeyType>();
+  mlir::zamalang::MidLFHE::KeySwitchingKeyType ksk =
+      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::KeySwitchingKeyType>();
   if (ksk != nullptr) {
     ksk.print(printer);
     return;
   }
-  mlir::zamalang::MidLFHE::AnyCipherTextType any = type.dyn_cast_or_null<mlir::zamalang::MidLFHE::AnyCipherTextType>();
+  mlir::zamalang::MidLFHE::AnyCipherTextType any =
+      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::AnyCipherTextType>();
   if (any != nullptr) {
     any.print(printer);
     return;

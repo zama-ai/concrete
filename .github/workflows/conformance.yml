@@ -1,0 +1,18 @@
+name: Conformance
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  Formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Format with clang-format
+        run: .github/workflows/scripts/format_cpp.sh
+

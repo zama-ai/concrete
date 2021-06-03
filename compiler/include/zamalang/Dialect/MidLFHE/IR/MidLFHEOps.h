@@ -1,12 +1,11 @@
 #ifndef ZAMALANG_DIALECT_MidLFHE_MidLFHE_OPS_H
 #define ZAMALANG_DIALECT_MidLFHE_MidLFHE_OPS_H
 
+#include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
-#include <mlir/Interfaces/SideEffectInterfaces.h>
 #include <mlir/Interfaces/ControlFlowInterfaces.h>
-#include <mlir/IR/Builders.h>
-
+#include <mlir/Interfaces/SideEffectInterfaces.h>
 
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 
