@@ -19,8 +19,8 @@ class MidLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<MidLFHE_Dialect, mnemonic, traits>;
 
 def AddPlainOp : MidLFHE_Op<"add_plain"> {
-    let arguments = (ins CipherTextType:$a, AnyInteger:$b);
-    let results = (outs CipherTextType);
+    let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
+    let results = (outs GLWECipherTextType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -30,8 +30,8 @@ def AddPlainOp : MidLFHE_Op<"add_plain"> {
 }
 
 def MulPlainOp : MidLFHE_Op<"mul_plain"> {
-    let arguments = (ins CipherTextType:$a, AnyInteger:$b);
-    let results = (outs CipherTextType);
+    let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
+    let results = (outs GLWECipherTextType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -39,29 +39,6 @@ def MulPlainOp : MidLFHE_Op<"mul_plain"> {
         }]>
     ];
 }
-
-def PBSRegion : Region<
-  CPred<"::mlir::zamalang::predPBSRegion($_self)">,
-  "pbs region needs one block with one any integer argument">;
-
-def PBSOp : MidLFHE_Op<"pbs"> {
-  let arguments = (ins CipherTextType:$x, I32Attr:$big_n, I32Attr:$log_noise, I32Attr:$base_log, I32Attr:$level);
-  let results = (outs CipherTextType:$result);
-  let regions = (region PBSRegion:$region);
-}
-
-def ReturnOp : MidLFHE_Op<"pbs_return", [NoSideEffect, ReturnLike, Terminator]> {
-  let summary = "terminator of pbs block";
-  let arguments = (ins AnyInteger);
-  let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
-}
-
-
-def KeySwitchOp : MidLFHE_Op<"keyswitch"> {
-    let arguments = (ins KeySwitchingKeyType:$ks, CipherTextType:$ct, I32Attr:$base_log, I32Attr:$level);
-    let results = (outs CipherTextType);
-}
-
 
 def HAddOp : MidLFHE_Op<"h_add"> {
     let arguments = (ins GLWECipherTextType:$a, GLWECipherTextType:$b);
@@ -86,5 +63,21 @@ def HMulOp : MidLFHE_Op<"h_mul"> {
     ];
 }
 
+
+def PBSRegion : Region<
+  CPred<"::mlir::zamalang::predPBSRegion($_self)">,
+  "pbs region needs one block with one any integer argument">;
+
+def PBSOp : MidLFHE_Op<"pbs"> {
+  let arguments = (ins GLWECipherTextType:$x, I32Attr:$big_n, I32Attr:$log_noise, I32Attr:$base_log, I32Attr:$level);
+  let results = (outs GLWECipherTextType:$result);
+  let regions = (region PBSRegion:$region);
+}
+
+def ReturnOp : MidLFHE_Op<"pbs_return", [NoSideEffect, ReturnLike, Terminator]> {
+  let summary = "terminator of pbs block";
+  let arguments = (ins AnyInteger);
+  let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
+}
 
 #endif

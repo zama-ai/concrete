@@ -1,45 +1,11 @@
 // RUN: zamacompiler %s  2>&1| FileCheck %s
-
-// CHECK-LABEL: func @mul_plain_ciphertext(%arg0: !MidLFHE.ciphertext) -> !MidLFHE.ciphertext
-func @mul_plain_ciphertext(%arg0: !MidLFHE.ciphertext) -> !MidLFHE.ciphertext {
+// CHECK-LABEL: func @mul_plain_glwe(%arg0: !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>) -> !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>
+func @mul_plain_glwe(%arg0: !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>) -> !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}> {
   // CHECK-NEXT: %[[V1:.*]] = constant 1 : i32
-  // CHECK-NEXT: %[[V2:.*]] = "MidLFHE.mul_plain"(%arg0, %[[V1]]) : (!MidLFHE.ciphertext, i32) -> !MidLFHE.ciphertext
-  // CHECK-NEXT: return %[[V2]] : !MidLFHE.ciphertext
+  // CHECK-NEXT: %[[V2:.*]] = "MidLFHE.mul_plain"(%arg0, %[[V1]]) : (!MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>, i32) -> !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>
+  // CHECK-NEXT: return %[[V2]] : !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>
 
   %0 = constant 1 : i32
-  %1 = "MidLFHE.mul_plain"(%arg0, %0): (!MidLFHE.ciphertext, i32) -> (!MidLFHE.ciphertext)
-  return %1: !MidLFHE.ciphertext
-}
-
-// CHECK-LABEL: func @mul_plain_lwe(%arg0: !MidLFHE.lwe<1024>) -> !MidLFHE.lwe<1024>
-func @mul_plain_lwe(%arg0: !MidLFHE.lwe<1024>) -> !MidLFHE.lwe<1024> {
-  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i32
-  // CHECK-NEXT: %[[V2:.*]] = "MidLFHE.mul_plain"(%arg0, %[[V1]]) : (!MidLFHE.lwe<1024>, i32) -> !MidLFHE.lwe<1024>
-  // CHECK-NEXT: return %[[V2]] : !MidLFHE.lwe<1024>
-
-  %0 = constant 1 : i32
-  %1 = "MidLFHE.mul_plain"(%arg0, %0): (!MidLFHE.lwe<1024>, i32) -> (!MidLFHE.lwe<1024>)
-  return %1: !MidLFHE.lwe<1024>
-}
-
-// CHECK-LABEL: func @mul_plain_glwe(%arg0: !MidLFHE.glwe<1024,12>) -> !MidLFHE.glwe<1024,12>
-func @mul_plain_glwe(%arg0: !MidLFHE.glwe<1024,12>) -> !MidLFHE.glwe<1024,12> {
-  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i32
-  // CHECK-NEXT: %[[V2:.*]] = "MidLFHE.mul_plain"(%arg0, %[[V1]]) : (!MidLFHE.glwe<1024,12>, i32) -> !MidLFHE.glwe<1024,12>
-  // CHECK-NEXT: return %[[V2]] : !MidLFHE.glwe<1024,12>
-
-  %0 = constant 1 : i32
-  %1 = "MidLFHE.mul_plain"(%arg0, %0): (!MidLFHE.glwe<1024,12>, i32) -> (!MidLFHE.glwe<1024,12>)
-  return %1: !MidLFHE.glwe<1024,12>
-}
-
-// CHECK-LABEL: func @mul_plain_ggsw(%arg0: !MidLFHE.ggsw<1024,12,3,2>) -> !MidLFHE.ggsw<1024,12,3,2>
-func @mul_plain_ggsw(%arg0: !MidLFHE.ggsw<1024,12,3,2>) -> !MidLFHE.ggsw<1024,12,3,2> {
-  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i32
-  // CHECK-NEXT: %[[V2:.*]] = "MidLFHE.mul_plain"(%arg0, %[[V1]]) : (!MidLFHE.ggsw<1024,12,3,2>, i32) -> !MidLFHE.ggsw<1024,12,3,2>
-  // CHECK-NEXT: return %[[V2]] : !MidLFHE.ggsw<1024,12,3,2>
-
-  %0 = constant 1 : i32
-  %1 = "MidLFHE.mul_plain"(%arg0, %0): (!MidLFHE.ggsw<1024,12,3,2>, i32) -> (!MidLFHE.ggsw<1024,12,3,2>)
-  return %1: !MidLFHE.ggsw<1024,12,3,2>
+  %1 = "MidLFHE.mul_plain"(%arg0, %0): (!MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>, i32) -> (!MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>)
+  return %1: !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>
 }

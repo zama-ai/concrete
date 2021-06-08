@@ -20,50 +20,18 @@ void MidLFHEDialect::initialize() {
 }
 
 ::mlir::Type MidLFHEDialect::parseType(::mlir::DialectAsmParser &parser) const {
-  if (parser.parseOptionalKeyword("lwe").succeeded())
-    return LWECipherTextType::parse(this->getContext(), parser);
   if (parser.parseOptionalKeyword("glwe").succeeded())
     return GLWECipherTextType::parse(this->getContext(), parser);
-  if (parser.parseOptionalKeyword("ggsw").succeeded())
-    return GGSWCipherTextType::parse(this->getContext(), parser);
-  if (parser.parseOptionalKeyword("ciphertext").succeeded())
-    return AnyCipherTextType::parse(this->getContext(), parser);
-  if (parser.parseOptionalKeyword("ksk").succeeded())
-    return KeySwitchingKeyType::parse(this->getContext(), parser);
   parser.emitError(parser.getCurrentLocation(), "Unknown MidLFHE type");
   return ::mlir::Type();
 }
 
 void MidLFHEDialect::printType(::mlir::Type type,
                                ::mlir::DialectAsmPrinter &printer) const {
-  mlir::zamalang::MidLFHE::LWECipherTextType lwe =
-      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::LWECipherTextType>();
-  if (lwe != nullptr) {
-    lwe.print(printer);
-    return;
-  }
   mlir::zamalang::MidLFHE::GLWECipherTextType glwe =
       type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GLWECipherTextType>();
   if (glwe != nullptr) {
     glwe.print(printer);
-    return;
-  }
-  mlir::zamalang::MidLFHE::GGSWCipherTextType ggsw =
-      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GGSWCipherTextType>();
-  if (ggsw != nullptr) {
-    ggsw.print(printer);
-    return;
-  }
-  mlir::zamalang::MidLFHE::KeySwitchingKeyType ksk =
-      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::KeySwitchingKeyType>();
-  if (ksk != nullptr) {
-    ksk.print(printer);
-    return;
-  }
-  mlir::zamalang::MidLFHE::AnyCipherTextType any =
-      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::AnyCipherTextType>();
-  if (any != nullptr) {
-    any.print(printer);
     return;
   }
   // TODO - What should be done here?

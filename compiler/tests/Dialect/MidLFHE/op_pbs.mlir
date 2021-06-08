@@ -1,18 +1,18 @@
 // RUN: zamacompiler %s  2>&1| FileCheck %s
 
-// CHECK-LABEL: func @pbs_ciphertext(%arg0: !MidLFHE.ciphertext, %arg1: i32) -> !MidLFHE.ciphertext {
-func @pbs_ciphertext(%arg0: !MidLFHE.ciphertext, %arg1: i32) -> !MidLFHE.ciphertext {
+// CHECK-LABEL: func @pbs_ciphertext(%arg0: !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>, %arg1: i32) -> !MidLFHE.glwe<{2048,10,64}{0,7,0,32,-20}> {
+func @pbs_ciphertext(%arg0: !MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>, %arg1: i32) -> !MidLFHE.glwe<{2048,10,64}{0,7,0,32,-20}> {
   // CHECK-NEXT: %[[V1:.*]] = "MidLFHE.pbs"(%arg0) ( {
   // CHECK-NEXT: ^bb0(%[[V2:.*]]: i32):  // no predecessors
   // CHECK-NEXT:   %[[V4:.*]] = divi_unsigned %[[V2]], %arg1 : i32
   // CHECK-NEXT:   "MidLFHE.pbs_return"(%[[V4]]) : (i32) -> ()
-  // CHECK-NEXT: }) {base_log = 8 : i32, big_n = 1024 : i32, level = 2 : i32, log_noise = -20 : i32} : (!MidLFHE.ciphertext) -> !MidLFHE.ciphertext
-  // CHECK-NEXT: return %[[V1]] : !MidLFHE.ciphertext
+  // CHECK-NEXT: }) {base_log = 8 : i32, big_n = 1024 : i32, level = 2 : i32, log_noise = -20 : i32} : (!MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>) -> !MidLFHE.glwe<{2048,10,64}{0,7,0,32,-20}>
+  // CHECK-NEXT: return %[[V1]] : !MidLFHE.glwe<{2048,10,64}{0,7,0,32,-20}>
   %0 = "MidLFHE.pbs"(%arg0)({
     ^bb0(%a:i32):
       %1 = std.divi_unsigned %a, %arg1 : i32
       "MidLFHE.pbs_return"(%1) : (i32) -> ()
-  }){big_n=1024: i32, log_noise=-20: i32, base_log=8 : i32, level=2 : i32} : (!MidLFHE.ciphertext) -> !MidLFHE.ciphertext
+  }){big_n=1024: i32, log_noise=-20: i32, base_log=8 : i32, level=2 : i32} : (!MidLFHE.glwe<{1024,12,-64}{0,7,0,32,-25}>) -> !MidLFHE.glwe<{2048,10,64}{0,7,0,32,-20}>
 
-  return %0 : !MidLFHE.ciphertext
+  return %0 : !MidLFHE.glwe<{2048,10,64}{0,7,0,32,-20}>
 }
