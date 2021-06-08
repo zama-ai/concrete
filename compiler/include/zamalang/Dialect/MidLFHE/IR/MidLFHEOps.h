@@ -1,5 +1,5 @@
-#ifndef ZAMALANG_DIALECT_MidLFHE_MidLFHE_OPS_H
-#define ZAMALANG_DIALECT_MidLFHE_MidLFHE_OPS_H
+#ifndef ZAMALANG_DIALECT_MIDLFHE_IR_MIDLFHEOPS_H
+#define ZAMALANG_DIALECT_MIDLFHE_IR_MIDLFHEOPS_H
 
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
