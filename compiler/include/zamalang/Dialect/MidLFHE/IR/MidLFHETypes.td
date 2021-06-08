@@ -28,7 +28,7 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
         // The precision of the encrypted value
         "signed":$p,
         // Number of 'phantom' bits on the right of the message
-        "signed":$phantomRight,
+        "signed":$phantomBits,
         // The scaling factor
         "signed":$scalingFactor,
         // Log2 of the standard derivation
@@ -55,8 +55,8 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
                 if (getImpl()->p == -1) $_printer << "_";
                 else $_printer << getImpl()->p;
                 $_printer << ",";
-                if (getImpl()->phantomRight == -1) $_printer << "_";
-                else $_printer << getImpl()->phantomRight;
+                if (getImpl()->phantomBits == -1) $_printer << "_";
+                else $_printer << getImpl()->phantomBits;
                 $_printer << ",";
                 if (getImpl()->scalingFactor == -1) $_printer << "_";
                 else $_printer << getImpl()->scalingFactor;
@@ -103,8 +103,8 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
             return Type();
         if ($_parser.parseComma())
             return Type();
-        int phantomRight = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(phantomRight))
+        int phantomBits = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(phantomBits))
             return Type();
         if ($_parser.parseComma())
             return Type();
@@ -122,7 +122,7 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
         if ($_parser.parseGreater())
             return Type();
 
-        return get($_ctxt, dimension, polynomialSize, bits, paddingBits, p, phantomRight, scalingFactor, log2StdDev);
+        return get($_ctxt, dimension, polynomialSize, bits, paddingBits, p, phantomBits, scalingFactor, log2StdDev);
     }];
 }
 

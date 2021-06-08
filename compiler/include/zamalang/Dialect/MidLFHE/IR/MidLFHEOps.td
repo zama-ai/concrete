@@ -27,6 +27,10 @@ def AddPlainOp : MidLFHE_Op<"add_plain"> {
             build($_builder, $_state, a.getType(), a, b);
         }]>
     ];
+
+    let verifier = [{
+        return ::mlir::zamalang::verifyAddPlainOp(*this);
+    }];
 }
 
 def MulPlainOp : MidLFHE_Op<"mul_plain"> {
