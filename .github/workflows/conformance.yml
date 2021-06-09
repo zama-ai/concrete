@@ -2,7 +2,7 @@ name: Conformance
 
 on:
   push:
-    branches: [master]
+    branches: [master, test-ci]
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -15,4 +15,15 @@ jobs:
           submodules: true
       - name: Format with clang-format
         run: .github/workflows/scripts/format_cpp.sh
-
+  BuildAndTest:
+    runs-on: ubuntu-latest
+    env:
+      LLVM_PROJECT: $GITHUB_WORKSPACE/llvm_project
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and test compiler
+        uses: addnab/docker-run-action@v3
+        with:
+          image: qbozama/mlir:54f059c
+          options: -v ${{ github.workspace }}:/workspace
+          run: cd /workspace/compiler && mkdir build && cmake -B build . -DLLVM_DIR=$LLVM_PROJECT/build/lib/cmake/llvm -DMLIR_DIR=$LLVM_PROJECT/build/lib/cmake/mlir && make -C build/ zamacompiler && make test

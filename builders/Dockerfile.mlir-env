@@ -1,0 +1,24 @@
+FROM ubuntu:latest
+
+RUN apt-get update --fix-missing
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-essential python3 python3-pip python3-setuptools ninja-build
+RUN apt-get install -y git
+RUN git clone https://github.com/llvm/llvm-project.git
+ENV LLVM_PROJECT=$PWD/llvm-project
+RUN mkdir ${LLVM_PROJECT}/build
+RUN cd ${LLVM_PROJECT}/build && cmake -GNinja ../llvm \
+   -DLLVM_ENABLE_PROJECTS=mlir \
+   -DLLVM_BUILD_EXAMPLES=ON \
+   -DLLVM_TARGETS_TO_BUILD="host" \
+   -DCMAKE_BUILD_TYPE=Release \
+   -DLLVM_ENABLE_ASSERTIONS=ON
+RUN cd ${LLVM_PROJECT}/build && cmake --build . --target check-mlir
+ENV PATH=${LLVM_PROJECT}/build/bin:${PATH}
+
+FROM ubuntu:latest
+COPY --from=0 /llvm-project/ /llvm-project/
+ENV LLVM_PROJECT=/llvm-project
+ENV PATH=${LLVM_PROJECT}/build/bin:${PATH}
+RUN apt-get update 
+RUN  DEBIAN_FRONTEND="noninteractive" apt-get install -y cmake g++ build-essential python3
+RUN apt-get install zlib1g-dev
