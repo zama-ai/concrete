@@ -42,6 +42,10 @@ def MulPlainOp : MidLFHE_Op<"mul_plain"> {
             build($_builder, $_state, a.getType(), a, b);
         }]>
     ];
+
+    let verifier = [{
+        return ::mlir::zamalang::verifyMulPlainOp(*this);
+    }];
 }
 
 def HAddOp : MidLFHE_Op<"h_add"> {
@@ -53,6 +57,10 @@ def HAddOp : MidLFHE_Op<"h_add"> {
             build($_builder, $_state, a.getType(), a, b);
         }]>
     ];
+
+    let verifier = [{
+        return ::mlir::zamalang::verifyHAddOp(*this);
+    }];
 }
 
 

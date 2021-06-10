@@ -121,9 +121,11 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
 
         if ($_parser.parseGreater())
             return Type();
-
-        return get($_ctxt, dimension, polynomialSize, bits, paddingBits, p, phantomBits, scalingFactor, log2StdDev);
+        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
+        return getChecked(loc, loc.getContext(), dimension, polynomialSize, bits, paddingBits, p, phantomBits, scalingFactor, log2StdDev);
     }];
+
+    let genVerifyDecl = true;
 }
 
 #endif
