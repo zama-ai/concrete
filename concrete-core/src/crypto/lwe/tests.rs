@@ -1,16 +1,17 @@
 use concrete_npe as npe;
 
+use concrete_commons::{Numeric, CastFrom, SignedInteger};
+use concrete_commons::{DispersionParameter, LogStandardDev, Variance};
+
 use crate::crypto::encoding::{Cleartext, CleartextList, Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweKeyswitchKey, LweList};
 use crate::crypto::secret::LweSecretKey;
 use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, PlaintextCount, UnsignedTorus};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use crate::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use crate::math::random::{
     EncryptionRandomGenerator, RandomGenerable, RandomGenerator, UniformMsb,
 };
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
-use crate::numeric::{CastFrom, Numeric, SignedInteger};
 use crate::test_tools::{
     assert_delta_std_dev, assert_noise_distribution, random_ciphertext_count, random_lwe_dimension,
     random_utorus_between,

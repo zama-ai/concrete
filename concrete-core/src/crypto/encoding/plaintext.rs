@@ -1,7 +1,8 @@
+use concrete_commons::Numeric;
+
 use crate::crypto::PlaintextCount;
 use crate::math::polynomial::Polynomial;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
-use crate::numeric::Numeric;
 use crate::{ck_dim_div, tensor_traits};
 
 /// An plaintext (encoded) value.

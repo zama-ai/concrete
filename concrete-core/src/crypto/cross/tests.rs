@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
 use concrete_npe as npe;
+use concrete_commons::{Numeric, CastFrom, CastInto};
+use concrete_commons::{DispersionParameter, LogStandardDev, Variance};
 
 use crate::crypto::bootstrap::BootstrapKey;
 use crate::crypto::cross::{bootstrap, cmux, constant_sample_extract, external_product};
@@ -10,12 +12,10 @@ use crate::crypto::lwe::LweCiphertext;
 use crate::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::crypto::{GlweDimension, LweDimension, LweSize, PlaintextCount, UnsignedTorus};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use crate::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use crate::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::math::polynomial::PolynomialSize;
 use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
-use crate::numeric::{CastFrom, CastInto, Numeric};
 use crate::test_tools::{assert_delta_std_dev, assert_noise_distribution};
 
 fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {

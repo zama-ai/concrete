@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+use concrete_commons::{Numeric, DispersionParameter};
+
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweList};
 use crate::crypto::{LweDimension, UnsignedTorus};
-use crate::math::dispersion::DispersionParameter;
 use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
-use crate::numeric::Numeric;
 use crate::tensor_traits;
 
 /// A LWE secret key.
@@ -82,9 +82,10 @@ impl<Cont> LweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     ///
     /// let mut generator = RandomGenerator::new(None);
@@ -137,9 +138,10 @@ impl<Cont> LweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = LweSecretKey::generate(
@@ -194,9 +196,10 @@ impl<Cont> LweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = LweSecretKey::generate(
@@ -253,9 +256,10 @@ impl<Cont> LweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = LweSecretKey::generate(

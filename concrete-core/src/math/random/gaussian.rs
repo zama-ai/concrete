@@ -1,6 +1,7 @@
+use concrete_commons::{CastInto, FloatingPoint, Numeric};
+
 use crate::crypto::UnsignedTorus;
 use crate::math::torus::FromTorus;
-use crate::numeric::{CastInto, FloatingPoint, Numeric};
 
 use super::*;
 

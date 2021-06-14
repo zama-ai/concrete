@@ -15,10 +15,12 @@
 pub use float::*;
 pub use signed::*;
 pub use unsigned::*;
+pub use dispersion::*;
 
 mod float;
 mod signed;
 mod unsigned;
+mod dispersion;
 
 /// A trait implemented by any generic numeric type suitable for computations.
 pub trait Numeric: Sized + Copy + PartialEq + PartialOrd {

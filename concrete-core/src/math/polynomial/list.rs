@@ -1,7 +1,8 @@
 use std::iter::Iterator;
 
+use concrete_commons::UnsignedInteger;
+
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
-use crate::numeric::UnsignedInteger;
 use crate::{ck_dim_div, tensor_traits};
 
 use super::*;

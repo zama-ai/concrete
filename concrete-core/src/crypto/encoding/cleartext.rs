@@ -1,6 +1,7 @@
+use concrete_commons::Numeric;
+
 use crate::crypto::CleartextCount;
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
-use crate::numeric::Numeric;
 use crate::{ck_dim_div, tensor_traits};
 
 /// A clear, non-encoded, value.

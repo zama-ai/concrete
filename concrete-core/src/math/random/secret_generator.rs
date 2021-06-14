@@ -1,10 +1,10 @@
+use concrete_commons::{DispersionParameter, UnsignedInteger};
+
 use crate::crypto::{GlweDimension, GlweSize, LweDimension};
 use crate::math::decomposition::DecompositionLevelCount;
-use crate::math::dispersion::DispersionParameter;
 use crate::math::polynomial::PolynomialSize;
 use crate::math::random::{Gaussian, RandomGenerable, RandomGenerator, Uniform};
 use crate::math::tensor::AsMutTensor;
-use crate::numeric::UnsignedInteger;
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
 

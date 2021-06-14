@@ -245,10 +245,11 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, lwe::*, secret::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     ///

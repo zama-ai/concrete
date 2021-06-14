@@ -1,9 +1,10 @@
+use concrete_commons::*;
+
 use crate::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
 use crate::math::fft::{Complex64, Fft, FourierPolynomial, SerializableComplex64};
 use crate::math::polynomial::{Polynomial, PolynomialSize};
 use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutTensor, AsRefTensor};
-use crate::numeric::*;
 use fftw::array::AlignedVec;
 use serde_test::{Token, assert_tokens};
 

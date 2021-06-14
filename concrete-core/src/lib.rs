@@ -24,11 +24,11 @@
 //! ```
 //! // This examples shows how to multiply a secret value by a public one homomorphically. First
 //! // we import the proper symbols:
+//! use concrete_commons::LogStandardDev;
 //! use concrete_core::crypto::encoding::{RealEncoder, Cleartext, Encoder, Plaintext};
 //! use concrete_core::crypto::secret::LweSecretKey;
 //! use concrete_core::crypto::LweDimension;
 //! use concrete_core::crypto::lwe::LweCiphertext;
-//! use concrete_core::math::dispersion::LogStandardDev;
 //! use concrete_core::math::random::RandomGenerator;
 //!
 //! // We initialize a prng that will be used to generate every random samples.
@@ -107,7 +107,6 @@ macro_rules! modular_distance {
 
 pub mod crypto;
 pub mod math;
-pub mod numeric;
 pub mod utils;
 
 #[doc(hidden)]
@@ -115,15 +114,16 @@ pub mod utils;
 pub mod test_tools {
     use rand::Rng;
 
+    use concrete_commons::DispersionParameter;
+
     use crate::crypto::{
         CiphertextCount, GlweDimension, LweDimension, PlaintextCount, UnsignedTorus,
     };
     use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    use crate::math::dispersion::DispersionParameter;
     use crate::math::polynomial::PolynomialSize;
     use crate::math::random::RandomGenerator;
     use crate::math::tensor::{AsRefSlice, AsRefTensor};
-    use crate::numeric::UnsignedInteger;
+    use concrete_commons::UnsignedInteger;
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
         let d0 = first.wrapping_sub(other);

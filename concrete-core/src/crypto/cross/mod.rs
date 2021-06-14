@@ -1,5 +1,7 @@
 //! Operations involving ciphertexts of different schemes.
 
+use concrete_commons::{CastInto, Numeric};
+
 use crate::crypto::UnsignedTorus;
 use crate::math::decomposition::{
     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount,
@@ -7,7 +9,6 @@ use crate::math::decomposition::{
 use crate::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::math::polynomial::{MonomialDegree, Polynomial, PolynomialList};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor};
-use crate::numeric::{CastInto, Numeric};
 use crate::{ck_dim_eq, zip, zip_args};
 
 use super::bootstrap::BootstrapKey;
@@ -355,12 +356,13 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 /// # Example
 ///
 /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
 /// use concrete_core::crypto::bootstrap::BootstrapKey;
 /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
 /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
 /// use concrete_core::math::polynomial::PolynomialSize;
 /// use concrete_core::crypto::secret::{LweSecretKey, GlweSecretKey};
-/// use concrete_core::math::dispersion::LogStandardDev;
 /// use concrete_core::crypto::lwe::LweCiphertext;
 /// use concrete_core::crypto::glwe::GlweCiphertext;
 /// use concrete_core::crypto::cross::bootstrap;

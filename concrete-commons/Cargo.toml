@@ -1,0 +1,22 @@
+[package]
+name = "concrete-commons"
+version = "0.1.0"
+edition = "2018"
+authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
+license = "AGPL-3.0"
+description = "Common tools for the concrete FHE library."
+homepage = "https://crates.io/crates/concrete"
+documentation = "https://concrete.zama.ai"
+repository = "https://github.com/zama-ai/concrete"
+readme = "README.md"
+keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
+
+[lib]
+name = "concrete_commons"
+crate-type = ["cdylib", "rlib"]
+bench = false
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
