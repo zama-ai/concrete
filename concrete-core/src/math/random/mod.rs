@@ -16,8 +16,9 @@
 //! + [`random_uniform_n_msb`]
 //! + [`random_uniform_n_lsb`]
 //! + [`random_gaussian`]
+use concrete_commons::{FloatingPoint, Numeric};
+
 use crate::math::tensor::{AsMutTensor, Tensor};
-use crate::numeric::{FloatingPoint, Numeric};
 
 #[cfg(test)]
 mod tests;

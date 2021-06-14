@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use concrete_commons::{Numeric, UnsignedInteger};
+
 use crate::crypto::encoding::{Cleartext, CleartextList, Plaintext};
 use crate::crypto::secret::LweSecretKey;
 use crate::crypto::{LweDimension, LweSize, UnsignedTorus};
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
-use crate::numeric::{Numeric, UnsignedInteger};
 use crate::tensor_traits;
 
 use super::LweList;
@@ -198,8 +199,9 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     ///
@@ -244,8 +246,9 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     ///
@@ -302,8 +305,9 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     ///
@@ -344,8 +348,9 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     ///
@@ -386,8 +391,9 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     ///
@@ -421,8 +427,9 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     ///

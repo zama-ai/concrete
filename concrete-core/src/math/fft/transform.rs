@@ -4,11 +4,12 @@ use fftw::array::AlignedVec;
 use fftw::plan::*;
 use fftw::types::{c64, Flag, Sign};
 
+use concrete_commons::{CastInto, SignedInteger, UnsignedInteger};
+
 use crate::crypto::UnsignedTorus;
 use crate::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
 use crate::math::polynomial::{Polynomial, PolynomialSize};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefTensor};
-use crate::numeric::{CastInto, SignedInteger, UnsignedInteger};
 use crate::{ck_dim_eq, zip};
 
 use super::{Complex64, Correctors, FourierPolynomial};
@@ -124,7 +125,7 @@ impl Fft {
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::crypto::UnsignedTorus;
-    /// use concrete_core::numeric::UnsignedInteger;
+    /// use concrete_commons::UnsignedInteger;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly_1 = FourierPolynomial::allocate(
@@ -201,7 +202,7 @@ impl Fft {
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_core::numeric::UnsignedInteger;
+    /// use concrete_commons::UnsignedInteger;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly = FourierPolynomial::allocate(
@@ -241,7 +242,7 @@ impl Fft {
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_core::numeric::UnsignedInteger;
+    /// use concrete_commons::UnsignedInteger;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly_1 = FourierPolynomial::allocate(

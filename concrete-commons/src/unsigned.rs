@@ -1,5 +1,5 @@
 use super::{CastFrom, Numeric, SignedInteger};
-use crate::numeric::CastInto;
+use crate::CastInto;
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,

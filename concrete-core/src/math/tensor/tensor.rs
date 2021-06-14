@@ -8,7 +8,8 @@ use std::slice::SliceIndex;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use crate::numeric::{CastFrom, UnsignedInteger};
+use concrete_commons::{CastFrom, UnsignedInteger};
+
 use crate::zip;
 
 use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, LoadError, SaveError};

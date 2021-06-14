@@ -1,8 +1,8 @@
 use std::convert::TryInto;
 use std::fmt::Binary;
+use concrete_commons::CastInto;
 
 use crate::crypto::UnsignedTorus;
-use crate::numeric::CastInto;
 use crate::test_tools::{any_usize, any_utorus};
 
 use super::*;

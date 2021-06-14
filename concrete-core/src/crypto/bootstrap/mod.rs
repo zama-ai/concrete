@@ -1,14 +1,15 @@
 //! Bootstrapping key
 use fftw::array::AlignedVec;
 
+use concrete_commons::Numeric;
+use concrete_commons::DispersionParameter;
+
 use crate::crypto::encoding::Plaintext;
 use crate::crypto::{LweDimension, UnsignedTorus};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use crate::math::dispersion::DispersionParameter;
 use crate::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::math::polynomial::{Polynomial, PolynomialSize};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
-use crate::numeric::Numeric;
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
 use super::ggsw::GgswCiphertext;
@@ -313,12 +314,13 @@ impl<Cont> BootstrapKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::bootstrap::BootstrapKey;
     /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
     /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::secret::{LweSecretKey, GlweSecretKey};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
@@ -394,12 +396,13 @@ impl<Cont> BootstrapKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::bootstrap::BootstrapKey;
     /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
     /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::secret::{LweSecretKey, GlweSecretKey};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
@@ -471,12 +474,13 @@ impl<Cont> BootstrapKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::bootstrap::BootstrapKey;
     /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
     /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::secret::{LweSecretKey, GlweSecretKey};
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};

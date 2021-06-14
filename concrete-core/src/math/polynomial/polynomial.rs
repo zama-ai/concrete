@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 use std::iter::Iterator;
 
+use concrete_commons::{CastFrom, UnsignedInteger};
+
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefTensor, Tensor};
-use crate::numeric::{CastFrom, UnsignedInteger};
 use crate::{ck_dim_eq, tensor_traits};
 
 use super::*;

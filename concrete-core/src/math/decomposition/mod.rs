@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::numeric::{Numeric, SignedInteger, UnsignedInteger};
+use concrete_commons::{Numeric, SignedInteger, UnsignedInteger};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 

@@ -1,8 +1,9 @@
+use concrete_commons::{FloatingPoint, Numeric};
+
 use crate::math::random::{
     Gaussian, RandomGenerable, Uniform, UniformBoolean, UniformLsb, UniformMsb, UniformWithZeros,
 };
 use crate::math::tensor::{AsMutSlice, AsMutTensor, Tensor};
-use crate::numeric::{FloatingPoint, Numeric};
 use concrete_csprng::RandomGenerator as RandomGeneratorImpl;
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;

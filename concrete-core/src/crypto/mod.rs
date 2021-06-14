@@ -6,10 +6,11 @@ use std::fmt::{Debug, Display};
 
 use serde::{Deserialize, Serialize};
 
+use concrete_commons::{UnsignedInteger, CastFrom, CastInto};
+
 use crate::math::decomposition::SignedDecomposable;
 use crate::math::random::{Gaussian, RandomGenerable, Uniform};
 use crate::math::torus::{FromTorus, IntoTorus};
-use crate::numeric::{CastFrom, CastInto, UnsignedInteger};
 
 pub mod bootstrap;
 pub mod cross;

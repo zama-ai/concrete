@@ -2,6 +2,8 @@ use criterion::{criterion_group, criterion_main, Benchmark, BenchmarkId, Criteri
 use itertools::iproduct;
 use rand::Rng;
 
+use concrete_commons::{CastFrom, CastInto, Numeric};
+
 use concrete_core::crypto::bootstrap::BootstrapKey;
 use concrete_core::crypto::cross::{bootstrap, cmux, constant_sample_extract, external_product};
 use concrete_core::crypto::encoding::{Plaintext, PlaintextList};
@@ -21,7 +23,6 @@ use concrete_core::math::random::{
 use concrete_core::math::tensor::{
     AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
 };
-use concrete_core::numeric::{CastFrom, CastInto, Numeric};
 
 mod bootstrap;
 mod keyswitch;

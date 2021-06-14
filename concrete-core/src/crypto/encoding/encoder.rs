@@ -1,7 +1,8 @@
+use concrete_commons::{Numeric, FloatingPoint};
+
 use crate::crypto::UnsignedTorus;
 use crate::math::tensor::{AsMutTensor, AsRefTensor};
 use crate::math::torus::{FromTorus, IntoTorus};
-use crate::numeric::{FloatingPoint, Numeric};
 
 use super::{Cleartext, CleartextList, Plaintext, PlaintextList};
 

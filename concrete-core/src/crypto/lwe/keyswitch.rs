@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
 
+use concrete_commons::{CastFrom, SignedInteger};
+use concrete_commons::DispersionParameter;
+
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::secret::LweSecretKey;
 use crate::crypto::{CiphertextCount, LweDimension, LweSize, UnsignedTorus};
 use crate::math::decomposition::{
     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount,
 };
-use crate::math::dispersion::DispersionParameter;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
-use crate::numeric::{CastFrom, SignedInteger};
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
 use super::{LweCiphertext, LweList};
@@ -259,9 +260,10 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::LweKeyswitchKey};
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     ///
     /// let input_size = LweDimension(10);
@@ -421,10 +423,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::LogStandardDev;
+    /// 
     /// use concrete_core::crypto::{*, secret::LweSecretKey};
     /// use concrete_core::crypto::{lwe::*, encoding::*};
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_core::math::dispersion::LogStandardDev;
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
     ///
