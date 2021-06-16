@@ -83,6 +83,14 @@ bool verifyAddResultHasSameParameters(::mlir::OpState &op,
   return true;
 }
 
+/**
+ * veriffyAddPlainOp verify for AddPlainOp(a, x) if the GLWE parameters of the
+ * output follow the rules:
+ * - paddingBits:
+ *    - if a.paddingBits == 0 then result.paddingBits == 0
+ *    - if a.paddingBits > 0 then result.paddingBits == a.paddingBits -1
+ * - every other parameters of a and the result should be equals
+ */
 ::mlir::LogicalResult verifyAddPlainOp(AddPlainOp &op) {
   GLWECipherTextType in = op.a().getType().cast<GLWECipherTextType>();
   GLWECipherTextType out = op.getResult().getType().cast<GLWECipherTextType>();
@@ -167,6 +175,19 @@ bool verifyHAddSameGLWEParameter(::mlir::OpState &op, GLWECipherTextType &inA,
   return true;
 }
 
+/**
+ * verifyHAddOp verify for HAddOp(a, b) if the GLWE parameters of the
+ * output follow the rules:
+ * - paddingBits:
+ *    - if a.paddingBits == 0 then result.paddingBits == 0
+ *    - if a.paddingBits > 0 then result.paddingBits == a.paddingBits -1
+ *    - a.paddingBits == b.paddingBits
+ * - log2StdDev:
+ *    - result.log2StdDev should be equals of the result of the noise
+ * propagation formula for homomorphic addition, i.e. (variance of result ==
+ * variance of a + variance of b)
+ * - every other parameter should be equals
+ */
 ::mlir::LogicalResult verifyHAddOp(HAddOp &op) {
   GLWECipherTextType inA = op.a().getType().cast<GLWECipherTextType>();
   GLWECipherTextType inB = op.b().getType().cast<GLWECipherTextType>();
@@ -249,6 +270,14 @@ bool verifyMulPlainResultHasSameParameters(::mlir::OpState &op,
   return true;
 }
 
+/**
+ * verifyMulPlainOp verify for MulPlainOp(a, b) if the GLWE parameters of the
+ * output follow the rules:
+ * - paddingBits:
+ *    - if a.paddingBits == 0 then result.paddingBits == 0
+ *    - if a.paddingBits > 0 then result.paddingBits == a.paddingBits - log2(b)
+ * - every other parameter of a and result should be equals
+ */
 ::mlir::LogicalResult verifyMulPlainOp(MulPlainOp &op) {
   GLWECipherTextType inA = op.a().getType().cast<GLWECipherTextType>();
   ::mlir::Value inB = op.b();
