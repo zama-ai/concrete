@@ -101,6 +101,10 @@ bool verifyHAddResultPadding(::mlir::OpState &op, GLWECipherTextType &inA,
   if (inA.getPaddingBits() == -1 && inB.getPaddingBits() == -1) {
     return true;
   }
+  if (inA.getPaddingBits() != inB.getPaddingBits()) {
+    emitOpErrorForIncompatibleGLWEParameter(op, "padding");
+    return false;
+  }
   return verifyAddResultPadding(op, inA, out);
 }
 
@@ -137,25 +141,25 @@ bool verifyHAddSameGLWEParameter(::mlir::OpState &op, GLWECipherTextType &inA,
     emitOpErrorForIncompatibleGLWEParameter(op, "dimension");
     return false;
   }
-  if (inA.getPolynomialSize() != inB.getPolynomialSize() &&
+  if (inA.getPolynomialSize() != inB.getPolynomialSize() ||
       inA.getPolynomialSize() != out.getPolynomialSize()) {
     emitOpErrorForIncompatibleGLWEParameter(op, "polynomialSize");
     return false;
   }
-  if (inA.getBits() != inB.getBits() && inA.getBits() != out.getBits()) {
+  if (inA.getBits() != inB.getBits() || inA.getBits() != out.getBits()) {
     emitOpErrorForIncompatibleGLWEParameter(op, "bits");
     return false;
   }
-  if (inA.getP() != inB.getP() && inA.getP() != out.getP()) {
+  if (inA.getP() != inB.getP() || inA.getP() != out.getP()) {
     emitOpErrorForIncompatibleGLWEParameter(op, "p");
     return false;
   }
-  if (inA.getPhantomBits() != inB.getPhantomBits() &&
+  if (inA.getPhantomBits() != inB.getPhantomBits() ||
       inA.getPhantomBits() != out.getPhantomBits()) {
     emitOpErrorForIncompatibleGLWEParameter(op, "phantomBits");
     return false;
   }
-  if (inA.getScalingFactor() && inB.getScalingFactor() &&
+  if (inA.getScalingFactor() != inB.getScalingFactor() ||
       inA.getScalingFactor() != out.getScalingFactor()) {
     emitOpErrorForIncompatibleGLWEParameter(op, "scalingFactor");
     return false;
@@ -167,13 +171,13 @@ bool verifyHAddSameGLWEParameter(::mlir::OpState &op, GLWECipherTextType &inA,
   GLWECipherTextType inA = op.a().getType().cast<GLWECipherTextType>();
   GLWECipherTextType inB = op.b().getType().cast<GLWECipherTextType>();
   GLWECipherTextType out = op.getResult().getType().cast<GLWECipherTextType>();
+  if (!verifyHAddSameGLWEParameter(op, inA, inB, out)) {
+    return ::mlir::failure();
+  }
   if (!verifyHAddResultPadding(op, inA, inB, out)) {
     return ::mlir::failure();
   }
   if (!verifyHAddResultLog2StdDev(op, inA, inB, out)) {
-    return ::mlir::failure();
-  }
-  if (!verifyHAddSameGLWEParameter(op, inA, inB, out)) {
     return ::mlir::failure();
   }
   return ::mlir::success();
