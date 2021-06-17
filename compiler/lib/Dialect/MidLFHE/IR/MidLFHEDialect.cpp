@@ -100,10 +100,11 @@ unsigned nbBitsFromLog2StdDev(signed log2StdDev, signed bits) {
     signed int phantomLeft =
         (bits - scalingFactor) - phantomBits - p - paddingBits;
     if (phantomLeft < 0) {
-      // TODO: better message ...
-      emitError() << "GLWE message cannot be represented "
-                  << (bits - scalingFactor) << "vs"
-                  << (phantomBits - p - paddingBits);
+      emitError() << "GLWE padding + message + phantom = "
+                  << phantomBits + p + paddingBits
+                  << " cannot be represented  cannot be represented in bits - "
+                     "scalingFactor = "
+                  << (bits - scalingFactor);
       return ::mlir::failure();
     }
   }
