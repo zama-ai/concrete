@@ -245,13 +245,14 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    /// 
     /// use concrete_core::crypto::{*, lwe::*, secret::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+    /// use concrete_commons::LogStandardDev;
+    ///
     /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
     ///
     /// let secret_key = LweSecretKey::generate(LweDimension(4), &mut generator);
     /// let parameters = LogStandardDev::from_log_standard_dev(-15.);
@@ -264,7 +265,7 @@ impl<Cont> LweList<Cont> {
     ///     vec![0. as u32; 5*6],
     ///     LweSize(5)
     /// );
-    /// secret_key.encrypt_lwe_list(&mut cipher_values, &plain_values, parameters, &mut generator);
+    /// secret_key.encrypt_lwe_list(&mut cipher_values, &plain_values, parameters, &mut secret_gen);
     ///
     /// let mut output = LweList::from_container(vec![0u32 ;5*2], LweSize(5));
     /// let weights = CleartextList::from_container(vec![7, 8, 9, 10, 11, 12]);

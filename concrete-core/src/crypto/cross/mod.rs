@@ -356,8 +356,6 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 /// # Example
 ///
 /// ```
-    /// use concrete_commons::LogStandardDev;
-    /// 
 /// use concrete_core::crypto::bootstrap::BootstrapKey;
 /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
 /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
@@ -366,8 +364,12 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 /// use concrete_core::crypto::lwe::LweCiphertext;
 /// use concrete_core::crypto::glwe::GlweCiphertext;
 /// use concrete_core::crypto::cross::bootstrap;
-/// use concrete_core::math::random::RandomGenerator;
-/// let mut generator = RandomGenerator::new(None); use concrete_core::math::fft::Complex64;
+/// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+/// use concrete_core::math::fft::Complex64;
+/// use concrete_commons::LogStandardDev;
+///
+/// let mut generator = RandomGenerator::new(None);
+/// let mut secret_gen = EncryptionRandomGenerator::new(None);
 ///
 /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(512));
 /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
@@ -385,7 +387,7 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 ///     &lwe_sk,
 ///     &glwe_sk,
 ///     LogStandardDev::from_log_standard_dev(-15.),
-///     &mut generator
+///     &mut secret_gen
 /// );
 /// let mut frr_bsk = BootstrapKey::allocate_complex(
 ///     Complex64::new(0.,0.),

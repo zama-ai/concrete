@@ -29,10 +29,12 @@
 //! use concrete_core::crypto::secret::LweSecretKey;
 //! use concrete_core::crypto::LweDimension;
 //! use concrete_core::crypto::lwe::LweCiphertext;
-//! use concrete_core::math::random::RandomGenerator;
+//! use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
 //!
-//! // We initialize a prng that will be used to generate every random samples.
+//! // We initialize a prng that will be used to generate secret keys.
 //! let mut generator = RandomGenerator::new(None);
+//! // We initialize a prng used to encrypt data.
+//! let mut secret_gen = EncryptionRandomGenerator::new(None);
 //! // We initialize an encoder that will allow us to turn cleartext values into plaintexts.
 //! let encoder = RealEncoder{offset: 0., delta: 100.};
 //! // Our secret value will be 10.,
@@ -51,7 +53,7 @@
 //!     &mut ciphertext,
 //!     &plaintext,
 //!     LogStandardDev::from_log_standard_dev(-17.),
-//!     &mut generator
+//!     &mut secret_gen
 //! );
 //!
 //! // We perform the homomorphic operation:

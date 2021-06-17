@@ -200,10 +200,12 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+    ///
     /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
     ///
     /// let secret_key = LweSecretKey::generate(LweDimension(256), &mut generator);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -212,7 +214,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let cleartext = Cleartext(2. as f32);
     /// let plaintext: Plaintext<u32> = encoder.encode(cleartext);
     /// let mut ciphertext = LweCiphertext::from_container(vec![0. as u32;257]);
-    /// secret_key.encrypt_lwe(&mut ciphertext, &plaintext, noise, &mut generator);
+    /// secret_key.encrypt_lwe(&mut ciphertext, &plaintext, noise, &mut secret_gen);
     ///
     /// let mut processed = LweCiphertext::from_container(vec![0 as u32; 257]);
     /// processed.fill_with_scalar_mul(&ciphertext, &Cleartext(4));
@@ -247,10 +249,12 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+    ///
     /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
     ///
     /// let secret_key = LweSecretKey::generate(LweDimension(4), &mut generator);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -263,7 +267,7 @@ impl<Cont> LweCiphertext<Cont> {
     ///     vec![0. as u32; 5*3],
     ///     LweSize(5)
     /// );
-    /// secret_key.encrypt_lwe_list(&mut ciphertext_values, &plain_values, noise, &mut generator);
+    /// secret_key.encrypt_lwe_list(&mut ciphertext_values, &plain_values, noise, &mut secret_gen);
     ///
     /// let mut output = LweCiphertext::from_container(vec![0. as u32; 5]);
     /// let weights = CleartextList::from_container(vec![7, 8, 9]);
@@ -306,10 +310,12 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+    ///
     /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
     ///
     /// let secret_key = LweSecretKey::generate(LweDimension(256), &mut generator);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -318,12 +324,12 @@ impl<Cont> LweCiphertext<Cont> {
     /// let clear_1 = Cleartext(2. as f32);
     /// let plain_1: Plaintext<u32> = encoder.encode(clear_1);
     /// let mut cipher_1 = LweCiphertext::from_container(vec![0. as u32;257]);
-    /// secret_key.encrypt_lwe(&mut cipher_1, &plain_1, noise, &mut generator);
+    /// secret_key.encrypt_lwe(&mut cipher_1, &plain_1, noise, &mut secret_gen);
     ///
     /// let clear_2 = Cleartext(3. as f32);
     /// let plain_2: Plaintext<u32> = encoder.encode(clear_2);
     /// let mut cipher_2 = LweCiphertext::from_container(vec![0. as u32;257]);
-    /// secret_key.encrypt_lwe(&mut cipher_2, &plain_2, noise, &mut generator);
+    /// secret_key.encrypt_lwe(&mut cipher_2, &plain_2, noise, &mut secret_gen);
     ///
     /// cipher_1.update_with_add(&cipher_2);
     ///
@@ -349,10 +355,12 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+    ///
     /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
     ///
     /// let secret_key = LweSecretKey::generate(LweDimension(256), &mut generator);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -361,12 +369,12 @@ impl<Cont> LweCiphertext<Cont> {
     /// let clear_1 = Cleartext(3. as f32);
     /// let plain_1: Plaintext<u32> = encoder.encode(clear_1);
     /// let mut cipher_1 = LweCiphertext::from_container(vec![0. as u32;257]);
-    /// secret_key.encrypt_lwe(&mut cipher_1, &plain_1, noise, &mut generator);
+    /// secret_key.encrypt_lwe(&mut cipher_1, &plain_1, noise, &mut secret_gen);
     ///
     /// let clear_2 = Cleartext(2. as f32);
     /// let plain_2: Plaintext<u32> = encoder.encode(clear_2);
     /// let mut cipher_2 = LweCiphertext::from_container(vec![0. as u32;257]);
-    /// secret_key.encrypt_lwe(&mut cipher_2, &plain_2, noise, &mut generator);
+    /// secret_key.encrypt_lwe(&mut cipher_2, &plain_2, noise, &mut secret_gen);
     ///
     /// cipher_1.update_with_sub(&cipher_2);
     ///
@@ -392,10 +400,12 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+    ///
     /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
     ///
     /// let secret_key = LweSecretKey::generate(LweDimension(256), &mut generator);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -404,7 +414,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let clear = Cleartext(2. as f32);
     /// let plain: Plaintext<u32> = encoder.encode(clear);
     /// let mut cipher = LweCiphertext::from_container(vec![0. as u32;257]);
-    /// secret_key.encrypt_lwe( &mut cipher, &plain, noise, &mut generator);
+    /// secret_key.encrypt_lwe( &mut cipher, &plain, noise, &mut secret_gen);
     ///
     /// cipher.update_with_neg();
     ///
@@ -428,10 +438,12 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::*, encoding::*};
-    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+    ///
     /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
     ///
     /// let secret_key = LweSecretKey::generate(LweDimension(256), &mut generator);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
@@ -440,7 +452,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let clear = Cleartext(2. as f32);
     /// let plain: Plaintext<u32> = encoder.encode(clear);
     /// let mut cipher = LweCiphertext::from_container(vec![0. as u32;257]);
-    /// secret_key.encrypt_lwe(&mut cipher, &plain, noise, &mut generator);
+    /// secret_key.encrypt_lwe(&mut cipher, &plain, noise, &mut secret_gen);
     ///
     /// cipher.update_with_scalar_mul(Cleartext(3));
     ///
