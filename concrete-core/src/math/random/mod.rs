@@ -18,8 +18,6 @@
 //! + [`random_uniform_n_msb`]
 //! + [`random_uniform_n_lsb`]
 //! + [`random_gaussian`]
-use concrete_commons::{FloatingPoint, Numeric};
-
 use crate::math::tensor::{AsMutTensor, Tensor};
 
 #[cfg(test)]
@@ -47,6 +45,7 @@ mod generator;
 pub use generator::*;
 
 mod secret_generator;
+use concrete_commons::numeric::FloatingPoint;
 pub use secret_generator::*;
 
 pub trait RandomGenerable<D: Distribution>

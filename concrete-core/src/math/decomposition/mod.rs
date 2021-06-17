@@ -1,25 +1,12 @@
 //! Decomposition of numeric types.
+use concrete_commons::numeric::{Numeric, SignedInteger, UnsignedInteger};
 
 #[cfg(test)]
 mod tests;
 
-use concrete_commons::{Numeric, SignedInteger, UnsignedInteger};
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-
-/// The logarithm of the base used in a decomposition.
-///
-/// When decomposing an integer over powers of the $2^B$ basis, this type
-/// represents the $B$ value.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
-pub struct DecompositionBaseLog(pub usize);
-
-/// The number of levels used in a decomposition.
-///
-/// When decomposing an integer over the $l$ largest powers of the basis, this
-/// type represents the $l$ value.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
-pub struct DecompositionLevelCount(pub usize);
 
 /// The level of a given member of a decomposition.
 ///

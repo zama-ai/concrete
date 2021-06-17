@@ -14,7 +14,7 @@
 //! between an unsigned integer representation and a floating point
 //! representation.
 
-use concrete_commons::{CastInto, FloatingPoint, Numeric, UnsignedInteger};
+use concrete_commons::numeric::{CastInto, FloatingPoint, Numeric, UnsignedInteger};
 
 /// A trait that converts a torus element in unsigned integer representation to
 /// the closest torus element in floating point representation.

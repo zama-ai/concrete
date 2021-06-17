@@ -4,15 +4,15 @@ use fftw::array::AlignedVec;
 use fftw::plan::*;
 use fftw::types::{c64, Flag, Sign};
 
-use concrete_commons::{CastInto, SignedInteger, UnsignedInteger};
-
 use crate::crypto::UnsignedTorus;
 use crate::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
-use crate::math::polynomial::{Polynomial, PolynomialSize};
+use crate::math::polynomial::Polynomial;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefTensor};
 use crate::{ck_dim_eq, zip};
 
 use super::{Complex64, Correctors, FourierPolynomial};
+use concrete_commons::numeric::{CastInto, SignedInteger, UnsignedInteger};
+use concrete_commons::parameters::PolynomialSize;
 
 /// A fast fourier transformer.
 ///
@@ -31,8 +31,8 @@ impl Fft {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::Fft;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
@@ -59,8 +59,8 @@ impl Fft {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::Fft;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
@@ -82,9 +82,10 @@ impl Fft {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::crypto::UnsignedTorus;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
@@ -119,10 +120,10 @@ impl Fft {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::UnsignedInteger;
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::crypto::UnsignedTorus;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
@@ -197,9 +198,10 @@ impl Fft {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::UnsignedInteger;
+    /// use concrete_commons::numeric::UnsignedInteger;
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
@@ -234,9 +236,10 @@ impl Fft {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::UnsignedInteger;
+    /// use concrete_commons::numeric::UnsignedInteger;
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);

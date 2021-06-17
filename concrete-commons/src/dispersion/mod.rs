@@ -16,11 +16,11 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::UnsignedInteger;
+use crate::numeric::UnsignedInteger;
 
 /// A trait for types representing distribution parameters, for a given unsigned
 /// integer type.
-pub trait DispersionParameter: Clone {
+pub trait DispersionParameter: Copy {
     /// Returns the standard deviation of the distribution, i.e. $\sigma = 2^p$.
     fn get_standard_dev(&self) -> f64;
     /// Returns the variance of the distribution, i.e. $\sigma^2 = 2^{2p}$.
@@ -51,7 +51,7 @@ pub trait DispersionParameter: Clone {
 /// # Example:
 ///
 /// ```
-/// use concrete_commons::{DispersionParameter, LogStandardDev};
+/// use concrete_commons::dispersion::{DispersionParameter, LogStandardDev};
 /// let params = LogStandardDev::from_log_standard_dev(-25.);
 /// assert_eq!(params.get_standard_dev(), 2_f64.powf(-25.));
 /// assert_eq!(params.get_log_standard_dev(), -25.);
@@ -120,7 +120,7 @@ impl DispersionParameter for LogStandardDev {
 /// # Example:
 ///
 /// ```
-/// use concrete_commons::{DispersionParameter, StandardDev};
+/// use concrete_commons::dispersion::{DispersionParameter, StandardDev};
 /// let params = StandardDev::from_standard_dev(2_f64.powf(-25.));
 /// assert_eq!(params.get_standard_dev(), 2_f64.powf(-25.));
 /// assert_eq!(params.get_log_standard_dev(), -25.);
@@ -186,7 +186,7 @@ impl DispersionParameter for StandardDev {
 /// # Example:
 ///
 /// ```
-/// use concrete_commons::{DispersionParameter, Variance};
+/// use concrete_commons::dispersion::{DispersionParameter, Variance};
 /// let params = Variance::from_variance(2_f64.powi(-50));
 /// assert_eq!(params.get_standard_dev(), 2_f64.powf(-25.));
 /// assert_eq!(params.get_log_standard_dev(), -25.);

@@ -1,9 +1,8 @@
-use concrete_commons::LogStandardDev;
-
 use crate::crypto::UnsignedTorus;
 use crate::math::random::RandomGenerator;
 use crate::math::tensor::Tensor;
 use crate::test_tools::assert_noise_distribution;
+use concrete_commons::dispersion::LogStandardDev;
 
 fn test_normal_random<T: UnsignedTorus>() {
     //! test if the normal random generation with std_dev is below 3*std_dev

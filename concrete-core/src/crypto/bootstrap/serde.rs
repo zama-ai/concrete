@@ -4,12 +4,11 @@ use serde::de::{self, Deserializer, MapAccess, SeqAccess, Visitor};
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde::Deserialize;
 
-use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::fft::{Complex64, SerializableComplex64};
-use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::Tensor;
 
 use super::{BootstrapKey, GlweSize};
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, PolynomialSize};
 
 impl Serialize for BootstrapKey<Vec<Complex64>> {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -178,10 +177,12 @@ impl<'de> Deserialize<'de> for BootstrapKey<Vec<Complex64>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::crypto::LweDimension;
     use crate::math::random::RandomGenerator;
     use crate::math::tensor::AsMutTensor;
     use crate::test_tools;
+    use concrete_commons::parameters::{
+        DecompositionBaseLog, DecompositionLevelCount, LweDimension, PolynomialSize,
+    };
     use serde_test::{assert_de_tokens_error, assert_tokens, Token};
 
     #[test]

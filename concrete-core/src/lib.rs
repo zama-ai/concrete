@@ -22,21 +22,24 @@
 //! # Quick Example
 //!
 //! Despite being low-overhead, `concrete-core` offers a pretty straightforward
-//! interface: ```
-//! // This examples shows how to multiply a secret value by a public one homomorphically. First
-//! // we import the proper symbols:
-//! use concrete_commons::LogStandardDev;
-//! use concrete_core::crypto::encoding::{Cleartext, Encoder, Plaintext, RealEncoder};
-//! use concrete_core::crypto::lwe::LweCiphertext;
+//! interface.
+//! This example shows how to multiply a secret value by a public one
+//! homomorphically. First we import the proper symbols:
+//! ```rust
+//! use concrete_commons::dispersion::LogStandardDev;
+//! use concrete_commons::parameters::LweDimension;
+//! use concrete_core::crypto::encoding::{Cleartext, Encoder, Plaintext,
+//! RealEncoder}; use concrete_core::crypto::lwe::LweCiphertext;
 //! use concrete_core::crypto::secret::LweSecretKey;
-//! use concrete_core::crypto::LweDimension;
-//! use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
+//! use concrete_core::math::random::{EncryptionRandomGenerator,
+//! RandomGenerator};
 //!
 //! // We initialize a prng that will be used to generate secret keys.
 //! let mut generator = RandomGenerator::new(None);
 //! // We initialize a prng used to encrypt data.
 //! let mut secret_gen = EncryptionRandomGenerator::new(None);
-//! // We initialize an encoder that will allow us to turn cleartext values into plaintexts.
+//! // We initialize an encoder that will allow us to turn cleartext values into
+//! // plaintexts.
 //! let encoder = RealEncoder {
 //!     offset: 0.,
 //!     delta: 100.,
@@ -121,16 +124,16 @@ pub mod utils;
 pub mod test_tools {
     use rand::Rng;
 
-    use concrete_commons::DispersionParameter;
-
-    use crate::crypto::{
-        CiphertextCount, GlweDimension, LweDimension, PlaintextCount, UnsignedTorus,
+    use concrete_commons::dispersion::DispersionParameter;
+    use concrete_commons::numeric::UnsignedInteger;
+    use concrete_commons::parameters::{
+        CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, GlweDimension,
+        LweDimension, PlaintextCount, PolynomialSize,
     };
-    use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    use crate::math::polynomial::PolynomialSize;
+
+    use crate::crypto::UnsignedTorus;
     use crate::math::random::RandomGenerator;
     use crate::math::tensor::{AsRefSlice, AsRefTensor};
-    use concrete_commons::UnsignedInteger;
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
         let d0 = first.wrapping_sub(other);

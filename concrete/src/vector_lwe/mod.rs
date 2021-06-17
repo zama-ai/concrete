@@ -8,7 +8,7 @@ use colored::Colorize;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
 
-use concrete_core::math::polynomial::PolynomialSize;
+use concrete_commons::{StandardDev, PolynomialSize, Numeric}
 use concrete_core::{
     crypto::{
         self,

@@ -1,9 +1,7 @@
-use concrete_commons::{CastInto, FloatingPoint, Numeric};
-
+use super::*;
 use crate::crypto::UnsignedTorus;
 use crate::math::torus::FromTorus;
-
-use super::*;
+use concrete_commons::numeric::{CastInto, Numeric};
 
 /// A distribution type representing random sampling of floating point numbers,
 /// following a gaussian distribution.

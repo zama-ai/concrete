@@ -6,6 +6,7 @@ use crate::crypto::UnsignedTorus;
 use crate::test_tools::{any_usize, any_utorus};
 
 use super::*;
+use concrete_commons::numeric::CastInto;
 
 fn test_round_to_closest_multiple<T: UnsignedTorus>() {
     let log_b = any_usize();

@@ -1,6 +1,6 @@
 use super::{read_from_file, write_to_file};
 use concrete_core::crypto::GlweDimension;
-use concrete_core::math::polynomial::PolynomialSize;
+use concrete_commons::PolynomialSize;
 use concrete_core::math::random::RandomGenerator;
 use concrete_core::{
     crypto::secret::{GlweSecretKey, LweSecretKey},

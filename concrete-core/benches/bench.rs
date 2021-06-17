@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Benchmark, BenchmarkId, Criteri
 use itertools::iproduct;
 use rand::Rng;
 
-use concrete_commons::{CastFrom, CastInto, Numeric};
+use concrete_commons::{CastFrom, CastInto, Numeric, PolynomialSize};
 
 use concrete_core::crypto::bootstrap::BootstrapKey;
 use concrete_core::crypto::cross::{bootstrap, cmux, constant_sample_extract, external_product};
@@ -15,7 +15,6 @@ use concrete_core::crypto::{
 };
 use concrete_core::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::math::random::{
     fill_with_random_uniform, fill_with_random_uniform_boolean, random_uniform_n_msb,
     RandomGenerable, UniformMsb,

@@ -8,9 +8,8 @@ use crate::traits::GenericAdd;
 use crate::{read_from_file, write_to_file, Torus};
 use backtrace::Backtrace;
 use colored::Colorize;
-use concrete_commons::{Numeric, StandardDev};
-use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::math::random::EncryptionRandomGenerator;
+use concrete_commons::{Numeric, PolynomialSize, StandardDev};
 use concrete_core::{
     crypto::{
         self,
@@ -1823,7 +1822,7 @@ impl LWE {
         }
 
         // compute the new variance (without the drift)
-        let new_var = <Torus as npe::Cross>::bootstrap(
+        let new_var = npe::bootstrap(
             self.dimension,
             bsk.dimension,
             bsk.level,

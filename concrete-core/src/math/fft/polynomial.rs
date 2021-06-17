@@ -1,10 +1,10 @@
 use fftw::array::AlignedVec;
 
-use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_eq, tensor_traits, zip, zip_args};
 
 use super::Complex64;
+use concrete_commons::parameters::PolynomialSize;
 
 /// A polynomial in the fourier domain.
 ///
@@ -22,8 +22,8 @@ impl FourierPolynomial<AlignedVec<Complex64>> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
@@ -40,8 +40,8 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use fftw::array::AlignedVec;
     /// let mut alvec: AlignedVec<Complex64> = AlignedVec::new(128);
     /// let fourier_poly = FourierPolynomial::from_container(alvec.as_slice_mut());
@@ -58,8 +58,8 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
@@ -79,8 +79,8 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// for coef in fourier_poly.coefficient_iter() {
     ///     assert_eq!(*coef, Complex64::new(0., 0.));
@@ -103,8 +103,8 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// let mut fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// for mut coef in fourier_poly.coefficient_iter_mut() {
@@ -132,8 +132,8 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let mut fpoly1 = FourierPolynomial::allocate(Complex64::new(1., 2.), PolynomialSize(128));
     /// let fpoly2 = FourierPolynomial::allocate(Complex64::new(3., 4.), PolynomialSize(128));
     /// let fpoly3 = FourierPolynomial::allocate(Complex64::new(5., 6.), PolynomialSize(128));
@@ -174,8 +174,8 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let mut fpoly1 = FourierPolynomial::allocate(Complex64::new(1., 2.), PolynomialSize(128));
     /// let fpoly2 = FourierPolynomial::allocate(Complex64::new(3., 4.), PolynomialSize(128));
     /// let fpoly3 = FourierPolynomial::allocate(Complex64::new(5., 6.), PolynomialSize(128));
@@ -229,7 +229,7 @@ impl<Cont> FourierPolynomial<Cont> {
     ///
     /// ```rust
     /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
-    /// use concrete_core::math::polynomial::PolynomialSize;
+    /// use concrete_commons::parameters::PolynomialSize;
     /// macro_rules! new_poly {
     ///     ($name: ident, $re: literal, $im: literal) => {
     ///         let mut $name =

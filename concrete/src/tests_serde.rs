@@ -146,9 +146,9 @@ fn test_rlweparams_save() {
 }
 
 use crate::RLWESecretKey;
+use concrete_commons::PolynomialSize;
 use concrete_core::crypto::LweDimension;
 use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::polynomial::PolynomialSize;
 
 #[test]
 fn test_rlwesecretkey_save() {

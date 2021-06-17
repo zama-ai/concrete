@@ -1,11 +1,10 @@
 //! Operations involving ciphertexts of different schemes.
 
-use concrete_commons::{CastInto, Numeric};
+use concrete_commons::numeric::{CastInto, Numeric};
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
 
 use crate::crypto::UnsignedTorus;
-use crate::math::decomposition::{
-    DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount,
-};
+use crate::math::decomposition::DecompositionLevel;
 use crate::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::math::polynomial::{MonomialDegree, Polynomial, PolynomialList};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor};
@@ -357,16 +356,17 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 /// # Example
 ///
 /// ```
-/// use concrete_commons::LogStandardDev;
+/// use concrete_commons::dispersion::LogStandardDev;
+/// use concrete_commons::parameters::{
+///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
+///     PolynomialSize,
+/// };
 /// use concrete_core::crypto::bootstrap::BootstrapKey;
 /// use concrete_core::crypto::cross::bootstrap;
 /// use concrete_core::crypto::glwe::GlweCiphertext;
 /// use concrete_core::crypto::lwe::LweCiphertext;
 /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
-/// use concrete_core::crypto::{GlweDimension, GlweSize, LweDimension, LweSize};
-/// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 /// use concrete_core::math::fft::Complex64;
-/// use concrete_core::math::polynomial::PolynomialSize;
 /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
 ///
 /// let mut generator = RandomGenerator::new(None);

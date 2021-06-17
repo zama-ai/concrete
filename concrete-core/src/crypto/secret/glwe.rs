@@ -2,18 +2,19 @@ use std::ops::Add;
 
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{DispersionParameter, Numeric};
-
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::ggsw::GgswCiphertext;
 use crate::crypto::glwe::{GlweCiphertext, GlweList};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{GlweDimension, PlaintextCount, UnsignedTorus};
-use crate::math::polynomial::{PolynomialList, PolynomialSize};
+use crate::crypto::UnsignedTorus;
 use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
+use crate::math::polynomial::PolynomialList;
+use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{GlweDimension, PlaintextCount, PolynomialSize};
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 
@@ -32,9 +33,9 @@ impl GlweSecretKey<Vec<bool>> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key =
@@ -59,9 +60,8 @@ impl GlweSecretKey<Vec<bool>> {
     /// # Examples
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::crypto::{GlweDimension, LweDimension};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     /// let glwe_secret_key =
@@ -86,9 +86,9 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let secret_key = GlweSecretKey::from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
@@ -111,9 +111,9 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key =
@@ -132,9 +132,9 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key =
@@ -150,9 +150,9 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialCount, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key =
@@ -173,9 +173,9 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut generator = RandomGenerator::new(None);
@@ -200,13 +200,12 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{GlweDimension, GlweSize, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut generator = RandomGenerator::new(None);
@@ -255,13 +254,12 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{GlweDimension, GlweSize, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut generator = RandomGenerator::new(None);
@@ -304,13 +302,12 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{CiphertextCount, GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::{GlweCiphertext, GlweList};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut generator = RandomGenerator::new(None);
@@ -369,13 +366,12 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{CiphertextCount, GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::{GlweCiphertext, GlweList};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut generator = RandomGenerator::new(None);
@@ -468,14 +464,13 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Examples
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::ggsw::GgswCiphertext;
     /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::crypto::{GlweDimension, GlweSize};
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = GlweSecretKey::generate(GlweDimension(2), PolynomialSize(10), &mut generator);
@@ -551,14 +546,13 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Examples
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::ggsw::GgswCiphertext;
     /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::crypto::{GlweDimension, GlweSize};
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = GlweSecretKey::generate(GlweDimension(2), PolynomialSize(10), &mut generator);
@@ -647,14 +641,13 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Examples
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::ggsw::GgswCiphertext;
     /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::crypto::{GlweDimension, GlweSize};
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// let mut generator = RandomGenerator::new(None);
     /// let secret_key = GlweSecretKey::generate(GlweDimension(2), PolynomialSize(10), &mut generator);

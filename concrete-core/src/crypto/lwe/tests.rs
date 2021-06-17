@@ -1,14 +1,9 @@
 use concrete_npe as npe;
 
-use concrete_commons::{
-    CastFrom, DispersionParameter, LogStandardDev, Numeric, SignedInteger, Variance,
-};
-
 use crate::crypto::encoding::{Cleartext, CleartextList, Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweKeyswitchKey, LweList};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, PlaintextCount, UnsignedTorus};
-use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
+use crate::crypto::UnsignedTorus;
 use crate::math::random::{
     EncryptionRandomGenerator, RandomGenerable, RandomGenerator, UniformMsb,
 };
@@ -16,6 +11,12 @@ use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
 use crate::test_tools::{
     assert_delta_std_dev, assert_noise_distribution, random_ciphertext_count, random_lwe_dimension,
     random_utorus_between,
+};
+use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
+use concrete_commons::numeric::{CastFrom, Numeric, SignedInteger};
+use concrete_commons::parameters::{
+    CiphertextCount, CleartextCount, DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    PlaintextCount,
 };
 
 fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
