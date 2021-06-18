@@ -102,7 +102,7 @@ unsigned nbBitsFromLog2StdDev(signed log2StdDev, signed bits) {
     if (phantomLeft < 0) {
       emitError() << "GLWE padding + message + phantom = "
                   << phantomBits + p + paddingBits
-                  << " cannot be represented  cannot be represented in bits - "
+                  << " cannot be represented in bits - "
                      "scalingFactor = "
                   << (bits - scalingFactor);
       return ::mlir::failure();

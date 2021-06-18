@@ -217,16 +217,16 @@ bool verifyMulPlainOpPadding(::mlir::OpState &op, GLWECipherTextType &inA,
     }
     return true;
   }
-  unsigned int additionalBit = 0;
+  unsigned int additionalBits = 0;
   ::mlir::ConstantIntOp constantOp = inB.getDefiningOp<::mlir::ConstantIntOp>();
   if (constantOp != nullptr) {
     int64_t value = constantOp.getValue();
-    additionalBit = std::ceil(std::log2(value)) + 1;
+    additionalBits = std::ceil(std::log2(value)) + 1;
   } else {
     ::mlir::IntegerType tyB = inB.getType().cast<::mlir::IntegerType>();
-    additionalBit = tyB.getIntOrFloatBitWidth();
+    additionalBits = tyB.getIntOrFloatBitWidth();
   }
-  unsigned int expectedPadding = inA.getPaddingBits() - additionalBit;
+  unsigned int expectedPadding = inA.getPaddingBits() - additionalBits;
   if (out.getPaddingBits() != expectedPadding) {
     ::llvm::Twine msg(
         "has unexpected padding parameter of its GLWE result, expected:");
