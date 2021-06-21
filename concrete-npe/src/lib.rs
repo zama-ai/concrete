@@ -1,3 +1,7 @@
+pub mod key_distributions;
+pub mod operators;
+pub mod tools;
+
 /// Noise Propagation Estimator Module
 /// * Contains material needed to estimate the growth of the noise when
 ///   performing homomorphic computation
@@ -6,7 +10,6 @@ use concrete_commons::numeric::{CastInto, SignedInteger, UnsignedInteger};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
 };
-use itertools::izip;
 
 /// Computes the dispersion of the error distribution after the addition of two
 /// uncorrelated ciphertexts
@@ -41,32 +44,6 @@ where
         var_res += dispersion.get_variance();
     }
     Variance::from_variance(var_res)
-}
-
-/// Computes the number of bits affected by the noise with a dispersion
-/// describing a normal distribution
-/// Arguments:
-/// * `dispersion` - noise variance of the ciphertext
-/// * `log_integer_modulus`- the log_2 of the integer modulus q
-/// Output:
-/// * The number of bit affected by the noise
-pub fn nb_bit_from_variance<D>(dispersion: D, log_integer_modulus: usize) -> usize
-where
-    D: DispersionParameter,
-{
-    // get the standard deviation
-    let std_dev: f64 = dispersion.get_standard_dev();
-
-    // the constant used for the computation
-    let z: f64 = 4.;
-    let tmp = log_integer_modulus as f64 + f64::log2(std_dev * z);
-    if tmp < 0. {
-        // means no bits are affected by the noise in the integer representation
-        // (discrete space)
-        0usize
-    } else {
-        tmp.ceil() as usize
-    }
 }
 
 /// Return the variance of the external product given a set of parameters.
@@ -136,19 +113,19 @@ where
 
 /// Return the variance of the cmux given a set of parameters.
 /// To see how to use it, please refer to the test of the cmux.
-/// Arguments
+/// Arguments:
 /// * `dimension` - the size of the RLWE mask
 /// * `polynomial_size` - number of coefficients of the polynomial e.g. degree +
 ///   1
 /// * `base_log` - decomposition base of the gadget matrix
-/// * `l_gadget` - number of elements for the Torus decomposition
-/// * `var_rlwe_0` - noise variance of the first TRLWE
-/// * `var_rlwe_1` - noise variance of the second TRLWE
-/// * `var_trgsw` - noise variance of the TRGSW
+/// * `l_gadget` - number of elements for the decomposition
+/// * `dispersion_rlwe_0` - noise dispersion of the first RLWE
+/// * `dispersion_rlwe_1` - noise dispersion of the second RLWE
+/// * `dispersion_rgsw` - noise dispersion of the RGSW
 /// # Output
 /// * Returns the variance of the output RLWE
 /// # Warning
-/// * only correct for the cmux inside a bootstrap
+/// * Only correct for the cmux inside a bootstrap
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::{DispersionParameter, Variance};
@@ -156,24 +133,22 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::cmux;
-/// type torus = u64; // or u32
-///                   // settings
 /// let dimension = GlweDimension(3);
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let polynomial_size = PolynomialSize(1024);
-/// let var_trgsw = Variance::from_variance(f64::powi(2., -38));
-/// let var_trlwe_0 = Variance::from_variance(f64::powi(2., -40));
-/// let var_trlwe_1 = Variance::from_variance(f64::powi(2., -40));
+/// let dispersion_rgsw = Variance::from_variance(f64::powi(2., -38));
+/// let dispersion_rlwe_0 = Variance::from_variance(f64::powi(2., -40));
+/// let dispersion_rlwe_1 = Variance::from_variance(f64::powi(2., -40));
 /// // Computing the noise
-/// let var_cmux = cmux::<torus, _, _, _>(
+/// let var_cmux = cmux::<u64, _, _, _>(
 ///     dimension,
 ///     polynomial_size,
 ///     base_log,
 ///     l_gadget,
-///     var_trlwe_0,
-///     var_trlwe_1,
-///     var_trgsw,
+///     dispersion_rlwe_0,
+///     dispersion_rlwe_1,
+///     dispersion_rgsw,
 /// );
 /// ```
 pub fn cmux<T: UnsignedInteger, D1, D2, D3>(
@@ -181,9 +156,9 @@ pub fn cmux<T: UnsignedInteger, D1, D2, D3>(
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
     l_gadget: DecompositionLevelCount,
-    var_rlwe_0: D1,
-    var_rlwe_1: D2,
-    var_trgsw: D3,
+    dispersion_rlwe_0: D1,
+    dispersion_rlwe_1: D2,
+    dispersion_rgsw: D3,
 ) -> Variance
 where
     D1: DispersionParameter,
@@ -195,11 +170,11 @@ where
         polynomial_size,
         base_log,
         l_gadget,
-        var_trgsw,
-        add(var_rlwe_0, var_rlwe_1),
+        dispersion_rgsw,
+        add(dispersion_rlwe_0, dispersion_rlwe_1),
     );
-    let dispersion_cmux = add(var_external_product, var_rlwe_0);
-    dispersion_cmux
+    let var_cmux = add(var_external_product, dispersion_rlwe_0);
+    var_cmux
 }
 
 /// Return the variance of output of a bootstrap given a set of parameters.
@@ -210,8 +185,8 @@ where
 /// * `polynomial_size` - number of coefficients of the polynomial e.g. degree +
 ///   1
 /// * `base_log` - decomposition base of the gadget matrix
-/// * `l_gadget` - number of elements for the Torus decomposition
-/// * `var_bsk` - variance of the bootstrapping key
+/// * `l_gadget` - number of elements for the decomposition
+/// * `dispersion_bsk` - dispersion of the bootstrapping key
 /// # Output
 /// * Returns the variance of the output RLWE
 /// # Example
@@ -221,8 +196,6 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::bootstrap;
-/// type Torus = u64; // or u32
-///                   // settings
 /// let rlwe_dimension = GlweDimension(3);
 /// let lwe_dimension = LweDimension(630);
 /// let polynomial_size = PolynomialSize(1024);
@@ -230,7 +203,7 @@ where
 /// let l_gadget = DecompositionLevelCount(4);
 /// let var_bsk = Variance::from_variance(f64::powi(2., -38));
 /// // Computing the noise
-/// let var_bootstrap = bootstrap(
+/// let var_bootstrap = bootstrap::<u64, _>(
 ///     lwe_dimension,
 ///     rlwe_dimension,
 ///     polynomial_size,
@@ -252,7 +225,7 @@ where
 {
     let b_g = 1 << base_log.0;
     let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
-    let res_1: f64 = (lwe_dimension.0
+    let var_res_1: f64 = (lwe_dimension.0
         * (rlwe_dimension.0 + 1)
         * l_gadget.0
         * polynomial_size.0
@@ -260,23 +233,13 @@ where
         / 12.
         * var_bsk.get_variance();
 
-    let res_2: f64 = lwe_dimension.0 as f64
+    let var_res_2: f64 = lwe_dimension.0 as f64
         * ((rlwe_dimension.0 * polynomial_size.0 + 2) as f64
             / (24. * f64::powi(b_g as f64, 2 * l_gadget.0 as i32)) as f64
             + lwe_dimension.0 as f64 * (rlwe_dimension.0 * polynomial_size.0 / 48 - 1 / 12) as f64
                 / q_square);
 
-    let res: f64 = res_1 + res_2;
-    return Variance::from_variance(res);
-}
-
-/// Computes tho variance of the error during a bootstrap due to the round on
-/// the LWE mask # Argument
-/// * `lwe_dimension` - size of the LWE mask
-/// # Output
-/// * Return the variance of the error
-pub fn drift_index_lut(lwe_dimension: LweDimension) -> f64 {
-    (lwe_dimension.0 as f64) / 16.0
+    Variance::from_variance(var_res_1 + var_res_2)
 }
 
 /// Return the variance of the keyswitch on a LWE ciphertext given a set of
@@ -288,8 +251,8 @@ pub fn drift_index_lut(lwe_dimension: LweDimension) -> f64 {
 /// `dimension_before` - size of the input LWE mask
 /// `l_ks` - number of level max for the torus decomposition
 /// `base_log` - number of bits for the base B (B=2^base_log)
-/// `var_ks` - variance of the keyswitching key
-/// `var_input` - variance of the input LWE
+/// `dispersion_ks` - dispersion of the keyswitching key
+/// `dispersion_input` - dispersion of the input LWE
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
@@ -297,37 +260,35 @@ pub fn drift_index_lut(lwe_dimension: LweDimension) -> f64 {
 ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
 /// };
 /// use concrete_npe::key_switch;
-/// let torus = u32; // or u64
-///                  // settings
-/// let dimension_beforei = LweDimension(630);
+/// let dimension_before = LweDimension(630);
 /// let l_ks = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
-/// let var_ks = Variance::from_variance(f64::powi(2., -38));
-/// let var_input = Variance::from_variance(f64::powi(2., -40));
+/// let dispersion_ks = Variance::from_variance(f64::powi(2., -38));
+/// let dispersion_input = Variance::from_variance(f64::powi(2., -40));
 /// // Computing the noise
-/// let var_ks = key_switch::<torus, _, _>(dimension_before, l_ks, base_log, var_ks, var_input);
+/// let var_ks = key_switch::<u64, _, _>(dimension_before, l_ks, base_log, dispersion_ks, dispersion_input);
 /// ```
 pub fn key_switch<T: UnsignedInteger, D1, D2>(
     dimension_before: LweDimension,
     l_ks: DecompositionLevelCount,
     base_log: DecompositionBaseLog,
-    var_ks: D1,
-    var_input: D2,
+    dispersion_ks: D1,
+    dispersion_input: D2,
 ) -> Variance
 where
     D1: DispersionParameter,
     D2: DispersionParameter,
 {
     let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
-    let res_1: f64 = dimension_before.0 as f64
+    let var_res_1: f64 = dimension_before.0 as f64
         * (1. / 24. * f64::powi(2.0, -2 * (base_log.0 * l_ks.0) as i32) + 1. / (48. * q_square));
-    let res_2: f64 = dimension_before.0 as f64
+    let var_res_2: f64 = dimension_before.0 as f64
         * l_ks.0 as f64
         * (f64::powi(2., 2 * base_log.0 as i32) / 12. + 1. / 6.)
-        * var_ks.get_variance();
+        * dispersion_ks.get_variance();
 
-    let res: f64 = var_input.get_variance() + res_1 + res_2;
-    return Variance::from_variance(res);
+    let var_res: f64 = dispersion_input.get_variance() + var_res_1 + var_res_2;
+    Variance::from_variance(var_res)
 }
 
 /// Noise formulas for the LWE ciphertext related operations
@@ -344,13 +305,11 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_npe::single_scalar_mul;
-/// let torus = u32; // or u64
-///                   // parameters
+/// use concrete_npe::scalar_mul;
 /// let variance = Variance::from_variance(f64::powi(2., -48));
-/// let n: torus = (-543 as i64) as torus;
+/// let n: u64 = 543;
 /// // noise computation
-/// let noise = single_scalar_mul::<torus, _>(variance, n);
+/// let noise = scalar_mul(variance, n);
 /// ```
 pub fn scalar_mul<T, V>(variance: V, n: T) -> Variance
 where
@@ -373,16 +332,14 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_npe::multisum_uncorrelated;
-/// let torus = u32; // or u64
-///                  // parameters
+/// use concrete_npe::scalar_weighted_sum;
 /// let variances = vec![
 ///     Variance::from_variance(f64::powi(2., -30)),
 ///     Variance::from_variance(f64::powi(2., -32)),
 /// ];
-/// let weights: Vec<Torus> = vec![(-543 as i64) as Torus, 10 as Torus];
+/// let weights: Vec<u64> = vec![20, 10];
 /// // noise computation
-/// let noise = multisum_uncorrelated::<torus, _>(&variances, &weights);
+/// let noise = scalar_weighted_sum(&variances, &weights);
 /// ```
 pub fn scalar_weighted_sum<T: UnsignedInteger, D>(dispersion_list: &[D], weights: &[T]) -> Variance
 where
@@ -393,7 +350,6 @@ where
     for (dispersion, &w) in dispersion_list.iter().zip(weights) {
         var_res += scalar_mul(*dispersion, w).get_variance();
     }
-
     Variance::from_variance(var_res)
 }
 
