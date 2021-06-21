@@ -378,3 +378,347 @@ where
         scalar_polynomial,
     )
 }
+
+/// returns a variance when computing a tensorial product between two independant GLWE, and rescaling it with a factor
+/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn glwe_tensor_product_rescale_round(
+    poly_size: usize,
+    mask_size: usize,
+    var_1: f64,
+    var_2: f64,
+    delta_1: f64,
+    delta_2: f64,
+    max_msg_1: f64,
+    max_msg_2: f64,
+    q: f64,
+    key_type: char,
+) -> f64 {
+    // constants
+    let big_n = poly_size as f64;
+    let k = mask_size as f64;
+    let delta = f64::min(delta_1, delta_2);
+    let delta_square = square(delta);
+
+    // #1
+    let res_1 = big_n / delta_square
+        * (var_1 * square(delta_2) * square(max_msg_2)
+            + var_2 * square(delta_1) * square(max_msg_1)
+            + var_1 * var_2);
+
+    // #2
+    let res_2 = (
+        // 1ere parenthese
+        (square(q) - 1.) / 12.
+            * (1.
+                + k * big_n * var_key_coefficient(key_type)
+                + k * big_n * square(expect_key_coefficient(key_type)))
+            + k * big_n / 4. * var_key_coefficient(key_type)
+            + 1. / 4. * square(1. + k * big_n * expect_key_coefficient(key_type))
+    ) * (
+        // 2e parenthese
+        var_1 + var_2
+    ) * big_n
+        / delta_square;
+
+    // #3
+    let res_3 = 1. / 12.
+        + k * big_n / (12. * delta_square)
+            * ((delta_square - 1.)
+                * (var_key_coefficient(key_type) + square(expect_key_coefficient(key_type)))
+                + 3. * var_key_coefficient(key_type))
+        + k * (k - 1.) * big_n / (24. * delta_square)
+            * ((delta_square - 1.)
+                * (var_poly_key_times_key(poly_size, key_type)
+                    + square_expect_mean_poly_key_times_key(poly_size, key_type))
+                + 3. * var_poly_key_times_key(poly_size, key_type))
+        + k * big_n / (24. * delta_square)
+            * ((delta_square - 1.)
+                * (var_odd_poly_key_square(poly_size, key_type)
+                    + var_even_poly_key_square(poly_size, key_type)
+                    + 2. * square_expect_mean_poly_key_square(poly_size, key_type))
+                + 3. * (var_odd_poly_key_square(poly_size, key_type)
+                    + var_even_poly_key_square(poly_size, key_type)));
+
+    res_2 + res_1 + res_3
+}
+
+pub fn glwe_relinearization(
+    poly_size: usize,
+    mask_size: usize,
+    q: f64,
+    key_type: char,
+    var_rlk: f64,
+    base_log: usize,
+    level: usize,
+) -> f64 {
+    // constants
+    let big_n = poly_size as f64;
+    let k = mask_size as f64;
+    let b = f64::powi(2., base_log as i32);
+
+    // first term
+    let res_1 = k * (level as f64) * big_n * var_rlk * (k + 1.) / 2. * (square(b) + 2.) / 12.;
+
+    // second term
+    let res_2 = k * big_n / 2.
+        * (square(q) / (12. * f64::powi(b, (2 * level) as i32)) - 1. / 12.)
+        * ((k - 1.)
+            * (var_poly_key_times_key(poly_size, key_type)
+                + square_expect_mean_poly_key_times_key(poly_size, key_type))
+            + var_odd_poly_key_square(poly_size, key_type)
+            + var_even_poly_key_square(poly_size, key_type)
+            + 2. * square_expect_mean_poly_key_square(poly_size, key_type));
+
+    // third term
+    let res_3 = k * big_n / 8.
+        * ((k - 1.) * var_poly_key_times_key(poly_size, key_type)
+            + var_odd_poly_key_square(poly_size, key_type)
+            + var_even_poly_key_square(poly_size, key_type));
+
+    res_1 + res_2 + res_3
+}
+
+/// returns a variance when computing an GLWE multiplication (tensor product + relinearization)
+/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn glwe_mul_with_rel(
+    poly_size: usize,
+    mask_size: usize,
+    var_1: f64,
+    var_2: f64,
+    delta_1: f64,
+    delta_2: f64,
+    max_msg_1: f64,
+    max_msg_2: f64,
+    q: f64,
+    key_type: char,
+    var_rlk: f64,
+    base_log: usize,
+    level: usize,
+) -> f64 {
+    // res 1
+    let res_1: f64 = glwe_tensor_product_rescale_round(
+        poly_size, mask_size, var_1, var_2, delta_1, delta_2, max_msg_1, max_msg_2, q, key_type,
+    );
+
+    // res 2
+    let res_2: f64 =
+        glwe_relinearization(poly_size, mask_size, q, key_type, var_rlk, base_log, level);
+
+    // return
+    res_1 + res_2
+}
+
+/// returns a variance of the drift of the PBS with binary keys
+/// output -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+/// in TFHE's case nb_msb = log2(poly_size) + 1
+pub fn lwe_drift_pbs(lwe_mask_size: usize, q: f64, nb_msb: usize, var_in: f64) -> f64 {
+    let w = (1 << nb_msb) as f64;
+    let n = lwe_mask_size as f64;
+    square(w) * var_in / square(q) + 1. / 12. - square(w) / (12. * square(q))
+        + n / 24.
+        + n * square(w) / (48. * square(q))
+}
+
+/// returns a variance of the constant term of the GLWE after an LWE to GLWE key switch
+/// output -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn lwe_to_glwe_ks(
+    lwe_mask_size: usize,
+    var_lwe: f64,
+    var_ksk: f64,
+    q: f64,
+    base_log: usize,
+    level: usize,
+    lwe_key_type: char,
+) -> f64 {
+    let n = lwe_mask_size as f64;
+    let base = (1 << base_log) as f64;
+
+    // res 1
+    let res_1 = var_lwe;
+
+    // res 2
+    let res_2 = n
+        * (square(q) / (12. * f64::powi(base, 2 * level as i32)) - 1. / 12.)
+        * (var_key_coefficient(lwe_key_type) + square(expect_key_coefficient(lwe_key_type)));
+
+    // res 3
+    let res_3 = n / 4. * var_key_coefficient(lwe_key_type);
+
+    // res 4
+    let res_4 = n * (level as f64) * var_ksk * (square(base) + 2.) / 12.;
+
+    // return
+    res_1 + res_2 + res_3 + res_4
+}
+
+/// returns a variance of the non constant GLWE after an LWE to GLWE key switch
+/// output -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn lwe_to_glwe_ks_other_terms(
+    lwe_mask_size: usize,
+    var_ksk: f64,
+    base_log: usize,
+    level: usize,
+) -> f64 {
+    let n = lwe_mask_size as f64;
+    let base = (1 << base_log) as f64;
+
+    // res 4
+    let res_4 = n * (level as f64) * var_ksk * (square(base) + 2.) / 12.;
+
+    // return
+    res_4
+}
+
+/// returns a variance of U when doing a modulus switching
+/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn rlwe_k_1_var_u_mod_switch(poly_size: usize, q: f64, key_type: char) -> f64 {
+    1. / square(q)
+        * ((square(q) - 1.) / 12.
+            * (1.
+                + (poly_size as f64) * var_key_coefficient(key_type)
+                + (poly_size as f64) * square(expect_key_coefficient(key_type)))
+            + (poly_size as f64) / 4. * var_key_coefficient(key_type))
+}
+
+/// returns a variance when computing a relinarization of an RLWE resulting from a tensor product: with k=2, and the secret key is (-S^2(X),S(X))
+/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn rlwe_k_2_relinearization(
+    poly_size: usize,
+    var_rlk: f64,
+    base_log: usize,
+    level: usize,
+    q: f64,
+    key_type: char,
+) -> f64 {
+    let basis: f64 = (1 << base_log) as f64;
+    let big_n: f64 = poly_size as f64;
+
+    // res 1
+    let res_1: f64 = (level as f64) * big_n * var_rlk * (square(basis) + 2.) / 12.;
+
+    // res 2
+    let res_2: f64 = big_n / 2.
+        * (var_odd_poly_key_square(poly_size, key_type)
+            + var_even_poly_key_square(poly_size, key_type)
+            + 2. * square_expect_mean_poly_key_square(poly_size, key_type))
+        * (square(q) / (12. * f64::powi(basis, 2 * level as i32)) - 1. / 12.)
+        + big_n / 8.
+            * (var_odd_poly_key_square(poly_size, key_type)
+                + var_even_poly_key_square(poly_size, key_type));
+
+    // return
+    res_1 + res_2
+}
+
+/// returns a variance when computing a relinarization of an RLWE resulting from a tensor product: both input had a mask size set to k
+/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn rlwe_relinearization(
+    poly_size: usize,
+    mask_size: usize,
+    var_rlk: f64,
+    base_log: usize,
+    level: usize,
+    q: f64,
+    key_type: char,
+) -> f64 {
+    let basis: f64 = (1 << base_log) as f64;
+    let big_n: f64 = poly_size as f64;
+    let k = mask_size as f64;
+
+    // res 1
+    let res_1: f64 = k * (level as f64) * big_n * var_rlk * (square(basis) + 2.) * (k + 1.) / 24.;
+
+    // res 2
+    let res_2: f64 = k * big_n / 2.
+        * (var_odd_poly_key_square(poly_size, key_type)
+            + var_even_poly_key_square(poly_size, key_type)
+            + 2. * square_expect_mean_poly_key_square(poly_size, key_type)
+            + (k - 1.)
+                * (var_poly_key_times_key(poly_size, key_type)
+                    + square_expect_mean_poly_key_times_key(poly_size, key_type)))
+        * (square(q) / (12. * f64::powi(basis, 2 * level as i32)) - 1. / 12.)
+        + k * big_n / 8.
+            * (var_odd_poly_key_square(poly_size, key_type)
+                + var_even_poly_key_square(poly_size, key_type)
+                + (k - 1.) * var_poly_key_times_key(poly_size, key_type));
+
+    // return
+    res_1 + res_2
+}
+
+/// returns a variance when computing an external product as in TFHE's PBS
+/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn external_product(
+    poly_size: usize,
+    rlwe_mask_size: usize,
+    var_rlwe: f64,
+    var_rgsw: f64,
+    base_log: usize,
+    level: usize,
+    q: f64,
+    key_type: char,
+) -> f64 {
+    let l = level as f64;
+    let k = rlwe_mask_size as f64;
+    let big_n = poly_size as f64;
+    let b = (1 << base_log) as f64;
+    let b2l = f64::powf(b, 2. * l);
+
+    let res_1 = l * (k + 1.) * big_n * var_rgsw * (square(b) + 2.) / 12.;
+    let res_2 = var_rlwe / 2.;
+    let res_3 = (square(q) - b2l) / (24. * b2l)
+        * (1.
+            + k * big_n
+                * (var_key_coefficient(key_type) + square(expect_key_coefficient(key_type))));
+    let res_4 = k * big_n / 8. * var_key_coefficient(key_type);
+    let res_5 = 1. / 16. * square(1. - k * big_n * expect_key_coefficient(key_type));
+    res_1 + res_2 + res_3 + res_4 + res_5
+}
+
+/// returns a variance when computing the cmux
+pub fn cmux(
+    poly_size: usize,
+    rlwe_mask_size: usize,
+    var_rlwe: f64,
+    var_rgsw: f64,
+    base_log: usize,
+    level: usize,
+    q: f64,
+    key_type: char,
+) -> f64 {
+    let res = external_product(
+        poly_size,
+        rlwe_mask_size,
+        2. * var_rlwe,
+        var_rgsw,
+        base_log,
+        level,
+        q,
+        key_type,
+    ) + var_rlwe;
+    res
+}
+
+/// returns a variance when computing TFHE's PBS
+pub fn tfhe_pbs(
+    lwe_mask_size: usize,
+    poly_size: usize,
+    rlwe_mask_size: usize,
+    var_rgsw: f64,
+    base_log: usize,
+    level: usize,
+    q: f64,
+    key_type: char,
+) -> f64 {
+    (lwe_mask_size as f64)
+        * external_product(
+            poly_size,
+            rlwe_mask_size,
+            0.,
+            var_rgsw,
+            base_log,
+            level,
+            q,
+            key_type,
+        )
+}
