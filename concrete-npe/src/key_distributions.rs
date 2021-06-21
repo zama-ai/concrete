@@ -1,10 +1,16 @@
-pub fn var_key_coefficient(key_type: char) -> f64 {
+pub enum KeyType {
+    Binary,
+    Ternary,
+    Gaussian,
+    Zero,
+}
+
+pub fn var_key_coefficient(key_type: KeyType) -> f64 {
     match key_type {
-        BINARY_KEY => var_binary_key_coefficient(),
-        TERNARY_KEY => var_ternary_key_coefficient(),
-        GAUSSIAN_KEY => var_gaussian_key_coefficient(),
-        ZERO_KEY => 0.,
-        _ => panic!("wrong key type"),
+        KeyType::Binary => var_binary_key_coefficient(),
+        KeyType::Ternary => var_ternary_key_coefficient(),
+        KeyType::Gaussian => var_gaussian_key_coefficient(),
+        KeyType::Zero => 0.,
     }
 }
 
