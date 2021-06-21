@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::GlweDimension;
-use crate::crypto::{CiphertextCount, GlweSize};
+use crate::crypto::{CiphertextCount, GlweDimension, GlweSize};
 use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_div, tensor_traits};

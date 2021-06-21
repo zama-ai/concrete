@@ -9,8 +9,7 @@ use crate::math::fft::{Complex64, SerializableComplex64};
 use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::Tensor;
 
-use super::BootstrapKey;
-use super::GlweSize;
+use super::{BootstrapKey, GlweSize};
 
 impl Serialize for BootstrapKey<Vec<Complex64>> {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

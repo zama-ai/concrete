@@ -38,8 +38,9 @@ macro_rules! assert_eq_granularity {
 #[allow(unused_macros)]
 macro_rules! generate_random_interval {
     () => {{
-        let coins: Vec<u32> =
-            concrete_core::math::random::random_uniform_tensor(3).into_container();
+        let coins: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
+            .random_uniform_tensor(3)
+            .into_container();
 
         let interval_type: usize = (coins[0] % 3) as usize;
         let interval_size = ((coins[1] % (1000 * 1000)) as f64) / 1000.;
@@ -66,8 +67,9 @@ macro_rules! generate_random_interval {
 #[allow(unused_macros)]
 macro_rules! generate_random_centered_interval {
     () => {{
-        let coins: Vec<u32> =
-            concrete_core::math::random::random_uniform_tensor(2).into_container();
+        let coins: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
+            .random_uniform_tensor(2)
+            .into_container();
 
         let interval_size = ((coins[0] % (1000 * 1000)) as f64) / 1000.;
 
@@ -80,7 +82,9 @@ macro_rules! generate_random_centered_interval {
 #[allow(unused_macros)]
 macro_rules! generate_precision_padding {
     ($max_precision: expr, $max_padding: expr) => {{
-        let rs: Vec<u32> = concrete_core::math::random::random_uniform_tensor(2).into_container();
+        let rs: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
+            .random_uniform_tensor(2)
+            .into_container();
         (
             ((rs[0] % $max_precision) as usize) + 1,
             (rs[1] % $max_padding) as usize,
@@ -94,8 +98,9 @@ macro_rules! random_index {
         if $max == 0 {
             (0 as usize)
         } else {
-            let rs: Vec<u32> =
-                concrete_core::math::random::random_uniform_tensor(1).into_container();
+            let rs: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
+                .random_uniform_tensor(1)
+                .into_container();
             (rs[0] % ($max as u32)) as usize
         }
     }};
@@ -104,7 +109,9 @@ macro_rules! random_index {
 #[allow(unused_macros)]
 macro_rules! random_message {
     ($min: expr, $max: expr) => {{
-        let rs: Vec<u64> = concrete_core::math::random::random_uniform_tensor(1).into_container();
+        let rs: Vec<u64> = concrete_core::math::random::RandomGenerator::new(None)
+            .random_uniform_tensor(1)
+            .into_container();
         (rs[0] as f64) / f64::powi(2., 64) * ($max - $min) + $min
     }};
 }

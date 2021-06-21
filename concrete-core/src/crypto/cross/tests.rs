@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 
+use concrete_commons::{
+    CastFrom, CastInto, DispersionParameter, LogStandardDev, Numeric, Variance,
+};
 use concrete_npe as npe;
-use concrete_commons::{Numeric, CastFrom, CastInto};
-use concrete_commons::{DispersionParameter, LogStandardDev, Variance};
 
 use crate::crypto::bootstrap::BootstrapKey;
 use crate::crypto::cross::{bootstrap, cmux, constant_sample_extract, external_product};

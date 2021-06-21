@@ -2,7 +2,7 @@ use std::ops::Add;
 
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{Numeric, DispersionParameter};
+use concrete_commons::{DispersionParameter, Numeric};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::ggsw::GgswCiphertext;
@@ -215,7 +215,7 @@ impl<Cont> GlweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*};
     /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
@@ -274,7 +274,7 @@ impl<Cont> GlweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*};
     /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
@@ -326,7 +326,7 @@ impl<Cont> GlweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*};
     /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
@@ -394,7 +394,7 @@ impl<Cont> GlweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*};
     /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
@@ -496,7 +496,7 @@ impl<Cont> GlweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::secret::GlweSecretKey;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::{GlweSize, GlweDimension};
@@ -577,7 +577,7 @@ impl<Cont> GlweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::secret::GlweSecretKey;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::{GlweSize, GlweDimension};
@@ -671,7 +671,7 @@ impl<Cont> GlweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::secret::GlweSecretKey;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::crypto::{GlweSize, GlweDimension};

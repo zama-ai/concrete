@@ -1,4 +1,4 @@
-use concrete_commons::{Numeric, FloatingPoint};
+use concrete_commons::{FloatingPoint, Numeric};
 
 use crate::crypto::UnsignedTorus;
 use crate::math::tensor::{AsMutTensor, AsRefTensor};

@@ -1,6 +1,6 @@
 use itertools::izip;
 
-use concrete_core::math::{random, tensor::Tensor};
+use concrete_core::math::tensor::Tensor;
 
 #[test]
 fn test_new_x_encode_single_x_decode_single() {
@@ -244,8 +244,8 @@ fn margins_with_reals() {
     let mut plaintext = encoder.encode(&messages).unwrap();
 
     // add some error
-    let random_errors: Tensor<Vec<u64>> =
-        random::random_gaussian_tensor(nb_messages, 0., f64::powi(2., -25));
+    let random_errors: Tensor<Vec<u64>> = concrete_core::math::random::RandomGenerator::new(None)
+        .random_gaussian_tensor(nb_messages, 0., f64::powi(2., -25));
     Tensor::from_container(plaintext.plaintexts.as_mut_slice())
         .update_with_wrapping_add(&random_errors);
 

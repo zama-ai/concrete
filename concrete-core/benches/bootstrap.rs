@@ -2,8 +2,9 @@ use criterion::{criterion_group, criterion_main, Benchmark, BenchmarkId, Criteri
 use itertools::iproduct;
 use rand::Rng;
 
-use concrete_commons::{CastFrom, CastInto, Numeric};
-use concrete_commons::{DispersionParameter, LogStandardDev, Variance};
+use concrete_commons::{
+    CastFrom, CastInto, DispersionParameter, LogStandardDev, Numeric, Variance,
+};
 
 use concrete_core::crypto::bootstrap::BootstrapKey;
 use concrete_core::crypto::cross::{bootstrap, cmux, constant_sample_extract, external_product};

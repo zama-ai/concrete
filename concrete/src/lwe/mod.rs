@@ -8,8 +8,9 @@ use crate::traits::GenericAdd;
 use crate::{read_from_file, write_to_file, Torus};
 use backtrace::Backtrace;
 use colored::Colorize;
-use concrete_core::math::dispersion::StandardDev;
+use concrete_commons::{Numeric, StandardDev};
 use concrete_core::math::polynomial::PolynomialSize;
+use concrete_core::math::random::EncryptionRandomGenerator;
 use concrete_core::{
     crypto::{
         self,
@@ -19,7 +20,6 @@ use concrete_core::{
         GlweSize, LweSize,
     },
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor},
-    numeric::Numeric,
 };
 use concrete_npe as npe;
 use serde::{Deserialize, Serialize};
@@ -184,6 +184,7 @@ impl LWE {
             &mut self.ciphertext,
             &Plaintext(plaintext),
             StandardDev::from_standard_dev(sk.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
 
         Ok(())

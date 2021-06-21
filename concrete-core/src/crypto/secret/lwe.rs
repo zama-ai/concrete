@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{Numeric, DispersionParameter};
+use concrete_commons::{DispersionParameter, Numeric};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweList};
@@ -83,7 +83,7 @@ impl<Cont> LweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
@@ -139,7 +139,7 @@ impl<Cont> LweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
@@ -197,7 +197,7 @@ impl<Cont> LweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
@@ -257,7 +257,7 @@ impl<Cont> LweSecretKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::*, lwe::*};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};

@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{CastFrom, SignedInteger};
-use concrete_commons::DispersionParameter;
+use concrete_commons::{CastFrom, DispersionParameter, SignedInteger};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::secret::LweSecretKey;
@@ -261,7 +260,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey, lwe::LweKeyswitchKey};
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
@@ -424,7 +423,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///
     /// ```rust
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::{*, secret::LweSecretKey};
     /// use concrete_core::crypto::{lwe::*, encoding::*};
     /// use concrete_core::math::tensor::AsRefTensor;

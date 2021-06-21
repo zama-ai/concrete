@@ -1,6 +1,7 @@
 use super::{read_from_file, write_to_file};
 use concrete_core::crypto::GlweDimension;
 use concrete_core::math::polynomial::PolynomialSize;
+use concrete_core::math::random::RandomGenerator;
 use concrete_core::{
     crypto::secret::{GlweSecretKey, LweSecretKey},
     math::tensor::IntoTensor,
@@ -27,6 +28,7 @@ impl RLWESecretKey {
         let val = GlweSecretKey::generate(
             GlweDimension(params.dimension),
             PolynomialSize(params.polynomial_size),
+            &mut RandomGenerator::new(None),
         );
         RLWESecretKey {
             val,
@@ -43,8 +45,11 @@ impl RLWESecretKey {
     /// # Output
     /// * a new RLWESecretKey
     pub fn new_raw(polynomial_size: usize, dimension: usize, std_dev: f64) -> RLWESecretKey {
-        let val =
-            GlweSecretKey::generate(GlweDimension(dimension), PolynomialSize(polynomial_size));
+        let val = GlweSecretKey::generate(
+            GlweDimension(dimension),
+            PolynomialSize(polynomial_size),
+            &mut RandomGenerator::new(None),
+        );
         RLWESecretKey {
             val,
             polynomial_size,

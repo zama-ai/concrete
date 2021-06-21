@@ -8,12 +8,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::CryptoAPIError;
 use crate::Torus;
+use concrete_core::crypto;
 use concrete_core::math::decomposition::SignedDecomposable;
-use concrete_core::{crypto, numeric::Numeric};
 use concrete_npe as npe;
 
 use super::{read_from_file, write_to_file};
 use crate::plaintext::Plaintext;
+use concrete_commons::Numeric;
 use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 
 /// Structure describing one particular Encoding

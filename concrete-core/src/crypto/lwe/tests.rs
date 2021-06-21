@@ -1,7 +1,8 @@
 use concrete_npe as npe;
 
-use concrete_commons::{Numeric, CastFrom, SignedInteger};
-use concrete_commons::{DispersionParameter, LogStandardDev, Variance};
+use concrete_commons::{
+    CastFrom, DispersionParameter, LogStandardDev, Numeric, SignedInteger, Variance,
+};
 
 use crate::crypto::encoding::{Cleartext, CleartextList, Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweKeyswitchKey, LweList};
