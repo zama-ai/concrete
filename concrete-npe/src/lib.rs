@@ -21,7 +21,7 @@ where
     D1: DispersionParameter,
     D2: DispersionParameter,
 {
-    //The result variance isequal to the sum of the input variances
+    // The result variance is equal to the sum of the input variances
     let var_res: f64 = dispersion_ct1.get_variance() + dispersion_ct2.get_variance();
     Variance::from_variance(var_res)
 }
