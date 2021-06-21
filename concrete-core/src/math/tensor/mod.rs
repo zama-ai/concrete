@@ -1,8 +1,8 @@
 //! Operations on collections of values.
 //!
-//! This module contains a [`Tensor`] type, central to the whole library. In essence, a tensor
-//! wraps a collection container, and provides a set of methods to operate with other tensors of
-//! the same length:
+//! This module contains a [`Tensor`] type, central to the whole library. In
+//! essence, a tensor wraps a collection container, and provides a set of
+//! methods to operate with other tensors of the same length:
 //! ```
 //! use concrete_core::math::tensor::Tensor;
 //! // We allocate two tensors of size 10
@@ -12,9 +12,9 @@
 //! tensor1.update_with_add(&tensor2);
 //! ```
 //!
-//! The first interest of this type is that it can be backed by several collection containers,
-//! such as `Vec<T>`, `&mut [T]` or `&[T]`. Operations can homogeneously be applied to tensors
-//! backed by different containers:
+//! The first interest of this type is that it can be backed by several
+//! collection containers, such as `Vec<T>`, `&mut [T]` or `&[T]`. Operations
+//! can homogeneously be applied to tensors backed by different containers:
 //! ```
 //! use concrete_core::math::tensor::Tensor;
 //! // `allocate` returns a tensor backed by a `Vec`
@@ -26,50 +26,53 @@
 //! tensor2.update_with_add(&tensor1);
 //! ```
 //!
-//! It is important to note that the `Tensor` type we have here, is *not* an n-dimmensional array,
-//! as is common in scientific computating libraries. It is indexed by a single integral value,
-//! and only operations with tensors of the same *length* are authorized.
+//! It is important to note that the `Tensor` type we have here, is *not* an
+//! n-dimmensional array, as is common in scientific computating libraries. It
+//! is indexed by a single integral value, and only operations with tensors of
+//! the same *length* are authorized.
 //!
-//! Despite this apparent limitation, `Tensor` are used throughout this library as the backbone of
-//! several structures representing multi-dimensional collections. The pattern we use for such
-//! structures is pretty simple:
+//! Despite this apparent limitation, `Tensor` are used throughout this library
+//! as the backbone of several structures representing multi-dimensional
+//! collections. The pattern we use for such structures is pretty simple:
 //! ```
-//! use concrete_core::math::tensor::{Tensor, AsRefTensor, AsRefSlice};
+//! use concrete_core::math::tensor::{AsRefSlice, AsRefTensor, Tensor};
 //!
 //! // We want to have a matrix structure stored row-major.
-//! pub struct Matrix<Cont>{
+//! pub struct Matrix<Cont> {
 //!     tensor: Tensor<Cont>,
 //!     row_length: usize,
 //! }
 //!
 //! // Our matrix is row-major, so we must be able to iterate over rows.
-//! pub struct Row<Cont>{
-//!     tensor: Tensor<Cont>
+//! pub struct Row<Cont> {
+//!     tensor: Tensor<Cont>,
 //! }
 //!
 //! impl<Cont> Matrix<Cont> {
-//!     
 //!     // Returns an iterator over the matrix rows.
 //!     pub fn row_iter(&self) -> impl Iterator<Item = Row<&[<Self as AsRefTensor>::Element]>>
 //!     where
-//!         Self: AsRefTensor
+//!         Self: AsRefTensor,
 //!     {
 //!         self.as_tensor()
 //!             .as_slice()
 //!             .chunks(self.row_length)
-//!             .map(|sub| Row{tensor: Tensor::from_container(sub)})
+//!             .map(|sub| Row {
+//!                 tensor: Tensor::from_container(sub),
+//!             })
 //!     }
 //! }
 //! ```
 //!
-//! You can combine such structures to implement n-dimensional arrays of any size. This approach
-//! has the benefit of making the orderinng of the element explicit, and to provide a specific type
-//! and a specific set of operations for the different dimensions of your array. This prevents you
-//! from shooting yourself in the foot when messing with your data layout, writing new code, or
-//! refactoring.
+//! You can combine such structures to implement n-dimensional arrays of any
+//! size. This approach has the benefit of making the orderinng of the element
+//! explicit, and to provide a specific type and a specific set of operations
+//! for the different dimensions of your array. This prevents you from shooting
+//! yourself in the foot when messing with your data layout, writing new code,
+//! or refactoring.
 
-// This macro implements various traits for a tensor-based object. To work properly, the object in
-// question must be a structure with a `tensor` field.
+// This macro implements various traits for a tensor-based object. To work
+// properly, the object in question must be a structure with a `tensor` field.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! tensor_traits {

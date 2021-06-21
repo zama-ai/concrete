@@ -71,8 +71,8 @@ fn test_gen_aes_incr() {
 
 #[test]
 fn test_state_fork_initial_batch() {
-    // Checks that forking the prng into children that spawns the initial batch gives the
-    // correct states.
+    // Checks that forking the prng into children that spawns the initial batch
+    // gives the correct states.
     let state = State::from_aes_counter(AesCtr(0));
     let mut generator = SoftAesCtrGenerator::new(None, Some(state), None);
     assert_eq!(
@@ -190,8 +190,8 @@ fn test_state_fork_initial_batch() {
 
 #[test]
 fn test_state_fork_next_batch() {
-    // Checks that forking the prng into children that spawns the next batch gives the
-    // correct states.
+    // Checks that forking the prng into children that spawns the next batch gives
+    // the correct states.
     let state = State::from_aes_counter(AesCtr(0));
     let mut generator = SoftAesCtrGenerator::new(None, Some(state), None);
     assert_eq!(
@@ -395,8 +395,9 @@ fn test_state_ordering() {
 
 #[test]
 fn test_randomized_fork_generation() {
-    // Checks that whatever the fork, whatever the state, children generate the same outputs
-    // sequence as parent, and that parent recover at the proper position.
+    // Checks that whatever the fork, whatever the state, children generate the same
+    // outputs sequence as parent, and that parent recover at the proper
+    // position.
     for _ in 0..100 {
         let state = State::from_aes_counter(AesCtr(rand::thread_rng().gen()));
         let n_child = ChildCount(rand::thread_rng().gen::<usize>() % 200);

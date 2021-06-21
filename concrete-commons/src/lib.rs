@@ -1,16 +1,18 @@
 //! Generic numeric types.
 //!
-//! This module contains types and traits to manipulate numeric types in a generic manner. For
-//! instance, in the standard library, the `f32` and `f64` trait share a lot of methods of the
-//! same name and same semantics. Still, it is not possible to use them generically. This module
-//! provides the [`FloatingPoint`] trait, implemented by both of those type, to remedy the
+//! This module contains types and traits to manipulate numeric types in a
+//! generic manner. For instance, in the standard library, the `f32` and `f64`
+//! trait share a lot of methods of the same name and same semantics. Still, it
+//! is not possible to use them generically. This module provides the
+//! [`FloatingPoint`] trait, implemented by both of those type, to remedy the
 //! situation.
 //!
 //! # Note
 //!
-//! The current implementation of those traits does not strive to be general, in the sense that
-//! not all the common methods of the same kind of types are exposed. Only were included the ones
-//! that are used in the rest of the library.
+//! The current implementation of those traits does not strive to be general, in
+//! the sense that not all the common methods of the same kind of types are
+//! exposed. Only were included the ones that are used in the rest of the
+//! library.
 
 pub use dispersion::*;
 pub use float::*;
@@ -42,9 +44,9 @@ pub trait Numeric: Sized + Copy + PartialEq + PartialOrd {
 
 /// A trait that allows to generically cast one type from another.
 ///
-/// This type is similar to the [`std::convert::From`] trait, but the conversion between the two
-/// types is deferred to the individual `as` casting. If in doubt about the semantics of such a
-/// casting, refer to
+/// This type is similar to the [`std::convert::From`] trait, but the conversion
+/// between the two types is deferred to the individual `as` casting. If in
+/// doubt about the semantics of such a casting, refer to
 /// [the rust reference](https://doc.rust-lang.org/reference/expressions/operator-expr.html#type-cast-expressions).
 pub trait CastFrom<Input> {
     fn cast_from(input: Input) -> Self;
@@ -52,9 +54,9 @@ pub trait CastFrom<Input> {
 
 /// A trait that allows to generically cast one type into another.
 ///
-/// This type is similar to the [`std::convert::Into`] trait, but the conversion between the two
-/// types is deferred to the individual `as` casting. If in doubt about the semantics of such a
-/// casting, refer to
+/// This type is similar to the [`std::convert::Into`] trait, but the conversion
+/// between the two types is deferred to the individual `as` casting. If in
+/// doubt about the semantics of such a casting, refer to
 /// [the rust reference](https://doc.rust-lang.org/reference/expressions/operator-expr.html#type-cast-expressions).
 pub trait CastInto<Output> {
     fn cast_into(self) -> Output;

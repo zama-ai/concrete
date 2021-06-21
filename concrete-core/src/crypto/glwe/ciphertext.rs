@@ -17,12 +17,14 @@ pub struct GlweCiphertext<Cont> {
 tensor_traits!(GlweCiphertext);
 
 impl<Scalar> GlweCiphertext<Vec<Scalar>> {
-    /// Allocates a new GLWE ciphertext, whose body and masks coefficients are all `value`.
+    /// Allocates a new GLWE ciphertext, whose body and masks coefficients are
+    /// all `value`.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// let glwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// assert_eq!(glwe_ciphertext.polynomial_size(), PolynomialSize(10));
@@ -47,13 +49,14 @@ impl<Cont> GlweCiphertext<Cont> {
     ///
     /// # Note
     ///
-    /// This method does not perform any transformation of the container data. Those are assumed to
-    /// represent a valid glwe ciphertext.
+    /// This method does not perform any transformation of the container data.
+    /// Those are assumed to represent a valid glwe ciphertext.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// let glwe = GlweCiphertext::from_container(vec![0 as u8; 1100], PolynomialSize(10));
     /// assert_eq!(glwe.polynomial_size(), PolynomialSize(10));
@@ -72,7 +75,8 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// let glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// assert_eq!(glwe.size(), GlweSize(100));
@@ -89,7 +93,8 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// let glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// assert_eq!(glwe.mask_size(), GlweDimension(99));
@@ -106,7 +111,8 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// let rlwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// assert_eq!(rlwe_ciphertext.polynomial_size(), PolynomialSize(10));
@@ -120,7 +126,8 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// let rlwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let body = rlwe_ciphertext.get_body();
@@ -142,7 +149,8 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// let rlwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let mask = rlwe_ciphertext.get_mask();
@@ -165,14 +173,15 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, glwe::*};
+    /// use concrete_core::crypto::glwe::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let mut body = glwe.get_mut_body();
     /// body.as_mut_tensor().fill_with_element(9);
     /// let body = glwe.get_body();
-    /// assert!(body.as_tensor().iter().all(|a|*a==9));
+    /// assert!(body.as_tensor().iter().all(|a| *a == 9));
     /// ```
     pub fn get_mut_body(&mut self) -> GlweBody<&mut [<Self as AsRefTensor>::Element]>
     where
@@ -189,17 +198,17 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
-    /// use concrete_core::crypto::GlweSize;
-    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// let mut glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let mut masks = glwe.get_mut_mask();
-    /// for mut mask in masks.mask_element_iter_mut(){
+    /// for mut mask in masks.mask_element_iter_mut() {
     ///     mask.as_mut_tensor().fill_with_element(9);
     /// }
     /// assert_eq!(masks.mask_element_iter_mut().count(), 99);
-    /// assert!(!glwe.as_tensor().iter().all(|a|*a==9));
+    /// assert!(!glwe.as_tensor().iter().all(|a| *a == 9));
     /// ```
     pub fn get_mut_mask(&mut self) -> GlweMask<&mut [<Self as AsRefTensor>::Element]>
     where
@@ -213,15 +222,16 @@ impl<Cont> GlweCiphertext<Cont> {
         }
     }
 
-    /// Returns borrowed [`GlweBody`] and [`GlweMask`] from the current ciphertext.
+    /// Returns borrowed [`GlweBody`] and [`GlweMask`] from the current
+    /// ciphertext.
     ///
     /// # Example
     ///
     /// ```rust
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
-    /// use concrete_core::crypto::GlweSize;
-    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// let mut glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let (body, masks) = glwe.get_body_and_mask();
     /// assert_eq!(body.as_polynomial().polynomial_size(), PolynomialSize(10));
@@ -249,23 +259,24 @@ impl<Cont> GlweCiphertext<Cont> {
         )
     }
 
-    /// Returns borrowed [`GlweBody`] and [`GlweMask`] from the current ciphertext.
+    /// Returns borrowed [`GlweBody`] and [`GlweMask`] from the current
+    /// ciphertext.
     ///
     /// # Example
     ///
     /// ```rust
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
-    /// use concrete_core::crypto::GlweSize;
-    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// let mut glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let (mut body, mut masks) = glwe.get_mut_body_and_mask();
     /// body.as_mut_tensor().fill_with_element(9);
-    /// for mut mask in masks.mask_element_iter_mut(){
+    /// for mut mask in masks.mask_element_iter_mut() {
     ///     mask.as_mut_tensor().fill_with_element(9);
     /// }
     /// assert_eq!(body.as_polynomial().polynomial_size(), PolynomialSize(10));
-    /// assert!(glwe.as_tensor().iter().all(|a|*a==9));
+    /// assert!(glwe.as_tensor().iter().all(|a| *a == 9));
     /// ```
     #[allow(clippy::type_complexity)]
     pub fn get_mut_body_and_mask(
@@ -296,9 +307,9 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::GlweSize;
+    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// let rlwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let poly_list = rlwe_ciphertext.into_polynomial_list();
     /// assert_eq!(poly_list.polynomial_count(), PolynomialCount(100));
@@ -316,9 +327,9 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::GlweSize;
+    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// let rlwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let poly_list = rlwe_ciphertext.as_polynomial_list();
     /// assert_eq!(poly_list.polynomial_count(), PolynomialCount(100));
@@ -339,16 +350,16 @@ impl<Cont> GlweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::GlweSize;
+    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let mut poly_list = glwe.as_mut_polynomial_list();
-    /// for mut  poly in poly_list.polynomial_iter_mut() {
+    /// for mut poly in poly_list.polynomial_iter_mut() {
     ///     poly.as_mut_tensor().fill_with_element(9);
     /// }
-    /// assert!(glwe.as_tensor().iter().all(|a|*a==9));
+    /// assert!(glwe.as_tensor().iter().all(|a| *a == 9));
     /// ```
     pub fn as_mut_polynomial_list(
         &mut self,

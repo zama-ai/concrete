@@ -1,7 +1,7 @@
 //! Concrete
 //!
-//! Welcome to the concrete documentation. If you are new to FHE, you may have a look at the
-//! [concrete book](https://concrete.zama.ai/).
+//! Welcome to the concrete documentation. If you are new to FHE, you may have a
+//! look at the [concrete book](https://concrete.zama.ai/).
 
 use std::error::Error;
 use std::fs::File;
@@ -157,8 +157,8 @@ fn read_from_file<P: AsRef<Path>, U: DeserializeOwned>(path: P) -> Result<U, Box
 //     im: f64,
 // }
 
-// fn deserialize_vec_ctorus<'de, D>(deserializer: D) -> Result<Vec<Complex64>, D::Error>
-// where
+// fn deserialize_vec_ctorus<'de, D>(deserializer: D) -> Result<Vec<Complex64>,
+// D::Error> where
 //     D: Deserializer<'de>,
 // {
 //     #[derive(Deserialize)]
@@ -168,8 +168,8 @@ fn read_from_file<P: AsRef<Path>, U: DeserializeOwned>(path: P) -> Result<U, Box
 //     Ok(vec.into_iter().map(|Wrapper(a)| a).collect())
 // }
 
-// fn serialize_vec_ctorus<S>(x: &BootstrapKey<Vec<Complex64>>, s: S) -> Result<S::Ok, S::Error>
-// where
+// fn serialize_vec_ctorus<S>(x: &BootstrapKey<Vec<Complex64>>, s: S) ->
+// Result<S::Ok, S::Error> where
 //     S: Serializer,
 // {
 //     #[derive(Serialize)]

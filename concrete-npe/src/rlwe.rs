@@ -1,4 +1,5 @@
-//! Noise formulas for the RLWE operations considering that all slot have the same error variance
+//! Noise formulas for the RLWE operations considering that all slot have the
+//! same error variance
 
 use crate::LWE;
 
@@ -12,9 +13,9 @@ macro_rules! impl_trait_npe_rlwe {
         impl RLWE for $T {
             type STorus = $S;
 
-            /// Computes the variance of the error distribution after a multiplication between a RLWE sample and a scalar polynomial
-            /// sigma_out^2 <- \Sum_i weight_i^2 * sigma^2
-            /// Arguments
+            /// Computes the variance of the error distribution after a multiplication
+            /// between a RLWE sample and a scalar polynomial sigma_out^2 <- \Sum_i
+            /// weight_i^2 * sigma^2 Arguments
             /// * `variance` - the error variance in each slot of the input ciphertext
             /// * `scalar_polynomial` - a slice of Torus with the input weights
             /// Output

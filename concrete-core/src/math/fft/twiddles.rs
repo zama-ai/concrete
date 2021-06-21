@@ -20,7 +20,8 @@ pub struct BackwardCorrector<Cont> {
 
 tensor_traits!(BackwardCorrector);
 
-/// A set of correcting factors allowing to perform the product modulo $(X^N+1)$ with fftw.
+/// A set of correcting factors allowing to perform the product modulo $(X^N+1)$
+/// with fftw.
 pub struct Correctors {
     pub forward: ForwardCorrector<&'static [Complex64]>,
     pub backward: BackwardCorrector<&'static [Complex64]>,

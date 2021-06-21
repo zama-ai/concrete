@@ -6,7 +6,8 @@ use crate::math::tensor::Tensor;
 use crate::test_tools::assert_noise_distribution;
 
 fn test_normal_random<T: UnsignedTorus>() {
-    //! test if the normal random generation with std_dev is below 3*std_dev (99.7%)
+    //! test if the normal random generation with std_dev is below 3*std_dev
+    //! (99.7%)
 
     // settings
     let std_dev: f64 = f64::powi(2., -20);

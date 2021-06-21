@@ -240,7 +240,8 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             );
             rlwe_sk.decrypt_glwe(&mut new_messages, &res);
 
-            // call the NPE to find the theoritical amount of noise after the external product
+            // call the NPE to find the theoritical amount of noise after the external
+            // product
             let var_trgsw = std_dev_bsk.get_variance();
             let var_trlwe = std_dev_rlwe.get_variance();
             let output_variance = <T as npe::Cross>::external_product(

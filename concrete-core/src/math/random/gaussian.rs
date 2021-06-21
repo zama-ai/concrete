@@ -5,8 +5,8 @@ use crate::math::torus::FromTorus;
 
 use super::*;
 
-/// A distribution type representing random sampling of floating point numbers, following a
-/// gaussian distribution.
+/// A distribution type representing random sampling of floating point numbers,
+/// following a gaussian distribution.
 #[derive(Clone, Copy)]
 pub struct Gaussian<T: FloatingPoint> {
     /// The standard deviation of the distribution.

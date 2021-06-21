@@ -1,21 +1,23 @@
 //! Converting to torus values.
 //!
-//! The theory behind some of the homomorphic operators of the library, uses the real torus
-//! $\mathbb{T} = \mathbb{R} / \mathbb{Z}$, or the set or real numbers modulo 1 (elements of the
-//! torus are in $[0,1)$). In practice, floating-point number are not well suited to performing
-//! operations on the torus, and we prefer to use unsigned integer values to represent them.
-//! Indeed, unsigned integer can be used to encode the decimal part of the torus element with a
-//! fixed precision.
+//! The theory behind some of the homomorphic operators of the library, uses the
+//! real torus $\mathbb{T} = \mathbb{R} / \mathbb{Z}$, or the set or real
+//! numbers modulo 1 (elements of the torus are in $[0,1)$). In practice,
+//! floating-point number are not well suited to performing operations on the
+//! torus, and we prefer to use unsigned integer values to represent them.
+//! Indeed, unsigned integer can be used to encode the decimal part of the torus
+//! element with a fixed precision.
 //!
-//! Still, in some cases, we may need to represent an unsigned integer as a torus value in
-//! floating point representation. For this reason we provide the [`IntoTorus`] and [`FromTorus`]
-//! traits which allow to go back and forth between an unsigned integer representation and a
-//! floating point representation.
+//! Still, in some cases, we may need to represent an unsigned integer as a
+//! torus value in floating point representation. For this reason we provide the
+//! [`IntoTorus`] and [`FromTorus`] traits which allow to go back and forth
+//! between an unsigned integer representation and a floating point
+//! representation.
 
 use concrete_commons::{CastInto, FloatingPoint, Numeric, UnsignedInteger};
 
-/// A trait that converts a torus element in unsigned integer representation to the closest
-/// torus element in floating point representation.
+/// A trait that converts a torus element in unsigned integer representation to
+/// the closest torus element in floating point representation.
 pub trait IntoTorus<F>: Sized
 where
     F: FloatingPoint,
@@ -25,14 +27,15 @@ where
     fn into_torus(self) -> F;
 }
 
-/// A trait that converts a torus element in floating point representation into the closest torus
-/// element in unsigned integer representation.
+/// A trait that converts a torus element in floating point representation into
+/// the closest torus element in unsigned integer representation.
 pub trait FromTorus<F>: Sized
 where
     F: FloatingPoint,
     Self: UnsignedInteger,
 {
-    /// Consumes `input` and returns its closest unsigned integer representation.
+    /// Consumes `input` and returns its closest unsigned integer
+    /// representation.
     fn from_torus(input: F) -> Self;
 }
 

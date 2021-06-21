@@ -20,7 +20,8 @@ pub mod glwe;
 pub mod lwe;
 pub mod secret;
 
-/// A marker trait for unsigned integer types that can be used in ciphertexts, keys etc.
+/// A marker trait for unsigned integer types that can be used in ciphertexts,
+/// keys etc.
 pub trait UnsignedTorus:
     UnsignedInteger
     + FromTorus<f64>
@@ -84,7 +85,8 @@ impl GlweSize {
     }
 }
 
-/// The number of polynomials of an GLWE mask, or the size of an GLWE secret key.
+/// The number of polynomials of an GLWE mask, or the size of an GLWE secret
+/// key.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct GlweDimension(pub usize);
 

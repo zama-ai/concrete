@@ -1,8 +1,9 @@
 //! Utilities for the
 
-/// This macro is used in tandem with the [`zip_args`] macro, to allow to zip iterators and access
-/// them in an non-nested fashion. This makes large zip iterators easier to write, but also,
-/// makes the code faster, as zipped-flatten iterators are hard to optimize for the compiler.
+/// This macro is used in tandem with the [`zip_args`] macro, to allow to zip
+/// iterators and access them in an non-nested fashion. This makes large zip
+/// iterators easier to write, but also, makes the code faster, as
+/// zipped-flatten iterators are hard to optimize for the compiler.
 ///
 /// # Example
 ///
@@ -13,12 +14,12 @@
 /// let c = [4, 5, 6];
 ///
 /// // Normally we would do:
-/// for (a, (b, c)) in a.iter().zip(b.iter().zip(c.iter())){
-///     println!("{}{}{}", a,b,c);
+/// for (a, (b, c)) in a.iter().zip(b.iter().zip(c.iter())) {
+///     println!("{}{}{}", a, b, c);
 /// }
 ///
 /// // Now we can do:
-/// for zip_args!(a, b, c) in zip!(a.iter(), b.iter(), c.iter()){
+/// for zip_args!(a, b, c) in zip!(a.iter(), b.iter(), c.iter()) {
 ///     println!("{}{}{}", a, b, c);
 /// }
 /// ```

@@ -79,9 +79,9 @@ fn test_panic_round_to_closest_multiple_u64() {
 
 fn test_signed_decompose_one_level<T: UnsignedTorus + Debug + Binary>() {
     // This test picks a random Torus value,
-    // rounds them according to the decomposition precision (base_log*level_max) which is randomly picked each time,
-    // decomposes them with the signed_decompose_one_level() function,
-    // recomposes Torus elements,
+    // rounds them according to the decomposition precision (base_log*level_max)
+    // which is randomly picked each time, decomposes them with the
+    // signed_decompose_one_level() function, recomposes Torus elements,
     // and finally makes sure that they are equal to the rounded values.
 
     let log_b = any_usize();

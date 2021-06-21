@@ -1,8 +1,9 @@
-//! A module implementing an `aes128-counter` random number generator, using `aesni` instructions.
+//! A module implementing an `aes128-counter` random number generator, using
+//! `aesni` instructions.
 //!
-//! This module implements a cryptographically secure pseudorandom number generator
-//! (CS-PRNG), using a fast streamcipher: aes128 in counter-mode (CTR). The implementation
-//! is based on the [intel aesni white paper 323641-001 revision 3.0](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf).
+//! This module implements a cryptographically secure pseudorandom number
+//! generator (CS-PRNG), using a fast streamcipher: aes128 in counter-mode
+//! (CTR). The implementation is based on the [intel aesni white paper 323641-001 revision 3.0](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf).
 use crate::counter::{AesBatchedGenerator, AesCtr, AesKey};
 use std::arch::x86_64::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_aeskeygenassist_si128, _mm_load_si128,
@@ -80,8 +81,8 @@ fn rdseed_random_m128() -> __m128i {
     }
 }
 
-// Uses aes to encrypt many values at once. This allows a substantial speedup (around 30%)
-// compared to the naive approach.
+// Uses aes to encrypt many values at once. This allows a substantial speedup
+// (around 30%) compared to the naive approach.
 #[allow(clippy::too_many_arguments)]
 fn aes_encrypt_many(
     message_1: &__m128i,
@@ -234,7 +235,8 @@ mod test {
 
     #[test]
     fn test_generate_key_schedule() {
-        // Checks that the round keys are correctly generated from the sample key from FIPS
+        // Checks that the round keys are correctly generated from the sample key from
+        // FIPS
         let key = u128_to_si128(CIPHER_KEY);
         let mut keys: [__m128i; 11] = [u128_to_si128(0); 11];
         aes_128_key_expansion(key, &mut keys);
@@ -245,7 +247,8 @@ mod test {
 
     #[test]
     fn test_encrypt_many_messages() {
-        // Checks that encrypting many plaintext at the same time gives the correct output.
+        // Checks that encrypting many plaintext at the same time gives the correct
+        // output.
         let message = u128_to_si128(PLAINTEXT);
         let key = u128_to_si128(CIPHER_KEY);
         let mut keys: [__m128i; 11] = [u128_to_si128(0); 11];

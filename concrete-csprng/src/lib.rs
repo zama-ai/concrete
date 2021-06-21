@@ -1,10 +1,11 @@
-//! Cryptographically secure pseudo random number generator, that uses AES in CTR mode.
+//! Cryptographically secure pseudo random number generator, that uses AES in
+//! CTR mode.
 //!
 //! Welcome to the `concrete-csprng` documentation.
 //!
-//! This crate contains a reasonably fast cryptographically secure pseudo-random number generator.
-//! The implementation is based on the AES blockcipher used in counter (CTR) mode, as presented
-//! in the ISO/IEC 18033-4 document.
+//! This crate contains a reasonably fast cryptographically secure pseudo-random
+//! number generator. The implementation is based on the AES blockcipher used in
+//! counter (CTR) mode, as presented in the ISO/IEC 18033-4 document.
 
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
@@ -18,8 +19,8 @@ pub use software::set_soft_rdseed_secret;
 
 /// The pseudorandom number generator.
 ///
-/// If the correct instructions sets are available on the machine, an hardware accelerated version
-/// of the generator can be used.  
+/// If the correct instructions sets are available on the machine, an hardware
+/// accelerated version of the generator can be used.  
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum RandomGenerator {
@@ -30,13 +31,14 @@ pub enum RandomGenerator {
 }
 
 impl RandomGenerator {
-    /// Builds a new random generator, selecting the hardware implementation if available.
-    /// Optionally, a seed can be provided.
+    /// Builds a new random generator, selecting the hardware implementation if
+    /// available. Optionally, a seed can be provided.
     ///
     /// # Note
     ///
-    /// If using the `slow` feature, this function will return the non-accelerated variant, even
-    /// though the right instructions are available.
+    /// If using the `slow` feature, this function will return the
+    /// non-accelerated variant, even though the right instructions are
+    /// available.
     pub fn new(seed: Option<u128>) -> RandomGenerator {
         if cfg!(feature = "slow") {
             return RandomGenerator::new_software(seed);
@@ -44,12 +46,14 @@ impl RandomGenerator {
         RandomGenerator::new_hardware(seed).unwrap_or_else(|| RandomGenerator::new_software(seed))
     }
 
-    /// Builds a new software random generator, optionally seeding it with a given value.
+    /// Builds a new software random generator, optionally seeding it with a
+    /// given value.
     pub fn new_software(seed: Option<u128>) -> RandomGenerator {
         RandomGenerator::Software(SoftAesCtrGenerator::new(seed.map(AesKey), None, None))
     }
 
-    /// Tries to build a new hardware random generator, optionally seeding it with a given value.
+    /// Tries to build a new hardware random generator, optionally seeding it
+    /// with a given value.
     pub fn new_hardware(seed: Option<u128>) -> Option<RandomGenerator> {
         if !is_x86_feature_detected!("aes")
             || !is_x86_feature_detected!("rdseed")
@@ -88,11 +92,12 @@ impl RandomGenerator {
         }
     }
 
-    /// Tries to fork the current generator into `n_child` generators each able to yield
-    /// `child_bytes` random bytes.
+    /// Tries to fork the current generator into `n_child` generators each able
+    /// to yield `child_bytes` random bytes.
     ///
-    /// If the total number of bytes to be generated exceeds the bound of the current generator,
-    /// `None` is returned. Otherwise, we return an iterator over the children generators.
+    /// If the total number of bytes to be generated exceeds the bound of the
+    /// current generator, `None` is returned. Otherwise, we return an
+    /// iterator over the children generators.
     pub fn try_fork(
         &mut self,
         n_child: usize,
@@ -135,11 +140,12 @@ impl RandomGenerator {
         }
     }
 
-    /// Tries to fork the current generator into `n_child` generators each able to yield
-    /// `child_bytes` random bytes as a parallel iterator.
+    /// Tries to fork the current generator into `n_child` generators each able
+    /// to yield `child_bytes` random bytes as a parallel iterator.
     ///
-    /// If the total number of bytes to be generated exceeds the bound of the current generator,
-    /// `None` is returned. Otherwise, we return a parallel iterator over the children generators.
+    /// If the total number of bytes to be generated exceeds the bound of the
+    /// current generator, `None` is returned. Otherwise, we return a
+    /// parallel iterator over the children generators.
     ///
     /// # Notes
     ///
@@ -276,8 +282,8 @@ mod test {
 
     #[test]
     fn test_fork() {
-        // Checks that forks returns a bounded child, and that the proper number of bytes can be
-        // generated.
+        // Checks that forks returns a bounded child, and that the proper number of
+        // bytes can be generated.
         let mut gen = RandomGenerator::new(None);
         let mut bounded = gen.try_fork(1, 10).unwrap().next().unwrap();
         assert!(bounded.is_bounded());

@@ -1,7 +1,7 @@
 //! Fourier transform for polynomials.
 //!
-//! This module provides the tools to perform a fast product of two polynomials, reduced modulo
-//! $X^N+1$, using the fast fourier transform.
+//! This module provides the tools to perform a fast product of two polynomials,
+//! reduced modulo $X^N+1$, using the fast fourier transform.
 use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
 use serde::ser::{Serialize, SerializeTuple, Serializer};
 use std::fmt;

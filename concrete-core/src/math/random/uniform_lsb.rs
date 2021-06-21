@@ -1,7 +1,7 @@
 use super::*;
 
-/// A distribution type representing random sampling for unsigned integer type, where the `n`
-/// least significant bits are sampled in `[0, 2^n[`.
+/// A distribution type representing random sampling for unsigned integer type,
+/// where the `n` least significant bits are sampled in `[0, 2^n[`.
 #[derive(Copy, Clone)]
 pub struct UniformLsb {
     /// The number of least significant bits that should be set randomly.
