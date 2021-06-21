@@ -31,21 +31,21 @@ where
 /// Argument:
 /// * `dispersion_cts` - noise variance of the ciphertexts
 /// Output:
-/// * the noise dispersion of the sum of the ciphertexts
+/// * the noise variance of the sum of the ciphertexts
 pub fn add_several_ciphertexts<D>(dispersion_cts: &[D]) -> Variance
 where
     D: DispersionParameter,
 {
     let mut var_res: f64 = 0.;
+    // The result variance is equal to the sum of the input variances
     for dispersion in dispersion_cts.iter() {
         var_res += dispersion.get_variance();
     }
     Variance::from_variance(var_res)
 }
 
-/// Computes the number of bits affected by the noise with a variance var
-/// describing a normal distribution takes into account the number of bits of
-/// the integers
+/// Computes the number of bits affected by the noise with a dispersion
+/// describing a normal distribution
 pub fn nb_bit_from_variance_99<D>(dispersion: D, torus_bit: usize) -> usize
 where
     D: DispersionParameter,
