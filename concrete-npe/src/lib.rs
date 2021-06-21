@@ -8,40 +8,54 @@ use concrete_commons::parameters::{
 };
 use itertools::izip;
 
-/// Computes the variance of the error distribution after the addition of two
-/// uncorrelated ciphertexts Arguments
-/// * `var_ct1` - noise variance of the first ciphertext
-/// * `var_ct2` - noise variance of the second ciphertext
+/// Computes the dispersion of the error distribution after the addition of two
+/// uncorrelated ciphertexts
+///
+/// Arguments:
+/// * `dispersion_ct1` - noise dispersion of the first ciphertext
+/// * `dispersion_ct2` - noise dispersion of the second ciphertext
 /// Output
-/// * the variance of the sum of the first and the second ciphertext
-pub fn add_ciphertexts(var_ct1: f64, var_ct2: f64) -> f64 {
-    var_ct1 + var_ct2
+/// * the noise variance of the sum of the first and the second ciphertext
+pub fn add_ciphertexts<D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
+where
+    D1: DispersionParameter,
+    D2: DispersionParameter,
+{
+    //The result variance isequal to the sum of the input variances
+    let var_res: f64 = dispersion_ct1.get_variance() + dispersion_ct2.get_variance();
+    Variance::from_variance(var_res)
 }
 
-/// Computes the variance of the error distribution after the addition several
+/// Computes the dispersion of the error distribution after the addition of several
 /// uncorrelated ciphertexts
-/// Argument
-/// * `var_cts` - noise variance of the ciphertexts
-/// Output
-/// * the variance of the sum of the ciphertexts
-pub fn add_several_ciphertexts(var_cts: &[f64]) -> f64 {
-    let mut res: f64 = 0.;
-    for var in var_cts.iter() {
-        res += *var;
+/// Argument:
+/// * `dispersion_cts` - noise variance of the ciphertexts
+/// Output:
+/// * the noise dispersion of the sum of the ciphertexts
+pub fn add_several_ciphertexts<D>(dispersion_cts: &[D]) -> Variance
+where
+    D: DispersionParameter,
+{
+    let mut var_res: f64 = 0.;
+    for dispersion in dispersion_cts.iter() {
+        var_res += dispersion.get_variance();
     }
-    res
+    Variance::from_variance(var_res)
 }
 
 /// Computes the number of bits affected by the noise with a variance var
 /// describing a normal distribution takes into account the number of bits of
 /// the integers
-pub fn nb_bit_from_variance_99(var: f64, torus_bit: usize) -> usize {
-    // compute sigma
-    let sigma: f64 = f64::sqrt(var);
+pub fn nb_bit_from_variance_99<D>(dispersion: D, torus_bit: usize) -> usize
+where
+    D: DispersionParameter,
+{
+    // get the standard deviation
+    let std_dev: f64 = dispersion.get_standard_dev();
 
     // the constant to get 99% of the normal distribution
     let z: f64 = 3.;
-    let tmp = torus_bit as f64 + f64::log2(sigma * z);
+    let tmp = torus_bit as f64 + f64::log2(std_dev * z);
     if tmp < 0. {
         // means no bits are affected by the noise in the integer representation
         // (discrete space)
@@ -89,17 +103,17 @@ pub fn nb_bit_from_variance_99(var: f64, torus_bit: usize) -> usize {
 ///     var_trlwe,
 /// );
 /// ```
-pub fn external_product<T: UnsignedInteger, V1, V2>(
+pub fn external_product<T: UnsignedInteger, D1, D2>(
     dimension: GlweDimension,
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
     l_gadget: DecompositionLevelCount,
-    var_trgsw: V1,
-    var_trlwe: V2,
+    dispersion_trgsw: D1,
+    dispersion_trlwe: D2,
 ) -> Variance
 where
-    V1: DispersionParameter,
-    V2: DispersionParameter,
+    D1: DispersionParameter,
+    D2: DispersionParameter,
 {
     // norm 2 of the integer polynomial hidden in the TRGSW
     // for an external product inside a bootstrap, the integer polynomial is in fact
@@ -109,16 +123,15 @@ where
     let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
     let res_1: f64 = ((dimension.0 + 1) * l_gadget.0 * polynomial_size.0 * (b_g * b_g + 2)) as f64
         / 12.
-        * var_trgsw.get_variance();
+        * dispersion_trgsw.get_variance();
 
     let res_2: f64 = norm_2_msg_trgsw
         * ((dimension.0 * polynomial_size.0 + 2) as f64
             / (24. * f64::powi(b_g as f64, 2 * l_gadget.0 as i32)) as f64
             + (dimension.0 * polynomial_size.0 / 48 - 1 / 12) as f64 / q_square);
 
-    let res_3: f64 = norm_2_msg_trgsw * var_trlwe.get_variance();
-    let res: Variance = Variance::from_variance(res_1 + res_2 + res_3);
-    return res;
+    let res_3: f64 = norm_2_msg_trgsw * dispersion_trlwe.get_variance();
+    Variance::from_variance(res_1 + res_2 + res_3)
 }
 
 /// Return the variance of the cmux given a set of parameters.
@@ -163,19 +176,19 @@ where
 ///     var_trgsw,
 /// );
 /// ```
-pub fn cmux<T: UnsignedInteger, V1, V2, V3>(
+pub fn cmux<T: UnsignedInteger, D1, D2, D3>(
     dimension: GlweDimension,
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
     l_gadget: DecompositionLevelCount,
-    var_rlwe_0: V1,
-    var_rlwe_1: V2,
-    var_trgsw: V3,
+    var_rlwe_0: D1,
+    var_rlwe_1: D2,
+    var_trgsw: D3,
 ) -> Variance
 where
-    V1: DispersionParameter,
-    V2: DispersionParameter,
-    V3: DispersionParameter,
+    D1: DispersionParameter,
+    D2: DispersionParameter,
+    D3: DispersionParameter,
 {
     let var_external_product = external_product::<T, _, _>(
         dimension,
@@ -183,16 +196,10 @@ where
         base_log,
         l_gadget,
         var_trgsw,
-        Variance::from_variance(add_ciphertexts(
-            var_rlwe_0.get_variance(),
-            var_rlwe_1.get_variance(),
-        )),
+        add_ciphertexts(var_rlwe_0, var_rlwe_1),
     );
-    let var_cmux = add_ciphertexts(
-        var_external_product.get_variance(),
-        var_rlwe_0.get_variance(),
-    );
-    return Variance::from_variance(var_cmux);
+    let dispersion_cmux = add_ciphertexts(var_external_product, var_rlwe_0);
+    dispersion_cmux
 }
 
 /// Return the variance of output of a bootstrap given a set of parameters.
@@ -326,16 +333,16 @@ pub fn bootstrap_then_key_switch(
 /// // Computing the noise
 /// let var_ks = key_switch::<torus, _, _>(dimension_before, l_ks, base_log, var_ks, var_input);
 /// ```
-pub fn key_switch<T: UnsignedInteger, V1, V2>(
+pub fn key_switch<T: UnsignedInteger, D1, D2>(
     dimension_before: LweDimension,
     l_ks: DecompositionLevelCount,
     base_log: DecompositionBaseLog,
-    var_ks: V1,
-    var_input: V2,
+    var_ks: D1,
+    var_input: D2,
 ) -> Variance
 where
-    V1: DispersionParameter,
-    V2: DispersionParameter,
+    D1: DispersionParameter,
+    D2: DispersionParameter,
 {
     let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
     let res_1: f64 = dimension_before.0 as f64
@@ -475,10 +482,10 @@ fn scalar_mul_inplace<T: UnsignedInteger>(var: &mut [Variance], t: &[T]) {
 /// * `variance_1` - variance of the error of the second input ciphertext
 /// Output
 /// * the sum of the variances
-pub fn add_2_uncorrelated<V0, V1>(variance_0: V0, variance_1: V1) -> Variance
+pub fn add_2_uncorrelated<V0, D1>(variance_0: V0, variance_1: D1) -> Variance
 where
     V0: DispersionParameter,
-    V1: DispersionParameter,
+    D1: DispersionParameter,
 {
     Variance::from_variance(variance_0.get_variance() + variance_1.get_variance())
 }
