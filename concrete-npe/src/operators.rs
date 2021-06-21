@@ -14,8 +14,9 @@ use concrete_commons::parameters::{
 /// * `dispersion_ct2` - noise dispersion of the second ciphertext
 /// Output
 /// * The noise variance of the sum of the first and the second ciphertext
-pub fn add<T: UnsignedInteger, D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
+pub fn add<T, D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
 where
+    T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
 {
@@ -31,8 +32,9 @@ where
 /// * `dispersion_cts` - noise variance of the ciphertexts
 /// Output:
 /// * the noise variance of the sum of the ciphertexts
-pub fn add_several<T: UnsignedInteger, D>(dispersion_cts: &[D]) -> Variance
+pub fn add_several<T, D>(dispersion_cts: &[D]) -> Variance
 where
+    T: UnsignedInteger,
     D: DispersionParameter,
 {
     let mut var_res: f64 = 0.;
@@ -77,7 +79,7 @@ where
 ///     dispersion_rlwe,
 /// );
 /// ```
-pub fn external_product<T: UnsignedInteger, D1, D2>(
+pub fn external_product<T, D1, D2>(
     dimension: GlweDimension,
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
@@ -86,6 +88,7 @@ pub fn external_product<T: UnsignedInteger, D1, D2>(
     dispersion_rlwe: D2,
 ) -> Variance
 where
+    T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
 {
@@ -148,7 +151,7 @@ where
 ///     dispersion_rgsw,
 /// );
 /// ```
-pub fn cmux<T: UnsignedInteger, D1, D2, D3>(
+pub fn cmux<T, D1, D2, D3>(
     dimension: GlweDimension,
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
@@ -158,6 +161,7 @@ pub fn cmux<T: UnsignedInteger, D1, D2, D3>(
     dispersion_rgsw: D3,
 ) -> Variance
 where
+    T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
     D3: DispersionParameter,
@@ -209,16 +213,17 @@ where
 ///     var_bsk,
 /// );
 /// ```
-pub fn bootstrap<T: UnsignedInteger, V>(
+pub fn bootstrap<T, D>(
     lwe_dimension: LweDimension,
     rlwe_dimension: GlweDimension,
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
     l_gadget: DecompositionLevelCount,
-    var_bsk: V,
+    var_bsk: D,
 ) -> Variance
 where
-    V: DispersionParameter,
+    T: UnsignedInteger,
+    D: DispersionParameter,
 {
     let b_g = 1 << base_log.0;
     let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
@@ -265,7 +270,7 @@ where
 /// // Computing the noise
 /// let var_ks = key_switch::<u64, _, _>(dimension_before, l_ks, base_log, dispersion_ks, dispersion_input);
 /// ```
-pub fn key_switch<T: UnsignedInteger, D1, D2>(
+pub fn key_switch<T, D1, D2>(
     dimension_before: LweDimension,
     l_ks: DecompositionLevelCount,
     base_log: DecompositionBaseLog,
@@ -273,6 +278,7 @@ pub fn key_switch<T: UnsignedInteger, D1, D2>(
     dispersion_input: D2,
 ) -> Variance
 where
+    T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
 {
@@ -308,10 +314,10 @@ where
 /// // noise computation
 /// let noise = scalar_mul(variance, n);
 /// ```
-pub fn scalar_mul<T, V>(variance: V, n: T) -> Variance
+pub fn scalar_mul<T, D>(variance: D, n: T) -> Variance
 where
     T: UnsignedInteger,
-    V: DispersionParameter,
+    D: DispersionParameter,
 {
     let sn = n.into_signed();
     let product: f64 = (sn * sn).cast_into();
@@ -338,8 +344,9 @@ where
 /// // noise computation
 /// let noise = scalar_weighted_sum(&variances, &weights);
 /// ```
-pub fn scalar_weighted_sum<T: UnsignedInteger, D>(dispersion_list: &[D], weights: &[T]) -> Variance
+pub fn scalar_weighted_sum<T, D>(dispersion_list: &[D], weights: &[T]) -> Variance
 where
+    T: UnsignedInteger,
     D: DispersionParameter,
 {
     let mut var_res: f64 = 0.;
@@ -360,11 +367,10 @@ where
 /// * `scalar_polynomial` - a slice of Torus with the input weights
 /// Output
 /// * the error variance for each slot of the output ciphertext
-pub fn scalar_polynomial_mult<T: UnsignedInteger, S: SignedInteger, D>(
-    dispersion: D,
-    scalar_polynomial: &[T],
-) -> Variance
+pub fn scalar_polynomial_mult<T, S, D>(dispersion: D, scalar_polynomial: &[T]) -> Variance
 where
+    T: UnsignedInteger,
+    S: SignedInteger,
     D: DispersionParameter,
 {
     scalar_weighted_sum(
