@@ -5,17 +5,17 @@ use colored::Colorize;
 
 use concrete_core::crypto::LweDimension;
 use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::dispersion::StandardDev;
 use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::{
     crypto::{bootstrap::BootstrapKey, GlweSize},
     math::tensor::{AsMutTensor, AsRefTensor},
     math::{fft::Complex64, tensor::Tensor},
-    numeric::Numeric,
 };
 
 use crate::error::CryptoAPIError;
 use crate::Torus;
+use concrete_commons::{Numeric, StandardDev};
+use concrete_core::math::random::EncryptionRandomGenerator;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LWEBSK {
@@ -144,6 +144,7 @@ impl LWEBSK {
             &sk_input.val,
             &sk_output.val,
             StandardDev::from_standard_dev(sk_output.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
         let mut fourier_bsk = BootstrapKey::allocate(
             Complex64::new(0., 0.),

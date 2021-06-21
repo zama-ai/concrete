@@ -4,6 +4,7 @@ use backtrace::Backtrace;
 use colored::Colorize;
 use concrete_core::crypto::LweDimension;
 use concrete_core::math::polynomial::PolynomialSize;
+use concrete_core::math::random::RandomGenerator;
 use concrete_core::{
     crypto::secret::{GlweSecretKey, LweSecretKey},
     math::tensor::IntoTensor,
@@ -26,7 +27,10 @@ impl LWESecretKey {
     /// # Output
     /// * a new LWESecretKey
     pub fn new(params: &crate::LWEParams) -> LWESecretKey {
-        let val = LweSecretKey::generate(LweDimension(params.dimension));
+        let val = LweSecretKey::generate(
+            LweDimension(params.dimension),
+            &mut RandomGenerator::new(None),
+        );
         LWESecretKey {
             val,
             dimension: params.dimension,
@@ -41,7 +45,7 @@ impl LWESecretKey {
     /// # Output
     /// * a new LWESecretKey
     pub fn new_raw(dimension: usize, std_dev: f64) -> LWESecretKey {
-        let val = LweSecretKey::generate(LweDimension(dimension));
+        let val = LweSecretKey::generate(LweDimension(dimension), &mut RandomGenerator::new(None));
         LWESecretKey {
             val,
             dimension,

@@ -8,17 +8,17 @@ use colored::Colorize;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
 
-use concrete_core::math::dispersion::StandardDev;
 use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::{
     crypto::{encoding::PlaintextList, glwe::GlweList, CiphertextCount, GlweDimension},
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor},
-    numeric::Numeric,
 };
 use concrete_npe as npe;
 
 use crate::error::CryptoAPIError;
 use crate::{read_from_file, write_to_file, Torus};
+use concrete_commons::{Numeric, StandardDev};
+use concrete_core::math::random::EncryptionRandomGenerator;
 
 #[cfg(test)]
 mod tests;
@@ -442,6 +442,7 @@ impl VectorRLWE {
             &mut self.ciphertexts,
             &PlaintextList::from_container(plaintexts),
             StandardDev::from_standard_dev(sk.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
 
         Ok(())
@@ -729,6 +730,7 @@ impl VectorRLWE {
         for mut polynomial in res
             .ciphertexts
             .as_mut_tensor()
+            .get_sub_mut(0..(self.dimension * self.polynomial_size))
             .subtensor_iter_mut(self.polynomial_size)
         {
             if polynomial.len() == self.polynomial_size {

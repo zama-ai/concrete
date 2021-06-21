@@ -1,7 +1,8 @@
 use crate::Torus;
+use concrete_commons::StandardDev;
 use concrete_core::crypto::LweDimension;
 use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::dispersion::StandardDev;
+use concrete_core::math::random::EncryptionRandomGenerator;
 use concrete_core::{
     crypto,
     math::tensor::Tensor,
@@ -82,6 +83,7 @@ impl LWEKSK {
             &sk_before.val,
             &sk_after.val,
             StandardDev::from_standard_dev(sk_after.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
 
         LWEKSK {

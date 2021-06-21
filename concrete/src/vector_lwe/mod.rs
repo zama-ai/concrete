@@ -8,7 +8,6 @@ use colored::Colorize;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
 
-use concrete_core::math::dispersion::StandardDev;
 use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::{
     crypto::{
@@ -20,12 +19,13 @@ use concrete_core::{
     },
     math::tensor::Tensor,
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor},
-    numeric::Numeric,
 };
 use concrete_npe as npe;
 
 use crate::error::CryptoAPIError;
 use crate::{read_from_file, write_to_file, Torus};
+use concrete_commons::{Numeric, StandardDev};
+use concrete_core::math::random::EncryptionRandomGenerator;
 
 #[cfg(test)]
 mod tests;
@@ -473,6 +473,7 @@ impl VectorLWE {
             &mut self.ciphertexts,
             &PlaintextList::from_container(plaintexts),
             StandardDev::from_standard_dev(sk.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
 
         Ok(())

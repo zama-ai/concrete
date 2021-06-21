@@ -12,15 +12,15 @@
 //! not all the common methods of the same kind of types are exposed. Only were included the ones
 //! that are used in the rest of the library.
 
+pub use dispersion::*;
 pub use float::*;
 pub use signed::*;
 pub use unsigned::*;
-pub use dispersion::*;
 
+mod dispersion;
 mod float;
 mod signed;
 mod unsigned;
-mod dispersion;
 
 /// A trait implemented by any generic numeric type suitable for computations.
 pub trait Numeric: Sized + Copy + PartialEq + PartialOrd {

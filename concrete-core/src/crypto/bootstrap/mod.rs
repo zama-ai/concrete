@@ -1,8 +1,7 @@
 //! Bootstrapping key
 use fftw::array::AlignedVec;
 
-use concrete_commons::Numeric;
-use concrete_commons::DispersionParameter;
+use concrete_commons::{DispersionParameter, Numeric};
 
 use crate::crypto::encoding::Plaintext;
 use crate::crypto::{LweDimension, UnsignedTorus};
@@ -315,7 +314,7 @@ impl<Cont> BootstrapKey<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::bootstrap::BootstrapKey;
     /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
     /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
@@ -397,7 +396,7 @@ impl<Cont> BootstrapKey<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::bootstrap::BootstrapKey;
     /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
     /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
@@ -475,7 +474,7 @@ impl<Cont> BootstrapKey<Cont> {
     ///
     /// ```
     /// use concrete_commons::LogStandardDev;
-    /// 
+    ///
     /// use concrete_core::crypto::bootstrap::BootstrapKey;
     /// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
     /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};

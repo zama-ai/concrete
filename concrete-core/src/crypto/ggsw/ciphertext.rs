@@ -4,8 +4,7 @@ use crate::math::decomposition::{
     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount,
 };
 use crate::math::polynomial::PolynomialSize;
-use crate::math::tensor::AsMutSlice;
-use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
+use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_div, tensor_traits};
 
 use super::GgswLevelMatrix;
