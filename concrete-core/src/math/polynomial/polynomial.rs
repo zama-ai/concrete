@@ -318,9 +318,11 @@ impl<Cont> Polynomial<Cont> {
         ck_dim_eq!(self.polynomial_size() => p.polynomial_size(), q.polynomial_size());
 
         // check dimensions are a power of 2
-        debug_assert_eq!(
-            f64::floor(f64::log2(p.polynomial_size().0 as f64)),
-            f64::log2(p.polynomial_size().0 as f64)
+        debug_assert!(
+            f64::abs(
+                f64::floor(f64::log2(p.polynomial_size().0 as f64))
+                    - f64::log2(p.polynomial_size().0 as f64)
+            ) < f64::EPSILON
         );
 
         let poly_size = self.polynomial_size().0;

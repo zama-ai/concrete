@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Low-overhead fhe library.
 //!
 //! Welcome to the `concrete-core` documentation!

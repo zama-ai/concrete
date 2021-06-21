@@ -1,0 +1,40 @@
+name: Build
+
+on: 
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build debug
+        if: ${{ !cancelled() }}
+        run: cargo build --verbose
+      - name: Build release
+        if: ${{ !cancelled() }}
+        run: cargo build --verbose --release --all-features
+      - name: Build native
+        if: ${{ !cancelled() }}
+        run: RUSTFLAGS="-C target-feature=+aes,+rdseed,+sse2,+avx,+avx2" cargo build --verbose --release --all-features
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build debug
+        if: ${{ !cancelled() }}
+        run: cargo build --verbose
+      - name: Build release
+        if: ${{ !cancelled() }}
+        run: cargo build --verbose --release
+      - name: Build native
+        if: ${{ !cancelled() }}
+        run: RUSTFLAGS="-C target-cpu=native" cargo build --verbose --release --all-features
