@@ -1,4 +1,5 @@
 use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::numeric::UnsignedInteger;
 
 /// Computes the number of bits affected by the noise with a dispersion
 /// describing a normal distribution
@@ -7,16 +8,17 @@ use concrete_commons::dispersion::DispersionParameter;
 /// * `log_integer_modulus`- the log_2 of the integer modulus q
 /// Output:
 /// * The number of bit affected by the noise
-pub fn nb_bit_from_variance<D>(dispersion: D, log_integer_modulus: usize) -> usize
+pub fn nb_bit_from_variance<T, D>(dispersion: D) -> usize
 where
     D: DispersionParameter,
+    T: UnsignedInteger,
 {
     // get the standard deviation
-    let std_dev: f64 = dispersion.get_standard_dev();
+    let std_dev: f64 = dispersion.get_modular_standard_dev::<T>();
 
     // the constant used for the computation
     let z: f64 = 4.;
-    let tmp = log_integer_modulus as f64 + f64::log2(std_dev * z);
+    let tmp = f64::log2(std_dev * z);
     if tmp < 0. {
         // means no bits are affected by the noise in the integer representation
         // (discrete space)

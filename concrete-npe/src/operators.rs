@@ -14,13 +14,14 @@ use concrete_commons::parameters::{
 /// * `dispersion_ct2` - noise dispersion of the second ciphertext
 /// Output
 /// * The noise variance of the sum of the first and the second ciphertext
-pub fn add<D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
+pub fn add<T: UnsignedInteger, D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
 where
     D1: DispersionParameter,
     D2: DispersionParameter,
 {
     // The result variance is equal to the sum of the input variances
-    let var_res: f64 = dispersion_ct1.get_variance() + dispersion_ct2.get_variance();
+    let var_res: f64 =
+        dispersion_ct1.get_modular_variance::<T>() + dispersion_ct2.get_modular_variance::<T>();
     Variance::from_variance(var_res)
 }
 
@@ -30,14 +31,14 @@ where
 /// * `dispersion_cts` - noise variance of the ciphertexts
 /// Output:
 /// * the noise variance of the sum of the ciphertexts
-pub fn add_several<D>(dispersion_cts: &[D]) -> Variance
+pub fn add_several<T: UnsignedInteger, D>(dispersion_cts: &[D]) -> Variance
 where
     D: DispersionParameter,
 {
     let mut var_res: f64 = 0.;
     // The result variance is equal to the sum of the input variances
     for dispersion in dispersion_cts.iter() {
-        var_res += dispersion.get_variance();
+        var_res += dispersion.get_modular_variance::<T>();
     }
     Variance::from_variance(var_res)
 }
@@ -96,14 +97,14 @@ where
     let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
     let res_1: f64 = ((dimension.0 + 1) * l_gadget.0 * polynomial_size.0 * (b_g * b_g + 2)) as f64
         / 12.
-        * dispersion_rgsw.get_variance();
+        * dispersion_rgsw.get_modular_variance::<T>();
 
     let res_2: f64 = norm_2_msg_rgsw
         * ((dimension.0 * polynomial_size.0 + 2) as f64
             / (24. * f64::powi(b_g as f64, 2 * l_gadget.0 as i32)) as f64
             + (dimension.0 * polynomial_size.0 / 48 - 1 / 12) as f64 / q_square);
 
-    let res_3: f64 = norm_2_msg_rgsw * dispersion_rlwe.get_variance();
+    let res_3: f64 = norm_2_msg_rgsw * dispersion_rlwe.get_modular_variance::<T>();
     Variance::from_variance(res_1 + res_2 + res_3)
 }
 
@@ -167,9 +168,9 @@ where
         base_log,
         l_gadget,
         dispersion_rgsw,
-        add(dispersion_rlwe_0, dispersion_rlwe_1),
+        add::<T, _, _>(dispersion_rlwe_0, dispersion_rlwe_1),
     );
-    let var_cmux = add(var_external_product, dispersion_rlwe_0);
+    let var_cmux = add::<T, _, _>(var_external_product, dispersion_rlwe_0);
     var_cmux
 }
 
@@ -227,7 +228,7 @@ where
         * polynomial_size.0
         * (b_g * b_g + 2)) as f64
         / 12.
-        * var_bsk.get_variance();
+        * var_bsk.get_modular_variance::<T>();
 
     let var_res_2: f64 = lwe_dimension.0 as f64
         * ((rlwe_dimension.0 * polynomial_size.0 + 2) as f64
@@ -281,9 +282,9 @@ where
     let var_res_2: f64 = dimension_before.0 as f64
         * l_ks.0 as f64
         * (f64::powi(2., 2 * base_log.0 as i32) / 12. + 1. / 6.)
-        * dispersion_ks.get_variance();
+        * dispersion_ks.get_modular_variance::<T>();
 
-    let var_res: f64 = dispersion_input.get_variance() + var_res_1 + var_res_2;
+    let var_res: f64 = dispersion_input.get_modular_variance::<T>() + var_res_1 + var_res_2;
     Variance::from_variance(var_res)
 }
 
@@ -314,7 +315,7 @@ where
 {
     let sn = n.into_signed();
     let product: f64 = (sn * sn).cast_into();
-    return Variance::from_variance(variance.get_variance() * product);
+    return Variance::from_variance(variance.get_modular_variance::<T>() * product);
 }
 
 /// Computes the variance of the error distribution after a multisum between
@@ -344,7 +345,7 @@ where
     let mut var_res: f64 = 0.;
 
     for (dispersion, &w) in dispersion_list.iter().zip(weights) {
-        var_res += scalar_mul(*dispersion, w).get_variance();
+        var_res += scalar_mul(*dispersion, w).get_modular_variance::<T>();
     }
     Variance::from_variance(var_res)
 }
