@@ -1,3 +1,11 @@
-add_mlir_dialect(HLFHEOps HLFHE)
+set(LLVM_TARGET_DEFINITIONS HLFHEOps.td)
+mlir_tablegen(HLFHEOps.h.inc -gen-op-decls)
+mlir_tablegen(HLFHEOps.cpp.inc -gen-op-defs)
+mlir_tablegen(HLFHEOpsTypes.h.inc -gen-typedef-decls -typedefs-dialect=HLFHE)
+mlir_tablegen(HLFHEOpsTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=HLFHE)
+mlir_tablegen(HLFHEOpsDialect.h.inc -gen-dialect-decls -dialect=HLFHE)
+add_public_tablegen_target(MLIRHLFHEOpsIncGen)
+add_dependencies(mlir-headers MLIRHLFHEOpsIncGen)
+
 add_mlir_doc(HLFHEDialect -gen-dialect-doc HLFHEDialect zamalang/)
 add_mlir_doc(HLFHEOps -gen-op-doc HLFHEOps zamalang/)

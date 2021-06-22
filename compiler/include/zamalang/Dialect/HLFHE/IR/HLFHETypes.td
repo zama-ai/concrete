@@ -2,10 +2,13 @@
 #define ZAMALANG_DIALECT_HLFHE_IR_HLFHE_TYPES
 
 include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.td"
+include "mlir/IR/BuiltinTypes.td"
 
-class HLFHE_Type<string name> : TypeDef<HLFHE_Dialect, name> { }
+class HLFHE_Type<string name, list<Trait> traits = []> :
+  TypeDef<HLFHE_Dialect, name, traits> { }
 
-def EncryptedIntegerType : HLFHE_Type<"EncryptedInteger"> {
+def EncryptedIntegerType : HLFHE_Type<"EncryptedInteger",
+        [MemRefElementTypeInterface]> {
   let mnemonic = "eint";
 
   let summary = "An encrypted integer";
