@@ -1,6 +1,6 @@
 [package]
 name = "concrete-commons"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "AGPL-3.0"
