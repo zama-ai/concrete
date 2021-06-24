@@ -1,5 +1,7 @@
 use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::numeric::FloatingPoint;
 use concrete_commons::numeric::UnsignedInteger;
+use std::ops::Mul;
 
 /// Computes the number of bits affected by the noise with a dispersion
 /// describing a normal distribution
@@ -26,4 +28,16 @@ where
     } else {
         tmp.ceil() as usize
     }
+}
+
+/// Square function tool
+/// Arguments:
+/// * `x` - input
+/// Output
+/// * x^2
+pub fn square<T>(x: T) -> T
+where
+    T: Mul<T, Output = T> + Copy,
+{
+    x * x
 }

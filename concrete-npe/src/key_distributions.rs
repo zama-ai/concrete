@@ -1,3 +1,7 @@
+pub const GAUSSIAN_STDEV: f64 = 3.2 / (1_u128 << 64) as f64;
+use super::*;
+use concrete_commons::parameters::PolynomialSize;
+
 /// KeyType is an enumeration on all the different key types
 /// * Uniform Binary
 /// * Uniform Ternary
@@ -14,7 +18,7 @@ pub enum KeyType {
 /// Arguments:
 /// * `key_type` - input key type
 /// Output:
-/// * The noise variance of the coefficients of the key 
+/// * The noise variance of the coefficients of the key
 pub fn variance_key_coefficient(key_type: KeyType) -> f64 {
     match key_type {
         KeyType::Binary => 1. / 4.,
@@ -28,7 +32,7 @@ pub fn variance_key_coefficient(key_type: KeyType) -> f64 {
 /// Arguments:
 /// * `key_type` - input key type
 /// Output:
-/// * The expectation of the coefficients of the key 
+/// * The expectation of the coefficients of the key
 pub fn expectation_key_coefficient(key_type: KeyType) -> f64 {
     match key_type {
         KeyType::Binary => 1. / 2.,
@@ -42,7 +46,7 @@ pub fn expectation_key_coefficient(key_type: KeyType) -> f64 {
 /// Arguments:
 /// * `key_type` - input key type
 /// Output:
-/// * The noise variance of the squared coefficients of the key 
+/// * The noise variance of the squared coefficients of the key
 pub fn variance_key_coefficient_squared(key_type: KeyType) -> f64 {
     match key_type {
         KeyType::Binary => 1. / 4.,
@@ -56,7 +60,7 @@ pub fn variance_key_coefficient_squared(key_type: KeyType) -> f64 {
 /// Arguments:
 /// * `key_type` - input key type
 /// Output:
-/// * The expectation of the squared coefficients of the key 
+/// * The expectation of the squared coefficients of the key
 pub fn expectation_key_coefficient_squared(key_type: KeyType) -> f64 {
     match key_type {
         KeyType::Binary => 1. / 2.,
@@ -66,97 +70,109 @@ pub fn expectation_key_coefficient_squared(key_type: KeyType) -> f64 {
     }
 }
 
-/// Returns the variance of the odd coefficients of a polynomial key to the square 
+/// Returns the variance of the odd coefficients of a polynomial key to the square
 /// given the key type
 /// Arguments:
 /// * `key_type` - input key type
 /// Output:
-/// * The noise variance of the odd coefficients of a polynomial key to the square 
-pub fn variance_odd_coefficient_in_polynomial_key_squared(poly_size: usize, key_type: KeyType) -> f64 {
-    if poly_size == 1 {
+/// * The noise variance of the odd coefficients of a polynomial key to the square
+pub fn variance_odd_coefficient_in_polynomial_key_squared(
+    poly_size: PolynomialSize,
+    key_type: KeyType,
+) -> f64 {
+    if poly_size.0 == 1 {
         return 0.;
     }
     match key_type {
-        KeyType::Binary => 3. * (poly_size as f64) / 8.,
-        KeyType::Ternary => 8. * (poly_size as f64) / 9.,
-        KeyType::Gaussian => 2. * (poly_size as f64) * square(square(GAUSSIAN_STDEV * f64::powi(2., 64 as i32))),
+        KeyType::Binary => 3. * (poly_size.0 as f64) / 8.,
+        KeyType::Ternary => 8. * (poly_size.0 as f64) / 9.,
+        KeyType::Gaussian => {
+            2. * (poly_size.0 as f64) * square(square(GAUSSIAN_STDEV * f64::powi(2., 64 as i32)))
+        }
         KeyType::Zero => 0.,
     }
 }
 
-/// Returns the variance of the even coefficients of a polynomial key to the square 
+/// Returns the variance of the even coefficients of a polynomial key to the square
 /// given the key type
 /// Arguments:
 /// * `key_type` - input key type
 /// Output:
-/// * The noise variance of the even coefficients of a polynomial key to the square 
-pub fn variance_even_coefficient_in_polynomial_key_squared(poly_size: usize, key_type: KeyType) -> f64 {
-    if poly_size == 1 {
+/// * The noise variance of the even coefficients of a polynomial key to the square
+pub fn variance_even_coefficient_in_polynomial_key_squared(
+    poly_size: PolynomialSize,
+    key_type: KeyType,
+) -> f64 {
+    if poly_size.0 == 1 {
         return 2. * variance_key_coefficient_squared(key_type);
     }
     match key_type {
-        KeyType::Binary => ((3 * poly_size + 2) as f64) / 16.,
-        KeyType::Ternary => 4. * ((2 * poly_size - 3) as f64) / 9.,
-        KeyType::Gaussian => 2. * (poly_size as f64) * square(square(GAUSSIAN_STDEV * f64::powi(2., 64 as i32))),
+        KeyType::Binary => ((3 * poly_size.0 + 2) as f64) / 16.,
+        KeyType::Ternary => 4. * ((2 * poly_size.0 - 3) as f64) / 9.,
+        KeyType::Gaussian => {
+            2. * (poly_size.0 as f64) * square(square(GAUSSIAN_STDEV * f64::powi(2., 64 as i32)))
+        }
         KeyType::Zero => 0.,
     }
 }
 
-/// Returns the mean expectation of the coefficients of a polynomial key to the square 
+/// Returns the mean expectation of the coefficients of a polynomial key to the square
 /// given the key type
 /// Arguments:
 /// * `key_type` - input key type
 /// Output:
 /// * The mean expectation of the coefficients of a polynomial key to the square
-pub fn squared_expectation_mean_in_polynomial_key_squared(poly_size: usize, key_type: KeyType) -> f64 {
-    if poly_size == 1 {
+pub fn squared_expectation_mean_in_polynomial_key_squared(
+    poly_size: PolynomialSize,
+    key_type: KeyType,
+) -> f64 {
+    if poly_size.0 == 1 {
         return square(expectation_key_coefficient_squared(key_type));
     }
     match key_type {
-        KeyType::Binary => (square(poly_size as f64) + 2.) / 48.,
+        KeyType::Binary => (square(poly_size.0 as f64) + 2.) / 48.,
         KeyType::Ternary => 0.,
         KeyType::Gaussian => 0.,
         KeyType::Zero => 0.,
     }
 }
 
-/// Returns the variance of the coefficients of a polynomial key resulting from 
+/// Returns the variance of the coefficients of a polynomial key resulting from
 /// the multiplication of two polynomial keys of the same type (S_i x S_j)
 /// given their key type
 /// Arguments:
 /// * `key_type` - input key type (both keys in the product have the same key type)
 /// Output:
-/// * The noise variance of the coefficients of the polynomial key S_i x S_j 
-pub fn variance_coefficient_in_polynomial_key_times_key(poly_size: usize, key_type: KeyType) -> f64 {
+/// * The noise variance of the coefficients of the polynomial key S_i x S_j
+pub fn variance_coefficient_in_polynomial_key_times_key(
+    poly_size: PolynomialSize,
+    key_type: KeyType,
+) -> f64 {
     match key_type {
-        KeyType::Binary => 3. * (poly_size as f64) / 16.,
-        KeyType::Ternary => 4. * (poly_size as f64) / 9.,
-        KeyType::Gaussian => square(square(GAUSSIAN_STDEV * f64::powi(2., 64 as i32))) * (poly_size as f64),
-        KeyType:Zero => 0.,
-    }
-}
-
-/// Returns the mean expectation of the coefficients of a polynomial key resulting from 
-/// the multiplication of two polynomial keys of the same type (S_i x S_j)
-/// given their key type
-/// Arguments:
-/// * `key_type` - input key type (both keys in the product have the same key type)
-/// Output:
-/// * The mean expectation of the coefficients of the polynomial key S_i x S_j 
-pub fn square_expectation_mean_in_polynomial_key_times_key(poly_size: usize, key_type: KeyType) -> f64 {
-    match key_type {
-        KeyType::Binary => (square(poly_size as f64) + 2.) / 48.,
-        KeyType::Ternary => 0.,
-        KeyType::Gaussian => 0.,
+        KeyType::Binary => 3. * (poly_size.0 as f64) / 16.,
+        KeyType::Ternary => 4. * (poly_size.0 as f64) / 9.,
+        KeyType::Gaussian => {
+            square(square(GAUSSIAN_STDEV * f64::powi(2., 64 as i32))) * (poly_size.0 as f64)
+        }
         KeyType::Zero => 0.,
     }
 }
 
-/// Square function tool
+/// Returns the mean expectation of the coefficients of a polynomial key resulting from
+/// the multiplication of two polynomial keys of the same type (S_i x S_j)
+/// given their key type
 /// Arguments:
-/// * `x` - input 
+/// * `key_type` - input key type (both keys in the product have the same key type)
 /// Output:
-/// * x^2 
-pub fn square(x: f64) -> f64 {
-    x * x
+/// * The mean expectation of the coefficients of the polynomial key S_i x S_j
+pub fn square_expectation_mean_in_polynomial_key_times_key(
+    poly_size: PolynomialSize,
+    key_type: KeyType,
+) -> f64 {
+    match key_type {
+        KeyType::Binary => (square(poly_size.0 as f64) + 2.) / 48.,
+        KeyType::Ternary => 0.,
+        KeyType::Gaussian => 0.,
+        KeyType::Zero => 0.,
+    }
 }
