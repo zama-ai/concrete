@@ -30,7 +30,7 @@ default-features = false
 features = ["system"]
 
 [dependencies]
-concrete-commons = "=0.1.0"
+concrete-commons = "=0.1.1"
 concrete-csprng= "=0.1.7"
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.3"
