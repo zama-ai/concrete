@@ -17,32 +17,19 @@
 //! is no longer an approximation, and becomes exact. The rationale behind using an approximate
 //! decomposition like that, is that when using this decomposition the approximation error will be
 //! located in the least significant bits, which are already erroneous.
+use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+
+pub use decomposer::*;
+pub use iter::*;
+pub use term::*;
 
 mod decomposer;
 mod iter;
 mod term;
 #[cfg(test)]
 mod tests;
-
-pub use decomposer::*;
-pub use iter::*;
-pub use term::*;
-
-/// The logarithm of the base used in a decomposition.
-///
-/// When decomposing an integer over powers of the $B=2^b$ basis, this type represents the $b$
-/// value.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
-pub struct DecompositionBaseLog(pub usize);
-
-/// The number of levels used in a decomposition.
-///
-/// When decomposing an integer over the $l$ levels, this type represents the $l$ value.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
-pub struct DecompositionLevelCount(pub usize);
 
 /// The level of a given term of a decomposition.
 ///

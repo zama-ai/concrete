@@ -22,6 +22,7 @@ use concrete_core::{
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor},
 };
 use concrete_npe as npe;
+use concrete_npe::Cross;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;

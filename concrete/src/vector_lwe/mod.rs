@@ -8,7 +8,7 @@ use colored::Colorize;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
 
-use concrete_core::math::polynomial::PolynomialSize;
+use concrete_commons::{Numeric, StandardDev};
 use concrete_core::{
     crypto::{
         self,
@@ -24,7 +24,7 @@ use concrete_npe as npe;
 
 use crate::error::CryptoAPIError;
 use crate::{read_from_file, write_to_file, Torus};
-use concrete_commons::{Numeric, StandardDev};
+use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::math::random::EncryptionRandomGenerator;
 
 #[cfg(test)]

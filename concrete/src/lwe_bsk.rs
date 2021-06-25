@@ -5,7 +5,6 @@ use colored::Colorize;
 
 use concrete_core::crypto::LweDimension;
 use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::{
     crypto::{bootstrap::BootstrapKey, GlweSize},
     math::tensor::{AsMutTensor, AsRefTensor},
@@ -15,6 +14,7 @@ use concrete_core::{
 use crate::error::CryptoAPIError;
 use crate::Torus;
 use concrete_commons::{Numeric, StandardDev};
+use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::math::random::EncryptionRandomGenerator;
 
 #[derive(Debug, PartialEq, Clone)]

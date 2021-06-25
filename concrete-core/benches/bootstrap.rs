@@ -1,7 +1,9 @@
 use criterion::{BenchmarkId, Criterion};
 use itertools::iproduct;
 
-use concrete_commons::{CastFrom, LogStandardDev, Numeric};
+use concrete_commons::dispersion::LogStandardDev;
+use concrete_commons::numeric::{CastFrom, Numeric};
+use concrete_commons::parameters::{GlweDimension, LweDimension, LweSize, PolynomialSize};
 
 use concrete_core::crypto::bootstrap::{Bootstrap, FourierBootstrapKey};
 use concrete_core::crypto::encoding::Plaintext;
@@ -9,10 +11,8 @@ use concrete_core::crypto::glwe::GlweCiphertext;
 use concrete_core::crypto::lwe::LweCiphertext;
 use concrete_core::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
 use concrete_core::crypto::secret::LweSecretKey;
-use concrete_core::crypto::{GlweDimension, LweDimension, LweSize};
 use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use concrete_core::math::fft::Complex64;
-use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::math::tensor::AsMutTensor;
 use concrete_core::math::torus::UnsignedTorus;
 

@@ -10,14 +10,15 @@ pub struct GlweBody<Cont> {
 tensor_traits!(GlweBody);
 
 impl<Cont> GlweBody<Cont> {
-    /// Consumes the current ciphertext body, and return a polynomial over the original container.
+    /// Consumes the current ciphertext body, and return a polynomial over the
+    /// original container.
     ///
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::glwe::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let body = glwe.get_body();
     /// let poly = body.into_polynomial();
@@ -35,9 +36,9 @@ impl<Cont> GlweBody<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::glwe::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let body = glwe.get_body();
     /// let poly = body.as_polynomial();
@@ -55,9 +56,9 @@ impl<Cont> GlweBody<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::glwe::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let mut body = glwe.get_mut_body();

@@ -3,15 +3,17 @@ use std::slice;
 use concrete_fftw::array::AlignedVec;
 use concrete_fftw::types::c64;
 
+use concrete_commons::numeric::{CastInto, SignedInteger, UnsignedInteger};
+use concrete_commons::parameters::PolynomialSize;
+
 use crate::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
-use crate::math::polynomial::{Polynomial, PolynomialSize};
+use crate::math::polynomial::Polynomial;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor};
 use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_eq, zip};
 
 use super::{Complex64, Correctors, FourierPolynomial};
 use crate::math::fft::plan::Plans;
-use concrete_commons::{CastInto, SignedInteger, UnsignedInteger};
 use std::cell::RefCell;
 
 /// A fast fourier transformer.
@@ -31,8 +33,8 @@ impl Fft {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::Fft;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
@@ -60,8 +62,8 @@ impl Fft {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::Fft;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
@@ -69,20 +71,23 @@ impl Fft {
         self.plans.polynomial_size()
     }
 
-    /// Performs the forward fourier transform of the `poly` polynomial, viewed as a polynomial of
-    /// torus coefficients, and stores the result in `fourier_poly`.
+    /// Performs the forward fourier transform of the `poly` polynomial, viewed
+    /// as a polynomial of torus coefficients, and stores the result in
+    /// `fourier_poly`.
     ///
     /// # Note
     ///
-    /// It should be noted that this method is subotpimal, as it only uses half of the computational
-    /// power of the transformer. For a faster approach, you should consider processing the
-    /// polynomials two by two with the [`Fft::forward_two_as_torus`] method.
+    /// It should be noted that this method is subotpimal, as it only uses half
+    /// of the computational power of the transformer. For a faster
+    /// approach, you should consider processing the polynomials two by two
+    /// with the [`Fft::forward_two_as_torus`] method.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::math::torus::UnsignedTorus;
@@ -111,15 +116,16 @@ impl Fft {
         self.forward(fourier_poly, poly, regular_convert_forward_single_torus);
     }
 
-    /// Performs the forward fourier transform of the `poly_1` and `poly_2` polynomials, viewed
-    /// as polynomials of torus coefficients, and stores the result in `fourier_poly_1` and
-    /// `fourier_poly_2`.
+    /// Performs the forward fourier transform of the `poly_1` and `poly_2`
+    /// polynomials, viewed as polynomials of torus coefficients, and stores
+    /// the result in `fourier_poly_1` and `fourier_poly_2`.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::math::torus::UnsignedTorus;
@@ -182,21 +188,24 @@ impl Fft {
         );
     }
 
-    /// Performs the forward fourier transform of the `poly` polynomial, viewed as a polynomial of
-    /// integer coefficients, and stores the result in `fourier_poly`.
+    /// Performs the forward fourier transform of the `poly` polynomial, viewed
+    /// as a polynomial of integer coefficients, and stores the result in
+    /// `fourier_poly`.
     ///
     /// # Note
     ///
-    /// It should be noted that this method is subotpimal, as it only uses half of the computational
-    /// power of the transformer. For a faster approach, you should consider processing the
-    /// polynomials two by two with the [`Fft::forward_two_as_integer`] method.
+    /// It should be noted that this method is subotpimal, as it only uses half
+    /// of the computational power of the transformer. For a faster
+    /// approach, you should consider processing the polynomials two by two
+    /// with the [`Fft::forward_two_as_integer`] method.
     ///
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::UnsignedInteger;
+    /// use concrete_commons::numeric::UnsignedInteger;
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
@@ -224,16 +233,17 @@ impl Fft {
         self.forward(fourier_poly, poly, regular_convert_forward_single_integer);
     }
 
-    /// Performs the forward fourier transform of the `poly_1` and `poly_2` polynomials, viewed
-    /// as polynomials of integer coefficients, and stores the result in `fourier_poly_1` and
-    /// `fourier_poly_2`.
+    /// Performs the forward fourier transform of the `poly_1` and `poly_2`
+    /// polynomials, viewed as polynomials of integer coefficients, and
+    /// stores the result in `fourier_poly_1` and `fourier_poly_2`.
     ///
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::UnsignedInteger;
+    /// use concrete_commons::numeric::UnsignedInteger;
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
+    /// use concrete_core::math::polynomial::Polynomial;
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
@@ -294,16 +304,18 @@ impl Fft {
         );
     }
 
-    /// Performs the backward fourier transform of the `fourier_poly` polynomial, viewed as a
-    /// polynomial of torus coefficients, and adds the result to `poly`.
+    /// Performs the backward fourier transform of the `fourier_poly`
+    /// polynomial, viewed as a polynomial of torus coefficients, and adds
+    /// the result to `poly`.
     ///
     /// See [`Fft::forward_as_torus`] for an example.
     ///
     /// # Note
     ///
-    /// It should be noted that this method is subotpimal, as it only uses half of the computational
-    /// power of the transformer. For a faster approach, you should consider processing the
-    /// polynomials two by two with the [`Fft::add_backward_two_as_torus`] method.
+    /// It should be noted that this method is subotpimal, as it only uses half
+    /// of the computational power of the transformer. For a faster
+    /// approach, you should consider processing the polynomials two by two
+    /// with the [`Fft::add_backward_two_as_torus`] method.
     pub fn add_backward_as_torus<OutCont, InCont, Coef>(
         &self,
         poly: &mut Polynomial<OutCont>,
@@ -321,16 +333,18 @@ impl Fft {
         );
     }
 
-    /// Performs the backward fourier transform of the `fourier_poly` polynomial, viewed as a
-    /// polynomial of integer coefficients, and adds the result to `poly`.
+    /// Performs the backward fourier transform of the `fourier_poly`
+    /// polynomial, viewed as a polynomial of integer coefficients, and adds
+    /// the result to `poly`.
     ///
     /// See [`Fft::forward_as_integer`] for an example.
     ///
     /// # Note
     ///
-    /// It should be noted that this method is subotpimal, as it only uses half of the computational
-    /// power of the transformer. For a faster approach, you should consider processing the
-    /// polynomials two by two with the [`Fft::add_backward_two_as_integer`] method.
+    /// It should be noted that this method is subotpimal, as it only uses half
+    /// of the computational power of the transformer. For a faster
+    /// approach, you should consider processing the polynomials two by two
+    /// with the [`Fft::add_backward_two_as_integer`] method.
     pub fn add_backward_as_integer<OutCont, InCont, Coef>(
         &self,
         poly: &mut Polynomial<OutCont>,
@@ -348,9 +362,10 @@ impl Fft {
         );
     }
 
-    /// Performs the backward fourier transform of the `fourier_poly_1` and `fourier_poly_2`
-    /// polynomials, viewed as polynomials of torus elements, and adds the result to the  
-    /// `poly_1` and `poly_2` polynomials.
+    /// Performs the backward fourier transform of the `fourier_poly_1` and
+    /// `fourier_poly_2` polynomials, viewed as polynomials of torus
+    /// elements, and adds the result to the `poly_1` and `poly_2`
+    /// polynomials.
     ///
     /// See [`Fft::forward_two_as_torus`] for an example.
     pub fn add_backward_two_as_torus<OutCont1, OutCont2, InCont1, InCont2, Coef>(
@@ -381,9 +396,10 @@ impl Fft {
         );
     }
 
-    /// Performs the backward fourier transform of the `fourier_poly_1` and `fourier_poly_2`
-    /// polynomials, viewed as polynomials of integer coefficients, and adds the result to the  
-    /// `poly_1` and `poly_2` polynomials.
+    /// Performs the backward fourier transform of the `fourier_poly_1` and
+    /// `fourier_poly_2` polynomials, viewed as polynomials of integer
+    /// coefficients, and adds the result to the `poly_1` and `poly_2`
+    /// polynomials.
     ///
     /// See [`Fft::forward_two_as_integer`] for an example.
     pub fn add_backward_two_as_integer<OutCont1, OutCont2, InCont1, InCont2, Coef>(

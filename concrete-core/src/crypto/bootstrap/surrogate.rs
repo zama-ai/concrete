@@ -1,10 +1,10 @@
 use crate::crypto::bootstrap::FourierBootstrapKey;
-use crate::crypto::GlweSize;
-use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::fft::Complex64;
-use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::Tensor;
 use crate::math::torus::UnsignedTorus;
+use concrete_commons::parameters::{
+    DecompositionBaseLog, DecompositionLevelCount, GlweSize, PolynomialSize,
+};
 use concrete_fftw::array::AlignedVec;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
