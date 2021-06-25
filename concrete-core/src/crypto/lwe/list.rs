@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::encoding::{CleartextList, PlaintextList};
-use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, LweSize};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_div, tensor_traits, zip, zip_args};
 
 use super::LweCiphertext;
+use concrete_commons::parameters::{CiphertextCount, CleartextCount, LweDimension, LweSize};
 
 /// A list of ciphertext encoded with the LWE scheme.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -21,11 +21,13 @@ impl<Scalar> LweList<Vec<Scalar>>
 where
     Scalar: Copy,
 {
-    /// Allocates a list of lwe ciphertext whose all masks and bodies have the value `value`.
+    /// Allocates a list of lwe ciphertext whose all masks and bodies have the
+    /// value `value`.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::allocate(0 as u8, LweSize(10), CiphertextCount(20));
@@ -46,6 +48,7 @@ impl<Cont> LweList<Cont> {
     /// # Example:
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -66,6 +69,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -84,6 +88,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweSize;
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -101,6 +106,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -118,6 +124,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweSize;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -148,6 +155,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweSize;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let mut list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -179,6 +187,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -214,6 +223,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let mut list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -252,9 +262,9 @@ impl<Cont> LweList<Cont> {
             .map(move |sub| LweList::from_container(sub.into_container(), size))
     }
 
-    /// Fills each ciphertexts of the list with the result of the multisum of a subpart of the
-    /// `input_list` ciphers, with a subset of the `weights_list` values, and one value of
-    /// `biases_list`.
+    /// Fills each ciphertexts of the list with the result of the multisum of a
+    /// subpart of the `input_list` ciphers, with a subset of the
+    /// `weights_list` values, and one value of `biases_list`.
     ///
     /// Said differently, this function fills `self` with:
     /// $$
@@ -264,7 +274,8 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{

@@ -17,7 +17,7 @@
 //! + [`random_uniform_n_lsb`]
 //! + [`random_gaussian`]
 use crate::math::tensor::{AsMutTensor, Tensor};
-use concrete_commons::{FloatingPoint, Numeric};
+use concrete_commons::numeric::FloatingPoint;
 pub use gaussian::*;
 pub use generator::*;
 pub use uniform::*;

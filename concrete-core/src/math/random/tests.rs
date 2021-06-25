@@ -1,4 +1,4 @@
-use concrete_commons::LogStandardDev;
+use concrete_commons::dispersion::LogStandardDev;
 
 use crate::math::random::RandomGenerator;
 use crate::math::tensor::Tensor;

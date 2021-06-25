@@ -1,32 +1,34 @@
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{BinaryKeyKind, DispersionParameter, SignedInteger};
+use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::key_kinds::BinaryKeyKind;
+use concrete_commons::numeric::SignedInteger;
+use concrete_commons::parameters::{
+    CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
+use crate::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{CiphertextCount, LweDimension, LweSize};
-use crate::math::decomposition::{
-    DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, DecompositionTerm,
-    SignedDecomposer,
-};
+use crate::math::decomposition::{DecompositionLevel, DecompositionTerm, SignedDecomposer};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
+use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
 use super::{LweCiphertext, LweList};
-use crate::crypto::secret::generators::EncryptionRandomGenerator;
-use crate::math::torus::UnsignedTorus;
 
 /// An Lwe Keyswithing key.
 ///
-/// A keyswitching key allows to change the key of a cipher text. Lets assume the following
-/// elements:
+/// A keyswitching key allows to change the key of a cipher text. Lets assume
+/// the following elements:
 ///
 /// + The input key $s_{in}$ is composed of $n$ bits
 /// + The output key $s_{out}$ is composed of $m$ bits
 ///
-/// The keyswitch key will be composed of $m$ encryptions of each bits of the $s_{out}$ key, under
-/// the key $s_{in}$; encryptions which will be stored as their decomposition over a given basis
-/// $B_{ks}\in\mathbb{N}$, up to a level $l_{ks}\in\mathbb{N}$.
+/// The keyswitch key will be composed of $m$ encryptions of each bits of the
+/// $s_{out}$ key, under the key $s_{in}$; encryptions which will be stored as
+/// their decomposition over a given basis $B_{ks}\in\mathbb{N}$, up to a level
+/// $l_{ks}\in\mathbb{N}$.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct LweKeyswitchKey<Cont> {
     tensor: Tensor<Cont>,
@@ -45,16 +47,19 @@ where
     ///
     /// # Note
     ///
-    /// This function does *not* generate a keyswitch key, but merely allocates a container of the
-    /// right size. See [`LweKeyswitchKey::fill_with_keyswitch_key`] to fill the container with a
-    /// proper keyswitching key.
+    /// This function does *not* generate a keyswitch key, but merely allocates
+    /// a container of the right size. See
+    /// [`LweKeyswitchKey::fill_with_keyswitch_key`] to fill the container with
+    /// a proper keyswitching key.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -95,16 +100,20 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///
     /// # Notes
     ///
-    /// This method does not create a keyswitching key, but merely wrap the container in the proper
-    /// type. It assumes that either the container already contains a proper keyswitching key, or
-    /// that [`LweKeyswitchKey::fill_with_keyswitch_key`] will be called right after.
+    /// This method does not create a keyswitching key, but merely wrap the
+    /// container in the proper type. It assumes that either the container
+    /// already contains a proper keyswitching key, or
+    /// that [`LweKeyswitchKey::fill_with_keyswitch_key`] will be called right
+    /// after.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let input_size = LweDimension(256);
     /// let output_size = LweDimension(35);
     /// let decomp_log_base = DecompositionBaseLog(7);
@@ -147,9 +156,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -166,15 +177,17 @@ impl<Cont> LweKeyswitchKey<Cont> {
         LweDimension(self.lwe_size.0 - 1)
     }
 
-    /// Returns the size of the ciphertexts encoding each level of the decomposition of each bits
-    /// of the input key.
+    /// Returns the size of the ciphertexts encoding each level of the
+    /// decomposition of each bits of the input key.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -196,9 +209,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -215,14 +230,17 @@ impl<Cont> LweKeyswitchKey<Cont> {
         LweDimension(self.as_tensor().len() / (self.lwe_size.0 * self.decomp_level_count.0))
     }
 
-    /// Returns the number of levels used for the decomposition of the input key bits.
+    /// Returns the number of levels used for the decomposition of the input key
+    /// bits.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -242,16 +260,20 @@ impl<Cont> LweKeyswitchKey<Cont> {
         self.decomp_level_count
     }
 
-    /// Returns the logarithm of the base used for the decomposition of the input key bits.
+    /// Returns the logarithm of the base used for the decomposition of the
+    /// input key bits.
     ///
-    /// Indeed, the basis used is always of the form $2^N$. This function returns $N$.
+    /// Indeed, the basis used is always of the form $2^N$. This function
+    /// returns $N$.
     ///
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -268,22 +290,23 @@ impl<Cont> LweKeyswitchKey<Cont> {
         self.decomp_base_log
     }
 
-    /// Fills the current keyswitch key container with an actual keyswitching key constructed from
-    /// an input and an output key.
+    /// Fills the current keyswitch key container with an actual keyswitching
+    /// key constructed from an input and an output key.
     ///
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    ///
-    /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::secret::generators::{
     ///     EncryptionRandomGenerator, SecretRandomGenerator,
     /// };
+    /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::tensor::AsRefTensor;
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     ///
     /// let input_size = LweDimension(10);
     /// let output_size = LweDimension(20);
@@ -364,8 +387,9 @@ impl<Cont> LweKeyswitchKey<Cont> {
 
     /// Iterates over borrowed `LweKeyBitDecomposition` elements.
     ///
-    /// One `LweKeyBitDecomposition` being a set of lwe ciphertext, encrypting under the output
-    /// key, the $l$ levels of the signed decomposition of a single bit of the input key.
+    /// One `LweKeyBitDecomposition` being a set of lwe ciphertext, encrypting
+    /// under the output key, the $l$ levels of the signed decomposition of
+    /// a single bit of the input key.
     ///
     /// # Example
     ///
@@ -401,8 +425,9 @@ impl<Cont> LweKeyswitchKey<Cont> {
 
     /// Iterates over mutably borrowed `LweKeyBitDecomposition` elements.
     ///
-    /// One `LweKeyBitDecomposition` being a set of lwe ciphertext, encrypting under the output
-    /// key, the $l$ levels of the signed decomposition of a single bit of the input key.
+    /// One `LweKeyBitDecomposition` being a set of lwe ciphertext, encrypting
+    /// under the output key, the $l$ levels of the signed decomposition of
+    /// a single bit of the input key.
     ///
     /// # Example
     ///
@@ -444,8 +469,10 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -453,7 +480,6 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::tensor::AsRefTensor;
     ///
     /// let input_size = LweDimension(1024);
@@ -574,8 +600,9 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
     ///
     /// # Notes
     ///
-    /// This method does not decompose a key bit in a basis, but merely wraps a container in the
-    /// right structure. See [`LweKeyswitchKey::bit_decomp_iter`] for an iterator that returns key
+    /// This method does not decompose a key bit in a basis, but merely wraps a
+    /// container in the right structure. See
+    /// [`LweKeyswitchKey::bit_decomp_iter`] for an iterator that returns key
     /// bit decompositions.
     ///
     /// # Example
@@ -593,7 +620,8 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
         }
     }
 
-    /// Returns the size of the lwe ciphertexts encoding each level of the key bit decomposition.
+    /// Returns the size of the lwe ciphertexts encoding each level of the key
+    /// bit decomposition.
     ///
     /// # Example
     ///
@@ -609,7 +637,8 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
 
     /// Returns the number of ciphertexts in the decomposition.
     ///
-    /// Note that this is actually equals to the number of levels in the decomposition.
+    /// Note that this is actually equals to the number of levels in the
+    /// decomposition.
     ///
     /// # Example
     ///
@@ -680,8 +709,8 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
 
     /// Consumes the current key bit decomposition and returns an lwe list.
     ///
-    /// Note that this operation is super cheap, as it merely rewraps the current container in an
-    /// lwe list structure.
+    /// Note that this operation is super cheap, as it merely rewraps the
+    /// current container in an lwe list structure.
     ///
     /// # Example
     ///

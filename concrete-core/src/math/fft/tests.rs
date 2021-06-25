@@ -1,8 +1,6 @@
-use concrete_commons::*;
-
 use crate::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
 use crate::math::fft::{Complex64, Fft, FourierPolynomial, SerializableComplex64};
-use crate::math::polynomial::{Polynomial, PolynomialSize};
+use crate::math::polynomial::Polynomial;
 use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutTensor, AsRefTensor};
 use concrete_fftw::array::AlignedVec;

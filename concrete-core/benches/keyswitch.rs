@@ -1,3 +1,4 @@
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweDimension};
 use concrete_core::crypto::lwe::{LweCiphertext, LweKeyswitchKey};
 use concrete_core::crypto::LweDimension;
 use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};

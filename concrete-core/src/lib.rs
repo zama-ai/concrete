@@ -5,18 +5,19 @@
 //!
 //! # Fully Homomorphic Encryption
 //!
-//! This library contains low-level primitives which can be used to implement *fully
-//! homomorphically encrypted* programs. In a nutshell, fully homomorphic
-//! encryption allows you to perform any computation you would normally perform over clear data;
-//! but this time over encrypted data. With fhe, you can perform computations without putting
-//! your trust on third-party providers. To learn more about the fhe schemes used in this library,
-//! you can have a look at the following papers:
+//! This library contains low-level primitives which can be used to implement
+//! *fully homomorphically encrypted* programs. In a nutshell, fully homomorphic
+//! encryption allows you to perform any computation you would normally perform
+//! over clear data; but this time over encrypted data. With fhe, you can
+//! perform computations without putting your trust on third-party providers. To
+//! learn more about the fhe schemes used in this library, you can have a look
+//! at the following papers:
 //!
 //! + [CONCRETE: Concrete Operates oN Ciphertexts Rapidly by Extending TfhE](https://whitepaper.zama.ai/concrete/WAHC2020Demo.pdf)
 //! + [Programmable Bootstrapping Enables Efficient Homomorphic Inference of Deep Neural Networks](https://whitepaper.zama.ai/)
 //!
-//! If you are not accustomed to cryptography, but are still interested by performing you should
-//! check the [`concrete`](https://crates.io/crates/concrete) library, which provides a simpler,
+//! If you are not accustomed to cryptography, but are still interested by
+//! performing you should check the [`concrete`](https://crates.io/crates/concrete) library, which provides a simpler,
 //! higher-level API.
 //!
 //! # Quick Example
@@ -25,14 +26,14 @@
 //! ```
 //! // This examples shows how to multiply a secret value by a public one homomorphically. First
 //! // we import the proper symbols:
-//! use concrete_commons::LogStandardDev;
+//! use concrete_commons::dispersion::LogStandardDev;
+//! use concrete_commons::parameters::LweDimension;
 //! use concrete_core::crypto::encoding::{Cleartext, Encoder, Plaintext, RealEncoder};
 //! use concrete_core::crypto::lwe::LweCiphertext;
 //! use concrete_core::crypto::secret::generators::{
 //!     EncryptionRandomGenerator, SecretRandomGenerator,
 //! };
 //! use concrete_core::crypto::secret::LweSecretKey;
-//! use concrete_core::crypto::LweDimension;
 //!
 //! // We initialize a prng that will be used to generate secret keys.
 //! let mut secret_generator = SecretRandomGenerator::new(None);
@@ -74,8 +75,9 @@
 //! assert!((output_cleartext.0 - 50.).abs() < 0.01);
 //! ```
 //!
-//! The scalar multiplication is only one of the many operations available. For more informations
-//! about the operations available, check the [`crypto`] module.
+//! The scalar multiplication is only one of the many operations available. For
+//! more informations about the operations available, check the [`crypto`]
+//! module.
 
 #[allow(unused_macros)]
 macro_rules! assert_delta {
@@ -122,15 +124,15 @@ pub mod utils;
 pub mod test_tools {
     use rand::Rng;
 
-    use concrete_commons::DispersionParameter;
-
-    use crate::crypto::{CiphertextCount, GlweDimension, LweDimension, PlaintextCount};
-    use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    use crate::math::polynomial::PolynomialSize;
+    use concrete_commons::dispersion::DispersionParameter;
+    use concrete_commons::numeric::UnsignedInteger;
+    use concrete_commons::parameters::{
+        CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, GlweDimension,
+        LweDimension, PlaintextCount, PolynomialSize,
+    };
     use crate::math::random::{RandomGenerable, RandomGenerator, Uniform};
     use crate::math::tensor::{AsRefSlice, AsRefTensor};
     use crate::math::torus::UnsignedTorus;
-    use concrete_commons::UnsignedInteger;
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
         let d0 = first.wrapping_sub(other);

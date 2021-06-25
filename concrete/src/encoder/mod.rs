@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::CryptoAPIError;
 use crate::Torus;
-use concrete_core::crypto;
+use concrete_commons::*;
 use concrete_core::math::decomposition::SignedDecomposable;
+use concrete_core::crypto;
 use concrete_npe as npe;
 
 use super::{read_from_file, write_to_file};
