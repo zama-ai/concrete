@@ -39,7 +39,8 @@ macro_rules! impl_trait_npe_cross {
             /// * `dimension` - the size of the RLWE mask
             /// * `l_gadget` - number of elements for the Torus decomposition
             /// * `base_log` - decomposition base of the gadget matrix
-            /// * `polynomial_size` - number of coefficients of the polynomial e.g. degree + 1
+            /// * `polynomial_size` - number of coefficients of the polynomial e.g.
+            ///   degree + 1
             /// * `var_trgsw` - noise variance of the TRGSW
             /// * `var_trlwe` - noise variance of the TRLWE
             /// # Output
@@ -58,8 +59,8 @@ macro_rules! impl_trait_npe_cross {
             /// let var_trgsw: f64 = f64::powi(2., -38) ;
             /// let var_trlwe: f64 = f64::powi(2., -40) ;
             /// // Computing the noise
-            /// let var_external_product = <Torus as Cross>::external_product(dimension, l_gadget, base_log, polynomial_size, var_trgsw, var_trlwe) ;
-            /// ```
+            /// let var_external_product = <Torus as Cross>::external_product(dimension,
+            /// l_gadget, base_log, polynomial_size, var_trgsw, var_trlwe) ; ```
             fn external_product(
                 dimension: usize,
                 l_gadget: usize,
@@ -95,7 +96,8 @@ macro_rules! impl_trait_npe_cross {
             /// * `var_rlwe_1` - noise variance of the second TRLWE
             /// * `var_trgsw` - noise variance of the TRGSW
             /// * `dimension` - the size of the RLWE mask
-            /// * `polynomial_size` - number of coefficients of the polynomial e.g. degree + 1
+            /// * `polynomial_size` - number of coefficients of the polynomial e.g.
+            ///   degree + 1
             /// * `base_log` - decomposition base of the gadget matrix
             /// * `l_gadget` - number of elements for the Torus decomposition
             /// # Output
@@ -115,8 +117,8 @@ macro_rules! impl_trait_npe_cross {
             /// let var_trlwe_0: f64 = f64::powi(2., -40) ;
             /// let var_trlwe_1: f64 = f64::powi(2., -40) ;
             /// // Computing the noise
-            /// let var_cmux = <Torus as Cross>::cmux(var_trlwe_0, var_trlwe_1, var_trgsw,  dimension, polynomial_size, base_log, l_gadget) ;
-            /// ```
+            /// let var_cmux = <Torus as Cross>::cmux(var_trlwe_0, var_trlwe_1,
+            /// var_trgsw,  dimension, polynomial_size, base_log, l_gadget) ; ```
             fn cmux(
                 var_rlwe_0: f64,
                 var_rlwe_1: f64,
@@ -146,7 +148,8 @@ macro_rules! impl_trait_npe_cross {
             /// * `l_gadget` - number of elements for the Torus decomposition
             /// * `dimension` - the size of the RLWE mask
             /// * `base_log` - decomposition base of the gadget matrix
-            /// * `polynomial_size` - number of coefficients of the polynomial e.g. degree + 1
+            /// * `polynomial_size` - number of coefficients of the polynomial e.g.
+            ///   degree + 1
             /// * `var_bsk` - variance of the bootstrapping key
             /// # Output
             /// * Returns the variance of the output RLWE
@@ -162,8 +165,8 @@ macro_rules! impl_trait_npe_cross {
             /// let polynomial_size: usize = 1024 ;
             /// let var_bsk: f64 = f64::powi(2., -38) ;
             /// // Computing the noise
-            /// let var_bootstrap = <Torus as Cross>::bootstrap(lwe_dimension, rlwe_dimension, l_gadget, base_log, polynomial_size, var_bsk) ;
-            /// ```
+            /// let var_bootstrap = <Torus as Cross>::bootstrap(lwe_dimension,
+            /// rlwe_dimension, l_gadget, base_log, polynomial_size, var_bsk) ; ```
             fn bootstrap(
                 lwe_dimension: usize,
                 rlwe_dimension: usize,
@@ -199,8 +202,8 @@ macro_rules! impl_trait_npe_cross {
 impl_trait_npe_cross!(u32, "type Torus = u32;");
 impl_trait_npe_cross!(u64, "type Torus = u64;");
 
-/// Computes tho variance of the error during a bootstrap due to the round on the LWE mask
-/// # Argument
+/// Computes tho variance of the error during a bootstrap due to the round on
+/// the LWE mask # Argument
 /// * `lwe_dimension` - size of the LWE mask
 /// # Output
 /// * Return the variance of the error

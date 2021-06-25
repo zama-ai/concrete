@@ -200,7 +200,8 @@ pub fn external_product<RgswCont, RlweCont, InCont, FftCont1, FftCont2, FftCont3
     }
 }
 
-/// Executes the CMUX operations of two GLWE ciphertexts conditioned on a GGSW ciphertext
+/// Executes the CMUX operations of two GLWE ciphertexts conditioned on a GGSW
+/// ciphertext
 ///
 /// # Note
 ///
@@ -230,8 +231,8 @@ pub fn cmux<RlweCont0, RlweCont1, RgswCont, FftCont1, FftCont2, FftCont3, Scalar
     external_product(fft, dec_i_fft, tmp_dec_i_fft, res_fft, glwe_0, ggsw, glwe_1);
 }
 
-/// Fills the `output` ciphertext with the result of the blind rotation of the bootstrap key by
-/// the LWE ciphertext.
+/// Fills the `output` ciphertext with the result of the blind rotation of the
+/// bootstrap key by the LWE ciphertext.
 pub fn blind_rotate<OutCont, LweCont, BskCont, FftCont1, FftCont2, FftCont3, Scalar>(
     fft: &mut Fft,
     dec_i_fft: &mut FourierPolynomial<FftCont1>,
@@ -356,17 +357,17 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 /// # Example
 ///
 /// ```
-/// use concrete_core::crypto::bootstrap::BootstrapKey;
-/// use concrete_core::crypto::{GlweSize, LweSize, LweDimension, GlweDimension};
-/// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
-/// use concrete_core::math::polynomial::PolynomialSize;
-/// use concrete_core::crypto::secret::{LweSecretKey, GlweSecretKey};
-/// use concrete_core::crypto::lwe::LweCiphertext;
-/// use concrete_core::crypto::glwe::GlweCiphertext;
-/// use concrete_core::crypto::cross::bootstrap;
-/// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
-/// use concrete_core::math::fft::Complex64;
 /// use concrete_commons::LogStandardDev;
+/// use concrete_core::crypto::bootstrap::BootstrapKey;
+/// use concrete_core::crypto::cross::bootstrap;
+/// use concrete_core::crypto::glwe::GlweCiphertext;
+/// use concrete_core::crypto::lwe::LweCiphertext;
+/// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
+/// use concrete_core::crypto::{GlweDimension, GlweSize, LweDimension, LweSize};
+/// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
+/// use concrete_core::math::fft::Complex64;
+/// use concrete_core::math::polynomial::PolynomialSize;
+/// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
 ///
 /// let mut generator = RandomGenerator::new(None);
 /// let mut secret_gen = EncryptionRandomGenerator::new(None);
@@ -379,7 +380,7 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 ///     poly_size,
 ///     dec_lc,
 ///     dec_bl,
-///     lwe_dim
+///     lwe_dim,
 /// );
 /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
 /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
@@ -387,15 +388,15 @@ pub fn constant_sample_extract<LweCont, RlweCont, Scalar>(
 ///     &lwe_sk,
 ///     &glwe_sk,
 ///     LogStandardDev::from_log_standard_dev(-15.),
-///     &mut secret_gen
+///     &mut secret_gen,
 /// );
 /// let mut frr_bsk = BootstrapKey::allocate_complex(
-///     Complex64::new(0.,0.),
+///     Complex64::new(0., 0.),
 ///     glwe_dim.to_glwe_size(),
 ///     poly_size,
 ///     dec_lc,
 ///     dec_bl,
-///     lwe_dim
+///     lwe_dim,
 /// );
 /// frr_bsk.fill_with_forward_fourier(&bsk);
 /// let lwe_in = LweCiphertext::allocate(9u32, lwe_dim.to_lwe_size());

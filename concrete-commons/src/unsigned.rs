@@ -52,10 +52,12 @@ pub trait UnsignedInteger:
     fn wrapping_shl(self, rhs: u32) -> Self;
     /// Panic free shift-right operation.
     fn wrapping_shr(self, rhs: u32) -> Self;
-    /// Returns the casting of the current value to the signed type of the same size.
+    /// Returns the casting of the current value to the signed type of the same
+    /// size.
     fn into_signed(self) -> Self::Signed;
-    /// Returns a bit representation of the integer, where blocks of length `block_length` are
-    /// separated by whitespaces to increase the readability.
+    /// Returns a bit representation of the integer, where blocks of length
+    /// `block_length` are separated by whitespaces to increase the
+    /// readability.
     fn to_bits_string(&self, block_length: usize) -> String;
 }
 

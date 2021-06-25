@@ -15,8 +15,8 @@ mod test;
 ))]
 mod test_aes;
 
-/// A trait for batched generators, i.e. generators that creates 128 bytes of random values at a
-/// time.
+/// A trait for batched generators, i.e. generators that creates 128 bytes of
+/// random values at a time.
 pub trait AesBatchedGenerator: Clone {
     /// Instantiate a new generator from a secret key.
     fn new(key: Option<AesKey>) -> Self;
@@ -24,7 +24,8 @@ pub trait AesBatchedGenerator: Clone {
     fn generate_batch(&mut self, ctr: AesCtr) -> [u8; 128];
 }
 
-/// Represents the counter used by the AES block cipher to generate a set of values.
+/// Represents the counter used by the AES block cipher to generate a set of
+/// values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AesCtr(pub u128);
 
@@ -42,11 +43,13 @@ pub enum ShouldGenerateBatch {
     Wait,
 }
 
-/// A state that uniquely defines the next byte outputted by a given `AesCtrGenerator`.
+/// A state that uniquely defines the next byte outputted by a given
+/// `AesCtrGenerator`.
 ///
-/// To construct a generator that can yield a byte at each call to `generate_next`, we must be
-/// able to store both the last AES counter used, and the index of the last outputted byte in the
-/// batch. This structure contains both, and provides operations to manipulate those two values
+/// To construct a generator that can yield a byte at each call to
+/// `generate_next`, we must be able to store both the last AES counter used,
+/// and the index of the last outputted byte in the batch. This structure
+/// contains both, and provides operations to manipulate those two values
 /// correctly.
 #[derive(Debug, Clone)]
 pub struct State {
@@ -70,7 +73,8 @@ impl State {
         }
     }
 
-    // Normalizes the current state, to be compatible with the offset of the other one.
+    // Normalizes the current state, to be compatible with the offset of the other
+    // one.
     //
     // Two states with the same normalization are faster to compare.
     pub fn normalize_with(&mut self, other: &Self) {
@@ -87,8 +91,8 @@ impl State {
         *self_byte_ctr += rem as u8 * 16;
     }
 
-    // Return a clone of the state in normalized form, e.g. with the aes counter maximized, and
-    // the byte counter minimized.
+    // Return a clone of the state in normalized form, e.g. with the aes counter
+    // maximized, and the byte counter minimized.
     pub fn to_normalized(&self) -> Self {
         let State {
             aes_ctr: AesCtr(aes_ctr),
@@ -231,7 +235,8 @@ pub struct AesCtrGenerator<G: AesBatchedGenerator> {
 impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
     /// Generates a new csprng.
     ///
-    /// If not given, the key is automatically selected, and the state is set to zero.
+    /// If not given, the key is automatically selected, and the state is set to
+    /// zero.
     pub fn new(
         key: Option<AesKey>,
         state: Option<State>,
@@ -294,11 +299,12 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         output
     }
 
-    /// Tries to fork the current generator into `n_child` generators each able to yield
-    /// `child_bytes` random bytes.
+    /// Tries to fork the current generator into `n_child` generators each able
+    /// to yield `child_bytes` random bytes.
     ///
-    /// If the total number of bytes to be generated exceeds the bound of the current generator,
-    /// `None` is returned. Otherwise, we return an iterator over the children generators.
+    /// If the total number of bytes to be generated exceeds the bound of the
+    /// current generator, `None` is returned. Otherwise, we return an
+    /// iterator over the children generators.
     pub fn try_fork(
         &mut self,
         n_child: ChildCount,
@@ -312,11 +318,12 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         Some(output)
     }
 
-    /// Tries to fork the current generator into `n_child` generators each able to yield
-    /// `child_bytes` random bytes as a parallel iterator.
+    /// Tries to fork the current generator into `n_child` generators each able
+    /// to yield `child_bytes` random bytes as a parallel iterator.
     ///
-    /// If the total number of bytes to be generated exceeds the bound of the current generator,
-    /// `None` is returned. Otherwise, we return a parallel iterator over the children generators.
+    /// If the total number of bytes to be generated exceeds the bound of the
+    /// current generator, `None` is returned. Otherwise, we return a
+    /// parallel iterator over the children generators.
     ///
     /// # Notes
     ///

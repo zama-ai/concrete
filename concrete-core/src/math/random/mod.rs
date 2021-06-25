@@ -1,16 +1,18 @@
 //! A module containing random sampling functions.
 //!
-//! This module contains generic functions to sample numeric values randomly according to a given
-//! distribution, for instance:
+//! This module contains generic functions to sample numeric values randomly
+//! according to a given distribution, for instance:
 //!
-//! + [`random_uniform`] samples a random unsigned integer with uniform probability over
-//! the set of representable values.
-//! + [`random_gaussian`] samples a random float with using a gaussian distribution.
+//! + [`random_uniform`] samples a random unsigned integer with uniform
+//! probability over the set of representable values.
+//! + [`random_gaussian`] samples a random float with using a gaussian
+//! distribution.
 //!
-//! The implementation relies on the [`RandomGenerable`] trait, which gives a type the ability to
-//! be randomly generated according to a given distribution. The module contains multiple
-//! implementations of this trait, for different distributions. Note, though, that instead of
-//! using the [`RandomGenerable`] method, you should use the provided generic functions instead:
+//! The implementation relies on the [`RandomGenerable`] trait, which gives a
+//! type the ability to be randomly generated according to a given distribution.
+//! The module contains multiple implementations of this trait, for different
+//! distributions. Note, though, that instead of using the [`RandomGenerable`]
+//! method, you should use the provided generic functions instead:
 //!
 //! + [`random_uniform`]
 //! + [`random_uniform_n_msb`]

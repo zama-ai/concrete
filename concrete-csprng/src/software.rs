@@ -1,4 +1,5 @@
-//! A module using a software fallback implementation of `aes128-counter` random number generator.
+//! A module using a software fallback implementation of `aes128-counter` random
+//! number generator.
 use crate::counter::{AesBatchedGenerator, AesCtr, AesKey};
 use aes_soft::cipher::generic_array::GenericArray;
 use aes_soft::cipher::{BlockCipher, NewBlockCipher};
@@ -19,11 +20,12 @@ thread_local! {
 
 /// Sets the secret used to seed the software version of the prng.
 ///
-/// When using the software variant of the CSPRNG, we do not have access to the (trusted)
-/// hardware source of randomness to seed the generator. Instead, we use a value from
-/// `/dev/random`, which can be easy to temper with. To mitigate this risk, the user can provide
-/// a secret value that is included in the seed of the prng. Note that to ensure maximal
-/// security, this value should be different each time a new application using concrete is started.
+/// When using the software variant of the CSPRNG, we do not have access to the
+/// (trusted) hardware source of randomness to seed the generator. Instead, we
+/// use a value from `/dev/random`, which can be easy to temper with. To
+/// mitigate this risk, the user can provide a secret value that is included in
+/// the seed of the prng. Note that to ensure maximal security, this value
+/// should be different each time a new application using concrete is started.
 pub fn set_soft_rdseed_secret(secret: u128) {
     RDSEED_SECRET.with(|f| {
         let _secret = unsafe { &mut *{ f.get() } };
@@ -97,8 +99,8 @@ pub fn dev_random() -> u128 {
     u128::from_ne_bytes(buf)
 }
 
-// Uses aes to encrypt many values at once. This allows a substantial speedup (around 30%)
-// compared to the naive approach.
+// Uses aes to encrypt many values at once. This allows a substantial speedup
+// (around 30%) compared to the naive approach.
 #[allow(clippy::too_many_arguments)]
 fn aes_encrypt_many(
     message_1: u128,
@@ -155,7 +157,8 @@ mod test {
 
     #[test]
     fn test_encrypt_many_messages() {
-        // Checks that encrypting many plaintext at the same time gives the correct output.
+        // Checks that encrypting many plaintext at the same time gives the correct
+        // output.
         let key: [u8; 16] = CIPHER_KEY.to_ne_bytes();
         let aes = Aes128::new(&GenericArray::from(key));
         let ciphertexts = aes_encrypt_many(

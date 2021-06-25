@@ -57,7 +57,8 @@ pub fn bench<T: UnsignedTorus + RandomGenerable<UniformMsb>>(c: &mut Criterion) 
                 let dimension_after = LweDimension(p.2);
 
                 // --------> all allocation
-                // fill the messages with random Torus element set to zeros but the n_bit_msg MSB uniformly picked
+                // fill the messages with random Torus element set to zeros but the n_bit_msg
+                // MSB uniformly picked
                 let mut messages = Plaintext(T::ZERO); // the message to encrypt
                                                        // messages.0 = random_uniform_n_msb(n_bit_msg);
 
@@ -83,7 +84,8 @@ pub fn bench<T: UnsignedTorus + RandomGenerable<UniformMsb>>(c: &mut Criterion) 
                 );
                 //ksk.fill_with_keyswitch_key(&sk_before, &sk_after, LogStandardDev(-25.));
 
-                //sk_before.encrypt_lwe(&mut ciphertexts_before, &messages, LogStandardDev(-30.));
+                //sk_before.encrypt_lwe(&mut ciphertexts_before, &messages,
+                // LogStandardDev(-30.));
 
                 b.iter(|| {
                     // key switch before -> after

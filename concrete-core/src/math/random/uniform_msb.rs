@@ -1,7 +1,7 @@
 use super::*;
 
-/// A distribution type representing random sampling for unsigned integer types, where the `n`
-/// most significant bits are sampled randomly in `[0, 2^n[`.
+/// A distribution type representing random sampling for unsigned integer types,
+/// where the `n` most significant bits are sampled randomly in `[0, 2^n[`.
 #[derive(Copy, Clone)]
 pub struct UniformMsb {
     /// The number of most significant bits that must be randomly set.

@@ -42,8 +42,8 @@ pub trait FloatingPoint:
     /// Returns the floor value of the input float.
     fn floor(self) -> Self;
 
-    /// Returns a bit representation of the float, with the sign, exponent, and mantissa bits
-    /// separated by whitespaces for increased readability.
+    /// Returns a bit representation of the float, with the sign, exponent, and
+    /// mantissa bits separated by whitespaces for increased readability.
     fn to_bit_string(&self) -> String;
 }
 

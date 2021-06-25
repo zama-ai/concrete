@@ -22,12 +22,9 @@ impl FourierPolynomial<AlignedVec<Complex64>> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// let fourier_poly = FourierPolynomial::allocate(
-    ///     Complex64::new(0., 0.),
-    ///     PolynomialSize(128)
-    /// );
+    /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
     pub fn allocate(value: Complex64, coef_count: PolynomialSize) -> Self {
@@ -43,10 +40,10 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use fftw::array::AlignedVec;
-    /// let mut alvec: AlignedVec<Complex64>= AlignedVec::new(128);
+    /// let mut alvec: AlignedVec<Complex64> = AlignedVec::new(128);
     /// let fourier_poly = FourierPolynomial::from_container(alvec.as_slice_mut());
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
@@ -61,12 +58,9 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// let fourier_poly = FourierPolynomial::allocate(
-    ///     Complex64::new(0., 0.),
-    ///     PolynomialSize(128)
-    /// );
+    /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
     pub fn polynomial_size(&self) -> PolynomialSize
@@ -85,14 +79,11 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// let fourier_poly = FourierPolynomial::allocate(
-    ///     Complex64::new(0., 0.),
-    ///     PolynomialSize(128)
-    /// );
-    /// for coef in fourier_poly.coefficient_iter(){
-    ///     assert_eq!(*coef, Complex64::new(0.,0.));
+    /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
+    /// for coef in fourier_poly.coefficient_iter() {
+    ///     assert_eq!(*coef, Complex64::new(0., 0.));
     /// }
     /// assert_eq!(fourier_poly.coefficient_iter().count(), 128);
     /// ```
@@ -112,17 +103,17 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// let mut fourier_poly = FourierPolynomial::allocate(
-    ///     Complex64::new(0., 0.),
-    ///     PolynomialSize(128)
-    /// );
-    /// for mut coef in fourier_poly.coefficient_iter_mut(){
-    ///     *coef =  Complex64::new(1.,1.);
+    /// let mut fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
+    /// for mut coef in fourier_poly.coefficient_iter_mut() {
+    ///     *coef = Complex64::new(1., 1.);
     /// }
-    /// assert!(fourier_poly.as_tensor().iter().all(|a| *a==Complex64::new(1.,1.)));
+    /// assert!(fourier_poly
+    ///     .as_tensor()
+    ///     .iter()
+    ///     .all(|a| *a == Complex64::new(1., 1.)));
     /// assert_eq!(fourier_poly.coefficient_iter_mut().count(), 128);
     /// ```
     pub fn coefficient_iter_mut(&mut self) -> impl Iterator<Item = &mut Complex64>
@@ -132,8 +123,8 @@ impl<Cont> FourierPolynomial<Cont> {
         self.as_mut_tensor().iter_mut()
     }
 
-    /// Adds the result of the element-wise product of two polynomials to $(self.len()/2)+2$
-    /// elements of the current polynomial:
+    /// Adds the result of the element-wise product of two polynomials to
+    /// $(self.len()/2)+2$ elements of the current polynomial:
     /// $$
     /// self\[i\] = self\[i\] + poly_1\[i\] * poly_2\[i\]
     /// $$
@@ -141,25 +132,22 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// let mut fpoly1 = FourierPolynomial::allocate(
-    ///     Complex64::new(1., 2.),
-    ///     PolynomialSize(128)
-    /// );
-    /// let fpoly2 = FourierPolynomial::allocate(
-    ///     Complex64::new(3., 4.),
-    ///     PolynomialSize(128)
-    /// );
-    /// let fpoly3 = FourierPolynomial::allocate(
-    ///     Complex64::new(5., 6.),
-    ///     PolynomialSize(128)
-    /// );
+    /// let mut fpoly1 = FourierPolynomial::allocate(Complex64::new(1., 2.), PolynomialSize(128));
+    /// let fpoly2 = FourierPolynomial::allocate(Complex64::new(3., 4.), PolynomialSize(128));
+    /// let fpoly3 = FourierPolynomial::allocate(Complex64::new(5., 6.), PolynomialSize(128));
     /// fpoly1.update_with_multiply_accumulate(&fpoly2, &fpoly3);
     /// // It actually update half+2 elements.
-    /// let half = fpoly1.polynomial_size().0/2 + 2;
-    /// assert!(fpoly1.coefficient_iter().take(half).all(|a| *a == Complex64::new(-8., 40.)));
-    /// assert!(fpoly1.coefficient_iter().skip(half).all(|a| *a == Complex64::new(1., 2.)));
+    /// let half = fpoly1.polynomial_size().0 / 2 + 2;
+    /// assert!(fpoly1
+    ///     .coefficient_iter()
+    ///     .take(half)
+    ///     .all(|a| *a == Complex64::new(-8., 40.)));
+    /// assert!(fpoly1
+    ///     .coefficient_iter()
+    ///     .skip(half)
+    ///     .all(|a| *a == Complex64::new(1., 2.)));
     /// ```
     pub fn update_with_multiply_accumulate<PolyCont1, PolyCont2>(
         &mut self,
@@ -176,43 +164,34 @@ impl<Cont> FourierPolynomial<Cont> {
         #[cfg(target_feature = "avx2")]
         avx2_uhwap(self, poly_1, poly_2);
     }
-    /// Adds the result of the element-wise product of `poly_1` with `poly_2`, and the result
-    /// of the element-wise product of `poly_3` with `poly_4`, to $(self.len()/2)+2$ elements of
-    /// the current polynomial:
+    /// Adds the result of the element-wise product of `poly_1` with `poly_2`,
+    /// and the result of the element-wise product of `poly_3` with
+    /// `poly_4`, to $(self.len()/2)+2$ elements of the current polynomial:
     /// $$
-    /// self\[i\] = self\[i\] + poly_1\[i\] * poly_2\[i\] + poly_3\[i\] * poly_4\[i\]
-    /// $$
+    /// self\[i\] = self\[i\] + poly_1\[i\] * poly_2\[i\] + poly_3\[i\] *
+    /// poly_4\[i\] $$
     ///
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// let mut fpoly1 = FourierPolynomial::allocate(
-    ///     Complex64::new(1., 2.),
-    ///     PolynomialSize(128)
-    /// );
-    /// let fpoly2 = FourierPolynomial::allocate(
-    ///     Complex64::new(3., 4.),
-    ///     PolynomialSize(128)
-    /// );
-    /// let fpoly3 = FourierPolynomial::allocate(
-    ///     Complex64::new(5., 6.),
-    ///     PolynomialSize(128)
-    /// );
-    /// let fpoly4 = FourierPolynomial::allocate(
-    ///     Complex64::new(7., 8.),
-    ///     PolynomialSize(128)
-    /// );
-    /// let fpoly5 = FourierPolynomial::allocate(
-    ///     Complex64::new(9., 10.),
-    ///     PolynomialSize(128)
-    /// );
+    /// let mut fpoly1 = FourierPolynomial::allocate(Complex64::new(1., 2.), PolynomialSize(128));
+    /// let fpoly2 = FourierPolynomial::allocate(Complex64::new(3., 4.), PolynomialSize(128));
+    /// let fpoly3 = FourierPolynomial::allocate(Complex64::new(5., 6.), PolynomialSize(128));
+    /// let fpoly4 = FourierPolynomial::allocate(Complex64::new(7., 8.), PolynomialSize(128));
+    /// let fpoly5 = FourierPolynomial::allocate(Complex64::new(9., 10.), PolynomialSize(128));
     /// fpoly1.update_with_two_multiply_accumulate(&fpoly2, &fpoly3, &fpoly4, &fpoly5);
     /// // It actually update half+2 elements.
-    /// let half = fpoly1.polynomial_size().0/2 + 2;
-    /// assert!(fpoly1.coefficient_iter().take(half).all(|a| *a == Complex64::new(-25., 182.)));
-    /// assert!(fpoly1.coefficient_iter().skip(half).all(|a| *a == Complex64::new(1., 2.)));
+    /// let half = fpoly1.polynomial_size().0 / 2 + 2;
+    /// assert!(fpoly1
+    ///     .coefficient_iter()
+    ///     .take(half)
+    ///     .all(|a| *a == Complex64::new(-25., 182.)));
+    /// assert!(fpoly1
+    ///     .coefficient_iter()
+    ///     .skip(half)
+    ///     .all(|a| *a == Complex64::new(1., 2.)));
     /// ```
     pub fn update_with_two_multiply_accumulate<Cont1, Cont2, Cont3, Cont4>(
         &mut self,
@@ -242,23 +221,20 @@ impl<Cont> FourierPolynomial<Cont> {
     /// Updates two polynomials with the following operation:
     ///
     /// $$
-    /// result_1\[i\]=result_1\[i\]+poly_{a_1}\[i\]*poly_b\[i\]+poly_{c_1}\[i\]*poly_d\[i\]\\\\
-    /// result_2\[i\]=result_2\[i\]+poly_{a_2}\[i\]*poly_b\[i\]+poly_{c_2}\[i\]*poly_d\[i\]
-    /// $$
+    /// result_1\[i\]=result_1\[i\]+poly_{a_1}\[i\]*poly_b\[i\]+poly_{c_1}\[i\]*
+    /// poly_d\[i\]\\\\ result_2\[i\]=result_2\[i\]+poly_{a_2}\[i\]*poly_b\
+    /// [i\]+poly_{c_2}\[i\]*poly_d\[i\] $$
     ///
     /// # Example
     ///
     /// ```rust
-    ///
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// macro_rules! new_poly{
-    ///     ($name: ident, $re: literal, $im: literal) =>  {
-    ///         let mut $name = FourierPolynomial::allocate(
-    ///             Complex64::new($re, $im),
-    ///             PolynomialSize(128)
-    ///         );
-    ///     }
+    /// macro_rules! new_poly {
+    ///     ($name: ident, $re: literal, $im: literal) => {
+    ///         let mut $name =
+    ///             FourierPolynomial::allocate(Complex64::new($re, $im), PolynomialSize(128));
+    ///     };
     /// }
     /// new_poly!(fpoly_1, 1., 2.);
     /// new_poly!(fpoly_2, 3., 4.);
@@ -279,11 +255,23 @@ impl<Cont> FourierPolynomial<Cont> {
     ///     &fpoly_8,
     /// );
     /// // It actually update half+2 elements.
-    /// let half = fpoly_1.polynomial_size().0/2 + 2;
-    /// assert!(fpoly_1.coefficient_iter().take(half).all(|a| *a == Complex64::new(-41., 462.)));
-    /// assert!(fpoly_1.coefficient_iter().skip(half).all(|a| *a == Complex64::new(1., 2.)));
-    /// assert!(fpoly_2.coefficient_iter().take(half).all(|a| *a == Complex64::new(-43., 564.)));
-    /// assert!(fpoly_2.coefficient_iter().skip(half).all(|a| *a == Complex64::new(3., 4.)));
+    /// let half = fpoly_1.polynomial_size().0 / 2 + 2;
+    /// assert!(fpoly_1
+    ///     .coefficient_iter()
+    ///     .take(half)
+    ///     .all(|a| *a == Complex64::new(-41., 462.)));
+    /// assert!(fpoly_1
+    ///     .coefficient_iter()
+    ///     .skip(half)
+    ///     .all(|a| *a == Complex64::new(1., 2.)));
+    /// assert!(fpoly_2
+    ///     .coefficient_iter()
+    ///     .take(half)
+    ///     .all(|a| *a == Complex64::new(-43., 564.)));
+    /// assert!(fpoly_2
+    ///     .coefficient_iter()
+    ///     .skip(half)
+    ///     .all(|a| *a == Complex64::new(3., 4.)));
     /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn update_two_with_two_multiply_accumulate<C2, C3, C4, C5, C6, C7, C8>(

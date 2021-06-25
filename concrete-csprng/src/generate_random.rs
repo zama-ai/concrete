@@ -1,5 +1,5 @@
-//! This program uses the concrete csprng to generate an infinite stream of random bytes on
-//! the program stdout. For testing purpose.
+//! This program uses the concrete csprng to generate an infinite stream of
+//! random bytes on the program stdout. For testing purpose.
 use std::io::prelude::*;
 use std::io::stdout;
 

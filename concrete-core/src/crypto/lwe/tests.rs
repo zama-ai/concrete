@@ -88,7 +88,8 @@ fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
     );
 
     if nb_ct.0 < 7 {
-        // assert the difference between the original messages and the decrypted messages
+        // assert the difference between the original messages and the decrypted
+        // messages
         assert_delta_std_dev(
             &messages,
             &dec_messages,
@@ -252,8 +253,8 @@ fn test_scalar_mul<T>()
 where
     T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE + CastFrom<usize>,
 {
-    //! encrypts a bunch of messages, performs a scalar multiplication and decrypts them
-    //! the settings are not randomized
+    //! encrypts a bunch of messages, performs a scalar multiplication and
+    //! decrypts them the settings are not randomized
     // settings
     let n_tests = 10;
     let nb_ct = CiphertextCount(n_tests);
@@ -299,7 +300,8 @@ where
     let output_variance: f64 =
         <T as npe::LWE>::single_scalar_mul(f64::powi(std_dev.0, 2), weight.0);
     if nb_ct.0 < 7 {
-        // assert the difference between the original messages and the decrypted messages
+        // assert the difference between the original messages and the decrypted
+        // messages
         assert_delta_std_dev(
             &messages_mul,
             &decryptions,
@@ -328,8 +330,8 @@ fn test_scalar_mul_random<T>()
 where
     T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE + CastFrom<usize>,
 {
-    //! encrypts a bunch of messages, performs a scalar multiplication and decrypts them
-    //! warning: std_dev is not randomized
+    //! encrypts a bunch of messages, performs a scalar multiplication and
+    //! decrypts them warning: std_dev is not randomized
     //! only assert with assert_delta_std_dev
 
     // settings

@@ -55,7 +55,8 @@ impl EncryptionRandomGenerator {
         self.try_fork(lwe_dimension.0, mask_bytes, noise_bytes)
     }
 
-    // Forks the generator into a parallel iterator, when splitting a bootstrap key into ggsw ct.
+    // Forks the generator into a parallel iterator, when splitting a bootstrap key
+    // into ggsw ct.
     #[cfg(feature = "multithread")]
     pub(crate) fn par_fork_bsk_to_ggsw<T: UnsignedInteger>(
         &mut self,
@@ -81,7 +82,8 @@ impl EncryptionRandomGenerator {
         self.try_fork(level.0, mask_bytes, noise_bytes)
     }
 
-    // Forks the generator into a parallel iterator, when splitting a ggsw into level matrices.
+    // Forks the generator into a parallel iterator, when splitting a ggsw into
+    // level matrices.
     #[cfg(feature = "multithread")]
     pub(crate) fn par_fork_ggsw_to_ggsw_levels<T: UnsignedInteger>(
         &mut self,
@@ -105,7 +107,8 @@ impl EncryptionRandomGenerator {
         self.try_fork(glwe_size.0, mask_bytes, noise_bytes)
     }
 
-    // Forks the generator into a parallel iterator, when splitting a ggsw level matrix to glwe.
+    // Forks the generator into a parallel iterator, when splitting a ggsw level
+    // matrix to glwe.
     #[cfg(feature = "multithread")]
     pub(crate) fn par_fork_ggsw_level_to_glwe<T: UnsignedInteger>(
         &mut self,
@@ -226,8 +229,8 @@ fn mask_bytes_per_ggsw<T: UnsignedInteger>(
 }
 
 fn noise_bytes_per_coef() -> usize {
-    // We use f64 to sample the noise for every precision, and we need 4/pi inputs to generate
-    // such an output (here we take 3 to keep a safety margin).
+    // We use f64 to sample the noise for every precision, and we need 4/pi inputs
+    // to generate such an output (here we take 3 to keep a safety margin).
     8 * 3
 }
 fn noise_bytes_per_polynomial(poly_size: PolynomialSize) -> usize {

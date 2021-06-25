@@ -1,7 +1,8 @@
 use super::*;
 
-/// A distribution type representing uniform sampling for unsigned integer types. The value is
-/// uniformly sampled in `[0, 2^n[` where `n` is the size of the integer type.
+/// A distribution type representing uniform sampling for unsigned integer
+/// types. The value is uniformly sampled in `[0, 2^n[` where `n` is the size of
+/// the integer type.
 #[derive(Copy, Clone)]
 pub struct Uniform;
 

@@ -1,4 +1,5 @@
-/// A trait allowing to treat a value as a reference to an alement of a different type.
+/// A trait allowing to treat a value as a reference to an alement of a
+/// different type.
 pub trait AsRefElement {
     /// The element type.
     type Element;
@@ -6,7 +7,8 @@ pub trait AsRefElement {
     fn as_element(&self) -> &Self::Element;
 }
 
-/// A trait allowing to treat a value as a mutable reference to an element of a different type.
+/// A trait allowing to treat a value as a mutable reference to an element of a
+/// different type.
 pub trait AsMutElement: AsRefElement<Element = <Self as AsMutElement>::Element> {
     /// The element type.
     type Element;
