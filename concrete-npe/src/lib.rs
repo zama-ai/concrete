@@ -1,5 +1,3 @@
-pub mod ffi;
-
 /// Noise Propagation Estimator Module
 /// * Contains material needed to estimate the growth of the noise when
 ///   performing homomophic computation
