@@ -8,5 +8,5 @@ int main (void) {
   Variance v1 = {1.};
   Variance v2 = {1.};
   Variance v3 = npe_add_ciphertexts_variance_variance(v1, v2);
-  printf("Result variance = %f\n", v3.variance);
+  printf("Result variance = %f\n", v3.val);
 }
