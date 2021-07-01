@@ -32,3 +32,8 @@ we rely on different representations for this quantity:
 In any of those cases, the corresponding type implements the `DispersionParameter` trait,
 which makes if possible to use any of those representations generically when noise must be
 defined.
+
+## License
+
+Concrete-commons is licensed under AGPLv3. If this does not fit your requirements, get in touch 
+at hello@zama.ai for other licensing options

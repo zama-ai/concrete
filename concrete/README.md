@@ -71,3 +71,7 @@ fn main() -> Result<(), CryptoAPIError> {
   Ok(())
 }
 ```
+
+## License
+
+Concrete is licensed under AGPLv3. If this does not fit your requirements, get in touch at hello@zama.ai for other licensing options
