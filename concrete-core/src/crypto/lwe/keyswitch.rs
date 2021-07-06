@@ -4,9 +4,10 @@ use concrete_commons::{CastFrom, DispersionParameter, SignedInteger};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{CiphertextCount, LweDimension, LweSize, UnsignedTorus};
+use crate::crypto::{CiphertextCount, LweDimension, LweSize};
 use crate::math::decomposition::{
-    DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount,
+    DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, DecompositionTerm,
+    SignedDecomposer,
 };
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
@@ -307,9 +308,9 @@ impl<Cont> LweKeyswitchKey<Cont> {
             self.decomp_level_count.0
         ]);
 
-        // We copy some values.
-        let base_log = self.decomp_base_log;
-        let level_count = self.decomp_level_count;
+        // We retrieve decomposition arguments
+        let decomp_level_count = self.decomp_level_count;
+        let decomp_base_log = self.decomp_base_log;
 
         // loop over the before key blocks
         for (input_key_bit, keyswitch_key_block) in before_key
@@ -323,10 +324,17 @@ impl<Cont> LweKeyswitchKey<Cont> {
                 .fill_with_element(<Self as AsMutTensor>::Element::ZERO);
 
             // We fill the buffer with the powers of the key bits
-            for (level, message) in (0..level_count.0).zip(messages.plaintext_iter_mut()) {
+            for (level, message) in (1..=decomp_level_count.0)
+                .map(DecompositionLevel)
+                .zip(messages.plaintext_iter_mut())
+            {
                 *message = Plaintext(
-                    Scalar::cast_from(*input_key_bit)
-                        .set_val_at_level(base_log, DecompositionLevel(level)),
+                    DecompositionTerm::new(
+                        level,
+                        decomp_base_log,
+                        Scalar::cast_from(*input_key_bit),
+                    )
+                    .to_recomposition_summand(),
                 );
             }
 
@@ -481,12 +489,15 @@ impl<Cont> LweKeyswitchKey<Cont> {
         // We allocate a boffer to hold the decomposition.
         let mut decomp = Tensor::allocate(Scalar::ZERO, self.decomp_level_count.0);
 
+        // We instantiate a decomposer
+        let decomposer = SignedDecomposer::new(self.decomp_base_log, self.decomp_level_count);
+
         for (block, before_mask) in self
             .bit_decomp_iter()
             .zip(before.get_mask().mask_element_iter())
         {
-            let mask_rounded = before_mask
-                .round_to_closest_multiple(self.decomp_base_log, self.decomp_level_count);
+            let mask_rounded = decomposer.closest_representable(*before_mask);
+
             torus_small_sign_decompose(
                 &mut decomp.as_mut_slice(),
                 mask_rounded,

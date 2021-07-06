@@ -318,7 +318,9 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 9);
     /// }
     /// ```
-    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &<Self as AsRefSlice>::Element>
+    pub fn iter(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = &<Self as AsRefSlice>::Element> + ExactSizeIterator
     where
         Self: AsRefSlice,
     {
@@ -362,7 +364,7 @@ impl<Container> Tensor<Container> {
     /// ```
     pub fn iter_mut(
         &mut self,
-    ) -> impl DoubleEndedIterator<Item = &mut <Self as AsMutSlice>::Element>
+    ) -> impl DoubleEndedIterator<Item = &mut <Self as AsMutSlice>::Element> + ExactSizeIterator
     where
         Self: AsMutSlice,
     {
@@ -412,7 +414,7 @@ impl<Container> Tensor<Container> {
     pub fn subtensor_iter(
         &self,
         size: usize,
-    ) -> impl DoubleEndedIterator<Item = Tensor<&[<Self as AsRefSlice>::Element]>>
+    ) -> impl DoubleEndedIterator<Item = Tensor<&[<Self as AsRefSlice>::Element]>> + ExactSizeIterator
     where
         Self: AsRefSlice,
     {
@@ -468,7 +470,7 @@ impl<Container> Tensor<Container> {
     pub fn subtensor_iter_mut(
         &mut self,
         size: usize,
-    ) -> impl DoubleEndedIterator<Item = Tensor<&mut [<Self as AsMutSlice>::Element]>>
+    ) -> impl DoubleEndedIterator<Item = Tensor<&mut [<Self as AsMutSlice>::Element]>> + ExactSizeIterator
     where
         Self: AsMutSlice,
     {
