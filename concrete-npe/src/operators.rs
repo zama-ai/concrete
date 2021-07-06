@@ -15,7 +15,7 @@ use std::fmt::*;
 /// * `dispersion_ct2` - noise dispersion of the second ciphertext
 /// Output
 /// * The noise variance of the sum of the first and the second ciphertext
-pub fn add<T, D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
+pub fn variance_add<T, D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
 where
     T: UnsignedInteger,
     D1: DispersionParameter,
@@ -33,7 +33,7 @@ where
 /// * `dispersion_cts` - noise variance of the ciphertexts
 /// Output:
 /// * the noise variance of the sum of the ciphertexts
-pub fn add_several<T, D>(dispersion_cts: &[D]) -> Variance
+pub fn variance_add_several<T, D>(dispersion_cts: &[D]) -> Variance
 where
     T: UnsignedInteger,
     D: DispersionParameter,
@@ -80,7 +80,7 @@ where
 ///     dispersion_rlwe,
 /// );
 /// ```
-pub fn external_product<T, D1, D2>(
+pub fn variance_external_product<T, D1, D2>(
     dimension: GlweDimension,
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
@@ -152,7 +152,7 @@ where
 ///     dispersion_rgsw,
 /// );
 /// ```
-pub fn cmux<T, D1, D2, D3>(
+pub fn variance_cmux<T, D1, D2, D3>(
     dimension: GlweDimension,
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
@@ -214,7 +214,7 @@ where
 ///     var_bsk,
 /// );
 /// ```
-pub fn bootstrap<T, D>(
+pub fn variance_bootstrap<T, D>(
     lwe_dimension: LweDimension,
     rlwe_dimension: GlweDimension,
     polynomial_size: PolynomialSize,
@@ -271,7 +271,7 @@ where
 /// // Computing the noise
 /// let var_ks = key_switch::<u64, _, _>(dimension_before, l_ks, base_log, dispersion_ks, dispersion_input);
 /// ```
-pub fn key_switch<T, D1, D2>(
+pub fn variance_key_switch<T, D1, D2>(
     dimension_before: LweDimension,
     l_ks: DecompositionLevelCount,
     base_log: DecompositionBaseLog,
@@ -315,7 +315,7 @@ where
 /// // noise computation
 /// let noise = scalar_mul(variance, n);
 /// ```
-pub fn scalar_mul<T, D>(variance: D, n: T) -> Variance
+pub fn variance_scalar_mul<T, D>(variance: D, n: T) -> Variance
 where
     T: UnsignedInteger,
     D: DispersionParameter,
@@ -345,7 +345,7 @@ where
 /// // noise computation
 /// let noise = scalar_weighted_sum(&variances, &weights);
 /// ```
-pub fn scalar_weighted_sum<T, D>(dispersion_list: &[D], weights: &[T]) -> Variance
+pub fn variance_scalar_weighted_sum<T, D>(dispersion_list: &[D], weights: &[T]) -> Variance
 where
     T: UnsignedInteger,
     D: DispersionParameter,
@@ -368,7 +368,7 @@ where
 /// * `scalar_polynomial` - a slice of Torus with the input weights
 /// Output
 /// * the error variance for each slot of the output ciphertext
-pub fn scalar_polynomial_mult<T, S, D>(dispersion: D, scalar_polynomial: &[T]) -> Variance
+pub fn variance_scalar_polynomial_mult<T, S, D>(dispersion: D, scalar_polynomial: &[T]) -> Variance
 where
     T: UnsignedInteger,
     S: SignedInteger,
@@ -422,7 +422,7 @@ pub fn val_qsquare<T>(q: T) {
 /// returns a variance when computing a tensorial product between two independant GLWE, and rescaling it with a factor
 /// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
 ///
-pub fn glwe_tensor_product_rescale_round<T, D1, D2>(
+pub fn variance_glwe_tensor_product_rescale_round<T, D1, D2>(
     poly_size: PolynomialSize,
     rlwe_dimension: GlweDimension,
     dispersion_glwe1: D1,
@@ -456,10 +456,10 @@ where
         // 1ere parenthese
         (q_square - 1.) / 12.
             * (1.
-                + k * big_n * var_key_coefficient(key_type) as f64
-                + k * big_n * square(expect_key_coefficient(key_type)))
-            + k * big_n / 4. * var_key_coefficient(key_type)
-            + 1. / 4. * square(1. + k * big_n * expect_key_coefficient(key_type))
+                + k * big_n * variance_key_coefficient(key_type) as f64
+                + k * big_n * square(expectation_key_coefficient(key_type)))
+            + k * big_n / 4. * variance_key_coefficient(key_type)
+            + 1. / 4. * square(1. + k * big_n * expectation_key_coefficient(key_type))
     ) * (
         // 2e parenthese
         dispersion_glwe1.get_variance() + dispersion_glwe2.get_variance()
@@ -470,26 +470,29 @@ where
     let res_3 = 1. / 12.
         + k * big_n / (12. * delta_square)
             * ((delta_square - 1.)
-                * (var_key_coefficient(key_type) + square(expect_key_coefficient(key_type)))
-                + 3. * var_key_coefficient(key_type))
+                * (variance_key_coefficient(key_type)
+                    + square(expectation_key_coefficient(key_type)))
+                + 3. * variance_key_coefficient(key_type))
         + k * (k - 1.) * big_n / (24. * delta_square)
             * ((delta_square - 1.)
-                * (var_poly_key_times_key(poly_size, key_type)
-                    + square_expect_mean_poly_key_times_key(poly_size, key_type))
-                + 3. * var_poly_key_times_key(poly_size, key_type))
+                * (variance_coefficient_in_polynomial_key_times_key(poly_size, key_type)
+                    + square_expectation_mean_in_polynomial_key_times_key(poly_size, key_type))
+                + 3. * variance_coefficient_in_polynomial_key_times_key(poly_size, key_type))
         + k * big_n / (24. * delta_square)
             * ((delta_square - 1.)
-                * (var_odd_poly_key_square(poly_size, key_type)
-                    + var_even_poly_key_square(poly_size, key_type)
-                    + 2. * square_expect_mean_poly_key_square(poly_size, key_type))
-                + 3. * (var_odd_poly_key_square(poly_size, key_type)
-                    + var_even_poly_key_square(poly_size, key_type)));
+                * (variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+                    + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type)
+                    + 2. * square_expectation_mean_in_polynomial_key_times_key(
+                        poly_size, key_type,
+                    ))
+                + 3. * (variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+                    + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type)));
 
     Variance::from_variance(res_2 + res_1 + res_3)
 }
 
 //TODO: DOC
-pub fn glwe_relinearization<T, D>(
+pub fn variance_glwe_relinearization<T, D>(
     poly_size: PolynomialSize,
     mask_size: GlweDimension,
     q: T,
@@ -517,24 +520,24 @@ where
     let res_2 = k * big_n / 2.
         * (q_square / (12. * f64::powi(b, (2 * level.0) as i32)) - 1. / 12.)
         * ((k - 1.)
-            * (var_poly_key_times_key(poly_size, key_type)
-                + square_expect_mean_poly_key_times_key(poly_size, key_type))
-            + var_odd_poly_key_square(poly_size, key_type)
-            + var_even_poly_key_square(poly_size, key_type)
-            + 2. * square_expect_mean_poly_key_square(poly_size, key_type));
+            * (variance_coefficient_in_polynomial_key_times_key(poly_size, key_type)
+                + square_expectation_mean_in_polynomial_key_times_key(poly_size, key_type))
+            + variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+            + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type)
+            + 2. * square_expectation_mean_in_polynomial_key_times_key(poly_size, key_type));
 
     // third term
     let res_3 = k * big_n / 8.
-        * ((k - 1.) * var_poly_key_times_key(poly_size, key_type)
-            + var_odd_poly_key_square(poly_size, key_type)
-            + var_even_poly_key_square(poly_size, key_type));
+        * ((k - 1.) * variance_coefficient_in_polynomial_key_times_key(poly_size, key_type)
+            + variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+            + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type));
 
     Variance::from_variance(res_1 + res_2 + res_3)
 }
 
 /// returns a variance when computing an GLWE multiplication (tensor product + relinearization)
 /// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
-pub fn glwe_mul_with_rel<T, D1, D2, D3>(
+pub fn variance_glwe_mul_with_rel<T, D1, D2, D3>(
     poly_size: PolynomialSize,
     mask_size: GlweDimension,
     dispersion_glwe1: D1,
@@ -587,7 +590,12 @@ where
 /// returns a variance of the drift of the PBS with binary keys
 /// output -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
 /// in TFHE's case nb_msb = log2(poly_size) + 1
-pub fn lwe_drift_pbs<T, D>(lwe_mask_size: usize, q: T, nb_msb: usize, var_in: D) -> Variance
+pub fn variance_lwe_drift_pbs<T, D>(
+    lwe_mask_size: usize,
+    q: T,
+    nb_msb: usize,
+    var_in: D,
+) -> Variance
 where
     T: UnsignedInteger,
     D: DispersionParameter,
@@ -604,7 +612,7 @@ where
 
 /// returns a variance of the constant term of the GLWE after an LWE to GLWE key switch
 /// output -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
-pub fn lwe_to_glwe_ks<T, D1, D2>(
+pub fn variance_lwe_to_glwe_ks<T, D1, D2>(
     lwe_mask_size: LweDimension,
     dispersion_lwe: D1,
     dispersion_ksk: D2,
@@ -628,10 +636,11 @@ where
     // res 2
     let res_2 = n
         * (q_square / (12. * f64::powi(base, 2 * level.0 as i32)) - 1. / 12.)
-        * (var_key_coefficient(lwe_key_type) + square(expect_key_coefficient(lwe_key_type)));
+        * (variance_key_coefficient(lwe_key_type)
+            + square(expectation_key_coefficient(lwe_key_type)));
 
     // res 3
-    let res_3 = n / 4. * var_key_coefficient(lwe_key_type);
+    let res_3 = n / 4. * variance_key_coefficient(lwe_key_type);
 
     // res 4
     let res_4 = n * (level.0 as f64) * dispersion_ksk.get_variance() * (square(base) + 2.) / 12.;
@@ -642,7 +651,7 @@ where
 
 /// returns a variance of the non constant GLWE after an LWE to GLWE key switch
 /// output -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
-pub fn lwe_to_glwe_ks_other_terms<D>(
+pub fn variance_lwe_to_glwe_ks_other_terms<D>(
     lwe_mask_size: LweDimension,
     dispersion_ksk: D,
     base_log: DecompositionBaseLog,
@@ -663,7 +672,7 @@ where
 
 /// returns a variance of U when doing a modulus switching
 /// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
-pub fn rlwe_k_1_var_u_mod_switch<T>(poly_size: usize, q: T, key_type: KeyType) -> Variance
+pub fn variance_rlwe_k_1_var_u_mod_switch<T>(poly_size: usize, q: T, key_type: KeyType) -> Variance
 where
     T: UnsignedInteger,
 {
@@ -673,15 +682,15 @@ where
         1. / q_square
             * ((q_square - 1.) / 12.
                 * (1.
-                    + (poly_size as f64) * var_key_coefficient(key_type)
-                    + (poly_size as f64) * square(expect_key_coefficient(key_type)))
-                + (poly_size as f64) / 4. * var_key_coefficient(key_type)),
+                    + (poly_size as f64) * variance_key_coefficient(key_type)
+                    + (poly_size as f64) * square(expectation_key_coefficient(key_type)))
+                + (poly_size as f64) / 4. * variance_key_coefficient(key_type)),
     )
 }
 
 /// returns a variance when computing a relinarization of an RLWE resulting from a tensor product: with k=2, and the secret key is (-S^2(X),S(X))
 /// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
-pub fn rlwe_k_2_relinearization<T, D>(
+pub fn variance_rlwe_k_2_relinearization<T, D>(
     poly_size: PolynomialSize,
     dispersion_rlk: D,
     base_log: DecompositionBaseLog,
@@ -703,13 +712,13 @@ where
 
     // res 2
     let res_2: f64 = big_n / 2.
-        * (var_odd_poly_key_square(poly_size, key_type)
-            + var_even_poly_key_square(poly_size, key_type)
-            + 2. * square_expect_mean_poly_key_square(poly_size, key_type))
+        * (variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+            + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type)
+            + 2. * square_expectation_mean_in_polynomial_key_times_key(poly_size, key_type))
         * (q_square / (12. * f64::powi(basis, 2 * level.0 as i32)) - 1. / 12.)
         + big_n / 8.
-            * (var_odd_poly_key_square(poly_size, key_type)
-                + var_even_poly_key_square(poly_size, key_type));
+            * (variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+                + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type));
 
     // return
     Variance::from_variance(res_1 + res_2)
@@ -717,7 +726,7 @@ where
 
 /// returns a variance when computing a relinarization of an RLWE resulting from a tensor product: both input had a mask size set to k
 /// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
-pub fn rlwe_relinearization<T, D>(
+pub fn variance_rlwe_relinearization<T, D>(
     poly_size: PolynomialSize,
     mask_size: GlweDimension,
     dispersion_rlk: D,
@@ -746,17 +755,17 @@ where
 
     // res 2
     let res_2: f64 = k * big_n / 2.
-        * (var_odd_poly_key_square(poly_size, key_type)
-            + var_even_poly_key_square(poly_size, key_type)
-            + 2. * square_expect_mean_poly_key_square(poly_size, key_type)
+        * (variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+            + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type)
+            + 2. * square_expectation_mean_in_polynomial_key_times_key(poly_size, key_type)
             + (k - 1.)
-                * (var_poly_key_times_key(poly_size, key_type)
-                    + square_expect_mean_poly_key_times_key(poly_size, key_type)))
+                * (variance_coefficient_in_polynomial_key_times_key(poly_size, key_type)
+                    + square_expectation_mean_in_polynomial_key_times_key(poly_size, key_type)))
         * (q_square / (12. * f64::powi(basis, 2 * level.0 as i32)) - 1. / 12.)
         + k * big_n / 8.
-            * (var_odd_poly_key_square(poly_size, key_type)
-                + var_even_poly_key_square(poly_size, key_type)
-                + (k - 1.) * var_poly_key_times_key(poly_size, key_type));
+            * (variance_odd_coefficient_in_polynomial_key_squared(poly_size, key_type)
+                + variance_even_coefficient_in_polynomial_key_squared(poly_size, key_type)
+                + (k - 1.) * variance_coefficient_in_polynomial_key_times_key(poly_size, key_type));
 
     // return
     Variance::from_variance(res_1 + res_2)
@@ -785,9 +794,9 @@ pub fn external_product(
     let res_3 = (square(q) - b2l) / (24. * b2l)
         * (1.
             + k * big_n
-                * (var_key_coefficient(key_type) + square(expect_key_coefficient(key_type))));
-    let res_4 = k * big_n / 8. * var_key_coefficient(key_type);
-    let res_5 = 1. / 16. * square(1. - k * big_n * expect_key_coefficient(key_type));
+                * (variance_key_coefficient(key_type) + square(expectation_key_coefficient(key_type))));
+    let res_4 = k * big_n / 8. * variance_key_coefficient(key_type);
+    let res_5 = 1. / 16. * square(1. - k * big_n * expectation_key_coefficient(key_type));
     res_1 + res_2 + res_3 + res_4 + res_5
 }
 

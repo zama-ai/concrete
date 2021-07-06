@@ -7,6 +7,7 @@ use concrete_commons::parameters::PolynomialSize;
 /// * Uniform Ternary
 /// * Gaussian (centered in 0 with stdev = 3.2)
 /// * Zero (all key set to zero, used only for debugging)
+#[derive(Clone, Copy)]
 pub enum KeyType {
     Binary,
     Ternary,
