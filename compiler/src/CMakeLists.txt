@@ -5,6 +5,7 @@ target_link_libraries(zamacompiler
   PRIVATE
   MLIRTransforms
   MidLFHEDialect
-  HLFHEDialect)
+  HLFHEDialect
+  HLFHEDialectTransforms)
 
 mlir_check_all_link_libraries(zamacompiler)
