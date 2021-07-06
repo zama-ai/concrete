@@ -272,6 +272,11 @@ impl<Cont> GgswCiphertext<Cont> {
 
     /// Returns an iterator over borrowed level matrices.
     ///
+    /// # Note
+    ///
+    /// This iterator iterates over the levels from the lower to the higher level in the usual
+    /// order. To iterate in the reverse order, you can use `rev()` on the iterator.
+    ///
     /// # Example
     ///
     /// ```
@@ -298,7 +303,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// ```
     pub fn level_matrix_iter(
         &self,
-    ) -> impl Iterator<Item = GgswLevelMatrix<&[<Self as AsRefTensor>::Element]>>
+    ) -> impl DoubleEndedIterator<Item = GgswLevelMatrix<&[<Self as AsRefTensor>::Element]>>
     where
         Self: AsRefTensor,
     {
@@ -313,12 +318,17 @@ impl<Cont> GgswCiphertext<Cont> {
                     tensor.into_container(),
                     poly_size,
                     rlwe_size,
-                    DecompositionLevel(index),
+                    DecompositionLevel(index + 1),
                 )
             })
     }
 
     /// Returns an iterator over mutably borrowed level matrices.
+    ///
+    /// # Note
+    ///
+    /// This iterator iterates over the levels from the lower to the higher level in the usual
+    /// order. To iterate in the reverse order, you can use `rev()` on the iterator.
     ///
     /// # Example
     ///
@@ -345,7 +355,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// ```
     pub fn level_matrix_iter_mut(
         &mut self,
-    ) -> impl Iterator<Item = GgswLevelMatrix<&mut [<Self as AsRefTensor>::Element]>>
+    ) -> impl DoubleEndedIterator<Item = GgswLevelMatrix<&mut [<Self as AsRefTensor>::Element]>>
     where
         Self: AsMutTensor,
     {
@@ -360,7 +370,7 @@ impl<Cont> GgswCiphertext<Cont> {
                     tensor.into_container(),
                     poly_size,
                     rlwe_size,
-                    DecompositionLevel(index),
+                    DecompositionLevel(index + 1),
                 )
             })
     }

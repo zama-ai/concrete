@@ -351,11 +351,11 @@ impl<Cont> GgswLevelRow<Cont> {
     ///     PolynomialSize(10),
     ///     DecompositionLevel(1)
     /// );
-    /// let rlwe = level_row.into_rlwe();
-    /// assert_eq!(rlwe.polynomial_size(), PolynomialSize(10)) ;
-    /// assert_eq!(rlwe.size(), GlweSize(7));
+    /// let glwe = level_row.into_glwe();
+    /// assert_eq!(glwe.polynomial_size(), PolynomialSize(10)) ;
+    /// assert_eq!(glwe.size(), GlweSize(7));
     /// ```
-    pub fn into_rlwe(self) -> GlweCiphertext<Cont> {
+    pub fn into_glwe(self) -> GlweCiphertext<Cont> {
         GlweCiphertext {
             tensor: self.tensor,
             poly_size: self.poly_size,
