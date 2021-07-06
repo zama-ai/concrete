@@ -90,7 +90,7 @@ pub fn bench<T: UnsignedTorus + CastFrom<u64>>(c: &mut Criterion) {
                     *elt = T::cast_from(val);
                 }
                 b.iter(|| {
-                    fourier_bsk.bootstrap(&mut accumulator, &mut lwe_out, &lwe_in);
+                    fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator);
                 });
             },
         );
