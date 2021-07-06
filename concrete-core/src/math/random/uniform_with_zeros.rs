@@ -1,6 +1,6 @@
 use super::*;
 
-/// A distribution type taht samples a uniform value with probability `1 - prob_zero`, and a zero
+/// A distribution type that samples a uniform value with probability `1 - prob_zero`, and a zero
 /// value with probaibility `prob_zero`.
 #[derive(Copy, Clone)]
 pub struct UniformWithZeros {

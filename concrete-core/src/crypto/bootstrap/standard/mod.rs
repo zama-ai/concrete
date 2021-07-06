@@ -1,14 +1,14 @@
 use crate::crypto::encoding::Plaintext;
 use crate::crypto::ggsw::GgswCiphertext;
+use crate::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::crypto::{GlweSize, LweDimension};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::polynomial::{Polynomial, PolynomialSize};
-use crate::math::random::EncryptionRandomGenerator;
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits, zip, zip_args};
-use concrete_commons::{DispersionParameter, Numeric};
+use concrete_commons::{BinaryKeyKind, DispersionParameter, Numeric};
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 
@@ -135,14 +135,15 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// ```
     /// use concrete_commons::LogStandardDev;
     /// use concrete_core::crypto::bootstrap::StandardBootstrapKey;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
     /// use concrete_core::crypto::{GlweDimension, GlweSize, LweDimension, LweSize};
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
-    ///
-    /// let mut generator = RandomGenerator::new(None);
-    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
     ///
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
@@ -154,25 +155,25 @@ impl<Cont> StandardBootstrapKey<Cont> {
     ///     dec_bl,
     ///     lwe_dim,
     /// );
-    /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
-    /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+    /// let lwe_sk = LweSecretKey::generate_binary(lwe_dim, &mut secret_generator);
+    /// let glwe_sk = GlweSecretKey::generate_binary(glwe_dim, poly_size, &mut secret_generator);
     /// bsk.fill_with_new_key(
     ///     &lwe_sk,
     ///     &glwe_sk,
     ///     LogStandardDev::from_log_standard_dev(-15.),
-    ///     &mut secret_generator,
+    ///     &mut encryption_generator,
     /// );
     /// ```
     pub fn fill_with_new_key<LweCont, RlweCont, Scalar>(
         &mut self,
-        lwe_secret_key: &LweSecretKey<LweCont>,
-        glwe_secret_key: &GlweSecretKey<RlweCont>,
+        lwe_secret_key: &LweSecretKey<BinaryKeyKind, LweCont>,
+        glwe_secret_key: &GlweSecretKey<BinaryKeyKind, RlweCont>,
         noise_parameters: impl DispersionParameter,
         generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsMutTensor<Element = Scalar>,
-        LweSecretKey<LweCont>: AsRefTensor<Element = bool>,
-        GlweSecretKey<RlweCont>: AsRefTensor<Element = bool>,
+        LweSecretKey<BinaryKeyKind, LweCont>: AsRefTensor<Element = Scalar>,
+        GlweSecretKey<BinaryKeyKind, RlweCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
         ck_dim_eq!(self.key_size().0 => lwe_secret_key.key_size().0);
@@ -191,11 +192,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
             lwe_secret_key.as_tensor().iter(),
             gen_iter
         ) {
-            let encoded = if *sk_scalar {
-                Plaintext(Scalar::ONE)
-            } else {
-                Plaintext(Scalar::ZERO)
-            };
+            let encoded = Plaintext(*sk_scalar);
             glwe_secret_key.encrypt_constant_ggsw(
                 &mut rgsw,
                 &encoded,
@@ -218,12 +215,16 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// ```
     /// use concrete_commons::LogStandardDev;
     /// use concrete_core::crypto::bootstrap::StandardBootstrapKey;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
     /// use concrete_core::crypto::{GlweDimension, GlweSize, LweDimension, LweSize};
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
-    /// let mut generator = RandomGenerator::new(None);
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let mut bsk = StandardBootstrapKey::allocate(
@@ -234,8 +235,8 @@ impl<Cont> StandardBootstrapKey<Cont> {
     ///     dec_bl,
     ///     lwe_dim,
     /// );
-    /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
-    /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+    /// let lwe_sk = LweSecretKey::generate_binary(lwe_dim, &mut secret_generator);
+    /// let glwe_sk = GlweSecretKey::generate_binary(glwe_dim, poly_size, &mut secret_generator);
     /// let mut secret_generator = EncryptionRandomGenerator::new(None);
     /// bsk.par_fill_with_new_key(
     ///     &lwe_sk,
@@ -247,14 +248,14 @@ impl<Cont> StandardBootstrapKey<Cont> {
     #[cfg(feature = "multithread")]
     pub fn par_fill_with_new_key<LweCont, RlweCont, Scalar>(
         &mut self,
-        lwe_secret_key: &LweSecretKey<LweCont>,
-        glwe_secret_key: &GlweSecretKey<RlweCont>,
+        lwe_secret_key: &LweSecretKey<BinaryKeyKind, LweCont>,
+        glwe_secret_key: &GlweSecretKey<BinaryKeyKind, RlweCont>,
         noise_parameters: impl DispersionParameter + Sync + Send,
         generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsMutTensor<Element = Scalar>,
-        LweSecretKey<LweCont>: AsRefTensor<Element = bool>,
-        GlweSecretKey<RlweCont>: AsRefTensor<Element = bool>,
+        LweSecretKey<BinaryKeyKind, LweCont>: AsRefTensor<Element = Scalar>,
+        GlweSecretKey<BinaryKeyKind, RlweCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus + Sync + Send,
         RlweCont: Sync,
     {
@@ -273,11 +274,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
             .zip(lwe_secret_key.as_tensor().par_iter())
             .zip(gen_iter)
             .for_each(|((mut rgsw, sk_scalar), mut generator)| {
-                let encoded = if *sk_scalar {
-                    Plaintext(Scalar::ONE)
-                } else {
-                    Plaintext(Scalar::ZERO)
-                };
+                let encoded = Plaintext(*sk_scalar);
                 glwe_secret_key.par_encrypt_constant_ggsw(
                     &mut rgsw,
                     &encoded,
@@ -295,16 +292,18 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// ```
     /// use concrete_commons::LogStandardDev;
     /// use concrete_core::crypto::bootstrap::StandardBootstrapKey;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
     /// use concrete_core::crypto::{GlweDimension, GlweSize, LweDimension, LweSize};
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     ///
     /// let (lwe_dim, glwe_dim, poly_size) = (LweDimension(4), GlweDimension(6), PolynomialSize(9));
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
-    /// let mut generator = RandomGenerator::new(None);
-    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
     /// let mut bsk = StandardBootstrapKey::allocate(
     ///     9u32,
     ///     glwe_dim.to_glwe_size(),
@@ -313,34 +312,30 @@ impl<Cont> StandardBootstrapKey<Cont> {
     ///     dec_bl,
     ///     lwe_dim,
     /// );
-    /// let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
-    /// let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+    /// let lwe_sk = LweSecretKey::generate_binary(lwe_dim, &mut secret_generator);
+    /// let glwe_sk = GlweSecretKey::generate_binary(glwe_dim, poly_size, &mut secret_generator);
     /// bsk.fill_with_new_trivial_key(
     ///     &lwe_sk,
     ///     &glwe_sk,
     ///     LogStandardDev::from_log_standard_dev(-15.),
-    ///     &mut secret_generator,
+    ///     &mut encryption_generator,
     /// );
     /// ```
     pub fn fill_with_new_trivial_key<LweCont, RlweCont, Scalar>(
         &mut self,
-        lwe_secret_key: &LweSecretKey<LweCont>,
-        rlwe_secret_key: &GlweSecretKey<RlweCont>,
+        lwe_secret_key: &LweSecretKey<BinaryKeyKind, LweCont>,
+        rlwe_secret_key: &GlweSecretKey<BinaryKeyKind, RlweCont>,
         noise_parameters: impl DispersionParameter,
         generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsMutTensor<Element = Scalar>,
-        LweSecretKey<LweCont>: AsRefTensor<Element = bool>,
-        GlweSecretKey<RlweCont>: AsRefTensor<Element = bool>,
+        LweSecretKey<BinaryKeyKind, LweCont>: AsRefTensor<Element = Scalar>,
+        GlweSecretKey<BinaryKeyKind, RlweCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
         ck_dim_eq!(self.key_size().0 => lwe_secret_key.key_size().0);
         for (mut rgsw, sk_scalar) in self.ggsw_iter_mut().zip(lwe_secret_key.as_tensor().iter()) {
-            let encoded = if *sk_scalar {
-                Plaintext(Scalar::ONE)
-            } else {
-                Plaintext(Scalar::ZERO)
-            };
+            let encoded = Plaintext(*sk_scalar);
             rlwe_secret_key.trivial_encrypt_constant_ggsw(
                 &mut rgsw,
                 &encoded,

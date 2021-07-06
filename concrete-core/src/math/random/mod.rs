@@ -16,36 +16,28 @@
 //! + [`random_uniform_n_msb`]
 //! + [`random_uniform_n_lsb`]
 //! + [`random_gaussian`]
-use concrete_commons::{FloatingPoint, Numeric};
-
 use crate::math::tensor::{AsMutTensor, Tensor};
+use concrete_commons::{FloatingPoint, Numeric};
+pub use gaussian::*;
+pub use generator::*;
+pub use uniform::*;
+pub use uniform_binary::*;
+pub use uniform_lsb::*;
+pub use uniform_msb::*;
+pub use uniform_ternary::*;
+pub use uniform_with_zeros::*;
 
 #[cfg(test)]
 mod tests;
 
-mod uniform;
-pub use uniform::*;
-
-mod uniform_msb;
-pub use uniform_msb::*;
-
-mod uniform_lsb;
-pub use uniform_lsb::*;
-
 mod gaussian;
-pub use gaussian::*;
-
-mod uniform_with_zeros;
-pub use uniform_with_zeros::*;
-
-mod uniform_boolean;
-pub use uniform_boolean::*;
-
 mod generator;
-pub use generator::*;
-
-mod secret_generator;
-pub use secret_generator::*;
+mod uniform;
+mod uniform_binary;
+mod uniform_lsb;
+mod uniform_msb;
+mod uniform_ternary;
+mod uniform_with_zeros;
 
 pub trait RandomGenerable<D: Distribution>
 where
@@ -79,12 +71,14 @@ mod seal {
     impl Sealed for super::UniformMsb {}
     impl Sealed for super::UniformLsb {}
     impl Sealed for super::UniformWithZeros {}
-    impl Sealed for super::UniformBoolean {}
+    impl Sealed for super::UniformBinary {}
+    impl Sealed for super::UniformTernary {}
     impl<T: super::FloatingPoint> Sealed for super::Gaussian<T> {}
 }
 impl Distribution for Uniform {}
 impl Distribution for UniformMsb {}
 impl Distribution for UniformLsb {}
 impl Distribution for UniformWithZeros {}
-impl Distribution for UniformBoolean {}
+impl Distribution for UniformBinary {}
+impl Distribution for UniformTernary {}
 impl<T: FloatingPoint> Distribution for Gaussian<T> {}

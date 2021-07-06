@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{CastFrom, DispersionParameter, SignedInteger};
+use concrete_commons::{BinaryKeyKind, DispersionParameter, SignedInteger};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::secret::LweSecretKey;
@@ -13,7 +13,7 @@ use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tens
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
 use super::{LweCiphertext, LweList};
-use crate::math::random::EncryptionRandomGenerator;
+use crate::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::math::torus::UnsignedTorus;
 
 /// An Lwe Keyswithing key.
@@ -277,6 +277,9 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// use concrete_commons::LogStandardDev;
     ///
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
@@ -287,14 +290,13 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// let decomp_log_base = DecompositionBaseLog(3);
     /// let decomp_level_count = DecompositionLevelCount(5);
     /// let cipher_size = LweSize(55);
-    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
-    /// let mut generator = RandomGenerator::new(None);
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
     ///
-    /// let input_key = LweSecretKey::generate(input_size, &mut generator);
-    /// let output_key = LweSecretKey::generate(output_size, &mut generator);
+    /// let input_key = LweSecretKey::generate_binary(input_size, &mut secret_generator);
+    /// let output_key = LweSecretKey::generate_binary(output_size, &mut secret_generator);
     ///
-    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
     /// let mut ksk = LweKeyswitchKey::allocate(
     ///     0 as u32,
     ///     decomp_level_count,
@@ -302,21 +304,21 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///     input_size,
     ///     output_size,
     /// );
-    /// ksk.fill_with_keyswitch_key(&input_key, &output_key, noise, &mut secret_generator);
+    /// ksk.fill_with_keyswitch_key(&input_key, &output_key, noise, &mut encryption_generator);
     ///
     /// assert!(!ksk.as_tensor().iter().all(|a| *a == 0));
     /// ```
     pub fn fill_with_keyswitch_key<InKeyCont, OutKeyCont, Scalar>(
         &mut self,
-        before_key: &LweSecretKey<InKeyCont>,
-        after_key: &LweSecretKey<OutKeyCont>,
+        before_key: &LweSecretKey<BinaryKeyKind, InKeyCont>,
+        after_key: &LweSecretKey<BinaryKeyKind, OutKeyCont>,
         noise_parameters: impl DispersionParameter,
         generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsMutTensor<Element = Scalar>,
-        LweSecretKey<InKeyCont>: AsRefTensor<Element = bool>,
-        LweSecretKey<OutKeyCont>: AsRefTensor<Element = bool>,
-        Scalar: UnsignedTorus + CastFrom<bool>,
+        LweSecretKey<BinaryKeyKind, InKeyCont>: AsRefTensor<Element = Scalar>,
+        LweSecretKey<BinaryKeyKind, OutKeyCont>: AsRefTensor<Element = Scalar>,
+        Scalar: UnsignedTorus,
     {
         // We instantiate a buffer
         let mut messages = PlaintextList::from_container(vec![
@@ -345,12 +347,8 @@ impl<Cont> LweKeyswitchKey<Cont> {
                 .zip(messages.plaintext_iter_mut())
             {
                 *message = Plaintext(
-                    DecompositionTerm::new(
-                        level,
-                        decomp_base_log,
-                        Scalar::cast_from(*input_key_bit),
-                    )
-                    .to_recomposition_summand(),
+                    DecompositionTerm::new(level, decomp_base_log, *input_key_bit)
+                        .to_recomposition_summand(),
                 );
             }
 
@@ -450,10 +448,12 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// use concrete_core::math::tensor::AsRefTensor;
     ///
     /// let input_size = LweDimension(1024);
@@ -461,9 +461,10 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// let decomp_log_base = DecompositionBaseLog(3);
     /// let decomp_level_count = DecompositionLevelCount(8);
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
-    /// let mut generator = RandomGenerator::new(None);
-    /// let input_key = LweSecretKey::generate(input_size, &mut generator);
-    /// let output_key = LweSecretKey::generate(output_size, &mut generator);
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// let input_key = LweSecretKey::generate_binary(input_size, &mut secret_generator);
+    /// let output_key = LweSecretKey::generate_binary(output_size, &mut secret_generator);
     ///
     /// let mut ksk = LweKeyswitchKey::allocate(
     ///     0 as u64,
@@ -472,13 +473,17 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///     input_size,
     ///     output_size,
     /// );
-    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
-    /// ksk.fill_with_keyswitch_key(&input_key, &output_key, noise, &mut secret_generator);
+    /// ksk.fill_with_keyswitch_key(&input_key, &output_key, noise, &mut encryption_generator);
     ///
     /// let plaintext: Plaintext<u64> = Plaintext(1432154329994324);
     /// let mut ciphertext = LweCiphertext::allocate(0. as u64, LweSize(1025));
     /// let mut switched_ciphertext = LweCiphertext::allocate(0. as u64, LweSize(1025));
-    /// input_key.encrypt_lwe(&mut ciphertext, &plaintext, noise, &mut secret_generator);
+    /// input_key.encrypt_lwe(
+    ///     &mut ciphertext,
+    ///     &plaintext,
+    ///     noise,
+    ///     &mut encryption_generator,
+    /// );
     ///
     /// ksk.keyswitch_ciphertext(&mut switched_ciphertext, &ciphertext);
     ///

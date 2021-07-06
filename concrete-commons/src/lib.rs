@@ -14,11 +14,13 @@
 
 pub use dispersion::*;
 pub use float::*;
+pub use key_kinds::*;
 pub use signed::*;
 pub use unsigned::*;
 
 mod dispersion;
 mod float;
+mod key_kinds;
 mod signed;
 mod unsigned;
 
@@ -91,16 +93,3 @@ macro_rules! implement_cast {
 }
 
 implement_cast!(f32, f64, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
-
-impl<Num> CastFrom<bool> for Num
-where
-    Num: Numeric,
-{
-    fn cast_from(input: bool) -> Num {
-        if input {
-            Num::ONE
-        } else {
-            Num::ZERO
-        }
-    }
-}

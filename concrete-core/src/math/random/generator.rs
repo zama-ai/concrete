@@ -1,7 +1,8 @@
 use concrete_commons::{FloatingPoint, Numeric};
 
 use crate::math::random::{
-    Gaussian, RandomGenerable, Uniform, UniformBoolean, UniformLsb, UniformMsb, UniformWithZeros,
+    Gaussian, RandomGenerable, Uniform, UniformBinary, UniformLsb, UniformMsb, UniformTernary,
+    UniformWithZeros,
 };
 use crate::math::tensor::{AsMutSlice, AsMutTensor, Tensor};
 use concrete_csprng::RandomGenerator as RandomGeneratorImpl;
@@ -213,20 +214,20 @@ impl RandomGenerator {
         Scalar::generate_tensor(self, Uniform, size)
     }
 
-    /// Generates a random uniform boolean value.
+    /// Generates a random uniform binary value.
     ///
     /// # Example
     ///
     /// ```rust
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
-    /// let random: bool = generator.random_uniform_boolean();
+    /// let random: u32 = generator.random_uniform_binary();
     /// ```
-    pub fn random_uniform_boolean<Scalar: RandomGenerable<UniformBoolean>>(&mut self) -> Scalar {
-        Scalar::generate_one(self, UniformBoolean)
+    pub fn random_uniform_binary<Scalar: RandomGenerable<UniformBinary>>(&mut self) -> Scalar {
+        Scalar::generate_one(self, UniformBinary)
     }
 
-    /// Fills an `AsMutTensor` value with random boolean values.
+    /// Fills an `AsMutTensor` value with random binary values.
     ///
     /// # Example
     ///
@@ -234,20 +235,20 @@ impl RandomGenerator {
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
-    /// let mut tensor = Tensor::allocate(false, 100);
-    /// generator.fill_tensor_with_random_uniform_boolean(&mut tensor);
+    /// let mut tensor = Tensor::allocate(1u32, 100);
+    /// generator.fill_tensor_with_random_uniform_binary(&mut tensor);
     /// ```
-    pub fn fill_tensor_with_random_uniform_boolean<Scalar, Tensorable>(
+    pub fn fill_tensor_with_random_uniform_binary<Scalar, Tensorable>(
         &mut self,
         output: &mut Tensorable,
     ) where
-        Scalar: RandomGenerable<UniformBoolean>,
+        Scalar: RandomGenerable<UniformBinary>,
         Tensorable: AsMutTensor<Element = Scalar>,
     {
-        Scalar::fill_tensor(self, UniformBoolean, output);
+        Scalar::fill_tensor(self, UniformBinary, output);
     }
 
-    /// Generates a tensor of random boolean values of a given size.
+    /// Generates a tensor of random binary values of a given size.
     ///
     /// # Example
     ///
@@ -255,14 +256,66 @@ impl RandomGenerator {
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
-    /// let t: Tensor<Vec<bool>> = generator.random_uniform_boolean_tensor(10);
+    /// let t: Tensor<Vec<u32>> = generator.random_uniform_binary_tensor(10);
     /// assert_eq!(t.len(), 10);
     /// ```
-    pub fn random_uniform_boolean_tensor<Scalar: RandomGenerable<UniformBoolean>>(
+    pub fn random_uniform_binary_tensor<Scalar: RandomGenerable<UniformBinary>>(
         &mut self,
         size: usize,
     ) -> Tensor<Vec<Scalar>> {
-        Scalar::generate_tensor(self, UniformBoolean, size)
+        Scalar::generate_tensor(self, UniformBinary, size)
+    }
+
+    /// Generates a random uniform ternary value.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_core::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
+    /// let random: u32 = generator.random_uniform_ternary();
+    /// ```
+    pub fn random_uniform_ternary<Scalar: RandomGenerable<UniformTernary>>(&mut self) -> Scalar {
+        Scalar::generate_one(self, UniformTernary)
+    }
+
+    /// Fills an `AsMutTensor` value with random ternary values.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut generator = RandomGenerator::new(None);
+    /// let mut tensor = Tensor::allocate(1u32, 100);
+    /// generator.fill_tensor_with_random_uniform_ternary(&mut tensor);
+    /// ```
+    pub fn fill_tensor_with_random_uniform_ternary<Scalar, Tensorable>(
+        &mut self,
+        output: &mut Tensorable,
+    ) where
+        Scalar: RandomGenerable<UniformTernary>,
+        Tensorable: AsMutTensor<Element = Scalar>,
+    {
+        Scalar::fill_tensor(self, UniformTernary, output);
+    }
+
+    /// Generates a tensor of random ternary values of a given size.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut generator = RandomGenerator::new(None);
+    /// let t: Tensor<Vec<u32>> = generator.random_uniform_ternary_tensor(10);
+    /// assert_eq!(t.len(), 10);
+    /// ```
+    pub fn random_uniform_ternary_tensor<Scalar: RandomGenerable<UniformTernary>>(
+        &mut self,
+        size: usize,
+    ) -> Tensor<Vec<Scalar>> {
+        Scalar::generate_tensor(self, UniformTernary, size)
     }
 
     /// Generates an unsigned integer whose n least significant bits are uniformly random, and the
@@ -414,7 +467,8 @@ impl RandomGenerator {
         Scalar::generate_one(self, UniformWithZeros { prob_zero })
     }
 
-    /// Fills an `AsMutTensor` value with random boolean values.
+    /// Fills an `AsMutTensor` value with random values uniform with probability `prob` and zero
+    /// with probability `1-prob`.
     ///
     /// # Example
     ///

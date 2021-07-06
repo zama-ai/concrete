@@ -12,8 +12,10 @@
 //! traits which allow to go back and forth between an unsigned integer representation and a
 //! floating point representation.
 
-use crate::math::random::{Gaussian, RandomGenerable, Uniform};
-use concrete_commons::{CastFrom, CastInto, FloatingPoint, Numeric, UnsignedInteger};
+use crate::math::random::{Gaussian, RandomGenerable, Uniform, UniformBinary, UniformTernary};
+use concrete_commons::{
+    CastFrom, CastInto, FloatingPoint, LogStandardDev, Numeric, UnsignedInteger,
+};
 use std::fmt::{Debug, Display};
 
 /// A trait that converts a torus element in unsigned integer representation to the closest
@@ -81,15 +83,22 @@ pub trait UnsignedTorus:
     + FromTorus<f64>
     + IntoTorus<f64>
     + RandomGenerable<Gaussian<f64>>
+    + RandomGenerable<UniformBinary>
+    + RandomGenerable<UniformTernary>
     + RandomGenerable<Uniform>
     + Display
     + Debug
-    + CastFrom<bool>
     + CastFrom<f64>
     + CastInto<f64>
 {
+    /// The log standard deviation used to sample gaussian keys in this precision.
+    const GAUSSIAN_KEY_LOG_STD: LogStandardDev;
 }
 
-impl UnsignedTorus for u32 {}
+impl UnsignedTorus for u32 {
+    const GAUSSIAN_KEY_LOG_STD: LogStandardDev = LogStandardDev(-30.32192809488736);
+}
 
-impl UnsignedTorus for u64 {}
+impl UnsignedTorus for u64 {
+    const GAUSSIAN_KEY_LOG_STD: LogStandardDev = LogStandardDev(-62.32192809488736);
+}

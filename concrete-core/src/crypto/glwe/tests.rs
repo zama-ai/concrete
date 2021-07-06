@@ -2,8 +2,9 @@ use concrete_commons::LogStandardDev;
 
 use crate::crypto::encoding::PlaintextList;
 use crate::crypto::glwe::GlweList;
+use crate::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
 use crate::crypto::secret::GlweSecretKey;
-use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
+use crate::math::random::RandomGenerator;
 use crate::math::torus::UnsignedTorus;
 use crate::test_tools;
 use crate::test_tools::assert_delta_std_dev;
@@ -14,15 +15,17 @@ fn test_glwe<T: UnsignedTorus>() {
     let dimension = test_tools::random_glwe_dimension(200);
     let polynomial_size = test_tools::random_polynomial_size(200);
     let noise_parameter = LogStandardDev::from_log_standard_dev(-20.);
-    let mut generator = RandomGenerator::new(None);
-    let mut secret_generator = EncryptionRandomGenerator::new(None);
+    let mut random_generator = RandomGenerator::new(None);
+    let mut secret_generator = SecretRandomGenerator::new(None);
+    let mut encryption_generator = EncryptionRandomGenerator::new(None);
 
     // generates a secret key
-    let sk = GlweSecretKey::generate(dimension, polynomial_size, &mut generator);
+    let sk = GlweSecretKey::generate_binary(dimension, polynomial_size, &mut secret_generator);
 
     // generates random plaintexts
-    let plaintexts =
-        PlaintextList::from_tensor(generator.random_uniform_tensor(nb_ct.0 * polynomial_size.0));
+    let plaintexts = PlaintextList::from_tensor(
+        random_generator.random_uniform_tensor(nb_ct.0 * polynomial_size.0),
+    );
 
     // encrypts
     let mut ciphertext = GlweList::allocate(T::ZERO, polynomial_size, dimension, nb_ct);
@@ -30,12 +33,13 @@ fn test_glwe<T: UnsignedTorus>() {
         &mut ciphertext,
         &plaintexts,
         noise_parameter.clone(),
-        &mut secret_generator,
+        &mut encryption_generator,
     );
 
     // decrypts
-    let mut decryptions =
-        PlaintextList::from_tensor(generator.random_uniform_tensor(nb_ct.0 * polynomial_size.0));
+    let mut decryptions = PlaintextList::from_tensor(
+        random_generator.random_uniform_tensor(nb_ct.0 * polynomial_size.0),
+    );
     sk.decrypt_glwe_list(&mut decryptions, &ciphertext);
 
     // test

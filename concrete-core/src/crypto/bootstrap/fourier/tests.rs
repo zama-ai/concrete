@@ -10,12 +10,13 @@ use crate::crypto::bootstrap::{Bootstrap, FourierBootstrapKey, StandardBootstrap
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::glwe::GlweCiphertext;
 use crate::crypto::lwe::LweCiphertext;
+use crate::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
 use crate::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::crypto::{GlweDimension, LweDimension, LweSize, PlaintextCount};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::fft::Complex64;
 use crate::math::polynomial::PolynomialSize;
-use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
+use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
 use crate::math::torus::UnsignedTorus;
 use crate::test_tools::{assert_delta_std_dev, assert_noise_distribution};
@@ -34,12 +35,8 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
         let level = DecompositionLevelCount(3);
         let base_log = DecompositionBaseLog(7);
         let std = LogStandardDev::from_log_standard_dev(-29.);
-        let mut generator = RandomGenerator::new(None);
-        let mut secret_generator = EncryptionRandomGenerator::new(None);
-
-        // allocate secret keys
-        let mut rlwe_sk = GlweSecretKey::generate(rlwe_dimension, polynomial_size, &mut generator);
-        let mut lwe_sk = LweSecretKey::generate(lwe_dimension, &mut generator);
+        let mut secret_generator = SecretRandomGenerator::new(None);
+        let mut encryption_generator = EncryptionRandomGenerator::new(None);
 
         // allocate message vectors
         let mut msg = Tensor::allocate(T::ZERO, nb_test);
@@ -47,9 +44,13 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
 
         // launch nb_test tests
         for i in 0..nb_test {
-            // Regenerates the keys.
-            generator.fill_tensor_with_random_uniform_boolean(&mut rlwe_sk);
-            generator.fill_tensor_with_random_uniform_boolean(&mut lwe_sk);
+            // allocate secret keys
+            let mut rlwe_sk = GlweSecretKey::generate_binary(
+                rlwe_dimension,
+                polynomial_size,
+                &mut secret_generator,
+            );
+            let mut lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
 
             // allocation and generation of the key in coef domain:
             let mut coef_bsk = StandardBootstrapKey::allocate(
@@ -60,7 +61,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
                 base_log,
                 lwe_dimension,
             );
-            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut secret_generator);
+            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut encryption_generator);
 
             // allocation for the bootstrapping key
             let mut fourier_bsk = FourierBootstrapKey::allocate(
@@ -87,7 +88,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
             let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
             let mut lwe_out =
                 LweCiphertext::allocate(T::ZERO, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
-            lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut secret_generator);
+            lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut encryption_generator);
             let cst = T::ONE << 29;
             msg.as_mut_slice()[i] = cst;
 
@@ -104,7 +105,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
             let mut m1 = Plaintext(T::ZERO);
 
             // now the lwe is encrypted using a flatten of the trlwe encryption key
-            let flattened_key = LweSecretKey::from_container(rlwe_sk.as_tensor().as_slice());
+            let flattened_key = LweSecretKey::binary_from_container(rlwe_sk.as_tensor().as_slice());
             flattened_key.decrypt_lwe(&mut m1, &lwe_out);
             // store the decryption of the bootstrapped ciphertext
             new_msg.as_mut_slice()[i] = m1.0;
@@ -145,22 +146,23 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             let std_dev_rlwe = LogStandardDev(-20.);
 
             // We instantiate the random generators.
-            let mut generator = RandomGenerator::new(None);
-            let mut secret_generator = EncryptionRandomGenerator::new(None);
+            let mut random_generator = RandomGenerator::new(None);
+            let mut secret_generator = SecretRandomGenerator::new(None);
+            let mut encryption_generator = EncryptionRandomGenerator::new(None);
 
             // compute the length of glwe secret key
-            let rlwe_sk = GlweSecretKey::generate(
+            let rlwe_sk = GlweSecretKey::generate_binary(
                 rlwe_dimension,
                 PolynomialSize(polynomial_size),
-                &mut generator,
+                &mut secret_generator,
             );
 
             // We create a lwe secret key with one bit set to one
-            let lwe_sk = LweSecretKey::from_container(vec![true]);
+            let lwe_sk = LweSecretKey::binary_from_container(vec![T::ONE]);
 
             // create the polynomial to encrypt
             let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
-            generator.fill_tensor_with_random_uniform(&mut messages);
+            random_generator.fill_tensor_with_random_uniform(&mut messages);
 
             // allocate space for the decrypted polynomial
             let mut new_messages =
@@ -175,7 +177,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
                 base_log,
                 lwe_dimension,
             );
-            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
+            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut encryption_generator);
 
             // allocation for the bootstrapping key
             let mut fourier_bsk = FourierBootstrapKey::allocate(
@@ -207,7 +209,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
                 &mut ciphertext,
                 &messages,
                 std_dev_rlwe,
-                &mut secret_generator,
+                &mut encryption_generator,
             );
             let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
 
@@ -244,22 +246,24 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         let base_log = DecompositionBaseLog(7);
         let std_dev_bsk = LogStandardDev(-20.);
         let std_dev_rlwe = LogStandardDev(-25.);
-        let mut generator = RandomGenerator::new(None);
-        let mut secret_generator = EncryptionRandomGenerator::new(None);
+
+        let mut random_generator = RandomGenerator::new(None);
+        let mut secret_generator = SecretRandomGenerator::new(None);
+        let mut encryption_generator = EncryptionRandomGenerator::new(None);
 
         // generate the secret keys
-        let rlwe_sk = GlweSecretKey::generate(
+        let rlwe_sk = GlweSecretKey::generate_binary(
             rlwe_dimension,
             PolynomialSize(polynomial_size),
-            &mut generator,
+            &mut secret_generator,
         );
-        let lwe_sk = LweSecretKey::from_container(vec![false]);
+        let lwe_sk = LweSecretKey::binary_from_container(vec![T::ZERO]);
 
         // create the polynomial to encrypt
         let mut m0 = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
-        generator.fill_tensor_with_random_uniform(&mut m0);
+        random_generator.fill_tensor_with_random_uniform(&mut m0);
         let mut m1 = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
-        generator.fill_tensor_with_random_uniform(&mut m1);
+        random_generator.fill_tensor_with_random_uniform(&mut m1);
 
         // allocate space for the decrypted polynomial
         let mut new_messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
@@ -273,7 +277,7 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
             base_log,
             lwe_dimension,
         );
-        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
+        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut encryption_generator);
 
         // allocation for the bootstrapping key
         let mut fourier_bsk = FourierBootstrapKey::allocate(
@@ -299,8 +303,18 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         );
 
         // // encrypt the polynomial
-        rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut secret_generator);
-        rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut secret_generator);
+        rlwe_sk.encrypt_glwe(
+            &mut ciphertext0,
+            &m0,
+            std_dev_rlwe,
+            &mut encryption_generator,
+        );
+        rlwe_sk.encrypt_glwe(
+            &mut ciphertext1,
+            &m1,
+            std_dev_rlwe,
+            &mut encryption_generator,
+        );
 
         let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
 
@@ -337,22 +351,23 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         let base_log = DecompositionBaseLog(7);
         let std_dev_bsk = LogStandardDev(-20.);
         let std_dev_rlwe = LogStandardDev(-25.);
-        let mut generator = RandomGenerator::new(None);
-        let mut secret_generator = EncryptionRandomGenerator::new(None);
+        let mut random_generator = RandomGenerator::new(None);
+        let mut secret_generator = SecretRandomGenerator::new(None);
+        let mut encryption_generator = EncryptionRandomGenerator::new(None);
 
         // generate the secret keys
-        let rlwe_sk = GlweSecretKey::generate(
+        let rlwe_sk = GlweSecretKey::generate_binary(
             rlwe_dimension,
             PolynomialSize(polynomial_size),
-            &mut generator,
+            &mut secret_generator,
         );
-        let lwe_sk = LweSecretKey::from_container(vec![true]);
+        let lwe_sk = LweSecretKey::binary_from_container(vec![T::ONE]);
 
         // create the polynomial to encrypt
         let mut m0 = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
-        generator.fill_tensor_with_random_uniform(&mut m0);
+        random_generator.fill_tensor_with_random_uniform(&mut m0);
         let mut m1 = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
-        generator.fill_tensor_with_random_uniform(&mut m1);
+        random_generator.fill_tensor_with_random_uniform(&mut m1);
 
         // allocate space for the decrypted polynomial
         let mut new_messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
@@ -366,7 +381,7 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
             base_log,
             lwe_dimension,
         );
-        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
+        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut encryption_generator);
 
         // allocation for the bootstrapping key
         let mut fourier_bsk = FourierBootstrapKey::allocate(
@@ -392,8 +407,18 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         );
 
         // // encrypt the polynomial
-        rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut secret_generator);
-        rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut secret_generator);
+        rlwe_sk.encrypt_glwe(
+            &mut ciphertext0,
+            &m0,
+            std_dev_rlwe,
+            &mut encryption_generator,
+        );
+        rlwe_sk.encrypt_glwe(
+            &mut ciphertext1,
+            &m1,
+            std_dev_rlwe,
+            &mut encryption_generator,
+        );
 
         let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
 
@@ -423,8 +448,9 @@ fn test_sample_extract<T: UnsignedTorus>() {
     let n_tests = 10;
     // fix different polynomial degrees
     let degrees = vec![512, 1024, 2048];
-    let mut generator = RandomGenerator::new(None);
-    let mut secret_generator = EncryptionRandomGenerator::new(None);
+    let mut random_generator = RandomGenerator::new(None);
+    let mut secret_generator = SecretRandomGenerator::new(None);
+    let mut encryption_generator = EncryptionRandomGenerator::new(None);
 
     for polynomial_size in degrees {
         // fixa set of parameters
@@ -435,12 +461,15 @@ fn test_sample_extract<T: UnsignedTorus>() {
 
         // compute length of the lwe secret key
         for i in 0..n_tests {
-            let rlwe_sk =
-                GlweSecretKey::generate(dimension, PolynomialSize(polynomial_size), &mut generator);
+            let rlwe_sk = GlweSecretKey::generate_binary(
+                dimension,
+                PolynomialSize(polynomial_size),
+                &mut secret_generator,
+            );
 
             // allocate and draw a random polynomial
             let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
-            generator.fill_tensor_with_random_uniform(&mut messages);
+            random_generator.fill_tensor_with_random_uniform(&mut messages);
 
             // allocate RLWE ciphertext
             let mut rlwe_ct = GlweCiphertext::allocate(
@@ -448,7 +477,7 @@ fn test_sample_extract<T: UnsignedTorus>() {
                 PolynomialSize(polynomial_size),
                 dimension.to_glwe_size(),
             );
-            rlwe_sk.encrypt_glwe(&mut rlwe_ct, &messages, std_dev, &mut secret_generator);
+            rlwe_sk.encrypt_glwe(&mut rlwe_ct, &messages, std_dev, &mut encryption_generator);
 
             // allocate LWE ciphertext
             let mut lwe_ct =
@@ -461,7 +490,8 @@ fn test_sample_extract<T: UnsignedTorus>() {
             constant_sample_extract(&mut lwe_ct, &rlwe_ct);
 
             // decrypt resulting lwe ciphertext
-            let lwe_sk = LweSecretKey::from_container(rlwe_sk.into_tensor().into_container());
+            let lwe_sk =
+                LweSecretKey::binary_from_container(rlwe_sk.into_tensor().into_container());
             lwe_sk.decrypt_lwe(&mut new_message, &lwe_ct);
             *groundtruth_samples.get_element_mut(i) = *messages.as_tensor().get_element(0);
             *sdk_samples.get_element_mut(i) = new_message.0;
@@ -489,11 +519,13 @@ where
     let base_log = DecompositionBaseLog(7);
     let std = LogStandardDev::from_log_standard_dev(-29.);
     let log_degree = f64::log2(polynomial_size.0 as f64) as i32;
-    let mut generator = RandomGenerator::new(None);
-    let mut secret_generator = EncryptionRandomGenerator::new(None);
+    let mut random_generator = RandomGenerator::new(None);
+    let mut secret_generator = SecretRandomGenerator::new(None);
+    let mut encryption_generator = EncryptionRandomGenerator::new(None);
 
-    let mut rlwe_sk = GlweSecretKey::generate(rlwe_dimension, polynomial_size, &mut generator);
-    let mut lwe_sk = LweSecretKey::generate(lwe_dimension, &mut generator);
+    let mut rlwe_sk =
+        GlweSecretKey::generate_binary(rlwe_dimension, polynomial_size, &mut secret_generator);
+    let mut lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
 
     let mut msg = Tensor::allocate(T::ZERO, nb_test);
     let mut new_msg = Tensor::allocate(T::ZERO, nb_test);
@@ -501,8 +533,8 @@ where
     // launch nb_test tests
     for i in 0..nb_test {
         // fill keys with random
-        generator.fill_tensor_with_random_uniform_boolean(&mut rlwe_sk);
-        generator.fill_tensor_with_random_uniform_boolean(&mut lwe_sk);
+        random_generator.fill_tensor_with_random_uniform_binary(&mut rlwe_sk);
+        random_generator.fill_tensor_with_random_uniform_binary(&mut lwe_sk);
 
         // allocation and generation of the key in coef domain:
         let mut coef_bsk = StandardBootstrapKey::allocate(
@@ -513,7 +545,7 @@ where
             base_log,
             lwe_dimension,
         );
-        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut secret_generator);
+        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut encryption_generator);
 
         // allocation for the bootstrapping key
         let mut fourier_bsk = FourierBootstrapKey::allocate(
@@ -538,7 +570,7 @@ where
         let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
         let mut lwe_out =
             LweCiphertext::allocate(T::ZERO, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
-        lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut secret_generator);
+        lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut encryption_generator);
 
         // accumulator is a trivial encryption of [0, 1/2N, 2/2N, ...]
         let mut accumulator =
@@ -559,7 +591,7 @@ where
         let mut m1 = Plaintext(T::ZERO);
 
         // now the lwe is encrypted using a flatten of the trlwe encryption key
-        let flattened_key = LweSecretKey::from_container(rlwe_sk.as_tensor().as_slice());
+        let flattened_key = LweSecretKey::binary_from_container(rlwe_sk.as_tensor().as_slice());
         flattened_key.decrypt_lwe(&mut m1, &lwe_out);
         // store the decryption of the bootstrapped ciphertext
         new_msg.as_mut_slice()[i] = m1.0;
