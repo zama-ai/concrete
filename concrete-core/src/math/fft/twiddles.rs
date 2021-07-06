@@ -1,12 +1,13 @@
 #![allow(clippy::excessive_precision, clippy::approx_constant)]
 
-use fftw::types::*;
+use concrete_fftw::types::*;
 
 use super::Complex64;
 use crate::math::tensor::Tensor;
 use crate::tensor_traits;
 
 /// Correcting factors for the forward transform.
+#[derive(Debug, Clone)]
 pub struct ForwardCorrector<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -14,6 +15,7 @@ pub struct ForwardCorrector<Cont> {
 tensor_traits!(ForwardCorrector);
 
 /// Correcting factors for the backward transform.
+#[derive(Debug, Clone)]
 pub struct BackwardCorrector<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -21,6 +23,7 @@ pub struct BackwardCorrector<Cont> {
 tensor_traits!(BackwardCorrector);
 
 /// A set of correcting factors allowing to perform the product modulo $(X^N+1)$ with fftw.
+#[derive(Debug, Clone)]
 pub struct Correctors {
     pub forward: ForwardCorrector<&'static [Complex64]>,
     pub backward: BackwardCorrector<&'static [Complex64]>,

@@ -49,6 +49,14 @@ macro_rules! zip_args {
     };
 }
 
+/// A macro which emits a compile time warning
+#[macro_export]
+macro_rules! compile_warning {
+    ($mess: literal) => {
+        const COMPILE_WARN: &str = $mess;
+    };
+}
+
 #[cfg(test)]
 mod test {
 

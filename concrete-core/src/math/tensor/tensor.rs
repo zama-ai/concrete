@@ -335,6 +335,7 @@ impl<Container> Tensor<Container> {
     /// # Example
     /// ```
     /// use concrete_core::math::tensor::Tensor;
+    /// use rayon::iter::ParallelIterator;
     /// let tensor = Tensor::allocate(9 as u8, 1000);
     /// tensor.par_iter().for_each(|scalar|{
     ///     assert_eq!(*scalar, 9);
@@ -431,6 +432,7 @@ impl<Container> Tensor<Container> {
     /// # Example:
     /// ```
     /// use concrete_core::math::tensor::Tensor;
+    /// use rayon::iter::ParallelIterator;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// tensor.par_subtensor_iter(10).for_each(|sub|{
     ///     assert_eq!(sub.len(), 10);
@@ -490,6 +492,7 @@ impl<Container> Tensor<Container> {
     /// # Example:
     /// ```
     /// use concrete_core::math::tensor::Tensor;
+    /// use rayon::iter::ParallelIterator;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// tensor.par_subtensor_iter_mut(10).for_each(|mut sub|{
     ///     assert_eq!(sub.len(), 10);

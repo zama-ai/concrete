@@ -4,11 +4,12 @@ use concrete_commons::{Numeric, UnsignedInteger};
 
 use crate::crypto::encoding::{Cleartext, CleartextList, Plaintext};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{LweDimension, LweSize, UnsignedTorus};
+use crate::crypto::{LweDimension, LweSize};
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
 use crate::tensor_traits;
 
 use super::LweList;
+use crate::math::torus::UnsignedTorus;
 
 /// A ciphertext encrypted using the LWE scheme.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

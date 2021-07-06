@@ -8,12 +8,13 @@ use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::ggsw::GgswCiphertext;
 use crate::crypto::glwe::{GlweCiphertext, GlweList};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{GlweDimension, PlaintextCount, UnsignedTorus};
+use crate::crypto::{GlweDimension, PlaintextCount};
 use crate::math::polynomial::{PolynomialList, PolynomialSize};
 use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
+use crate::math::torus::UnsignedTorus;
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 
@@ -547,13 +548,13 @@ impl<Cont> GlweSecretKey<Cont> {
             let decomposition = encoded.0
                 * (Scalar::ONE
                     << (<Scalar as Numeric>::BITS
-                        - (base_log.0 * (matrix.decomposition_level().0 + 1))));
+                        - (base_log.0 * (matrix.decomposition_level().0))));
             let gen_iter = generator
                 .fork_ggsw_level_to_glwe::<Scalar>(self.key_size().to_glwe_size(), self.poly_size)
                 .expect("Failed to split generator into rlwe");
             // We iterate over the rowe of the level matrix
             for ((index, row), mut generator) in matrix.row_iter_mut().enumerate().zip(gen_iter) {
-                let mut rlwe_ct = row.into_rlwe();
+                let mut rlwe_ct = row.into_glwe();
                 // We issue a fresh  encryption of zero
                 self.encrypt_zero_glwe(&mut rlwe_ct, noise_parameters.clone(), &mut generator);
                 // We retrieve the row as a polynomial list
@@ -633,7 +634,7 @@ impl<Cont> GlweSecretKey<Cont> {
                 let decomposition = encoded.0
                     * (Scalar::ONE
                         << (<Scalar as Numeric>::BITS
-                            - (base_log.0 * (matrix.decomposition_level().0 + 1))));
+                            - (base_log.0 * (matrix.decomposition_level().0))));
                 let gen_iter = generator
                     .par_fork_ggsw_level_to_glwe::<Scalar>(
                         self.key_size().to_glwe_size(),
@@ -646,7 +647,7 @@ impl<Cont> GlweSecretKey<Cont> {
                     .enumerate()
                     .zip(gen_iter)
                     .for_each(|((index, row), mut generator)| {
-                        let mut rlwe_ct = row.into_rlwe();
+                        let mut rlwe_ct = row.into_glwe();
                         // We issue a fresh  encryption of zero
                         self.encrypt_zero_glwe(
                             &mut rlwe_ct,
@@ -726,10 +727,10 @@ impl<Cont> GlweSecretKey<Cont> {
             let decomposition = encoded.0
                 * (Scalar::ONE
                     << (<Scalar as Numeric>::BITS
-                        - (base_log.0 * (matrix.decomposition_level().0 + 1))));
+                        - (base_log.0 * (matrix.decomposition_level().0))));
             // We iterate over the rowe of the level matrix
             for (index, row) in matrix.row_iter_mut().enumerate() {
-                let rlwe_ct = row.into_rlwe();
+                let rlwe_ct = row.into_glwe();
                 // We retrieve the row as a polynomial list
                 let mut polynomial_list = rlwe_ct.into_polynomial_list();
                 // We retrieve the polynomial in the diagonal

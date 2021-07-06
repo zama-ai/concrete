@@ -5,18 +5,19 @@ use concrete_commons::{
 };
 use concrete_npe as npe;
 
-use crate::crypto::bootstrap::BootstrapKey;
-use crate::crypto::cross::{bootstrap, cmux, constant_sample_extract, external_product};
+use crate::crypto::bootstrap::fourier::constant_sample_extract;
+use crate::crypto::bootstrap::{Bootstrap, FourierBootstrapKey, StandardBootstrapKey};
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::glwe::GlweCiphertext;
 use crate::crypto::lwe::LweCiphertext;
 use crate::crypto::secret::{GlweSecretKey, LweSecretKey};
-use crate::crypto::{GlweDimension, LweDimension, LweSize, PlaintextCount, UnsignedTorus};
+use crate::crypto::{GlweDimension, LweDimension, LweSize, PlaintextCount};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use crate::math::fft::{Complex64, Fft, FourierPolynomial};
+use crate::math::fft::Complex64;
 use crate::math::polynomial::PolynomialSize;
 use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
+use crate::math::torus::UnsignedTorus;
 use crate::test_tools::{assert_delta_std_dev, assert_noise_distribution};
 
 fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
@@ -51,7 +52,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
             generator.fill_tensor_with_random_uniform_boolean(&mut lwe_sk);
 
             // allocation and generation of the key in coef domain:
-            let mut coef_bsk = BootstrapKey::allocate(
+            let mut coef_bsk = StandardBootstrapKey::allocate(
                 T::ZERO,
                 rlwe_dimension.to_glwe_size(),
                 polynomial_size,
@@ -62,7 +63,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
             coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut secret_generator);
 
             // allocation for the bootstrapping key
-            let mut fourier_bsk = BootstrapKey::allocate(
+            let mut fourier_bsk = FourierBootstrapKey::allocate(
                 Complex64::new(0., 0.),
                 rlwe_dimension.to_glwe_size(),
                 polynomial_size,
@@ -98,7 +99,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
                 .as_mut_tensor()
                 .fill_with_element(cst);
 
-            bootstrap(&mut lwe_out, &lwe_in, &fourier_bsk, &mut accumulator);
+            fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator);
 
             let mut m1 = Plaintext(T::ZERO);
 
@@ -130,7 +131,7 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
 }
 
 fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
-    let n_tests = 100;
+    let n_tests = 10;
     for _n in 0..n_tests {
         // fix different polynomial degrees
         let degrees = vec![512, 1024, 2048];
@@ -142,16 +143,17 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             let base_log = DecompositionBaseLog(4);
             let std_dev_bsk = LogStandardDev(-25.);
             let std_dev_rlwe = LogStandardDev(-20.);
+
+            // We instantiate the random generators.
             let mut generator = RandomGenerator::new(None);
             let mut secret_generator = EncryptionRandomGenerator::new(None);
 
             // compute the length of glwe secret key
-            let mut rlwe_sk = GlweSecretKey::generate(
+            let rlwe_sk = GlweSecretKey::generate(
                 rlwe_dimension,
                 PolynomialSize(polynomial_size),
                 &mut generator,
             );
-            rlwe_sk.as_mut_tensor().fill_with_element(true);
 
             // We create a lwe secret key with one bit set to one
             let lwe_sk = LweSecretKey::from_container(vec![true]);
@@ -165,7 +167,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
                 PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
 
             // allocation and generation of the key in coef domain:
-            let mut coef_bsk = BootstrapKey::allocate(
+            let mut coef_bsk = StandardBootstrapKey::allocate(
                 T::ZERO,
                 rlwe_dimension.to_glwe_size(),
                 PolynomialSize(polynomial_size),
@@ -176,7 +178,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
             coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
 
             // allocation for the bootstrapping key
-            let mut fourier_bsk = BootstrapKey::allocate(
+            let mut fourier_bsk = FourierBootstrapKey::allocate(
                 Complex64::new(0., 0.),
                 rlwe_dimension.to_glwe_size(),
                 PolynomialSize(polynomial_size),
@@ -207,37 +209,10 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
                 std_dev_rlwe,
                 &mut secret_generator,
             );
+            let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
 
-            // unroll FFT Plan using FFTW
-            let mut fft = Fft::new(PolynomialSize(polynomial_size));
+            fourier_bsk.external_product(&mut res, &rgsw, &ciphertext);
 
-            // allocate vectors used as temporary variables inside the external product
-            let mut mask_dec_i_fft = FourierPolynomial::allocate(
-                Complex64::new(0., 0.),
-                PolynomialSize(polynomial_size),
-            );
-            let mut body_dec_i_fft = FourierPolynomial::allocate(
-                Complex64::new(0., 0.),
-                PolynomialSize(polynomial_size),
-            );
-            let mut res_fft = vec![
-                FourierPolynomial::allocate(
-                    Complex64::new(0., 0.),
-                    PolynomialSize(polynomial_size)
-                );
-                rlwe_dimension.0 + 1
-            ];
-
-            let rgsw = fourier_bsk.ggsw_iter_mut().nth(0).unwrap();
-            external_product(
-                &mut fft,
-                &mut mask_dec_i_fft,
-                &mut body_dec_i_fft,
-                &mut res_fft,
-                &mut res,
-                &rgsw,
-                &mut ciphertext,
-            );
             rlwe_sk.decrypt_glwe(&mut new_messages, &res);
 
             // call the NPE to find the theoritical amount of noise after the external product
@@ -290,7 +265,7 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         let mut new_messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
 
         // allocation and generation of the key in coef domain:
-        let mut coef_bsk = BootstrapKey::allocate(
+        let mut coef_bsk = StandardBootstrapKey::allocate(
             T::ZERO,
             rlwe_dimension.to_glwe_size(),
             PolynomialSize(polynomial_size),
@@ -301,7 +276,7 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
 
         // allocation for the bootstrapping key
-        let mut fourier_bsk = BootstrapKey::allocate(
+        let mut fourier_bsk = FourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             rlwe_dimension.to_glwe_size(),
             PolynomialSize(polynomial_size),
@@ -327,33 +302,10 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut secret_generator);
         rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut secret_generator);
 
-        // unroll FFT Plan using FFTW
-        let mut fft = Fft::new(PolynomialSize(polynomial_size));
-
-        // allocate vectors used as temporary variables inside the external product
-        let mut mask_dec_i_fft =
-            FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(polynomial_size));
-        let mut body_dec_i_fft =
-            FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(polynomial_size));
-        let mut res_fft = vec![
-            FourierPolynomial::allocate(
-                Complex64::new(0., 0.),
-                PolynomialSize(polynomial_size)
-            );
-            rlwe_dimension.0 + 1
-        ];
-        let rgsw = fourier_bsk.ggsw_iter_mut().nth(0).unwrap();
+        let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
 
         // compute cmux
-        cmux(
-            &mut fft,
-            &mut mask_dec_i_fft,
-            &mut body_dec_i_fft,
-            &mut res_fft,
-            &mut ciphertext0,
-            &mut ciphertext1,
-            &rgsw,
-        );
+        fourier_bsk.cmux(&mut ciphertext0, &mut ciphertext1, &rgsw);
         rlwe_sk.decrypt_glwe(&mut new_messages, &ciphertext0);
 
         // call the NPE to find the theoretical amount of noise added by the cmux
@@ -406,7 +358,7 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         let mut new_messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
 
         // allocation and generation of the key in coef domain:
-        let mut coef_bsk = BootstrapKey::allocate(
+        let mut coef_bsk = StandardBootstrapKey::allocate(
             T::ZERO,
             rlwe_dimension.to_glwe_size(),
             PolynomialSize(polynomial_size),
@@ -417,7 +369,7 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std_dev_bsk, &mut secret_generator);
 
         // allocation for the bootstrapping key
-        let mut fourier_bsk = BootstrapKey::allocate(
+        let mut fourier_bsk = FourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             rlwe_dimension.to_glwe_size(),
             PolynomialSize(polynomial_size),
@@ -443,33 +395,10 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         rlwe_sk.encrypt_glwe(&mut ciphertext0, &m0, std_dev_rlwe, &mut secret_generator);
         rlwe_sk.encrypt_glwe(&mut ciphertext1, &m1, std_dev_rlwe, &mut secret_generator);
 
-        // unroll FFT Plan using FFTW
-        let mut fft = Fft::new(PolynomialSize(polynomial_size));
-
-        // allocate vectors used as temporary variables inside the external product
-        let mut mask_dec_i_fft =
-            FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(polynomial_size));
-        let mut body_dec_i_fft =
-            FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(polynomial_size));
-        let mut res_fft = vec![
-            FourierPolynomial::allocate(
-                Complex64::new(0., 0.),
-                PolynomialSize(polynomial_size)
-            );
-            rlwe_dimension.0 + 1
-        ];
-        let rgsw = fourier_bsk.ggsw_iter_mut().nth(0).unwrap();
+        let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
 
         // compute cmux
-        cmux(
-            &mut fft,
-            &mut mask_dec_i_fft,
-            &mut body_dec_i_fft,
-            &mut res_fft,
-            &mut ciphertext0,
-            &mut ciphertext1,
-            &rgsw,
-        );
+        fourier_bsk.cmux(&mut ciphertext0, &mut ciphertext1, &rgsw);
         rlwe_sk.decrypt_glwe(&mut new_messages, &ciphertext0);
 
         // call the NPE to find the theoretical amount of noise added by the cmux
@@ -576,8 +505,8 @@ where
         generator.fill_tensor_with_random_uniform_boolean(&mut lwe_sk);
 
         // allocation and generation of the key in coef domain:
-        let mut coef_bsk = BootstrapKey::allocate(
-            0 as u32,
+        let mut coef_bsk = StandardBootstrapKey::allocate(
+            T::ZERO,
             rlwe_dimension.to_glwe_size(),
             polynomial_size,
             level,
@@ -587,7 +516,7 @@ where
         coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut secret_generator);
 
         // allocation for the bootstrapping key
-        let mut fourier_bsk = BootstrapKey::allocate(
+        let mut fourier_bsk = FourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             rlwe_dimension.to_glwe_size(),
             polynomial_size,
@@ -625,7 +554,7 @@ where
             });
 
         // bootstrap
-        bootstrap(&mut lwe_out, &lwe_in, &fourier_bsk, &mut accumulator);
+        fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator);
 
         let mut m1 = Plaintext(T::ZERO);
 

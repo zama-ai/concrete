@@ -65,6 +65,10 @@ impl<Cont> Polynomial<Cont> {
         }
     }
 
+    pub(crate) fn from_tensor(tensor: Tensor<Cont>) -> Self {
+        Polynomial { tensor }
+    }
+
     /// Returns the number of coefficients in the polynomial.
     ///
     /// # Example

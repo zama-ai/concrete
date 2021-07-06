@@ -1,4 +1,5 @@
-use fftw::array::AlignedVec;
+use concrete_fftw::array::AlignedVec;
+use serde::{Deserialize, Serialize};
 
 use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
@@ -9,7 +10,7 @@ use super::Complex64;
 /// A polynomial in the fourier domain.
 ///
 /// This structure represents a polynomial, which was put in the fourier domain.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FourierPolynomial<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -43,9 +44,8 @@ impl<Cont> FourierPolynomial<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::fft::{FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{FourierPolynomial, Complex64, AlignedVec};
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use fftw::array::AlignedVec;
     /// let mut alvec: AlignedVec<Complex64>= AlignedVec::new(128);
     /// let fourier_poly = FourierPolynomial::from_container(alvec.as_slice_mut());
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
@@ -54,6 +54,10 @@ impl<Cont> FourierPolynomial<Cont> {
         FourierPolynomial {
             tensor: Tensor::from_container(cont),
         }
+    }
+
+    pub(crate) fn from_tensor(tensor: Tensor<Cont>) -> Self {
+        FourierPolynomial { tensor }
     }
 
     /// Returns the number of coefficients in the polynomial.

@@ -7,15 +7,16 @@ use concrete_commons::{
 use crate::crypto::encoding::{Cleartext, CleartextList, Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweKeyswitchKey, LweList};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, PlaintextCount, UnsignedTorus};
+use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, PlaintextCount};
 use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::random::{
     EncryptionRandomGenerator, RandomGenerable, RandomGenerator, UniformMsb,
 };
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
+use crate::math::torus::UnsignedTorus;
 use crate::test_tools::{
     assert_delta_std_dev, assert_noise_distribution, random_ciphertext_count, random_lwe_dimension,
-    random_utorus_between,
+    random_uint_between,
 };
 
 fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
@@ -184,11 +185,11 @@ where
         .iter_mut()
         .zip(s_weights.as_mut_tensor().iter_mut())
     {
-        *sw = random_utorus_between::<T>(T::ZERO..T::cast_from(512)).into_signed()
+        *sw = random_uint_between::<T>(T::ZERO..T::cast_from(512)).into_signed()
             - T::cast_from(256).into_signed();
         *w = sw.into_unsigned();
     }
-    let bias = Plaintext(random_utorus_between::<T>(T::ZERO..T::cast_from(1024)));
+    let bias = Plaintext(random_uint_between::<T>(T::ZERO..T::cast_from(1024)));
 
     let n_tests = 10;
     for i in 0..n_tests {
@@ -275,7 +276,7 @@ where
 
     // generate a random signed weight vector represented as Torus elements
     let weight = Cleartext(
-        (random_utorus_between::<T>(T::ZERO..T::cast_from(1024)).into_signed()
+        (random_uint_between::<T>(T::ZERO..T::cast_from(1024)).into_signed()
             - T::cast_from(512).into_signed())
         .into_unsigned(),
     );
@@ -353,7 +354,7 @@ where
     // generate a random signed weight vector as Torus elements
     let mut weights = CleartextList::allocate(T::ZERO, CleartextCount(nb_ct.0));
     for w in weights.as_mut_tensor().iter_mut() {
-        let val = random_utorus_between::<T>(T::ZERO..T::cast_from(1024)).into_signed()
+        let val = random_uint_between::<T>(T::ZERO..T::cast_from(1024)).into_signed()
             - T::cast_from(512).into_signed();
         *w = val.into_unsigned();
     }

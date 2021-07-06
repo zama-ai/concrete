@@ -12,7 +12,9 @@
 //! traits which allow to go back and forth between an unsigned integer representation and a
 //! floating point representation.
 
-use concrete_commons::{CastInto, FloatingPoint, Numeric, UnsignedInteger};
+use crate::math::random::{Gaussian, RandomGenerable, Uniform};
+use concrete_commons::{CastFrom, CastInto, FloatingPoint, Numeric, UnsignedInteger};
+use std::fmt::{Debug, Display};
 
 /// A trait that converts a torus element in unsigned integer representation to the closest
 /// torus element in floating point representation.
@@ -72,3 +74,22 @@ implement!(u16);
 implement!(u32);
 implement!(u64);
 implement!(u128);
+
+/// A marker trait for unsigned integer types that can be used in ciphertexts, keys etc.
+pub trait UnsignedTorus:
+    UnsignedInteger
+    + FromTorus<f64>
+    + IntoTorus<f64>
+    + RandomGenerable<Gaussian<f64>>
+    + RandomGenerable<Uniform>
+    + Display
+    + Debug
+    + CastFrom<bool>
+    + CastFrom<f64>
+    + CastInto<f64>
+{
+}
+
+impl UnsignedTorus for u32 {}
+
+impl UnsignedTorus for u64 {}

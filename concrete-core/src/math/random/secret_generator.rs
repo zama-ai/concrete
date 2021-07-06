@@ -5,6 +5,7 @@ use crate::math::decomposition::DecompositionLevelCount;
 use crate::math::polynomial::PolynomialSize;
 use crate::math::random::{Gaussian, RandomGenerable, RandomGenerator, Uniform};
 use crate::math::tensor::AsMutTensor;
+
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
 
@@ -43,6 +44,7 @@ impl EncryptionRandomGenerator {
     }
 
     // Forks the generator, when splitting a bootstrap key into ggsw ct.
+    #[allow(dead_code)]
     pub(crate) fn fork_bsk_to_ggsw<T: UnsignedInteger>(
         &mut self,
         lwe_dimension: LweDimension,
@@ -227,8 +229,8 @@ fn mask_bytes_per_ggsw<T: UnsignedInteger>(
 
 fn noise_bytes_per_coef() -> usize {
     // We use f64 to sample the noise for every precision, and we need 4/pi inputs to generate
-    // such an output (here we take 3 to keep a safety margin).
-    8 * 3
+    // such an output (here we take 6 to keep a safety margin).
+    8 * 6
 }
 fn noise_bytes_per_polynomial(poly_size: PolynomialSize) -> usize {
     poly_size.0 * noise_bytes_per_coef()
