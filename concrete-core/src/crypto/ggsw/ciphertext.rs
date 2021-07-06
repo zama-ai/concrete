@@ -388,6 +388,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
     /// use concrete_core::math::polynomial::PolynomialSize;
+    /// use rayon::iter::ParallelIterator;
     /// let mut ggsw = GgswCiphertext::allocate(
     ///     9 as u8,
     ///     PolynomialSize(9),
@@ -422,7 +423,7 @@ impl<Cont> GgswCiphertext<Cont> {
                     tensor.into_container(),
                     poly_size,
                     rlwe_size,
-                    DecompositionLevel(index),
+                    DecompositionLevel(index + 1),
                 )
             })
     }

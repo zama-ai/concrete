@@ -1,4 +1,4 @@
-use fftw::array::AlignedVec;
+use concrete_fftw::array::AlignedVec;
 
 /// A trait allowing to extract a slice from a tensor.
 ///

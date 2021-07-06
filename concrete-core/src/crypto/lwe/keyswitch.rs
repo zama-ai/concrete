@@ -14,6 +14,7 @@ use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
 use super::{LweCiphertext, LweList};
 use crate::math::random::EncryptionRandomGenerator;
+use crate::math::torus::UnsignedTorus;
 
 /// An Lwe Keyswithing key.
 ///

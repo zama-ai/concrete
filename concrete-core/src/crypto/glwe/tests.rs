@@ -3,8 +3,8 @@ use concrete_commons::LogStandardDev;
 use crate::crypto::encoding::PlaintextList;
 use crate::crypto::glwe::GlweList;
 use crate::crypto::secret::GlweSecretKey;
-use crate::crypto::UnsignedTorus;
 use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
+use crate::math::torus::UnsignedTorus;
 use crate::test_tools;
 use crate::test_tools::assert_delta_std_dev;
 

@@ -205,6 +205,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
+    /// use rayon::iter::ParallelIterator;
     /// let mut level_matrix = GgswLevelMatrix::from_container(
     ///     vec![0 as u8; 10 * 7 * 7],
     ///     PolynomialSize(10),

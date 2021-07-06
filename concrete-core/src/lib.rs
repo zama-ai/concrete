@@ -118,13 +118,12 @@ pub mod test_tools {
 
     use concrete_commons::DispersionParameter;
 
-    use crate::crypto::{
-        CiphertextCount, GlweDimension, LweDimension, PlaintextCount, UnsignedTorus,
-    };
+    use crate::crypto::{CiphertextCount, GlweDimension, LweDimension, PlaintextCount};
     use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     use crate::math::polynomial::PolynomialSize;
-    use crate::math::random::RandomGenerator;
+    use crate::math::random::{RandomGenerable, RandomGenerator, Uniform};
     use crate::math::tensor::{AsRefSlice, AsRefTensor};
+    use crate::math::torus::UnsignedTorus;
     use concrete_commons::UnsignedInteger;
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
@@ -291,13 +290,15 @@ pub mod test_tools {
         random_usize_between(0..usize::MAX)
     }
 
-    pub fn random_utorus_between<T: UnsignedTorus>(range: std::ops::Range<T>) -> T {
+    pub fn random_uint_between<T: UnsignedInteger + RandomGenerable<Uniform>>(
+        range: std::ops::Range<T>,
+    ) -> T {
         let mut generator = RandomGenerator::new(None);
         let val: T = generator.random_uniform();
         val % (range.end - range.start) + range.start
     }
 
-    pub fn any_utorus<T: UnsignedTorus>() -> T {
+    pub fn any_uint<T: UnsignedInteger + RandomGenerable<Uniform>>() -> T {
         let mut generator = RandomGenerator::new(None);
         generator.random_uniform()
     }

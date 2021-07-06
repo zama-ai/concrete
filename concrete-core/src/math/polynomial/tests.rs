@@ -1,6 +1,6 @@
-use crate::crypto::UnsignedTorus;
 use crate::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
 use crate::math::random::RandomGenerator;
+use crate::math::torus::UnsignedTorus;
 use rand::Rng;
 
 fn test_multiply_divide_unit_monomial<T: UnsignedTorus>() {

@@ -4,9 +4,10 @@ use concrete_commons::{DispersionParameter, Numeric};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::lwe::{LweCiphertext, LweList};
-use crate::crypto::{LweDimension, UnsignedTorus};
+use crate::crypto::LweDimension;
 use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
+use crate::math::torus::UnsignedTorus;
 use crate::tensor_traits;
 
 /// A LWE secret key.

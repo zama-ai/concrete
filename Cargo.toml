@@ -11,10 +11,11 @@ members = [
 [profile.bench]
 opt-level = 3
 debug = true
-lto="thin"
+lto="fat"
 
 [patch.crates-io]
-concrete-commons = { path = "concrete-commons"}
-concrete-csprng = { path = "concrete-csprng" }
-concrete-core = { path = "concrete-core"}
-concrete-npe = { path = "concrete-npe"}
+concrete = {path="concrete"}
+concrete-npe = {path="concrete-npe"}
+concrete-core = {path="concrete-core"}
+concrete-csprng = {path="concrete-csprng"}
+concrete-commons = {path="concrete-commons"}

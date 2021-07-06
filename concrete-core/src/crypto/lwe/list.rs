@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::encoding::{CleartextList, PlaintextList};
-use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, LweSize, UnsignedTorus};
+use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, LweSize};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
+use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_div, tensor_traits, zip, zip_args};
 
 use super::LweCiphertext;
