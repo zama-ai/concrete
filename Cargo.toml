@@ -5,7 +5,8 @@ members = [
     "concrete-npe",
     "concrete-core",
     "concrete-csprng",
-    "concrete-commons"
+    "concrete-commons",
+    "concrete-ffi"
 ]
 
 [profile.bench]
@@ -18,3 +19,4 @@ concrete-commons = { path = "concrete-commons"}
 concrete-csprng = { path = "concrete-csprng" }
 concrete-core = { path = "concrete-core"}
 concrete-npe = { path = "concrete-npe"}
+concrete-ffi = { path = "concrete-ffi"}

@@ -1,0 +1,25 @@
+[package]
+name = "concrete-ffi"
+version = "0.1.0"
+edition = "2018"
+authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
+license = "AGPL-3.0"
+description = "Foreign Function Interface for the Concrete library"
+homepage = "https://crates.io/crates/concrete"
+documentation = "https://concrete.zama.ai"
+repository = "https://github.com/zama-ai/concrete"
+readme = "README.md"
+keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
+build = "build.rs"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+concrete-commons = "=0.1.1"
+concrete-npe = "=0.1.9"
+
+[build-dependencies]
+cbindgen = "0.19.0"
+
+[lib]
+name = "concrete_ffi"
+crate-type = ["cdylib"]

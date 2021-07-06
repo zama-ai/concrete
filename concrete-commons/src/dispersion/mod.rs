@@ -201,6 +201,8 @@ impl DispersionParameter for StandardDev {
 ///     2_f64.powf(32. - 25.).powi(2)
 /// );
 /// ```
+/// cbindgen:field-names=[val]
+#[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Variance(pub f64);
 
