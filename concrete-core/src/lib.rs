@@ -27,14 +27,16 @@
 //! use concrete_commons::LogStandardDev;
 //! use concrete_core::crypto::encoding::{Cleartext, Encoder, Plaintext, RealEncoder};
 //! use concrete_core::crypto::lwe::LweCiphertext;
+//! use concrete_core::crypto::secret::generators::{
+//!     EncryptionRandomGenerator, SecretRandomGenerator,
+//! };
 //! use concrete_core::crypto::secret::LweSecretKey;
 //! use concrete_core::crypto::LweDimension;
-//! use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
 //!
 //! // We initialize a prng that will be used to generate secret keys.
-//! let mut generator = RandomGenerator::new(None);
+//! let mut secret_generator = SecretRandomGenerator::new(None);
 //! // We initialize a prng used to encrypt data.
-//! let mut secret_gen = EncryptionRandomGenerator::new(None);
+//! let mut encryption_generator = EncryptionRandomGenerator::new(None);
 //! // We initialize an encoder that will allow us to turn cleartext values into plaintexts.
 //! let encoder = RealEncoder {
 //!     offset: 0.,
@@ -48,7 +50,7 @@
 //!
 //! // We generate a new secret key which is used to encrypt the message
 //! let secret_key_size = LweDimension(710);
-//! let secret_key = LweSecretKey::generate(secret_key_size, &mut generator);
+//! let secret_key = LweSecretKey::generate_binary(secret_key_size, &mut secret_generator);
 //!
 //! // We allocate a ciphertext and encrypt the plaintext with a secure parameter
 //! let mut ciphertext = LweCiphertext::allocate(0u32, secret_key_size.to_lwe_size());
@@ -56,7 +58,7 @@
 //!     &mut ciphertext,
 //!     &plaintext,
 //!     LogStandardDev::from_log_standard_dev(-17.),
-//!     &mut secret_gen,
+//!     &mut encryption_generator,
 //! );
 //!
 //! // We perform the homomorphic operation:

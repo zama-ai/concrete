@@ -30,12 +30,14 @@ pub trait Bootstrap {
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::crypto::lwe::LweCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
     /// use concrete_core::crypto::{GlweDimension, LweDimension, LweSize};
     /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::fft::Complex64;
     /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// use concrete_core::math::tensor::AsMutTensor;
     ///
     /// // define settings
@@ -46,11 +48,13 @@ pub trait Bootstrap {
     /// let level = DecompositionLevelCount(3);
     /// let base_log = DecompositionBaseLog(7);
     /// let std = LogStandardDev::from_log_standard_dev(-29.);
-    /// let mut generator = RandomGenerator::new(None);
-    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
     ///
-    /// let mut rlwe_sk = GlweSecretKey::generate(rlwe_dimension, polynomial_size, &mut generator);
-    /// let mut lwe_sk = LweSecretKey::generate(lwe_dimension, &mut generator);
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    ///
+    /// let mut rlwe_sk =
+    ///     GlweSecretKey::generate_binary(rlwe_dimension, polynomial_size, &mut secret_generator);
+    /// let mut lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
     ///
     /// // allocation and generation of the key in coef domain:
     /// let mut coef_bsk = StandardBootstrapKey::allocate(
@@ -61,7 +65,7 @@ pub trait Bootstrap {
     ///     base_log,
     ///     lwe_dimension,
     /// );
-    /// coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut secret_generator);
+    /// coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut encryption_generator);
     ///
     /// // allocation for the bootstrapping key
     /// let mut fourier_bsk = FourierBootstrapKey::allocate(
@@ -79,7 +83,7 @@ pub trait Bootstrap {
     /// let mut lwe_in = LweCiphertext::allocate(0u32, lwe_dimension.to_lwe_size());
     /// let mut lwe_out =
     ///     LweCiphertext::allocate(0u32, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
-    /// lwe_sk.encrypt_lwe(&mut lwe_in, &message, std, &mut secret_generator);
+    /// lwe_sk.encrypt_lwe(&mut lwe_in, &message, std, &mut encryption_generator);
     ///
     /// // accumulator is a trivial encryption of [0, 1/2N, 2/2N, ...]
     /// let mut accumulator =
@@ -110,11 +114,11 @@ pub trait Bootstrap {
 #[cfg(all(test, feature = "multithread"))]
 mod test {
     use crate::crypto::bootstrap::StandardBootstrapKey;
+    use crate::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
     use crate::crypto::secret::{GlweSecretKey, LweSecretKey};
     use crate::crypto::{GlweDimension, LweDimension};
     use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     use crate::math::polynomial::PolynomialSize;
-    use crate::math::random::{EncryptionRandomGenerator, RandomGenerator};
     use crate::math::torus::UnsignedTorus;
     use concrete_commons::StandardDev;
 
@@ -128,9 +132,10 @@ mod test {
             let mask_seed = crate::test_tools::any_usize() as u128;
             let noise_seed = crate::test_tools::any_usize() as u128;
 
-            let mut generator = RandomGenerator::new(None);
-            let lwe_sk = LweSecretKey::generate(lwe_dim, &mut generator);
-            let glwe_sk = GlweSecretKey::generate(glwe_dim, poly_size, &mut generator);
+            let mut secret_generator = SecretRandomGenerator::new(None);
+            let lwe_sk = LweSecretKey::generate_binary(lwe_dim, &mut secret_generator);
+            let glwe_sk =
+                GlweSecretKey::generate_binary(glwe_dim, poly_size, &mut secret_generator);
 
             let mut mono_bsk = StandardBootstrapKey::allocate(
                 T::ZERO,
@@ -140,13 +145,13 @@ mod test {
                 base_log,
                 lwe_dim,
             );
-            let mut gen = EncryptionRandomGenerator::new(Some(mask_seed));
-            gen.seed_noise_generator(noise_seed);
+            let mut encryption_generator = EncryptionRandomGenerator::new(Some(mask_seed));
+            encryption_generator.seed_noise_generator(noise_seed);
             mono_bsk.fill_with_new_key(
                 &lwe_sk,
                 &glwe_sk,
                 StandardDev::from_standard_dev(10.),
-                &mut gen,
+                &mut encryption_generator,
             );
 
             let mut multi_bsk = StandardBootstrapKey::allocate(
@@ -157,13 +162,13 @@ mod test {
                 base_log,
                 lwe_dim,
             );
-            let mut gen = EncryptionRandomGenerator::new(Some(mask_seed));
-            gen.seed_noise_generator(noise_seed);
+            let mut encryption_generator = EncryptionRandomGenerator::new(Some(mask_seed));
+            encryption_generator.seed_noise_generator(noise_seed);
             multi_bsk.par_fill_with_new_key(
                 &lwe_sk,
                 &glwe_sk,
                 StandardDev::from_standard_dev(10.),
-                &mut gen,
+                &mut encryption_generator,
             );
 
             assert_eq!(mono_bsk, multi_bsk);

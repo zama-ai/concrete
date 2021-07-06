@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::iter::Iterator;
 
-use concrete_commons::{CastFrom, UnsignedInteger};
+use concrete_commons::UnsignedInteger;
 
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefTensor, Tensor};
 use crate::{ck_dim_eq, tensor_traits};
@@ -383,55 +383,11 @@ impl<Cont> Polynomial<Cont> {
             .update_with_wrapping_sub(&a1.get_sub(bottom.clone()));
     }
 
-    /// Fills the current polynomial with the result of the product between an integer polynomial
-    /// and binary one, reduced modulo $(X^N + 1)$.
-    ///
-    /// # Example:
-    ///
-    /// ```
-    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
-    /// let poly = Polynomial::from_container(vec![1_u8, 2, 3]);
-    /// let bin_poly = Polynomial::from_container(vec![false, true, true]);
-    /// let mut res = Polynomial::allocate(133 as u8, PolynomialSize(3));
-    /// res.fill_with_wrapping_binary_mul(&poly, &bin_poly);
-    /// dbg!(&res);
-    /// assert_eq!(
-    ///     *res.get_monomial(MonomialDegree(0)).get_coefficient(),
-    ///     251 as u8
-    /// );
-    /// assert_eq!(
-    ///     *res.get_monomial(MonomialDegree(1)).get_coefficient(),
-    ///     254 as u8
-    /// );
-    /// assert_eq!(
-    ///     *res.get_monomial(MonomialDegree(2)).get_coefficient(),
-    ///     3 as u8
-    /// );
-    /// ```
-    pub fn fill_with_wrapping_binary_mul<Coef, PolyCont, BinCont>(
-        &mut self,
-        poly: &Polynomial<PolyCont>,
-        bin_poly: &Polynomial<BinCont>,
-    ) where
-        Self: AsMutTensor<Element = Coef>,
-        Polynomial<PolyCont>: AsRefTensor<Element = Coef>,
-        Polynomial<BinCont>: AsRefTensor<Element = bool>,
-        Coef: UnsignedInteger,
-    {
-        ck_dim_eq!(
-            self.polynomial_size() =>
-            poly.polynomial_size(),
-            bin_poly.polynomial_size()
-        );
-        self.coefficient_iter_mut().for_each(|a| *a = Coef::ZERO);
-        self.update_with_wrapping_add_binary_mul(poly, bin_poly)
-    }
-
-    /// Adds the sum of the element-wise product between a list of integer polynomial, and a
-    /// list of binary polynomial, to the current polynomial.
+    /// Adds the sum of the element-wise product between two lists of integer polynomial to the
+    /// current polynomial.
     ///
     /// I.e., if the current polynomial is $C(X)$, for a collection of polynomials $(P_i(X)))_i$
-    /// and a collection of binary polynomials $(B_i(X))_i$ we perform the operation:
+    /// and another collection of polynomials $(B_i(X))_i$ we perform the operation:
     /// $$
     /// C(X) := C(X) + \sum_i P_i(X) \times B_i(X) mod (X^N + 1)
     /// $$
@@ -442,14 +398,10 @@ impl<Cont> Polynomial<Cont> {
     /// use concrete_core::math::polynomial::{
     ///     MonomialDegree, Polynomial, PolynomialList, PolynomialSize,
     /// };
-    /// let poly_list =
-    ///     PolynomialList::from_container(vec![100 as u8, 20, 3, 4, 5, 6], PolynomialSize(3));
-    /// let bin_poly_list = PolynomialList::from_container(
-    ///     vec![false, true, true, true, false, false],
-    ///     PolynomialSize(3),
-    /// );
-    /// let mut output = Polynomial::allocate(250 as u8, PolynomialSize(3));
-    /// output.update_with_wrapping_add_binary_multisum(&poly_list, &bin_poly_list);
+    /// let poly_list = PolynomialList::from_container(vec![100_u8, 20, 3, 4, 5, 6], PolynomialSize(3));
+    /// let bin_poly_list = PolynomialList::from_container(vec![0, 1, 1, 1, 0, 0], PolynomialSize(3));
+    /// let mut output = Polynomial::allocate(250, PolynomialSize(3));
+    /// output.update_with_wrapping_add_multisum(&poly_list, &bin_poly_list);
     /// assert_eq!(
     ///     *output.get_monomial(MonomialDegree(0)).get_coefficient(),
     ///     231
@@ -463,28 +415,28 @@ impl<Cont> Polynomial<Cont> {
     ///     120
     /// );
     /// ```
-    pub fn update_with_wrapping_add_binary_multisum<Coef, InCont, BinCont>(
+    pub fn update_with_wrapping_add_multisum<Coef, Cont1, Cont2>(
         &mut self,
-        coef_list: &PolynomialList<InCont>,
-        bin_list: &PolynomialList<BinCont>,
+        coef_list: &PolynomialList<Cont1>,
+        bin_list: &PolynomialList<Cont2>,
     ) where
         Self: AsMutTensor<Element = Coef>,
-        PolynomialList<InCont>: AsRefTensor<Element = Coef>,
-        PolynomialList<BinCont>: AsRefTensor<Element = bool>,
-        for<'a> Polynomial<&'a [bool]>: AsRefTensor<Element = bool>,
+        PolynomialList<Cont1>: AsRefTensor<Element = Coef>,
+        PolynomialList<Cont2>: AsRefTensor<Element = Coef>,
+        for<'a> Polynomial<&'a [Coef]>: AsRefTensor<Element = Coef>,
         for<'a> Polynomial<&'a [Coef]>: AsRefTensor<Element = Coef>,
         Coef: UnsignedInteger,
     {
         for (poly, bin_poly) in coef_list.polynomial_iter().zip(bin_list.polynomial_iter()) {
-            self.update_with_wrapping_add_binary_mul(&poly, &bin_poly);
+            self.update_with_wrapping_add_mul(&poly, &bin_poly);
         }
     }
 
-    /// Subtracts the sum of the element-wise product between a list of integer polynomial, and a
-    /// list of binary polynomial, to the current polynomial.
+    /// Subtracts the sum of the element-wise product between two lists of integer polynomials,
+    /// to the current polynomial.
     ///
-    /// I.e., if the current polynomial is $C(X)$, for a list of polynomials $(P_i(X)))_i$ and a
-    /// list of  binary polynomials $(B_i(X))_i$ we perform the operation:
+    /// I.e., if the current polynomial is $C(X)$, for two lists of polynomials $(P_i(X)))_i$ and
+    /// $(B_i(X))_i$ we perform the operation:
     /// $$
     /// C(X) := C(X) + \sum_i P_i(X) \times B_i(X) mod (X^N + 1)
     /// $$
@@ -497,12 +449,9 @@ impl<Cont> Polynomial<Cont> {
     /// };
     /// let poly_list =
     ///     PolynomialList::from_container(vec![100 as u8, 20, 3, 4, 5, 6], PolynomialSize(3));
-    /// let bin_poly_list = PolynomialList::from_container(
-    ///     vec![false, true, true, true, false, false],
-    ///     PolynomialSize(3),
-    /// );
+    /// let bin_poly_list = PolynomialList::from_container(vec![0, 1, 1, 1, 0, 0], PolynomialSize(3));
     /// let mut output = Polynomial::allocate(250 as u8, PolynomialSize(3));
-    /// output.update_with_wrapping_sub_binary_multisum(&poly_list, &bin_poly_list);
+    /// output.update_with_wrapping_sub_multisum(&poly_list, &bin_poly_list);
     /// assert_eq!(
     ///     *output.get_monomial(MonomialDegree(0)).get_coefficient(),
     ///     13
@@ -516,46 +465,47 @@ impl<Cont> Polynomial<Cont> {
     ///     124
     /// );
     /// ```
-    pub fn update_with_wrapping_sub_binary_multisum<Coef, InCont, BinCont>(
+    pub fn update_with_wrapping_sub_multisum<Coef, InCont, BinCont>(
         &mut self,
         coef_list: &PolynomialList<InCont>,
         bin_list: &PolynomialList<BinCont>,
     ) where
         Self: AsMutTensor<Element = Coef>,
         PolynomialList<InCont>: AsRefTensor<Element = Coef>,
-        PolynomialList<BinCont>: AsRefTensor<Element = bool>,
-        for<'a> Polynomial<&'a [bool]>: AsRefTensor<Element = bool>,
+        PolynomialList<BinCont>: AsRefTensor<Element = Coef>,
         for<'a> Polynomial<&'a [Coef]>: AsRefTensor<Element = Coef>,
-        Coef: UnsignedInteger + CastFrom<bool>,
+        for<'a> Polynomial<&'a [Coef]>: AsRefTensor<Element = Coef>,
+        Coef: UnsignedInteger,
     {
         for (poly, bin_poly) in coef_list.polynomial_iter().zip(bin_list.polynomial_iter()) {
-            self.update_with_wrapping_sub_binary_mul(&poly, &bin_poly);
+            self.update_with_wrapping_sub_mul(&poly, &bin_poly);
         }
     }
-    /// Adds the result of the product between a integer polynomial and a binary one, reduced
-    /// modulo $(X^N+1)$, to the current polynomial.
+
+    /// Adds the result of the product between two integer polynomials, reduced modulo $(X^N+1)$,
+    /// to the current polynomial.
     ///
     /// # Example
     ///
     /// ```
     /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
-    /// let poly = Polynomial::from_container(vec![1_u8, 2, 3]);
-    /// let bin_poly = Polynomial::from_container(vec![false, true, true]);
-    /// let mut res = Polynomial::from_container(vec![1_u8, 0, 253]);
-    /// res.update_with_wrapping_add_binary_mul(&poly, &bin_poly);
+    /// let poly_1 = Polynomial::from_container(vec![1_u8, 2, 3]);
+    /// let poly_2 = Polynomial::from_container(vec![0, 1, 1]);
+    /// let mut res = Polynomial::from_container(vec![1, 0, 253]);
+    /// res.update_with_wrapping_add_mul(&poly_1, &poly_2);
     /// assert_eq!(*res.get_monomial(MonomialDegree(0)).get_coefficient(), 252);
     /// assert_eq!(*res.get_monomial(MonomialDegree(1)).get_coefficient(), 254);
     /// assert_eq!(*res.get_monomial(MonomialDegree(2)).get_coefficient(), 0);
     /// ```
-    pub fn update_with_wrapping_add_binary_mul<Coef, PolyCont, BinCont>(
+    pub fn update_with_wrapping_add_mul<Coef, Cont1, Cont2>(
         &mut self,
-        polynomial: &Polynomial<PolyCont>,
-        bin_polynomial: &Polynomial<BinCont>,
+        polynomial: &Polynomial<Cont1>,
+        bin_polynomial: &Polynomial<Cont2>,
     ) where
         Self: AsMutTensor<Element = Coef>,
-        Polynomial<PolyCont>: AsRefTensor<Element = Coef>,
-        Polynomial<BinCont>: AsRefTensor<Element = bool>,
-        Coef: UnsignedInteger + CastFrom<bool>,
+        Polynomial<Cont1>: AsRefTensor<Element = Coef>,
+        Polynomial<Cont2>: AsRefTensor<Element = Coef>,
+        Coef: UnsignedInteger,
     {
         ck_dim_eq!(
             self.polynomial_size() =>
@@ -566,18 +516,17 @@ impl<Cont> Polynomial<Cont> {
         for lhsi in polynomial.monomial_iter() {
             for rhsi in bin_polynomial.monomial_iter() {
                 let target_degree = lhsi.degree().0 + rhsi.degree().0;
-                let binary_bit = Coef::cast_from(*rhsi.get_coefficient());
                 if target_degree <= degree {
                     let update = self
                         .as_tensor()
                         .get_element(target_degree)
-                        .wrapping_add(*lhsi.get_coefficient() * binary_bit);
+                        .wrapping_add(*lhsi.get_coefficient() * *rhsi.get_coefficient());
                     *self.as_mut_tensor().get_element_mut(target_degree) = update;
                 } else {
                     let update = self
                         .as_tensor()
                         .get_element(target_degree % (degree + 1))
-                        .wrapping_sub(*lhsi.get_coefficient() * binary_bit);
+                        .wrapping_sub(*lhsi.get_coefficient() * *rhsi.get_coefficient());
                     *self
                         .as_mut_tensor()
                         .get_element_mut(target_degree % (degree + 1)) = update;
@@ -586,7 +535,7 @@ impl<Cont> Polynomial<Cont> {
         }
     }
 
-    /// Subtracts the result of the product between an integer polynomial and a binary one, reduced
+    /// Subtracts the result of the product between two integer polynomials, reduced
     /// modulo $(X^N+1)$, to the current polynomial.
     ///
     /// # Example
@@ -594,22 +543,22 @@ impl<Cont> Polynomial<Cont> {
     /// ```
     /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
     /// let poly = Polynomial::from_container(vec![1_u8, 2, 3]);
-    /// let bin_poly = Polynomial::from_container(vec![false, true, true]);
-    /// let mut res = Polynomial::from_container(vec![255_u8, 255, 1]);
-    /// res.update_with_wrapping_sub_binary_mul(&poly, &bin_poly);
+    /// let bin_poly = Polynomial::from_container(vec![0, 1, 1]);
+    /// let mut res = Polynomial::from_container(vec![255, 255, 1]);
+    /// res.update_with_wrapping_sub_mul(&poly, &bin_poly);
     /// assert_eq!(*res.get_monomial(MonomialDegree(0)).get_coefficient(), 4);
     /// assert_eq!(*res.get_monomial(MonomialDegree(1)).get_coefficient(), 1);
     /// assert_eq!(*res.get_monomial(MonomialDegree(2)).get_coefficient(), 254);
     /// ```
-    pub fn update_with_wrapping_sub_binary_mul<Coef, PolyCont, BinCont>(
+    pub fn update_with_wrapping_sub_mul<Coef, PolyCont, BinCont>(
         &mut self,
         polynomial: &Polynomial<PolyCont>,
         bin_polynomial: &Polynomial<BinCont>,
     ) where
         Self: AsMutTensor<Element = Coef>,
         Polynomial<PolyCont>: AsRefTensor<Element = Coef>,
-        Polynomial<BinCont>: AsRefTensor<Element = bool>,
-        Coef: UnsignedInteger + CastFrom<bool>,
+        Polynomial<BinCont>: AsRefTensor<Element = Coef>,
+        Coef: UnsignedInteger,
     {
         ck_dim_eq!(
             self.polynomial_size() =>
@@ -620,18 +569,17 @@ impl<Cont> Polynomial<Cont> {
         for lhsi in polynomial.monomial_iter() {
             for rhsi in bin_polynomial.monomial_iter() {
                 let target_degree = lhsi.degree().0 + rhsi.degree().0;
-                let binary_bit = Coef::cast_from(*rhsi.get_coefficient());
                 if target_degree <= degree {
                     let update = self
                         .as_tensor()
                         .get_element(target_degree)
-                        .wrapping_sub(*lhsi.get_coefficient() * binary_bit);
+                        .wrapping_sub(*lhsi.get_coefficient() * *rhsi.get_coefficient());
                     *self.as_mut_tensor().get_element_mut(target_degree) = update;
                 } else {
                     let update = self
                         .as_tensor()
                         .get_element(target_degree % (degree + 1))
-                        .wrapping_add(*lhsi.get_coefficient() * binary_bit);
+                        .wrapping_add(*lhsi.get_coefficient() * *rhsi.get_coefficient());
                     *self
                         .as_mut_tensor()
                         .as_mut_slice()

@@ -267,15 +267,17 @@ impl<Cont> LweList<Cont> {
     /// use concrete_commons::LogStandardDev;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
     /// use concrete_core::math::tensor::AsRefTensor;
     ///
-    /// let mut generator = RandomGenerator::new(None);
-    /// let mut secret_gen = EncryptionRandomGenerator::new(None);
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
     ///
-    /// let secret_key = LweSecretKey::generate(LweDimension(4), &mut generator);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(4), &mut secret_generator);
     /// let parameters = LogStandardDev::from_log_standard_dev(-15.);
     /// let encoder = RealEncoder {
     ///     offset: 0. as f32,
@@ -290,7 +292,7 @@ impl<Cont> LweList<Cont> {
     ///     &mut cipher_values,
     ///     &plain_values,
     ///     parameters,
-    ///     &mut secret_gen,
+    ///     &mut encryption_generator,
     /// );
     ///
     /// let mut output = LweList::from_container(vec![0u32; 5 * 2], LweSize(5));
