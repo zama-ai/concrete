@@ -81,26 +81,23 @@ impl Fft {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_core::math::torus::UnsignedTorus;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
-    /// let mut fourier_poly = FourierPolynomial::allocate(
-    ///     Complex64::new(0.,0.),
-    ///     PolynomialSize(256)
-    /// );
+    /// let mut fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
     /// let mut poly = Polynomial::allocate(0u32, PolynomialSize(256));
     /// generator.fill_tensor_with_random_uniform(&mut poly);
     /// fft.forward_as_torus(&mut fourier_poly, &poly);
     /// let mut out = Polynomial::allocate(0u32, PolynomialSize(256));
     /// fft.add_backward_as_torus(&mut out, &mut fourier_poly);
     /// out.as_tensor()
-    ///    .iter()
-    ///    .zip(poly.as_tensor().iter())
-    ///    .for_each(|(output, expected)| assert_eq!(*output, *expected));
+    ///     .iter()
+    ///     .zip(poly.as_tensor().iter())
+    ///     .for_each(|(output, expected)| assert_eq!(*output, *expected));
     /// ```
     pub fn forward_as_torus<OutCont, InCont, Coef>(
         &self,
@@ -121,7 +118,7 @@ impl Fft {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
+    /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
@@ -129,14 +126,10 @@ impl Fft {
     ///
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
-    /// let mut fourier_poly_1 = FourierPolynomial::allocate(
-    ///     Complex64::new(0.,0.),
-    ///     PolynomialSize(256)
-    /// );
-    /// let mut fourier_poly_2 = FourierPolynomial::allocate(
-    ///     Complex64::new(0.,0.),
-    ///     PolynomialSize(256)
-    /// );
+    /// let mut fourier_poly_1 =
+    ///     FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
+    /// let mut fourier_poly_2 =
+    ///     FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
     /// let mut poly_1 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// let mut poly_2 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// generator.fill_tensor_with_random_uniform(&mut poly_1);
@@ -148,16 +141,18 @@ impl Fft {
     ///     &mut out_1,
     ///     &mut out_2,
     ///     &mut fourier_poly_1,
-    ///     &mut fourier_poly_2
+    ///     &mut fourier_poly_2,
     /// );
-    /// out_1.as_tensor()
-    ///    .iter()
-    ///    .zip(poly_1.as_tensor().iter())
-    ///    .for_each(|(out, exp)| assert_eq!(out, exp));
-    /// out_2.as_tensor()
-    ///    .iter()
-    ///    .zip(poly_2.as_tensor().iter())
-    ///    .for_each(|(out, exp)| assert_eq!(out, exp));
+    /// out_1
+    ///     .as_tensor()
+    ///     .iter()
+    ///     .zip(poly_1.as_tensor().iter())
+    ///     .for_each(|(out, exp)| assert_eq!(out, exp));
+    /// out_2
+    ///     .as_tensor()
+    ///     .iter()
+    ///     .zip(poly_2.as_tensor().iter())
+    ///     .for_each(|(out, exp)| assert_eq!(out, exp));
     /// ```
     pub fn forward_two_as_torus<InCont1, InCont2, OutCont1, OutCont2, Coef>(
         &self,
@@ -199,26 +194,23 @@ impl Fft {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
+    /// use concrete_commons::UnsignedInteger;
+    /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_commons::UnsignedInteger;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
-    /// let mut fourier_poly = FourierPolynomial::allocate(
-    ///     Complex64::new(0.,0.),
-    ///     PolynomialSize(256)
-    /// );
+    /// let mut fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
     /// let mut poly = Polynomial::allocate(0u32, PolynomialSize(256));
     /// generator.fill_tensor_with_random_uniform(&mut poly);
     /// fft.forward_as_integer(&mut fourier_poly, &poly);
     /// let mut out = Polynomial::allocate(0u32, PolynomialSize(256));
     /// fft.add_backward_as_integer(&mut out, &mut fourier_poly);
     /// out.as_tensor()
-    ///    .iter()
-    ///    .zip(poly.as_tensor().iter())
-    ///    .for_each(|(out, exp)| assert_eq!(*out, *exp));
+    ///     .iter()
+    ///     .zip(poly.as_tensor().iter())
+    ///     .for_each(|(out, exp)| assert_eq!(*out, *exp));
     /// ```
     pub fn forward_as_integer<OutCont, InCont, Coef>(
         &self,
@@ -239,21 +231,17 @@ impl Fft {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::fft::{Fft, FourierPolynomial, Complex64};
+    /// use concrete_commons::UnsignedInteger;
+    /// use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
     /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// use concrete_core::math::random::RandomGenerator;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_commons::UnsignedInteger;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
-    /// let mut fourier_poly_1 = FourierPolynomial::allocate(
-    ///     Complex64::new(0.,0.),
-    ///     PolynomialSize(256)
-    /// );
-    /// let mut fourier_poly_2 = FourierPolynomial::allocate(
-    ///     Complex64::new(0.,0.),
-    ///     PolynomialSize(256)
-    /// );
+    /// let mut fourier_poly_1 =
+    ///     FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
+    /// let mut fourier_poly_2 =
+    ///     FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
     /// let mut poly_1 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// let mut poly_2 = Polynomial::allocate(0u32, PolynomialSize(256));
     /// generator.fill_tensor_with_random_uniform(&mut poly_1);
@@ -265,16 +253,18 @@ impl Fft {
     ///     &mut out_1,
     ///     &mut out_2,
     ///     &mut fourier_poly_1,
-    ///     &mut fourier_poly_2
+    ///     &mut fourier_poly_2,
     /// );
-    /// out_1.as_tensor()
-    ///    .iter()
-    ///    .zip(poly_1.as_tensor().iter())
-    ///    .for_each(|(out, exp)| assert_eq!(out, exp));
-    /// out_2.as_tensor()
-    ///    .iter()
-    ///    .zip(poly_2.as_tensor().iter())
-    ///    .for_each(|(out, exp)| assert_eq!(out, exp));
+    /// out_1
+    ///     .as_tensor()
+    ///     .iter()
+    ///     .zip(poly_1.as_tensor().iter())
+    ///     .for_each(|(out, exp)| assert_eq!(out, exp));
+    /// out_2
+    ///     .as_tensor()
+    ///     .iter()
+    ///     .zip(poly_2.as_tensor().iter())
+    ///     .for_each(|(out, exp)| assert_eq!(out, exp));
     /// ```
     pub fn forward_two_as_integer<InCont1, InCont2, OutCont1, OutCont2, Coef>(
         &self,

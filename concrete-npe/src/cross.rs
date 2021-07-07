@@ -58,7 +58,8 @@ macro_rules! impl_trait_npe_cross {
             /// let var_trgsw: f64 = f64::powi(2., -38) ;
             /// let var_trlwe: f64 = f64::powi(2., -40) ;
             /// // Computing the noise
-            /// let var_external_product = <Torus as Cross>::external_product(dimension, l_gadget, base_log, polynomial_size, var_trgsw, var_trlwe) ;
+            /// let var_external_product = <Torus as Cross>::external_product(dimension, l_gadget,
+            /// base_log, polynomial_size, var_trgsw, var_trlwe) ;
             /// ```
             fn external_product(
                 dimension: usize,
@@ -115,7 +116,8 @@ macro_rules! impl_trait_npe_cross {
             /// let var_trlwe_0: f64 = f64::powi(2., -40) ;
             /// let var_trlwe_1: f64 = f64::powi(2., -40) ;
             /// // Computing the noise
-            /// let var_cmux = <Torus as Cross>::cmux(var_trlwe_0, var_trlwe_1, var_trgsw,  dimension, polynomial_size, base_log, l_gadget) ;
+            /// let var_cmux = <Torus as Cross>::cmux(var_trlwe_0, var_trlwe_1, var_trgsw,
+            /// dimension, polynomial_size, base_log, l_gadget) ;
             /// ```
             fn cmux(
                 var_rlwe_0: f64,
@@ -162,7 +164,8 @@ macro_rules! impl_trait_npe_cross {
             /// let polynomial_size: usize = 1024 ;
             /// let var_bsk: f64 = f64::powi(2., -38) ;
             /// // Computing the noise
-            /// let var_bootstrap = <Torus as Cross>::bootstrap(lwe_dimension, rlwe_dimension, l_gadget, base_log, polynomial_size, var_bsk) ;
+            /// let var_bootstrap = <Torus as Cross>::bootstrap(lwe_dimension, rlwe_dimension,
+            /// l_gadget, base_log, polynomial_size, var_bsk) ;
             /// ```
             fn bootstrap(
                 lwe_dimension: usize,

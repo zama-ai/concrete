@@ -27,12 +27,13 @@ use rayon::prelude::*;
 /// use concrete_core::math::random::RandomGenerator;
 /// let mut parent_generator = RandomGenerator::new(None);
 /// assert_eq!(parent_generator.remaining_bytes(), None); // The generator is unbounded.
-/// let children = parent_generator.try_fork(5, 2) // 5 generators each able to generate 2 bytes.
+/// let children = parent_generator
+///     .try_fork(5, 2) // 5 generators each able to generate 2 bytes.
 ///     .unwrap()
 ///     .collect::<Vec<_>>();
-/// for child in children.into_iter(){
+/// for child in children.into_iter() {
 ///     assert_eq!(child.remaining_bytes(), Some(2));
-///     std::thread::spawn(move ||{
+///     std::thread::spawn(move || {
 ///         let child = child;
 ///         // use the prng to generate 2 bytes.
 ///         // ...
@@ -176,8 +177,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut tensor = Tensor::allocate(1000. as u32, 100);
     /// generator.fill_tensor_with_random_uniform(&mut tensor);
@@ -195,13 +196,13 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let t: Tensor<Vec<u64>> = generator.random_uniform_tensor(10);
     /// assert_eq!(t.len(), 10);
     /// let first_val = t.get_element(0);
-    /// for i in 1..10{
+    /// for i in 1..10 {
     ///     assert_ne!(first_val, t.get_element(i));
     /// }
     /// ```
@@ -230,8 +231,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut tensor = Tensor::allocate(false, 100);
     /// generator.fill_tensor_with_random_uniform_boolean(&mut tensor);
@@ -251,8 +252,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let t: Tensor<Vec<bool>> = generator.random_uniform_boolean_tensor(10);
     /// assert_eq!(t.len(), 10);
@@ -264,8 +265,8 @@ impl RandomGenerator {
         Scalar::generate_tensor(self, UniformBoolean, size)
     }
 
-    /// Generates an unsigned integer whose n least significant bits are uniformly random, and the other
-    /// bits are zero.
+    /// Generates an unsigned integer whose n least significant bits are uniformly random, and the
+    /// other bits are zero.
     ///
     /// # Example
     ///
@@ -287,8 +288,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut tensor = Tensor::allocate(0 as u8, 100);
     /// generator.fill_tensor_with_random_uniform_n_lsb(&mut tensor, 3);
@@ -315,7 +316,7 @@ impl RandomGenerator {
     /// let t: Tensor<Vec<u64>> = generator.random_uniform_n_lsb_tensor(10, 55);
     /// assert_eq!(t.len(), 10);
     /// let first_val = t.get_element(0);
-    /// for i in 1..10{
+    /// for i in 1..10 {
     ///     assert_ne!(first_val, t.get_element(i));
     /// }
     /// ```
@@ -327,8 +328,8 @@ impl RandomGenerator {
         Scalar::generate_tensor(self, UniformLsb { n }, size)
     }
 
-    /// Generates an unsigned integer whose n most significant bits are uniformly random, and the other
-    /// bits are zero.
+    /// Generates an unsigned integer whose n most significant bits are uniformly random, and the
+    /// other bits are zero.
     ///
     /// # Example
     ///
@@ -350,8 +351,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut tensor = Tensor::allocate(8 as u8, 100);
     /// generator.fill_tensor_with_random_uniform_n_msb(&mut tensor, 5);
@@ -372,13 +373,13 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let t: Tensor<Vec<u64>> = generator.random_uniform_n_msb_tensor(10, 55);
     /// assert_eq!(t.len(), 10);
     /// let first_val = t.get_element(0);
-    /// for i in 1..10{
+    /// for i in 1..10 {
     ///     assert_ne!(first_val, t.get_element(i));
     /// }
     /// ```
@@ -418,8 +419,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut tensor = Tensor::allocate(10 as u8, 100);
     /// generator.fill_tensor_with_random_uniform_with_zeros(&mut tensor, 0.5);
@@ -443,8 +444,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let t: Tensor<Vec<u64>> = generator.random_uniform_with_zeros_tensor(10, 0.);
     /// assert_eq!(t.len(), 10);
@@ -476,7 +477,7 @@ impl RandomGenerator {
     /// assert!(g1.abs() <= 6.);
     /// assert!(g2.abs() <= 6.);
     /// // for f64
-    /// let (g1, g2): (f64,f64) = generator.random_gaussian(0. as f64, 1. as f64);
+    /// let (g1, g2): (f64, f64) = generator.random_gaussian(0. as f64, 1. as f64);
     /// // check that both samples are in 6 sigmas.
     /// assert!(g1.abs() <= 6.);
     /// assert!(g2.abs() <= 6.);
@@ -494,8 +495,8 @@ impl RandomGenerator {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut tensor = Tensor::allocate(1000. as f32, 100);
     /// generator.fill_tensor_with_random_gaussian(&mut tensor, 0., 1.);
@@ -526,19 +527,18 @@ impl RandomGenerator {
             });
     }
 
-    /// Generates a new tensor of floating point values, randomly sampled from a gaussian distribution:
+    /// Generates a new tensor of floating point values, randomly sampled from a gaussian
+    /// distribution:
     ///
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_core::math::random::RandomGenerator;
+    /// use concrete_core::math::tensor::Tensor;
     /// let mut generator = RandomGenerator::new(None);
-    /// let tensor: Tensor<Vec<f32>> = generator.random_gaussian_tensor(10_000, 0. as f32, 1. as
-    /// f32);
+    /// let tensor: Tensor<Vec<f32>> = generator.random_gaussian_tensor(10_000, 0. as f32, 1. as f32);
     /// assert_eq!(tensor.len(), 10_000);
-    /// tensor.iter()
-    ///     .for_each(|a| assert!((*a).abs() <= 6.));
+    /// tensor.iter().for_each(|a| assert!((*a).abs() <= 6.));
     /// ```
     pub fn random_gaussian_tensor<Float, Scalar>(
         &mut self,

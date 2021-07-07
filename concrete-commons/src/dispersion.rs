@@ -46,14 +46,20 @@ pub trait DispersionParameter: Clone {
 /// # Example:
 ///
 /// ```
-/// use concrete_commons::{LogStandardDev, DispersionParameter};
+/// use concrete_commons::{DispersionParameter, LogStandardDev};
 /// let params = LogStandardDev::from_log_standard_dev(-25.);
 /// assert_eq!(params.get_standard_dev(), 2_f64.powf(-25.));
 /// assert_eq!(params.get_log_standard_dev(), -25.);
 /// assert_eq!(params.get_variance(), 2_f64.powf(-25.).powi(2));
-/// assert_eq!(params.get_modular_standard_dev::<u32>(), 2_f64.powf(32.-25.));
-/// assert_eq!(params.get_modular_log_standard_dev::<u32>(), 32.-25.);
-/// assert_eq!(params.get_modular_variance::<u32>(), 2_f64.powf(32.-25.).powi(2));
+/// assert_eq!(
+///     params.get_modular_standard_dev::<u32>(),
+///     2_f64.powf(32. - 25.)
+/// );
+/// assert_eq!(params.get_modular_log_standard_dev::<u32>(), 32. - 25.);
+/// assert_eq!(
+///     params.get_modular_variance::<u32>(),
+///     2_f64.powf(32. - 25.).powi(2)
+/// );
 ///
 /// let modular_params = LogStandardDev::from_modular_log_standard_dev::<u32>(22.);
 /// assert_eq!(modular_params.get_standard_dev(), 2_f64.powf(-10.));
@@ -109,14 +115,20 @@ impl DispersionParameter for LogStandardDev {
 /// # Example:
 ///
 /// ```
-/// use concrete_commons::{StandardDev, DispersionParameter};
+/// use concrete_commons::{DispersionParameter, StandardDev};
 /// let params = StandardDev::from_standard_dev(2_f64.powf(-25.));
 /// assert_eq!(params.get_standard_dev(), 2_f64.powf(-25.));
 /// assert_eq!(params.get_log_standard_dev(), -25.);
 /// assert_eq!(params.get_variance(), 2_f64.powf(-25.).powi(2));
-/// assert_eq!(params.get_modular_standard_dev::<u32>(), 2_f64.powf(32.-25.));
-/// assert_eq!(params.get_modular_log_standard_dev::<u32>(), 32.-25.);
-/// assert_eq!(params.get_modular_variance::<u32>(), 2_f64.powf(32.-25.).powi(2));
+/// assert_eq!(
+///     params.get_modular_standard_dev::<u32>(),
+///     2_f64.powf(32. - 25.)
+/// );
+/// assert_eq!(params.get_modular_log_standard_dev::<u32>(), 32. - 25.);
+/// assert_eq!(
+///     params.get_modular_variance::<u32>(),
+///     2_f64.powf(32. - 25.).powi(2)
+/// );
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct StandardDev(pub f64);
@@ -174,9 +186,15 @@ impl DispersionParameter for StandardDev {
 /// assert_eq!(params.get_standard_dev(), 2_f64.powf(-25.));
 /// assert_eq!(params.get_log_standard_dev(), -25.);
 /// assert_eq!(params.get_variance(), 2_f64.powf(-25.).powi(2));
-/// assert_eq!(params.get_modular_standard_dev::<u32>(), 2_f64.powf(32.-25.));
-/// assert_eq!(params.get_modular_log_standard_dev::<u32>(), 32.-25.);
-/// assert_eq!(params.get_modular_variance::<u32>(), 2_f64.powf(32.-25.).powi(2));
+/// assert_eq!(
+///     params.get_modular_standard_dev::<u32>(),
+///     2_f64.powf(32. - 25.)
+/// );
+/// assert_eq!(params.get_modular_log_standard_dev::<u32>(), 32. - 25.);
+/// assert_eq!(
+///     params.get_modular_variance::<u32>(),
+///     2_f64.powf(32. - 25.).powi(2)
+/// );
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Variance(pub f64);

@@ -29,14 +29,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.level_count(), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.base_log(), DecompositionBaseLog(4));
     /// ```
@@ -63,14 +59,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.base_log(), DecompositionBaseLog(4));
     /// ```
     pub fn base_log(&self) -> DecompositionBaseLog {
@@ -85,14 +77,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.level_count(), DecompositionLevelCount(3));
     /// ```
     pub fn level_count(&self) -> DecompositionLevelCount {
@@ -105,14 +93,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let closest = decomposer.closest_representable(1_340_987_234_u32);
     /// assert_eq!(closest, 1_341_128_704_u32);
     /// ```
@@ -142,15 +126,11 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
     /// use concrete_core::math::tensor::Tensor;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     ///
     /// let input = Tensor::allocate(1_340_987_234_u32, 1);
     /// let mut closest = Tensor::allocate(0u32, 1);
@@ -176,20 +156,18 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_commons::UnsignedInteger;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
-    /// for term in decomposer.decompose(1_340_987_234_u32){
+    /// use concrete_core::math::decomposition::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
+    /// for term in decomposer.decompose(1_340_987_234_u32) {
     ///     assert!(1 <= term.level().0);
     ///     assert!(term.level().0 <= 3);
     ///     let signed_term = term.value().into_signed();
     ///     let half_basis = 2i32.pow(4) / 2i32;
-    ///     assert!(- half_basis <= signed_term);
+    ///     assert!(-half_basis <= signed_term);
     ///     assert!(signed_term < half_basis);
     /// }
     /// assert_eq!(decomposer.decompose(1).count(), 3);
@@ -213,19 +191,14 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let val = 1_340_987_234_u32;
     /// let dec = decomposer.decompose(val);
     /// let rec = decomposer.recompose(dec);
-    /// assert_eq!(
-    ///     decomposer.closest_representable(val),
-    ///     rec.unwrap()
-    /// );
+    /// assert_eq!(decomposer.closest_representable(val), rec.unwrap());
     /// ```
     pub fn recompose(&self, decomp: SignedDecompositionIter<Scalar>) -> Option<Scalar> {
         if decomp.is_fresh() {
@@ -248,25 +221,24 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_commons::UnsignedInteger;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// use concrete_core::math::decomposition::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// use concrete_core::math::tensor::Tensor;
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let decomposable = Tensor::from_container(vec![1_340_987_234_u32, 1_340_987_234_u32]);
-    /// let mut decomp = decomposer.decompose_tensor(&decomposable);    ///
+    /// let mut decomp = decomposer.decompose_tensor(&decomposable);
+    /// ///
     /// let mut count = 0;
-    /// while let Some(term) = decomp.next_term(){
+    /// while let Some(term) = decomp.next_term() {
     ///     assert!(1 <= term.level().0);
     ///     assert!(term.level().0 <= 3);
-    ///     for elmt in term.as_tensor().iter(){
+    ///     for elmt in term.as_tensor().iter() {
     ///         let signed_term = elmt.into_signed();
     ///         let half_basis = 2i32.pow(4) / 2i32;
-    ///         assert!(- half_basis <= signed_term);
+    ///         assert!(-half_basis <= signed_term);
     ///         assert!(signed_term < half_basis);
     ///     }
     ///     count += 1;
@@ -296,21 +268,21 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_commons::UnsignedInteger;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// use concrete_core::math::decomposition::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// use concrete_core::math::tensor::Tensor;
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let decomposable = Tensor::allocate(1_340_987_234_u32, 1);
     /// let mut rounded = Tensor::allocate(0u32, 1);
     /// decomposer.fill_tensor_with_closest_representable(&mut rounded, &decomposable);
     /// let mut decomp = decomposer.decompose_tensor(&rounded);
     /// let mut recomposition = Tensor::allocate(0u32, 1);
-    /// decomposer.fill_tensor_with_recompose(decomp, &mut recomposition).unwrap();
+    /// decomposer
+    ///     .fill_tensor_with_recompose(decomp, &mut recomposition)
+    ///     .unwrap();
     /// assert_eq!(recomposition, rounded);
     /// ```
     pub fn fill_tensor_with_recompose<TLike>(

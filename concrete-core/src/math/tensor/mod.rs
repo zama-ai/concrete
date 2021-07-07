@@ -34,30 +34,31 @@
 //! several structures representing multi-dimensional collections. The pattern we use for such
 //! structures is pretty simple:
 //! ```
-//! use concrete_core::math::tensor::{Tensor, AsRefTensor, AsRefSlice};
+//! use concrete_core::math::tensor::{AsRefSlice, AsRefTensor, Tensor};
 //!
 //! // We want to have a matrix structure stored row-major.
-//! pub struct Matrix<Cont>{
+//! pub struct Matrix<Cont> {
 //!     tensor: Tensor<Cont>,
 //!     row_length: usize,
 //! }
 //!
 //! // Our matrix is row-major, so we must be able to iterate over rows.
-//! pub struct Row<Cont>{
-//!     tensor: Tensor<Cont>
+//! pub struct Row<Cont> {
+//!     tensor: Tensor<Cont>,
 //! }
 //!
 //! impl<Cont> Matrix<Cont> {
-//!     
 //!     // Returns an iterator over the matrix rows.
 //!     pub fn row_iter(&self) -> impl Iterator<Item = Row<&[<Self as AsRefTensor>::Element]>>
 //!     where
-//!         Self: AsRefTensor
+//!         Self: AsRefTensor,
 //!     {
 //!         self.as_tensor()
 //!             .as_slice()
 //!             .chunks(self.row_length)
-//!             .map(|sub| Row{tensor: Tensor::from_container(sub)})
+//!             .map(|sub| Row {
+//!                 tensor: Tensor::from_container(sub),
+//!             })
 //!     }
 //! }
 //! ```

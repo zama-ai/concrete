@@ -84,15 +84,13 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_commons::UnsignedInteger;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// use concrete_core::math::decomposition::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// use concrete_core::math::tensor::Tensor;
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let decomposable = Tensor::allocate(1_340_987_234_u32, 2);
     /// let decomp = decomposer.decompose_tensor(&decomposable);
     /// assert_eq!(decomp.base_log(), DecompositionBaseLog(4));
@@ -108,15 +106,13 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
-    /// use concrete_core::math::tensor::Tensor;
     /// use concrete_commons::UnsignedInteger;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// use concrete_core::math::decomposition::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// use concrete_core::math::tensor::Tensor;
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let decomposable = Tensor::allocate(1_340_987_234_u32, 2);
     /// let decomp = decomposer.decompose_tensor(&decomposable);
     /// assert_eq!(decomp.level_count(), DecompositionLevelCount(3));
@@ -135,18 +131,13 @@ where
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::UnsignedInteger;
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,  
-    ///     DecompositionLevelCount,
-    ///     DecompositionLevel
+    ///     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, SignedDecomposer,
     /// };
     /// use concrete_core::math::tensor::Tensor;
-    /// use concrete_commons::UnsignedInteger;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let decomposable = Tensor::allocate(1_340_987_234_u32, 1);
     /// let mut decomp = decomposer.decompose_tensor(&decomposable);
     /// let term = decomp.next_term().unwrap();
@@ -251,12 +242,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let val = 1_340_987_234_u32;
     /// let decomp = decomposer.decompose(val);
     /// assert_eq!(decomp.base_log(), DecompositionBaseLog(4));
@@ -273,12 +262,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    /// DecompositionBaseLog, DecompositionLevelCount};
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
+    /// };
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let val = 1_340_987_234_u32;
     /// let decomp = decomposer.decompose(val);
     /// assert_eq!(decomp.level_count(), DecompositionLevelCount(3));

@@ -7,7 +7,6 @@
 //! + [`Polynomial`], which represents a dense polynomial of a given degree.
 //! + [`PolynomialList`], which represent a set of polynomials with the same degree, on which
 //! operations can be performed.
-//!
 
 use serde::{Deserialize, Serialize};
 

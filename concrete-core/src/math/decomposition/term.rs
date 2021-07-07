@@ -44,14 +44,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
     /// assert_eq!(output.to_recomposition_summand(), 1048576);
     /// ```
@@ -68,14 +64,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
     /// assert_eq!(output.value(), 1);
     /// ```
@@ -91,15 +83,10 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount,
-    ///     DecompositionLevel
+    ///     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, SignedDecomposer,
     /// };
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
     /// assert_eq!(output.level(), DecompositionLevel(3));
     /// ```
@@ -150,15 +137,11 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
     /// use concrete_core::math::tensor::Tensor;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let input = Tensor::allocate(2u32.pow(19), 1);
     /// let mut decomp = decomposer.decompose_tensor(&input);
     /// let term = decomp.next_term().unwrap();
@@ -196,15 +179,11 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount
+    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
     /// };
     /// use concrete_core::math::tensor::Tensor;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let input = Tensor::allocate(2u32.pow(19), 1);
     /// let mut decomp = decomposer.decompose_tensor(&input);
     /// let term = decomp.next_term().unwrap();
@@ -220,16 +199,11 @@ where
     ///
     /// ```rust
     /// use concrete_core::math::decomposition::{
-    ///     SignedDecomposer,
-    ///     DecompositionBaseLog,
-    ///     DecompositionLevelCount,
-    ///     DecompositionLevel
+    ///     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, SignedDecomposer,
     /// };
     /// use concrete_core::math::tensor::Tensor;
-    /// let decomposer = SignedDecomposer::<u32>::new(
-    ///     DecompositionBaseLog(4),
-    ///     DecompositionLevelCount(3)
-    /// );
+    /// let decomposer =
+    ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let input = Tensor::allocate(2u32.pow(19), 1);
     /// let mut decomp = decomposer.decompose_tensor(&input);
     /// let term = decomp.next_term().unwrap();

@@ -25,18 +25,21 @@
 //! // This examples shows how to multiply a secret value by a public one homomorphically. First
 //! // we import the proper symbols:
 //! use concrete_commons::LogStandardDev;
-//! use concrete_core::crypto::encoding::{RealEncoder, Cleartext, Encoder, Plaintext};
+//! use concrete_core::crypto::encoding::{Cleartext, Encoder, Plaintext, RealEncoder};
+//! use concrete_core::crypto::lwe::LweCiphertext;
 //! use concrete_core::crypto::secret::LweSecretKey;
 //! use concrete_core::crypto::LweDimension;
-//! use concrete_core::crypto::lwe::LweCiphertext;
-//! use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
+//! use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
 //!
 //! // We initialize a prng that will be used to generate secret keys.
 //! let mut generator = RandomGenerator::new(None);
 //! // We initialize a prng used to encrypt data.
 //! let mut secret_gen = EncryptionRandomGenerator::new(None);
 //! // We initialize an encoder that will allow us to turn cleartext values into plaintexts.
-//! let encoder = RealEncoder{offset: 0., delta: 100.};
+//! let encoder = RealEncoder {
+//!     offset: 0.,
+//!     delta: 100.,
+//! };
 //! // Our secret value will be 10.,
 //! let cleartext = Cleartext(10_f64);
 //! let public_multiplier = Cleartext(5);
@@ -53,7 +56,7 @@
 //!     &mut ciphertext,
 //!     &plaintext,
 //!     LogStandardDev::from_log_standard_dev(-17.),
-//!     &mut secret_gen
+//!     &mut secret_gen,
 //! );
 //!
 //! // We perform the homomorphic operation:
@@ -180,7 +183,8 @@ pub mod test_tools {
         let n_slots = first.as_tensor().len();
         let mut generator = RandomGenerator::new(None);
 
-        // allocate 2 slices: one for the error samples obtained, the second for fresh samples according to the std_dev computed
+        // allocate 2 slices: one for the error samples obtained, the second for fresh samples
+        // according to the std_dev computed
         let mut sdk_samples = Tensor::allocate(0. as f64, n_slots);
 
         // recover the errors from each ciphertexts
