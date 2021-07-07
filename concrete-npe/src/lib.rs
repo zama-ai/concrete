@@ -1,5 +1,6 @@
 //! Noise Propagation Estimator Module
-//! * Contains material needed to estimate the growth of the noise when performing homomophic computation
+//! * Contains material needed to estimate the growth of the noise when performing homomophic
+//!   computation
 
 pub mod cross;
 pub mod lwe;
@@ -9,8 +10,8 @@ pub use cross::Cross;
 pub use lwe::LWE;
 pub use rlwe::RLWE;
 
-/// Computes the variance of the error distribution after the addition of two uncorrelated ciphertexts
-/// Arguments
+/// Computes the variance of the error distribution after the addition of two uncorrelated
+/// ciphertexts Arguments
 /// * `var_ct1` - noise variance of the first ciphertext
 /// * `var_ct2` - noise variance of the second ciphertext
 /// Output

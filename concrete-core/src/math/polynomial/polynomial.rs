@@ -90,9 +90,9 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree, PolynomialSize};
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
     /// let poly = Polynomial::allocate(0 as u32, PolynomialSize(100));
-    /// for monomial in poly.monomial_iter(){
+    /// for monomial in poly.monomial_iter() {
     ///     assert!(monomial.degree().0 <= 99)
     /// }
     /// assert_eq!(poly.monomial_iter().count(), 100);
@@ -112,9 +112,9 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree, PolynomialSize};
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
     /// let poly = Polynomial::allocate(0 as u32, PolynomialSize(100));
-    /// for coef in poly.coefficient_iter(){
+    /// for coef in poly.coefficient_iter() {
     ///     assert_eq!(*coef, 0);
     /// }
     /// assert_eq!(poly.coefficient_iter().count(), 100);
@@ -133,8 +133,8 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize, MonomialDegree};
-    /// let poly = Polynomial::from_container(vec![16_u32,8,19,12,3]);
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
+    /// let poly = Polynomial::from_container(vec![16_u32, 8, 19, 12, 3]);
     /// let mono = poly.get_monomial(MonomialDegree(0));
     /// assert_eq!(*mono.get_coefficient(), 16_u32);
     /// let mono = poly.get_monomial(MonomialDegree(2));
@@ -160,12 +160,12 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{PolynomialSize, Polynomial};
+    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// let mut poly = Polynomial::allocate(0 as u32, PolynomialSize(100));
-    /// for mut monomial in poly.monomial_iter_mut(){
+    /// for mut monomial in poly.monomial_iter_mut() {
     ///     monomial.set_coefficient(monomial.degree().0 as u32);
     /// }
-    /// for (i, monomial) in poly.monomial_iter().enumerate(){
+    /// for (i, monomial) in poly.monomial_iter().enumerate() {
     ///     assert_eq!(*monomial.get_coefficient(), i as u32);
     /// }
     /// assert_eq!(poly.monomial_iter_mut().count(), 100);
@@ -187,12 +187,12 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{PolynomialSize, Polynomial};
+    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize};
     /// let mut poly = Polynomial::allocate(0 as u32, PolynomialSize(100));
-    /// for mut coef in poly.coefficient_iter_mut(){
+    /// for mut coef in poly.coefficient_iter_mut() {
     ///     *coef = 1;
     /// }
-    /// for coef in poly.coefficient_iter(){
+    /// for coef in poly.coefficient_iter() {
     ///     assert_eq!(*coef, 1);
     /// }
     /// assert_eq!(poly.coefficient_iter_mut().count(), 100);
@@ -211,8 +211,8 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize, MonomialDegree};
-    /// let mut poly = Polynomial::from_container(vec![16_u32,8,19,12,3]);
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
+    /// let mut poly = Polynomial::from_container(vec![16_u32, 8, 19, 12, 3]);
     /// let mut mono = poly.get_mut_monomial(MonomialDegree(0));
     /// mono.set_coefficient(18);
     /// let mono = poly.get_monomial(MonomialDegree(0));
@@ -239,14 +239,23 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize, MonomialDegree};
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
     /// let lhs = Polynomial::from_container(vec![4_u8, 5, 0]);
     /// let rhs = Polynomial::from_container(vec![7_u8, 9, 0]);
     /// let mut res = Polynomial::allocate(0 as u8, PolynomialSize(3));
     /// res.fill_with_wrapping_mul(&lhs, &rhs);
-    /// assert_eq!(*res.get_monomial(MonomialDegree(0)).get_coefficient(), 28 as u8);
-    /// assert_eq!(*res.get_monomial(MonomialDegree(1)).get_coefficient(), 71 as u8);
-    /// assert_eq!(*res.get_monomial(MonomialDegree(2)).get_coefficient(), 45 as u8);
+    /// assert_eq!(
+    ///     *res.get_monomial(MonomialDegree(0)).get_coefficient(),
+    ///     28 as u8
+    /// );
+    /// assert_eq!(
+    ///     *res.get_monomial(MonomialDegree(1)).get_coefficient(),
+    ///     71 as u8
+    /// );
+    /// assert_eq!(
+    ///     *res.get_monomial(MonomialDegree(2)).get_coefficient(),
+    ///     45 as u8
+    /// );
     /// ```
     pub fn fill_with_wrapping_mul<Coef, LhsCont, RhsCont>(
         &mut self,
@@ -286,14 +295,14 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize, MonomialDegree};
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
     /// let lhs = Polynomial::from_container(vec![1_u32; 128]);
     /// let rhs = Polynomial::from_container(vec![2_u32; 128]);
     /// let mut res_kara = Polynomial::allocate(0 as u32, PolynomialSize(128));
     /// let mut res_mul = Polynomial::allocate(0 as u32, PolynomialSize(128));
     /// res_kara.fill_with_karatsuba_mul(&lhs, &rhs);
     /// res_mul.fill_with_wrapping_mul(&lhs, &rhs);
-    /// assert_eq!(res_kara,res_mul);
+    /// assert_eq!(res_kara, res_mul);
     /// ```
     pub fn fill_with_karatsuba_mul<Coef, LhsCont, RhsCont>(
         &mut self,
@@ -380,15 +389,24 @@ impl<Cont> Polynomial<Cont> {
     /// # Example:
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialSize, MonomialDegree};
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial, PolynomialSize};
     /// let poly = Polynomial::from_container(vec![1_u8, 2, 3]);
     /// let bin_poly = Polynomial::from_container(vec![false, true, true]);
     /// let mut res = Polynomial::allocate(133 as u8, PolynomialSize(3));
     /// res.fill_with_wrapping_binary_mul(&poly, &bin_poly);
     /// dbg!(&res);
-    /// assert_eq!(*res.get_monomial(MonomialDegree(0)).get_coefficient(), 251 as u8);
-    /// assert_eq!(*res.get_monomial(MonomialDegree(1)).get_coefficient(), 254 as u8);
-    /// assert_eq!(*res.get_monomial(MonomialDegree(2)).get_coefficient(), 3 as u8);
+    /// assert_eq!(
+    ///     *res.get_monomial(MonomialDegree(0)).get_coefficient(),
+    ///     251 as u8
+    /// );
+    /// assert_eq!(
+    ///     *res.get_monomial(MonomialDegree(1)).get_coefficient(),
+    ///     254 as u8
+    /// );
+    /// assert_eq!(
+    ///     *res.get_monomial(MonomialDegree(2)).get_coefficient(),
+    ///     3 as u8
+    /// );
     /// ```
     pub fn fill_with_wrapping_binary_mul<Coef, PolyCont, BinCont>(
         &mut self,
@@ -421,20 +439,29 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{PolynomialList, PolynomialSize, Polynomial, MonomialDegree};
-    /// let poly_list = PolynomialList::from_container(
-    ///     vec![100 as u8,20,3,4,5,6],
-    ///     PolynomialSize(3)
-    /// );
+    /// use concrete_core::math::polynomial::{
+    ///     MonomialDegree, Polynomial, PolynomialList, PolynomialSize,
+    /// };
+    /// let poly_list =
+    ///     PolynomialList::from_container(vec![100 as u8, 20, 3, 4, 5, 6], PolynomialSize(3));
     /// let bin_poly_list = PolynomialList::from_container(
     ///     vec![false, true, true, true, false, false],
-    ///     PolynomialSize(3)
+    ///     PolynomialSize(3),
     /// );
     /// let mut output = Polynomial::allocate(250 as u8, PolynomialSize(3));
     /// output.update_with_wrapping_add_binary_multisum(&poly_list, &bin_poly_list);
-    /// assert_eq!(*output.get_monomial(MonomialDegree(0)).get_coefficient(), 231);
-    /// assert_eq!(*output.get_monomial(MonomialDegree(1)).get_coefficient(), 96);
-    /// assert_eq!(*output.get_monomial(MonomialDegree(2)).get_coefficient(), 120);
+    /// assert_eq!(
+    ///     *output.get_monomial(MonomialDegree(0)).get_coefficient(),
+    ///     231
+    /// );
+    /// assert_eq!(
+    ///     *output.get_monomial(MonomialDegree(1)).get_coefficient(),
+    ///     96
+    /// );
+    /// assert_eq!(
+    ///     *output.get_monomial(MonomialDegree(2)).get_coefficient(),
+    ///     120
+    /// );
     /// ```
     pub fn update_with_wrapping_add_binary_multisum<Coef, InCont, BinCont>(
         &mut self,
@@ -465,20 +492,29 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{PolynomialList, PolynomialSize, Polynomial, MonomialDegree};
-    /// let poly_list = PolynomialList::from_container(
-    ///     vec![100 as u8,20,3,4,5,6],
-    ///     PolynomialSize(3)
-    /// );
+    /// use concrete_core::math::polynomial::{
+    ///     MonomialDegree, Polynomial, PolynomialList, PolynomialSize,
+    /// };
+    /// let poly_list =
+    ///     PolynomialList::from_container(vec![100 as u8, 20, 3, 4, 5, 6], PolynomialSize(3));
     /// let bin_poly_list = PolynomialList::from_container(
     ///     vec![false, true, true, true, false, false],
-    ///     PolynomialSize(3)
+    ///     PolynomialSize(3),
     /// );
     /// let mut output = Polynomial::allocate(250 as u8, PolynomialSize(3));
     /// output.update_with_wrapping_sub_binary_multisum(&poly_list, &bin_poly_list);
-    /// assert_eq!(*output.get_monomial(MonomialDegree(0)).get_coefficient(), 13);
-    /// assert_eq!(*output.get_monomial(MonomialDegree(1)).get_coefficient(), 148);
-    /// assert_eq!(*output.get_monomial(MonomialDegree(2)).get_coefficient(), 124);
+    /// assert_eq!(
+    ///     *output.get_monomial(MonomialDegree(0)).get_coefficient(),
+    ///     13
+    /// );
+    /// assert_eq!(
+    ///     *output.get_monomial(MonomialDegree(1)).get_coefficient(),
+    ///     148
+    /// );
+    /// assert_eq!(
+    ///     *output.get_monomial(MonomialDegree(2)).get_coefficient(),
+    ///     124
+    /// );
     /// ```
     pub fn update_with_wrapping_sub_binary_multisum<Coef, InCont, BinCont>(
         &mut self,
@@ -502,8 +538,8 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree};
-    /// let poly = Polynomial::from_container(vec![1_u8,2,3]);
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
+    /// let poly = Polynomial::from_container(vec![1_u8, 2, 3]);
     /// let bin_poly = Polynomial::from_container(vec![false, true, true]);
     /// let mut res = Polynomial::from_container(vec![1_u8, 0, 253]);
     /// res.update_with_wrapping_add_binary_mul(&poly, &bin_poly);
@@ -556,8 +592,8 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree};
-    /// let poly = Polynomial::from_container(vec![1_u8,2,3]);
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
+    /// let poly = Polynomial::from_container(vec![1_u8, 2, 3]);
     /// let bin_poly = Polynomial::from_container(vec![false, true, true]);
     /// let mut res = Polynomial::from_container(vec![255_u8, 255, 1]);
     /// res.update_with_wrapping_sub_binary_mul(&poly, &bin_poly);
@@ -611,7 +647,7 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree};
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
     /// let mut first = Polynomial::from_container(vec![1u8, 2, 3]);
     /// let second = Polynomial::from_container(vec![255u8, 255, 255]);
     /// first.update_with_wrapping_add(&second);
@@ -638,13 +674,22 @@ impl<Cont> Polynomial<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree};
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
     /// let mut first = Polynomial::from_container(vec![1u8, 2, 3]);
     /// let second = Polynomial::from_container(vec![4u8, 5, 6]);
     /// first.update_with_wrapping_sub(&second);
-    /// assert_eq!(*first.get_monomial(MonomialDegree(0)).get_coefficient(), 253);
-    /// assert_eq!(*first.get_monomial(MonomialDegree(1)).get_coefficient(), 253);
-    /// assert_eq!(*first.get_monomial(MonomialDegree(2)).get_coefficient(), 253);
+    /// assert_eq!(
+    ///     *first.get_monomial(MonomialDegree(0)).get_coefficient(),
+    ///     253
+    /// );
+    /// assert_eq!(
+    ///     *first.get_monomial(MonomialDegree(1)).get_coefficient(),
+    ///     253
+    /// );
+    /// assert_eq!(
+    ///     *first.get_monomial(MonomialDegree(2)).get_coefficient(),
+    ///     253
+    /// );
     /// ```
     pub fn update_with_wrapping_sub<Coef, OtherCont>(&mut self, other: &Polynomial<OtherCont>)
     where
@@ -666,8 +711,8 @@ impl<Cont> Polynomial<Cont> {
     /// # Examples
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree};
-    /// let mut poly = Polynomial::from_container(vec![1u8,2,3]);
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
+    /// let mut poly = Polynomial::from_container(vec![1u8, 2, 3]);
     /// poly.update_with_wrapping_monic_monomial_mul(MonomialDegree(2));
     /// assert_eq!(*poly.get_monomial(MonomialDegree(0)).get_coefficient(), 254);
     /// assert_eq!(*poly.get_monomial(MonomialDegree(1)).get_coefficient(), 253);
@@ -702,8 +747,8 @@ impl<Cont> Polynomial<Cont> {
     /// # Examples
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, MonomialDegree};
-    /// let mut poly = Polynomial::from_container(vec![1u8,2,3]);
+    /// use concrete_core::math::polynomial::{MonomialDegree, Polynomial};
+    /// let mut poly = Polynomial::from_container(vec![1u8, 2, 3]);
     /// poly.update_with_wrapping_unit_monomial_div(MonomialDegree(2));
     /// assert_eq!(*poly.get_monomial(MonomialDegree(0)).get_coefficient(), 3);
     /// assert_eq!(*poly.get_monomial(MonomialDegree(1)).get_coefficient(), 255);
@@ -738,10 +783,11 @@ impl<Cont> Polynomial<Cont> {
     /// # Examples
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialList, PolynomialSize};
-    /// use concrete_core::math::polynomial::MonomialDegree;
-    /// let mut poly = Polynomial::from_container(vec![1u8,2,3]);
-    /// let poly_list = PolynomialList::from_container(vec![4u8,5,6,7,8,9], PolynomialSize(3));
+    /// use concrete_core::math::polynomial::{
+    ///     MonomialDegree, Polynomial, PolynomialList, PolynomialSize,
+    /// };
+    /// let mut poly = Polynomial::from_container(vec![1u8, 2, 3]);
+    /// let poly_list = PolynomialList::from_container(vec![4u8, 5, 6, 7, 8, 9], PolynomialSize(3));
     /// poly.update_with_wrapping_add_several(&poly_list);
     /// assert_eq!(*poly.get_monomial(MonomialDegree(0)).get_coefficient(), 12);
     /// assert_eq!(*poly.get_monomial(MonomialDegree(1)).get_coefficient(), 15);
@@ -766,14 +812,24 @@ impl<Cont> Polynomial<Cont> {
     /// # Examples
     ///
     /// ```
-    /// use concrete_core::math::polynomial::{Polynomial, PolynomialList, PolynomialSize};
-    /// use concrete_core::math::polynomial::MonomialDegree;
-    /// let mut poly = Polynomial::from_container(vec![1u32,2,3]);
-    /// let poly_list = PolynomialList::from_container(vec![4u32,5,6,7,8,9], PolynomialSize(3));
+    /// use concrete_core::math::polynomial::{
+    ///     MonomialDegree, Polynomial, PolynomialList, PolynomialSize,
+    /// };
+    /// let mut poly = Polynomial::from_container(vec![1u32, 2, 3]);
+    /// let poly_list = PolynomialList::from_container(vec![4u32, 5, 6, 7, 8, 9], PolynomialSize(3));
     /// poly.update_with_wrapping_sub_several(&poly_list);
-    /// assert_eq!(*poly.get_monomial(MonomialDegree(0)).get_coefficient(), 4294967286);
-    /// assert_eq!(*poly.get_monomial(MonomialDegree(1)).get_coefficient(), 4294967285);
-    /// assert_eq!(*poly.get_monomial(MonomialDegree(2)).get_coefficient(), 4294967284);
+    /// assert_eq!(
+    ///     *poly.get_monomial(MonomialDegree(0)).get_coefficient(),
+    ///     4294967286
+    /// );
+    /// assert_eq!(
+    ///     *poly.get_monomial(MonomialDegree(1)).get_coefficient(),
+    ///     4294967285
+    /// );
+    /// assert_eq!(
+    ///     *poly.get_monomial(MonomialDegree(2)).get_coefficient(),
+    ///     4294967284
+    /// );
     /// ```
     pub fn update_with_wrapping_sub_several<Coef, InCont>(
         &mut self,

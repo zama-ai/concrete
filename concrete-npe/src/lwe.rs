@@ -44,7 +44,8 @@ macro_rules! impl_trait_npe_lwe {
             /// let var_ks: f64 = f64::powi(2., -38) ;
             /// let var_input: f64 = f64::powi(2., -40) ;
             /// // Computing the noise
-            /// let var_ks = <Torus as LWE>::key_switch(dimension_before, l_ks, base_log, var_ks, var_input) ;
+            /// let var_ks = <Torus as LWE>::key_switch(dimension_before, l_ks, base_log, var_ks,
+            /// var_input) ;
             /// ```
             fn key_switch(
                 dimension_before: usize,
@@ -66,8 +67,8 @@ macro_rules! impl_trait_npe_lwe {
                 return res;
             }
 
-            /// Computes the variance of the error distribution after a multiplication of a ciphertext by a scalar
-            /// i.e. sigma_out^2 <- n^2 * sigma^2
+            /// Computes the variance of the error distribution after a multiplication of a
+            /// ciphertext by a scalar i.e. sigma_out^2 <- n^2 * sigma^2
             /// Arguments
             /// * `variance` - variance of the input LWE
             /// * `n` - a signed integer
@@ -88,10 +89,11 @@ macro_rules! impl_trait_npe_lwe {
                 return variance * ((sn * sn) as f64);
             }
 
-            /// Computes the variance of the error distribution after a multisum between uncorrelated ciphertexts and scalar weights
-            /// i.e. sigma_out^2 <- \Sum_i weight_i^2 * sigma_i^2
-            /// Arguments
-            /// * `variances` - a slice of f64 with the error variances of all the input uncorrelated ciphertexts
+            /// Computes the variance of the error distribution after a multisum between
+            /// uncorrelated ciphertexts and scalar weights i.e. sigma_out^2 <- \Sum_i
+            /// weight_i^2 * sigma_i^2 Arguments
+            /// * `variances` - a slice of f64 with the error variances of all the input
+            ///   uncorrelated ciphertexts
             /// * `weights` - a slice of Torus with the input weights
             /// Output
             /// * the output variance
@@ -115,8 +117,8 @@ macro_rules! impl_trait_npe_lwe {
                 return new_variance;
             }
 
-            /// Computes the variance of the error distribution after a multiplication of several ciphertexts by several scalars
-            /// Arguments
+            /// Computes the variance of the error distribution after a multiplication of several
+            /// ciphertexts by several scalars Arguments
             /// * `var_out` - variances of the output LWEs (output)
             /// * `var_in` - variances of the input LWEs
             /// * `t` - a slice of signed integer
@@ -137,8 +139,8 @@ macro_rules! impl_trait_npe_lwe {
                 }
             }
 
-            /// Computes the variance of the error distribution after a multiplication of several ciphertexts by several scalars
-            /// Arguments
+            /// Computes the variance of the error distribution after a multiplication of several
+            /// ciphertexts by several scalars Arguments
             /// * `var` - variances of the input/output LWEs (output)
             /// * `t` - a slice of signed integer
             /// # Example
@@ -163,8 +165,8 @@ macro_rules! impl_trait_npe_lwe {
 impl_trait_npe_lwe!(u32, i32, "type Torus = u32;");
 impl_trait_npe_lwe!(u64, i64, "type Torus = u64;");
 
-/// Computes the variance of the error distribution after an addition of two uncorrelated ciphertexts
-/// sigma_out^2 <- sigma0^2 + sigma1^2
+/// Computes the variance of the error distribution after an addition of two uncorrelated
+/// ciphertexts sigma_out^2 <- sigma0^2 + sigma1^2
 /// Arguments
 /// * `variance_0` - variance of the error of the first input ciphertext
 /// * `variance_1` - variance of the error of the second input ciphertext
@@ -177,7 +179,8 @@ pub fn add_2_uncorrelated(variance_0: f64, variance_1: f64) -> f64 {
 /// Computes the variance of the error distribution after an addition of n uncorrelated ciphertexts
 /// sigma_out^2 <- \Sum sigma_i^2
 /// Arguments
-/// * `variances` - a slice of f64 with the error variances of all the input uncorrelated ciphertexts
+/// * `variances` - a slice of f64 with the error variances of all the input uncorrelated
+///   ciphertexts
 /// Output
 /// * the sum of the variances
 pub fn add_n_uncorrelated(variances: &[f64]) -> f64 {

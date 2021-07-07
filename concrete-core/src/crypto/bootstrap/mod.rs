@@ -25,22 +25,18 @@ pub trait Bootstrap {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::crypto::{GlweDimension, LweDimension, LweSize};
-    /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
-    /// use concrete_commons::{LogStandardDev, Numeric, CastInto};
-    /// use concrete_core::math::random::{RandomGenerator, EncryptionRandomGenerator};
-    /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
-    /// use concrete_core::crypto::glwe::GlweCiphertext;
-    /// use concrete_core::math::tensor::AsMutTensor;
-    /// use concrete_core::math::fft::Complex64;
+    /// use concrete_commons::{CastInto, LogStandardDev, Numeric};
+    /// use concrete_core::crypto::bootstrap::{Bootstrap, FourierBootstrapKey, StandardBootstrapKey};
     /// use concrete_core::crypto::encoding::Plaintext;
-    /// use concrete_core::crypto::bootstrap::{
-    ///     FourierBootstrapKey,
-    ///     StandardBootstrapKey,
-    ///     Bootstrap
-    /// };
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::crypto::lwe::LweCiphertext;
+    /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
+    /// use concrete_core::crypto::{GlweDimension, LweDimension, LweSize};
+    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::fft::Complex64;
+    /// use concrete_core::math::polynomial::PolynomialSize;
+    /// use concrete_core::math::random::{EncryptionRandomGenerator, RandomGenerator};
+    /// use concrete_core::math::tensor::AsMutTensor;
     ///
     /// // define settings
     /// let polynomial_size = PolynomialSize(1024);
@@ -81,23 +77,20 @@ pub trait Bootstrap {
     /// let message = Plaintext(2u32.pow(30));
     ///
     /// let mut lwe_in = LweCiphertext::allocate(0u32, lwe_dimension.to_lwe_size());
-    /// let mut lwe_out = LweCiphertext::allocate(
-    ///     0u32,
-    ///     LweSize(rlwe_dimension.0 * polynomial_size.0 + 1)
-    /// );
+    /// let mut lwe_out =
+    ///     LweCiphertext::allocate(0u32, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
     /// lwe_sk.encrypt_lwe(&mut lwe_in, &message, std, &mut secret_generator);
     ///
     /// // accumulator is a trivial encryption of [0, 1/2N, 2/2N, ...]
     /// let mut accumulator =
-    /// GlweCiphertext::allocate(0u32, polynomial_size, rlwe_dimension.to_glwe_size());
+    ///     GlweCiphertext::allocate(0u32, polynomial_size, rlwe_dimension.to_glwe_size());
     /// accumulator
     ///     .get_mut_body()
     ///     .as_mut_tensor()
     ///     .iter_mut()
     ///     .enumerate()
     ///     .for_each(|(i, a)| {
-    ///         *a = (i as f64 * 2_f64.powi(32_i32 - 10 - 1))
-    ///             .cast_into();
+    ///         *a = (i as f64 * 2_f64.powi(32_i32 - 10 - 1)).cast_into();
     ///     });
     ///
     /// // bootstrap
