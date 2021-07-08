@@ -5,6 +5,8 @@
 #define GET_TYPEDEF_CLASSES
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOpsTypes.cpp.inc"
 
+#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOpsDialect.cpp.inc"
+
 using namespace mlir::zamalang::MidLFHE;
 
 void MidLFHEDialect::initialize() {

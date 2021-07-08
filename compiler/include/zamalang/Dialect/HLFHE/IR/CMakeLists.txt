@@ -4,6 +4,7 @@ mlir_tablegen(HLFHEOps.cpp.inc -gen-op-defs)
 mlir_tablegen(HLFHEOpsTypes.h.inc -gen-typedef-decls -typedefs-dialect=HLFHE)
 mlir_tablegen(HLFHEOpsTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=HLFHE)
 mlir_tablegen(HLFHEOpsDialect.h.inc -gen-dialect-decls -dialect=HLFHE)
+mlir_tablegen(HLFHEOpsDialect.cpp.inc -gen-dialect-defs -dialect=HLFHE)
 add_public_tablegen_target(MLIRHLFHEOpsIncGen)
 add_dependencies(mlir-headers MLIRHLFHEOpsIncGen)
 

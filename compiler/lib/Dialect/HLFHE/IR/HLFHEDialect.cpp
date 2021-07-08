@@ -5,6 +5,8 @@
 #define GET_TYPEDEF_CLASSES
 #include "zamalang/Dialect/HLFHE/IR/HLFHEOpsTypes.cpp.inc"
 
+#include "zamalang/Dialect/HLFHE/IR/HLFHEOpsDialect.cpp.inc"
+
 using namespace mlir::zamalang::HLFHE;
 
 void HLFHEDialect::initialize() {
