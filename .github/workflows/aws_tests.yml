@@ -51,11 +51,13 @@ jobs:
           - os: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-
     - name: Set up home
       if: ${{ !cancelled() }}
       run: |
         echo "HOME=/home/ubuntu" >> ${GITHUB_ENV}
+    - name: Install Fftw
+      if: ${{ !cancelled() }}
+      run: sudo apt-get install -y libfftw3-dev
     - name: Install Rust
       if: ${{ !cancelled() }}
       uses: actions-rs/toolchain@v1
