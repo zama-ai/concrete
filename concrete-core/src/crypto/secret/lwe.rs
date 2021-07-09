@@ -135,7 +135,7 @@ impl<Cont> LweSecretKey<BinaryKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_binary`] for a
     /// generation method.
     ///
     /// # Example
@@ -163,7 +163,7 @@ impl<Cont> LweSecretKey<TernaryKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_ternary`] for a
     /// generation method.
     ///
     /// # Example
@@ -191,7 +191,7 @@ impl<Cont> LweSecretKey<GaussianKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_gaussian`] for a
     /// generation method.
     ///
     /// # Example
@@ -219,7 +219,7 @@ impl<Cont> LweSecretKey<UniformKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_uniform`] for a
     /// generation method.
     ///
     /// # Example
