@@ -7,9 +7,11 @@
 //! Zero keys are provided for debug only.
 //! All formulas are assumed to work on modular representation (i.e. not Torus representation).
 
+use concrete_commons::dispersion::Variance;
 use concrete_commons::parameters::PolynomialSize;
 
 use super::*;
+use concrete_commons::numeric::UnsignedInteger;
 
 /// The Gaussian secret keys have modular standard deviation set to 3.2 by default.
 pub const GAUSSIAN_MODULAR_STDEV: f64 = 3.2;
@@ -30,22 +32,29 @@ pub enum KeyType {
 /// Returns the variance of key coefficients given the key type
 /// # Example:
 /// ```rust
-/// use concrete_commons::dispersion::Variance;
+/// use concrete_commons::dispersion::*;
 /// use concrete_npe::*;
 ///
-/// let var_out = variance_key_coefficient(KeyType::Gaussian);
+/// type ui = u64;
+/// let var_out = Variance::get_modular_variance::<ui>(&variance_key_coefficient::<ui>
+/// (KeyType::Gaussian));
+/// let expected_var_out = 10.24;
 /// println!("{}", var_out);
-/// assert!((10.24 - var_out).abs() < 0.0001);
+/// assert!((expected_var_out - var_out).abs() < 0.0001);
 /// ```
-pub fn variance_key_coefficient(key_type: KeyType) -> f64 {
+pub fn variance_key_coefficient<T>(key_type: KeyType) -> Variance
+where
+    T: UnsignedInteger,
+{
     match key_type {
-        KeyType::Binary => 1. / 4.,
-        KeyType::Ternary => 2. / 3.,
-        KeyType::Gaussian => square(GAUSSIAN_MODULAR_STDEV),
-        KeyType::Zero => 0.,
+        KeyType::Binary => Variance::from_modular_variance::<T>(1. / 4.),
+        KeyType::Ternary => Variance::from_modular_variance::<T>(2. / 3.),
+        KeyType::Gaussian => Variance::from_modular_variance::<T>(square(GAUSSIAN_MODULAR_STDEV)),
+        KeyType::Zero => Variance::from_modular_variance::<T>(0.),
     }
 }
 
+/*
 /// Returns the expectation of key coefficients given the key type
 /// Arguments:
 /// * `key_type` - input key type
@@ -206,3 +215,4 @@ pub fn square_expectation_mean_in_polynomial_key_times_key(
         KeyType::Zero => 0.,
     }
 }
+*/
