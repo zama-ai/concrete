@@ -1,8 +1,9 @@
+//! All formulas are assumed to work on modular representation.
 use concrete_commons::parameters::PolynomialSize;
 
 use super::*;
-
-pub const GAUSSIAN_STDEV: f64 = 3.2 / (1_u128 << 64) as f64;
+/// TODO Doc
+pub const GAUSSIAN_MODULAR_STDEV: f64 = 3.2;
 
 /// KeyType is an enumeration on all the different key types
 /// * Uniform Binary
@@ -26,7 +27,7 @@ pub fn variance_key_coefficient(key_type: KeyType) -> f64 {
     match key_type {
         KeyType::Binary => 1. / 4.,
         KeyType::Ternary => 2. / 3.,
-        KeyType::Gaussian => square(GAUSSIAN_STDEV * f64::powi(2., 64 as i32)),
+        KeyType::Gaussian => square(GAUSSIAN_MODULAR_STDEV),
         KeyType::Zero => 0.,
     }
 }
