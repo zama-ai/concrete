@@ -1,8 +1,17 @@
-//! All formulas are assumed to work on modular representation.
+//! Key distributions
+//!
+//! In this file are contained all the distributions for the variance and the expectation of
+//! coefficients of the secret keys, secret keys to the square and different secret keys
+//! multiplied by themselves.
+//! The distributions are given for uniform binary, uniform ternary and gaussian secret keys.
+//! Zero keys are provided for debug only.
+//! All formulas are assumed to work on modular representation (i.e. not Torus representation).
+
 use concrete_commons::parameters::PolynomialSize;
 
 use super::*;
-/// TODO Doc
+
+/// The Gaussian secret keys have modular standard deviation set to 3.2 by default.
 pub const GAUSSIAN_MODULAR_STDEV: f64 = 3.2;
 
 /// KeyType is an enumeration on all the different key types
@@ -19,10 +28,15 @@ pub enum KeyType {
 }
 
 /// Returns the variance of key coefficients given the key type
-/// Arguments:
-/// * `key_type` - input key type
-/// Output:
-/// * The noise variance of the coefficients of the key
+/// # Example:
+/// ```rust
+/// use concrete_commons::dispersion::Variance;
+/// use concrete_npe::*;
+///
+/// let var_out = variance_key_coefficient(KeyType::Gaussian);
+/// println!("{}", var_out);
+/// assert!((10.24 - var_out).abs() < 0.0001);
+/// ```
 pub fn variance_key_coefficient(key_type: KeyType) -> f64 {
     match key_type {
         KeyType::Binary => 1. / 4.,
@@ -146,11 +160,19 @@ pub fn squared_expectation_mean_in_polynomial_key_squared(
 /// Returns the variance of the coefficients of a polynomial key resulting from
 /// the multiplication of two polynomial keys of the same type (S_i x S_j)
 /// given their key type
-/// Arguments:
-/// * `key_type` - input key type (both keys in the product have the same key
-///   type)
-/// Output:
-/// * The noise variance of the coefficients of the polynomial key S_i x S_j
+/// # Example:
+/// ```rust
+/// use concrete_commons::dispersion::Variance;
+/// use concrete_commons::parameters::{PolynomialSize};
+/// use concrete_npe::*;
+///
+/// let polynomial_size = PolynomialSize(1024);
+///
+/// let var_out = variance_coefficient_in_polynomial_key_times_key(polynomial_size,
+/// KeyType::Ternary);
+/// println!("{}", var_out);
+/// assert!((455.1111 - var_out).abs() < 0.0001);
+/// ```
 pub fn variance_coefficient_in_polynomial_key_times_key(
     poly_size: PolynomialSize,
     key_type: KeyType,
