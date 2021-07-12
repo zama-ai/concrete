@@ -85,8 +85,9 @@ pub fn variance_external_product<T, D1, D2>(
     polynomial_size: PolynomialSize,
     base_log: DecompositionBaseLog,
     l_gadget: DecompositionLevelCount,
-    dispersion_rgsw: D1,
-    dispersion_rlwe: D2,
+    dispersion_ggsw: D1,
+    dispersion_glwe: D2,
+    key_type_out: KeyType,
 ) -> Variance
 where
     T: UnsignedInteger,
@@ -96,20 +97,26 @@ where
     // norm 2 of the integer polynomial hidden in the RGSW
     // for an external product inside a bootstrap, the integer polynomial is in fact
     // a constant polynomial equal to 0 or 1
-    let norm_2_msg_rgsw = 1.;
+    let norm_2_msg_ggsw = 1.;
     let b_g = 1 << base_log.0;
-    let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
+    let q_square = f64::powi(2., (2 * T::BITS) as i32);
     let res_1: f64 = ((dimension.0 + 1) * l_gadget.0 * polynomial_size.0 * (b_g * b_g + 2)) as f64
         / 12.
-        * dispersion_rgsw.get_modular_variance::<T>();
+        * dispersion_ggsw.get_modular_variance::<T>();
 
-    let res_2: f64 = norm_2_msg_rgsw
-        * ((dimension.0 * polynomial_size.0 + 2) as f64
-            / (24. * f64::powi(b_g as f64, 2 * l_gadget.0 as i32)) as f64
-            + (dimension.0 * polynomial_size.0 / 48 - 1 / 12) as f64 / q_square);
+    let res_2: f64 = square(norm_2_msg_ggsw)
+        * (dispersion_glwe.get_modular_variance::<T>()
+            + (q_square - f64::powi(b_g as f64, 2 * l_gadget.0 as i32))
+                / (12. * f64::powi(b_g as f64, 2 * l_gadget.0 as i32))
+                * (1.
+                    + dimension.0 as f64
+                        * polynomial_size.0 as f64
+                        * (variance_key_coefficient(key_type_out)
+                            + square(expectation_key_coefficient(key_type_out))))
+            + dimension.0 as f64 * polynomial_size.0 as f64 / 4.
+                * variance_key_coefficient(key_type_out));
 
-    let res_3: f64 = norm_2_msg_rgsw * dispersion_rlwe.get_modular_variance::<T>();
-    Variance::from_variance(res_1 + res_2 + res_3)
+    Variance::from_variance(res_1 + res_2)
 }
 
 /// Return the variance of the cmux given a set of parameters.
@@ -160,6 +167,7 @@ pub fn variance_cmux<T, D1, D2, D3>(
     dispersion_rlwe_0: D1,
     dispersion_rlwe_1: D2,
     dispersion_rgsw: D3,
+    key_type: KeyType,
 ) -> Variance
 where
     T: UnsignedInteger,
@@ -174,131 +182,10 @@ where
         l_gadget,
         dispersion_rgsw,
         variance_add::<T, _, _>(dispersion_rlwe_0, dispersion_rlwe_1),
+        key_type,
     );
     let var_cmux = variance_add::<T, _, _>(var_external_product, dispersion_rlwe_0);
     var_cmux
-}
-
-/// Return the variance of output of a bootstrap given a set of parameters.
-/// To see how to use it, please refer to the test of the bootstrap.
-/// Arguments
-/// * `lwe_dimension` - size of the LWE mask
-/// * `rlwe_dimension` - size of the RLWE mask
-/// * `polynomial_size` - number of coefficients of the polynomial e.g. degree +
-///   1
-/// * `base_log` - decomposition base of the gadget matrix
-/// * `l_gadget` - number of elements for the decomposition
-/// * `dispersion_bsk` - dispersion of the bootstrapping key
-/// # Output
-/// * Returns the variance of the output RLWE
-/// # Example
-/// ```rust
-/// use concrete_commons::dispersion::{DispersionParameter, Variance};
-/// use concrete_commons::parameters::{
-///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
-/// };
-/// use concrete_npe::bootstrap;
-/// let rlwe_dimension = GlweDimension(3);
-/// let lwe_dimension = LweDimension(630);
-/// let polynomial_size = PolynomialSize(1024);
-/// let base_log = DecompositionBaseLog(7);
-/// let l_gadget = DecompositionLevelCount(4);
-/// let var_bsk = Variance::from_variance(f64::powi(2., -38));
-/// // Computing the noise
-/// let var_bootstrap = bootstrap::<u64, _>(
-///     lwe_dimension,
-///     rlwe_dimension,
-///     polynomial_size,
-///     base_log,
-///     l_gadget,
-///     var_bsk,
-/// );
-/// ```
-pub fn variance_bootstrap<T, D>(
-    lwe_dimension: LweDimension,
-    rlwe_dimension: GlweDimension,
-    polynomial_size: PolynomialSize,
-    base_log: DecompositionBaseLog,
-    l_gadget: DecompositionLevelCount,
-    var_bsk: D,
-) -> Variance
-where
-    T: UnsignedInteger,
-    D: DispersionParameter,
-{
-    let b_g = 1 << base_log.0;
-    let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
-    let var_res_1: f64 = (lwe_dimension.0
-        * (rlwe_dimension.0 + 1)
-        * l_gadget.0
-        * polynomial_size.0
-        * (b_g * b_g + 2)) as f64
-        / 12.
-        * var_bsk.get_modular_variance::<T>();
-
-    let var_res_2: f64 = lwe_dimension.0 as f64
-        * ((rlwe_dimension.0 * polynomial_size.0 + 2) as f64
-            / (24. * f64::powi(b_g as f64, 2 * l_gadget.0 as i32)) as f64
-            + lwe_dimension.0 as f64 * (rlwe_dimension.0 * polynomial_size.0 / 48 - 1 / 12) as f64
-                / q_square);
-
-    Variance::from_variance(var_res_1 + var_res_2)
-}
-
-/// Return the variance of the keyswitch on a LWE ciphertext given a set of
-/// parameters. To see how to use it, please refer to the test of the
-/// keyswitch # Warning
-/// * This function compute the noise of the keyswitch without functional
-///   evaluation
-/// # Arguments
-/// `dimension_before` - size of the input LWE mask
-/// `l_ks` - number of level max for the torus decomposition
-/// `base_log` - number of bits for the base B (B=2^base_log)
-/// `dispersion_ks` - dispersion of the keyswitching key
-/// `dispersion_input` - dispersion of the input LWE
-/// # Example
-/// ```rust
-/// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::parameters::{
-///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
-/// };
-/// use concrete_npe::key_switch;
-/// let dimension_before = LweDimension(630);
-/// let l_ks = DecompositionLevelCount(4);
-/// let base_log = DecompositionBaseLog(7);
-/// let dispersion_ks = Variance::from_variance(f64::powi(2., -38));
-/// let dispersion_input = Variance::from_variance(f64::powi(2., -40));
-/// // Computing the noise
-/// let var_ks = key_switch::<u64, _, _>(
-///     dimension_before,
-///     l_ks,
-///     base_log,
-///     dispersion_ks,
-///     dispersion_input,
-/// );
-/// ```
-pub fn variance_key_switch_lwe_to_lwe<T, D1, D2>(
-    dimension_before: LweDimension,
-    l_ks: DecompositionLevelCount,
-    base_log: DecompositionBaseLog,
-    dispersion_ks: D1,
-    dispersion_input: D2,
-) -> Variance
-where
-    T: UnsignedInteger,
-    D1: DispersionParameter,
-    D2: DispersionParameter,
-{
-    let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
-    let var_res_1: f64 = dimension_before.0 as f64
-        * (1. / 24. * f64::powi(2.0, -2 * (base_log.0 * l_ks.0) as i32) + 1. / (48. * q_square));
-    let var_res_2: f64 = dimension_before.0 as f64
-        * l_ks.0 as f64
-        * (f64::powi(2., 2 * base_log.0 as i32) / 12. + 1. / 6.)
-        * dispersion_ks.get_modular_variance::<T>();
-
-    let var_res: f64 = dispersion_input.get_modular_variance::<T>() + var_res_1 + var_res_2;
-    Variance::from_variance(var_res)
 }
 
 /// Noise formulas for the LWE ciphertext related operations
@@ -497,8 +384,6 @@ where
     Variance::from_variance(res_2 + res_1 + res_3)
 }
 
-///HHHHHHEEEEEEEEEERRRRRRRREEEEEE HERE
-
 //TODO: DOC
 pub fn variance_glwe_relinearization<T, D>(
     poly_size: PolynomialSize,
@@ -516,7 +401,7 @@ where
     let big_n = poly_size.0 as f64;
     let k = mask_size.0 as f64;
     let b = f64::powi(2., base_log.0 as i32);
-    let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
+    let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
     // first term
     let res_1 = k * (level.0 as f64) * big_n * dispersion_rlk.get_variance() * (k + 1.) / 2.
@@ -594,7 +479,11 @@ where
 /// returns a variance of the drift of the PBS with binary keys
 /// output -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
 /// in TFHE's case nb_msb = log2(poly_size) + 1
-pub fn variance_lwe_drift_pbs<T, D>(lwe_mask_size: usize, nb_msb: usize, var_in: D) -> Variance
+pub fn variance_lwe_drift_pbs_with_binary_key<T, D>(
+    lwe_mask_size: usize,
+    nb_msb: usize,
+    var_in: D,
+) -> Variance
 where
     T: UnsignedInteger,
     D: DispersionParameter,
@@ -686,6 +575,8 @@ where
     )
 }
 
+//HERE
+
 /// returns a variance when computing a relinarization of an RLWE resulting from
 /// a tensor product: with k=2, and the secret key is (-S^2(X),S(X))
 /// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
@@ -769,34 +660,7 @@ where
     Variance::from_variance(res_1 + res_2)
 }
 /*
-/// returns a variance when computing an external product as in TFHE's PBS
-/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
-pub fn external_product(
-    poly_size: usize,
-    rlwe_mask_size: usize,
-    var_rlwe: f64,
-    var_rgsw: f64,
-    base_log: usize,
-    level: usize,
-    q: f64,
-    key_type: char,
-) -> f64 {
-    let l = level as f64;
-    let k = rlwe_mask_size as f64;
-    let big_n = poly_size as f64;
-    let b = (1 << base_log) as f64;
-    let b2l = f64::powf(b, 2. * l);
 
-    let res_1 = l * (k + 1.) * big_n * var_rgsw * (square(b) + 2.) / 12.;
-    let res_2 = var_rlwe / 2.;
-    let res_3 = (square(q) - b2l) / (24. * b2l)
-        * (1.
-            + k * big_n
-                * (variance_key_coefficient(key_type) + square(expectation_key_coefficient(key_type))));
-    let res_4 = k * big_n / 8. * variance_key_coefficient(key_type);
-    let res_5 = 1. / 16. * square(1. - k * big_n * expectation_key_coefficient(key_type));
-    res_1 + res_2 + res_3 + res_4 + res_5
-}
 
 /// returns a variance when computing the cmux
 pub fn cmux(
@@ -821,28 +685,199 @@ pub fn cmux(
     ) + var_rlwe;
     res
 }
+*/
 
+//TODO: update the types
+/// returns a variance when computing an external product as in TFHE's PBS
+/// input -> var_1 = 2^22 <=> std_dev lwe estimator 2^-53
+pub fn external_product_binary_GGSW<T, D1, D2>(
+    poly_size: PolynomialSize,
+    rlwe_mask_size: GlweDimension,
+    var_rlwe: D1,
+    var_rgsw: D2,
+    base_log: DecompositionBaseLog,
+    level: DecompositionLevelCount,
+    key_type: KeyType,
+) -> Variance
+where
+    T: UnsignedInteger,
+    D1: DispersionParameter,
+    D2: DispersionParameter,
+{
+    let l = level.0 as f64;
+    let k = rlwe_mask_size.0 as f64;
+    let big_n = poly_size.0 as f64;
+    let b = (1 << base_log.0) as f64;
+    let b2l = f64::powf(b, 2. * l);
+
+    let res_1 =
+        l * (k + 1.) * big_n * var_rgsw.get_modular_variance::<T>() * (square(b) + 2.) / 12.;
+    let res_2 = var_rlwe.get_modular_variance::<T>() / 2.;
+    let res_3 = (square(T::BITS) as f64 - b2l) / (24. * b2l)
+        * (1.
+            + k * big_n
+                * (variance_key_coefficient(key_type)
+                    + square(expectation_key_coefficient(key_type))));
+    let res_4 = k * big_n / 8. * variance_key_coefficient(key_type);
+    let res_5 = 1. / 16. * square(1. - k * big_n * expectation_key_coefficient(key_type));
+    Variance::from_variance(res_1 + res_2 + res_3 + res_4 + res_5)
+}
+
+//TODO: Update type
 /// returns a variance when computing TFHE's PBS
-pub fn tfhe_pbs(
-    lwe_mask_size: usize,
-    poly_size: usize,
-    rlwe_mask_size: usize,
-    var_rgsw: f64,
-    base_log: usize,
-    level: usize,
-    q: f64,
-    key_type: char,
-) -> f64 {
-    (lwe_mask_size as f64)
-        * external_product(
-            poly_size,
-            rlwe_mask_size,
-            0.,
-            var_rgsw,
-            base_log,
-            level,
-            q,
-            key_type,
-        )
+pub fn variance_tfhe_pbs<T, D>(
+    lwe_mask_size: LweDimension,
+    poly_size: PolynomialSize,
+    rlwe_mask_size: GlweDimension,
+    var_rgsw: D,
+    base_log: DecompositionBaseLog,
+    level: DecompositionLevelCount,
+    key_type: KeyType,
+) -> Variance
+where
+    T: UnsignedInteger,
+    D: DispersionParameter,
+{
+    //TODO Correct the types
+    let var_rlwe = Variance::from_modular_variance::<T>(0.);
+    Variance::from_variance(
+        lwe_mask_size.0 as f64
+            * external_product_binary_GGSW::<T, _, _>(
+                poly_size,
+                rlwe_mask_size,
+                var_rlwe,
+                var_rgsw,
+                base_log,
+                level,
+                key_type,
+            )
+            .get_modular_variance::<T>(),
+    )
+}
+
+/*
+/// Return the variance of output of a bootstrap given a set of parameters.
+/// To see how to use it, please refer to the test of the bootstrap.
+/// Arguments
+/// * `lwe_dimension` - size of the LWE mask
+/// * `rlwe_dimension` - size of the RLWE mask
+/// * `polynomial_size` - number of coefficients of the polynomial e.g. degree +
+///   1
+/// * `base_log` - decomposition base of the gadget matrix
+/// * `l_gadget` - number of elements for the decomposition
+/// * `dispersion_bsk` - dispersion of the bootstrapping key
+/// # Output
+/// * Returns the variance of the output RLWE
+/// # Example
+/// ```rust
+/// use concrete_commons::dispersion::{DispersionParameter, Variance};
+/// use concrete_commons::parameters::{
+///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
+/// };
+/// use concrete_npe::bootstrap;
+/// let rlwe_dimension = GlweDimension(3);
+/// let lwe_dimension = LweDimension(630);
+/// let polynomial_size = PolynomialSize(1024);
+/// let base_log = DecompositionBaseLog(7);
+/// let l_gadget = DecompositionLevelCount(4);
+/// let var_bsk = Variance::from_variance(f64::powi(2., -38));
+/// // Computing the noise
+/// let var_bootstrap = bootstrap::<u64, _>(
+///     lwe_dimension,
+///     rlwe_dimension,
+///     polynomial_size,
+///     base_log,
+///     l_gadget,
+///     var_bsk,
+/// );
+/// ```
+//TODO: WHAT IS THIS FORMULA ?
+pub fn variance_bootstrap<T, D>(
+    lwe_dimension: LweDimension,
+    rlwe_dimension: GlweDimension,
+    polynomial_size: PolynomialSize,
+    base_log: DecompositionBaseLog,
+    l_gadget: DecompositionLevelCount,
+    var_bsk: D,
+) -> Variance
+where
+    T: UnsignedInteger,
+    D: DispersionParameter,
+{
+    let b_g = 1 << base_log.0;
+    let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    let var_res_1: f64 = (lwe_dimension.0
+        * (rlwe_dimension.0 + 1)
+        * l_gadget.0
+        * polynomial_size.0
+        * (b_g * b_g + 2)) as f64
+        / 12.
+        * var_bsk.get_modular_variance::<T>();
+
+    let var_res_2: f64 = lwe_dimension.0 as f64
+        * ((rlwe_dimension.0 * polynomial_size.0 + 2) as f64
+            / (24. * f64::powi(b_g as f64, 2 * l_gadget.0 as i32)) as f64
+            + lwe_dimension.0 as f64 * (rlwe_dimension.0 * polynomial_size.0 / 48 - 1 / 12) as f64
+                / q_square);
+
+    Variance::from_variance(var_res_1 + var_res_2)
+}
+*/
+
+/*
+/// Return the variance of the keyswitch on a LWE ciphertext given a set of
+/// parameters. To see how to use it, please refer to the test of the
+/// keyswitch # Warning
+/// * This function compute the noise of the keyswitch without functional
+///   evaluation
+/// # Arguments
+/// `dimension_before` - size of the input LWE mask
+/// `l_ks` - number of level max for the torus decomposition
+/// `base_log` - number of bits for the base B (B=2^base_log)
+/// `dispersion_ks` - dispersion of the keyswitching key
+/// `dispersion_input` - dispersion of the input LWE
+/// # Example
+/// ```rust
+/// use concrete_commons::dispersion::Variance;
+/// use concrete_commons::parameters::{
+///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+/// };
+/// use concrete_npe::key_switch;
+/// let dimension_before = LweDimension(630);
+/// let l_ks = DecompositionLevelCount(4);
+/// let base_log = DecompositionBaseLog(7);
+/// let dispersion_ks = Variance::from_variance(f64::powi(2., -38));
+/// let dispersion_input = Variance::from_variance(f64::powi(2., -40));
+/// // Computing the noise
+/// let var_ks = key_switch::<u64, _, _>(
+///     dimension_before,
+///     l_ks,
+///     base_log,
+///     dispersion_ks,
+///     dispersion_input,
+/// );
+/// ```
+pub fn variance_key_switch_lwe_to_lwe<T, D1, D2>(
+    dimension_before: LweDimension,
+    l_ks: DecompositionLevelCount,
+    base_log: DecompositionBaseLog,
+    dispersion_ks: D1,
+    dispersion_input: D2,
+) -> Variance
+    where
+        T: UnsignedInteger,
+        D1: DispersionParameter,
+        D2: DispersionParameter,
+{
+    let q_square = f64::powi(2., (2 * T::BITS * 8) as i32);
+    let var_res_1: f64 = dimension_before.0 as f64
+        * (1. / 24. * f64::powi(2.0, -2 * (base_log.0 * l_ks.0) as i32) + 1. / (48. * q_square));
+    let var_res_2: f64 = dimension_before.0 as f64
+        * l_ks.0 as f64
+        * (f64::powi(2., 2 * base_log.0 as i32) / 12. + 1. / 6.)
+        * dispersion_ks.get_modular_variance::<T>();
+
+    let var_res: f64 = dispersion_input.get_modular_variance::<T>() + var_res_1 + var_res_2;
+    Variance::from_variance(var_res)
 }
 */
