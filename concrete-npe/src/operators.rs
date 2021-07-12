@@ -1,4 +1,4 @@
-/// Noise Propagation Estimator Module
+//! Noise Propagation Estimator Module
 /// * Contains material needed to estimate the growth of the noise when
 ///   performing homomorphic computation
 use super::*;
@@ -9,11 +9,18 @@ use concrete_commons::parameters::{
 };
 /// Computes the dispersion of the error distribution after the addition of two
 /// uncorrelated ciphertexts
-/// Arguments:
-/// * `dispersion_ct1` - noise dispersion of the first ciphertext
-/// * `dispersion_ct2` - noise dispersion of the second ciphertext
-/// Output
-/// * The noise variance of the sum of the first and the second ciphertext
+/// # Example:
+/// ```rust
+/// use concrete_commons::dispersion::*;
+/// use concrete_npe::*;
+///
+/// let var1 = Variance::from_variance(2_f64.powf(-25.));
+/// let var2 = Variance::from_variance(2_f64.powf(-25.));
+/// let var_out = variance_add::<u64, _, _>(var1, var2);
+/// println!("Expect Variance (2^24) =  {}", f64::powi(2., -24));
+/// println!("Output Variance {}", var_out.get_variance());
+/// assert!((f64::powi(2., -24) - var_out.get_variance()).abs() < 0.0001);
+/// ```
 pub fn variance_add<T, D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
 where
     T: UnsignedInteger,
@@ -23,15 +30,24 @@ where
     // The result variance is equal to the sum of the input variances
     let var_res: f64 =
         dispersion_ct1.get_modular_variance::<T>() + dispersion_ct2.get_modular_variance::<T>();
-    Variance::from_variance(var_res)
+    Variance::from_modular_variance::<T>(var_res)
 }
 
 /// Computes the dispersion of the error distribution after the addition of
 /// several uncorrelated ciphertexts
-/// Argument:
-/// * `dispersion_cts` - noise variance of the ciphertexts
-/// Output:
-/// * the noise variance of the sum of the ciphertexts
+/// /// # Example:
+/// ```rust
+/// use concrete_commons::dispersion::*;
+/// use concrete_npe::*;
+/// let var
+/// let var1 = Variance::from_variance(2_f64.powf(-25.));
+/// let var2 = Variance::from_variance(2_f64.powf(-25.));
+/// let var3 = Variance::from_variance(2_f64.powf(-24.));
+/// let var_out = variance_add::<u64, _, _>([var1, var2, var3]);
+/// println!("Expect Variance (2^24) =  {}", f64::powi(2., -24));
+/// println!("Output Variance {}", var_out.get_variance());
+/// assert!((f64::powi(2., -24) - var_out.get_variance()).abs() < 0.0001);
+/// ```
 pub fn variance_add_several<T, D>(dispersion_cts: &[D]) -> Variance
 where
     T: UnsignedInteger,
@@ -45,6 +61,7 @@ where
     Variance::from_variance(var_res)
 }
 
+//TODO: CHECK THE PRECISION !
 /// Return the variance of the external product given a set of parameters.
 /// To see how to use it, please refer to the test of the external product.
 /// # Arguments:
@@ -59,26 +76,34 @@ where
 /// * Returns the variance of the output RLWE
 /// # Example:
 /// ```rust
-/// use concrete_commons::dispersion::Variance;
+/// use concrete_commons::dispersion::*;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
-/// use concrete_npe::external_product;
+/// use concrete_npe::*;
 /// let dimension = GlweDimension(3);
 /// let polynomial_size = PolynomialSize(1024);
 /// let base_log = DecompositionBaseLog(7);
 /// let l_gadget = DecompositionLevelCount(4);
-/// let dispersion_rgsw = Variance::from_variance(f64::powi(2., -38));
-/// let dispersion_rlwe = Variance::from_variance(f64::powi(2., -40));
+/// //Variance::from_variance(f64::powi(2., -38));
+/// let dispersion_rgsw = Variance::from_modular_variance::<u64>(f64::powi(2., 26));
+/// //Variance::from_variance(f64::powi(2., -40));
+/// let dispersion_rlwe = Variance::from_modular_variance::<u64>(f64::powi(2., 24));
+/// let key_type = KeyType::Binary;
 /// // Computing the noise
-/// let var_external_product = external_product::<u64, _, _>(
+/// let var_external_product = variance_external_product::<u64, _, _>(
 ///     dimension,
 ///     polynomial_size,
 ///     base_log,
 ///     l_gadget,
 ///     dispersion_rgsw,
 ///     dispersion_rlwe,
+///     key_type,
 /// );
+/// println!("Out. {}", var_external_product.get_modular_variance::<u64>());
+/// println!("Exp. {}", 2419425767395747475838549./4. );
+/// assert!(( 2419425767395747475838549./4.
+/// - var_external_product.get_modular_variance::<u64>()).abs() < f64::powi(10., 10));
 /// ```
 pub fn variance_external_product<T, D1, D2>(
     dimension: GlweDimension,
@@ -100,6 +125,15 @@ where
     let norm_2_msg_ggsw = 1.;
     let b_g = 1 << base_log.0;
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    println!("q = {}", T::BITS);
+    println!("q_square = {}", q_square);
+    println!("dimension = {}", dimension.0);
+    println!("l_gadget = {}", l_gadget.0);
+    println!("polynomial_size = {}", polynomial_size.0);
+    println!("b_g = {}", b_g);
+    println!("var(ggsw) = {}", dispersion_ggsw.get_modular_variance::<T>());
+    println!("var(rlwe) = {}", dispersion_glwe.get_modular_variance::<T>());
+
     let res_1: f64 = ((dimension.0 + 1) * l_gadget.0 * polynomial_size.0 * (b_g * b_g + 2)) as f64
         / 12.
         * dispersion_ggsw.get_modular_variance::<T>();
@@ -116,7 +150,7 @@ where
             + dimension.0 as f64 * polynomial_size.0 as f64 / 4.
                 * variance_key_coefficient(key_type_out));
 
-    Variance::from_variance(res_1 + res_2)
+    Variance::from_modular_variance::<T>(res_1 + res_2)
 }
 
 /// Return the variance of the cmux given a set of parameters.
