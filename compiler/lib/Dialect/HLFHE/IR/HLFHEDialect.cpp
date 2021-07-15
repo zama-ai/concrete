@@ -43,3 +43,12 @@ void HLFHEDialect::printType(::mlir::Type type,
     // Calling default printer if failed to print HLFHE type
     printer.printType(type);
 }
+
+mlir::LogicalResult EncryptedIntegerType::verify(
+    llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
+  if (p == 0 || p > 7) {
+    emitError() << "HLFHE.eint support only precision in ]0;7]";
+    return mlir::failure();
+  }
+  return mlir::success();
+}

@@ -33,8 +33,11 @@ def EncryptedIntegerType : HLFHE_Type<"EncryptedInteger",
       return Type();
     if ($_parser.parseGreater())
       return Type();
-    return get($_ctxt, width);
+    Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
+    return getChecked(loc, loc.getContext(), width);
   }];
+
+  let genVerifyDecl = true;
 }
 
 #endif
