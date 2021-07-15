@@ -25,3 +25,7 @@ conformance: python_format
 
 pcc: check_python_format pylint
 .PHONY: pcc
+
+docs:
+	cd docs && poetry run make html
+.PHONY: docs

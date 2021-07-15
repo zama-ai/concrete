@@ -2,6 +2,6 @@
 
 This is currently very much WIP.
 
-## Frontend flow:
+## Frontend flow
 
-<img src="./resources/frontend_flow.svg">
+![Frontend Flow](../_static/frontend_flow.svg)

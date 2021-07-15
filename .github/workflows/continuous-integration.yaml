@@ -43,6 +43,16 @@ jobs:
         if: ${{ success() && !cancelled() }}
         run: |
           make pcc
+      - name: Build docs
+        id: docs
+        if: ${{ success() && !cancelled() }}
+        run: |
+          make docs
+      - name: Archive docs artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: html-docs
+          path: docs/_build/html
       - name: Slack Notification
         if: ${{ always() }}
         uses: rtCamp/action-slack-notify@v2

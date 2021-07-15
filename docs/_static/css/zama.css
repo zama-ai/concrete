@@ -1,0 +1,35 @@
+/** css/zama.css **/
+
+/* This line is theme specific - it includes the base theme CSS */
+@import 'theme.css';       /* for the Read the Docs theme */
+
+.wy-side-nav-search {
+    background-color: #ffd208;
+}
+
+.wy-menu-vertical header, .wy-menu-vertical p.caption {
+    color: #ffd208;
+}
+
+.wy-side-nav-search > a {
+    position: relative;
+    padding-top: 50px;
+    color: black;
+}
+
+.wy-side-nav-search > a::before {
+    display: none;
+}
+
+.wy-side-nav-search > a .logo {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    padding: 0;
+    margin: 0 0 0 -100px !important;
+}
+
+.rst-content code.literal, .rst-content tt.literal {
+    color: #ffd208;
+    background-color: #696969;
+}
