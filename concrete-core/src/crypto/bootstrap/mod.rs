@@ -25,6 +25,12 @@ pub trait Bootstrap {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::numeric::CastInto;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
+    ///     PolynomialSize,
+    /// };
     /// use concrete_core::crypto::bootstrap::{Bootstrap, FourierBootstrapKey, StandardBootstrapKey};
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
@@ -35,9 +41,6 @@ pub trait Bootstrap {
     /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
     /// use concrete_core::math::fft::Complex64;
     /// use concrete_core::math::tensor::AsMutTensor;
-    /// use concrete_commons::parameters::{PolynomialSize, GlweDimension, LweDimension, DecompositionLevelCount, DecompositionBaseLog, LweSize};
-    /// use concrete_commons::dispersion::LogStandardDev;
-    /// use concrete_commons::numeric::CastInto;
     ///
     /// // define settings
     /// let polynomial_size = PolynomialSize(1024);

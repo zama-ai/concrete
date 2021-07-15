@@ -34,10 +34,10 @@ where
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::LweDimension;
     /// let mut generator = SecretRandomGenerator::new(None);
     /// let secret_key: LweSecretKey<_, Vec<u32>> =
     ///     LweSecretKey::generate_binary(LweDimension(256), &mut generator);
@@ -89,10 +89,10 @@ where
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::LweDimension;
     /// let mut generator = SecretRandomGenerator::new(None);
     /// let secret_key: LweSecretKey<_, Vec<u32>> =
     ///     LweSecretKey::generate_gaussian(LweDimension(256), &mut generator);
@@ -116,10 +116,10 @@ where
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::LweDimension;
     /// let mut generator = SecretRandomGenerator::new(None);
     /// let secret_key: LweSecretKey<_, Vec<u32>> =
     ///     LweSecretKey::generate_uniform(LweDimension(256), &mut generator);
@@ -145,9 +145,9 @@ impl<Cont> LweSecretKey<BinaryKeyKind, Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::LweDimension;
     /// let secret_key = LweSecretKey::binary_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
@@ -203,9 +203,9 @@ impl<Cont> LweSecretKey<GaussianKeyKind, Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::LweDimension;
     /// let secret_key = LweSecretKey::gaussian_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
@@ -232,9 +232,9 @@ impl<Cont> LweSecretKey<UniformKeyKind, Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::LweDimension;
     /// let secret_key = LweSecretKey::uniform_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```

@@ -213,9 +213,11 @@ impl<Cont> LweCiphertext<Cont> {
     /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::crypto::secret::generators::{SecretRandomGenerator, EncryptionRandomGenerator};
     ///
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
@@ -273,9 +275,11 @@ impl<Cont> LweCiphertext<Cont> {
     /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::crypto::secret::generators::{SecretRandomGenerator, EncryptionRandomGenerator};
     ///
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
@@ -342,9 +346,11 @@ impl<Cont> LweCiphertext<Cont> {
     /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::crypto::secret::generators::{SecretRandomGenerator, EncryptionRandomGenerator};
     ///
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
@@ -393,9 +399,11 @@ impl<Cont> LweCiphertext<Cont> {
     /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::crypto::secret::generators::{SecretRandomGenerator, EncryptionRandomGenerator};
     ///
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
@@ -444,9 +452,11 @@ impl<Cont> LweCiphertext<Cont> {
     /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::crypto::secret::generators::{SecretRandomGenerator, EncryptionRandomGenerator};
     ///
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
@@ -488,9 +498,11 @@ impl<Cont> LweCiphertext<Cont> {
     /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::crypto::secret::generators::{SecretRandomGenerator, EncryptionRandomGenerator};
     ///
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let mut encryption_generator = EncryptionRandomGenerator::new(None);

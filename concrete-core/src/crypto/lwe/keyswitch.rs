@@ -296,17 +296,17 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::secret::generators::{
-    ///     EncryptionRandomGenerator, SecretRandomGenerator,
-    /// };
-    /// use concrete_core::crypto::lwe::LweKeyswitchKey;
-    /// use concrete_core::crypto::secret::LweSecretKey;
-    /// use concrete_core::crypto::*;
-    /// use concrete_core::math::tensor::AsRefTensor;
     /// use concrete_commons::dispersion::LogStandardDev;
     /// use concrete_commons::parameters::{
     ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
     /// };
+    /// use concrete_core::crypto::lwe::LweKeyswitchKey;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::LweSecretKey;
+    /// use concrete_core::crypto::*;
+    /// use concrete_core::math::tensor::AsRefTensor;
     ///
     /// let input_size = LweDimension(10);
     /// let output_size = LweDimension(20);

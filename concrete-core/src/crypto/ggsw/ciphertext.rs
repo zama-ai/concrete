@@ -286,7 +286,7 @@ impl<Cont> GgswCiphertext<Cont> {
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweSize, PolynomialSize,
     /// };
     /// use concrete_core::crypto::ggsw::GgswCiphertext;
-   /// let ggsw = GgswCiphertext::allocate(
+    /// let ggsw = GgswCiphertext::allocate(
     ///     9 as u8,
     ///     PolynomialSize(9),
     ///     GlweSize(7),

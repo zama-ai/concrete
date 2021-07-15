@@ -41,11 +41,11 @@ where
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::key_kinds::BinaryKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::key_kinds::BinaryKeyKind;
-    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// let mut generator = SecretRandomGenerator::new(None);
     /// let secret_key: GlweSecretKey<BinaryKeyKind, Vec<u32>> =
     ///     GlweSecretKey::generate_binary(GlweDimension(256), PolynomialSize(10), &mut generator);
@@ -74,8 +74,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_commons::key_kinds::TernaryKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
@@ -111,8 +111,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
     /// use concrete_commons::key_kinds::GaussianKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
@@ -148,10 +148,10 @@ where
     ///
     /// ```rust
     /// use concrete_commons::key_kinds::UniformKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let secret_key: GlweSecretKey<UniformKeyKind, Vec<u32>> = GlweSecretKey::generate_uniform(
     ///     GlweDimension(256),
@@ -219,9 +219,9 @@ impl<Cont> GlweSecretKey<TernaryKeyKind, Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::{PolynomialSize, GlweDimension};
     /// let secret_key =
     ///     GlweSecretKey::ternary_from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
@@ -252,9 +252,9 @@ impl<Cont> GlweSecretKey<GaussianKeyKind, Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// let secret_key =
     ///     GlweSecretKey::binary_from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
@@ -285,9 +285,9 @@ impl<Cont> GlweSecretKey<UniformKeyKind, Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::*;
     /// use concrete_core::crypto::*;
-    /// use concrete_commons::parameters::{PolynomialSize, GlweDimension};
     /// let secret_key =
     ///     GlweSecretKey::binary_from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
@@ -315,9 +315,9 @@ where
     /// # Examples
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
     /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
     /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let glwe_secret_key: GlweSecretKey<_, Vec<u32>> =
     ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut secret_generator);

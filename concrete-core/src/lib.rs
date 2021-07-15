@@ -124,15 +124,15 @@ pub mod utils;
 pub mod test_tools {
     use rand::Rng;
 
+    use crate::math::random::{RandomGenerable, RandomGenerator, Uniform};
+    use crate::math::tensor::{AsRefSlice, AsRefTensor};
+    use crate::math::torus::UnsignedTorus;
     use concrete_commons::dispersion::DispersionParameter;
     use concrete_commons::numeric::UnsignedInteger;
     use concrete_commons::parameters::{
         CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, GlweDimension,
         LweDimension, PlaintextCount, PolynomialSize,
     };
-    use crate::math::random::{RandomGenerable, RandomGenerator, Uniform};
-    use crate::math::tensor::{AsRefSlice, AsRefTensor};
-    use crate::math::torus::UnsignedTorus;
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
         let d0 = first.wrapping_sub(other);
