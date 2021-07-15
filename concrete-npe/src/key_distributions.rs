@@ -18,16 +18,16 @@ use concrete_commons::numeric::UnsignedInteger;
 pub const GAUSSIAN_MODULAR_STDEV: f64 = 3.2;
 
 pub trait KeyDistributions: KeyKind {
+    ///
+    ///```rust
+    /// use concrete_commons::key_kinds::{KeyKind, BinaryKeyKind};
+    /// use concrete_npe::KeyDistributions;
+    /// BinaryKeyKind::variance_key_coefficient();
+    /// ```
     fn variance_key_coefficient<T: UnsignedInteger>() -> Variance;
     fn expectation_key_coefficient() -> f64;
     // ...
 }
-///
-///```rust
-/// use concrete_commons::key_kinds::{KeyKind, BinaryKeyKind};
-/// use concrete_npe::KeyDistributions;
-/// BinaryKeyKind::variance_key_coefficient();
-/// ```
 impl KeyDistributions for BinaryKeyKind {
     fn variance_key_coefficient<T: UnsignedInteger>() -> Variance{
         Variance::from_modular_variance::<T>(1. / 4.)
