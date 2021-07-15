@@ -26,6 +26,10 @@ conformance: python_format
 pcc: check_python_format pylint
 .PHONY: pcc
 
+pytest:
+	poetry run pytest --cov=hdk -vv --cov-report=xml tests/
+.PHONY: pytest
+
 docs:
 	cd docs && poetry run make html
 .PHONY: docs

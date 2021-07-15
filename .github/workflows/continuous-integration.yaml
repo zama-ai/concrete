@@ -15,6 +15,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
@@ -43,12 +45,27 @@ jobs:
         if: ${{ success() && !cancelled() }}
         run: |
           make pcc
+      - name: PyTest
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          make pytest
+      - name: Test coverage
+        if: ${{ success() && !cancelled() }}
+        run: |
+          poetry run diff-cover coverage.xml --fail-under 100 --html-report coverage.html --compare-branch origin/${{ github.base_ref }}
+      - name: Archive test coverage
+        uses: actions/upload-artifact@v2
+        if: ${{ success() && !cancelled() }}
+        with:
+          name: coverage
+          path: coverage.html
       - name: Build docs
         id: docs
-        if: ${{ success() && !cancelled() }}
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make docs
       - name: Archive docs artifacts
+        if: ${{ steps.docs.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@v2
         with:
           name: html-docs
