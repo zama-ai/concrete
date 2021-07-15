@@ -8,8 +8,80 @@ namespace mlir {
 namespace zamalang {
 namespace HLFHE {
 
+using mlir::zamalang::HLFHE::AddEintOp;
 using mlir::zamalang::HLFHE::ApplyLookupTable;
 using mlir::zamalang::HLFHE::EncryptedIntegerType;
+
+bool verifyEncryptedIntegerInputAndResultConsistency(
+    ::mlir::OpState &op, EncryptedIntegerType &input,
+    EncryptedIntegerType &result) {
+  if (input.getWidth() != result.getWidth()) {
+    op.emitOpError(
+        " should have the width of encrypted inputs and result equals");
+    return false;
+  }
+  return true;
+}
+
+bool verifyEncryptedIntegerAndIntegerInputsConsistency(::mlir::OpState &op,
+                                                       EncryptedIntegerType &a,
+                                                       IntegerType &b) {
+  if (a.getWidth() + 1 != b.getWidth()) {
+    op.emitOpError(" should have the width of plain input equals to width of "
+                   "encrypted input + 1");
+    return false;
+  }
+  return true;
+}
+
+bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
+                                             EncryptedIntegerType &a,
+                                             EncryptedIntegerType &b) {
+  if (a.getWidth() != b.getWidth()) {
+    op.emitOpError(" should have the width of encrypted inputs equals");
+    return false;
+  }
+  return true;
+}
+
+::mlir::LogicalResult verifyAddEintIntOp(AddEintIntOp &op) {
+  auto a = op.a().getType().cast<EncryptedIntegerType>();
+  auto b = op.b().getType().cast<IntegerType>();
+  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
+    return ::mlir::failure();
+  }
+  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(op, a, b)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+::mlir::LogicalResult verifyAddEintOp(AddEintOp &op) {
+  auto a = op.a().getType().cast<EncryptedIntegerType>();
+  auto b = op.b().getType().cast<EncryptedIntegerType>();
+  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
+    return ::mlir::failure();
+  }
+  if (!verifyEncryptedIntegerInputsConsistency(op, a, b)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+::mlir::LogicalResult verifyMulEintIntOp(MulEintIntOp &op) {
+  auto a = op.a().getType().cast<EncryptedIntegerType>();
+  auto b = op.b().getType().cast<IntegerType>();
+  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
+    return ::mlir::failure();
+  }
+  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(op, a, b)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
 
 ::mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
   auto ct = op.ct().getType().cast<EncryptedIntegerType>();

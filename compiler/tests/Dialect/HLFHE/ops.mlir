@@ -2,23 +2,23 @@
 
 // CHECK-LABEL: func @add_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 func @add_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
-  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i32
-  // CHECK-NEXT: %[[V2:.*]] = "HLFHE.add_eint_int"(%arg0, %[[V1]]) : (!HLFHE.eint<2>, i32) -> !HLFHE.eint<2>
+  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i3
+  // CHECK-NEXT: %[[V2:.*]] = "HLFHE.add_eint_int"(%arg0, %[[V1]]) : (!HLFHE.eint<2>, i3) -> !HLFHE.eint<2>
   // CHECK-NEXT: return %[[V2]] : !HLFHE.eint<2>
 
-  %0 = constant 1 : i32
-  %1 = "HLFHE.add_eint_int"(%arg0, %0): (!HLFHE.eint<2>, i32) -> (!HLFHE.eint<2>)
+  %0 = constant 1 : i3
+  %1 = "HLFHE.add_eint_int"(%arg0, %0): (!HLFHE.eint<2>, i3) -> (!HLFHE.eint<2>)
   return %1: !HLFHE.eint<2>
 }
 
 // CHECK-LABEL: func @mul_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 func @mul_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
-  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i32
-  // CHECK-NEXT: %[[V2:.*]] = "HLFHE.mul_eint_int"(%arg0, %[[V1]]) : (!HLFHE.eint<2>, i32) -> !HLFHE.eint<2>
+  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i3
+  // CHECK-NEXT: %[[V2:.*]] = "HLFHE.mul_eint_int"(%arg0, %[[V1]]) : (!HLFHE.eint<2>, i3) -> !HLFHE.eint<2>
   // CHECK-NEXT: return %[[V2]] : !HLFHE.eint<2>
 
-  %0 = constant 1 : i32
-  %1 = "HLFHE.mul_eint_int"(%arg0, %0): (!HLFHE.eint<2>, i32) -> (!HLFHE.eint<2>)
+  %0 = constant 1 : i3
+  %1 = "HLFHE.mul_eint_int"(%arg0, %0): (!HLFHE.eint<2>, i3) -> (!HLFHE.eint<2>)
   return %1: !HLFHE.eint<2>
 }
 

@@ -27,6 +27,10 @@ def AddEintIntOp : HLFHE_Op<"add_eint_int"> {
          build($_builder, $_state, a.getType(), a, b);
         }]>
     ];
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHE::verifyAddEintIntOp(*this);
+    }];
 }
 
 def AddEintOp : HLFHE_Op<"add_eint"> {
@@ -38,6 +42,10 @@ def AddEintOp : HLFHE_Op<"add_eint"> {
          build($_builder, $_state, a.getType(), a, b);
         }]>
     ];
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHE::verifyAddEintOp(*this);
+    }];
 }
 
 def MulEintIntOp : HLFHE_Op<"mul_eint_int"> {
@@ -49,6 +57,10 @@ def MulEintIntOp : HLFHE_Op<"mul_eint_int"> {
          build($_builder, $_state, a.getType(), a, b);
         }]>
     ];
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHE::verifyMulEintIntOp(*this);
+    }];
 }
 
 def ApplyLookupTable : HLFHE_Op<"apply_lookup_table"> {
