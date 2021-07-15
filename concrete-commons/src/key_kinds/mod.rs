@@ -20,6 +20,7 @@ impl KeyKind for BinaryKeyKind {}
 impl KeyKind for TernaryKeyKind {}
 impl KeyKind for GaussianKeyKind {}
 impl KeyKind for UniformKeyKind {}
+impl KeyKind for ZeroKeyKind {}
 
 mod seal {
     pub trait SealedKeyKind {}
@@ -27,4 +28,5 @@ mod seal {
     impl SealedKeyKind for super::TernaryKeyKind {}
     impl SealedKeyKind for super::GaussianKeyKind {}
     impl SealedKeyKind for super::UniformKeyKind {}
+    impl SealedKeyKind for super::ZeroKeyKind {}
 }
