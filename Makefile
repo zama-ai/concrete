@@ -9,15 +9,15 @@ sync_env:
 .PHONY: sync_env
 
 python_format:
-	poetry run env bash ./script/source_format/format_python.sh --dir hdk
+	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests
 .PHONY: python_format
 
 check_python_format:
-	poetry run env bash ./script/source_format/format_python.sh --dir hdk --check
+	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests --check
 .PHONY: check_python_format
 
 pylint:
-	poetry run pylint --rcfile=pylintrc hdk
+	poetry run pylint --rcfile=pylintrc hdk tests
 .PHONY: pylint
 
 conformance: python_format

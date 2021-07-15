@@ -14,6 +14,9 @@ myst-parser = "^0.15.1"
 isort = "^5.9.2"
 black = "21.6b0"
 pylint = "^2.9.3"
+pytest = "^6.2.4"
+pytest-cov = "^2.12.1"
+diff-cover = "^6.2.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
