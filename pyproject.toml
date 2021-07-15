@@ -8,6 +8,9 @@ authors = ["Arthur Meyre <arthur.meyre@zama.ai>"]
 python = ">=3.6.2,<3.10"
 
 [tool.poetry.dev-dependencies]
+isort = "^5.9.2"
+black = "21.6b0"
+pylint = "^2.9.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
