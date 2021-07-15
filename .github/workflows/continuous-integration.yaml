@@ -1,0 +1,55 @@
+name: hdk PR checks
+
+on: [pull_request]
+
+jobs:
+  build:
+    concurrency:
+      group: ${{ github.head_ref }}
+      cancel-in-progress: true
+
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache Installation Files
+        uses: actions/cache@v2
+        with:
+          # Paths are Unix specific for now
+          path: |
+            ~/.cache/pip
+            ~/.cache/pypoetry
+          # Ignore line break in the evaluated double quoted string
+          key: "${{ runner.os }}-build-${{ matrix.python-version }}-\
+            ${{ hashFiles('poetry.lock') }}"
+          restore-keys: |
+            ${{ runner.os }}-build-${{ matrix.python-version }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          make setup_env
+      - name: Conformance
+        id: conformance
+        if: ${{ success() && !cancelled() }}
+        run: |
+          make pcc
+      - name: Slack Notification
+        if: ${{ always() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: hdk-updates
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: 'Build finished with status ${{ job.status }}'
+          SLACK_USERNAME: zama-bot
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
