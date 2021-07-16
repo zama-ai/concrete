@@ -5,10 +5,11 @@ description = "Zama Homomorphic Development frameworK"
 authors = ["Arthur Meyre <arthur.meyre@zama.ai>"]
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<3.10"
+python = ">=3.7,<3.10"
 Sphinx = "^4.1.1"
 sphinx-rtd-theme = "^0.5.2"
 myst-parser = "^0.15.1"
+networkx = "^2.6.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.2"
