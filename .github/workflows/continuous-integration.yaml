@@ -46,19 +46,28 @@ jobs:
         run: |
           make pcc
       - name: PyTest
+        id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest
       - name: Test coverage
-        if: ${{ success() && !cancelled() }}
+        id: coverage
+        if: ${{ steps.pytest.outcome != 'skipped' && !cancelled() }}
         run: |
-          poetry run diff-cover coverage.xml --fail-under 100 --html-report coverage.html --compare-branch origin/${{ github.base_ref }}
+          bash --noprofile --norc -o pipefail \
+            script/actions_utils/coverage.sh ${{ github.base_ref }}
       - name: Archive test coverage
         uses: actions/upload-artifact@v2
-        if: ${{ success() && !cancelled() }}
+        if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
         with:
           name: coverage
           path: coverage.html
+      - name: Comment with coverage
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
+        with:
+          path: diff-coverage.txt
+          recreate: true
       - name: Build docs
         id: docs
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
