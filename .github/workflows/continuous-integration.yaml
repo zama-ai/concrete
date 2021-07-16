@@ -43,8 +43,10 @@ jobs:
       - name: Conformance
         id: conformance
         if: ${{ success() && !cancelled() }}
+        # keep going register errors in the intermediate target but executes them all
+        # Nicer to have pcc complete for the dev and have all the relevan conformance issues
         run: |
-          make pcc
+          make --keep-going pcc
       - name: PyTest
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}

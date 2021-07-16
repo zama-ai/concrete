@@ -23,12 +23,16 @@ pylint:
 conformance: python_format
 .PHONY: conformance
 
-pcc: check_python_format pylint
+pcc: check_python_format pylint mypy
 .PHONY: pcc
 
 pytest:
 	poetry run pytest --cov=hdk -vv --cov-report=xml tests/
 .PHONY: pytest
+
+mypy:
+	poetry run mypy -p hdk
+.PHONY: mypy
 
 docs:
 	cd docs && poetry run make html
