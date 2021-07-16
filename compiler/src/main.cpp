@@ -24,6 +24,12 @@ llvm::cl::opt<std::string> output("o",
                                   llvm::cl::value_desc("filename"),
                                   llvm::cl::init("-"));
 
+llvm::cl::opt<bool> verifyDiagnostics(
+    "verify-diagnostics",
+    llvm::cl::desc("Check that emitted diagnostics match "
+                   "expected-* lines on the corresponding line"),
+    llvm::cl::init(false));
+
 llvm::cl::opt<bool> splitInputFile(
     "split-input-file",
     llvm::cl::desc("Split the input file into pieces and process each "
@@ -32,14 +38,27 @@ llvm::cl::opt<bool> splitInputFile(
 }; // namespace cmdline
 
 // Process a single source buffer
+//
+// If `verifyDiagnostics` is `true`, the procedure only checks if the
+// diagnostic messages provided in the source buffer using
+// `expected-error` are produced.
+//
+// If `verifyDiagnostics` is `false`, the procedure checks if the
+// parsed module is valid.
 mlir::LogicalResult
 processInputBuffer(mlir::MLIRContext &context,
                    std::unique_ptr<llvm::MemoryBuffer> buffer,
-                   llvm::raw_ostream &os) {
+                   llvm::raw_ostream &os, bool verifyDiagnostics) {
   llvm::SourceMgr sourceMgr;
   sourceMgr.AddNewSourceBuffer(std::move(buffer), llvm::SMLoc());
 
+  mlir::SourceMgrDiagnosticVerifierHandler sourceMgrHandler(sourceMgr,
+                                                            &context);
+
   auto module = mlir::parseSourceFile(sourceMgr, &context);
+
+  if (verifyDiagnostics)
+    return sourceMgrHandler.verify();
 
   if (!module)
     return mlir::failure();
@@ -64,6 +83,9 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   context.getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
   context.getOrLoadDialect<mlir::StandardOpsDialect>();
   context.getOrLoadDialect<mlir::memref::MemRefDialect>();
+
+  if (cmdline::verifyDiagnostics)
+    context.printOpOnDiagnostic(false);
 
   auto output = mlir::openOutputFile(cmdline::output, &errorMessage);
 
@@ -90,12 +112,14 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
               std::move(file),
               [&](std::unique_ptr<llvm::MemoryBuffer> inputBuffer,
                   llvm::raw_ostream &os) {
-                return processInputBuffer(context, std::move(inputBuffer), os);
+                return processInputBuffer(context, std::move(inputBuffer), os,
+                                          cmdline::verifyDiagnostics);
               },
               output->os())))
         return mlir::failure();
     } else {
-      return processInputBuffer(context, std::move(file), output->os());
+      return processInputBuffer(context, std::move(file), output->os(),
+                                cmdline::verifyDiagnostics);
     }
   }
 
