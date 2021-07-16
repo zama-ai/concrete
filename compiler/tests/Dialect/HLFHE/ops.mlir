@@ -68,3 +68,16 @@ func @apply_univariate(%arg0: !HLFHE.eint<0>) -> !HLFHE.eint<0> {
 
   return %0: !HLFHE.eint<0>
 }
+
+// CHECK-LABEL: func @dot_eint_int(%arg0: memref<2x!HLFHE.eint<0>>, %arg1: memref<2xi32>, %arg2: memref<!HLFHE.eint<0>>)
+func @dot_eint_int(%arg0: memref<2x!HLFHE.eint<0>>,
+          %arg1: memref<2xi32>,
+          %arg2: memref<!HLFHE.eint<0>>)
+{
+  // CHECK-NEXT: "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) : (memref<2x!HLFHE.eint<0>>, memref<2xi32>, memref<!HLFHE.eint<0>>) -> ()
+  "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) :
+    (memref<2x!HLFHE.eint<0>>, memref<2xi32>, memref<!HLFHE.eint<0>>) -> ()
+
+  //CHECK-NEXT: return
+  return
+}

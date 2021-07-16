@@ -103,5 +103,26 @@ def ReturnOp : HLFHE_Op<"apply_univariate_return", [NoSideEffect, ReturnLike, Te
 }
 
 
+// Tensor operations
+
+// Dot product
+def Dot : HLFHE_Op<"dot_eint_int", [DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
+    // Output memref is passed as the last argument; Input and output
+    // relationships are modeled through MemoryEffectsOpInterface`
+    let arguments = (ins
+        Type<And<[StaticShapeMemRefOf<[EncryptedIntegerType]>.predicate, HasAnyRankOfPred<[1]>]>>:$lhs,
+        Type<And<[StaticShapeMemRefOf<[AnyInteger]>.predicate, HasAnyRankOfPred<[1]>]>>:$rhs,
+        Type<And<[StaticShapeMemRefOf<[EncryptedIntegerType]>.predicate, HasAnyRankOfPred<[0]>]>>:$out);
+    let verifier = [{
+        if(::mlir::failed(
+              mlir::verifyCompatibleShape(
+                  lhs().getType(),
+                  rhs().getType()))) {
+            return this->emitOpError("arguments have incompatible shapes");
+        }
+
+        return ::mlir::success();
+    }];
+}
 
 #endif
