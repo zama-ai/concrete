@@ -275,7 +275,7 @@ good-names=i,
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
-good-names-rgxs=
+good-names-rgxs=^[a-z]$
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
@@ -571,7 +571,7 @@ max-returns=6
 max-statements=50
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+min-public-methods=0
 
 
 [IMPORTS]
