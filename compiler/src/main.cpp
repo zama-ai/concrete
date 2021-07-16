@@ -1,10 +1,12 @@
 #include <iostream>
 
 #include <llvm/Support/CommandLine.h>
-
-#include <memory>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/ToolOutputFile.h>
 #include <mlir/Parser.h>
+#include <mlir/Support/FileUtilities.h>
+#include <mlir/Support/LogicalResult.h>
+#include <mlir/Support/ToolUtilities.h>
 
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
@@ -18,28 +20,68 @@ llvm::cl::list<std::string> inputs(llvm::cl::Positional,
 
 llvm::cl::opt<std::string> output("o",
                                   llvm::cl::desc("Specify output filename"),
-                                  llvm::cl::value_desc("filename"));
+                                  llvm::cl::value_desc("filename"),
+                                  llvm::cl::init("-"));
 }; // namespace cmdline
 
-int main(int argc, char **argv) {
+// Process a single source buffer
+mlir::LogicalResult
+processInputBuffer(mlir::MLIRContext &context,
+                   std::unique_ptr<llvm::MemoryBuffer> buffer,
+                   llvm::raw_ostream &os) {
+  llvm::SourceMgr sourceMgr;
+  sourceMgr.AddNewSourceBuffer(std::move(buffer), llvm::SMLoc());
+
+  auto module = mlir::parseSourceFile(sourceMgr, &context);
+
+  if (!module)
+    return mlir::failure();
+
+  module->print(os);
+
+  return mlir::success();
+}
+
+mlir::LogicalResult compilerMain(int argc, char **argv) {
   // Parse command line arguments
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
   // Initialize the MLIR context
   mlir::MLIRContext context;
 
+  // String for error messages from library functions
+  std::string errorMessage;
+
   // Load our Dialect in this MLIR Context.
   context.getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   context.getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
   context.getOrLoadDialect<mlir::StandardOpsDialect>();
 
-  // For all input file, parse and dump
-  for (const auto &fileName : cmdline::inputs) {
-    auto module = mlir::parseSourceFile<mlir::ModuleOp>(fileName, &context);
-    if (!module) {
-      exit(1);
-    }
-    module->dump();
+  auto output = mlir::openOutputFile(cmdline::output, &errorMessage);
+
+  if (!output) {
+    llvm::errs() << errorMessage << "\n";
+    return mlir::failure();
   }
+
+  // Iterate over all inpiut files specified on the command line
+  for (const auto &fileName : cmdline::inputs) {
+    auto file = mlir::openInputFile(fileName, &errorMessage);
+
+    if (!file) {
+      llvm::errs() << errorMessage << "\n";
+      return mlir::failure();
+    }
+
+    return processInputBuffer(context, std::move(file), output->os());
+  }
+
+  return mlir::success();
+}
+
+int main(int argc, char **argv) {
+  if (mlir::failed(compilerMain(argc, argv)))
+    return 1;
+
   return 0;
 }
