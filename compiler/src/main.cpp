@@ -3,6 +3,7 @@
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/ToolOutputFile.h>
+#include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Parser.h>
 #include <mlir/Support/FileUtilities.h>
 #include <mlir/Support/LogicalResult.h>
@@ -22,6 +23,12 @@ llvm::cl::opt<std::string> output("o",
                                   llvm::cl::desc("Specify output filename"),
                                   llvm::cl::value_desc("filename"),
                                   llvm::cl::init("-"));
+
+llvm::cl::opt<bool> splitInputFile(
+    "split-input-file",
+    llvm::cl::desc("Split the input file into pieces and process each "
+                   "chunk independently"),
+    llvm::cl::init(false));
 }; // namespace cmdline
 
 // Process a single source buffer
@@ -56,6 +63,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   context.getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   context.getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
   context.getOrLoadDialect<mlir::StandardOpsDialect>();
+  context.getOrLoadDialect<mlir::memref::MemRefDialect>();
 
   auto output = mlir::openOutputFile(cmdline::output, &errorMessage);
 
@@ -73,7 +81,22 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
       return mlir::failure();
     }
 
-    return processInputBuffer(context, std::move(file), output->os());
+    // If `--split-input-file` is set, the file is split into
+    // individual chunks separated by `// -----` markers. Each chunk
+    // is then processed individually as if it were part of a separate
+    // source file.
+    if (cmdline::splitInputFile) {
+      if (mlir::failed(mlir::splitAndProcessBuffer(
+              std::move(file),
+              [&](std::unique_ptr<llvm::MemoryBuffer> inputBuffer,
+                  llvm::raw_ostream &os) {
+                return processInputBuffer(context, std::move(inputBuffer), os);
+              },
+              output->os())))
+        return mlir::failure();
+    } else {
+      return processInputBuffer(context, std::move(file), output->os());
+    }
   }
 
   return mlir::success();
