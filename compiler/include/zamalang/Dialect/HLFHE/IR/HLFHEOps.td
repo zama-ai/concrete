@@ -51,6 +51,16 @@ def MulEintIntOp : HLFHE_Op<"mul_eint_int"> {
     ];
 }
 
+def ApplyLookupTable : HLFHE_Op<"apply_lookup_table"> {
+    let arguments = (ins EncryptedIntegerType:$ct,
+        MemRefOf<[AnyInteger]>:$l_cst);
+    let results = (outs EncryptedIntegerType);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHE::verifyApplyLookupTable(*this);
+    }];
+}
+
 // Tensor operations
 
 // Dot product
