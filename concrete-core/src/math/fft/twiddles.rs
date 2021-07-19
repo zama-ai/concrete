@@ -8,6 +8,7 @@ use crate::tensor_traits;
 
 /// Correcting factors for the forward transform.
 #[derive(Debug, Clone)]
+// Todo: Naming
 pub struct ForwardCorrector<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -16,6 +17,7 @@ tensor_traits!(ForwardCorrector);
 
 /// Correcting factors for the backward transform.
 #[derive(Debug, Clone)]
+// Todo: Naming
 pub struct BackwardCorrector<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -24,12 +26,14 @@ tensor_traits!(BackwardCorrector);
 
 /// A set of correcting factors allowing to perform the product modulo $(X^N+1)$ with fftw.
 #[derive(Debug, Clone)]
+// Todo: Naming
 pub struct Correctors {
     pub forward: ForwardCorrector<&'static [Complex64]>,
     pub backward: BackwardCorrector<&'static [Complex64]>,
 }
 
 impl Correctors {
+    // Todo: Naming
     pub fn new(big_n: usize) -> Correctors {
         let (forward, backward) = match big_n {
             256 => (&TWIDDLES_256[0..256], &INVERSE_TWIDDLES_256[0..256]),

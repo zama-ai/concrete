@@ -20,6 +20,7 @@ use std::fmt::{Debug, Display};
 
 /// A trait that converts a torus element in unsigned integer representation to the closest
 /// torus element in floating point representation.
+// Todo: Naming
 pub trait IntoTorus<F>: Sized
 where
     F: FloatingPoint,
@@ -31,6 +32,7 @@ where
 
 /// A trait that converts a torus element in floating point representation into the closest torus
 /// element in unsigned integer representation.
+// Todo: Naming
 pub trait FromTorus<F>: Sized
 where
     F: FloatingPoint,
@@ -78,6 +80,7 @@ implement!(u64);
 implement!(u128);
 
 /// A marker trait for unsigned integer types that can be used in ciphertexts, keys etc.
+// Todo: Naming
 pub trait UnsignedTorus:
     UnsignedInteger
     + FromTorus<f64>

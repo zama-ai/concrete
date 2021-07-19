@@ -11,6 +11,7 @@ use std::marker::PhantomData;
 
 /// Represents the kind of a bsk.
 #[derive(Serialize, Deserialize, PartialEq)]
+// Todo: Naming
 pub enum BskKind {
     Fourier,
     Standard,
@@ -19,6 +20,7 @@ pub enum BskKind {
 /// This structure contains only the data of a BSK. Used to implement equality and serialization
 /// when the bootstrap key contains other fields (fft, buffers, etc...).
 #[derive(Serialize, Deserialize, PartialEq)]
+// Todo: Naming
 pub struct SurrogateBsk<Cont, Scalar> {
     pub kind: BskKind,
     pub version: String,

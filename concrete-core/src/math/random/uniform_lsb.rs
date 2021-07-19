@@ -3,6 +3,7 @@ use super::*;
 /// A distribution type representing random sampling for unsigned integer type, where the `n`
 /// least significant bits are sampled in `[0, 2^n[`.
 #[derive(Copy, Clone)]
+// Todo: Naming
 pub struct UniformLsb {
     /// The number of least significant bits that should be set randomly.
     pub n: usize,

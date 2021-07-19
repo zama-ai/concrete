@@ -25,6 +25,7 @@ mod signed;
 mod unsigned;
 
 /// A trait implemented by any generic numeric type suitable for computations.
+// Todo: Naming
 pub trait Numeric: Sized + Copy + PartialEq + PartialOrd {
     /// This size of the type in bits.
     const BITS: usize;
@@ -48,6 +49,7 @@ pub trait Numeric: Sized + Copy + PartialEq + PartialOrd {
 /// types is deferred to the individual `as` casting. If in doubt about the semantics of such a
 /// casting, refer to
 /// [the rust reference](https://doc.rust-lang.org/reference/expressions/operator-expr.html#type-cast-expressions).
+// Todo: Naming
 pub trait CastFrom<Input> {
     fn cast_from(input: Input) -> Self;
 }
@@ -58,6 +60,7 @@ pub trait CastFrom<Input> {
 /// types is deferred to the individual `as` casting. If in doubt about the semantics of such a
 /// casting, refer to
 /// [the rust reference](https://doc.rust-lang.org/reference/expressions/operator-expr.html#type-cast-expressions).
+// Todo: Naming
 pub trait CastInto<Output> {
     fn cast_into(self) -> Output;
 }

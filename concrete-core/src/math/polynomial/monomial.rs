@@ -18,6 +18,7 @@ use super::MonomialDegree;
 /// assert_eq!(mono.degree(), MonomialDegree(5));
 /// ```
 #[derive(PartialEq)]
+// Todo: Naming
 pub struct Monomial<Cont> {
     tensor: Tensor<Cont>,
     degree: MonomialDegree,
@@ -56,6 +57,7 @@ impl<Coef> Monomial<Vec<Coef>> {
     /// assert_eq!(*mono.get_coefficient(), 1u8);
     /// assert_eq!(mono.degree(), MonomialDegree(5));
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Coef, degree: MonomialDegree) -> Monomial<Vec<Coef>> {
         Monomial {
             tensor: Tensor::from_container(vec![value]),
@@ -76,6 +78,7 @@ impl<Cont> Monomial<Cont> {
     /// assert_eq!(*mono.get_coefficient(), 1u8);
     /// assert_eq!(mono.degree(), MonomialDegree(5));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont, degree: MonomialDegree) -> Monomial<Cont>
     where
         Cont: AsRefSlice,
@@ -99,6 +102,7 @@ impl<Cont> Monomial<Cont> {
     /// let mono = Monomial::allocate(1u8, MonomialDegree(5));
     /// assert_eq!(*mono.get_coefficient(), 1u8);
     /// ```
+    // Todo: Naming
     pub fn get_coefficient(&self) -> &<Self as AsRefElement>::Element
     where
         Self: AsRefElement,
@@ -116,6 +120,7 @@ impl<Cont> Monomial<Cont> {
     /// mono.set_coefficient(5u8);
     /// assert_eq!(*mono.get_coefficient(), 5u8);
     /// ```
+    // Todo: Naming
     pub fn set_coefficient<Coef>(&mut self, coefficient: Coef)
     where
         Self: AsMutElement<Element = Coef>,
@@ -133,6 +138,7 @@ impl<Cont> Monomial<Cont> {
     /// *mono.get_mut_coefficient() += 1u8;
     /// assert_eq!(*mono.get_coefficient(), 2u8);
     /// ```
+    // Todo: Naming
     pub fn get_mut_coefficient(&mut self) -> &mut <Self as AsMutElement>::Element
     where
         Self: AsMutElement,
@@ -149,6 +155,7 @@ impl<Cont> Monomial<Cont> {
     /// let mono = Monomial::allocate(1u8, MonomialDegree(5));
     /// assert_eq!(mono.degree(), MonomialDegree(5));
     /// ```
+    // Todo: Naming
     pub fn degree(&self) -> MonomialDegree {
         self.degree
     }

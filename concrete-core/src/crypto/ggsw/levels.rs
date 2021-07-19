@@ -8,6 +8,7 @@ use crate::{ck_dim_div, tensor_traits};
 use rayon::prelude::*;
 
 /// A matrix containing a single level of gadget decomposition.
+/// Todo: Naming
 pub struct GgswLevelMatrix<Cont> {
     tensor: Tensor<Cont>,
     poly_size: PolynomialSize,
@@ -37,6 +38,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// assert_eq!(level_matrix.glwe_size(), GlweSize(7));
     /// assert_eq!(level_matrix.decomposition_level(), DecompositionLevel(1));
     /// ```
+    /// Todo: Naming
     pub fn from_container(
         cont: Cont,
         poly_size: PolynomialSize,
@@ -76,6 +78,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// );
     /// assert_eq!(level_matrix.glwe_size(), GlweSize(7));
     /// ```
+    /// Todo: Naming
     pub fn glwe_size(&self) -> GlweSize {
         self.glwe_size
     }
@@ -97,6 +100,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// );
     /// assert_eq!(level_matrix.decomposition_level(), DecompositionLevel(1));
     /// ```
+    /// Todo: Naming
     pub fn decomposition_level(&self) -> DecompositionLevel {
         self.level
     }
@@ -118,6 +122,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// );
     /// assert_eq!(level_matrix.polynomial_size(), PolynomialSize(10));
     /// ```
+    /// Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -143,6 +148,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// }
     /// assert_eq!(level_matrix.row_iter().count(), 7);
     /// ```
+    /// Todo: Naming
     pub fn row_iter(&self) -> impl Iterator<Item = GgswLevelRow<&[<Self as AsRefTensor>::Element]>>
     where
         Self: AsRefTensor,
@@ -176,6 +182,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// assert!(level_matrix.as_tensor().iter().all(|a| *a == 9));
     /// assert_eq!(level_matrix.row_iter_mut().count(), 7);
     /// ```
+    /// Todo: Naming
     pub fn row_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = GgswLevelRow<&mut [<Self as AsRefTensor>::Element]>>
@@ -217,6 +224,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// });
     /// ```
     #[cfg(feature = "multithread")]
+    /// Todo: Naming
     pub fn par_row_iter_mut(
         &mut self,
     ) -> impl IndexedParallelIterator<Item = GgswLevelRow<&mut [<Self as AsRefTensor>::Element]>>
@@ -234,6 +242,7 @@ impl<Cont> GgswLevelMatrix<Cont> {
 }
 
 /// A row of a GGSW level matrix.
+/// Todo: Naming
 pub struct GgswLevelRow<Cont> {
     tensor: Tensor<Cont>,
     poly_size: PolynomialSize,
@@ -261,6 +270,7 @@ impl<Cont> GgswLevelRow<Cont> {
     /// assert_eq!(level_row.glwe_size(), GlweSize(7));
     /// assert_eq!(level_row.decomposition_level(), DecompositionLevel(1));
     /// ```
+    /// Todo: Naming
     pub fn from_container(cont: Cont, poly_size: PolynomialSize, level: DecompositionLevel) -> Self
     where
         Cont: AsRefSlice,
@@ -290,6 +300,7 @@ impl<Cont> GgswLevelRow<Cont> {
     /// );
     /// assert_eq!(level_row.glwe_size(), GlweSize(7));
     /// ```
+    /// Todo: Naming
     pub fn glwe_size(&self) -> GlweSize
     where
         Self: AsRefTensor,
@@ -314,6 +325,7 @@ impl<Cont> GgswLevelRow<Cont> {
     /// );
     /// assert_eq!(level_row.decomposition_level(), DecompositionLevel(1));
     /// ```
+    /// Todo: Naming
     pub fn decomposition_level(&self) -> DecompositionLevel {
         self.level
     }
@@ -334,6 +346,7 @@ impl<Cont> GgswLevelRow<Cont> {
     /// );
     /// assert_eq!(level_row.polynomial_size(), PolynomialSize(10));
     /// ```
+    /// Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -356,6 +369,7 @@ impl<Cont> GgswLevelRow<Cont> {
     /// assert_eq!(glwe.polynomial_size(), PolynomialSize(10));
     /// assert_eq!(glwe.size(), GlweSize(7));
     /// ```
+    /// Todo: Naming
     pub fn into_glwe(self) -> GlweCiphertext<Cont> {
         GlweCiphertext {
             tensor: self.tensor,

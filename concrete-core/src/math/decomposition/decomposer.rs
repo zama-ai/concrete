@@ -10,6 +10,7 @@ use std::marker::PhantomData;
 ///
 /// See the [module level](super) documentation for a description of the signed decomposition.
 #[derive(Debug)]
+// Todo: Naming
 pub struct SignedDecomposer<Scalar>
 where
     Scalar: UnsignedInteger,
@@ -36,6 +37,7 @@ where
     /// assert_eq!(decomposer.level_count(), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.base_log(), DecompositionBaseLog(4));
     /// ```
+    // Todo: Naming
     pub fn new(
         base_log: DecompositionBaseLog,
         level_count: DecompositionLevelCount,
@@ -65,6 +67,7 @@ where
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.base_log(), DecompositionBaseLog(4));
     /// ```
+    // Todo: Naming
     pub fn base_log(&self) -> DecompositionBaseLog {
         DecompositionBaseLog(self.base_log)
     }
@@ -83,6 +86,7 @@ where
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.level_count(), DecompositionLevelCount(3));
     /// ```
+    // Todo: Naming
     pub fn level_count(&self) -> DecompositionLevelCount {
         DecompositionLevelCount(self.level_count)
     }
@@ -100,6 +104,7 @@ where
     /// let closest = decomposer.closest_representable(1_340_987_234_u32);
     /// assert_eq!(closest, 1_341_128_704_u32);
     /// ```
+    // Todo: Naming
     pub fn closest_representable(&self, input: Scalar) -> Scalar {
         // The closest number representable by the decomposition can be computed by performing
         // the rounding at the appropriate bit.
@@ -172,6 +177,7 @@ where
     /// }
     /// assert_eq!(decomposer.decompose(1).count(), 3);
     /// ```
+    // Todo: Naming
     pub fn decompose(&self, input: Scalar) -> SignedDecompositionIter<Scalar> {
         // Note that there would be no sense of making the decomposition on an input which was
         // not rounded to the closest representable first. We then perform it before decomposing.
@@ -200,6 +206,7 @@ where
     /// let rec = decomposer.recompose(dec);
     /// assert_eq!(decomposer.closest_representable(val), rec.unwrap());
     /// ```
+    // Todo: Naming
     pub fn recompose(&self, decomp: SignedDecompositionIter<Scalar>) -> Option<Scalar> {
         if decomp.is_fresh() {
             Some(decomp.fold(Scalar::ZERO, |acc, term| {
@@ -245,6 +252,7 @@ where
     /// }
     /// assert_eq!(count, 3);
     /// ```
+    // Todo: Naming
     pub fn decompose_tensor<I>(&self, input: &I) -> TensorSignedDecompositionIter<Scalar>
     where
         I: AsRefTensor<Element = Scalar>,
@@ -285,6 +293,7 @@ where
     ///     .unwrap();
     /// assert_eq!(recomposition, rounded);
     /// ```
+    // Todo: Naming
     pub fn fill_tensor_with_recompose<TLike>(
         &self,
         decomp: TensorSignedDecompositionIter<Scalar>,

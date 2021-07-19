@@ -7,6 +7,7 @@ use super::*;
 /// A distribution type representing random sampling of floating point numbers, following a
 /// gaussian distribution.
 #[derive(Clone, Copy)]
+// Todo: Naming
 pub struct Gaussian<T: FloatingPoint> {
     /// The standard deviation of the distribution.
     pub std: T,

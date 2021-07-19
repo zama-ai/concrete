@@ -10,6 +10,7 @@ use super::LweCiphertext;
 
 /// A list of ciphertext encoded with the LWE scheme.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+// Todo: Naming
 pub struct LweList<Cont> {
     pub(crate) tensor: Tensor<Cont>,
     pub(crate) lwe_size: LweSize,
@@ -32,6 +33,7 @@ where
     /// assert_eq!(list.count(), CiphertextCount(20));
     /// assert_eq!(list.lwe_size(), LweSize(10));
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Scalar, lwe_size: LweSize, lwe_count: CiphertextCount) -> Self {
         LweList {
             tensor: Tensor::from_container(vec![value; lwe_size.0 * lwe_count.0]),
@@ -52,6 +54,7 @@ impl<Cont> LweList<Cont> {
     /// assert_eq!(list.count(), CiphertextCount(20));
     /// assert_eq!(list.lwe_size(), LweSize(10));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont, lwe_size: LweSize) -> Self
     where
         Cont: AsRefSlice,
@@ -71,6 +74,7 @@ impl<Cont> LweList<Cont> {
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
     /// assert_eq!(list.count(), CiphertextCount(20));
     /// ```
+    // Todo: Naming
     pub fn count(&self) -> CiphertextCount
     where
         Self: AsRefTensor,
@@ -89,6 +93,7 @@ impl<Cont> LweList<Cont> {
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
     /// assert_eq!(list.lwe_size(), LweSize(10));
     /// ```
+    // Todo: Naming
     pub fn lwe_size(&self) -> LweSize
     where
         Self: AsRefTensor,
@@ -106,6 +111,7 @@ impl<Cont> LweList<Cont> {
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
     /// assert_eq!(list.mask_size(), LweDimension(9));
     /// ```
+    // Todo: Naming
     pub fn mask_size(&self) -> LweDimension
     where
         Self: AsRefTensor,
@@ -131,6 +137,7 @@ impl<Cont> LweList<Cont> {
     /// }
     /// assert_eq!(list.ciphertext_iter().count(), 20);
     /// ```
+    // Todo: Naming
     pub fn ciphertext_iter(
         &self,
     ) -> impl Iterator<Item = LweCiphertext<&[<Self as AsRefTensor>::Element]>>
@@ -161,6 +168,7 @@ impl<Cont> LweList<Cont> {
     /// }
     /// assert_eq!(list.ciphertext_iter_mut().count(), 20);
     /// ```
+    // Todo: Naming
     pub fn ciphertext_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = LweCiphertext<&mut [<Self as AsMutTensor>::Element]>>
@@ -195,6 +203,7 @@ impl<Cont> LweList<Cont> {
     /// }
     /// assert_eq!(list.sublist_iter(CiphertextCount(5)).count(), 4);
     /// ```
+    // Todo: Naming
     pub fn sublist_iter(
         &self,
         sub_len: CiphertextCount,
@@ -237,6 +246,7 @@ impl<Cont> LweList<Cont> {
     /// }
     /// assert_eq!(list.sublist_iter_mut(CiphertextCount(5)).count(), 4);
     /// ```
+    // Todo: Naming
     pub fn sublist_iter_mut(
         &mut self,
         sub_len: CiphertextCount,
@@ -311,6 +321,7 @@ impl<Cont> LweList<Cont> {
     /// assert!((decoded.as_tensor().first() - 63.).abs() < 0.3);
     /// assert!((decoded.as_tensor().last() - 181.).abs() < 0.3);
     /// ```
+    // Todo: Naming
     pub fn fill_with_multisums_with_biases<Scalar, InputCont, WeightCont, BiasesCont>(
         &mut self,
         input_list: &LweList<InputCont>,

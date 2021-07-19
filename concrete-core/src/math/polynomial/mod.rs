@@ -26,16 +26,19 @@ mod polynomial;
 ///
 /// Assuming a monomial $aX^N$, this returns the $N$ value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+// Todo: Naming
 pub struct MonomialDegree(pub usize);
 
 /// The number of coefficients of a polynomial.
 ///
 /// Assuming a polynomial $a_0 + a_1X + /dots + a_nX^N$, this returns $N+1$.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+// Todo: Naming
 pub struct PolynomialSize(pub usize);
 
 /// The number of polynomials in a polynomial list.
 ///
 /// Assuming a polynomial list, this return the number of polynomials.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+// Todo: Naming
 pub struct PolynomialCount(pub usize);

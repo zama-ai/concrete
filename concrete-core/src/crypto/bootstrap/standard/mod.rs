@@ -14,6 +14,7 @@ use rayon::{iter::IndexedParallelIterator, prelude::*};
 
 /// A bootstrapping key represented in the standard domain.
 #[derive(Debug, Clone, PartialEq)]
+// Todo: Naming
 pub struct StandardBootstrapKey<Cont> {
     tensor: Tensor<Cont>,
     poly_size: PolynomialSize,
@@ -49,6 +50,7 @@ impl<Scalar> StandardBootstrapKey<Vec<Scalar>> {
     /// assert_eq!(bsk.base_log(), DecompositionBaseLog(5));
     /// assert_eq!(bsk.key_size(), LweDimension(4));
     /// ```
+    // Todo: Naming
     pub fn allocate(
         value: Scalar,
         rlwe_size: GlweSize,
@@ -101,6 +103,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// assert_eq!(bsk.base_log(), DecompositionBaseLog(4));
     /// assert_eq!(bsk.key_size(), LweDimension(15));
     /// ```
+    // Todo: Naming
     pub fn from_container<Coef>(
         cont: Cont,
         glwe_size: GlweSize,
@@ -164,6 +167,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     ///     &mut encryption_generator,
     /// );
     /// ```
+    // Todo: Naming
     pub fn fill_with_new_key<LweCont, RlweCont, Scalar>(
         &mut self,
         lwe_secret_key: &LweSecretKey<BinaryKeyKind, LweCont>,
@@ -245,6 +249,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     ///     &mut secret_generator,
     /// );
     /// ```
+    // Todo: Naming
     #[cfg(feature = "multithread")]
     pub fn par_fill_with_new_key<LweCont, RlweCont, Scalar>(
         &mut self,
@@ -321,6 +326,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     ///     &mut encryption_generator,
     /// );
     /// ```
+    // Todo: Naming
     pub fn fill_with_new_trivial_key<LweCont, RlweCont, Scalar>(
         &mut self,
         lwe_secret_key: &LweSecretKey<BinaryKeyKind, LweCont>,
@@ -364,6 +370,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// );
     /// assert_eq!(bsk.polynomial_size(), PolynomialSize(9));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -387,6 +394,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// );
     /// assert_eq!(bsk.glwe_size(), GlweSize(7));
     /// ```
+    // Todo: Naming
     pub fn glwe_size(&self) -> GlweSize {
         self.rlwe_size
     }
@@ -410,6 +418,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// );
     /// assert_eq!(bsk.level_count(), DecompositionLevelCount(3));
     /// ```
+    // Todo: Naming
     pub fn level_count(&self) -> DecompositionLevelCount {
         self.decomp_level
     }
@@ -433,6 +442,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// );
     /// assert_eq!(bsk.base_log(), DecompositionBaseLog(5));
     /// ```
+    // Todo: Naming
     pub fn base_log(&self) -> DecompositionBaseLog {
         self.decomp_base_log
     }
@@ -456,6 +466,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// );
     /// assert_eq!(bsk.key_size(), LweDimension(4));
     /// ```
+    // Todo: Naming
     pub fn key_size(&self) -> LweDimension
     where
         Self: AsRefTensor,
@@ -495,6 +506,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// }
     /// assert_eq!(bsk.ggsw_iter().count(), 4);
     /// ```
+    // Todo: Naming
     pub fn ggsw_iter(
         &self,
     ) -> impl Iterator<Item = GgswCiphertext<&[<Self as AsRefTensor>::Element]>>
@@ -549,6 +561,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// assert_eq!(bsk.ggsw_iter_mut().count(), 4);
     /// ```
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub fn par_ggsw_iter_mut(
         &mut self,
     ) -> impl IndexedParallelIterator<Item = GgswCiphertext<&mut [<Self as AsRefTensor>::Element]>>
@@ -598,6 +611,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// assert!(bsk.as_tensor().iter().all(|a| *a == 0));
     /// assert_eq!(bsk.ggsw_iter_mut().count(), 4);
     /// ```
+    // Todo: Naming
     pub fn ggsw_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = GgswCiphertext<&mut [<Self as AsRefTensor>::Element]>>
@@ -645,6 +659,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// }
     /// assert_eq!(bsk.poly_iter().count(), 7 * 7 * 3 * 4)
     /// ```
+    // Todo: Naming
     pub fn poly_iter(&self) -> impl Iterator<Item = Polynomial<&[<Self as AsRefTensor>::Element]>>
     where
         Self: AsRefTensor,
@@ -681,6 +696,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// assert!(bsk.as_tensor().iter().all(|a| *a == 0));
     /// assert_eq!(bsk.poly_iter_mut().count(), 7 * 7 * 3 * 4)
     /// ```
+    // Todo: Naming
     pub fn poly_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = Polynomial<&mut [<Self as AsMutTensor>::Element]>>

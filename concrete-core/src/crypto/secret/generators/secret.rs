@@ -4,25 +4,30 @@ use crate::math::torus::UnsignedTorus;
 use concrete_commons::DispersionParameter;
 
 /// A random number generator which can be used to generate secret keys.
+// Todo: Naming
 pub struct SecretRandomGenerator(RandomGenerator);
 
 impl SecretRandomGenerator {
     /// Creates a new generator, optionally seeding it with the given value.
+    // Todo: Naming
     pub fn new(seed: Option<u128>) -> SecretRandomGenerator {
         SecretRandomGenerator(RandomGenerator::new(seed))
     }
 
     /// Returns the number of remaining bytes, if the generator is bounded.
+    // Todo: Naming
     pub fn remaining_bytes(&self) -> Option<usize> {
         self.0.remaining_bytes()
     }
 
     /// Returns whether the generator is bounded.
+    // Todo: Naming
     pub fn is_bounded(&self) -> bool {
         self.0.is_bounded()
     }
 
     // Returns a tensor with random uniform binary values.
+    // Todo: Naming
     pub(crate) fn random_binary_tensor<Scalar>(&mut self, length: usize) -> Tensor<Vec<Scalar>>
     where
         Scalar: UnsignedTorus,
@@ -31,6 +36,7 @@ impl SecretRandomGenerator {
     }
 
     // Returns a tensor with random uniform ternary values.
+    // Todo: Naming
     pub(crate) fn random_ternary_tensor<Scalar>(&mut self, length: usize) -> Tensor<Vec<Scalar>>
     where
         Scalar: UnsignedTorus,
@@ -39,6 +45,7 @@ impl SecretRandomGenerator {
     }
 
     // Returns a tensor with random uniform values.
+    // Todo: Naming
     pub(crate) fn random_uniform_tensor<Scalar>(&mut self, length: usize) -> Tensor<Vec<Scalar>>
     where
         Scalar: UnsignedTorus,
@@ -47,6 +54,7 @@ impl SecretRandomGenerator {
     }
 
     // Returns a tensor with random gaussian values.
+    // Todo: Naming
     pub(crate) fn random_gaussian_tensor<Scalar>(&mut self, length: usize) -> Tensor<Vec<Scalar>>
     where
         (Scalar, Scalar): RandomGenerable<Gaussian<f64>>,

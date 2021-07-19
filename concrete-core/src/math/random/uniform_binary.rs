@@ -2,6 +2,7 @@ use super::*;
 
 /// A distribution type representing uniform sampling for binary type.
 #[derive(Clone, Copy)]
+// Todo: Naming
 pub struct UniformBinary;
 
 macro_rules! implement_uniform_binary {

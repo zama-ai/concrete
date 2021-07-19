@@ -31,6 +31,7 @@ use rayon::{iter::IndexedParallelIterator, prelude::*};
 /// the result of an operation on other values.
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[repr(transparent)]
+// Todo: Naming
 pub struct Tensor<Container: ?Sized>(Container);
 
 impl<Element> Tensor<Vec<Element>> {
@@ -43,6 +44,7 @@ impl<Element> Tensor<Vec<Element>> {
     /// assert_eq!(*tensor.get_element(0), 9);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Element, size: usize) -> Self
     where
         Element: Copy,
@@ -67,6 +69,7 @@ impl<Element> Tensor<Vec<Element>> {
     /// t.save_to_file(&path);
     /// assert!(path.exists());
     /// ```
+    // Todo: Naming
     pub fn save_to_file<Path: AsRef<std::path::Path>>(&self, path: Path) -> Result<(), SaveError>
     where
         Self: Serialize,
@@ -99,6 +102,7 @@ impl<Element> Tensor<Vec<Element>> {
     /// let t_recovered = Tensor::load_from_file(&path).unwrap();
     /// assert_eq!(t_initial, t_recovered);
     /// ```
+    // Todo: Naming
     pub fn load_from_file<Path: AsRef<std::path::Path>>(path: Path) -> Result<Self, LoadError>
     where
         Self: DeserializeOwned,
@@ -231,6 +235,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(0), 9);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Container) -> Self {
         Tensor(cont)
     }
@@ -247,6 +252,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(vec[0], 9);
     /// assert_eq!(vec[1], 9);
     /// ```
+    // Todo: Naming
     pub fn into_container(self) -> Container {
         self.0
     }
@@ -260,6 +266,7 @@ impl<Container> Tensor<Container> {
     /// let tensor = Tensor::allocate(9 as u8, 1000);
     /// let vecref: &Vec<_> = tensor.as_container();
     /// ```
+    // Todo: Naming
     pub fn as_container(&self) -> &Container {
         &self.0
     }
@@ -273,6 +280,7 @@ impl<Container> Tensor<Container> {
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// let vecmut: &mut Vec<_> = tensor.as_mut_container();
     /// ```
+    // Todo: Naming
     pub fn as_mut_container(&mut self) -> &mut Container {
         &mut self.0
     }
@@ -285,6 +293,7 @@ impl<Container> Tensor<Container> {
     /// let tensor = Tensor::allocate(9 as u8, 1000);
     /// assert_eq!(tensor.len(), 1000);
     /// ```
+    // Todo: Naming
     pub fn len(&self) -> usize
     where
         Self: AsRefSlice,
@@ -300,6 +309,7 @@ impl<Container> Tensor<Container> {
     /// let tensor = Tensor::allocate(9 as u8, 1000);
     /// assert_eq!(tensor.is_empty(), false);
     /// ```
+    // Todo: Naming
     pub fn is_empty(&self) -> bool
     where
         Self: AsRefSlice,
@@ -317,6 +327,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 9);
     /// }
     /// ```
+    // Todo: Naming
     pub fn iter(
         &self,
     ) -> impl DoubleEndedIterator<Item = &<Self as AsRefSlice>::Element> + ExactSizeIterator
@@ -341,6 +352,7 @@ impl<Container> Tensor<Container> {
     /// });
     /// ```
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub fn par_iter(&self) -> impl IndexedParallelIterator<Item = &<Self as AsRefSlice>::Element>
     where
         Self: AsRefSlice,
@@ -362,6 +374,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 8);
     /// }
     /// ```
+    // Todo: Naming
     pub fn iter_mut(
         &mut self,
     ) -> impl DoubleEndedIterator<Item = &mut <Self as AsMutSlice>::Element> + ExactSizeIterator
@@ -388,6 +401,7 @@ impl<Container> Tensor<Container> {
     /// }
     /// ```
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub fn par_iter_mut(
         &mut self,
     ) -> impl IndexedParallelIterator<Item = &mut <Self as AsMutSlice>::Element>
@@ -411,6 +425,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(sub.len(), 10);
     /// }
     /// ```
+    // Todo: Naming
     pub fn subtensor_iter(
         &self,
         size: usize,
@@ -438,6 +453,7 @@ impl<Container> Tensor<Container> {
     /// });
     /// ```
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub fn par_subtensor_iter(
         &self,
         size: usize,
@@ -468,6 +484,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*sub.get_element(10), 1);
     /// }
     /// ```
+    // Todo: Naming
     pub fn subtensor_iter_mut(
         &mut self,
         size: usize,
@@ -503,6 +520,7 @@ impl<Container> Tensor<Container> {
     /// }
     /// ```
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub fn par_subtensor_iter_mut(
         &mut self,
         size: usize,
@@ -530,6 +548,7 @@ impl<Container> Tensor<Container> {
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// assert_eq!(*tensor.first(), 9);
     /// ```
+    // Todo: Naming
     pub fn first<Element>(&self) -> &Element
     where
         Self: AsRefSlice<Element = Element>,
@@ -550,6 +569,7 @@ impl<Container> Tensor<Container> {
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// assert_eq!(*tensor.last(), 9);
     /// ```
+    // Todo: Naming
     pub fn last<Element>(&self) -> &Element
     where
         Self: AsRefSlice<Element = Element>,
@@ -572,6 +592,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(0), 8);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
+    // Todo: Naming
     pub fn first_mut<Element>(&mut self) -> &mut Element
     where
         Self: AsMutSlice<Element = Element>,
@@ -594,6 +615,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(999), 8);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
+    // Todo: Naming
     pub fn last_mut<Element>(&mut self) -> &mut Element
     where
         Self: AsMutSlice<Element = Element>,
@@ -616,6 +638,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*first, 9);
     /// assert_eq!(end.len(), 999);
     /// ```
+    // Todo: Naming
     pub fn split_first<Element>(&self) -> (&Element, Tensor<&[Element]>)
     where
         Self: AsRefSlice<Element = Element>,
@@ -640,6 +663,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*last, 9);
     /// assert_eq!(beginning.len(), 999);
     /// ```
+    // Todo: Naming
     pub fn split_last<Element>(&self) -> (&Element, Tensor<&[Element]>)
     where
         Self: AsRefSlice<Element = Element>,
@@ -668,6 +692,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(1), 7);
     /// assert_eq!(*tensor.get_element(2), 9);
     /// ```
+    // Todo: Naming
     pub fn split_first_mut<Element>(&mut self) -> (&mut Element, Tensor<&mut [Element]>)
     where
         Self: AsMutSlice<Element = Element>,
@@ -696,6 +721,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(999), 8);
     /// assert_eq!(*tensor.get_element(2), 9);
     /// ```
+    // Todo: Naming
     pub fn split_last_mut<Element>(&mut self) -> (&mut Element, Tensor<&mut [Element]>)
     where
         Self: AsMutSlice<Element = Element>,
@@ -720,6 +746,7 @@ impl<Container> Tensor<Container> {
     /// let sub = tensor.get_sub(0..3);
     /// assert_eq!(sub.len(), 3);
     /// ```
+    // Todo: Naming
     pub fn get_sub<Index>(&self, index: Index) -> Tensor<&[<Self as AsRefSlice>::Element]>
     where
         Self: AsRefSlice,
@@ -745,6 +772,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(0), 0);
     /// assert_eq!(*tensor.get_element(3), 9);
     /// ```
+    // Todo: Naming
     pub fn get_sub_mut<Index>(
         &mut self,
         index: Index,
@@ -770,6 +798,7 @@ impl<Container> Tensor<Container> {
     /// let tensor = Tensor::allocate(9 as u8, 1000);
     /// assert_eq!(*tensor.get_element(0), 9);
     /// ```
+    // Todo: Naming
     pub fn get_element(&self, index: usize) -> &<Self as AsRefSlice>::Element
     where
         Self: AsRefSlice,
@@ -792,6 +821,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(0), 8);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
+    // Todo: Naming
     pub fn get_element_mut(&mut self, index: usize) -> &mut <Self as AsMutSlice>::Element
     where
         Self: AsMutSlice,
@@ -814,6 +844,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(0), 8);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
+    // Todo: Naming
     pub fn set_element(&mut self, index: usize, val: <Self as AsMutSlice>::Element)
     where
         Self: AsMutSlice,
@@ -834,6 +865,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor1.get_element(0), 10);
     /// assert_eq!(*tensor2.get_element(0), 10);
     /// ```
+    // Todo: Naming
     pub fn fill_two_with_one<Cont1, Cont2>(
         first: &mut Self,
         second: &mut Tensor<Cont1>,
@@ -871,6 +903,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 3);
     /// }
     /// ```
+    // Todo: Naming
     pub fn fill_with_two<Cont1, Cont2>(
         &mut self,
         lhs: &Tensor<Cont1>,
@@ -907,6 +940,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 4);
     /// }
     /// ```
+    // Todo: Naming
     pub fn fill_with_one<Cont>(
         &mut self,
         other: &Tensor<Cont>,
@@ -931,6 +965,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 8);
     /// }
     /// ```
+    // Todo: Naming
     pub fn fill_with_element(&mut self, element: <Self as AsMutSlice>::Element)
     where
         Self: AsMutSlice,
@@ -956,6 +991,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(1), 2);
     /// assert_eq!(*tensor.get_element(2), 3);
     /// ```
+    // Todo: Naming
     pub fn fill_with(&mut self, ope: impl Fn() -> <Self as AsMutSlice>::Element)
     where
         Self: AsMutSlice,
@@ -976,6 +1012,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 8);
     /// }
     /// ```
+    // Todo: Naming
     pub fn fill_with_cast<Cont>(&mut self, other: &Tensor<Cont>)
     where
         Self: AsMutSlice,
@@ -987,6 +1024,7 @@ impl<Container> Tensor<Container> {
         self.fill_with_one(other, |a| <Self as AsMutSlice>::Element::cast_from(*a));
     }
 
+    // Todo: Naming
     fill_with!(Add, fill_with_add, |l, r| *l + *r);
     fill_with!(Sub, fill_with_sub, |l, r| *l - *r);
     fill_with!(Mul, fill_with_mul, |l, r| *l * *r);
@@ -998,6 +1036,7 @@ impl<Container> Tensor<Container> {
     fill_with!(Shl, fill_with_bit_shl, |l, r| *l << *r);
     fill_with!(Shr, fill_with_bit_shr, |l, r| *l >> *r);
 
+    // Todo: Naming
     fill_with_wrapping!(fill_with_wrapping_add, |l, r| l.wrapping_add(*r));
     fill_with_wrapping!(fill_with_wrapping_sub, |l, r| l.wrapping_sub(*r));
     fill_with_wrapping!(fill_with_wrapping_mul, |l, r| l.wrapping_mul(*r));
@@ -1019,6 +1058,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor1.get_element(0), 19);
     /// assert_eq!(*tensor2.get_element(0), 20);
     /// ```
+    // Todo: Naming
     pub fn update_two_with_one<Cont1, Cont2>(
         first: &mut Self,
         second: &mut Tensor<Cont1>,
@@ -1053,6 +1093,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 12);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_two<Cont1, Cont2>(
         &mut self,
         first: &Tensor<Cont1>,
@@ -1090,6 +1131,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 13);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_one<Cont>(
         &mut self,
         other: &Tensor<Cont>,
@@ -1114,6 +1156,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 17);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_element<Element>(
         &mut self,
         scalar: Element,
@@ -1142,6 +1185,7 @@ impl<Container> Tensor<Container> {
     /// assert_eq!(*tensor.get_element(1), 11);
     /// assert_eq!(*tensor.get_element(2), 12);
     /// ```
+    // Todo: Naming
     pub fn update_with(&mut self, ope: impl Fn(&mut <Self as AsMutSlice>::Element))
     where
         Self: AsMutSlice,
@@ -1151,6 +1195,7 @@ impl<Container> Tensor<Container> {
         }
     }
 
+    // Todo: Naming
     update_with!(AddAssign, update_with_add, |s, a| *s += *a);
     update_with!(SubAssign, update_with_sub, |s, a| *s -= *a);
     update_with!(MulAssign, update_with_mul, |s, a| *s *= *a);
@@ -1162,11 +1207,13 @@ impl<Container> Tensor<Container> {
     update_with!(ShlAssign, update_with_shl, |s, a| *s <<= *a);
     update_with!(ShrAssign, update_with_shr, |s, a| *s >>= *a);
 
+    // Todo: Naming
     update_with_wrapping!(update_with_wrapping_add, |s, a| *s = s.wrapping_add(*a));
     update_with_wrapping!(update_with_wrapping_sub, |s, a| *s = s.wrapping_sub(*a));
     update_with_wrapping!(update_with_wrapping_mul, |s, a| *s = s.wrapping_mul(*a));
     update_with_wrapping!(update_with_wrapping_div, |s, a| *s = s.wrapping_div(*a));
 
+    // Todo: Naming
     update_with_scalar!(AddAssign, update_with_scalar_add, |s, a| *s += *a);
     update_with_scalar!(SubAssign, update_with_scalar_sub, |s, a| *s -= *a);
     update_with_scalar!(MulAssign, update_with_scalar_mul, |s, a| *s *= *a);
@@ -1178,6 +1225,7 @@ impl<Container> Tensor<Container> {
     update_with_scalar!(ShlAssign, update_with_scalar_shl, |s, a| *s <<= *a);
     update_with_scalar!(ShrAssign, update_with_scalar_shr, |s, a| *s >>= *a);
 
+    // Todo: Naming
     update_with_wrapping_scalar!(update_with_wrapping_scalar_add, |s, a| *s =
         s.wrapping_add(*a));
     update_with_wrapping_scalar!(update_with_wrapping_scalar_sub, |s, a| *s =
@@ -1198,6 +1246,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, -9);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_neg(&mut self)
     where
         Self: AsMutSlice,
@@ -1217,6 +1266,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 247);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_neg(&mut self)
     where
         Self: AsMutSlice,
@@ -1238,6 +1288,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 6);
     /// }
     /// ```
+    // Todo: Naming
     pub fn fill_with_element_mul<Cont, Element>(&mut self, tensor: &Tensor<Cont>, element: Element)
     where
         Self: AsMutSlice,
@@ -1263,6 +1314,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 238);
     /// }
     /// ```
+    // Todo: Naming
     pub fn fill_with_wrapping_element_mul<Cont, Element>(
         &mut self,
         tensor: &Tensor<Cont>,
@@ -1289,6 +1341,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 1);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_sub_element_mul<Cont, Element>(
         &mut self,
         tensor: &Tensor<Cont>,
@@ -1318,6 +1371,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 21);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_sub_element_mul<Cont, Element>(
         &mut self,
         tensor: &Tensor<Cont>,
@@ -1344,6 +1398,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 17);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_add_element_mul<Cont, Element>(
         &mut self,
         tensor: &Tensor<Cont>,
@@ -1373,6 +1428,7 @@ impl<Container> Tensor<Container> {
     ///     assert_eq!(*scalar, 253);
     /// }
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_add_element_mul<Cont, Element>(
         &mut self,
         tensor: &Tensor<Cont>,
@@ -1399,6 +1455,7 @@ impl<Container> Tensor<Container> {
     /// });
     /// assert_eq!(val, 120);
     /// ```
+    // Todo: Naming
     pub fn fold_with_one<Cont, Output>(
         &self,
         other: &Tensor<Cont>,

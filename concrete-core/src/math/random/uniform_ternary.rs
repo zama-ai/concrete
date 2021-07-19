@@ -2,6 +2,7 @@ use super::*;
 
 /// A distribution type representing uniform sampling for ternary type.
 #[derive(Clone, Copy)]
+// Todo: Naming
 pub struct UniformTernary;
 
 macro_rules! implement_uniform_ternary {

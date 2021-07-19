@@ -2,6 +2,7 @@ use std::fmt;
 
 /// A type that represents an error when saving a tensor to a file.
 #[derive(Debug)]
+// Todo: Naming
 pub enum SaveError {
     /// The error occured when creating the file. Probably a wrong path.
     CreatingFile {
@@ -39,6 +40,7 @@ impl std::error::Error for SaveError {
 
 /// A type representing an error when loading a tensor from a file.
 #[derive(Debug)]
+// Todo: Naming
 pub enum LoadError {
     /// The error occurred when opening the file. Probably a wrong path.
     OpeningFile {

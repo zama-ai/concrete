@@ -9,6 +9,7 @@ use super::{GlweBody, GlweMask};
 
 /// An GLWE ciphertext.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+// Todo: Naming
 pub struct GlweCiphertext<Cont> {
     pub(crate) tensor: Tensor<Cont>,
     pub(crate) poly_size: PolynomialSize,
@@ -30,6 +31,7 @@ impl<Scalar> GlweCiphertext<Vec<Scalar>> {
     /// assert_eq!(glwe_ciphertext.mask_size(), GlweDimension(99));
     /// assert_eq!(glwe_ciphertext.size(), GlweSize(100));
     /// ```
+    // Todo: Naming
     pub fn allocate(
         value: Scalar,
         poly_size: PolynomialSize,
@@ -62,6 +64,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// assert_eq!(glwe.mask_size(), GlweDimension(109));
     /// assert_eq!(glwe.size(), GlweSize(110));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont, poly_size: PolynomialSize) -> GlweCiphertext<Cont> {
         GlweCiphertext {
             tensor: Tensor::from_container(cont),
@@ -80,6 +83,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// let glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// assert_eq!(glwe.size(), GlweSize(100));
     /// ```
+    // Todo: Naming
     pub fn size(&self) -> GlweSize
     where
         Self: AsRefTensor,
@@ -98,6 +102,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// let glwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// assert_eq!(glwe.mask_size(), GlweDimension(99));
     /// ```
+    // Todo: Naming
     pub fn mask_size(&self) -> GlweDimension
     where
         Self: AsRefTensor,
@@ -116,6 +121,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// let rlwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// assert_eq!(rlwe_ciphertext.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -132,6 +138,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// let body = rlwe_ciphertext.get_body();
     /// assert_eq!(body.as_polynomial().polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn get_body(&self) -> GlweBody<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -155,6 +162,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// let mask = rlwe_ciphertext.get_mask();
     /// assert_eq!(mask.mask_element_iter().count(), 99);
     /// ```
+    // Todo: Naming
     pub fn get_mask(&self) -> GlweMask<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -182,6 +190,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// let body = glwe.get_body();
     /// assert!(body.as_tensor().iter().all(|a| *a == 9));
     /// ```
+    // Todo: Naming
     pub fn get_mut_body(&mut self) -> GlweBody<&mut [<Self as AsRefTensor>::Element]>
     where
         Self: AsMutTensor,
@@ -209,6 +218,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// assert_eq!(masks.mask_element_iter_mut().count(), 99);
     /// assert!(!glwe.as_tensor().iter().all(|a| *a == 9));
     /// ```
+    // Todo: Naming
     pub fn get_mut_mask(&mut self) -> GlweMask<&mut [<Self as AsRefTensor>::Element]>
     where
         Self: AsMutTensor,
@@ -236,6 +246,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// assert_eq!(masks.mask_element_iter().count(), 99);
     /// ```
     #[allow(clippy::type_complexity)]
+    // Todo: Naming
     pub fn get_body_and_mask(
         &self,
     ) -> (
@@ -276,6 +287,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// assert!(glwe.as_tensor().iter().all(|a| *a == 9));
     /// ```
     #[allow(clippy::type_complexity)]
+    // Todo: Naming
     pub fn get_mut_body_and_mask(
         &mut self,
     ) -> (
@@ -312,6 +324,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// assert_eq!(poly_list.polynomial_count(), PolynomialCount(100));
     /// assert_eq!(poly_list.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn into_polynomial_list(self) -> PolynomialList<Cont> {
         PolynomialList {
             tensor: self.tensor,
@@ -332,6 +345,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// assert_eq!(poly_list.polynomial_count(), PolynomialCount(100));
     /// assert_eq!(poly_list.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn as_polynomial_list(&self) -> PolynomialList<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -358,6 +372,7 @@ impl<Cont> GlweCiphertext<Cont> {
     /// }
     /// assert!(glwe.as_tensor().iter().all(|a| *a == 9));
     /// ```
+    // Todo: Naming
     pub fn as_mut_polynomial_list(
         &mut self,
     ) -> PolynomialList<&mut [<Self as AsMutTensor>::Element]>

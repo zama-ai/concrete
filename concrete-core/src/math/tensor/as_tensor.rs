@@ -45,6 +45,7 @@ use super::{AsMutSlice, AsRefSlice};
 ///     }
 /// }
 /// ```
+// Todo: Naming
 pub trait AsRefTensor {
     /// The element type.
     type Element;
@@ -58,6 +59,7 @@ pub trait AsRefTensor {
 ///
 /// This trait implements the same logic as `AsRefTensor`, but for mutable borrow instead. See the
 /// [`AsRefTensor`] documentation for more explanations on the logic.
+// Todo: Naming
 pub trait AsMutTensor: AsRefTensor<Element = <Self as AsMutTensor>::Element> {
     /// The element type.
     type Element;

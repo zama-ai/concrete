@@ -10,6 +10,7 @@ use crate::math::tensor::AsMutTensor;
 use rayon::prelude::*;
 
 /// A random number generator which can be used to encrypt messages.
+// Todo: Naming
 pub struct EncryptionRandomGenerator {
     // A separate mask generator, only used to generate the mask elements.
     mask: RandomGenerator,
@@ -19,6 +20,7 @@ pub struct EncryptionRandomGenerator {
 
 impl EncryptionRandomGenerator {
     /// Creates a new encryption, optionally seeding it with the given value.
+    // Todo: Naming
     pub fn new(seed: Option<u128>) -> EncryptionRandomGenerator {
         EncryptionRandomGenerator {
             mask: RandomGenerator::new(seed),
@@ -28,23 +30,27 @@ impl EncryptionRandomGenerator {
 
     // Allows to seed the noise generator. For testing purpose only.
     #[allow(dead_code)]
+    // Todo: Naming
     pub(crate) fn seed_noise_generator(&mut self, seed: u128) {
         println!("WARNING: The noise generator of the encryption random generator was seeded.");
         self.noise = RandomGenerator::new(Some(seed));
     }
 
     /// Returns the number of remaining bytes, if the generator is bounded.
+    // Todo: Naming
     pub fn remaining_bytes(&self) -> Option<usize> {
         self.mask.remaining_bytes()
     }
 
     /// Returns whether the generator is bounded.
+    // Todo: Naming
     pub fn is_bounded(&self) -> bool {
         self.mask.is_bounded()
     }
 
     // Forks the generator, when splitting a bootstrap key into ggsw ct.
     #[allow(dead_code)]
+    // Todo: Naming
     pub(crate) fn fork_bsk_to_ggsw<T: UnsignedInteger>(
         &mut self,
         lwe_dimension: LweDimension,
@@ -59,6 +65,7 @@ impl EncryptionRandomGenerator {
 
     // Forks the generator into a parallel iterator, when splitting a bootstrap key into ggsw ct.
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub(crate) fn par_fork_bsk_to_ggsw<T: UnsignedInteger>(
         &mut self,
         lwe_dimension: LweDimension,
@@ -72,6 +79,7 @@ impl EncryptionRandomGenerator {
     }
 
     // Forks the generator, when splitting a ggsw into level matrices.
+    // Todo: Naming
     pub(crate) fn fork_ggsw_to_ggsw_levels<T: UnsignedInteger>(
         &mut self,
         level: DecompositionLevelCount,
@@ -85,6 +93,7 @@ impl EncryptionRandomGenerator {
 
     // Forks the generator into a parallel iterator, when splitting a ggsw into level matrices.
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub(crate) fn par_fork_ggsw_to_ggsw_levels<T: UnsignedInteger>(
         &mut self,
         level: DecompositionLevelCount,
@@ -97,6 +106,7 @@ impl EncryptionRandomGenerator {
     }
 
     // Forks the generator, when splitting a ggsw level matrix to glwe.
+    // Todo: Naming
     pub(crate) fn fork_ggsw_level_to_glwe<T: UnsignedInteger>(
         &mut self,
         glwe_size: GlweSize,
@@ -109,6 +119,7 @@ impl EncryptionRandomGenerator {
 
     // Forks the generator into a parallel iterator, when splitting a ggsw level matrix to glwe.
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub(crate) fn par_fork_ggsw_level_to_glwe<T: UnsignedInteger>(
         &mut self,
         glwe_size: GlweSize,
@@ -159,6 +170,7 @@ impl EncryptionRandomGenerator {
     }
 
     // Fills the tensor with random uniform values, using the mask generator.
+    // Todo: Naming
     pub(crate) fn fill_tensor_with_random_mask<Scalar, Tensorable>(
         &mut self,
         output: &mut Tensorable,
@@ -170,6 +182,7 @@ impl EncryptionRandomGenerator {
     }
 
     // Sample a noise value, using the noise generator.
+    // Todo: Naming
     pub(crate) fn random_noise<Scalar>(&mut self, std: impl DispersionParameter) -> Scalar
     where
         Scalar: RandomGenerable<Gaussian<f64>>,
@@ -184,6 +197,7 @@ impl EncryptionRandomGenerator {
     }
 
     // Fills the input tensor with random noise, using the noise generator.
+    // Todo: Naming
     pub(crate) fn fill_tensor_with_random_noise<Scalar, Tensorable>(
         &mut self,
         output: &mut Tensorable,

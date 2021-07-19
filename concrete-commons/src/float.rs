@@ -4,6 +4,7 @@ use std::ops::{
 };
 
 /// A trait shared by all the floating point types.
+// Todo: Naming
 pub trait FloatingPoint:
     Numeric
     + Neg<Output = Self>

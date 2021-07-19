@@ -21,6 +21,7 @@ use concrete_commons::{SignedInteger, UnsignedInteger};
 ///
 /// This iterator yields the decomposition in reverse order. That means that the highest level
 /// will be yielded first.
+// Todo: Naming
 pub struct TensorSignedDecompositionIter<Scalar>
 where
     Scalar: UnsignedInteger,
@@ -54,6 +55,7 @@ where
     Scalar: UnsignedInteger,
 {
     // Creates a new tensor decomposition iterator.
+    // Todo: Naming
     pub(crate) fn new(
         input: Tensor<Vec<Scalar>>,
         base_log: DecompositionBaseLog,
@@ -73,6 +75,7 @@ where
         }
     }
 
+    // Todo: Naming
     pub(crate) fn is_fresh(&self) -> bool {
         self.fresh
     }
@@ -95,6 +98,7 @@ where
     /// let decomp = decomposer.decompose_tensor(&decomposable);
     /// assert_eq!(decomp.base_log(), DecompositionBaseLog(4));
     /// ```
+    // Todo: Naming
     pub fn base_log(&self) -> DecompositionBaseLog {
         DecompositionBaseLog(self.base_log)
     }
@@ -117,6 +121,7 @@ where
     /// let decomp = decomposer.decompose_tensor(&decomposable);
     /// assert_eq!(decomp.level_count(), DecompositionLevelCount(3));
     /// ```
+    // Todo: Naming
     pub fn level_count(&self) -> DecompositionLevelCount {
         DecompositionLevelCount(self.level_count)
     }
@@ -144,6 +149,7 @@ where
     /// assert_eq!(term.level(), DecompositionLevel(3));
     /// assert_eq!(*term.as_tensor().get_element(0), 4294967295);
     /// ```
+    // Todo: Naming
     pub fn next_term(&mut self) -> Option<DecompositionTermTensor<'_, Scalar>> {
         // The iterator is not fresh anymore.
         self.fresh = false;
@@ -184,6 +190,7 @@ where
 ///
 /// This iterator yields the decomposition in reverse order. That means that the highest level
 /// will be yielded first.
+// Todo: Naming
 pub struct SignedDecompositionIter<T>
 where
     T: UnsignedInteger,
@@ -213,6 +220,7 @@ impl<T> SignedDecompositionIter<T>
 where
     T: UnsignedInteger,
 {
+    // Todo: Naming
     pub(crate) fn new(
         input: T,
         base_log: DecompositionBaseLog,
@@ -230,6 +238,7 @@ where
         }
     }
 
+    // Todo: Naming
     pub(crate) fn is_fresh(&self) -> bool {
         self.fresh
     }
@@ -250,6 +259,7 @@ where
     /// let decomp = decomposer.decompose(val);
     /// assert_eq!(decomp.base_log(), DecompositionBaseLog(4));
     /// ```
+    // Todo: Naming
     pub fn base_log(&self) -> DecompositionBaseLog {
         DecompositionBaseLog(self.base_log)
     }
@@ -270,6 +280,7 @@ where
     /// let decomp = decomposer.decompose(val);
     /// assert_eq!(decomp.level_count(), DecompositionLevelCount(3));
     /// ```
+    // Todo: Naming
     pub fn level_count(&self) -> DecompositionLevelCount {
         DecompositionLevelCount(self.level_count)
     }

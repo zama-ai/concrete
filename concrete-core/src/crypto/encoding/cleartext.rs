@@ -6,9 +6,11 @@ use crate::{ck_dim_div, tensor_traits};
 
 /// A clear, non-encoded, value.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+// Todo: Naming
 pub struct Cleartext<T: Numeric>(pub T);
 
 /// A list of clear, non-encoded, values.
+// Todo: Naming
 pub struct CleartextList<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -29,6 +31,7 @@ where
     /// let clear_list = CleartextList::allocate(1 as u8, CleartextCount(100));
     /// assert_eq!(clear_list.count(), CleartextCount(100));
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Scalar, count: CleartextCount) -> CleartextList<Vec<Scalar>> {
         CleartextList::from_container(vec![value; count.0])
     }
@@ -45,6 +48,7 @@ impl<Cont> CleartextList<Cont> {
     /// let clear_list = CleartextList::from_container(vec![1 as u8; 100]);
     /// assert_eq!(clear_list.count(), CleartextCount(100));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont) -> CleartextList<Cont> {
         CleartextList {
             tensor: Tensor::from_container(cont),
@@ -61,6 +65,7 @@ impl<Cont> CleartextList<Cont> {
     /// let clear_list = CleartextList::from_container(vec![1 as u8; 100]);
     /// assert_eq!(clear_list.count(), CleartextCount(100));
     /// ```
+    // Todo: Naming
     pub fn count(&self) -> CleartextCount
     where
         Self: AsRefTensor,
@@ -79,6 +84,7 @@ impl<Cont> CleartextList<Cont> {
     /// clear_list.cleartext_iter().for_each(|a| assert_eq!(a.0, 1));
     /// assert_eq!(clear_list.cleartext_iter().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn cleartext_iter(&self) -> impl Iterator<Item = &Cleartext<<Self as AsRefTensor>::Element>>
     where
         Self: AsRefTensor,
@@ -106,6 +112,7 @@ impl<Cont> CleartextList<Cont> {
     /// clear_list.cleartext_iter().for_each(|a| assert_eq!(a.0, 2));
     /// assert_eq!(clear_list.cleartext_iter_mut().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn cleartext_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = &mut Cleartext<<Self as AsMutTensor>::Element>>
@@ -134,6 +141,7 @@ impl<Cont> CleartextList<Cont> {
     ///     .for_each(|a| assert_eq!(a.count(), CleartextCount(10)));
     /// assert_eq!(clear_list.sublist_iter(CleartextCount(10)).count(), 10);
     /// ```
+    // Todo: Naming
     pub fn sublist_iter(
         &self,
         sub_len: CleartextCount,
@@ -163,6 +171,7 @@ impl<Cont> CleartextList<Cont> {
     ///     .for_each(|a| assert_eq!(*a, Cleartext(3)));
     /// assert_eq!(clear_list.sublist_iter_mut(CleartextCount(10)).count(), 10);
     /// ```
+    // Todo: Naming
     pub fn sublist_iter_mut(
         &mut self,
         sub_len: CleartextCount,

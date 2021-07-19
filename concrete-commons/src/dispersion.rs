@@ -18,23 +18,30 @@ use serde::{Deserialize, Serialize};
 use super::UnsignedInteger;
 
 /// A trait for types representing distribution parameters, for a given unsigned integer type.
+// Todo: Naming
 pub trait DispersionParameter: Clone {
     /// Returns the standard deviation of the distribution, i.e. $\sigma = 2^p$.
+    // Todo: Naming
     fn get_standard_dev(&self) -> f64;
     /// Returns the variance of the distribution, i.e. $\sigma^2 = 2^{2p}$.
+    // Todo: Naming
     fn get_variance(&self) -> f64;
     /// Returns base 2 logarithm of the standard deviation of the distribution, i.e.
     /// $\log_2(\sigma)=p$
+    // Todo: Naming
     fn get_log_standard_dev(&self) -> f64;
     /// For a `Uint` type representing $\mathbb{Z}/2^q\mathbb{Z}$, we return $2^{q-p}$.
+    // Todo: Naming
     fn get_modular_standard_dev<Uint>(&self) -> f64
     where
         Uint: UnsignedInteger;
     /// For a `Uint` type representing $\mathbb{Z}/2^q\mathbb{Z}$, we return $2^{2(q-p)}$.
+    // Todo: Naming
     fn get_modular_variance<Uint>(&self) -> f64
     where
         Uint: UnsignedInteger;
     /// For a `Uint` type representing $\mathbb{Z}/2^q\mathbb{Z}$, we return $q-p$.
+    // Todo: Naming
     fn get_modular_log_standard_dev<Uint>(&self) -> f64
     where
         Uint: UnsignedInteger;
@@ -65,13 +72,16 @@ pub trait DispersionParameter: Clone {
 /// assert_eq!(modular_params.get_standard_dev(), 2_f64.powf(-10.));
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+// Todo: Naming
 pub struct LogStandardDev(pub f64);
 
 impl LogStandardDev {
+    // Todo: Naming
     pub fn from_log_standard_dev(log_std: f64) -> LogStandardDev {
         LogStandardDev(log_std)
     }
 
+    // Todo: Naming
     pub fn from_modular_log_standard_dev<Uint>(log_std: f64) -> LogStandardDev
     where
         Uint: UnsignedInteger,
@@ -131,13 +141,16 @@ impl DispersionParameter for LogStandardDev {
 /// );
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+// Todo: Naming
 pub struct StandardDev(pub f64);
 
 impl StandardDev {
+    // Todo: Naming
     pub fn from_standard_dev(std: f64) -> StandardDev {
         StandardDev(std)
     }
 
+    // Todo: Naming
     pub fn from_modular_standard_dev<Uint>(std: f64) -> StandardDev
     where
         Uint: UnsignedInteger,
@@ -197,13 +210,16 @@ impl DispersionParameter for StandardDev {
 /// );
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+// Todo: Naming
 pub struct Variance(pub f64);
 
 impl Variance {
+    // Todo: Naming
     pub fn from_variance(var: f64) -> Variance {
         Variance(var)
     }
 
+    // Todo: Naming
     pub fn from_modular_variance<Uint>(var: f64) -> Variance
     where
         Uint: UnsignedInteger,

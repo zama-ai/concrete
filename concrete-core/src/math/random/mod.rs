@@ -39,11 +39,14 @@ mod uniform_msb;
 mod uniform_ternary;
 mod uniform_with_zeros;
 
+// Todo: Naming
 pub trait RandomGenerable<D: Distribution>
 where
     Self: Sized,
 {
+    // Todo: Naming
     fn generate_one(generator: &mut RandomGenerator, distribution: D) -> Self;
+    // Todo: Naming
     fn generate_tensor(
         generator: &mut RandomGenerator,
         distribution: D,
@@ -53,6 +56,7 @@ where
             .map(|_| Self::generate_one(generator, distribution))
             .collect()
     }
+    // Todo: Naming
     fn fill_tensor<Tens>(generator: &mut RandomGenerator, distribution: D, tensor: &mut Tens)
     where
         Tens: AsMutTensor<Element = Self>,

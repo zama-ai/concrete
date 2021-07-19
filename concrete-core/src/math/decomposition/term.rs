@@ -9,6 +9,7 @@ use std::fmt::Debug;
 /// If we decompose a value $\theta$ as a sum $\sum_{i=1}^l\tilde{\theta}_i\frac{q}{B^i}$, this
 /// represents a $\tilde{\theta}_i$.
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+// Todo: Naming
 pub struct DecompositionTerm<T>
 where
     T: UnsignedInteger,
@@ -23,6 +24,7 @@ where
     T: UnsignedInteger,
 {
     // Creates a new decomposition term.
+    // Todo: Naming
     pub(crate) fn new(
         level: DecompositionLevel,
         base_log: DecompositionBaseLog,
@@ -51,6 +53,7 @@ where
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
     /// assert_eq!(output.to_recomposition_summand(), 1048576);
     /// ```
+    // Todo: Naming
     pub fn to_recomposition_summand(&self) -> T {
         let shift: usize = <T as Numeric>::BITS - self.base_log * self.level;
         self.value << shift
@@ -71,6 +74,7 @@ where
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
     /// assert_eq!(output.value(), 1);
     /// ```
+    // Todo: Naming
     pub fn value(&self) -> T {
         self.value
     }
@@ -90,6 +94,7 @@ where
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
     /// assert_eq!(output.level(), DecompositionLevel(3));
     /// ```
+    // Todo: Naming
     pub fn level(&self) -> DecompositionLevel {
         DecompositionLevel(self.level)
     }
@@ -101,6 +106,7 @@ where
 /// sums $(\sum_{i=1}^l\tilde{\theta}^{(a)}_i\frac{q}{B^i})_{a\in\mathbb{N}}$, this represents a set
 /// of $(\tilde{\theta}^{(a)}_i)_{a\in\mathbb{N}}$.
 #[derive(Debug, PartialEq, Eq, Clone)]
+// Todo: Naming
 pub struct DecompositionTermTensor<'a, Scalar>
 where
     Scalar: UnsignedInteger,
@@ -115,6 +121,7 @@ where
     Scalar: UnsignedInteger,
 {
     // Creates a new tensor decomposition term.
+    // Todo: Naming
     pub(crate) fn new(
         level: DecompositionLevel,
         base_log: DecompositionBaseLog,
@@ -149,6 +156,7 @@ where
     /// term.fill_tensor_with_recomposition_summand(&mut output);
     /// assert_eq!(*output.get_element(0), 1048576);
     /// ```
+    // Todo: Naming
     pub fn fill_tensor_with_recomposition_summand<TLike>(&self, output: &mut TLike)
     where
         TLike: AsMutTensor<Element = Scalar>,
@@ -159,6 +167,7 @@ where
         });
     }
 
+    // Todo: Naming
     pub(crate) fn update_tensor_with_recomposition_summand_wrapping_addition<TLike>(
         &self,
         output: &mut TLike,
@@ -189,6 +198,7 @@ where
     /// let term = decomp.next_term().unwrap();
     /// assert_eq!(*term.as_tensor().get_element(0), 1);
     /// ```
+    // Todo: Naming
     pub fn as_tensor(&self) -> &Tensor<&'a [Scalar]> {
         &self.tensor
     }
@@ -209,6 +219,7 @@ where
     /// let term = decomp.next_term().unwrap();
     /// assert_eq!(term.level(), DecompositionLevel(3));
     /// ```
+    // Todo: Naming
     pub fn level(&self) -> DecompositionLevel {
         DecompositionLevel(self.level)
     }

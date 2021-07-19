@@ -3,6 +3,7 @@ use super::*;
 /// A distribution type that samples a uniform value with probability `1 - prob_zero`, and a zero
 /// value with probaibility `prob_zero`.
 #[derive(Copy, Clone)]
+// Todo: Naming
 pub struct UniformWithZeros {
     /// The probability of the output being a zero
     pub prob_zero: f32,

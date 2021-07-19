@@ -8,6 +8,7 @@ use super::{Cleartext, CleartextList, Plaintext, PlaintextList};
 /// A trait for types that encode cleartext to plaintext.
 ///
 /// Examples use the [`RealEncoder'] type.
+// Todo: Naming
 pub trait Encoder<Enc: Numeric> {
     /// The type of the cleartexts.
     type Raw: Numeric;
@@ -27,11 +28,13 @@ pub trait Encoder<Enc: Numeric> {
     /// let decoded = encoder.decode(encoded);
     /// assert!((cleartext.0 - decoded.0).abs() < 0.1);
     /// ```
+    // Todo: Naming
     fn encode(&self, raw: Cleartext<Self::Raw>) -> Plaintext<Enc>;
 
     /// Decodes a single encoded value.
     ///
     /// See [`Encoder::encode`] for an example.
+    // Todo: Naming
     fn decode(&self, encoded: Plaintext<Enc>) -> Cleartext<Self::Raw>;
 
     /// Encodes a list of cleartexts to a list of plaintexts.
@@ -56,6 +59,7 @@ pub trait Encoder<Enc: Numeric> {
     ///     assert!((clear.0 - decoded.0).abs() < 0.1);
     /// }
     /// ```
+    // Todo: Naming
     fn encode_list<RawCont, EncCont>(
         &self,
         encoded: &mut PlaintextList<EncCont>,
@@ -67,6 +71,7 @@ pub trait Encoder<Enc: Numeric> {
     /// Decodes a list of plaintexts into a list of cleartexts.
     ///
     /// See [`Encoder::encode_list`] for an example.
+    // Todo: Naming
     fn decode_list<RawCont, EncCont>(
         &self,
         raw: &mut CleartextList<RawCont>,
@@ -77,6 +82,7 @@ pub trait Encoder<Enc: Numeric> {
 }
 
 /// An encoder for real cleartexts
+// Todo: Naming
 pub struct RealEncoder<T: FloatingPoint> {
     /// The offset of the encoding
     pub offset: T,

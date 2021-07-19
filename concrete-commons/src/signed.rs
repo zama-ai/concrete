@@ -6,6 +6,7 @@ use std::ops::{
 };
 
 /// A trait shared by all the unsigned integer types.
+// Todo: Naming
 pub trait SignedInteger:
     Numeric
     + Neg<Output = Self>

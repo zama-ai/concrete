@@ -13,6 +13,7 @@ use crate::math::torus::UnsignedTorus;
 
 /// A ciphertext encrypted using the LWE scheme.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+// Todo: Naming
 pub struct LweCiphertext<Cont> {
     pub(super) tensor: Tensor<Cont>,
 }
@@ -34,6 +35,7 @@ where
     /// assert_eq!(ct.lwe_size(), LweSize(4));
     /// assert_eq!(ct.get_mask().mask_size(), LweDimension(3));
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Scalar, size: LweSize) -> Self {
         LweCiphertext {
             tensor: Tensor::from_container(vec![value; size.0]),
@@ -54,6 +56,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// assert_eq!(ct.lwe_size(), LweSize(10));
     /// assert_eq!(ct.get_mask().mask_size(), LweDimension(9));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont) -> LweCiphertext<Cont> {
         let tensor = Tensor::from_container(cont);
         LweCiphertext { tensor }
@@ -69,6 +72,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let ct = LweCiphertext::allocate(0 as u8, LweSize(4));
     /// assert_eq!(ct.lwe_size(), LweSize(4));
     /// ```
+    // Todo: Naming
     pub fn lwe_size(&self) -> LweSize
     where
         Self: AsRefTensor,
@@ -87,6 +91,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let body = ciphertext.get_body();
     /// assert_eq!(body, &LweBody(0 as u8));
     /// ```
+    // Todo: Naming
     pub fn get_body<Scalar>(&self) -> &LweBody<Scalar>
     where
         Self: AsRefTensor<Element = Scalar>,
@@ -105,6 +110,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let mask = ciphertext.get_mask();
     /// assert_eq!(mask.mask_size(), LweDimension(9));
     /// ```
+    // Todo: Naming
     pub fn get_mask<Scalar>(&self) -> LweMask<&[Scalar]>
     where
         Self: AsRefTensor<Element = Scalar>,
@@ -125,6 +131,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// assert_eq!(body, &LweBody(0));
     /// assert_eq!(mask.mask_size(), LweDimension(9));
     /// ```
+    // Todo: Naming
     pub fn get_body_and_mask<Scalar>(&self) -> (&LweBody<Scalar>, LweMask<&[Scalar]>)
     where
         Self: AsRefTensor<Element = Scalar>,
@@ -147,6 +154,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let body = ciphertext.get_body();
     /// assert_eq!(body, &LweBody(8 as u8));
     /// ```
+    // Todo: Naming
     pub fn get_mut_body<Scalar>(&mut self) -> &mut LweBody<Scalar>
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -172,6 +180,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// }
     /// assert_eq!(mask.mask_element_iter().count(), 9);
     /// ```
+    // Todo: Naming
     pub fn get_mut_mask<Scalar>(&mut self) -> LweMask<&mut [Scalar]>
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -192,6 +201,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// assert_eq!(body, &mut LweBody(0));
     /// assert_eq!(mask.mask_size(), LweDimension(9));
     /// ```
+    // Todo: Naming
     pub fn get_mut_body_and_mask<Scalar>(
         &mut self,
     ) -> (&mut LweBody<Scalar>, LweMask<&mut [Scalar]>)
@@ -247,6 +257,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let decoded = encoder.decode(decrypted);
     /// assert!((decoded.0 - (cleartext.0 * 4.)).abs() < 0.2);
     /// ```
+    // Todo: Naming
     pub fn fill_with_scalar_mul<Scalar, InputCont>(
         &mut self,
         input: &LweCiphertext<InputCont>,
@@ -313,6 +324,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// let decoded = encoder.decode(decrypted);
     /// assert!((decoded.0 - 63.).abs() < 0.1);
     /// ```
+    // Todo: Naming
     pub fn fill_with_multisum_with_bias<Scalar, InputCont, WeightCont>(
         &mut self,
         input_list: &LweList<InputCont>,
@@ -380,6 +392,7 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// assert!((decoded.0 - 5.).abs() < 0.1);
     /// ```
+    // Todo: Naming
     pub fn update_with_add<OtherCont, Scalar>(&mut self, other: &LweCiphertext<OtherCont>)
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -433,6 +446,7 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// assert!((decoded.0 - 1.).abs() < 0.1);
     /// ```
+    // Todo: Naming
     pub fn update_with_sub<OtherCont, Scalar>(&mut self, other: &LweCiphertext<OtherCont>)
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -481,6 +495,7 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// assert!((decoded.0 - (-2.)).abs() < 0.1);
     /// ```
+    // Todo: Naming
     pub fn update_with_neg<Scalar>(&mut self)
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -527,6 +542,7 @@ impl<Cont> LweCiphertext<Cont> {
     ///
     /// assert!((decoded.0 - 6.).abs() < 0.2);
     /// ```
+    // Todo: Naming
     pub fn update_with_scalar_mul<Scalar>(&mut self, scalar: Cleartext<Scalar>)
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -539,6 +555,7 @@ impl<Cont> LweCiphertext<Cont> {
 
 /// The mask of an LWE encrypted ciphertext.
 #[derive(Debug, PartialEq, Eq)]
+// Todo: Naming
 pub struct LweMask<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -556,6 +573,7 @@ impl<Cont> LweMask<Cont> {
     /// let masks = LweMask::from_container(vec![0 as u8; 10]);
     /// assert_eq!(masks.mask_size(), LweDimension(10));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont) -> LweMask<Cont> {
         LweMask {
             tensor: Tensor::from_container(cont),
@@ -575,6 +593,7 @@ impl<Cont> LweMask<Cont> {
     /// }
     /// assert_eq!(masks.mask_element_iter().count(), 9);
     /// ```
+    // Todo: Naming
     pub fn mask_element_iter(&self) -> impl Iterator<Item = &<Self as AsRefTensor>::Element>
     where
         Self: AsRefTensor,
@@ -598,6 +617,7 @@ impl<Cont> LweMask<Cont> {
     /// }
     /// assert_eq!(masks.mask_element_iter_mut().count(), 9);
     /// ```
+    // Todo: Naming
     pub fn mask_element_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = &mut <Self as AsMutTensor>::Element>
@@ -617,6 +637,7 @@ impl<Cont> LweMask<Cont> {
     /// let mut ciphertext = LweCiphertext::from_container(vec![0 as u8; 10]);
     /// assert_eq!(ciphertext.get_mask().mask_size(), LweDimension(9));
     /// ```
+    // Todo: Naming
     pub fn mask_size(&self) -> LweDimension
     where
         Self: AsRefTensor,
@@ -637,6 +658,7 @@ impl<Cont> LweMask<Cont> {
     /// let multisum = mask.compute_multisum(&key);
     /// assert_eq!(multisum, 7);
     /// ```
+    // Todo: Naming
     pub fn compute_multisum<Kind, Scalar, Cont1>(&self, key: &LweSecretKey<Kind, Cont1>) -> Scalar
     where
         Self: AsRefTensor<Element = Scalar>,
@@ -655,4 +677,5 @@ impl<Cont> LweMask<Cont> {
 /// The body of an Lwe ciphertext.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
+// Todo: Naming
 pub struct LweBody<T>(pub T);

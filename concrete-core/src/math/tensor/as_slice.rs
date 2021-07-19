@@ -34,6 +34,7 @@ use concrete_fftw::array::AlignedVec;
 /// }
 /// ```
 /// This is blanket implementation is used by the methods of the `Tensor` structure for instance.
+// Todo: Naming
 pub trait AsRefSlice {
     /// The type of the elements of the collection.
     type Element;
@@ -81,6 +82,7 @@ impl<Element> AsRefSlice for AlignedVec<Element> {
 /// The logic is the same as for the `AsRefTensor`, but here, it allows to access mutable slices
 /// instead. See the [`AsRefTensor`](super::AsRefTensor) documentation for a more detailed
 /// explanation of the logic.
+// Todo: Naming
 pub trait AsMutSlice: AsRefSlice<Element = <Self as AsMutSlice>::Element> {
     /// The type of the elements of the collection
     type Element;

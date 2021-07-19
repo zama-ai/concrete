@@ -6,6 +6,7 @@ use super::AsRefSlice;
 ///
 /// This trait allows to consume a value, and extracts the tensor that was wrapped inside, to
 /// return it to the caller.
+// Todo: Naming
 pub trait IntoTensor {
     /// The element type of the collection container.
     type Element;

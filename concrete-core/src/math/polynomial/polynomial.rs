@@ -24,6 +24,7 @@ const KARATUSBA_STOP: usize = 32;
 /// assert_eq!(poly.polynomial_size(), PolynomialSize(100));
 /// ```
 #[derive(PartialEq, Debug, Clone)]
+// Todo: Naming
 pub struct Polynomial<Cont> {
     pub(crate) tensor: Tensor<Cont>,
 }
@@ -43,6 +44,7 @@ where
     /// let poly = Polynomial::allocate(0 as u32, PolynomialSize(100));
     /// assert_eq!(poly.polynomial_size(), PolynomialSize(100));
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Scalar, coef_count: PolynomialSize) -> Polynomial<Vec<Scalar>> {
         Polynomial::from_container(vec![value; coef_count.0])
     }
@@ -59,12 +61,14 @@ impl<Cont> Polynomial<Cont> {
     /// let poly = Polynomial::from_container(vec.as_slice());
     /// assert_eq!(poly.polynomial_size(), PolynomialSize(100));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont) -> Self {
         Polynomial {
             tensor: Tensor::from_container(cont),
         }
     }
 
+    // Todo: Naming
     pub(crate) fn from_tensor(tensor: Tensor<Cont>) -> Self {
         Polynomial { tensor }
     }
@@ -78,6 +82,7 @@ impl<Cont> Polynomial<Cont> {
     /// let poly = Polynomial::allocate(0 as u32, PolynomialSize(100));
     /// assert_eq!(poly.polynomial_size(), PolynomialSize(100));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize
     where
         Self: AsRefTensor,
@@ -97,6 +102,7 @@ impl<Cont> Polynomial<Cont> {
     /// }
     /// assert_eq!(poly.monomial_iter().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn monomial_iter(&self) -> impl Iterator<Item = Monomial<&[<Self as AsRefTensor>::Element]>>
     where
         Self: AsRefTensor,
@@ -119,6 +125,7 @@ impl<Cont> Polynomial<Cont> {
     /// }
     /// assert_eq!(poly.coefficient_iter().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn coefficient_iter(
         &self,
     ) -> impl DoubleEndedIterator<Item = &<Self as AsRefTensor>::Element>
@@ -140,6 +147,7 @@ impl<Cont> Polynomial<Cont> {
     /// let mono = poly.get_monomial(MonomialDegree(2));
     /// assert_eq!(*mono.get_coefficient(), 19_u32);
     /// ```
+    // Todo: Naming
     pub fn get_monomial(
         &self,
         degree: MonomialDegree,
@@ -170,6 +178,7 @@ impl<Cont> Polynomial<Cont> {
     /// }
     /// assert_eq!(poly.monomial_iter_mut().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn monomial_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = Monomial<&mut [<Self as AsMutTensor>::Element]>>
@@ -197,6 +206,7 @@ impl<Cont> Polynomial<Cont> {
     /// }
     /// assert_eq!(poly.coefficient_iter_mut().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn coefficient_iter_mut(
         &mut self,
     ) -> impl DoubleEndedIterator<Item = &mut <Self as AsMutTensor>::Element>
@@ -218,6 +228,7 @@ impl<Cont> Polynomial<Cont> {
     /// let mono = poly.get_monomial(MonomialDegree(0));
     /// assert_eq!(*mono.get_coefficient(), 18);
     /// ```
+    // Todo: Naming
     pub fn get_mut_monomial(
         &mut self,
         degree: MonomialDegree,
@@ -257,6 +268,7 @@ impl<Cont> Polynomial<Cont> {
     ///     45 as u8
     /// );
     /// ```
+    // Todo: Naming
     pub fn fill_with_wrapping_mul<Coef, LhsCont, RhsCont>(
         &mut self,
         lhs: &Polynomial<LhsCont>,
@@ -304,6 +316,7 @@ impl<Cont> Polynomial<Cont> {
     /// res_mul.fill_with_wrapping_mul(&lhs, &rhs);
     /// assert_eq!(res_kara, res_mul);
     /// ```
+    // Todo: Naming
     pub fn fill_with_karatsuba_mul<Coef, LhsCont, RhsCont>(
         &mut self,
         p: &Polynomial<LhsCont>,
@@ -417,6 +430,7 @@ impl<Cont> Polynomial<Cont> {
     ///     120
     /// );
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_add_multisum<Coef, Cont1, Cont2>(
         &mut self,
         coef_list: &PolynomialList<Cont1>,
@@ -467,6 +481,7 @@ impl<Cont> Polynomial<Cont> {
     ///     124
     /// );
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_sub_multisum<Coef, InCont, BinCont>(
         &mut self,
         coef_list: &PolynomialList<InCont>,
@@ -499,6 +514,7 @@ impl<Cont> Polynomial<Cont> {
     /// assert_eq!(*res.get_monomial(MonomialDegree(1)).get_coefficient(), 254);
     /// assert_eq!(*res.get_monomial(MonomialDegree(2)).get_coefficient(), 0);
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_add_mul<Coef, Cont1, Cont2>(
         &mut self,
         polynomial: &Polynomial<Cont1>,
@@ -552,6 +568,7 @@ impl<Cont> Polynomial<Cont> {
     /// assert_eq!(*res.get_monomial(MonomialDegree(1)).get_coefficient(), 1);
     /// assert_eq!(*res.get_monomial(MonomialDegree(2)).get_coefficient(), 254);
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_sub_mul<Coef, PolyCont, BinCont>(
         &mut self,
         polynomial: &Polynomial<PolyCont>,
@@ -605,6 +622,7 @@ impl<Cont> Polynomial<Cont> {
     /// assert_eq!(*first.get_monomial(MonomialDegree(1)).get_coefficient(), 1);
     /// assert_eq!(*first.get_monomial(MonomialDegree(2)).get_coefficient(), 2);
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_add<Coef, OtherCont>(&mut self, other: &Polynomial<OtherCont>)
     where
         Self: AsMutTensor<Element = Coef>,
@@ -641,6 +659,7 @@ impl<Cont> Polynomial<Cont> {
     ///     253
     /// );
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_sub<Coef, OtherCont>(&mut self, other: &Polynomial<OtherCont>)
     where
         Self: AsMutTensor<Element = Coef>,
@@ -668,6 +687,7 @@ impl<Cont> Polynomial<Cont> {
     /// assert_eq!(*poly.get_monomial(MonomialDegree(1)).get_coefficient(), 253);
     /// assert_eq!(*poly.get_monomial(MonomialDegree(2)).get_coefficient(), 1);
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_monic_monomial_mul<Coef>(&mut self, monomial_degree: MonomialDegree)
     where
         Self: AsMutTensor<Element = Coef>,
@@ -704,6 +724,7 @@ impl<Cont> Polynomial<Cont> {
     /// assert_eq!(*poly.get_monomial(MonomialDegree(1)).get_coefficient(), 255);
     /// assert_eq!(*poly.get_monomial(MonomialDegree(2)).get_coefficient(), 254);
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_unit_monomial_div<Coef>(&mut self, monomial_degree: MonomialDegree)
     where
         Self: AsMutTensor<Element = Coef>,
@@ -743,6 +764,7 @@ impl<Cont> Polynomial<Cont> {
     /// assert_eq!(*poly.get_monomial(MonomialDegree(1)).get_coefficient(), 15);
     /// assert_eq!(*poly.get_monomial(MonomialDegree(2)).get_coefficient(), 18);
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_add_several<Coef, InCont>(
         &mut self,
         coef_list: &PolynomialList<InCont>,
@@ -781,6 +803,7 @@ impl<Cont> Polynomial<Cont> {
     ///     4294967284
     /// );
     /// ```
+    // Todo: Naming
     pub fn update_with_wrapping_sub_several<Coef, InCont>(
         &mut self,
         coef_list: &PolynomialList<InCont>,

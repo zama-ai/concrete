@@ -3,6 +3,7 @@ use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Into
 use crate::tensor_traits;
 
 /// The body of a GLWE ciphertext.
+// Todo: Naming
 pub struct GlweBody<Cont> {
     pub(super) tensor: Tensor<Cont>,
 }
@@ -23,6 +24,7 @@ impl<Cont> GlweBody<Cont> {
     /// let poly = body.into_polynomial();
     /// assert_eq!(poly.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn into_polynomial(self) -> Polynomial<Cont>
     where
         Self: IntoTensor<Container = Cont>,
@@ -43,6 +45,7 @@ impl<Cont> GlweBody<Cont> {
     /// let poly = body.as_polynomial();
     /// assert_eq!(poly.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn as_polynomial(&self) -> Polynomial<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -65,6 +68,7 @@ impl<Cont> GlweBody<Cont> {
     /// poly.as_mut_tensor().fill_with_element(9);
     /// assert!(body.as_tensor().iter().all(|a| *a == 9));
     /// ```
+    / Todo: Naming
     pub fn as_mut_polynomial(&mut self) -> Polynomial<&mut [<Self as AsMutTensor>::Element]>
     where
         Self: AsMutTensor,

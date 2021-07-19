@@ -19,6 +19,7 @@ use std::cell::RefCell;
 /// This transformer type allows to send polynomials of a fixed size, back and forth in the fourier
 /// domain.
 #[derive(Debug, Clone)]
+// Todo: Naming
 pub struct Fft {
     plans: Plans,
     correctors: Correctors,
@@ -36,6 +37,7 @@ impl Fft {
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
+    // Todo: Naming
     pub fn new(size: PolynomialSize) -> Fft {
         debug_assert!(
             [256, 512, 1024, 2048, 4096].contains(&size.0),
@@ -65,6 +67,7 @@ impl Fft {
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.plans.polynomial_size()
     }
@@ -99,6 +102,7 @@ impl Fft {
     ///     .zip(poly.as_tensor().iter())
     ///     .for_each(|(output, expected)| assert_eq!(*output, *expected));
     /// ```
+    // Todo: Naming
     pub fn forward_as_torus<OutCont, InCont, Coef>(
         &self,
         fourier_poly: &mut FourierPolynomial<OutCont>,
@@ -154,6 +158,7 @@ impl Fft {
     ///     .zip(poly_2.as_tensor().iter())
     ///     .for_each(|(out, exp)| assert_eq!(out, exp));
     /// ```
+    // Todo: Naming
     pub fn forward_two_as_torus<InCont1, InCont2, OutCont1, OutCont2, Coef>(
         &self,
         fourier_poly_1: &mut FourierPolynomial<OutCont1>,
@@ -212,6 +217,7 @@ impl Fft {
     ///     .zip(poly.as_tensor().iter())
     ///     .for_each(|(out, exp)| assert_eq!(*out, *exp));
     /// ```
+    // Todo: Naming
     pub fn forward_as_integer<OutCont, InCont, Coef>(
         &self,
         fourier_poly: &mut FourierPolynomial<OutCont>,
@@ -266,6 +272,7 @@ impl Fft {
     ///     .zip(poly_2.as_tensor().iter())
     ///     .for_each(|(out, exp)| assert_eq!(out, exp));
     /// ```
+    // Todo: Naming
     pub fn forward_two_as_integer<InCont1, InCont2, OutCont1, OutCont2, Coef>(
         &self,
         fourier_poly_1: &mut FourierPolynomial<OutCont1>,
@@ -304,6 +311,7 @@ impl Fft {
     /// It should be noted that this method is subotpimal, as it only uses half of the computational
     /// power of the transformer. For a faster approach, you should consider processing the
     /// polynomials two by two with the [`Fft::add_backward_two_as_torus`] method.
+    // Todo: Naming
     pub fn add_backward_as_torus<OutCont, InCont, Coef>(
         &self,
         poly: &mut Polynomial<OutCont>,
@@ -331,6 +339,7 @@ impl Fft {
     /// It should be noted that this method is subotpimal, as it only uses half of the computational
     /// power of the transformer. For a faster approach, you should consider processing the
     /// polynomials two by two with the [`Fft::add_backward_two_as_integer`] method.
+    // Todo: Naming
     pub fn add_backward_as_integer<OutCont, InCont, Coef>(
         &self,
         poly: &mut Polynomial<OutCont>,
@@ -353,6 +362,7 @@ impl Fft {
     /// `poly_1` and `poly_2` polynomials.
     ///
     /// See [`Fft::forward_two_as_torus`] for an example.
+    // Todo: Naming
     pub fn add_backward_two_as_torus<OutCont1, OutCont2, InCont1, InCont2, Coef>(
         &self,
         poly_1: &mut Polynomial<OutCont1>,
@@ -386,6 +396,7 @@ impl Fft {
     /// `poly_1` and `poly_2` polynomials.
     ///
     /// See [`Fft::forward_two_as_integer`] for an example.
+    // Todo: Naming
     pub fn add_backward_two_as_integer<OutCont1, OutCont2, InCont1, InCont2, Coef>(
         &self,
         poly_1: &mut Polynomial<OutCont1>,
@@ -414,6 +425,7 @@ impl Fft {
         );
     }
 
+    // Todo: Naming
     pub(super) fn forward<OutCont, InCont, Coef>(
         &self,
         fourier_poly: &mut FourierPolynomial<OutCont>,
@@ -443,6 +455,7 @@ impl Fft {
         );
     }
 
+    // Todo: Naming
     pub(super) fn forward_two<InCont1, InCont2, OutCont1, OutCont2, Coef>(
         &self,
         fourier_poly_1: &mut FourierPolynomial<OutCont1>,
@@ -489,6 +502,7 @@ impl Fft {
         );
     }
 
+    // Todo: Naming
     pub(super) fn backward<OutCont, InCont, Coef>(
         &self,
         poly: &mut Polynomial<OutCont>,
@@ -519,6 +533,7 @@ impl Fft {
         convert_function(poly, &*self.buffer.borrow(), &self.correctors.backward)
     }
 
+    // Todo: Naming
     pub(super) fn backward_two<OutCont1, OutCont2, InCont1, InCont2, Coef>(
         &self,
         poly_1: &mut Polynomial<OutCont1>,

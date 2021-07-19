@@ -16,6 +16,7 @@ mod standard;
 mod surrogate;
 
 /// A trait for bootstrap keys types performing a bootstrap operation.
+// Todo: Naming
 pub trait Bootstrap {
     /// The types of data used in the bootstrapped ciphertexts.
     type CiphertextScalar: UnsignedTorus;
@@ -100,6 +101,7 @@ pub trait Bootstrap {
     /// // bootstrap
     /// fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator);
     /// ```
+    // Todo: Naming
     fn bootstrap<C1, C2, C3>(
         &self,
         lwe_out: &mut LweCiphertext<C1>,

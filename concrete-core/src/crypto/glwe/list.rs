@@ -9,6 +9,7 @@ use super::GlweCiphertext;
 
 /// A list of ciphertexts encoded with the GLWE scheme.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+// Todo: Naming
 pub struct GlweList<Cont> {
     pub(crate) tensor: Tensor<Cont>,
     pub(crate) rlwe_size: GlweSize,
@@ -40,6 +41,7 @@ where
     /// assert_eq!(list.glwe_size(), GlweSize(21));
     /// assert_eq!(list.glwe_dimension(), GlweDimension(20));
     /// ```
+    // Todo: Naming
     pub fn allocate(
         value: Scalar,
         poly_size: PolynomialSize,
@@ -76,6 +78,7 @@ impl<Cont> GlweList<Cont> {
     /// assert_eq!(list.glwe_size(), GlweSize(21));
     /// assert_eq!(list.glwe_dimension(), GlweDimension(20));
     /// ```
+    // Todo: Naming
     pub fn from_container(
         cont: Cont,
         rlwe_dimension: GlweDimension,
@@ -109,6 +112,7 @@ impl<Cont> GlweList<Cont> {
     /// );
     /// assert_eq!(list.ciphertext_count(), CiphertextCount(30));
     /// ```
+    // Todo: Naming
     pub fn ciphertext_count(&self) -> CiphertextCount
     where
         Self: AsRefTensor,
@@ -133,6 +137,7 @@ impl<Cont> GlweList<Cont> {
     /// );
     /// assert_eq!(list.glwe_size(), GlweSize(21));
     /// ```
+    // Todo: Naming
     pub fn glwe_size(&self) -> GlweSize
     where
         Self: AsRefTensor,
@@ -156,6 +161,7 @@ impl<Cont> GlweList<Cont> {
     /// );
     /// assert_eq!(list.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -176,6 +182,7 @@ impl<Cont> GlweList<Cont> {
     /// );
     /// assert_eq!(list.glwe_dimension(), GlweDimension(20));
     /// ```
+    // Todo: Naming
     pub fn glwe_dimension(&self) -> GlweDimension
     where
         Self: AsRefTensor,
@@ -204,6 +211,7 @@ impl<Cont> GlweList<Cont> {
     /// }
     /// assert_eq!(list.ciphertext_iter().count(), 30);
     /// ```
+    // Todo: Naming
     pub fn ciphertext_iter(
         &self,
     ) -> impl Iterator<Item = GlweCiphertext<&[<Self as AsRefTensor>::Element]>>
@@ -243,6 +251,7 @@ impl<Cont> GlweList<Cont> {
     /// }
     /// assert_eq!(list.ciphertext_iter_mut().count(), 30);
     /// ```
+    // Todo: Naming
     pub fn ciphertext_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = GlweCiphertext<&mut [<Self as AsMutTensor>::Element]>>

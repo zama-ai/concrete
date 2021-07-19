@@ -28,6 +28,7 @@ use crate::math::torus::UnsignedTorus;
 /// the key $s_{in}$; encryptions which will be stored as their decomposition over a given basis
 /// $B_{ks}\in\mathbb{N}$, up to a level $l_{ks}\in\mathbb{N}$.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+// Todo: Naming
 pub struct LweKeyswitchKey<Cont> {
     tensor: Tensor<Cont>,
     decomp_base_log: DecompositionBaseLog,
@@ -71,6 +72,7 @@ where
     /// assert_eq!(ksk.before_key_size(), LweDimension(10));
     /// assert_eq!(ksk.after_key_size(), LweDimension(20));
     /// ```
+    // Todo: Naming
     pub fn allocate(
         value: Scalar,
         decomp_size: DecompositionLevelCount,
@@ -123,6 +125,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// assert_eq!(ksk.before_key_size(), LweDimension(256));
     /// assert_eq!(ksk.after_key_size(), LweDimension(35));
     /// ```
+    // Todo: Naming
     pub fn from_container(
         cont: Cont,
         decomp_base_log: DecompositionBaseLog,
@@ -159,6 +162,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// );
     /// assert_eq!(ksk.after_key_size(), LweDimension(20));
     /// ```
+    // Todo: Naming
     pub fn after_key_size(&self) -> LweDimension
     where
         Self: AsRefTensor,
@@ -184,6 +188,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// );
     /// assert_eq!(ksk.lwe_size(), LweSize(21));
     /// ```
+    // Todo: Naming
     pub fn lwe_size(&self) -> LweSize
     where
         Self: AsRefTensor,
@@ -208,6 +213,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// );
     /// assert_eq!(ksk.before_key_size(), LweDimension(10));
     /// ```
+    // Todo: Naming
     pub fn before_key_size(&self) -> LweDimension
     where
         Self: AsRefTensor,
@@ -235,6 +241,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///     DecompositionLevelCount(10)
     /// );
     /// ```
+    // Todo: Naming
     pub fn decomposition_levels_count(&self) -> DecompositionLevelCount
     where
         Self: AsRefTensor,
@@ -261,6 +268,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// );
     /// assert_eq!(ksk.decomposition_base_log(), DecompositionBaseLog(16));
     /// ```
+    // Todo: Naming
     pub fn decomposition_base_log(&self) -> DecompositionBaseLog
     where
         Self: AsRefTensor,
@@ -308,6 +316,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///
     /// assert!(!ksk.as_tensor().iter().all(|a| *a == 0));
     /// ```
+    // Todo: Naming
     pub fn fill_with_keyswitch_key<InKeyCont, OutKeyCont, Scalar>(
         &mut self,
         before_key: &LweSecretKey<BinaryKeyKind, InKeyCont>,
@@ -385,6 +394,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// }
     /// assert_eq!(ksk.bit_decomp_iter().count(), 15);
     /// ```
+    // Todo: Naming
     pub(crate) fn bit_decomp_iter(
         &self,
     ) -> impl Iterator<Item = LweKeyBitDecomposition<&[<Self as AsRefTensor>::Element]>>
@@ -425,6 +435,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// assert!(ksk.as_tensor().iter().all(|a| *a == 0));
     /// assert_eq!(ksk.bit_decomp_iter_mut().count(), 15);
     /// ```
+    // Todo: Naming
     pub(crate) fn bit_decomp_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = LweKeyBitDecomposition<&mut [<Self as AsMutTensor>::Element]>>
@@ -490,6 +501,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// let mut decrypted = Plaintext(0 as u64);
     /// output_key.decrypt_lwe(&mut decrypted, &switched_ciphertext);
     /// ```
+    // Todo: Naming
     pub fn keyswitch_ciphertext<InCont, OutCont, Scalar>(
         &self,
         after: &mut LweCiphertext<OutCont>,
@@ -540,6 +552,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
         }
     }
 
+    // Todo: Naming
     pub fn keyswitch_list<InCont, OutCont, Scalar>(
         &self,
         output: &mut LweList<OutCont>,
@@ -562,6 +575,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
 
 /// The encryption of a single bit of the output key.
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
+// Todo: Naming
 pub(crate) struct LweKeyBitDecomposition<Cont> {
     pub(crate) tensor: Tensor<Cont>,
     pub(crate) lwe_size: LweSize,
@@ -586,6 +600,7 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
     /// assert_eq!(kbd.count(), CiphertextCount(15));
     /// assert_eq!(kbd.lwe_size(), LweSize(10));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont, lwe_size: LweSize) -> Self {
         LweKeyBitDecomposition {
             tensor: Tensor::from_container(cont),
@@ -603,6 +618,7 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
     /// assert_eq!(kbd.lwe_size(), LweSize(10));
     /// ```
     #[allow(dead_code)]
+    // Todo: Naming
     pub fn lwe_size(&self) -> LweSize {
         self.lwe_size
     }
@@ -619,6 +635,7 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
     /// assert_eq!(kbd.count(), CiphertextCount(15));
     /// ```
     #[allow(dead_code)]
+    // Todo: Naming
     pub fn count(&self) -> CiphertextCount
     where
         Self: AsRefTensor,
@@ -640,6 +657,7 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
     /// assert_eq!(kbd.ciphertext_iter().count(), 15);
     /// ```
     #[allow(dead_code)]
+    // Todo: Naming
     pub fn ciphertext_iter(
         &self,
     ) -> impl Iterator<Item = LweCiphertext<&[<Self as AsRefTensor>::Element]>>
@@ -666,6 +684,7 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
     /// assert_eq!(kbd.ciphertext_iter().count(), 15);
     /// ```
     #[allow(dead_code)]
+    // Todo: Naming
     pub fn ciphertext_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = LweCiphertext<&mut [<Self as AsMutTensor>::Element]>>
@@ -692,6 +711,7 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
     /// assert_eq!(list.count(), CiphertextCount(15));
     /// assert_eq!(list.lwe_size(), LweSize(10));
     /// ```
+    // Todo: Naming
     pub fn into_lwe_list(self) -> LweList<Cont> {
         LweList {
             tensor: self.tensor,

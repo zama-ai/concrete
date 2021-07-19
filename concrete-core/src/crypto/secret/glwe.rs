@@ -22,6 +22,7 @@ use std::marker::PhantomData;
 
 /// A GLWE secret key
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+// Todo: Naming
 pub struct GlweSecretKey<Kind, Container>
 where
     Kind: KeyKind,
@@ -51,6 +52,7 @@ where
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn generate_binary(
         dimension: GlweDimension,
         poly_size: PolynomialSize,
@@ -87,6 +89,7 @@ where
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn generate_ternary(
         dimension: GlweDimension,
         poly_size: PolynomialSize,
@@ -124,6 +127,7 @@ where
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn generate_gaussian(
         dimension: GlweDimension,
         poly_size: PolynomialSize,
@@ -160,6 +164,7 @@ where
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn generate_uniform(
         dimension: GlweDimension,
         poly_size: PolynomialSize,
@@ -193,6 +198,7 @@ impl<Cont> GlweSecretKey<BinaryKeyKind, Cont> {
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
     /// ```
+    // Todo: Naming
     pub fn binary_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
     where
         Cont: AsRefSlice,
@@ -226,6 +232,7 @@ impl<Cont> GlweSecretKey<TernaryKeyKind, Cont> {
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
     /// ```
+    // Todo: Naming
     pub fn ternary_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
     where
         Cont: AsRefSlice,
@@ -259,6 +266,7 @@ impl<Cont> GlweSecretKey<GaussianKeyKind, Cont> {
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
     /// ```
+    // Todo: Naming
     pub fn gaussian_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
     where
         Cont: AsRefSlice,
@@ -292,6 +300,7 @@ impl<Cont> GlweSecretKey<UniformKeyKind, Cont> {
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
     /// ```
+    // Todo: Naming
     pub fn uniform_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
     where
         Cont: AsRefSlice,
@@ -324,6 +333,7 @@ where
     /// let lwe_secret_key = glwe_secret_key.into_lwe_secret_key();
     /// assert_eq!(lwe_secret_key.key_size(), LweDimension(20))
     /// ```
+    // Todo: Naming
     pub fn into_lwe_secret_key(self) -> LweSecretKey<Kind, Vec<Scalar>> {
         LweSecretKey {
             tensor: self.tensor,
@@ -355,6 +365,7 @@ where
     /// );
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn key_size(&self) -> GlweDimension
     where
         Self: AsRefTensor,
@@ -379,6 +390,7 @@ where
     /// );
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -402,6 +414,7 @@ where
     /// assert_eq!(poly.polynomial_count(), PolynomialCount(256));
     /// assert_eq!(poly.polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn as_polynomial_list(&self) -> PolynomialList<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -429,6 +442,7 @@ where
     /// poly.as_mut_tensor().fill_with_element(1);
     /// assert!(secret_key.as_tensor().iter().all(|a| *a == 1));
     /// ```
+    // Todo: Naming
     pub fn as_mut_polynomial_list(
         &mut self,
     ) -> PolynomialList<&mut [<Self as AsRefTensor>::Element]>
@@ -481,6 +495,7 @@ where
     ///     assert!(dist < 400, "dist: {:?}", dist);
     /// }
     /// ```
+    // Todo: Naming
     pub fn encrypt_glwe<Cont1, Cont2, Scalar>(
         &self,
         encrypted: &mut GlweCiphertext<Cont1>,
@@ -539,6 +554,7 @@ where
     ///     assert!(dist < 500, "dist: {:?}", dist);
     /// }
     /// ```
+    // Todo: Naming
     pub fn encrypt_zero_glwe<Scalar, Cont1>(
         &self,
         encrypted: &mut GlweCiphertext<Cont1>,
@@ -604,6 +620,7 @@ where
     ///     assert!(dist < 400, "dist: {:?}", dist);
     /// }
     /// ```
+    // Todo: Naming
     pub fn encrypt_glwe_list<CiphCont, EncCont, Scalar>(
         &self,
         encrypt: &mut GlweList<CiphCont>,
@@ -674,6 +691,7 @@ where
     ///     assert!(dist < 400, "dist: {:?}", dist);
     /// }
     /// ```
+    // Todo: Naming
     pub fn encrypt_zero_glwe_list<Scalar, OutputCont>(
         &self,
         encrypted: &mut GlweList<OutputCont>,
@@ -692,6 +710,7 @@ where
     /// Decrypts a single GLWE ciphertext.
     ///
     /// See ['GlweSecretKey::encrypt_glwe`] for an example.
+    // Todo: Naming
     pub fn decrypt_glwe<CiphCont, EncCont, Scalar>(
         &self,
         encoded: &mut PlaintextList<EncCont>,
@@ -718,6 +737,7 @@ where
     /// Decrypts a list of GLWE ciphertexts.
     ///
     /// See ['GlweSecretKey::encrypt_glwe_list`] for an example.
+    // Todo: Naming
     pub fn decrypt_glwe_list<CiphCont, EncCont, Scalar>(
         &self,
         encoded: &mut PlaintextList<EncCont>,
@@ -774,6 +794,7 @@ where
     ///     &mut secret_generator,
     /// );
     /// ```
+    // Todo: Naming
     pub fn encrypt_constant_ggsw<OutputCont, Scalar>(
         &self,
         encrypted: &mut GgswCiphertext<OutputCont>,
@@ -860,6 +881,7 @@ where
     /// );
     /// ```
     #[cfg(feature = "multithread")]
+    // Todo: Naming
     pub fn par_encrypt_constant_ggsw<OutputCont, Scalar>(
         &self,
         encrypted: &mut GgswCiphertext<OutputCont>,
@@ -957,6 +979,7 @@ where
     ///     &mut encryption_generator,
     /// );
     /// ```
+    // Todo: Naming
     pub fn trivial_encrypt_constant_ggsw<OutputCont, Scalar>(
         &self,
         encrypted: &mut GgswCiphertext<OutputCont>,

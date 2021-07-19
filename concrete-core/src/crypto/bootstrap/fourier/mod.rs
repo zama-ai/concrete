@@ -27,6 +27,7 @@ mod tests;
 const VERSION_STRING: &str = "v0";
 
 /// A bootstrapping key in the fourier domain.
+// Todo: Naming
 #[derive(Debug, Clone)]
 pub struct FourierBootstrapKey<Cont, Scalar>
 where
@@ -82,6 +83,7 @@ where
     /// assert_eq!(bsk.base_log(), DecompositionBaseLog(5));
     /// assert_eq!(bsk.key_size(), LweDimension(4));
     /// ```
+    // Todo: Naming
     pub fn allocate(
         value: Complex64,
         glwe_size: GlweSize,
@@ -153,6 +155,7 @@ where
     /// assert_eq!(bsk.base_log(), DecompositionBaseLog(4));
     /// assert_eq!(bsk.key_size(), LweDimension(15));
     /// ```
+    // Todo: Naming
     pub fn from_container(
         cont: Cont,
         glwe_size: GlweSize,
@@ -228,6 +231,7 @@ where
     /// );
     /// frr_bsk.fill_with_forward_fourier(&bsk);
     /// ```
+    // Todo: Naming
     pub fn fill_with_forward_fourier<InputCont>(
         &mut self,
         coef_bsk: &StandardBootstrapKey<InputCont>,
@@ -254,6 +258,7 @@ where
     }
 
     // Returns a surrogate bsk from the current one.
+    // Todo: Naming
     fn as_surrogate(&self) -> SurrogateBsk<&[Complex64], Scalar>
     where
         Self: AsRefTensor<Element = Complex64>,
@@ -290,6 +295,7 @@ where
     /// );
     /// assert_eq!(bsk.polynomial_size(), PolynomialSize(256));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -314,6 +320,7 @@ where
     /// );
     /// assert_eq!(bsk.glwe_size(), GlweSize(7));
     /// ```
+    // Todo: Naming
     pub fn glwe_size(&self) -> GlweSize {
         self.glwe_size
     }
@@ -338,6 +345,7 @@ where
     /// );
     /// assert_eq!(bsk.level_count(), DecompositionLevelCount(3));
     /// ```
+    // Todo: Naming
     pub fn level_count(&self) -> DecompositionLevelCount {
         self.decomp_level
     }
@@ -362,6 +370,7 @@ where
     /// );
     /// assert_eq!(bsk.base_log(), DecompositionBaseLog(5));
     /// ```
+    // Todo: Naming
     pub fn base_log(&self) -> DecompositionBaseLog {
         self.decomp_base_log
     }
@@ -386,6 +395,7 @@ where
     /// );
     /// assert_eq!(bsk.key_size(), LweDimension(4));
     /// ```
+    // Todo: Naming
     pub fn key_size(&self) -> LweDimension
     where
         Self: AsRefTensor,
@@ -426,6 +436,7 @@ where
     /// }
     /// assert_eq!(bsk.ggsw_iter().count(), 4);
     /// ```
+    // Todo: Naming
     pub fn ggsw_iter(&self) -> impl Iterator<Item = GgswCiphertext<&[Complex64]>>
     where
         Self: AsRefTensor<Element = Complex64>,
@@ -473,6 +484,7 @@ where
     /// assert!(bsk.as_tensor().iter().all(|a| *a == Complex64::new(0., 0.)));
     /// assert_eq!(bsk.ggsw_iter_mut().count(), 4);
     /// ```
+    // Todo: Naming
     pub fn ggsw_iter_mut(&mut self) -> impl Iterator<Item = GgswCiphertext<&mut [Complex64]>>
     where
         Self: AsMutTensor<Element = Complex64>,

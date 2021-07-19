@@ -13,6 +13,7 @@ use super::GgswLevelMatrix;
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 
 /// A GGSW ciphertext.
+/// Todo: Naming
 pub struct GgswCiphertext<Cont> {
     tensor: Tensor<Cont>,
     poly_size: PolynomialSize,
@@ -43,6 +44,7 @@ impl<Scalar> GgswCiphertext<Vec<Scalar>> {
     /// assert_eq!(ggsw.decomposition_level_count(), DecompositionLevelCount(3));
     /// assert_eq!(ggsw.decomposition_base_log(), DecompositionBaseLog(4));
     /// ```
+    /// Todo: Naming
     pub fn allocate(
         value: Scalar,
         poly_size: PolynomialSize,
@@ -88,6 +90,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// assert_eq!(ggsw.decomposition_level_count(), DecompositionLevelCount(3));
     /// assert_eq!(ggsw.decomposition_base_log(), DecompositionBaseLog(4));
     /// ```
+    /// Todo: Naming
     pub fn from_container(
         cont: Cont,
         rlwe_size: GlweSize,
@@ -125,6 +128,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// );
     /// assert_eq!(ggsw.glwe_size(), GlweSize(7));
     /// ```
+    /// Todo: Naming
     pub fn glwe_size(&self) -> GlweSize {
         self.rlwe_size
     }
@@ -147,6 +151,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// );
     /// assert_eq!(ggsw.decomposition_level_count(), DecompositionLevelCount(3));
     /// ```
+    /// Todo: Naming
     pub fn decomposition_level_count(&self) -> DecompositionLevelCount
     where
         Self: AsRefTensor,
@@ -179,6 +184,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// );
     /// assert_eq!(ggsw.polynomial_size(), PolynomialSize(10));
     /// ```
+    /// Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.poly_size
     }
@@ -203,6 +209,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// assert_eq!(list.glwe_dimension(), GlweDimension(6));
     /// assert_eq!(list.ciphertext_count(), CiphertextCount(3 * 7));
     /// ```
+    /// Todo: Naming
     pub fn as_glwe_list<Scalar>(&self) -> GlweList<&[Scalar]>
     where
         Self: AsRefTensor<Element = Scalar>,
@@ -239,6 +246,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// assert_eq!(list.ciphertext_count(), CiphertextCount(3 * 7));
     /// ggsw.as_tensor().iter().for_each(|a| assert_eq!(*a, 0));
     /// ```
+    /// Todo: Naming
     pub fn as_mut_glwe_list<Scalar>(&mut self) -> GlweList<&mut [Scalar]>
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -266,6 +274,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// );
     /// assert_eq!(ggsw.decomposition_base_log(), DecompositionBaseLog(4));
     /// ```
+    /// Todo: Naming
     pub fn decomposition_base_log(&self) -> DecompositionBaseLog {
         self.decomp_base_log
     }
@@ -301,6 +310,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// }
     /// assert_eq!(ggsw.level_matrix_iter().count(), 3);
     /// ```
+    /// Todo: Naming
     pub fn level_matrix_iter(
         &self,
     ) -> impl DoubleEndedIterator<Item = GgswLevelMatrix<&[<Self as AsRefTensor>::Element]>>
@@ -353,6 +363,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// assert!(ggsw.as_tensor().iter().all(|a| *a == 9));
     /// assert_eq!(ggsw.level_matrix_iter_mut().count(), 3);
     /// ```
+    /// Todo: Naming
     pub fn level_matrix_iter_mut(
         &mut self,
     ) -> impl DoubleEndedIterator<Item = GgswLevelMatrix<&mut [<Self as AsRefTensor>::Element]>>
@@ -406,6 +417,7 @@ impl<Cont> GgswCiphertext<Cont> {
     /// assert_eq!(ggsw.level_matrix_iter_mut().count(), 3);
     /// ```
     #[cfg(feature = "multithread")]
+    /// Todo: Naming
     pub fn par_level_matrix_iter_mut(
         &mut self,
     ) -> impl IndexedParallelIterator<Item = GgswLevelMatrix<&mut [<Self as AsRefTensor>::Element]>>

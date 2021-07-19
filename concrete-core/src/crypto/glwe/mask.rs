@@ -25,6 +25,7 @@ impl<Cont> GlweMask<Cont> {
     /// }
     /// assert_eq!(rlwe_ciphertext.get_mask().mask_element_iter().count(), 99);
     /// ```
+    // Todo: Naming
     pub fn mask_element_iter(
         &self,
     ) -> impl Iterator<Item = GlweMaskElement<&[<Self as AsRefTensor>::Element]>>
@@ -52,6 +53,7 @@ impl<Cont> GlweMask<Cont> {
     /// assert!(rlwe.get_mask().as_tensor().iter().all(|a| *a == 9));
     /// assert_eq!(rlwe.get_mask().mask_element_iter().count(), 99);
     /// ```
+    // Todo: Naming
     pub fn mask_element_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = GlweMaskElement<&mut [<Self as AsMutTensor>::Element]>>
@@ -79,6 +81,7 @@ impl<Cont> GlweMask<Cont> {
     /// assert_eq!(list.polynomial_size(), PolynomialSize(10));
     /// assert_eq!(list.polynomial_count(), PolynomialCount(99));
     /// ```
+    // Todo: Naming
     pub fn as_polynomial_list(&self) -> PolynomialList<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -101,6 +104,7 @@ impl<Cont> GlweMask<Cont> {
     /// assert_eq!(tensor.polynomial_size(), PolynomialSize(10));
     /// assert_eq!(tensor.polynomial_count(), PolynomialCount(99));
     /// ```
+    // Todo: Naming
     pub fn as_mut_polynomial_list(
         &mut self,
     ) -> PolynomialList<&mut [<Self as AsRefTensor>::Element]>
@@ -113,6 +117,7 @@ impl<Cont> GlweMask<Cont> {
 }
 
 /// A mask of an GLWE ciphertext.
+// Todo: Naming
 pub struct GlweMaskElement<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -130,6 +135,7 @@ impl<Container> GlweMaskElement<Container> {
     /// let mask = GlweMaskElement::from_container(vec![0 as u8; 10]);
     /// assert_eq!(mask.as_polynomial().polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Container) -> GlweMaskElement<Container> {
         GlweMaskElement {
             tensor: Tensor::from_container(cont),
@@ -146,6 +152,7 @@ impl<Container> GlweMaskElement<Container> {
     /// let mask = GlweMaskElement::from_container(vec![0 as u8; 10]);
     /// assert_eq!(mask.as_polynomial().polynomial_size(), PolynomialSize(10));
     /// ```
+    // Todo: Naming
     pub fn as_polynomial(&self) -> Polynomial<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -167,6 +174,7 @@ impl<Container> GlweMaskElement<Container> {
     ///     .fill_with_element(9);
     /// assert!(mask.as_tensor().iter().all(|a| *a == 9));
     /// ```
+    // Todo: Naming
     pub fn as_mut_polynomial(&mut self) -> Polynomial<&mut [<Self as AsRefTensor>::Element]>
     where
         Self: AsMutTensor,

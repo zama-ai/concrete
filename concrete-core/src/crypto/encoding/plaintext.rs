@@ -8,9 +8,11 @@ use crate::{ck_dim_div, tensor_traits};
 /// An plaintext (encoded) value.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
+// Todo: Naming
 pub struct Plaintext<T: Numeric>(pub T);
 
 /// A list of plaintexts
+// Todo: Naming
 pub struct PlaintextList<Cont> {
     pub(crate) tensor: Tensor<Cont>,
 }
@@ -31,6 +33,7 @@ where
     /// let plain_list = PlaintextList::allocate(1 as u8, PlaintextCount(100));
     /// assert_eq!(plain_list.count(), PlaintextCount(100));
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Scalar, count: PlaintextCount) -> PlaintextList<Vec<Scalar>> {
         PlaintextList::from_container(vec![value; count.0])
     }
@@ -47,12 +50,14 @@ impl<Cont> PlaintextList<Cont> {
     /// let plain_list = PlaintextList::from_container(vec![1 as u8; 100]);
     /// assert_eq!(plain_list.count(), PlaintextCount(100));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont) -> PlaintextList<Cont> {
         PlaintextList {
             tensor: Tensor::from_container(cont),
         }
     }
 
+    // Todo: Naming
     pub fn from_tensor(tensor: Tensor<Cont>) -> PlaintextList<Cont> {
         PlaintextList { tensor }
     }
@@ -67,6 +72,7 @@ impl<Cont> PlaintextList<Cont> {
     /// let plain_list = PlaintextList::from_container(vec![1 as u8; 100]);
     /// assert_eq!(plain_list.count(), PlaintextCount(100));
     /// ```
+    // Todo: Naming
     pub fn count(&self) -> PlaintextCount
     where
         Self: AsRefTensor,
@@ -85,6 +91,7 @@ impl<Cont> PlaintextList<Cont> {
     /// plain_list.plaintext_iter().for_each(|a| assert_eq!(a.0, 1));
     /// assert_eq!(plain_list.plaintext_iter().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn plaintext_iter(&self) -> impl Iterator<Item = &Plaintext<<Self as AsRefTensor>::Element>>
     where
         Self: AsRefTensor,
@@ -112,6 +119,7 @@ impl<Cont> PlaintextList<Cont> {
     /// plain_list.plaintext_iter().for_each(|a| assert_eq!(a.0, 2));
     /// assert_eq!(plain_list.plaintext_iter_mut().count(), 100);
     /// ```
+    // Todo: Naming
     pub fn plaintext_iter_mut(
         &mut self,
     ) -> impl Iterator<Item = &mut Plaintext<<Self as AsMutTensor>::Element>>
@@ -140,6 +148,7 @@ impl<Cont> PlaintextList<Cont> {
     ///     .for_each(|a| assert_eq!(a.count(), PlaintextCount(10)));
     /// assert_eq!(plain_list.sublist_iter(PlaintextCount(10)).count(), 10);
     /// ```
+    // Todo: Naming
     pub fn sublist_iter(
         &self,
         count: PlaintextCount,
@@ -168,6 +177,7 @@ impl<Cont> PlaintextList<Cont> {
     ///     .for_each(|a| assert_eq!(*a, Plaintext(2)));
     /// assert_eq!(plain_list.sublist_iter_mut(PlaintextCount(10)).count(), 10);
     /// ```
+    // Todo: Naming
     pub fn sublist_iter_mut(
         &mut self,
         count: PlaintextCount,
@@ -193,6 +203,7 @@ impl<Cont> PlaintextList<Cont> {
     /// let plain_poly = plain_list.as_polynomial();
     /// assert_eq!(plain_poly.polynomial_size(), PolynomialSize(100));
     /// ```
+    // Todo: Naming
     pub fn as_polynomial(&self) -> Polynomial<&[<Self as AsRefTensor>::Element]>
     where
         Self: AsRefTensor,
@@ -212,6 +223,7 @@ impl<Cont> PlaintextList<Cont> {
     /// let mut plain_poly = plain_list.as_mut_polynomial();
     /// assert_eq!(plain_poly.polynomial_size(), PolynomialSize(100));
     /// ```
+    /// Todo: Naming
     pub fn as_mut_polynomial(&mut self) -> Polynomial<&mut [<Self as AsRefTensor>::Element]>
     where
         Self: AsMutTensor,

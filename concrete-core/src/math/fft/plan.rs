@@ -8,6 +8,7 @@ use std::fmt::{Debug, Formatter};
 
 /// A set of forward/backward plans to perform the
 #[derive(Clone)]
+// Todo: Naming
 pub struct Plans {
     forward: &'static C2CPlan64,
     backward: &'static C2CPlan64,
@@ -22,6 +23,7 @@ impl Debug for Plans {
 
 impl Plans {
     /// Generates a new plan
+    // Todo: Naming
     pub fn new(size: PolynomialSize) -> Plans {
         debug_assert!(
             [256, 512, 1024, 2048, 4096].contains(&size.0),
@@ -44,11 +46,13 @@ impl Plans {
     }
 
     /// Returns the plans polynomial sizes.
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize {
         self.size
     }
 
     /// Performs a forward transform.
+    // Todo: Naming
     pub fn forward(&self, input: &[Complex64], output: &mut [Complex64]) {
         self.forward
             .c2c(
@@ -63,6 +67,7 @@ impl Plans {
     }
 
     /// Performs a backward transform.
+    // Todo: Naming
     pub fn backward(&self, input: &[Complex64], output: &mut [Complex64]) {
         self.backward
             .c2c(

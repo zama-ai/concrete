@@ -1,4 +1,5 @@
 /// A trait allowing to treat a value as a reference to an alement of a different type.
+// Todo: Naming
 pub trait AsRefElement {
     /// The element type.
     type Element;
@@ -7,6 +8,7 @@ pub trait AsRefElement {
 }
 
 /// A trait allowing to treat a value as a mutable reference to an element of a different type.
+// Todo: Naming
 pub trait AsMutElement: AsRefElement<Element = <Self as AsMutElement>::Element> {
     /// The element type.
     type Element;

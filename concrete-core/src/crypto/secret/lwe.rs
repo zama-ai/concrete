@@ -16,6 +16,7 @@ use std::marker::PhantomData;
 
 /// A LWE secret key.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+// Todo: Naming
 pub struct LweSecretKey<Kind, Cont>
 where
     Kind: KeyKind,
@@ -42,6 +43,7 @@ where
     ///     LweSecretKey::generate_binary(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn generate_binary(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
         LweSecretKey {
             tensor: generator.random_binary_tensor(size.0),
@@ -68,6 +70,7 @@ where
     ///     LweSecretKey::generate_ternary(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn generate_ternary(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
         LweSecretKey {
             tensor: generator.random_ternary_tensor(size.0),
@@ -95,6 +98,7 @@ where
     ///     LweSecretKey::generate_gaussian(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn generate_gaussian(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
         LweSecretKey {
             tensor: generator.random_gaussian_tensor(size.0),
@@ -121,6 +125,7 @@ where
     ///     LweSecretKey::generate_uniform(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn generate_uniform(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
         LweSecretKey {
             tensor: generator.random_uniform_tensor(size.0),
@@ -146,6 +151,7 @@ impl<Cont> LweSecretKey<BinaryKeyKind, Cont> {
     /// let secret_key = LweSecretKey::binary_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn binary_from_container(cont: Cont) -> Self
     where
         Cont: AsRefSlice,
@@ -174,6 +180,7 @@ impl<Cont> LweSecretKey<TernaryKeyKind, Cont> {
     /// let secret_key = LweSecretKey::ternary_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn ternary_from_container(cont: Cont) -> Self
     where
         Cont: AsRefSlice,
@@ -202,6 +209,7 @@ impl<Cont> LweSecretKey<GaussianKeyKind, Cont> {
     /// let secret_key = LweSecretKey::gaussian_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn gaussian_from_container(cont: Cont) -> Self
     where
         Cont: AsRefSlice,
@@ -230,6 +238,7 @@ impl<Cont> LweSecretKey<UniformKeyKind, Cont> {
     /// let secret_key = LweSecretKey::uniform_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn uniform_from_container(cont: Cont) -> Self
     where
         Cont: AsRefSlice,
@@ -255,6 +264,7 @@ where
     /// let secret_key = LweSecretKey::binary_from_container(vec![true; 256]);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
+    // Todo: Naming
     pub fn key_size(&self) -> LweDimension
     where
         Self: AsRefTensor,
@@ -297,6 +307,7 @@ where
     ///
     /// assert!((decoded.0 - clear.0).abs() < 0.1);
     /// ```
+    // Todo: Naming
     pub fn encrypt_lwe<OutputCont, Scalar>(
         &self,
         output: &mut LweCiphertext<OutputCont>,
@@ -371,6 +382,7 @@ where
     ///     assert!((clear.0 - decoded.0).abs() < 0.1);
     /// }
     /// ```
+    // Todo: Naming
     pub fn encrypt_lwe_list<OutputCont, InputCont, Scalar>(
         &self,
         output: &mut LweList<OutputCont>,
@@ -427,6 +439,7 @@ where
     ///
     /// assert!((decoded.0 - clear.0).abs() < 0.1);
     /// ```
+    // Todo: Naming
     pub fn trivial_encrypt_lwe<OutputCont, Scalar>(
         &self,
         output: &mut LweCiphertext<OutputCont>,
@@ -509,6 +522,7 @@ where
     ///     assert!((clear.0 - decoded.0).abs() < 0.1);
     /// }
     /// ```
+    // Todo: Naming
     pub fn trivial_encrypt_lwe_list<OutputCont, InputCont, Scalar>(
         &self,
         output: &mut LweList<OutputCont>,
@@ -533,6 +547,7 @@ where
     /// Decrypts a single ciphertext.
     ///
     /// See ['encrypt_lwe'] for an example.
+    // Todo: Naming
     pub fn decrypt_lwe<Scalar, CipherCont>(
         &self,
         output: &mut Plaintext<Scalar>,
@@ -552,6 +567,7 @@ where
     /// Decrypts a list of ciphertexts.
     ///
     /// See ['encrypt_lwe_list'] for an example.
+    // Todo: Naming
     pub fn decrypt_lwe_list<Scalar, EncodedCont, CipherCont>(
         &self,
         output: &mut PlaintextList<EncodedCont>,

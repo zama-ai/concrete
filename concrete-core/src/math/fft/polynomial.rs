@@ -11,6 +11,7 @@ use super::Complex64;
 ///
 /// This structure represents a polynomial, which was put in the fourier domain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+// Todo: Naming
 pub struct FourierPolynomial<Cont> {
     tensor: Tensor<Cont>,
 }
@@ -28,6 +29,7 @@ impl FourierPolynomial<AlignedVec<Complex64>> {
     /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
+    // Todo: Naming
     pub fn allocate(value: Complex64, coef_count: PolynomialSize) -> Self {
         let mut tensor = Tensor::from_container(AlignedVec::new(coef_count.0));
         tensor.fill_with_element(value);
@@ -47,12 +49,14 @@ impl<Cont> FourierPolynomial<Cont> {
     /// let fourier_poly = FourierPolynomial::from_container(alvec.as_slice_mut());
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
+    // Todo: Naming
     pub fn from_container(cont: Cont) -> Self {
         FourierPolynomial {
             tensor: Tensor::from_container(cont),
         }
     }
 
+    // Todo: Naming
     pub(crate) fn from_tensor(tensor: Tensor<Cont>) -> Self {
         FourierPolynomial { tensor }
     }
@@ -67,6 +71,7 @@ impl<Cont> FourierPolynomial<Cont> {
     /// let fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(128));
     /// assert_eq!(fourier_poly.polynomial_size(), PolynomialSize(128));
     /// ```
+    // Todo: Naming
     pub fn polynomial_size(&self) -> PolynomialSize
     where
         Self: AsRefTensor,
@@ -91,6 +96,7 @@ impl<Cont> FourierPolynomial<Cont> {
     /// }
     /// assert_eq!(fourier_poly.coefficient_iter().count(), 128);
     /// ```
+    // Todo: Naming
     pub fn coefficient_iter(&self) -> impl Iterator<Item = &Complex64>
     where
         Self: AsRefTensor<Element = Complex64>,
@@ -120,6 +126,7 @@ impl<Cont> FourierPolynomial<Cont> {
     ///     .all(|a| *a == Complex64::new(1., 1.)));
     /// assert_eq!(fourier_poly.coefficient_iter_mut().count(), 128);
     /// ```
+    // Todo: Naming
     pub fn coefficient_iter_mut(&mut self) -> impl Iterator<Item = &mut Complex64>
     where
         Self: AsMutTensor<Element = Complex64>,
@@ -153,6 +160,7 @@ impl<Cont> FourierPolynomial<Cont> {
     ///     .skip(half)
     ///     .all(|a| *a == Complex64::new(1., 2.)));
     /// ```
+    // Todo: Naming
     pub fn update_with_multiply_accumulate<PolyCont1, PolyCont2>(
         &mut self,
         poly_1: &FourierPolynomial<PolyCont1>,
@@ -197,6 +205,7 @@ impl<Cont> FourierPolynomial<Cont> {
     ///     .skip(half)
     ///     .all(|a| *a == Complex64::new(1., 2.)));
     /// ```
+    // Todo: Naming
     pub fn update_with_two_multiply_accumulate<Cont1, Cont2, Cont3, Cont4>(
         &mut self,
         poly_1: &FourierPolynomial<Cont1>,
@@ -278,6 +287,7 @@ impl<Cont> FourierPolynomial<Cont> {
     ///     .all(|a| *a == Complex64::new(3., 4.)));
     /// ```
     #[allow(clippy::too_many_arguments)]
+    // Todo: Naming
     pub fn update_two_with_two_multiply_accumulate<C2, C3, C4, C5, C6, C7, C8>(
         result_1: &mut FourierPolynomial<Cont>,
         result_2: &mut FourierPolynomial<C2>,
