@@ -6,24 +6,8 @@
 
 namespace mlir {
 namespace zamalang {
-bool predApplyUnivariateRegion(::mlir::Region &region) {
-  if (region.getBlocks().size() != 1) {
-    return false;
-  }
-  auto args = region.getBlocks().front().getArguments();
-  if (args.size() != 1) {
-    return false;
-  }
-  if (!args.front().getType().isa<mlir::IntegerType>()) {
-    return false;
-  }
-  // TODO: need to handle when there is no terminator
-  auto terminator = region.getBlocks().front().getTerminator();
-  return terminator->getName().getStringRef().equals(
-      "HLFHE.apply_univariate_return");
-}
-
 namespace HLFHE {
+
 void Dot::getEffects(
     SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
         &effects) {
@@ -36,6 +20,7 @@ void Dot::getEffects(
   effects.emplace_back(MemoryEffects::Write::get(), this->out(),
                        SideEffects::DefaultResource::get());
 }
+
 } // namespace HLFHE
 } // namespace zamalang
 } // namespace mlir
