@@ -38,3 +38,33 @@ def test_basic_integers(integer: Integer, expected_min: int, expected_max: int):
     assert integer.can_represent_value(random.randint(expected_min, expected_max))
     assert not integer.can_represent_value(expected_min - 1)
     assert not integer.can_represent_value(expected_max + 1)
+
+
+@pytest.mark.parametrize(
+    "integer,expected_repr_str",
+    [
+        pytest.param(
+            Integer(8, is_signed=False),
+            "Integer<unsigned, 8 bits>",
+            id="8 bits unsigned Integer",
+        ),
+        pytest.param(
+            Integer(8, is_signed=True),
+            "Integer<signed, 8 bits>",
+            id="8 bits signed Integer",
+        ),
+        pytest.param(
+            Integer(32, is_signed=False),
+            "Integer<unsigned, 32 bits>",
+            id="32 bits unsigned Integer",
+        ),
+        pytest.param(
+            Integer(32, is_signed=True),
+            "Integer<signed, 32 bits>",
+            id="32 bits signed Integer",
+        ),
+    ],
+)
+def test_integers_repr(integer: Integer, expected_repr_str: str):
+    """Test integer repr"""
+    assert integer.__repr__() == expected_repr_str
