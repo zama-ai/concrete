@@ -135,10 +135,10 @@ where
                 * (1.
                     + dimension.0 as f64
                         * polynomial_size.0 as f64
-                        * (variance_key_coefficient::<T, K>()
+                        * (K::variance_key_coefficient::<T>().get_variance()
                             + square(K::expectation_key_coefficient())))
             + dimension.0 as f64 * polynomial_size.0 as f64 / 4.
-                * variance_key_coefficient::<T, K>());
+                * K::variance_key_coefficient::<T>().get_variance());
 
     Variance::from_modular_variance::<T>(res_1 + res_2)
 }
@@ -161,7 +161,7 @@ where
 /// let dispersion_rlwe_0 = Variance::from_variance(f64::powi(2., -40));
 /// let dispersion_rlwe_1 = Variance::from_variance(f64::powi(2., -40));
 /// // Computing the noise
-/// let var_cmux = variance_cmux::<u64, _, _, _>(
+/// let var_cmux = variance_cmux::<u64, _, _, _, _>(
 ///     dimension,
 ///     polynomial_size,
 ///     base_log,
@@ -169,7 +169,6 @@ where
 ///     dispersion_rlwe_0,
 ///     dispersion_rlwe_1,
 ///     dispersion_rgsw,
-///     KeyType::Binary,
 /// );
 /// ```
 pub fn variance_cmux<T, D1, D2, D3, K>(
@@ -186,7 +185,7 @@ where
     D1: DispersionParameter,
     D2: DispersionParameter,
     D3: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     let var_external_product = variance_external_product::<T, _, _, K>(
         dimension,
@@ -298,7 +297,7 @@ where
 /// let max_msg_2 = 7.;
 /// let key_type = KeyType::Binary;
 /// // Computing the noise
-/// let var_out = variance_glwe_tensor_product_rescale_round::<u64, _, _>(
+/// let var_out = variance_glwe_tensor_product_rescale_round::<u64, _, _, _>(
 /// polynomial_size,
 /// dimension,
 /// dispersion_rlwe_0,
@@ -307,9 +306,9 @@ where
 /// delta_2,
 /// max_msg_1,
 /// max_msg_2,
-/// key_type,
 /// );
-pub fn variance_glwe_tensor_product_rescale_round<T, D1, D2>(
+/// ```
+pub fn variance_glwe_tensor_product_rescale_round<T, D1, D2, K>(
     poly_size: PolynomialSize,
     rlwe_dimension: GlweDimension,
     dispersion_glwe1: D1,
@@ -323,7 +322,7 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     // constants
     let big_n = poly_size.0 as f64; //TODO: polysize is defined as N+1
@@ -342,10 +341,10 @@ where
         // 1ere parenthese
         (q_square - 1.) / 12.
             * (1.
-                + k * big_n * variance_key_coefficient::<T, K>() as f64
-                + k * big_n * square(expectation_key_coefficient::<K>()))
-            + k * big_n / 4. * variance_key_coefficient::<T, K>()
-            + 1. / 4. * square(1. + k * big_n * expectation_key_coefficient::<K>())
+                + k * big_n * K::variance_key_coefficient::<T>().get_variance()
+                + k * big_n * square(K::expectation_key_coefficient()))
+            + k * big_n / 4. * K::variance_key_coefficient::<T>().get_variance()
+            + 1. / 4. * square(1. + k * big_n * K::expectation_key_coefficient())
     ) * (
         // 2e parenthese
         dispersion_glwe1.get_variance() + dispersion_glwe2.get_variance()
@@ -356,21 +355,27 @@ where
     let res_3 = 1. / 12.
         + k * big_n / (12. * delta_square)
             * ((delta_square - 1.)
-                * (variance_key_coefficient::<T, K>()
-                    + square(expectation_key_coefficient::<K>()))
-                + 3. * variance_key_coefficient::<T, K>())
+                * (K::variance_key_coefficient::<T>().get_variance()
+                    + square(K::expectation_key_coefficient()))
+                + 3. * K::variance_key_coefficient::<T>().get_variance())
         + k * (k - 1.) * big_n / (24. * delta_square)
             * ((delta_square - 1.)
-                * (variance_coefficient_in_polynomial_key_times_key::<T, K>(poly_size)
-                    + square_expectation_mean_in_polynomial_key_times_key::<K>(poly_size))
-                + 3. * variance_coefficient_in_polynomial_key_times_key::<T, K>(poly_size))
+                * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
+                    .get_variance()
+                    + K::square_expectation_mean_in_polynomial_key_times_key(poly_size))
+                + 3. * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
+                    .get_variance())
         + k * big_n / (24. * delta_square)
             * ((delta_square - 1.)
-                * (variance_odd_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-                    + variance_even_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-                    + 2. * squared_expectation_mean_in_polynomial_key_squared::<T, K>(poly_size))
-                + 3. * (variance_odd_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-                    + variance_even_coefficient_in_polynomial_key_squared::<T, K>(poly_size)));
+                * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                    .get_variance()
+                    + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                        .get_variance()
+                    + 2. * K::squared_expectation_mean_in_polynomial_key_squared::<T>(poly_size))
+                + 3. * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                    .get_variance()
+                    + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                        .get_variance()));
 
     Variance::from_variance(res_2 + res_1 + res_3)
 }
@@ -389,7 +394,7 @@ where
 /// let base_log = DecompositionBaseLog(7);
 /// let polynomial_size = PolynomialSize(1024);
 /// let dispersion_rlk = Variance::from_variance(f64::powi(2., -38));
-/// let var_cmux = variance_glwe_relinearization::<u64, _, KeyKind::BinaryKeyKind>(
+/// let var_cmux = variance_glwe_relinearization::<u64, _, _>(
 ///     polynomial_size,
 ///     dimension,
 ///     dispersion_rlk,
@@ -407,7 +412,7 @@ pub fn variance_glwe_relinearization<T, D, K>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     // constants
     let big_n = poly_size.0 as f64;
@@ -424,17 +429,20 @@ where
     let res_2 = k * big_n / 2.
         * (q_square / (12. * f64::powi(b, (2 * level.0) as i32)) - 1. / 12.)
         * ((k - 1.)
-            * (variance_coefficient_in_polynomial_key_times_key::<T, K>(poly_size)
-                + square_expectation_mean_in_polynomial_key_times_key::<K>(poly_size))
-            + variance_odd_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-            + variance_even_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-            + 2. * square_expectation_mean_in_polynomial_key_times_key::<K>(poly_size));
+            * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size).get_variance()
+                + K::square_expectation_mean_in_polynomial_key_times_key(poly_size))
+            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size).get_variance()
+            + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                .get_variance()
+            + 2. * K::square_expectation_mean_in_polynomial_key_times_key(poly_size));
 
     // third term
     let res_3 = k * big_n / 8.
-        * ((k - 1.) * variance_coefficient_in_polynomial_key_times_key::<T, K>(poly_size)
-            + variance_odd_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-            + variance_even_coefficient_in_polynomial_key_squared::<T, K>(poly_size));
+        * ((k - 1.)
+            * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size).get_variance()
+            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size).get_variance()
+            + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                .get_variance());
 
     Variance::from_variance(res_1 + res_2 + res_3)
 }
@@ -457,11 +465,10 @@ where
 /// let delta_2 = f64::powi(2., 42);
 /// let max_msg_1 = 15.;
 /// let max_msg_2 = 7.;
-/// let key_type = KeyType::Binary;
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let dispersion_rlk = Variance::from_variance(f64::powi(2., -38));
-/// let var_out = variance_glwe_mul_with_relinearization::<u64, _, _, _>(
+/// let var_out = variance_glwe_mul_with_relinearization::<u64, _, _, _, _>(
 /// polynomial_size,
 /// dimension,
 /// dispersion_rlwe_0,
@@ -470,11 +477,11 @@ where
 /// delta_2,
 /// max_msg_1,
 /// max_msg_2,
-/// key_type,
 /// dispersion_rlk,
 /// base_log,
 /// l_gadget,
 /// );
+/// ```
 pub fn variance_glwe_mul_with_relinearization<T, D1, D2, D3, K>(
     poly_size: PolynomialSize,
     mask_size: GlweDimension,
@@ -493,7 +500,7 @@ where
     D1: DispersionParameter,
     D2: DispersionParameter,
     D3: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     // res 1
     let res_1: Variance = variance_glwe_tensor_product_rescale_round::<T, _, _, K>(
@@ -569,7 +576,7 @@ where
 /// let dispersion_lwe = Variance::from_variance(f64::powi(2., -38));
 /// let dispersion_ks = Variance::from_variance(f64::powi(2., -40));
 /// // Computing the noise
-/// let var_ks = variance_keyswitch_lwe_to_glwe_constant_term::<u64, _, _, KeyKind::BinaryKeyKind>(
+/// let var_ks = variance_keyswitch_lwe_to_glwe_constant_term::<u64, _, _, _>(
 ///     lwe_mask_size,
 ///     dispersion_lwe,
 ///     dispersion_ks,
@@ -588,7 +595,7 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     let n = lwe_mask_size.0 as f64;
     let base = (1 << base_log.0) as f64;
@@ -600,10 +607,11 @@ where
     // res 2
     let res_2 = n
         * (q_square / (12. * f64::powi(base, 2 * level.0 as i32)) - 1. / 12.)
-        * (variance_key_coefficient::<T, K>() + square(expectation_key_coefficient::<K>()));
+        * (K::variance_key_coefficient::<T>().get_variance()
+            + square(K::expectation_key_coefficient()));
 
     // res 3
-    let res_3 = n / 4. * variance_key_coefficient::<T, K>();
+    let res_3 = n / 4. * K::variance_key_coefficient::<T>().get_variance();
 
     // res 4
     let res_4 = n * (level.0 as f64) * dispersion_ksk.get_variance() * (square(base) + 2.) / 12.;
@@ -657,15 +665,12 @@ where
 /// use concrete_npe::{variance_rlwe_k_1_var_u_mod_switch, *};
 /// let rlwe_mask_size = PolynomialSize(1024);
 /// ///
-/// let var_out = variance_rlwe_k_1_var_u_mod_switch::<u64, KeyKind::BinaryKeyKind>(rlwe_mask_size, key_type);
+/// let var_out = variance_rlwe_k_1_var_u_mod_switch::<u64, _>(rlwe_mask_size);
 /// ```
-pub fn variance_rlwe_k_1_var_u_mod_switch<T, K>(
-    poly_size: PolynomialSize,
-    key_type: KeyType,
-) -> Variance
+pub fn variance_rlwe_k_1_var_u_mod_switch<T, K>(poly_size: PolynomialSize) -> Variance
 where
     T: UnsignedInteger,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
@@ -673,9 +678,9 @@ where
         1. / q_square
             * ((q_square - 1.) / 12.
                 * (1.
-                    + (poly_size.0 as f64) * variance_key_coefficient(key_type)
-                    + (poly_size.0 as f64) * square(expectation_key_coefficient(key_type)))
-                + (poly_size.0 as f64) / 4. * variance_key_coefficient(key_type)),
+                    + (poly_size.0 as f64) * K::variance_key_coefficient::<T>().get_variance()
+                    + (poly_size.0 as f64) * square(K::expectation_key_coefficient()))
+                + (poly_size.0 as f64) / 4. * K::variance_key_coefficient::<T>().get_variance()),
     )
 }
 
@@ -694,16 +699,15 @@ where
 /// let dispersion_rlk = Variance::from_variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
 /// let key_type = KeyType::Binary;
-/// let var_ks = variance_rlwe_relinearization::<u64, _>(
+/// let var_ks = variance_rlwe_relinearization::<u64, _, _>(
 ///     poly_size,
 ///     mask_size,
 ///     dispersion_rlk,
 ///     base_log,
 ///     level,
-///     key_type,
 /// );
 /// ```
-pub fn variance_rlwe_relinearization<T, D>(
+pub fn variance_rlwe_relinearization<T, D, K>(
     poly_size: PolynomialSize,
     mask_size: GlweDimension,
     dispersion_rlk: D,
@@ -713,7 +717,7 @@ pub fn variance_rlwe_relinearization<T, D>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     let basis: f64 = (1 << base_log.0) as f64;
     let big_n: f64 = poly_size.0 as f64;
@@ -731,17 +735,23 @@ where
 
     // res 2
     let res_2: f64 = k * big_n / 2.
-        * (variance_odd_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-            + variance_even_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-            + 2. * square_expectation_mean_in_polynomial_key_times_key::<K>(poly_size)
+        * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size).get_variance()
+            + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                .get_variance()
+            + 2. * K::square_expectation_mean_in_polynomial_key_times_key(poly_size)
             + (k - 1.)
-                * (variance_coefficient_in_polynomial_key_times_key::<T, K>(poly_size)
-                    + square_expectation_mean_in_polynomial_key_times_key::<K>(poly_size)))
+                * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
+                    .get_variance()
+                    + K::square_expectation_mean_in_polynomial_key_times_key(poly_size)))
         * (q_square / (12. * f64::powi(basis, 2 * level.0 as i32)) - 1. / 12.)
         + k * big_n / 8.
-            * (variance_odd_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-                + variance_even_coefficient_in_polynomial_key_squared::<T, K>(poly_size)
-                + (k - 1.) * variance_coefficient_in_polynomial_key_times_key::<T, K>(poly_size));
+            * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                .get_variance()
+                + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                    .get_variance()
+                + (k - 1.)
+                    * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
+                        .get_variance());
 
     // return
     Variance::from_variance(res_1 + res_2)
@@ -788,17 +798,16 @@ pub fn cmux(
 /// let dispersion_rgsw = Variance::from_variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
 /// let key_type = KeyType::Binary;
-/// let var_ks = variance_external_product_binary_ggsw::<u64, _, _>(
+/// let var_ks = variance_external_product_binary_ggsw::<u64, _, _, _>(
 ///     poly_size,
 ///     mask_size,
 ///     dispersion_rlwe,
 ///     dispersion_rgsw,
 ///     base_log,
 ///     level,
-///     key_type,
 /// );
 /// ```
-pub fn variance_external_product_binary_ggsw<T, D1, D2>(
+pub fn variance_external_product_binary_ggsw<T, D1, D2, K>(
     poly_size: PolynomialSize,
     rlwe_mask_size: GlweDimension,
     var_glwe: D1,
@@ -810,7 +819,7 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     let l = level.0 as f64;
     let k = rlwe_mask_size.0 as f64;
@@ -824,10 +833,10 @@ where
     let res_3 = (square(T::BITS) as f64 - b2l) / (24. * b2l)
         * (1.
             + k * big_n
-                * (variance_key_coefficient::<T, K>()
-                    + square(expectation_key_coefficient::<K>())));
-    let res_4 = k * big_n / 8. * variance_key_coefficient::<T, K>();
-    let res_5 = 1. / 16. * square(1. - k * big_n * expectation_key_coefficient::<K>());
+                * (K::variance_key_coefficient::<T>().get_variance()
+                    + square(K::expectation_key_coefficient())));
+    let res_4 = k * big_n / 8. * K::variance_key_coefficient::<T>().get_variance();
+    let res_5 = 1. / 16. * square(1. - k * big_n * K::expectation_key_coefficient());
     Variance::from_variance(res_1 + res_2 + res_3 + res_4 + res_5)
 }
 
@@ -847,17 +856,16 @@ where
 /// let dispersion_rgsw = Variance::from_variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
 /// let key_type = KeyType::Binary;
-/// let var_ks = variance_tfhe_pbs::<u64, _>(
+/// let var_ks = variance_tfhe_pbs::<u64, _, _>(
 ///     mask_size,
 ///     poly_size,
 ///     rlwe_mask_size,
 ///     dispersion_rgsw,
 ///     base_log,
 ///     level,
-///     key_type,
 /// );
 /// ```
-pub fn variance_tfhe_pbs<T, D>(
+pub fn variance_tfhe_pbs<T, D, K>(
     lwe_mask_size: LweDimension,
     poly_size: PolynomialSize,
     rlwe_mask_size: GlweDimension,
@@ -868,12 +876,12 @@ pub fn variance_tfhe_pbs<T, D>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyKind,
+    K: KeyDistributions,
 {
     let var_rlwe = Variance::from_modular_variance::<T>(0.);
     Variance::from_variance(
         lwe_mask_size.0 as f64
-            * variance_external_product_binary_ggsw::<T, _, _>(
+            * variance_external_product_binary_ggsw::<T, _, _, K>(
                 poly_size,
                 rlwe_mask_size,
                 var_rlwe,
