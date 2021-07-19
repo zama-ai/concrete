@@ -8,10 +8,6 @@ namespace mlir {
 namespace zamalang {
 namespace HLFHE {
 
-using mlir::zamalang::HLFHE::AddEintOp;
-using mlir::zamalang::HLFHE::ApplyLookupTable;
-using mlir::zamalang::HLFHE::EncryptedIntegerType;
-
 bool verifyEncryptedIntegerInputAndResultConsistency(
     ::mlir::OpState &op, EncryptedIntegerType &input,
     EncryptedIntegerType &result) {
@@ -65,6 +61,19 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
     return ::mlir::failure();
   }
   if (!verifyEncryptedIntegerInputsConsistency(op, a, b)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+::mlir::LogicalResult verifySubIntEintOp(SubIntEintOp &op) {
+  auto a = op.a().getType().cast<IntegerType>();
+  auto b = op.b().getType().cast<EncryptedIntegerType>();
+  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(op, b, out)) {
+    return ::mlir::failure();
+  }
+  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(op, b, a)) {
     return ::mlir::failure();
   }
   return ::mlir::success();

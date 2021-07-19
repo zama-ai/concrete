@@ -48,6 +48,15 @@ def AddEintOp : HLFHE_Op<"add_eint"> {
     }];
 }
 
+def SubIntEintOp : HLFHE_Op<"sub_int_eint"> {
+    let arguments = (ins AnyInteger:$a, EncryptedIntegerType:$b);
+    let results = (outs EncryptedIntegerType);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHE::verifySubIntEintOp(*this);
+    }];
+}
+
 def MulEintIntOp : HLFHE_Op<"mul_eint_int"> {
     let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
     let results = (outs EncryptedIntegerType);

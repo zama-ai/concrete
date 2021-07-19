@@ -11,6 +11,17 @@ func @add_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
   return %1: !HLFHE.eint<2>
 }
 
+// CHECK-LABEL: func @sub_int_eint(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
+func @sub_int_eint(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
+  // CHECK-NEXT: %[[V1:.*]] = constant 1 : i3
+  // CHECK-NEXT: %[[V2:.*]] = "HLFHE.sub_int_eint"(%[[V1]], %arg0) : (i3, !HLFHE.eint<2>) -> !HLFHE.eint<2>
+  // CHECK-NEXT: return %[[V2]] : !HLFHE.eint<2>
+
+  %0 = constant 1 : i3
+  %1 = "HLFHE.sub_int_eint"(%0, %arg0): (i3, !HLFHE.eint<2>) -> (!HLFHE.eint<2>)
+  return %1: !HLFHE.eint<2>
+}
+
 // CHECK-LABEL: func @mul_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 func @mul_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
   // CHECK-NEXT: %[[V1:.*]] = constant 1 : i3
