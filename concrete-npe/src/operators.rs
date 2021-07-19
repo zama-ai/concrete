@@ -116,7 +116,7 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     // norm 2 of the integer polynomial hidden in the RGSW
     // for an external product inside a bootstrap, the integer polynomial is in fact
@@ -185,7 +185,7 @@ where
     D1: DispersionParameter,
     D2: DispersionParameter,
     D3: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     let var_external_product = variance_external_product::<T, _, _, K>(
         dimension,
@@ -322,7 +322,7 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     // constants
     let big_n = poly_size.0 as f64; //TODO: polysize is defined as N+1
@@ -412,7 +412,7 @@ pub fn variance_glwe_relinearization<T, D, K>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     // constants
     let big_n = poly_size.0 as f64;
@@ -500,7 +500,7 @@ where
     D1: DispersionParameter,
     D2: DispersionParameter,
     D3: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     // res 1
     let res_1: Variance = variance_glwe_tensor_product_rescale_round::<T, _, _, K>(
@@ -595,7 +595,7 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     let n = lwe_mask_size.0 as f64;
     let base = (1 << base_log.0) as f64;
@@ -670,7 +670,7 @@ where
 pub fn variance_rlwe_k_1_var_u_mod_switch<T, K>(poly_size: PolynomialSize) -> Variance
 where
     T: UnsignedInteger,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
@@ -717,7 +717,7 @@ pub fn variance_rlwe_relinearization<T, D, K>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     let basis: f64 = (1 << base_log.0) as f64;
     let big_n: f64 = poly_size.0 as f64;
@@ -819,7 +819,7 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     let l = level.0 as f64;
     let k = rlwe_mask_size.0 as f64;
@@ -876,7 +876,7 @@ pub fn variance_tfhe_pbs<T, D, K>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyDistributions,
+    K: KeyDispersion,
 {
     let var_rlwe = Variance::from_modular_variance::<T>(0.);
     Variance::from_variance(

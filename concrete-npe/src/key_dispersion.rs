@@ -17,28 +17,26 @@ use concrete_commons::numeric::UnsignedInteger;
 /// The Gaussian secret keys have modular standard deviation set to 3.2 by default.
 pub const GAUSSIAN_MODULAR_STDEV: f64 = 3.2;
 
-pub trait KeyDistributions: KeyKind {
-    ///
-    /// For every key distribution, we return the following functions
-    /// * `variance_key_coefficient`: returns the variance of key coefficients
-    /// * `expectation_key_coefficient`: returns the expectation of key coefficients
-    /// * `variance_key_coefficient_squared`: returns the variance of the squared key
-    /// coefficients
-    /// * `expectation_key_coefficient_squared`: returns the expectation of the squared key
-    /// coefficients
-    /// * `variance_odd_coefficient_in_polynomial_key_squared`: returns the variance of the odd
-    /// coefficients of a polynomial key to the square
-    /// * `variance_even_coefficient_in_polynomial_key_squared`: returns the variance of the even
-    /// coefficients of a polynomial key to the square
-    /// * `squared_expectation_mean_in_polynomial_key_squared`: returns the mean expectation of
-    /// the coefficients of a polynomial key to the square
-    /// * `variance_coefficient_in_polynomial_key_times_key`: returns the variance of the
-    /// coefficients of a polynomial key resulting from the multiplication of two polynomial keys
-    /// of the same key kind (S_i x S_j)
-    /// * `square_expectation_mean_in_polynomial_key_times_key`: returns the mean expectation of
-    /// the coefficients of a polynomial key resulting from the multiplication of two polynomial
-    /// keys of the same key kind (S_i x S_j)
-
+/// For every key distribution, we return the following functions
+/// * `variance_key_coefficient`: returns the variance of key coefficients
+/// * `expectation_key_coefficient`: returns the expectation of key coefficients
+/// * `variance_key_coefficient_squared`: returns the variance of the squared key
+/// coefficients
+/// * `expectation_key_coefficient_squared`: returns the expectation of the squared key
+/// coefficients
+/// * `variance_odd_coefficient_in_polynomial_key_squared`: returns the variance of the odd
+/// coefficients of a polynomial key to the square
+/// * `variance_even_coefficient_in_polynomial_key_squared`: returns the variance of the even
+/// coefficients of a polynomial key to the square
+/// * `squared_expectation_mean_in_polynomial_key_squared`: returns the mean expectation of
+/// the coefficients of a polynomial key to the square
+/// * `variance_coefficient_in_polynomial_key_times_key`: returns the variance of the
+/// coefficients of a polynomial key resulting from the multiplication of two polynomial keys
+/// of the same key kind ($S_i \cdot S_j$ with $i,j$ different)
+/// * `square_expectation_mean_in_polynomial_key_times_key`: returns the mean expectation of
+/// the coefficients of a polynomial key resulting from the multiplication of two polynomial
+/// keys of the same key kind ($S_i \cdot S_j$ with $i,j$ different)
+pub trait KeyDispersion: KeyKind {
     /// # Example
     ///```rust
     /// use concrete_commons::dispersion::*;
@@ -204,7 +202,7 @@ pub trait KeyDistributions: KeyKind {
     fn square_expectation_mean_in_polynomial_key_times_key(poly_size: PolynomialSize) -> f64;
 }
 
-impl KeyDistributions for BinaryKeyKind {
+impl KeyDispersion for BinaryKeyKind {
     fn variance_key_coefficient<T: UnsignedInteger>() -> Variance {
         Variance::from_modular_variance::<T>(1. / 4.)
     }
@@ -258,7 +256,7 @@ impl KeyDistributions for BinaryKeyKind {
     }
 }
 
-impl KeyDistributions for TernaryKeyKind {
+impl KeyDispersion for TernaryKeyKind {
     fn variance_key_coefficient<T: UnsignedInteger>() -> Variance {
         Variance::from_modular_variance::<T>(2. / 3.)
     }
@@ -307,12 +305,12 @@ impl KeyDistributions for TernaryKeyKind {
     ) -> Variance {
         Variance::from_modular_variance::<T>(4. * (poly_size.0 as f64) / 9.)
     }
-    fn square_expectation_mean_in_polynomial_key_times_key(poly_size: PolynomialSize) -> f64 {
+    fn square_expectation_mean_in_polynomial_key_times_key(_poly_size: PolynomialSize) -> f64 {
         0.
     }
 }
 
-impl KeyDistributions for GaussianKeyKind {
+impl KeyDispersion for GaussianKeyKind {
     fn variance_key_coefficient<T: UnsignedInteger>() -> Variance {
         Variance::from_modular_variance::<T>(square(GAUSSIAN_MODULAR_STDEV))
     }
@@ -379,59 +377,12 @@ impl KeyDistributions for GaussianKeyKind {
             )) * (poly_size.0 as f64),
         )
     }
-    fn square_expectation_mean_in_polynomial_key_times_key(poly_size: PolynomialSize) -> f64 {
+    fn square_expectation_mean_in_polynomial_key_times_key(_poly_size: PolynomialSize) -> f64 {
         0.
     }
 }
 
-impl KeyDistributions for UniformKeyKind {
-    fn variance_key_coefficient<T: UnsignedInteger>() -> Variance {
-        Variance::from_modular_variance::<T>(0.)
-        // println!("Not supported yet!");
-    }
-    fn expectation_key_coefficient() -> f64 {
-        0.
-        // println!("Not supported yet!");
-    }
-    fn variance_key_coefficient_squared<T: UnsignedInteger>() -> Variance {
-        Variance::from_modular_variance::<T>(0.)
-        // println!("Not supported yet!");
-    }
-    fn expectation_key_coefficient_squared<T: UnsignedInteger>() -> f64 {
-        0.
-        // println!("Not supported yet!");
-    }
-    fn variance_odd_coefficient_in_polynomial_key_squared<T: UnsignedInteger>(
-        poly_size: PolynomialSize,
-    ) -> Variance {
-        Variance::from_modular_variance::<T>(0.)
-        // println!("Not supported yet!");
-    }
-    fn variance_even_coefficient_in_polynomial_key_squared<T: UnsignedInteger>(
-        poly_size: PolynomialSize,
-    ) -> Variance {
-        Variance::from_modular_variance::<T>(0.)
-        // println!("Not supported yet!");
-    }
-    fn squared_expectation_mean_in_polynomial_key_squared<T: UnsignedInteger>(
-        poly_size: PolynomialSize,
-    ) -> f64 {
-        0.
-        // println!("Not supported yet!");
-    }
-    fn variance_coefficient_in_polynomial_key_times_key<T: UnsignedInteger>(
-        poly_size: PolynomialSize,
-    ) -> Variance {
-        Variance::from_modular_variance::<T>(0.)
-        // println!("Not supported yet!");
-    }
-    fn square_expectation_mean_in_polynomial_key_times_key(poly_size: PolynomialSize) -> f64 {
-        0.
-        // println!("Not supported yet!");
-    }
-}
-
-impl KeyDistributions for ZeroKeyKind {
+impl KeyDispersion for ZeroKeyKind {
     fn variance_key_coefficient<T: UnsignedInteger>() -> Variance {
         Variance::from_modular_variance::<T>(0.)
     }
@@ -476,11 +427,11 @@ impl KeyDistributions for ZeroKeyKind {
         }
     }
     fn variance_coefficient_in_polynomial_key_times_key<T: UnsignedInteger>(
-        poly_size: PolynomialSize,
+        _poly_size: PolynomialSize,
     ) -> Variance {
         Variance::from_modular_variance::<T>(0.)
     }
-    fn square_expectation_mean_in_polynomial_key_times_key(poly_size: PolynomialSize) -> f64 {
+    fn square_expectation_mean_in_polynomial_key_times_key(_poly_size: PolynomialSize) -> f64 {
         0.
     }
 }
