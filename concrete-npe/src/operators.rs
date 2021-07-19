@@ -298,14 +298,14 @@ where
 /// let key_type = KeyType::Binary;
 /// // Computing the noise
 /// let var_out = variance_glwe_tensor_product_rescale_round::<u64, _, _, _>(
-/// polynomial_size,
-/// dimension,
-/// dispersion_rlwe_0,
-/// dispersion_rlwe_1,
-/// delta_1,
-/// delta_2,
-/// max_msg_1,
-/// max_msg_2,
+///     polynomial_size,
+///     dimension,
+///     dispersion_rlwe_0,
+///     dispersion_rlwe_1,
+///     delta_1,
+///     delta_2,
+///     max_msg_1,
+///     max_msg_2,
 /// );
 /// ```
 pub fn variance_glwe_tensor_product_rescale_round<T, D1, D2, K>(
@@ -469,17 +469,17 @@ where
 /// let base_log = DecompositionBaseLog(7);
 /// let dispersion_rlk = Variance::from_variance(f64::powi(2., -38));
 /// let var_out = variance_glwe_mul_with_relinearization::<u64, _, _, _, _>(
-/// polynomial_size,
-/// dimension,
-/// dispersion_rlwe_0,
-/// dispersion_rlwe_1,
-/// delta_1,
-/// delta_2,
-/// max_msg_1,
-/// max_msg_2,
-/// dispersion_rlk,
-/// base_log,
-/// l_gadget,
+///     polynomial_size,
+///     dimension,
+///     dispersion_rlwe_0,
+///     dispersion_rlwe_1,
+///     delta_1,
+///     delta_2,
+///     max_msg_1,
+///     max_msg_2,
+///     dispersion_rlk,
+///     base_log,
+///     l_gadget,
 /// );
 /// ```
 pub fn variance_glwe_mul_with_relinearization<T, D1, D2, D3, K>(
