@@ -18,78 +18,56 @@ include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.td"
 class MidLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<MidLFHE_Dialect, mnemonic, traits>;
 
-def AddPlainOp : MidLFHE_Op<"add_plain"> {
+def AddGLWEInt : MidLFHE_Op<"add_glwe_int"> {
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
     let results = (outs GLWECipherTextType);
 
-    let builders = [
-        OpBuilder<(ins "Value":$a, "Value":$b), [{
-            build($_builder, $_state, a.getType(), a, b);
-        }]>
-    ];
-
     let verifier = [{
-        return ::mlir::zamalang::verifyAddPlainOp(*this);
+        return mlir::zamalang::MidLFHE::verifyGLWEIntegerOperator<AddGLWEInt>(*this);
     }];
 }
 
-def MulPlainOp : MidLFHE_Op<"mul_plain"> {
+def AddGLWEOp : MidLFHE_Op<"add_glwe"> {
+    let arguments = (ins GLWECipherTextType:$a, GLWECipherTextType:$b);
+    let results = (outs GLWECipherTextType);
+
+    let verifier = [{
+        return ::mlir::zamalang::MidLFHE::verifyBinaryGLWEOperator<AddGLWEOp>(*this);
+    }];
+}
+
+def SubIntGLWEOp : MidLFHE_Op<"sub_int_glwe"> {
+    let arguments = (ins AnyInteger:$a, GLWECipherTextType:$b);
+    let results = (outs GLWECipherTextType);
+
+    let verifier = [{
+        return ::mlir::zamalang::MidLFHE::verifyIntegerGLWEOperator(*this);
+    }];
+}
+
+
+def MulGLWEInt : MidLFHE_Op<"mul_glwe_int"> {
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
     let results = (outs GLWECipherTextType);
 
-    let builders = [
-        OpBuilder<(ins "Value":$a, "Value":$b), [{
-            build($_builder, $_state, a.getType(), a, b);
-        }]>
-    ];
-
     let verifier = [{
-        return ::mlir::zamalang::verifyMulPlainOp(*this);
-    }];
-}
-
-def HAddOp : MidLFHE_Op<"h_add"> {
-    let arguments = (ins GLWECipherTextType:$a, GLWECipherTextType:$b);
-    let results = (outs GLWECipherTextType);
-
-    let builders = [
-        OpBuilder<(ins "Value":$a, "Value":$b), [{
-            build($_builder, $_state, a.getType(), a, b);
-        }]>
-    ];
-
-    let verifier = [{
-        return ::mlir::zamalang::verifyHAddOp(*this);
+        return mlir::zamalang::MidLFHE::verifyGLWEIntegerOperator<MulGLWEInt>(*this);
     }];
 }
 
 
-def HMulOp : MidLFHE_Op<"h_mul"> {
-    let arguments = (ins GLWECipherTextType:$a, GLWECipherTextType:$b);
+
+def ApplyLookupTable : MidLFHE_Op<"apply_lookup_table"> {
+    let arguments = (ins GLWECipherTextType:$ct,
+        MemRefOf<[AnyInteger]>:$l_cst,
+        I32Attr:$k, I32Attr:$polynomialSize,
+        I32Attr:$levelKS, I32Attr:$baseLogKS,
+        I32Attr:$levelBS, I32Attr:$baseLogBS);
     let results = (outs GLWECipherTextType);
 
-    let builders = [
-        OpBuilder<(ins "Value":$a, "Value":$b), [{
-            build($_builder, $_state, a.getType(), a, b);
-        }]>
-    ];
-}
-
-
-def PBSRegion : Region<
-  CPred<"::mlir::zamalang::predPBSRegion($_self)">,
-  "pbs region needs one block with one any integer argument">;
-
-def PBSOp : MidLFHE_Op<"pbs"> {
-  let arguments = (ins GLWECipherTextType:$x, I32Attr:$big_n, I32Attr:$log_noise, I32Attr:$base_log, I32Attr:$level);
-  let results = (outs GLWECipherTextType:$result);
-  let regions = (region PBSRegion:$region);
-}
-
-def ReturnOp : MidLFHE_Op<"pbs_return", [NoSideEffect, ReturnLike, Terminator]> {
-  let summary = "terminator of pbs block";
-  let arguments = (ins AnyInteger);
-  let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
+    let verifier = [{
+        return ::mlir::zamalang::MidLFHE::verifyApplyLookupTable(*this);
+    }];
 }
 
 #endif

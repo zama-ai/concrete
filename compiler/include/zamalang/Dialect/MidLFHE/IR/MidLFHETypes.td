@@ -23,16 +23,8 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
         "signed":$polynomialSize,
         // Number of bits of the ciphertext
         "signed":$bits,
-        // Number of bits for padding
-        "signed":$paddingBits,
-        // The precision of the encrypted value
-        "signed":$p,
-        // Number of 'phantom' bits on the right of the message
-        "signed":$phantomBits,
-        // The scaling factor
-        "signed":$scalingFactor,
-        // Log2 of the standard derivation
-        "signed":$log2StdDev
+        // Number of bits of the plain text representation
+        "signed":$p
     );
 
     // We define the printer inline.
@@ -49,20 +41,8 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
                 else $_printer << getImpl()->bits;
         $_printer << "}";
         $_printer << "{";
-                if (getImpl()->paddingBits == -1) $_printer << "_";
-                else $_printer << getImpl()->paddingBits;
-                $_printer << ",";
                 if (getImpl()->p == -1) $_printer << "_";
                 else $_printer << getImpl()->p;
-                $_printer << ",";
-                if (getImpl()->phantomBits == -1) $_printer << "_";
-                else $_printer << getImpl()->phantomBits;
-                $_printer << ",";
-                if (getImpl()->scalingFactor == -1) $_printer << "_";
-                else $_printer << getImpl()->scalingFactor;
-                $_printer << ",";
-                if (getImpl()->log2StdDev == -1) $_printer << "_";
-                else $_printer << getImpl()->log2StdDev;
         $_printer << "}>";
     }];
 
@@ -93,28 +73,8 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
         // Next parameters block
         if ($_parser.parseLBrace())
             return Type();
-        int paddingBits = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(paddingBits))
-            return Type();
-        if ($_parser.parseComma())
-            return Type();
         int p = -1;
         if ($_parser.parseInteger(p))
-            return Type();
-        if ($_parser.parseComma())
-            return Type();
-        int phantomBits = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(phantomBits))
-            return Type();
-        if ($_parser.parseComma())
-            return Type();
-        int scalingFactor = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(scalingFactor))
-            return Type();
-        if ($_parser.parseComma())
-            return Type();
-        int log2StdDev = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(log2StdDev))
             return Type();
         if ($_parser.parseRBrace())
             return Type();
@@ -122,7 +82,7 @@ def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
         if ($_parser.parseGreater())
             return Type();
         Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
-        return getChecked(loc, loc.getContext(), dimension, polynomialSize, bits, paddingBits, p, phantomBits, scalingFactor, log2StdDev);
+        return getChecked(loc, loc.getContext(), dimension, polynomialSize, bits, p);
     }];
 
     let genVerifyDecl = true;
