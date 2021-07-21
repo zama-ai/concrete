@@ -9,6 +9,8 @@ use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
 use crate::tensor_traits;
 
 use super::LweList;
+use crate::crypto::glwe::GlweCiphertext;
+use crate::math::polynomial::MonomialDegree;
 use crate::math::torus::UnsignedTorus;
 
 /// A ciphertext encrypted using the LWE scheme.
@@ -534,6 +536,70 @@ impl<Cont> LweCiphertext<Cont> {
     {
         self.as_mut_tensor()
             .update_with_wrapping_scalar_mul(&scalar.0)
+    }
+
+    /// Fills an LWE ciphertext with the sample extraction of one of the coefficients of a GLWE
+    /// ciphertext.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::LogStandardDev;
+    /// use concrete_core::crypto::encoding::{Plaintext, PlaintextList};
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::lwe::LweCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::GlweSecretKey;
+    /// use concrete_core::crypto::{GlweDimension, LweDimension};
+    /// use concrete_core::math::polynomial::{MonomialDegree, PolynomialSize};
+    /// use concrete_core::math::tensor::AsRefTensor;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// let poly_size = PolynomialSize(4);
+    /// let glwe_dim = GlweDimension(2);
+    /// let glwe_secret_key =
+    ///     GlweSecretKey::generate_binary(glwe_dim, poly_size, &mut secret_generator);
+    /// let mut plaintext_list =
+    ///     PlaintextList::from_container(vec![100000 as u32, 200000, 300000, 400000]);
+    /// let mut glwe_ct = GlweCiphertext::allocate(0u32, poly_size, glwe_dim.to_glwe_size());
+    /// let mut lwe_ct =
+    ///     LweCiphertext::allocate(0u32, LweDimension(poly_size.0 * glwe_dim.0).to_lwe_size());
+    /// glwe_secret_key.encrypt_glwe(
+    ///     &mut glwe_ct,
+    ///     &plaintext_list,
+    ///     LogStandardDev(-25.),
+    ///     &mut encryption_generator,
+    /// );
+    /// let lwe_secret_key = glwe_secret_key.into_lwe_secret_key();
+    ///
+    /// // Check for the first
+    /// for i in 0..4 {
+    ///     // We sample extract
+    ///     lwe_ct.fill_with_glwe_sample_extraction(&glwe_ct, MonomialDegree(i));
+    ///     // We decrypt
+    ///     let mut output = Plaintext(0u32);
+    ///     lwe_secret_key.decrypt_lwe(&mut output, &lwe_ct);
+    ///     // We check that the decryption is correct
+    ///     let plain = plaintext_list.as_tensor().get_element(i);
+    ///     let d0 = output.0.wrapping_sub(*plain);
+    ///     let d1 = plain.wrapping_sub(output.0);
+    ///     let dist = std::cmp::min(d0, d1);
+    ///     assert!(dist < 400);
+    /// }
+    /// ```
+    pub fn fill_with_glwe_sample_extraction<InputCont, Element>(
+        &mut self,
+        glwe: &GlweCiphertext<InputCont>,
+        n_th: MonomialDegree,
+    ) where
+        Self: AsMutTensor<Element = Element>,
+        GlweCiphertext<InputCont>: AsRefTensor<Element = Element>,
+        Element: UnsignedTorus,
+    {
+        glwe.fill_lwe_with_sample_extraction(self, n_th);
     }
 }
 

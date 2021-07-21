@@ -493,6 +493,8 @@ where
         PlaintextList<Cont2>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
+        ck_dim_eq!(encoded.count().0 => encrypted.polynomial_size().0);
+        ck_dim_eq!(encrypted.mask_size().0 => self.key_size().0);
         let (mut body, mut masks) = encrypted.get_mut_body_and_mask();
         generator.fill_tensor_with_random_noise(&mut body, noise_parameter);
         generator.fill_tensor_with_random_mask(&mut masks);
@@ -549,6 +551,7 @@ where
         GlweCiphertext<Cont1>: AsMutTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
+        ck_dim_eq!(encrypted.mask_size().0 => self.key_size().0);
         let (mut body, mut masks) = encrypted.get_mut_body_and_mask();
         generator.fill_tensor_with_random_noise(&mut body, noise_parameters);
         generator.fill_tensor_with_random_mask(&mut masks);
