@@ -56,8 +56,7 @@ jobs:
         id: coverage
         if: ${{ steps.pytest.outcome != 'skipped' && !cancelled() }}
         run: |
-          bash --noprofile --norc -o pipefail \
-            script/actions_utils/coverage.sh ${{ github.base_ref }}
+          ./script/actions_utils/coverage.sh ${{ github.base_ref }}
       - name: Archive test coverage
         uses: actions/upload-artifact@v2
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
