@@ -17,6 +17,13 @@ class Integer(base.BaseDataType):
         signed_str = "signed" if self.is_signed else "unsigned"
         return f"{self.__class__.__name__}<{signed_str}, {self.bit_width} bits>"
 
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self.bit_width == other.bit_width
+            and self.is_signed == other.is_signed
+        )
+
     def min_value(self) -> int:
         """Minimum value representable by the Integer"""
         if self.is_signed:

@@ -1,8 +1,8 @@
-"""Test file for HDK's common/data_types/helpers.py"""
+"""Test file for HDK's data types helpers"""
 
 import pytest
 
-from hdk.common.data_types.helpers import (
+from hdk.common.data_types.dtypes_helpers import (
     value_is_encrypted_integer,
     value_is_encrypted_unsigned_integer,
 )

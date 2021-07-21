@@ -8,11 +8,13 @@ class TestHelpers:
     """Class allowing to pass helper functions to tests"""
 
     @staticmethod
-    def digraphs_are_equivalent(reference: nx.DiGraph, to_compare: nx.DiGraph):
+    def digraphs_are_equivalent(reference: nx.MultiDiGraph, to_compare: nx.MultiDiGraph):
         """Check that two digraphs are equivalent without modifications"""
         # edge_match is a copy of node_match
-        edge_matcher = iso.categorical_node_match("input_idx", None)
-        node_matcher = iso.categorical_node_match("content", None)
+        edge_matcher = iso.categorical_multiedge_match("input_idx", None)
+        node_matcher = iso.generic_node_match(
+            "content", None, lambda lhs, rhs: lhs.is_equivalent_to(rhs)
+        )
         graphs_are_isomorphic = nx.is_isomorphic(
             reference,
             to_compare,

@@ -30,9 +30,16 @@ pytest:
 	poetry run pytest --cov=hdk -vv --cov-report=xml tests/
 .PHONY: pytest
 
+# Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 mypy:
-	poetry run mypy -p hdk
+	poetry run mypy -p hdk --ignore-missing-imports
 .PHONY: mypy
+
+# Friendly target to run mypy without ignoring missing stubs and still have errors messages
+# Allows to see which stubs we are missing
+mypy_ns:
+	poetry run mypy -p hdk
+.PHONY: mypy_ns
 
 docs:
 	cd docs && poetry run make html

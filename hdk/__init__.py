@@ -1,2 +1,2 @@
 """HDK's top import"""
-from . import common
+from . import common, hnumpy

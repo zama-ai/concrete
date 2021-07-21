@@ -16,6 +16,9 @@ class BaseValue(ABC):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<{self.data_type!r}>"
 
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, self.__class__) and self.data_type == other.data_type
+
 
 class ClearValue(BaseValue):
     """Class representing a clear/plaintext value (constant or not)"""

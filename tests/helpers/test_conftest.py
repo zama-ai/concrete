@@ -16,11 +16,13 @@ def test_digraphs_are_equivalent(test_helpers):
         def __hash__(self) -> int:
             return self.computation.__hash__()
 
-        def __eq__(self, other) -> bool:
+        def __eq__(self, other: object) -> bool:
             return self.computation == other.computation
 
-    g_1 = nx.DiGraph()
-    g_2 = nx.DiGraph()
+        is_equivalent_to = __eq__
+
+    g_1 = nx.MultiDiGraph()
+    g_2 = nx.MultiDiGraph()
 
     t_0 = TestNode("Add")
     t_1 = TestNode("Mul")
@@ -44,7 +46,7 @@ def test_digraphs_are_equivalent(test_helpers):
     for node in g_2:
         g_2.add_node(node, content=node)
 
-    bad_g2 = nx.DiGraph()
+    bad_g2 = nx.MultiDiGraph()
 
     bad_t0 = TestNode("Not Add")
 
@@ -55,7 +57,7 @@ def test_digraphs_are_equivalent(test_helpers):
     for node in bad_g2:
         bad_g2.add_node(node, content=node)
 
-    bad_g3 = nx.DiGraph()
+    bad_g3 = nx.MultiDiGraph()
 
     bad_g3.add_edge(t_0, t_2, input_idx=1)
     bad_g3.add_edge(t_1, t_2, input_idx=0)
