@@ -821,6 +821,27 @@ impl<Container> Tensor<Container> {
         self.as_mut_slice()[index] = val;
     }
 
+    /// Fills a tensor with the values of another tensor, using memcpy.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor1 = Tensor::allocate(9 as u8, 1000);
+    /// let tensor2 = Tensor::allocate(10 as u8, 1000);
+    /// tensor1.fill_with_copy(&tensor2);
+    /// assert_eq!(*tensor2.get_element(0), 10);
+    /// ```
+    pub fn fill_with_copy<InputCont, Element>(&mut self, other: &Tensor<InputCont>)
+    where
+        Self: AsMutSlice<Element = Element>,
+        Tensor<InputCont>: AsRefSlice<Element = Element>,
+        Element: Copy,
+    {
+        ck_dim_eq!(self.len() => other.len());
+        self.as_mut_slice().copy_from_slice(other.as_slice());
+    }
+
     /// Fills two tensors with the result of the operation on a single one.
     ///
     /// # Example:
@@ -1417,6 +1438,57 @@ impl<Container> Tensor<Container> {
         self.iter()
             .zip(other.as_slice().iter())
             .fold(acc, |acc, (s_i, o_i)| ope(acc, s_i, o_i))
+    }
+
+    /// Reverses the elements of the tensor inplace.
+    ///
+    /// # Example
+    ///  
+    /// ```rust
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::from_container(vec![1u8, 2, 3, 4]);
+    /// tensor.reverse();
+    /// assert_eq!(*tensor.get_element(0), 4);
+    /// ```
+    pub fn reverse(&mut self)
+    where
+        Self: AsMutSlice,
+    {
+        self.as_mut_slice().reverse()
+    }
+
+    /// Rotates the elements of the tensor to the right, inplace.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::from_container(vec![1u8, 2, 3, 4]);
+    /// tensor.rotate_right(2);
+    /// assert_eq!(*tensor.get_element(0), 3);
+    /// ```
+    pub fn rotate_right(&mut self, n: usize)
+    where
+        Self: AsMutSlice,
+    {
+        self.as_mut_slice().rotate_right(n)
+    }
+
+    /// Rotates the elements of the tensor to the left, inplace.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::from_container(vec![1u8, 2, 3, 4]);
+    /// tensor.rotate_left(2);
+    /// assert_eq!(*tensor.get_element(0), 3);
+    /// ```
+    pub fn rotate_left(&mut self, n: usize)
+    where
+        Self: AsMutSlice,
+    {
+        self.as_mut_slice().rotate_left(n)
     }
 }
 

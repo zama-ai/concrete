@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::{GlweDimension, GlweSize};
-use crate::math::polynomial::{PolynomialList, PolynomialSize};
+use crate::math::polynomial::{MonomialDegree, PolynomialList, PolynomialSize};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::tensor_traits;
 
 use super::{GlweBody, GlweMask};
+use crate::crypto::lwe::LweCiphertext;
+use crate::math::torus::UnsignedTorus;
 
 /// An GLWE ciphertext.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -368,6 +370,101 @@ impl<Cont> GlweCiphertext<Cont> {
         PolynomialList {
             tensor: Tensor::from_container(self.as_mut_tensor().as_mut_slice()),
             poly_size,
+        }
+    }
+
+    /// Fills an LWE ciphertext with the extraction of one coefficient of the current GLWE
+    /// ciphertext.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::LogStandardDev;
+    /// use concrete_core::crypto::encoding::{Plaintext, PlaintextList};
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::crypto::lwe::LweCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::GlweSecretKey;
+    /// use concrete_core::crypto::{GlweDimension, LweDimension};
+    /// use concrete_core::math::polynomial::{MonomialDegree, PolynomialSize};
+    /// use concrete_core::math::tensor::AsRefTensor;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// let poly_size = PolynomialSize(4);
+    /// let glwe_dim = GlweDimension(2);
+    /// let glwe_secret_key =
+    ///     GlweSecretKey::generate_binary(glwe_dim, poly_size, &mut secret_generator);
+    /// let mut plaintext_list =
+    ///     PlaintextList::from_container(vec![100000 as u32, 200000, 300000, 400000]);
+    /// let mut glwe_ct = GlweCiphertext::allocate(0u32, poly_size, glwe_dim.to_glwe_size());
+    /// let mut lwe_ct =
+    ///     LweCiphertext::allocate(0u32, LweDimension(poly_size.0 * glwe_dim.0).to_lwe_size());
+    /// glwe_secret_key.encrypt_glwe(
+    ///     &mut glwe_ct,
+    ///     &plaintext_list,
+    ///     LogStandardDev(-25.),
+    ///     &mut encryption_generator,
+    /// );
+    /// let lwe_secret_key = glwe_secret_key.into_lwe_secret_key();
+    ///
+    /// // Check for the first
+    /// for i in 0..4 {
+    ///     // We sample extract
+    ///     glwe_ct.fill_lwe_with_sample_extraction(&mut lwe_ct, MonomialDegree(i));
+    ///     // We decrypt
+    ///     let mut output = Plaintext(0u32);
+    ///     lwe_secret_key.decrypt_lwe(&mut output, &lwe_ct);
+    ///     // We check that the decryption is correct
+    ///     let plain = plaintext_list.as_tensor().get_element(i);
+    ///     let d0 = output.0.wrapping_sub(*plain);
+    ///     let d1 = plain.wrapping_sub(output.0);
+    ///     let dist = std::cmp::min(d0, d1);
+    ///     assert!(dist < 400);
+    /// }
+    /// ```
+    pub fn fill_lwe_with_sample_extraction<OutputCont, Element>(
+        &self,
+        lwe: &mut LweCiphertext<OutputCont>,
+        n_th: MonomialDegree,
+    ) where
+        Self: AsRefTensor<Element = Element>,
+        LweCiphertext<OutputCont>: AsMutTensor<Element = Element>,
+        Element: UnsignedTorus,
+    {
+        // We retrieve the bodies and masks of the two ciphertexts.
+        let (lwe_body, mut lwe_mask) = lwe.get_mut_body_and_mask();
+        let (glwe_body, glwe_mask) = self.get_body_and_mask();
+
+        // We copy the body
+        lwe_body.0 = *glwe_body
+            .as_polynomial()
+            .get_monomial(n_th)
+            .get_coefficient();
+
+        // We copy the mask (each polynomial is in the wrong order)
+        lwe_mask
+            .as_mut_tensor()
+            .fill_with_copy(glwe_mask.as_tensor());
+
+        // We compute the number of elements which must be negated
+        let negated_count = self.poly_size.0 - n_th.0 - 1;
+
+        // We loop through the polynomials (as mut tensors)
+        for mut lwe_mask_poly in lwe_mask
+            .as_mut_tensor()
+            .subtensor_iter_mut(self.poly_size.0)
+        {
+            // We reverse the polynomial
+            lwe_mask_poly.reverse();
+            // We negate the proper coefficients
+            lwe_mask_poly
+                .get_sub_mut(0..negated_count)
+                .update_with_wrapping_neg();
+            // We rotate the polynomial properly
+            lwe_mask_poly.rotate_left(negated_count);
         }
     }
 }
