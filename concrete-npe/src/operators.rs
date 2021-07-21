@@ -66,7 +66,6 @@ where
     Variance::from_modular_variance::<T>(var_res)
 }
 
-//TODO: CHECK THE PRECISION !
 /// Return the variance of the external product given a set of parameters.
 /// # Example:
 /// ```rust
@@ -93,16 +92,7 @@ where
 ///     dispersion_rgsw,
 ///     dispersion_rlwe,
 /// );
-/// println!(
-///     "Out. {}",
-///     var_external_product.get_modular_variance::<u64>()
-/// );
-///
-/// println!("Exp. {}", 3.66209842969680e35);
-/// assert!(
-///     (3.66209842969680e35 - var_external_product.get_modular_variance::<u64>()).abs()
-///         < f64::powi(10., 10)
-/// );
+
 /// ```
 pub fn variance_external_product<T, D1, D2, K>(
     dimension: GlweDimension,
@@ -144,7 +134,6 @@ where
 
     Variance::from_modular_variance::<T>(res_1 + res_2)
 }
-//TODO: End this test
 /// Return the variance of the CMUX given a set of parameters.
 /// # Warning
 /// * Only correct for the CMUX inside a bootstrap
@@ -173,11 +162,6 @@ where
 ///     dispersion_rlwe_1,
 ///     dispersion_rgsw,
 /// );
-/// let expected_variance = 6.04856441848937e23 + dispersion_rlwe_0.get_modular_variance::<u64>();
-/// println!("Out. {}", var_cmux.get_modular_variance::<u64>());
-///
-/// println!("Exp. {}", expected_variance);
-///
 /// let var_external_product = variance_external_product::<u64, _, _, BinaryKeyKind>(
 ///     dimension,
 ///     polynomial_size,
@@ -186,14 +170,6 @@ where
 ///     dispersion_rgsw,
 ///     variance_add::<u64, _, _>(dispersion_rlwe_0, dispersion_rlwe_1),
 /// );
-/// println!(
-///     "External_Product. {}",
-///     var_external_product.get_modular_variance::<u64>()
-/// );
-/// assert!(
-///     (expected_variance - var_cmux.get_modular_variance::<u64>()).abs() < f64::powi(10., 10)
-/// );
-/// ```
 pub fn variance_cmux<T, D1, D2, D3, K>(
     dimension: GlweDimension,
     polynomial_size: PolynomialSize,
@@ -232,7 +208,6 @@ where
 /// let n: u64 = 543;
 /// // noise computation
 /// let var_out = variance_scalar_mul::<u64, _>(variance, n);
-/// println!("Out. {}", var_out.get_modular_variance::<u64>());
 /// ```
 pub fn variance_scalar_mul<T, D>(variance: D, n: T) -> Variance
 where
@@ -276,7 +251,6 @@ where
 
 /// Computes the variance of the error distribution after a multiplication
 /// between an RLWE ciphertext and a scalar polynomial
-/// sigma_out^2 <- \Sum_i weight_i^2 * sigma^2
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
@@ -285,7 +259,6 @@ where
 /// let polynomial_size = PolynomialSize(1024);
 /// let dispersion_rlwe = Variance::from_variance(f64::powi(2., -40));
 /// let scalar_polynomial = vec![10, 15, 18];
-/// // Computing the noise
 /// let var_out = variance_scalar_polynomial_mul::<u64, _>(dispersion_rlwe, &scalar_polynomial);
 /// ```
 pub fn variance_scalar_polynomial_mul<T, D>(dispersion: D, scalar_polynomial: &[T]) -> Variance
@@ -299,7 +272,6 @@ where
     )
 }
 
-//TODO: IS THIS REALLY THE GET VARIANCE OR GET_VARIANCE_MODULAR ?
 /// Return the variance of the tensor product between two independent GLWE given
 /// a set of parameters
 /// /// # Example:
@@ -347,7 +319,7 @@ where
     K: KeyDispersion,
 {
     // constants
-    let big_n = poly_size.0 as f64; //TODO: polysize is defined as N+1
+    let big_n = poly_size.0 as f64;
     let k = rlwe_dimension.0 as f64;
     let delta = f64::min(delta_1, delta_2);
     let delta_square = square(delta);
@@ -403,8 +375,7 @@ where
     Variance::from_variance(res_2 + res_1 + res_3)
 }
 
-/// Return the variance of the GLWE after relinearization given
-/// a set of parameters
+/// Return the variance of the GLWE after relinearizatio
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
@@ -692,7 +663,6 @@ where
 
     Variance::from_variance(res)
 }
-//TODO: THIS HAS TO BE RENAMED
 /// Returns a variance of U when doing a modulus switching
 /// U is the distribution of error for this bits greater than q.
 /// # Example
@@ -796,32 +766,6 @@ where
     // return
     Variance::from_variance(res_1 + res_2)
 }
-/*
-
-/// returns a variance when computing the cmux
-pub fn cmux(
-    poly_size: usize,
-    rlwe_mask_size: usize,
-    var_rlwe: f64,
-    var_rgsw: f64,
-    base_log: usize,
-    level: usize,
-    q: f64,
-    key_kind: char,
-) -> f64 {
-    let res = external_product(
-        poly_size,
-        rlwe_mask_size,
-        2. * var_rlwe,
-        var_rgsw,
-        base_log,
-        level,
-        q,
-        key_kind,
-    ) + var_rlwe;
-    res
-}
-*/
 
 /// Return the variance when computing an external product as in TFHE's PBS
 /// # Example
