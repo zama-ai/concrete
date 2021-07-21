@@ -75,6 +75,7 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::*;
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let dimension = GlweDimension(3);
 /// let polynomial_size = PolynomialSize(1024);
 /// let base_log = DecompositionBaseLog(7);
@@ -83,9 +84,8 @@ where
 /// let dispersion_rgsw = Variance::from_modular_variance::<u64>(f64::powi(2., 26));
 /// //Variance::from_variance(f64::powi(2., -40));
 /// let dispersion_rlwe = Variance::from_modular_variance::<u64>(f64::powi(2., 24));
-/// let key_kind = KeyKind::Binary;
 /// // Computing the noise
-/// let var_external_product = variance_external_product::<u64, _, _, key_kind>(
+/// let var_external_product = variance_external_product::<u64, _, _, BinaryKeyKind>(
 ///     dimension,
 ///     polynomial_size,
 ///     base_log,
@@ -98,9 +98,9 @@ where
 ///     var_external_product.get_modular_variance::<u64>()
 /// );
 ///
-/// println!("Exp. {}", 6.04856441848937e23);
+/// println!("Exp. {}", 3.66209842969680e35);
 /// assert!(
-///     (6.04856441848937e23 - var_external_product.get_modular_variance::<u64>()).abs()
+///     (3.66209842969680e35 - var_external_product.get_modular_variance::<u64>()).abs()
 ///         < f64::powi(10., 10)
 /// );
 /// ```
@@ -127,6 +127,8 @@ where
     let res_1: f64 = ((dimension.0 + 1) * l_gadget.0 * polynomial_size.0 * (b_g * b_g + 2)) as f64
         / 12.
         * dispersion_ggsw.get_modular_variance::<T>();
+    println!("Res1. {}", res_1);
+    println!("var_rgsw. {}", dispersion_ggsw.get_modular_variance::<T>());
 
     let res_2: f64 = square(norm_2_msg_ggsw)
         * (dispersion_glwe.get_modular_variance::<T>()
@@ -142,7 +144,7 @@ where
 
     Variance::from_modular_variance::<T>(res_1 + res_2)
 }
-
+//TODO: End this test
 /// Return the variance of the CMUX given a set of parameters.
 /// # Warning
 /// * Only correct for the CMUX inside a bootstrap
@@ -153,15 +155,16 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::*;
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let dimension = GlweDimension(3);
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let polynomial_size = PolynomialSize(1024);
-/// let dispersion_rgsw = Variance::from_variance(f64::powi(2., -38));
-/// let dispersion_rlwe_0 = Variance::from_variance(f64::powi(2., -40));
-/// let dispersion_rlwe_1 = Variance::from_variance(f64::powi(2., -40));
+/// let dispersion_rgsw = Variance::from_modular_variance::<u64>(f64::powi(2., 26));
+/// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(f64::powi(2., 25));
+/// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(f64::powi(2., 25));
 /// // Computing the noise
-/// let var_cmux = variance_cmux::<u64, _, _, _, _>(
+/// let var_cmux = variance_cmux::<u64, _, _, _,BinaryKeyKind>(
 ///     dimension,
 ///     polynomial_size,
 ///     base_log,
@@ -169,6 +172,27 @@ where
 ///     dispersion_rlwe_0,
 ///     dispersion_rlwe_1,
 ///     dispersion_rgsw,
+/// );
+/// let expected_variance = 6.04856441848937e23 + dispersion_rlwe_0.get_modular_variance::<u64>();
+/// println!(
+///     "Out. {}",
+///     var_cmux.get_modular_variance::<u64>()
+/// );
+///
+/// println!("Exp. {}", expected_variance);
+///
+/// let var_external_product = variance_external_product::<u64, _, _, BinaryKeyKind> (
+///         dimension,
+///         polynomial_size,
+///         base_log,
+///         l_gadget,
+///        dispersion_rgsw,
+///         variance_add::<u64, _, _>(dispersion_rlwe_0, dispersion_rlwe_1),
+/// );
+///  println!("External_Product. {}", var_external_product.get_modular_variance::<u64>());
+/// assert!(
+///     (expected_variance - var_cmux.get_modular_variance::<u64>()).abs()
+///         < f64::powi(10., 10)
 /// );
 /// ```
 pub fn variance_cmux<T, D1, D2, D3, K>(
@@ -286,6 +310,7 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::*;
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let dimension = GlweDimension(3);
 /// let polynomial_size = PolynomialSize(1024);
 /// //Variance::from_variance(f64::powi(2., -38));
@@ -295,9 +320,7 @@ where
 /// let delta_2 = f64::powi(2., 42);
 /// let max_msg_1 = 15.;
 /// let max_msg_2 = 7.;
-/// let key_type = KeyType::Binary;
-/// // Computing the noise
-/// let var_out = variance_glwe_tensor_product_rescale_round::<u64, _, _, _>(
+/// let var_out = variance_glwe_tensor_product_rescale_round::<u64, _, _, BinaryKeyKind>(
 ///     polynomial_size,
 ///     dimension,
 ///     dispersion_rlwe_0,
@@ -347,7 +370,7 @@ where
             + 1. / 4. * square(1. + k * big_n * K::expectation_key_coefficient())
     ) * (
         // 2e parenthese
-        dispersion_glwe1.get_variance() + dispersion_glwe2.get_variance()
+        dispersion_glwe1.get_modular_variance::<T>() + dispersion_glwe2.get_modular_variance::<T>()
     ) * big_n
         / delta_square;
 
@@ -355,27 +378,27 @@ where
     let res_3 = 1. / 12.
         + k * big_n / (12. * delta_square)
             * ((delta_square - 1.)
-                * (K::variance_key_coefficient::<T>().get_variance()
+                * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
                     + square(K::expectation_key_coefficient()))
-                + 3. * K::variance_key_coefficient::<T>().get_variance())
+                + 3. * K::variance_key_coefficient::<T>().get_modular_variance::<T>())
         + k * (k - 1.) * big_n / (24. * delta_square)
             * ((delta_square - 1.)
                 * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
-                    .get_variance()
+                    .get_modular_variance::<T>()
                     + K::square_expectation_mean_in_polynomial_key_times_key(poly_size))
                 + 3. * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
-                    .get_variance())
+                    .get_modular_variance::<T>())
         + k * big_n / (24. * delta_square)
             * ((delta_square - 1.)
                 * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                    .get_variance()
+                    .get_modular_variance::<T>()
                     + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                        .get_variance()
+                        .get_modular_variance::<T>()
                     + 2. * K::squared_expectation_mean_in_polynomial_key_squared::<T>(poly_size))
                 + 3. * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                    .get_variance()
+                    .get_modular_variance::<T>()
                     + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                        .get_variance()));
+                        .get_modular_variance::<T>()));
 
     Variance::from_variance(res_2 + res_1 + res_3)
 }
@@ -389,12 +412,13 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::*;
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let dimension = GlweDimension(3);
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let polynomial_size = PolynomialSize(1024);
 /// let dispersion_rlk = Variance::from_variance(f64::powi(2., -38));
-/// let var_cmux = variance_glwe_relinearization::<u64, _, _>(
+/// let var_cmux = variance_glwe_relinearization::<u64, _, BinaryKeyKind>(
 ///     polynomial_size,
 ///     dimension,
 ///     dispersion_rlk,
@@ -421,28 +445,33 @@ where
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
     // first term
-    let res_1 = k * (level.0 as f64) * big_n * dispersion_rlk.get_variance() * (k + 1.) / 2.
-        * (square(b) + 2.)
-        / 12.;
+    let res_1 =
+        k * (level.0 as f64) * big_n * dispersion_rlk.get_modular_variance::<T>() * (k + 1.) / 2.
+            * (square(b) + 2.)
+            / 12.;
 
     // second term
     let res_2 = k * big_n / 2.
         * (q_square / (12. * f64::powi(b, (2 * level.0) as i32)) - 1. / 12.)
         * ((k - 1.)
-            * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size).get_variance()
+            * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
+                .get_modular_variance::<T>()
                 + K::square_expectation_mean_in_polynomial_key_times_key(poly_size))
-            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size).get_variance()
+            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                .get_modular_variance::<T>()
             + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                .get_variance()
+                .get_modular_variance::<T>()
             + 2. * K::square_expectation_mean_in_polynomial_key_times_key(poly_size));
 
     // third term
     let res_3 = k * big_n / 8.
         * ((k - 1.)
-            * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size).get_variance()
-            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size).get_variance()
+            * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
+                .get_modular_variance::<T>()
+            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                .get_modular_variance::<T>()
             + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                .get_variance());
+                .get_modular_variance::<T>());
 
     Variance::from_variance(res_1 + res_2 + res_3)
 }
@@ -456,6 +485,7 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::*;
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let dimension = GlweDimension(3);
 /// let polynomial_size = PolynomialSize(1024);
 /// //Variance::from_variance(f64::powi(2., -38));
@@ -468,7 +498,7 @@ where
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let dispersion_rlk = Variance::from_variance(f64::powi(2., -38));
-/// let var_out = variance_glwe_mul_with_relinearization::<u64, _, _, _, _>(
+/// let var_out = variance_glwe_mul_with_relinearization::<u64, _, _, _, BinaryKeyKind>(
 ///     polynomial_size,
 ///     dimension,
 ///     dispersion_rlwe_0,
@@ -570,13 +600,13 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
 /// };
 /// use concrete_npe::{variance_keyswitch_lwe_to_glwe_constant_term, *};
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let lwe_mask_size = LweDimension(630);
 /// let l_ks = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let dispersion_lwe = Variance::from_variance(f64::powi(2., -38));
 /// let dispersion_ks = Variance::from_variance(f64::powi(2., -40));
-/// // Computing the noise
-/// let var_ks = variance_keyswitch_lwe_to_glwe_constant_term::<u64, _, _, _>(
+/// let var_ks = variance_keyswitch_lwe_to_glwe_constant_term::<u64, _, _, BinaryKeyKind>(
 ///     lwe_mask_size,
 ///     dispersion_lwe,
 ///     dispersion_ks,
@@ -663,9 +693,11 @@ where
 /// use concrete_commons::dispersion::Variance;
 /// use concrete_commons::parameters::PolynomialSize;
 /// use concrete_npe::{variance_rlwe_k_1_var_u_mod_switch, *};
+/// use std::fmt::Binary;
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let rlwe_mask_size = PolynomialSize(1024);
 /// ///
-/// let var_out = variance_rlwe_k_1_var_u_mod_switch::<u64, _>(rlwe_mask_size);
+/// let var_out = variance_rlwe_k_1_var_u_mod_switch::<u64, BinaryKeyKind>(rlwe_mask_size);
 /// ```
 pub fn variance_rlwe_k_1_var_u_mod_switch<T, K>(poly_size: PolynomialSize) -> Variance
 where
@@ -693,13 +725,13 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::{variance_keyswitch_lwe_to_glwe_constant_term, *};
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let poly_size = PolynomialSize(1024);
 /// let mask_size = GlweDimension(2);
 /// let level = DecompositionLevelCount(4);
 /// let dispersion_rlk = Variance::from_variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
-/// let key_type = KeyType::Binary;
-/// let var_ks = variance_rlwe_relinearization::<u64, _, _>(
+/// let var_ks = variance_rlwe_relinearization::<u64, _, BinaryKeyKind>(
 ///     poly_size,
 ///     mask_size,
 ///     dispersion_rlk,
@@ -791,14 +823,14 @@ pub fn cmux(
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::{variance_keyswitch_lwe_to_glwe_constant_term, *};
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let poly_size = PolynomialSize(1024);
 /// let mask_size = GlweDimension(2);
 /// let level = DecompositionLevelCount(4);
 /// let dispersion_rlwe = Variance::from_variance(f64::powi(2., -40));
 /// let dispersion_rgsw = Variance::from_variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
-/// let key_type = KeyType::Binary;
-/// let var_ks = variance_external_product_binary_ggsw::<u64, _, _, _>(
+/// let var_ks = variance_external_product_binary_ggsw::<u64, _, _, BinaryKeyKind>(
 ///     poly_size,
 ///     mask_size,
 ///     dispersion_rlwe,
@@ -841,7 +873,6 @@ where
 }
 
 /// Return the variance when computing TFHE's PBS
-/// Return the variance when computing an external product as in TFHE's PBS
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
@@ -849,14 +880,14 @@ where
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
 /// };
 /// use concrete_npe::{variance_keyswitch_lwe_to_glwe_constant_term, *};
+/// use concrete_commons::key_kinds::BinaryKeyKind;
 /// let poly_size = PolynomialSize(1024);
 /// let mask_size = LweDimension(2);
 /// let rlwe_mask_size = GlweDimension(2);
 /// let level = DecompositionLevelCount(4);
 /// let dispersion_rgsw = Variance::from_variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
-/// let key_type = KeyType::Binary;
-/// let var_ks = variance_tfhe_pbs::<u64, _, _>(
+/// let var_ks = variance_tfhe_pbs::<u64, _, BinaryKeyKind>(
 ///     mask_size,
 ///     poly_size,
 ///     rlwe_mask_size,
