@@ -1,0 +1,31 @@
+name: Docker image
+
+on:
+  push:
+    paths:
+      - builders/Dockerfile.mlir-env
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build_publish:
+    name: Build & Publish the Docker image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: qbozama/mlir
+      
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: build
+        run: docker build -t $IMAGE -f builders/Dockerfile.mlir-env .
+      
+      - name: login
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+      
+      - name: tag and publish
+        run: |
+          docker tag $IMAGE $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
