@@ -4,10 +4,11 @@
 // TODO: MLWE / GSW
 
 include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.td"
+include "mlir/IR/BuiltinTypes.td"
 
-class MidLFHE_Type<string name> : TypeDef<MidLFHE_Dialect, name> { }
+class MidLFHE_Type<string name, list<Trait> traits = []> : TypeDef<MidLFHE_Dialect, name, traits> { }
 
-def GLWECipherTextType : MidLFHE_Type<"GLWECipherText"> {
+def GLWECipherTextType : MidLFHE_Type<"GLWECipherText", [MemRefElementTypeInterface]> {
     let mnemonic = "glwe";
 
     let summary = "An GLWE cipher text";

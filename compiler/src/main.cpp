@@ -10,6 +10,7 @@
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Support/ToolUtilities.h>
 
+#include "zamalang/Conversion/HLFHEToMidLFHE/Pass.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
 #include "zamalang/Dialect/HLFHE/Transforms/TensorOpsToLinalg.h"
@@ -29,6 +30,10 @@ llvm::cl::opt<std::string> output("o",
 llvm::cl::opt<bool> convertHLFHETensorOpsToLinalg(
     "convert-hlfhe-tensor-ops-to-linalg",
     llvm::cl::desc("Convert HLFHE tensor operations to linalg operations"));
+
+llvm::cl::opt<bool> convertHLFHEToMidLFHE(
+    "convert-hlfhe-to-midlfhe",
+    llvm::cl::desc("Convert HLFHE operations to MidLFHE operations"));
 
 llvm::cl::opt<bool> verifyDiagnostics(
     "verify-diagnostics",
@@ -52,11 +57,10 @@ llvm::cl::opt<bool> splitInputFile(
 // If `verifyDiagnostics` is `false`, the procedure checks if the
 // parsed module is valid and if all requested transformations
 // succeeded.
-mlir::LogicalResult
-processInputBuffer(mlir::MLIRContext &context,
-                   std::unique_ptr<llvm::MemoryBuffer> buffer,
-                   llvm::raw_ostream &os, bool verifyDiagnostics,
-                   bool convertHLFHETensorOpsToLinalg) {
+mlir::LogicalResult processInputBuffer(
+    mlir::MLIRContext &context, std::unique_ptr<llvm::MemoryBuffer> buffer,
+    llvm::raw_ostream &os, bool verifyDiagnostics,
+    bool convertHLFHETensorOpsToLinalg, bool convertHLFHEToMidLFHE) {
   mlir::PassManager pm(&context);
 
   llvm::SourceMgr sourceMgr;
@@ -76,6 +80,11 @@ processInputBuffer(mlir::MLIRContext &context,
   if (convertHLFHETensorOpsToLinalg) {
     pm.addNestedPass<mlir::FuncOp>(
         mlir::zamalang::HLFHE::createLowerTensorOpsToLinalgPass());
+  }
+
+  if (convertHLFHEToMidLFHE) {
+    pm.addNestedPass<mlir::FuncOp>(
+        mlir::zamalang::createConvertHLFHEToMidLFHEPass());
   }
 
   if (pm.run(*module).failed()) {
@@ -135,14 +144,16 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
                 return processInputBuffer(
                     context, std::move(inputBuffer), os,
                     cmdline::verifyDiagnostics,
-                    cmdline::convertHLFHETensorOpsToLinalg);
+                    cmdline::convertHLFHETensorOpsToLinalg,
+                    cmdline::convertHLFHEToMidLFHE);
               },
               output->os())))
         return mlir::failure();
     } else {
       return processInputBuffer(context, std::move(file), output->os(),
                                 cmdline::verifyDiagnostics,
-                                cmdline::convertHLFHETensorOpsToLinalg);
+                                cmdline::convertHLFHETensorOpsToLinalg,
+                                cmdline::convertHLFHEToMidLFHE);
     }
   }
 

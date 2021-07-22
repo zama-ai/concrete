@@ -18,12 +18,12 @@ include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.td"
 class MidLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<MidLFHE_Dialect, mnemonic, traits>;
 
-def AddGLWEInt : MidLFHE_Op<"add_glwe_int"> {
+def AddGLWEIntOp : MidLFHE_Op<"add_glwe_int"> {
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
     let results = (outs GLWECipherTextType);
 
     let verifier = [{
-        return mlir::zamalang::MidLFHE::verifyGLWEIntegerOperator<AddGLWEInt>(*this);
+        return mlir::zamalang::MidLFHE::verifyGLWEIntegerOperator<AddGLWEIntOp>(*this);
     }];
 }
 
@@ -46,12 +46,12 @@ def SubIntGLWEOp : MidLFHE_Op<"sub_int_glwe"> {
 }
 
 
-def MulGLWEInt : MidLFHE_Op<"mul_glwe_int"> {
+def MulGLWEIntOp : MidLFHE_Op<"mul_glwe_int"> {
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
     let results = (outs GLWECipherTextType);
 
     let verifier = [{
-        return mlir::zamalang::MidLFHE::verifyGLWEIntegerOperator<MulGLWEInt>(*this);
+        return mlir::zamalang::MidLFHE::verifyGLWEIntegerOperator<MulGLWEIntOp>(*this);
     }];
 }
 

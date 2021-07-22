@@ -92,7 +92,7 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
   return ::mlir::success();
 }
 
-::mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
+::mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
   auto ct = op.ct().getType().cast<EncryptedIntegerType>();
   auto l_cst = op.l_cst().getType().cast<MemRefType>();
   auto result = op.getResult().getType().cast<EncryptedIntegerType>();
