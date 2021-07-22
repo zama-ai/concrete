@@ -3,6 +3,7 @@
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/ToolOutputFile.h>
+#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Parser.h>
 #include <mlir/Pass/PassManager.h>
@@ -10,14 +11,15 @@
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Support/ToolUtilities.h>
 
+#include "zamalang/Conversion/HLFHETensorOpsToLinalg/Pass.h"
 #include "zamalang/Conversion/HLFHEToMidLFHE/Pass.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
-#include "zamalang/Dialect/HLFHE/Transforms/TensorOpsToLinalg.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 
 namespace cmdline {
+
 llvm::cl::list<std::string> inputs(llvm::cl::Positional,
                                    llvm::cl::desc("<Input files>"),
                                    llvm::cl::OneOrMore);
@@ -27,13 +29,14 @@ llvm::cl::opt<std::string> output("o",
                                   llvm::cl::value_desc("filename"),
                                   llvm::cl::init("-"));
 
-llvm::cl::opt<bool> convertHLFHETensorOpsToLinalg(
-    "convert-hlfhe-tensor-ops-to-linalg",
-    llvm::cl::desc("Convert HLFHE tensor operations to linalg operations"));
+llvm::cl::list<std::string> passes(
+    "passes",
+    llvm::cl::desc("Specify the passes to run (use only for compiler tests)"),
+    llvm::cl::value_desc("passname"), llvm::cl::ZeroOrMore);
 
-llvm::cl::opt<bool> convertHLFHEToMidLFHE(
-    "convert-hlfhe-to-midlfhe",
-    llvm::cl::desc("Convert HLFHE operations to MidLFHE operations"));
+llvm::cl::opt<bool> roundTrip("round-trip",
+                              llvm::cl::desc("Just parse and dump"),
+                              llvm::cl::init(false));
 
 llvm::cl::opt<bool> verifyDiagnostics(
     "verify-diagnostics",
@@ -48,6 +51,24 @@ llvm::cl::opt<bool> splitInputFile(
     llvm::cl::init(false));
 }; // namespace cmdline
 
+void addPassCmdLineFiltered(mlir::PassManager &pm,
+                            std::unique_ptr<mlir::Pass> pass) {
+  if (cmdline::roundTrip)
+    return;
+  auto passName = pass->getName();
+  if (cmdline::passes.size() == 0 ||
+      std::any_of(
+          cmdline::passes.begin(), cmdline::passes.end(),
+          [&](const std::string &p) { return pass->getArgument() == p; })) {
+    if (*pass->getOpName() == "module") {
+      pm.addPass(std::move(pass));
+    } else {
+      pm.nest(*pass->getOpName()).addPass(std::move(pass));
+    }
+  }
+  return;
+}
+
 // Process a single source buffer
 //
 // If `verifyDiagnostics` is `true`, the procedure only checks if the
@@ -57,10 +78,10 @@ llvm::cl::opt<bool> splitInputFile(
 // If `verifyDiagnostics` is `false`, the procedure checks if the
 // parsed module is valid and if all requested transformations
 // succeeded.
-mlir::LogicalResult processInputBuffer(
-    mlir::MLIRContext &context, std::unique_ptr<llvm::MemoryBuffer> buffer,
-    llvm::raw_ostream &os, bool verifyDiagnostics,
-    bool convertHLFHETensorOpsToLinalg, bool convertHLFHEToMidLFHE) {
+mlir::LogicalResult
+processInputBuffer(mlir::MLIRContext &context,
+                   std::unique_ptr<llvm::MemoryBuffer> buffer,
+                   llvm::raw_ostream &os, bool verifyDiagnostics) {
   mlir::PassManager pm(&context);
 
   llvm::SourceMgr sourceMgr;
@@ -77,15 +98,9 @@ mlir::LogicalResult processInputBuffer(
   if (!module)
     return mlir::failure();
 
-  if (convertHLFHETensorOpsToLinalg) {
-    pm.addNestedPass<mlir::FuncOp>(
-        mlir::zamalang::HLFHE::createLowerTensorOpsToLinalgPass());
-  }
-
-  if (convertHLFHEToMidLFHE) {
-    pm.addNestedPass<mlir::FuncOp>(
-        mlir::zamalang::createConvertHLFHEToMidLFHEPass());
-  }
+  addPassCmdLineFiltered(pm,
+                         mlir::zamalang::createConvertHLFHETensorOpsToLinalg());
+  addPassCmdLineFiltered(pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass());
 
   if (pm.run(*module).failed()) {
     llvm::errs() << "Could not run passes!\n";
@@ -112,6 +127,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   context.getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
   context.getOrLoadDialect<mlir::StandardOpsDialect>();
   context.getOrLoadDialect<mlir::memref::MemRefDialect>();
+  context.getOrLoadDialect<mlir::linalg::LinalgDialect>();
 
   if (cmdline::verifyDiagnostics)
     context.printOpOnDiagnostic(false);
@@ -141,19 +157,14 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
               std::move(file),
               [&](std::unique_ptr<llvm::MemoryBuffer> inputBuffer,
                   llvm::raw_ostream &os) {
-                return processInputBuffer(
-                    context, std::move(inputBuffer), os,
-                    cmdline::verifyDiagnostics,
-                    cmdline::convertHLFHETensorOpsToLinalg,
-                    cmdline::convertHLFHEToMidLFHE);
+                return processInputBuffer(context, std::move(inputBuffer), os,
+                                          cmdline::verifyDiagnostics);
               },
               output->os())))
         return mlir::failure();
     } else {
       return processInputBuffer(context, std::move(file), output->os(),
-                                cmdline::verifyDiagnostics,
-                                cmdline::convertHLFHETensorOpsToLinalg,
-                                cmdline::convertHLFHEToMidLFHE);
+                                cmdline::verifyDiagnostics);
     }
   }
 

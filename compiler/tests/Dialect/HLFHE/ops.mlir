@@ -1,4 +1,4 @@
-// RUN: zamacompiler %s  2>&1| FileCheck %s
+// RUN: zamacompiler --round-trip %s  2>&1| FileCheck %s
 
 // CHECK-LABEL: func @add_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 func @add_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
@@ -51,14 +51,14 @@ func @apply_lookup_table(%arg0: !HLFHE.eint<2>, %arg1: memref<4xi2>) -> !HLFHE.e
   return %1: !HLFHE.eint<2>
 }
 
-// CHECK-LABEL: func @dot_eint_int(%arg0: memref<2x!HLFHE.eint<2>>, %arg1: memref<2xi32>, %arg2: memref<!HLFHE.eint<2>>)
+// CHECK-LABEL: func @dot_eint_int(%arg0: memref<2x!HLFHE.eint<2>>, %arg1: memref<2xi3>, %arg2: memref<!HLFHE.eint<2>>)
 func @dot_eint_int(%arg0: memref<2x!HLFHE.eint<2>>,
-          %arg1: memref<2xi32>,
+          %arg1: memref<2xi3>,
           %arg2: memref<!HLFHE.eint<2>>)
 {
-  // CHECK-NEXT: "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) : (memref<2x!HLFHE.eint<2>>, memref<2xi32>, memref<!HLFHE.eint<2>>) -> ()
+  // CHECK-NEXT: "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) : (memref<2x!HLFHE.eint<2>>, memref<2xi3>, memref<!HLFHE.eint<2>>) -> ()
   "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) :
-    (memref<2x!HLFHE.eint<2>>, memref<2xi32>, memref<!HLFHE.eint<2>>) -> ()
+    (memref<2x!HLFHE.eint<2>>, memref<2xi3>, memref<!HLFHE.eint<2>>) -> ()
 
   //CHECK-NEXT: return
   return

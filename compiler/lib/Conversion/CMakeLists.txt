@@ -1,1 +1,2 @@
 add_subdirectory(HLFHEToMidLFHE)
+add_subdirectory(HLFHETensorOpsToLinalg)

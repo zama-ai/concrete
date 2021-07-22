@@ -1,14 +1,16 @@
-#include "zamalang/Dialect/HLFHE/Transforms/TensorOpsToLinalg.h"
+#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/OperationSupport.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/SmallVector.h"
-#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
-#include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/IR/PatternMatch.h>
-#include <mlir/Pass/Pass.h>
-#include <mlir/Transforms/DialectConversion.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHEOps.h>
+#include <iostream>
+
+#include "zamalang/Conversion/Passes.h"
+#include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
+#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
 
 struct DotToLinalgGeneric : public ::mlir::RewritePattern {
   DotToLinalgGeneric(::mlir::MLIRContext *context)
@@ -88,15 +90,13 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
 };
 
 namespace {
-struct LowerTensorOpsToLinalgPass
-    : public mlir::PassWrapper<LowerTensorOpsToLinalgPass, mlir::FunctionPass> {
-  void getDependentDialects(mlir::DialectRegistry &registry) const override {
-    registry.insert<mlir::linalg::LinalgDialect>();
-  }
+struct HLFHETensorOpsToLinalg
+    : public HLFHETensorOpsToLinalgBase<HLFHETensorOpsToLinalg> {
+
   void runOnFunction() final;
 };
 
-void LowerTensorOpsToLinalgPass::runOnFunction() {
+void HLFHETensorOpsToLinalg::runOnFunction() {
   mlir::FuncOp function = this->getFunction();
 
   mlir::ConversionTarget target(getContext());
@@ -119,10 +119,8 @@ void LowerTensorOpsToLinalgPass::runOnFunction() {
 
 namespace mlir {
 namespace zamalang {
-namespace HLFHE {
-std::unique_ptr<mlir::Pass> createLowerTensorOpsToLinalgPass() {
-  return std::make_unique<LowerTensorOpsToLinalgPass>();
+std::unique_ptr<mlir::Pass> createConvertHLFHETensorOpsToLinalg() {
+  return std::make_unique<HLFHETensorOpsToLinalg>();
 }
-} // namespace HLFHE
 } // namespace zamalang
 } // namespace mlir

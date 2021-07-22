@@ -6,7 +6,8 @@ target_link_libraries(zamacompiler
   MLIRTransforms
   MidLFHEDialect
   HLFHEDialect
-  HLFHEDialectTransforms
+
+  HLFHETensorOpsToLinalg
   HLFHEToMidLFHE
 )
 

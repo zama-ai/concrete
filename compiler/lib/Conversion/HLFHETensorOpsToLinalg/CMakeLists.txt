@@ -1,4 +1,4 @@
-add_mlir_dialect_library(HLFHEDialectTransforms
+add_mlir_dialect_library(HLFHETensorOpsToLinalg
   TensorOpsToLinalg.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -6,6 +6,7 @@ add_mlir_dialect_library(HLFHEDialectTransforms
 
   DEPENDS
   HLFHEDialect
+  MLIRConversionPassIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR
