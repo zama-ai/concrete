@@ -33,7 +33,7 @@ def trace_numpy_function(
     function_parameters = prepare_function_parameters(function_to_trace, function_parameters)
 
     input_tracers = {
-        param_name: make_input_tracer(NPTracer, param)
+        param_name: make_input_tracer(NPTracer, param_name, param)
         for param_name, param in function_parameters.items()
     }
 

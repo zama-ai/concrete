@@ -10,18 +10,23 @@ from ..representation import intermediate as ir
 from .base_tracer import BaseTracer
 
 
-def make_input_tracer(tracer_class: Type[BaseTracer], input_value: BaseValue) -> BaseTracer:
+def make_input_tracer(
+    tracer_class: Type[BaseTracer],
+    input_name: str,
+    input_value: BaseValue,
+) -> BaseTracer:
     """Helper function to create a tracer for an input value
 
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create an Input for
+        input_name (str): the name of the input in the traced function
         input_value (BaseValue): the Value that is an input and needs to be wrapped in an
             BaseTracer
 
     Returns:
         BaseTracer: The BaseTracer for that input value
     """
-    return tracer_class([], ir.Input([input_value]), 0)
+    return tracer_class([], ir.Input(input_value, input_name), 0)
 
 
 def prepare_function_parameters(

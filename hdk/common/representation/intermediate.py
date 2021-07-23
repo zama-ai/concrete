@@ -100,15 +100,14 @@ class Mul(IntermediateNode):
 class Input(IntermediateNode):
     """Node representing an input of the numpy program"""
 
+    input_name: str
+
     def __init__(
         self,
-        inputs: Iterable[BaseValue],
-        op_args: Optional[Tuple[Any, ...]] = None,
-        op_kwargs: Optional[Dict[str, Any]] = None,
+        input_value: BaseValue,
+        input_name: str,
     ) -> None:
-        assert op_args is None, f"Expected op_args to be None, got {op_args}"
-        assert op_kwargs is None, f"Expected op_kwargs to be None, got {op_kwargs}"
-
-        super().__init__(inputs, op_args=op_args, op_kwargs=op_kwargs)
+        super().__init__((input_value,))
         assert len(self.inputs) == 1
+        self.input_name = input_name
         self.outputs = [deepcopy(self.inputs[0])]
