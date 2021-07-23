@@ -333,7 +333,7 @@ impl<Cont> LweList<Cont> {
             weights_list.sublist_iter(CleartextCount(count)),
             biases_list.plaintext_iter()
         ) {
-            output.fill_with_multisum_with_bias(&input, &weights, &bias);
+            output.fill_with_multisum_with_bias(&input, &weights, bias);
         }
     }
 }

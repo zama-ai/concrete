@@ -1,3 +1,5 @@
+#![allow(clippy::float_cmp)]
+
 use itertools::izip;
 
 use concrete_core::math::tensor::Tensor;
@@ -54,7 +56,7 @@ fn test_new_x_is_valid() {
     let encoder = crate::Encoder::new(min, max, precision, padding).unwrap();
 
     //test
-    assert_eq!(true, encoder.is_valid());
+    assert!(encoder.is_valid());
 }
 
 #[test]
@@ -69,7 +71,7 @@ fn test_new_centered_x_is_valid() {
             .unwrap();
 
     //test
-    assert_eq!(true, encoder.is_valid());
+    assert!(encoder.is_valid());
 }
 
 #[test]
@@ -78,7 +80,7 @@ fn test_zero_x_is_valid() {
     let encoder = crate::Encoder::zero();
 
     //test
-    assert_eq!(false, encoder.is_valid());
+    assert!(!encoder.is_valid());
 }
 
 #[test]

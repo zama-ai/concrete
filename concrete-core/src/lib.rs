@@ -188,10 +188,10 @@ pub mod test_tools {
 
         // allocate 2 slices: one for the error samples obtained, the second for fresh samples
         // according to the std_dev computed
-        let mut sdk_samples = Tensor::allocate(0. as f64, n_slots);
+        let mut sdk_samples = Tensor::allocate(0.0_f64, n_slots);
 
         // recover the errors from each ciphertexts
-        sdk_samples.fill_with_two(&first.as_tensor(), &second.as_tensor(), |a, b| {
+        sdk_samples.fill_with_two(first.as_tensor(), second.as_tensor(), |a, b| {
             torus_modular_distance(*a, *b)
         });
 

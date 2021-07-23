@@ -5,7 +5,8 @@ members = [
     "concrete-npe",
     "concrete-core",
     "concrete-csprng",
-    "concrete-commons"
+    "concrete-commons",
+    "concrete-tasks"
 ]
 
 [profile.bench]

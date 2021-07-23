@@ -111,10 +111,10 @@ where
             RefCell::new(GlweCiphertext::allocate(Scalar::ZERO, poly_size, glwe_size));
         FourierBootstrapKey {
             tensor,
+            poly_size,
+            glwe_size,
             decomp_level,
             decomp_base_log,
-            glwe_size,
-            poly_size,
             fft,
             fft_first_buffer,
             fft_second_buffer,
@@ -186,10 +186,10 @@ where
             RefCell::new(GlweCiphertext::allocate(Scalar::ZERO, poly_size, glwe_size));
         FourierBootstrapKey {
             tensor,
+            poly_size,
+            glwe_size,
             decomp_level,
             decomp_base_log,
-            glwe_size,
-            poly_size,
             fft,
             fft_first_buffer,
             fft_second_buffer,
@@ -603,9 +603,9 @@ where
                         {
                             output_poly.update_with_two_multiply_accumulate(
                                 &first_ggsw_poly,
-                                &first_fft_buffer,
+                                first_fft_buffer,
                                 &second_ggsw_poly,
-                                &second_fft_buffer,
+                                second_fft_buffer,
                             );
                         }
                     }
@@ -630,7 +630,7 @@ where
                         for zip_args!(first_ggsw_poly, mut output_poly) in iterator {
                             output_poly.update_with_multiply_accumulate(
                                 &first_ggsw_poly,
-                                &first_fft_buffer,
+                                first_fft_buffer,
                             );
                         }
                     }
@@ -693,7 +693,7 @@ where
     {
         ct1.as_mut_tensor()
             .update_with_wrapping_sub(ct0.as_tensor());
-        self.external_product(ct0, &ggsw, &ct1);
+        self.external_product(ct0, ggsw, ct1);
     }
 
     fn blind_rotate<C1, C2>(&self, lut: &mut GlweCiphertext<C1>, lwe: &LweCiphertext<C2>)

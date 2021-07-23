@@ -45,12 +45,12 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
         // launch nb_test tests
         for i in 0..nb_test {
             // allocate secret keys
-            let mut rlwe_sk = GlweSecretKey::generate_binary(
+            let rlwe_sk = GlweSecretKey::generate_binary(
                 rlwe_dimension,
                 polynomial_size,
                 &mut secret_generator,
             );
-            let mut lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
+            let lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
 
             // allocation and generation of the key in coef domain:
             let mut coef_bsk = StandardBootstrapKey::allocate(
@@ -211,7 +211,7 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
                 std_dev_rlwe,
                 &mut encryption_generator,
             );
-            let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
+            let rgsw = fourier_bsk.ggsw_iter().next().unwrap();
 
             fourier_bsk.external_product(&mut res, &rgsw, &ciphertext);
 
@@ -316,7 +316,7 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
             &mut encryption_generator,
         );
 
-        let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
+        let rgsw = fourier_bsk.ggsw_iter().next().unwrap();
 
         // compute cmux
         fourier_bsk.cmux(&mut ciphertext0, &mut ciphertext1, &rgsw);
@@ -420,7 +420,7 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
             &mut encryption_generator,
         );
 
-        let rgsw = fourier_bsk.ggsw_iter().nth(0).unwrap();
+        let rgsw = fourier_bsk.ggsw_iter().next().unwrap();
 
         // compute cmux
         fourier_bsk.cmux(&mut ciphertext0, &mut ciphertext1, &rgsw);

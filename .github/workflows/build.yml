@@ -1,12 +1,12 @@
 name: Build
 
-on: 
+on:
   pull_request:
 
 env:
   CARGO_TERM_COLOR: always
 
-concurrency: 
+concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
@@ -20,13 +20,13 @@ jobs:
         run: sudo apt-get install -y libfftw3-dev
       - name: Build debug
         if: ${{ !cancelled() }}
-        run: cargo build --verbose
+        run: cargo xtask build_debug_crates
       - name: Build release
         if: ${{ !cancelled() }}
-        run: cargo build --verbose --release --all-features
+        run: cargo xtask build_release_crates
       - name: Build native
         if: ${{ !cancelled() }}
-        run: RUSTFLAGS="-C target-feature=+aes,+rdseed,+sse2,+avx,+avx2" cargo build --verbose --release --all-features
+        run: cargo xtask build_simd_crates
 
   macos:
     runs-on: macos-latest
@@ -37,10 +37,10 @@ jobs:
         run: brew install fftw
       - name: Build debug
         if: ${{ !cancelled() }}
-        run: cargo build --verbose
+        run: cargo xtask build_debug_crates
       - name: Build release
         if: ${{ !cancelled() }}
-        run: cargo build --verbose --release
+        run: cargo xtask build_release_crates
       - name: Build native
         if: ${{ !cancelled() }}
-        run: RUSTFLAGS="-C target-cpu=native" cargo build --verbose --release --all-features
+        run: cargo xtask build_simd_crates

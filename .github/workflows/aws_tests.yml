@@ -30,7 +30,7 @@ jobs:
         uses: machulav/ec2-github-runner@v2.2.0
         with:
           mode: start
-          github-token: ${{ secrets.ZAMA_GH_ACTIONS }}
+          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
           ec2-image-id: ami-0ad14d9cfbfb4a07b
           ec2-instance-type: m5.2xlarge
           subnet-id: subnet-da319dd4
@@ -55,7 +55,16 @@ jobs:
       if: ${{ !cancelled() }}
       run: |
         echo "HOME=/home/ubuntu" >> ${GITHUB_ENV}
-    - name: Install Fftw
+    - name: Update aptitude
+      if: ${{ !cancelled() }}
+      run: sudo apt-get update
+    - name: Install build_essential
+      if: ${{ !cancelled() }}
+      run: sudo apt-get install -y build-essential
+    - name: Install clang
+      if: ${{ !cancelled() }}
+      run: sudo apt-get install -y libclang-dev
+    - name: Install fftw3
       if: ${{ !cancelled() }}
       run: sudo apt-get install -y libfftw3-dev
     - name: Install Rust
@@ -65,19 +74,12 @@ jobs:
         toolchain: nightly
         override: true
     - name: Run concrete tests
-      uses: actions-rs/cargo@v1
       if: ${{ !cancelled() }}
-      with:
-        command: test
-        args: --release --no-fail-fast --lib --all-features
-      env:
-        CARGO_INCREMENTAL: '0'
-        RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-        RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+      run: cargo xtask cov
     - name: Coverage
       if: ${{ !cancelled() }}
       uses: actions-rs/grcov@v0.1
-      with:  
+      with:
         config: grcov.yml
     - name: Coveralls upload
       if: ${{ !cancelled() }}
@@ -103,7 +105,7 @@ jobs:
       - name: Stop EC2 runner
         uses: machulav/ec2-github-runner@v2.2.0
         with:
-          github-token: ${{ secrets.ZAMA_GH_ACTIONS }}
+          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
           label: ${{ needs.start-runner.outputs.label }}
           ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
           mode: stop

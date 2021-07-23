@@ -16,10 +16,8 @@ jobs:
           toolchain: nightly
           components: rustfmt
           override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args:  --all -- --check
+      - name: Run rustfmt
+        run: cargo xtask check_fmt
 
   clippy-check:
     name: clippy
@@ -33,7 +31,5 @@ jobs:
           toolchain: nightly
           components: clippy
           override: true
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+      - name: Run clippy
+        run: cargo xtask check_clippy

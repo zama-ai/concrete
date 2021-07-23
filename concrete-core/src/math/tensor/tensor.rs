@@ -1457,7 +1457,7 @@ where
     type Element = Cont::Element;
     type Container = Cont;
     fn as_tensor(&self) -> &Tensor<Cont> {
-        &self
+        self
     }
 }
 

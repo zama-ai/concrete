@@ -107,7 +107,7 @@ mod test {
 
     #[test]
     fn test_f64_binary_rep() {
-        let a = 1123214.4321432 as f64;
+        let a = 1123214.4321432_f64;
         let b = a.to_bit_string();
         assert_eq!(
             b,
@@ -117,7 +117,7 @@ mod test {
 
     #[test]
     fn test_f32_binary_rep() {
-        let a = -1.27666388717e+27 as f32;
+        let a = -1.276_663_9e27_f32;
         let b = a.to_bit_string();
         assert_eq!(b, "1 11011001 00001000000000100000011".to_string());
     }

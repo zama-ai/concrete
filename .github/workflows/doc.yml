@@ -12,7 +12,5 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args:  --all
+      - name: Compile doc
+        run: cargo xtask check_doc

@@ -432,7 +432,7 @@ impl Fft {
         // We convert the data to real and fill the temporary buffer
         convert_function(
             &mut *self.buffer.borrow_mut(),
-            &poly,
+            poly,
             &self.correctors.forward,
         );
 
@@ -470,14 +470,14 @@ impl Fft {
 
         convert_function(
             &mut *self.buffer.borrow_mut(),
-            &poly_1,
-            &poly_2,
+            poly_1,
+            poly_2,
             &self.correctors.forward,
         );
 
         // We perform the forward on the first fourier polynomial.
         self.plans.forward(
-            &mut self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
+            self.buffer.borrow().as_tensor().as_slice(),
             &mut fourier_poly_1.as_mut_tensor().as_mut_slice(),
         );
 
@@ -511,7 +511,7 @@ impl Fft {
 
         // We perform the backward fft
         self.plans.backward(
-            &mut fourier_poly.as_mut_tensor().as_mut_slice(),
+            fourier_poly.as_tensor().as_slice(),
             &mut self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
         );
 
@@ -566,7 +566,7 @@ impl Fft {
 
         // We perform the backward fft
         self.plans.backward(
-            &mut fourier_poly_1.as_mut_tensor().as_mut_slice(),
+            fourier_poly_1.as_tensor().as_slice(),
             &mut self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
         );
 

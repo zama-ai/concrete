@@ -2,7 +2,6 @@
 name = "concrete-core"
 version = "0.1.10"
 edition = "2018"
-build = "build.rs"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "AGPL-3.0"
 description = "Concrete is a fully homomorphic encryption (FHE) library that implements Zama's variant of TFHE."
@@ -11,9 +10,6 @@ documentation = "https://concrete.zama.ai"
 repository = "https://github.com/zama-ai/concrete"
 readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
-
-[build-dependencies]
-cmake = { version = "0.1", optional = true}
 
 [dev-dependencies]
 concrete-npe = "=0.1.8"
@@ -25,7 +21,7 @@ itertools = "0.10"
 serde_test = "1.0.125"
 
 [dependencies]
-concrete-fftw = {version = "=0.1.0", features = ["serialize"]}
+concrete-fftw = {version="=0.1.2", features=["serialize"]}
 concrete-commons = "=0.1.1"
 concrete-csprng= "=0.1.7"
 serde = { version = "1.0", features = ["derive"] }
@@ -39,8 +35,6 @@ crate-type = ["cdylib", "rlib"]
 bench = false
 
 [features]
-gpu = ["cmake"]
-cloud-computing = []
 slow-csprng = ["concrete-csprng/slow"]
 multithread = ["rayon", "concrete-csprng/multithread"]
 

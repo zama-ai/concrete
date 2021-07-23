@@ -1,3 +1,4 @@
+#![allow(clippy::upper_case_acronyms)]
 //! Noise Propagation Estimator Module
 //! * Contains material needed to estimate the growth of the noise when performing homomophic
 //!   computation

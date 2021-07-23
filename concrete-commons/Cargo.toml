@@ -17,6 +17,4 @@ crate-type = ["cdylib", "rlib"]
 bench = false
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+serde = { version = "1.0", features = ["derive"]}
