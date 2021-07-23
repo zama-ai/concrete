@@ -32,7 +32,7 @@ fn test_glwe<T: UnsignedTorus>() {
     sk.encrypt_glwe_list(
         &mut ciphertext,
         &plaintexts,
-        noise_parameter.clone(),
+        noise_parameter,
         &mut encryption_generator,
     );
 

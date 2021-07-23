@@ -251,7 +251,7 @@ macro_rules! PolynomialSizeError {
                 $size_2,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -267,7 +267,7 @@ macro_rules! NoNoiseInCiphertext {
                 "so the ciphertext does not contain any noise!\n{:#?}\n",
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -284,7 +284,7 @@ macro_rules! DimensionError {
                 $dim_2,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -301,7 +301,7 @@ macro_rules! InvalidEncoderError {
                 $delta,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -322,7 +322,7 @@ macro_rules! MessageOutsideIntervalError {
                 $delta,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -339,7 +339,7 @@ macro_rules! MessageTooBigError {
                 $delta,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -356,7 +356,7 @@ macro_rules! DeltaError {
                 $delta_2,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -373,7 +373,7 @@ macro_rules! PaddingError {
                 $p_2,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -390,7 +390,7 @@ macro_rules! NotEnoughPaddingError {
                 $p,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -407,7 +407,7 @@ macro_rules! IndexError {
                 $n,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -424,7 +424,7 @@ macro_rules! ConstantMaximumError {
                 $max,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -443,7 +443,7 @@ macro_rules! ZeroInIntervalError {
                 $delta,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -462,7 +462,7 @@ macro_rules! NbCTError {
                 $nb_ct2,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -475,7 +475,7 @@ macro_rules! PrecisionError {
                 "Number of bit for precision == 0".red().bold(),
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -491,7 +491,7 @@ macro_rules! MinMaxError {
                 $max,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -506,7 +506,7 @@ macro_rules! RadiusError {
                 $radius,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -523,7 +523,7 @@ macro_rules! MonomialError {
                 $monomial,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -538,7 +538,7 @@ macro_rules! NotPowerOfTwoError {
                 "must be a power of 2".red().bold(),
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -553,7 +553,7 @@ macro_rules! ZeroCiphertextsInStructureError {
                 $nb_ciphertexts,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -568,7 +568,7 @@ macro_rules! WrongSizeError {
                 $size,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -585,7 +585,7 @@ macro_rules! NotEnoughValidEncoderError {
                 $nb_actions,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }
 
@@ -603,6 +603,6 @@ macro_rules! LweToRlweError {
                 $polynomial_size,
                 Backtrace::new()
             ),
-        };
+        }
     };
 }

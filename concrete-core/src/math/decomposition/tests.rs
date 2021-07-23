@@ -4,7 +4,6 @@ use crate::math::tensor::Tensor;
 use crate::math::torus::UnsignedTorus;
 use crate::test_tools::{any_uint, any_usize, random_usize_between};
 use concrete_commons::{Numeric, SignedInteger, UnsignedInteger};
-use std::convert::TryInto;
 use std::fmt::Debug;
 
 // Returns a random decomposition valid for the size of the T type.
@@ -102,9 +101,7 @@ fn test_round_to_closest_representable<T: UnsignedTorus>() {
         let delta = any_uint::<T>();
         let bits = T::BITS;
         let log_b = (log_b % ((bits / 4) - 1)) + 1;
-        let log_b: usize = log_b.try_into().unwrap();
         let level_max = (level_max % 4) + 1;
-        let level_max: usize = level_max.try_into().unwrap();
         let bit: usize = log_b * level_max;
 
         let val = val << (bits - bit);

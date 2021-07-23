@@ -1,6 +1,5 @@
 use super::*;
 use crate::AesKey;
-use rand;
 use rand::Rng;
 
 #[test]
@@ -402,7 +401,7 @@ fn test_randomized_fork_generation() {
         let n_child = ChildCount(rand::thread_rng().gen::<usize>() % 200);
         let bytes_child = BytesPerChild(rand::thread_rng().gen::<usize>() % 200);
         let key = AesKey(rand::thread_rng().gen());
-        let mut generator = SoftAesCtrGenerator::new(Some(key.clone()), Some(state.clone()), None);
+        let mut generator = SoftAesCtrGenerator::new(Some(key), Some(state.clone()), None);
         let n_to_gen = n_child.0 * bytes_child.0;
         let initial_output: Vec<u8> = (0..n_to_gen).map(|_| generator.generate_next()).collect();
         let mut forking_generator = SoftAesCtrGenerator::new(Some(key), Some(state), None);

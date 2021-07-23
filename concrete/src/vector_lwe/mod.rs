@@ -920,7 +920,7 @@ impl VectorLWE {
         // add the two ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_add(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_add(ct.ciphertexts.as_tensor());
 
         // get the size of one lwe ciphertext
         let ct_size = self.get_ciphertext_size();
@@ -1068,7 +1068,7 @@ impl VectorLWE {
         // add ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_add(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_add(ct.ciphertexts.as_tensor());
 
         // correction related to the addition
         for (mut ciphertext, enc1) in izip!(
@@ -1208,7 +1208,7 @@ impl VectorLWE {
         // add ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_add(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_add(ct.ciphertexts.as_tensor());
 
         // update the Encoder list and variances
         for (self_enc, ct_enc, self_var, ct_var) in izip!(
@@ -1336,7 +1336,7 @@ impl VectorLWE {
         // subtract ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_sub(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_sub(ct.ciphertexts.as_tensor());
 
         // get the size of one lwe ciphertext
         let ct_size = self.get_ciphertext_size();
@@ -2509,7 +2509,6 @@ impl fmt::Display for VectorLWE {
             for elt in self.ciphertexts.as_tensor().iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
@@ -2524,15 +2523,14 @@ impl fmt::Display for VectorLWE {
             {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         }
+        to_be_print += "]\n";
 
         to_be_print += "         -> variances = [";
         if self.variances.len() <= 2 * n {
             for elt in self.variances.iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.variances[0..n].iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
@@ -2541,8 +2539,8 @@ impl fmt::Display for VectorLWE {
             for elt in self.variances[self.variances.len() - n..].iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         }
+        to_be_print += "]\n";
         to_be_print = to_be_print + &format!("         -> dimension = {}\n", self.dimension);
         to_be_print =
             to_be_print + &format!("         -> nb of ciphertexts = {}\n", self.nb_ciphertexts);

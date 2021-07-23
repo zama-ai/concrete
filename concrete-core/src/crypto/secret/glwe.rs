@@ -180,7 +180,7 @@ impl<Cont> GlweSecretKey<BinaryKeyKind, Cont> {
     ///
     /// This method does not fill the container with random data. It merely wraps the container in
     /// the appropriate type. For a method that generate a new random key see
-    /// [`GlweSecretKey::generate`].
+    /// [`GlweSecretKey::generate_binary`].
     ///
     /// # Example
     ///
@@ -213,7 +213,7 @@ impl<Cont> GlweSecretKey<TernaryKeyKind, Cont> {
     ///
     /// This method does not fill the container with random data. It merely wraps the container in
     /// the appropriate type. For a method that generate a new random key see
-    /// [`GlweSecretKey::generate`].
+    /// [`GlweSecretKey::generate_ternary`].
     ///
     /// # Example
     ///
@@ -246,7 +246,7 @@ impl<Cont> GlweSecretKey<GaussianKeyKind, Cont> {
     ///
     /// This method does not fill the container with random data. It merely wraps the container in
     /// the appropriate type. For a method that generate a new random key see
-    /// [`GlweSecretKey::generate`].
+    /// [`GlweSecretKey::generate_gaussian`].
     ///
     /// # Example
     ///
@@ -279,7 +279,7 @@ impl<Cont> GlweSecretKey<UniformKeyKind, Cont> {
     ///
     /// This method does not fill the container with random data. It merely wraps the container in
     /// the appropriate type. For a method that generate a new random key see
-    /// [`GlweSecretKey::generate`].
+    /// [`GlweSecretKey::generate_uniform`].
     ///
     /// # Example
     ///

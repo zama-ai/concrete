@@ -1,3 +1,4 @@
+#![allow(clippy::upper_case_acronyms)]
 //! Concrete
 //!
 //! Welcome to the concrete documentation. If you are new to FHE, you may have a look at the

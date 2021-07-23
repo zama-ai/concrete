@@ -101,8 +101,8 @@ impl<Cont> GgswCiphertext<Cont> {
         ck_dim_div!(tensor.len() => rlwe_size.0, poly_size.0, rlwe_size.0 * rlwe_size.0);
         GgswCiphertext {
             tensor,
-            rlwe_size,
             poly_size,
+            rlwe_size,
             decomp_base_log,
         }
     }

@@ -1,7 +1,7 @@
 //! Operations on collections of values.
 //!
 //! This module contains a [`Tensor`] type, central to the whole library. In essence, a tensor
-//! wraps a collection container, and provides a set of methods to operate with other tensors of
+//! wraps a data container, and provides a set of methods to operate with other tensors of
 //! the same length:
 //! ```
 //! use concrete_core::math::tensor::Tensor;

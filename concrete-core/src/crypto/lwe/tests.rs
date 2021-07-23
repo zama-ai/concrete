@@ -58,18 +58,13 @@ fn test_keyswitch<T: UnsignedTorus + RandomGenerable<UniformMsb> + npe::LWE>() {
         dimension_before,
         dimension_after,
     );
-    ksk.fill_with_keyswitch_key(
-        &sk_before,
-        &sk_after,
-        std_ksk.clone(),
-        &mut encryption_generator,
-    );
+    ksk.fill_with_keyswitch_key(&sk_before, &sk_after, std_ksk, &mut encryption_generator);
 
     // encrypts with the before key our messages
     sk_before.encrypt_lwe_list(
         &mut ciphertexts_before,
         &messages,
-        std_input.clone(),
+        std_input,
         &mut encryption_generator,
     );
 
@@ -392,7 +387,7 @@ where
         .ciphertext_iter_mut()
         .zip(ciphertexts.ciphertext_iter().zip(weights.cleartext_iter()))
     {
-        out.fill_with_scalar_mul(&inp, &w);
+        out.fill_with_scalar_mul(&inp, w);
     }
 
     // compute on cleartexts the multiplication

@@ -571,7 +571,7 @@ impl RandomGenerator {
             .as_mut_slice()
             .chunks_mut(2)
             .for_each(|s| {
-                let (g1, g2) = <(Scalar, Scalar)>::generate_one(self, Gaussian { mean, std });
+                let (g1, g2) = <(Scalar, Scalar)>::generate_one(self, Gaussian { std, mean });
                 if let Some(elem) = s.get_mut(0) {
                     *elem = g1;
                 }

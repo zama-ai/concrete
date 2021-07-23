@@ -154,7 +154,6 @@ impl fmt::Display for LWEKSK {
             for elt in self.ciphertexts.as_tensor().iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
@@ -169,8 +168,8 @@ impl fmt::Display for LWEKSK {
             {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         }
+        to_be_print += "]\n";
 
         to_be_print = to_be_print + &format!("         -> variance = {}\n", self.variance);
         to_be_print =

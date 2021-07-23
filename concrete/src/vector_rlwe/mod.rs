@@ -935,7 +935,7 @@ impl VectorRLWE {
         // add ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_add(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_add(ct.ciphertexts.as_tensor());
 
         // correction related to the addition
         for (mut ciphertext, encoders, encoders_ct, self_variances, ct_variances) in izip!(
@@ -1059,7 +1059,7 @@ impl VectorRLWE {
         // add the ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_add(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_add(ct.ciphertexts.as_tensor());
 
         // update the Encoder list
         for (self_enc, ct_enc, self_var, ct_var) in izip!(
@@ -1161,7 +1161,7 @@ impl VectorRLWE {
         // subtract ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_sub(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_sub(ct.ciphertexts.as_tensor());
 
         // correction related to the subtraction
         for (mut ciphertext, enc1_list, enc2_list) in izip!(
@@ -1526,7 +1526,6 @@ impl fmt::Display for VectorRLWE {
             for elt in self.ciphertexts.as_tensor().iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
@@ -1540,14 +1539,13 @@ impl fmt::Display for VectorRLWE {
             {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         }
+        to_be_print += "]\n";
         to_be_print += "         -> variances = [";
         if self.variances.len() <= 2 * n {
             for elt in self.variances.iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.variances[0..n].iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
@@ -1558,9 +1556,9 @@ impl fmt::Display for VectorRLWE {
                 to_be_print = to_be_print + &format!("{}, ", elt);
                 // write!(f, "{}, ", elt);
             }
-            to_be_print += "]\n";
             // writeln!(f, "]");
         }
+        to_be_print += "]\n";
         to_be_print = to_be_print + &format!("         -> dimension = {}\n", self.dimension);
         to_be_print =
             to_be_print + &format!("         -> polynomial_size = {}\n", self.polynomial_size);

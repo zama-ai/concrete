@@ -9,7 +9,7 @@ pub fn bench<T: UnsignedInteger + RandomGenerable<Uniform>>(c: &mut Criterion) {
     c.bench_function(name.as_str(), |b| {
         b.iter(|| {
             let mut tensor: Tensor<Vec<T>> = Tensor::allocate(T::ZERO, black_box(100_000));
-            black_box(generator.fill_tensor_with_random_uniform(&mut tensor));
+            generator.fill_tensor_with_random_uniform(&mut tensor);
         })
     });
 }

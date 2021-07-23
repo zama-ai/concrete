@@ -135,7 +135,7 @@ impl<Cont> LweSecretKey<BinaryKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_binary`] for a
     /// generation method.
     ///
     /// # Example
@@ -163,7 +163,7 @@ impl<Cont> LweSecretKey<TernaryKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_ternary`] for a
     /// generation method.
     ///
     /// # Example
@@ -191,7 +191,7 @@ impl<Cont> LweSecretKey<GaussianKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_gaussian`] for a
     /// generation method.
     ///
     /// # Example
@@ -219,7 +219,7 @@ impl<Cont> LweSecretKey<UniformKeyKind, Cont> {
     /// # Notes
     ///
     /// This method does not fill the container with random values to create a new key. It merely
-    /// wraps a container into the appropriate type. See [`LweSecretKey::generate`] for a
+    /// wraps a container into the appropriate type. See [`LweSecretKey::generate_uniform`] for a
     /// generation method.
     ///
     /// # Example
@@ -319,7 +319,7 @@ where
         // compute the multisum between the secret key and the mask
         output_body.0 = output_body
             .0
-            .wrapping_add(output_masks.compute_multisum(&self));
+            .wrapping_add(output_masks.compute_multisum(self));
 
         // add the encoded message
         output_body.0 = output_body.0.wrapping_add(encoded.0);
@@ -451,7 +451,7 @@ where
         // compute the multisum between the secret key and the mask
         output_body.0 = output_body
             .0
-            .wrapping_add(output_masks.compute_multisum(&self));
+            .wrapping_add(output_masks.compute_multisum(self));
 
         // add the encoded message
         output_body.0 = output_body.0.wrapping_add(encoded.0);
@@ -546,7 +546,7 @@ where
         // put body inside result
         output.0 = output.0.wrapping_add(body.0);
         // subtract the multisum between the key and the mask
-        output.0 = output.0.wrapping_sub(masks.compute_multisum(&self));
+        output.0 = output.0.wrapping_sub(masks.compute_multisum(self));
     }
 
     /// Decrypts a list of ciphertexts.

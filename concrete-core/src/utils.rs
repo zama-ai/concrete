@@ -1,4 +1,4 @@
-//! Utilities for the
+//! Utilities for the library.
 
 /// This macro is used in tandem with the [`zip_args`] macro, to allow to zip iterators and access
 /// them in an non-nested fashion. This makes large zip iterators easier to write, but also,
@@ -59,6 +59,7 @@ macro_rules! compile_warning {
 
 #[cfg(test)]
 mod test {
+    #![allow(clippy::many_single_char_names)]
 
     #[test]
     fn test_zip() {

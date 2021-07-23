@@ -209,12 +209,12 @@ impl Encoder {
         if nb_bit_precision == 0 {
             return Err(PrecisionError!());
         }
-        Ok(crate::Encoder::new(
+        crate::Encoder::new(
             center - radius,
             center + radius,
             nb_bit_precision,
             nb_bit_padding,
-        )?)
+        )
     }
 
     /// Encode one single message according to this Encoder parameters

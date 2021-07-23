@@ -20,4 +20,4 @@ jobs:
         run: sudo apt-get install -y libfftw3-dev
       - name: Build benches
         if: ${{ !cancelled() }}
-        run: cargo build --release --benches
+        run: cargo xtask build_benches

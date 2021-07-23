@@ -381,8 +381,8 @@ impl<Cont> Polynomial<Cont> {
             .get_sub_mut(top.clone())
             .update_with_wrapping_sub(&a0.get_sub(bottom.clone()));
         self.as_mut_tensor()
-            .get_sub_mut(top.clone())
-            .update_with_wrapping_sub(&a1.get_sub(bottom.clone()));
+            .get_sub_mut(top)
+            .update_with_wrapping_sub(&a1.get_sub(bottom));
     }
 
     /// Adds the sum of the element-wise product between two lists of integer polynomial to the
@@ -843,7 +843,7 @@ fn induction_karatsuba<Coef>(
             .fill_with_wrapping_add(&p.get_sub(bottom.clone()), &p.get_sub(top.clone()));
         input_a2_q
             .as_mut_tensor()
-            .fill_with_wrapping_add(&q.get_sub(bottom.clone()), &q.get_sub(top.clone()));
+            .fill_with_wrapping_add(&q.get_sub(bottom), &q.get_sub(top));
         induction_karatsuba(
             &mut a2.get_sub_mut(..),
             &input_a2_p.get_sub(..),

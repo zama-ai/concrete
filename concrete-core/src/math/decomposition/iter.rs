@@ -10,9 +10,10 @@ use concrete_commons::{SignedInteger, UnsignedInteger};
 ///
 /// # Note
 ///
-/// On each call to [`next_term`], this structure yields a new [`DecompositionTermTensor`],
-/// backed by a `Vec` owned by the structure. This vec is mutated at each call of the `next_term`
-/// method, and as such the term must be dropped before `next_term` is called again.
+/// On each call to [`TensorSignedDecompositionIter::next_term`], this structure yields a new
+/// [`DecompositionTermTensor`], backed by a `Vec` owned by the structure. This vec is mutated at
+/// each call of the `next_term` method, and as such the term must be dropped before `next_term` is
+/// called again.
 ///
 /// Such a pattern can not be implemented with iterators yet (without GATs), which is why this
 /// iterator must be explicitly called.
