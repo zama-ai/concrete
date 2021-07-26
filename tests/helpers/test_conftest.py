@@ -17,7 +17,7 @@ def test_digraphs_are_equivalent(test_helpers):
             return self.computation.__hash__()
 
         def __eq__(self, other: object) -> bool:
-            return self.computation == other.computation
+            return isinstance(other, self.__class__) and self.computation == other.computation
 
         is_equivalent_to = __eq__
 

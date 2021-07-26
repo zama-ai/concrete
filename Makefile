@@ -23,7 +23,7 @@ pylint:
 conformance: python_format
 .PHONY: conformance
 
-pcc: check_python_format pylint mypy
+pcc: check_python_format pylint mypy_ci
 .PHONY: pcc
 
 pytest:
@@ -40,6 +40,13 @@ mypy:
 mypy_ns:
 	poetry run mypy -p hdk
 .PHONY: mypy_ns
+
+mypy_test:
+	find ./tests/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
+.PHONY: mypy_test
+
+mypy_ci: mypy mypy_test
+.PHONY: mypy_ci
 
 docs:
 	cd docs && poetry run make html

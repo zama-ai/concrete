@@ -7,7 +7,7 @@ from hdk.common.data_types.dtypes_helpers import (
     value_is_encrypted_unsigned_integer,
 )
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import ClearValue, EncryptedValue
+from hdk.common.data_types.values import BaseValue, ClearValue, EncryptedValue
 
 
 @pytest.mark.parametrize(
@@ -25,7 +25,7 @@ from hdk.common.data_types.values import ClearValue, EncryptedValue
         ),
     ],
 )
-def test_value_is_encrypted_integer(value: Integer, expected_result: bool):
+def test_value_is_encrypted_integer(value: BaseValue, expected_result: bool):
     """Test value_is_encrypted_integer helper"""
     assert value_is_encrypted_integer(value) == expected_result
 
@@ -50,6 +50,6 @@ def test_value_is_encrypted_integer(value: Integer, expected_result: bool):
         ),
     ],
 )
-def test_value_is_encrypted_unsigned_integer(value: Integer, expected_result: bool):
+def test_value_is_encrypted_unsigned_integer(value: BaseValue, expected_result: bool):
     """Test value_is_encrypted_unsigned_integer helper"""
     assert value_is_encrypted_unsigned_integer(value) == expected_result
