@@ -6,9 +6,7 @@ set +e
 CURR_DIR=`dirname $0`
 
 # Run diff-coverage
-poetry run diff-cover coverage.xml --fail-under 100 \
---html-report coverage.html \
---compare-branch origin/"$1" | tee diff-coverage.txt
+BB="origin/$1" make coverage | tee diff-coverage.txt
 
 # Get exit code without closing the script
 TEST_EXIT_CODE="$?"

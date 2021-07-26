@@ -48,6 +48,13 @@ mypy_test:
 mypy_ci: mypy mypy_test
 .PHONY: mypy_ci
 
+pytest_and_coverage: pytest coverage
+.PHONY: pytest_and_coverage
+
+coverage:
+	@if [[ "$$BB" == "" ]]; then BB=origin/main; fi && poetry run diff-cover coverage.xml --fail-under 100 --html-report coverage.html --compare-branch $$BB
+.PHONY: coverage
+
 docs:
 	cd docs && poetry run make html
 .PHONY: docs
