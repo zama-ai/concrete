@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from ..data_types import BaseValue
+from ..data_types.dtypes_helpers import mix_values_determine_holding_dtype
 
 
 class IntermediateNode(ABC):
@@ -39,9 +40,7 @@ class IntermediateNode(ABC):
 
         assert len(self.inputs) == 2
 
-        # For now copy the first input type for the output type
-        # We don't perform checks or enforce consistency here for now, so this is OK
-        self.outputs = [deepcopy(self.inputs[0])]
+        self.outputs = [mix_values_determine_holding_dtype(self.inputs[0], self.inputs[1])]
 
     def _is_equivalent_to_binary_commutative(self, other: object) -> bool:
         return (
