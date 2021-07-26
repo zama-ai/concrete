@@ -14,6 +14,10 @@ pub struct GaussianKeyKind;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct UniformKeyKind;
 
+#[derive(Clone)]
+/// This type is a marker for keys filled with zeros (used for testing)
+pub struct ZeroKeyKind;
+
 /// In concrete, secret keys can be based on different kinds of scalar values (put aside the
 /// data type eventually used to store it in memory). This trait is implemented by marker types,
 /// which are used to specify in the type system, what kind of keys we are currently using.
@@ -23,6 +27,7 @@ impl KeyKind for BinaryKeyKind {}
 impl KeyKind for TernaryKeyKind {}
 impl KeyKind for GaussianKeyKind {}
 impl KeyKind for UniformKeyKind {}
+impl KeyKind for ZeroKeyKind {}
 
 mod seal {
     pub trait SealedKeyKind {}
@@ -30,4 +35,5 @@ mod seal {
     impl SealedKeyKind for super::TernaryKeyKind {}
     impl SealedKeyKind for super::GaussianKeyKind {}
     impl SealedKeyKind for super::UniformKeyKind {}
+    impl SealedKeyKind for super::ZeroKeyKind {}
 }
