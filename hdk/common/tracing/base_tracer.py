@@ -65,3 +65,21 @@ class BaseTracer(ABC):
 
         assert len(result_tracer) == 1
         return result_tracer[0]
+
+    def __sub__(self, other: "BaseTracer") -> "BaseTracer":
+        result_tracer = self.instantiate_output_tracers(
+            [self, other],
+            ir.Sub,
+        )
+
+        assert len(result_tracer) == 1
+        return result_tracer[0]
+
+    def __mul__(self, other: "BaseTracer") -> "BaseTracer":
+        result_tracer = self.instantiate_output_tracers(
+            [self, other],
+            ir.Mul,
+        )
+
+        assert len(result_tracer) == 1
+        return result_tracer[0]

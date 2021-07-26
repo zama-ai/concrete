@@ -26,6 +26,37 @@ class IntermediateNode(ABC):
         self.op_args = op_args
         self.op_kwargs = op_kwargs
 
+    def _init_binary(
+        self,
+        inputs: Iterable[BaseValue],
+        op_args: Optional[Tuple[Any, ...]] = None,
+        op_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        assert op_args is None, f"Expected op_args to be None, got {op_args}"
+        assert op_kwargs is None, f"Expected op_kwargs to be None, got {op_kwargs}"
+
+        IntermediateNode.__init__(self, inputs, op_args=op_args, op_kwargs=op_kwargs)
+
+        assert len(self.inputs) == 2
+
+        # For now copy the first input type for the output type
+        # We don't perform checks or enforce consistency here for now, so this is OK
+        self.outputs = [deepcopy(self.inputs[0])]
+
+    def _is_equivalent_to_binary_commutative(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and (self.inputs == other.inputs or self.inputs == other.inputs[::-1])
+            and self.outputs == other.outputs
+        )
+
+    def _is_equivalent_to_binary_non_commutative(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self.inputs == other.inputs
+            and self.outputs == other.outputs
+        )
+
     def is_equivalent_to(self, other: object) -> bool:
         """Overriding __eq__ has unwanted side effects, this provides the same facility without
             disrupting expected behavior too much
@@ -48,28 +79,22 @@ class IntermediateNode(ABC):
 class Add(IntermediateNode):
     """Addition between two values"""
 
-    def __init__(
-        self,
-        inputs: Iterable[BaseValue],
-        op_args: Optional[Tuple[Any, ...]] = None,
-        op_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        assert op_args is None, f"Expected op_args to be None, got {op_args}"
-        assert op_kwargs is None, f"Expected op_kwargs to be None, got {op_kwargs}"
+    __init__ = IntermediateNode._init_binary
+    is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
 
-        super().__init__(inputs, op_args=op_args, op_kwargs=op_kwargs)
-        assert len(self.inputs) == 2
 
-        # For now copy the first input type for the output type
-        # We don't perform checks or enforce consistency here for now, so this is OK
-        self.outputs = [deepcopy(self.inputs[0])]
+class Sub(IntermediateNode):
+    """Subtraction between two values"""
 
-    def is_equivalent_to(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and (self.inputs == other.inputs or self.inputs == other.inputs[::-1])
-            and self.outputs == other.outputs
-        )
+    __init__ = IntermediateNode._init_binary
+    is_equivalent_to = IntermediateNode._is_equivalent_to_binary_non_commutative
+
+
+class Mul(IntermediateNode):
+    """Multiplication between two values"""
+
+    __init__ = IntermediateNode._init_binary
+    is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
 
 
 class Input(IntermediateNode):
