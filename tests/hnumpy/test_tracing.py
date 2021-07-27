@@ -16,36 +16,36 @@ from hdk.hnumpy import tracing
 @pytest.mark.parametrize(
     "x",
     [
-        pytest.param(EncryptedValue(Integer(64, is_signed=False)), id="Encrypted uint"),
+        pytest.param(EncryptedValue(Integer(64, is_signed=False)), id="x: Encrypted uint"),
         pytest.param(
             EncryptedValue(Integer(64, is_signed=True)),
-            id="Encrypted int",
+            id="x: Encrypted int",
         ),
         pytest.param(
             ClearValue(Integer(64, is_signed=False)),
-            id="Clear uint",
+            id="x: Clear uint",
         ),
         pytest.param(
             ClearValue(Integer(64, is_signed=True)),
-            id="Clear int",
+            id="x: Clear int",
         ),
     ],
 )
 @pytest.mark.parametrize(
     "y",
     [
-        pytest.param(EncryptedValue(Integer(64, is_signed=False)), id="Encrypted uint"),
+        pytest.param(EncryptedValue(Integer(64, is_signed=False)), id="y: Encrypted uint"),
         pytest.param(
             EncryptedValue(Integer(64, is_signed=True)),
-            id="Encrypted int",
+            id="y: Encrypted int",
         ),
         pytest.param(
             ClearValue(Integer(64, is_signed=False)),
-            id="Clear uint",
+            id="y: Clear uint",
         ),
         pytest.param(
             ClearValue(Integer(64, is_signed=True)),
-            id="Clear int",
+            id="y: Clear int",
         ),
     ],
 )
