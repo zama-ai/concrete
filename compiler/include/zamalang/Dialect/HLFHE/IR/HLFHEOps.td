@@ -91,13 +91,11 @@ def ApplyLookupTableEintOp : HLFHE_Op<"apply_lookup_table"> {
 // Tensor operations
 
 // Dot product
-def Dot : HLFHE_Op<"dot_eint_int", [DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]> {
-    // Output memref is passed as the last argument; Input and output
-    // relationships are modeled through MemoryEffectsOpInterface`
+def Dot : HLFHE_Op<"dot_eint_int"> {
     let arguments = (ins
-        Type<And<[StaticShapeMemRefOf<[EncryptedIntegerType]>.predicate, HasAnyRankOfPred<[1]>]>>:$lhs,
-        Type<And<[StaticShapeMemRefOf<[AnyInteger]>.predicate, HasAnyRankOfPred<[1]>]>>:$rhs,
-        Type<And<[StaticShapeMemRefOf<[EncryptedIntegerType]>.predicate, HasAnyRankOfPred<[0]>]>>:$out);
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$lhs,
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$rhs);
+    let results = (outs EncryptedIntegerType:$out);
     let verifier = [{
         if(::mlir::failed(
               mlir::verifyCompatibleShape(

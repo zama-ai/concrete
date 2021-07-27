@@ -118,19 +118,6 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
   return mlir::success();
 }
 
-void Dot::getEffects(
-    SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
-        &effects) {
-  // Side effects for Dot product: the first two operands are inputs,
-  // the last one is an output
-  effects.emplace_back(MemoryEffects::Read::get(), this->lhs(),
-                       SideEffects::DefaultResource::get());
-  effects.emplace_back(MemoryEffects::Read::get(), this->rhs(),
-                       SideEffects::DefaultResource::get());
-  effects.emplace_back(MemoryEffects::Write::get(), this->out(),
-                       SideEffects::DefaultResource::get());
-}
-
 } // namespace HLFHE
 } // namespace zamalang
 } // namespace mlir

@@ -1,6 +1,8 @@
 #include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
@@ -20,31 +22,38 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
   // This rewrite pattern transforms any instance of
   // `HLFHE.dot_eint_int` to an instance of `linalg.generic` with an
   // appropriate region using `HLFHE.mul_eint_int` and
-  // `HLFHE.add_eint` operations and an appropriate specification for
-  // the iteration dimensions.
+  // `HLFHE.add_eint` operations, an appropriate specification for the
+  // iteration dimensions and appropriate operaztions managing the
+  // accumulator of `linalg.generic`.
   //
   // Example:
   //
-  //   "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) :
-  //     (memref<?x!HLFHE.eint<0>>,
-  //      memref<?xi32>,
-  //      memref<!HLFHE.eint<0>>) -> ()
+  //   %o = "HLFHE.dot_eint_int"(%arg0, %arg1) :
+  //     (tensor<4x!HLFHE.eint<0>>,
+  //      tensor<4xi32>) -> (!HLFHE.eint<0>)
   //
   // becomes:
   //
-  //   linalg.generic {
-  //     indexing_maps = [affine_map<(d0) -> (d0)>,
-  //                      affine_map<(d0) -> (d0)>,
-  //                      affine_map<(d0) -> ()>],
-  //     iterator_types = ["reduction"]
-  //   } ins(%arg0, %arg1 : memref<?x!HLFHE.eint<0>>, memref<?xi32>)
-  //     outs(%arg2: memref<!HLFHE.eint<0>>)
-  //   {
-  //     ^bb0(%arg3: !HLFHE.eint<0>, %arg4: i32, %arg5: !HLFHE.eint<0>):
-  //       %0 = "HLFHE.mul_eint_int"(%arg3, %arg4) : (!HLFHE.eint<0>, i32) ->
-  //       !HLFHE.eint<0> %1 = "HLFHE.add_eint"(%0, %arg5) : (!HLFHE.eint<0>,
-  //       !HLFHE.eint<0>) -> !HLFHE.eint<0> linalg.yield %1 : !HLFHE.eint<0>
-  //   }
+  //   %0 = "HLFHE.zero"() : () -> !HLFHE.eint<0>
+  //   %1 = tensor.from_elements %0 : tensor<1x!HLFHE.eint<0>>
+  //   %2 = linalg.generic {
+  //          indexing_maps = [#map0, #map0, #map1],
+  //          iterator_types = ["reduction"]
+  //        }
+  //        ins(%arg0, %arg1 : tensor<2x!HLFHE.eint<0>>, tensor<2xi32>)
+  //        outs(%1 : tensor<1x!HLFHE.eint<0>>) {
+  //          ^bb0(%arg2: !HLFHE.eint<0>, %arg3: i32, %arg4: !HLFHE.eint<0>):
+  //            %4 = "HLFHE.mul_eint_int"(%arg2, %arg3) :
+  //                    (!HLFHE.eint<0>, i32) -> !HLFHE.eint<0>
+  //
+  //            %5 = "HLFHE.add_eint"(%4, %arg4) :
+  //                    (!HLFHE.eint<0>, !HLFHE.eint<0>) -> !HLFHE.eint<0>
+  //
+  //            linalg.yield %5 : !HLFHE.eint<0>
+  //        } -> tensor<1x!HLFHE.eint<0>>
+  //
+  //   %c0 = constant 0 : index
+  //   %o = tensor.extract %2[%c0] : tensor<1x!HLFHE.eint<0>>
   //
   ::mlir::LogicalResult
   matchAndRewrite(::mlir::Operation *op0,
@@ -52,14 +61,28 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
     ::mlir::zamalang::HLFHE::Dot &&dotOp =
         ::llvm::dyn_cast_or_null<::mlir::zamalang::HLFHE::Dot>(op0);
 
-    mlir::TypeRange resTypes{};
-    llvm::SmallVector<mlir::Value, 2> ins{dotOp.lhs(), dotOp.rhs()};
-    llvm::SmallVector<mlir::Value, 1> outs{dotOp.out()};
+    // Zero value to initialize accumulator
+    mlir::Value zeroCst = rewriter.create<mlir::zamalang::HLFHE::ZeroOp>(
+        dotOp.getLoc(),
+        dotOp.lhs().getType().cast<mlir::ShapedType>().getElementType());
 
+    // Create one-dimensional accumulator with a single element
+    // (`tensor.from_elements` does not allow for the creation of 0d
+    // tensors)
+    mlir::tensor::FromElementsOp feOp =
+        rewriter.create<mlir::tensor::FromElementsOp>(dotOp.getLoc(), zeroCst);
+
+    mlir::Value accu = feOp.getResult();
+
+    // Create `linalg.generic` op
+    llvm::SmallVector<mlir::Type, 1> resTypes{accu.getType()};
+    llvm::SmallVector<mlir::Value, 2> ins{dotOp.lhs(), dotOp.rhs()};
+    llvm::SmallVector<mlir::Value, 1> outs{accu};
     llvm::SmallVector<mlir::AffineMap, 3> maps{
         mlir::AffineMap::getMultiDimIdentityMap(1, this->getContext()),
         mlir::AffineMap::getMultiDimIdentityMap(1, this->getContext()),
-        mlir::AffineMap::get(1, 0, this->getContext())};
+        mlir::AffineMap::get(1, 0, {rewriter.getAffineConstantExpr(0)},
+                             this->getContext())};
 
     llvm::SmallVector<llvm::StringRef, 1> itTypes{"reduction"};
     llvm::StringRef doc{""};
@@ -83,7 +106,16 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
         dotOp.getLoc(), resTypes, ins, outs, maps, itTypes, doc, call,
         regBuilder);
 
-    rewriter.replaceOp(op0, {gop.getODSResults(0)});
+    // Return value is still a 1-dimensional tensor; extract first
+    // element and use it as a replacement for the result of the dot
+    // operation
+    mlir::Value idx0 =
+        rewriter.create<mlir::ConstantIndexOp>(dotOp.getLoc(), 0);
+    llvm::SmallVector<mlir::Value, 1> indexes{idx0};
+    mlir::Value res = rewriter.create<mlir::tensor::ExtractOp>(
+        dotOp.getLoc(), gop.getResult(0), indexes);
+
+    rewriter.replaceOp(op0, {res});
 
     return ::mlir::success();
   };
@@ -105,6 +137,7 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
   target.addLegalDialect<mlir::StandardOpsDialect>();
   target.addLegalDialect<mlir::memref::MemRefDialect>();
   target.addLegalDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
+  target.addLegalDialect<mlir::tensor::TensorDialect>();
   target.addIllegalOp<mlir::zamalang::HLFHE::Dot>();
 
   mlir::OwningRewritePatternList patterns(&getContext());

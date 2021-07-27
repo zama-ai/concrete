@@ -60,15 +60,14 @@ func @apply_lookup_table(%arg0: !HLFHE.eint<2>, %arg1: memref<4xi2>) -> !HLFHE.e
   return %1: !HLFHE.eint<2>
 }
 
-// CHECK-LABEL: func @dot_eint_int(%arg0: memref<2x!HLFHE.eint<2>>, %arg1: memref<2xi3>, %arg2: memref<!HLFHE.eint<2>>)
-func @dot_eint_int(%arg0: memref<2x!HLFHE.eint<2>>,
-          %arg1: memref<2xi3>,
-          %arg2: memref<!HLFHE.eint<2>>)
+// CHECK-LABEL: func @dot_eint_int(%arg0: tensor<2x!HLFHE.eint<2>>, %arg1: tensor<2xi32>) -> !HLFHE.eint<2>
+func @dot_eint_int(%arg0: tensor<2x!HLFHE.eint<2>>,
+                   %arg1: tensor<2xi32>) -> !HLFHE.eint<2>
 {
-  // CHECK-NEXT: "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) : (memref<2x!HLFHE.eint<2>>, memref<2xi3>, memref<!HLFHE.eint<2>>) -> ()
-  "HLFHE.dot_eint_int"(%arg0, %arg1, %arg2) :
-    (memref<2x!HLFHE.eint<2>>, memref<2xi3>, memref<!HLFHE.eint<2>>) -> ()
+  // CHECK-NEXT: %[[RET:.*]] = "HLFHE.dot_eint_int"(%arg0, %arg1) : (tensor<2x!HLFHE.eint<2>>, tensor<2xi32>) -> !HLFHE.eint<2>
+  %ret = "HLFHE.dot_eint_int"(%arg0, %arg1) :
+    (tensor<2x!HLFHE.eint<2>>, tensor<2xi32>) -> !HLFHE.eint<2>
 
-  //CHECK-NEXT: return
-  return
+  //CHECK-NEXT: return %[[RET]] : !HLFHE.eint<2>
+  return %ret : !HLFHE.eint<2>
 }
