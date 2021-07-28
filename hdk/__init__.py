@@ -1,2 +1,2 @@
-"""HDK's top import"""
+"""Package top import"""
 from . import common, hnumpy

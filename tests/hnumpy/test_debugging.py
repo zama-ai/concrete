@@ -1,4 +1,4 @@
-"""Test file for HDK's hnumpy debugging functions"""
+"""Test file for hnumpy debugging functions"""
 
 import pytest
 

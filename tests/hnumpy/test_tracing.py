@@ -1,4 +1,4 @@
-"""Test file for HDK's hnumpy tracing"""
+"""Test file for hnumpy tracing"""
 
 import networkx as nx
 import pytest

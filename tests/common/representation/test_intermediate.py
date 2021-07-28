@@ -1,4 +1,4 @@
-"""Test file for HDK's common/representation/intermediate.py"""
+"""Test file for intermediate representation"""
 
 import pytest
 

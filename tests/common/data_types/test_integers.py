@@ -1,4 +1,4 @@
-"""Test file for HDK's common/data_types/integers.py"""
+"""Test file for integers data types"""
 
 import random
 

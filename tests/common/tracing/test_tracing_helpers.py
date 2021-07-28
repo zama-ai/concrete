@@ -1,4 +1,4 @@
-"""Test file for HDK's common tracing helpers"""
+"""Test file for common tracing helpers"""
 
 from typing import Any, Dict, List
 

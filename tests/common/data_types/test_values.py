@@ -1,4 +1,4 @@
-"""Test file for HDK's common/data_types/values.py"""
+"""Test file for values classes"""
 
 import pytest
 

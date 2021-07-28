@@ -1,4 +1,4 @@
-"""File containing HDK's intermdiate representation of source programs operations"""
+"""File containing code to represent source programs operations"""
 
 from abc import ABC, abstractmethod
 from copy import deepcopy

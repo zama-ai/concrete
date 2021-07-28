@@ -1,4 +1,4 @@
-"""Test file for HDK's data types helpers"""
+"""Test file for data types helpers"""
 
 import pytest
 
