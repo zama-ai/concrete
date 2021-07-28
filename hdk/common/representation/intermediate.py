@@ -1,8 +1,8 @@
 """File containing HDK's intermdiate representation of source programs operations"""
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from ..data_types import BaseValue
 from ..data_types.dtypes_helpers import mix_values_determine_holding_dtype
@@ -74,12 +74,26 @@ class IntermediateNode(ABC):
             and self.op_kwargs == other.op_kwargs
         )
 
+    @abstractmethod
+    def evaluate(self, inputs: Mapping[int, Any]) -> Any:
+        """Function to simulate what the represented computation would output for the given inputs
+
+        Args:
+            inputs (Mapping[int, Any]): Mapping containing the inputs for the evaluation
+
+        Returns:
+            Any: the result of the computation
+        """
+
 
 class Add(IntermediateNode):
     """Addition between two values"""
 
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
+
+    def evaluate(self, inputs: Mapping[int, Any]) -> Any:
+        return inputs[0] + inputs[1]
 
 
 class Sub(IntermediateNode):
@@ -88,12 +102,18 @@ class Sub(IntermediateNode):
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_non_commutative
 
+    def evaluate(self, inputs: Mapping[int, Any]) -> Any:
+        return inputs[0] - inputs[1]
+
 
 class Mul(IntermediateNode):
     """Multiplication between two values"""
 
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
+
+    def evaluate(self, inputs: Mapping[int, Any]) -> Any:
+        return inputs[0] * inputs[1]
 
 
 class Input(IntermediateNode):
@@ -113,3 +133,6 @@ class Input(IntermediateNode):
         self.input_name = input_name
         self.program_input_idx = program_input_idx
         self.outputs = [deepcopy(self.inputs[0])]
+
+    def evaluate(self, inputs: Mapping[int, Any]) -> Any:
+        return inputs[0]
