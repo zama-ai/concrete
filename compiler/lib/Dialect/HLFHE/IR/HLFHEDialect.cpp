@@ -22,20 +22,24 @@ void HLFHEDialect::initialize() {
 }
 
 ::mlir::Type HLFHEDialect::parseType(::mlir::DialectAsmParser &parser) const {
-  if (parser.parseKeyword("eint").failed())
-    return ::mlir::Type();
+  mlir::Type type;
 
-  return EncryptedIntegerType::parse(this->getContext(), parser);
+  if (parser.parseOptionalKeyword("eint").succeeded()) {
+    generatedTypeParser(this->getContext(), parser, "eint", type);
+    return type;
+  }
+
+  // TODO
+  // Don't have a parser for a custom type
+  // We shouldn't call the default parser
+  // but what should we do instead?
+  parser.parseType(type);
+  return type;
 }
 
 void HLFHEDialect::printType(::mlir::Type type,
                              ::mlir::DialectAsmPrinter &printer) const {
-  mlir::zamalang::HLFHE::EncryptedIntegerType eint =
-      type.dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
-  if (eint != nullptr) {
-    eint.print(printer);
-    return;
-  }
-  // TODO - What should be done here?
-  printer << "unknwontype";
+  if (generatedTypePrinter(type, printer).failed())
+    // Calling default printer if failed to print HLFHE type
+    printer.printType(type);
 }

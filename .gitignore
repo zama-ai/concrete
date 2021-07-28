@@ -39,3 +39,5 @@
 # Jetbrains tools
 .idea/
 
+# Python cache
+__pycache__/

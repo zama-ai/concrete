@@ -27,6 +27,38 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+
+#-------------------------------------------------------------------------------
+# Python Configuration
+#-------------------------------------------------------------------------------
+
+option(ZAMALANG_BINDINGS_PYTHON_ENABLED "Enables ZamaLang Python bindings." ON)
+
+if(ZAMALANG_BINDINGS_PYTHON_ENABLED)
+  message(STATUS "ZamaLang Python bindings are enabled.")
+
+  include(MLIRDetectPythonEnv)
+  find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+  message(STATUS "Found Python include dirs: ${Python3_INCLUDE_DIRS}")
+  message(STATUS "Found Python libraries: ${Python3_LIBRARIES}")
+  message(STATUS "Found Python executable: ${Python3_EXECUTABLE}")
+
+  mlir_detect_pybind11_install()
+  find_package(pybind11 2.6 CONFIG REQUIRED)
+  message(STATUS "Found pybind11 v${pybind11_VERSION}: ${pybind11_INCLUDE_DIR}")
+  message(STATUS "Python prefix = '${PYTHON_MODULE_PREFIX}', "
+                 "suffix = '${PYTHON_MODULE_SUFFIX}', "
+                 "extension = '${PYTHON_MODULE_EXTENSION}'")
+else()
+  message(STATUS "ZamaLang Python bindings are disabled.")
+endif()
+
+
+
 add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(src)
+
+if (ZAMALANG_BINDINGS_PYTHON_ENABLED)
+    add_subdirectory(python)
+endif()
