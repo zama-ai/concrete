@@ -7,7 +7,7 @@ from ..common.data_types import BaseValue
 from ..common.tracing import (
     BaseTracer,
     create_graph_from_output_tracers,
-    make_input_tracer,
+    make_input_tracers,
     prepare_function_parameters,
 )
 
@@ -32,10 +32,7 @@ def trace_numpy_function(
     """
     function_parameters = prepare_function_parameters(function_to_trace, function_parameters)
 
-    input_tracers = {
-        param_name: make_input_tracer(NPTracer, param_name, param)
-        for param_name, param in function_parameters.items()
-    }
+    input_tracers = make_input_tracers(NPTracer, function_parameters)
 
     # We could easily create a graph of NPTracer, but we may end up with dead nodes starting from
     # the inputs that's why we create the graph starting from the outputs

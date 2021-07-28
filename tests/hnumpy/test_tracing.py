@@ -80,8 +80,8 @@ def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
 
     ref_graph = nx.MultiDiGraph()
 
-    input_x = ir.Input(x, input_name="x")
-    input_y = ir.Input(y, input_name="y")
+    input_x = ir.Input(x, input_name="x", program_input_idx=0)
+    input_y = ir.Input(y, input_name="y", program_input_idx=1)
 
     add_node_z = ir.Add(
         (

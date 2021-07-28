@@ -1,6 +1,7 @@
 """Helper functions for tracing"""
+import collections
 from inspect import signature
-from typing import Callable, Dict, Iterable, Set, Tuple, Type
+from typing import Callable, Dict, Iterable, OrderedDict, Set, Tuple, Type
 
 import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
@@ -10,9 +11,30 @@ from ..representation import intermediate as ir
 from .base_tracer import BaseTracer
 
 
+def make_input_tracers(
+    tracer_class: Type[BaseTracer],
+    function_parameters: OrderedDict[str, BaseValue],
+) -> OrderedDict[str, BaseTracer]:
+    """Helper function to create tracers for a function's parameters
+
+    Args:
+        tracer_class (Type[BaseTracer]): the class of tracer to create an Input for
+        function_parameters (OrderedDict[str, BaseValue]): the dictionary with the parameters names
+            and corresponding Values
+
+    Returns:
+        OrderedDict[str, BaseTracer]: the dictionary containing the Input Tracers for each parameter
+    """
+    return collections.OrderedDict(
+        (param_name, make_input_tracer(tracer_class, param_name, input_idx, param))
+        for input_idx, (param_name, param) in enumerate(function_parameters.items())
+    )
+
+
 def make_input_tracer(
     tracer_class: Type[BaseTracer],
     input_name: str,
+    input_idx: int,
     input_value: BaseValue,
 ) -> BaseTracer:
     """Helper function to create a tracer for an input value
@@ -20,18 +42,19 @@ def make_input_tracer(
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create an Input for
         input_name (str): the name of the input in the traced function
+        input_idx (int): the input index in the function parameters
         input_value (BaseValue): the Value that is an input and needs to be wrapped in an
             BaseTracer
 
     Returns:
         BaseTracer: The BaseTracer for that input value
     """
-    return tracer_class([], ir.Input(input_value, input_name), 0)
+    return tracer_class([], ir.Input(input_value, input_name, input_idx), 0)
 
 
 def prepare_function_parameters(
     function_to_trace: Callable, function_parameters: Dict[str, BaseValue]
-) -> Dict[str, BaseValue]:
+) -> OrderedDict[str, BaseValue]:
     """Function to filter the passed function_parameters to trace function_to_trace
 
     Args:
@@ -42,7 +65,7 @@ def prepare_function_parameters(
         ValueError: Raised when some parameters are missing to trace function_to_trace
 
     Returns:
-        Dict[str, BaseValue]: filtered function_parameters dictionary
+        OrderedDict[str, BaseValue]: filtered function_parameters dictionary
     """
     function_signature = signature(function_to_trace)
 
@@ -54,10 +77,11 @@ def prepare_function_parameters(
             f"that were not provided: {', '.join(sorted(missing_args))}"
         )
 
-    useless_arguments = function_parameters.keys() - function_signature.parameters.keys()
-    useful_arguments = function_signature.parameters.keys() - useless_arguments
-
-    return {k: function_parameters[k] for k in useful_arguments}
+    # This convoluted way of creating the dict is to ensure key order is maintained
+    return collections.OrderedDict(
+        (param_name, function_parameters[param_name])
+        for param_name in function_signature.parameters.keys()
+    )
 
 
 def create_graph_from_output_tracers(

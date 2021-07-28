@@ -100,13 +100,16 @@ class Input(IntermediateNode):
     """Node representing an input of the numpy program"""
 
     input_name: str
+    program_input_idx: int
 
     def __init__(
         self,
         input_value: BaseValue,
         input_name: str,
+        program_input_idx: int,
     ) -> None:
         super().__init__((input_value,))
         assert len(self.inputs) == 1
         self.input_name = input_name
+        self.program_input_idx = program_input_idx
         self.outputs = [deepcopy(self.inputs[0])]
