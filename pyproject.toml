@@ -10,6 +10,7 @@ Sphinx = "^4.1.1"
 sphinx-rtd-theme = "^0.5.2"
 myst-parser = "^0.15.1"
 networkx = "^2.6.1"
+matplotlib = "^3.4.2"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.2"
