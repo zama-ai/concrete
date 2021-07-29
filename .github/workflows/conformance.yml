@@ -24,6 +24,6 @@ jobs:
       - name: Build and test compiler
         uses: addnab/docker-run-action@v3
         with:
-          image: qbozama/mlir:latest
+          image: qbozama/mlir:69c6ea9038e5f3ef91a3c5ab59fae3276f95628b
           options: -v ${{ github.workspace }}:/workspace
           run: cd /workspace/compiler && mkdir build && cmake -B build . -DLLVM_DIR=$LLVM_PROJECT/build/lib/cmake/llvm -DMLIR_DIR=$LLVM_PROJECT/build/lib/cmake/mlir && make -C build/ zamacompiler && make test
