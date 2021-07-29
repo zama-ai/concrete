@@ -119,7 +119,7 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
 
 namespace mlir {
 namespace zamalang {
-std::unique_ptr<mlir::Pass> createConvertHLFHETensorOpsToLinalg() {
+std::unique_ptr<mlir::FunctionPass> createConvertHLFHETensorOpsToLinalg() {
   return std::make_unique<HLFHETensorOpsToLinalg>();
 }
 } // namespace zamalang
