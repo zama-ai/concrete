@@ -1,5 +1,5 @@
 """functions to draw the different graphs we can generate in the package, eg to debug"""
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -194,3 +194,52 @@ def draw_graph(
     plt.show(block=block_until_user_closes_graph)
 
     # pylint: enable=too-many-locals
+
+
+def get_printable_graph(graph: nx.DiGraph) -> str:
+    """
+    Return a string representing a graph
+
+    Args:
+        graph (nx.DiGraph): The graph that we want to draw
+
+    Returns:
+        a string to print or save in a file
+
+    """
+    returned_str = ""
+
+    i = 0
+    map_table: Dict[Any, int] = {}
+
+    for node in nx.topological_sort(graph):
+
+        if not isinstance(node, ir.Input):
+            what_to_print = node.__class__.__name__ + "("
+
+            # Find all the names of the current predecessors of the node
+            list_of_arg_name = []
+
+            for pred, index_list in graph.pred[node].items():
+                for index in index_list.values():
+                    # Remark that we keep the index of the predecessor and its
+                    # name, to print sources in the right order, which is
+                    # important for eg non commutative operations
+                    list_of_arg_name += [(index["input_idx"], str(map_table[pred]))]
+
+            # Some checks, because the previous algorithm is not clear
+            assert len(list_of_arg_name) == len({x[0] for x in list_of_arg_name})
+            assert [x[0] for x in list_of_arg_name] == list(range(len(list_of_arg_name)))
+
+            # Then, just print the predecessors in the right order
+            list_of_arg_name.sort()
+            what_to_print += ", ".join([x[1] for x in list_of_arg_name]) + ")"
+
+        else:
+            what_to_print = node.input_name
+
+        returned_str += f"\n%{i} = {what_to_print}"
+        map_table[node] = i
+        i += 1
+
+    return returned_str
