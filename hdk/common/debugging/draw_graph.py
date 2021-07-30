@@ -1,9 +1,10 @@
 """functions to draw the different graphs we can generate in the package, eg to debug"""
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from hdk.common.operator_graph import OPGraph
 from hdk.common.representation import intermediate as ir
 
 IR_NODE_COLOR_MAPPING = {ir.Input: "blue", ir.Add: "red", ir.Sub: "yellow", ir.Mul: "green"}
@@ -80,13 +81,15 @@ def human_readable_layout(graph: nx.Graph, x_delta: float = 1.0, y_delta: float 
 
 
 def draw_graph(
-    graph: nx.DiGraph, block_until_user_closes_graph: bool = True, draw_edge_numbers: bool = True
+    graph: Union[OPGraph, nx.MultiDiGraph],
+    block_until_user_closes_graph: bool = True,
+    draw_edge_numbers: bool = True,
 ) -> None:
     """
     Draw a graph
 
     Args:
-        graph (nx.DiGraph): The graph that we want to draw
+        graph (Union[OPGraph, nx.MultiDiGraph]): The graph that we want to draw
         block_until_user_closes_graph (bool): if True, will wait the user to
             close the figure before continuing; False is useful for the CI tests
         draw_edge_numbers (bool): if True, add the edge number on the arrow
@@ -101,6 +104,9 @@ def draw_graph(
 
     # FIXME: less variables
     # pylint: disable=too-many-locals
+
+    # Allow to pass either OPGraph or an nx graph, manage this here
+    graph = graph.graph if isinstance(graph, OPGraph) else graph
 
     # Positions of the node
     pos = human_readable_layout(graph)
@@ -196,17 +202,19 @@ def draw_graph(
     # pylint: enable=too-many-locals
 
 
-def get_printable_graph(graph: nx.DiGraph) -> str:
-    """
-    Return a string representing a graph
+def get_printable_graph(graph: Union[OPGraph, nx.MultiDiGraph]) -> str:
+    """Return a string representing a graph
 
     Args:
-        graph (nx.DiGraph): The graph that we want to draw
+        graph (Union[OPGraph, nx.MultiDiGraph]): The graph that we want to draw
 
     Returns:
-        a string to print or save in a file
-
+        str: a string to print or save in a file
     """
+
+    # Allow to pass either OPGraph or an nx graph, manage this here
+    graph = graph.graph if isinstance(graph, OPGraph) else graph
+
     returned_str = ""
 
     i = 0

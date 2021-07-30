@@ -1,15 +1,9 @@
 """hnumpy tracing utilities"""
 from typing import Callable, Dict
 
-import networkx as nx
-
 from ..common.data_types import BaseValue
-from ..common.tracing import (
-    BaseTracer,
-    create_graph_from_output_tracers,
-    make_input_tracers,
-    prepare_function_parameters,
-)
+from ..common.operator_graph import OPGraph
+from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 
 
 class NPTracer(BaseTracer):
@@ -18,7 +12,7 @@ class NPTracer(BaseTracer):
 
 def trace_numpy_function(
     function_to_trace: Callable, function_parameters: Dict[str, BaseValue]
-) -> nx.MultiDiGraph:
+) -> OPGraph:
     """Function used to trace a numpy function
 
     Args:
@@ -27,8 +21,8 @@ def trace_numpy_function(
             function is e.g. an EncryptedValue holding a 7bits unsigned Integer
 
     Returns:
-        nx.MultiDiGraph: The graph containing the ir nodes representing the computation done in the
-            input function
+        OPGraph: The graph containing the ir nodes representing the computation done in the input
+            function
     """
     function_parameters = prepare_function_parameters(function_to_trace, function_parameters)
 
@@ -40,6 +34,6 @@ def trace_numpy_function(
     if isinstance(output_tracers, NPTracer):
         output_tracers = (output_tracers,)
 
-    graph = create_graph_from_output_tracers(output_tracers)
+    op_graph = OPGraph(output_tracers)
 
-    return graph
+    return op_graph

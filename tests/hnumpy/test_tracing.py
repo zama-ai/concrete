@@ -76,7 +76,7 @@ def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
     else:
         assert False, f"unknown operation {operation}"
 
-    graph = tracing.trace_numpy_function(function_to_compile, {"x": x, "y": y})
+    op_graph = tracing.trace_numpy_function(function_to_compile, {"x": x, "y": y})
 
     ref_graph = nx.MultiDiGraph()
 
@@ -108,4 +108,4 @@ def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
     ref_graph.add_edge(add_node_z, returned_final_node, input_idx=0)
     ref_graph.add_edge(input_y, returned_final_node, input_idx=1)
 
-    assert test_helpers.digraphs_are_equivalent(ref_graph, graph)
+    assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)
