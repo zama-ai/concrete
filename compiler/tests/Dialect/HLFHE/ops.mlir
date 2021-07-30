@@ -1,5 +1,14 @@
 // RUN: zamacompiler --round-trip %s  2>&1| FileCheck %s
 
+// CHECK-LABEL: func @zero() -> !HLFHE.eint<2>
+func @zero() -> !HLFHE.eint<2> {
+  // CHECK-NEXT: %[[RET:.*]] = "HLFHE.zero"() : () -> !HLFHE.eint<2>
+  // CHECK-NEXT: return %[[RET]] : !HLFHE.eint<2>
+
+  %1 = "HLFHE.zero"() : () -> !HLFHE.eint<2>
+  return %1: !HLFHE.eint<2>
+}
+
 // CHECK-LABEL: func @add_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 func @add_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
   // CHECK-NEXT: %[[V1:.*]] = constant 1 : i3

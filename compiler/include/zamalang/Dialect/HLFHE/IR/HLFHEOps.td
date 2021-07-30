@@ -18,6 +18,12 @@ include "zamalang/Dialect/HLFHE/IR/HLFHETypes.td"
 class HLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<HLFHE_Dialect, mnemonic, traits>;
 
+// Generates an encrypted zero constant
+def ZeroOp : HLFHE_Op<"zero"> {
+    let arguments = (ins);
+    let results = (outs EncryptedIntegerType:$out);
+}
+
 def AddEintIntOp : HLFHE_Op<"add_eint_int"> {
     let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
     let results = (outs EncryptedIntegerType);
