@@ -1,4 +1,4 @@
-use crate::backends::core::private::crypto::encoding::Plaintext;
+use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
 use crate::backends::core::private::crypto::gsw::GswCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::crypto::secret::generators::{
@@ -8,13 +8,16 @@ use crate::backends::core::private::crypto::secret::LweSecretKey;
 use crate::backends::core::private::math::random::RandomGenerator;
 use crate::backends::core::private::math::tensor::{AsMutSlice, Tensor};
 use crate::backends::core::private::math::torus::UnsignedTorus;
-use crate::backends::core::private::test_tools::assert_noise_distribution;
+use crate::backends::core::private::test_tools::{self, assert_noise_distribution};
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_commons::parameters::{
-    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
+    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PlaintextCount,
+    PolynomialSize,
 };
 use concrete_npe as npe;
+
+use super::GswSeededCiphertext;
 
 fn test_external_product_gsw<T: UnsignedTorus>() {
     let n_tests = 10;
@@ -229,6 +232,103 @@ fn test_cmux_1_gsw<T: UnsignedTorus>() {
     assert_noise_distribution(&msg, &new_msg, output_variance);
 }
 
+fn test_seeded_gsw<T: UnsignedTorus>() {
+    // random settings
+    let nb_ct = test_tools::random_ciphertext_count(10);
+    let dimension = test_tools::random_lwe_dimension(5);
+    let noise_parameters = LogStandardDev::from_log_standard_dev(-50.);
+    let decomp_level = DecompositionLevelCount(3);
+    let decomp_base_log = DecompositionBaseLog(7);
+    let mut secret_generator = SecretRandomGenerator::new(None);
+    let mut generator = EncryptionRandomGenerator::new(None);
+
+    // generates a secret key
+    let sk = LweSecretKey::generate_binary(dimension, &mut secret_generator);
+
+    // generates random plaintexts
+    let plaintext_vector =
+        PlaintextList::from_tensor(secret_generator.random_uniform_tensor(nb_ct.0));
+    let mut seeded_decryptions =
+        PlaintextList::from_container(vec![T::ZERO; nb_ct.0 * decomp_level.0 * (dimension.0 + 1)]);
+    let mut control_decryptions =
+        PlaintextList::from_container(vec![T::ZERO; nb_ct.0 * decomp_level.0 * (dimension.0 + 1)]);
+
+    for (plaintext, (mut seeded_decryption, mut control_decryption)) in
+        plaintext_vector.plaintext_iter().zip(
+            seeded_decryptions
+                .sublist_iter_mut(PlaintextCount(decomp_level.0 * (dimension.0 + 1)))
+                .zip(
+                    control_decryptions
+                        .sublist_iter_mut(PlaintextCount(decomp_level.0 * (dimension.0 + 1))),
+                ),
+        )
+    {
+        // encrypts
+        let mut seeded_gsw = GswSeededCiphertext::allocate(
+            T::ZERO,
+            dimension.to_lwe_size(),
+            decomp_level,
+            decomp_base_log,
+        );
+        sk.encrypt_constant_seeded_gsw(&mut seeded_gsw, &plaintext, noise_parameters.clone());
+
+        // expands
+        let mut gsw_expanded = GswCiphertext::allocate(
+            T::ZERO,
+            dimension.to_lwe_size(),
+            decomp_level,
+            decomp_base_log,
+        );
+        seeded_gsw.expand_into(&mut gsw_expanded);
+
+        // control encryption
+        let mut gsw = GswCiphertext::allocate(
+            T::ZERO,
+            dimension.to_lwe_size(),
+            decomp_level,
+            decomp_base_log,
+        );
+        sk.encrypt_constant_gsw(
+            &mut gsw,
+            &plaintext,
+            noise_parameters.clone(),
+            &mut generator,
+        );
+
+        for ((seeded_lwe, control_lwe), (mut decoded_seeded, mut decoded_control)) in gsw_expanded
+            .as_lwe_list()
+            .ciphertext_iter()
+            .zip(gsw.as_lwe_list().ciphertext_iter())
+            .zip(
+                seeded_decryption
+                    .plaintext_iter_mut()
+                    .zip(control_decryption.plaintext_iter_mut()),
+            )
+        {
+            // decrypts
+            sk.decrypt_lwe(&mut decoded_seeded, &seeded_lwe);
+            sk.decrypt_lwe(&mut decoded_control, &control_lwe);
+
+            // test
+
+            decoded_seeded.0 >>= T::BITS - 22;
+            if decoded_seeded.0 & T::ONE == T::ONE {
+                decoded_seeded.0 += T::ONE;
+            }
+            decoded_seeded.0 >>= 1;
+            decoded_seeded.0 %= T::ONE << 21;
+
+            decoded_control.0 >>= T::BITS - 22;
+            if decoded_control.0 & T::ONE == T::ONE {
+                decoded_control.0 += T::ONE;
+            }
+            decoded_control.0 >>= 1;
+            decoded_control.0 %= T::ONE << 21;
+            assert_eq!(decoded_seeded.0, decoded_control.0);
+        }
+    }
+}
+
 #[test]
 pub fn test_external_product_gsw_u32() {
     test_external_product_gsw::<u32>()
@@ -257,4 +357,14 @@ pub fn test_cmux_1_gsw_u32() {
 #[test]
 pub fn test_cmux_1_gsw_u64() {
     test_cmux_1_gsw::<u64>();
+}
+
+#[test]
+pub fn test_seeded_gsw_u32() {
+    test_seeded_gsw::<u32>()
+}
+
+#[test]
+pub fn test_seeded_gsw_u64() {
+    test_seeded_gsw::<u64>()
 }

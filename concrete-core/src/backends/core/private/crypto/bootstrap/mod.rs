@@ -5,9 +5,12 @@
 
 pub use fourier::{FourierBootstrapKey, FourierBuffers};
 pub use standard::StandardBootstrapKey;
+pub use standard_seeded::StandardSeededBootstrapKey;
 
 mod fourier;
+mod fourier_seeded;
 mod standard;
+mod standard_seeded;
 
 #[cfg(all(test, feature = "multithread"))]
 mod test {

@@ -782,6 +782,6 @@ impl<Cont> LweMask<Cont> {
 }
 
 /// The body of an Lwe ciphertext.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct LweBody<T>(pub T);

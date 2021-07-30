@@ -46,6 +46,10 @@ impl AesBatchedGenerator for Generator {
             &self.round_keys,
         ))
     }
+
+    fn generate_u128() -> u128 {
+        si128_to_u128(rdseed_random_m128())
+    }
 }
 
 fn generate_initialization_vector() -> AesKey {

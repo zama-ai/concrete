@@ -6,8 +6,8 @@ use concrete_commons::parameters::PolynomialSize;
 
 /// The mask of a GLWE ciphertext
 pub struct GlweMask<Cont> {
-    pub(super) tensor: Tensor<Cont>,
-    pub(super) poly_size: PolynomialSize,
+    pub(crate) tensor: Tensor<Cont>,
+    pub(crate) poly_size: PolynomialSize,
 }
 
 tensor_traits!(GlweMask);

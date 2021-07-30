@@ -52,6 +52,10 @@ use rayon::prelude::*;
 pub struct RandomGenerator(RandomGeneratorImpl);
 
 impl RandomGenerator {
+    pub fn generate_u128() -> u128 {
+        concrete_csprng::RandomGenerator::generate_u128()
+    }
+
     pub(crate) fn generate_next(&mut self) -> u8 {
         self.0.generate_next()
     }
@@ -67,6 +71,12 @@ impl RandomGenerator {
     /// ```
     pub fn new(seed: Option<u128>) -> RandomGenerator {
         RandomGenerator(RandomGeneratorImpl::new(seed))
+    }
+
+    pub fn shift(&mut self, n_bytes: usize) {
+        for _ in 0..n_bytes {
+            self.0.generate_next();
+        }
     }
 
     /// Returns the number of bytes that can still be generated, if the generator is bounded.

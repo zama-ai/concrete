@@ -86,6 +86,10 @@ impl AesBatchedGenerator for Generator {
             &self.aes,
         )
     }
+
+    fn generate_u128() -> u128 {
+        rdseed()
+    }
 }
 
 pub fn dev_random() -> u128 {

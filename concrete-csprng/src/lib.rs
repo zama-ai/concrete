@@ -73,6 +73,18 @@ impl RandomGenerator {
         }
     }
 
+    pub fn generate_u128() -> u128 {
+        if cfg!(feature = "slow")
+            || !is_x86_feature_detected!("aes")
+            || !is_x86_feature_detected!("rdseed")
+            || !is_x86_feature_detected!("sse2")
+        {
+            SoftAesCtrGenerator::generate_u128()
+        } else {
+            HardAesCtrGenerator::generate_u128()
+        }
+    }
+
     /// Returns whether the generator is bounded.
     pub fn is_bounded(&self) -> bool {
         match self {

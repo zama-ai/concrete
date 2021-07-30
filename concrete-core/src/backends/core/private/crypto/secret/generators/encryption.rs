@@ -28,6 +28,10 @@ impl EncryptionRandomGenerator {
         }
     }
 
+    pub fn shift(&mut self, n_bytes: usize) {
+        self.mask.shift(n_bytes);
+    }
+
     // Allows to seed the noise generator. For testing purpose only.
     #[allow(dead_code)]
     pub(crate) fn seed_noise_generator(&mut self, seed: u128) {
@@ -166,7 +170,7 @@ impl EncryptionRandomGenerator {
     }
 
     // Forks both generators into an iterator
-    fn try_fork(
+    pub(crate) fn try_fork(
         &mut self,
         n_child: usize,
         mask_bytes: usize,
