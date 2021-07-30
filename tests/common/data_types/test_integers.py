@@ -4,7 +4,12 @@ import random
 
 import pytest
 
-from hdk.common.data_types.integers import Integer, SignedInteger, UnsignedInteger
+from hdk.common.data_types.integers import (
+    Integer,
+    SignedInteger,
+    UnsignedInteger,
+    make_integer_to_hold_ints,
+)
 
 
 @pytest.mark.parametrize(
@@ -68,3 +73,40 @@ def test_basic_integers(integer: Integer, expected_min: int, expected_max: int):
 def test_integers_repr(integer: Integer, expected_repr_str: str):
     """Test integer repr"""
     assert integer.__repr__() == expected_repr_str
+
+
+@pytest.mark.parametrize(
+    "values,force_signed,expected_result",
+    [
+        ([0], False, Integer(1, is_signed=False)),
+        ([0], True, Integer(2, is_signed=True)),
+        ([1], False, Integer(1, is_signed=False)),
+        ([1], True, Integer(2, is_signed=True)),
+        ([-1], False, Integer(2, is_signed=True)),
+        ([-2], False, Integer(2, is_signed=True)),
+        ([0, 1], False, Integer(1, is_signed=False)),
+        ([0, 1], True, Integer(2, is_signed=True)),
+        ([7], False, Integer(3, is_signed=False)),
+        ([7], True, Integer(4, is_signed=True)),
+        ([8], False, Integer(4, is_signed=False)),
+        ([8], True, Integer(5, is_signed=True)),
+        ([-7], False, Integer(4, is_signed=True)),
+        ([-8], False, Integer(4, is_signed=True)),
+        ([-7, -8], False, Integer(4, is_signed=True)),
+        ([-9], False, Integer(5, is_signed=True)),
+        ([-9], True, Integer(5, is_signed=True)),
+        ([0, 127], False, Integer(7, is_signed=False)),
+        ([0, 127], True, Integer(8, is_signed=True)),
+        ([0, 128], False, Integer(8, is_signed=False)),
+        ([0, 128], True, Integer(9, is_signed=True)),
+        ([-1, 127], False, Integer(8, is_signed=True)),
+        ([-256, 127], False, Integer(9, is_signed=True)),
+        ([-128, 127], False, Integer(8, is_signed=True)),
+        ([-128, 128], False, Integer(9, is_signed=True)),
+        ([-13, 4], False, Integer(5, is_signed=True)),
+        ([42, 1019], False, Integer(10, is_signed=False)),
+    ],
+)
+def test_make_integer_to_hold(values, force_signed, expected_result):
+    """Test make_integer_to_hold"""
+    assert expected_result == make_integer_to_hold_ints(values, force_signed)

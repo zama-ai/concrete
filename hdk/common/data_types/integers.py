@@ -1,5 +1,8 @@
 """This file holds the definitions for integer types"""
 
+import math
+from typing import Iterable
+
 from . import base
 
 
@@ -79,3 +82,60 @@ def create_unsigned_integer(bit_width: int) -> Integer:
 
 
 UnsignedInteger = create_unsigned_integer
+
+
+def make_integer_to_hold_ints(values: Iterable[int], force_signed: bool) -> Integer:
+    """Returns an Integer able to hold all values, it is possible to force the Integer to be signed
+
+    Args:
+        values (Iterable[int]): The values to hold
+        force_signed (bool): Set to True to force the result to be a signed Integer
+
+    Returns:
+        Integer: The Integer able to hold values
+    """
+    assert all(map(lambda x: isinstance(x, int), values))
+    min_value = min(values)
+    max_value = max(values)
+
+    make_signed_integer = force_signed or min_value < 0
+
+    num_bits = max(
+        get_bits_to_represent_int(min_value, make_signed_integer),
+        get_bits_to_represent_int(max_value, make_signed_integer),
+    )
+
+    return Integer(num_bits, is_signed=make_signed_integer)
+
+
+def get_bits_to_represent_int(value: int, force_signed: bool) -> int:
+    """Returns how many bits are required to represent a single int
+
+    Args:
+        value (int): The int for which we want to know how many bits are required
+        force_signed (bool): Set to True to force the result to be a signed Integer
+
+    Returns:
+        int: required amount of bits
+    """
+
+    # Writing this in a very dumb way
+    num_bits: int
+    if value < 0:
+        abs_value = abs(value)
+        if abs_value > 1:
+            num_bits = math.ceil(math.log2(abs_value)) + 1
+        else:
+            # -1 case
+            num_bits = 2
+    else:
+        if value > 1:
+            num_bits = math.ceil(math.log2(value + 1))
+        else:
+            # 0 and 1 case
+            num_bits = 1
+
+        if force_signed:
+            num_bits += 1
+
+    return num_bits
