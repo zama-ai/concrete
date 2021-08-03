@@ -29,6 +29,8 @@ from hdk.common.representation import intermediate as ir
             id="Mul",
         ),
         pytest.param(ir.Input(ClearValue(Integer(32, True)), "in", 0), [42], 42, id="Input"),
+        pytest.param(ir.ConstantInput(42), None, 42, id="ConstantInput"),
+        pytest.param(ir.ConstantInput(-42), None, -42, id="ConstantInput"),
     ],
 )
 def test_evaluate(

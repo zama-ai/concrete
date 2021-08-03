@@ -7,7 +7,13 @@ import networkx as nx
 from hdk.common.operator_graph import OPGraph
 from hdk.common.representation import intermediate as ir
 
-IR_NODE_COLOR_MAPPING = {ir.Input: "blue", ir.Add: "red", ir.Sub: "yellow", ir.Mul: "green"}
+IR_NODE_COLOR_MAPPING = {
+    ir.Input: "blue",
+    ir.ConstantInput: "cyan",
+    ir.Add: "red",
+    ir.Sub: "yellow",
+    ir.Mul: "green",
+}
 
 
 def human_readable_layout(graph: nx.Graph, x_delta: float = 1.0, y_delta: float = 1.0) -> Dict:
@@ -117,10 +123,14 @@ def draw_graph(
     # For most types, we just pick the operation as the label, but for Input,
     # we take the name of the variable, ie the argument name of the function
     # to compile
-    label_dict = {
-        node: node.input_name if isinstance(node, ir.Input) else node.__class__.__name__
-        for node in graph.nodes()
-    }
+    def get_proper_name(node):
+        if isinstance(node, ir.Input):
+            return node.input_name
+        if isinstance(node, ir.ConstantInput):
+            return str(node.constant_data)
+        return node.__class__.__name__
+
+    label_dict = {node: get_proper_name(node) for node in graph.nodes()}
 
     # Draw nodes
     nx.draw_networkx_nodes(
@@ -222,7 +232,11 @@ def get_printable_graph(graph: Union[OPGraph, nx.MultiDiGraph]) -> str:
 
     for node in nx.topological_sort(graph):
 
-        if not isinstance(node, ir.Input):
+        if isinstance(node, ir.Input):
+            what_to_print = node.input_name
+        elif isinstance(node, ir.ConstantInput):
+            what_to_print = f"ConstantInput({node.constant_data})"
+        else:
             what_to_print = node.__class__.__name__ + "("
 
             # Find all the names of the current predecessors of the node
@@ -242,9 +256,6 @@ def get_printable_graph(graph: Union[OPGraph, nx.MultiDiGraph]) -> str:
             # Then, just print the predecessors in the right order
             list_of_arg_name.sort()
             what_to_print += ", ".join([x[1] for x in list_of_arg_name]) + ")"
-
-        else:
-            what_to_print = node.input_name
 
         returned_str += f"\n%{i} = {what_to_print}"
         map_table[node] = i

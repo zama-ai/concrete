@@ -27,10 +27,8 @@ class OPGraph:
         self.input_nodes = {
             node.program_input_idx: node
             for node in self.graph.nodes()
-            if len(self.graph.pred[node]) == 0
+            if len(self.graph.pred[node]) == 0 and isinstance(node, ir.Input)
         }
-
-        assert all(map(lambda x: isinstance(x, ir.Input), self.input_nodes.values()))
 
         graph_outputs = set(node for node in self.graph.nodes() if len(self.graph.succ[node]) == 0)
 
