@@ -22,7 +22,7 @@ jobs:
         run: docker build -t $IMAGE -f builders/Dockerfile.mlir-env .
       
       - name: login
-        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
       
       - name: tag and publish
         run: |
