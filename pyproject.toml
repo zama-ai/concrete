@@ -14,7 +14,7 @@ matplotlib = "^3.4.2"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.2"
-black = "21.6b0"
+black = "21.7b0"
 pylint = "^2.9.3"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
