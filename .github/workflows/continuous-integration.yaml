@@ -9,12 +9,20 @@ jobs:
       cancel-in-progress: true
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/zama-ai/zamalang-compiler
+      credentials:
+        username: zama-bot
+        password: ${{ secrets.BOT_TOKEN }}
     strategy:
       matrix:
         python-version: [3.8]
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Install Git
+        run: apt-get install git -y
+      - name: Checkout Code
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
