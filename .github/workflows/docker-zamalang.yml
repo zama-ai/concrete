@@ -1,0 +1,39 @@
+name: Docker image (ZamaLang)
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types: [created]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build_publish:
+    name: Build & Publish the Docker image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/zama-ai/zamalang-compiler
+      
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: build
+        run: docker build -t $IMAGE -f builders/Dockerfile.zamalang-env .
+      
+      - name: login
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin
+      
+      - name: tag and publish
+        run: |
+          docker tag $IMAGE $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
+
+      - name: tag and publish release image
+        if: github.event_name == 'release'
+        run: |
+          docker tag $IMAGE $IMAGE:${{ github.event.release.tag_name }}
+          docker push $IMAGE:${{ github.event.release.tag_name }}
