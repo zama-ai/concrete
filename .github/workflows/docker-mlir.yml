@@ -1,4 +1,4 @@
-name: Docker image
+name: Docker image (MLIR)
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     name: Build & Publish the Docker image
     runs-on: ubuntu-latest
     env:
-      IMAGE: qbozama/mlir
+      IMAGE: ghcr.io/zama-ai/mlir
       
     steps:
       - uses: actions/checkout@v2
@@ -22,10 +22,8 @@ jobs:
         run: docker build -t $IMAGE -f builders/Dockerfile.mlir-env .
       
       - name: login
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin
       
       - name: tag and publish
         run: |
-          docker tag $IMAGE $IMAGE:${{ github.sha }}
           docker push $IMAGE:latest
-          docker push $IMAGE:${{ github.sha }}
