@@ -11,6 +11,7 @@ add_mlir_python_extension(ZamalangBindingsPythonExtension _zamalang
   SOURCES
     ZamalangModule.cpp
     HLFHEModule.cpp
+    CompilerAPIModule.cpp
   LINK_LIBS
     ZAMALANGCAPIHLFHE
 )
