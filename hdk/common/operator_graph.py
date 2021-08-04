@@ -30,10 +30,6 @@ class OPGraph:
             if len(self.graph.pred[node]) == 0 and isinstance(node, ir.Input)
         }
 
-        graph_outputs = set(node for node in self.graph.nodes() if len(self.graph.succ[node]) == 0)
-
-        assert set(self.output_nodes.values()) == graph_outputs
-
     def evaluate(self, inputs: Mapping[int, Any]) -> Dict[ir.IntermediateNode, Any]:
         """Function to evaluate a graph and get intermediate values for all nodes
 

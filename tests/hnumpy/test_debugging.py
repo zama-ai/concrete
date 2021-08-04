@@ -58,6 +58,10 @@ from hdk.hnumpy import tracing
             lambda x, y: (y, x),
             "\n%0 = y\n%1 = x\nreturn(%0, %1)",
         ),
+        (
+            lambda x, y: (x, x + 1),
+            "\n%0 = x\n%1 = ConstantInput(1)\n%2 = Add(0, 1)\nreturn(%0, %2)",
+        ),
     ],
 )
 @pytest.mark.parametrize(
