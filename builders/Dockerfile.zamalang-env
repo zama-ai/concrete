@@ -4,4 +4,4 @@ ENV PYTHONPATH=/llvm-project/build/python:/compiler/build/python:$PYTHONPATH
 
 COPY /compiler /compiler
 WORKDIR /compiler
-RUN mkdir -p build && make -B build && make -C build all
+RUN mkdir -p build && make -B build && make -C build all zamacompiler

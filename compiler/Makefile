@@ -6,3 +6,6 @@ zamacompiler:
 
 test:
 	${LLVM_PROJECT}/build/bin/llvm-lit -v tests/
+
+test_python:
+	pytest -v tests/python

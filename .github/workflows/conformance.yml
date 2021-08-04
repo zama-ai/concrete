@@ -28,5 +28,5 @@ jobs:
           image: ghcr.io/zama-ai/mlir@sha256:5b7adfbf4e28c5a7517ed0b2bb0347455dea86f495b3ba060f6bea70c9dc10d3
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}:/workspace
-          run: cd /workspace/compiler && mkdir build && cmake -B build . -DLLVM_DIR=$LLVM_PROJECT/build/lib/cmake/llvm -DMLIR_DIR=$LLVM_PROJECT/build/lib/cmake/mlir && make -C build/ zamacompiler && make test
+          options: -v ${{ github.workspace }}:/workspace -e PYTHONPATH=/llvm-project/build/python:/workspace/compiler/build/python
+          run: cd /workspace/compiler && mkdir build && cmake -B build . -DLLVM_DIR=$LLVM_PROJECT/build/lib/cmake/llvm -DMLIR_DIR=$LLVM_PROJECT/build/lib/cmake/mlir && make -C build/ all zamacompiler && make test && pip install pytest && make test_python
