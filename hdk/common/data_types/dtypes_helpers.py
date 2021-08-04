@@ -6,7 +6,7 @@ from .base import BaseDataType
 from .integers import Integer
 from .values import BaseValue, ClearValue, EncryptedValue
 
-INTEGER_TYPES = set([Integer])
+INTEGER_TYPES = (Integer,)
 
 
 def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
@@ -18,9 +18,8 @@ def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is an encrypted value of type Integer
     """
-    return (
-        isinstance(value_to_check, EncryptedValue)
-        and type(value_to_check.data_type) in INTEGER_TYPES
+    return isinstance(value_to_check, EncryptedValue) and isinstance(
+        value_to_check.data_type, INTEGER_TYPES
     )
 
 
