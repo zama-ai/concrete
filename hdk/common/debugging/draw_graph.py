@@ -1,5 +1,5 @@
 """functions to draw the different graphs we can generate in the package, eg to debug"""
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -13,6 +13,7 @@ IR_NODE_COLOR_MAPPING = {
     ir.Add: "red",
     ir.Sub: "yellow",
     ir.Mul: "green",
+    "output": "magenta",
 }
 
 
@@ -87,7 +88,7 @@ def human_readable_layout(graph: nx.Graph, x_delta: float = 1.0, y_delta: float 
 
 
 def draw_graph(
-    graph: Union[OPGraph, nx.MultiDiGraph],
+    opgraph: OPGraph,
     block_until_user_closes_graph: bool = True,
     draw_edge_numbers: bool = True,
 ) -> None:
@@ -95,7 +96,7 @@ def draw_graph(
     Draw a graph
 
     Args:
-        graph (Union[OPGraph, nx.MultiDiGraph]): The graph that we want to draw
+        graph (OPGraph): The graph that we want to draw
         block_until_user_closes_graph (bool): if True, will wait the user to
             close the figure before continuing; False is useful for the CI tests
         draw_edge_numbers (bool): if True, add the edge number on the arrow
@@ -111,14 +112,20 @@ def draw_graph(
     # FIXME: less variables
     # pylint: disable=too-many-locals
 
-    # Allow to pass either OPGraph or an nx graph, manage this here
-    graph = graph.graph if isinstance(graph, OPGraph) else graph
+    assert isinstance(opgraph, OPGraph)
+    set_of_nodes_which_are_outputs = set(opgraph.output_nodes.values())
+    graph = opgraph.graph
 
     # Positions of the node
     pos = human_readable_layout(graph)
 
     # Colors and labels
-    color_map = [IR_NODE_COLOR_MAPPING[type(node)] for node in graph.nodes()]
+    def get_color(node):
+        if node in set_of_nodes_which_are_outputs:
+            return IR_NODE_COLOR_MAPPING["output"]
+        return IR_NODE_COLOR_MAPPING[type(node)]
+
+    color_map = [get_color(node) for node in graph.nodes()]
 
     # For most types, we just pick the operation as the label, but for Input,
     # we take the name of the variable, ie the argument name of the function
@@ -212,18 +219,19 @@ def draw_graph(
     # pylint: enable=too-many-locals
 
 
-def get_printable_graph(graph: Union[OPGraph, nx.MultiDiGraph]) -> str:
+def get_printable_graph(opgraph: OPGraph) -> str:
     """Return a string representing a graph
 
     Args:
-        graph (Union[OPGraph, nx.MultiDiGraph]): The graph that we want to draw
+        graph (OPGraph): The graph that we want to draw
 
     Returns:
         str: a string to print or save in a file
     """
 
-    # Allow to pass either OPGraph or an nx graph, manage this here
-    graph = graph.graph if isinstance(graph, OPGraph) else graph
+    assert isinstance(opgraph, OPGraph)
+    list_of_nodes_which_are_outputs = list(opgraph.output_nodes.values())
+    graph = opgraph.graph
 
     returned_str = ""
 
@@ -260,5 +268,8 @@ def get_printable_graph(graph: Union[OPGraph, nx.MultiDiGraph]) -> str:
         returned_str += f"\n%{i} = {what_to_print}"
         map_table[node] = i
         i += 1
+
+    return_part = ", ".join(["%" + str(map_table[n]) for n in list_of_nodes_which_are_outputs])
+    returned_str += f"\nreturn({return_part})"
 
     return returned_str
