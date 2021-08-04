@@ -3,9 +3,6 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
-
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
@@ -19,10 +16,16 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/Sequence.h"
 
+#include "zamalang/Conversion/Passes.h"
+#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+
 namespace {
 struct MLIRLowerableDialectsToLLVMPass
     : public MLIRLowerableDialectsToLLVMBase<MLIRLowerableDialectsToLLVMPass> {
   void runOnOperation() final;
+
+  /// Convert types to the LLVM dialect-compatible type
+  static llvm::Optional<mlir::Type> convertTypes(mlir::Type type);
 };
 } // namespace
 
@@ -35,6 +38,7 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   // Setup the LLVMTypeConverter (that converts `std` types to `llvm` types) and
   // add our types conversion to `llvm` compatible type.
   mlir::LLVMTypeConverter typeConverter(&getContext());
+  typeConverter.addConversion(convertTypes);
 
   // Setup the set of the patterns rewriter. At this point we want to
   // convert the `scf` operations to `std` and `std` operations to `llvm`.
@@ -47,6 +51,15 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   if (mlir::applyFullConversion(module, target, std::move(patterns)).failed()) {
     signalPassFailure();
   }
+}
+
+llvm::Optional<mlir::Type>
+MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
+  if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
+    return mlir::LLVM::LLVMPointerType::get(
+        mlir::IntegerType::get(type.getContext(), 8));
+  }
+  return llvm::None;
 }
 
 namespace mlir {

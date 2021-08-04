@@ -1,5 +1,8 @@
 build:
-	cmake -B build . -DLLVM_DIR=${LLVM_PROJECT}/build/lib/cmake/llvm    -DMLIR_DIR=${LLVM_PROJECT}/build/lib/cmake/mlir
+	cmake -B build . \
+	-DLLVM_DIR=${LLVM_PROJECT}/build/lib/cmake/llvm \
+	-DMLIR_DIR=${LLVM_PROJECT}/build/lib/cmake/mlir \
+	-DCONCRETE_FFI_RELEASE=${CONCRETE_PROJECT}/target/release
 
 zamacompiler:
 	make -C build/ zamacompiler

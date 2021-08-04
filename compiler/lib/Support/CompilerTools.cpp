@@ -8,6 +8,9 @@
 namespace mlir {
 namespace zamalang {
 
+// This is temporary while we doesn't yet have the high-level verification pass
+FHECircuitConstraint defaultGlobalFHECircuitConstraint{.norm2 = 20, .p = 6};
+
 void initLLVMNativeTarget() {
   // Initialize LLVM targets.
   llvm::InitializeNativeTarget();
@@ -27,8 +30,9 @@ void addFilteredPassToPassManager(
   }
 };
 
-mlir::LogicalResult CompilerTools::lowerHLFHEToMlirLLVMDialect(
+mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
     mlir::MLIRContext &context, mlir::Operation *module,
+    FHECircuitConstraint &constraint,
     llvm::function_ref<bool(std::string)> enablePass) {
   mlir::PassManager pm(&context);
 
@@ -37,11 +41,7 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirLLVMDialect(
       pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg(), enablePass);
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
-  addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
-  addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
-      enablePass);
+  constraint = defaultGlobalFHECircuitConstraint;
 
   // Run the passes
   if (pm.run(module).failed()) {
@@ -51,14 +51,31 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirLLVMDialect(
   return mlir::success();
 }
 
+mlir::LogicalResult CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
+    mlir::MLIRContext &context, mlir::Operation *module,
+    llvm::function_ref<bool(std::string)> enablePass) {
+
+  mlir::PassManager pm(&context);
+  addFilteredPassToPassManager(
+      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
+  addFilteredPassToPassManager(
+      pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
+      enablePass);
+
+  if (pm.run(module).failed()) {
+    return mlir::failure();
+  }
+  return mlir::success();
+}
+
 llvm::Expected<std::unique_ptr<llvm::Module>> CompilerTools::toLLVMModule(
-    llvm::LLVMContext &context, mlir::ModuleOp &module,
+    llvm::LLVMContext &llvmContext, mlir::ModuleOp &module,
     llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline) {
 
   initLLVMNativeTarget();
   mlir::registerLLVMDialectTranslation(*module->getContext());
 
-  auto llvmModule = mlir::translateModuleToLLVMIR(module, context);
+  auto llvmModule = mlir::translateModuleToLLVMIR(module, llvmContext);
   if (!llvmModule) {
     return llvm::make_error<llvm::StringError>(
         "failed to translate MLIR to LLVM IR", llvm::inconvertibleErrorCode());
@@ -111,6 +128,70 @@ llvm::Error JITLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
   return llvm::make_error<llvm::StringError>(
       "wrong number of argument when invoke the JIT lambda",
       llvm::inconvertibleErrorCode());
+}
+
+llvm::Error JITLambda::invoke(Argument &args) { return invokeRaw(args.rawArg); }
+
+JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
+  inputs = std::vector<void *>(keySet.numInputs());
+  results = std::vector<void *>(keySet.numOutputs());
+  // The raw argument contains pointers to inputs and pointers to store the
+  // results
+  rawArg =
+      std::vector<void *>(keySet.numInputs() + keySet.numOutputs(), nullptr);
+  // Set the results pointer on the rawArg
+  for (auto i = keySet.numInputs(); i < rawArg.size(); i++) {
+    rawArg[i] = &results[i - keySet.numInputs()];
+  }
+}
+
+JITLambda::Argument::~Argument() {
+  int err;
+  for (auto i = 0; i < keySet.numInputs(); i++) {
+    if (keySet.isInputEncrypted(i)) {
+      free_lwe_ciphertext_u64(&err, (LweCiphertext_u64 *)(inputs[i]));
+    }
+  }
+}
+
+llvm::Expected<std::unique_ptr<JITLambda::Argument>>
+JITLambda::Argument::create(KeySet &keySet) {
+  auto args = std::make_unique<JITLambda::Argument>(keySet);
+  return std::move(args);
+}
+
+llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
+  // If argument is not encrypted, just save.
+  if (!keySet.isInputEncrypted(pos)) {
+    inputs[pos] = (void *)arg;
+    rawArg[pos] = &inputs[pos];
+    return llvm::Error::success();
+  }
+  // Else if is encryted, allocate ciphertext.
+  LweCiphertext_u64 *ctArg;
+  if (auto err = this->keySet.allocate_lwe(pos, &ctArg)) {
+    return std::move(err);
+  }
+  if (auto err = this->keySet.encrypt_lwe(pos, ctArg, arg)) {
+    return std::move(err);
+  }
+  inputs[pos] = ctArg;
+  rawArg[pos] = &inputs[pos];
+  return llvm::Error::success();
+}
+
+llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t &res) {
+  // If result is not encrypted, just set the result
+  if (!keySet.isOutputEncrypted(pos)) {
+    res = (uint64_t)(results[pos]);
+    return llvm::Error::success();
+  }
+  // Else if is encryted, decrypt
+  LweCiphertext_u64 *ct = (LweCiphertext_u64 *)(results[pos]);
+  if (auto err = this->keySet.decrypt_lwe(pos, ct, res)) {
+    return std::move(err);
+  }
+  return llvm::Error::success();
 }
 
 } // namespace zamalang

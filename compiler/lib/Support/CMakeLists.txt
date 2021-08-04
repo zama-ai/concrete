@@ -1,5 +1,8 @@
 add_mlir_library(ZamalangSupport
   CompilerTools.cpp
+  V0Parameters.cpp
+  ClientParameters.cpp
+  KeySet.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/zamalang/Support
@@ -13,4 +16,7 @@ add_mlir_library(ZamalangSupport
   MLIRLowerableDialectsToLLVM
 
   MLIRExecutionEngine
-  ${LLVM_PTHREAD_LIB})
+  ${LLVM_PTHREAD_LIB}
+  
+  Concrete
+)
