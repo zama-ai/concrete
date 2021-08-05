@@ -12,9 +12,9 @@ You can follow [this](https://realpython.com/installing-python/) guide to instal
 
 ### Installing Poetry
 
-`Poetry` is our package manager. It simplifies depenency and environment management by a lot.
+`Poetry` is our package manager. It simplifies dependency and environment management by a lot.
 
-You can follow [this](https://python-poetry.org/docs/#installation) guide to install it (this is the official guide so just use it).
+You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
 ### Cloning repository
 
@@ -41,6 +41,14 @@ Finally, all we need to do is to activate the newly created environment using th
 source .venv/bin/activate
 ```
 
+### Leaving the environment
+
+After your work is done you can simply run the following command to leave the environment.
+
+```shell
+deactivate
+```
+
 ### Syncing environment with the latest changes
 
 From time to time, new dependencies will be added to project or the old ones will be removed. The command below will make sure the project have proper environment. So run it regularly!
@@ -55,13 +63,13 @@ In this section we will go over some terms that we use throughout the project.
 
 - intermediate representation
     - a data structure to represent a calculation
-    - basically a computation graph where nodes are either inputs or operations
+    - basically a computation graph where nodes are either inputs or operations on other nodes
 - tracing
     - act of creating intermediate representation from plain python functions
     - this is awesome to have to avoid manual intermediate representation creation
 - bounds
     - before intermediate representation is sent to the compiler, we need to know which node will output which type (e.g., uint3 vs uint5)
-    - there are several ways to do this but the simplest one is to evaluate the intermediate representation with all combinations of inputs and remember the maximum and the minimum values for each node
+    - there are several ways to do this but the simplest one is to evaluate the intermediate representation with all combinations of inputs and remember the maximum and the minimum values for each node, which is what we call bounds, and bounds can be used to determine the appropriate type for each node
 
 ## Module Structure
 
@@ -82,7 +90,7 @@ Now, you have a working environment, and you know what is where in the project. 
 
 ### Creating a new branch
 
-We are using a consistent branch naming schema, and you are expected to follow it as well. Here is the format and some examples.
+We are using a consistent branch naming scheme, and you are expected to follow it as well. Here is the format and some examples.
 
 ```shell
 git checkout -b {feat|fix|refactor|test|benchmark|doc|style|chore}/short-description{_$issue_id}?
@@ -106,7 +114,7 @@ make pytest
 
 ### Commiting
 
-We are using a consistent commit naming schema, and you are expected to follow it as well. Here is the format and some examples.
+We are using a consistent commit naming scheme, and you are expected to follow it as well. Here is the format and some examples.
 
 ```shell
 git commit -m "{feat|fix|refactor|test|benchmark|doc|style|chore}{($location)}?: description of the change"
@@ -120,7 +128,7 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 ```
 
-To learn more about it, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
+To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
 
 ### Before creating pull request
 
