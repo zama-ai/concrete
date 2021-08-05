@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from ..data_types import BaseValue
 from ..data_types.dtypes_helpers import mix_values_determine_holding_dtype
+from ..data_types.floats import Float
 from ..data_types.integers import Integer, get_bits_to_represent_int
 from ..data_types.scalars import Scalars
 from ..data_types.values import ClearValue
@@ -153,12 +154,16 @@ class ConstantInput(IntermediateNode):
         super().__init__([])
         self.constant_data = constant_data
 
-        # TODO: manage other cases, we can't call get_bits_to_represent_int
-        assert isinstance(constant_data, int)
-        is_signed = constant_data < 0
-        self.outputs = [
-            ClearValue(Integer(get_bits_to_represent_int(constant_data, is_signed), is_signed))
-        ]
+        assert isinstance(
+            constant_data, (int, float)
+        ), "Only int and float are support for constant input"
+        if isinstance(constant_data, int):
+            is_signed = constant_data < 0
+            self.outputs = [
+                ClearValue(Integer(get_bits_to_represent_int(constant_data, is_signed), is_signed))
+            ]
+        elif isinstance(constant_data, float):
+            self.outputs = [ClearValue(Float(64))]
 
     def evaluate(self, inputs: Mapping[int, Any]) -> Any:
         return self.constant_data

@@ -5,6 +5,7 @@ from typing import Tuple
 import pytest
 
 from hdk.common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
+from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.data_types.values import EncryptedValue
 from hdk.hnumpy.tracing import trace_numpy_function
@@ -26,6 +27,13 @@ from hdk.hnumpy.tracing import trace_numpy_function
             (-14, 7),
             Integer(5, is_signed=True),
             id="x + y, (-10, 2), (-4, 5), (-14, 7)",
+        ),
+        pytest.param(
+            lambda x, y: x + y + 1.7,
+            ((-10, 2), (-4, 5)),
+            (-12.3, 8.7),
+            Float(64),
+            id="x + y + 1.7, (-10, 2), (-4, 5), (-12.3, 8.7)",
         ),
         pytest.param(
             lambda x, y: x + y + 1,
@@ -67,21 +75,42 @@ from hdk.hnumpy.tracing import trace_numpy_function
             ((-10, 2), (-4, 5)),
             (-57, -36),
             Integer(7, is_signed=True),
-            id="x - y, (-10, 2), (-4, 5), (-57, -36)",
+            id="x - y - 42, (-10, 2), (-4, 5), (-57, -36)",
+        ),
+        pytest.param(
+            lambda x, y: x - y - 41.5,
+            ((-10, 2), (-4, 5)),
+            (-56.5, -35.5),
+            Float(64),
+            id="x - y - 41.5, (-10, 2), (-4, 5), (-56.5, -35.5)",
         ),
         pytest.param(
             lambda x, y: 3 - x + y,
             ((-10, 2), (-4, 5)),
             (-3, 18),
             Integer(6, is_signed=True),
-            id="x - y, (-10, 2), (-4, 5), (-3, 18)",
+            id="3 - x + y, (-10, 2), (-4, 5), (-3, 18)",
+        ),
+        pytest.param(
+            lambda x, y: 2.8 - x + y,
+            ((-10, 2), (-4, 5)),
+            (-3.2, 17.8),
+            Float(64),
+            id="2.8 - x + y, (-10, 2), (-4, 5), (-3.2, 17.8)",
         ),
         pytest.param(
             lambda x, y: (-13) - x + y,
             ((-10, 2), (-4, 5)),
             (-19, 2),
             Integer(6, is_signed=True),
-            id="x - y, (-10, 2), (-4, 5), (-16, 2)",
+            id="(-13) - x + y, (-10, 2), (-4, 5), (-19, 2)",
+        ),
+        pytest.param(
+            lambda x, y: (-13.5) - x + y,
+            ((-10, 2), (-4, 5)),
+            (-19.5, 1.5),
+            Float(64),
+            id="(-13.5) - x + y, (-10, 2), (-4, 5), (-19.5, 1.5)",
         ),
         pytest.param(
             lambda x, y: x * y,
@@ -102,7 +131,14 @@ from hdk.hnumpy.tracing import trace_numpy_function
             ((-10, 2), (-4, 5)),
             (-150, 120),
             Integer(9, is_signed=True),
-            id="x * y, (-10, 2), (-4, 5), (-150, 120)",
+            id="(3 * x) * y, (-10, 2), (-4, 5), (-150, 120)",
+        ),
+        pytest.param(
+            lambda x, y: (3.0 * x) * y,
+            ((-10, 2), (-4, 5)),
+            (-150.0, 120.0),
+            Float(64),
+            id="(3.0 * x) * y, (-10, 2), (-4, 5), (-150.0, 120.0)",
         ),
         pytest.param(
             lambda x, y: (x * 11) * y,
@@ -116,7 +152,14 @@ from hdk.hnumpy.tracing import trace_numpy_function
             ((-10, 2), (-4, 5)),
             (-440, 550),
             Integer(11, is_signed=True),
-            id="x * y, (-10, 2), (-4, 5), (-440, 550)",
+            id="(x * (-11)) * y, (-10, 2), (-4, 5), (-440, 550)",
+        ),
+        pytest.param(
+            lambda x, y: (x * (-11.0)) * y,
+            ((-10, 2), (-4, 5)),
+            (-440.0, 550.0),
+            Float(64),
+            id="(x * (-11.0)) * y, (-10, 2), (-4, 5), (-440.0, 550.0)",
         ),
         pytest.param(
             lambda x, y: x + x + y,
@@ -188,10 +231,34 @@ def test_eval_op_graph_bounds_on_dataset(
             (Integer(2, is_signed=False), Integer(4, is_signed=False)),
         ),
         pytest.param(
+            lambda x, y: (x + 1.5, y + 9.6),
+            ((-1, 1), (3, 4)),
+            ((0.5, 2.5), (12.6, 13.6)),
+            (Float(64), Float(64)),
+        ),
+        pytest.param(
             lambda x, y: (x + y + 1, x * y + 42),
             ((-1, 1), (3, 4)),
             ((3, 6), (38, 46)),
             (Integer(3, is_signed=False), Integer(6, is_signed=False)),
+        ),
+        pytest.param(
+            lambda x, y: (x + y + 0.4, x * y + 41.7),
+            ((-1, 1), (3, 4)),
+            ((2.4, 5.4), (37.7, 45.7)),
+            (Float(64), Float(64)),
+        ),
+        pytest.param(
+            lambda x, y: (x + y + 1, x * y + 41.7),
+            ((-1, 1), (3, 4)),
+            ((3, 6), (37.7, 45.7)),
+            (Integer(3, is_signed=False), Float(64)),
+        ),
+        pytest.param(
+            lambda x, y: (x + y + 0.4, x * y + 42),
+            ((-1, 1), (3, 4)),
+            ((2.4, 5.4), (38, 46)),
+            (Float(64), Integer(6, is_signed=False)),
         ),
     ],
 )
@@ -218,10 +285,7 @@ def test_eval_op_graph_bounds_on_dataset_multiple_output(
 
     for i, output_node in op_graph.output_nodes.items():
         output_node_bounds = node_bounds[output_node]
-
         assert (output_node_bounds["min"], output_node_bounds["max"]) == expected_output_bounds[i]
-
-        assert EncryptedValue(Integer(64, True)) == output_node.outputs[0]
 
     op_graph.update_values_with_bounds(node_bounds)
 
