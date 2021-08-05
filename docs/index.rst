@@ -7,3 +7,4 @@ Homomorphic Development Kit's documentation
    :caption: Developer docs
 
    dev/ARCHITECTURE.md
+   dev/GETTING-STARTED.md

@@ -65,8 +65,7 @@ In this section we will go over some terms that we use throughout the project.
     - a data structure to represent a calculation
     - basically a computation graph where nodes are either inputs or operations on other nodes
 - tracing
-    - act of creating intermediate representation from plain python functions
-    - this is awesome to have to avoid manual intermediate representation creation
+    - it is our technique to take directly a plain numpy function from a user and deduce its intermediate representation in a painless way for the user
 - bounds
     - before intermediate representation is sent to the compiler, we need to know which node will output which type (e.g., uint3 vs uint5)
     - there are several ways to do this but the simplest one is to evaluate the intermediate representation with all combinations of inputs and remember the maximum and the minimum values for each node, which is what we call bounds, and bounds can be used to determine the appropriate type for each node
@@ -93,13 +92,13 @@ Now, you have a working environment, and you know what is where in the project. 
 We are using a consistent branch naming scheme, and you are expected to follow it as well. Here is the format and some examples.
 
 ```shell
-git checkout -b {feat|fix|refactor|test|benchmark|doc|style|chore}/short-description{_$issue_id}?
+git checkout -b {feat|fix|refactor|test|benchmark|doc|style|chore}/short-description_$issue_id
 ```
 
 e.g.
 
 ```shell
-git checkout -b feat/explicit-tlu
+git checkout -b feat/explicit-tlu_11
 git checkout -b fix/tracing_indexing_42
 ```
 
