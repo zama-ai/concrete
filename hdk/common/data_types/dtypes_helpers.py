@@ -1,12 +1,16 @@
 """File to hold helper functions for data types related stuff"""
 
+from copy import deepcopy
 from typing import cast
 
 from .base import BaseDataType
+from .floats import Float
 from .integers import Integer
 from .values import BaseValue, ClearValue, EncryptedValue
 
 INTEGER_TYPES = (Integer,)
+FLOAT_TYPES = (Float,)
+SUPPORTED_TYPES = INTEGER_TYPES + FLOAT_TYPES
 
 
 def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
@@ -57,36 +61,44 @@ def find_type_to_hold_both_lossy(
     Returns:
         BaseDataType: The dtype able to hold (potentially lossy) dtype1 and dtype2
     """
+    assert isinstance(dtype1, SUPPORTED_TYPES), f"Unsupported dtype1: {type(dtype1)}"
+    assert isinstance(dtype2, SUPPORTED_TYPES), f"Unsupported dtype2: {type(dtype2)}"
+
+    type_to_return: BaseDataType
+
     if isinstance(dtype1, Integer) and isinstance(dtype2, Integer):
         d1_signed = dtype1.is_signed
         d2_signed = dtype2.is_signed
         max_bits = max(dtype1.bit_width, dtype2.bit_width)
 
-        holding_integer: BaseDataType
-
         if d1_signed and d2_signed:
-            holding_integer = Integer(max_bits, is_signed=True)
+            type_to_return = Integer(max_bits, is_signed=True)
         elif not d1_signed and not d2_signed:
-            holding_integer = Integer(max_bits, is_signed=False)
+            type_to_return = Integer(max_bits, is_signed=False)
         elif d1_signed and not d2_signed:
             # 2 is unsigned, if it has the bigger bit_width, we need a signed integer that can hold
             # it, so add 1 bit of sign to its bit_width
             if dtype2.bit_width >= dtype1.bit_width:
                 new_bit_width = dtype2.bit_width + 1
-                holding_integer = Integer(new_bit_width, is_signed=True)
+                type_to_return = Integer(new_bit_width, is_signed=True)
             else:
-                holding_integer = Integer(dtype1.bit_width, is_signed=True)
+                type_to_return = Integer(dtype1.bit_width, is_signed=True)
         elif not d1_signed and d2_signed:
             # Same as above, with 1 and 2 switched around
             if dtype1.bit_width >= dtype2.bit_width:
                 new_bit_width = dtype1.bit_width + 1
-                holding_integer = Integer(new_bit_width, is_signed=True)
+                type_to_return = Integer(new_bit_width, is_signed=True)
             else:
-                holding_integer = Integer(dtype2.bit_width, is_signed=True)
+                type_to_return = Integer(dtype2.bit_width, is_signed=True)
+    elif isinstance(dtype1, Float) and isinstance(dtype2, Float):
+        max_bits = max(dtype1.bit_width, dtype2.bit_width)
+        type_to_return = Float(max_bits)
+    elif isinstance(dtype1, Float):
+        type_to_return = deepcopy(dtype1)
+    elif isinstance(dtype2, Float):
+        type_to_return = deepcopy(dtype2)
 
-        return holding_integer
-
-    raise NotImplementedError("For now only Integers are supported by find_type_to_hold_both_lossy")
+    return type_to_return
 
 
 def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> BaseValue:
