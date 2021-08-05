@@ -4,7 +4,7 @@ use crate::math::tensor::AsMutTensor;
 use concrete_commons::dispersion::DispersionParameter;
 use concrete_commons::numeric::UnsignedInteger;
 use concrete_commons::parameters::{
-    DecompositionLevelCount, GlweDimension, GlweSize, LweDimension, PolynomialSize,
+    DecompositionLevelCount, GlweDimension, GlweSize, LweDimension, LweSize, PolynomialSize,
 };
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
@@ -119,6 +119,50 @@ impl EncryptionRandomGenerator {
         self.par_try_fork(glwe_size.0, mask_bytes, noise_bytes)
     }
 
+    // Forks the generator, when splitting a ggsw into level matrices.
+    pub(crate) fn fork_gsw_to_gsw_levels<T: UnsignedInteger>(
+        &mut self,
+        level: DecompositionLevelCount,
+        lwe_size: LweSize,
+    ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
+        let mask_bytes = mask_bytes_per_gsw_level::<T>(lwe_size);
+        let noise_bytes = noise_bytes_per_gsw_level(lwe_size);
+        self.try_fork(level.0, mask_bytes, noise_bytes)
+    }
+
+    // Forks the generator into a parallel iterator, when splitting a ggsw into level matrices.
+    #[cfg(feature = "multithread")]
+    pub(crate) fn par_fork_gsw_to_gsw_levels<T: UnsignedInteger>(
+        &mut self,
+        level: DecompositionLevelCount,
+        lwe_size: LweSize,
+    ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
+        let mask_bytes = mask_bytes_per_gsw_level::<T>(lwe_size);
+        let noise_bytes = noise_bytes_per_gsw_level(lwe_size);
+        self.par_try_fork(level.0, mask_bytes, noise_bytes)
+    }
+
+    // Forks the generator, when splitting a ggsw level matrix to glwe.
+    pub(crate) fn fork_gsw_level_to_lwe<T: UnsignedInteger>(
+        &mut self,
+        lwe_size: LweSize,
+    ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
+        let mask_bytes = mask_bytes_per_lwe::<T>(lwe_size.to_lwe_dimension());
+        let noise_bytes = noise_bytes_per_lwe();
+        self.try_fork(lwe_size.0, mask_bytes, noise_bytes)
+    }
+
+    // Forks the generator into a parallel iterator, when splitting a ggsw level matrix to glwe.
+    #[cfg(feature = "multithread")]
+    pub(crate) fn par_fork_gsw_level_to_lwe<T: UnsignedInteger>(
+        &mut self,
+        lwe_size: LweSize,
+    ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
+        let mask_bytes = mask_bytes_per_lwe::<T>(lwe_size.to_lwe_dimension());
+        let noise_bytes = noise_bytes_per_lwe();
+        self.par_try_fork(lwe_size.0, mask_bytes, noise_bytes)
+    }
+
     // Forks both generators into an iterator
     fn try_fork(
         &mut self,
@@ -219,6 +263,14 @@ fn mask_bytes_per_ggsw_level<T: UnsignedInteger>(
     glwe_size.0 * mask_bytes_per_glwe::<T>(glwe_size.to_glwe_dimension(), poly_size)
 }
 
+fn mask_bytes_per_lwe<T: UnsignedInteger>(lwe_dimension: LweDimension) -> usize {
+    lwe_dimension.0 * mask_bytes_per_coef::<T>()
+}
+
+fn mask_bytes_per_gsw_level<T: UnsignedInteger>(lwe_size: LweSize) -> usize {
+    lwe_size.0 * mask_bytes_per_lwe::<T>(lwe_size.to_lwe_dimension())
+}
+
 fn mask_bytes_per_ggsw<T: UnsignedInteger>(
     level: DecompositionLevelCount,
     glwe_size: GlweSize,
@@ -242,6 +294,15 @@ fn noise_bytes_per_glwe(poly_size: PolynomialSize) -> usize {
 
 fn noise_bytes_per_ggsw_level(glwe_size: GlweSize, poly_size: PolynomialSize) -> usize {
     glwe_size.0 * noise_bytes_per_glwe(poly_size)
+}
+
+fn noise_bytes_per_lwe() -> usize {
+    // Here we take 3 to keep a safety margin
+    noise_bytes_per_coef() * 3
+}
+
+fn noise_bytes_per_gsw_level(lwe_size: LweSize) -> usize {
+    lwe_size.0 * noise_bytes_per_lwe()
 }
 
 fn noise_bytes_per_ggsw(

@@ -6,5 +6,6 @@ pub mod bootstrap;
 pub mod encoding;
 pub mod ggsw;
 pub mod glwe;
+pub mod gsw;
 pub mod lwe;
 pub mod secret;
