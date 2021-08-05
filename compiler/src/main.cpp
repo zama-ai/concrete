@@ -15,6 +15,8 @@
 #include "zamalang/Conversion/Passes.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
+#include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
+#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 #include "zamalang/Support/CompilerTools.h"
@@ -170,6 +172,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   // Load our Dialect in this MLIR Context.
   context.getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   context.getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
+  context.getOrLoadDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
   context.getOrLoadDialect<mlir::StandardOpsDialect>();
   context.getOrLoadDialect<mlir::memref::MemRefDialect>();
   context.getOrLoadDialect<mlir::linalg::LinalgDialect>();

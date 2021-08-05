@@ -11,6 +11,7 @@ target_link_libraries(zamacompiler
   ${conversion_libs}
 
   MLIRTransforms
+  LowLFHEDialect
   MidLFHEDialect
   HLFHEDialect
 
