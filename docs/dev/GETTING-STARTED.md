@@ -120,6 +120,8 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 ```
 
+To learn more about it, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
+
 ### Before creating pull request
 
 You should rebase on top of `main` branch before you create your pull request. This is to avoid merge commits and have a clean git log. After you commit your changes to your new branch, you can use the following commands to rebase.
