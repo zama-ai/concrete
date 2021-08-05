@@ -219,11 +219,26 @@ def draw_graph(
     # pylint: enable=too-many-locals
 
 
-def get_printable_graph(opgraph: OPGraph) -> str:
+def data_type_to_string(node):
+    """Return the datatypes of the outputs of the node
+
+    Args:
+        node: a graph node
+
+    Returns:
+        str: a string representing the datatypes of the outputs of the node
+
+    """
+    return ", ".join([str(o.data_type) for o in node.outputs])
+
+
+def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
     """Return a string representing a graph
 
     Args:
         graph (OPGraph): The graph that we want to draw
+        show_data_types (bool): Whether or not showing data_types of nodes, eg
+            to see their width
 
     Returns:
         str: a string to print or save in a file
@@ -265,7 +280,14 @@ def get_printable_graph(opgraph: OPGraph) -> str:
             list_of_arg_name.sort()
             what_to_print += ", ".join([x[1] for x in list_of_arg_name]) + ")"
 
-        returned_str += f"\n%{i} = {what_to_print}"
+        new_line = f"%{i} = {what_to_print}"
+
+        # Manage datatypes
+        if show_data_types:
+            new_line = f"{new_line: <40s} # {data_type_to_string(node)}"
+
+        returned_str += f"\n{new_line}"
+
         map_table[node] = i
         i += 1
 

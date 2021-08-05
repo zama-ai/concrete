@@ -96,3 +96,46 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
     print(f"\nExp {ref_graph_str}\n")
 
     assert str_of_the_graph == ref_graph_str
+
+
+# Remark that the bitwidths are not particularly correct (eg, a MUL of a 17b times 23b
+# returning 23b), since they are replaced later by the real bitwidths computed on the
+# dataset
+@pytest.mark.parametrize(
+    "lambda_f,x_y,ref_graph_str",
+    [
+        (
+            lambda x, y: x + y,
+            (
+                EncryptedValue(Integer(64, is_signed=False)),
+                EncryptedValue(Integer(32, is_signed=True)),
+            ),
+            "\n%0 = x                                   # Integer<unsigned, 64 bits>"
+            "\n%1 = y                                   # Integer<signed, 32 bits>"
+            "\n%2 = Add(0, 1)                           # Integer<signed, 65 bits>"
+            "\nreturn(%2)",
+        ),
+        (
+            lambda x, y: x * y,
+            (
+                EncryptedValue(Integer(17, is_signed=False)),
+                EncryptedValue(Integer(23, is_signed=False)),
+            ),
+            "\n%0 = x                                   # Integer<unsigned, 17 bits>"
+            "\n%1 = y                                   # Integer<unsigned, 23 bits>"
+            "\n%2 = Mul(0, 1)                           # Integer<unsigned, 23 bits>"
+            "\nreturn(%2)",
+        ),
+    ],
+)
+def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
+    "Test hnumpy get_printable_graph with show_data_types"
+    x, y = x_y
+    graph = tracing.trace_numpy_function(lambda_f, {"x": x, "y": y})
+
+    str_of_the_graph = get_printable_graph(graph, show_data_types=True)
+
+    print(f"\nGot {str_of_the_graph}\n")
+    print(f"\nExp {ref_graph_str}\n")
+
+    assert str_of_the_graph == ref_graph_str
