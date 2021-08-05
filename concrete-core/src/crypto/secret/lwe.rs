@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use crate::ck_dim_eq;
 use crate::crypto::encoding::{Plaintext, PlaintextList};
+use crate::crypto::gsw::GswCiphertext;
 use crate::crypto::lwe::{LweCiphertext, LweList};
 use crate::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
 use crate::math::random::{Gaussian, RandomGenerable};
@@ -12,6 +14,8 @@ use concrete_commons::key_kinds::{
 };
 use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::LweDimension;
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
 use std::marker::PhantomData;
 
 /// A LWE secret key.
@@ -583,6 +587,168 @@ where
         );
         for (cipher, mut output) in cipher.ciphertext_iter().zip(output.plaintext_iter_mut()) {
             self.decrypt_lwe(&mut output, &cipher);
+        }
+    }
+
+    /// This function encrypts a message as a GSW ciphertext.
+    pub fn encrypt_constant_gsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut GswCiphertext<OutputCont, Scalar>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter,
+        generator: &mut EncryptionRandomGenerator,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        GswCiphertext<OutputCont, Scalar>: AsMutTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
+        let gen_iter = generator
+            .fork_gsw_to_gsw_levels::<Scalar>(
+                encrypted.decomposition_level_count(),
+                self.key_size().to_lwe_size(),
+            )
+            .expect("Failed to split generator into gsw levels");
+        let base_log = encrypted.decomposition_base_log();
+        for (mut matrix, mut generator) in encrypted.level_matrix_iter_mut().zip(gen_iter) {
+            let decomposition = encoded.0
+                * (Scalar::ONE
+                    << (<Scalar as Numeric>::BITS
+                        - (base_log.0 * (matrix.decomposition_level().0))));
+            let gen_iter = generator
+                .fork_gsw_level_to_lwe::<Scalar>(self.key_size().to_lwe_size())
+                .expect("Failed to split generator into lwe");
+
+            // We iterate over the rows of the level matrix
+            for ((index, row), mut generator) in matrix.row_iter_mut().enumerate().zip(gen_iter) {
+                let mut lwe_ct = row.into_lwe();
+
+                // We issue a fresh  encryption of zero
+                self.encrypt_lwe(
+                    &mut lwe_ct,
+                    &Plaintext(Scalar::ZERO),
+                    noise_parameters,
+                    &mut generator,
+                );
+
+                // We retrieve the coefficient in the diagonal
+                let level_coeff = lwe_ct
+                    .as_mut_tensor()
+                    .as_mut_container()
+                    .as_mut_slice()
+                    .get_mut(index)
+                    .unwrap();
+
+                // We update it
+                *level_coeff = level_coeff.wrapping_add(decomposition);
+            }
+        }
+    }
+
+    /// This function encrypts a message as a GSW ciphertext, using as many threads as possible.
+    ///
+    /// # Notes
+    /// This method is hidden behind the "multithread" feature gate.
+    #[cfg(feature = "multithread")]
+    pub fn par_encrypt_constant_gsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut GswCiphertext<OutputCont, Scalar>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter + Send + Sync,
+        generator: &mut EncryptionRandomGenerator,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        GswCiphertext<OutputCont, Scalar>: AsMutTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus + Send + Sync,
+        Cont: Sync,
+    {
+        ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
+        let generators = generator
+            .par_fork_gsw_to_gsw_levels::<Scalar>(
+                encrypted.decomposition_level_count(),
+                self.key_size().to_lwe_size(),
+            )
+            .expect("Failed to split generator into gsw levels");
+        let base_log = encrypted.decomposition_base_log();
+        encrypted
+            .par_level_matrix_iter_mut()
+            .zip(generators)
+            .for_each(move |(mut matrix, mut generator)| {
+                let decomposition = encoded.0
+                    * (Scalar::ONE
+                        << (<Scalar as Numeric>::BITS
+                            - (base_log.0 * (matrix.decomposition_level().0))));
+                let gen_iter = generator
+                    .par_fork_gsw_level_to_lwe::<Scalar>(self.key_size().to_lwe_size())
+                    .expect("Failed to split generator into lwe");
+                // We iterate over the rows of the level matrix
+                matrix
+                    .par_row_iter_mut()
+                    .enumerate()
+                    .zip(gen_iter)
+                    .for_each(|((index, row), mut generator)| {
+                        let mut lwe_ct = row.into_lwe();
+                        // We issue a fresh  encryption of zero
+                        self.encrypt_lwe(
+                            &mut lwe_ct,
+                            &Plaintext(Scalar::ZERO),
+                            noise_parameters,
+                            &mut generator,
+                        );
+                        // We retrieve the coefficient in the diagonal
+                        let level_coeff = lwe_ct
+                            .as_mut_tensor()
+                            .as_mut_container()
+                            .as_mut_slice()
+                            .get_mut(index)
+                            .unwrap();
+                        // We update it
+                        *level_coeff = level_coeff.wrapping_add(decomposition);
+                    })
+            })
+    }
+
+    /// This function encrypts a message as a GSW ciphertext whose lwe masks are all zeros.
+    pub fn trivial_encrypt_constant_ggsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut GswCiphertext<OutputCont, Scalar>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter,
+        generator: &mut EncryptionRandomGenerator,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        GswCiphertext<OutputCont, Scalar>: AsMutTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
+        // We fill the gsw with trivial lwe encryptions of zero:
+        for mut lwe in encrypted.as_mut_lwe_list().ciphertext_iter_mut() {
+            let (mut body, mut mask) = lwe.get_mut_body_and_mask();
+            mask.as_mut_tensor().fill_with_element(Scalar::ZERO);
+            body.0 = generator.random_noise(noise_parameters);
+        }
+        let base_log = encrypted.decomposition_base_log();
+        for mut matrix in encrypted.level_matrix_iter_mut() {
+            let decomposition = encoded.0
+                * (Scalar::ONE
+                    << (<Scalar as Numeric>::BITS
+                        - (base_log.0 * (matrix.decomposition_level().0))));
+            // We iterate over the rows of the level matrix
+            for (index, row) in matrix.row_iter_mut().enumerate() {
+                let mut lwe_ct = row.into_lwe();
+                // We retrieve the coefficient in the diagonal
+                let level_coeff = lwe_ct
+                    .as_mut_tensor()
+                    .as_mut_container()
+                    .as_mut_slice()
+                    .get_mut(index)
+                    .unwrap();
+                // We update it
+                *level_coeff = level_coeff.wrapping_add(decomposition);
+            }
         }
     }
 }
