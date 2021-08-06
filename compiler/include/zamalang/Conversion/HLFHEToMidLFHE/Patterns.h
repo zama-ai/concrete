@@ -62,6 +62,12 @@ createApplyLookupTableGLWEOpFromHLFHE(mlir::PatternRewriter rewriter,
 } // namespace zamalang
 } // namespace mlir
 
+namespace {
 #include "zamalang/Conversion/HLFHEToMidLFHE/Patterns.h.inc"
+}
+
+void populateWithGeneratedHLFHEToMidLFHE(mlir::RewritePatternSet &patterns) {
+  populateWithGenerated(patterns);
+}
 
 #endif
