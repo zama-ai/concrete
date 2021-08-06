@@ -591,6 +591,39 @@ where
     }
 
     /// This function encrypts a message as a GSW ciphertext.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    ///
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
+    /// use concrete_core::crypto::encoding::Plaintext;
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::LweSecretKey;
+    ///
+    /// let mut generator = SecretRandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(256), &mut generator);
+    /// let mut ciphertext = GswCiphertext::allocate(
+    ///     0 as u32,
+    ///     LweSize(257),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.encrypt_constant_gsw(
+    ///     &mut ciphertext,
+    ///     &Plaintext(10),
+    ///     noise,
+    ///     &mut secret_generator,
+    /// );
+    /// ```
     pub fn encrypt_constant_gsw<OutputCont, Scalar>(
         &self,
         encrypted: &mut GswCiphertext<OutputCont, Scalar>,
@@ -650,6 +683,39 @@ where
     ///
     /// # Notes
     /// This method is hidden behind the "multithread" feature gate.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    ///
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
+    /// use concrete_core::crypto::encoding::Plaintext;
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::LweSecretKey;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+    /// let mut ciphertext = GswCiphertext::allocate(
+    ///     0 as u32,
+    ///     LweSize(257),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.par_encrypt_constant_gsw(
+    ///     &mut ciphertext,
+    ///     &Plaintext(10),
+    ///     noise,
+    ///     &mut encryption_generator,
+    /// );
+    /// ```
     #[cfg(feature = "multithread")]
     pub fn par_encrypt_constant_gsw<OutputCont, Scalar>(
         &self,
@@ -711,7 +777,41 @@ where
     }
 
     /// This function encrypts a message as a GSW ciphertext whose lwe masks are all zeros.
-    pub fn trivial_encrypt_constant_ggsw<OutputCont, Scalar>(
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    ///
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
+    /// use concrete_core::crypto::encoding::Plaintext;
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::LweSecretKey;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: LweSecretKey<_, Vec<u32>> =
+    ///     LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+    /// let mut ciphertext = GswCiphertext::allocate(
+    ///     0 as u32,
+    ///     LweSize(257),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.trivial_encrypt_constant_gsw(
+    ///     &mut ciphertext,
+    ///     &Plaintext(10),
+    ///     noise,
+    ///     &mut encryption_generator,
+    /// );
+    /// ```
+    pub fn trivial_encrypt_constant_gsw<OutputCont, Scalar>(
         &self,
         encrypted: &mut GswCiphertext<OutputCont, Scalar>,
         encoded: &Plaintext<Scalar>,
