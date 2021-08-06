@@ -8,6 +8,7 @@ use crate::{ck_dim_div, ck_dim_eq, zip, zip_args};
 
 use super::GswLevelMatrix;
 
+use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
@@ -22,6 +23,22 @@ pub struct GswCiphertext<Cont, Scalar> {
 
 impl<Scalar> GswCiphertext<Vec<Scalar>, Scalar> {
     /// Allocates a new GSW ciphertext whose coefficients are all `value`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// let gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// assert_eq!(gsw.lwe_size(), LweSize(7));
+    /// assert_eq!(gsw.decomposition_level_count(), DecompositionLevelCount(3));
+    /// assert_eq!(gsw.decomposition_base_log(), DecompositionBaseLog(4));
+    /// ```
     pub fn allocate(
         value: Scalar,
         lwe_size: LweSize,
@@ -29,7 +46,7 @@ impl<Scalar> GswCiphertext<Vec<Scalar>, Scalar> {
         decomp_base_log: DecompositionBaseLog,
     ) -> Self
     where
-        Scalar: UnsignedTorus,
+        Scalar: Numeric,
     {
         GswCiphertext {
             tensor: Tensor::from_container(vec![value; decomp_level.0 * lwe_size.0 * lwe_size.0]),
@@ -42,14 +59,29 @@ impl<Scalar> GswCiphertext<Vec<Scalar>, Scalar> {
 
 impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     /// Creates a gsw ciphertext from an existing container.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// let gsw = GswCiphertext::from_container(
+    ///     vec![9 as u8; 7 * 7 * 3],
+    ///     LweSize(7),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// assert_eq!(gsw.lwe_size(), LweSize(7));
+    /// assert_eq!(gsw.decomposition_level_count(), DecompositionLevelCount(3));
+    /// assert_eq!(gsw.decomposition_base_log(), DecompositionBaseLog(4));
+    /// ```
     pub fn from_container(
         cont: Cont,
         lwe_size: LweSize,
         decomp_base_log: DecompositionBaseLog,
     ) -> Self
     where
-        Cont: AsRefSlice,
-        Scalar: UnsignedTorus,
+        Cont: AsRefSlice<Element = Scalar>,
+        Scalar: Numeric,
     {
         let tensor = Tensor::from_container(cont);
         ck_dim_div!(tensor.len() => lwe_size.0,lwe_size.0 * lwe_size.0);
@@ -62,11 +94,39 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     }
 
     /// Returns the size of the lwe ciphertexts composing the gsw ciphertext.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// let gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// assert_eq!(gsw.lwe_size(), LweSize(7));
+    /// ```
     pub fn lwe_size(&self) -> LweSize {
         self.lwe_size
     }
 
     /// Returns the number of decomposition levels used in the ciphertext.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// let gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// assert_eq!(gsw.decomposition_level_count(), DecompositionLevelCount(3));
+    /// ```
     pub fn decomposition_level_count(&self) -> DecompositionLevelCount
     where
         Self: AsRefTensor,
@@ -79,6 +139,24 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     }
 
     /// Returns a borrowed list composed of all the LWE ciphertexts composing current ciphertext.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{
+    ///     CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, LweSize,
+    /// };
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// let gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// let list = gsw.as_lwe_list();
+    /// assert_eq!(list.lwe_size(), LweSize(7));
+    /// assert_eq!(list.count(), CiphertextCount(3 * 7));
+    /// ```
     pub fn as_lwe_list(&self) -> LweList<&[Scalar]>
     where
         Self: AsRefTensor<Element = Scalar>,
@@ -88,6 +166,28 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
 
     /// Returns a mutably borrowed `LweList` composed of all the LWE ciphertexts composing
     /// current ciphertext.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{
+    ///     CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, LweSize,
+    /// };
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// let mut gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// let mut list = gsw.as_mut_lwe_list();
+    /// list.as_mut_tensor().fill_with_element(0);
+    /// assert_eq!(list.lwe_size(), LweSize(7));
+    /// assert_eq!(list.count(), CiphertextCount(3 * 7));
+    /// gsw.as_tensor().iter().for_each(|a| assert_eq!(*a, 0));
+    /// ```
     pub fn as_mut_lwe_list(&mut self) -> LweList<&mut [Scalar]>
     where
         Self: AsMutTensor<Element = Scalar>,
@@ -97,6 +197,20 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     }
 
     /// Returns the logarithm of the base used for the gadget decomposition.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// let gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// assert_eq!(gsw.decomposition_base_log(), DecompositionBaseLog(4));
+    /// ```
     pub fn decomposition_base_log(&self) -> DecompositionBaseLog {
         self.decomp_base_log
     }
@@ -107,6 +221,26 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     ///
     /// This iterator iterates over the levels from the lower to the higher level in the usual
     /// order. To iterate in the reverse order, you can use `rev()` on the iterator.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// let gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// for level_matrix in gsw.level_matrix_iter() {
+    ///     assert_eq!(level_matrix.row_iter().count(), 7);
+    ///     for lwe in level_matrix.row_iter() {
+    ///         assert_eq!(lwe.lwe_size(), LweSize(7));
+    ///     }
+    /// }
+    /// assert_eq!(gsw.level_matrix_iter().count(), 3);
+    /// ```
     pub fn level_matrix_iter(
         &self,
     ) -> impl DoubleEndedIterator<Item = GswLevelMatrix<&[<Self as AsRefTensor>::Element]>>
@@ -133,6 +267,27 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     ///
     /// This iterator iterates over the levels from the lower to the higher level in the usual
     /// order. To iterate in the reverse order, you can use `rev()` on the iterator.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// let mut gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// for mut level_matrix in gsw.level_matrix_iter_mut() {
+    ///     for mut lwe in level_matrix.row_iter_mut() {
+    ///         lwe.as_mut_tensor().fill_with_element(9);
+    ///     }
+    /// }
+    /// assert!(gsw.as_tensor().iter().all(|a| *a == 9));
+    /// assert_eq!(gsw.level_matrix_iter_mut().count(), 3);
+    /// ```
     pub fn level_matrix_iter_mut(
         &mut self,
     ) -> impl DoubleEndedIterator<Item = GswLevelMatrix<&mut [<Self as AsRefTensor>::Element]>>
@@ -157,6 +312,29 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     ///
     /// # Notes
     /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// use rayon::iter::ParallelIterator;
+    /// let mut gsw = GswCiphertext::allocate(
+    ///     9 as u8,
+    ///     LweSize(7),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(4),
+    /// );
+    /// gsw.par_level_matrix_iter_mut()
+    ///     .for_each(|mut level_matrix| {
+    ///         for mut lwe in level_matrix.row_iter_mut() {
+    ///             lwe.as_mut_tensor().fill_with_element(9);
+    ///         }
+    ///     });
+    /// assert!(gsw.as_tensor().iter().all(|a| *a == 9));
+    /// assert_eq!(gsw.level_matrix_iter_mut().count(), 3);
+    /// ```
     #[cfg(feature = "multithread")]
     pub fn par_level_matrix_iter_mut(
         &mut self,
@@ -180,6 +358,55 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
     }
 
     /// Computes the external product and adds it to the output
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::dispersion::LogStandardDev;
+    ///
+    /// use concrete_commons::parameters::LweDimension;
+    /// use concrete_commons::parameters::LweSize;
+    /// use concrete_core::crypto::encoding::Plaintext;
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::crypto::lwe::LweCiphertext;
+    /// use concrete_core::crypto::secret::LweSecretKey;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_commons::parameters::DecompositionLevelCount;
+    /// use concrete_commons::parameters::DecompositionBaseLog;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    ///
+    /// let lwe_sk = LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+
+    /// let mut gsw = GswCiphertext::allocate(
+    ///     0 as u32,
+    ///     LweSize(257),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let std_dev = LogStandardDev(-20.);
+    /// lwe_sk.encrypt_constant_gsw(
+    ///     &mut gsw,
+    ///     &Plaintext(1 as u32),
+    ///     std_dev,
+    ///     &mut encryption_generator,
+    /// );
+    ///
+    /// let mut ciphertext = LweCiphertext::allocate(0 as u32, LweSize(257));
+    /// let mut res = LweCiphertext::allocate(0 as u32, LweSize(257));
+    ///
+    /// lwe_sk.encrypt_lwe(
+    ///     &mut ciphertext,
+    ///     &Plaintext(0 as u32),
+    ///     std_dev,
+    ///     &mut encryption_generator,
+    /// );
+    ///
+    /// gsw.external_product(&mut res, &ciphertext);
+    /// ```
     pub fn external_product<C1, C2>(&self, output: &mut LweCiphertext<C1>, lwe: &LweCiphertext<C2>)
     where
         Self: AsRefTensor<Element = Scalar>,
@@ -242,6 +469,62 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
         }
     }
 
+    /// Computes the CMux between ct0 and ct1 and writes the result in ouptut
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::dispersion::LogStandardDev;
+    ///
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
+    /// use concrete_core::crypto::encoding::Plaintext;
+    /// use concrete_core::crypto::gsw::GswCiphertext;
+    /// use concrete_core::crypto::lwe::LweCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::LweSecretKey;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    ///
+    /// let lwe_sk = LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+    ///
+    /// let mut gsw = GswCiphertext::allocate(
+    ///     0 as u32,
+    ///     LweSize(257),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let std_dev = LogStandardDev(-20.);
+    /// lwe_sk.encrypt_constant_gsw(
+    ///     &mut gsw,
+    ///     &Plaintext(1 as u32),
+    ///     std_dev,
+    ///     &mut encryption_generator,
+    /// );
+    ///
+    /// let mut ciphertext0 = LweCiphertext::allocate(0 as u32, LweSize(257));
+    /// let mut ciphertext1 = LweCiphertext::allocate(0 as u32, LweSize(257));
+    /// let mut out = LweCiphertext::allocate(0 as u32, LweSize(257));
+    ///
+    /// lwe_sk.encrypt_lwe(
+    ///     &mut ciphertext0,
+    ///     &Plaintext(0 as u32),
+    ///     std_dev,
+    ///     &mut encryption_generator,
+    /// );
+    /// lwe_sk.encrypt_lwe(
+    ///     &mut ciphertext1,
+    ///     &Plaintext(1 as u32),
+    ///     std_dev,
+    ///     &mut encryption_generator,
+    /// );
+    ///
+    /// gsw.cmux(&mut out, &ciphertext0, &ciphertext1);
+    /// ```
     pub fn cmux<C0, C1, COut>(
         &self,
         output: &mut LweCiphertext<COut>,
@@ -274,7 +557,7 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
 impl<Element, Cont, Scalar> AsRefTensor for GswCiphertext<Cont, Scalar>
 where
     Cont: AsRefSlice<Element = Element>,
-    Scalar: UnsignedTorus,
+    Scalar: Numeric,
 {
     type Element = Element;
     type Container = Cont;
@@ -286,7 +569,7 @@ where
 impl<Element, Cont, Scalar> AsMutTensor for GswCiphertext<Cont, Scalar>
 where
     Cont: AsMutSlice<Element = Element>,
-    Scalar: UnsignedTorus,
+    Scalar: Numeric,
 {
     type Element = Element;
     type Container = Cont;
@@ -298,7 +581,7 @@ where
 impl<Cont, Scalar> IntoTensor for GswCiphertext<Cont, Scalar>
 where
     Cont: AsRefSlice,
-    Scalar: UnsignedTorus,
+    Scalar: Numeric,
 {
     type Element = <Cont as AsRefSlice>::Element;
     type Container = Cont;
