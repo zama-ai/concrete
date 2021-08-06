@@ -10,21 +10,21 @@ func @add_lwe_ciphertexts(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.lwe_ci
   return %1: !LowLFHE.lwe_ciphertext
 }
 
-// CHECK-LABEL: func @add_plaintext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.plaintext) -> !LowLFHE.lwe_ciphertext
-func @add_plaintext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.plaintext) -> !LowLFHE.lwe_ciphertext {
-  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.add_plaintext_lwe_ciphertext"(%arg0, %arg1) : (!LowLFHE.lwe_ciphertext, !LowLFHE.plaintext) -> !LowLFHE.lwe_ciphertext
+// CHECK-LABEL: func @add_plaintext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.plaintext<5>) -> !LowLFHE.lwe_ciphertext
+func @add_plaintext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.plaintext<5>) -> !LowLFHE.lwe_ciphertext {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.add_plaintext_lwe_ciphertext"(%arg0, %arg1) : (!LowLFHE.lwe_ciphertext, !LowLFHE.plaintext<5>) -> !LowLFHE.lwe_ciphertext
   // CHECK-NEXT: return %[[V1]] : !LowLFHE.lwe_ciphertext
 
-  %1 = "LowLFHE.add_plaintext_lwe_ciphertext"(%arg0, %arg1): (!LowLFHE.lwe_ciphertext, !LowLFHE.plaintext) -> (!LowLFHE.lwe_ciphertext)
+  %1 = "LowLFHE.add_plaintext_lwe_ciphertext"(%arg0, %arg1): (!LowLFHE.lwe_ciphertext, !LowLFHE.plaintext<5>) -> (!LowLFHE.lwe_ciphertext)
   return %1: !LowLFHE.lwe_ciphertext
 }
 
-// CHECK-LABEL: func @mul_cleartext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.cleartext) -> !LowLFHE.lwe_ciphertext
-func @mul_cleartext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.cleartext) -> !LowLFHE.lwe_ciphertext {
-  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.mul_cleartext_lwe_ciphertext"(%arg0, %arg1) : (!LowLFHE.lwe_ciphertext, !LowLFHE.cleartext) -> !LowLFHE.lwe_ciphertext
+// CHECK-LABEL: func @mul_cleartext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.cleartext<7>) -> !LowLFHE.lwe_ciphertext
+func @mul_cleartext_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext, %arg1: !LowLFHE.cleartext<7>) -> !LowLFHE.lwe_ciphertext {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.mul_cleartext_lwe_ciphertext"(%arg0, %arg1) : (!LowLFHE.lwe_ciphertext, !LowLFHE.cleartext<7>) -> !LowLFHE.lwe_ciphertext
   // CHECK-NEXT: return %[[V1]] : !LowLFHE.lwe_ciphertext
 
-  %1 = "LowLFHE.mul_cleartext_lwe_ciphertext"(%arg0, %arg1): (!LowLFHE.lwe_ciphertext, !LowLFHE.cleartext) -> (!LowLFHE.lwe_ciphertext)
+  %1 = "LowLFHE.mul_cleartext_lwe_ciphertext"(%arg0, %arg1): (!LowLFHE.lwe_ciphertext, !LowLFHE.cleartext<7>) -> (!LowLFHE.lwe_ciphertext)
   return %1: !LowLFHE.lwe_ciphertext
 }
 
@@ -55,13 +55,13 @@ func @decrypt_glwe(%arg0: !LowLFHE.glwe_secret_key, %arg1: !LowLFHE.glwe_ciphert
   return %1: !LowLFHE.plaintext_list
 }
 
-// CHECK-LABEL: func @decrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.lwe_ciphertext) -> !LowLFHE.plaintext
-func @decrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.lwe_ciphertext) -> !LowLFHE.plaintext {
-  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.decrypt_lwe"(%arg0, %arg1) : (!LowLFHE.lwe_secret_key, !LowLFHE.lwe_ciphertext) -> !LowLFHE.plaintext
-  // CHECK-NEXT: return %[[V1]] : !LowLFHE.plaintext
+// CHECK-LABEL: func @decrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.lwe_ciphertext) -> !LowLFHE.plaintext<6>
+func @decrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.lwe_ciphertext) -> !LowLFHE.plaintext<6> {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.decrypt_lwe"(%arg0, %arg1) : (!LowLFHE.lwe_secret_key, !LowLFHE.lwe_ciphertext) -> !LowLFHE.plaintext<6>
+  // CHECK-NEXT: return %[[V1]] : !LowLFHE.plaintext<6>
 
-  %1 = "LowLFHE.decrypt_lwe"(%arg0, %arg1): (!LowLFHE.lwe_secret_key, !LowLFHE.lwe_ciphertext) -> (!LowLFHE.plaintext)
-  return %1: !LowLFHE.plaintext
+  %1 = "LowLFHE.decrypt_lwe"(%arg0, %arg1): (!LowLFHE.lwe_secret_key, !LowLFHE.lwe_ciphertext) -> (!LowLFHE.plaintext<6>)
+  return %1: !LowLFHE.plaintext<6>
 }
 
 // CHECK-LABEL: func @encrypt_glwe(%arg0: !LowLFHE.glwe_secret_key, %arg1: !LowLFHE.plaintext_list, %arg2: !LowLFHE.enc_rand_gen, %arg3: !LowLFHE.variance) -> !LowLFHE.glwe_ciphertext
@@ -73,12 +73,12 @@ func @encrypt_glwe(%arg0: !LowLFHE.glwe_secret_key, %arg1: !LowLFHE.plaintext_li
   return %1: !LowLFHE.glwe_ciphertext
 }
 
-// CHECK-LABEL: func @encrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.plaintext, %arg2: !LowLFHE.enc_rand_gen, %arg3: !LowLFHE.variance) -> !LowLFHE.lwe_ciphertext
-func @encrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.plaintext, %arg2: !LowLFHE.enc_rand_gen, %arg3: !LowLFHE.variance) -> !LowLFHE.lwe_ciphertext {
-  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.encrypt_lwe"(%arg0, %arg1, %arg2, %arg3) : (!LowLFHE.lwe_secret_key, !LowLFHE.plaintext, !LowLFHE.enc_rand_gen, !LowLFHE.variance) -> !LowLFHE.lwe_ciphertext
+// CHECK-LABEL: func @encrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.plaintext<6>, %arg2: !LowLFHE.enc_rand_gen, %arg3: !LowLFHE.variance) -> !LowLFHE.lwe_ciphertext
+func @encrypt_lwe(%arg0: !LowLFHE.lwe_secret_key, %arg1: !LowLFHE.plaintext<6>, %arg2: !LowLFHE.enc_rand_gen, %arg3: !LowLFHE.variance) -> !LowLFHE.lwe_ciphertext {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.encrypt_lwe"(%arg0, %arg1, %arg2, %arg3) : (!LowLFHE.lwe_secret_key, !LowLFHE.plaintext<6>, !LowLFHE.enc_rand_gen, !LowLFHE.variance) -> !LowLFHE.lwe_ciphertext
   // CHECK-NEXT: return %[[V1]] : !LowLFHE.lwe_ciphertext
 
-  %1 = "LowLFHE.encrypt_lwe"(%arg0, %arg1, %arg2, %arg3): (!LowLFHE.lwe_secret_key, !LowLFHE.plaintext, !LowLFHE.enc_rand_gen, !LowLFHE.variance) -> (!LowLFHE.lwe_ciphertext)
+  %1 = "LowLFHE.encrypt_lwe"(%arg0, %arg1, %arg2, %arg3): (!LowLFHE.lwe_secret_key, !LowLFHE.plaintext<6>, !LowLFHE.enc_rand_gen, !LowLFHE.variance) -> (!LowLFHE.lwe_ciphertext)
   return %1: !LowLFHE.lwe_ciphertext
 }
 
@@ -152,4 +152,40 @@ func @fill_plaintext_list_with_expansion(%arg0: !LowLFHE.plaintext_list, %arg1: 
 
   "LowLFHE.fill_plaintext_list_with_expansion"(%arg0, %arg1): (!LowLFHE.plaintext_list, !LowLFHE.foreign_plaintext_list) -> ()
   return
+}
+
+// CHECK-LABEL: func @encode_cleartext(%arg0: !LowLFHE.cleartext<6>) -> !LowLFHE.plaintext<6>
+func @encode_cleartext(%arg0: !LowLFHE.cleartext<6>) -> (!LowLFHE.plaintext<6>) {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.encode_cleartext"(%arg0) : (!LowLFHE.cleartext<6>) -> !LowLFHE.plaintext<6>
+  // CHECK-NEXT: return %[[V1]] : !LowLFHE.plaintext<6>
+
+  %0 = "LowLFHE.encode_cleartext"(%arg0): (!LowLFHE.cleartext<6>) -> !LowLFHE.plaintext<6>
+  return %0: !LowLFHE.plaintext<6>
+}
+
+// CHECK-LABEL: func @encode_int(%arg0: i6) -> !LowLFHE.plaintext<6>
+func @encode_int(%arg0: i6) -> (!LowLFHE.plaintext<6>) {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.encode_int"(%arg0) : (i6) -> !LowLFHE.plaintext<6>
+  // CHECK-NEXT: return %[[V1]] : !LowLFHE.plaintext<6>
+
+  %0 = "LowLFHE.encode_int"(%arg0): (i6) -> !LowLFHE.plaintext<6>
+  return %0: !LowLFHE.plaintext<6>
+}
+
+// CHECK-LABEL: func @const_cleartext() -> !LowLFHE.cleartext<8>
+func @const_cleartext() -> (!LowLFHE.cleartext<8>) {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.const_cleartext"() {value = 1 : i8} : () -> !LowLFHE.cleartext<8>
+  // CHECK-NEXT: return %[[V1]] : !LowLFHE.cleartext<8>
+  %0 = "LowLFHE.const_cleartext"() {value = 1 : i8} : () -> !LowLFHE.cleartext<8>
+  return %0: !LowLFHE.cleartext<8>
+}
+
+// CHECK-LABEL: func @int_to_cleartext() -> !LowLFHE.cleartext<6>
+func @int_to_cleartext() -> !LowLFHE.cleartext<6> {
+  // CHECK-NEXT: %[[V0:.*]] = constant 5 : i6
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.int_to_cleartext"(%[[V0]]) : (i6) -> !LowLFHE.cleartext<6>
+  // CHECK-NEXT: return %[[V1]] : !LowLFHE.cleartext<6>
+  %0 = constant 5 : i6
+  %1 = "LowLFHE.int_to_cleartext"(%0) : (i6) -> !LowLFHE.cleartext<6>
+  return %1 : !LowLFHE.cleartext<6>
 }

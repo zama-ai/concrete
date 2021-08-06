@@ -13,10 +13,10 @@ func @type_secret_rand_gen(%arg0: !LowLFHE.secret_rand_gen) -> !LowLFHE.secret_r
   return %arg0: !LowLFHE.secret_rand_gen
 }
 
-// CHECK-LABEL: func @type_plaintext(%arg0: !LowLFHE.plaintext) -> !LowLFHE.plaintext
-func @type_plaintext(%arg0: !LowLFHE.plaintext) -> !LowLFHE.plaintext {
-  // CHECK-NEXT: return %arg0 : !LowLFHE.plaintext
-  return %arg0: !LowLFHE.plaintext
+// CHECK-LABEL: func @type_plaintext(%arg0: !LowLFHE.plaintext<7>) -> !LowLFHE.plaintext<7>
+func @type_plaintext(%arg0: !LowLFHE.plaintext<7>) -> !LowLFHE.plaintext<7> {
+  // CHECK-NEXT: return %arg0 : !LowLFHE.plaintext<7>
+  return %arg0: !LowLFHE.plaintext<7>
 }
 
 // CHECK-LABEL: func @type_plaintext_list(%arg0: !LowLFHE.plaintext_list) -> !LowLFHE.plaintext_list
@@ -103,8 +103,8 @@ func @type_variance(%arg0: !LowLFHE.variance) -> !LowLFHE.variance {
   return %arg0: !LowLFHE.variance
 }
 
-// CHECK-LABEL: func @type_cleartext(%arg0: !LowLFHE.cleartext) -> !LowLFHE.cleartext
-func @type_cleartext(%arg0: !LowLFHE.cleartext) -> !LowLFHE.cleartext {
-  // CHECK-NEXT: return %arg0 : !LowLFHE.cleartext
-  return %arg0: !LowLFHE.cleartext
+// CHECK-LABEL: func @type_cleartext(%arg0: !LowLFHE.cleartext<5>) -> !LowLFHE.cleartext<5>
+func @type_cleartext(%arg0: !LowLFHE.cleartext<5>) -> !LowLFHE.cleartext<5> {
+  // CHECK-NEXT: return %arg0 : !LowLFHE.cleartext<5>
+  return %arg0: !LowLFHE.cleartext<5>
 }

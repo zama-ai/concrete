@@ -51,12 +51,28 @@ def PlaintextType : LowLFHE_Type<"Plaintext"> {
        Plaintext.
     }];
 
+    let parameters = (ins
+        // Number of bits of the cleartext representation
+        "signed":$p
+    );
+
     let printer = [{
-        $_printer << "plaintext";
+        $_printer << "plaintext<";
+        if (getImpl()->p == -1) $_printer << "_";
+        else $_printer << getImpl()->p;
+        $_printer << ">";
     }];
 
     let parser = [{
-        return get($_ctxt);
+        if ($_parser.parseLess())
+            return Type();
+        int p = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
+            return Type();
+        if ($_parser.parseGreater())
+            return Type();
+        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
+        return getChecked(loc, loc.getContext(), p);
     }];
 }
 
@@ -326,12 +342,28 @@ def CleartextType : LowLFHE_Type<"Cleartext"> {
        Cleartext.
     }];
 
+    let parameters = (ins
+        // Number of bits of the cleartext representation
+        "signed":$p
+    );
+
     let printer = [{
-        $_printer << "cleartext";
+        $_printer << "cleartext<";
+        if (getImpl()->p == -1) $_printer << "_";
+        else $_printer << getImpl()->p;
+        $_printer << ">";
     }];
 
     let parser = [{
-        return get($_ctxt);
+        if ($_parser.parseLess())
+            return Type();
+        int p = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
+            return Type();
+        if ($_parser.parseGreater())
+            return Type();
+        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
+        return getChecked(loc, loc.getContext(), p);
     }];
 }
 

@@ -124,4 +124,25 @@ def FillPlaintextListWithExpansionOp : LowLFHE_Op<"fill_plaintext_list_with_expa
     let results = (outs );
 }
 
+def EncodeCleartextOp : LowLFHE_Op<"encode_cleartext"> {
+    let arguments = (ins CleartextType:$cleartext);
+    let results = (outs PlaintextType:$plaintext);
+}
+
+def EncodeIntOp : LowLFHE_Op<"encode_int"> {
+    let arguments = (ins AnyInteger:$i);
+    let results = (outs PlaintextType:$plaintext);
+}
+
+def IntToCleartextOp : LowLFHE_Op<"int_to_cleartext"> {
+    let arguments = (ins AnyInteger:$i);
+    let results = (outs CleartextType:$cleartext);
+}
+
+def ConstCleartextOp : LowLFHE_Op<"const_cleartext", [ConstantLike]> {
+    // TODO: maybe restrict to specific attr?
+    let arguments = (ins AnyAttr:$value);
+    let results = (outs CleartextType:$cleartext);
+}
+
 #endif
