@@ -55,7 +55,7 @@ class BaseTracer(ABC):
         sanitized_inputs = [sanitize(inp) for inp in inputs]
 
         traced_computation = computation_to_trace(
-            map(lambda x: x.output, sanitized_inputs),
+            (x.output for x in sanitized_inputs),
             op_args=op_args,
             op_kwargs=op_kwargs,
         )

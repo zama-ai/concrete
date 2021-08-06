@@ -16,8 +16,8 @@ def ir_nodes_has_integer_input_and_output(node: ir.IntermediateNode) -> bool:
     Returns:
         bool: True if all input and output values hold Integers
     """
-    return all(map(lambda x: isinstance(x.data_type, Integer), node.inputs)) and all(
-        map(lambda x: isinstance(x.data_type, Integer), node.outputs)
+    return all(isinstance(x.data_type, Integer) for x in node.inputs) and all(
+        isinstance(x.data_type, Integer) for x in node.outputs
     )
 
 

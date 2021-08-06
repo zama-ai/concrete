@@ -94,7 +94,7 @@ def make_integer_to_hold_ints(values: Iterable[int], force_signed: bool) -> Inte
     Returns:
         Integer: The Integer able to hold values
     """
-    assert all(map(lambda x: isinstance(x, int), values))
+    assert all(isinstance(x, int) for x in values)
     min_value = min(values)
     max_value = max(values)
 

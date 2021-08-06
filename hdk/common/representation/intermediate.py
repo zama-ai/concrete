@@ -26,7 +26,7 @@ class IntermediateNode(ABC):
         op_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.inputs = list(inputs)
-        assert all(map(lambda x: isinstance(x, BaseValue), self.inputs))
+        assert all(isinstance(x, BaseValue) for x in self.inputs)
         self.op_args = op_args
         self.op_kwargs = op_kwargs
 
