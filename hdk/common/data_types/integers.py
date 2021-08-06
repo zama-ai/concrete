@@ -13,6 +13,7 @@ class Integer(base.BaseDataType):
     is_signed: bool
 
     def __init__(self, bit_width: int, is_signed: bool) -> None:
+        assert bit_width > 0, "bit_width must be > 0"
         self.bit_width = bit_width
         self.is_signed = is_signed
 

@@ -5,7 +5,10 @@ import pytest
 
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.hnumpy.np_dtypes_helpers import convert_numpy_dtype_to_common_dtype
+from hdk.hnumpy.np_dtypes_helpers import (
+    convert_common_dtype_to_numpy_dtype,
+    convert_numpy_dtype_to_common_dtype,
+)
 
 
 @pytest.mark.parametrize(
@@ -29,3 +32,26 @@ from hdk.hnumpy.np_dtypes_helpers import convert_numpy_dtype_to_common_dtype
 def test_convert_numpy_dtype_to_common_dtype(numpy_dtype, expected_common_type):
     """Test function for convert_numpy_dtype_to_common_dtype"""
     assert convert_numpy_dtype_to_common_dtype(numpy_dtype) == expected_common_type
+
+
+@pytest.mark.parametrize(
+    "common_dtype,expected_numpy_dtype",
+    [
+        pytest.param(Integer(7, is_signed=False), numpy.uint32),
+        pytest.param(Integer(7, is_signed=True), numpy.int32),
+        pytest.param(Integer(32, is_signed=True), numpy.int32),
+        pytest.param(Integer(64, is_signed=True), numpy.int64),
+        pytest.param(Integer(32, is_signed=False), numpy.uint32),
+        pytest.param(Integer(64, is_signed=False), numpy.uint64),
+        pytest.param(Float(32), numpy.float32),
+        pytest.param(Float(64), numpy.float64),
+        pytest.param(
+            Integer(128, is_signed=True),
+            None,
+            marks=pytest.mark.xfail(strict=True, raises=NotImplementedError),
+        ),
+    ],
+)
+def test_convert_common_dtype_to_numpy_dtype(common_dtype, expected_numpy_dtype):
+    """Test function for convert_common_dtype_to_numpy_dtype"""
+    assert expected_numpy_dtype == convert_common_dtype_to_numpy_dtype(common_dtype)
