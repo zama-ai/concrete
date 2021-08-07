@@ -2,11 +2,31 @@
 
 from copy import deepcopy
 
-from hdk.common import check_op_graph_is_integer_program
+import pytest
+
+from hdk.common import check_op_graph_is_integer_program, is_a_power_of_2
 from hdk.common.data_types.base import BaseDataType
 from hdk.common.data_types.integers import Integer
 from hdk.common.data_types.values import EncryptedValue
 from hdk.hnumpy.tracing import trace_numpy_function
+
+
+@pytest.mark.parametrize(
+    "x,result",
+    [
+        (0, False),
+        (1, True),
+        (2, True),
+        (3, False),
+        (4, True),
+        (10, False),
+        (16, True),
+    ],
+)
+def test_is_a_power_of_2(x, result):
+    """Test function for test_is_a_power_of_2"""
+
+    assert is_a_power_of_2(x) == result
 
 
 class DummyNotInteger(BaseDataType):

@@ -7,6 +7,21 @@ from .operator_graph import OPGraph
 from .representation import intermediate as ir
 
 
+def is_a_power_of_2(x: int) -> bool:
+    """Check if an integer is a power of two
+
+    Args:
+        x (int): Number to check
+
+    Returns:
+        bool: True if the number is a power of two
+    """
+
+    # https://stackoverflow.com/questions/57025836/how-to-check-if-a-given-number-is-a-power-of-two
+
+    return x > 0 and (x & (x - 1)) == 0
+
+
 def ir_nodes_has_integer_input_and_output(node: ir.IntermediateNode) -> bool:
     """Check if an ir node has Integer inputs and outputs
 

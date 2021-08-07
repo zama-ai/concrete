@@ -79,6 +79,7 @@ In this section, we will discuss the module structure of hdk briefly. You are en
       - bounds_measurement: utilities for determining bounds of intermediate representation
       - data_types: type definitions of typing information of intermediate representation
       - debugging: utilities for printing/displaying intermediate representation
+      - extensions: utilities that provide special functionality to our users
       - representation: type definitions of intermediate representation
       - tracing: utilities for generic function tracing used during intermediate representation creation
     - hnumpy: numpy frontend of hdk
