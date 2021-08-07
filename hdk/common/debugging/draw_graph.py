@@ -13,6 +13,7 @@ IR_NODE_COLOR_MAPPING = {
     ir.Add: "red",
     ir.Sub: "yellow",
     ir.Mul: "green",
+    ir.ArbitraryFunction: "orange",
     "output": "magenta",
 }
 
