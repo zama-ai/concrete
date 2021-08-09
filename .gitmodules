@@ -1,0 +1,3 @@
+[submodule "lwe-estimator"]
+	path = lwe-estimator
+	url = git@github.com:zama-ai/lwe-estimator.git
