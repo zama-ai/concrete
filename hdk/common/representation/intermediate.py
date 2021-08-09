@@ -177,7 +177,6 @@ class ArbitraryFunction(IntermediateNode):
     # understand this properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623
     arbitrary_func: Optional[Callable]
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         input_base_value: BaseValue,
@@ -191,8 +190,6 @@ class ArbitraryFunction(IntermediateNode):
         self.arbitrary_func = arbitrary_func
         # TLU/PBS has an encrypted output
         self.outputs = [EncryptedValue(output_dtype)]
-
-    # pylint: enable=too-many-arguments
 
     def evaluate(self, inputs: Mapping[int, Any]) -> Any:
         # This is the continuation of the mypy bug workaround

@@ -33,9 +33,6 @@ def human_readable_layout(graph: nx.Graph, x_delta: float = 1.0, y_delta: float 
 
     """
 
-    # FIXME: less variables
-    # pylint: disable=too-many-locals
-
     nodes_depth = {node: 0 for node in graph.nodes()}
     input_nodes = [node for node in graph.nodes() if len(list(graph.predecessors(node))) == 0]
 
@@ -83,7 +80,6 @@ def human_readable_layout(graph: nx.Graph, x_delta: float = 1.0, y_delta: float 
 
         curr_x += x_delta
 
-    # pylint: enable=too-many-locals
     return pos
 
 
@@ -108,9 +104,6 @@ def draw_graph(
         None
 
     """
-
-    # FIXME: less variables
-    # pylint: disable=too-many-locals
 
     assert isinstance(opgraph, OPGraph)
     set_of_nodes_which_are_outputs = set(opgraph.output_nodes.values())
@@ -215,8 +208,6 @@ def draw_graph(
     # block_until_user_closes_graph is used as True for real users and False
     # for CI
     plt.show(block=block_until_user_closes_graph)
-
-    # pylint: enable=too-many-locals
 
 
 def data_type_to_string(node):
