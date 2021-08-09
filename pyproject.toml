@@ -11,6 +11,7 @@ sphinx-rtd-theme = "^0.5.2"
 myst-parser = "^0.15.1"
 networkx = "^2.6.1"
 matplotlib = "^3.4.2"
+numpy = "^1.21.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.2"
