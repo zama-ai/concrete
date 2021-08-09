@@ -1,7 +1,7 @@
 """This file holds the code that can be shared between tracers"""
 
 from abc import ABC
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import List, Tuple, Type, Union
 
 from ..data_types import BaseValue
 from ..data_types.scalars import Scalars
@@ -29,8 +29,6 @@ class BaseTracer(ABC):
         self,
         inputs: List[Union["BaseTracer", Scalars]],
         computation_to_trace: Type[ir.IntermediateNode],
-        op_args: Optional[Tuple[Any, ...]] = None,
-        op_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Tuple["BaseTracer", ...]:
         """Helper functions to instantiate all output BaseTracer for a given computation
 
@@ -38,9 +36,6 @@ class BaseTracer(ABC):
             inputs (List[BaseTracer]): Previous BaseTracer used as inputs for a new node
             computation_to_trace (Type[ir.IntermediateNode]): The IntermediateNode class
                 to instantiate for the computation being traced
-            op_args: *args coming from the call being traced
-            op_kwargs: **kwargs coming from the call being traced
-
 
         Returns:
             Tuple[BaseTracer, ...]: A tuple containing an BaseTracer per output function
@@ -56,8 +51,6 @@ class BaseTracer(ABC):
 
         traced_computation = computation_to_trace(
             (x.output for x in sanitized_inputs),
-            op_args=op_args,
-            op_kwargs=op_kwargs,
         )
 
         output_tracers = tuple(

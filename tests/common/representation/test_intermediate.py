@@ -81,3 +81,122 @@ def test_evaluate(
 ):
     """Test evaluate methods on IntermediateNodes"""
     assert node.evaluate(input_data) == expected_result
+
+
+@pytest.mark.parametrize(
+    "node1,node2,expected_result",
+    [
+        (
+            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            True,
+        ),
+        (
+            ir.Add([EncryptedValue(Integer(16, False)), EncryptedValue(Integer(32, False))]),
+            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
+            True,
+        ),
+        (
+            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            False,
+        ),
+        (
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            True,
+        ),
+        (
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
+            True,
+        ),
+        (
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
+            ir.Sub([EncryptedValue(Integer(16, False)), EncryptedValue(Integer(32, False))]),
+            False,
+        ),
+        (
+            ir.Mul([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Mul([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            True,
+        ),
+        (
+            ir.Mul([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            False,
+        ),
+        (
+            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
+            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            False,
+        ),
+        (
+            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
+            True,
+        ),
+        (
+            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedValue(Integer(32, False)), "y", 0),
+            False,
+        ),
+        (
+            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedValue(Integer(32, False)), "x", 1),
+            False,
+        ),
+        (
+            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedValue(Integer(8, False)), "x", 0),
+            False,
+        ),
+        (
+            ir.ConstantInput(10),
+            ir.ConstantInput(10),
+            True,
+        ),
+        (
+            ir.ConstantInput(10),
+            ir.Input(EncryptedValue(Integer(8, False)), "x", 0),
+            False,
+        ),
+        (
+            ir.ConstantInput(10),
+            ir.ConstantInput(10.0),
+            False,
+        ),
+        (
+            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            True,
+        ),
+        (
+            ir.ArbitraryFunction(
+                EncryptedValue(Integer(8, False)),
+                lambda x: x,
+                Integer(8, False),
+                op_args=(1, 2, 3),
+            ),
+            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            False,
+        ),
+        (
+            ir.ArbitraryFunction(
+                EncryptedValue(Integer(8, False)),
+                lambda x: x,
+                Integer(8, False),
+                op_kwargs={"tuple": (1, 2, 3)},
+            ),
+            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            False,
+        ),
+    ],
+)
+def test_is_equivalent_to(
+    node1: ir.IntermediateNode,
+    node2: ir.IntermediateNode,
+    expected_result: bool,
+):
+    """Test is_equivalent_to methods on IntermediateNodes"""
+    assert node1.is_equivalent_to(node2) == node2.is_equivalent_to(node1) == expected_result
