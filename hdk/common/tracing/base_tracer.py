@@ -1,7 +1,7 @@
 """This file holds the code that can be shared between tracers"""
 
 from abc import ABC
-from typing import List, Tuple, Type, Union
+from typing import Iterable, List, Tuple, Type, Union
 
 from ..data_types import BaseValue
 from ..data_types.scalars import Scalars
@@ -17,17 +17,17 @@ class BaseTracer(ABC):
 
     def __init__(
         self,
-        inputs: List["BaseTracer"],
+        inputs: Iterable["BaseTracer"],
         traced_computation: ir.IntermediateNode,
         output_index: int,
     ) -> None:
-        self.inputs = inputs
+        self.inputs = list(inputs)
         self.traced_computation = traced_computation
         self.output = traced_computation.outputs[output_index]
 
     def instantiate_output_tracers(
         self,
-        inputs: List[Union["BaseTracer", Scalars]],
+        inputs: Iterable[Union["BaseTracer", Scalars]],
         computation_to_trace: Type[ir.IntermediateNode],
     ) -> Tuple["BaseTracer", ...]:
         """Helper functions to instantiate all output BaseTracer for a given computation

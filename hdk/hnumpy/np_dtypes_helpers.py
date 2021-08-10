@@ -1,7 +1,7 @@
 """File to hold code to manage package and numpy dtypes"""
 
 from copy import deepcopy
-from typing import List, Union
+from typing import List
 
 import numpy
 from numpy.typing import DTypeLike
@@ -94,14 +94,14 @@ def convert_common_dtype_to_numpy_dtype(common_dtype: BaseDataType) -> numpy.dty
 
 def get_ufunc_numpy_output_dtype(
     ufunc: numpy.ufunc,
-    input_dtypes: Union[List[numpy.dtype], List[BaseDataType]],
+    input_dtypes: List[BaseDataType],
 ) -> List[numpy.dtype]:
     """Function to record the output dtype of a numpy.ufunc given some input types
 
     Args:
         ufunc (numpy.ufunc): The numpy.ufunc whose output types need to be recorded
-        input_dtypes (Union[List[numpy.dtype], List[BaseDataType]]): Either numpy or common dtypes
-            in the same order as they will be used with the ufunc inputs
+        input_dtypes (List[BaseDataType]): Common dtypes in the same order as they will be used with
+            the ufunc inputs
 
     Returns:
         List[numpy.dtype]: The ordered numpy dtypes of the ufunc outputs
@@ -110,12 +110,7 @@ def get_ufunc_numpy_output_dtype(
         len(input_dtypes) == ufunc.nin
     ), f"Expected {ufunc.nin} types, got {len(input_dtypes)}: {input_dtypes}"
 
-    input_dtypes = [
-        numpy.dtype(convert_common_dtype_to_numpy_dtype(dtype))
-        if not isinstance(dtype, numpy.dtype)
-        else dtype
-        for dtype in input_dtypes
-    ]
+    input_numpy_dtypes = [convert_common_dtype_to_numpy_dtype(dtype) for dtype in input_dtypes]
 
     # Store numpy old error settings and ignore all errors in this function
     # We ignore errors as we may call functions with invalid inputs just to get the proper output
@@ -123,7 +118,7 @@ def get_ufunc_numpy_output_dtype(
     old_numpy_err_settings = numpy.seterr(all="ignore")
 
     dummy_inputs = tuple(
-        dtype.type(1000.0 * numpy.random.random_sample()) for dtype in input_dtypes
+        dtype.type(1000.0 * numpy.random.random_sample()) for dtype in input_numpy_dtypes
     )
 
     outputs = ufunc(*dummy_inputs)
