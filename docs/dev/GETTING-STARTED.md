@@ -77,6 +77,7 @@ In this section, we will discuss the module structure of hdk briefly. You are en
 - hdk
     - common: types and utilities that can be used by multiple frontends (e.g., numpy, torch)
       - bounds_measurement: utilities for determining bounds of intermediate representation
+      - compilation: type definitions related to compilation (e.g., compilation config, compilation artifacts)
       - data_types: type definitions of typing information of intermediate representation
       - debugging: utilities for printing/displaying intermediate representation
       - extensions: utilities that provide special functionality to our users
