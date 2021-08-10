@@ -4,10 +4,12 @@
 //!   computation
 
 pub mod cross;
+pub mod gsw;
 pub mod lwe;
 pub mod rlwe;
 
 pub use cross::Cross;
+pub use gsw::GSW;
 pub use lwe::LWE;
 pub use rlwe::RLWE;
 
