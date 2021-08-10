@@ -1,8 +1,4 @@
-from V0Parameters.compile_test import check_codegen
-from V0Parameters.tabulation import main_optimization_v0
-from V0Parameters.compile_test import check_codegen
 from v0curves import curves
-import numpy as np
 
 # define the number of security levels in curves
 num_sec_levels = len(curves)
@@ -55,11 +51,11 @@ def fill_parameters(
 ):
     parameters = "{}{{".format(table_string)
     for security_level in range(num_sec_levels):
+        print(security_level)
         line = "{"
         
         try:
             line += constructor(
-                1,
                 int(polynomial_size_results[security_level]),
                 int(rlwe_dimension_results[security_level]),
 
@@ -120,8 +116,3 @@ def main_codegen():
         rlwe_dimension_results
     )
 
-    # check code gen worked
-    check_codegen(
-        polynomial_size_results,
-        rlwe_dimension_results
-    )
