@@ -8,3 +8,9 @@ Homomorphic Development Kit's documentation
 
    dev/ARCHITECTURE.md
    dev/GETTING-STARTED.md
+
+.. toctree::
+   :maxdepth: 5
+   :caption: Docs from sources
+
+   _apidoc/hdk.rst

@@ -58,5 +58,21 @@ coverage:
 .PHONY: coverage
 
 docs:
+
+	# Generate the auto summary of documentations
+	poetry run sphinx-apidoc -o docs/_apidoc hdk
+
+	# Docs
 	cd docs && poetry run make html
+
+clean_docs:
+	rm -rf docs/_apidoc docs/_build
+
+open_docs:
+	open docs/_build/html/index.html
+
+build_and_open_docs: clean_docs docs open_docs
+
+
+
 .PHONY: docs

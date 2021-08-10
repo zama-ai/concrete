@@ -167,3 +167,14 @@ make coverage
 Note that this will compare the coverage with `origin/main`. If you want to set a custom base branch, you can specify `BB` environment variable like so `BB=$YOUR_BASE_BRANCH make coverage`.
 
 If your coverage is below hundred percent, you should write more tests and then create the pull request. If you ignore this warning and create the PR, GitHub actions will fail and your PR will not be merged anyway.
+
+### Making docs with Sphinx
+
+One can simply create docs with Sphinx and open them, by doing:
+
+```shell
+make build_and_open_docs
+```
+
+The documentation contains both files written by hand by developpers and files automatically created by parsing the source files.
+
