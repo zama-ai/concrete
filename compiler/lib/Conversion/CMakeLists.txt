@@ -1,4 +1,5 @@
 add_subdirectory(HLFHEToMidLFHE)
 add_subdirectory(MidLFHEToLowLFHE)
 add_subdirectory(HLFHETensorOpsToLinalg)
+add_subdirectory(LowLFHEToConcreteCAPI)
 add_subdirectory(MLIRLowerableDialectsToLLVM)

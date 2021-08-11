@@ -41,6 +41,8 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
       pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg(), enablePass);
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
+  addFilteredPassToPassManager(
+      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(), enablePass);
   constraint = defaultGlobalFHECircuitConstraint;
 
   // Run the passes

@@ -5,6 +5,7 @@
 
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
+#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
@@ -37,7 +38,9 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
 
   // Setup the LLVMTypeConverter (that converts `std` types to `llvm` types) and
   // add our types conversion to `llvm` compatible type.
-  mlir::LLVMTypeConverter typeConverter(&getContext());
+  mlir::LowerToLLVMOptions options(&getContext());
+  options.useBarePtrCallConv = true;
+  mlir::LLVMTypeConverter typeConverter(&getContext(), options);
   typeConverter.addConversion(convertTypes);
 
   // Setup the set of the patterns rewriter. At this point we want to
@@ -45,6 +48,7 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::RewritePatternSet patterns(&getContext());
   mlir::populateLoopToStdConversionPatterns(patterns);
   mlir::populateStdToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
 
   // Apply a `FullConversion` to `llvm`.
   auto module = getOperation();
@@ -57,7 +61,7 @@ llvm::Optional<mlir::Type>
 MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
   if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
     return mlir::LLVM::LLVMPointerType::get(
-        mlir::IntegerType::get(type.getContext(), 8));
+        mlir::IntegerType::get(type.getContext(), 64));
   }
   return llvm::None;
 }

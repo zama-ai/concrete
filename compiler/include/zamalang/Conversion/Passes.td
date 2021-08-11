@@ -25,6 +25,12 @@ def MidLFHEToLowLFHE : Pass<"midlfhe-to-lowlfhe", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect"];
 }
 
+def LowLFHEToConcreteCAPI : Pass<"lowlfhe-to-concrete-c-api", "mlir::ModuleOp"> {
+  let summary = "Lower operations from the LowLFHE dialect to std with function call to the Concrete C API";
+  let constructor = "mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass()";
+  let dependentDialects = ["mlir::zamalang::LowLFHE::LowLFHEDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
+}
+
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
   let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
   let constructor = "mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass()";

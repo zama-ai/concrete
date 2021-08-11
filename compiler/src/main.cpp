@@ -253,6 +253,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   context.getOrLoadDialect<mlir::StandardOpsDialect>();
   context.getOrLoadDialect<mlir::memref::MemRefDialect>();
   context.getOrLoadDialect<mlir::linalg::LinalgDialect>();
+  context.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
   if (cmdline::verifyDiagnostics)
     context.printOpOnDiagnostic(false);
