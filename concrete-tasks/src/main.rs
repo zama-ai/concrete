@@ -26,26 +26,6 @@ lazy_static! {
         env.insert("RUSTFLAGS", "-Ctarget-cpu=native");
         env
     };
-    static ref ENV_TARGET_SIMD: utils::Environment = {
-        let mut env = HashMap::new();
-        env.insert(
-            "RUSTFLAGS",
-            "-Ctarget-feature=+aes,+rdseed,+sse2,+avx,+avx2",
-        );
-        env
-    };
-    static ref ENV_COVERAGE: utils::Environment = {
-        let mut env = HashMap::new();
-        env.insert("CARGO_INCREMENTAL", "0");
-        env.insert("RUSTFLAGS", "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests");
-        env.insert("RUSTDOCFLAGS", "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests");
-        env
-    };
-    static ref ENV_DOC_KATEX: utils::Environment = {
-        let mut env = HashMap::new();
-        env.insert("RUSTDOCFLAGS", "--html-in-header katex-header.html");
-        env
-    };
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -142,10 +122,18 @@ fn main() -> Result<(), std::io::Error> {
         test::cov_crates()?;
     }
     if matches.subcommand_matches("build").is_some() {
-        build::debug_crates()?;
-        build::release_crates()?;
-        build::simd_crates()?;
-        build::benches()?;
+        build::debug::benches()?;
+        build::debug::crates()?;
+        build::debug::doctests()?;
+        build::debug::tests()?;
+        build::release::benches()?;
+        build::release::crates()?;
+        build::release::doctests()?;
+        build::release::tests()?;
+        build::simd::benches()?;
+        build::simd::crates()?;
+        build::simd::doctests()?;
+        build::simd::tests()?;
     }
     if matches.subcommand_matches("check").is_some() {
         check::doc()?;
@@ -174,16 +162,16 @@ fn main() -> Result<(), std::io::Error> {
         test::cov_crates()?;
     }
     if matches.subcommand_matches("build_debug_crates").is_some() {
-        build::debug_crates()?;
+        build::debug::crates()?;
     }
     if matches.subcommand_matches("build_release_crates").is_some() {
-        build::release_crates()?;
+        build::release::crates()?;
     }
     if matches.subcommand_matches("build_simd_crates").is_some() {
-        build::simd_crates()?;
+        build::simd::crates()?;
     }
     if matches.subcommand_matches("build_benches").is_some() {
-        build::benches()?;
+        build::release::benches()?;
     }
     if matches.subcommand_matches("check_doc").is_some() {
         check::doc()?;
