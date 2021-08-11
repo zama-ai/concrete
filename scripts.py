@@ -30,6 +30,51 @@ def quantum_conservative(beta, d, B):
 cost_models = [classical, quantum, classical_conservative, quantum_conservative, est.BKZ.enum]
 
 
+def estimate_lwe_nocrash(n, alpha, q, secret_distribution,
+                                reduction_cost_model=est.BKZ.sieve, m=oo):
+    """ 
+    A function to estimate the complexity of LWE, whilst skipping over any attacks which crash.s 
+    """
+
+    success = 0
+
+    try:
+        # we begin by trying all four attacks (usvp, dual, dec, mitm)
+        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo,
+                                skip={"bkw", "dec", "arora-gb"})
+        success = 1
+
+    except Exception as e:
+        print(e)
+    
+    if success == 0:
+        try:
+            # dual crashes most often, so try skipping dual first
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                    reduction_cost_model=reduction_cost_model, m=oo,
+                                    skip={"bkw", "dec", "arora-gb", "dual"})
+            success = 1
+
+        except Exception as e:
+            print(e)
+
+    if success == 0:
+        try:
+            # next, skip mitm
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                    reduction_cost_model=reduction_cost_model, m=oo,
+                                    skip={"mitm", "bkw", "dec", "arora-gb", "dual"})
+        
+        except Exception as e:
+            print(e)
+
+    security_level = get_security_level(estimate)
+
+    return security_level
+
+
+
 def get_security_level(estimate, decimal_places = 2):
     """ Function to get the security level from an LWE Estimator output, 
     i.e. returns only the bit-security level (without the attack params)
@@ -60,6 +105,12 @@ def get_security_level(estimate, decimal_places = 2):
     try:
         levels.append(estimate["dual"]["rop"])
 
+    except:
+        pass
+
+    try:
+        levels.append(estimate["mitm"]["rop"])
+    
     except:
         pass
 
@@ -230,29 +281,17 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
 
 
     # initial estimate, to determine if we are above or below the target security level
-    try:
-        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb"})
-    except Exception as e:
-        print(e)
-        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb", "dual"})
-    security_level = get_security_level(estimate)
+
+    security_level = estimate_lwe_nocrash(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo)
+
     z = inequality(security_level, target_security)
 
     while z * security_level < z * target_security and n > 80:
         n += z * 8
         alpha = sqrt(2 * pi) * sd / RR(q)
-        try:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
-        except:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "dual"})
-        security_level = get_security_level(estimate)
+        security_level = estimate_lwe_nocrash(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo)
 
         if (-1 * sd > 0):
             print("target security level is unatainable")
@@ -262,14 +301,8 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
     if security_level < target_security:
         n -= z * 8
         alpha = sqrt(2 * pi) * sd / RR(q)
-        try:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
-        except:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "dual"})
-        security_level = get_security_level(estimate)
+        security_level = estimate_lwe_nocrash(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo)
 
     print("the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(n,
                                                                                                                       sd,
@@ -312,15 +345,8 @@ def automated_param_select_sd(n, sd=None, q=2**32, reduction_cost_model=est.BKZ.
     alpha = sqrt(2 * pi) * sd_ / RR(q)
 
     # initial estimate, to determine if we are above or below the target security level
-    try:
-        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb"})
-    except:
-        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb", "dual"})
-    security_level = get_security_level(estimate)
+    security_level = estimate_lwe_nocrash(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo)
     z = inequality(security_level, target_security)
 
     while z * security_level < z * target_security and sd > -log(q,2):
@@ -328,14 +354,8 @@ def automated_param_select_sd(n, sd=None, q=2**32, reduction_cost_model=est.BKZ.
         sd += z * (0.5)
         sd_ = (2 ** sd) * q
         alpha = sqrt(2 * pi) * sd_ / RR(q)
-        try:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
-        except:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "dual"})
-        security_level = get_security_level(estimate)
+        security_level = estimate_lwe_nocrash(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo)
 
         ## THIS IS WHERE THE PROBLEM IS, CORRECT THIS CONDITION?
         if (sd > log(q, 2)):
@@ -347,14 +367,8 @@ def automated_param_select_sd(n, sd=None, q=2**32, reduction_cost_model=est.BKZ.
         sd -= z * (0.5)
         sd_ = (2 ** sd) * q
         alpha = sqrt(2 * pi) * sd_ / RR(q)
-        try:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
-        except:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "dual"})
-        security_level = get_security_level(estimate)
+        security_level = estimate_lwe_nocrash(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo)
 
     print("the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(n,
                                                                                                                       sd,
@@ -654,19 +668,12 @@ def verify_interpolants(interpolant, n_range, log_q, secret_distribution = (0,1)
         sd = 2 ** sd
         alpha = sqrt(2*pi) * sd
 
-        try:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                        reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
-        except:
-            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                        reduction_cost_model=reduction_cost_model, m=oo,
-                                        skip={"bkw", "dec", "arora-gb", "dual"})
-
-        sec_lvl = get_security_level(estimate)
-        print(sec_lvl)
-        if sec_lvl == oo:
-            sec_lvl = 0
-        estimates.append(get_security_level(estimate))
+        security_level = estimate_lwe_nocrash(n, alpha, q, secret_distribution=secret_distribution,
+                                reduction_cost_model=reduction_cost_model, m=oo)
+        print(security_level)
+        if security_level == oo:
+            security_level = 0
+        estimates.append(security_level)
 
     return estimates
 
