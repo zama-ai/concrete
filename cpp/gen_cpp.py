@@ -3,9 +3,6 @@ from v0curves import curves
 # define the number of security levels in curves
 num_sec_levels = len(curves)
 
-polynomial_i
-
-
 import_string = f"""
 
 #include <iostream>
