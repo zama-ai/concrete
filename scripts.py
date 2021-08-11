@@ -54,7 +54,6 @@ def get_security_level(estimate, decimal_places = 2):
 
     try:
         levels.append(estimate["dec"]["rop"])
-
     except:
         pass
 
@@ -232,14 +231,14 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
 
     # initial estimate, to determine if we are above or below the target security level
     try:
-        estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                 reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb", "mitm"})
+                                skip={"bkw", "dec", "arora-gb"})
     except Exception as e:
         print(e)
-        estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                 reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                skip={"bkw", "dec", "arora-gb", "dual"})
     security_level = get_security_level(estimate)
     z = inequality(security_level, target_security)
 
@@ -247,12 +246,12 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
         n += z * 8
         alpha = sqrt(2 * pi) * sd / RR(q)
         try:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
         except:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                     reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                    skip={"bkw", "dec", "arora-gb", "dual"})
         security_level = get_security_level(estimate)
 
         if (-1 * sd > 0):
@@ -264,12 +263,12 @@ def automated_param_select_n(sd, n=None, q=2 ** 32, reduction_cost_model=est.BKZ
         n -= z * 8
         alpha = sqrt(2 * pi) * sd / RR(q)
         try:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
         except:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                     reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                    skip={"bkw", "dec", "arora-gb", "dual"})
         security_level = get_security_level(estimate)
 
     print("the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(n,
@@ -314,13 +313,13 @@ def automated_param_select_sd(n, sd=None, q=2**32, reduction_cost_model=est.BKZ.
 
     # initial estimate, to determine if we are above or below the target security level
     try:
-        estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                 reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb", "mitm"})
+                                skip={"bkw", "dec", "arora-gb"})
     except:
-        estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+        estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                 reduction_cost_model=reduction_cost_model, m=oo,
-                                skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                skip={"bkw", "dec", "arora-gb", "dual"})
     security_level = get_security_level(estimate)
     z = inequality(security_level, target_security)
 
@@ -330,12 +329,12 @@ def automated_param_select_sd(n, sd=None, q=2**32, reduction_cost_model=est.BKZ.
         sd_ = (2 ** sd) * q
         alpha = sqrt(2 * pi) * sd_ / RR(q)
         try:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
         except:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                     reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                    skip={"bkw", "dec", "arora-gb", "dual"})
         security_level = get_security_level(estimate)
 
         ## THIS IS WHERE THE PROBLEM IS, CORRECT THIS CONDITION?
@@ -349,12 +348,12 @@ def automated_param_select_sd(n, sd=None, q=2**32, reduction_cost_model=est.BKZ.
         sd_ = (2 ** sd) * q
         alpha = sqrt(2 * pi) * sd_ / RR(q)
         try:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                    reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
         except:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                     reduction_cost_model=reduction_cost_model, m=oo,
-                                    skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                    skip={"bkw", "dec", "arora-gb", "dual"})
         security_level = get_security_level(estimate)
 
     print("the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(n,
@@ -477,7 +476,7 @@ def test_params(n, q, sd, secret_distribution):
     sd = sd * q
     alpha = RR(sqrt(2*pi) * sd / q)
 
-    est = estimate_lwe(n, alpha, q, secret_distribution = secret_distribution, reduction_cost_model = est.BKZ.sieve, skip = ("arora-gb", "bkw", "mitm", "dec"))
+    est = est.estimate_lwe(n, alpha, q, secret_distribution = secret_distribution, reduction_cost_model = est.BKZ.sieve, skip = ("arora-gb", "bkw", "dec"))
 
     return est
 
@@ -491,10 +490,10 @@ def generate_iso_lines(N = [256, 2048], SD = [0, 32], q = 2**32):
             sd = 2**sd
             alpha = sqrt(2*pi) * sd / q
             try:
-                est = estimate_lwe(n, alpha, q, secret_distribution = (0,1), reduction_cost_model = est.BKZ.sieve, skip = ("bkw", "mitm", "arora-gb", "dec"))
+                est = est.estimate_lwe(n, alpha, q, secret_distribution = (0,1), reduction_cost_model = est.BKZ.sieve, skip = ("bkw", "arora-gb", "dec"))
                 est = get_security_level(est, 2)
             except:
-                est = estimate_lwe(n, alpha, q, secret_distribution = (0,1), reduction_cost_model = est.BKZ.sieve, skip = ("bkw", "mitm", "arora-gb", "dual", "dec"))
+                est = est.estimate_lwe(n, alpha, q, secret_distribution = (0,1), reduction_cost_model = est.BKZ.sieve, skip = ("bkw", "arora-gb", "dual", "dec"))
                 est = get_security_level(est, 2)
             RESULTS.append((n, sd, est))
 
@@ -525,11 +524,11 @@ def test_multiple_sd(n, q, secret_distribution, reduction_cost_model, split = 33
          sd = (2** (-1 * sd_))* q
          alpha = sqrt(2*pi) * sd / q
          try:
-             es = estimate_lwe(n=512, alpha=alpha, q=q, secret_distribution=(0, 1), reduction_cost_model = reduction_cost_model,
-                                            skip=("bkw", "mitm", "dec", "arora-gb"), m = m)
+             es = est.estimate_lwe(n=512, alpha=alpha, q=q, secret_distribution=(0, 1), reduction_cost_model = reduction_cost_model,
+                                            skip=("bkw", "dec", "arora-gb"), m = m)
          except:
-             es = estimate_lwe(n=512, alpha=alpha, q=q, secret_distribution=(0, 1), reduction_cost_model = reduction_cost_model,
-                                            skip=("bkw", "mitm", "dec", "arora-gb", "dual"), m = m)
+             es = est.estimate_lwe(n=512, alpha=alpha, q=q, secret_distribution=(0, 1), reduction_cost_model = reduction_cost_model,
+                                            skip=("bkw", "dec", "arora-gb", "dual"), m = m)
          est.append(get_security_level(es,2))
 
      return est, Y
@@ -630,12 +629,12 @@ def verify_results(results, security_level, secret_distribution = (0,1), reducti
 
             # 2. Test that these parameters satisfy the given security level
             try:
-                estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                        reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
+                estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                        reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
             except:
-                estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                         reduction_cost_model=reduction_cost_model, m=oo,
-                                        skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                        skip={"bkw", "dec", "arora-gb", "dual"})
         
             estimates.append(estimate)
 
@@ -656,12 +655,17 @@ def verify_interpolants(interpolant, n_range, log_q, secret_distribution = (0,1)
         alpha = sqrt(2*pi) * sd
 
         try:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
-                                        reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb","mitm"})
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+                                        reduction_cost_model=reduction_cost_model, m=oo, skip = {"bkw","dec","arora-gb"})
         except:
-            estimate = estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
+            estimate = est.estimate_lwe(n, alpha, q, secret_distribution=secret_distribution,
                                         reduction_cost_model=reduction_cost_model, m=oo,
-                                        skip={"bkw", "dec", "arora-gb", "mitm", "dual"})
+                                        skip={"bkw", "dec", "arora-gb", "dual"})
+
+        sec_lvl = get_security_level(estimate)
+        print(sec_lvl)
+        if sec_lvl == oo:
+            sec_lvl = 0
         estimates.append(get_security_level(estimate))
 
     return estimates
@@ -685,6 +689,11 @@ def test_curves():
     results = get_parameter_curves_data_n(sec_levels, n_range, q = 2**64)
 
     return results
+
+def find_nalpha(l, sec_lvl):
+    for j in range(len(l)):
+        if l[j] != oo and l[j] > sec_lvl:
+            return j
 
 
 ## we start with 80/128/192/256-bits of security
