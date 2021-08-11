@@ -9,7 +9,7 @@ namespace zamalang {
 /// Create a pass to convert `LowLFHE` operators to function call to the
 /// `ConcreteCAPI`
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertLowLFHEToConcreteCAPIPass();
+createConvertLowLFHEToConcreteCAPIPass(uint64_t lweSize);
 } // namespace zamalang
 } // namespace mlir
 

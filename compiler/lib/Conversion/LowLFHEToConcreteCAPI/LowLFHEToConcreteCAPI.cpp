@@ -30,9 +30,10 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
   LowLFHEOpToConcreteCAPICallPattern(mlir::MLIRContext *context,
                                      mlir::StringRef funcName,
                                      mlir::StringRef allocName,
+                                     uint64_t lweSize,
                                      mlir::PatternBenefit benefit = 1)
       : mlir::OpRewritePattern<Op>(context, benefit), funcName(funcName),
-        allocName(allocName) {}
+        allocName(allocName), lweSize(lweSize) {}
 
   mlir::LogicalResult static insertForwardDeclaration(
       Op op, mlir::PatternRewriter &rewriter, llvm::StringRef funcName,
@@ -92,17 +93,16 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
     // Replace the operation with a call to the `funcName`
     {
       // Create the err value
-      auto err = rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
+      auto errOp = rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
       // Add the call to the allocation
-      // TODO - 2018
-      auto lweSize = rewriter.create<mlir::ConstantOp>(
-          op.getLoc(), rewriter.getIndexAttr(2048));
-      mlir::SmallVector<mlir::Value, 1> allocOperands{err, lweSize};
+      auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+          op.getLoc(), rewriter.getIndexAttr(lweSize));
+      mlir::SmallVector<mlir::Value, 1> allocOperands{errOp, lweSizeOp};
       auto alloc = rewriter.replaceOpWithNewOp<mlir::CallOp>(
           op, allocName, op.getType(), allocOperands);
 
       // Add err and allocated value to operands
-      mlir::SmallVector<mlir::Value, 4> newOperands{err, alloc.getResult(0)};
+      mlir::SmallVector<mlir::Value, 4> newOperands{errOp, alloc.getResult(0)};
       for (auto operand : op->getOperands()) {
         newOperands.push_back(operand);
       }
@@ -115,21 +115,24 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
 private:
   std::string funcName;
   std::string allocName;
+  uint64_t lweSize;
 };
 
 /// Populate the RewritePatternSet with all patterns that rewrite LowLFHE
 /// operators to the corresponding function call to the `Concrete C API`.
-void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
+void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns, uint64_t lweSize) {
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
       mlir::zamalang::LowLFHE::AddLweCiphertextsOp>>(
       patterns.getContext(), "add_lwe_ciphertexts_u64",
-      "allocate_lwe_ciphertext_u64");
+      "allocate_lwe_ciphertext_u64", lweSize);
 }
 
 namespace {
 struct LowLFHEToConcreteCAPIPass
     : public LowLFHEToConcreteCAPIBase<LowLFHEToConcreteCAPIPass> {
+  LowLFHEToConcreteCAPIPass(uint64_t lweSize): lweSize(lweSize){};
   void runOnOperation() final;
+  uint64_t lweSize;
 };
 } // namespace
 
@@ -142,7 +145,7 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 
   // Setup rewrite patterns
   mlir::RewritePatternSet patterns(&getContext());
-  populateLowLFHEToConcreteCAPICall(patterns);
+  populateLowLFHEToConcreteCAPICall(patterns, lweSize);
 
   // Apply the conversion
   mlir::ModuleOp op = getOperation();
@@ -154,8 +157,8 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 namespace mlir {
 namespace zamalang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertLowLFHEToConcreteCAPIPass() {
-  return std::make_unique<LowLFHEToConcreteCAPIPass>();
+createConvertLowLFHEToConcreteCAPIPass(uint64_t lweSize) {
+  return std::make_unique<LowLFHEToConcreteCAPIPass>(lweSize);
 }
 } // namespace zamalang
 } // namespace mlir

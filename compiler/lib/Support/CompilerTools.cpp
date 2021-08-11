@@ -32,18 +32,19 @@ void addFilteredPassToPassManager(
 
 mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
     mlir::MLIRContext &context, mlir::Operation *module,
-    FHECircuitConstraint &constraint,
+    FHECircuitConstraint &constraint, V0Parameter &v0Parameter,
     llvm::function_ref<bool(std::string)> enablePass) {
   mlir::PassManager pm(&context);
 
+  constraint = defaultGlobalFHECircuitConstraint;
+  v0Parameter = *getV0Parameter(constraint.norm2, constraint.p);
   // Add all passes to lower from HLFHE to LLVM Dialect
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg(), enablePass);
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
   addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(), enablePass);
-  constraint = defaultGlobalFHECircuitConstraint;
+      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(1 << v0Parameter.polynomialSize), enablePass);
 
   // Run the passes
   if (pm.run(module).failed()) {

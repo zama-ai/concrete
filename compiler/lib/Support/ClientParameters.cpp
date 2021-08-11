@@ -45,13 +45,13 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
 }
 
 llvm::Expected<ClientParameters>
-createClientParametersForV0(V0Parameter *v0Param, Precision precision,
+createClientParametersForV0(V0Parameter &v0Param, Precision precision,
                             llvm::StringRef name, mlir::ModuleOp module) {
   // Static client parameters from global parameters for v0
   ClientParameters c{
       .secretKeys{
-          {"small", {.size = v0Param->nSmall}},
-          {"big", {.size = v0Param->k * (1 << v0Param->polynomialSize)}},
+          {"small", {.size = v0Param.nSmall}},
+          {"big", {.size = v0Param.k * (1 << v0Param.polynomialSize)}},
       },
       .bootstrapKeys{
           {
@@ -59,9 +59,9 @@ createClientParametersForV0(V0Parameter *v0Param, Precision precision,
               {
                   .inputSecretKeyID = "small",
                   .outputSecretKeyID = "big",
-                  .level = v0Param->brLevel,
-                  .baseLog = v0Param->brLogBase,
-                  .k = v0Param->k,
+                  .level = v0Param.brLevel,
+                  .baseLog = v0Param.brLogBase,
+                  .k = v0Param.k,
                   // TODO - Compute variance, wait for security estimator
                   .variance = 0,
               },
@@ -73,8 +73,8 @@ createClientParametersForV0(V0Parameter *v0Param, Precision precision,
               {
                   .inputSecretKeyID = "big",
                   .outputSecretKeyID = "small",
-                  .level = v0Param->ksLevel,
-                  .baseLog = v0Param->ksLogBase,
+                  .level = v0Param.ksLevel,
+                  .baseLog = v0Param.ksLogBase,
                   // TODO - Compute variance, wait for security estimator
                   .variance = 0,
               },

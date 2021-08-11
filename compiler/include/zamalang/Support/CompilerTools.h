@@ -26,7 +26,7 @@ public:
   /// The given module MLIR operation would be modified and the constraints set.
   static mlir::LogicalResult lowerHLFHEToMlirStdsDialect(
       mlir::MLIRContext &context, mlir::Operation *module,
-      FHECircuitConstraint &constraint,
+      FHECircuitConstraint &constraint, V0Parameter &v0Parameter,
       llvm::function_ref<bool(std::string)> enablePass = [](std::string pass) {
         return true;
       });

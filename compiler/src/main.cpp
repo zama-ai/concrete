@@ -175,33 +175,30 @@ processInputBuffer(mlir::MLIRContext &context,
 
   // Lower to MLIR Stds Dialects and compute the constraint on the FHE Circuit.
   mlir::zamalang::FHECircuitConstraint constraint;
+  mlir::zamalang::V0Parameter v0Parameter;
   LOG_VERBOSE("### Lower from HLFHE to MLIR standards \n");
   if (mlir::zamalang::CompilerTools::lowerHLFHEToMlirStdsDialect(
-          context, *module, constraint, enablePass)
+          context, *module, constraint, v0Parameter, enablePass)
           .failed()) {
     return mlir::failure();
   }
   LOG_VERBOSE("### Global FHE constraint: {norm2:" << constraint.norm2 << ", p:"
                                                    << constraint.p << "}\n");
-
-  // Retreive the parameters for the v0 approach
-  mlir::zamalang::V0Parameter *fheParameter =
-      mlir::zamalang::getV0Parameter(constraint.norm2, constraint.p);
   LOG_VERBOSE("### FHE parameters for the atomic pattern: {k: "
-              << fheParameter->k
-              << ", polynomialSize: " << fheParameter->polynomialSize
-              << ", nSmall: " << fheParameter->nSmall
-              << ", brLevel: " << fheParameter->brLevel
-              << ", brLogBase: " << fheParameter->brLogBase
-              << ", ksLevel: " << fheParameter->ksLevel
-              << ", polynomialSize: " << fheParameter->ksLogBase << "}\n");
+              << v0Parameter.k
+              << ", polynomialSize: " << v0Parameter.polynomialSize
+              << ", nSmall: " << v0Parameter.nSmall
+              << ", brLevel: " << v0Parameter.brLevel
+              << ", brLogBase: " << v0Parameter.brLogBase
+              << ", ksLevel: " << v0Parameter.ksLevel
+              << ", polynomialSize: " << v0Parameter.ksLogBase << "}\n");
 
   // Generate the keySet
   std::unique_ptr<mlir::zamalang::KeySet> keySet;
   if (cmdline::generateKeySet || cmdline::runJit) {
     // Create the client parameters
     auto clientParameter = mlir::zamalang::createClientParametersForV0(
-        fheParameter, constraint.p, cmdline::jitFuncname, *module);
+        v0Parameter, constraint.p, cmdline::jitFuncname, *module);
     if (auto err = clientParameter.takeError()) {
       LOG_ERROR("cannot generate client parameters: " << err << "\n");
       return mlir::failure();

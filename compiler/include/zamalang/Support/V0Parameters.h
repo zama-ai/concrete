@@ -15,6 +15,8 @@ typedef struct V0Parameter {
   size_t ksLevel;
   size_t ksLogBase;
 
+  V0Parameter() {}
+
   V0Parameter(size_t k, size_t polynomialSize, size_t nSmall, size_t brLevel,
               size_t brLogBase, size_t ksLevel, size_t ksLogBase)
       : k(k), polynomialSize(polynomialSize), nSmall(nSmall), brLevel(brLevel),
