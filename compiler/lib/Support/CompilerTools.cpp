@@ -38,6 +38,8 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirLLVMDialect(
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
   addFilteredPassToPassManager(
+      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
+  addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
       enablePass);
 

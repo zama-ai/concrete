@@ -4,3 +4,4 @@ add_public_tablegen_target(MLIRConversionPassIncGen)
 
 
 add_subdirectory(HLFHEToMidLFHE)
+add_subdirectory(MidLFHEToLowLFHE)

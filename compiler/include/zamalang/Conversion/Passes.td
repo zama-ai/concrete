@@ -17,6 +17,14 @@ def HLFHEToMidLFHE : Pass<"hlfhe-to-midlfhe", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect"];
 }
 
+def MidLFHEToLowLFHE : Pass<"midlfhe-to-lowlfhe", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the MidLFHE dialect to LowLFHE";
+  let description = [{ Lowers operations from the MidLFHE dialect to LowLFHE }];
+  let constructor = "mlir::zamalang::createConvertMidLFHEToLowLFHEPass()";
+  let options = [];
+  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+}
+
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
   let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
   let constructor = "mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass()";

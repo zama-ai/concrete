@@ -9,6 +9,7 @@
 #include "zamalang/Conversion/HLFHETensorOpsToLinalg/Pass.h"
 #include "zamalang/Conversion/HLFHEToMidLFHE/Pass.h"
 #include "zamalang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h"
+#include "zamalang/Conversion/MidLFHEToLowLFHE/Pass.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 
 #define GEN_PASS_CLASSES
