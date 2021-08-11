@@ -1,4 +1,4 @@
-"""File holding code to represent data types used for constants in programs"""
+"""File holding code to represent data types used for constants in programs."""
 
 from typing import Union
 

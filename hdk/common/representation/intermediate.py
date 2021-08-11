@@ -1,4 +1,4 @@
-"""File containing code to represent source programs operations"""
+"""File containing code to represent source programs operations."""
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -14,7 +14,7 @@ from ..data_types.values import ClearValue, EncryptedValue
 
 
 class IntermediateNode(ABC):
-    """Abstract Base Class to derive from to represent source program operations"""
+    """Abstract Base Class to derive from to represent source program operations."""
 
     inputs: List[BaseValue]
     outputs: List[BaseValue]
@@ -30,7 +30,7 @@ class IntermediateNode(ABC):
         self,
         inputs: Iterable[BaseValue],
     ) -> None:
-
+        """__init__ for a binary operation, ie two inputs."""
         IntermediateNode.__init__(self, inputs)
 
         assert len(self.inputs) == 2
@@ -38,6 +38,7 @@ class IntermediateNode(ABC):
         self.outputs = [mix_values_determine_holding_dtype(self.inputs[0], self.inputs[1])]
 
     def _is_equivalent_to_binary_commutative(self, other: object) -> bool:
+        """is_equivalent_to for a binary and commutative operation."""
         return (
             isinstance(other, self.__class__)
             and (self.inputs == other.inputs or self.inputs == other.inputs[::-1])
@@ -45,6 +46,7 @@ class IntermediateNode(ABC):
         )
 
     def _is_equivalent_to_binary_non_commutative(self, other: object) -> bool:
+        """is_equivalent_to for a binary and non-commutative operation."""
         return (
             isinstance(other, self.__class__)
             and self.inputs == other.inputs
@@ -53,8 +55,10 @@ class IntermediateNode(ABC):
 
     @abstractmethod
     def is_equivalent_to(self, other: object) -> bool:
-        """Overriding __eq__ has unwanted side effects, this provides the same facility without
-            disrupting expected behavior too much
+        """Alternative to __eq__ to check equivalence between IntermediateNodes.
+
+        Overriding __eq__ has unwanted side effects, this provides the same facility without
+        disrupting expected behavior too much
 
         Args:
             other (object): Other object to check against
@@ -70,7 +74,7 @@ class IntermediateNode(ABC):
 
     @abstractmethod
     def evaluate(self, inputs: Mapping[int, Any]) -> Any:
-        """Function to simulate what the represented computation would output for the given inputs
+        """Function to simulate what the represented computation would output for the given inputs.
 
         Args:
             inputs (Mapping[int, Any]): Mapping containing the inputs for the evaluation
@@ -81,7 +85,7 @@ class IntermediateNode(ABC):
 
 
 class Add(IntermediateNode):
-    """Addition between two values"""
+    """Addition between two values."""
 
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
@@ -91,7 +95,7 @@ class Add(IntermediateNode):
 
 
 class Sub(IntermediateNode):
-    """Subtraction between two values"""
+    """Subtraction between two values."""
 
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_non_commutative
@@ -101,7 +105,7 @@ class Sub(IntermediateNode):
 
 
 class Mul(IntermediateNode):
-    """Multiplication between two values"""
+    """Multiplication between two values."""
 
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
@@ -111,7 +115,7 @@ class Mul(IntermediateNode):
 
 
 class Input(IntermediateNode):
-    """Node representing an input of the program"""
+    """Node representing an input of the program."""
 
     input_name: str
     program_input_idx: int
@@ -141,7 +145,7 @@ class Input(IntermediateNode):
 
 
 class ConstantInput(IntermediateNode):
-    """Node representing a constant of the program"""
+    """Node representing a constant of the program."""
 
     constant_data: Scalars
 
@@ -175,7 +179,7 @@ class ConstantInput(IntermediateNode):
 
 
 class ArbitraryFunction(IntermediateNode):
-    """Node representing a univariate arbitrary function, e.g. sin(x)"""
+    """Node representing a univariate arbitrary function, e.g. sin(x)."""
 
     # The arbitrary_func is not optional but mypy has a long standing bug and is not able to
     # understand this properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623

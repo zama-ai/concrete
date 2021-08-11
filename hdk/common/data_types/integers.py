@@ -1,4 +1,4 @@
-"""This file holds the definitions for integer types"""
+"""This file holds the definitions for integer types."""
 
 import math
 from typing import Iterable
@@ -7,7 +7,7 @@ from . import base
 
 
 class Integer(base.BaseDataType):
-    """Class representing an integer"""
+    """Class representing an integer."""
 
     bit_width: int
     is_signed: bool
@@ -29,21 +29,21 @@ class Integer(base.BaseDataType):
         )
 
     def min_value(self) -> int:
-        """Minimum value representable by the Integer"""
+        """Minimum value representable by the Integer."""
         if self.is_signed:
             return -(2 ** (self.bit_width - 1))
 
         return 0
 
     def max_value(self) -> int:
-        """Maximum value representable by the Integer"""
+        """Maximum value representable by the Integer."""
         if self.is_signed:
             return 2 ** (self.bit_width - 1) - 1
 
         return 2 ** self.bit_width - 1
 
     def can_represent_value(self, value_to_represent: int) -> bool:
-        """A helper function to check if a value is representable by the Integer
+        """A helper function to check if a value is representable by the Integer.
 
         Args:
             value_to_represent (int): Value to check
@@ -55,7 +55,7 @@ class Integer(base.BaseDataType):
 
 
 def create_signed_integer(bit_width: int) -> Integer:
-    """Convenience function to create a signed integer
+    """Convenience function to create a signed integer.
 
     Args:
         bit_width (int): width of the integer
@@ -70,7 +70,7 @@ SignedInteger = create_signed_integer
 
 
 def create_unsigned_integer(bit_width: int) -> Integer:
-    """Convenience function to create an unsigned integer
+    """Convenience function to create an unsigned integer.
 
     Args:
         bit_width (int): width of the integer
@@ -78,7 +78,6 @@ def create_unsigned_integer(bit_width: int) -> Integer:
     Returns:
         Integer: An unsigned integer with the requested bit_width
     """
-
     return Integer(bit_width, is_signed=False)
 
 
@@ -86,7 +85,7 @@ UnsignedInteger = create_unsigned_integer
 
 
 def make_integer_to_hold_ints(values: Iterable[int], force_signed: bool) -> Integer:
-    """Returns an Integer able to hold all values, it is possible to force the Integer to be signed
+    """Returns an Integer able to hold all values, it is possible to force the Integer to be signed.
 
     Args:
         values (Iterable[int]): The values to hold
@@ -110,7 +109,7 @@ def make_integer_to_hold_ints(values: Iterable[int], force_signed: bool) -> Inte
 
 
 def get_bits_to_represent_int(value: int, force_signed: bool) -> int:
-    """Returns how many bits are required to represent a single int
+    """Returns how many bits are required to represent a single int.
 
     Args:
         value (int): The int for which we want to know how many bits are required
@@ -119,7 +118,6 @@ def get_bits_to_represent_int(value: int, force_signed: bool) -> int:
     Returns:
         int: required amount of bits
     """
-
     # Writing this in a very dumb way
     num_bits: int
     if value < 0:

@@ -1,10 +1,10 @@
-"""This file holds the definitions for floating point types"""
+"""This file holds the definitions for floating point types."""
 
 from . import base
 
 
 class Float(base.BaseDataType):
-    """Class representing a float"""
+    """Class representing a float."""
 
     # bit_width is the total number of bits used to represent a floating point number, including
     # sign bit, exponent and mantissa

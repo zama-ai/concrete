@@ -13,4 +13,4 @@ Homomorphic Development Kit's documentation
    :maxdepth: 5
    :caption: Docs from sources
 
-   _apidoc/hdk.rst
+   _apidoc/modules.rst

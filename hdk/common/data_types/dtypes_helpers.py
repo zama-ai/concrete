@@ -1,4 +1,4 @@
-"""File to hold helper functions for data types related stuff"""
+"""File to hold helper functions for data types related stuff."""
 
 from copy import deepcopy
 from typing import cast
@@ -14,7 +14,7 @@ SUPPORTED_TYPES = INTEGER_TYPES + FLOAT_TYPES
 
 
 def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted_integer
+    """Helper function to check that a value is an encrypted_integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -28,7 +28,7 @@ def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
 
 
 def value_is_encrypted_unsigned_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted_integer
+    """Helper function to check that a value is an encrypted_integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -36,7 +36,6 @@ def value_is_encrypted_unsigned_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is an encrypted value of type Integer
     """
-
     return (
         value_is_encrypted_integer(value_to_check)
         and not cast(Integer, value_to_check.data_type).is_signed
@@ -47,8 +46,9 @@ def find_type_to_hold_both_lossy(
     dtype1: BaseDataType,
     dtype2: BaseDataType,
 ) -> BaseDataType:
-    """Determine the type that can represent both dtype1 and dtype2 separately, this is lossy with
-        floating point types
+    """Determine the type that can represent both dtype1 and dtype2 separately.
+
+    This is lossy with floating point types.
 
     Args:
         dtype1 (BaseDataType): first dtype to hold
@@ -102,9 +102,11 @@ def find_type_to_hold_both_lossy(
 
 
 def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> BaseValue:
-    """Returns a Value that would result from computation on both value1 and value2 while
-        determining the data type able to hold both value1 and value2 data type (this can be lossy
-        with floats)
+    """Return mixed value with data type able to hold both value1 and value2 dtypes.
+
+    Returns a Value that would result from computation on both value1 and value2 while
+    determining the data type able to hold both value1 and value2 data type (this can be lossy
+    with floats)
 
     Args:
         value1 (BaseValue): first value to mix
@@ -114,7 +116,6 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
         BaseValue: The resulting mixed value with data type able to hold both value1 and value2
             dtypes
     """
-
     holding_type = find_type_to_hold_both_lossy(value1.data_type, value2.data_type)
 
     mixed_value: BaseValue

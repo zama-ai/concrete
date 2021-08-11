@@ -1,4 +1,4 @@
-"""Module for basic tracing facilities"""
+"""Module for basic tracing facilities."""
 from .base_tracer import BaseTracer
 from .tracing_helpers import (
     create_graph_from_output_tracers,

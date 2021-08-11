@@ -1,2 +1,2 @@
-"""Package top import"""
+"""Package top import."""
 from . import common, hnumpy

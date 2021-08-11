@@ -1,4 +1,4 @@
-"""File to hold some helper code"""
+"""File to hold some helper code."""
 
 from typing import List, Optional
 
@@ -8,7 +8,7 @@ from .representation import intermediate as ir
 
 
 def is_a_power_of_2(x: int) -> bool:
-    """Check if an integer is a power of two
+    """Check if an integer is a power of two.
 
     Args:
         x (int): Number to check
@@ -16,14 +16,13 @@ def is_a_power_of_2(x: int) -> bool:
     Returns:
         bool: True if the number is a power of two
     """
-
     # https://stackoverflow.com/questions/57025836/how-to-check-if-a-given-number-is-a-power-of-two
 
     return x > 0 and (x & (x - 1)) == 0
 
 
 def ir_nodes_has_integer_input_and_output(node: ir.IntermediateNode) -> bool:
-    """Check if an ir node has Integer inputs and outputs
+    """Check if an ir node has Integer inputs and outputs.
 
     Args:
         node (ir.IntermediateNode): Node to check
@@ -42,7 +41,7 @@ def check_op_graph_is_integer_program(
     op_graph: OPGraph,
     offending_nodes_out: Optional[List[ir.IntermediateNode]] = None,
 ) -> bool:
-    """Check if an op_graph inputs, outputs and intermediate values are Integers
+    """Check if an op_graph inputs, outputs and intermediate values are Integers.
 
     Args:
         op_graph (OPGraph): The OPGraph to check

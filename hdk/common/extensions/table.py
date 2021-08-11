@@ -1,4 +1,4 @@
-"""This file contains a wrapper class for direct table lookups"""
+"""This file contains a wrapper class for direct table lookups."""
 
 from copy import deepcopy
 from typing import Iterable, Tuple, Union
@@ -11,7 +11,7 @@ from ..tracing.base_tracer import BaseTracer
 
 
 class LookupTable:
-    """Class representing a lookup table"""
+    """Class representing a lookup table."""
 
     # lookup table itself, has 2^N entries
     table: Tuple[int, ...]

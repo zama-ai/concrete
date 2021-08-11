@@ -1,4 +1,4 @@
-"""hnumpy tracing utilities"""
+"""hnumpy tracing utilities."""
 from typing import Callable, Dict, Mapping
 
 import numpy
@@ -15,12 +15,12 @@ from .np_dtypes_helpers import (
 
 
 class NPTracer(BaseTracer):
-    """Tracer class for numpy operations"""
+    """Tracer class for numpy operations."""
 
     def __array_ufunc__(self, ufunc, method, *input_tracers, **kwargs):
-        """
-        Catch calls to numpy ufunc and routes them to tracing functions if supported
-        read more: https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch
+        """Catch calls to numpy ufunc and routes them to tracing functions if supported.
+
+        Read more: https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch
         """
         if method == "__call__":
             tracing_func = self.get_tracing_func_for_np_ufunc(ufunc)
@@ -31,8 +31,10 @@ class NPTracer(BaseTracer):
         raise NotImplementedError("Only __call__ method is supported currently")
 
     def astype(self, numpy_dtype: DTypeLike, *args, **kwargs) -> "NPTracer":
-        """Support numpy astype feature, for now it only accepts a dtype and no additional
-            parameters, *args and **kwargs are accepted for interface compatibility only
+        r"""Support numpy astype feature.
+
+        For now it only accepts a dtype and no additional parameters, \*args and
+        \*\*kwargs are accepted for interface compatibility only
 
         Args:
             numpy_dtype (DTypeLike): The object describing a numpy type
@@ -59,7 +61,7 @@ class NPTracer(BaseTracer):
 
     @staticmethod
     def get_tracing_func_for_np_ufunc(ufunc: numpy.ufunc) -> Callable:
-        """Get the tracing function for a numpy ufunc
+        """Get the tracing function for a numpy ufunc.
 
         Args:
             ufunc (numpy.ufunc): The numpy ufunc that will be traced
@@ -88,7 +90,7 @@ class NPTracer(BaseTracer):
         return common_output_dtypes
 
     def rint(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
-        """Function to trace numpy.rint
+        """Function to trace numpy.rint.
 
         Returns:
             NPTracer: The output NPTracer containing the traced function
@@ -116,7 +118,7 @@ class NPTracer(BaseTracer):
 def trace_numpy_function(
     function_to_trace: Callable, function_parameters: Dict[str, BaseValue]
 ) -> OPGraph:
-    """Function used to trace a numpy function
+    """Function used to trace a numpy function.
 
     Args:
         function_to_trace (Callable): The function you want to trace

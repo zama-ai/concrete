@@ -1,4 +1,4 @@
-"""File to hold code to manage package and numpy dtypes"""
+"""File to hold code to manage package and numpy dtypes."""
 
 from copy import deepcopy
 from typing import List
@@ -26,7 +26,7 @@ SUPPORTED_TYPE_MSG_STRING = ", ".join(sorted(str(dtype) for dtype in SUPPORTED_N
 
 
 def convert_numpy_dtype_to_common_dtype(numpy_dtype: DTypeLike) -> BaseDataType:
-    """Helper function to get the corresponding type from a numpy dtype
+    """Helper function to get the corresponding type from a numpy dtype.
 
     Args:
         numpy_dtype (DTypeLike): Any python object that can be translated to a numpy.dtype
@@ -37,7 +37,6 @@ def convert_numpy_dtype_to_common_dtype(numpy_dtype: DTypeLike) -> BaseDataType:
     Returns:
         BaseDataType: The corresponding data type corresponding to the input numpy_dtype
     """
-
     # Normalize numpy_dtype
     normalized_numpy_dtype = numpy.dtype(numpy_dtype)
     corresponding_hdk_dtype = NUMPY_TO_HDK_TYPE_MAPPING.get(normalized_numpy_dtype, None)
@@ -54,7 +53,7 @@ def convert_numpy_dtype_to_common_dtype(numpy_dtype: DTypeLike) -> BaseDataType:
 
 
 def convert_common_dtype_to_numpy_dtype(common_dtype: BaseDataType) -> numpy.dtype:
-    """Convert a BaseDataType to corresponding numpy.dtype
+    """Convert a BaseDataType to corresponding numpy.dtype.
 
     Args:
         common_dtype (BaseDataType): dtype to convert to numpy.dtype
@@ -96,7 +95,7 @@ def get_ufunc_numpy_output_dtype(
     ufunc: numpy.ufunc,
     input_dtypes: List[BaseDataType],
 ) -> List[numpy.dtype]:
-    """Function to record the output dtype of a numpy.ufunc given some input types
+    """Function to record the output dtype of a numpy.ufunc given some input types.
 
     Args:
         ufunc (numpy.ufunc): The numpy.ufunc whose output types need to be recorded

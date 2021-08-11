@@ -1,4 +1,4 @@
-"""This file holds the code that can be shared between tracers"""
+"""This file holds the code that can be shared between tracers."""
 
 from abc import ABC
 from typing import Iterable, List, Tuple, Type, Union
@@ -9,7 +9,7 @@ from ..representation import intermediate as ir
 
 
 class BaseTracer(ABC):
-    """Base class for implementing tracers"""
+    """Base class for implementing tracers."""
 
     inputs: List["BaseTracer"]
     traced_computation: ir.IntermediateNode
@@ -30,7 +30,7 @@ class BaseTracer(ABC):
         inputs: Iterable[Union["BaseTracer", Scalars]],
         computation_to_trace: Type[ir.IntermediateNode],
     ) -> Tuple["BaseTracer", ...]:
-        """Helper functions to instantiate all output BaseTracer for a given computation
+        """Helper functions to instantiate all output BaseTracer for a given computation.
 
         Args:
             inputs (List[BaseTracer]): Previous BaseTracer used as inputs for a new node
@@ -40,7 +40,6 @@ class BaseTracer(ABC):
         Returns:
             Tuple[BaseTracer, ...]: A tuple containing an BaseTracer per output function
         """
-
         # For inputs which are actually constant, first convert into a tracer
         def sanitize(inp):
             if not isinstance(inp, BaseTracer):
@@ -61,7 +60,6 @@ class BaseTracer(ABC):
         return output_tracers
 
     def __add__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
-
         result_tracer = self.instantiate_output_tracers(
             [self, other],
             ir.Add,
@@ -76,7 +74,6 @@ class BaseTracer(ABC):
     __radd__ = __add__
 
     def __sub__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
-
         result_tracer = self.instantiate_output_tracers(
             [self, other],
             ir.Sub,
@@ -86,7 +83,6 @@ class BaseTracer(ABC):
         return result_tracer[0]
 
     def __rsub__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
-
         result_tracer = self.instantiate_output_tracers(
             [other, self],
             ir.Sub,
@@ -111,7 +107,7 @@ class BaseTracer(ABC):
 
 
 def make_const_input_tracer(tracer_class: Type[BaseTracer], constant_data: Scalars) -> BaseTracer:
-    """Helper function to create a tracer for a constant input
+    """Helper function to create a tracer for a constant input.
 
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create a ConstantInput for

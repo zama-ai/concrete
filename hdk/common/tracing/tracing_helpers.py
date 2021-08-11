@@ -1,4 +1,4 @@
-"""Helper functions for tracing"""
+"""Helper functions for tracing."""
 import collections
 from inspect import signature
 from typing import Callable, Dict, Iterable, OrderedDict, Set, Tuple, Type
@@ -15,7 +15,7 @@ def make_input_tracers(
     tracer_class: Type[BaseTracer],
     function_parameters: OrderedDict[str, BaseValue],
 ) -> OrderedDict[str, BaseTracer]:
-    """Helper function to create tracers for a function's parameters
+    """Helper function to create tracers for a function's parameters.
 
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create an Input for
@@ -37,7 +37,7 @@ def make_input_tracer(
     input_idx: int,
     input_value: BaseValue,
 ) -> BaseTracer:
-    """Helper function to create a tracer for an input value
+    """Helper function to create a tracer for an input value.
 
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create an Input for
@@ -55,7 +55,7 @@ def make_input_tracer(
 def prepare_function_parameters(
     function_to_trace: Callable, function_parameters: Dict[str, BaseValue]
 ) -> OrderedDict[str, BaseValue]:
-    """Function to filter the passed function_parameters to trace function_to_trace
+    """Function to filter the passed function_parameters to trace function_to_trace.
 
     Args:
         function_to_trace (Callable): function that will be traced for which parameters are checked
@@ -87,7 +87,7 @@ def prepare_function_parameters(
 def create_graph_from_output_tracers(
     output_tracers: Iterable[BaseTracer],
 ) -> nx.MultiDiGraph:
-    """Generate a networkx Directed Graph that will represent the computation from a traced function
+    """Generate a networkx Directed Graph that represents the computation from a traced function.
 
     Args:
         output_tracers (Iterable[BaseTracer]): the output tracers resulting from running the

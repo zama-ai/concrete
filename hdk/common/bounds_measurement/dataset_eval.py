@@ -1,4 +1,4 @@
-"""Code to evaluate the IR graph on datasets"""
+"""Code to evaluate the IR graph on datasets."""
 
 from typing import Any, Iterator, Tuple
 
@@ -6,7 +6,9 @@ from ..operator_graph import OPGraph
 
 
 def eval_op_graph_bounds_on_dataset(op_graph: OPGraph, dataset: Iterator[Tuple[Any, ...]]):
-    """Evaluate the bounds for all output values of the operators in the graph op_graph over data
+    """Evaluate the bounds with a dataset.
+
+    Evaluate the bounds for all output values of the operators in the graph op_graph over data
         coming from the dataset
 
     Args:

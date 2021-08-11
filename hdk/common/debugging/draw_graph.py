@@ -1,4 +1,4 @@
-"""functions to draw the different graphs we can generate in the package, eg to debug"""
+"""functions to draw the different graphs we can generate in the package, eg to debug."""
 from typing import Any, Dict, List
 
 import matplotlib.pyplot as plt
@@ -19,7 +19,8 @@ IR_NODE_COLOR_MAPPING = {
 
 
 def human_readable_layout(graph: nx.Graph, x_delta: float = 1.0, y_delta: float = 1.0) -> Dict:
-    """
+    """Returns positions for graphs, to make them easy to read.
+
     Returns a pos to be used later with eg nx.draw_networkx_nodes, so that nodes
     are ordered by depth from input along the x axis and have a uniform
     distribution along the y axis
@@ -33,7 +34,6 @@ def human_readable_layout(graph: nx.Graph, x_delta: float = 1.0, y_delta: float 
         pos (Dict): the argument to use with eg nx.draw_networkx_nodes
 
     """
-
     nodes_depth = {node: 0 for node in graph.nodes()}
     input_nodes = [node for node in graph.nodes() if len(list(graph.predecessors(node))) == 0]
 
@@ -89,8 +89,7 @@ def draw_graph(
     block_until_user_closes_graph: bool = True,
     draw_edge_numbers: bool = True,
 ) -> None:
-    """
-    Draw a graph
+    """Draw a graph.
 
     Args:
         graph (OPGraph): The graph that we want to draw
@@ -105,7 +104,6 @@ def draw_graph(
         None
 
     """
-
     assert isinstance(opgraph, OPGraph)
     set_of_nodes_which_are_outputs = set(opgraph.output_nodes.values())
     graph = opgraph.graph
@@ -212,7 +210,7 @@ def draw_graph(
 
 
 def data_type_to_string(node):
-    """Return the datatypes of the outputs of the node
+    """Return the datatypes of the outputs of the node.
 
     Args:
         node: a graph node
@@ -225,7 +223,7 @@ def data_type_to_string(node):
 
 
 def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
-    """Return a string representing a graph
+    """Return a string representing a graph.
 
     Args:
         graph (OPGraph): The graph that we want to draw
@@ -235,7 +233,6 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
     Returns:
         str: a string to print or save in a file
     """
-
     assert isinstance(opgraph, OPGraph)
     list_of_nodes_which_are_outputs = list(opgraph.output_nodes.values())
     graph = opgraph.graph

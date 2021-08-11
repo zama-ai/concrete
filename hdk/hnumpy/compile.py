@@ -1,4 +1,4 @@
-"""hnumpy compilation function"""
+"""hnumpy compilation function."""
 
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 
@@ -17,7 +17,7 @@ def compile_numpy_function(
     dataset: Iterator[Tuple[Any, ...]],
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ) -> OPGraph:
-    """Main API of hnumpy, to be able to compile an homomorphic program
+    """Main API of hnumpy, to be able to compile an homomorphic program.
 
     Args:
         function_to_trace (Callable): The function you want to trace
@@ -33,7 +33,6 @@ def compile_numpy_function(
         OPGraph: currently returns a compilable graph, but later, it will return an MLIR compatible
             with the compiler, and even later, it will return the result of the compilation
     """
-
     # Trace
     op_graph = trace_numpy_function(function_to_trace, function_parameters)
 

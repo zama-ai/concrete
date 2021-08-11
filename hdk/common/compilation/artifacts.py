@@ -1,4 +1,4 @@
-"""Module for compilation artifacts"""
+"""Module for compilation artifacts."""
 
 import platform
 import subprocess
@@ -13,7 +13,7 @@ from ..representation import intermediate as ir
 
 
 class CompilationArtifacts:
-    """Class that conveys information about compilation process"""
+    """Class that conveys information about compilation process."""
 
     operation_graph: Optional[OPGraph]
     bounds: Optional[Dict[ir.IntermediateNode, Dict[str, Any]]]
@@ -23,7 +23,7 @@ class CompilationArtifacts:
         self.bounds = None
 
     def export(self, output_directory: Path):
-        """Exports the artifacts in a textual format
+        """Exports the artifacts in a textual format.
 
         Args:
             output_directory (Path): the directory to save the artifacts
@@ -31,7 +31,6 @@ class CompilationArtifacts:
         Returns:
             None
         """
-
         with open(output_directory.joinpath("environment.txt"), "w") as f:
             f.write(f"{platform.platform()} {platform.version()}\n")
             f.write(f"Python {platform.python_version()}\n")

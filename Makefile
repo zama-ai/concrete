@@ -25,7 +25,7 @@ pylint:
 conformance: python_format
 .PHONY: conformance
 
-pcc: check_python_format pylint mypy_ci
+pcc: check_python_format pylint mypy_ci pydocstyle
 .PHONY: pcc
 
 pytest:
@@ -58,21 +58,26 @@ coverage:
 .PHONY: coverage
 
 docs:
-
-	# Generate the auto summary of documentations
+	@# Generate the auto summary of documentations
 	poetry run sphinx-apidoc -o docs/_apidoc hdk
 
-	# Docs
+	@# Docs
 	cd docs && poetry run make html
+.PHONY: docs
 
 clean_docs:
 	rm -rf docs/_apidoc docs/_build
+.PHONY: clean_docs
 
 open_docs:
+	@# This is macOS only. On other systems, one would use `start` or `xdg-open`
 	open docs/_build/html/index.html
+.PHONY: open_docs
 
 build_and_open_docs: clean_docs docs open_docs
+.PHONY: build_and_open_docs
 
-
-
-.PHONY: docs
+pydocstyle:
+	@# From http://www.pydocstyle.org/en/stable/error_codes.html
+	poetry run pydocstyle hdk --convention google --add-ignore=D1,D202
+.PHONY: pydocstyle

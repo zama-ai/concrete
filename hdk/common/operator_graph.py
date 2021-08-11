@@ -1,4 +1,4 @@
-"""Code to wrap and make manipulating networkx graphs easier"""
+"""Code to wrap and make manipulating networkx graphs easier."""
 
 from copy import deepcopy
 from typing import Any, Dict, Iterable, Mapping
@@ -13,7 +13,7 @@ from .tracing.tracing_helpers import create_graph_from_output_tracers
 
 
 class OPGraph:
-    """Class to make work with nx graphs easier"""
+    """Class to make work with nx graphs easier."""
 
     graph: nx.MultiDiGraph
     input_nodes: Mapping[int, ir.Input]
@@ -32,7 +32,7 @@ class OPGraph:
         }
 
     def evaluate(self, inputs: Mapping[int, Any]) -> Dict[ir.IntermediateNode, Any]:
-        """Function to evaluate a graph and get intermediate values for all nodes
+        """Function to evaluate a graph and get intermediate values for all nodes.
 
         Args:
             inputs (Mapping[int, Any]): The inputs to the program
@@ -56,14 +56,15 @@ class OPGraph:
         return node_results
 
     def update_values_with_bounds(self, node_bounds: dict):
-        """Update nodes inputs and outputs values with data types able to hold data ranges measured
-            and passed in nodes_bounds
+        """Update values with bounds.
+
+        Update nodes inputs and outputs values with data types able to hold data ranges measured
+        and passed in nodes_bounds
 
         Args:
             node_bounds (dict): Dictionary with nodes as keys, holding dicts with a 'min' and 'max'
                 keys. Those bounds will be taken as the data range to be represented, per node.
         """
-
         node: ir.IntermediateNode
 
         for node in self.graph.nodes():

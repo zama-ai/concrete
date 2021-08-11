@@ -1,2 +1,2 @@
-"""Bounds measurement module"""
+"""Bounds measurement module."""
 from . import dataset_eval
