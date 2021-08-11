@@ -1,3 +1,5 @@
+SHELL:=/bin/bash
+
 setup_env:
 	poetry install
 	poetry run python -m pip install -U pip wheel setuptools
