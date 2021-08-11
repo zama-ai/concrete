@@ -1,5 +1,5 @@
 use super::*;
-
+use concrete_commons::numeric::Numeric;
 /// A distribution type representing random sampling for unsigned integer type, where the `n`
 /// least significant bits are sampled in `[0, 2^n[`.
 #[derive(Copy, Clone)]

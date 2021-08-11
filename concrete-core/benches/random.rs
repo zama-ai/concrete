@@ -1,4 +1,4 @@
-use concrete_commons::UnsignedInteger;
+use concrete_commons::numeric::UnsignedInteger;
 use concrete_core::math::random::{RandomGenerable, RandomGenerator, Uniform};
 use concrete_core::math::tensor::Tensor;
 use criterion::{black_box, Criterion};

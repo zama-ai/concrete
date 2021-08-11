@@ -8,12 +8,11 @@ use std::slice::SliceIndex;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{CastFrom, UnsignedInteger};
-
 use crate::zip;
 
 use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, LoadError, SaveError};
 
+use concrete_commons::numeric::{CastFrom, UnsignedInteger};
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 

@@ -25,7 +25,12 @@ pub trait Bootstrap {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::{CastInto, LogStandardDev, Numeric};
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::numeric::CastInto;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
+    ///     PolynomialSize,
+    /// };
     /// use concrete_core::crypto::bootstrap::{Bootstrap, FourierBootstrapKey, StandardBootstrapKey};
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
@@ -34,10 +39,7 @@ pub trait Bootstrap {
     ///     EncryptionRandomGenerator, SecretRandomGenerator,
     /// };
     /// use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
-    /// use concrete_core::crypto::{GlweDimension, LweDimension, LweSize};
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::fft::Complex64;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::AsMutTensor;
     ///
     /// // define settings
@@ -116,11 +118,11 @@ mod test {
     use crate::crypto::bootstrap::StandardBootstrapKey;
     use crate::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
     use crate::crypto::secret::{GlweSecretKey, LweSecretKey};
-    use crate::crypto::{GlweDimension, LweDimension};
-    use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    use crate::math::polynomial::PolynomialSize;
     use crate::math::torus::UnsignedTorus;
-    use concrete_commons::StandardDev;
+    use concrete_commons::dispersion::StandardDev;
+    use concrete_commons::parameters::{
+        DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
+    };
 
     fn test_bsk_gen_equivalence<T: UnsignedTorus + Send + Sync>() {
         for _ in 0..10 {

@@ -33,6 +33,15 @@ In any of those cases, the corresponding type implements the `DispersionParamete
 which makes if possible to use any of those representations generically when noise must be
 defined.
 
+## Key kinds
+
+This module contains types to manage the different kinds of secret keys.
+
+## Parameters
+
+This module contains structures that wrap unsigned integer parameters of
+concrete, like the ciphertext dimension or the polynomial degree.
+
 ## License
 
 Concrete-commons is licensed under AGPLv3. If this does not fit your requirements, get in touch 

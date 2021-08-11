@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{KeyKind, Numeric, UnsignedInteger};
-
 use crate::crypto::encoding::{Cleartext, CleartextList, Plaintext};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{LweDimension, LweSize};
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
 use crate::tensor_traits;
 
@@ -12,6 +9,9 @@ use super::LweList;
 use crate::crypto::glwe::GlweCiphertext;
 use crate::math::polynomial::MonomialDegree;
 use crate::math::torus::UnsignedTorus;
+use concrete_commons::key_kinds::KeyKind;
+use concrete_commons::numeric::{Numeric, UnsignedInteger};
+use concrete_commons::parameters::{LweDimension, LweSize};
 
 /// A ciphertext encrypted using the LWE scheme.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -30,8 +30,8 @@ where
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::lwe::LweCiphertext;
-    /// use concrete_core::crypto::*;
     /// let ct = LweCiphertext::allocate(0 as u8, LweSize(4));
     /// assert_eq!(ct.lwe_size(), LweSize(4));
     /// assert_eq!(ct.get_mask().mask_size(), LweDimension(3));
@@ -49,8 +49,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::lwe::LweCiphertext;
-    /// use concrete_core::crypto::*;
     /// let vector = vec![0 as u8; 10];
     /// let ct = LweCiphertext::from_container(vector.as_slice());
     /// assert_eq!(ct.lwe_size(), LweSize(10));
@@ -66,8 +66,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::LweSize;
     /// use concrete_core::crypto::lwe::LweCiphertext;
-    /// use concrete_core::crypto::*;
     /// let ct = LweCiphertext::allocate(0 as u8, LweSize(4));
     /// assert_eq!(ct.lwe_size(), LweSize(4));
     /// ```
@@ -83,8 +83,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::lwe::*;
-    /// use concrete_core::crypto::*;
+    /// use concrete_core::crypto::lwe::{LweBody, LweCiphertext};
     /// let ciphertext = LweCiphertext::from_container(vec![0 as u8; 10]);
     /// let body = ciphertext.get_body();
     /// assert_eq!(body, &LweBody(0 as u8));
@@ -101,8 +100,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::lwe::*;
-    /// use concrete_core::crypto::*;
+    /// use concrete_commons::parameters::LweDimension;
+    /// use concrete_core::crypto::lwe::LweCiphertext;
     /// let ciphertext = LweCiphertext::from_container(vec![0 as u8; 10]);
     /// let mask = ciphertext.get_mask();
     /// assert_eq!(mask.mask_size(), LweDimension(9));
@@ -120,8 +119,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::lwe::*;
-    /// use concrete_core::crypto::*;
+    /// use concrete_commons::parameters::LweDimension;
+    /// use concrete_core::crypto::lwe::{LweBody, LweCiphertext};
     /// let ciphertext = LweCiphertext::from_container(vec![0 as u8; 10]);
     /// let (body, mask) = ciphertext.get_body_and_mask();
     /// assert_eq!(body, &LweBody(0));
@@ -141,8 +140,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::lwe::*;
-    /// use concrete_core::crypto::*;
+    /// use concrete_core::crypto::lwe::{LweBody, LweCiphertext};
     /// let mut ciphertext = LweCiphertext::from_container(vec![0 as u8; 10]);
     /// let mut body = ciphertext.get_mut_body();
     /// *body = LweBody(8);
@@ -187,6 +185,7 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let mut ciphertext = LweCiphertext::from_container(vec![0 as u8; 10]);
@@ -211,8 +210,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -273,8 +272,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -344,8 +343,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -397,8 +396,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -450,8 +449,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -496,8 +495,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -544,7 +543,8 @@ impl<Cont> LweCiphertext<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
     /// use concrete_core::crypto::encoding::{Plaintext, PlaintextList};
     /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::crypto::lwe::LweCiphertext;
@@ -552,8 +552,7 @@ impl<Cont> LweCiphertext<Cont> {
     ///     EncryptionRandomGenerator, SecretRandomGenerator,
     /// };
     /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::crypto::{GlweDimension, LweDimension};
-    /// use concrete_core::math::polynomial::{MonomialDegree, PolynomialSize};
+    /// use concrete_core::math::polynomial::MonomialDegree;
     /// use concrete_core::math::tensor::AsRefTensor;
     ///
     /// let mut secret_generator = SecretRandomGenerator::new(None);
@@ -617,8 +616,8 @@ impl<Cont> LweMask<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::lwe::*;
-    /// use concrete_core::crypto::LweDimension;
     /// let masks = LweMask::from_container(vec![0 as u8; 10]);
     /// assert_eq!(masks.mask_size(), LweDimension(10));
     /// ```
@@ -678,8 +677,8 @@ impl<Cont> LweMask<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweDimension;
     /// use concrete_core::crypto::lwe::*;
-    /// use concrete_core::crypto::LweDimension;
     /// let mut ciphertext = LweCiphertext::from_container(vec![0 as u8; 10]);
     /// assert_eq!(ciphertext.get_mask().mask_size(), LweDimension(9));
     /// ```

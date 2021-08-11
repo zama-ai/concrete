@@ -1,9 +1,13 @@
 use std::fmt::Debug;
 
-use concrete_commons::{
-    CastFrom, CastInto, DispersionParameter, LogStandardDev, Numeric, Variance,
-};
 use concrete_npe as npe;
+
+use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
+use concrete_commons::numeric::{CastFrom, CastInto, Numeric};
+use concrete_commons::parameters::{
+    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
+    PlaintextCount, PolynomialSize,
+};
 
 use crate::crypto::bootstrap::fourier::constant_sample_extract;
 use crate::crypto::bootstrap::{Bootstrap, FourierBootstrapKey, StandardBootstrapKey};
@@ -12,10 +16,7 @@ use crate::crypto::glwe::GlweCiphertext;
 use crate::crypto::lwe::LweCiphertext;
 use crate::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
 use crate::crypto::secret::{GlweSecretKey, LweSecretKey};
-use crate::crypto::{GlweDimension, LweDimension, LweSize, PlaintextCount};
-use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
 use crate::math::fft::Complex64;
-use crate::math::polynomial::PolynomialSize;
 use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
 use crate::math::torus::UnsignedTorus;

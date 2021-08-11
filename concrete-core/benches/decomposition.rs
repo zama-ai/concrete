@@ -1,7 +1,6 @@
-use concrete_commons::UnsignedInteger;
-use concrete_core::math::decomposition::{
-    DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-};
+use concrete_commons::numeric::UnsignedInteger;
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+use concrete_core::math::decomposition::SignedDecomposer;
 use concrete_core::math::tensor::Tensor;
 use criterion::{black_box, BenchmarkId, Criterion};
 use itertools::iproduct;

@@ -14,7 +14,7 @@
 //! using the [`RandomGenerable`] methods, you should use the various methods exposed by
 //! [`RandomGenerator`] instead.
 use crate::math::tensor::{AsMutTensor, Tensor};
-use concrete_commons::{FloatingPoint, Numeric};
+use concrete_commons::numeric::FloatingPoint;
 pub use gaussian::*;
 pub use generator::*;
 pub use uniform::*;

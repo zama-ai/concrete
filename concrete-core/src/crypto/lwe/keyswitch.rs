@@ -1,20 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-use concrete_commons::{BinaryKeyKind, DispersionParameter, SignedInteger};
+use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::key_kinds::BinaryKeyKind;
+use concrete_commons::numeric::SignedInteger;
+use concrete_commons::parameters::{
+    CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+};
 
 use crate::crypto::encoding::{Plaintext, PlaintextList};
+use crate::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{CiphertextCount, LweDimension, LweSize};
-use crate::math::decomposition::{
-    DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, DecompositionTerm,
-    SignedDecomposer,
-};
+use crate::math::decomposition::{DecompositionLevel, DecompositionTerm, SignedDecomposer};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
+use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
 
 use super::{LweCiphertext, LweList};
-use crate::crypto::secret::generators::EncryptionRandomGenerator;
-use crate::math::torus::UnsignedTorus;
 
 /// An Lwe Keyswithing key.
 ///
@@ -52,9 +53,11 @@ where
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -102,9 +105,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let input_size = LweDimension(256);
     /// let output_size = LweDimension(35);
     /// let decomp_log_base = DecompositionBaseLog(7);
@@ -147,9 +152,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -172,9 +179,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -196,9 +205,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -220,9 +231,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -249,9 +262,11 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// let ksk = LweKeyswitchKey::allocate(
     ///     0 as u8,
     ///     DecompositionLevelCount(10),
@@ -274,15 +289,16 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::lwe::LweKeyswitchKey;
     /// use concrete_core::crypto::secret::generators::{
     ///     EncryptionRandomGenerator, SecretRandomGenerator,
     /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::tensor::AsRefTensor;
     ///
     /// let input_size = LweDimension(10);
@@ -356,7 +372,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
             after_key.encrypt_lwe_list(
                 &mut keyswitch_key_block.into_lwe_list(),
                 &messages,
-                noise_parameters.clone(),
+                noise_parameters,
                 generator,
             );
         }
@@ -444,8 +460,10 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::LogStandardDev;
-    ///
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
@@ -453,7 +471,6 @@ impl<Cont> LweKeyswitchKey<Cont> {
     /// };
     /// use concrete_core::crypto::secret::LweSecretKey;
     /// use concrete_core::crypto::*;
-    /// use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
     /// use concrete_core::math::tensor::AsRefTensor;
     ///
     /// let input_size = LweDimension(1024);
