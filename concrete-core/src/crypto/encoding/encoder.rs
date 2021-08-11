@@ -1,9 +1,8 @@
-use concrete_commons::{FloatingPoint, Numeric};
-
 use crate::math::tensor::{AsMutTensor, AsRefTensor};
 use crate::math::torus::{FromTorus, IntoTorus, UnsignedTorus};
 
 use super::{Cleartext, CleartextList, Plaintext, PlaintextList};
+use concrete_commons::numeric::{FloatingPoint, Numeric};
 
 /// A trait for types that encode cleartext to plaintext.
 ///

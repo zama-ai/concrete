@@ -1,6 +1,7 @@
-use crate::math::polynomial::{Polynomial, PolynomialList, PolynomialSize};
+use crate::math::polynomial::{Polynomial, PolynomialList};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::tensor_traits;
+use concrete_commons::parameters::PolynomialSize;
 
 /// The mask of a GLWE ciphertext
 pub struct GlweMask<Cont> {
@@ -16,9 +17,8 @@ impl<Cont> GlweMask<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::glwe::*;
-    /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// let rlwe_ciphertext = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// for mask in rlwe_ciphertext.get_mask().mask_element_iter() {
     ///     assert_eq!(mask.as_polynomial().polynomial_size(), PolynomialSize(10));
@@ -41,9 +41,8 @@ impl<Cont> GlweMask<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::glwe::*;
-    /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::PolynomialSize;
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut rlwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// for mut mask in rlwe.get_mut_mask().mask_element_iter_mut() {
@@ -69,9 +68,8 @@ impl<Cont> GlweMask<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::glwe::*;
-    /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
+    /// use concrete_commons::parameters::{GlweSize, PolynomialCount, PolynomialSize};
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let rlwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let masks = rlwe.get_mask();
@@ -91,9 +89,8 @@ impl<Cont> GlweMask<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::glwe::*;
-    /// use concrete_core::crypto::*;
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
+    /// use concrete_commons::parameters::{GlweSize, PolynomialCount, PolynomialSize};
+    /// use concrete_core::crypto::glwe::GlweCiphertext;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut rlwe = GlweCiphertext::allocate(0 as u8, PolynomialSize(10), GlweSize(100));
     /// let mut masks = rlwe.get_mut_mask();
@@ -125,8 +122,8 @@ impl<Container> GlweMaskElement<Container> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::crypto::glwe::GlweMaskElement;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let mask = GlweMaskElement::from_container(vec![0 as u8; 10]);
     /// assert_eq!(mask.as_polynomial().polynomial_size(), PolynomialSize(10));
     /// ```
@@ -141,8 +138,8 @@ impl<Container> GlweMaskElement<Container> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::crypto::glwe::GlweMaskElement;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let mask = GlweMaskElement::from_container(vec![0 as u8; 10]);
     /// assert_eq!(mask.as_polynomial().polynomial_size(), PolynomialSize(10));
     /// ```
@@ -159,7 +156,6 @@ impl<Container> GlweMaskElement<Container> {
     ///
     /// ```rust
     /// use concrete_core::crypto::glwe::GlweMaskElement;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut mask = GlweMaskElement::from_container(vec![0 as u8; 10]);
     /// mask.as_mut_polynomial()

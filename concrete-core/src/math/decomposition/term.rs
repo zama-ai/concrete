@@ -1,6 +1,7 @@
-use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevel};
+use crate::math::decomposition::DecompositionLevel;
 use crate::math::tensor::{AsMutTensor, Tensor};
-use concrete_commons::{Numeric, UnsignedInteger};
+use concrete_commons::numeric::{Numeric, UnsignedInteger};
+use concrete_commons::parameters::DecompositionBaseLog;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -43,9 +44,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
@@ -63,9 +63,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
@@ -82,9 +81,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::{DecompositionLevel, SignedDecomposer};
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let output = decomposer.decompose(2u32.pow(19)).next().unwrap();
@@ -136,9 +134,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// use concrete_core::math::tensor::Tensor;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
@@ -178,9 +175,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// use concrete_core::math::tensor::Tensor;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
@@ -198,9 +194,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevel, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::{DecompositionLevel, SignedDecomposer};
     /// use concrete_core::math::tensor::Tensor;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));

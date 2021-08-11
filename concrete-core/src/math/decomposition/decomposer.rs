@@ -1,9 +1,7 @@
-use crate::math::decomposition::{
-    DecompositionBaseLog, DecompositionLevelCount, SignedDecompositionIter,
-    TensorSignedDecompositionIter,
-};
+use crate::math::decomposition::{SignedDecompositionIter, TensorSignedDecompositionIter};
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
-use concrete_commons::{Numeric, UnsignedInteger};
+use concrete_commons::numeric::{Numeric, UnsignedInteger};
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
 use std::marker::PhantomData;
 
 /// A structure which allows to decompose unsigned integers into a set of smaller terms.
@@ -28,9 +26,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.level_count(), DecompositionLevelCount(3));
@@ -58,9 +55,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.base_log(), DecompositionBaseLog(4));
@@ -76,9 +72,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// assert_eq!(decomposer.level_count(), DecompositionLevelCount(3));
@@ -92,9 +87,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let closest = decomposer.closest_representable(1_340_987_234_u32);
@@ -125,9 +119,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// use concrete_core::math::tensor::Tensor;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
@@ -156,10 +149,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::UnsignedInteger;
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::numeric::UnsignedInteger;
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// for term in decomposer.decompose(1_340_987_234_u32) {
@@ -190,9 +182,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
     /// let val = 1_340_987_234_u32;
@@ -221,10 +212,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::UnsignedInteger;
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::numeric::UnsignedInteger;
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// use concrete_core::math::tensor::Tensor;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));
@@ -268,10 +258,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_commons::UnsignedInteger;
-    /// use concrete_core::math::decomposition::{
-    ///     DecompositionBaseLog, DecompositionLevelCount, SignedDecomposer,
-    /// };
+    /// use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
+    /// use concrete_core::math::decomposition::SignedDecomposer;
     /// use concrete_core::math::tensor::Tensor;
     /// let decomposer =
     ///     SignedDecomposer::<u32>::new(DecompositionBaseLog(4), DecompositionLevelCount(3));

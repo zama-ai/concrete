@@ -1,9 +1,8 @@
 use crate::crypto::glwe::GlweCiphertext;
-use crate::crypto::GlweSize;
 use crate::math::decomposition::DecompositionLevel;
-use crate::math::polynomial::PolynomialSize;
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::{ck_dim_div, tensor_traits};
+use concrete_commons::parameters::{GlweSize, PolynomialSize};
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
 
@@ -23,10 +22,9 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_matrix = GgswLevelMatrix::from_container(
     ///     vec![0 as u8; 10 * 7 * 7],
     ///     PolynomialSize(10),
@@ -58,16 +56,15 @@ impl<Cont> GgswLevelMatrix<Cont> {
 
     /// Returns the size of the GLWE ciphertexts composing the GGSW level matrix.
     ///
-    /// This is also the number of columns of the matrix (assuming it is a matrix of polynomials)
-    /// , as well as its number of rows.
+    /// This is also the number of columns of the matrix (assuming it is a matrix of
+    /// polynomials), as well as its number of rows.
     ///
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_matrix = GgswLevelMatrix::from_container(
     ///     vec![0 as u8; 10 * 7 * 7],
     ///     PolynomialSize(10),
@@ -85,10 +82,9 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_matrix = GgswLevelMatrix::from_container(
     ///     vec![0 as u8; 10 * 7 * 7],
     ///     PolynomialSize(10),
@@ -106,10 +102,9 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_matrix = GgswLevelMatrix::from_container(
     ///     vec![0 as u8; 10 * 7 * 7],
     ///     PolynomialSize(10),
@@ -127,10 +122,9 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_matrix = GgswLevelMatrix::from_container(
     ///     vec![0 as u8; 10 * 7 * 7],
     ///     PolynomialSize(10),
@@ -159,10 +153,9 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// let mut level_matrix = GgswLevelMatrix::from_container(
     ///     vec![0 as u8; 10 * 7 * 7],
@@ -200,10 +193,9 @@ impl<Cont> GgswLevelMatrix<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelMatrix;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
     /// use rayon::iter::ParallelIterator;
     /// let mut level_matrix = GgswLevelMatrix::from_container(
@@ -248,10 +240,9 @@ impl<Cont> GgswLevelRow<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelRow;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_row = GgswLevelRow::from_container(
     ///     vec![0 as u8; 10 * 7],
     ///     PolynomialSize(10),
@@ -279,10 +270,9 @@ impl<Cont> GgswLevelRow<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelRow;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_row = GgswLevelRow::from_container(
     ///     vec![0 as u8; 10 * 7],
     ///     PolynomialSize(10),
@@ -303,10 +293,9 @@ impl<Cont> GgswLevelRow<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::crypto::ggsw::GgswLevelRow;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_row = GgswLevelRow::from_container(
     ///     vec![0 as u8; 10 * 7],
     ///     PolynomialSize(10),
@@ -323,10 +312,9 @@ impl<Cont> GgswLevelRow<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::PolynomialSize;
     /// use concrete_core::crypto::ggsw::GgswLevelRow;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_row = GgswLevelRow::from_container(
     ///     vec![0 as u8; 10 * 7],
     ///     PolynomialSize(10),
@@ -343,10 +331,9 @@ impl<Cont> GgswLevelRow<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{GlweSize, PolynomialSize};
     /// use concrete_core::crypto::ggsw::GgswLevelRow;
-    /// use concrete_core::crypto::GlweSize;
     /// use concrete_core::math::decomposition::DecompositionLevel;
-    /// use concrete_core::math::polynomial::PolynomialSize;
     /// let level_row = GgswLevelRow::from_container(
     ///     vec![0 as u8; 10 * 7],
     ///     PolynomialSize(10),

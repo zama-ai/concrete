@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::encoding::{CleartextList, PlaintextList};
-use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, LweSize};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
 use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_div, tensor_traits, zip, zip_args};
 
 use super::LweCiphertext;
+use concrete_commons::parameters::{CiphertextCount, CleartextCount, LweDimension, LweSize};
 
 /// A list of ciphertext encoded with the LWE scheme.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -26,6 +26,7 @@ where
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::allocate(0 as u8, LweSize(10), CiphertextCount(20));
@@ -46,6 +47,7 @@ impl<Cont> LweList<Cont> {
     /// # Example:
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -66,6 +68,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -84,6 +87,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweSize;
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -101,6 +105,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::lwe::LweList;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -118,6 +123,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweSize;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -148,6 +154,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
+    /// use concrete_commons::parameters::LweSize;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let mut list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -179,6 +186,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -214,6 +222,7 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::*;
     /// let mut list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
@@ -264,7 +273,8 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_commons::LogStandardDev;
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::encoding::*;
     /// use concrete_core::crypto::lwe::*;
     /// use concrete_core::crypto::secret::generators::{
