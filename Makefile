@@ -57,6 +57,24 @@ coverage:
 	@if [[ "$$BB" == "" ]]; then BB=origin/main; fi && poetry run diff-cover coverage.xml --fail-under 100 --html-report coverage.html --compare-branch $$BB
 .PHONY: coverage
 
+docker_build:
+	docker build -t hdk:mlir -f docker/Dockerfile .
+.PHONY: docker_build
+
+docker_rebuild:
+	docker build --no-cache -t hdk:mlir -f docker/Dockerfile .
+.PHONY: docker_rebuild
+
+docker_start:
+	docker run --rm -it --volume /"$$(pwd)":/hdk hdk:mlir # the slash before pwd is for Windows
+.PHONY: docker_start
+
+docker_build_and_start: docker_build docker_start
+.PHONY: docker_build_and_start
+
+docker_bas: docker_build_and_start
+.PHONY: docker_bas
+
 docs:
 	@# Generate the auto summary of documentations
 	poetry run sphinx-apidoc -o docs/_apidoc hdk

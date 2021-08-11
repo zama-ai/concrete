@@ -85,6 +85,28 @@ In this section, we will discuss the module structure of hdk briefly. You are en
       - tracing: utilities for generic function tracing used during intermediate representation creation
     - hnumpy: numpy frontend of hdk
 
+## Working in Docker
+
+Before you start this section, go ahead and install docker. You can follow [this](https://docs.docker.com/engine/install/) official guide for that.
+
+Docker image of `hdk` is based of another docker image provided by the compiler team. The process of building on top of that image is automated, but it requires authorization. So to work in docker, talk with your team lead to gain access to the base docker image. You need to be added to a special group in the organization.
+
+Upon joining to the team, you need to log in using the following command:
+
+```shell
+docker login ghcr.io
+```
+
+This command will ask for a username and a password. For username, just enter your GitHub username. For password, you should create a personal access token from [here](https://github.com/settings/tokens) selecting `read:packages` permission. Just paste the generated access token as your password, and you are good to go.
+
+Once you do that you can get inside the docker environment using the following command:
+
+```shell
+make docker_build_and_start
+```
+
+After you finish your work, you can leave the docker by using the `exit` command or by pressing `CTRL + D`.
+
 ## Contributing
 
 Now, you have a working environment, and you know what is where in the project. You are ready to contribute! Well, not so fast let's go over some other important things that you need to be careful about.
