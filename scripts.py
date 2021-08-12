@@ -1,12 +1,6 @@
-import matplotlib.pyplot as plt
-from sage.stats.distributions.discrete_gaussian_lattice import DiscreteGaussianDistributionIntegerSampler
-from concrete_params import concrete_LWE_params, concrete_RLWE_params
-import numpy as np
-#from pytablewriter import MarkdownTableWriter
-from hybrid_decoding import parameter_search
-from random import uniform
-# easier to just load the estimator
 import estimator.estimator as est
+import matplotlib.pyplot as plt
+import numpy as np
 
 # define the four cost models used for Concrete (2 classical, 2 quantum)
 # note that classical and quantum are the two models used in the "HE Std"
@@ -33,9 +27,20 @@ cost_models = [classical, quantum, classical_conservative, quantum_conservative,
 def estimate_lwe_nocrash(n, alpha, q, secret_distribution,
                                 reduction_cost_model=est.BKZ.sieve, m=oo):
     """ 
-    A function to estimate the complexity of LWE, whilst skipping over any attacks which crash.s 
+    A function to estimate the complexity of LWE, whilst skipping over any attacks which crash
+    :param n                   : the LWE dimension
+    :param alpha               : the noise rate of the error
+    :param q                   : the LWE ciphertext modulus
+    :param secret_distribution : the LWE secret distribution
+    :param reduction_cost_model: the BKZ reduction cost model
+    :param m                   : the number of available LWE samples
+
+    EXAMPLE:
+    sage: estimate_lwe_nocrash(n = 256, q = 2**32, alpha = RR(8/2**32), secret_distribution = (0,1))
+    sage: 39.46
     """
 
+    # the success value denotes whether we need to re-run the estimator, in the case of a crash
     success = 0
 
     try:
@@ -69,6 +74,7 @@ def estimate_lwe_nocrash(n, alpha, q, secret_distribution,
         except Exception as e:
             print(e)
 
+    # the output security level is just the cost of the fastest attack
     security_level = get_security_level(estimate)
 
     return security_level
@@ -118,129 +124,6 @@ def get_security_level(estimate, decimal_places = 2):
     security_level = round(log(min(levels), 2), decimal_places)
 
     return security_level
-
-
-def get_all_security_levels(params):
-    """ A function which gets the security levels of a collection of TFHE parameters,
-    using the four cost models: classical, quantum, classical_conservative, and
-    quantum_conservative
-    :param params: a dictionary of LWE parameter sets (see concrete_params)
-
-    EXAMPLE:
-    sage: X = get_all_security_levels(concrete_LWE_params)
-    sage: X
-    [['LWE128_256',
-    126.692189756144,
-    117.566189756144,
-    98.6960000000000,
-    89.5700000000000], ...]
-    """
-
-    RESULTS = []
-
-    for param in params:
-
-        results = [param]
-        x = params["{}".format(param)]
-        n = x["n"] * x["k"]
-        q = 2 ** 32
-        sd = 2 ** (x["sd"]) * q
-        alpha = sqrt(2 * pi) * sd / RR(q)
-        secret_distribution = (0, 1)
-        # assume access to an infinite number of samples
-        m = oo
-
-        for model in cost_models:
-            try:
-                model = model[0]
-            except:
-                model = model
-            estimate = parameter_search(mitm = True, reduction_cost_model = est.BKZ.sieve, n = n, q = q, alpha = alpha, m = m, secret_distribution = secret_distribution)
-            results.append(get_security_level(estimate))
-
-        RESULTS.append(results)
-
-    return RESULTS
-
-
-def get_hybrid_security_levels(params):
-    """ A function which gets the security levels of a collection of TFHE parameters,
-    using the four cost models: classical, quantum, classical_conservative, and
-    quantum_conservative
-    :param params: a dictionary of LWE parameter sets (see concrete_params)
-
-    EXAMPLE:
-    sage: X = get_all_security_levels(concrete_LWE_params)
-    sage: X
-    [['LWE128_256',
-    126.692189756144,
-    117.566189756144,
-    98.6960000000000,
-    89.5700000000000], ...]
-    """
-
-    RESULTS = []
-
-    for param in params:
-
-        results = [param]
-        x = params["{}".format(param)]
-        n = x["n"] * x["k"]
-        q = 2 ** 32
-        sd = 2 ** (x["sd"]) * q
-        alpha = sqrt(2 * pi) * sd / RR(q)
-        secret_distribution = (0, 1)
-        # assume access to an infinite number of papers
-        m = oo
-
-        model = est.BKZ.sieve
-        estimate = parameter_search(mitm = True, reduction_cost_model = est.BKZ.sieve, n = n, q = q, alpha = alpha, m = m, secret_distribution = secret_distribution)
-        results.append(get_security_level(estimate))
-
-        RESULTS.append(results)
-
-    return RESULTS
-
-
-def latexit(results):
-    """
-    A function which takes the output of get_all_security_levels() and
-    turns it into a latex table
-    :param results: the security levels
-
-    sage: X = get_all_security_levels(concrete_LWE_params)
-    sage: latextit(X)
-    \begin{tabular}{llllll}
-    LWE128_256 & $126.69$ & $117.57$ & $98.7$ & $89.57$ & $217.55$ \\
-    LWE128_512 & $135.77$ & $125.92$ & $106.58$ & $96.73$ & $218.53$ \\
-    LWE128_638 & $135.27$ & $125.49$ & $105.7$ & $95.93$ & $216.81$ \\
-    [...]
-    """
-
-    return latex(table(results))
-
-
-def markdownit(results, headings = ["Parameter Set", "Classical", "Quantum", "Classical (c)", "Quantum (c)", "Enum"]):
-    """
-    A function which takes the output of get_all_security_levels() and
-    turns it into a markdown table
-    :param results: the security levels
-
-    sage: X = get_all_security_levels(concrete_LWE_params)
-    sage: markdownit(X)
-    # estimates
-    |Parameter Set|Classical|Quantum|Classical (c)|Quantum (c)| Enum |
-    |-------------|---------|-------|-------------|-----------|------|
-    |LWE128_256   |126.69   |117.57 |98.7         |89.57      |217.55|
-    |LWE128_512   |135.77   |125.92 |106.58       |96.73      |218.53|
-    |LWE128_638   |135.27   |125.49 |105.7        |95.93      |216.81|
-    [...]
-    """
-
-    writer = MarkdownTableWriter(value_matrix = results, headers = headings, table_name = "estimates")
-    writer.write_table()
-
-    return writer
 
 
 def inequality(x, y):
@@ -580,7 +463,6 @@ def get_parameter_curves_data_n(sec_levels, n_range, q):
 
 def interpolate_result(result, log_q):
 
-    import numpy as np
     # linear function interpolation
     x = []
     y = []
