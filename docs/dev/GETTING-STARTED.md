@@ -89,7 +89,7 @@ In this section, we will discuss the module structure of hdk briefly. You are en
 
 Before you start this section, go ahead and install docker. You can follow [this](https://docs.docker.com/engine/install/) official guide for that.
 
-Docker image of `hdk` is based of another docker image provided by the compiler team. The process of building on top of that image is automated, but it requires authorization. So to work in docker, talk with your team lead to gain access to the base docker image. You need to be added to a special group in the organization.
+Docker image of `hdk` is based of another docker image provided by the compiler team. The process of building on top of that image is automated, but it requires authorization. So to work in docker, talk with your team lead to gain access to the base docker image. You need to be added to a special group in the organization called `homomorphizer-ghcr`.
 
 Upon joining to the team, you need to log in using the following command:
 
