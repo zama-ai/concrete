@@ -1,7 +1,9 @@
-from qbozama/mlir:69c6ea9038e5f3ef91a3c5ab59fae3276f95628b
+FROM qbozama/mlir:69c6ea9038e5f3ef91a3c5ab59fae3276f95628b
 
 ENV PYTHONPATH=/llvm-project/build/python:/compiler/build/python:$PYTHONPATH
 
+COPY --from=ghcr.io/zama-ai/concrete-api-env:c6dcab41c272d661dd93980d14549e88db1c32b1 /target/release /concrete/target/release
 COPY /compiler /compiler
 WORKDIR /compiler
+ENV CONCRETE_PROJECT=/concrete
 RUN mkdir -p build && make -B build && make -C build all zamacompiler
