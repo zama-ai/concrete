@@ -273,7 +273,6 @@ def generate_parameter_matrix(n_range, sd=None, q=2**32, reduction_cost_model=es
     :param target_security: the target number of bits of security, 128 is default
 
     TODO: we should probably parallelise this function for speed
-    TODO: code seems to fail when the initial estimate is < target_security bits
 
     EXAMPLE:
     sage: X = generate_parameter_matrix([788, 790])
@@ -363,10 +362,6 @@ def generate_parameter_step(results, label = None, torus_sd = True):
 
     return plt
 
-
-# dual bug example
-# n = 256; q = 2**32; sd = 2**(-4); reduction_cost_model = BKZ.sieve
-# _ = estimate_lwe(n, alpha, q, reduction_cost_model)
 
 def test_params(n, q, sd, secret_distribution):
 
