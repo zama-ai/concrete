@@ -123,3 +123,7 @@ def markdownit(results, headings = ["Parameter Set", "Classical", "Quantum", "Cl
     writer.write_table()
 
     return writer
+
+# dual bug example
+# n = 256; q = 2**32; sd = 2**(-4); reduction_cost_model = BKZ.sieve
+# _ = estimate_lwe(n, alpha, q, reduction_cost_model)
