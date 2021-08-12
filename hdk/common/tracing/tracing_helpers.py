@@ -1,7 +1,7 @@
 """Helper functions for tracing."""
 import collections
 from inspect import signature
-from typing import Callable, Dict, Iterable, OrderedDict, Set, Tuple, Type
+from typing import Callable, Dict, Iterable, OrderedDict, Set, Type
 
 import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
@@ -100,10 +100,12 @@ def create_graph_from_output_tracers(
     graph = nx.MultiDiGraph()
 
     visited_tracers: Set[BaseTracer] = set()
-    current_tracers = tuple(output_tracers)
+    # use dict as ordered set
+    current_tracers = {tracer: None for tracer in output_tracers}
 
     while current_tracers:
-        next_tracers: Tuple[BaseTracer, ...] = tuple()
+        # use dict as ordered set
+        next_tracers: Dict[BaseTracer, None] = dict()
         for tracer in current_tracers:
             current_ir_node = tracer.traced_computation
             graph.add_node(current_ir_node, content=current_ir_node)
@@ -113,7 +115,7 @@ def create_graph_from_output_tracers(
                 graph.add_node(input_ir_node, content=input_ir_node)
                 graph.add_edge(input_ir_node, current_ir_node, input_idx=input_idx)
                 if input_tracer not in visited_tracers:
-                    next_tracers += (input_tracer,)
+                    next_tracers.update({input_tracer: None})
 
             visited_tracers.add(tracer)
 

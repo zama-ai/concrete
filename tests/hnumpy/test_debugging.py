@@ -8,6 +8,30 @@ from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.hnumpy import tracing
 
 
+def issue_130_a(x, y):
+    """Test case derived from issue #130"""
+    # pylint: disable=unused-argument
+    intermediate = x + 1
+    return (intermediate, intermediate)
+    # pylint: enable=unused-argument
+
+
+def issue_130_b(x, y):
+    """Test case derived from issue #130"""
+    # pylint: disable=unused-argument
+    intermediate = x - 1
+    return (intermediate, intermediate)
+    # pylint: enable=unused-argument
+
+
+def issue_130_c(x, y):
+    """Test case derived from issue #130"""
+    # pylint: disable=unused-argument
+    intermediate = 1 - x
+    return (intermediate, intermediate)
+    # pylint: enable=unused-argument
+
+
 @pytest.mark.parametrize(
     "lambda_f,ref_graph_str",
     [
@@ -61,6 +85,27 @@ from hdk.hnumpy import tracing
         (
             lambda x, y: (x, x + 1),
             "\n%0 = x\n%1 = ConstantInput(1)\n%2 = Add(0, 1)\nreturn(%0, %2)",
+        ),
+        (
+            lambda x, y: (x + 1, x + 1),
+            "\n%0 = x"
+            "\n%1 = ConstantInput(1)"
+            "\n%2 = ConstantInput(1)"
+            "\n%3 = Add(0, 1)"
+            "\n%4 = Add(0, 2)"
+            "\nreturn(%3, %4)",
+        ),
+        (
+            issue_130_a,
+            "\n%0 = x\n%1 = ConstantInput(1)\n%2 = Add(0, 1)\nreturn(%2, %2)",
+        ),
+        (
+            issue_130_b,
+            "\n%0 = x\n%1 = ConstantInput(1)\n%2 = Sub(0, 1)\nreturn(%2, %2)",
+        ),
+        (
+            issue_130_c,
+            "\n%0 = ConstantInput(1)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2, %2)",
         ),
     ],
 )
