@@ -30,19 +30,19 @@ class LookupTable:
         self.table = table
         self.output_dtype = make_integer_to_hold_ints(table, force_signed=False)
 
-    def __getitem__(self, item: Union[int, BaseTracer]):
+    def __getitem__(self, key: Union[int, BaseTracer]):
         # if a tracer is used for indexing,
         # we need to create an `ArbitraryFunction` node
         # because the result will be determined during the runtime
-        if isinstance(item, BaseTracer):
+        if isinstance(key, BaseTracer):
             traced_computation = ir.ArbitraryFunction(
-                input_base_value=item.output,
-                arbitrary_func=lambda x, table: table[x],
+                input_base_value=key.output,
+                arbitrary_func=LookupTable._checked_indexing,
                 output_dtype=self.output_dtype,
                 op_kwargs={"table": deepcopy(self.table)},
             )
-            return item.__class__(
-                inputs=[item],
+            return key.__class__(
+                inputs=[key],
                 traced_computation=traced_computation,
                 output_index=0,
             )
@@ -50,4 +50,14 @@ class LookupTable:
         # if not, it means table is indexed with a constant
         # thus, the result of the lookup is a constant
         # so, we can propagate it directly
-        return self.table[item]
+        return LookupTable._checked_indexing(key, self.table)
+
+    @staticmethod
+    def _checked_indexing(x, table):
+        if x < 0 or x >= len(table):
+            raise ValueError(
+                f"Lookup table with {len(table)} entries cannot be indexed with {x} "
+                f"(you should check your dataset)",
+            )
+
+        return table[x]

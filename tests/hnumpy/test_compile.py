@@ -6,6 +6,7 @@ import pytest
 from hdk.common.data_types.integers import Integer
 from hdk.common.data_types.values import EncryptedValue
 from hdk.common.debugging import draw_graph, get_printable_graph
+from hdk.common.extensions.table import LookupTable
 from hdk.hnumpy.compile import compile_numpy_function
 
 
@@ -45,3 +46,37 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
 
     str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
     print(f"\n{str_of_the_graph}\n")
+
+
+def test_compile_function_with_direct_tlu():
+    """Test compile_numpy_function for a program with direct table lookup"""
+
+    table = LookupTable([9, 2, 4, 11])
+
+    def function(x):
+        return x + table[x]
+
+    op_graph = compile_numpy_function(
+        function,
+        {"x": EncryptedValue(Integer(2, is_signed=False))},
+        iter([(0,), (1,), (2,), (3,)]),
+    )
+
+    str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
+    print(f"\n{str_of_the_graph}\n")
+
+
+def test_compile_function_with_direct_tlu_overflow():
+    """Test compile_numpy_function for a program with direct table lookup overflow"""
+
+    table = LookupTable([9, 2, 4, 11])
+
+    def function(x):
+        return table[x]
+
+    with pytest.raises(ValueError):
+        compile_numpy_function(
+            function,
+            {"x": EncryptedValue(Integer(3, is_signed=False))},
+            iter([(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)]),
+        )

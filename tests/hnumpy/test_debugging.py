@@ -5,7 +5,11 @@ import pytest
 from hdk.common.data_types.integers import Integer
 from hdk.common.data_types.values import ClearValue, EncryptedValue
 from hdk.common.debugging import draw_graph, get_printable_graph
+from hdk.common.extensions.table import LookupTable
 from hdk.hnumpy import tracing
+
+LOOKUP_TABLE_FROM_2B_TO_4B = LookupTable([9, 2, 4, 11])
+LOOKUP_TABLE_FROM_3B_TO_2B = LookupTable([0, 1, 3, 2, 2, 3, 1, 0])
 
 
 def issue_130_a(x, y):
@@ -143,6 +147,39 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
     assert str_of_the_graph == ref_graph_str
 
 
+@pytest.mark.parametrize(
+    "lambda_f,params,ref_graph_str",
+    [
+        (
+            lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
+            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            "\n%0 = x\n%1 = ArbitraryFunction(0)\nreturn(%1)",
+        ),
+        (
+            lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
+            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            "\n%0 = x"
+            "\n%1 = ConstantInput(4)"
+            "\n%2 = Add(0, 1)"
+            "\n%3 = ArbitraryFunction(2)"
+            "\nreturn(%3)",
+        ),
+    ],
+)
+def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
+    "Test hnumpy get_printable_graph and draw_graph on graphs with direct table lookup"
+    graph = tracing.trace_numpy_function(lambda_f, params)
+
+    draw_graph(graph, block_until_user_closes_graph=False)
+
+    str_of_the_graph = get_printable_graph(graph)
+
+    print(f"\nGot {str_of_the_graph}\n")
+    print(f"\nExp {ref_graph_str}\n")
+
+    assert str_of_the_graph == ref_graph_str
+
+
 # Remark that the bitwidths are not particularly correct (eg, a MUL of a 17b times 23b
 # returning 23b), since they are replaced later by the real bitwidths computed on the
 # dataset
@@ -174,9 +211,54 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
     ],
 )
 def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
-    "Test hnumpy get_printable_graph with show_data_types"
+    """Test hnumpy get_printable_graph with show_data_types"""
     x, y = x_y
     graph = tracing.trace_numpy_function(lambda_f, {"x": x, "y": y})
+
+    str_of_the_graph = get_printable_graph(graph, show_data_types=True)
+
+    print(f"\nGot {str_of_the_graph}\n")
+    print(f"\nExp {ref_graph_str}\n")
+
+    assert str_of_the_graph == ref_graph_str
+
+
+@pytest.mark.parametrize(
+    "lambda_f,params,ref_graph_str",
+    [
+        (
+            lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
+            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            "\n%0 = x                                   # Integer<unsigned, 2 bits>"
+            "\n%1 = ArbitraryFunction(0)                # Integer<unsigned, 4 bits>"
+            "\nreturn(%1)",
+        ),
+        (
+            lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
+            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            "\n%0 = x                                   # Integer<unsigned, 2 bits>"
+            "\n%1 = ConstantInput(4)                    # Integer<unsigned, 3 bits>"
+            "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
+            "\n%3 = ArbitraryFunction(2)                # Integer<unsigned, 2 bits>"
+            "\nreturn(%3)",
+        ),
+        (
+            lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[LOOKUP_TABLE_FROM_3B_TO_2B[x + 4]],
+            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            "\n%0 = x                                   # Integer<unsigned, 2 bits>"
+            "\n%1 = ConstantInput(4)                    # Integer<unsigned, 3 bits>"
+            "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
+            "\n%3 = ArbitraryFunction(2)                # Integer<unsigned, 2 bits>"
+            "\n%4 = ArbitraryFunction(3)                # Integer<unsigned, 4 bits>"
+            "\nreturn(%4)",
+        ),
+    ],
+)
+def test_hnumpy_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref_graph_str):
+    """Test hnumpy get_printable_graph with show_data_types on graphs with direct table lookup"""
+    graph = tracing.trace_numpy_function(lambda_f, params)
+
+    draw_graph(graph, block_until_user_closes_graph=False)
 
     str_of_the_graph = get_printable_graph(graph, show_data_types=True)
 
