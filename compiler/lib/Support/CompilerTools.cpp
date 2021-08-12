@@ -44,7 +44,12 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
   addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(1 << v0Parameter.polynomialSize), enablePass);
+      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
+  addFilteredPassToPassManager(
+      pm,
+      mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(
+          1 << v0Parameter.polynomialSize),
+      enablePass);
 
   // Run the passes
   if (pm.run(module).failed()) {
@@ -59,8 +64,6 @@ mlir::LogicalResult CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
     llvm::function_ref<bool(std::string)> enablePass) {
 
   mlir::PassManager pm(&context);
-  addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
       enablePass);
