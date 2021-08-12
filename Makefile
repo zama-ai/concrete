@@ -34,8 +34,12 @@ python_linting: pylint flake8
 conformance: python_format
 .PHONY: conformance
 
-pcc: check_python_format python_linting mypy_ci pydocstyle
+pcc:
+	@$(MAKE) --keep-going --jobs $$(nproc) --output-sync --no-print-directory pcc_internal
 .PHONY: pcc
+
+pcc_internal: check_python_format python_linting mypy_ci pydocstyle
+.PHONY: pcc_internal
 
 pytest:
 	poetry run pytest --cov=hdk -vv --cov-report=xml tests/
@@ -60,7 +64,10 @@ mypy_benchmark:
 	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 .PHONY: mypy_benchmark
 
-mypy_ci: mypy mypy_test mypy_benchmark
+mypy_ci:
+	@$(MAKE) --no-print-directory mypy
+	@$(MAKE) --no-print-directory mypy_test
+	@$(MAKE) --no-print-directory mypy_benchmark
 .PHONY: mypy_ci
 
 pytest_and_coverage: pytest coverage
