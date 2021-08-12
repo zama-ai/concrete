@@ -42,6 +42,12 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   options.useBarePtrCallConv = true;
   mlir::LLVMTypeConverter typeConverter(&getContext(), options);
   typeConverter.addConversion(convertTypes);
+  typeConverter.addConversion([&](mlir::zamalang::LowLFHE::PlaintextType type) {
+    return mlir::IntegerType::get(type.getContext(), 64);
+  });
+  typeConverter.addConversion([&](mlir::zamalang::LowLFHE::CleartextType type) {
+    return mlir::IntegerType::get(type.getContext(), 64);
+  });
 
   // Setup the set of the patterns rewriter. At this point we want to
   // convert the `scf` operations to `std` and `std` operations to `llvm`.

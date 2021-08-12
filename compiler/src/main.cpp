@@ -124,7 +124,8 @@ mlir::LogicalResult runJit(mlir::ModuleOp module,
     }
   }
   // Invoke the lambda
-  if (lambda->invoke(*arguments)) {
+  if (auto err = lambda->invoke(*arguments)) {
+    LOG_ERROR("Cannot invoke : " << err << "\n");
     return mlir::failure();
   }
   uint64_t res = 0;
@@ -187,9 +188,8 @@ processInputBuffer(mlir::MLIRContext &context,
   LOG_VERBOSE("### FHE parameters for the atomic pattern: {k: "
               << v0Parameter.k
               << ", polynomialSize: " << v0Parameter.polynomialSize
-              << ", nSmall: " << v0Parameter.nSmall
-              << ", brLevel: " << v0Parameter.brLevel
-              << ", brLogBase: " << v0Parameter.brLogBase
+              << ", nSmall: " << v0Parameter.nSmall << ", brLevel: "
+              << v0Parameter.brLevel << ", brLogBase: " << v0Parameter.brLogBase
               << ", ksLevel: " << v0Parameter.ksLevel
               << ", polynomialSize: " << v0Parameter.ksLogBase << "}\n");
 

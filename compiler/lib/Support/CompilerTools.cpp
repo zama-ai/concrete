@@ -125,15 +125,20 @@ JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
 }
 
 llvm::Error JITLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
-  if (this->type.getNumParams() == args.size() - 1 /*For the result*/) {
-    return this->engine->invokePacked(this->name, args);
+  if (this->type.getNumParams() != args.size() - 1) {
+    return llvm::make_error<llvm::StringError>(
+        "invokeRaw: wrong number of argument", llvm::inconvertibleErrorCode());
   }
-  return llvm::make_error<llvm::StringError>(
-      "wrong number of argument when invoke the JIT lambda",
-      llvm::inconvertibleErrorCode());
+  if (llvm::find(args, nullptr) != args.end()) {
+    return llvm::make_error<llvm::StringError>(
+        "invoke: some arguments are null", llvm::inconvertibleErrorCode());
+  }
+  return this->engine->invokePacked(this->name, args);
 }
 
-llvm::Error JITLambda::invoke(Argument &args) { return invokeRaw(args.rawArg); }
+llvm::Error JITLambda::invoke(Argument &args) {
+  return std::move(invokeRaw(args.rawArg));
+}
 
 JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
   inputs = std::vector<void *>(keySet.numInputs());

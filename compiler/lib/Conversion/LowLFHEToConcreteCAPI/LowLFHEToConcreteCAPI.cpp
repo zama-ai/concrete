@@ -10,6 +10,49 @@
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
 
+class LowLFHEToConcreteCAPITypeConverter : public mlir::TypeConverter {
+
+public:
+  LowLFHEToConcreteCAPITypeConverter() {
+    addConversion([](mlir::Type type) { return type; });
+    addConversion([&](mlir::zamalang::LowLFHE::PlaintextType type) {
+      return mlir::IntegerType::get(type.getContext(), 64);
+    });
+    addConversion([&](mlir::zamalang::LowLFHE::CleartextType type) {
+      return mlir::IntegerType::get(type.getContext(), 64);
+    });
+  }
+};
+
+mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
+                                             mlir::PatternRewriter &rewriter,
+                                             llvm::StringRef funcName,
+                                             mlir::FunctionType funcType) {
+  // Looking for the `funcName` Operation
+  auto module = mlir::SymbolTable::getNearestSymbolTable(op);
+  auto opFunc = mlir::dyn_cast_or_null<mlir::SymbolOpInterface>(
+      mlir::SymbolTable::lookupSymbolIn(module, funcName));
+  if (!opFunc) {
+    // Insert the forward declaration of the funcName
+    mlir::OpBuilder::InsertionGuard guard(rewriter);
+    rewriter.setInsertionPointToStart(&module->getRegion(0).front());
+
+    opFunc = rewriter.create<mlir::FuncOp>(rewriter.getUnknownLoc(), funcName,
+                                           funcType);
+    opFunc.setPrivate();
+  } else {
+    // Check if the `funcName` is well a private function
+    if (!opFunc.isPrivate()) {
+      op->emitError() << "the function \"" << funcName
+                      << "\" conflicts with the concrete C API, please rename";
+      return mlir::failure();
+    }
+  }
+  assert(mlir::SymbolTable::lookupSymbolIn(module, funcName)
+             ->template hasTrait<mlir::OpTrait::FunctionLike>());
+  return mlir::success();
+}
+
 /// LowLFHEOpToConcreteCAPICallPattern<Op> match the `Op` Operation and
 /// replace with a call to `funcName`, the funcName should be an external
 /// function that was linked later. It insert the forward declaration of the
@@ -35,36 +78,9 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
       : mlir::OpRewritePattern<Op>(context, benefit), funcName(funcName),
         allocName(allocName), lweSize(lweSize) {}
 
-  mlir::LogicalResult static insertForwardDeclaration(
-      Op op, mlir::PatternRewriter &rewriter, llvm::StringRef funcName,
-      mlir::FunctionType funcType) {
-    // Looking for the `funcName` Operation
-    auto module = mlir::SymbolTable::getNearestSymbolTable(op);
-    auto opFunc = mlir::dyn_cast_or_null<mlir::SymbolOpInterface>(
-        mlir::SymbolTable::lookupSymbolIn(module, funcName));
-    if (!opFunc) {
-      // Insert the forward declaration of the funcName
-      mlir::OpBuilder::InsertionGuard guard(rewriter);
-      rewriter.setInsertionPointToStart(&module->getRegion(0).front());
-
-      opFunc = rewriter.create<mlir::FuncOp>(rewriter.getUnknownLoc(), funcName,
-                                             funcType);
-      opFunc.setPrivate();
-    } else {
-      // Check if the `funcName` is well a private function
-      if (!opFunc.isPrivate()) {
-        op.emitError() << "the function \"" << funcName
-                       << "\" conflicts with the concrete C API, please rename";
-        return mlir::failure();
-      }
-    }
-    assert(mlir::SymbolTable::lookupSymbolIn(module, funcName)
-               ->template hasTrait<mlir::OpTrait::FunctionLike>());
-    return mlir::success();
-  }
-
   mlir::LogicalResult
   matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
+    LowLFHEToConcreteCAPITypeConverter typeConverter;
     auto errType =
         mlir::MemRefType::get({}, mlir::IndexType::get(rewriter.getContext()));
     // Insert forward declaration of the operator function
@@ -72,7 +88,7 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
       mlir::SmallVector<mlir::Type, 4> operands{errType,
                                                 op->getResultTypes().front()};
       for (auto ty : op->getOperandTypes()) {
-        operands.push_back(ty);
+        operands.push_back(typeConverter.convertType(ty));
       }
       auto funcType =
           mlir::FunctionType::get(rewriter.getContext(), operands, {});
@@ -93,11 +109,12 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
     // Replace the operation with a call to the `funcName`
     {
       // Create the err value
-      auto errOp = rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
+      auto errOp =
+          rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
       // Add the call to the allocation
       auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
           op.getLoc(), rewriter.getIndexAttr(lweSize));
-      mlir::SmallVector<mlir::Value, 1> allocOperands{errOp, lweSizeOp};
+      mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
       auto alloc = rewriter.replaceOpWithNewOp<mlir::CallOp>(
           op, allocName, op.getType(), allocOperands);
 
@@ -118,19 +135,75 @@ private:
   uint64_t lweSize;
 };
 
+struct LowLFHEEncodeIntOpPattern
+    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::EncodeIntOp> {
+  LowLFHEEncodeIntOpPattern(mlir::MLIRContext *context,
+                            mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::EncodeIntOp>(context,
+                                                                     benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::LowLFHE::EncodeIntOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    {
+      mlir::Value castedInt = rewriter.create<mlir::ZeroExtendIOp>(
+          op.getLoc(), rewriter.getIntegerType(64), op->getOperands().front());
+      mlir::Value constantShiftOp = rewriter.create<mlir::ConstantOp>(
+          op.getLoc(),
+          rewriter.getI64IntegerAttr(64 - (op.getType().getP() - 1)));
+
+      mlir::Type resultType = rewriter.getIntegerType(64);
+      rewriter.replaceOpWithNewOp<mlir::ShiftLeftOp>(op, resultType, castedInt,
+                                                     constantShiftOp);
+    }
+    return mlir::success();
+  };
+};
+
+struct LowLFHEIntToCleartextOpPattern
+    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::IntToCleartextOp> {
+  LowLFHEIntToCleartextOpPattern(mlir::MLIRContext *context,
+                                 mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::IntToCleartextOp>(
+            context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::LowLFHE::IntToCleartextOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Value castedInt = rewriter.replaceOpWithNewOp<mlir::ZeroExtendIOp>(
+        op, rewriter.getIntegerType(64), op->getOperands().front());
+    return mlir::success();
+  };
+};
+
 /// Populate the RewritePatternSet with all patterns that rewrite LowLFHE
 /// operators to the corresponding function call to the `Concrete C API`.
-void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns, uint64_t lweSize) {
+void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns,
+                                       uint64_t lweSize) {
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
       mlir::zamalang::LowLFHE::AddLweCiphertextsOp>>(
       patterns.getContext(), "add_lwe_ciphertexts_u64",
       "allocate_lwe_ciphertext_u64", lweSize);
+  patterns.add<LowLFHEOpToConcreteCAPICallPattern<
+      mlir::zamalang::LowLFHE::AddPlaintextLweCiphertextOp>>(
+      patterns.getContext(), "add_plaintext_lwe_ciphertext_u64",
+      "allocate_lwe_ciphertext_u64", lweSize);
+  patterns.add<LowLFHEOpToConcreteCAPICallPattern<
+      mlir::zamalang::LowLFHE::MulCleartextLweCiphertextOp>>(
+      patterns.getContext(), "mul_cleartext_lwe_ciphertext_u64",
+      "allocate_lwe_ciphertext_u64", lweSize);
+  patterns.add<LowLFHEOpToConcreteCAPICallPattern<
+      mlir::zamalang::LowLFHE::NegateLweCiphertextOp>>(
+      patterns.getContext(), "negate_lwe_ciphertext_u64",
+      "allocate_lwe_ciphertext_u64", lweSize);
+  patterns.add<LowLFHEEncodeIntOpPattern>(patterns.getContext());
+  patterns.add<LowLFHEIntToCleartextOpPattern>(patterns.getContext());
 }
 
 namespace {
 struct LowLFHEToConcreteCAPIPass
     : public LowLFHEToConcreteCAPIBase<LowLFHEToConcreteCAPIPass> {
-  LowLFHEToConcreteCAPIPass(uint64_t lweSize): lweSize(lweSize){};
+  LowLFHEToConcreteCAPIPass(uint64_t lweSize) : lweSize(lweSize){};
   void runOnOperation() final;
   uint64_t lweSize;
 };
@@ -152,6 +225,8 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
   if (mlir::applyFullConversion(op, target, std::move(patterns)).failed()) {
     this->signalPassFailure();
   }
+  op.dump();
+  llvm::errs() << "#########\n";
 }
 
 namespace mlir {

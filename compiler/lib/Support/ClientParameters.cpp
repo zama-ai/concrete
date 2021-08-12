@@ -13,7 +13,7 @@ namespace zamalang {
 llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
                                              Precision precision,
                                              mlir::Type type) {
-  if (type.isInteger(64)) {
+  if (type.isIntOrIndex()) {
     return CircuitGate{
         .encryption = llvm::None,
         .shape = {.size = 0},
