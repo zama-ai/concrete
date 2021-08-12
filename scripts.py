@@ -311,7 +311,6 @@ def generate_parameter_matrix_sd(sd_range, n=None, q=2**32, reduction_cost_model
     :param target_security: the target number of bits of security, 128 is default
 
     TODO: we should probably parallelise this function for speed
-    TODO: code seems to fail when the initial estimate is < target_security bits
 
     EXAMPLE:
     sage: X = generate_parameter_matrix([788, 790])
@@ -361,16 +360,6 @@ def generate_parameter_step(results, label = None, torus_sd = True):
     plt.legend(loc = "upper right")
 
     return plt
-
-
-def test_params(n, q, sd, secret_distribution):
-
-    sd = sd * q
-    alpha = RR(sqrt(2*pi) * sd / q)
-
-    est = est.estimate_lwe(n, alpha, q, secret_distribution = secret_distribution, reduction_cost_model = est.BKZ.sieve, skip = ("arora-gb", "bkw", "dec"))
-
-    return est
 
 
 def generate_iso_lines(N = [256, 2048], SD = [0, 32], q = 2**32):
