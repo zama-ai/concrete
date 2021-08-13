@@ -14,6 +14,11 @@ add_mlir_python_extension(ZamalangBindingsPythonExtension _zamalang
     CompilerAPIModule.cpp
   LINK_LIBS
     ZAMALANGCAPIHLFHE
+    ZamalangSupport
+    LowLFHEDialect
+    MidLFHEDialect
+    HLFHEDialect
+    Concrete
 )
 add_dependencies(ZamalangBindingsPython ZamalangBindingsPythonExtension)
 

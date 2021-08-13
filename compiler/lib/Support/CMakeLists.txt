@@ -1,5 +1,6 @@
 add_mlir_library(ZamalangSupport
   CompilerTools.cpp
+  CompilerEngine.cpp
   V0Parameters.cpp
   ClientParameters.cpp
   KeySet.cpp

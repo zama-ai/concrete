@@ -1,2 +1,3 @@
+"""Zamalang python module"""
 from _zamalang import *
-import _zamalang._compiler as compiler
+from .compiler import CompilerEngine
