@@ -67,3 +67,4 @@ There are several updates which are still required.
     2. CI/CD stuff for new pushes to the external LWE Estimator.
     3. Fully automate the process of finding n_{alpha} for each curve.
     4. Functionality for q =! 64? This is covered by the curve, but we currently don't account for it in the models, and it needs to be done manually.
+    5. cpp file generation
