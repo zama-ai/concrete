@@ -9,8 +9,16 @@ This Github repository contains the code needed to generate the Parameter curves
 
 Example
 -------------------
-This is an example of how to generate the parameter curves using the v0.sobj data file.
+This is an example of how to generate the parameter curves, and save them to file.
 
+::
+
+sage: load("scripts.py")
+sage: results = get_zama_curves()
+sage: save(results, "v0.sobj")
+::
+
+We can load results files, and find the interpolants.
 
 ::
 
@@ -56,9 +64,6 @@ TODO List
 
 There are several updates which are still required.
     1. Consider Hybrid attacks (WIP, Michael + Ben are coding up hybrid-dual/hybrid-decoding estimates)
-    2. Consider MITM attacks for small values of n (WIP, Michael has coded this up in the Zama internal estimator, I just need to add it to the parameter curves code).
-    3. As part of (2), the version of the LWE Estimator used needs to be edited to use Zama's internal estimator.
-    4. Add an example of how to _generate_ the parameter curves in the first place.
-    5. CI/CD stuff for new pushes to the external LWE Estimator.
-    6. Fully automate the process of finding n_{alpha} for each curve.
-    7. Functionality for q =! 64? This is covered by the curve, but we currently don't account for it in the models, and it needs to be done manually.
+    2. CI/CD stuff for new pushes to the external LWE Estimator.
+    3. Fully automate the process of finding n_{alpha} for each curve.
+    4. Functionality for q =! 64? This is covered by the curve, but we currently don't account for it in the models, and it needs to be done manually.
