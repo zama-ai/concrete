@@ -3,9 +3,12 @@ Parameter curves for Concrete
 
 This Github repository contains the code needed to generate the Parameter curves used inside Zama. The repository contains the following files:
 
-- estimator.py, a copy of the LWE Estimator 
+- cpp/, Python scripts to generate a cpp file containing the parameter curves
+- data/, a folder containing the data generated for previous curves. 
+- estimator/, Zama's internal version of the LWE Estimator
+- figs/, a folder containing various figures related to the parameter curves
 - scripts.py, a copy of all scripts required to generate the parameter curves
-- data/, a folder containing the data generated for previous curves. This folder currently contains "v0.sobj", i.e. the data used for the v0 curves
+- a variety of other python files, used for estimating the security of previous Concrete parameter sets
 
 Example
 -------------------
@@ -57,6 +60,17 @@ Finding the value of n_{alpha} is done manually. We can also verify the interpol
     (-0.014327640360322604, 2.899270827311096, 653)
     # which corresponds to
     # sd(n) = max(-0.014327640360322604 * n +  2.899270827311096, -logq + 2), n >= 653
+::
+
+Version History
+-------------------
+
+Data for the curves are kept in /data. The following files are present:
+
+::
+
+    v0: generated using the {usvp, dual, decoding} attacks
+    v0.1: generated using the {mitm, usvp, dual, decoding} attacks
 ::
 
 TODO List
