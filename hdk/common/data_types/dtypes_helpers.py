@@ -34,12 +34,38 @@ def value_is_encrypted_unsigned_integer(value_to_check: BaseValue) -> bool:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is an encrypted value of type Integer
+        bool: True if the passed value_to_check is an encrypted value of type Integer and unsigned
     """
     return (
         value_is_encrypted_integer(value_to_check)
         and not cast(Integer, value_to_check.data_type).is_signed
     )
+
+
+def value_is_clear_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is a clear integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is a clear value of type Integer
+    """
+    return isinstance(value_to_check, ClearValue) and isinstance(
+        value_to_check.data_type, INTEGER_TYPES
+    )
+
+
+def value_is_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is of type integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is a value of type Integer
+    """
+    return isinstance(value_to_check.data_type, INTEGER_TYPES)
 
 
 def find_type_to_hold_both_lossy(

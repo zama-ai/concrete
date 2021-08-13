@@ -7,6 +7,10 @@ from hdk.hnumpy.tracing import trace_numpy_function
 
 from ..common.compilation import CompilationArtifacts
 from ..common.data_types import BaseValue
+from ..common.mlir.utils import (
+    is_graph_values_compatible_with_mlir,
+    update_bit_width_for_mlir,
+)
 from ..common.operator_graph import OPGraph
 from ..hnumpy.tracing import trace_numpy_function
 
@@ -41,6 +45,13 @@ def compile_numpy_function(
 
     # Update the graph accordingly: after that, we have the compilable graph
     op_graph.update_values_with_bounds(node_bounds)
+
+    # Make sure the graph can be lowered to MLIR
+    if not is_graph_values_compatible_with_mlir(op_graph):
+        raise TypeError("signed integers aren't supported for MLIR lowering")
+
+    # Update bit_width for MLIR
+    update_bit_width_for_mlir(op_graph)
 
     # Fill compilation artifacts
     if compilation_artifacts is not None:

@@ -1,7 +1,7 @@
 """Code to wrap and make manipulating networkx graphs easier."""
 
 from copy import deepcopy
-from typing import Any, Dict, Iterable, Mapping
+from typing import Any, Dict, Iterable, List, Mapping
 
 import networkx as nx
 
@@ -30,6 +30,22 @@ class OPGraph:
             for node in self.graph.nodes()
             if len(self.graph.pred[node]) == 0 and isinstance(node, ir.Input)
         }
+
+    def get_ordered_inputs(self) -> List[ir.Input]:
+        """Get the input nodes of the graph, ordered by their index.
+
+        Returns:
+            List[ir.Input]: ordered input nodes
+        """
+        return [self.input_nodes[idx] for idx in range(len(self.input_nodes))]
+
+    def get_ordered_outputs(self) -> List[ir.IntermediateNode]:
+        """Get the output nodes of the graph, ordered by their index.
+
+        Returns:
+            List[ir.IntermediateNode]: ordered input nodes
+        """
+        return [self.output_nodes[idx] for idx in range(len(self.output_nodes))]
 
     def evaluate(self, inputs: Mapping[int, Any]) -> Dict[ir.IntermediateNode, Any]:
         """Function to evaluate a graph and get intermediate values for all nodes.
@@ -69,7 +85,10 @@ class OPGraph:
 
         for node in self.graph.nodes():
             current_node_bounds = node_bounds[node]
-            min_bound, max_bound = current_node_bounds["min"], current_node_bounds["max"]
+            min_bound, max_bound = (
+                current_node_bounds["min"],
+                current_node_bounds["max"],
+            )
 
             if not isinstance(node, ir.Input):
                 for output_value in node.outputs:
