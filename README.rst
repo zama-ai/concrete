@@ -10,6 +10,11 @@ This Github repository contains the code needed to generate the Parameter curves
 - scripts.py, a copy of all scripts required to generate the parameter curves
 - a variety of other python files, used for estimating the security of previous Concrete parameter sets
 
+.. image:: logo.svg
+   :align: center
+   :width: 200
+
+
 Example
 -------------------
 This is an example of how to generate the parameter curves, and save them to file.
