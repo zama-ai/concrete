@@ -68,7 +68,7 @@ class CompilationArtifacts:
 
         if self.operation_graph is not None:
             with open(output_directory.joinpath("graph.txt"), "w") as f:
-                f.write(f"{get_printable_graph(self.operation_graph)[1:]}\n")
+                f.write(f"{get_printable_graph(self.operation_graph, show_data_types=True)[1:]}\n")
 
             if self.bounds is not None:
                 with open(output_directory.joinpath("bounds.txt"), "w") as f:
