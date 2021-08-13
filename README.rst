@@ -13,9 +13,9 @@ This is an example of how to generate the parameter curves, and save them to fil
 
 ::
 
-sage: load("scripts.py")
-sage: results = get_zama_curves()
-sage: save(results, "v0.sobj")
+    sage: load("scripts.py")
+    sage: results = get_zama_curves()
+    sage: save(results, "v0.sobj")
 ::
 
 We can load results files, and find the interpolants.
