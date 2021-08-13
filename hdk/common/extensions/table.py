@@ -40,6 +40,7 @@ class LookupTable:
                 arbitrary_func=LookupTable._checked_indexing,
                 output_dtype=self.output_dtype,
                 op_kwargs={"table": deepcopy(self.table)},
+                op_name="TLU",
             )
             return key.__class__(
                 inputs=[key],

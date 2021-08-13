@@ -57,6 +57,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
         arbitrary_func=lambda x, table: table[x],
         output_dtype=table.output_dtype,
         op_kwargs={"table": deepcopy(table.table)},
+        op_name="TLU",
     )
     ref_graph.add_node(output_arbitrary_function, content=output_arbitrary_function)
 
@@ -93,6 +94,7 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
         arbitrary_func=lambda x, table: table[x],
         output_dtype=table.output_dtype,
         op_kwargs={"table": deepcopy(table.table)},
+        op_name="TLU",
     )
     ref_graph.add_node(intermediate_arbitrary_function, content=intermediate_arbitrary_function)
 

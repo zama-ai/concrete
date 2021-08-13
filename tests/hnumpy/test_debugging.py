@@ -153,16 +153,12 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
-            "\n%0 = x\n%1 = ArbitraryFunction(0)\nreturn(%1)",
+            "\n%0 = x\n%1 = TLU(0)\nreturn(%1)",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
-            "\n%0 = x"
-            "\n%1 = ConstantInput(4)"
-            "\n%2 = Add(0, 1)"
-            "\n%3 = ArbitraryFunction(2)"
-            "\nreturn(%3)",
+            "\n%0 = x\n%1 = ConstantInput(4)\n%2 = Add(0, 1)\n%3 = TLU(2)\nreturn(%3)",
         ),
     ],
 )
@@ -230,7 +226,7 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
             "\n%0 = x                                   # Integer<unsigned, 2 bits>"
-            "\n%1 = ArbitraryFunction(0)                # Integer<unsigned, 4 bits>"
+            "\n%1 = TLU(0)                              # Integer<unsigned, 4 bits>"
             "\nreturn(%1)",
         ),
         (
@@ -239,7 +235,7 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
             "\n%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = ConstantInput(4)                    # Integer<unsigned, 3 bits>"
             "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
-            "\n%3 = ArbitraryFunction(2)                # Integer<unsigned, 2 bits>"
+            "\n%3 = TLU(2)                              # Integer<unsigned, 2 bits>"
             "\nreturn(%3)",
         ),
         (
@@ -248,8 +244,8 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
             "\n%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = ConstantInput(4)                    # Integer<unsigned, 3 bits>"
             "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
-            "\n%3 = ArbitraryFunction(2)                # Integer<unsigned, 2 bits>"
-            "\n%4 = ArbitraryFunction(3)                # Integer<unsigned, 4 bits>"
+            "\n%3 = TLU(2)                              # Integer<unsigned, 2 bits>"
+            "\n%4 = TLU(3)                              # Integer<unsigned, 4 bits>"
             "\nreturn(%4)",
         ),
     ],

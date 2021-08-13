@@ -186,12 +186,14 @@ class ArbitraryFunction(IntermediateNode):
     arbitrary_func: Optional[Callable]
     op_args: Tuple[Any, ...]
     op_kwargs: Dict[str, Any]
+    op_name: str
 
     def __init__(
         self,
         input_base_value: BaseValue,
         arbitrary_func: Callable,
         output_dtype: BaseDataType,
+        op_name: Optional[str] = None,
         op_args: Optional[Tuple[Any, ...]] = None,
         op_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -202,6 +204,7 @@ class ArbitraryFunction(IntermediateNode):
         self.op_kwargs = deepcopy(op_kwargs) if op_kwargs is not None else {}
         # TLU/PBS has an encrypted output
         self.outputs = [EncryptedValue(output_dtype)]
+        self.op_name = op_name if op_name is not None else self.__class__.__name__
 
     def evaluate(self, inputs: Mapping[int, Any]) -> Any:
         # This is the continuation of the mypy bug workaround
@@ -215,5 +218,6 @@ class ArbitraryFunction(IntermediateNode):
             isinstance(other, ArbitraryFunction)
             and self.op_args == other.op_args
             and self.op_kwargs == other.op_kwargs
+            and self.op_name == other.op_name
             and super().is_equivalent_to(other)
         )

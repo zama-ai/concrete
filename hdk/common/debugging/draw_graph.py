@@ -13,7 +13,8 @@ IR_NODE_COLOR_MAPPING = {
     ir.Add: "red",
     ir.Sub: "yellow",
     ir.Mul: "green",
-    ir.ArbitraryFunction: "orange",
+    "ArbitraryFunction": "orange",
+    "TLU": "grey",
     "output": "magenta",
 }
 
@@ -115,6 +116,8 @@ def draw_graph(
     def get_color(node):
         if node in set_of_nodes_which_are_outputs:
             return IR_NODE_COLOR_MAPPING["output"]
+        if isinstance(node, ir.ArbitraryFunction):
+            return IR_NODE_COLOR_MAPPING[node.op_name]
         return IR_NODE_COLOR_MAPPING[type(node)]
 
     color_map = [get_color(node) for node in graph.nodes()]
@@ -127,6 +130,8 @@ def draw_graph(
             return node.input_name
         if isinstance(node, ir.ConstantInput):
             return str(node.constant_data)
+        if isinstance(node, ir.ArbitraryFunction):
+            return node.op_name
         return node.__class__.__name__
 
     label_dict = {node: get_proper_name(node) for node in graph.nodes()}
@@ -209,7 +214,7 @@ def draw_graph(
     plt.show(block=block_until_user_closes_graph)
 
 
-def data_type_to_string(node):
+def output_data_type_to_string(node):
     """Return the datatypes of the outputs of the node.
 
     Args:
@@ -249,7 +254,13 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
         elif isinstance(node, ir.ConstantInput):
             what_to_print = f"ConstantInput({node.constant_data})"
         else:
-            what_to_print = node.__class__.__name__ + "("
+
+            base_name = node.__class__.__name__
+
+            if isinstance(node, ir.ArbitraryFunction):
+                base_name = node.op_name
+
+            what_to_print = base_name + "("
 
             # Find all the names of the current predecessors of the node
             list_of_arg_name = []
@@ -273,7 +284,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
 
         # Manage datatypes
         if show_data_types:
-            new_line = f"{new_line: <40s} # {data_type_to_string(node)}"
+            new_line = f"{new_line: <40s} # {output_data_type_to_string(node)}"
 
         returned_str += f"\n{new_line}"
 
