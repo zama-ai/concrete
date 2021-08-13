@@ -26,11 +26,12 @@ class HLFHEToMidLFHETypeConverter : public mlir::TypeConverter {
 
 public:
   HLFHEToMidLFHETypeConverter() {
-    addConversion([&](EncryptedIntegerType type) {
+    addConversion([](mlir::Type type) { return type; });
+    addConversion([](EncryptedIntegerType type) {
       return mlir::zamalang::convertTypeEncryptedIntegerToGLWE(
           type.getContext(), type);
     });
-    addConversion([&](mlir::MemRefType type) {
+    addConversion([](mlir::MemRefType type) {
       auto eint =
           type.getElementType().dyn_cast_or_null<EncryptedIntegerType>();
       if (eint == nullptr) {
@@ -43,25 +44,6 @@ public:
           type.getAffineMaps(), type.getMemorySpace());
       return r;
     });
-  }
-
-  /// [workaround] as converter.isLegal returns unexpected false for glwe with
-  /// same parameters.
-  static bool _isLegal(mlir::Type type) {
-    if (type.isa<EncryptedIntegerType>()) {
-      return false;
-    }
-    auto memref = type.dyn_cast_or_null<mlir::MemRefType>();
-    if (memref != nullptr) {
-      return _isLegal(memref.getElementType());
-    }
-    return true;
-  }
-
-  // [workaround]
-  template <typename TypeRangeT> static bool _isLegal(TypeRangeT &&types) {
-    return llvm::all_of(types,
-                        [&](const mlir::Type ty) { return _isLegal(ty); });
   }
 };
 
@@ -86,16 +68,9 @@ void HLFHEToMidLFHEPass::runOnOperation() {
       });
 
   // Make sure that func has legal signature
-  target.addDynamicallyLegalOp<mlir::FuncOp>([](mlir::FuncOp funcOp) {
-    HLFHEToMidLFHETypeConverter converter;
-    // [workaround] should be this commented code but for an unknown reasons
-    // converter.isLegal returns false for glwe with same parameters.
-    //
-    // return converter.isSignatureLegal(op.getType()) &&
-    //  converter.isLegal(&op.getBody());
-    auto funcType = funcOp.getType();
-    return HLFHEToMidLFHETypeConverter::_isLegal(funcType.getInputs()) &&
-           HLFHEToMidLFHETypeConverter::_isLegal(funcType.getResults());
+  target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
+    return converter.isSignatureLegal(funcOp.getType()) &&
+           converter.isLegal(&funcOp.getBody());
   });
   // Add all patterns required to lower all ops from `HLFHE` to
   // `MidLFHE`

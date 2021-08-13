@@ -27,6 +27,7 @@ class MidLFHEToLowLFHETypeConverter : public mlir::TypeConverter {
 
 public:
   MidLFHEToLowLFHETypeConverter() {
+    addConversion([](mlir::Type type) { return type; });
     addConversion([&](GLWECipherTextType type) {
       return mlir::zamalang::convertTypeGLWEToLWE(type.getContext(), type);
     });
@@ -41,10 +42,6 @@ public:
           type.getAffineMaps(), type.getMemorySpace());
       return r;
     });
-    // [workaround] need these converters to consider those types legal
-    addConversion([&](mlir::IntegerType type) { return type; });
-    addConversion(
-        [&](mlir::zamalang::LowLFHE::LweCiphertextType type) { return type; });
   }
 };
 
@@ -69,8 +66,7 @@ void MidLFHEToLowLFHEPass::runOnOperation() {
       });
 
   // Make sure that func has legal signature
-  target.addDynamicallyLegalOp<mlir::FuncOp>([](mlir::FuncOp funcOp) {
-    MidLFHEToLowLFHETypeConverter converter;
+  target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
     return converter.isSignatureLegal(funcOp.getType()) &&
            converter.isLegal(&funcOp.getBody());
   });
