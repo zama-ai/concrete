@@ -119,7 +119,7 @@ V0Parameter *getV0Parameter(size_t norm, size_t p) {
   if (norm > NORM2_MAX) {
     return nullptr;
   }
-  if (p >= P_MAX) {
+  if (p > P_MAX) {
     return nullptr;
   }
   // - 1 is an offset as norm and p are in [1, ...] and not [0, ...]

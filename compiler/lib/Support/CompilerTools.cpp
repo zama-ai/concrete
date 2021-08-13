@@ -9,7 +9,7 @@ namespace mlir {
 namespace zamalang {
 
 // This is temporary while we doesn't yet have the high-level verification pass
-FHECircuitConstraint defaultGlobalFHECircuitConstraint{.norm2 = 20, .p = 6};
+FHECircuitConstraint defaultGlobalFHECircuitConstraint{.norm2 = 10, .p = 7};
 
 void initLLVMNativeTarget() {
   // Initialize LLVM targets.

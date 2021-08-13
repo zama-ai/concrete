@@ -149,8 +149,7 @@ struct LowLFHEEncodeIntOpPattern
       mlir::Value castedInt = rewriter.create<mlir::ZeroExtendIOp>(
           op.getLoc(), rewriter.getIntegerType(64), op->getOperands().front());
       mlir::Value constantShiftOp = rewriter.create<mlir::ConstantOp>(
-          op.getLoc(),
-          rewriter.getI64IntegerAttr(64 - (op.getType().getP() - 1)));
+          op.getLoc(), rewriter.getI64IntegerAttr(64 - op.getType().getP()));
 
       mlir::Type resultType = rewriter.getIntegerType(64);
       rewriter.replaceOpWithNewOp<mlir::ShiftLeftOp>(op, resultType, castedInt,
