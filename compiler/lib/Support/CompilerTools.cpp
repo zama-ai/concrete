@@ -9,7 +9,7 @@ namespace mlir {
 namespace zamalang {
 
 // This is temporary while we doesn't yet have the high-level verification pass
-FHECircuitConstraint defaultGlobalFHECircuitConstraint{.norm2 = 10, .p = 7};
+V0FHEConstraint defaultGlobalFHECircuitConstraint{.norm2 = 10, .p = 7};
 
 void initLLVMNativeTarget() {
   // Initialize LLVM targets.
@@ -32,23 +32,23 @@ void addFilteredPassToPassManager(
 
 mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
     mlir::MLIRContext &context, mlir::Operation *module,
-    FHECircuitConstraint &constraint, V0Parameter &v0Parameter,
+    V0FHEContext &fheContext,
     llvm::function_ref<bool(std::string)> enablePass) {
   mlir::PassManager pm(&context);
 
-  constraint = defaultGlobalFHECircuitConstraint;
-  v0Parameter = *getV0Parameter(constraint.norm2, constraint.p);
+  fheContext.constraint = defaultGlobalFHECircuitConstraint;
+  fheContext.parameter = *getV0Parameter(fheContext.constraint);
   // Add all passes to lower from HLFHE to LLVM Dialect
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg(), enablePass);
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
   addFilteredPassToPassManager(
+      pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
+  addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
   addFilteredPassToPassManager(
-      pm,
-      mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(
-          1 << v0Parameter.polynomialSize),
+      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(fheContext),
       enablePass);
 
   // Run the passes

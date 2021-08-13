@@ -202,9 +202,10 @@ void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns,
 namespace {
 struct LowLFHEToConcreteCAPIPass
     : public LowLFHEToConcreteCAPIBase<LowLFHEToConcreteCAPIPass> {
-  LowLFHEToConcreteCAPIPass(uint64_t lweSize) : lweSize(lweSize){};
+  LowLFHEToConcreteCAPIPass(mlir::zamalang::V0FHEContext &fheContext)
+      : fheContext(fheContext){};
   void runOnOperation() final;
-  uint64_t lweSize;
+  mlir::zamalang::V0FHEContext &fheContext;
 };
 } // namespace
 
@@ -217,6 +218,7 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 
   // Setup rewrite patterns
   mlir::RewritePatternSet patterns(&getContext());
+  auto lweSize = 1 << fheContext.parameter.polynomialSize;
   populateLowLFHEToConcreteCAPICall(patterns, lweSize);
 
   // Apply the conversion
@@ -229,8 +231,8 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 namespace mlir {
 namespace zamalang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertLowLFHEToConcreteCAPIPass(uint64_t lweSize) {
-  return std::make_unique<LowLFHEToConcreteCAPIPass>(lweSize);
+createConvertLowLFHEToConcreteCAPIPass(V0FHEContext &fheContext) {
+  return std::make_unique<LowLFHEToConcreteCAPIPass>(fheContext);
 }
 } // namespace zamalang
 } // namespace mlir

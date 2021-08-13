@@ -73,8 +73,8 @@ struct ClientParameters {
 };
 
 llvm::Expected<ClientParameters>
-createClientParametersForV0(V0Parameter &v0Param, Precision precision,
-                            llvm::StringRef name, mlir::ModuleOp module);
+createClientParametersForV0(V0FHEContext context, llvm::StringRef name,
+                            mlir::ModuleOp module);
 } // namespace zamalang
 } // namespace mlir
 

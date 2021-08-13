@@ -30,18 +30,17 @@ CompilerEngine::compileFHE(std::string mlir_input) {
     return llvm::make_error<llvm::StringError>("mlir parsing failed",
                                                llvm::inconvertibleErrorCode());
   }
-  mlir::zamalang::FHECircuitConstraint constraint;
-  mlir::zamalang::V0Parameter v0Parameter;
+  mlir::zamalang::V0FHEContext fheContext;
   // Lower to MLIR Std
   if (mlir::zamalang::CompilerTools::lowerHLFHEToMlirStdsDialect(
-          *context, module_ref.get(), constraint, v0Parameter)
+          *context, module_ref.get(), fheContext)
           .failed()) {
     return llvm::make_error<llvm::StringError>("failed to lower to MLIR Std",
                                                llvm::inconvertibleErrorCode());
   }
   // Create the client parameters
   auto clientParameter = mlir::zamalang::createClientParametersForV0(
-      v0Parameter, constraint.p, "main", module_ref.get());
+      fheContext, "main", module_ref.get());
   if (auto err = clientParameter.takeError()) {
     return llvm::make_error<llvm::StringError>(
         "cannot generate client parameters", llvm::inconvertibleErrorCode());

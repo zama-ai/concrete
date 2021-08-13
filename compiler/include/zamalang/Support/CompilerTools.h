@@ -12,13 +12,6 @@
 namespace mlir {
 namespace zamalang {
 
-/// For the v0 we compute a global constraint, this is defined here as the
-/// high-level verification pass is not yet implemented.
-struct FHECircuitConstraint {
-  size_t norm2;
-  size_t p;
-};
-
 class CompilerTools {
 public:
   /// lowerHLFHEToMlirLLVMDialect run all passes to lower FHE dialects to mlir
@@ -26,7 +19,7 @@ public:
   /// The given module MLIR operation would be modified and the constraints set.
   static mlir::LogicalResult lowerHLFHEToMlirStdsDialect(
       mlir::MLIRContext &context, mlir::Operation *module,
-      FHECircuitConstraint &constraint, V0Parameter &v0Parameter,
+      V0FHEContext &fheContext,
       llvm::function_ref<bool(std::string)> enablePass = [](std::string pass) {
         return true;
       });

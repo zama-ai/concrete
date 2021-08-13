@@ -20,14 +20,14 @@ LweCiphertextType convertTypeGLWEToLWE(mlir::MLIRContext *context,
   return LweCiphertextType::get(context);
 }
 
-PlaintextType convertIntToPlaintextType(mlir::MLIRContext *context,
-                                        IntegerType &type) {
-  return PlaintextType::get(context, type.getWidth());
+PlaintextType convertPlaintextTypeFromGlwe(mlir::MLIRContext *context,
+                                           GLWECipherTextType &type) {
+  return PlaintextType::get(context, type.getP() + 1);
 }
 
-CleartextType convertIntToCleartextType(mlir::MLIRContext *context,
-                                        IntegerType &type) {
-  return CleartextType::get(context, type.getWidth());
+CleartextType convertCleartextTypeFromGlwe(mlir::MLIRContext *context,
+                                           GLWECipherTextType &type) {
+  return CleartextType::get(context, type.getP() + 1);
 }
 
 template <class Operator>
@@ -44,13 +44,11 @@ mlir::Value createLowLFHEOpFromMidLFHE(mlir::PatternRewriter rewriter,
   return op.getODSResults(0).front();
 }
 
-mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter rewriter,
-                                        mlir::Location loc, mlir::Value arg0,
-                                        mlir::Value arg1,
-                                        mlir::OpResult result) {
-  auto integer_type = arg1.getType().cast<IntegerType>();
+mlir::Value createAddPlainLweCiphertextWithGlwe(
+    mlir::PatternRewriter rewriter, mlir::Location loc, mlir::Value arg0,
+    mlir::Value arg1, mlir::OpResult result, GLWECipherTextType glwe) {
   PlaintextType encoded_type =
-      convertIntToPlaintextType(rewriter.getContext(), integer_type);
+      convertPlaintextTypeFromGlwe(rewriter.getContext(), glwe);
   // encode int into plaintext
   mlir::Value encoded =
       rewriter
@@ -67,6 +65,15 @@ mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter rewriter,
   return op.getODSResults(0).front();
 }
 
+mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter rewriter,
+                                        mlir::Location loc, mlir::Value arg0,
+                                        mlir::Value arg1,
+                                        mlir::OpResult result) {
+  auto glwe = arg0.getType().cast<GLWECipherTextType>();
+  return createAddPlainLweCiphertextWithGlwe(rewriter, loc, arg0, arg1, result,
+                                             glwe);
+}
+
 mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter rewriter,
                                       mlir::Location loc, mlir::Value arg0,
                                       mlir::Value arg1, mlir::OpResult result) {
@@ -76,16 +83,17 @@ mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter rewriter,
           .create<mlir::zamalang::LowLFHE::NegateLweCiphertextOp>(
               loc, convertTypeGLWEToLWE(rewriter.getContext(), arg1_type), arg1)
           .result();
-  return createAddPlainLweCiphertext(rewriter, loc, negated_arg1, arg0, result);
+  return createAddPlainLweCiphertextWithGlwe(rewriter, loc, negated_arg1, arg0,
+                                             result, arg1_type);
 }
 
 mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter rewriter,
                                         mlir::Location loc, mlir::Value arg0,
                                         mlir::Value arg1,
                                         mlir::OpResult result) {
-  auto integer_type = arg1.getType().cast<IntegerType>();
+  auto glwe = arg0.getType().cast<GLWECipherTextType>();
   CleartextType encoded_type =
-      convertIntToCleartextType(rewriter.getContext(), integer_type);
+      convertCleartextTypeFromGlwe(rewriter.getContext(), glwe);
   // encode int into plaintext
   mlir::Value encoded = rewriter
                             .create<mlir::zamalang::LowLFHE::IntToCleartextOp>(

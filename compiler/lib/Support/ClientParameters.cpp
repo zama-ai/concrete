@@ -45,13 +45,14 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
 }
 
 llvm::Expected<ClientParameters>
-createClientParametersForV0(V0Parameter &v0Param, Precision precision,
-                            llvm::StringRef name, mlir::ModuleOp module) {
+createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
+                            mlir::ModuleOp module) {
+  auto v0Param = fheContext.parameter;
   // Static client parameters from global parameters for v0
   ClientParameters c{
       .secretKeys{
           {"small", {.size = v0Param.nSmall}},
-          {"big", {.size = v0Param.k * (1 << v0Param.polynomialSize)}},
+          {"big", {.size = v0Param.getNBigGlweSize()}},
       },
       .bootstrapKeys{
           {
@@ -92,7 +93,8 @@ createClientParametersForV0(V0Parameter &v0Param, Precision precision,
   }
 
   // For the v0 the precision is global
-  Encoding encoding = {.precision = precision};
+  auto precision = fheContext.constraint.p;
+  Encoding encoding = {.precision = fheContext.constraint.p};
 
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();

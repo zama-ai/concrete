@@ -4,12 +4,14 @@
 
 #include "mlir/Pass/Pass.h"
 
+#include "zamalang/Conversion/Utils/GlobalFHEContext.h"
+
 namespace mlir {
 namespace zamalang {
 /// Create a pass to convert `LowLFHE` operators to function call to the
 /// `ConcreteCAPI`
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertLowLFHEToConcreteCAPIPass(uint64_t lweSize);
+createConvertLowLFHEToConcreteCAPIPass(V0FHEContext &context);
 } // namespace zamalang
 } // namespace mlir
 

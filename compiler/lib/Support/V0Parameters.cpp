@@ -115,15 +115,15 @@ V0Parameter parameters[NORM2_MAX][P_MAX] = {
      V0Parameter(0, 0, 0, 0, 0, 0, 0), V0Parameter(0, 0, 0, 0, 0, 0, 0),
      V0Parameter(0, 0, 0, 0, 0, 0, 0)}};
 
-V0Parameter *getV0Parameter(size_t norm, size_t p) {
-  if (norm > NORM2_MAX) {
+V0Parameter *getV0Parameter(V0FHEConstraint constraint) {
+  if (constraint.norm2 > NORM2_MAX) {
     return nullptr;
   }
-  if (p > P_MAX) {
+  if (constraint.p > P_MAX) {
     return nullptr;
   }
   // - 1 is an offset as norm and p are in [1, ...] and not [0, ...]
-  auto param = &parameters[norm - 1][p - 1];
+  auto param = &parameters[constraint.norm2 - 1][constraint.p - 1];
   if (param->k == 0) {
     return nullptr;
   }
