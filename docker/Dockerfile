@@ -1,6 +1,6 @@
 FROM ghcr.io/zama-ai/zamalang-compiler
 
-RUN apt-get install --no-install-recommends -y python3.8 python3.8-venv python-is-python3 && \
+RUN apt-get install --no-install-recommends -y python3.8 python3.8-venv python-is-python3 git && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry && \
     echo "python3 -m venv /hdk/.docker_venv" >> /root/.bashrc && \

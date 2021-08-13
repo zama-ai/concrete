@@ -66,7 +66,8 @@ docker_rebuild:
 .PHONY: docker_rebuild
 
 docker_start:
-	docker run --rm -it --volume /"$$(pwd)":/hdk hdk:mlir # the slash before pwd is for Windows
+	@# the slash before pwd is for Windows
+	docker run --rm -it --volume /"$$(pwd)":/hdk hdk:mlir
 .PHONY: docker_start
 
 docker_build_and_start: docker_build docker_start
