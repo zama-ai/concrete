@@ -6,7 +6,7 @@ from zamalang import CompilerEngine
 
 from ..common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
 from ..common.common_helpers import check_op_graph_is_integer_program
-from ..common.compilation import CompilationArtifacts
+from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import BaseValue
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from ..common.mlir.utils import (
@@ -23,6 +23,7 @@ def compile_numpy_function_into_op_graph(
     function_to_trace: Callable,
     function_parameters: Dict[str, BaseValue],
     dataset: Iterator[Tuple[Any, ...]],
+    compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ) -> OPGraph:
     """Compile a function into an OPGraph.
@@ -34,18 +35,30 @@ def compile_numpy_function_into_op_graph(
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
             needs to be an iterator on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
+        compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
+            during compilation
         compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
             during compilation
 
     Returns:
         OPGraph: compiled function into a graph
     """
+
+    # Create default configuration if custom configuration is not specified
+    compilation_configuration = (
+        CompilationConfiguration()
+        if compilation_configuration is None
+        else compilation_configuration
+    )
+
     # Trace
     op_graph = trace_numpy_function(function_to_trace, function_parameters)
 
-    # Fuse float operations to have int to int ArbitraryFunction
-    if not check_op_graph_is_integer_program(op_graph):
-        fuse_float_operations(op_graph)
+    # Apply topological optimizations if they are enabled
+    if compilation_configuration.enable_topological_optimizations:
+        # Fuse float operations to have int to int ArbitraryFunction
+        if not check_op_graph_is_integer_program(op_graph):
+            fuse_float_operations(op_graph)
 
     # TODO: To be removed once we support more than integers
     offending_non_integer_nodes: List[ir.IntermediateNode] = []
@@ -82,6 +95,7 @@ def compile_numpy_function(
     function_to_trace: Callable,
     function_parameters: Dict[str, BaseValue],
     dataset: Iterator[Tuple[Any, ...]],
+    compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ) -> CompilerEngine:
     """Main API of hnumpy, to be able to compile an homomorphic program.
@@ -93,15 +107,29 @@ def compile_numpy_function(
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
             needs to be an iterator on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
+        compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
+            during compilation
         compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
             during compilation
 
     Returns:
         CompilerEngine: engine to run and debug the compiled graph
     """
+
+    # Create default configuration if custom configuration is not specified
+    compilation_configuration = (
+        CompilationConfiguration()
+        if compilation_configuration is None
+        else compilation_configuration
+    )
+
     # Compile into an OPGraph
     op_graph = compile_numpy_function_into_op_graph(
-        function_to_trace, function_parameters, dataset, compilation_artifacts
+        function_to_trace,
+        function_parameters,
+        dataset,
+        compilation_configuration,
+        compilation_artifacts,
     )
 
     # Convert graph to an MLIR representation

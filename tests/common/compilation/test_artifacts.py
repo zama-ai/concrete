@@ -20,7 +20,7 @@ def test_artifacts_export():
         function,
         {"x": EncryptedValue(Integer(7, True))},
         iter([(-2,), (-1,), (0,), (1,), (2,)]),
-        artifacts,
+        compilation_artifacts=artifacts,
     )
 
     with tempfile.TemporaryDirectory() as tmp:
