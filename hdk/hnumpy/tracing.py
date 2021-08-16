@@ -113,8 +113,31 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
+    def sin(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.sin.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        assert len(input_tracers) == 1
+        common_output_dtypes = self._manage_dtypes(numpy.sin, *input_tracers)
+        assert len(common_output_dtypes) == 1
+
+        traced_computation = ir.ArbitraryFunction(
+            input_base_value=input_tracers[0].output,
+            arbitrary_func=numpy.sin,
+            output_dtype=common_output_dtypes[0],
+            op_kwargs=deepcopy(kwargs),
+            op_name="numpy.sin",
+        )
+        output_tracer = self.__class__(
+            input_tracers, traced_computation=traced_computation, output_index=0
+        )
+        return output_tracer
+
     UFUNC_ROUTING: Mapping[numpy.ufunc, Callable] = {
         numpy.rint: rint,
+        numpy.sin: sin,
     }
 
 
