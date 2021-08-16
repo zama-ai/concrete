@@ -24,10 +24,17 @@ pylint:
 	poetry run pylint --rcfile=pylintrc hdk tests
 .PHONY: pylint
 
+flake8:
+	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" hdk/ tests/
+.PHONY: flake8
+
+python_linting: pylint flake8
+.PHONY: python_linting
+
 conformance: python_format
 .PHONY: conformance
 
-pcc: check_python_format pylint mypy_ci pydocstyle
+pcc: check_python_format python_linting mypy_ci pydocstyle
 .PHONY: pcc
 
 pytest:

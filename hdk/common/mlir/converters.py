@@ -13,8 +13,7 @@ from mlir.dialects import std as std_dialect
 from mlir.ir import IntegerAttr, IntegerType
 from zamalang.dialects import hlfhe
 
-from hdk.common.data_types.integers import Integer
-
+from ...common.data_types.integers import Integer
 from ..data_types.dtypes_helpers import (
     value_is_clear_integer,
     value_is_encrypted_unsigned_integer,

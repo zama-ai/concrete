@@ -2,9 +2,7 @@
 
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 
-from hdk.common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
-from hdk.hnumpy.tracing import trace_numpy_function
-
+from ..common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
 from ..common.compilation import CompilationArtifacts
 from ..common.data_types import BaseValue
 from ..common.mlir.utils import (

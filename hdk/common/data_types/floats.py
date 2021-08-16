@@ -1,5 +1,7 @@
 """This file holds the definitions for floating point types."""
 
+from functools import partial
+
 from . import base
 
 
@@ -21,5 +23,5 @@ class Float(base.BaseDataType):
         return isinstance(other, self.__class__) and self.bit_width == other.bit_width
 
 
-Float32 = lambda: Float(32)
-Float64 = lambda: Float(64)
+Float32 = partial(Float, 32)
+Float64 = partial(Float, 64)

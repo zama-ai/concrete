@@ -10,10 +10,12 @@ from hdk.common.data_types.values import ClearValue, EncryptedValue
 from hdk.common.representation import intermediate as ir
 from hdk.hnumpy import tracing
 
+OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
+
 
 @pytest.mark.parametrize(
     "operation",
-    [ir.Add, ir.Sub, ir.Mul],
+    OPERATIONS_TO_TEST,
 )
 @pytest.mark.parametrize(
     "x",
@@ -69,14 +71,13 @@ def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
         z = x + x
         return z * y
 
+    assert operation in OPERATIONS_TO_TEST, f"unknown operation {operation}"
     if operation == ir.Add:
         function_to_compile = simple_add_function
     elif operation == ir.Sub:
         function_to_compile = simple_sub_function
     elif operation == ir.Mul:
         function_to_compile = simple_mul_function
-    else:
-        assert False, f"unknown operation {operation}"
 
     op_graph = tracing.trace_numpy_function(function_to_compile, {"x": x, "y": y})
 

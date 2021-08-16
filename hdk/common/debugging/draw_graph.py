@@ -4,8 +4,8 @@ from typing import Any, Dict, List
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from hdk.common.operator_graph import OPGraph
-from hdk.common.representation import intermediate as ir
+from ..operator_graph import OPGraph
+from ..representation import intermediate as ir
 
 IR_NODE_COLOR_MAPPING = {
     ir.Input: "blue",

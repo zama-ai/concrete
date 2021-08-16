@@ -24,6 +24,8 @@ mypy = "^0.910"
 pydocstyle = "^6.1.1"
 jupyter = "^1.0.0"
 nbmake = "^0.5"
+flake8 = "^3.9.2"
+flake8-bugbear = "^21.4.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
