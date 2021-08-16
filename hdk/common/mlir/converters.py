@@ -7,7 +7,13 @@ Converter functions all have the same signature `converter(node, preds, ir_to_ml
 - `ctx`: MLIR context
 """
 # pylint: disable=no-name-in-module,no-member
+from typing import cast
+
+from mlir.dialects import std as std_dialect
+from mlir.ir import IntegerAttr, IntegerType
 from zamalang.dialects import hlfhe
+
+from hdk.common.data_types.integers import Integer
 
 from ..data_types.dtypes_helpers import (
     value_is_clear_integer,
@@ -113,6 +119,22 @@ def _mul_eint_int(node, preds, ir_to_mlir_node, ctx):
     ).result
 
 
-V0_OPSET_CONVERSION_FUNCTIONS = {ir.Add: add, ir.Sub: sub, ir.Mul: mul}
+def constant(node, _, __, ctx):
+    """Converter function for constant inputs."""
+    if not value_is_clear_integer(node.outputs[0]):
+        raise TypeError("Don't support non-integer constants")
+    dtype = cast(Integer, node.outputs[0].data_type)
+    if dtype.is_signed:
+        raise TypeError("Don't support signed constant integer")
+    int_type = IntegerType.get_signless(dtype.bit_width, context=ctx)
+    return std_dialect.ConstantOp(int_type, IntegerAttr.get(int_type, node.constant_data)).result
+
+
+V0_OPSET_CONVERSION_FUNCTIONS = {
+    ir.Add: add,
+    ir.Sub: sub,
+    ir.Mul: mul,
+    ir.ConstantInput: constant,
+}
 
 # pylint: enable=no-name-in-module,no-member

@@ -18,14 +18,29 @@ def add(x, y):
     return x + y
 
 
+def constant_add(x):
+    """Test constant add"""
+    return x + 5
+
+
 def sub(x, y):
     """Test simple sub"""
     return x - y
 
 
+def constant_sub(x):
+    """Test constant sub"""
+    return 8 - x
+
+
 def mul(x, y):
     """Test simple mul"""
     return x * y
+
+
+def constant_mul(x):
+    """Test constant mul"""
+    return x * 2
 
 
 def sub_add_mul(x, y, z):
@@ -61,6 +76,13 @@ def datagen(*args):
             (range(0, 8), range(1, 4)),
         ),
         (
+            constant_add,
+            {
+                "x": EncryptedValue(Integer(64, is_signed=False)),
+            },
+            (range(0, 8),),
+        ),
+        (
             add,
             {
                 "x": ClearValue(Integer(32, is_signed=False)),
@@ -85,12 +107,26 @@ def datagen(*args):
             (range(5, 10), range(2, 6)),
         ),
         (
+            constant_sub,
+            {
+                "x": EncryptedValue(Integer(64, is_signed=False)),
+            },
+            (range(0, 5),),
+        ),
+        (
             mul,
             {
                 "x": EncryptedValue(Integer(7, is_signed=False)),
                 "y": ClearValue(Integer(8, is_signed=False)),
             },
             (range(1, 5), range(2, 8)),
+        ),
+        (
+            constant_mul,
+            {
+                "x": EncryptedValue(Integer(64, is_signed=False)),
+            },
+            (range(0, 8),),
         ),
         (
             mul,
