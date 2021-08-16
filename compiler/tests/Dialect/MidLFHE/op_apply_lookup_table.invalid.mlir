@@ -11,7 +11,7 @@ func @apply_lookup_table(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>, %arg1: tensor<4x
 
 // Bad dimension of integer in the lookup table
 func @apply_lookup_table(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>, %arg1: tensor<128xi3>) -> !MidLFHE.glwe<{512,10,64}{2}> {
-  // expected-error @+1 {{'MidLFHE.apply_lookup_table' op should have equals width beetwen the encrypted integer result and integers of the `tabulated_lambda` argument}}
+  // expected-error @+1 {{'MidLFHE.apply_lookup_table' op should have the width of the constants less or equals than the precision of the encrypted integer}}
   %1 = "MidLFHE.apply_lookup_table"(%arg0, %arg1) {k = 1 : i32, polynomialSize = 1024 : i32, levelKS = 2 : i32, baseLogKS = -82 : i32, levelBS = 3 : i32, baseLogBS = -83 : i32}: (!MidLFHE.glwe<{1024,12,64}{7}>, tensor<128xi3>) -> (!MidLFHE.glwe<{512,10,64}{2}>)
   return %1: !MidLFHE.glwe<{512,10,64}{2}>
 }

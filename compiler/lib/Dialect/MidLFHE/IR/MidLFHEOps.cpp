@@ -36,8 +36,10 @@ mlir::LogicalResult _verifyGLWEIntegerOperator(mlir::OpState &op,
   }
 
   // verify consistency of width of inputs
-  if (a.getP() + 1 != b.getWidth()) {
-    op.emitOpError() << "should have the width of `b` equals to 'p'+1";
+  if (b.getWidth() > a.getP() + 1) {
+    op.emitOpError()
+        << "should have the width of `b` equals or less than 'p'+1: "
+        << b.getWidth() << " <= " << a.getP() << "+ 1";
     return mlir::failure();
   }
   return mlir::success();
@@ -123,10 +125,9 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
   }
   // Check the witdh of the encrypted integer and the integer of the tabulated
   // lambda are equals
-  if (result.getP() != l_cst.getElementType().cast<IntegerType>().getWidth()) {
-    op.emitOpError()
-        << "should have equals width beetwen the encrypted integer result and "
-           "integers of the `tabulated_lambda` argument";
+  if (result.getP() < l_cst.getElementType().cast<IntegerType>().getWidth()) {
+    op.emitOpError() << "should have the width of the constants less or equals "
+                        "than the precision of the encrypted integer";
     return mlir::failure();
   }
   return mlir::success();
