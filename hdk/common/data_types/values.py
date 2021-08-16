@@ -13,7 +13,7 @@ class BaseValue(ABC):
     def __init__(self, data_type: base.BaseDataType) -> None:
         self.data_type = data_type
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         return f"{self.__class__.__name__}<{self.data_type!r}>"
 
     def __eq__(self, other: object) -> bool:
