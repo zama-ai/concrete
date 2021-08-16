@@ -17,6 +17,13 @@ def HLFHEToMidLFHE : Pass<"hlfhe-to-midlfhe", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect"];
 }
 
+def MidLFHEGlobalParametrization : Pass<"midlfhe-global-parametrization", "mlir::ModuleOp"> {
+  let summary = "Inject global fhe parameters to the MidLFHE dialect";
+  let constructor = "mlir::zamalang::createConvertMidLFHEToLowLFHEPass()";
+  let options = [];
+  let dependentDialects = ["mlir::zamalang::MidLFHE::MidLFHEDialect"];
+}
+
 def MidLFHEToLowLFHE : Pass<"midlfhe-to-lowlfhe", "mlir::ModuleOp"> {
   let summary = "Lowers operations from the MidLFHE dialect to LowLFHE";
   let description = [{ Lowers operations from the MidLFHE dialect to LowLFHE }];
