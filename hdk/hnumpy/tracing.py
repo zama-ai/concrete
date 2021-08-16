@@ -139,6 +139,6 @@ def trace_numpy_function(
     if isinstance(output_tracers, NPTracer):
         output_tracers = (output_tracers,)
 
-    op_graph = OPGraph(output_tracers)
+    op_graph = OPGraph.from_output_tracers(output_tracers)
 
     return op_graph
