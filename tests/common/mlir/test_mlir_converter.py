@@ -157,7 +157,7 @@ def test_hdk_clear_integer_to_mlir_type(is_signed):
         if is_signed:
             assert int_mlir == IntegerType.get_signed(5)
         else:
-            assert int_mlir == IntegerType.get_unsigned(5)
+            assert int_mlir == IntegerType.get_signless(5)
 
 
 def test_failing_hdk_to_mlir_type():

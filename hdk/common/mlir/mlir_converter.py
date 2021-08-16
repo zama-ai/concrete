@@ -58,7 +58,8 @@ class MLIRConverter:
             dtype = cast(Integer, value.data_type)
             if dtype.is_signed:
                 return IntegerType.get_signed(dtype.bit_width, context=self.context)
-            return IntegerType.get_unsigned(dtype.bit_width, context=self.context)
+            # unsigned integer are considered signless in the compiler
+            return IntegerType.get_signless(dtype.bit_width, context=self.context)
         raise TypeError(f"can't convert value of type {type(value)} to MLIR type")
 
     def convert(self, op_graph: OPGraph) -> str:
@@ -80,7 +81,7 @@ class MLIRConverter:
                 ]
 
                 @builtin.FuncOp.from_py_func(*func_types)
-                def fhe_circuit(*arg):
+                def main(*arg):
                     ir_to_mlir_node = {}
                     for arg_num, node in op_graph.input_nodes.items():
                         ir_to_mlir_node[node] = arg[arg_num]
