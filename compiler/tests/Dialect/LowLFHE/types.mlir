@@ -31,10 +31,10 @@ func @type_foreign_plaintext_list(%arg0: !LowLFHE.foreign_plaintext_list) -> !Lo
   return %arg0: !LowLFHE.foreign_plaintext_list
 }
 
-// CHECK-LABEL: func @type_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext) -> !LowLFHE.lwe_ciphertext
-func @type_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext) -> !LowLFHE.lwe_ciphertext {
-  // CHECK-NEXT: return %arg0 : !LowLFHE.lwe_ciphertext
-  return %arg0: !LowLFHE.lwe_ciphertext
+// CHECK-LABEL: func @type_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7>
+func @type_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7> {
+  // CHECK-NEXT: return %arg0 : !LowLFHE.lwe_ciphertext<2048,7>
+  return %arg0: !LowLFHE.lwe_ciphertext<2048,7>
 }
 
 // CHECK-LABEL: func @type_lwe_key_switch_key(%arg0: !LowLFHE.lwe_key_switch_key) -> !LowLFHE.lwe_key_switch_key

@@ -122,12 +122,39 @@ def LweCiphertextType : LowLFHE_Type<"LweCiphertext"> {
        Learning With Error ciphertext.
     }];
 
+
+    let parameters = (ins
+        // The size of the lwe ciphertext
+        "signed":$size,
+        // Precision of the lwe ciphertext
+        "signed":$p
+    );
+
     let printer = [{
-        $_printer << "lwe_ciphertext";
+        $_printer << "lwe_ciphertext<";
+        if (getImpl()->size == -1) $_printer << "_";
+        else $_printer << getImpl()->size;
+        $_printer << ",";
+        if (getImpl()->p == -1) $_printer << "_";
+        else $_printer << getImpl()->p;
+        $_printer << ">";
     }];
 
     let parser = [{
-        return get($_ctxt);
+        if ($_parser.parseLess())
+            return Type();
+        int size = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(size))
+            return Type();
+        if ($_parser.parseComma())
+            return Type();
+        int p = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
+            return Type();
+        if ($_parser.parseGreater())
+            return Type();
+        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
+        return getChecked(loc, loc.getContext(), size, p);
     }];
 }
 

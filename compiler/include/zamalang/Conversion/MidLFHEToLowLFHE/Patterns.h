@@ -17,7 +17,8 @@ using MidLFHE::GLWECipherTextType;
 
 LweCiphertextType convertTypeGLWEToLWE(mlir::MLIRContext *context,
                                        GLWECipherTextType &glwe) {
-  return LweCiphertextType::get(context);
+  return LweCiphertextType::get(
+      context, glwe.getDimension() * glwe.getPolynomialSize(), glwe.getP());
 }
 
 PlaintextType convertPlaintextTypeFromGlwe(mlir::MLIRContext *context,
