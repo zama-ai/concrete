@@ -1,4 +1,5 @@
 """hnumpy tracing utilities."""
+from copy import deepcopy
 from typing import Callable, Dict, Mapping
 
 import numpy
@@ -53,6 +54,7 @@ class NPTracer(BaseTracer):
             input_base_value=self.output,
             arbitrary_func=normalized_numpy_dtype.type,
             output_dtype=output_dtype,
+            op_name=f"astype({normalized_numpy_dtype})",
         )
         output_tracer = self.__class__(
             [self], traced_computation=traced_computation, output_index=0
@@ -103,7 +105,8 @@ class NPTracer(BaseTracer):
             input_base_value=input_tracers[0].output,
             arbitrary_func=numpy.rint,
             output_dtype=common_output_dtypes[0],
-            op_kwargs=kwargs,
+            op_kwargs=deepcopy(kwargs),
+            op_name="numpy.rint",
         )
         output_tracer = self.__class__(
             input_tracers, traced_computation=traced_computation, output_index=0

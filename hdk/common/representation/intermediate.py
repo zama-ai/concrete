@@ -200,8 +200,8 @@ class ArbitraryFunction(IntermediateNode):
         super().__init__([input_base_value])
         assert len(self.inputs) == 1
         self.arbitrary_func = arbitrary_func
-        self.op_args = deepcopy(op_args) if op_args is not None else ()
-        self.op_kwargs = deepcopy(op_kwargs) if op_kwargs is not None else {}
+        self.op_args = op_args if op_args is not None else ()
+        self.op_kwargs = op_kwargs if op_kwargs is not None else {}
         # TLU/PBS has an encrypted output
         self.outputs = [EncryptedValue(output_dtype)]
         self.op_name = op_name if op_name is not None else self.__class__.__name__
