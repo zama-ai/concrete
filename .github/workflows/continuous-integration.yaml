@@ -60,6 +60,12 @@ jobs:
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest
+      - name: Notebooks
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          make strip_nb
+          make notebook_timeout
+          poetry run pytest --nbmake examples/*.ipynb
       - name: Test coverage
         id: coverage
         if: ${{ steps.pytest.outcome != 'skipped' && !cancelled() }}

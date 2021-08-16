@@ -3,6 +3,8 @@ SHELL:=/bin/bash
 setup_env:
 	poetry install
 	poetry run python -m pip install -U pip wheel setuptools
+	poetry run python -m pip install -r torch_requirements.txt \
+		-f https://download.pytorch.org/whl/torch_stable.html
 .PHONY: setup_env
 
 sync_env:
@@ -100,3 +102,11 @@ pydocstyle:
 	@# From http://www.pydocstyle.org/en/stable/error_codes.html
 	poetry run pydocstyle hdk --convention google --add-ignore=D1,D202
 .PHONY: pydocstyle
+
+strip_nb:
+	poetry run python ./script/nbmake_utils/notebook_sanitize.py examples
+.PHONY: strip_nb
+
+notebook_timeout:
+	poetry run python ./script/nbmake_utils/notebook_test_timeout.py examples
+.PHONY: notebook_timeout

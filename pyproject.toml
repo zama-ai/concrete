@@ -22,6 +22,8 @@ pytest-cov = "^2.12.1"
 diff-cover = "^6.2.0"
 mypy = "^0.910"
 pydocstyle = "^6.1.1"
+jupyter = "^1.0.0"
+nbmake = "^0.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
