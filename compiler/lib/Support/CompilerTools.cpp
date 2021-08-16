@@ -50,8 +50,7 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
   addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(fheContext),
-      enablePass);
+      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(), enablePass);
 
   // Run the passes
   if (pm.run(module).failed()) {

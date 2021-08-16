@@ -9,6 +9,7 @@
 #include "zamalang/Conversion/Passes.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
+#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
 
 class LowLFHEToConcreteCAPITypeConverter : public mlir::TypeConverter {
 
@@ -73,10 +74,9 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
   LowLFHEOpToConcreteCAPICallPattern(mlir::MLIRContext *context,
                                      mlir::StringRef funcName,
                                      mlir::StringRef allocName,
-                                     uint64_t lweSize,
                                      mlir::PatternBenefit benefit = 1)
       : mlir::OpRewritePattern<Op>(context, benefit), funcName(funcName),
-        allocName(allocName), lweSize(lweSize) {}
+        allocName(allocName) {}
 
   mlir::LogicalResult
   matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
@@ -106,6 +106,9 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
         return mlir::failure();
       }
     }
+    mlir::Type resultType = op->getResultTypes().front();
+    auto lweResultType =
+        resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>();
     // Replace the operation with a call to the `funcName`
     {
       // Create the err value
@@ -113,7 +116,7 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
           rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
       // Add the call to the allocation
       auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
-          op.getLoc(), rewriter.getIndexAttr(lweSize));
+          op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
       mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
       auto alloc = rewriter.replaceOpWithNewOp<mlir::CallOp>(
           op, allocName, op.getType(), allocOperands);
@@ -132,7 +135,6 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
 private:
   std::string funcName;
   std::string allocName;
-  uint64_t lweSize;
 };
 
 struct LowLFHEEncodeIntOpPattern
@@ -177,24 +179,23 @@ struct LowLFHEIntToCleartextOpPattern
 
 /// Populate the RewritePatternSet with all patterns that rewrite LowLFHE
 /// operators to the corresponding function call to the `Concrete C API`.
-void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns,
-                                       uint64_t lweSize) {
+void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
       mlir::zamalang::LowLFHE::AddLweCiphertextsOp>>(
       patterns.getContext(), "add_lwe_ciphertexts_u64",
-      "allocate_lwe_ciphertext_u64", lweSize);
+      "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
       mlir::zamalang::LowLFHE::AddPlaintextLweCiphertextOp>>(
       patterns.getContext(), "add_plaintext_lwe_ciphertext_u64",
-      "allocate_lwe_ciphertext_u64", lweSize);
+      "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
       mlir::zamalang::LowLFHE::MulCleartextLweCiphertextOp>>(
       patterns.getContext(), "mul_cleartext_lwe_ciphertext_u64",
-      "allocate_lwe_ciphertext_u64", lweSize);
+      "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
       mlir::zamalang::LowLFHE::NegateLweCiphertextOp>>(
       patterns.getContext(), "negate_lwe_ciphertext_u64",
-      "allocate_lwe_ciphertext_u64", lweSize);
+      "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEEncodeIntOpPattern>(patterns.getContext());
   patterns.add<LowLFHEIntToCleartextOpPattern>(patterns.getContext());
 }
@@ -202,10 +203,7 @@ void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns,
 namespace {
 struct LowLFHEToConcreteCAPIPass
     : public LowLFHEToConcreteCAPIBase<LowLFHEToConcreteCAPIPass> {
-  LowLFHEToConcreteCAPIPass(mlir::zamalang::V0FHEContext &fheContext)
-      : fheContext(fheContext){};
   void runOnOperation() final;
-  mlir::zamalang::V0FHEContext &fheContext;
 };
 } // namespace
 
@@ -218,8 +216,7 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 
   // Setup rewrite patterns
   mlir::RewritePatternSet patterns(&getContext());
-  auto lweSize = 1 << fheContext.parameter.polynomialSize;
-  populateLowLFHEToConcreteCAPICall(patterns, lweSize);
+  populateLowLFHEToConcreteCAPICall(patterns);
 
   // Apply the conversion
   mlir::ModuleOp op = getOperation();
@@ -231,8 +228,8 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 namespace mlir {
 namespace zamalang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertLowLFHEToConcreteCAPIPass(V0FHEContext &fheContext) {
-  return std::make_unique<LowLFHEToConcreteCAPIPass>(fheContext);
+createConvertLowLFHEToConcreteCAPIPass() {
+  return std::make_unique<LowLFHEToConcreteCAPIPass>();
 }
 } // namespace zamalang
 } // namespace mlir
