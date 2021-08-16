@@ -1,6 +1,7 @@
 """Test file for hnumpy compilation functions"""
 import itertools
 
+import numpy
 import pytest
 
 from hdk.common.data_types.integers import Integer
@@ -8,6 +9,14 @@ from hdk.common.data_types.values import EncryptedValue
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
 from hdk.hnumpy.compile import compile_numpy_function
+
+
+def no_fuse_unhandled(x, y):
+    """No fuse unhandled"""
+    x_intermediate = x + 2.8
+    y_intermediate = y + 9.3
+    intermediate = x_intermediate + y_intermediate
+    return intermediate.astype(numpy.int32)
 
 
 @pytest.mark.parametrize(
@@ -20,6 +29,12 @@ from hdk.hnumpy.compile import compile_numpy_function
             lambda x, y, z: (x + y + 1 - z, x * y + 42, z, z + 99),
             ((4, 8), (3, 4), (0, 4)),
             ["x", "y", "z"],
+        ),
+        pytest.param(
+            no_fuse_unhandled,
+            ((-2, 2), (-2, 2)),
+            ["x", "y"],
+            marks=pytest.mark.xfail(raises=ValueError),
         ),
     ],
 )
