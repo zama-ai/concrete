@@ -30,14 +30,6 @@ print("Minimal POC to reproduce the bug")
 
 ## Artifacts
 
-Generate a compiler report (see documentation) and attach all generated artifacts here:
-
-- bounds.txt
-- cryptographic_parameters.txt
-- ir_nodes.txt
-- optimizations_applied.txt
-- target_nodes.txt
-
 <details><summary>Logs or output</summary>
 <p>
 

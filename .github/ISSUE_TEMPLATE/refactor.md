@@ -6,11 +6,11 @@ labels: refactor
 
 ## Proposal
 
-What would be your refactor proposal
+What would be your refactor proposal?
 
 ## Impact
 
-List all files/modules/projects impacted by this refactor
+List all files/modules/projects impacted by this refactor.
 
 <details><summary>Files impacted</summary>
 <p>
