@@ -17,7 +17,7 @@ fn unbounded_benchmark(c: &mut Criterion) {
 fn bounded_benchmark(c: &mut Criterion) {
     let mut generator = RandomGenerator::new_hardware(None).unwrap();
     let mut generator = generator
-        .try_fork(1, N_GEN * 10_000)
+        .try_bounded_fork(1, N_GEN * 10_000)
         .unwrap()
         .next()
         .unwrap();

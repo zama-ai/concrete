@@ -2,9 +2,39 @@
 //!
 //! Welcome to the `concrete-csprng` documentation.
 //!
+//! # Implementation
+//!
 //! This crate contains a reasonably fast cryptographically secure pseudo-random number generator.
 //! The implementation is based on the AES blockcipher used in counter (CTR) mode, as presented
 //! in the ISO/IEC 18033-4 document.
+//!
+//! When a new generator is created, it can be provided with a seed, which is used as the key of the
+//! inner aes blockcipher. The counter is initialized with a constant IV of zero.
+//!
+//! A generator can _bounded_, in which case it can only generate a fixed amount of bytes, or
+//! _unbounded_, in which case it can generate as many bytes as necessary.
+//!
+//! # Forking
+//!
+//! This implementation makes it possible to _fork_ a parent generator into a set of children
+//! generators which use the same key. Two modes of operation are supported, which give different
+//! guarantees on the bytes yielded by the children:
+//!
+//! + A _bounded fork_ creates a set of bounded generators which can only generate a fixed amount
+//! of randomness. During the fork, the parent generator state is shifted of as much bytes as the
+//! children generate, and the children states are set evenly on the state span of the fork. When
+//! the children are exhausted in the order yielded by the fork, they are guaranteed to generate the
+//! same sequence the parent would have if it had not been forked. Thanks to that, exhausting the
+//! leave of any tree of generator constructed using this fork will give the same sequence of
+//! bytes.
+//! + An _unbounded fork_ creates a set of unbounded generators which can generates as much
+//! randomness as needed. During the fork, the states of the children are randomly sampled by the
+//! parent generator. This makes the fork deterministic on the parent state. Thanks to that, two
+//! trees of generators constructed with this fork, with the same topology, will produce two sets
+//! of leaves generators in the same state.
+//!
+//! The cost of forking a generator is constant in both modes of operations, and is typically
+//! very low (essentially the cost of copying the aes key).
 
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
@@ -88,12 +118,12 @@ impl RandomGenerator {
         }
     }
 
-    /// Tries to fork the current generator into `n_child` generators each able to yield
-    /// `child_bytes` random bytes.
+    /// Tries to perform a bounded fork of the current generator into `n_child` generators each able
+    /// to yield `child_bytes` random bytes.
     ///
     /// If the total number of bytes to be generated exceeds the bound of the current generator,
     /// `None` is returned. Otherwise, we return an iterator over the children generators.
-    pub fn try_fork(
+    pub fn try_bounded_fork(
         &mut self,
         n_child: usize,
         child_bytes: usize,
@@ -127,16 +157,16 @@ impl RandomGenerator {
         }
         match self {
             Self::Hardware(ref mut rand) => rand
-                .try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .try_bounded_fork(ChildCount(n_child), BytesPerChild(child_bytes))
                 .map(GeneratorChildIter::Hardware),
             Self::Software(ref mut rand) => rand
-                .try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .try_bounded_fork(ChildCount(n_child), BytesPerChild(child_bytes))
                 .map(GeneratorChildIter::Software),
         }
     }
 
-    /// Tries to fork the current generator into `n_child` generators each able to yield
-    /// `child_bytes` random bytes as a parallel iterator.
+    /// Tries to perform a bounded fork of the current generator into `n_child` generators each able
+    /// to yield `child_bytes` random bytes as a parallel iterator.
     ///
     /// If the total number of bytes to be generated exceeds the bound of the current generator,
     /// `None` is returned. Otherwise, we return a parallel iterator over the children generators.
@@ -145,7 +175,7 @@ impl RandomGenerator {
     ///
     /// This method necessitates the "multithread" feature.
     #[cfg(feature = "multithread")]
-    pub fn par_try_fork(
+    pub fn par_try_bounded_fork(
         &mut self,
         n_child: usize,
         child_bytes: usize,
@@ -216,10 +246,138 @@ impl RandomGenerator {
 
         match self {
             Self::Hardware(ref mut rand) => rand
-                .par_try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .par_try_bounded_fork(ChildCount(n_child), BytesPerChild(child_bytes))
                 .map(GeneratorChildIter::Hardware),
             Self::Software(ref mut rand) => rand
-                .par_try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .par_try_bounded_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .map(GeneratorChildIter::Software),
+        }
+    }
+
+    /// Tries to perform an unbounded fork of the current generator into `n_child` generators each
+    /// able to yield as many random bytes as wanted.
+    pub fn try_unbounded_fork(
+        &mut self,
+        n_child: usize,
+    ) -> Option<impl Iterator<Item = RandomGenerator>> {
+        enum GeneratorChildIter<HardIter, SoftIter>
+        where
+            HardIter: Iterator<Item = HardAesCtrGenerator>,
+            SoftIter: Iterator<Item = SoftAesCtrGenerator>,
+        {
+            Hardware(HardIter),
+            Software(SoftIter),
+        }
+
+        impl<HardIter, SoftIter> Iterator for GeneratorChildIter<HardIter, SoftIter>
+        where
+            HardIter: Iterator<Item = HardAesCtrGenerator>,
+            SoftIter: Iterator<Item = SoftAesCtrGenerator>,
+        {
+            type Item = RandomGenerator;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                match self {
+                    GeneratorChildIter::Hardware(ref mut iter) => {
+                        iter.next().map(RandomGenerator::Hardware)
+                    }
+                    GeneratorChildIter::Software(ref mut iter) => {
+                        iter.next().map(RandomGenerator::Software)
+                    }
+                }
+            }
+        }
+        match self {
+            Self::Hardware(ref mut rand) => rand
+                .try_unbounded_fork(ChildCount(n_child))
+                .map(GeneratorChildIter::Hardware),
+            Self::Software(ref mut rand) => rand
+                .try_unbounded_fork(ChildCount(n_child))
+                .map(GeneratorChildIter::Software),
+        }
+    }
+
+    /// Tries to perform an unbounded fork of the current generator into `n_child` generators each
+    /// able to yield as many random bytes as wanted.
+    ///
+    /// # Notes
+    ///
+    /// This method necessitates the "multithread" feature.
+    #[cfg(feature = "multithread")]
+    pub fn par_try_unbounded_fork(
+        &mut self,
+        n_child: usize,
+    ) -> Option<impl IndexedParallelIterator<Item = RandomGenerator>> {
+        use rayon::iter::plumbing::{Consumer, ProducerCallback, UnindexedConsumer};
+        enum GeneratorChildIter<HardIter, SoftIter>
+        where
+            HardIter: IndexedParallelIterator<Item = HardAesCtrGenerator> + Send + Sync,
+            SoftIter: IndexedParallelIterator<Item = SoftAesCtrGenerator> + Send + Sync,
+        {
+            Hardware(HardIter),
+            Software(SoftIter),
+        }
+        impl<HardIter, SoftIter> ParallelIterator for GeneratorChildIter<HardIter, SoftIter>
+        where
+            HardIter: IndexedParallelIterator<Item = HardAesCtrGenerator> + Send + Sync,
+            SoftIter: IndexedParallelIterator<Item = SoftAesCtrGenerator> + Send + Sync,
+        {
+            type Item = RandomGenerator;
+            fn drive_unindexed<C>(self, consumer: C) -> <C as Consumer<Self::Item>>::Result
+            where
+                C: UnindexedConsumer<Self::Item>,
+            {
+                match self {
+                    Self::Hardware(iter) => iter
+                        .map(RandomGenerator::Hardware)
+                        .drive_unindexed(consumer),
+                    Self::Software(iter) => iter
+                        .map(RandomGenerator::Software)
+                        .drive_unindexed(consumer),
+                }
+            }
+        }
+        impl<HardIter, SoftIter> IndexedParallelIterator for GeneratorChildIter<HardIter, SoftIter>
+        where
+            HardIter: IndexedParallelIterator<Item = HardAesCtrGenerator> + Send + Sync,
+            SoftIter: IndexedParallelIterator<Item = SoftAesCtrGenerator> + Send + Sync,
+        {
+            fn len(&self) -> usize {
+                match self {
+                    Self::Software(iter) => iter.len(),
+                    Self::Hardware(iter) => iter.len(),
+                }
+            }
+            fn drive<C: Consumer<Self::Item>>(
+                self,
+                consumer: C,
+            ) -> <C as Consumer<Self::Item>>::Result {
+                match self {
+                    Self::Software(iter) => iter.map(RandomGenerator::Software).drive(consumer),
+                    Self::Hardware(iter) => iter.map(RandomGenerator::Hardware).drive(consumer),
+                }
+            }
+            fn with_producer<CB: ProducerCallback<Self::Item>>(
+                self,
+                callback: CB,
+            ) -> <CB as ProducerCallback<Self::Item>>::Output {
+                match self {
+                    Self::Software(iter) => {
+                        iter.map(RandomGenerator::Software).with_producer(callback)
+                    }
+                    Self::Hardware(iter) => {
+                        iter.map(RandomGenerator::Hardware).with_producer(callback)
+                    }
+                }
+            }
+        }
+
+        match self {
+            Self::Hardware(ref mut rand) => rand
+                .par_try_unbounded_fork(ChildCount(n_child))
+                .map(GeneratorChildIter::Hardware),
+            Self::Software(ref mut rand) => rand
+                .par_try_unbounded_fork(ChildCount(n_child))
                 .map(GeneratorChildIter::Software),
         }
     }
@@ -279,7 +437,7 @@ mod test {
         // Checks that forks returns a bounded child, and that the proper number of bytes can be
         // generated.
         let mut gen = RandomGenerator::new(None);
-        let mut bounded = gen.try_fork(1, 10).unwrap().next().unwrap();
+        let mut bounded = gen.try_bounded_fork(1, 10).unwrap().next().unwrap();
         assert!(bounded.is_bounded());
         assert!(!gen.is_bounded());
         for _ in 0..10 {
@@ -292,7 +450,7 @@ mod test {
     fn test_bounded_panic() {
         // Checks that a bounded prng panics when exceeding the allowed number of bytes.
         let mut gen = RandomGenerator::new(None);
-        let mut bounded = gen.try_fork(1, 10).unwrap().next().unwrap();
+        let mut bounded = gen.try_bounded_fork(1, 10).unwrap().next().unwrap();
         assert!(bounded.is_bounded());
         assert!(!gen.is_bounded());
         for _ in 0..11 {

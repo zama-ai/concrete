@@ -82,7 +82,7 @@ fn test_state_fork_initial_batch() {
         }
     );
     let children: Vec<_> = generator
-        .try_fork(ChildCount(2), BytesPerChild(3))
+        .try_bounded_fork(ChildCount(2), BytesPerChild(3))
         .unwrap()
         .collect();
     assert_eq!(
@@ -108,7 +108,7 @@ fn test_state_fork_initial_batch() {
         }
     );
     let out_first: Vec<_> = first
-        .try_fork(ChildCount(3), BytesPerChild(1))
+        .try_bounded_fork(ChildCount(3), BytesPerChild(1))
         .unwrap()
         .collect();
     assert_eq!(
@@ -201,7 +201,7 @@ fn test_state_fork_next_batch() {
         }
     );
     let out: Vec<_> = generator
-        .try_fork(ChildCount(4), BytesPerChild(127))
+        .try_bounded_fork(ChildCount(4), BytesPerChild(127))
         .unwrap()
         .collect();
     assert_eq!(
@@ -227,7 +227,7 @@ fn test_state_fork_next_batch() {
         }
     );
     let out_first: Vec<_> = first
-        .try_fork(ChildCount(3), BytesPerChild(1))
+        .try_bounded_fork(ChildCount(3), BytesPerChild(1))
         .unwrap()
         .collect();
     assert_eq!(
@@ -406,7 +406,7 @@ fn test_randomized_fork_generation() {
         let initial_output: Vec<u8> = (0..n_to_gen).map(|_| generator.generate_next()).collect();
         let mut forking_generator = SoftAesCtrGenerator::new(Some(key), Some(state), None);
         let children_output: Vec<u8> = forking_generator
-            .try_fork(n_child, bytes_child)
+            .try_bounded_fork(n_child, bytes_child)
             .unwrap()
             .map(|mut child| (0..bytes_child.0).map(move |_| child.generate_next()))
             .flatten()
@@ -425,7 +425,7 @@ fn test_randomized_remaining_bytes() {
         let key = AesKey(rand::thread_rng().gen());
         let mut forking_generator = SoftAesCtrGenerator::new(Some(key), Some(state), None);
         forking_generator
-            .try_fork(n_child, bytes_child)
+            .try_bounded_fork(n_child, bytes_child)
             .unwrap()
             .for_each(|child| assert_eq!(child.remaining_bytes(), Some(bytes_child.0)));
         assert_eq!(forking_generator.remaining_bytes(), None);

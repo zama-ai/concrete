@@ -53,8 +53,7 @@ impl EncryptionRandomGenerator {
         polynomial_size: PolynomialSize,
     ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_ggsw::<T>(level, glwe_size, polynomial_size);
-        let noise_bytes = noise_bytes_per_ggsw(level, glwe_size, polynomial_size);
-        self.try_fork(lwe_dimension.0, mask_bytes, noise_bytes)
+        self.try_fork(lwe_dimension.0, mask_bytes)
     }
 
     // Forks the generator into a parallel iterator, when splitting a bootstrap key into ggsw ct.
@@ -67,8 +66,7 @@ impl EncryptionRandomGenerator {
         polynomial_size: PolynomialSize,
     ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_ggsw::<T>(level, glwe_size, polynomial_size);
-        let noise_bytes = noise_bytes_per_ggsw(level, glwe_size, polynomial_size);
-        self.par_try_fork(lwe_dimension.0, mask_bytes, noise_bytes)
+        self.par_try_fork(lwe_dimension.0, mask_bytes)
     }
 
     // Forks the generator, when splitting a ggsw into level matrices.
@@ -79,8 +77,7 @@ impl EncryptionRandomGenerator {
         polynomial_size: PolynomialSize,
     ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_ggsw_level::<T>(glwe_size, polynomial_size);
-        let noise_bytes = noise_bytes_per_ggsw_level(glwe_size, polynomial_size);
-        self.try_fork(level.0, mask_bytes, noise_bytes)
+        self.try_fork(level.0, mask_bytes)
     }
 
     // Forks the generator into a parallel iterator, when splitting a ggsw into level matrices.
@@ -92,8 +89,7 @@ impl EncryptionRandomGenerator {
         polynomial_size: PolynomialSize,
     ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_ggsw_level::<T>(glwe_size, polynomial_size);
-        let noise_bytes = noise_bytes_per_ggsw_level(glwe_size, polynomial_size);
-        self.par_try_fork(level.0, mask_bytes, noise_bytes)
+        self.par_try_fork(level.0, mask_bytes)
     }
 
     // Forks the generator, when splitting a ggsw level matrix to glwe.
@@ -103,8 +99,7 @@ impl EncryptionRandomGenerator {
         polynomial_size: PolynomialSize,
     ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_glwe::<T>(glwe_size.to_glwe_dimension(), polynomial_size);
-        let noise_bytes = noise_bytes_per_glwe(polynomial_size);
-        self.try_fork(glwe_size.0, mask_bytes, noise_bytes)
+        self.try_fork(glwe_size.0, mask_bytes)
     }
 
     // Forks the generator into a parallel iterator, when splitting a ggsw level matrix to glwe.
@@ -115,8 +110,7 @@ impl EncryptionRandomGenerator {
         polynomial_size: PolynomialSize,
     ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_glwe::<T>(glwe_size.to_glwe_dimension(), polynomial_size);
-        let noise_bytes = noise_bytes_per_glwe(polynomial_size);
-        self.par_try_fork(glwe_size.0, mask_bytes, noise_bytes)
+        self.par_try_fork(glwe_size.0, mask_bytes)
     }
 
     // Forks the generator, when splitting a ggsw into level matrices.
@@ -126,8 +120,7 @@ impl EncryptionRandomGenerator {
         lwe_size: LweSize,
     ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_gsw_level::<T>(lwe_size);
-        let noise_bytes = noise_bytes_per_gsw_level(lwe_size);
-        self.try_fork(level.0, mask_bytes, noise_bytes)
+        self.try_fork(level.0, mask_bytes)
     }
 
     // Forks the generator into a parallel iterator, when splitting a ggsw into level matrices.
@@ -138,8 +131,7 @@ impl EncryptionRandomGenerator {
         lwe_size: LweSize,
     ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_gsw_level::<T>(lwe_size);
-        let noise_bytes = noise_bytes_per_gsw_level(lwe_size);
-        self.par_try_fork(level.0, mask_bytes, noise_bytes)
+        self.par_try_fork(level.0, mask_bytes)
     }
 
     // Forks the generator, when splitting a ggsw level matrix to glwe.
@@ -148,8 +140,7 @@ impl EncryptionRandomGenerator {
         lwe_size: LweSize,
     ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_lwe::<T>(lwe_size.to_lwe_dimension());
-        let noise_bytes = noise_bytes_per_lwe();
-        self.try_fork(lwe_size.0, mask_bytes, noise_bytes)
+        self.try_fork(lwe_size.0, mask_bytes)
     }
 
     // Forks the generator into a parallel iterator, when splitting a ggsw level matrix to glwe.
@@ -159,8 +150,7 @@ impl EncryptionRandomGenerator {
         lwe_size: LweSize,
     ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
         let mask_bytes = mask_bytes_per_lwe::<T>(lwe_size.to_lwe_dimension());
-        let noise_bytes = noise_bytes_per_lwe();
-        self.par_try_fork(lwe_size.0, mask_bytes, noise_bytes)
+        self.par_try_fork(lwe_size.0, mask_bytes)
     }
 
     // Forks both generators into an iterator
@@ -168,11 +158,10 @@ impl EncryptionRandomGenerator {
         &mut self,
         n_child: usize,
         mask_bytes: usize,
-        noise_bytes: usize,
     ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
         // We try to fork the generators
-        let mask_iter = self.mask.try_fork(n_child, mask_bytes)?;
-        let noise_iter = self.noise.try_fork(n_child, noise_bytes)?;
+        let mask_iter = self.mask.try_bounded_fork(n_child, mask_bytes)?;
+        let noise_iter = self.noise.try_unbounded_fork(n_child)?;
 
         // We return a proper iterator.
         Some(
@@ -188,11 +177,10 @@ impl EncryptionRandomGenerator {
         &mut self,
         n_child: usize,
         mask_bytes: usize,
-        noise_bytes: usize,
     ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
         // We try to fork the generators
-        let mask_iter = self.mask.par_try_fork(n_child, mask_bytes)?;
-        let noise_iter = self.noise.par_try_fork(n_child, noise_bytes)?;
+        let mask_iter = self.mask.par_try_bounded_fork(n_child, mask_bytes)?;
+        let noise_iter = self.noise.par_try_unbounded_fork(n_child)?;
 
         // We return a proper iterator.
         Some(
@@ -277,38 +265,4 @@ fn mask_bytes_per_ggsw<T: UnsignedInteger>(
     poly_size: PolynomialSize,
 ) -> usize {
     level.0 * mask_bytes_per_ggsw_level::<T>(glwe_size, poly_size)
-}
-
-fn noise_bytes_per_coef() -> usize {
-    // We use f64 to sample the noise for every precision, and we need 4/pi inputs to generate
-    // such an output (here we take 6 to keep a safety margin).
-    8 * 6
-}
-fn noise_bytes_per_polynomial(poly_size: PolynomialSize) -> usize {
-    poly_size.0 * noise_bytes_per_coef()
-}
-
-fn noise_bytes_per_glwe(poly_size: PolynomialSize) -> usize {
-    noise_bytes_per_polynomial(poly_size)
-}
-
-fn noise_bytes_per_ggsw_level(glwe_size: GlweSize, poly_size: PolynomialSize) -> usize {
-    glwe_size.0 * noise_bytes_per_glwe(poly_size)
-}
-
-fn noise_bytes_per_lwe() -> usize {
-    // Here we take 3 to keep a safety margin
-    noise_bytes_per_coef() * 3
-}
-
-fn noise_bytes_per_gsw_level(lwe_size: LweSize) -> usize {
-    lwe_size.0 * noise_bytes_per_lwe()
-}
-
-fn noise_bytes_per_ggsw(
-    level: DecompositionLevelCount,
-    glwe_size: GlweSize,
-    poly_size: PolynomialSize,
-) -> usize {
-    level.0 * noise_bytes_per_ggsw_level(glwe_size, poly_size)
 }
