@@ -97,14 +97,7 @@ def Dot : HLFHE_Op<"dot_eint_int"> {
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$rhs);
     let results = (outs EncryptedIntegerType:$out);
     let verifier = [{
-        if(::mlir::failed(
-              mlir::verifyCompatibleShape(
-                  lhs().getType(),
-                  rhs().getType()))) {
-            return this->emitOpError("arguments have incompatible shapes");
-        }
-
-        return ::mlir::success();
+        return ::mlir::zamalang::HLFHE::verifyDotEintInt(*this);
     }];
 }
 #endif
