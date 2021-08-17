@@ -6,7 +6,12 @@ set +e
 CURR_DIR=`dirname $0`
 
 # Run diff-coverage
-BB="origin/$1" make coverage | tee diff-coverage.txt
+if [[ "$1" == "" ]]; then
+    BB="origin/main"
+else
+    BB="origin/$1"
+fi
+make coverage | tee diff-coverage.txt
 
 # Get exit code without closing the script
 TEST_EXIT_CODE="$?"

@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     concurrency:
-      group: ${{ github.head_ref }}
+      group: ${{ github.ref }}
       cancel-in-progress: true
 
     runs-on: ubuntu-20.04
@@ -114,7 +114,7 @@ jobs:
     needs: [build]
 
     runs-on: ubuntu-20.04
-    if: ${{ github.event_name == 'push' && github.base_ref == 'main' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
     steps:
       - name: Download Documentation
