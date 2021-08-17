@@ -13,19 +13,19 @@ sync_env:
 .PHONY: sync_env
 
 python_format:
-	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests
+	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests --dir benchmarks
 .PHONY: python_format
 
 check_python_format:
-	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests --check
+	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests --dir benchmarks --check
 .PHONY: check_python_format
 
 pylint:
-	poetry run pylint --rcfile=pylintrc hdk tests
+	poetry run pylint --rcfile=pylintrc hdk tests benchmarks
 .PHONY: pylint
 
 flake8:
-	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" hdk/ tests/
+	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" hdk/ tests/ benchmarks/
 .PHONY: flake8
 
 python_linting: pylint flake8
@@ -56,7 +56,11 @@ mypy_test:
 	find ./tests/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 .PHONY: mypy_test
 
-mypy_ci: mypy mypy_test
+mypy_benchmark:
+	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
+.PHONY: mypy_benchmark
+
+mypy_ci: mypy mypy_test mypy_benchmark
 .PHONY: mypy_ci
 
 pytest_and_coverage: pytest coverage
@@ -117,3 +121,7 @@ strip_nb:
 notebook_timeout:
 	poetry run python ./script/nbmake_utils/notebook_test_timeout.py examples
 .PHONY: notebook_timeout
+
+benchmark:
+	poetry run pytest benchmarks/ --benchmark-save=findings
+.PHONY: benchmark
