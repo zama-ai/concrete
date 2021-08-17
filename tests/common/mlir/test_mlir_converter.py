@@ -8,6 +8,7 @@ from zamalang import compiler
 from zamalang.dialects import hlfhe
 
 from hdk.common.data_types.integers import Integer
+from hdk.common.extensions.table import LookupTable
 from hdk.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from hdk.common.values import ClearValue, EncryptedValue
 from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
@@ -56,6 +57,12 @@ def ret_multiple(x, y, z):
 def ret_multiple_different_order(x, y, z):
     """Test return of multiple values in a different order from input"""
     return y, z, x
+
+
+def lut(x):
+    """Test lookup table"""
+    table = LookupTable([3, 6, 0, 2, 1, 4, 5, 7])
+    return table[x]
 
 
 def datagen(*args):
@@ -162,6 +169,13 @@ def datagen(*args):
                 "z": ClearValue(Integer(7, is_signed=False)),
             },
             (range(1, 5), range(1, 5), range(1, 5)),
+        ),
+        (
+            lut,
+            {
+                "x": EncryptedValue(Integer(64, is_signed=False)),
+            },
+            (range(0, 8),),
         ),
     ],
 )

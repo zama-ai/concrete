@@ -23,6 +23,12 @@ def no_fuse_unhandled(x, y):
     return intermediate.astype(numpy.int32)
 
 
+def lut(x):
+    """Test lookup table"""
+    table = LookupTable(list(range(128)))
+    return table[x]
+
+
 @pytest.mark.parametrize(
     "function,input_ranges,list_of_arg_names",
     [
@@ -75,6 +81,7 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
         pytest.param(lambda x: x * 2, ((0, 2),), ["x"]),
         pytest.param(lambda x: 8 - x, ((0, 2),), ["x"]),
         pytest.param(lambda x, y: x + y + 8, ((2, 10), (4, 8)), ["x", "y"]),
+        pytest.param(lut, ((0, 127),), ["x"]),
     ],
 )
 def test_compile_and_run_function_multiple_outputs(function, input_ranges, list_of_arg_names):

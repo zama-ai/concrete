@@ -3,8 +3,8 @@ import pytest
 
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.mlir.converters import add, constant, mul, sub
-from hdk.common.values import ClearValue
+from hdk.common.mlir.converters import add, apply_lut, constant, mul, sub
+from hdk.common.values import ClearValue, EncryptedValue
 
 
 class MockNode:
@@ -38,3 +38,45 @@ def test_fail_signed_integer_const():
     """Test failing constant converter with non-integer"""
     with pytest.raises(TypeError, match=r"Don't support signed constant integer"):
         constant(MockNode(outputs=[ClearValue(Integer(8, True))]), None, None, None)
+
+
+@pytest.mark.parametrize(
+    "input_node",
+    [
+        ClearValue(Integer(8, True)),
+        ClearValue(Integer(8, False)),
+        EncryptedValue(Integer(8, True)),
+    ],
+)
+def test_fail_tlu_input(input_node):
+    """Test failing LUT converter with invalid input"""
+    with pytest.raises(
+        TypeError, match=r"Only support LUT with encrypted unsigned integers inputs"
+    ):
+        apply_lut(
+            MockNode(inputs=[input_node], outputs=[EncryptedValue(Integer(8, False))]),
+            [None],
+            None,
+            None,
+        )
+
+
+@pytest.mark.parametrize(
+    "input_node",
+    [
+        ClearValue(Integer(8, True)),
+        ClearValue(Integer(8, False)),
+        EncryptedValue(Integer(8, True)),
+    ],
+)
+def test_fail_tlu_output(input_node):
+    """Test failing LUT converter with invalid output"""
+    with pytest.raises(
+        TypeError, match=r"Only support LUT with encrypted unsigned integers outputs"
+    ):
+        apply_lut(
+            MockNode(inputs=[EncryptedValue(Integer(8, False))], outputs=[input_node]),
+            [None],
+            None,
+            None,
+        )

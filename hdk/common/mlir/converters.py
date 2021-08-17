@@ -6,11 +6,12 @@ Converter functions all have the same signature `converter(node, preds, ir_to_ml
 - `ir_to_mlir_node`: Dict mapping intermediate nodes to MLIR nodes or values
 - `ctx`: MLIR context
 """
-# pylint: disable=no-name-in-module,no-member
 from typing import cast
 
+# pylint: disable=no-name-in-module,no-member
+import numpy as np
 from mlir.dialects import std as std_dialect
-from mlir.ir import IntegerAttr, IntegerType
+from mlir.ir import DenseElementsAttr, IntegerAttr, IntegerType, RankedTensorType
 from zamalang.dialects import hlfhe
 
 from ...common.data_types.integers import Integer
@@ -129,11 +130,38 @@ def constant(node, _, __, ctx):
     return std_dialect.ConstantOp(int_type, IntegerAttr.get(int_type, node.constant_data)).result
 
 
+def apply_lut(node, preds, ir_to_mlir_node, ctx):
+    """Converted function for the arbitrary function intermediate node."""
+    assert len(node.inputs) == 1, "LUT should have a single input"
+    assert len(node.outputs) == 1, "LUT should have a single output"
+    if not value_is_encrypted_scalar_unsigned_integer(node.inputs[0]):
+        raise TypeError("Only support LUT with encrypted unsigned integers inputs")
+    if not value_is_encrypted_scalar_unsigned_integer(node.outputs[0]):
+        raise TypeError("Only support LUT with encrypted unsigned integers outputs")
+
+    x_node = preds[0]
+    x = ir_to_mlir_node[x_node]
+    table = node.get_table()
+    out_dtype = cast(Integer, node.outputs[0].data_type)
+    # Create table
+    dense_elem = DenseElementsAttr.get(np.array(table, dtype=np.uint64), context=ctx)
+    tensor_lut = std_dialect.ConstantOp(
+        RankedTensorType.get([len(table)], IntegerType.get_signless(64, context=ctx)),
+        dense_elem,
+    ).result
+    return hlfhe.ApplyLookupTableEintOp(
+        hlfhe.EncryptedIntegerType.get(ctx, out_dtype.bit_width),
+        x,
+        tensor_lut,
+    ).result
+
+
 V0_OPSET_CONVERSION_FUNCTIONS = {
     ir.Add: add,
     ir.Sub: sub,
     ir.Mul: mul,
     ir.Constant: constant,
+    ir.ArbitraryFunction: apply_lut,
 }
 
 # pylint: enable=no-name-in-module,no-member
