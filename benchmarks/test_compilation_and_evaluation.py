@@ -6,7 +6,7 @@ import pytest
 
 from hdk.common.data_types.integers import SignedInteger, UnsignedInteger
 from hdk.common.data_types.values import EncryptedValue
-from hdk.hnumpy.compile import compile_numpy_function
+from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 
 @pytest.mark.parametrize(
@@ -35,7 +35,7 @@ def test_compilation(benchmark, function, parameters, ranges):
 
     @benchmark
     def compilation():
-        compile_numpy_function(function, parameters, dataset(ranges))
+        compile_numpy_function_into_op_graph(function, parameters, dataset(ranges))
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ def test_evaluation(benchmark, function, parameters, ranges, inputs):
         for prod in itertools.product(*args):
             yield prod
 
-    graph = compile_numpy_function(function, parameters, dataset(ranges))
+    graph = compile_numpy_function_into_op_graph(function, parameters, dataset(ranges))
 
     @benchmark
     def evaluation():

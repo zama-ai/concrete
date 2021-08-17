@@ -1,5 +1,6 @@
 """Test file for hnumpy compilation functions"""
 import itertools
+import random
 
 import numpy
 import pytest
@@ -8,7 +9,10 @@ from hdk.common.data_types.integers import Integer
 from hdk.common.data_types.values import EncryptedValue
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
-from hdk.hnumpy.compile import compile_numpy_function
+from hdk.hnumpy.compile import (
+    compile_numpy_function,
+    compile_numpy_function_into_op_graph,
+)
 
 
 def no_fuse_unhandled(x, y):
@@ -49,7 +53,7 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
         arg_name: EncryptedValue(Integer(64, True)) for arg_name in list_of_arg_names
     }
 
-    op_graph = compile_numpy_function(
+    op_graph = compile_numpy_function_into_op_graph(
         function,
         function_parameters,
         data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
@@ -63,6 +67,36 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
     print(f"\n{str_of_the_graph}\n")
 
 
+@pytest.mark.parametrize(
+    "function,input_ranges,list_of_arg_names",
+    [
+        pytest.param(lambda x: x + 42, ((0, 2),), ["x"]),
+        pytest.param(lambda x: x * 2, ((0, 2),), ["x"]),
+        pytest.param(lambda x: 8 - x, ((0, 2),), ["x"]),
+        pytest.param(lambda x, y: x + y + 8, ((2, 10), (4, 8)), ["x", "y"]),
+    ],
+)
+def test_compile_and_run_function_multiple_outputs(function, input_ranges, list_of_arg_names):
+    """Test function compile_numpy_function for a program with multiple outputs"""
+
+    def data_gen(args):
+        for prod in itertools.product(*args):
+            yield prod
+
+    function_parameters = {
+        arg_name: EncryptedValue(Integer(64, False)) for arg_name in list_of_arg_names
+    }
+
+    compiler_engine = compile_numpy_function(
+        function,
+        function_parameters,
+        data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+    )
+
+    args = [random.randint(low, high) for (low, high) in input_ranges]
+    compiler_engine.run(*args)
+
+
 def test_compile_function_with_direct_tlu():
     """Test compile_numpy_function for a program with direct table lookup"""
 
@@ -71,7 +105,7 @@ def test_compile_function_with_direct_tlu():
     def function(x):
         return x + table[x]
 
-    op_graph = compile_numpy_function(
+    op_graph = compile_numpy_function_into_op_graph(
         function,
         {"x": EncryptedValue(Integer(2, is_signed=False))},
         iter([(0,), (1,), (2,), (3,)]),
@@ -90,7 +124,7 @@ def test_compile_function_with_direct_tlu_overflow():
         return table[x]
 
     with pytest.raises(ValueError):
-        compile_numpy_function(
+        compile_numpy_function_into_op_graph(
             function,
             {"x": EncryptedValue(Integer(3, is_signed=False))},
             iter([(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)]),
@@ -115,7 +149,7 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
     }
 
     with pytest.raises(TypeError, match=r"signed integers aren't supported for MLIR lowering"):
-        compile_numpy_function(
+        compile_numpy_function_into_op_graph(
             function,
             function_parameters,
             data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),

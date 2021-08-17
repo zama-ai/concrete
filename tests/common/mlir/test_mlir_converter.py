@@ -10,7 +10,7 @@ from zamalang.dialects import hlfhe
 from hdk.common.data_types.integers import Integer
 from hdk.common.data_types.values import ClearValue, EncryptedValue
 from hdk.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
-from hdk.hnumpy.compile import compile_numpy_function
+from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 
 def add(x, y):
@@ -168,7 +168,7 @@ def datagen(*args):
 def test_mlir_converter(func, args_dict, args_ranges):
     """Test the conversion to MLIR by calling the parser from the compiler"""
     dataset = datagen(*args_ranges)
-    result_graph = compile_numpy_function(func, args_dict, dataset)
+    result_graph = compile_numpy_function_into_op_graph(func, args_dict, dataset)
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
     # testing that this doesn't raise an error

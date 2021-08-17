@@ -2,10 +2,13 @@
 
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
+from zamalang import CompilerEngine
+
 from ..common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
 from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts
 from ..common.data_types import BaseValue
+from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from ..common.mlir.utils import (
     is_graph_values_compatible_with_mlir,
     update_bit_width_for_mlir,
@@ -16,13 +19,13 @@ from ..common.representation import intermediate as ir
 from ..hnumpy.tracing import trace_numpy_function
 
 
-def compile_numpy_function(
+def compile_numpy_function_into_op_graph(
     function_to_trace: Callable,
     function_parameters: Dict[str, BaseValue],
     dataset: Iterator[Tuple[Any, ...]],
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ) -> OPGraph:
-    """Main API of hnumpy, to be able to compile an homomorphic program.
+    """Compile a function into an OPGraph.
 
     Args:
         function_to_trace (Callable): The function you want to trace
@@ -35,8 +38,7 @@ def compile_numpy_function(
             during compilation
 
     Returns:
-        OPGraph: currently returns a compilable graph, but later, it will return an MLIR compatible
-            with the compiler, and even later, it will return the result of the compilation
+        OPGraph: compiled function into a graph
     """
     # Trace
     op_graph = trace_numpy_function(function_to_trace, function_parameters)
@@ -74,3 +76,40 @@ def compile_numpy_function(
         compilation_artifacts.bounds = node_bounds
 
     return op_graph
+
+
+def compile_numpy_function(
+    function_to_trace: Callable,
+    function_parameters: Dict[str, BaseValue],
+    dataset: Iterator[Tuple[Any, ...]],
+    compilation_artifacts: Optional[CompilationArtifacts] = None,
+) -> CompilerEngine:
+    """Main API of hnumpy, to be able to compile an homomorphic program.
+
+    Args:
+        function_to_trace (Callable): The function you want to trace
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+        dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
+            needs to be an iterator on tuples which are of the same length than the number of
+            parameters in the function, and in the same order than these same parameters
+        compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
+            during compilation
+
+    Returns:
+        CompilerEngine: engine to run and debug the compiled graph
+    """
+    # Compile into an OPGraph
+    op_graph = compile_numpy_function_into_op_graph(
+        function_to_trace, function_parameters, dataset, compilation_artifacts
+    )
+
+    # Convert graph to an MLIR representation
+    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    mlir_result = converter.convert(op_graph)
+
+    # Compile the MLIR representation
+    engine = CompilerEngine()
+    engine.compile_fhe(mlir_result)
+
+    return engine

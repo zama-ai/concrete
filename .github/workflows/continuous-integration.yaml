@@ -60,6 +60,9 @@ jobs:
       - name: PyTest
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        env:
+          # TODO: remove this when concrete is statically linked with compiler
+          LD_PRELOAD: /concrete/target/release/libconcrete_ffi.so
         run: |
           make pytest
       - name: Notebooks
