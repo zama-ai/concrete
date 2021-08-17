@@ -31,17 +31,15 @@ public:
       return mlir::zamalang::convertTypeEncryptedIntegerToGLWE(
           type.getContext(), type);
     });
-    addConversion([](mlir::MemRefType type) {
+    addConversion([](mlir::RankedTensorType type) {
       auto eint =
           type.getElementType().dyn_cast_or_null<EncryptedIntegerType>();
       if (eint == nullptr) {
         return (mlir::Type)(type);
       }
-      mlir::Type r = mlir::MemRefType::get(
-          type.getShape(),
-          mlir::zamalang::convertTypeEncryptedIntegerToGLWE(eint.getContext(),
-                                                            eint),
-          type.getAffineMaps(), type.getMemorySpace());
+      mlir::Type r = mlir::RankedTensorType::get(
+          type.getShape(), mlir::zamalang::convertTypeEncryptedIntegerToGLWE(
+                               eint.getContext(), eint));
       return r;
     });
   }

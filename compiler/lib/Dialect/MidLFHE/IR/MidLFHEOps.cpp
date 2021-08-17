@@ -108,7 +108,7 @@ mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
 /// - The lookup table contains integer values of the same width of the output
 mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
   auto ct = op.ct().getType().cast<GLWECipherTextType>();
-  auto l_cst = op.l_cst().getType().cast<MemRefType>();
+  auto l_cst = op.l_cst().getType().cast<RankedTensorType>();
   auto result = op.getResult().getType().cast<GLWECipherTextType>();
 
   // Check the shape of l_cst argument

@@ -59,7 +59,7 @@ def MulGLWEIntOp : MidLFHE_Op<"mul_glwe_int"> {
 
 def ApplyLookupTable : MidLFHE_Op<"apply_lookup_table"> {
     let arguments = (ins GLWECipherTextType:$ct,
-        MemRefOf<[AnyInteger]>:$l_cst,
+        TensorOf<[AnyInteger]>:$l_cst,
         I32Attr:$k, I32Attr:$polynomialSize,
         I32Attr:$levelKS, I32Attr:$baseLogKS,
         I32Attr:$levelBS, I32Attr:$baseLogBS);

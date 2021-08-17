@@ -31,15 +31,14 @@ public:
     addConversion([&](GLWECipherTextType type) {
       return mlir::zamalang::convertTypeGLWEToLWE(type.getContext(), type);
     });
-    addConversion([&](mlir::MemRefType type) {
+    addConversion([&](mlir::RankedTensorType type) {
       auto glwe = type.getElementType().dyn_cast_or_null<GLWECipherTextType>();
       if (glwe == nullptr) {
         return (mlir::Type)(type);
       }
-      mlir::Type r = mlir::MemRefType::get(
+      mlir::Type r = mlir::RankedTensorType::get(
           type.getShape(),
-          mlir::zamalang::convertTypeGLWEToLWE(glwe.getContext(), glwe),
-          type.getAffineMaps(), type.getMemorySpace());
+          mlir::zamalang::convertTypeGLWEToLWE(glwe.getContext(), glwe));
       return r;
     });
   }

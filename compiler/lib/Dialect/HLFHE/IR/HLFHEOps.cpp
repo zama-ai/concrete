@@ -94,7 +94,7 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
 
 ::mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
   auto ct = op.ct().getType().cast<EncryptedIntegerType>();
-  auto l_cst = op.l_cst().getType().cast<MemRefType>();
+  auto l_cst = op.l_cst().getType().cast<TensorType>();
   auto result = op.getResult().getType().cast<EncryptedIntegerType>();
 
   // Check the shape of l_cst argument
