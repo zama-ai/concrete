@@ -90,7 +90,7 @@ docker_rebuild:
 
 docker_start:
 	@# the slash before pwd is for Windows
-	docker run --rm -it --volume /"$$(pwd)":/hdk hdk:mlir
+	docker run --rm -it -p 8888:8888 --volume /"$$(pwd)":/hdk hdk:mlir
 .PHONY: docker_start
 
 docker_build_and_start: docker_build docker_start
@@ -135,3 +135,7 @@ notebook_timeout:
 benchmark:
 	poetry run pytest benchmarks/ --benchmark-save=findings
 .PHONY: benchmark
+
+jupyter:
+	poetry run jupyter notebook --allow-root --no-browser --ip=0.0.0.0
+.PHONY: jupyter
