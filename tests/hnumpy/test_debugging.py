@@ -141,10 +141,11 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
 
     str_of_the_graph = get_printable_graph(graph)
 
-    print(f"\nGot {str_of_the_graph}\n")
-    print(f"\nExp {ref_graph_str}\n")
-
-    assert str_of_the_graph == ref_graph_str
+    assert str_of_the_graph == ref_graph_str, (
+        f"\n==================\nGot {str_of_the_graph}"
+        f"\n==================\nExpected {ref_graph_str}"
+        f"\n==================\n"
+    )
 
 
 @pytest.mark.parametrize(
@@ -170,10 +171,11 @@ def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph
 
     str_of_the_graph = get_printable_graph(graph)
 
-    print(f"\nGot {str_of_the_graph}\n")
-    print(f"\nExp {ref_graph_str}\n")
-
-    assert str_of_the_graph == ref_graph_str
+    assert str_of_the_graph == ref_graph_str, (
+        f"\n==================\nGot {str_of_the_graph}"
+        f"\n==================\nExpected {ref_graph_str}"
+        f"\n==================\n"
+    )
 
 
 # Remark that the bitwidths are not particularly correct (eg, a MUL of a 17b times 23b
@@ -213,10 +215,11 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
 
     str_of_the_graph = get_printable_graph(graph, show_data_types=True)
 
-    print(f"\nGot {str_of_the_graph}\n")
-    print(f"\nExp {ref_graph_str}\n")
-
-    assert str_of_the_graph == ref_graph_str
+    assert str_of_the_graph == ref_graph_str, (
+        f"\n==================\nGot {str_of_the_graph}"
+        f"\n==================\nExpected {ref_graph_str}"
+        f"\n==================\n"
+    )
 
 
 @pytest.mark.parametrize(
@@ -258,7 +261,8 @@ def test_hnumpy_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref
 
     str_of_the_graph = get_printable_graph(graph, show_data_types=True)
 
-    print(f"\nGot {str_of_the_graph}\n")
-    print(f"\nExp {ref_graph_str}\n")
-
-    assert str_of_the_graph == ref_graph_str
+    assert str_of_the_graph == ref_graph_str, (
+        f"\n==================\nGot {str_of_the_graph}"
+        f"\n==================\nExpected {ref_graph_str}"
+        f"\n==================\n"
+    )
