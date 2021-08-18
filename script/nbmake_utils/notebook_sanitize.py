@@ -15,6 +15,7 @@ def main():
 
         with open(notebook_file, "w", newline="\n") as f:
             json.dump(notebook_dict, f, indent=1, ensure_ascii=False)
+            f.write("\n")
 
 
 if __name__ == "__main__":

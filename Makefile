@@ -31,7 +31,7 @@ flake8:
 python_linting: pylint flake8
 .PHONY: python_linting
 
-conformance: python_format
+conformance: strip_nb python_format
 .PHONY: conformance
 
 pcc:

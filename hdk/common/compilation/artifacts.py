@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import networkx as nx
 
-from ..debugging.draw_graph import get_printable_graph
+from ..debugging import draw_graph, get_printable_graph
 from ..operator_graph import OPGraph
 from ..representation import intermediate as ir
 
@@ -69,6 +69,13 @@ class CompilationArtifacts:
         if self.operation_graph is not None:
             with open(output_directory.joinpath("graph.txt"), "w") as f:
                 f.write(f"{get_printable_graph(self.operation_graph, show_data_types=True)[1:]}\n")
+
+            draw_graph(
+                self.operation_graph,
+                save_to=output_directory.joinpath("graph.png"),
+                block_until_user_closes_graph=False,
+                draw_edge_numbers=True,
+            )
 
             if self.bounds is not None:
                 with open(output_directory.joinpath("bounds.txt"), "w") as f:

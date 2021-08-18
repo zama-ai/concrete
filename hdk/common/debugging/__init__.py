@@ -1,2 +1,3 @@
 """Module for debugging."""
-from .draw_graph import draw_graph, get_printable_graph
+from .drawing import draw_graph
+from .printing import get_printable_graph

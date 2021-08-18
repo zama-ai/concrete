@@ -30,6 +30,7 @@ def test_artifacts_export():
         assert output_directory.joinpath("environment.txt").exists()
         assert output_directory.joinpath("requirements.txt").exists()
         assert output_directory.joinpath("graph.txt").exists()
+        assert output_directory.joinpath("graph.png").exists()
         assert output_directory.joinpath("bounds.txt").exists()
 
         # format of those files might change in the future
