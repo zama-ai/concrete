@@ -58,11 +58,17 @@ else()
   message(STATUS "ZamaLang Python bindings are disabled.")
 endif()
 
+#-------------------------------------------------------------------------------
+# Unit tests
+#-------------------------------------------------------------------------------
+
+option(ZAMALANG_UNIT_TESTS "Enables the build of unittests" ON)
 
 
 add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(src)
+add_subdirectory(tests)
 
 if (ZAMALANG_BINDINGS_PYTHON_ENABLED)
     add_subdirectory(python)
