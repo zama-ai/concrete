@@ -81,8 +81,7 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
   mlir::LogicalResult
   matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
     LowLFHEToConcreteCAPITypeConverter typeConverter;
-    auto errType =
-        mlir::MemRefType::get({}, mlir::IndexType::get(rewriter.getContext()));
+    auto errType = mlir::IndexType::get(rewriter.getContext());
     // Insert forward declaration of the operator function
     {
       mlir::SmallVector<mlir::Type, 4> operands{errType,
@@ -112,8 +111,8 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
     // Replace the operation with a call to the `funcName`
     {
       // Create the err value
-      auto errOp =
-          rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
+      auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
+                                                     rewriter.getIndexAttr(0));
       // Add the call to the allocation
       auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
           op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));

@@ -39,7 +39,6 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   // Setup the LLVMTypeConverter (that converts `std` types to `llvm` types) and
   // add our types conversion to `llvm` compatible type.
   mlir::LowerToLLVMOptions options(&getContext());
-  options.useBarePtrCallConv = true;
   mlir::LLVMTypeConverter typeConverter(&getContext(), options);
   typeConverter.addConversion(convertTypes);
   typeConverter.addConversion([&](mlir::zamalang::LowLFHE::PlaintextType type) {
