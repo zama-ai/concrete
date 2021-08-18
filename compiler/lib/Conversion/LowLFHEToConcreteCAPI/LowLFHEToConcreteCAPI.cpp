@@ -224,8 +224,6 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
   if (mlir::applyFullConversion(op, target, std::move(patterns)).failed()) {
     this->signalPassFailure();
   }
-  op.dump();
-  llvm::errs() << "#########\n";
 }
 
 namespace mlir {
