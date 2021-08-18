@@ -1,6 +1,9 @@
+#include "mlir/Dialect/Tensor/Transforms/Passes.h"
 #include <llvm/Support/TargetSelect.h>
+#include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
+#include <mlir/Transforms/Passes.h>
 
 #include "zamalang/Conversion/Passes.h"
 #include "zamalang/Support/CompilerTools.h"
@@ -63,8 +66,17 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
 mlir::LogicalResult CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
     mlir::MLIRContext &context, mlir::Operation *module,
     llvm::function_ref<bool(std::string)> enablePass) {
-
   mlir::PassManager pm(&context);
+
+  // Bufferize
+  addFilteredPassToPassManager(pm, mlir::createTensorConstantBufferizePass(),
+                               enablePass);
+  addFilteredPassToPassManager(pm, mlir::createStdBufferizePass(), enablePass);
+  addFilteredPassToPassManager(pm, mlir::createTensorBufferizePass(),
+                               enablePass);
+  addFilteredPassToPassManager(pm, mlir::createFuncBufferizePass(), enablePass);
+  addFilteredPassToPassManager(pm, mlir::createFinalizingBufferizePass(),
+                               enablePass);
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
       enablePass);

@@ -220,7 +220,7 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 
   // Apply the conversion
   mlir::ModuleOp op = getOperation();
-  if (mlir::applyFullConversion(op, target, std::move(patterns)).failed()) {
+  if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {
     this->signalPassFailure();
   }
 }
