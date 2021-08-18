@@ -42,7 +42,7 @@ pcc_internal: check_python_format python_linting mypy_ci pydocstyle
 .PHONY: pcc_internal
 
 pytest:
-	poetry run pytest --cov=hdk -vv --cov-report=xml tests/
+	poetry run pytest -svv --cov=hdk --cov-report=xml tests/
 .PHONY: pytest
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
