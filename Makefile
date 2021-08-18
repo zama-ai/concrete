@@ -64,17 +64,20 @@ mypy_benchmark:
 	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 .PHONY: mypy_benchmark
 
+# The plus indicates that make will be called by the command and allows to share the context with
+# the parent make execution. We serialize calls to these targets as they may overwrite each others
+# cache which can cause issues.
 mypy_ci:
-	@$(MAKE) --no-print-directory mypy
-	@$(MAKE) --no-print-directory mypy_test
-	@$(MAKE) --no-print-directory mypy_benchmark
+	+poetry run env bash script/make_utils/serialize_targets.sh mypy mypy_test mypy_benchmark
 .PHONY: mypy_ci
 
 pytest_and_coverage: pytest coverage
 .PHONY: pytest_and_coverage
 
 coverage:
-	@if [[ "$$BB" == "" ]]; then BB=origin/main; fi && poetry run diff-cover coverage.xml --fail-under 100 --html-report coverage.html --compare-branch $$BB
+	@if [[ "$$BB" == "" ]]; then BB=origin/main; fi && \
+	poetry run diff-cover coverage.xml --fail-under 100 \
+	--html-report coverage.html --compare-branch $$BB
 .PHONY: coverage
 
 docker_build:
