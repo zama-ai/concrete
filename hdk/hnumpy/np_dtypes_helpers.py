@@ -7,7 +7,7 @@ import numpy
 from numpy.typing import DTypeLike
 
 from ..common.data_types.base import BaseDataType
-from ..common.data_types.dtypes_helpers import SUPPORTED_TYPES
+from ..common.data_types.dtypes_helpers import BASE_DATA_TYPES
 from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
 
@@ -62,7 +62,7 @@ def convert_common_dtype_to_numpy_dtype(common_dtype: BaseDataType) -> numpy.dty
         numpy.dtype: The resulting numpy.dtype
     """
     assert isinstance(
-        common_dtype, SUPPORTED_TYPES
+        common_dtype, BASE_DATA_TYPES
     ), f"Unsupported common_dtype: {type(common_dtype)}"
     type_to_return: numpy.dtype
 

@@ -1,12 +1,14 @@
 """Code to wrap and make manipulating networkx graphs easier."""
 
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
 
 import networkx as nx
 
+from .data_types.base import BaseDataType
+from .data_types.dtypes_helpers import get_base_data_type_for_python_constant_data
 from .data_types.floats import Float
-from .data_types.integers import make_integer_to_hold
+from .data_types.integers import Integer, make_integer_to_hold
 from .representation import intermediate as ir
 from .tracing import BaseTracer
 from .tracing.tracing_helpers import create_graph_from_output_tracers
@@ -130,7 +132,13 @@ class OPGraph:
 
         return node_results
 
-    def update_values_with_bounds(self, node_bounds: dict):
+    def update_values_with_bounds(
+        self,
+        node_bounds: dict,
+        get_base_data_type_for_constant_data: Callable[
+            [Any], BaseDataType
+        ] = get_base_data_type_for_python_constant_data,
+    ):
         """Update values with bounds.
 
         Update nodes inputs and outputs values with data types able to hold data ranges measured
@@ -139,6 +147,10 @@ class OPGraph:
         Args:
             node_bounds (dict): Dictionary with nodes as keys, holding dicts with a 'min' and 'max'
                 keys. Those bounds will be taken as the data range to be represented, per node.
+            get_base_data_type_for_constant_data (Callable[ [Type], BaseDataType ], optional): This
+                is a callback function to convert data encountered during value updates to
+                BaseDataType. This allows to manage data coming from foreign frameworks without
+                specialising OPGraph. Defaults to get_base_data_type_for_python_constant_data.
         """
         node: ir.IntermediateNode
 
@@ -149,9 +161,12 @@ class OPGraph:
                 current_node_bounds["max"],
             )
 
+            min_data_type = get_base_data_type_for_constant_data(min_bound)
+            max_data_type = get_base_data_type_for_constant_data(max_bound)
+
             if not isinstance(node, ir.Input):
                 for output_value in node.outputs:
-                    if isinstance(min_bound, int) and isinstance(max_bound, int):
+                    if isinstance(min_data_type, Integer) and isinstance(max_data_type, Integer):
                         output_value.data_type = make_integer_to_hold(
                             (min_bound, max_bound), force_signed=False
                         )
@@ -159,8 +174,8 @@ class OPGraph:
                         output_value.data_type = Float(64)
             else:
                 # Currently variable inputs are only allowed to be integers
-                assert isinstance(min_bound, int) and isinstance(max_bound, int), (
-                    f"Inputs to a graph should be integers, got bounds that were not float, \n"
+                assert isinstance(min_data_type, Integer) and isinstance(max_data_type, Integer), (
+                    f"Inputs to a graph should be integers, got bounds that were float, \n"
                     f"min: {min_bound} ({type(min_bound)}), max: {max_bound} ({type(max_bound)})"
                 )
                 node.inputs[0].data_type = make_integer_to_hold(

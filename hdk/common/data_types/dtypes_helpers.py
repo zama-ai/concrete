@@ -1,16 +1,16 @@
 """File to hold helper functions for data types related stuff."""
 
 from copy import deepcopy
-from typing import cast
+from typing import Union, cast
 
 from .base import BaseDataType
 from .floats import Float
-from .integers import Integer
+from .integers import Integer, get_bits_to_represent_value_as_integer
 from .values import BaseValue, ClearValue, EncryptedValue, ScalarValue
 
 INTEGER_TYPES = (Integer,)
 FLOAT_TYPES = (Float,)
-SUPPORTED_TYPES = INTEGER_TYPES + FLOAT_TYPES
+BASE_DATA_TYPES = INTEGER_TYPES + FLOAT_TYPES
 
 
 def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
@@ -93,8 +93,8 @@ def find_type_to_hold_both_lossy(
     Returns:
         BaseDataType: The dtype able to hold (potentially lossy) dtype1 and dtype2
     """
-    assert isinstance(dtype1, SUPPORTED_TYPES), f"Unsupported dtype1: {type(dtype1)}"
-    assert isinstance(dtype2, SUPPORTED_TYPES), f"Unsupported dtype2: {type(dtype2)}"
+    assert isinstance(dtype1, BASE_DATA_TYPES), f"Unsupported dtype1: {type(dtype1)}"
+    assert isinstance(dtype2, BASE_DATA_TYPES), f"Unsupported dtype2: {type(dtype2)}"
 
     type_to_return: BaseDataType
 
@@ -161,3 +161,27 @@ def mix_scalar_values_determine_holding_dtype(value1: BaseValue, value2: BaseVal
         mixed_value = ClearValue(holding_type)
 
     return mixed_value
+
+
+def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]) -> BaseDataType:
+    """Helper function to determine the BaseDataType to hold the input constant data.
+
+    Args:
+        constant_data (Union[int, float]): The constant data for which to determine the
+            corresponding BaseDataType.
+
+    Returns:
+        BaseDataType: The corresponding BaseDataType
+    """
+    constant_data_type: BaseDataType
+    assert isinstance(
+        constant_data, (int, float)
+    ), f"Unsupported constant data of type {type(constant_data)}"
+    if isinstance(constant_data, int):
+        is_signed = constant_data < 0
+        constant_data_type = Integer(
+            get_bits_to_represent_value_as_integer(constant_data, is_signed), is_signed
+        )
+    elif isinstance(constant_data, float):
+        constant_data_type = Float(64)
+    return constant_data_type
