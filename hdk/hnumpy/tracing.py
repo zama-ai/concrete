@@ -10,7 +10,7 @@ from ..common.operator_graph import OPGraph
 from ..common.representation import intermediate as ir
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 from .np_dtypes_helpers import (
-    convert_numpy_dtype_to_common_dtype,
+    convert_numpy_dtype_to_base_data_type,
     get_ufunc_numpy_output_dtype,
 )
 
@@ -49,7 +49,7 @@ class NPTracer(BaseTracer):
         ), f"astype currently only supports tracing without **kwargs, got {kwargs}"
 
         normalized_numpy_dtype = numpy.dtype(numpy_dtype)
-        output_dtype = convert_numpy_dtype_to_common_dtype(numpy_dtype)
+        output_dtype = convert_numpy_dtype_to_base_data_type(numpy_dtype)
         traced_computation = ir.ArbitraryFunction(
             input_base_value=self.output,
             arbitrary_func=normalized_numpy_dtype.type,
@@ -87,7 +87,7 @@ class NPTracer(BaseTracer):
             ufunc, [input_tracer.output.data_type for input_tracer in input_tracers]
         )
         common_output_dtypes = [
-            convert_numpy_dtype_to_common_dtype(dtype) for dtype in output_dtypes
+            convert_numpy_dtype_to_base_data_type(dtype) for dtype in output_dtypes
         ]
         return common_output_dtypes
 

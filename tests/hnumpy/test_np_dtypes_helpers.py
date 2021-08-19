@@ -6,8 +6,8 @@ import pytest
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.hnumpy.np_dtypes_helpers import (
-    convert_common_dtype_to_numpy_dtype,
-    convert_numpy_dtype_to_common_dtype,
+    convert_base_data_type_to_numpy_dtype,
+    convert_numpy_dtype_to_base_data_type,
 )
 
 
@@ -29,9 +29,9 @@ from hdk.hnumpy.np_dtypes_helpers import (
         pytest.param("complex64", None, marks=pytest.mark.xfail(strict=True, raises=ValueError)),
     ],
 )
-def test_convert_numpy_dtype_to_common_dtype(numpy_dtype, expected_common_type):
-    """Test function for convert_numpy_dtype_to_common_dtype"""
-    assert convert_numpy_dtype_to_common_dtype(numpy_dtype) == expected_common_type
+def test_convert_numpy_dtype_to_base_data_type(numpy_dtype, expected_common_type):
+    """Test function for convert_numpy_dtype_to_base_data_type"""
+    assert convert_numpy_dtype_to_base_data_type(numpy_dtype) == expected_common_type
 
 
 @pytest.mark.parametrize(
@@ -54,4 +54,4 @@ def test_convert_numpy_dtype_to_common_dtype(numpy_dtype, expected_common_type):
 )
 def test_convert_common_dtype_to_numpy_dtype(common_dtype, expected_numpy_dtype):
     """Test function for convert_common_dtype_to_numpy_dtype"""
-    assert expected_numpy_dtype == convert_common_dtype_to_numpy_dtype(common_dtype)
+    assert expected_numpy_dtype == convert_base_data_type_to_numpy_dtype(common_dtype)
