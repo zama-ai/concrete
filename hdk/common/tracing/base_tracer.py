@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Iterable, List, Tuple, Type, Union
 
 from ..data_types import BaseValue
-from ..data_types.scalars import Scalars
 from ..representation import intermediate as ir
 
 
@@ -39,13 +38,14 @@ class BaseTracer(ABC):
 
     def instantiate_output_tracers(
         self,
-        inputs: Iterable[Union["BaseTracer", Scalars]],
+        inputs: Iterable[Union["BaseTracer", Any]],
         computation_to_trace: Type[ir.IntermediateNode],
     ) -> Tuple["BaseTracer", ...]:
         """Helper functions to instantiate all output BaseTracer for a given computation.
 
         Args:
-            inputs (List[BaseTracer]): Previous BaseTracer used as inputs for a new node
+            inputs (Iterable[Union[BaseTracer, Any]]): Previous BaseTracer or data used as inputs
+                for a new node.
             computation_to_trace (Type[ir.IntermediateNode]): The IntermediateNode class
                 to instantiate for the computation being traced
 
@@ -71,7 +71,7 @@ class BaseTracer(ABC):
 
         return output_tracers
 
-    def __add__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+    def __add__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented
 
@@ -88,7 +88,7 @@ class BaseTracer(ABC):
     # some changes
     __radd__ = __add__
 
-    def __sub__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+    def __sub__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented
 
@@ -100,7 +100,7 @@ class BaseTracer(ABC):
         assert len(result_tracer) == 1
         return result_tracer[0]
 
-    def __rsub__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+    def __rsub__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented
 
@@ -112,7 +112,7 @@ class BaseTracer(ABC):
         assert len(result_tracer) == 1
         return result_tracer[0]
 
-    def __mul__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+    def __mul__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented
 
@@ -130,12 +130,12 @@ class BaseTracer(ABC):
     __rmul__ = __mul__
 
 
-def make_const_input_tracer(tracer_class: Type[BaseTracer], constant_data: Scalars) -> BaseTracer:
+def make_const_input_tracer(tracer_class: Type[BaseTracer], constant_data: Any) -> BaseTracer:
     """Helper function to create a tracer for a constant input.
 
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create a ConstantInput for
-        constant_data (Scalars): the constant
+        constant_data (Any): the constant
 
     Returns:
         BaseTracer: The BaseTracer for that constant

@@ -1,7 +1,8 @@
 """File to hold helper functions for data types related stuff."""
 
 from copy import deepcopy
-from typing import Union, cast
+from functools import partial
+from typing import Callable, Union, cast
 
 from .base import BaseDataType
 from .floats import Float
@@ -185,3 +186,24 @@ def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]
     elif isinstance(constant_data, float):
         constant_data_type = Float(64)
     return constant_data_type
+
+
+def get_base_value_for_python_constant_data(
+    constant_data: Union[int, float]
+) -> Callable[..., ScalarValue]:
+    """Function to wrap the BaseDataType to hold the input constant data in a ScalarValue partial.
+
+    The returned object can then be instantiated as an Encrypted or Clear version of the ScalarValue
+    by calling it with the proper arguments forwarded to the ScalarValue `__init__` function
+
+    Args:
+        constant_data (Union[int, float]): The constant data for which to determine the
+            corresponding ScalarValue and BaseDataType.
+
+    Returns:
+        Callable[..., ScalarValue]: A partial object that will return the proper ScalarValue when
+            called with `encrypted` as keyword argument (forwarded to the ScalarValue `__init__`
+            method).
+    """
+    constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
+    return partial(ScalarValue, data_type=constant_data_type)

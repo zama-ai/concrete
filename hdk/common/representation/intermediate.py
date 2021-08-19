@@ -6,11 +6,11 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from ..data_types import BaseValue
 from ..data_types.base import BaseDataType
-from ..data_types.dtypes_helpers import mix_scalar_values_determine_holding_dtype
-from ..data_types.floats import Float
-from ..data_types.integers import Integer, get_bits_to_represent_value_as_integer
-from ..data_types.scalars import Scalars
-from ..data_types.values import ClearValue, EncryptedValue
+from ..data_types.dtypes_helpers import (
+    get_base_value_for_python_constant_data,
+    mix_scalar_values_determine_holding_dtype,
+)
+from ..data_types.values import EncryptedValue
 
 
 class IntermediateNode(ABC):
@@ -147,30 +147,18 @@ class Input(IntermediateNode):
 class ConstantInput(IntermediateNode):
     """Node representing a constant of the program."""
 
-    constant_data: Scalars
+    _constant_data: Any
 
     def __init__(
         self,
-        constant_data: Scalars,
+        constant_data: Any,
     ) -> None:
         super().__init__([])
-        self.constant_data = constant_data
 
-        assert isinstance(
-            constant_data, (int, float)
-        ), "Only int and float are support for constant input"
-        if isinstance(constant_data, int):
-            is_signed = constant_data < 0
-            self.outputs = [
-                ClearValue(
-                    Integer(
-                        get_bits_to_represent_value_as_integer(constant_data, is_signed),
-                        is_signed,
-                    )
-                )
-            ]
-        elif isinstance(constant_data, float):
-            self.outputs = [ClearValue(Float(64))]
+        base_value_class = get_base_value_for_python_constant_data(constant_data)
+
+        self._constant_data = constant_data
+        self.outputs = [base_value_class(is_encrypted=False)]
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return self.constant_data
@@ -181,6 +169,15 @@ class ConstantInput(IntermediateNode):
             and self.constant_data == other.constant_data
             and super().is_equivalent_to(other)
         )
+
+    @property
+    def constant_data(self) -> Any:
+        """Returns the constant_data stored in the ConstantInput node.
+
+        Returns:
+            Any: The constant data that was stored.
+        """
+        return self._constant_data
 
 
 class ArbitraryFunction(IntermediateNode):
