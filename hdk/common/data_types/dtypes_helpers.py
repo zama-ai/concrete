@@ -6,7 +6,7 @@ from typing import cast
 from .base import BaseDataType
 from .floats import Float
 from .integers import Integer
-from .values import BaseValue, ClearValue, EncryptedValue
+from .values import BaseValue, ClearValue, EncryptedValue, ScalarValue
 
 INTEGER_TYPES = (Integer,)
 FLOAT_TYPES = (Float,)
@@ -22,8 +22,10 @@ def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is an encrypted value of type Integer
     """
-    return isinstance(value_to_check, EncryptedValue) and isinstance(
-        value_to_check.data_type, INTEGER_TYPES
+    return (
+        isinstance(value_to_check, BaseValue)
+        and value_to_check.is_encrypted
+        and isinstance(value_to_check.data_type, INTEGER_TYPES)
     )
 
 
@@ -51,8 +53,10 @@ def value_is_clear_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is a clear value of type Integer
     """
-    return isinstance(value_to_check, ClearValue) and isinstance(
-        value_to_check.data_type, INTEGER_TYPES
+    return (
+        isinstance(value_to_check, BaseValue)
+        and value_to_check.is_clear
+        and isinstance(value_to_check.data_type, INTEGER_TYPES)
     )
 
 
@@ -65,7 +69,9 @@ def value_is_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is a value of type Integer
     """
-    return isinstance(value_to_check.data_type, INTEGER_TYPES)
+    return isinstance(value_to_check, BaseValue) and isinstance(
+        value_to_check.data_type, INTEGER_TYPES
+    )
 
 
 def find_type_to_hold_both_lossy(
@@ -127,26 +133,29 @@ def find_type_to_hold_both_lossy(
     return type_to_return
 
 
-def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> BaseValue:
+def mix_scalar_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> ScalarValue:
     """Return mixed value with data type able to hold both value1 and value2 dtypes.
 
-    Returns a Value that would result from computation on both value1 and value2 while
+    Returns a ScalarValue that would result from computation on both value1 and value2 while
     determining the data type able to hold both value1 and value2 data type (this can be lossy
-    with floats)
+    with floats).
 
     Args:
-        value1 (BaseValue): first value to mix
-        value2 (BaseValue): second value to mix
+        value1 (BaseValue): first ScalarValue to mix.
+        value2 (BaseValue): second ScalarValue to mix.
 
     Returns:
-        BaseValue: The resulting mixed value with data type able to hold both value1 and value2
-            dtypes
+        ScalarValue: The resulting mixed BaseValue with data type able to hold both value1 and
+            value2 dtypes.
     """
+
+    assert isinstance(value1, ScalarValue), f"Unsupported value1: {value1}, expected ScalarValue"
+    assert isinstance(value2, ScalarValue), f"Unsupported value2: {value2}, expected ScalarValue"
+
     holding_type = find_type_to_hold_both_lossy(value1.data_type, value2.data_type)
+    mixed_value: ScalarValue
 
-    mixed_value: BaseValue
-
-    if isinstance(value1, EncryptedValue) or isinstance(value2, EncryptedValue):
+    if value1.is_encrypted or value2.is_encrypted:
         mixed_value = EncryptedValue(holding_type)
     else:
         mixed_value = ClearValue(holding_type)

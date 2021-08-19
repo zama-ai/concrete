@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from ..data_types import BaseValue
 from ..data_types.base import BaseDataType
-from ..data_types.dtypes_helpers import mix_values_determine_holding_dtype
+from ..data_types.dtypes_helpers import mix_scalar_values_determine_holding_dtype
 from ..data_types.floats import Float
 from ..data_types.integers import Integer, get_bits_to_represent_int
 from ..data_types.scalars import Scalars
@@ -35,7 +35,7 @@ class IntermediateNode(ABC):
 
         assert len(self.inputs) == 2
 
-        self.outputs = [mix_values_determine_holding_dtype(self.inputs[0], self.inputs[1])]
+        self.outputs = [mix_scalar_values_determine_holding_dtype(self.inputs[0], self.inputs[1])]
 
     def _is_equivalent_to_binary_commutative(self, other: object) -> bool:
         """is_equivalent_to for a binary and commutative operation."""

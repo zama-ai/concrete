@@ -5,7 +5,7 @@ import pytest
 from hdk.common.data_types.base import BaseDataType
 from hdk.common.data_types.dtypes_helpers import (
     find_type_to_hold_both_lossy,
-    mix_values_determine_holding_dtype,
+    mix_scalar_values_determine_holding_dtype,
     value_is_encrypted_integer,
     value_is_encrypted_unsigned_integer,
 )
@@ -167,4 +167,4 @@ def test_mix_data_types(
 def test_mix_values(value1: BaseValue, value2: BaseValue, expected_mixed_value: BaseValue):
     """Test mix_values helper"""
 
-    assert expected_mixed_value == mix_values_determine_holding_dtype(value1, value2)
+    assert expected_mixed_value == mix_scalar_values_determine_holding_dtype(value1, value2)
