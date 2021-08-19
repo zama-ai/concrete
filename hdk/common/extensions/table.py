@@ -5,7 +5,7 @@ from typing import Iterable, Tuple, Union
 
 from ..common_helpers import is_a_power_of_2
 from ..data_types.base import BaseDataType
-from ..data_types.integers import make_integer_to_hold_ints
+from ..data_types.integers import make_integer_to_hold
 from ..representation import intermediate as ir
 from ..tracing.base_tracer import BaseTracer
 
@@ -28,7 +28,7 @@ class LookupTable:
             )
 
         self.table = table
-        self.output_dtype = make_integer_to_hold_ints(table, force_signed=False)
+        self.output_dtype = make_integer_to_hold(table, force_signed=False)
 
     def __getitem__(self, key: Union[int, BaseTracer]):
         # if a tracer is used for indexing,

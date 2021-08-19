@@ -6,7 +6,7 @@ from typing import Any, Dict, Iterable, List, Set, Tuple, Union
 import networkx as nx
 
 from .data_types.floats import Float
-from .data_types.integers import make_integer_to_hold_ints
+from .data_types.integers import make_integer_to_hold
 from .representation import intermediate as ir
 from .tracing import BaseTracer
 from .tracing.tracing_helpers import create_graph_from_output_tracers
@@ -152,7 +152,7 @@ class OPGraph:
             if not isinstance(node, ir.Input):
                 for output_value in node.outputs:
                     if isinstance(min_bound, int) and isinstance(max_bound, int):
-                        output_value.data_type = make_integer_to_hold_ints(
+                        output_value.data_type = make_integer_to_hold(
                             (min_bound, max_bound), force_signed=False
                         )
                     else:
@@ -163,7 +163,7 @@ class OPGraph:
                     f"Inputs to a graph should be integers, got bounds that were not float, \n"
                     f"min: {min_bound} ({type(min_bound)}), max: {max_bound} ({type(max_bound)})"
                 )
-                node.inputs[0].data_type = make_integer_to_hold_ints(
+                node.inputs[0].data_type = make_integer_to_hold(
                     (min_bound, max_bound), force_signed=False
                 )
                 node.outputs[0] = deepcopy(node.inputs[0])

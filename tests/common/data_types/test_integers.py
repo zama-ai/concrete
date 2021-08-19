@@ -8,7 +8,7 @@ from hdk.common.data_types.integers import (
     Integer,
     SignedInteger,
     UnsignedInteger,
-    make_integer_to_hold_ints,
+    make_integer_to_hold,
 )
 
 
@@ -109,4 +109,4 @@ def test_integers_repr(integer: Integer, expected_repr_str: str):
 )
 def test_make_integer_to_hold(values, force_signed, expected_result):
     """Test make_integer_to_hold"""
-    assert expected_result == make_integer_to_hold_ints(values, force_signed)
+    assert expected_result == make_integer_to_hold(values, force_signed)

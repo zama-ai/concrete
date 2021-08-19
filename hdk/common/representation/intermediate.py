@@ -8,7 +8,7 @@ from ..data_types import BaseValue
 from ..data_types.base import BaseDataType
 from ..data_types.dtypes_helpers import mix_scalar_values_determine_holding_dtype
 from ..data_types.floats import Float
-from ..data_types.integers import Integer, get_bits_to_represent_int
+from ..data_types.integers import Integer, get_bits_to_represent_value_as_integer
 from ..data_types.scalars import Scalars
 from ..data_types.values import ClearValue, EncryptedValue
 
@@ -162,7 +162,12 @@ class ConstantInput(IntermediateNode):
         if isinstance(constant_data, int):
             is_signed = constant_data < 0
             self.outputs = [
-                ClearValue(Integer(get_bits_to_represent_int(constant_data, is_signed), is_signed))
+                ClearValue(
+                    Integer(
+                        get_bits_to_represent_value_as_integer(constant_data, is_signed),
+                        is_signed,
+                    )
+                )
             ]
         elif isinstance(constant_data, float):
             self.outputs = [ClearValue(Float(64))]

@@ -1,7 +1,7 @@
 """This file holds the definitions for integer types."""
 
 import math
-from typing import Iterable
+from typing import Any, Iterable
 
 from . import base
 
@@ -84,36 +84,35 @@ def create_unsigned_integer(bit_width: int) -> Integer:
 UnsignedInteger = create_unsigned_integer
 
 
-def make_integer_to_hold_ints(values: Iterable[int], force_signed: bool) -> Integer:
+def make_integer_to_hold(values: Iterable[Any], force_signed: bool) -> Integer:
     """Returns an Integer able to hold all values, it is possible to force the Integer to be signed.
 
     Args:
-        values (Iterable[int]): The values to hold
+        values (Iterable[Any]): The values to hold
         force_signed (bool): Set to True to force the result to be a signed Integer
 
     Returns:
         Integer: The Integer able to hold values
     """
-    assert all(isinstance(x, int) for x in values)
     min_value = min(values)
     max_value = max(values)
 
     make_signed_integer = force_signed or min_value < 0
 
     num_bits = max(
-        get_bits_to_represent_int(min_value, make_signed_integer),
-        get_bits_to_represent_int(max_value, make_signed_integer),
+        get_bits_to_represent_value_as_integer(min_value, make_signed_integer),
+        get_bits_to_represent_value_as_integer(max_value, make_signed_integer),
     )
 
     return Integer(num_bits, is_signed=make_signed_integer)
 
 
-def get_bits_to_represent_int(value: int, force_signed: bool) -> int:
-    """Returns how many bits are required to represent a single int.
+def get_bits_to_represent_value_as_integer(value: Any, force_signed: bool) -> int:
+    """Returns how many bits are required to represent a numerical Value.
 
     Args:
-        value (int): The int for which we want to know how many bits are required
-        force_signed (bool): Set to True to force the result to be a signed Integer
+        value (Any): The value for which we want to know how many bits are required.
+        force_signed (bool): Set to True to force the result to be a signed integer.
 
     Returns:
         int: required amount of bits
