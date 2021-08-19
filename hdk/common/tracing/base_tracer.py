@@ -1,7 +1,7 @@
 """This file holds the code that can be shared between tracers."""
 
-from abc import ABC
-from typing import Iterable, List, Tuple, Type, Union
+from abc import ABC, abstractmethod
+from typing import Any, Iterable, List, Tuple, Type, Union
 
 from ..data_types import BaseValue
 from ..data_types.scalars import Scalars
@@ -24,6 +24,18 @@ class BaseTracer(ABC):
         self.inputs = list(inputs)
         self.traced_computation = traced_computation
         self.output = traced_computation.outputs[output_index]
+
+    @abstractmethod
+    def _supports_other_operand(self, other: Any) -> bool:
+        """Function to check if the current class supports tracing with the other operand.
+
+        Args:
+            other (Any): the operand to check compatibility with.
+
+        Returns:
+            bool: True if the tracer can manage operations with the other operand.
+        """
+        return isinstance(other, self.__class__)
 
     def instantiate_output_tracers(
         self,
@@ -60,6 +72,9 @@ class BaseTracer(ABC):
         return output_tracers
 
     def __add__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+        if not self._supports_other_operand(other):
+            return NotImplemented
+
         result_tracer = self.instantiate_output_tracers(
             [self, other],
             ir.Add,
@@ -74,6 +89,9 @@ class BaseTracer(ABC):
     __radd__ = __add__
 
     def __sub__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+        if not self._supports_other_operand(other):
+            return NotImplemented
+
         result_tracer = self.instantiate_output_tracers(
             [self, other],
             ir.Sub,
@@ -83,6 +101,9 @@ class BaseTracer(ABC):
         return result_tracer[0]
 
     def __rsub__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+        if not self._supports_other_operand(other):
+            return NotImplemented
+
         result_tracer = self.instantiate_output_tracers(
             [other, self],
             ir.Sub,
@@ -92,6 +113,9 @@ class BaseTracer(ABC):
         return result_tracer[0]
 
     def __mul__(self, other: Union["BaseTracer", Scalars]) -> "BaseTracer":
+        if not self._supports_other_operand(other):
+            return NotImplemented
+
         result_tracer = self.instantiate_output_tracers(
             [self, other],
             ir.Mul,

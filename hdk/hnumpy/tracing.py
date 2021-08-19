@@ -1,6 +1,6 @@
 """hnumpy tracing utilities."""
 from copy import deepcopy
-from typing import Callable, Dict, Mapping
+from typing import Any, Callable, Dict
 
 import numpy
 from numpy.typing import DTypeLike
@@ -10,8 +10,13 @@ from ..common.operator_graph import OPGraph
 from ..common.representation import intermediate as ir
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 from .np_dtypes_helpers import (
+    SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
     convert_numpy_dtype_to_base_data_type,
     get_ufunc_numpy_output_dtype,
+)
+
+SUPPORTED_TYPES_FOR_TRACING = (int, float, numpy.ndarray) + tuple(
+    SUPPORTED_NUMPY_DTYPES_CLASS_TYPES
 )
 
 
@@ -81,6 +86,11 @@ class NPTracer(BaseTracer):
             )
         return tracing_func
 
+    def _supports_other_operand(self, other: Any) -> bool:
+        return super()._supports_other_operand(other) or isinstance(
+            other, SUPPORTED_TYPES_FOR_TRACING
+        )
+
     @staticmethod
     def _manage_dtypes(ufunc: numpy.ufunc, *input_tracers: "NPTracer"):
         output_dtypes = get_ufunc_numpy_output_dtype(
@@ -135,7 +145,7 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
-    UFUNC_ROUTING: Mapping[numpy.ufunc, Callable] = {
+    UFUNC_ROUTING: Dict[numpy.ufunc, Callable] = {
         numpy.rint: rint,
         numpy.sin: sin,
     }

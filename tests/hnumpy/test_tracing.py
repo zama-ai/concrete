@@ -280,3 +280,26 @@ def test_trace_hnumpy_supported_ufuncs(
 def test_nptracer_get_tracing_func_for_np_ufunc(np_ufunc, expected_tracing_func):
     """Test NPTracer get_tracing_func_for_np_ufunc"""
     assert tracing.NPTracer.get_tracing_func_for_np_ufunc(np_ufunc) == expected_tracing_func
+
+
+@pytest.mark.parametrize(
+    "tracer",
+    [
+        tracing.NPTracer([], ir.Input(ClearValue(Integer(32, True)), "x", 0), 0),
+    ],
+)
+@pytest.mark.parametrize(
+    "operation",
+    [
+        lambda x: x + "fail",
+        lambda x: "fail" + x,
+        lambda x: x - "fail",
+        lambda x: "fail" - x,
+        lambda x: x * "fail",
+        lambda x: "fail" * x,
+    ],
+)
+def test_nptracer_unsupported_operands(operation, tracer):
+    """Test cases where NPTracer cannot be used with other operands."""
+    with pytest.raises(TypeError):
+        tracer = operation(tracer)
