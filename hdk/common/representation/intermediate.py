@@ -11,16 +11,20 @@ from ..data_types.dtypes_helpers import (
     mix_scalar_values_determine_holding_dtype,
 )
 
+IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
+
 
 class IntermediateNode(ABC):
     """Abstract Base Class to derive from to represent source program operations."""
 
     inputs: List[BaseValue]
     outputs: List[BaseValue]
+    _n_in: int  # _n_in indicates how many inputs are required to evaluate the IntermediateNode
 
     def __init__(
         self,
         inputs: Iterable[BaseValue],
+        **_kwargs,  # This is to be able to feed arbitrary arguments to IntermediateNodes
     ) -> None:
         self.inputs = list(inputs)
         assert all(isinstance(x, BaseValue) for x in self.inputs)
@@ -28,13 +32,15 @@ class IntermediateNode(ABC):
     def _init_binary(
         self,
         inputs: Iterable[BaseValue],
+        mix_values_func: Callable[..., BaseValue] = mix_scalar_values_determine_holding_dtype,
+        **_kwargs,  # Required to conform to __init__ typing
     ) -> None:
         """__init__ for a binary operation, ie two inputs."""
         IntermediateNode.__init__(self, inputs)
 
         assert len(self.inputs) == 2
 
-        self.outputs = [mix_scalar_values_determine_holding_dtype(self.inputs[0], self.inputs[1])]
+        self.outputs = [mix_values_func(self.inputs[0], self.inputs[1])]
 
     def _is_equivalent_to_binary_commutative(self, other: object) -> bool:
         """is_equivalent_to for a binary and commutative operation."""
@@ -82,9 +88,29 @@ class IntermediateNode(ABC):
             Any: the result of the computation
         """
 
+    @classmethod
+    def n_in(cls) -> int:
+        """Returns how many inputs the node has.
+
+        Returns:
+            int: The number of inputs of the node.
+        """
+        return cls._n_in
+
+    @classmethod
+    def requires_mix_values_func(cls) -> bool:
+        """Function to determine whether the Class requires a mix_values_func to be built.
+
+        Returns:
+            bool: True if __init__ expects a mix_values_func argument.
+        """
+        return cls.n_in() > 1
+
 
 class Add(IntermediateNode):
     """Addition between two values."""
+
+    _n_in: int = 2
 
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
@@ -96,6 +122,8 @@ class Add(IntermediateNode):
 class Sub(IntermediateNode):
     """Subtraction between two values."""
 
+    _n_in: int = 2
+
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_non_commutative
 
@@ -105,6 +133,8 @@ class Sub(IntermediateNode):
 
 class Mul(IntermediateNode):
     """Multiplication between two values."""
+
+    _n_in: int = 2
 
     __init__ = IntermediateNode._init_binary
     is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
@@ -118,6 +148,7 @@ class Input(IntermediateNode):
 
     input_name: str
     program_input_idx: int
+    _n_in: int = 1
 
     def __init__(
         self,
@@ -147,6 +178,7 @@ class ConstantInput(IntermediateNode):
     """Node representing a constant of the program."""
 
     _constant_data: Any
+    _n_in: int = 0
 
     def __init__(
         self,
@@ -191,6 +223,7 @@ class ArbitraryFunction(IntermediateNode):
     op_args: Tuple[Any, ...]
     op_kwargs: Dict[str, Any]
     op_name: str
+    _n_in: int = 1
 
     def __init__(
         self,

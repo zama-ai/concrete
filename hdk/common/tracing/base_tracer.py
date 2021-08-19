@@ -1,10 +1,11 @@
 """This file holds the code that can be shared between tracers."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, List, Tuple, Type, Union
+from typing import Any, Callable, Iterable, List, Tuple, Type, Union
 
 from ..data_types import BaseValue
 from ..representation import intermediate as ir
+from ..representation.intermediate import IR_MIX_VALUES_FUNC_ARG_NAME
 
 
 class BaseTracer(ABC):
@@ -13,6 +14,7 @@ class BaseTracer(ABC):
     inputs: List["BaseTracer"]
     traced_computation: ir.IntermediateNode
     output: BaseValue
+    _mix_values_func: Callable[..., BaseValue]
 
     def __init__(
         self,
@@ -47,6 +49,10 @@ class BaseTracer(ABC):
             BaseTracer: The BaseTracer for that constant.
         """
 
+    @classmethod
+    def _get_mix_values_func(cls):
+        return cls._mix_values_func
+
     def instantiate_output_tracers(
         self,
         inputs: Iterable[Union["BaseTracer", Any]],
@@ -71,8 +77,15 @@ class BaseTracer(ABC):
 
         sanitized_inputs = [sanitize(inp) for inp in inputs]
 
+        additional_parameters = (
+            {IR_MIX_VALUES_FUNC_ARG_NAME: self._get_mix_values_func()}
+            if computation_to_trace.requires_mix_values_func()
+            else {}
+        )
+
         traced_computation = computation_to_trace(
             (x.output for x in sanitized_inputs),
+            **additional_parameters,
         )
 
         output_tracers = tuple(

@@ -7,6 +7,7 @@ import numpy
 from numpy.typing import DTypeLike
 
 from ..common.data_types import BaseValue
+from ..common.data_types.dtypes_helpers import mix_scalar_values_determine_holding_dtype
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import ArbitraryFunction, ConstantInput
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
@@ -29,6 +30,8 @@ NPConstantInput = partial(
 
 class NPTracer(BaseTracer):
     """Tracer class for numpy operations."""
+
+    _mix_values_func: Callable[..., BaseValue] = mix_scalar_values_determine_holding_dtype
 
     def __array_ufunc__(self, ufunc, method, *input_tracers, **kwargs):
         """Catch calls to numpy ufunc and routes them to tracing functions if supported.
