@@ -35,4 +35,10 @@ def SubIntGLWEPattern : Pat<
     (SubIntGLWEOp:$result $arg0, $arg1),
     (createSubIntLweOp $arg0, $arg1, $result)>;
 
+def createPBS : NativeCodeCall<"mlir::zamalang::createPBS($_builder, $_loc, $0, $1, $2, $3, $4, $5, $6, $7, $8)">;
+
+def ApplyLookupTableGLWEPattern : Pat<
+    (ApplyLookupTable:$result $ct, $table, $k, $polynomialSize, $levelKS, $baseLogKS, $levelBS, $baseLogBS),
+    (createPBS $ct, $table, $k, $polynomialSize, $levelKS, $baseLogKS, $levelBS, $baseLogBS, $result)>;
+
 #endif

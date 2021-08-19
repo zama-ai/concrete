@@ -169,6 +169,42 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter rewriter,
   return op.getODSResults(0).front();
 }
 
+mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
+                      mlir::Value ct, mlir::Value table, mlir::IntegerAttr k,
+                      mlir::IntegerAttr polynomialSize,
+                      mlir::IntegerAttr levelKS, mlir::IntegerAttr baseLogKS,
+                      mlir::IntegerAttr levelBS, mlir::IntegerAttr baseLogBS,
+                      mlir::OpResult result) {
+  // fill the the table in the GLWE accumulator
+  mlir::Value accumulator =
+      rewriter
+          .create<mlir::zamalang::LowLFHE::GlweFromTable>(
+              loc, LowLFHE::GlweCiphertextType::get(rewriter.getContext()),
+              table, polynomialSize, k)
+          .result();
+
+  // keyswitch
+  auto ct_type = ct.getType().cast<GLWECipherTextType>();
+  mlir::Value keyswitched =
+      rewriter
+          .create<mlir::zamalang::LowLFHE::KeySwitchLweOp>(
+              loc, convertTypeGLWEToLWE(rewriter.getContext(), ct_type), ct)
+          .result();
+
+  // convert result type
+  GLWECipherTextType glwe_type = result.getType().cast<GLWECipherTextType>();
+  LweCiphertextType lwe_type =
+      convertTypeGLWEToLWE(rewriter.getContext(), glwe_type);
+  // bootstrap operation
+  mlir::Value bootstrapped =
+      rewriter
+          .create<mlir::zamalang::LowLFHE::BootstrapLweOp>(
+              loc, lwe_type, keyswitched, accumulator)
+          .result();
+
+  return bootstrapped;
+}
+
 } // namespace zamalang
 } // namespace mlir
 
