@@ -71,6 +71,7 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
     "function,input_ranges,list_of_arg_names",
     [
         pytest.param(lambda x: x + 42, ((0, 2),), ["x"]),
+        pytest.param(lambda x: x + numpy.int32(42), ((0, 2),), ["x"]),
         pytest.param(lambda x: x * 2, ((0, 2),), ["x"]),
         pytest.param(lambda x: 8 - x, ((0, 2),), ["x"]),
         pytest.param(lambda x, y: x + y + 8, ((2, 10), (4, 8)), ["x", "y"]),

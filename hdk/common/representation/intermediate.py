@@ -152,10 +152,13 @@ class ConstantInput(IntermediateNode):
     def __init__(
         self,
         constant_data: Any,
+        get_base_value_for_data_func: Callable[
+            [Any], Callable[..., BaseValue]
+        ] = get_base_value_for_python_constant_data,
     ) -> None:
         super().__init__([])
 
-        base_value_class = get_base_value_for_python_constant_data(constant_data)
+        base_value_class = get_base_value_for_data_func(constant_data)
 
         self._constant_data = constant_data
         self.outputs = [base_value_class(is_encrypted=False)]

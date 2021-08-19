@@ -36,6 +36,17 @@ class BaseTracer(ABC):
         """
         return isinstance(other, self.__class__)
 
+    @abstractmethod
+    def _make_const_input_tracer(self, constant_data: Any) -> "BaseTracer":
+        """Helper function to create a tracer for a constant input.
+
+        Args:
+            constant_data (Any): The constant to store.
+
+        Returns:
+            BaseTracer: The BaseTracer for that constant.
+        """
+
     def instantiate_output_tracers(
         self,
         inputs: Iterable[Union["BaseTracer", Any]],
@@ -55,7 +66,7 @@ class BaseTracer(ABC):
         # For inputs which are actually constant, first convert into a tracer
         def sanitize(inp):
             if not isinstance(inp, BaseTracer):
-                return make_const_input_tracer(self.__class__, inp)
+                return self._make_const_input_tracer(inp)
             return inp
 
         sanitized_inputs = [sanitize(inp) for inp in inputs]
@@ -128,16 +139,3 @@ class BaseTracer(ABC):
     # the order, we need to do as in __rmul__, ie mostly a copy of __mul__ +
     # some changes
     __rmul__ = __mul__
-
-
-def make_const_input_tracer(tracer_class: Type[BaseTracer], constant_data: Any) -> BaseTracer:
-    """Helper function to create a tracer for a constant input.
-
-    Args:
-        tracer_class (Type[BaseTracer]): the class of tracer to create a ConstantInput for
-        constant_data (Any): the constant
-
-    Returns:
-        BaseTracer: The BaseTracer for that constant
-    """
-    return tracer_class([], ir.ConstantInput(constant_data), 0)

@@ -17,6 +17,7 @@ from ..common.operator_graph import OPGraph
 from ..common.optimization.topological import fuse_float_operations
 from ..common.representation import intermediate as ir
 from ..hnumpy.tracing import trace_numpy_function
+from .np_dtypes_helpers import get_base_data_type_for_numpy_or_python_constant_data
 
 
 def compile_numpy_function_into_op_graph(
@@ -74,7 +75,9 @@ def compile_numpy_function_into_op_graph(
     node_bounds = eval_op_graph_bounds_on_dataset(op_graph, dataset)
 
     # Update the graph accordingly: after that, we have the compilable graph
-    op_graph.update_values_with_bounds(node_bounds)
+    op_graph.update_values_with_bounds(
+        node_bounds, get_base_data_type_for_numpy_or_python_constant_data
+    )
 
     # Make sure the graph can be lowered to MLIR
     if not is_graph_values_compatible_with_mlir(op_graph):

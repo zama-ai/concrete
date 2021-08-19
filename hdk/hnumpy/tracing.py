@@ -1,5 +1,6 @@
 """hnumpy tracing utilities."""
 from copy import deepcopy
+from functools import partial
 from typing import Any, Callable, Dict
 
 import numpy
@@ -7,16 +8,22 @@ from numpy.typing import DTypeLike
 
 from ..common.data_types import BaseValue
 from ..common.operator_graph import OPGraph
-from ..common.representation import intermediate as ir
+from ..common.representation.intermediate import ArbitraryFunction, ConstantInput
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
     convert_numpy_dtype_to_base_data_type,
+    get_base_value_for_numpy_or_python_constant_data,
     get_ufunc_numpy_output_dtype,
 )
 
 SUPPORTED_TYPES_FOR_TRACING = (int, float, numpy.ndarray) + tuple(
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES
+)
+
+NPConstantInput = partial(
+    ConstantInput,
+    get_base_value_for_data_func=get_base_value_for_numpy_or_python_constant_data,
 )
 
 
@@ -55,7 +62,7 @@ class NPTracer(BaseTracer):
 
         normalized_numpy_dtype = numpy.dtype(numpy_dtype)
         output_dtype = convert_numpy_dtype_to_base_data_type(numpy_dtype)
-        traced_computation = ir.ArbitraryFunction(
+        traced_computation = ArbitraryFunction(
             input_base_value=self.output,
             arbitrary_func=normalized_numpy_dtype.type,
             output_dtype=output_dtype,
@@ -91,6 +98,9 @@ class NPTracer(BaseTracer):
             other, SUPPORTED_TYPES_FOR_TRACING
         )
 
+    def _make_const_input_tracer(self, constant_data: Any) -> "NPTracer":
+        return self.__class__([], NPConstantInput(constant_data), 0)
+
     @staticmethod
     def _manage_dtypes(ufunc: numpy.ufunc, *input_tracers: "NPTracer"):
         output_dtypes = get_ufunc_numpy_output_dtype(
@@ -111,7 +121,7 @@ class NPTracer(BaseTracer):
         common_output_dtypes = self._manage_dtypes(numpy.rint, *input_tracers)
         assert len(common_output_dtypes) == 1
 
-        traced_computation = ir.ArbitraryFunction(
+        traced_computation = ArbitraryFunction(
             input_base_value=input_tracers[0].output,
             arbitrary_func=numpy.rint,
             output_dtype=common_output_dtypes[0],
@@ -133,7 +143,7 @@ class NPTracer(BaseTracer):
         common_output_dtypes = self._manage_dtypes(numpy.sin, *input_tracers)
         assert len(common_output_dtypes) == 1
 
-        traced_computation = ir.ArbitraryFunction(
+        traced_computation = ArbitraryFunction(
             input_base_value=input_tracers[0].output,
             arbitrary_func=numpy.sin,
             output_dtype=common_output_dtypes[0],
