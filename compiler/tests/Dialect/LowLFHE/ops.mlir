@@ -37,12 +37,12 @@ func @negate_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.
   return %1: !LowLFHE.lwe_ciphertext<2048,7>
 }
 
-// CHECK-LABEL: func @bootstrap_lwe(%arg0: !LowLFHE.lwe_bootstrap_key, %arg1: !LowLFHE.lwe_ciphertext<2048,7>, %arg2: !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7>
-func @bootstrap_lwe(%arg0: !LowLFHE.lwe_bootstrap_key, %arg1: !LowLFHE.lwe_ciphertext<2048,7>, %arg2: !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7> {
-  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.bootstrap_lwe"(%arg0, %arg1, %arg2) : (!LowLFHE.lwe_bootstrap_key, !LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7>
+// CHECK-LABEL: func @bootstrap_lwe(%arg0: !LowLFHE.lwe_ciphertext<2048,7>, %arg1: !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7>
+func @bootstrap_lwe(%arg0: !LowLFHE.lwe_ciphertext<2048,7>, %arg1: !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7> {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.bootstrap_lwe"(%arg0, %arg1) : (!LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7>
   // CHECK-NEXT: return %[[V1]] : !LowLFHE.lwe_ciphertext<2048,7>
 
-  %1 = "LowLFHE.bootstrap_lwe"(%arg0, %arg1, %arg2): (!LowLFHE.lwe_bootstrap_key, !LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> (!LowLFHE.lwe_ciphertext<2048,7>)
+  %1 = "LowLFHE.bootstrap_lwe"(%arg0, %arg1): (!LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> (!LowLFHE.lwe_ciphertext<2048,7>)
   return %1: !LowLFHE.lwe_ciphertext<2048,7>
 }
 
@@ -100,12 +100,12 @@ func @set_plaintext_list_element(%arg0: !LowLFHE.plaintext_list, %arg1: index, %
   return
 }
 
-// CHECK-LABEL: func @keyswitch_lwe(%arg0: !LowLFHE.lwe_key_switch_key, %arg1: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7>
-func @keyswitch_lwe(%arg0: !LowLFHE.lwe_key_switch_key, %arg1: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7> {
-  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.keyswitch_lwe"(%arg0, %arg1) : (!LowLFHE.lwe_key_switch_key, !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7>
+// CHECK-LABEL: func @keyswitch_lwe(%arg0: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7>
+func @keyswitch_lwe(%arg0: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7> {
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.keyswitch_lwe"(%arg0) : (!LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.lwe_ciphertext<2048,7>
   // CHECK-NEXT: return %[[V1]] : !LowLFHE.lwe_ciphertext<2048,7>
 
-  %1 = "LowLFHE.keyswitch_lwe"(%arg0, %arg1): (!LowLFHE.lwe_key_switch_key, !LowLFHE.lwe_ciphertext<2048,7>) -> (!LowLFHE.lwe_ciphertext<2048,7>)
+  %1 = "LowLFHE.keyswitch_lwe"(%arg0): (!LowLFHE.lwe_ciphertext<2048,7>) -> (!LowLFHE.lwe_ciphertext<2048,7>)
   return %1: !LowLFHE.lwe_ciphertext<2048,7>
 }
 

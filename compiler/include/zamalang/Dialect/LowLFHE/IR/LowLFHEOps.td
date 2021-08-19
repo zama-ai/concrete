@@ -37,7 +37,7 @@ def NegateLweCiphertextOp : LowLFHE_Op<"negate_lwe_ciphertext"> {
 
 def BootstrapLweOp : LowLFHE_Op<"bootstrap_lwe"> {
     let arguments = (ins 
-        LweBootstrapKeyType:$bootstrap_key,
+        // LweBootstrapKeyType:$bootstrap_key,
         LweCiphertextType:$input_ciphertext,
         GlweCiphertextType:$accumulator
     );
@@ -87,7 +87,10 @@ def SetPlaintextListElementOp : LowLFHE_Op<"set_plaintext_list_element">{
 }
 
 def KeySwitchLweOp : LowLFHE_Op<"keyswitch_lwe"> {
-    let arguments = (ins LweKeySwitchKeyType:$keyswitch_key, LweCiphertextType:$ciphertext);
+    let arguments = (ins
+        // LweKeySwitchKeyType:$keyswitch_key,
+        LweCiphertextType:$ciphertext
+    );
     let results = (outs LweCiphertextType:$result);
 }
 
@@ -148,6 +151,11 @@ def ConstCleartextOp : LowLFHE_Op<"const_cleartext", [ConstantLike]> {
     // TODO: maybe restrict to specific attr?
     let arguments = (ins AnyAttr:$value);
     let results = (outs CleartextType:$cleartext);
+}
+
+def GlweFromTable : LowLFHE_Op<"glwe_from_table"> {
+    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$k);
+    let results = (outs GlweCiphertextType:$result);
 }
 
 #endif
