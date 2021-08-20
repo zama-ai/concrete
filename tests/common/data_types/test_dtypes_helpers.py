@@ -62,6 +62,9 @@ def test_value_is_encrypted_unsigned_integer(value: BaseValue, expected_result: 
 class UnsupportedDataType(BaseDataType):
     """Test helper class to represent an UnsupportedDataType"""
 
+    def __eq__(self, o: object) -> bool:
+        return isinstance(o, self.__class__)
+
 
 @pytest.mark.parametrize(
     "dtype1,dtype2,expected_mixed_dtype",

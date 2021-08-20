@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 
 from hdk.common import check_op_graph_is_integer_program, is_a_power_of_2
-from hdk.common.data_types.base import BaseDataType
+from hdk.common.data_types.floats import Float64
 from hdk.common.data_types.integers import Integer
 from hdk.common.data_types.values import EncryptedValue
 from hdk.hnumpy.tracing import trace_numpy_function
@@ -29,10 +29,6 @@ def test_is_a_power_of_2(x, result):
     assert is_a_power_of_2(x) == result
 
 
-class DummyNotInteger(BaseDataType):
-    """Dummy helper data type class"""
-
-
 def test_check_op_graph_is_integer_program():
     """Test function for check_op_graph_is_integer_program"""
 
@@ -50,7 +46,7 @@ def test_check_op_graph_is_integer_program():
     assert len(offending_nodes) == 0
 
     op_graph_copy = deepcopy(op_graph)
-    op_graph_copy.output_nodes[0].outputs[0].data_type = DummyNotInteger()
+    op_graph_copy.output_nodes[0].outputs[0].data_type = Float64
 
     offending_nodes = []
     assert not check_op_graph_is_integer_program(op_graph_copy)
@@ -59,7 +55,7 @@ def test_check_op_graph_is_integer_program():
     assert offending_nodes == [op_graph_copy.output_nodes[0]]
 
     op_graph_copy = deepcopy(op_graph)
-    op_graph_copy.input_nodes[0].inputs[0].data_type = DummyNotInteger()
+    op_graph_copy.input_nodes[0].inputs[0].data_type = Float64
 
     offending_nodes = []
     assert not check_op_graph_is_integer_program(op_graph_copy)
@@ -68,8 +64,8 @@ def test_check_op_graph_is_integer_program():
     assert offending_nodes == [op_graph_copy.input_nodes[0]]
 
     op_graph_copy = deepcopy(op_graph)
-    op_graph_copy.input_nodes[0].inputs[0].data_type = DummyNotInteger()
-    op_graph_copy.input_nodes[1].inputs[0].data_type = DummyNotInteger()
+    op_graph_copy.input_nodes[0].inputs[0].data_type = Float64
+    op_graph_copy.input_nodes[1].inputs[0].data_type = Float64
 
     offending_nodes = []
     assert not check_op_graph_is_integer_program(op_graph_copy)
