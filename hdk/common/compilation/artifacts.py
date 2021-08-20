@@ -72,9 +72,8 @@ class CompilationArtifacts:
 
             draw_graph(
                 self.operation_graph,
+                show=False,
                 save_to=output_directory.joinpath("graph.png"),
-                block_until_user_closes_graph=False,
-                draw_edge_numbers=True,
             )
 
             if self.bounds is not None:

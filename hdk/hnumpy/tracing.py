@@ -129,7 +129,7 @@ class NPTracer(BaseTracer):
             arbitrary_func=numpy.rint,
             output_dtype=common_output_dtypes[0],
             op_kwargs=deepcopy(kwargs),
-            op_name="numpy.rint",
+            op_name="np.rint",
         )
         output_tracer = self.__class__(
             input_tracers, traced_computation=traced_computation, output_index=0
@@ -151,7 +151,7 @@ class NPTracer(BaseTracer):
             arbitrary_func=numpy.sin,
             output_dtype=common_output_dtypes[0],
             op_kwargs=deepcopy(kwargs),
-            op_name="numpy.sin",
+            op_name="np.sin",
         )
         output_tracer = self.__class__(
             input_tracers, traced_computation=traced_computation, output_index=0

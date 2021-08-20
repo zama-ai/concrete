@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Install Git
         run: apt-get install git -y
+      - name: Install Graphviz
+        run: apt-get install graphviz* -y
       - name: Checkout Code
         uses: actions/checkout@v2
         with:

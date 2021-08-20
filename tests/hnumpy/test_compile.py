@@ -61,7 +61,7 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
 
     # TODO: For the moment, we don't have really checks, but some printfs. Later,
     # when we have the converter, we can check the MLIR
-    draw_graph(op_graph, block_until_user_closes_graph=False)
+    draw_graph(op_graph, show=False)
 
     str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
     print(f"\n{str_of_the_graph}\n")

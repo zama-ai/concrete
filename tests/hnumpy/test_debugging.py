@@ -137,7 +137,7 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
     x, y = x_y
     graph = tracing.trace_numpy_function(lambda_f, {"x": x, "y": y})
 
-    draw_graph(graph, block_until_user_closes_graph=False)
+    draw_graph(graph, show=False)
 
     str_of_the_graph = get_printable_graph(graph)
 
@@ -167,7 +167,7 @@ def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph
     "Test hnumpy get_printable_graph and draw_graph on graphs with direct table lookup"
     graph = tracing.trace_numpy_function(lambda_f, params)
 
-    draw_graph(graph, block_until_user_closes_graph=False)
+    draw_graph(graph, show=False)
 
     str_of_the_graph = get_printable_graph(graph)
 
@@ -257,7 +257,7 @@ def test_hnumpy_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref
     """Test hnumpy get_printable_graph with show_data_types on graphs with direct table lookup"""
     graph = tracing.trace_numpy_function(lambda_f, params)
 
-    draw_graph(graph, block_until_user_closes_graph=False)
+    draw_graph(graph, show=False)
 
     str_of_the_graph = get_printable_graph(graph, show_data_types=True)
 

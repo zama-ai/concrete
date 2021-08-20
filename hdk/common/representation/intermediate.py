@@ -106,6 +106,15 @@ class IntermediateNode(ABC):
         """
         return cls.n_in() > 1
 
+    @abstractmethod
+    def label(self) -> str:
+        """Function to get the label of the node.
+
+        Returns:
+            str: the label of the node
+
+        """
+
 
 class Add(IntermediateNode):
     """Addition between two values."""
@@ -117,6 +126,9 @@ class Add(IntermediateNode):
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] + inputs[1]
+
+    def label(self) -> str:
+        return "+"
 
 
 class Sub(IntermediateNode):
@@ -130,6 +142,9 @@ class Sub(IntermediateNode):
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] - inputs[1]
 
+    def label(self) -> str:
+        return "-"
+
 
 class Mul(IntermediateNode):
     """Multiplication between two values."""
@@ -141,6 +156,9 @@ class Mul(IntermediateNode):
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] * inputs[1]
+
+    def label(self) -> str:
+        return "*"
 
 
 class Input(IntermediateNode):
@@ -172,6 +190,9 @@ class Input(IntermediateNode):
             and self.program_input_idx == other.program_input_idx
             and super().is_equivalent_to(other)
         )
+
+    def label(self) -> str:
+        return self.input_name
 
 
 class Constant(IntermediateNode):
@@ -212,6 +233,9 @@ class Constant(IntermediateNode):
             Any: The constant data that was stored.
         """
         return self._constant_data
+
+    def label(self) -> str:
+        return str(self.constant_data)
 
 
 class ArbitraryFunction(IntermediateNode):
@@ -257,3 +281,6 @@ class ArbitraryFunction(IntermediateNode):
             and self.op_name == other.op_name
             and super().is_equivalent_to(other)
         )
+
+    def label(self) -> str:
+        return self.op_name
