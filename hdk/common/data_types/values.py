@@ -2,18 +2,17 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from functools import partial
 
-from . import base
+from .base import BaseDataType
 
 
 class BaseValue(ABC):
     """Abstract base class to represent any kind of value in a program."""
 
-    data_type: base.BaseDataType
+    data_type: BaseDataType
     _is_encrypted: bool
 
-    def __init__(self, data_type: base.BaseDataType, is_encrypted: bool) -> None:
+    def __init__(self, data_type: BaseDataType, is_encrypted: bool) -> None:
         self.data_type = deepcopy(data_type)
         self._is_encrypted = is_encrypted
 
@@ -51,6 +50,33 @@ class ScalarValue(BaseValue):
         return BaseValue.__eq__(self, other)
 
 
-ClearValue = partial(ScalarValue, is_encrypted=False)
+def make_clear_scalar(
+    data_type: BaseDataType,
+) -> ScalarValue:
+    """Helper to create a clear ScalarValue.
 
-EncryptedValue = partial(ScalarValue, is_encrypted=True)
+    Args:
+        data_type (BaseDataType): The data type for the value.
+
+    Returns:
+        ScalarValue: The corresponding ScalarValue.
+    """
+    return ScalarValue(data_type=data_type, is_encrypted=False)
+
+
+def make_encrypted_scalar(
+    data_type: BaseDataType,
+) -> ScalarValue:
+    """Helper to create an encrypted ScalarValue.
+
+    Args:
+        data_type (BaseDataType): The data type for the value.
+
+    Returns:
+        ScalarValue: The corresponding ScalarValue.
+    """
+    return ScalarValue(data_type=data_type, is_encrypted=True)
+
+
+ClearValue = make_clear_scalar
+EncryptedValue = make_encrypted_scalar
