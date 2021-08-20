@@ -60,6 +60,10 @@ And then use it to install FFTW:
 brew install fftw
 ```
 
+**Note for Apple Silicon users**: Concrete is currently only available for x86 architecture.
+To use it on Apple Silicon chip, you could use an x86_64 version (more detailed information
+could be found [here](https://github.com/zama-ai/concrete/issues/65#issuecomment-902005481)).
+
 To install FFTW on a debian-based distribution, you can use the following command:
 
 ```bash
