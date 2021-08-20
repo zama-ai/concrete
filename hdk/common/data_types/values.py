@@ -1,6 +1,7 @@
 """File holding classes representing values used by an FHE program."""
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from functools import partial
 
 from . import base
@@ -13,7 +14,7 @@ class BaseValue(ABC):
     _is_encrypted: bool
 
     def __init__(self, data_type: base.BaseDataType, is_encrypted: bool) -> None:
-        self.data_type = data_type
+        self.data_type = deepcopy(data_type)
         self._is_encrypted = is_encrypted
 
     def __repr__(self) -> str:  # pragma: no cover
