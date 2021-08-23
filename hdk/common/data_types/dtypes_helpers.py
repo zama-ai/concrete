@@ -4,7 +4,15 @@ from copy import deepcopy
 from functools import partial
 from typing import Callable, Union, cast
 
-from ..values import BaseValue, ClearValue, EncryptedValue, ScalarValue
+from ..values import (
+    BaseValue,
+    ClearTensor,
+    ClearValue,
+    EncryptedTensor,
+    EncryptedValue,
+    ScalarValue,
+    TensorValue,
+)
 from .base import BaseDataType
 from .floats import Float
 from .integers import Integer, get_bits_to_represent_value_as_integer
@@ -134,19 +142,22 @@ def find_type_to_hold_both_lossy(
     return type_to_return
 
 
-def mix_scalar_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> ScalarValue:
-    """Return mixed value with data type able to hold both value1 and value2 dtypes.
+def mix_scalar_values_determine_holding_dtype(
+    value1: ScalarValue,
+    value2: ScalarValue,
+) -> ScalarValue:
+    """Return mixed ScalarValue with data type able to hold both value1 and value2 dtypes.
 
     Returns a ScalarValue that would result from computation on both value1 and value2 while
     determining the data type able to hold both value1 and value2 data type (this can be lossy
     with floats).
 
     Args:
-        value1 (BaseValue): first ScalarValue to mix.
-        value2 (BaseValue): second ScalarValue to mix.
+        value1 (ScalarValue): first ScalarValue to mix.
+        value2 (ScalarValue): second ScalarValue to mix.
 
     Returns:
-        ScalarValue: The resulting mixed BaseValue with data type able to hold both value1 and
+        ScalarValue: The resulting mixed ScalarValue with data type able to hold both value1 and
             value2 dtypes.
     """
 
@@ -162,6 +173,77 @@ def mix_scalar_values_determine_holding_dtype(value1: BaseValue, value2: BaseVal
         mixed_value = ClearValue(holding_type)
 
     return mixed_value
+
+
+def mix_tensor_values_determine_holding_dtype(
+    value1: TensorValue,
+    value2: TensorValue,
+) -> TensorValue:
+    """Return mixed TensorValue with data type able to hold both value1 and value2 dtypes.
+
+    Returns a TensorValue that would result from computation on both value1 and value2 while
+    determining the data type able to hold both value1 and value2 data type (this can be lossy
+    with floats).
+
+    Args:
+        value1 (TensorValue): first TensorValue to mix.
+        value2 (TensorValue): second TensorValue to mix.
+
+    Returns:
+        TensorValue: The resulting mixed TensorValue with data type able to hold both value1 and
+            value2 dtypes.
+    """
+
+    assert isinstance(value1, TensorValue), f"Unsupported value1: {value1}, expected TensorValue"
+    assert isinstance(value2, TensorValue), f"Unsupported value2: {value2}, expected TensorValue"
+
+    assert value1.shape == value2.shape, (
+        f"Tensors have different shapes which is not supported.\n"
+        f"value1: {value1.shape}, value2: {value2.shape}"
+    )
+
+    holding_type = find_type_to_hold_both_lossy(value1.data_type, value2.data_type)
+    shape = value1.shape
+
+    if value1.is_encrypted or value2.is_encrypted:
+        mixed_value = EncryptedTensor(data_type=holding_type, shape=shape)
+    else:
+        mixed_value = ClearTensor(data_type=holding_type, shape=shape)
+
+    return mixed_value
+
+
+def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> BaseValue:
+    """Return mixed BaseValue with data type able to hold both value1 and value2 dtypes.
+
+    Returns a BaseValue that would result from computation on both value1 and value2 while
+    determining the data type able to hold both value1 and value2 data type (this can be lossy
+    with floats). Supports only mixing instances from the same class.
+
+    Args:
+        value1 (BaseValue): first BaseValue to mix.
+        value2 (BaseValue): second BaseValue to mix.
+
+    Raises:
+        ValueError: raised if the BaseValue is not one of (ScalarValue, TensorValue)
+
+    Returns:
+        BaseValue: The resulting mixed BaseValue with data type able to hold both value1 and value2
+            dtypes.
+    """
+
+    assert (
+        value1.__class__ == value2.__class__
+    ), f"Cannot mix values of different types: value 1:{type(value1)}, value2: {type(value2)}"
+
+    if isinstance(value1, ScalarValue) and isinstance(value2, ScalarValue):
+        return mix_scalar_values_determine_holding_dtype(value1, value2)
+    if isinstance(value1, TensorValue) and isinstance(value2, TensorValue):
+        return mix_tensor_values_determine_holding_dtype(value1, value2)
+
+    raise ValueError(
+        f"{mix_values_determine_holding_dtype.__name__} does not support value {type(value1)}"
+    )
 
 
 def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]) -> BaseDataType:

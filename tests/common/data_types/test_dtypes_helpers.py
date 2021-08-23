@@ -5,13 +5,19 @@ import pytest
 from hdk.common.data_types.base import BaseDataType
 from hdk.common.data_types.dtypes_helpers import (
     find_type_to_hold_both_lossy,
-    mix_scalar_values_determine_holding_dtype,
+    mix_values_determine_holding_dtype,
     value_is_encrypted_integer,
     value_is_encrypted_unsigned_integer,
 )
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.values import BaseValue, ClearValue, EncryptedValue
+from hdk.common.values import (
+    BaseValue,
+    ClearTensor,
+    ClearValue,
+    EncryptedTensor,
+    EncryptedValue,
+)
 
 
 @pytest.mark.parametrize(
@@ -167,7 +173,67 @@ def test_mix_data_types(
         ),
     ],
 )
-def test_mix_values(value1: BaseValue, value2: BaseValue, expected_mixed_value: BaseValue):
-    """Test mix_values helper"""
+def test_mix_scalar_values(value1, value2, expected_mixed_value):
+    """Test mix_values_determine_holding_dtype helper with scalars"""
 
-    assert expected_mixed_value == mix_scalar_values_determine_holding_dtype(value1, value2)
+    assert expected_mixed_value == mix_values_determine_holding_dtype(value1, value2)
+
+
+@pytest.mark.parametrize(
+    "value1,value2,expected_mixed_value",
+    [
+        pytest.param(
+            EncryptedTensor(Integer(7, False), (1, 2, 3)),
+            EncryptedTensor(Integer(7, False), (1, 2, 3)),
+            EncryptedTensor(Integer(7, False), (1, 2, 3)),
+        ),
+        pytest.param(
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+            EncryptedTensor(Integer(7, False), (1, 2, 3)),
+            EncryptedTensor(Integer(7, False), (1, 2, 3)),
+        ),
+        pytest.param(
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+        ),
+        pytest.param(
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+        ),
+        pytest.param(
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+            EncryptedValue(Integer(7, False)),
+            None,
+            marks=pytest.mark.xfail(raises=AssertionError),
+        ),
+        pytest.param(
+            ClearTensor(Integer(7, False), (1, 2, 3)),
+            ClearTensor(Integer(7, False), (3, 2, 1)),
+            None,
+            marks=pytest.mark.xfail(raises=AssertionError),
+        ),
+    ],
+)
+def test_mix_tensor_values(value1, value2, expected_mixed_value):
+    """Test mix_values_determine_holding_dtype helper with tensors"""
+
+    assert expected_mixed_value == mix_values_determine_holding_dtype(value1, value2)
+
+
+class DummyValue(BaseValue):
+    """DummyValue"""
+
+    def __eq__(self, other: object) -> bool:
+        return BaseValue.__eq__(self, other)
+
+
+def test_fail_mix_values_determine_holding_dtype():
+    """Test function for failure case of mix_values_determine_holding_dtype"""
+
+    with pytest.raises(ValueError, match=r".* does not support value .*"):
+        mix_values_determine_holding_dtype(
+            DummyValue(Integer(32, True), True),
+            DummyValue(Integer(32, True), True),
+        )
