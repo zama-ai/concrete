@@ -25,8 +25,22 @@ check_strip_nb:
 .PHONY: strip_nb
 
 pylint:
-	poetry run pylint --rcfile=pylintrc hdk tests benchmarks
+	+poetry run env bash script/make_utils/serialize_targets.sh pylint_src pylint_tests pylint_benchmarks
 .PHONY: pylint
+
+pylint_src:
+	poetry run pylint --rcfile=pylintrc hdk
+.PHONY: pylint_src
+
+pylint_tests:
+	@# Disable duplicate code detection in tests
+	poetry run pylint --disable=R0801 --rcfile=pylintrc tests
+.PHONY: pylint_tests
+
+pylint_benchmarks:
+	@# Disable duplicate code detection in benchmarks
+	poetry run pylint --disable=R0801 --rcfile=pylintrc benchmarks
+.PHONY: pylint_benchmarks
 
 flake8:
 	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" hdk/ tests/ benchmarks/
