@@ -15,7 +15,7 @@ from ..common.data_types.dtypes_helpers import (
 )
 from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
-from ..common.values import BaseValue, ScalarValue
+from ..common.values import BaseValue, ScalarValue, TensorValue
 
 NUMPY_TO_HDK_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
     numpy.dtype(numpy.int32): Integer(32, is_signed=True),
@@ -110,11 +110,13 @@ def get_base_data_type_for_numpy_or_python_constant_data(constant_data: Any) -> 
     """
     base_dtype: BaseDataType
     assert isinstance(
-        constant_data, (int, float, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
+        constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
     ), f"Unsupported constant data of type {type(constant_data)}"
-    if isinstance(constant_data, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES):
-        base_dtype = convert_numpy_dtype_to_base_data_type(constant_data)
+    if isinstance(constant_data, (numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)):
+        # numpy
+        base_dtype = convert_numpy_dtype_to_base_data_type(constant_data.dtype)
     else:
+        # python
         base_dtype = get_base_data_type_for_python_constant_data(constant_data)
     return base_dtype
 
@@ -139,11 +141,13 @@ def get_base_value_for_numpy_or_python_constant_data(
     """
     constant_data_value: Callable[..., BaseValue]
     assert isinstance(
-        constant_data, (int, float, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
+        constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
     ), f"Unsupported constant data of type {type(constant_data)}"
 
     base_dtype = get_base_data_type_for_numpy_or_python_constant_data(constant_data)
-    if isinstance(constant_data, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES):
+    if isinstance(constant_data, numpy.ndarray):
+        constant_data_value = partial(TensorValue, data_type=base_dtype, shape=constant_data.shape)
+    elif isinstance(constant_data, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES):
         constant_data_value = partial(ScalarValue, data_type=base_dtype)
     else:
         constant_data_value = get_base_value_for_python_constant_data(constant_data)

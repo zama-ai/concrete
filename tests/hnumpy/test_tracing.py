@@ -7,7 +7,7 @@ import pytest
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.representation import intermediate as ir
-from hdk.common.values import ClearValue, EncryptedValue
+from hdk.common.values import ClearTensor, ClearValue, EncryptedTensor, EncryptedValue
 from hdk.hnumpy import tracing
 
 OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
@@ -112,6 +112,32 @@ def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
     ref_graph.add_edge(input_y, returned_final_node, input_idx=1)
 
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)
+
+
+@pytest.mark.parametrize(
+    "tensor_constructor",
+    [
+        EncryptedTensor,
+        ClearTensor,
+    ],
+)
+def test_hnumpy_tracing_tensor_constant(tensor_constructor):
+    "Test hnumpy tracing tensor constant"
+
+    def simple_add_tensor(x):
+        return x + numpy.array([[1, 2], [3, 4]], dtype=numpy.int32)
+
+    op_graph = tracing.trace_numpy_function(
+        simple_add_tensor, {"x": tensor_constructor(Integer(32, True), shape=(2, 2))}
+    )
+
+    constant_inputs = [node for node in op_graph.graph.nodes() if isinstance(node, ir.Constant)]
+    assert len(constant_inputs) == 1
+
+    constant_input_data = constant_inputs[0].constant_data
+
+    assert (constant_input_data == numpy.array([[1, 2], [3, 4]], dtype=numpy.int32)).all()
+    assert op_graph.get_ordered_outputs()[0].outputs[0].shape == constant_input_data.shape
 
 
 @pytest.mark.parametrize(

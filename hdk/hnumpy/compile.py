@@ -2,6 +2,7 @@
 
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
+import numpy
 from zamalang import CompilerEngine
 
 from ..common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
@@ -18,6 +19,32 @@ from ..common.representation import intermediate as ir
 from ..common.values import BaseValue
 from ..hnumpy.tracing import trace_numpy_function
 from .np_dtypes_helpers import get_base_data_type_for_numpy_or_python_constant_data
+
+
+def numpy_max_func(lhs: Any, rhs: Any) -> Any:
+    """Compute the maximum value between two values which can be numpy classes (e.g. ndarray).
+
+    Args:
+        lhs (Any): lhs value to compute max from.
+        rhs (Any): rhs value to compute max from.
+
+    Returns:
+        Any: maximum scalar value between lhs and rhs.
+    """
+    return numpy.maximum(lhs, rhs).max()
+
+
+def numpy_min_func(lhs: Any, rhs: Any) -> Any:
+    """Compute the minimum value between two values which can be numpy classes (e.g. ndarray).
+
+    Args:
+        lhs (Any): lhs value to compute min from.
+        rhs (Any): rhs value to compute min from.
+
+    Returns:
+        Any: minimum scalar value between lhs and rhs.
+    """
+    return numpy.minimum(lhs, rhs).min()
 
 
 def compile_numpy_function_into_op_graph(
@@ -72,7 +99,12 @@ def compile_numpy_function_into_op_graph(
         )
 
     # Find bounds with the dataset
-    node_bounds = eval_op_graph_bounds_on_dataset(op_graph, dataset)
+    node_bounds = eval_op_graph_bounds_on_dataset(
+        op_graph,
+        dataset,
+        min_func=numpy_min_func,
+        max_func=numpy_max_func,
+    )
 
     # Update the graph accordingly: after that, we have the compilable graph
     op_graph.update_values_with_bounds(
