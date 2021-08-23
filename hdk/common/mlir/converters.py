@@ -133,7 +133,7 @@ V0_OPSET_CONVERSION_FUNCTIONS = {
     ir.Add: add,
     ir.Sub: sub,
     ir.Mul: mul,
-    ir.ConstantInput: constant,
+    ir.Constant: constant,
 }
 
 # pylint: enable=no-name-in-module,no-member

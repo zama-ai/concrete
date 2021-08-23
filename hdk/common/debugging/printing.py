@@ -45,8 +45,8 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
 
         if isinstance(node, ir.Input):
             what_to_print = node.input_name
-        elif isinstance(node, ir.ConstantInput):
-            what_to_print = f"ConstantInput({node.constant_data})"
+        elif isinstance(node, ir.Constant):
+            what_to_print = f"Constant({node.constant_data})"
         else:
 
             base_name = node.__class__.__name__

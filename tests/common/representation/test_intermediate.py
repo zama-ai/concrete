@@ -29,8 +29,8 @@ from hdk.common.representation import intermediate as ir
             id="Mul",
         ),
         pytest.param(ir.Input(ClearValue(Integer(32, True)), "in", 0), [42], 42, id="Input"),
-        pytest.param(ir.ConstantInput(42), None, 42, id="ConstantInput"),
-        pytest.param(ir.ConstantInput(-42), None, -42, id="ConstantInput"),
+        pytest.param(ir.Constant(42), None, 42, id="Constant"),
+        pytest.param(ir.Constant(-42), None, -42, id="Constant"),
         pytest.param(
             ir.ArbitraryFunction(
                 EncryptedValue(Integer(7, False)), lambda x: x + 3, Integer(7, False)
@@ -152,18 +152,18 @@ def test_evaluate(
             False,
         ),
         (
-            ir.ConstantInput(10),
-            ir.ConstantInput(10),
+            ir.Constant(10),
+            ir.Constant(10),
             True,
         ),
         (
-            ir.ConstantInput(10),
+            ir.Constant(10),
             ir.Input(EncryptedValue(Integer(8, False)), "x", 0),
             False,
         ),
         (
-            ir.ConstantInput(10),
-            ir.ConstantInput(10.0),
+            ir.Constant(10),
+            ir.Constant(10.0),
             False,
         ),
         (

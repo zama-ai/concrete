@@ -98,7 +98,7 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     )
     ref_graph.add_node(intermediate_arbitrary_function, content=intermediate_arbitrary_function)
 
-    constant_3 = ir.ConstantInput(3)
+    constant_3 = ir.Constant(3)
     ref_graph.add_node(constant_3, content=constant_3)
 
     output_add = ir.Add((intermediate_arbitrary_function.outputs[0], constant_3.outputs[0]))

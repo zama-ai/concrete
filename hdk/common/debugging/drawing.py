@@ -11,7 +11,7 @@ from ..representation import intermediate as ir
 
 IR_NODE_COLOR_MAPPING = {
     ir.Input: "blue",
-    ir.ConstantInput: "cyan",
+    ir.Constant: "cyan",
     ir.Add: "red",
     ir.Sub: "yellow",
     ir.Mul: "green",
@@ -151,7 +151,7 @@ def draw_graph(
     def get_proper_name(node):
         if isinstance(node, ir.Input):
             return node.input_name
-        if isinstance(node, ir.ConstantInput):
+        if isinstance(node, ir.Constant):
             return str(node.constant_data)
         if isinstance(node, ir.ArbitraryFunction):
             return node.op_name

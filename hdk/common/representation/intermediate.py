@@ -174,7 +174,7 @@ class Input(IntermediateNode):
         )
 
 
-class ConstantInput(IntermediateNode):
+class Constant(IntermediateNode):
     """Node representing a constant of the program."""
 
     _constant_data: Any
@@ -199,14 +199,14 @@ class ConstantInput(IntermediateNode):
 
     def is_equivalent_to(self, other: object) -> bool:
         return (
-            isinstance(other, ConstantInput)
+            isinstance(other, Constant)
             and self.constant_data == other.constant_data
             and super().is_equivalent_to(other)
         )
 
     @property
     def constant_data(self) -> Any:
-        """Returns the constant_data stored in the ConstantInput node.
+        """Returns the constant_data stored in the Constant node.
 
         Returns:
             Any: The constant data that was stored.

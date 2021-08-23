@@ -9,7 +9,7 @@ from numpy.typing import DTypeLike
 from ..common.data_types import BaseValue
 from ..common.data_types.dtypes_helpers import mix_scalar_values_determine_holding_dtype
 from ..common.operator_graph import OPGraph
-from ..common.representation.intermediate import ArbitraryFunction, ConstantInput
+from ..common.representation.intermediate import ArbitraryFunction, Constant
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
@@ -22,8 +22,8 @@ SUPPORTED_TYPES_FOR_TRACING = (int, float, numpy.ndarray) + tuple(
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES
 )
 
-NPConstantInput = partial(
-    ConstantInput,
+NPConstant = partial(
+    Constant,
     get_base_value_for_data_func=get_base_value_for_numpy_or_python_constant_data,
 )
 
@@ -102,7 +102,7 @@ class NPTracer(BaseTracer):
         )
 
     def _make_const_input_tracer(self, constant_data: Any) -> "NPTracer":
-        return self.__class__([], NPConstantInput(constant_data), 0)
+        return self.__class__([], NPConstant(constant_data), 0)
 
     @staticmethod
     def _manage_dtypes(ufunc: numpy.ufunc, *input_tracers: "NPTracer"):

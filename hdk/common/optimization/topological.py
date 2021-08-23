@@ -95,12 +95,12 @@ def convert_float_subgraph_to_fused_node(
         return None
 
     # Only one variable input node, find which node feeds its input
-    non_constant_input_nodes = [
-        node for node in float_subgraph_start_nodes if not isinstance(node, ir.ConstantInput)
+    non_constant_start_nodes = [
+        node for node in float_subgraph_start_nodes if not isinstance(node, ir.Constant)
     ]
-    assert len(non_constant_input_nodes) == 1
+    assert len(non_constant_start_nodes) == 1
 
-    current_subgraph_variable_input = non_constant_input_nodes[0]
+    current_subgraph_variable_input = non_constant_start_nodes[0]
     new_input_value = deepcopy(current_subgraph_variable_input.outputs[0])
 
     nx_graph = op_graph.graph
@@ -233,8 +233,8 @@ def subgraph_has_unique_variable_input(
         float_subgraph_start_nodes (Set[ir.IntermediateNode]): The nodes starting the subgraph.
 
     Returns:
-        bool: True if only one of the nodes is not an ir.ConstantInput
+        bool: True if only one of the nodes is not an ir.Constant
     """
     # Only one input to the subgraph where computations are done in floats is variable, this
     # is the only case we can manage with ArbitraryFunction fusing
-    return sum(not isinstance(node, ir.ConstantInput) for node in float_subgraph_start_nodes) == 1
+    return sum(not isinstance(node, ir.Constant) for node in float_subgraph_start_nodes) == 1
