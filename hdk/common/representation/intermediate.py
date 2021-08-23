@@ -9,7 +9,7 @@ from ..data_types.dtypes_helpers import (
     get_base_value_for_python_constant_data,
     mix_scalar_values_determine_holding_dtype,
 )
-from ..values import BaseValue
+from ..values import BaseValue, ClearValue, EncryptedValue, TensorValue
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
 
@@ -291,3 +291,66 @@ class ArbitraryFunction(IntermediateNode):
 
     def label(self) -> str:
         return self.op_name
+
+
+def default_dot_evaluation_function(lhs: Any, rhs: Any) -> Any:
+    """Default python dot implementation for 1D iterable arrays.
+
+    Args:
+        lhs (Any): lhs vector of the dot.
+        rhs (Any): rhs vector of the dot.
+
+    Returns:
+        Any: the result of the dot operation.
+    """
+    return sum(lhs * rhs for lhs, rhs in zip(lhs, rhs))
+
+
+class Dot(IntermediateNode):
+    """Node representing a dot product."""
+
+    _n_in: int = 2
+    # Optional, same issue as in ArbitraryFunction for mypy
+    evaluation_function: Optional[Callable[[Any, Any], Any]]
+    # Allows to use specialized implementations from e.g. numpy
+
+    def __init__(
+        self,
+        inputs: Iterable[BaseValue],
+        output_dtype: BaseDataType,
+        delegate_evaluation_function: Optional[
+            Callable[[Any, Any], Any]
+        ] = default_dot_evaluation_function,
+    ) -> None:
+        super().__init__(inputs)
+        assert len(self.inputs) == 2
+
+        assert all(
+            isinstance(input_value, TensorValue) and input_value.ndim == 1
+            for input_value in self.inputs
+        ), f"Dot only supports two vectors ({TensorValue.__name__} with ndim == 1)"
+
+        output_scalar_value = (
+            EncryptedValue
+            if (self.inputs[0].is_encrypted or self.inputs[1].is_encrypted)
+            else ClearValue
+        )
+
+        self.outputs = [output_scalar_value(output_dtype)]
+        self.evaluation_function = delegate_evaluation_function
+
+    def evaluate(self, inputs: Dict[int, Any]) -> Any:
+        # This is the continuation of the mypy bug workaround
+        assert self.evaluation_function is not None
+        return self.evaluation_function(inputs[0], inputs[1])
+
+    def is_equivalent_to(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self.evaluation_function == other.evaluation_function
+            and super().is_equivalent_to(other)
+        )
+
+    # TODO: Coverage will come with the ability to trace the operator in a subsequent PR
+    def label(self) -> str:  # pragma: no cover
+        return "dot"

@@ -19,6 +19,7 @@ IR_NODE_COLOR_MAPPING = {
     ir.Sub: "yellow",
     ir.Mul: "green",
     ir.ArbitraryFunction: "orange",
+    ir.Dot: "purple",
     "ArbitraryFunction": "orange",
     "TLU": "grey",
     "output": "magenta",

@@ -1,10 +1,12 @@
 """Test file for intermediate representation"""
 
+import numpy
 import pytest
 
+from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.representation import intermediate as ir
-from hdk.common.values import ClearValue, EncryptedValue
+from hdk.common.values import ClearTensor, ClearValue, EncryptedTensor, EncryptedValue
 
 
 @pytest.mark.parametrize(
@@ -71,6 +73,46 @@ from hdk.common.values import ClearValue, EncryptedValue
             [2],
             4,
             id="ArbitraryFunction, x, y -> y[3], where y is constant == (1, 2, 3, 4)",
+        ),
+        pytest.param(
+            ir.Dot(
+                [
+                    EncryptedTensor(Integer(32, True), shape=(4,)),
+                    ClearTensor(Integer(32, True), shape=(4,)),
+                ],
+                Integer(32, True),
+            ),
+            [[1, 2, 3, 4], [4, 3, 2, 1]],
+            20,
+            id="Dot, [1, 2, 3, 4], [4, 3, 2, 1]",
+        ),
+        pytest.param(
+            ir.Dot(
+                [
+                    EncryptedTensor(Float(32), shape=(4,)),
+                    ClearTensor(Float(32), shape=(4,)),
+                ],
+                Float(32),
+            ),
+            [[1.0, 2.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0]],
+            20,
+            id="Dot, [1.0, 2.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0]",
+        ),
+        pytest.param(
+            ir.Dot(
+                [
+                    EncryptedTensor(Integer(32, True), shape=(4,)),
+                    ClearTensor(Integer(32, True), shape=(4,)),
+                ],
+                Integer(32, True),
+                delegate_evaluation_function=numpy.dot,
+            ),
+            [
+                numpy.array([1, 2, 3, 4], dtype=numpy.int32),
+                numpy.array([4, 3, 2, 1], dtype=numpy.int32),
+            ],
+            20,
+            id="Dot, np.array([1, 2, 3, 4]), np.array([4, 3, 2, 1])",
         ),
     ],
 )
@@ -189,6 +231,43 @@ def test_evaluate(
                 op_kwargs={"tuple": (1, 2, 3)},
             ),
             ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            False,
+        ),
+        (
+            ir.Dot(
+                [
+                    EncryptedTensor(Integer(32, True), shape=(4,)),
+                    ClearTensor(Integer(32, True), shape=(4,)),
+                ],
+                Integer(32, True),
+                delegate_evaluation_function=numpy.dot,
+            ),
+            ir.Dot(
+                [
+                    EncryptedTensor(Integer(32, True), shape=(4,)),
+                    ClearTensor(Integer(32, True), shape=(4,)),
+                ],
+                Integer(32, True),
+                delegate_evaluation_function=numpy.dot,
+            ),
+            True,
+        ),
+        (
+            ir.Dot(
+                [
+                    EncryptedTensor(Integer(32, True), shape=(4,)),
+                    ClearTensor(Integer(32, True), shape=(4,)),
+                ],
+                Integer(32, True),
+                delegate_evaluation_function=numpy.dot,
+            ),
+            ir.Dot(
+                [
+                    EncryptedTensor(Integer(32, True), shape=(4,)),
+                    ClearTensor(Integer(32, True), shape=(4,)),
+                ],
+                Integer(32, True),
+            ),
             False,
         ),
     ],
