@@ -1,21 +1,33 @@
+import argparse
 import json
-import sys
 
 from pathlib import Path
 
 
 def main():
-    path_to_glob = Path(sys.argv[1])
-    notebooks = path_to_glob.glob("*.ipynb")
+    parser = argparse.ArgumentParser(description='Sanitizer for Jupyter Notebooks')
 
-    for notebook_file in notebooks:
-        with open(notebook_file, "r") as f:
-            notebook_dict = json.load(f)
-            notebook_dict["metadata"] = {}
+    parser.add_argument('base', type=str, help='directory which contains the notebooks')
+    parser.add_argument('--check', action='store_true', help='flag to enable just checking mode')
 
-        with open(notebook_file, "w", newline="\n") as f:
-            json.dump(notebook_dict, f, indent=1, ensure_ascii=False)
-            f.write("\n")
+    args = parser.parse_args()
+
+    base = Path(args.base)
+    notebooks = base.glob("*.ipynb")
+
+    for notebook in notebooks:
+        with open(notebook, "r") as f:
+            content = json.load(f)
+
+        if args.check:
+            if len(content["metadata"]) != 0:
+                print("Notebooks are not sanitized. Please run `make conformance`.")
+                exit(1)
+        else:
+            content["metadata"] = {}
+            with open(notebook, "w", newline="\n") as f:
+                json.dump(content, f, indent=1, ensure_ascii=False)
+                f.write("\n")
 
 
 if __name__ == "__main__":

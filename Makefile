@@ -20,6 +20,10 @@ check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests --dir benchmarks --check
 .PHONY: check_python_format
 
+check_strip_nb:
+	poetry run python ./script/nbmake_utils/notebook_sanitize.py examples --check
+.PHONY: strip_nb
+
 pylint:
 	poetry run pylint --rcfile=pylintrc hdk tests benchmarks
 .PHONY: pylint
@@ -38,7 +42,7 @@ pcc:
 	@$(MAKE) --keep-going --jobs $$(nproc) --output-sync --no-print-directory pcc_internal
 .PHONY: pcc
 
-pcc_internal: check_python_format python_linting mypy_ci pydocstyle
+pcc_internal: check_python_format check_strip_nb python_linting mypy_ci pydocstyle
 .PHONY: pcc_internal
 
 pytest:
