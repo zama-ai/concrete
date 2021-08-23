@@ -1,10 +1,11 @@
 #ifndef ZAMALANG_DIALECT_LowLFHE_IR_LowLFHE_TYPES
 #define ZAMALANG_DIALECT_LowLFHE_IR_LowLFHE_TYPES
 
+include "mlir/IR/BuiltinTypes.td"
+
 include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.td"
 
-class LowLFHE_Type<string name> : TypeDef<LowLFHE_Dialect, name> { }
-
+class LowLFHE_Type<string name, list<Trait> traits = []> : TypeDef<LowLFHE_Dialect, name, traits> { }
 def EncryptionRandomGeneratorType : LowLFHE_Type<"EncryptionRandomGenerator"> {
     let mnemonic = "enc_rand_gen";
 
@@ -113,7 +114,7 @@ def ForeignPlaintextListType : LowLFHE_Type<"ForeignPlaintextList"> {
 }
 
 
-def LweCiphertextType : LowLFHE_Type<"LweCiphertext"> {
+def LweCiphertextType : LowLFHE_Type<"LweCiphertext", [MemRefElementTypeInterface]> {
     let mnemonic = "lwe_ciphertext";
 
     let summary = "LWE ciphertext";
