@@ -6,6 +6,7 @@
 #include "zamalang/Conversion/HLFHEToMidLFHE/Patterns.h"
 #include "zamalang/Conversion/Passes.h"
 #include "zamalang/Conversion/Utils/LinalgGenericTypeConverterPattern.h"
+#include "zamalang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
@@ -77,6 +78,8 @@ void HLFHEToMidLFHEPass::runOnOperation() {
   populateWithGeneratedHLFHEToMidLFHE(patterns);
   patterns.add<LinalgGenericTypeConverterPattern<HLFHEToMidLFHETypeConverter>>(
       &getContext(), converter);
+  mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
+                                                          converter);
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);
 
   // Apply conversion
