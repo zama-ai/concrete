@@ -1,11 +1,12 @@
 """Test file for hnumpy debugging functions"""
 
+import numpy
 import pytest
 
 from hdk.common.data_types.integers import Integer
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
-from hdk.common.values import ClearValue, EncryptedValue
+from hdk.common.values import ClearValue, EncryptedTensor, EncryptedValue
 from hdk.hnumpy import tracing
 
 LOOKUP_TABLE_FROM_2B_TO_4B = LookupTable([9, 2, 4, 11])
@@ -165,6 +166,36 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
 )
 def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
     "Test hnumpy get_printable_graph and draw_graph on graphs with direct table lookup"
+    graph = tracing.trace_numpy_function(lambda_f, params)
+
+    draw_graph(graph, show=False)
+
+    str_of_the_graph = get_printable_graph(graph)
+
+    assert str_of_the_graph == ref_graph_str, (
+        f"\n==================\nGot {str_of_the_graph}"
+        f"\n==================\nExpected {ref_graph_str}"
+        f"\n==================\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "lambda_f,params,ref_graph_str",
+    [
+        # pylint: disable=unnecessary-lambda
+        (
+            lambda x, y: numpy.dot(x, y),
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3,)),
+                "y": EncryptedTensor(Integer(2, is_signed=False), shape=(3,)),
+            },
+            "\n%0 = x\n%1 = y\n%2 = Dot(0, 1)\nreturn(%2)",
+        ),
+        # pylint: enable=unnecessary-lambda
+    ],
+)
+def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
+    "Test hnumpy get_printable_graph and draw_graph on graphs with dot"
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)

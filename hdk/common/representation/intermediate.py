@@ -351,6 +351,5 @@ class Dot(IntermediateNode):
             and super().is_equivalent_to(other)
         )
 
-    # TODO: Coverage will come with the ability to trace the operator in a subsequent PR
-    def label(self) -> str:  # pragma: no cover
+    def label(self) -> str:
         return "dot"

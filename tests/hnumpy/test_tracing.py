@@ -291,10 +291,64 @@ def test_trace_hnumpy_supported_ufuncs(
 
 
 @pytest.mark.parametrize(
-    "np_ufunc,expected_tracing_func",
+    "function_to_trace,inputs,expected_output_node,expected_output_value",
+    [
+        # pylint: disable=unnecessary-lambda
+        pytest.param(
+            lambda x, y: numpy.dot(x, y),
+            {
+                "x": EncryptedTensor(Integer(7, is_signed=False), shape=(10,)),
+                "y": EncryptedTensor(Integer(7, is_signed=False), shape=(10,)),
+            },
+            ir.Dot,
+            EncryptedValue(Integer(32, False)),
+        ),
+        pytest.param(
+            lambda x, y: numpy.dot(x, y),
+            {
+                "x": EncryptedTensor(Float(64), shape=(42,)),
+                "y": EncryptedTensor(Float(64), shape=(10,)),
+            },
+            ir.Dot,
+            EncryptedValue(Float(64)),
+        ),
+        pytest.param(
+            lambda x, y: numpy.dot(x, y),
+            {
+                "x": ClearTensor(Integer(64, is_signed=True), shape=(6,)),
+                "y": ClearTensor(Integer(64, is_signed=True), shape=(6,)),
+            },
+            ir.Dot,
+            ClearValue(Integer(64, is_signed=True)),
+        ),
+        pytest.param(
+            lambda x: numpy.dot(x, numpy.array([1, 2, 3, 4, 5], dtype=numpy.int64)),
+            {
+                "x": EncryptedTensor(Integer(64, is_signed=True), shape=(5,)),
+            },
+            ir.Dot,
+            EncryptedValue(Integer(64, True)),
+        ),
+        # pylint: enable=unnecessary-lambda
+    ],
+)
+def test_trace_hnumpy_dot(function_to_trace, inputs, expected_output_node, expected_output_value):
+    """Function to test dot tracing"""
+
+    op_graph = tracing.trace_numpy_function(function_to_trace, inputs)
+
+    assert len(op_graph.output_nodes) == 1
+    assert isinstance(op_graph.output_nodes[0], expected_output_node)
+    assert len(op_graph.output_nodes[0].outputs) == 1
+    assert op_graph.output_nodes[0].outputs[0] == expected_output_value
+
+
+@pytest.mark.parametrize(
+    "np_function,expected_tracing_func",
     [
         pytest.param(numpy.rint, tracing.NPTracer.rint),
         pytest.param(numpy.sin, tracing.NPTracer.sin),
+        pytest.param(numpy.dot, tracing.NPTracer.dot),
         # There is a need to test the case where the function fails, I chose numpy.conjugate which
         # works on complex types, as we don't talk about complex types for now this looks like a
         # good long term candidate to check for an unsupported function
@@ -303,9 +357,9 @@ def test_trace_hnumpy_supported_ufuncs(
         ),
     ],
 )
-def test_nptracer_get_tracing_func_for_np_ufunc(np_ufunc, expected_tracing_func):
-    """Test NPTracer get_tracing_func_for_np_ufunc"""
-    assert tracing.NPTracer.get_tracing_func_for_np_ufunc(np_ufunc) == expected_tracing_func
+def test_nptracer_get_tracing_func_for_np_functions(np_function, expected_tracing_func):
+    """Test NPTracer get_tracing_func_for_np_function"""
+    assert tracing.NPTracer.get_tracing_func_for_np_function(np_function) == expected_tracing_func
 
 
 @pytest.mark.parametrize(

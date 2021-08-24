@@ -53,6 +53,11 @@ class BaseTracer(ABC):
     def _get_mix_values_func(cls):
         return cls._mix_values_func
 
+    def _sanitize(self, inp) -> "BaseTracer":
+        if not isinstance(inp, BaseTracer):
+            return self._make_const_input_tracer(inp)
+        return inp
+
     def instantiate_output_tracers(
         self,
         inputs: Iterable[Union["BaseTracer", Any]],
@@ -69,13 +74,9 @@ class BaseTracer(ABC):
         Returns:
             Tuple[BaseTracer, ...]: A tuple containing an BaseTracer per output function
         """
-        # For inputs which are actually constant, first convert into a tracer
-        def sanitize(inp):
-            if not isinstance(inp, BaseTracer):
-                return self._make_const_input_tracer(inp)
-            return inp
 
-        sanitized_inputs = [sanitize(inp) for inp in inputs]
+        # For inputs which are actually constant, first convert into a tracer
+        sanitized_inputs = [self._sanitize(inp) for inp in inputs]
 
         additional_parameters = (
             {IR_MIX_VALUES_FUNC_ARG_NAME: self._get_mix_values_func()}

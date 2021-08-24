@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Union
 
 import numpy
 from numpy.typing import DTypeLike
@@ -154,23 +154,25 @@ def get_base_value_for_numpy_or_python_constant_data(
     return constant_data_value
 
 
-def get_ufunc_numpy_output_dtype(
-    ufunc: numpy.ufunc,
+def get_numpy_function_output_dtype(
+    function: Union[numpy.ufunc, Callable],
     input_dtypes: List[BaseDataType],
 ) -> List[numpy.dtype]:
-    """Function to record the output dtype of a numpy.ufunc given some input types.
+    """Function to record the output dtype of a numpy function given some input types.
 
     Args:
-        ufunc (numpy.ufunc): The numpy.ufunc whose output types need to be recorded
-        input_dtypes (List[BaseDataType]): Common dtypes in the same order as they will be used with
-            the ufunc inputs
+        function (Union[numpy.ufunc, Callable]): The numpy function whose output types need to
+            be recorded
+        input_dtypes (List[BaseDataType]): BaseDataTypes in the same order as they will be used with
+            the function inputs
 
     Returns:
-        List[numpy.dtype]: The ordered numpy dtypes of the ufunc outputs
+        List[numpy.dtype]: The ordered numpy dtypes of the function outputs
     """
-    assert (
-        len(input_dtypes) == ufunc.nin
-    ), f"Expected {ufunc.nin} types, got {len(input_dtypes)}: {input_dtypes}"
+    if isinstance(function, numpy.ufunc):
+        assert (
+            len(input_dtypes) == function.nin
+        ), f"Expected {function.nin} types, got {len(input_dtypes)}: {input_dtypes}"
 
     input_numpy_dtypes = [convert_base_data_type_to_numpy_dtype(dtype) for dtype in input_dtypes]
 
@@ -183,7 +185,7 @@ def get_ufunc_numpy_output_dtype(
         dtype.type(1000.0 * numpy.random.random_sample()) for dtype in input_numpy_dtypes
     )
 
-    outputs = ufunc(*dummy_inputs)
+    outputs = function(*dummy_inputs)
     if not isinstance(outputs, tuple):
         outputs = (outputs,)
 

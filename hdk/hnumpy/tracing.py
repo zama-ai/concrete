@@ -1,21 +1,21 @@
 """hnumpy tracing utilities."""
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional, Union
 
 import numpy
 from numpy.typing import DTypeLike
 
 from ..common.data_types.dtypes_helpers import mix_values_determine_holding_dtype
 from ..common.operator_graph import OPGraph
-from ..common.representation.intermediate import ArbitraryFunction, Constant
+from ..common.representation.intermediate import ArbitraryFunction, Constant, Dot
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 from ..common.values import BaseValue
 from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
     convert_numpy_dtype_to_base_data_type,
     get_base_value_for_numpy_or_python_constant_data,
-    get_ufunc_numpy_output_dtype,
+    get_numpy_function_output_dtype,
 )
 
 SUPPORTED_TYPES_FOR_TRACING = (int, float, numpy.ndarray) + tuple(
@@ -39,12 +39,23 @@ class NPTracer(BaseTracer):
         Read more: https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch
         """
         if method == "__call__":
-            tracing_func = self.get_tracing_func_for_np_ufunc(ufunc)
+            tracing_func = self.get_tracing_func_for_np_function(ufunc)
             assert (
                 len(kwargs) == 0
             ), f"hnumpy does not support **kwargs currently for numpy ufuncs, ufunc: {ufunc}"
             return tracing_func(self, *input_tracers, **kwargs)
         raise NotImplementedError("Only __call__ method is supported currently")
+
+    def __array_function__(self, func, _types, args, kwargs):
+        """Catch calls to numpy function in routes them to hnp functions if supported.
+
+        Read more: https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch
+        """
+        tracing_func = self.get_tracing_func_for_np_function(func)
+        assert (
+            len(kwargs) == 0
+        ), f"hnumpy does not support **kwargs currently for numpy functions, func: {func}"
+        return tracing_func(*args, **kwargs)
 
     def astype(self, numpy_dtype: DTypeLike, *args, **kwargs) -> "NPTracer":
         r"""Support numpy astype feature.
@@ -77,22 +88,27 @@ class NPTracer(BaseTracer):
         return output_tracer
 
     @staticmethod
-    def get_tracing_func_for_np_ufunc(ufunc: numpy.ufunc) -> Callable:
-        """Get the tracing function for a numpy ufunc.
+    def get_tracing_func_for_np_function(func: Union[numpy.ufunc, Callable]) -> Callable:
+        """Get the tracing function for a numpy function.
 
         Args:
-            ufunc (numpy.ufunc): The numpy ufunc that will be traced
+            func (Union[numpy.ufunc, Callable]): The numpy function that will be traced
 
         Raises:
-            NotImplementedError: Raised if the passed ufunc is not supported by NPTracer
+            NotImplementedError: Raised if the passed function is not supported by NPTracer
 
         Returns:
-            Callable: the tracing function that needs to be called to trace ufunc
+            Callable: the tracing function that needs to be called to trace func
         """
-        tracing_func = NPTracer.UFUNC_ROUTING.get(ufunc, None)
+        tracing_func: Optional[Callable]
+        if isinstance(func, numpy.ufunc):
+            tracing_func = NPTracer.UFUNC_ROUTING.get(func, None)
+        else:
+            tracing_func = NPTracer.FUNC_ROUTING.get(func, None)
+
         if tracing_func is None:
             raise NotImplementedError(
-                f"NPTracer does not yet manage the following ufunc: {ufunc.__name__}"
+                f"NPTracer does not yet manage the following func: {func.__name__}"
             )
         return tracing_func
 
@@ -105,8 +121,8 @@ class NPTracer(BaseTracer):
         return self.__class__([], NPConstant(constant_data), 0)
 
     @staticmethod
-    def _manage_dtypes(ufunc: numpy.ufunc, *input_tracers: "NPTracer"):
-        output_dtypes = get_ufunc_numpy_output_dtype(
+    def _manage_dtypes(ufunc: Union[numpy.ufunc, Callable], *input_tracers: BaseTracer):
+        output_dtypes = get_numpy_function_output_dtype(
             ufunc, [input_tracer.output.data_type for input_tracer in input_tracers]
         )
         common_output_dtypes = [
@@ -132,7 +148,9 @@ class NPTracer(BaseTracer):
             op_name="np.rint",
         )
         output_tracer = self.__class__(
-            input_tracers, traced_computation=traced_computation, output_index=0
+            input_tracers,
+            traced_computation=traced_computation,
+            output_index=0,
         )
         return output_tracer
 
@@ -154,13 +172,44 @@ class NPTracer(BaseTracer):
             op_name="np.sin",
         )
         output_tracer = self.__class__(
-            input_tracers, traced_computation=traced_computation, output_index=0
+            input_tracers,
+            traced_computation=traced_computation,
+            output_index=0,
+        )
+        return output_tracer
+
+    def dot(self, other_tracer: "NPTracer", **_kwargs) -> "NPTracer":
+        """Function to trace numpy.dot.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        # input_tracers contains the other tracer of the dot product
+        dot_inputs = (self, self._sanitize(other_tracer))
+
+        common_output_dtypes = self._manage_dtypes(numpy.dot, *dot_inputs)
+        assert len(common_output_dtypes) == 1
+
+        traced_computation = Dot(
+            [input_tracer.output for input_tracer in dot_inputs],
+            common_output_dtypes[0],
+            delegate_evaluation_function=numpy.dot,
+        )
+
+        output_tracer = self.__class__(
+            dot_inputs,
+            traced_computation=traced_computation,
+            output_index=0,
         )
         return output_tracer
 
     UFUNC_ROUTING: Dict[numpy.ufunc, Callable] = {
         numpy.rint: rint,
         numpy.sin: sin,
+    }
+
+    FUNC_ROUTING: Dict[Callable, Callable] = {
+        numpy.dot: dot,
     }
 
 
