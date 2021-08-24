@@ -3,9 +3,9 @@ from typing import cast
 
 from ..data_types import Integer
 from ..data_types.dtypes_helpers import (
-    value_is_clear_integer,
-    value_is_encrypted_integer,
-    value_is_integer,
+    value_is_clear_scalar_integer,
+    value_is_encrypted_scalar_integer,
+    value_is_scalar_integer,
 )
 from ..operator_graph import OPGraph
 
@@ -21,7 +21,7 @@ def is_graph_values_compatible_with_mlir(op_graph: OPGraph) -> bool:
     """
     return all(
         all(
-            value_is_integer(out) and not cast(Integer, out.data_type).is_signed
+            value_is_scalar_integer(out) and not cast(Integer, out.data_type).is_signed
             for out in out_node.outputs
         )
         for out_node in op_graph.output_nodes.values()
@@ -37,9 +37,9 @@ def _set_all_bit_width(op_graph: OPGraph, p: int):
     """
     for node in op_graph.graph.nodes:
         for value in node.outputs + node.inputs:
-            if value_is_clear_integer(value):
+            if value_is_clear_scalar_integer(value):
                 value.data_type.bit_width = p + 1
-            elif value_is_encrypted_integer(value):
+            elif value_is_encrypted_scalar_integer(value):
                 value.data_type.bit_width = p
 
 
@@ -52,8 +52,8 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
     max_bit_width = 0
     for node in op_graph.graph.nodes:
         for value_out in node.outputs:
-            if value_is_clear_integer(value_out):
+            if value_is_clear_scalar_integer(value_out):
                 max_bit_width = max(max_bit_width, value_out.data_type.bit_width - 1)
-            elif value_is_encrypted_integer(value_out):
+            elif value_is_encrypted_scalar_integer(value_out):
                 max_bit_width = max(max_bit_width, value_out.data_type.bit_width)
     _set_all_bit_width(op_graph, max_bit_width)

@@ -12,8 +12,8 @@ from zamalang.dialects import hlfhe
 from .. import values
 from ..data_types import Integer
 from ..data_types.dtypes_helpers import (
-    value_is_clear_integer,
-    value_is_encrypted_unsigned_integer,
+    value_is_clear_scalar_integer,
+    value_is_encrypted_scalar_unsigned_integer,
 )
 from ..operator_graph import OPGraph
 from ..representation import intermediate as ir
@@ -50,11 +50,11 @@ class MLIRConverter:
         Returns:
             corresponding MLIR type
         """
-        if value_is_encrypted_unsigned_integer(value):
+        if value_is_encrypted_scalar_unsigned_integer(value):
             return hlfhe.EncryptedIntegerType.get(
                 self.context, cast(Integer, value.data_type).bit_width
             )
-        if value_is_clear_integer(value):
+        if value_is_clear_scalar_integer(value):
             dtype = cast(Integer, value.data_type)
             if dtype.is_signed:
                 return IntegerType.get_signed(dtype.bit_width, context=self.context)

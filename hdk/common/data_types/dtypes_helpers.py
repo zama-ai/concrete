@@ -22,63 +22,64 @@ FLOAT_TYPES = (Float,)
 BASE_DATA_TYPES = INTEGER_TYPES + FLOAT_TYPES
 
 
-def value_is_encrypted_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted_integer.
+def value_is_encrypted_scalar_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is an encrypted ScalarValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is an encrypted value of type Integer
+        bool: True if the passed value_to_check is an encrypted ScalarValue of type Integer
     """
     return (
-        isinstance(value_to_check, BaseValue)
+        isinstance(value_to_check, ScalarValue)
         and value_to_check.is_encrypted
         and isinstance(value_to_check.data_type, INTEGER_TYPES)
     )
 
 
-def value_is_encrypted_unsigned_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted_integer.
+def value_is_encrypted_scalar_unsigned_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is an encrypted ScalarValue of type unsigned Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is an encrypted value of type Integer and unsigned
+        bool: True if the passed value_to_check is an encrypted ScalarValue of type Integer and
+            unsigned
     """
     return (
-        value_is_encrypted_integer(value_to_check)
+        value_is_encrypted_scalar_integer(value_to_check)
         and not cast(Integer, value_to_check.data_type).is_signed
     )
 
 
-def value_is_clear_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is a clear integer.
+def value_is_clear_scalar_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is a clear ScalarValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is a clear value of type Integer
+        bool: True if the passed value_to_check is a clear ScalarValue of type Integer
     """
     return (
-        isinstance(value_to_check, BaseValue)
+        isinstance(value_to_check, ScalarValue)
         and value_to_check.is_clear
         and isinstance(value_to_check.data_type, INTEGER_TYPES)
     )
 
 
-def value_is_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is of type integer.
+def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is a ScalarValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is a value of type Integer
+        bool: True if the passed value_to_check is a ScalarValue of type Integer
     """
-    return isinstance(value_to_check, BaseValue) and isinstance(
+    return isinstance(value_to_check, ScalarValue) and isinstance(
         value_to_check.data_type, INTEGER_TYPES
     )
 

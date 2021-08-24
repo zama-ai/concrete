@@ -6,8 +6,8 @@ from hdk.common.data_types.base import BaseDataType
 from hdk.common.data_types.dtypes_helpers import (
     find_type_to_hold_both_lossy,
     mix_values_determine_holding_dtype,
-    value_is_encrypted_integer,
-    value_is_encrypted_unsigned_integer,
+    value_is_encrypted_scalar_integer,
+    value_is_encrypted_scalar_unsigned_integer,
 )
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
@@ -37,7 +37,7 @@ from hdk.common.values import (
 )
 def test_value_is_encrypted_integer(value: BaseValue, expected_result: bool):
     """Test value_is_encrypted_integer helper"""
-    assert value_is_encrypted_integer(value) == expected_result
+    assert value_is_encrypted_scalar_integer(value) == expected_result
 
 
 @pytest.mark.parametrize(
@@ -62,7 +62,7 @@ def test_value_is_encrypted_integer(value: BaseValue, expected_result: bool):
 )
 def test_value_is_encrypted_unsigned_integer(value: BaseValue, expected_result: bool):
     """Test value_is_encrypted_unsigned_integer helper"""
-    assert value_is_encrypted_unsigned_integer(value) == expected_result
+    assert value_is_encrypted_scalar_unsigned_integer(value) == expected_result
 
 
 class UnsupportedDataType(BaseDataType):

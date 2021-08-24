@@ -15,8 +15,8 @@ from zamalang.dialects import hlfhe
 
 from ...common.data_types.integers import Integer
 from ..data_types.dtypes_helpers import (
-    value_is_clear_integer,
-    value_is_encrypted_unsigned_integer,
+    value_is_clear_scalar_integer,
+    value_is_encrypted_scalar_unsigned_integer,
 )
 from ..representation import intermediate as ir
 
@@ -25,18 +25,18 @@ def add(node, preds, ir_to_mlir_node, ctx):
     """Converter function for the addition intermediate node."""
     assert len(node.inputs) == 2, "addition should have two inputs"
     assert len(node.outputs) == 1, "addition should have a single output"
-    if value_is_encrypted_unsigned_integer(node.inputs[0]) and value_is_clear_integer(
+    if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
         node.inputs[1]
     ):
         return _add_eint_int(node, preds, ir_to_mlir_node, ctx)
-    if value_is_encrypted_unsigned_integer(node.inputs[1]) and value_is_clear_integer(
+    if value_is_encrypted_scalar_unsigned_integer(node.inputs[1]) and value_is_clear_scalar_integer(
         node.inputs[0]
     ):
         # flip lhs and rhs
         return _add_eint_int(node, preds[::-1], ir_to_mlir_node, ctx)
-    if value_is_encrypted_unsigned_integer(node.inputs[0]) and value_is_encrypted_unsigned_integer(
-        node.inputs[1]
-    ):
+    if value_is_encrypted_scalar_unsigned_integer(
+        node.inputs[0]
+    ) and value_is_encrypted_scalar_unsigned_integer(node.inputs[1]):
         return _add_eint_eint(node, preds, ir_to_mlir_node, ctx)
     raise TypeError(
         f"Don't support addition between {type(node.inputs[0])} and {type(node.inputs[1])}"
@@ -69,7 +69,7 @@ def sub(node, preds, ir_to_mlir_node, ctx):
     """Converter function for the subtraction intermediate node."""
     assert len(node.inputs) == 2, "subtraction should have two inputs"
     assert len(node.outputs) == 1, "subtraction should have a single output"
-    if value_is_clear_integer(node.inputs[0]) and value_is_encrypted_unsigned_integer(
+    if value_is_clear_scalar_integer(node.inputs[0]) and value_is_encrypted_scalar_unsigned_integer(
         node.inputs[1]
     ):
         return _sub_int_eint(node, preds, ir_to_mlir_node, ctx)
@@ -93,11 +93,11 @@ def mul(node, preds, ir_to_mlir_node, ctx):
     """Converter function for the multiplication intermediate node."""
     assert len(node.inputs) == 2, "multiplication should have two inputs"
     assert len(node.outputs) == 1, "multiplication should have a single output"
-    if value_is_encrypted_unsigned_integer(node.inputs[0]) and value_is_clear_integer(
+    if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
         node.inputs[1]
     ):
         return _mul_eint_int(node, preds, ir_to_mlir_node, ctx)
-    if value_is_encrypted_unsigned_integer(node.inputs[1]) and value_is_clear_integer(
+    if value_is_encrypted_scalar_unsigned_integer(node.inputs[1]) and value_is_clear_scalar_integer(
         node.inputs[0]
     ):
         # flip lhs and rhs
@@ -120,7 +120,7 @@ def _mul_eint_int(node, preds, ir_to_mlir_node, ctx):
 
 def constant(node, _, __, ctx):
     """Converter function for constant inputs."""
-    if not value_is_clear_integer(node.outputs[0]):
+    if not value_is_clear_scalar_integer(node.outputs[0]):
         raise TypeError("Don't support non-integer constants")
     dtype = cast(Integer, node.outputs[0].data_type)
     if dtype.is_signed:
