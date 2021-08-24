@@ -7,8 +7,14 @@ build:
 zamacompiler:
 	make -C build/ zamacompiler
 
-test:
+test-check: zamacompiler
 	${LLVM_PROJECT}/build/bin/llvm-lit -v tests/
+
+test-end-to-end-jit:
+	make -C build/ end_to_end_jit_test
+	./build/bin/end_to_end_jit_test
+
+test: test-check test-end-to-end-jit
 
 test_python:
 	pytest -v tests/python
