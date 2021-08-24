@@ -8,10 +8,12 @@ fn test_soft_hard_eq() {
         Some(AesKey(0)),
         Some(State::from_aes_counter(AesCtr(0))),
         None,
+        None,
     );
     let mut hard = HardAesCtrGenerator::new(
         Some(AesKey(0)),
         Some(State::from_aes_counter(AesCtr(0))),
+        None,
         None,
     );
     for _ in 0..1000 {

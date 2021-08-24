@@ -19,7 +19,7 @@ use rayon::prelude::*;
 pub struct RandomGenerator(RandomGeneratorImpl);
 
 impl RandomGenerator {
-    pub(crate) fn generate_next(&mut self) -> u8 {
+    pub(crate) fn generate_next(&mut self) -> Option<u8> {
         self.0.generate_next()
     }
 
@@ -30,43 +30,32 @@ impl RandomGenerator {
     /// ```rust
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
-    /// assert!(!generator.is_bounded());
+    /// assert_eq!(generator.remaining_bytes(), u128::MAX);
     /// ```
     pub fn new(seed: Option<u128>) -> RandomGenerator {
         RandomGenerator(RandomGeneratorImpl::new(seed))
     }
 
-    /// Returns the number of bytes that can still be generated, if the generator is bounded.
+    /// Returns the number of bytes that can still be generated.
     ///
     /// # Example
     ///
     /// ```rust
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
-    /// assert_eq!(generator.remaining_bytes(), None);
-    /// let mut generator = generator.try_bounded_fork(1, 50).unwrap().next().unwrap();
-    /// assert_eq!(generator.remaining_bytes(), Some(50));
+    /// assert_eq!(generator.remaining_bytes(), u128::MAX);
+    /// let mut generator = generator
+    ///     .try_sequential_fork(1, 50)
+    ///     .unwrap()
+    ///     .next()
+    ///     .unwrap();
+    /// assert_eq!(generator.remaining_bytes(), 50);
     /// ```
-    pub fn remaining_bytes(&self) -> Option<usize> {
+    pub fn remaining_bytes(&self) -> u128 {
         self.0.remaining_bytes()
     }
 
-    /// Returns whether the generator is bounded or not.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// assert!(!generator.is_bounded());
-    /// let mut generator = generator.try_bounded_fork(1, 50).unwrap().next().unwrap();
-    /// assert!(generator.is_bounded());
-    /// ```
-    pub fn is_bounded(&self) -> bool {
-        self.0.is_bounded()
-    }
-
-    /// Tries to perform a bounded fork of the current generator into `n_child` generator bounded
+    /// Tries to perform a sequential fork of the current generator into `n_child` generator bounded
     /// to `bytes_per_child`.
     ///
     /// If `n_child*bytes_per_child` exceeds the bound of the current generator, the method
@@ -78,21 +67,21 @@ impl RandomGenerator {
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut free_generator = RandomGenerator::new(None);
     /// let children = free_generator
-    ///     .try_bounded_fork(5, 50)
+    ///     .try_sequential_fork(5, 50)
     ///     .unwrap()
     ///     .collect::<Vec<_>>();
     /// ```
-    pub fn try_bounded_fork(
+    pub fn try_sequential_fork(
         &mut self,
         n_child: usize,
         bytes_per_child: usize,
     ) -> Option<impl Iterator<Item = RandomGenerator>> {
         self.0
-            .try_bounded_fork(n_child, bytes_per_child)
+            .try_sequential_fork(n_child, bytes_per_child)
             .map(|iter| iter.map(Self))
     }
 
-    /// Tries to perform a bounded fork of the current generator into `n_child` generator bounded
+    /// Tries to perform a sequential fork of the current generator into `n_child` generator bounded
     /// to `bytes_per_child`, as a parallel iterator.
     ///
     /// If `n_child*bytes_per_child` exceeds the bound of the current generator, the method
@@ -109,22 +98,22 @@ impl RandomGenerator {
     /// use rayon::iter::ParallelIterator;
     /// let mut free_generator = RandomGenerator::new(None);
     /// let children = free_generator
-    ///     .par_try_bounded_fork(5, 50)
+    ///     .par_try_sequential_fork(5, 50)
     ///     .unwrap()
     ///     .collect::<Vec<_>>();
     /// ```
     #[cfg(feature = "multithread")]
-    pub fn par_try_bounded_fork(
+    pub fn par_try_sequential_fork(
         &mut self,
         n_child: usize,
         bytes_per_child: usize,
     ) -> Option<impl IndexedParallelIterator<Item = RandomGenerator>> {
         self.0
-            .par_try_bounded_fork(n_child, bytes_per_child)
+            .par_try_sequential_fork(n_child, bytes_per_child)
             .map(|iter| iter.map(Self))
     }
 
-    /// Tries to perform an unbounded fork of the current generator into `n_child` unbounded
+    /// Tries to perform an alternate fork of the current generator into `n_child`
     /// generators.
     ///
     /// # Example
@@ -133,20 +122,20 @@ impl RandomGenerator {
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut free_generator = RandomGenerator::new(None);
     /// let children = free_generator
-    ///     .try_unbounded_fork(5)
+    ///     .try_alternate_fork(5)
     ///     .unwrap()
     ///     .collect::<Vec<_>>();
     /// ```
-    pub fn try_unbounded_fork(
+    pub fn try_alternate_fork(
         &mut self,
         n_child: usize,
     ) -> Option<impl Iterator<Item = RandomGenerator>> {
         self.0
-            .try_unbounded_fork(n_child)
+            .try_alternate_fork(n_child)
             .map(|iter| iter.map(Self))
     }
 
-    /// Tries to perform an unbounded fork of the current generator into `n_child` unbounded
+    /// Tries to perform an alternate fork of the current generator into `n_child`
     /// generators, as a parallel iterator.
     ///
     /// # Notes
@@ -160,17 +149,17 @@ impl RandomGenerator {
     /// use rayon::iter::ParallelIterator;
     /// let mut free_generator = RandomGenerator::new(None);
     /// let children = free_generator
-    ///     .par_try_unbounded_fork(5)
+    ///     .par_try_alternate_fork(5)
     ///     .unwrap()
     ///     .collect::<Vec<_>>();
     /// ```
     #[cfg(feature = "multithread")]
-    pub fn par_try_unbounded_fork(
+    pub fn par_try_alternate_fork(
         &mut self,
         n_child: usize,
     ) -> Option<impl IndexedParallelIterator<Item = RandomGenerator>> {
         self.0
-            .par_try_unbounded_fork(n_child)
+            .par_try_alternate_fork(n_child)
             .map(|iter| iter.map(Self))
     }
 

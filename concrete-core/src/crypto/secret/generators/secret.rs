@@ -13,13 +13,8 @@ impl SecretRandomGenerator {
     }
 
     /// Returns the number of remaining bytes, if the generator is bounded.
-    pub fn remaining_bytes(&self) -> Option<usize> {
+    pub fn remaining_bytes(&self) -> u128 {
         self.0.remaining_bytes()
-    }
-
-    /// Returns whether the generator is bounded.
-    pub fn is_bounded(&self) -> bool {
-        self.0.is_bounded()
     }
 
     // Returns a tensor with random uniform binary values.

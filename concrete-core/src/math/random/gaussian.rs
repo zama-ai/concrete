@@ -33,7 +33,7 @@ macro_rules! implement_gaussian {
                     };
                     uniform_rand_bytes
                         .iter_mut()
-                        .for_each(|a| *a = generator.generate_next());
+                        .for_each(|a| *a = generator.generate_next().unwrap());
                     let size = <$T>::BITS as i32;
                     let mut u: $T = uniform_rand[0].cast_into();
                     u *= <$T>::TWO.powi(-size + 1);

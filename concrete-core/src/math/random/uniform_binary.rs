@@ -9,7 +9,7 @@ macro_rules! implement_uniform_binary {
         impl RandomGenerable<UniformBinary> for $T {
             #[allow(unused)]
             fn generate_one(generator: &mut RandomGenerator, distribution: UniformBinary) -> Self {
-                if generator.generate_next() & 1 == 1 {
+                if generator.generate_next().unwrap() & 1 == 1 {
                     1
                 } else {
                     0

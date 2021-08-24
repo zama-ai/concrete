@@ -10,7 +10,7 @@ macro_rules! implement_uniform_ternary {
             #[allow(unused)]
             fn generate_one(generator: &mut RandomGenerator, distribution: UniformTernary) -> Self {
                 loop {
-                    match generator.generate_next() & 3 {
+                    match generator.generate_next().unwrap() & 3 {
                         0 => return 0,
                         1 => return 1,
                         2 => return (0 as $T).wrapping_sub(1),

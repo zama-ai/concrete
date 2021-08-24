@@ -12,7 +12,7 @@ pub fn main() {
     loop {
         buffer
             .iter_mut()
-            .for_each(|a| *a = generator.generate_next());
+            .for_each(|a| *a = generator.generate_next().unwrap());
         stdout.write_all(&buffer).unwrap();
     }
 }

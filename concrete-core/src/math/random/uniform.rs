@@ -11,7 +11,8 @@ macro_rules! implement_uniform {
             #[allow(unused)]
             fn generate_one(generator: &mut RandomGenerator, distribution: Uniform) -> Self {
                 let mut buf = [0; $bytes];
-                buf.iter_mut().for_each(|a| *a = generator.generate_next());
+                buf.iter_mut()
+                    .for_each(|a| *a = generator.generate_next().unwrap());
                 unsafe { *(buf.as_ptr() as *const $T) }
             }
         }

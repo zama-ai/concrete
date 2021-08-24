@@ -33,14 +33,9 @@ impl EncryptionRandomGenerator {
         self.noise = RandomGenerator::new(Some(seed));
     }
 
-    /// Returns the number of remaining bytes, if the generator is bounded.
-    pub fn remaining_bytes(&self) -> Option<usize> {
+    /// Returns the number of remaining bytes.
+    pub fn remaining_bytes(&self) -> u128 {
         self.mask.remaining_bytes()
-    }
-
-    /// Returns whether the generator is bounded.
-    pub fn is_bounded(&self) -> bool {
-        self.mask.is_bounded()
     }
 
     // Forks the generator, when splitting a bootstrap key into ggsw ct.
@@ -160,8 +155,8 @@ impl EncryptionRandomGenerator {
         mask_bytes: usize,
     ) -> Option<impl Iterator<Item = EncryptionRandomGenerator>> {
         // We try to fork the generators
-        let mask_iter = self.mask.try_bounded_fork(n_child, mask_bytes)?;
-        let noise_iter = self.noise.try_unbounded_fork(n_child)?;
+        let mask_iter = self.mask.try_sequential_fork(n_child, mask_bytes)?;
+        let noise_iter = self.noise.try_alternate_fork(n_child)?;
 
         // We return a proper iterator.
         Some(
@@ -179,8 +174,8 @@ impl EncryptionRandomGenerator {
         mask_bytes: usize,
     ) -> Option<impl IndexedParallelIterator<Item = EncryptionRandomGenerator>> {
         // We try to fork the generators
-        let mask_iter = self.mask.par_try_bounded_fork(n_child, mask_bytes)?;
-        let noise_iter = self.noise.par_try_unbounded_fork(n_child)?;
+        let mask_iter = self.mask.par_try_sequential_fork(n_child, mask_bytes)?;
+        let noise_iter = self.noise.par_try_alternate_fork(n_child)?;
 
         // We return a proper iterator.
         Some(
