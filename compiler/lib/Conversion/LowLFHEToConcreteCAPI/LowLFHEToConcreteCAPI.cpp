@@ -215,6 +215,407 @@ struct LowLFHEIntToCleartextOpPattern
   };
 };
 
+struct GlweFromTableOpPattern
+    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::GlweFromTable> {
+  GlweFromTableOpPattern(mlir::MLIRContext *context,
+                         mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::GlweFromTable>(
+            context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::LowLFHE::GlweFromTable op,
+                  mlir::PatternRewriter &rewriter) const override {
+    LowLFHEToConcreteCAPITypeConverter typeConverter;
+    auto errType =
+        mlir::MemRefType::get({}, mlir::IndexType::get(rewriter.getContext()));
+    // Insert forward declaration of the alloc_glwe function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {
+              errType,
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+          },
+          {mlir::zamalang::LowLFHE::GlweCiphertextType::get(
+              rewriter.getContext())});
+      if (insertForwardDeclaration(op, rewriter, "allocate_glwe_ciphertext_u64",
+                                   funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+    // Insert forward declaration of the alloc_plaintext_list function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {errType, mlir::IntegerType::get(rewriter.getContext(), 32)},
+          {mlir::zamalang::LowLFHE::PlaintextListType::get(
+              rewriter.getContext())});
+      if (insertForwardDeclaration(op, rewriter, "allocate_plaintext_list_u64",
+                                   funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+
+    // Insert forward declaration of the foregin_pt_list function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {errType,
+           //  mlir::UnrankedTensorType::get(
+           //      mlir::IntegerType::get(rewriter.getContext(), 64)),
+           op->getOperandTypes().front(),
+           mlir::IntegerType::get(rewriter.getContext(), 64)},
+          {mlir::zamalang::LowLFHE::ForeignPlaintextListType::get(
+              rewriter.getContext())});
+      if (insertForwardDeclaration(op, rewriter, "foreign_plaintext_list_u64",
+                                   funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+
+    // Insert forward declaration of the fill_plaintext_list function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {errType,
+           mlir::zamalang::LowLFHE::PlaintextListType::get(
+               rewriter.getContext()),
+           mlir::zamalang::LowLFHE::ForeignPlaintextListType::get(
+               rewriter.getContext())},
+          {});
+      if (insertForwardDeclaration(
+              op, rewriter, "fill_plaintext_list_with_expansion_u64", funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+
+    // Insert forward declaration of the add_plaintext_list_glwe function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {errType,
+           mlir::zamalang::LowLFHE::GlweCiphertextType::get(
+               rewriter.getContext()),
+           mlir::zamalang::LowLFHE::GlweCiphertextType::get(
+               rewriter.getContext()),
+           mlir::zamalang::LowLFHE::PlaintextListType::get(
+               rewriter.getContext())},
+          {});
+      if (insertForwardDeclaration(
+              op, rewriter, "add_plaintext_list_glwe_ciphertext_u64", funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+    auto errOp = rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
+    // allocate two glwe to build accumulator
+    auto glweSizeOp =
+        rewriter.create<mlir::ConstantOp>(op.getLoc(), op->getAttr("k"));
+    auto polySizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(), op->getAttr("polynomialSize"));
+    mlir::SmallVector<mlir::Value> allocGlweOperands{errOp, glweSizeOp,
+                                                     polySizeOp};
+    // first accumulator would replace the op since it's the returned value
+    auto accumulatorOp = rewriter.replaceOpWithNewOp<mlir::CallOp>(
+        op, "allocate_glwe_ciphertext_u64",
+        mlir::zamalang::LowLFHE::GlweCiphertextType::get(rewriter.getContext()),
+        allocGlweOperands);
+    // second accumulator is just needed to build the actual accumulator
+    auto _accumulatorOp = rewriter.create<mlir::CallOp>(
+        op.getLoc(), "allocate_glwe_ciphertext_u64",
+        mlir::zamalang::LowLFHE::GlweCiphertextType::get(rewriter.getContext()),
+        allocGlweOperands);
+    // allocate plaintext list
+    mlir::SmallVector<mlir::Value> allocPlaintextListOperands{errOp,
+                                                              polySizeOp};
+    auto plaintextListOp = rewriter.create<mlir::CallOp>(
+        op.getLoc(), "allocate_plaintext_list_u64",
+        mlir::zamalang::LowLFHE::PlaintextListType::get(rewriter.getContext()),
+        allocPlaintextListOperands);
+    // create foreign plaintext
+    auto rankedTensorType =
+        op->getOperandTypes().front().cast<mlir::RankedTensorType>();
+    if (rankedTensorType.getRank() != 1) {
+      llvm::errs() << "table lookup must be of a single dimension";
+      return mlir::failure();
+    }
+    auto sizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(), rewriter.getIntegerAttr(
+                         mlir::IntegerType::get(rewriter.getContext(), 64),
+                         rankedTensorType.getDimSize(0)));
+    mlir::SmallVector<mlir::Value> ForeignPlaintextListOperands{
+        errOp, op->getOperand(0), sizeOp};
+    auto foreignPlaintextListOp = rewriter.create<mlir::CallOp>(
+        op.getLoc(), "foreign_plaintext_list_u64",
+        mlir::zamalang::LowLFHE::ForeignPlaintextListType::get(
+            rewriter.getContext()),
+        ForeignPlaintextListOperands);
+    // fill plaintext list
+    mlir::SmallVector<mlir::Value> FillPlaintextListOperands{
+        errOp, plaintextListOp.getResult(0),
+        foreignPlaintextListOp.getResult(0)};
+    rewriter.create<mlir::CallOp>(
+        op.getLoc(), "fill_plaintext_list_with_expansion_u64",
+        mlir::TypeRange({}), FillPlaintextListOperands);
+    // add plaintext list and glwe to build final accumulator for pbs
+    mlir::SmallVector<mlir::Value> AddPlaintextListGlweOperands{
+        errOp, accumulatorOp.getResult(0), _accumulatorOp.getResult(0),
+        plaintextListOp.getResult(0)};
+    rewriter.create<mlir::CallOp>(
+        op.getLoc(), "add_plaintext_list_glwe_ciphertext_u64",
+        mlir::TypeRange({}), AddPlaintextListGlweOperands);
+    return mlir::success();
+  };
+};
+
+// TODO:
+// Parameterization
+// Get concrete key
+struct LowLFHEBootstrapLweOpPattern
+    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::BootstrapLweOp> {
+  LowLFHEBootstrapLweOpPattern(mlir::MLIRContext *context,
+                               mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::BootstrapLweOp>(
+            context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::LowLFHE::BootstrapLweOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto errType =
+        mlir::MemRefType::get({}, mlir::IndexType::get(rewriter.getContext()));
+    auto lweOperandType = op->getOperandTypes().front();
+    // Insert forward declaration of the allocate_bsk_key function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {
+              errType,
+              // level
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              // baselog
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              // glwe size
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              // lwe size
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              // polynomial size
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+          },
+          {mlir::zamalang::LowLFHE::LweBootstrapKeyType::get(
+              rewriter.getContext())});
+      if (insertForwardDeclaration(op, rewriter,
+                                   "allocate_lwe_bootstrap_key_u64", funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+    // Insert forward declaration of the allocate_lwe_ct function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {
+              errType,
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+          },
+          {lweOperandType});
+      if (insertForwardDeclaration(op, rewriter, "allocate_lwe_ciphertext_u64",
+                                   funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+    // Insert forward declaration of the bootstrap function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {
+              errType,
+              mlir::zamalang::LowLFHE::LweBootstrapKeyType::get(
+                  rewriter.getContext()),
+              lweOperandType,
+              lweOperandType,
+              mlir::zamalang::LowLFHE::GlweCiphertextType::get(
+                  rewriter.getContext()),
+          },
+          {});
+      if (insertForwardDeclaration(op, rewriter, "bootstrap_lwe_u64", funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+
+    auto errOp = rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
+    // allocate the result lwe ciphertext
+    auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
+    auto allocateLweCtOp = rewriter.replaceOpWithNewOp<mlir::CallOp>(
+        op, "allocate_lwe_ciphertext_u64", lweOperandType, allocLweCtOperands);
+    // allocate bsk
+    auto decompLevelCountOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    auto decompBaseLogOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    auto glweSizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    auto polySizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    mlir::SmallVector<mlir::Value> allocBskOperands{
+        errOp,      decompLevelCountOp, decompBaseLogOp,
+        glweSizeOp, lweSizeOp,          polySizeOp};
+    auto allocateBskOp = rewriter.create<mlir::CallOp>(
+        op.getLoc(), "allocate_lwe_bootstrap_key_u64",
+        mlir::zamalang::LowLFHE::LweBootstrapKeyType::get(
+            rewriter.getContext()),
+        allocBskOperands);
+    // bootstrap
+    mlir::SmallVector<mlir::Value> bootstrapOperands{
+        errOp, allocateBskOp.getResult(0), allocateLweCtOp.getResult(0),
+        op->getOperand(0), op->getOperand(1)};
+    rewriter.create<mlir::CallOp>(op.getLoc(), "bootstrap_lwe_u64",
+                                  mlir::TypeRange({}), bootstrapOperands);
+
+    return mlir::success();
+  };
+};
+
+// TODO:
+// Parameterization
+// Get concrete key
+struct LowLFHEKeySwitchLweOpPattern
+    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::KeySwitchLweOp> {
+  LowLFHEKeySwitchLweOpPattern(mlir::MLIRContext *context,
+                               mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::KeySwitchLweOp>(
+            context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::LowLFHE::KeySwitchLweOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto errType =
+        mlir::MemRefType::get({}, mlir::IndexType::get(rewriter.getContext()));
+    auto lweOperandType = op->getOperandTypes().front();
+    // Insert forward declaration of the allocate_bsk_key function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {
+              errType,
+              // level
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              // baselog
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              // input lwe size
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+              // output lwe size
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+          },
+          {mlir::zamalang::LowLFHE::LweKeySwitchKeyType::get(
+              rewriter.getContext())});
+      if (insertForwardDeclaration(op, rewriter,
+                                   "allocate_lwe_keyswitch_key_u64", funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+    // Insert forward declaration of the allocate_lwe_ct function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {
+              errType,
+              mlir::IntegerType::get(rewriter.getContext(), 32),
+          },
+          {lweOperandType});
+      if (insertForwardDeclaration(op, rewriter, "allocate_lwe_ciphertext_u64",
+                                   funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+    // TODO: build the right type here
+    auto lweOutputType = lweOperandType;
+    // Insert forward declaration of the keyswitch function
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(),
+          {
+              errType,
+              // ksk
+              mlir::zamalang::LowLFHE::LweKeySwitchKeyType::get(
+                  rewriter.getContext()),
+              // output ct
+              lweOutputType,
+              // input ct
+              lweOperandType,
+          },
+          {});
+      if (insertForwardDeclaration(op, rewriter, "keyswitch_lwe_u64", funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+
+    auto errOp = rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
+    // allocate the result lwe ciphertext
+    auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
+    auto allocateLweCtOp = rewriter.replaceOpWithNewOp<mlir::CallOp>(
+        op, "allocate_lwe_ciphertext_u64", lweOutputType, allocLweCtOperands);
+    // allocate ksk
+    auto decompLevelCountOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    auto decompBaseLogOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    auto inputLweSizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    auto outputLweSizeOp = rewriter.create<mlir::ConstantOp>(
+        op.getLoc(),
+        mlir::IntegerAttr::get(
+            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+    mlir::SmallVector<mlir::Value> allockskOperands{
+        errOp, decompLevelCountOp, decompBaseLogOp, inputLweSizeOp,
+        outputLweSizeOp};
+    auto allocateKskOp = rewriter.create<mlir::CallOp>(
+        op.getLoc(), "allocate_lwe_keyswitch_key_u64",
+        mlir::zamalang::LowLFHE::LweKeySwitchKeyType::get(
+            rewriter.getContext()),
+        allockskOperands);
+    // bootstrap
+    mlir::SmallVector<mlir::Value> bootstrapOperands{
+        errOp, allocateKskOp.getResult(0), allocateLweCtOp.getResult(0),
+        op->getOperand(0)};
+    rewriter.create<mlir::CallOp>(op.getLoc(), "keyswitch_lwe_u64",
+                                  mlir::TypeRange({}), bootstrapOperands);
+
+    return mlir::success();
+  };
+};
+
 /// Populate the RewritePatternSet with all patterns that rewrite LowLFHE
 /// operators to the corresponding function call to the `Concrete C API`.
 void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
@@ -237,6 +638,9 @@ void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
   patterns.add<LowLFHEEncodeIntOpPattern>(patterns.getContext());
   patterns.add<LowLFHEIntToCleartextOpPattern>(patterns.getContext());
   patterns.add<LowLFHEZeroOpPattern>(patterns.getContext());
+  patterns.add<GlweFromTableOpPattern>(patterns.getContext());
+  patterns.add<LowLFHEKeySwitchLweOpPattern>(patterns.getContext());
+  patterns.add<LowLFHEBootstrapLweOpPattern>(patterns.getContext());
 }
 
 namespace {
