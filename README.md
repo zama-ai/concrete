@@ -3,6 +3,8 @@
   <h1 align="center">Concrete</h1>
 </p>
 
+[![Coverage Status](https://coveralls.io/repos/github/zama-ai/concrete/badge.svg?branch=master)](https://coveralls.io/github/zama-ai/concrete?branch=master)
+
 The `concrete` ecosystem is a set of crates that implements Zama's variant of
 [TFHE](https://eprint.iacr.org/2018/421.pdf). In a nutshell,
 [fully homomorphic encryption (FHE)](https://en.wikipedia.org/wiki/Homomorphic_encryption), allows
