@@ -10,6 +10,7 @@ from PIL import Image
 
 from ..operator_graph import OPGraph
 from ..representation import intermediate as ir
+from ..representation.intermediate import ALL_IR_NODES
 
 IR_NODE_COLOR_MAPPING = {
     ir.Input: "blue",
@@ -22,6 +23,14 @@ IR_NODE_COLOR_MAPPING = {
     "TLU": "grey",
     "output": "magenta",
 }
+
+_missing_nodes_in_mapping = ALL_IR_NODES - IR_NODE_COLOR_MAPPING.keys()
+assert len(_missing_nodes_in_mapping) == 0, (
+    f"Missing IR node in IR_NODE_COLOR_MAPPING : "
+    f"{', '.join(sorted(str(node_type) for node_type in _missing_nodes_in_mapping))}"
+)
+
+del _missing_nodes_in_mapping
 
 
 def draw_graph(

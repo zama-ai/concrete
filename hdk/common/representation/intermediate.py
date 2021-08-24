@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type
 
 from ..data_types.base import BaseDataType
 from ..data_types.dtypes_helpers import (
@@ -12,6 +12,8 @@ from ..data_types.dtypes_helpers import (
 from ..values import BaseValue
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
+
+ALL_IR_NODES: Set[Type] = set()
 
 
 class IntermediateNode(ABC):
@@ -28,6 +30,11 @@ class IntermediateNode(ABC):
     ) -> None:
         self.inputs = list(inputs)
         assert all(isinstance(x, BaseValue) for x in self.inputs)
+
+    # Register all IR nodes
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        ALL_IR_NODES.add(cls)
 
     def _init_binary(
         self,
