@@ -3,9 +3,9 @@
 import pytest
 
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import ClearValue, EncryptedValue
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
+from hdk.common.values import ClearValue, EncryptedValue
 from hdk.hnumpy import tracing
 
 LOOKUP_TABLE_FROM_2B_TO_4B = LookupTable([9, 2, 4, 11])

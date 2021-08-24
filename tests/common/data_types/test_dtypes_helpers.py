@@ -11,7 +11,7 @@ from hdk.common.data_types.dtypes_helpers import (
 )
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import BaseValue, ClearValue, EncryptedValue
+from hdk.common.values import BaseValue, ClearValue, EncryptedValue
 
 
 @pytest.mark.parametrize(

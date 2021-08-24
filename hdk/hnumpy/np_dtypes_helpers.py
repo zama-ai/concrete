@@ -15,7 +15,7 @@ from ..common.data_types.dtypes_helpers import (
 )
 from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
-from ..common.data_types.values import BaseValue, ScalarValue
+from ..common.values import BaseValue, ScalarValue
 
 NUMPY_TO_HDK_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
     numpy.dtype(numpy.int32): Integer(32, is_signed=True),

@@ -6,8 +6,8 @@ from typing import Callable, Dict, Iterable, OrderedDict, Set, Type
 import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
 
-from ..data_types import BaseValue
 from ..representation import intermediate as ir
+from ..values import BaseValue
 from .base_tracer import BaseTracer
 
 

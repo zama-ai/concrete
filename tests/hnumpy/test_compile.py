@@ -6,9 +6,9 @@ import numpy
 import pytest
 
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import EncryptedValue
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
+from hdk.common.values import EncryptedValue
 from hdk.hnumpy.compile import (
     compile_numpy_function,
     compile_numpy_function_into_op_graph,

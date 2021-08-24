@@ -3,8 +3,8 @@ import pytest
 
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import ClearValue
 from hdk.common.mlir.converters import add, constant, mul, sub
+from hdk.common.values import ClearValue
 
 
 class MockNode:

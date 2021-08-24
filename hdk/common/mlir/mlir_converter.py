@@ -9,7 +9,7 @@ from mlir.ir import Context, InsertionPoint, IntegerType, Location, Module
 from mlir.ir import Type as MLIRType
 from zamalang.dialects import hlfhe
 
-from .. import data_types
+from .. import values
 from ..data_types import Integer
 from ..data_types.dtypes_helpers import (
     value_is_clear_integer,
@@ -41,7 +41,7 @@ class MLIRConverter:
         self.context = Context()
         zamalang.register_dialects(self.context)
 
-    def hdk_value_to_mlir_type(self, value: data_types.BaseValue) -> MLIRType:
+    def hdk_value_to_mlir_type(self, value: values.BaseValue) -> MLIRType:
         """Convert an HDK value to its corresponding MLIR Type.
 
         Args:

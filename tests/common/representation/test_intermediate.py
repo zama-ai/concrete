@@ -3,8 +3,8 @@
 import pytest
 
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import ClearValue, EncryptedValue
 from hdk.common.representation import intermediate as ir
+from hdk.common.values import ClearValue, EncryptedValue
 
 
 @pytest.mark.parametrize(

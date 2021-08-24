@@ -5,7 +5,7 @@ from pathlib import Path
 
 from hdk.common.compilation import CompilationArtifacts
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import EncryptedValue
+from hdk.common.values import EncryptedValue
 from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 

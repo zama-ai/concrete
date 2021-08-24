@@ -4,10 +4,10 @@ from copy import deepcopy
 from functools import partial
 from typing import Callable, Union, cast
 
+from ..values import BaseValue, ClearValue, EncryptedValue, ScalarValue
 from .base import BaseDataType
 from .floats import Float
 from .integers import Integer, get_bits_to_represent_value_as_integer
-from .values import BaseValue, ClearValue, EncryptedValue, ScalarValue
 
 INTEGER_TYPES = (Integer,)
 FLOAT_TYPES = (Float,)

@@ -6,8 +6,8 @@ import numpy
 import pytest
 
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import EncryptedValue
 from hdk.common.optimization.topological import fuse_float_operations
+from hdk.common.values import EncryptedValue
 from hdk.hnumpy.tracing import trace_numpy_function
 
 

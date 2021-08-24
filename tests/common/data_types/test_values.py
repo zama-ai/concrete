@@ -9,7 +9,7 @@ import pytest
 from hdk.common.data_types.base import BaseDataType
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import ClearTensor, EncryptedTensor, TensorValue
+from hdk.common.values import ClearTensor, EncryptedTensor, TensorValue
 
 
 class DummyDtype(BaseDataType):

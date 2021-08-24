@@ -8,8 +8,8 @@ from zamalang import compiler
 from zamalang.dialects import hlfhe
 
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import ClearValue, EncryptedValue
 from hdk.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
+from hdk.common.values import ClearValue, EncryptedValue
 from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 

@@ -7,9 +7,9 @@ import pytest
 
 from hdk.common import is_a_power_of_2
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import EncryptedValue
 from hdk.common.extensions.table import LookupTable
 from hdk.common.representation import intermediate as ir
+from hdk.common.values import EncryptedValue
 from hdk.hnumpy import tracing
 
 

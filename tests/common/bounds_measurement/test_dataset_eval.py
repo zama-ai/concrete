@@ -7,7 +7,7 @@ import pytest
 from hdk.common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import EncryptedValue
+from hdk.common.values import EncryptedValue
 from hdk.hnumpy.tracing import trace_numpy_function
 
 

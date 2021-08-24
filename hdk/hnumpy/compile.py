@@ -7,7 +7,6 @@ from zamalang import CompilerEngine
 from ..common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
 from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
-from ..common.data_types import BaseValue
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from ..common.mlir.utils import (
     is_graph_values_compatible_with_mlir,
@@ -16,6 +15,7 @@ from ..common.mlir.utils import (
 from ..common.operator_graph import OPGraph
 from ..common.optimization.topological import fuse_float_operations
 from ..common.representation import intermediate as ir
+from ..common.values import BaseValue
 from ..hnumpy.tracing import trace_numpy_function
 from .np_dtypes_helpers import get_base_data_type_for_numpy_or_python_constant_data
 

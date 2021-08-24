@@ -4,12 +4,12 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-from ..data_types import BaseValue
 from ..data_types.base import BaseDataType
 from ..data_types.dtypes_helpers import (
     get_base_value_for_python_constant_data,
     mix_scalar_values_determine_holding_dtype,
 )
+from ..values import BaseValue
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
 

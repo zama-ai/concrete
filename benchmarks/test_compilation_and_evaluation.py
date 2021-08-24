@@ -5,7 +5,7 @@ import itertools
 import pytest
 
 from hdk.common.data_types.integers import SignedInteger, UnsignedInteger
-from hdk.common.data_types.values import EncryptedValue
+from hdk.common.values import EncryptedValue
 from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 

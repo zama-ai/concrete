@@ -3,9 +3,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, List, Tuple, Type, Union
 
-from ..data_types import BaseValue
 from ..representation import intermediate as ir
 from ..representation.intermediate import IR_MIX_VALUES_FUNC_ARG_NAME
+from ..values import BaseValue
 
 
 class BaseTracer(ABC):

@@ -7,7 +7,7 @@ import pytest
 from hdk.common import check_op_graph_is_integer_program, is_a_power_of_2
 from hdk.common.data_types.floats import Float64
 from hdk.common.data_types.integers import Integer
-from hdk.common.data_types.values import EncryptedValue
+from hdk.common.values import EncryptedValue
 from hdk.hnumpy.tracing import trace_numpy_function
 
 
