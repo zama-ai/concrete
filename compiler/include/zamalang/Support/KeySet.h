@@ -37,6 +37,9 @@ public:
   size_t numInputs() { return inputs.size(); }
   size_t numOutputs() { return outputs.size(); }
 
+  CircuitGate inputGate(size_t pos) { return std::get<0>(inputs[pos]); }
+  CircuitGate outputGate(size_t pos) { return std::get<0>(outputs[pos]); }
+
 protected:
   llvm::Error generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,
                                 SecretRandomGenerator *generator);

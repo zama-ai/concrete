@@ -15,6 +15,9 @@
 
 namespace mlir {
 namespace zamalang {
+
+/// CompilerEngine is an tools that provides tools to implements the compilation
+/// flow and manage the compilation flow state.
 class CompilerEngine {
 public:
   CompilerEngine() {
@@ -26,10 +29,16 @@ public:
       delete context;
   }
 
-  // Compile an MLIR input
-  llvm::Expected<mlir::LogicalResult> compileFHE(std::string mlir_input);
+  // Compile an mlir programs from it's textual representation.
+  llvm::Error compile(std::string mlirStr);
 
-  // Run the compiled module
+  // Build the jit lambda argument.
+  llvm::Expected<std::unique_ptr<JITLambda::Argument>> buildArgument();
+
+  // Call the compiled function with and argument object.
+  llvm::Error invoke(JITLambda::Argument &arg);
+
+  // Call the compiled function with a list of integer arguments.
   llvm::Expected<uint64_t> run(std::vector<uint64_t> args);
 
   // Get a printable representation of the compiled module

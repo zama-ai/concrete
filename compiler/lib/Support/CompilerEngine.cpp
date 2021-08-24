@@ -23,9 +23,8 @@ std::string CompilerEngine::getCompiledModule() {
   return os.str();
 }
 
-llvm::Expected<mlir::LogicalResult>
-CompilerEngine::compileFHE(std::string mlir_input) {
-  module_ref = mlir::parseSourceString(mlir_input, context);
+llvm::Error CompilerEngine::compile(std::string mlirStr) {
+  module_ref = mlir::parseSourceString(mlirStr, context);
   if (!module_ref) {
     return llvm::make_error<llvm::StringError>("mlir parsing failed",
                                                llvm::inconvertibleErrorCode());
@@ -60,29 +59,44 @@ CompilerEngine::compileFHE(std::string mlir_input) {
     return llvm::make_error<llvm::StringError>(
         "failed to lower to LLVM dialect", llvm::inconvertibleErrorCode());
   }
-  return mlir::success();
+  return llvm::Error::success();
 }
 
-llvm::Expected<uint64_t> CompilerEngine::run(std::vector<uint64_t> args) {
+llvm::Expected<std::unique_ptr<JITLambda::Argument>>
+CompilerEngine::buildArgument() {
+  if (keySet.get() == nullptr) {
+    return llvm::make_error<llvm::StringError>(
+        "CompilerEngine::buildArgument: invalid engine state, the keySet has "
+        "not be generated",
+        llvm::inconvertibleErrorCode());
+  }
+  return JITLambda::Argument::create(*keySet);
+}
+
+llvm::Error CompilerEngine::invoke(JITLambda::Argument &arg) {
   // Create the JIT lambda
   auto defaultOptPipeline = mlir::makeOptimizingTransformer(3, 0, nullptr);
   auto module = module_ref.get();
   auto maybeLambda =
       mlir::zamalang::JITLambda::create("main", module, defaultOptPipeline);
-  if (!maybeLambda) {
-    return llvm::make_error<llvm::StringError>("couldn't create lambda",
-                                               llvm::inconvertibleErrorCode());
+  if (auto err = maybeLambda.takeError()) {
+    return std::move(err);
   }
-  auto lambda = std::move(maybeLambda.get());
+  // Invoke the lambda
+  if (auto err = maybeLambda.get()->invoke(arg)) {
+    return std::move(err);
+  }
+  return llvm::Error::success();
+}
 
-  // Create the arguments of the JIT lambda
-  auto maybeArguments = mlir::zamalang::JITLambda::Argument::create(*keySet);
-  if (auto err = maybeArguments.takeError()) {
-    return llvm::make_error<llvm::StringError>("cannot create lambda args",
-                                               llvm::inconvertibleErrorCode());
+llvm::Expected<uint64_t> CompilerEngine::run(std::vector<uint64_t> args) {
+  // Build the argument of the JIT lambda.
+  auto maybeArgument = buildArgument();
+  if (auto err = maybeArgument.takeError()) {
+    return std::move(err);
   }
-  // Set the arguments
-  auto arguments = std::move(maybeArguments.get());
+  // Set the integer arguments
+  auto arguments = std::move(maybeArgument.get());
   for (auto i = 0; i < args.size(); i++) {
     if (auto err = arguments->setArg(i, args[i])) {
       return llvm::make_error<llvm::StringError>(
@@ -90,14 +104,12 @@ llvm::Expected<uint64_t> CompilerEngine::run(std::vector<uint64_t> args) {
     }
   }
   // Invoke the lambda
-  if (lambda->invoke(*arguments)) {
-    return llvm::make_error<llvm::StringError>("failed execution",
-                                               llvm::inconvertibleErrorCode());
+  if (auto err = invoke(*arguments)) {
+    return std::move(err);
   }
   uint64_t res = 0;
   if (auto err = arguments->getResult(0, res)) {
-    return llvm::make_error<llvm::StringError>("cannot get result",
-                                               llvm::inconvertibleErrorCode());
+    return std::move(err);
   }
   return res;
 }

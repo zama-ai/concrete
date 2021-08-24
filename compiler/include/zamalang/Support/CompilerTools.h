@@ -51,17 +51,54 @@ public:
     // and decryption operations.
     static llvm::Expected<std::unique_ptr<Argument>> create(KeySet &keySet);
 
-    // Set the argument at the given pos as a uint64_t.
+    // Set a scalar argument at the given pos as a uint64_t.
     llvm::Error setArg(size_t pos, uint64_t arg);
+
+    // Set a argument at the given pos as a tensor of int64.
+    llvm::Error setArg(size_t pos, uint64_t *data, size_t size) {
+      return setArg(pos, 64, (void *)data, size);
+    }
+
+    // Set a argument at the given pos as a tensor of int32.
+    llvm::Error setArg(size_t pos, uint32_t *data, size_t size) {
+      return setArg(pos, 32, (void *)data, size);
+    }
+
+    // Set a argument at the given pos as a tensor of int32.
+    llvm::Error setArg(size_t pos, uint16_t *data, size_t size) {
+      return setArg(pos, 16, (void *)data, size);
+    }
+
+    // Set a tensor argument at the given pos as a uint64_t.
+    llvm::Error setArg(size_t pos, uint8_t *data, size_t size) {
+      return setArg(pos, 8, (void *)data, size);
+    }
 
     // Get the result at the given pos as an uint64_t.
     llvm::Error getResult(size_t pos, uint64_t &res);
 
+    // Fill the result.
+    llvm::Error getResult(size_t pos, uint64_t *res, size_t size);
+
   private:
+    llvm::Error setArg(size_t pos, size_t width, void *data, size_t size);
+
     friend JITLambda;
+    // Store the pointer on inputs values and outputs values
     std::vector<void *> rawArg;
+    // Store the values of inputs
     std::vector<void *> inputs;
-    std::vector<void *> results;
+    // Store the values of outputs
+    std::vector<void *> outputs;
+    // Store the input gates description and the offset of the argument.
+    std::vector<std::tuple<CircuitGate, size_t /*offet*/>> inputGates;
+    // Store the outputs gates description and the offset of the argument.
+    std::vector<std::tuple<CircuitGate, size_t /*offet*/>> outputGates;
+    // Store allocated lwe ciphertexts (for free)
+    std::vector<LweCiphertext_u64 *> allocatedCiphertexts;
+    // Store buffers of ciphertexts
+    std::vector<LweCiphertext_u64 **> ciphertextBuffers;
+
     KeySet &keySet;
   };
   JITLambda(mlir::LLVM::LLVMFunctionType type, llvm::StringRef name)

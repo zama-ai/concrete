@@ -56,7 +56,10 @@ struct EncryptionGate {
 };
 
 struct CircuitGateShape {
-  uint64_t size;
+  // Width of the scalar value
+  size_t width;
+  // Size of the buffer
+  size_t size;
 };
 
 struct CircuitGate {
