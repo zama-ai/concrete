@@ -30,7 +30,7 @@ public:
   MidLFHEToLowLFHETypeConverter() {
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](GLWECipherTextType type) {
-      return mlir::zamalang::convertTypeGLWEToLWE(type.getContext(), type);
+      return mlir::zamalang::convertTypeToLWE(type.getContext(), type);
     });
     addConversion([&](mlir::RankedTensorType type) {
       auto glwe = type.getElementType().dyn_cast_or_null<GLWECipherTextType>();
@@ -39,7 +39,7 @@ public:
       }
       mlir::Type r = mlir::RankedTensorType::get(
           type.getShape(),
-          mlir::zamalang::convertTypeGLWEToLWE(glwe.getContext(), glwe));
+          mlir::zamalang::convertTypeToLWE(glwe.getContext(), glwe));
       return r;
     });
   }
