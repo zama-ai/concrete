@@ -1,5 +1,6 @@
 #include "mlir/Dialect/Tensor/Transforms/Passes.h"
 #include <llvm/Support/TargetSelect.h>
+#include <mlir/Dialect/Linalg/Passes.h>
 #include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
@@ -73,6 +74,10 @@ mlir::LogicalResult CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
                                enablePass);
   addFilteredPassToPassManager(pm, mlir::createStdBufferizePass(), enablePass);
   addFilteredPassToPassManager(pm, mlir::createTensorBufferizePass(),
+                               enablePass);
+  addFilteredPassToPassManager(pm, mlir::createLinalgBufferizePass(),
+                               enablePass);
+  addFilteredPassToPassManager(pm, mlir::createConvertLinalgToLoopsPass(),
                                enablePass);
   addFilteredPassToPassManager(pm, mlir::createFuncBufferizePass(), enablePass);
   addFilteredPassToPassManager(pm, mlir::createFinalizingBufferizePass(),
