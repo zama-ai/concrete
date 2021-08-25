@@ -39,7 +39,11 @@ def BootstrapLweOp : LowLFHE_Op<"bootstrap_lwe"> {
     let arguments = (ins 
         // LweBootstrapKeyType:$bootstrap_key,
         LweCiphertextType:$input_ciphertext,
-        GlweCiphertextType:$accumulator
+        GlweCiphertextType:$accumulator,
+        I32Attr:$k,
+        I32Attr:$polynomialSize,
+        I32Attr:$level,
+        I32Attr:$baseLog
     );
     let results = (outs LweCiphertextType:$result);
 }

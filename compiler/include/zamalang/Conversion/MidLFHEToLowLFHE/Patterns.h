@@ -196,10 +196,22 @@ mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
   LweCiphertextType lwe_type =
       convertTypeGLWEToLWE(rewriter.getContext(), glwe_type);
   // bootstrap operation
+  mlir::SmallVector<mlir::Value, 2> bsArgs{keyswitched, accumulator};
+  mlir::SmallVector<mlir::NamedAttribute, 6> bsAttrs{
+      mlir::NamedAttribute(mlir::Identifier::get("k", rewriter.getContext()),
+                           k),
+      mlir::NamedAttribute(
+          mlir::Identifier::get("polynomialSize", rewriter.getContext()),
+          polynomialSize),
+      mlir::NamedAttribute(
+          mlir::Identifier::get("level", rewriter.getContext()), levelBS),
+      mlir::NamedAttribute(
+          mlir::Identifier::get("baseLog", rewriter.getContext()), baseLogBS),
+  };
   mlir::Value bootstrapped =
       rewriter
-          .create<mlir::zamalang::LowLFHE::BootstrapLweOp>(
-              loc, lwe_type, keyswitched, accumulator)
+          .create<mlir::zamalang::LowLFHE::BootstrapLweOp>(loc, lwe_type,
+                                                           bsArgs, bsAttrs)
           .result();
 
   return bootstrapped;

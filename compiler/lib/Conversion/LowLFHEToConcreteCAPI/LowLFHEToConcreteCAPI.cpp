@@ -374,7 +374,6 @@ struct GlweFromTableOpPattern
 };
 
 // TODO:
-// Parameterization
 // Get concrete key
 struct LowLFHEBootstrapLweOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::BootstrapLweOp> {
@@ -452,9 +451,9 @@ struct LowLFHEBootstrapLweOpPattern
     auto errOp = rewriter.create<mlir::memref::AllocaOp>(op.getLoc(), errType);
     // allocate the result lwe ciphertext
     auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
-        op.getLoc(),
-        mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+        op.getLoc(), mlir::IntegerAttr::get(
+                         mlir::IntegerType::get(rewriter.getContext(), 32),
+                         op->getAttr("k").cast<mlir::IntegerAttr>().getInt()));
     mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
     auto allocateLweCtOp = rewriter.replaceOpWithNewOp<mlir::CallOp>(
         op, "allocate_lwe_ciphertext_u64", lweOperandType, allocLweCtOperands);
@@ -462,11 +461,13 @@ struct LowLFHEBootstrapLweOpPattern
     auto decompLevelCountOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("level").cast<mlir::IntegerAttr>().getInt()));
     auto decompBaseLogOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("baseLog").cast<mlir::IntegerAttr>().getInt()));
     auto glweSizeOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
@@ -474,7 +475,8 @@ struct LowLFHEBootstrapLweOpPattern
     auto polySizeOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("polynomialSize").cast<mlir::IntegerAttr>().getInt()));
     mlir::SmallVector<mlir::Value> allocBskOperands{
         errOp,      decompLevelCountOp, decompBaseLogOp,
         glweSizeOp, lweSizeOp,          polySizeOp};

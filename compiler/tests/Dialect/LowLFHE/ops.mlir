@@ -39,10 +39,10 @@ func @negate_lwe_ciphertext(%arg0: !LowLFHE.lwe_ciphertext<2048,7>) -> !LowLFHE.
 
 // CHECK-LABEL: func @bootstrap_lwe(%arg0: !LowLFHE.lwe_ciphertext<2048,7>, %arg1: !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7>
 func @bootstrap_lwe(%arg0: !LowLFHE.lwe_ciphertext<2048,7>, %arg1: !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7> {
-  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.bootstrap_lwe"(%arg0, %arg1) : (!LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7>
+  // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.bootstrap_lwe"(%arg0, %arg1) {baseLog = -1 : i32, k = 1 : i32, level = -1 : i32, polynomialSize = 1024 : i32} : (!LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> !LowLFHE.lwe_ciphertext<2048,7>
   // CHECK-NEXT: return %[[V1]] : !LowLFHE.lwe_ciphertext<2048,7>
 
-  %1 = "LowLFHE.bootstrap_lwe"(%arg0, %arg1): (!LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> (!LowLFHE.lwe_ciphertext<2048,7>)
+  %1 = "LowLFHE.bootstrap_lwe"(%arg0, %arg1) {baseLog = -1 : i32, k = 1 : i32, level = -1 : i32, polynomialSize = 1024 : i32} : (!LowLFHE.lwe_ciphertext<2048,7>, !LowLFHE.glwe_ciphertext) -> (!LowLFHE.lwe_ciphertext<2048,7>)
   return %1: !LowLFHE.lwe_ciphertext<2048,7>
 }
 
