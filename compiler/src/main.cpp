@@ -175,10 +175,13 @@ processInputBuffer(mlir::MLIRContext &context,
   };
 
   // Lower to MLIR Stds Dialects and compute the constraint on the FHE Circuit.
+  mlir::zamalang::CompilerTools::LowerOptions lowerOptions;
+  lowerOptions.enablePass = enablePass;
+  lowerOptions.verbose = cmdline::verbose;
+
   mlir::zamalang::V0FHEContext fheContext;
-  LOG_VERBOSE("### Lower from HLFHE to MLIR standards \n");
   if (mlir::zamalang::CompilerTools::lowerHLFHEToMlirStdsDialect(
-          context, *module, fheContext, enablePass)
+          context, *module, fheContext, lowerOptions)
           .failed()) {
     return mlir::failure();
   }
@@ -217,9 +220,8 @@ processInputBuffer(mlir::MLIRContext &context,
   }
 
   // Lower to MLIR LLVM Dialect
-  LOG_VERBOSE("### Lower from MLIR standards to LLVM\n");
   if (mlir::zamalang::CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
-          context, *module, enablePass)
+          context, *module, lowerOptions)
           .failed()) {
     return mlir::failure();
   }

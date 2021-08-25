@@ -14,24 +14,29 @@ namespace zamalang {
 
 class CompilerTools {
 public:
+  struct LowerOptions {
+    llvm::function_ref<bool(std::string)> enablePass;
+    bool verbose;
+
+    LowerOptions()
+        : verbose(false), enablePass([](std::string pass) { return true; }){};
+  };
+
   /// lowerHLFHEToMlirLLVMDialect run all passes to lower FHE dialects to mlir
   /// lowerable to llvm dialect.
   /// The given module MLIR operation would be modified and the constraints set.
-  static mlir::LogicalResult lowerHLFHEToMlirStdsDialect(
-      mlir::MLIRContext &context, mlir::Operation *module,
-      V0FHEContext &fheContext,
-      llvm::function_ref<bool(std::string)> enablePass = [](std::string pass) {
-        return true;
-      });
+  static mlir::LogicalResult
+  lowerHLFHEToMlirStdsDialect(mlir::MLIRContext &context,
+                              mlir::Operation *module, V0FHEContext &fheContext,
+                              LowerOptions options = LowerOptions());
 
   /// lowerMlirStdsDialectToMlirLLVMDialect run all passes to lower MLIR
   /// dialects to MLIR LLVM dialect. The given module MLIR operation would be
   /// modified.
-  static mlir::LogicalResult lowerMlirStdsDialectToMlirLLVMDialect(
-      mlir::MLIRContext &context, mlir::Operation *module,
-      llvm::function_ref<bool(std::string)> enablePass = [](std::string pass) {
-        return true;
-      });
+  static mlir::LogicalResult
+  lowerMlirStdsDialectToMlirLLVMDialect(mlir::MLIRContext &context,
+                                        mlir::Operation *module,
+                                        LowerOptions options = LowerOptions());
 
   static llvm::Expected<std::unique_ptr<llvm::Module>>
   toLLVMModule(llvm::LLVMContext &llvmContext, mlir::ModuleOp &module,

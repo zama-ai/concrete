@@ -36,25 +36,37 @@ void addFilteredPassToPassManager(
 
 mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
     mlir::MLIRContext &context, mlir::Operation *module,
-    V0FHEContext &fheContext,
-    llvm::function_ref<bool(std::string)> enablePass) {
+    V0FHEContext &fheContext, LowerOptions options) {
   mlir::PassManager pm(&context);
+  if (options.verbose) {
+    llvm::errs() << "##################################################\n";
+    llvm::errs() << "### HLFHEToMlirStdsDialect pipeline\n";
+    context.disableMultithreading();
+    pm.enableIRPrinting();
+    pm.enableStatistics();
+    pm.enableTiming();
+    pm.enableVerifier();
+  }
 
   fheContext.constraint = defaultGlobalFHECircuitConstraint;
   fheContext.parameter = *getV0Parameter(fheContext.constraint);
   // Add all passes to lower from HLFHE to LLVM Dialect
   addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg(), enablePass);
+      pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg(),
+      options.enablePass);
   addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
+      pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(),
+      options.enablePass);
   addFilteredPassToPassManager(
       pm,
       mlir::zamalang::createConvertMidLFHEGlobalParametrizationPass(fheContext),
-      enablePass);
+      options.enablePass);
   addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
+      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(),
+      options.enablePass);
   addFilteredPassToPassManager(
-      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(), enablePass);
+      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(),
+      options.enablePass);
 
   // Run the passes
   if (pm.run(module).failed()) {
@@ -65,26 +77,37 @@ mlir::LogicalResult CompilerTools::lowerHLFHEToMlirStdsDialect(
 }
 
 mlir::LogicalResult CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
-    mlir::MLIRContext &context, mlir::Operation *module,
-    llvm::function_ref<bool(std::string)> enablePass) {
+    mlir::MLIRContext &context, mlir::Operation *module, LowerOptions options) {
   mlir::PassManager pm(&context);
+  if (options.verbose) {
+    llvm::errs() << "##################################################\n";
+    llvm::errs() << "### MlirStdsDialectToMlirLLVMDialect pipeline\n";
+    context.disableMultithreading();
+    pm.enableIRPrinting();
+    pm.enableStatistics();
+    pm.enableTiming();
+    pm.enableVerifier();
+  }
 
   // Bufferize
   addFilteredPassToPassManager(pm, mlir::createTensorConstantBufferizePass(),
-                               enablePass);
-  addFilteredPassToPassManager(pm, mlir::createStdBufferizePass(), enablePass);
+                               options.enablePass);
+  addFilteredPassToPassManager(pm, mlir::createStdBufferizePass(),
+                               options.enablePass);
   addFilteredPassToPassManager(pm, mlir::createTensorBufferizePass(),
-                               enablePass);
+                               options.enablePass);
   addFilteredPassToPassManager(pm, mlir::createLinalgBufferizePass(),
-                               enablePass);
+                               options.enablePass);
   addFilteredPassToPassManager(pm, mlir::createConvertLinalgToLoopsPass(),
-                               enablePass);
-  addFilteredPassToPassManager(pm, mlir::createFuncBufferizePass(), enablePass);
+                               options.enablePass);
+  addFilteredPassToPassManager(pm, mlir::createFuncBufferizePass(),
+                               options.enablePass);
   addFilteredPassToPassManager(pm, mlir::createFinalizingBufferizePass(),
-                               enablePass);
+                               options.enablePass);
+
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
-      enablePass);
+      options.enablePass);
 
   if (pm.run(module).failed()) {
     return mlir::failure();
