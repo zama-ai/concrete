@@ -1,10 +1,6 @@
-FROM ghcr.io/zama-ai/zamalang-compiler
+FROM ghcr.io/zama-ai/hdk-env
 
-RUN apt-get install --no-install-recommends -y \
-	python3.8 python3.8-venv python-is-python3 git graphviz* && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir poetry && \
-    echo "source /hdk/.docker_venv/bin/activate" >> /root/.bashrc && \
+RUN echo "source /hdk/.docker_venv/bin/activate" >> /root/.bashrc && \
     echo "if [[ \"\$?\" != \"0\" ]]; then" >> /root/.bashrc && \
     echo "    python3 -m venv /hdk/.docker_venv" >> /root/.bashrc && \
     echo "    source /hdk/.docker_venv/bin/activate" >> /root/.bashrc && \

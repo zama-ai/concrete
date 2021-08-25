@@ -1,0 +1,54 @@
+name: Docker image (HDK dev/CI)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - docker/Dockerfile.hdk-env
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build_publish:
+    name: Build & Push the HDK env Docker Image
+    runs-on: ubuntu-20.04
+    env:
+      IMAGE_URL: ghcr.io/zama-ai/hdk-env
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.BOT_USERNAME }}
+          password: ${{ secrets.BOT_TOKEN }}
+      - name: Build hdk-env Image
+        if: ${{ success() && !cancelled() }}
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: docker/Dockerfile.hdk-env
+          push: true
+          tags: "${{ env.IMAGE_URL }}:latest"
+          no-cache: true
+
+      - name: Slack Notification
+        if: ${{ always() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: hdk-updates
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Publishing Docker Image ${{ env.IMAGE_URL }} \
+            finished with status ${{ job.status }}"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+

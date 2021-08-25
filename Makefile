@@ -1,5 +1,8 @@
 SHELL:=/bin/bash
 
+DEV_DOCKER_IMG:=hdk:dev
+DEV_DOCKERFILE:=docker/Dockerfile.hdk-dev
+
 setup_env:
 	poetry install
 	poetry run python -m pip install -U pip wheel setuptools
@@ -99,16 +102,16 @@ coverage:
 .PHONY: coverage
 
 docker_build:
-	docker build -t hdk:mlir -f docker/Dockerfile .
+	docker build -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 .PHONY: docker_build
 
 docker_rebuild:
-	docker build --no-cache -t hdk:mlir -f docker/Dockerfile .
+	docker build --no-cache -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 .PHONY: docker_rebuild
 
 docker_start:
 	@# the slash before pwd is for Windows
-	docker run --rm -it -p 8888:8888 --volume /"$$(pwd)":/hdk hdk:mlir
+	docker run --rm -it -p 8888:8888 --volume /"$$(pwd)":/hdk $(DEV_DOCKER_IMG)
 .PHONY: docker_start
 
 docker_build_and_start: docker_build docker_start
