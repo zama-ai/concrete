@@ -75,6 +75,19 @@ CleartextType convertCleartextTypeFromType(mlir::MLIRContext *context,
   assert(false && "expect glwe or lwe");
 }
 
+mlir::Value createZeroLWEOpFromMidLFHE(mlir::PatternRewriter rewriter,
+                                       mlir::Location loc,
+                                       mlir::OpResult result) {
+  mlir::SmallVector<mlir::Value> args{};
+  mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
+  auto glwe = result.getType().cast<GLWECipherTextType>();
+  mlir::SmallVector<mlir::Type, 1> resTypes{
+      convertTypeToLWE(rewriter.getContext(), glwe)};
+  LowLFHE::ZeroLWEOp op =
+      rewriter.create<LowLFHE::ZeroLWEOp>(loc, resTypes, args, attrs);
+  return op.getODSResults(0).front();
+}
+
 template <class Operator>
 mlir::Value createLowLFHEOpFromMidLFHE(mlir::PatternRewriter rewriter,
                                        mlir::Location loc, mlir::Value arg0,

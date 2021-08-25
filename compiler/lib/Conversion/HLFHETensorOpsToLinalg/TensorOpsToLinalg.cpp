@@ -62,7 +62,7 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
         ::llvm::dyn_cast_or_null<::mlir::zamalang::HLFHE::Dot>(op0);
 
     // Zero value to initialize accumulator
-    mlir::Value zeroCst = rewriter.create<mlir::zamalang::HLFHE::ZeroOp>(
+    mlir::Value zeroCst = rewriter.create<mlir::zamalang::HLFHE::ZeroEintOp>(
         dotOp.getLoc(),
         dotOp.lhs().getType().cast<mlir::ShapedType>().getElementType());
 

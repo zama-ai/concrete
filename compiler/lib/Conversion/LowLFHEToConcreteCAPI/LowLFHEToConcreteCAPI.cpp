@@ -65,8 +65,7 @@ mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
 /// ```
 /// to
 /// ```
-/// err = memref.alloc() : memref<index>
-/// out = _allocate_(err);
+/// err = constant 0 : i64
 /// call_op(err, out, arg0, arg1);
 /// ```
 template <typename Op>
@@ -136,6 +135,46 @@ private:
   std::string allocName;
 };
 
+struct LowLFHEZeroOpPattern
+    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::ZeroLWEOp> {
+  LowLFHEZeroOpPattern(mlir::MLIRContext *context,
+                       mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::ZeroLWEOp>(context,
+                                                                   benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::LowLFHE::ZeroLWEOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto allocName = "allocate_lwe_ciphertext_u64";
+    auto errType = mlir::IndexType::get(rewriter.getContext());
+    {
+      auto funcType = mlir::FunctionType::get(
+          rewriter.getContext(), {errType, rewriter.getIndexType()},
+          {op->getResultTypes().front()});
+      if (insertForwardDeclaration(op, rewriter, allocName, funcType)
+              .failed()) {
+        return mlir::failure();
+      }
+    }
+    // Replace the operation with a call to the `funcName`
+    {
+      mlir::Type resultType = op->getResultTypes().front();
+      auto lweResultType =
+          resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>();
+      // Create the err value
+      auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
+                                                     rewriter.getIndexAttr(0));
+      // Add the call to the allocation
+      auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+          op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
+      mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
+      auto alloc = rewriter.replaceOpWithNewOp<mlir::CallOp>(
+          op, allocName, op.getType(), allocOperands);
+    }
+    return mlir::success();
+  };
+};
+
 struct LowLFHEEncodeIntOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::EncodeIntOp> {
   LowLFHEEncodeIntOpPattern(mlir::MLIRContext *context,
@@ -197,6 +236,7 @@ void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
       "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEEncodeIntOpPattern>(patterns.getContext());
   patterns.add<LowLFHEIntToCleartextOpPattern>(patterns.getContext());
+  patterns.add<LowLFHEZeroOpPattern>(patterns.getContext());
 }
 
 namespace {

@@ -19,6 +19,20 @@ convertTypeEncryptedIntegerToGLWE(mlir::MLIRContext *context,
   return GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth());
 }
 
+mlir::Value createZeroGLWEOpFromHLFHE(mlir::PatternRewriter rewriter,
+                                      mlir::Location loc,
+                                      mlir::OpResult result) {
+  mlir::SmallVector<mlir::Value> args{};
+  mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
+  auto eint =
+      result.getType().cast<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+  mlir::SmallVector<mlir::Type, 1> resTypes{
+      convertTypeEncryptedIntegerToGLWE(rewriter.getContext(), eint)};
+  MidLFHE::ZeroGLWEOp op =
+      rewriter.create<MidLFHE::ZeroGLWEOp>(loc, resTypes, args, attrs);
+  return op.getODSResults(0).front();
+}
+
 template <class Operator>
 mlir::Value createGLWEOpFromHLFHE(mlir::PatternRewriter rewriter,
                                   mlir::Location loc, mlir::Value arg0,

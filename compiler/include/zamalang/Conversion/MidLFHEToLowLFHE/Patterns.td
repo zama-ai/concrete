@@ -5,6 +5,12 @@ include "mlir/Dialect/StandardOps/IR/Ops.td"
 include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.td"
 include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.td"
 
+def createZeroLWEOp : NativeCodeCall<"mlir::zamalang::createZeroLWEOpFromMidLFHE($_builder, $_loc, $0)">;
+
+def ZeroGLWEPattern : Pat<
+    (ZeroGLWEOp:$result),
+    (createZeroLWEOp $result)>;
+
 def createAddLWEOp : NativeCodeCall<"mlir::zamalang::createLowLFHEOpFromMidLFHE<mlir::zamalang::LowLFHE::AddLweCiphertextsOp>($_builder, $_loc, $0, $1, $2)">;
 
 def AddGLWEPattern : Pat<

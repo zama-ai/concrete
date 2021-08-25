@@ -10,6 +10,11 @@ include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.td"
 class LowLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<LowLFHE_Dialect, mnemonic, traits>;
 
+def ZeroLWEOp : LowLFHE_Op<"zero"> {
+    let arguments = (ins);
+    let results = (outs LweCiphertextType:$out);
+}
+
 def AddLweCiphertextsOp : LowLFHE_Op<"add_lwe_ciphertexts"> {
     let arguments = (ins LweCiphertextType:$lhs, LweCiphertextType:$rhs);
     let results = (outs LweCiphertextType:$result);

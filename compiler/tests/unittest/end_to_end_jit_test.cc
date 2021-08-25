@@ -382,3 +382,32 @@ func @main(%arg0: tensor<2x!HLFHE.eint<7>>, %arg1: tensor<2xi8>, %acc: !HLFHE.ei
   ASSERT_LLVM_ERROR(argument->getResult(0, res));
   ASSERT_EQ(res, 76);
 }
+
+TEST(CompileAndRunTensorEncrypted, dot_eint_int_7) {
+  mlir::zamalang::CompilerEngine engine;
+  auto mlirStr = R"XXX(
+func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
+                   %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+{
+  %ret = "HLFHE.dot_eint_int"(%arg0, %arg1) :
+    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
+  return %ret : !HLFHE.eint<7>
+}
+)XXX";
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  auto maybeArgument = engine.buildArgument();
+  ASSERT_LLVM_ERROR(maybeArgument.takeError());
+  auto argument = std::move(maybeArgument.get());
+  // Set arg0, arg1, acc
+  const size_t in_size = 4;
+  uint8_t arg0[in_size] = {0, 1, 2, 3};
+  ASSERT_LLVM_ERROR(argument->setArg(0, arg0, in_size));
+  uint8_t arg1[in_size] = {0, 1, 2, 3};
+  ASSERT_LLVM_ERROR(argument->setArg(1, arg1, in_size));
+  // Invoke the function
+  ASSERT_LLVM_ERROR(engine.invoke(*argument));
+  // Get and assert the result
+  uint64_t res;
+  ASSERT_LLVM_ERROR(argument->getResult(0, res));
+  ASSERT_EQ(res, 14);
+}

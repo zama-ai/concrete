@@ -18,6 +18,11 @@ include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.td"
 class MidLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<MidLFHE_Dialect, mnemonic, traits>;
 
+def ZeroGLWEOp : MidLFHE_Op<"zero"> {
+    let arguments = (ins);
+    let results = (outs GLWECipherTextType:$out);
+}
+
 def AddGLWEIntOp : MidLFHE_Op<"add_glwe_int"> {
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
     let results = (outs GLWECipherTextType);

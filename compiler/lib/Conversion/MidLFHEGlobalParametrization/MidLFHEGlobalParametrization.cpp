@@ -163,6 +163,8 @@ void populateWithMidLFHEOpTypeConversionPatterns(
     mlir::TypeConverter &typeConverter,
     mlir::zamalang::V0Parameter &v0Parameter) {
   populateWithMidLFHEOpTypeConversionPattern<
+      mlir::zamalang::MidLFHE::ZeroGLWEOp>(patterns, target, typeConverter);
+  populateWithMidLFHEOpTypeConversionPattern<
       mlir::zamalang::MidLFHE::AddGLWEIntOp>(patterns, target, typeConverter);
   populateWithMidLFHEOpTypeConversionPattern<
       mlir::zamalang::MidLFHE::AddGLWEOp>(patterns, target, typeConverter);
