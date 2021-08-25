@@ -130,7 +130,7 @@ docker_build_and_start: docker_build docker_start
 docker_bas: docker_build_and_start
 .PHONY: docker_bas
 
-docs:
+docs: clean_docs
 	@# Generate the auto summary of documentations
 	poetry run sphinx-apidoc -o docs/_apidoc hdk
 
