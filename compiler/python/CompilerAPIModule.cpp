@@ -46,7 +46,7 @@ void zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
       .def("run",
            [](CompilerEngine &engine, std::vector<uint64_t> args) {
              auto result = engine.run(args);
-             if (!result) {
+             if (!result) { // not an error
                llvm::errs()
                    << "Execution failed: " << result.takeError() << "\n";
                throw std::runtime_error(
@@ -56,9 +56,9 @@ void zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
            })
       .def("compile_fhe",
            [](CompilerEngine &engine, std::string mlir_input) {
-             auto result = engine.compile(mlir_input);
-             if (!result) {
-               llvm::errs() << "Compilation failed: " << result << "\n";
+             auto error = engine.compile(mlir_input);
+             if (error) {
+               llvm::errs() << "Compilation failed: " << error << "\n";
                throw std::runtime_error(
                    "failed compiling, see previous logs for more info");
              }
