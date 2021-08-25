@@ -12,6 +12,10 @@ on:
 
 jobs:
   build_publish:
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
+
     name: Build & Push the HDK env Docker Image
     runs-on: ubuntu-20.04
     env:
