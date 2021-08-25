@@ -512,7 +512,7 @@ struct LowLFHEKeySwitchLweOpPattern
     auto errType =
         mlir::MemRefType::get({}, mlir::IndexType::get(rewriter.getContext()));
     auto lweOperandType = op->getOperandTypes().front();
-    // Insert forward declaration of the allocate_bsk_key function
+    // Insert forward declaration of the allocate_ksk_key function
     {
       auto funcType = mlir::FunctionType::get(
           rewriter.getContext(),
@@ -578,7 +578,8 @@ struct LowLFHEKeySwitchLweOpPattern
     auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("outputLweSize").cast<mlir::IntegerAttr>().getInt()));
     mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
     auto allocateLweCtOp = rewriter.replaceOpWithNewOp<mlir::CallOp>(
         op, "allocate_lwe_ciphertext_u64", lweOutputType, allocLweCtOperands);
@@ -586,19 +587,23 @@ struct LowLFHEKeySwitchLweOpPattern
     auto decompLevelCountOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("level").cast<mlir::IntegerAttr>().getInt()));
     auto decompBaseLogOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("baseLog").cast<mlir::IntegerAttr>().getInt()));
     auto inputLweSizeOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("inputLweSize").cast<mlir::IntegerAttr>().getInt()));
     auto outputLweSizeOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
         mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), -1));
+            mlir::IntegerType::get(rewriter.getContext(), 32),
+            op->getAttr("outputLweSize").cast<mlir::IntegerAttr>().getInt()));
     mlir::SmallVector<mlir::Value> allockskOperands{
         errOp, decompLevelCountOp, decompBaseLogOp, inputLweSizeOp,
         outputLweSizeOp};
@@ -608,11 +613,11 @@ struct LowLFHEKeySwitchLweOpPattern
             rewriter.getContext()),
         allockskOperands);
     // bootstrap
-    mlir::SmallVector<mlir::Value> bootstrapOperands{
+    mlir::SmallVector<mlir::Value> keyswitchOperands{
         errOp, allocateKskOp.getResult(0), allocateLweCtOp.getResult(0),
         op->getOperand(0)};
     rewriter.create<mlir::CallOp>(op.getLoc(), "keyswitch_lwe_u64",
-                                  mlir::TypeRange({}), bootstrapOperands);
+                                  mlir::TypeRange({}), keyswitchOperands);
 
     return mlir::success();
   };

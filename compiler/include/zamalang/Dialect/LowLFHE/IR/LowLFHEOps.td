@@ -93,7 +93,11 @@ def SetPlaintextListElementOp : LowLFHE_Op<"set_plaintext_list_element">{
 def KeySwitchLweOp : LowLFHE_Op<"keyswitch_lwe"> {
     let arguments = (ins
         // LweKeySwitchKeyType:$keyswitch_key,
-        LweCiphertextType:$ciphertext
+        LweCiphertextType:$ciphertext,
+        I32Attr:$inputLweSize,
+        I32Attr:$outputLweSize,
+        I32Attr:$level,
+        I32Attr:$baseLog
     );
     let results = (outs LweCiphertextType:$result);
 }

@@ -185,10 +185,23 @@ mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
 
   // keyswitch
   auto ct_type = ct.getType().cast<GLWECipherTextType>();
+  mlir::SmallVector<mlir::Value, 1> ksArgs{ct};
+  mlir::SmallVector<mlir::NamedAttribute, 6> ksAttrs{
+      mlir::NamedAttribute(
+          mlir::Identifier::get("inputLweSize", rewriter.getContext()), k),
+      // TODO: get the actual output size
+      mlir::NamedAttribute(
+          mlir::Identifier::get("outputLweSize", rewriter.getContext()), k),
+      mlir::NamedAttribute(
+          mlir::Identifier::get("level", rewriter.getContext()), levelKS),
+      mlir::NamedAttribute(
+          mlir::Identifier::get("baseLog", rewriter.getContext()), baseLogKS),
+  };
   mlir::Value keyswitched =
       rewriter
           .create<mlir::zamalang::LowLFHE::KeySwitchLweOp>(
-              loc, convertTypeGLWEToLWE(rewriter.getContext(), ct_type), ct)
+              loc, convertTypeGLWEToLWE(rewriter.getContext(), ct_type), ksArgs,
+              ksAttrs)
           .result();
 
   // convert result type
