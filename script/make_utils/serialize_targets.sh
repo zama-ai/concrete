@@ -4,8 +4,12 @@ set +e
 
 EXIT_CODE=0
 
+# Get the make executable
+MAKE="$1"
+shift
+
 for make_target in "$@"; do
-    make --no-print-directory "${make_target}"
+    "${MAKE}" --no-print-directory "${make_target}"
     if [[ "$?" != "0" ]]; then
         EXIT_CODE=1
     fi

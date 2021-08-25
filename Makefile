@@ -16,11 +16,13 @@ sync_env:
 .PHONY: sync_env
 
 python_format:
-	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests --dir benchmarks
+	poetry run env bash ./script/source_format/format_python.sh \
+	--dir hdk --dir tests --dir benchmarks
 .PHONY: python_format
 
 check_python_format:
-	poetry run env bash ./script/source_format/format_python.sh --dir hdk --dir tests --dir benchmarks --check
+	poetry run env bash ./script/source_format/format_python.sh \
+	--dir hdk --dir tests --dir benchmarks --check
 .PHONY: check_python_format
 
 check_strip_nb:
@@ -28,7 +30,8 @@ check_strip_nb:
 .PHONY: strip_nb
 
 pylint:
-	+poetry run env bash script/make_utils/serialize_targets.sh pylint_src pylint_tests pylint_benchmarks
+	+poetry run env bash script/make_utils/serialize_targets.sh $(MAKE) \
+	pylint_src pylint_tests pylint_benchmarks
 .PHONY: pylint
 
 pylint_src:
@@ -46,7 +49,8 @@ pylint_benchmarks:
 .PHONY: pylint_benchmarks
 
 flake8:
-	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" hdk/ tests/ benchmarks/
+	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" \
+	hdk/ tests/ benchmarks/
 .PHONY: flake8
 
 python_linting: pylint flake8
@@ -56,7 +60,8 @@ conformance: strip_nb python_format
 .PHONY: conformance
 
 pcc:
-	@$(MAKE) --keep-going --jobs $$(nproc) --output-sync --no-print-directory pcc_internal
+	@$(MAKE) --keep-going --jobs $(./script/make_utils/ncpus.sh) --output-sync=recurse \
+	--no-print-directory pcc_internal
 .PHONY: pcc
 
 pcc_internal: check_python_format check_strip_nb python_linting mypy_ci pydocstyle
@@ -89,7 +94,8 @@ mypy_benchmark:
 # the parent make execution. We serialize calls to these targets as they may overwrite each others
 # cache which can cause issues.
 mypy_ci:
-	+poetry run env bash script/make_utils/serialize_targets.sh mypy mypy_test mypy_benchmark
+	+poetry run env bash script/make_utils/serialize_targets.sh $(MAKE) \
+	mypy mypy_test mypy_benchmark
 .PHONY: mypy_ci
 
 pytest_and_coverage: pytest coverage

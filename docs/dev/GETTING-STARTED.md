@@ -16,6 +16,29 @@ You can follow [this](https://realpython.com/installing-python/) guide to instal
 
 You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
+### Installing make
+
+The dev tools use make to launch the various commands.
+
+On Linux you can install make from your distribution's preferred package manager.
+
+On Mac OS you can install a more recent version of make via brew:
+
+```consol
+# check for gmake
+which gmake
+# If you don't have it, it will error out, install gmake
+brew install make
+# recheck, now you should have gmake
+which gmake
+```
+
+It is possible to install gmake as make, check this [StackOverflow post](https://stackoverflow.com/questions/38901894/how-can-i-install-a-newer-version-of-make-on-mac-os) for more infos.
+
+On Windows check [this GitHub gist](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
+
+**/!\\ In the next sections, be sure to use the proper `make` tool for your system, `make`, `gmake` or other. /!\\**
+
 ### Cloning repository
 
 Now, it's time to get the source code of `hdk`. You can use the following command to do that.
