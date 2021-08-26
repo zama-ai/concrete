@@ -42,7 +42,7 @@ def fuse_float_operations(op_graph: OPGraph):
 
         fused_node, node_before_subgraph = subgraph_conversion_result
 
-        nx_graph.add_node(fused_node, content=fused_node)
+        nx_graph.add_node(fused_node)
 
         if terminal_node in op_graph.output_nodes.values():
             # Output value replace it

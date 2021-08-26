@@ -31,20 +31,12 @@ def test_digraphs_are_equivalent(test_helpers):
     g_1.add_edge(t_0, t_2, input_idx=0)
     g_1.add_edge(t_1, t_2, input_idx=1)
 
-    # This updates the nodes attributes in the graph
-    for node in g_1:
-        g_1.add_node(node, content=node)
-
     t0p = TestNode("Add")
     t1p = TestNode("Mul")
     t2p = TestNode("TLU")
 
     g_2.add_edge(t1p, t2p, input_idx=1)
     g_2.add_edge(t0p, t2p, input_idx=0)
-
-    # This updates the nodes attributes in the graph
-    for node in g_2:
-        g_2.add_node(node, content=node)
 
     bad_g2 = nx.MultiDiGraph()
 
@@ -53,18 +45,10 @@ def test_digraphs_are_equivalent(test_helpers):
     bad_g2.add_edge(bad_t0, t_2, input_idx=0)
     bad_g2.add_edge(t_1, t_2, input_idx=1)
 
-    # This updates the nodes attributes in the graph
-    for node in bad_g2:
-        bad_g2.add_node(node, content=node)
-
     bad_g3 = nx.MultiDiGraph()
 
     bad_g3.add_edge(t_0, t_2, input_idx=1)
     bad_g3.add_edge(t_1, t_2, input_idx=0)
-
-    # This updates the nodes attributes in the graph
-    for node in bad_g3:
-        bad_g3.add_node(node, content=node)
 
     assert test_helpers.digraphs_are_equivalent(g_1, g_2), "Graphs should be equivalent"
     assert not test_helpers.digraphs_are_equivalent(g_1, bad_g2), "Graphs should not be equivalent"

@@ -108,11 +108,11 @@ def create_graph_from_output_tracers(
         next_tracers: Dict[BaseTracer, None] = dict()
         for tracer in current_tracers:
             current_ir_node = tracer.traced_computation
-            graph.add_node(current_ir_node, content=current_ir_node)
+            graph.add_node(current_ir_node)
 
             for input_idx, input_tracer in enumerate(tracer.inputs):
                 input_ir_node = input_tracer.traced_computation
-                graph.add_node(input_ir_node, content=input_ir_node)
+                graph.add_node(input_ir_node)
                 graph.add_edge(input_ir_node, current_ir_node, input_idx=input_idx)
                 if input_tracer not in visited_tracers:
                     next_tracers.update({input_tracer: None})

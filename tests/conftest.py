@@ -13,8 +13,16 @@ class TestHelpers:
         # edge_match is a copy of node_match
         edge_matcher = iso.categorical_multiedge_match("input_idx", None)
         node_matcher = iso.generic_node_match(
-            "content", None, lambda lhs, rhs: lhs.is_equivalent_to(rhs)
+            "_test_content", None, lambda lhs, rhs: lhs.is_equivalent_to(rhs)
         )
+
+        # Set the _test_content for each node in the graphs
+        for node in reference.nodes():
+            reference.add_node(node, _test_content=node)
+
+        for node in to_compare.nodes():
+            to_compare.add_node(node, _test_content=node)
+
         graphs_are_isomorphic = nx.is_isomorphic(
             reference,
             to_compare,

@@ -50,7 +50,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     #   (x) - (TLU)
 
     input_x = ir.Input(input_value=x, input_name="x", program_input_idx=0)
-    ref_graph.add_node(input_x, content=input_x)
+    ref_graph.add_node(input_x)
 
     output_arbitrary_function = ir.ArbitraryFunction(
         input_base_value=x,
@@ -59,7 +59,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
         op_kwargs={"table": deepcopy(table.table)},
         op_name="TLU",
     )
-    ref_graph.add_node(output_arbitrary_function, content=output_arbitrary_function)
+    ref_graph.add_node(output_arbitrary_function)
 
     ref_graph.add_edge(input_x, output_arbitrary_function, input_idx=0)
 
@@ -87,7 +87,7 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     #           (3)
 
     input_x = ir.Input(input_value=x, input_name="x", program_input_idx=0)
-    ref_graph.add_node(input_x, content=input_x)
+    ref_graph.add_node(input_x)
 
     intermediate_arbitrary_function = ir.ArbitraryFunction(
         input_base_value=x,
@@ -96,13 +96,13 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
         op_kwargs={"table": deepcopy(table.table)},
         op_name="TLU",
     )
-    ref_graph.add_node(intermediate_arbitrary_function, content=intermediate_arbitrary_function)
+    ref_graph.add_node(intermediate_arbitrary_function)
 
     constant_3 = ir.Constant(3)
-    ref_graph.add_node(constant_3, content=constant_3)
+    ref_graph.add_node(constant_3)
 
     output_add = ir.Add((intermediate_arbitrary_function.outputs[0], constant_3.outputs[0]))
-    ref_graph.add_node(output_add, content=output_add)
+    ref_graph.add_node(output_add)
 
     ref_graph.add_edge(input_x, intermediate_arbitrary_function, input_idx=0)
 

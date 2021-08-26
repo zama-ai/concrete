@@ -100,10 +100,10 @@ def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
         )
     )
 
-    ref_graph.add_node(input_x, content=input_x)
-    ref_graph.add_node(input_y, content=input_y)
-    ref_graph.add_node(add_node_z, content=add_node_z)
-    ref_graph.add_node(returned_final_node, content=returned_final_node)
+    ref_graph.add_node(input_x)
+    ref_graph.add_node(input_y)
+    ref_graph.add_node(add_node_z)
+    ref_graph.add_node(returned_final_node)
 
     ref_graph.add_edge(input_x, add_node_z, input_idx=0)
     ref_graph.add_edge(input_x, add_node_z, input_idx=1)
