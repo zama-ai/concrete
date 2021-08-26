@@ -276,6 +276,11 @@ def test_is_equivalent_to(
     node1: ir.IntermediateNode,
     node2: ir.IntermediateNode,
     expected_result: bool,
+    test_helpers,
 ):
     """Test is_equivalent_to methods on IntermediateNodes"""
-    assert node1.is_equivalent_to(node2) == node2.is_equivalent_to(node1) == expected_result
+    assert (
+        test_helpers.nodes_are_equivalent(node1, node2)
+        == test_helpers.nodes_are_equivalent(node2, node1)
+        == expected_result
+    )

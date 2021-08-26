@@ -49,41 +49,6 @@ class IntermediateNode(ABC):
 
         self.outputs = [mix_values_func(self.inputs[0], self.inputs[1])]
 
-    def _is_equivalent_to_binary_commutative(self, other: object) -> bool:
-        """is_equivalent_to for a binary and commutative operation."""
-        return (
-            isinstance(other, self.__class__)
-            and (self.inputs == other.inputs or self.inputs == other.inputs[::-1])
-            and self.outputs == other.outputs
-        )
-
-    def _is_equivalent_to_binary_non_commutative(self, other: object) -> bool:
-        """is_equivalent_to for a binary and non-commutative operation."""
-        return (
-            isinstance(other, self.__class__)
-            and self.inputs == other.inputs
-            and self.outputs == other.outputs
-        )
-
-    @abstractmethod
-    def is_equivalent_to(self, other: object) -> bool:
-        """Alternative to __eq__ to check equivalence between IntermediateNodes.
-
-        Overriding __eq__ has unwanted side effects, this provides the same facility without
-        disrupting expected behavior too much
-
-        Args:
-            other (object): Other object to check against
-
-        Returns:
-            bool: True if the other object is equivalent
-        """
-        return (
-            isinstance(other, IntermediateNode)
-            and self.inputs == other.inputs
-            and self.outputs == other.outputs
-        )
-
     @abstractmethod
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         """Function to simulate what the represented computation would output for the given inputs.
@@ -129,7 +94,6 @@ class Add(IntermediateNode):
     _n_in: int = 2
 
     __init__ = IntermediateNode._init_binary
-    is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] + inputs[1]
@@ -144,7 +108,6 @@ class Sub(IntermediateNode):
     _n_in: int = 2
 
     __init__ = IntermediateNode._init_binary
-    is_equivalent_to = IntermediateNode._is_equivalent_to_binary_non_commutative
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] - inputs[1]
@@ -159,7 +122,6 @@ class Mul(IntermediateNode):
     _n_in: int = 2
 
     __init__ = IntermediateNode._init_binary
-    is_equivalent_to = IntermediateNode._is_equivalent_to_binary_commutative
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] * inputs[1]
@@ -190,14 +152,6 @@ class Input(IntermediateNode):
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0]
 
-    def is_equivalent_to(self, other: object) -> bool:
-        return (
-            isinstance(other, Input)
-            and self.input_name == other.input_name
-            and self.program_input_idx == other.program_input_idx
-            and super().is_equivalent_to(other)
-        )
-
     def label(self) -> str:
         return self.input_name
 
@@ -224,13 +178,6 @@ class Constant(IntermediateNode):
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return self.constant_data
-
-    def is_equivalent_to(self, other: object) -> bool:
-        return (
-            isinstance(other, Constant)
-            and self.constant_data == other.constant_data
-            and super().is_equivalent_to(other)
-        )
 
     @property
     def constant_data(self) -> Any:
@@ -277,17 +224,6 @@ class ArbitraryFunction(IntermediateNode):
         # This is the continuation of the mypy bug workaround
         assert self.arbitrary_func is not None
         return self.arbitrary_func(inputs[0], *self.op_args, **self.op_kwargs)
-
-    def is_equivalent_to(self, other: object) -> bool:
-        # FIXME: comparing self.arbitrary_func to other.arbitrary_func will not work
-        # Only evaluating over the same set of inputs and comparing will help
-        return (
-            isinstance(other, ArbitraryFunction)
-            and self.op_args == other.op_args
-            and self.op_kwargs == other.op_kwargs
-            and self.op_name == other.op_name
-            and super().is_equivalent_to(other)
-        )
 
     def label(self) -> str:
         return self.op_name
@@ -343,13 +279,6 @@ class Dot(IntermediateNode):
         # This is the continuation of the mypy bug workaround
         assert self.evaluation_function is not None
         return self.evaluation_function(inputs[0], inputs[1])
-
-    def is_equivalent_to(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.evaluation_function == other.evaluation_function
-            and super().is_equivalent_to(other)
-        )
 
     def label(self) -> str:
         return "dot"
