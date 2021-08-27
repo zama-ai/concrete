@@ -6,7 +6,8 @@ RUN echo "source /hdk/.docker_venv/bin/activate" >> /root/.bashrc && \
     echo "    source /hdk/.docker_venv/bin/activate" >> /root/.bashrc && \
     echo "    cd /hdk/ && make setup_env" >> /root/.bashrc && \
     echo "fi" >> /root/.bashrc && \
-    echo "export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so" >> /root/.bashrc
+    echo "export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so" >> /root/.bashrc && \
+    echo "export MPLBACKEND=TkAgg" >> /root/.bashrc
 
 WORKDIR /hdk
 

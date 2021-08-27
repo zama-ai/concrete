@@ -117,7 +117,11 @@ docker_rebuild:
 
 docker_start:
 	@# the slash before pwd is for Windows
-	docker run --rm -it -p 8888:8888 --volume /"$$(pwd)":/hdk $(DEV_DOCKER_IMG)
+	docker run --rm -it \
+	-p 8888:8888 \
+	--env DISPLAY=host.docker.internal:0 \
+	--volume /"$$(pwd)":/hdk \
+	$(DEV_DOCKER_IMG)
 .PHONY: docker_start
 
 docker_build_and_start: docker_build docker_start
