@@ -104,7 +104,8 @@ struct MidLFHEApplyLookupTableParametrizationPattern
                              rewriter.getI32IntegerAttr(v0Parameter.k)),
         mlir::NamedAttribute(
             rewriter.getIdentifier("polynomialSize"),
-            rewriter.getI32IntegerAttr(v0Parameter.polynomialSize)),
+            // TODO remove the shift when we have true polynomial size
+            rewriter.getI32IntegerAttr(1 << v0Parameter.polynomialSize)),
         mlir::NamedAttribute(rewriter.getIdentifier("levelKS"),
                              rewriter.getI32IntegerAttr(v0Parameter.ksLevel)),
         mlir::NamedAttribute(rewriter.getIdentifier("baseLogKS"),
@@ -145,7 +146,8 @@ void populateWithMidLFHEApplyLookupTableParametrizationPattern(
   target.addDynamicallyLegalOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
       [&](mlir::zamalang::MidLFHE::ApplyLookupTable op) {
         if (op.k() != v0Parameter.k ||
-            op.polynomialSize() != v0Parameter.polynomialSize ||
+            // TODO remove the shift when we have true polynomial size
+            op.polynomialSize() != (1 << v0Parameter.polynomialSize) ||
             op.levelKS() != v0Parameter.ksLevel ||
             op.baseLogKS() != v0Parameter.ksLogBase ||
             op.levelBS() != v0Parameter.brLevel ||

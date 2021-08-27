@@ -26,6 +26,7 @@ struct V0Parameter {
       : k(k), polynomialSize(polynomialSize), nSmall(nSmall), brLevel(brLevel),
         brLogBase(brLogBase), ksLevel(ksLevel), ksLogBase(ksLogBase) {}
 
+  // TODO remove the shift when we have true polynomial size
   size_t getNBigGlweSize() { return k * (1 << polynomialSize); }
 };
 
