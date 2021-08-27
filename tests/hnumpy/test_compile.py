@@ -236,3 +236,33 @@ def test_compile_function_with_dot(function, params, shape, ref_graph_str):
         f"\n==================\nExpected {ref_graph_str}"
         f"\n==================\n"
     )
+
+
+@pytest.mark.parametrize(
+    "function,input_ranges,list_of_arg_names",
+    [
+        pytest.param(lambda x: x + 64, ((0, 10),), ["x"]),
+        pytest.param(lambda x: x * 3, ((0, 40),), ["x"]),
+        pytest.param(lambda x: 120 - x, ((40, 80),), ["x"]),
+        pytest.param(lambda x, y: x + y + 64, ((0, 20), (0, 20)), ["x", "y"]),
+        pytest.param(lambda x, y: 100 - y + x, ((0, 20), (0, 20)), ["x", "y"]),
+        pytest.param(lambda x, y: 50 - y * 2 + x, ((0, 20), (0, 20)), ["x", "y"]),
+    ],
+)
+def test_compile_with_show_mlir(function, input_ranges, list_of_arg_names):
+    """Test show_mlir option"""
+
+    def data_gen(args):
+        for prod in itertools.product(*args):
+            yield prod
+
+    function_parameters = {
+        arg_name: EncryptedValue(Integer(64, False)) for arg_name in list_of_arg_names
+    }
+
+    compile_numpy_function(
+        function,
+        function_parameters,
+        data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+        show_mlir=True,
+    )

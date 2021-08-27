@@ -132,6 +132,7 @@ def compile_numpy_function(
     dataset: Iterator[Tuple[Any, ...]],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
+    show_mlir: bool = False,
 ) -> CompilerEngine:
     """Main API of hnumpy, to be able to compile an homomorphic program.
 
@@ -146,6 +147,8 @@ def compile_numpy_function(
             during compilation
         compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
             during compilation
+        show_mlir (bool): if set, the MLIR produced by the converter and which is going
+            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 
     Returns:
         CompilerEngine: engine to run and debug the compiled graph
@@ -170,6 +173,9 @@ def compile_numpy_function(
     # Convert graph to an MLIR representation
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(op_graph)
+
+    if show_mlir:
+        print(f"MLIR which is going to be compiled: \n{mlir_result}")
 
     # Compile the MLIR representation
     engine = CompilerEngine()
