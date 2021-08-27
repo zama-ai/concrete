@@ -50,6 +50,7 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
             for param in signature(function_to_trace).parameters.keys()
         },
         iter([(1,), (2,), (3,)]),
+        CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
     )
     op_graph_not_optimized = compile_numpy_function_into_op_graph(
         function_to_trace,
@@ -58,7 +59,10 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
             for param in signature(function_to_trace).parameters.keys()
         },
         iter([(1,), (2,), (3,)]),
-        compilation_configuration=CompilationConfiguration(enable_topological_optimizations=False),
+        CompilationConfiguration(
+            dump_artifacts_on_unexpected_failures=False,
+            enable_topological_optimizations=False,
+        ),
     )
 
     graph = op_graph.graph

@@ -1,5 +1,6 @@
 """hnumpy compilation function."""
 
+import traceback
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import numpy
@@ -47,8 +48,94 @@ def numpy_min_func(lhs: Any, rhs: Any) -> Any:
     return numpy.minimum(lhs, rhs).min()
 
 
+def _compile_numpy_function_into_op_graph_internal(
+    function_to_compile: Callable,
+    function_parameters: Dict[str, BaseValue],
+    dataset: Iterator[Tuple[Any, ...]],
+    compilation_configuration: CompilationConfiguration,
+    compilation_artifacts: CompilationArtifacts,
+) -> OPGraph:
+    """Compile a function into an OPGraph.
+
+    Args:
+        function_to_compile (Callable): The function to compile
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+        dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
+            needs to be an iterator on tuples which are of the same length than the number of
+            parameters in the function, and in the same order than these same parameters
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+            during compilation
+        compilation_configuration (CompilationConfiguration): Configuration object to use
+            during compilation
+
+    Returns:
+        OPGraph: compiled function into a graph
+    """
+
+    # Add the function to compile as an artifact
+    compilation_artifacts.add_function_to_compile(function_to_compile)
+
+    # Add the parameters of function to compile as artifacts
+    for name, value in function_parameters.items():
+        compilation_artifacts.add_parameter_of_function_to_compile(name, str(value))
+
+    # Trace the function
+    op_graph = trace_numpy_function(function_to_compile, function_parameters)
+
+    # Add the initial graph as an artifact
+    compilation_artifacts.add_operation_graph("initial", op_graph)
+
+    # Apply topological optimizations if they are enabled
+    if compilation_configuration.enable_topological_optimizations:
+        # Fuse float operations to have int to int ArbitraryFunction
+        if not check_op_graph_is_integer_program(op_graph):
+            fuse_float_operations(op_graph)
+
+            # Add the fused floats graph as an artifact
+            compilation_artifacts.add_operation_graph("fused-float-operations", op_graph)
+
+    # TODO: To be removed once we support more than integers
+    offending_non_integer_nodes: List[ir.IntermediateNode] = []
+    op_grap_is_int_prog = check_op_graph_is_integer_program(op_graph, offending_non_integer_nodes)
+    if not op_grap_is_int_prog:
+        raise ValueError(
+            f"{function_to_compile.__name__} cannot be compiled as it has nodes with either float"
+            f" inputs or outputs.\nOffending nodes : "
+            f"{', '.join(str(node) for node in offending_non_integer_nodes)}"
+        )
+
+    # Find bounds with the dataset
+    node_bounds = eval_op_graph_bounds_on_dataset(
+        op_graph,
+        dataset,
+        min_func=numpy_min_func,
+        max_func=numpy_max_func,
+    )
+
+    # Add the bounds as an artifact
+    compilation_artifacts.add_final_operation_graph_bounds(node_bounds)
+
+    # Update the graph accordingly: after that, we have the compilable graph
+    op_graph.update_values_with_bounds(
+        node_bounds, get_base_data_type_for_numpy_or_python_constant_data
+    )
+
+    # Add the initial graph as an artifact
+    compilation_artifacts.add_operation_graph("final", op_graph)
+
+    # Make sure the graph can be lowered to MLIR
+    if not is_graph_values_compatible_with_mlir(op_graph):
+        raise TypeError("signed integers aren't supported for MLIR lowering")
+
+    # Update bit_width for MLIR
+    update_bit_width_for_mlir(op_graph)
+
+    return op_graph
+
+
 def compile_numpy_function_into_op_graph(
-    function_to_trace: Callable,
+    function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
     dataset: Iterator[Tuple[Any, ...]],
     compilation_configuration: Optional[CompilationConfiguration] = None,
@@ -57,7 +144,7 @@ def compile_numpy_function_into_op_graph(
     """Compile a function into an OPGraph.
 
     Args:
-        function_to_trace (Callable): The function you want to trace
+        function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedValue holding a 7bits unsigned Integer
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
@@ -79,55 +166,91 @@ def compile_numpy_function_into_op_graph(
         else compilation_configuration
     )
 
-    # Trace
-    op_graph = trace_numpy_function(function_to_trace, function_parameters)
+    # Create temporary artifacts if custom artifacts is not specified (in case of exceptions)
+    if compilation_artifacts is None:
+        compilation_artifacts = CompilationArtifacts()
 
-    # Apply topological optimizations if they are enabled
-    if compilation_configuration.enable_topological_optimizations:
-        # Fuse float operations to have int to int ArbitraryFunction
-        if not check_op_graph_is_integer_program(op_graph):
-            fuse_float_operations(op_graph)
-
-    # TODO: To be removed once we support more than integers
-    offending_non_integer_nodes: List[ir.IntermediateNode] = []
-    op_grap_is_int_prog = check_op_graph_is_integer_program(op_graph, offending_non_integer_nodes)
-    if not op_grap_is_int_prog:
-        raise ValueError(
-            f"{function_to_trace.__name__} cannot be compiled as it has nodes with either float "
-            f"inputs or outputs.\nOffending nodes : "
-            f"{', '.join(str(node) for node in offending_non_integer_nodes)}"
+    # Try to compile the function and save partial artifacts on failure
+    try:
+        return _compile_numpy_function_into_op_graph_internal(
+            function_to_compile,
+            function_parameters,
+            dataset,
+            compilation_configuration,
+            compilation_artifacts,
         )
+    except Exception:  # pragma: no cover
+        # This branch is reserved for unexpected issues and hence it shouldn't be tested.
+        # If it could be tested, we would have fixed the underlying issue.
 
-    # Find bounds with the dataset
-    node_bounds = eval_op_graph_bounds_on_dataset(
-        op_graph,
+        # We need to export all the information we have about the compilation
+        # If the user wants them to be exported
+
+        if compilation_configuration.dump_artifacts_on_unexpected_failures:
+            compilation_artifacts.export()
+            with open(compilation_artifacts.output_directory.joinpath("traceback.txt"), "w") as f:
+                f.write(traceback.format_exc())
+
+        raise
+
+
+def _compile_numpy_function_internal(
+    function_to_compile: Callable,
+    function_parameters: Dict[str, BaseValue],
+    dataset: Iterator[Tuple[Any, ...]],
+    compilation_configuration: CompilationConfiguration,
+    compilation_artifacts: CompilationArtifacts,
+    show_mlir: bool,
+) -> CompilerEngine:
+    """Main API of hnumpy, to be able to compile an homomorphic program.
+
+    Args:
+        function_to_compile (Callable): The function you want to compile
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+        dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
+            needs to be an iterator on tuples which are of the same length than the number of
+            parameters in the function, and in the same order than these same parameters
+        compilation_configuration (CompilationConfiguration): Configuration object to use
+            during compilation
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+            during compilation
+        show_mlir (bool): if set, the MLIR produced by the converter and which is going
+            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+
+    Returns:
+        CompilerEngine: engine to run and debug the compiled graph
+    """
+
+    # Compile into an OPGraph
+    op_graph = _compile_numpy_function_into_op_graph_internal(
+        function_to_compile,
+        function_parameters,
         dataset,
-        min_func=numpy_min_func,
-        max_func=numpy_max_func,
+        compilation_configuration,
+        compilation_artifacts,
     )
 
-    # Update the graph accordingly: after that, we have the compilable graph
-    op_graph.update_values_with_bounds(
-        node_bounds, get_base_data_type_for_numpy_or_python_constant_data
-    )
+    # Convert graph to an MLIR representation
+    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    mlir_result = converter.convert(op_graph)
 
-    # Make sure the graph can be lowered to MLIR
-    if not is_graph_values_compatible_with_mlir(op_graph):
-        raise TypeError("signed integers aren't supported for MLIR lowering")
+    # Show MLIR representation if requested
+    if show_mlir:
+        print(f"MLIR which is going to be compiled: \n{mlir_result}")
 
-    # Update bit_width for MLIR
-    update_bit_width_for_mlir(op_graph)
+    # Add MLIR representation as an artifact
+    compilation_artifacts.add_final_operation_graph_mlir(mlir_result)
 
-    # Fill compilation artifacts
-    if compilation_artifacts is not None:
-        compilation_artifacts.operation_graph = op_graph
-        compilation_artifacts.bounds = node_bounds
+    # Compile the MLIR representation
+    engine = CompilerEngine()
+    engine.compile_fhe(mlir_result)
 
-    return op_graph
+    return engine
 
 
 def compile_numpy_function(
-    function_to_trace: Callable,
+    function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
     dataset: Iterator[Tuple[Any, ...]],
     compilation_configuration: Optional[CompilationConfiguration] = None,
@@ -137,7 +260,7 @@ def compile_numpy_function(
     """Main API of hnumpy, to be able to compile an homomorphic program.
 
     Args:
-        function_to_trace (Callable): The function you want to trace
+        function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedValue holding a 7bits unsigned Integer
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
@@ -161,24 +284,30 @@ def compile_numpy_function(
         else compilation_configuration
     )
 
-    # Compile into an OPGraph
-    op_graph = compile_numpy_function_into_op_graph(
-        function_to_trace,
-        function_parameters,
-        dataset,
-        compilation_configuration,
-        compilation_artifacts,
-    )
+    # Create temporary artifacts if custom artifacts is not specified (in case of exceptions)
+    if compilation_artifacts is None:
+        compilation_artifacts = CompilationArtifacts()
 
-    # Convert graph to an MLIR representation
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
-    mlir_result = converter.convert(op_graph)
+    # Try to compile the function and save partial artifacts on failure
+    try:
+        return _compile_numpy_function_internal(
+            function_to_compile,
+            function_parameters,
+            dataset,
+            compilation_configuration,
+            compilation_artifacts,
+            show_mlir,
+        )
+    except Exception:  # pragma: no cover
+        # This branch is reserved for unexpected issues and hence it shouldn't be tested.
+        # If it could be tested, we would have fixed the underlying issue.
 
-    if show_mlir:
-        print(f"MLIR which is going to be compiled: \n{mlir_result}")
+        # We need to export all the information we have about the compilation
+        # If the user wants them to be exported
 
-    # Compile the MLIR representation
-    engine = CompilerEngine()
-    engine.compile_fhe(mlir_result)
+        if compilation_configuration.dump_artifacts_on_unexpected_failures:
+            compilation_artifacts.export()
+            with open(compilation_artifacts.output_directory.joinpath("traceback.txt"), "w") as f:
+                f.write(traceback.format_exc())
 
-    return engine
+        raise

@@ -5,6 +5,7 @@ import random
 import numpy
 import pytest
 
+from hdk.common.compilation import CompilationConfiguration
 from hdk.common.data_types.integers import Integer
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
@@ -63,6 +64,7 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
         function,
         function_parameters,
         data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+        CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
     )
 
     # TODO: For the moment, we don't have really checks, but some printfs. Later,
@@ -168,6 +170,7 @@ def test_compile_function_with_direct_tlu_overflow():
             function,
             {"x": EncryptedValue(Integer(3, is_signed=False))},
             iter([(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)]),
+            CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
         )
 
 
@@ -193,6 +196,7 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
             function,
             function_parameters,
             data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+            CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
         )
 
 

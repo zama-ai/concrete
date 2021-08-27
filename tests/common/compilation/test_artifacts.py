@@ -4,9 +4,9 @@ import tempfile
 from pathlib import Path
 
 from hdk.common.compilation import CompilationArtifacts
-from hdk.common.data_types.integers import Integer
+from hdk.common.data_types.integers import UnsignedInteger
 from hdk.common.values import EncryptedValue
-from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
+from hdk.hnumpy.compile import compile_numpy_function
 
 
 def test_artifacts_export():
@@ -15,23 +15,33 @@ def test_artifacts_export():
     def function(x):
         return x + 42
 
-    artifacts = CompilationArtifacts()
-    compile_numpy_function_into_op_graph(
-        function,
-        {"x": EncryptedValue(Integer(7, True))},
-        iter([(-2,), (-1,), (0,), (1,), (2,)]),
-        compilation_artifacts=artifacts,
-    )
-
     with tempfile.TemporaryDirectory() as tmp:
         output_directory = Path(tmp)
-        artifacts.export(output_directory)
+        artifacts = CompilationArtifacts(output_directory)
+
+        compile_numpy_function(
+            function,
+            {"x": EncryptedValue(UnsignedInteger(7))},
+            iter([(0,), (1,), (2,)]),
+            compilation_artifacts=artifacts,
+        )
+
+        artifacts.export()
 
         assert output_directory.joinpath("environment.txt").exists()
         assert output_directory.joinpath("requirements.txt").exists()
-        assert output_directory.joinpath("graph.txt").exists()
-        assert output_directory.joinpath("graph.png").exists()
+
+        assert output_directory.joinpath("function.txt").exists()
+        assert output_directory.joinpath("parameters.txt").exists()
+
+        assert output_directory.joinpath("1.initial.graph.txt").exists()
+        assert output_directory.joinpath("1.initial.graph.png").exists()
+
+        assert output_directory.joinpath("2.final.graph.txt").exists()
+        assert output_directory.joinpath("2.final.graph.png").exists()
+
         assert output_directory.joinpath("bounds.txt").exists()
+        assert output_directory.joinpath("mlir.txt").exists()
 
         # format of those files might change in the future
         # so it is sufficient to test their existance
