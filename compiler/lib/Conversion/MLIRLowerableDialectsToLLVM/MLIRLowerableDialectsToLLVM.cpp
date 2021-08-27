@@ -64,7 +64,12 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
 
 llvm::Optional<mlir::Type>
 MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
-  if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
+  if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>() ||
+      type.isa<mlir::zamalang::LowLFHE::GlweCiphertextType>() ||
+      type.isa<mlir::zamalang::LowLFHE::LweKeySwitchKeyType>() ||
+      type.isa<mlir::zamalang::LowLFHE::LweBootstrapKeyType>() ||
+      type.isa<mlir::zamalang::LowLFHE::ForeignPlaintextListType>() ||
+      type.isa<mlir::zamalang::LowLFHE::PlaintextListType>()) {
     return mlir::LLVM::LLVMPointerType::get(
         mlir::IntegerType::get(type.getContext(), 64));
   }
