@@ -19,5 +19,5 @@ add_mlir_library(ZamalangSupport
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
   
-  Concrete
+  ZamalangRuntime
 )

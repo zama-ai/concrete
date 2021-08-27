@@ -18,7 +18,7 @@ add_mlir_python_extension(ZamalangBindingsPythonExtension _zamalang
     LowLFHEDialect
     MidLFHEDialect
     HLFHEDialect
-    Concrete
+    ZamalangRuntime
 )
 add_dependencies(ZamalangBindingsPython ZamalangBindingsPythonExtension)
 

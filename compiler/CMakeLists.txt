@@ -30,8 +30,8 @@ add_definitions(${LLVM_DEFINITIONS})
 # Concrete FFI Configuration
 #-------------------------------------------------------------------------------
 include_directories(${CONCRETE_FFI_RELEASE})
-add_library(Concrete SHARED IMPORTED)
-set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEASE}/libconcrete_ffi.so )
+add_library(Concrete STATIC IMPORTED)
+set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEASE}/libconcrete_ffi.a )
 
 #-------------------------------------------------------------------------------
 # Python Configuration
