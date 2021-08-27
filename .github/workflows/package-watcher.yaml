@@ -1,0 +1,41 @@
+name: Package Version Checker
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # At minute 0 for each hour from 8:00 to 22:00 inclusive from Monday to Friday inclusive
+    - cron: '0 8-22 * * 1-5'
+
+jobs:
+  check_and_notify_build:
+    name: Check timestamps and notify build
+    runs-on: ubuntu-20.04
+    env:
+      BASE_IMG_ENDPOINT_URL: "https://api.github.com/orgs/zama-ai/packages/container/zamalang-compiler"
+      ENV_IMG_ENDPOINT_URL: "https://api.github.com/orgs/zama-ai/packages/container/hdk-env"
+    steps:
+      - name: Compare image timestamps and notify
+      - run: |
+          BASE_IMG_TIMESTAMP=$(curl \
+            -X GET \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.BOT_TOKEN }}" \
+            "${BASE_IMG_ENDPOINT_URL}" | jq -r '.updated_at')
+          ENV_IMG_TIMESTAMP=$(curl \
+            -X GET \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.BOT_TOKEN }}" \
+            "${ENV_IMG_ENDPOINT_URL}" | jq -r '.updated_at')
+          BASE_IMG_DATE=$(date -d ${BASE_IMG_TIMESTAMP} +%s)
+          ENV_IMG_DATE=$(date -d ${ENV_IMG_TIMESTAMP} +%s)
+          if [[ "${BASE_IMG_DATE}" -ge "${ENV_IMG_DATE}" ]]; then
+            echo "Env image out of date, sending rebuild request."
+            curl \
+            -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.BOT_TOKEN }}" \
+            https://api.github.com/repos/zama-ai/hdk/dispatches \
+            -d '{"event_type":"rebuild-docker"}'
+          else
+            echo "Image up to date, nothing to do."
+          fi

@@ -10,6 +10,11 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+  # Allows external webhook trigger
+  repository_dispatch:
+    types:
+      - rebuild-docker
+
 jobs:
   build_publish:
     concurrency:
