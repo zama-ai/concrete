@@ -6,6 +6,7 @@
 
 extern "C" {
 #include "concrete-ffi.h"
+#include "zamalang/Runtime/context.h"
 }
 
 #include "zamalang/Support/ClientParameters.h"
@@ -39,6 +40,12 @@ public:
 
   CircuitGate inputGate(size_t pos) { return std::get<0>(inputs[pos]); }
   CircuitGate outputGate(size_t pos) { return std::get<0>(outputs[pos]); }
+
+  void generateRuntimeContext() {
+    auto ksk = std::get<1>(this->keyswitchKeys["ksk_v0"]);
+    auto bsk = std::get<1>(this->bootstrapKeys["bsk_v0"]);
+    setGlobalRuntimeContext(createRuntimeContext(ksk, bsk));
+  }
 
 protected:
   llvm::Error generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,

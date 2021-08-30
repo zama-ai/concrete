@@ -234,6 +234,9 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
   for (auto i = inputs.size(); i < rawArg.size(); i++) {
     rawArg[i] = &outputs[i - inputs.size()];
   }
+
+  // Setup runtime context with appropriate keys
+  keySet.generateRuntimeContext();
 }
 
 JITLambda::Argument::~Argument() {
