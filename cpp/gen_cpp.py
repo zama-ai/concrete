@@ -19,14 +19,17 @@ typedef struct v0curves
     int rlweDimension;
     int polynomialSize;
     int ciphertextModulus;
+    int keyFormat;
 
     v0curves(int rlweDimension,
                 int polynomialSize_,
-                int ciphertextModulus)
+                int ciphertextModulus,
+                int keyFormat)
     {
         rlweDimension = rlweDimension_;
         polynomialSize = polynomialSize_;
         ciphertextModulus = ciphertextModulus_;
+        keyFormat = keyFormat_;
     }
 
 } v0curves;"""
@@ -37,20 +40,22 @@ v0curves parameters[num_sec_levels] = """
 
 
 get_string = """
-extern "C" int security_estimator(int rlweDimension, int polynomialSize, int ciphertextModulus)
+extern "C" int security_estimator(int securityLevel, int keyFormat)
 {
+    return &parameters[securityLevel][keyFormat];
 }"""
 
 
-def constructor(rlweDimension, polynomialSize, ciphertextModulus):
-    return f"v0curves({rlweDimension}, {polynomialSize}, {ciphertextModulus}),"
+def constructor(rlweDimension, polynomialSize, ciphertextModulus, keyFormat):
+    return f"v0curves({rlweDimension}, {polynomialSize}, {ciphertextModulus}, {keyFormat}),"
 
 
 def fill_parameters(
     # Return a string with parameters for the c++ array initialization
     polynomial_size_results,
     rlwe_dimension_results,
-    ciphertextModulus,
+    ciphertext_modulus_results,
+    key_format_results
 ):
     parameters = "{}{{".format(table_string)
     for security_level in range(num_sec_levels):
@@ -62,9 +67,10 @@ def fill_parameters(
                 int(polynomial_size_results[security_level]),
                 int(rlwe_dimension_results[security_level]),
                 int(ciphertext_modulus_results[security_level]),
+                int(key_format_results[security_level]),
             )
         except ValueError:
-            line += constructor(0, 0,0)
+            line += constructor(0, 0, 0, 0)
         line = line[:-1]
         line += "},"
         parameters += line
@@ -77,6 +83,7 @@ def codegen(
     polynomial_size_results,
     rlwe_dimension_results,
     ciphertext_modulus_results,
+    key_format_results,
 ):
     # Generate the C++ file as a string
     code = f"""
@@ -86,7 +93,8 @@ def codegen(
     {fill_parameters(
         polynomial_size_results,
         rlwe_dimension_results,
-        ciphertext_modulus_results
+        ciphertext_modulus_results,
+        key_format_results
     )}
     {get_string}
     """
@@ -96,13 +104,15 @@ def codegen(
 def write_codegen(
     polynomial_size_results,
     rlwe_dimension_results,
-    ciphertext_modulus_results
+    ciphertext_modulus_results,
+    key_format_results,
 ):
     # Create the c++ source
     code = codegen(
         polynomial_size_results,
         rlwe_dimension_results,
-        ciphertext_modulus_results
+        ciphertext_modulus_results,
+        key_format_results
     )
     # TODO: insert correct filename here with a path
     with open(f"test.cpp", "w") as f:
@@ -115,12 +125,15 @@ def main_codegen():
     (
         polynomial_size_results,
         rlwe_dimension_results,
-        ciphertext_modulus_resultss
+        ciphertext_modulus_results,
+        key_format_results,
+        
     ) = main_optimization_v0()
 
     # code generation
     write_codegen(
         polynomial_size_results,
         rlwe_dimension_results,
-        ciphertext_modulus_results
+        ciphertext_modulus_results,
+        key_format_results
     )
