@@ -59,12 +59,15 @@ jobs:
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         env:
-          # TODO: remove this when concrete is statically linked with compiler
-          LD_PRELOAD: /concrete/target/release/libconcrete_ffi.so
+          # TODO: remove this when JIT doesn't need this
+          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
           make pytest
       - name: Notebooks
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        env:
+          # TODO: remove this when JIT doesn't need this
+          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
           make strip_nb
           make notebook_timeout
