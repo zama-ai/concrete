@@ -37,5 +37,5 @@ jobs:
           image: ghcr.io/zama-ai/mlir@sha256:5b7adfbf4e28c5a7517ed0b2bb0347455dea86f495b3ba060f6bea70c9dc10d3
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}:/workspace -e PYTHONPATH=/llvm-project/build/python:/workspace/compiler/build/python
-          run: cd /workspace/compiler && mkdir build && cmake -B build . -DCONCRETE_FFI_RELEASE=/workspace/concrete/target/release -DLLVM_DIR=$LLVM_PROJECT/build/lib/cmake/llvm -DMLIR_DIR=$LLVM_PROJECT/build/lib/cmake/mlir && make -C build/ all zamacompiler && make test && pip install pytest && LD_PRELOAD=/workspace/concrete/target/release/libconcrete_ffi.so make test_python
+          options: -v ${{ github.workspace }}:/workspace -e PYTHONPATH=/llvm-project/build/python:/workspace/compiler/build/python -e LD_LIBRARY_PATH=/workspace/compiler/build/lib/Runtime/
+          run: cd /workspace/compiler && mkdir build && cmake -B build . -DCONCRETE_FFI_RELEASE=/workspace/concrete/target/release -DLLVM_DIR=$LLVM_PROJECT/build/lib/cmake/llvm -DMLIR_DIR=$LLVM_PROJECT/build/lib/cmake/mlir && make -C build/ all zamacompiler && make test && pip install pytest && LD_PRELOAD=./build/lib/Runtime/libZamalangRuntime.so make test_python
