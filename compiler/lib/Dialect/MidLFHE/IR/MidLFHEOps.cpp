@@ -126,8 +126,10 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
   // Disable this check for the moment
   // Check the witdh of the encrypted integer and the integer of the tabulated
   // lambda are equals
-  // if (result.getP() < l_cst.getElementType().cast<IntegerType>().getWidth()) {
-  //   op.emitOpError() << "should have the width of the constants less or equals "
+  // if (result.getP() < l_cst.getElementType().cast<IntegerType>().getWidth())
+  // {
+  //   op.emitOpError() << "should have the width of the constants less or
+  //   equals "
   //                       "than the precision of the encrypted integer";
   //   return mlir::failure();
   // }

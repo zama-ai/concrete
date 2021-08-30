@@ -3,4 +3,4 @@ add_library(ZamalangRuntime SHARED
     wrappers.c
 )
 
-target_link_libraries(ZamalangRuntime Concrete)
+target_link_libraries(ZamalangRuntime Concrete pthread m dl)
