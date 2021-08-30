@@ -8,10 +8,13 @@ use crate::math::tensor::{AsMutSlice, Tensor};
 use crate::math::torus::UnsignedTorus;
 use crate::test_tools::assert_noise_distribution;
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweDimension};
+use concrete_commons::key_kinds::BinaryKeyKind;
+use concrete_commons::parameters::{
+    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
+};
 use concrete_npe as npe;
 
-fn test_external_product_gsw<T: UnsignedTorus + npe::GSW>() {
+fn test_external_product_gsw<T: UnsignedTorus>() {
     let n_tests = 10;
 
     // allocate message vectors
@@ -76,19 +79,21 @@ fn test_external_product_gsw<T: UnsignedTorus + npe::GSW>() {
     }
 
     // call the NPE to find the theoretical amount of noise after the bootstrap
-    let output_variance = <T as npe::GSW>::external_product(
-        dimension.0,
-        level.0,
-        base_log.0,
-        f64::powi(std_dev.get_standard_dev(), 2),
-        f64::powi(std_dev.get_standard_dev(), 2),
-    );
+    let output_variance =
+        npe::estimate_external_product_noise_with_binary_ggsw::<T, _, _, BinaryKeyKind>(
+            PolynomialSize(1),
+            GlweDimension(dimension.0),
+            Variance(f64::powi(std_dev.get_standard_dev(), 2)),
+            Variance(f64::powi(std_dev.get_standard_dev(), 2)),
+            base_log,
+            level,
+        );
     // we check that the obtain distribution is the same
     // as the theoretical one
-    assert_noise_distribution(&msg, &new_msg, Variance::from_variance(output_variance));
+    assert_noise_distribution(&msg, &new_msg, output_variance);
 }
 
-fn test_cmux_0_gsw<T: UnsignedTorus + npe::GSW>() {
+fn test_cmux_0_gsw<T: UnsignedTorus>() {
     let n_tests = 10;
 
     // allocate message vectors
@@ -140,21 +145,22 @@ fn test_cmux_0_gsw<T: UnsignedTorus + npe::GSW>() {
         new_msg.as_mut_slice()[i] = new_message.0;
     }
 
-    // call the NPE to find the theoretical amount of noise after the bootstrap
-    let output_variance = <T as npe::GSW>::cmux(
-        f64::powi(std_dev.get_standard_dev(), 2),
-        f64::powi(std_dev.get_standard_dev(), 2),
-        f64::powi(std_dev.get_standard_dev(), 2),
-        dimension.0,
-        base_log.0,
-        level.0,
+    // call the NPE to find the theoretical amount of noise after the cmux
+    let output_variance = npe::estimate_cmux_noise_with_binary_ggsw::<T, _, _, _, BinaryKeyKind>(
+        GlweDimension(dimension.0),
+        PolynomialSize(1),
+        base_log,
+        level,
+        Variance(f64::powi(std_dev.get_standard_dev(), 2)),
+        Variance(f64::powi(std_dev.get_standard_dev(), 2)),
+        Variance(f64::powi(std_dev.get_standard_dev(), 2)),
     );
     // we check that the obtain distribution is the same
     // as the theoretical one
-    assert_noise_distribution(&msg, &new_msg, Variance::from_variance(output_variance));
+    assert_noise_distribution(&msg, &new_msg, output_variance);
 }
 
-fn test_cmux_1_gsw<T: UnsignedTorus + npe::GSW>() {
+fn test_cmux_1_gsw<T: UnsignedTorus>() {
     let n_tests = 10;
 
     // allocate message vectors
@@ -207,17 +213,18 @@ fn test_cmux_1_gsw<T: UnsignedTorus + npe::GSW>() {
     }
 
     // call the NPE to find the theoretical amount of noise after the bootstrap
-    let output_variance = <T as npe::GSW>::cmux(
-        f64::powi(std_dev.get_standard_dev(), 2),
-        f64::powi(std_dev.get_standard_dev(), 2),
-        f64::powi(std_dev.get_standard_dev(), 2),
-        dimension.0,
-        base_log.0,
-        level.0,
+    let output_variance = npe::estimate_cmux_noise_with_binary_ggsw::<T, _, _, _, BinaryKeyKind>(
+        GlweDimension(dimension.0),
+        PolynomialSize(1),
+        base_log,
+        level,
+        Variance(f64::powi(std_dev.get_standard_dev(), 2)),
+        Variance(f64::powi(std_dev.get_standard_dev(), 2)),
+        Variance(f64::powi(std_dev.get_standard_dev(), 2)),
     );
     // we check that the obtain distribution is the same
     // as the theoretical one
-    assert_noise_distribution(&msg, &new_msg, Variance::from_variance(output_variance));
+    assert_noise_distribution(&msg, &new_msg, output_variance);
 }
 
 #[test]

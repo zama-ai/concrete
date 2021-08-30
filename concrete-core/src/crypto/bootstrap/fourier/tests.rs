@@ -21,8 +21,9 @@ use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
 use crate::math::torus::UnsignedTorus;
 use crate::test_tools::{assert_delta_std_dev, assert_noise_distribution};
+use concrete_commons::key_kinds::BinaryKeyKind;
 
-fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
+fn test_bootstrap_noise<T: UnsignedTorus>() {
     //! test that the bootstrapping noise matches the theoretical noise
     //! This test is design to remove the impact of the drift, we only
     //! check the noise added by the external products
@@ -77,20 +78,21 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
 
             // Create a fix message (encoded in the most significant bit of the torus)
             // put a 3 bit message XXX here 0XXX000...000 in the torus bit representation
-            let val = (polynomial_size.0 as f64
-                - (5. * f64::sqrt(npe::cross::drift_index_lut(lwe_dimension.0))))
-                * (1. / (2. * polynomial_size.0 as f64))
-                * (<T as Numeric>::MAX.cast_into() + 1_f64);
-            let val = T::cast_from(val);
-
-            let m0 = Plaintext(val);
+            let mut random_generator = RandomGenerator::new(None);
+            let random: T = random_generator.random_uniform();
+            let m0 = Plaintext(random & (((T::ONE << 3) - T::ONE) << (T::BITS - 4)));
+            println!("{:?}", m0.0);
 
             // allocate ciphertext vectors
             let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
             let mut lwe_out =
                 LweCiphertext::allocate(T::ZERO, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
             lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut encryption_generator);
-            let cst = T::ONE << 29;
+            // Here we define a LUT that takes a message as an input
+            // and outputs:
+            // -1/8 if the most significant bit of the message is one
+            // 1/8 otherwise
+            let cst = T::ONE << (T::BITS - 3);
             msg.as_mut_slice()[i] = cst;
 
             // create a constant accumulator
@@ -103,9 +105,10 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
 
             fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator);
 
+            // Initialize a m1 message
             let mut m1 = Plaintext(T::ZERO);
 
-            // now the lwe is encrypted using a flatten of the trlwe encryption key
+            // now the lwe is decrypted using a flatten of the rlwe encryption key
             let flattened_key = LweSecretKey::binary_from_container(rlwe_sk.as_tensor().as_slice());
             flattened_key.decrypt_lwe(&mut m1, &lwe_out);
             // store the decryption of the bootstrapped ciphertext
@@ -113,26 +116,26 @@ fn test_bootstrap_noise<T: UnsignedTorus + npe::Cross>() {
         }
 
         // call the NPE to find the theoretical amount of noise after the bootstrap
-        let output_variance = <T as npe::Cross>::bootstrap(
-            lwe_dimension.0,
-            rlwe_dimension.0,
-            level.0,
-            base_log.0,
-            polynomial_size.0,
-            f64::powi(std.get_standard_dev(), 2),
+        let output_variance = npe::estimate_pbs_noise::<T, Variance, BinaryKeyKind>(
+            lwe_dimension,
+            polynomial_size,
+            rlwe_dimension,
+            base_log,
+            level,
+            Variance(f64::powi(std.get_standard_dev(), 2)),
         );
         // if we have enough test, we check that the obtain distribution is the same
         // as the theoretical one
         // if not, it only tests if the noise remains in the 99% confidence interval
         if nb_test < 7 {
-            assert_delta_std_dev(&msg, &new_msg, Variance::from_variance(output_variance));
+            assert_delta_std_dev(&msg, &new_msg, output_variance);
         } else {
-            assert_noise_distribution(&msg, &new_msg, Variance::from_variance(output_variance));
+            assert_noise_distribution(&msg, &new_msg, output_variance);
         }
     }
 }
 
-fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
+fn test_external_product_generic<T: UnsignedTorus>() {
     let n_tests = 10;
     for _n in 0..n_tests {
         // fix different polynomial degrees
@@ -218,25 +221,30 @@ fn test_external_product_generic<T: UnsignedTorus + npe::Cross>() {
 
             rlwe_sk.decrypt_glwe(&mut new_messages, &res);
 
-            // call the NPE to find the theoritical amount of noise after the external product
+            // call the NPE to find the theoretical amount of noise after the external product
             let var_trgsw = std_dev_bsk.get_variance();
             let var_trlwe = std_dev_rlwe.get_variance();
-            let output_variance = <T as npe::Cross>::external_product(
-                rlwe_dimension.0,
-                level.0,
-                base_log.0,
-                polynomial_size,
-                var_trgsw,
-                var_trlwe,
+            let output_variance = npe::estimate_external_product_noise_with_binary_ggsw::<
+                T,
+                Variance,
+                Variance,
+                BinaryKeyKind,
+            >(
+                PolynomialSize(polynomial_size),
+                rlwe_dimension,
+                Variance(var_trlwe),
+                Variance(var_trgsw),
+                base_log,
+                level,
             );
 
             // test
-            assert_noise_distribution(&new_messages, &messages, Variance(output_variance));
+            assert_noise_distribution(&new_messages, &messages, output_variance);
         }
     }
 }
 
-fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
+fn test_cmux_0<T: UnsignedTorus>() {
     // fix different polynomial degrees
     let degrees = vec![512, 1024, 2048];
     for polynomial_size in degrees {
@@ -326,22 +334,21 @@ fn test_cmux_0<T: UnsignedTorus + npe::Cross>() {
         // call the NPE to find the theoretical amount of noise added by the cmux
         let variance_rlwe = std_dev_rlwe.get_variance();
         let variance_trgsw = std_dev_bsk.get_variance();
-        let output_variance = <T as npe::Cross>::cmux(
-            variance_rlwe,
-            variance_rlwe,
-            variance_trgsw,
-            rlwe_dimension.0,
-            polynomial_size,
-            base_log.0,
-            level.0,
+        let output_variance = npe::estimate_cmux_noise_with_binary_ggsw::<T, _, _, _, BinaryKeyKind>(
+            rlwe_dimension,
+            PolynomialSize(polynomial_size),
+            base_log,
+            level,
+            Variance(variance_rlwe),
+            Variance(variance_rlwe),
+            Variance(variance_trgsw),
         );
-
         // test
-        assert_noise_distribution(&new_messages, &m0, Variance(output_variance));
+        assert_noise_distribution(&new_messages, &m0, output_variance);
     }
 }
 
-fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
+fn test_cmux_1<T: UnsignedTorus>() {
     // fix different polynomial degrees
     let degrees = vec![512, 1024, 2048];
     for polynomial_size in degrees {
@@ -430,18 +437,17 @@ fn test_cmux_1<T: UnsignedTorus + npe::Cross>() {
         // call the NPE to find the theoretical amount of noise added by the cmux
         let variance_rlwe = std_dev_rlwe.get_variance();
         let variance_trgsw = std_dev_bsk.get_variance();
-        let output_variance = <T as npe::Cross>::cmux(
-            variance_rlwe,
-            variance_rlwe,
-            variance_trgsw,
-            rlwe_dimension.0,
-            polynomial_size,
-            base_log.0,
-            level.0,
+        let output_variance = npe::estimate_cmux_noise_with_binary_ggsw::<T, _, _, _, BinaryKeyKind>(
+            rlwe_dimension,
+            PolynomialSize(polynomial_size),
+            base_log,
+            level,
+            Variance(variance_rlwe),
+            Variance(variance_rlwe),
+            Variance(variance_trgsw),
         );
-
         // test
-        assert_noise_distribution(&new_messages, &m1, Variance(output_variance));
+        assert_noise_distribution(&new_messages, &m1, output_variance);
     }
 }
 
@@ -559,8 +565,7 @@ where
         );
         fourier_bsk.fill_with_forward_fourier(&coef_bsk);
 
-        let val = (polynomial_size.0 as f64
-            - (10. * f64::sqrt(npe::cross::drift_index_lut(lwe_dimension.0))))
+        let val = (polynomial_size.0 as f64 - (10. * f64::sqrt((lwe_dimension.0 as f64) / 16.0)))
             * 2_f64.powi(<T as Numeric>::BITS as i32 - log_degree - 1);
         let val = T::cast_from(val);
 
@@ -598,7 +603,7 @@ where
         new_msg.as_mut_slice()[i] = m1.0;
 
         // test that the drift remains within the bound of the theretical drift
-        let delta_max: i64 = ((5. * f64::sqrt(npe::cross::drift_index_lut(lwe_dimension.0)))
+        let delta_max: i64 = ((5. * f64::sqrt((lwe_dimension.0 as f64) / 16.0))
             * 2_f64.powi(<T as Numeric>::BITS as i32 - log_degree - 1))
             as i64;
         assert!(
