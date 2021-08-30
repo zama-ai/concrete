@@ -130,22 +130,24 @@ class NPTracer(BaseTracer):
         ]
         return common_output_dtypes
 
-    def rint(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
-        """Function to trace numpy.rint.
+    def _unary_operator(
+        self, unary_operator, unary_operator_string, *input_tracers: "NPTracer", **kwargs
+    ) -> "NPTracer":
+        """Function to trace an unary operator.
 
         Returns:
             NPTracer: The output NPTracer containing the traced function
         """
         assert len(input_tracers) == 1
-        common_output_dtypes = self._manage_dtypes(numpy.rint, *input_tracers)
+        common_output_dtypes = self._manage_dtypes(unary_operator, *input_tracers)
         assert len(common_output_dtypes) == 1
 
         traced_computation = ArbitraryFunction(
             input_base_value=input_tracers[0].output,
-            arbitrary_func=numpy.rint,
+            arbitrary_func=unary_operator,
             output_dtype=common_output_dtypes[0],
             op_kwargs=deepcopy(kwargs),
-            op_name="np.rint",
+            op_name=unary_operator_string,
         )
         output_tracer = self.__class__(
             input_tracers,
@@ -153,6 +155,14 @@ class NPTracer(BaseTracer):
             output_index=0,
         )
         return output_tracer
+
+    def rint(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.rint.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.rint, "np.rint", *input_tracers, **kwargs)
 
     def sin(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
         """Function to trace numpy.sin.
@@ -160,23 +170,15 @@ class NPTracer(BaseTracer):
         Returns:
             NPTracer: The output NPTracer containing the traced function
         """
-        assert len(input_tracers) == 1
-        common_output_dtypes = self._manage_dtypes(numpy.sin, *input_tracers)
-        assert len(common_output_dtypes) == 1
+        return self._unary_operator(numpy.sin, "np.sin", *input_tracers, **kwargs)
 
-        traced_computation = ArbitraryFunction(
-            input_base_value=input_tracers[0].output,
-            arbitrary_func=numpy.sin,
-            output_dtype=common_output_dtypes[0],
-            op_kwargs=deepcopy(kwargs),
-            op_name="np.sin",
-        )
-        output_tracer = self.__class__(
-            input_tracers,
-            traced_computation=traced_computation,
-            output_index=0,
-        )
-        return output_tracer
+    def cos(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.cos.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.cos, "np.cos", *input_tracers, **kwargs)
 
     def dot(self, other_tracer: "NPTracer", **_kwargs) -> "NPTracer":
         """Function to trace numpy.dot.
@@ -206,6 +208,7 @@ class NPTracer(BaseTracer):
     UFUNC_ROUTING: Dict[numpy.ufunc, Callable] = {
         numpy.rint: rint,
         numpy.sin: sin,
+        numpy.cos: cos,
     }
 
     FUNC_ROUTING: Dict[Callable, Callable] = {
