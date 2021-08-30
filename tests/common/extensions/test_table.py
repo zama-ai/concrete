@@ -45,6 +45,8 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     x = EncryptedValue(Integer(2, is_signed=False))
     op_graph = tracing.trace_numpy_function(f, {"x": x})
 
+    assert op_graph.output_nodes[0].get_table() == [3, 6, 0, 2]
+
     ref_graph = nx.MultiDiGraph()
     # Here is the ASCII drawing of the expected graph:
     #   (x) - (TLU)

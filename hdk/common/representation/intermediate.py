@@ -9,6 +9,7 @@ from ..data_types.dtypes_helpers import (
     get_base_value_for_python_constant_data,
     mix_scalar_values_determine_holding_dtype,
 )
+from ..data_types.integers import Integer
 from ..values import BaseValue, ClearValue, EncryptedValue, TensorValue
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
@@ -227,6 +228,30 @@ class ArbitraryFunction(IntermediateNode):
 
     def label(self) -> str:
         return self.op_name
+
+    def get_table(self) -> List[int]:
+        """Function to get the table for the current input value of this ArbitraryFunction.
+
+        Returns:
+            List[int]: The table.
+        """
+        # Check the input is an unsigned integer to be able to build a table
+        assert isinstance(
+            self.inputs[0].data_type, Integer
+        ), "get_table only works for an unsigned Integer input"
+        assert not self.inputs[
+            0
+        ].data_type.is_signed, "get_table only works for an unsigned Integer input"
+
+        min_input_range = self.inputs[0].data_type.min_value()
+        max_input_range = self.inputs[0].data_type.max_value() + 1
+
+        table = [
+            int(self.evaluate({0: input_value}))
+            for input_value in range(min_input_range, max_input_range)
+        ]
+
+        return table
 
 
 def default_dot_evaluation_function(lhs: Any, rhs: Any) -> Any:
