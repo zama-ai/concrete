@@ -188,6 +188,30 @@ class NPTracer(BaseTracer):
         """
         return self._unary_operator(numpy.tan, "np.tan", *input_tracers, **kwargs)
 
+    def arcsin(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.arcsin.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.arcsin, "np.arcsin", *input_tracers, **kwargs)
+
+    def arccos(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.arccos.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.arccos, "np.arccos", *input_tracers, **kwargs)
+
+    def arctan(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.arctan.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.arctan, "np.arctan", *input_tracers, **kwargs)
+
     def dot(self, other_tracer: "NPTracer", **_kwargs) -> "NPTracer":
         """Function to trace numpy.dot.
 
@@ -218,6 +242,9 @@ class NPTracer(BaseTracer):
         numpy.sin: sin,
         numpy.cos: cos,
         numpy.tan: tan,
+        numpy.arcsin: arcsin,
+        numpy.arccos: arccos,
+        numpy.arctan: arctan,
     }
 
     FUNC_ROUTING: Dict[Callable, Callable] = {
