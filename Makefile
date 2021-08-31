@@ -12,7 +12,7 @@ setup_env:
 
 sync_env:
 	poetry install --remove-untracked
-	make setup_env
+	$(MAKE) setup_env
 .PHONY: sync_env
 
 python_format:
@@ -135,7 +135,7 @@ docs: clean_docs
 	poetry run sphinx-apidoc -o docs/_apidoc hdk
 
 	@# Docs
-	cd docs && poetry run make html
+	cd docs && poetry run $(MAKE) html SPHINXOPTS='-W --keep-going'
 .PHONY: docs
 
 clean_docs:

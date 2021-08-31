@@ -49,12 +49,23 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
-      - name: Conformance
+      - name: Conformance and Docs build
         id: conformance
         if: ${{ success() && !cancelled() }}
+        env:
+          # TODO: remove this when JIT doesn't need this
+          # Required to be sure that docs reads all files with MLIR imports properly
+          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         # pcc launches an internal target with proper flags
+        # docs is run here too as it can fail and we catch errors during the build
         run: |
-          make pcc
+          ./script/make_utils/serialize_targets.sh make pcc docs
+      - name: Archive docs artifacts
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: html-docs
+          path: docs/_build/html
       - name: PyTest
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
@@ -89,17 +100,6 @@ jobs:
         with:
           path: diff-coverage.txt
           recreate: true
-      - name: Build docs
-        id: docs
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          make docs
-      - name: Archive docs artifacts
-        if: ${{ steps.docs.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: html-docs
-          path: docs/_build/html
       - name: Slack Notification
         if: ${{ always() }}
         uses: rtCamp/action-slack-notify@v2
