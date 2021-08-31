@@ -108,11 +108,11 @@ coverage:
 .PHONY: coverage
 
 docker_build:
-	docker build -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
+	docker build --pull -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 .PHONY: docker_build
 
 docker_rebuild:
-	docker build --no-cache -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
+	docker build --pull --no-cache -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 .PHONY: docker_rebuild
 
 docker_start:
