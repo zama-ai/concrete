@@ -6,8 +6,9 @@ Homomorphic Development Kit's documentation
    :maxdepth: 2
    :caption: Developer docs
 
-   dev/ARCHITECTURE.md
    dev/GETTING-STARTED.md
+   dev/COMPILATION.md
+   dev/FLOAT-FUSING.md
 
 .. toctree::
    :maxdepth: 5
