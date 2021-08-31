@@ -15,7 +15,7 @@ jobs:
       ENV_IMG_ENDPOINT_URL: "https://api.github.com/orgs/zama-ai/packages/container/hdk-env"
     steps:
       - name: Compare image timestamps and notify
-      - run: |
+        run: |
           BASE_IMG_TIMESTAMP=$(curl \
             -X GET \
             -H "Accept: application/vnd.github.v3+json" \
