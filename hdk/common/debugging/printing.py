@@ -80,12 +80,12 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
         if show_data_types:
             new_line = f"{new_line: <40s} # {output_data_type_to_string(node)}"
 
-        returned_str += f"\n{new_line}"
+        returned_str += f"{new_line}\n"
 
         map_table[node] = i
         i += 1
 
     return_part = ", ".join(["%" + str(map_table[n]) for n in list_of_nodes_which_are_outputs])
-    returned_str += f"\nreturn({return_part})"
+    returned_str += f"return({return_part})\n"
 
     return returned_str

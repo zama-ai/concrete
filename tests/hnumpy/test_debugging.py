@@ -40,26 +40,26 @@ def issue_130_c(x, y):
 @pytest.mark.parametrize(
     "lambda_f,ref_graph_str",
     [
-        (lambda x, y: x + y, "\n%0 = x\n%1 = y\n%2 = Add(0, 1)\nreturn(%2)"),
-        (lambda x, y: x - y, "\n%0 = x\n%1 = y\n%2 = Sub(0, 1)\nreturn(%2)"),
-        (lambda x, y: x + x, "\n%0 = x\n%1 = Add(0, 0)\nreturn(%1)"),
+        (lambda x, y: x + y, "%0 = x\n%1 = y\n%2 = Add(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: x - y, "%0 = x\n%1 = y\n%2 = Sub(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: x + x, "%0 = x\n%1 = Add(0, 0)\nreturn(%1)\n"),
         (
             lambda x, y: x + x - y * y * y + x,
-            "\n%0 = x\n%1 = y\n%2 = Add(0, 0)\n%3 = Mul(1, 1)"
-            "\n%4 = Mul(3, 1)\n%5 = Sub(2, 4)\n%6 = Add(5, 0)\nreturn(%6)",
+            "%0 = x\n%1 = y\n%2 = Add(0, 0)\n%3 = Mul(1, 1)"
+            "\n%4 = Mul(3, 1)\n%5 = Sub(2, 4)\n%6 = Add(5, 0)\nreturn(%6)\n",
         ),
-        (lambda x, y: x + 1, "\n%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2)"),
-        (lambda x, y: 1 + x, "\n%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2)"),
-        (lambda x, y: (-1) + x, "\n%0 = x\n%1 = Constant(-1)\n%2 = Add(0, 1)\nreturn(%2)"),
-        (lambda x, y: 3 * x, "\n%0 = x\n%1 = Constant(3)\n%2 = Mul(0, 1)\nreturn(%2)"),
-        (lambda x, y: x * 3, "\n%0 = x\n%1 = Constant(3)\n%2 = Mul(0, 1)\nreturn(%2)"),
-        (lambda x, y: x * (-3), "\n%0 = x\n%1 = Constant(-3)\n%2 = Mul(0, 1)\nreturn(%2)"),
-        (lambda x, y: x - 11, "\n%0 = x\n%1 = Constant(11)\n%2 = Sub(0, 1)\nreturn(%2)"),
-        (lambda x, y: 11 - x, "\n%0 = Constant(11)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2)"),
-        (lambda x, y: (-11) - x, "\n%0 = Constant(-11)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2)"),
+        (lambda x, y: x + 1, "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: 1 + x, "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: (-1) + x, "%0 = x\n%1 = Constant(-1)\n%2 = Add(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: 3 * x, "%0 = x\n%1 = Constant(3)\n%2 = Mul(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: x * 3, "%0 = x\n%1 = Constant(3)\n%2 = Mul(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: x * (-3), "%0 = x\n%1 = Constant(-3)\n%2 = Mul(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: x - 11, "%0 = x\n%1 = Constant(11)\n%2 = Sub(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: 11 - x, "%0 = Constant(11)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: (-11) - x, "%0 = Constant(-11)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2)\n"),
         (
             lambda x, y: x + 13 - y * (-21) * y + 44,
-            "\n%0 = Constant(44)"
+            "%0 = Constant(44)"
             "\n%1 = x"
             "\n%2 = Constant(13)"
             "\n%3 = y"
@@ -69,48 +69,48 @@ def issue_130_c(x, y):
             "\n%7 = Mul(6, 3)"
             "\n%8 = Sub(5, 7)"
             "\n%9 = Add(8, 0)"
-            "\nreturn(%9)",
+            "\nreturn(%9)\n",
         ),
         # Multiple outputs
         (
             lambda x, y: (x + 1, x + y + 2),
-            "\n%0 = x"
+            "%0 = x"
             "\n%1 = Constant(1)"
             "\n%2 = Constant(2)"
             "\n%3 = y"
             "\n%4 = Add(0, 1)"
             "\n%5 = Add(0, 3)"
             "\n%6 = Add(5, 2)"
-            "\nreturn(%4, %6)",
+            "\nreturn(%4, %6)\n",
         ),
         (
             lambda x, y: (y, x),
-            "\n%0 = y\n%1 = x\nreturn(%0, %1)",
+            "%0 = y\n%1 = x\nreturn(%0, %1)\n",
         ),
         (
             lambda x, y: (x, x + 1),
-            "\n%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%0, %2)",
+            "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%0, %2)\n",
         ),
         (
             lambda x, y: (x + 1, x + 1),
-            "\n%0 = x"
+            "%0 = x"
             "\n%1 = Constant(1)"
             "\n%2 = Constant(1)"
             "\n%3 = Add(0, 1)"
             "\n%4 = Add(0, 2)"
-            "\nreturn(%3, %4)",
+            "\nreturn(%3, %4)\n",
         ),
         (
             issue_130_a,
-            "\n%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2, %2)",
+            "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2, %2)\n",
         ),
         (
             issue_130_b,
-            "\n%0 = x\n%1 = Constant(1)\n%2 = Sub(0, 1)\nreturn(%2, %2)",
+            "%0 = x\n%1 = Constant(1)\n%2 = Sub(0, 1)\nreturn(%2, %2)\n",
         ),
         (
             issue_130_c,
-            "\n%0 = Constant(1)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2, %2)",
+            "%0 = Constant(1)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2, %2)\n",
         ),
     ],
 )
@@ -143,9 +143,9 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
     str_of_the_graph = get_printable_graph(graph)
 
     assert str_of_the_graph == ref_graph_str, (
-        f"\n==================\nGot {str_of_the_graph}"
-        f"\n==================\nExpected {ref_graph_str}"
-        f"\n==================\n"
+        f"\n==================\nGot \n{str_of_the_graph}"
+        f"==================\nExpected \n{ref_graph_str}"
+        f"==================\n"
     )
 
 
@@ -155,12 +155,12 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
-            "\n%0 = x\n%1 = TLU(0)\nreturn(%1)",
+            "%0 = x\n%1 = TLU(0)\nreturn(%1)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
-            "\n%0 = x\n%1 = Constant(4)\n%2 = Add(0, 1)\n%3 = TLU(2)\nreturn(%3)",
+            "%0 = x\n%1 = Constant(4)\n%2 = Add(0, 1)\n%3 = TLU(2)\nreturn(%3)\n",
         ),
     ],
 )
@@ -173,9 +173,9 @@ def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph
     str_of_the_graph = get_printable_graph(graph)
 
     assert str_of_the_graph == ref_graph_str, (
-        f"\n==================\nGot {str_of_the_graph}"
-        f"\n==================\nExpected {ref_graph_str}"
-        f"\n==================\n"
+        f"\n==================\nGot \n{str_of_the_graph}"
+        f"==================\nExpected \n{ref_graph_str}"
+        f"==================\n"
     )
 
 
@@ -189,7 +189,7 @@ def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph
                 "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3,)),
                 "y": EncryptedTensor(Integer(2, is_signed=False), shape=(3,)),
             },
-            "\n%0 = x\n%1 = y\n%2 = Dot(0, 1)\nreturn(%2)",
+            "%0 = x\n%1 = y\n%2 = Dot(0, 1)\nreturn(%2)\n",
         ),
         # pylint: enable=unnecessary-lambda
     ],
@@ -203,9 +203,9 @@ def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
     str_of_the_graph = get_printable_graph(graph)
 
     assert str_of_the_graph == ref_graph_str, (
-        f"\n==================\nGot {str_of_the_graph}"
-        f"\n==================\nExpected {ref_graph_str}"
-        f"\n==================\n"
+        f"\n==================\nGot \n{str_of_the_graph}"
+        f"==================\nExpected \n{ref_graph_str}"
+        f"==================\n"
     )
 
 
@@ -221,10 +221,10 @@ def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
                 EncryptedValue(Integer(64, is_signed=False)),
                 EncryptedValue(Integer(32, is_signed=True)),
             ),
-            "\n%0 = x                                   # Integer<unsigned, 64 bits>"
+            "%0 = x                                   # Integer<unsigned, 64 bits>"
             "\n%1 = y                                   # Integer<signed, 32 bits>"
             "\n%2 = Add(0, 1)                           # Integer<signed, 65 bits>"
-            "\nreturn(%2)",
+            "\nreturn(%2)\n",
         ),
         (
             lambda x, y: x * y,
@@ -232,10 +232,10 @@ def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
                 EncryptedValue(Integer(17, is_signed=False)),
                 EncryptedValue(Integer(23, is_signed=False)),
             ),
-            "\n%0 = x                                   # Integer<unsigned, 17 bits>"
+            "%0 = x                                   # Integer<unsigned, 17 bits>"
             "\n%1 = y                                   # Integer<unsigned, 23 bits>"
             "\n%2 = Mul(0, 1)                           # Integer<unsigned, 23 bits>"
-            "\nreturn(%2)",
+            "\nreturn(%2)\n",
         ),
     ],
 )
@@ -247,9 +247,9 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
     str_of_the_graph = get_printable_graph(graph, show_data_types=True)
 
     assert str_of_the_graph == ref_graph_str, (
-        f"\n==================\nGot {str_of_the_graph}"
-        f"\n==================\nExpected {ref_graph_str}"
-        f"\n==================\n"
+        f"\n==================\nGot \n{str_of_the_graph}"
+        f"==================\nExpected \n{ref_graph_str}"
+        f"==================\n"
     )
 
 
@@ -259,28 +259,28 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
-            "\n%0 = x                                   # Integer<unsigned, 2 bits>"
+            "%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = TLU(0)                              # Integer<unsigned, 4 bits>"
-            "\nreturn(%1)",
+            "\nreturn(%1)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
-            "\n%0 = x                                   # Integer<unsigned, 2 bits>"
+            "%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = Constant(4)                         # Integer<unsigned, 3 bits>"
             "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
             "\n%3 = TLU(2)                              # Integer<unsigned, 2 bits>"
-            "\nreturn(%3)",
+            "\nreturn(%3)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[LOOKUP_TABLE_FROM_3B_TO_2B[x + 4]],
             {"x": EncryptedValue(Integer(2, is_signed=False))},
-            "\n%0 = x                                   # Integer<unsigned, 2 bits>"
+            "%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = Constant(4)                         # Integer<unsigned, 3 bits>"
             "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
             "\n%3 = TLU(2)                              # Integer<unsigned, 2 bits>"
             "\n%4 = TLU(3)                              # Integer<unsigned, 4 bits>"
-            "\nreturn(%4)",
+            "\nreturn(%4)\n",
         ),
     ],
 )
@@ -293,7 +293,7 @@ def test_hnumpy_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref
     str_of_the_graph = get_printable_graph(graph, show_data_types=True)
 
     assert str_of_the_graph == ref_graph_str, (
-        f"\n==================\nGot {str_of_the_graph}"
-        f"\n==================\nExpected {ref_graph_str}"
-        f"\n==================\n"
+        f"\n==================\nGot \n{str_of_the_graph}"
+        f"==================\nExpected \n{ref_graph_str}"
+        f"==================\n"
     )

@@ -213,10 +213,10 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
             (4,),
             # Remark that, when you do the dot of tensors of 4 values between 0 and 3,
             # you can get a maximal value of 4*3*3 = 36, ie something on 6 bits
-            "\n%0 = x                                   # Integer<unsigned, 2 bits>"
+            "%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = y                                   # Integer<unsigned, 2 bits>"
             "\n%2 = Dot(0, 1)                           # Integer<unsigned, 6 bits>"
-            "\nreturn(%2)",
+            "\nreturn(%2)\n",
         ),
         # pylint: enable=unnecessary-lambda
     ],
@@ -243,9 +243,9 @@ def test_compile_function_with_dot(function, params, shape, ref_graph_str):
     )
     str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
     assert str_of_the_graph == ref_graph_str, (
-        f"\n==================\nGot {str_of_the_graph}"
-        f"\n==================\nExpected {ref_graph_str}"
-        f"\n==================\n"
+        f"\n==================\nGot \n{str_of_the_graph}"
+        f"==================\nExpected \n{ref_graph_str}"
+        f"==================\n"
     )
 
 

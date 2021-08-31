@@ -85,9 +85,7 @@ class CompilationArtifacts:
         """
 
         drawing = draw_graph(operation_graph)
-        textual_representation = get_printable_graph(operation_graph, show_data_types=True)[1:]
-
-        # TODO: remove [1:] above after https://github.com/zama-ai/hdk/issues/222 is fixed
+        textual_representation = get_printable_graph(operation_graph, show_data_types=True)
 
         self.drawings_of_operation_graphs[name] = drawing
         self.textual_representations_of_operation_graphs[name] = textual_representation
