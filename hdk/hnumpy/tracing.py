@@ -180,6 +180,14 @@ class NPTracer(BaseTracer):
         """
         return self._unary_operator(numpy.cos, "np.cos", *input_tracers, **kwargs)
 
+    def tan(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.tan.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.tan, "np.tan", *input_tracers, **kwargs)
+
     def dot(self, other_tracer: "NPTracer", **_kwargs) -> "NPTracer":
         """Function to trace numpy.dot.
 
@@ -209,6 +217,7 @@ class NPTracer(BaseTracer):
         numpy.rint: rint,
         numpy.sin: sin,
         numpy.cos: cos,
+        numpy.tan: tan,
     }
 
     FUNC_ROUTING: Dict[Callable, Callable] = {
