@@ -1,10 +1,11 @@
 name: Package Version Checker
 
 on:
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # At minute 0 for each hour from 8:00 to 22:00 inclusive from Monday to Friday inclusive
-    - cron: '0 8-22 * * 1-5'
+  # schedule:
+  #   # * is a special character in YAML so you have to quote this string
+  #   # At minute 0 for each hour from 8:00 to 22:00 inclusive from Monday to Friday inclusive
+  #   - cron: '0 8-22 * * 1-5'
+  workflow_dispatch:
 
 jobs:
   check_and_notify_build:
