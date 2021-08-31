@@ -229,11 +229,11 @@ class ArbitraryFunction(IntermediateNode):
     def label(self) -> str:
         return self.op_name
 
-    def get_table(self) -> List[int]:
+    def get_table(self) -> List[Any]:
         """Function to get the table for the current input value of this ArbitraryFunction.
 
         Returns:
-            List[int]: The table.
+            List[Any]: The table.
         """
         # Check the input is an unsigned integer to be able to build a table
         assert isinstance(
@@ -247,7 +247,7 @@ class ArbitraryFunction(IntermediateNode):
         max_input_range = self.inputs[0].data_type.max_value() + 1
 
         table = [
-            int(self.evaluate({0: input_value}))
+            self.evaluate({0: input_value})
             for input_value in range(min_input_range, max_input_range)
         ]
 
