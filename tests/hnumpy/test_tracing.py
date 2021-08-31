@@ -243,6 +243,9 @@ def test_tracing_astype(
         pytest.param(lambda x: numpy.arcsin(x)),
         pytest.param(lambda x: numpy.arccos(x)),
         pytest.param(lambda x: numpy.arctan(x)),
+        pytest.param(lambda x: numpy.exp(x)),
+        pytest.param(lambda x: numpy.expm1(x)),
+        pytest.param(lambda x: numpy.exp2(x)),
         # The next test case is only for coverage purposes, to trigger the unsupported method
         # exception handling
         pytest.param(
@@ -358,6 +361,9 @@ def test_trace_hnumpy_dot(function_to_trace, inputs, expected_output_node, expec
         pytest.param(numpy.arcsin, tracing.NPTracer.arcsin),
         pytest.param(numpy.arccos, tracing.NPTracer.arccos),
         pytest.param(numpy.arctan, tracing.NPTracer.arctan),
+        pytest.param(numpy.exp, tracing.NPTracer.exp),
+        pytest.param(numpy.expm1, tracing.NPTracer.expm1),
+        pytest.param(numpy.exp2, tracing.NPTracer.exp2),
         pytest.param(numpy.dot, tracing.NPTracer.dot),
         # There is a need to test the case where the function fails, I chose numpy.conjugate which
         # works on complex types, as we don't talk about complex types for now this looks like a

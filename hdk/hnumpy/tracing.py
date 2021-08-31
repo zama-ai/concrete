@@ -212,6 +212,30 @@ class NPTracer(BaseTracer):
         """
         return self._unary_operator(numpy.arctan, "np.arctan", *input_tracers, **kwargs)
 
+    def exp(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.exp.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.exp, "np.exp", *input_tracers, **kwargs)
+
+    def expm1(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.expm1.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.expm1, "np.expm1", *input_tracers, **kwargs)
+
+    def exp2(self, *input_tracers: "NPTracer", **kwargs) -> "NPTracer":
+        """Function to trace numpy.exp2.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._unary_operator(numpy.exp2, "np.exp2", *input_tracers, **kwargs)
+
     def dot(self, other_tracer: "NPTracer", **_kwargs) -> "NPTracer":
         """Function to trace numpy.dot.
 
@@ -245,6 +269,9 @@ class NPTracer(BaseTracer):
         numpy.arcsin: arcsin,
         numpy.arccos: arccos,
         numpy.arctan: arctan,
+        numpy.exp: exp,
+        numpy.expm1: expm1,
+        numpy.exp2: exp2,
     }
 
     FUNC_ROUTING: Dict[Callable, Callable] = {
