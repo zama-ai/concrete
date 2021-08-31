@@ -231,31 +231,6 @@ def test_tracing_astype(
 
 
 @pytest.mark.parametrize(
-    "function_to_trace",
-    [
-        # We cannot call trace_numpy_function on some numpy function as getting the signature for
-        # these functions fails, so we wrap it in a lambda
-        # pylint: disable=unnecessary-lambda
-        pytest.param(lambda x: numpy.rint(x)),
-        pytest.param(lambda x: numpy.sin(x)),
-        pytest.param(lambda x: numpy.cos(x)),
-        pytest.param(lambda x: numpy.tan(x)),
-        pytest.param(lambda x: numpy.arcsin(x)),
-        pytest.param(lambda x: numpy.arccos(x)),
-        pytest.param(lambda x: numpy.arctan(x)),
-        pytest.param(lambda x: numpy.exp(x)),
-        pytest.param(lambda x: numpy.expm1(x)),
-        pytest.param(lambda x: numpy.exp2(x)),
-        # The next test case is only for coverage purposes, to trigger the unsupported method
-        # exception handling
-        pytest.param(
-            lambda x: numpy.add.reduce(x),
-            marks=pytest.mark.xfail(strict=True, raises=NotImplementedError),
-        ),
-        # pylint: enable=unnecessary-lambda
-    ],
-)
-@pytest.mark.parametrize(
     "inputs,expected_output_node,expected_output_value",
     [
         pytest.param(
@@ -286,16 +261,40 @@ def test_tracing_astype(
         ),
     ],
 )
-def test_trace_hnumpy_supported_ufuncs(
-    function_to_trace, inputs, expected_output_node, expected_output_value
-):
+def test_trace_hnumpy_supported_ufuncs(inputs, expected_output_node, expected_output_value):
     """Function to trace supported numpy ufuncs"""
-    op_graph = tracing.trace_numpy_function(function_to_trace, inputs)
+    for function_to_trace_def in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC:
 
-    assert len(op_graph.output_nodes) == 1
-    assert isinstance(op_graph.output_nodes[0], expected_output_node)
-    assert len(op_graph.output_nodes[0].outputs) == 1
-    assert op_graph.output_nodes[0].outputs[0] == expected_output_value
+        # We really need a lambda (because numpy functions are not playing
+        # nice with inspect.signature), but pylint and flake8 are not happy
+        # with it
+        # pylint: disable=unnecessary-lambda,cell-var-from-loop
+        function_to_trace = lambda x: function_to_trace_def(x)  # noqa: E731
+        # pylint: enable=unnecessary-lambda,cell-var-from-loop
+
+        op_graph = tracing.trace_numpy_function(function_to_trace, inputs)
+
+        assert len(op_graph.output_nodes) == 1
+        assert isinstance(op_graph.output_nodes[0], expected_output_node)
+        assert len(op_graph.output_nodes[0].outputs) == 1
+        assert op_graph.output_nodes[0].outputs[0] == expected_output_value
+
+
+def test_trace_hnumpy_ufuncs_not_supported():
+    """Testing a failure case of trace_numpy_function"""
+    inputs = {"x": EncryptedScalar(Integer(128, is_signed=True))}
+
+    # We really need a lambda (because numpy functions are not playing
+    # nice with inspect.signature), but pylint and flake8 are not happy
+    # with it
+    # pylint: disable=unnecessary-lambda
+    function_to_trace = lambda x: numpy.add.reduce(x)  # noqa: E731
+    # pylint: enable=unnecessary-lambda
+
+    with pytest.raises(NotImplementedError) as excinfo:
+        tracing.trace_numpy_function(function_to_trace, inputs)
+
+    assert "Only __call__ method is supported currently" in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -351,31 +350,23 @@ def test_trace_hnumpy_dot(function_to_trace, inputs, expected_output_node, expec
     assert op_graph.output_nodes[0].outputs[0] == expected_output_value
 
 
-@pytest.mark.parametrize(
-    "np_function,expected_tracing_func",
-    [
-        pytest.param(numpy.rint, tracing.NPTracer.rint),
-        pytest.param(numpy.sin, tracing.NPTracer.sin),
-        pytest.param(numpy.cos, tracing.NPTracer.cos),
-        pytest.param(numpy.tan, tracing.NPTracer.tan),
-        pytest.param(numpy.arcsin, tracing.NPTracer.arcsin),
-        pytest.param(numpy.arccos, tracing.NPTracer.arccos),
-        pytest.param(numpy.arctan, tracing.NPTracer.arctan),
-        pytest.param(numpy.exp, tracing.NPTracer.exp),
-        pytest.param(numpy.expm1, tracing.NPTracer.expm1),
-        pytest.param(numpy.exp2, tracing.NPTracer.exp2),
-        pytest.param(numpy.dot, tracing.NPTracer.dot),
-        # There is a need to test the case where the function fails, I chose numpy.conjugate which
-        # works on complex types, as we don't talk about complex types for now this looks like a
-        # good long term candidate to check for an unsupported function
-        pytest.param(
-            numpy.conjugate, None, marks=pytest.mark.xfail(strict=True, raises=NotImplementedError)
-        ),
-    ],
-)
-def test_nptracer_get_tracing_func_for_np_functions(np_function, expected_tracing_func):
+def test_nptracer_get_tracing_func_for_np_functions():
     """Test NPTracer get_tracing_func_for_np_function"""
-    assert tracing.NPTracer.get_tracing_func_for_np_function(np_function) == expected_tracing_func
+
+    for np_function in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC:
+        expected_tracing_func = tracing.NPTracer.UFUNC_ROUTING[np_function]
+
+        assert (
+            tracing.NPTracer.get_tracing_func_for_np_function(np_function) == expected_tracing_func
+        )
+
+
+def test_nptracer_get_tracing_func_for_np_functions_not_implemented():
+    """Check NPTracer in case of not-implemented function"""
+    with pytest.raises(NotImplementedError) as excinfo:
+        tracing.NPTracer.get_tracing_func_for_np_function(numpy.conjugate)
+
+    assert "NPTracer does not yet manage the following func: conjugate" in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
