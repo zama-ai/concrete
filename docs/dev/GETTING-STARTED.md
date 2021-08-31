@@ -24,7 +24,7 @@ On Linux you can install make from your distribution's preferred package manager
 
 On Mac OS you can install a more recent version of make via brew:
 
-```consol
+```bash
 # check for gmake
 which gmake
 # If you don't have it, it will error out, install gmake
