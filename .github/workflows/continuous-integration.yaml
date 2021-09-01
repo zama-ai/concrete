@@ -59,7 +59,7 @@ jobs:
         # pcc launches an internal target with proper flags
         # docs is run here too as it can fail and we catch errors during the build
         run: |
-          ./script/make_utils/serialize_targets.sh make pcc docs
+          make --keep-going pcc docs
       - name: Archive docs artifacts
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@v2

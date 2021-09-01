@@ -30,8 +30,7 @@ check_strip_nb:
 .PHONY: strip_nb
 
 pylint:
-	+poetry run env bash script/make_utils/serialize_targets.sh "$(MAKE)" \
-	pylint_src pylint_tests pylint_benchmarks
+	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks
 .PHONY: pylint
 
 pylint_src:
@@ -94,8 +93,7 @@ mypy_benchmark:
 # the parent make execution. We serialize calls to these targets as they may overwrite each others
 # cache which can cause issues.
 mypy_ci:
-	+poetry run env bash script/make_utils/serialize_targets.sh "$(MAKE)" \
-	mypy mypy_test mypy_benchmark
+	$(MAKE) --keep-going mypy mypy_test mypy_benchmark
 .PHONY: mypy_ci
 
 pytest_and_coverage: pytest coverage
