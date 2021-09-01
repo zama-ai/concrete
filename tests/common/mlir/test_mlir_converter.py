@@ -11,7 +11,7 @@ from hdk.common.data_types.integers import Integer
 from hdk.common.extensions.table import LookupTable
 from hdk.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from hdk.common.values import ClearScalar, EncryptedScalar
-from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
+from hdk.numpy.compile import compile_numpy_function_into_op_graph
 
 
 def add(x, y):

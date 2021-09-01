@@ -6,7 +6,7 @@ from pathlib import Path
 from hdk.common.data_types.integers import Integer
 from hdk.common.debugging import draw_graph
 from hdk.common.values import EncryptedScalar
-from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
+from hdk.numpy.compile import compile_numpy_function_into_op_graph
 
 
 def test_draw_graph_with_saving():

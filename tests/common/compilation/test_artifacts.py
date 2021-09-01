@@ -6,7 +6,7 @@ from pathlib import Path
 from hdk.common.compilation import CompilationArtifacts
 from hdk.common.data_types.integers import UnsignedInteger
 from hdk.common.values import EncryptedScalar
-from hdk.hnumpy.compile import compile_numpy_function
+from hdk.numpy.compile import compile_numpy_function
 
 
 def test_artifacts_export():

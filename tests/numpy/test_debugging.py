@@ -1,4 +1,4 @@
-"""Test file for hnumpy debugging functions"""
+"""Test file for debugging functions"""
 
 import numpy
 import pytest
@@ -7,7 +7,7 @@ from hdk.common.data_types.integers import Integer
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
 from hdk.common.values import ClearScalar, EncryptedScalar, EncryptedTensor
-from hdk.hnumpy import tracing
+from hdk.numpy import tracing
 
 LOOKUP_TABLE_FROM_2B_TO_4B = LookupTable([9, 2, 4, 11])
 LOOKUP_TABLE_FROM_3B_TO_2B = LookupTable([0, 1, 3, 2, 2, 3, 1, 0])
@@ -133,8 +133,8 @@ def issue_130_c(x, y):
         ),
     ],
 )
-def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
-    "Test hnumpy get_printable_graph and draw_graph"
+def test_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
+    "Test get_printable_graph and draw_graph"
     x, y = x_y
     graph = tracing.trace_numpy_function(lambda_f, {"x": x, "y": y})
 
@@ -164,8 +164,8 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
         ),
     ],
 )
-def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
-    "Test hnumpy get_printable_graph and draw_graph on graphs with direct table lookup"
+def test_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
+    "Test get_printable_graph and draw_graph on graphs with direct table lookup"
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)
@@ -194,8 +194,8 @@ def test_hnumpy_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph
         # pylint: enable=unnecessary-lambda
     ],
 )
-def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
-    "Test hnumpy get_printable_graph and draw_graph on graphs with dot"
+def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
+    "Test get_printable_graph and draw_graph on graphs with dot"
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)
@@ -239,8 +239,8 @@ def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
         ),
     ],
 )
-def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
-    """Test hnumpy get_printable_graph with show_data_types"""
+def test_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
+    """Test get_printable_graph with show_data_types"""
     x, y = x_y
     graph = tracing.trace_numpy_function(lambda_f, {"x": x, "y": y})
 
@@ -284,8 +284,8 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
         ),
     ],
 )
-def test_hnumpy_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref_graph_str):
-    """Test hnumpy get_printable_graph with show_data_types on graphs with direct table lookup"""
+def test_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref_graph_str):
+    """Test get_printable_graph with show_data_types on graphs with direct table lookup"""
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)

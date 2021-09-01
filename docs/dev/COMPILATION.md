@@ -13,7 +13,7 @@ However, one can already build interesting and impressing use cases, and more wi
 # Import necessary HDK components
 from hdk.common.data_types.integers import UnsignedInteger
 from hdk.common.values import EncryptedScalar, EncryptedTensor
-from hdk.hnumpy.compile import compile_numpy_function
+from hdk.numpy.compile import compile_numpy_function
 
 # Define the function to homomorphize
 def f(x, y):

@@ -1,4 +1,4 @@
-"""Test file for hnumpy tracing"""
+"""Test file for numpy tracing"""
 
 import networkx as nx
 import numpy
@@ -8,7 +8,7 @@ from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.representation import intermediate as ir
 from hdk.common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor
-from hdk.hnumpy import tracing
+from hdk.numpy import tracing
 
 OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
 
@@ -53,8 +53,8 @@ OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
         ),
     ],
 )
-def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
-    "Test hnumpy tracing a binary operation (in the supported ops)"
+def test_numpy_tracing_binary_op(operation, x, y, test_helpers):
+    "Test numpy tracing a binary operation (in the supported ops)"
 
     # Remark that the functions here have a common structure (which is
     # 2x op y), such that creating further the ref_graph is easy, by
@@ -121,8 +121,8 @@ def test_hnumpy_tracing_binary_op(operation, x, y, test_helpers):
         ClearTensor,
     ],
 )
-def test_hnumpy_tracing_tensor_constant(tensor_constructor):
-    "Test hnumpy tracing tensor constant"
+def test_numpy_tracing_tensor_constant(tensor_constructor):
+    "Test numpy tracing tensor constant"
 
     def simple_add_tensor(x):
         return x + numpy.array([[1, 2], [3, 4]], dtype=numpy.int32)
@@ -261,7 +261,7 @@ def test_tracing_astype(
         ),
     ],
 )
-def test_trace_hnumpy_supported_ufuncs(inputs, expected_output_node, expected_output_value):
+def test_trace_numpy_supported_ufuncs(inputs, expected_output_node, expected_output_value):
     """Function to trace supported numpy ufuncs"""
     for function_to_trace_def in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC:
 
@@ -339,7 +339,7 @@ def test_trace_hnumpy_ufuncs_not_supported():
         # pylint: enable=unnecessary-lambda
     ],
 )
-def test_trace_hnumpy_dot(function_to_trace, inputs, expected_output_node, expected_output_value):
+def test_trace_numpy_dot(function_to_trace, inputs, expected_output_node, expected_output_value):
     """Function to test dot tracing"""
 
     op_graph = tracing.trace_numpy_function(function_to_trace, inputs)

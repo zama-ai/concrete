@@ -10,7 +10,7 @@ from hdk.common.data_types.integers import Integer
 from hdk.common.extensions.table import LookupTable
 from hdk.common.representation import intermediate as ir
 from hdk.common.values import EncryptedScalar
-from hdk.hnumpy import tracing
+from hdk.numpy import tracing
 
 
 def test_lookup_table_size_constraints():

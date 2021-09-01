@@ -1,4 +1,4 @@
-"""Test file for hnumpy compilation functions"""
+"""Test file for numpy compilation functions"""
 import itertools
 import random
 
@@ -10,7 +10,7 @@ from hdk.common.data_types.integers import Integer
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
 from hdk.common.values import EncryptedScalar, EncryptedTensor
-from hdk.hnumpy.compile import (
+from hdk.numpy.compile import (
     compile_numpy_function,
     compile_numpy_function_into_op_graph,
 )

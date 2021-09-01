@@ -106,7 +106,7 @@ In this section, we will discuss the module structure of hdk briefly. You are en
       - extensions: utilities that provide special functionality to our users
       - representation: type definitions of intermediate representation
       - tracing: utilities for generic function tracing used during intermediate representation creation
-    - hnumpy: numpy frontend of hdk
+    - numpy: numpy frontend of hdk
 
 ## Working in Docker
 

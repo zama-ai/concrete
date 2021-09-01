@@ -8,7 +8,7 @@ import pytest
 from hdk.common.data_types.integers import Integer
 from hdk.common.optimization.topological import fuse_float_operations
 from hdk.common.values import EncryptedScalar
-from hdk.hnumpy.tracing import trace_numpy_function
+from hdk.numpy.tracing import trace_numpy_function
 
 
 def no_fuse(x):

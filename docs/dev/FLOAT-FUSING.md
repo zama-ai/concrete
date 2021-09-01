@@ -4,7 +4,7 @@
 
 The current compiler stack only supports integers with 7 bits or less. But it's not uncommon to have numpy code using floating point numbers.
 
-We added fusing floating point operations to make hnumpy somewhat user friendly to allow in-line quantization in the numpy code e.g.:
+We added fusing floating point operations to make tracing numpy functions somewhat user friendly to allow in-line quantization in the numpy code e.g.:
 
 ```python
 import numpy

@@ -1,4 +1,4 @@
-"""hnumpy tracing utilities."""
+"""numpy tracing utilities."""
 from copy import deepcopy
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -54,7 +54,7 @@ class NPTracer(BaseTracer):
         tracing_func = self.get_tracing_func_for_np_function(func)
         assert (
             len(kwargs) == 0
-        ), f"hnumpy does not support **kwargs currently for numpy functions, func: {func}"
+        ), f"**kwargs are currently not supported for numpy functions, func: {func}"
         return tracing_func(*args, **kwargs)
 
     def astype(self, numpy_dtype: DTypeLike, *args, **kwargs) -> "NPTracer":
