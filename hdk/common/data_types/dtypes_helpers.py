@@ -84,6 +84,68 @@ def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
     )
 
 
+def value_is_encrypted_tensor_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is an encrypted TensorValue of type Integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is an encrypted TensorValue of type Integer
+    """
+    return (
+        isinstance(value_to_check, TensorValue)
+        and value_to_check.is_encrypted
+        and isinstance(value_to_check.data_type, INTEGER_TYPES)
+    )
+
+
+def value_is_encrypted_tensor_unsigned_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is an encrypted TensorValue of type unsigned Integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is an encrypted TensorValue of type Integer and
+            unsigned
+    """
+    return (
+        value_is_encrypted_tensor_integer(value_to_check)
+        and not cast(Integer, value_to_check.data_type).is_signed
+    )
+
+
+def value_is_clear_tensor_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is a clear TensorValue of type Integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is a clear TensorValue of type Integer
+    """
+    return (
+        isinstance(value_to_check, TensorValue)
+        and value_to_check.is_clear
+        and isinstance(value_to_check.data_type, INTEGER_TYPES)
+    )
+
+
+def value_is_tensor_integer(value_to_check: BaseValue) -> bool:
+    """Helper function to check that a value is a TensorValue of type Integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is a TensorValue of type Integer
+    """
+    return isinstance(value_to_check, TensorValue) and isinstance(
+        value_to_check.data_type, INTEGER_TYPES
+    )
+
+
 def find_type_to_hold_both_lossy(
     dtype1: BaseDataType,
     dtype2: BaseDataType,

@@ -3,7 +3,7 @@
 import itertools
 
 import pytest
-from mlir.ir import IntegerType
+from mlir.ir import IntegerType, Location, RankedTensorType, UnrankedTensorType
 from zamalang import compiler
 from zamalang.dialects import hlfhe
 
@@ -11,6 +11,7 @@ from hdk.common.data_types.integers import Integer
 from hdk.common.extensions.table import LookupTable
 from hdk.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from hdk.common.values import ClearScalar, EncryptedScalar
+from hdk.common.values.tensors import ClearTensor, EncryptedTensor
 from hdk.numpy.compile import compile_numpy_function_into_op_graph
 
 
@@ -202,12 +203,62 @@ def test_hdk_clear_integer_to_mlir_type(is_signed):
     """Test conversion of ClearScalar into MLIR"""
     value = ClearScalar(Integer(5, is_signed=is_signed))
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
-    int_mlir = converter.hdk_value_to_mlir_type(value)
     with converter.context:
+        int_mlir = converter.hdk_value_to_mlir_type(value)
         if is_signed:
             assert int_mlir == IntegerType.get_signed(5)
         else:
             assert int_mlir == IntegerType.get_signless(5)
+
+
+@pytest.mark.parametrize("is_signed", [True, False])
+@pytest.mark.parametrize(
+    "shape",
+    [
+        None,
+        (5,),
+        (5, 8),
+        (-1, 5),
+    ],
+)
+def test_hdk_clear_tensor_integer_to_mlir_type(is_signed, shape):
+    """Test conversion of ClearTensor into MLIR"""
+    value = ClearTensor(Integer(5, is_signed=is_signed), shape)
+    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    with converter.context, Location.unknown():
+        tensor_mlir = converter.hdk_value_to_mlir_type(value)
+        if is_signed:
+            element_type = IntegerType.get_signed(5)
+        else:
+            element_type = IntegerType.get_signless(5)
+        if shape is None:
+            expected_type = UnrankedTensorType.get(element_type)
+        else:
+            expected_type = RankedTensorType.get(shape, element_type)
+        assert tensor_mlir == expected_type
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        None,
+        (5,),
+        (5, 8),
+        (-1, 5),
+    ],
+)
+def test_hdk_encrypted_tensor_integer_to_mlir_type(shape):
+    """Test conversion of EncryptedTensor into MLIR"""
+    value = EncryptedTensor(Integer(6, is_signed=False), shape)
+    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    with converter.context, Location.unknown():
+        tensor_mlir = converter.hdk_value_to_mlir_type(value)
+        element_type = hlfhe.EncryptedIntegerType.get(converter.context, 6)
+        if shape is None:
+            expected_type = UnrankedTensorType.get(element_type)
+        else:
+            expected_type = RankedTensorType.get(shape, element_type)
+        assert tensor_mlir == expected_type
 
 
 def test_failing_hdk_to_mlir_type():
