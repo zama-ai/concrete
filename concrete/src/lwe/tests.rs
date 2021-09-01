@@ -481,6 +481,7 @@ fn test_encode_encrypt_x_mul_constant_with_padding_inplace_x_decrypt() {
 }
 
 #[test]
+#[ignore]
 fn test_encode_encrypt_x_keyswitch_x_decrypt() {
     // random settings
     let (min, max) = generate_random_interval!();
@@ -520,7 +521,7 @@ fn test_encode_encrypt_x_keyswitch_x_decrypt() {
 #[test]
 fn test_encode_encrypt_x_bootstrap_x_decrypt() {
     // random settings
-    let (min, max) = (0.,7.);
+    let (min, max) = (0., 7.);
     let padding: usize = 1;
     let precision: usize = 3;
     let base_log: usize = 7;
