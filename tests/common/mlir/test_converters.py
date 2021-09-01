@@ -3,7 +3,7 @@ import pytest
 
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.mlir.converters import add, apply_lut, constant, mul, sub
+from hdk.common.mlir.converters import add, apply_lut, constant, dot, mul, sub
 from hdk.common.values import ClearScalar, EncryptedScalar
 
 
@@ -21,7 +21,7 @@ class MockNode:
             self.outputs = outputs
 
 
-@pytest.mark.parametrize("converter", [add, sub, mul])
+@pytest.mark.parametrize("converter", [add, sub, mul, dot])
 def test_failing_converter(converter):
     """Test failing converter"""
     with pytest.raises(TypeError, match=r"Don't support .* between .* and .*"):

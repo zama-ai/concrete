@@ -17,7 +17,9 @@ from zamalang.dialects import hlfhe
 from ...common.data_types.integers import Integer
 from ..data_types.dtypes_helpers import (
     value_is_clear_scalar_integer,
+    value_is_clear_tensor_integer,
     value_is_encrypted_scalar_unsigned_integer,
+    value_is_encrypted_tensor_integer,
 )
 from ..representation import intermediate as ir
 
@@ -131,7 +133,7 @@ def constant(node, _, __, ctx):
 
 
 def apply_lut(node, preds, ir_to_mlir_node, ctx):
-    """Converted function for the arbitrary function intermediate node."""
+    """Converter function for the arbitrary function intermediate node."""
     assert len(node.inputs) == 1, "LUT should have a single input"
     assert len(node.outputs) == 1, "LUT should have a single output"
     if not value_is_encrypted_scalar_unsigned_integer(node.inputs[0]):
@@ -156,12 +158,42 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx):
     ).result
 
 
+def dot(node, preds, ir_to_mlir_node, ctx):
+    """Converter function for the dot intermediate node."""
+    assert len(node.inputs) == 2, "Dot should have two inputs"
+    assert len(node.outputs) == 1, "Dot should have a single output"
+    if not (
+        (
+            value_is_encrypted_tensor_integer(node.inputs[0])
+            and value_is_clear_tensor_integer(node.inputs[1])
+        )
+        or (
+            value_is_encrypted_tensor_integer(node.inputs[1])
+            and value_is_clear_tensor_integer(node.inputs[0])
+        )
+    ):
+        raise TypeError(
+            f"Don't support subtraction between {type(node.inputs[0])} and {type(node.inputs[1])}"
+        )
+    lhs_node, rhs_node = preds
+    # need to flip as underlying operation need encrypted first
+    if value_is_clear_tensor_integer(node.inputs[0]):
+        lhs_node, rhs_node = rhs_node, lhs_node
+    lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
+    return hlfhe.Dot(
+        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].data_type.bit_width),
+        lhs,
+        rhs,
+    ).result
+
+
 V0_OPSET_CONVERSION_FUNCTIONS = {
     ir.Add: add,
     ir.Sub: sub,
     ir.Mul: mul,
     ir.Constant: constant,
     ir.ArbitraryFunction: apply_lut,
+    ir.Dot: dot,
 }
 
 # pylint: enable=no-name-in-module,no-member

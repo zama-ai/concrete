@@ -2,6 +2,7 @@
 # pylint: disable=no-name-in-module,no-member
 import itertools
 
+import numpy
 import pytest
 from mlir.ir import IntegerType, Location, RankedTensorType, UnrankedTensorType
 from zamalang import compiler
@@ -64,6 +65,11 @@ def lut(x):
     """Test lookup table"""
     table = LookupTable([3, 6, 0, 2, 1, 4, 5, 7])
     return table[x]
+
+
+def dot(x, y):
+    """Test dot"""
+    return numpy.dot(x, y)
 
 
 def datagen(*args):
@@ -177,6 +183,22 @@ def datagen(*args):
                 "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
             (range(0, 8),),
+        ),
+        (
+            dot,
+            {
+                "x": EncryptedTensor(Integer(64, is_signed=False), shape=(4,)),
+                "y": ClearTensor(Integer(64, is_signed=False), shape=(4,)),
+            },
+            (range(0, 8), range(0, 8)),
+        ),
+        (
+            dot,
+            {
+                "x": ClearTensor(Integer(64, is_signed=False), shape=(4,)),
+                "y": EncryptedTensor(Integer(64, is_signed=False), shape=(4,)),
+            },
+            (range(0, 8), range(0, 8)),
         ),
     ],
 )

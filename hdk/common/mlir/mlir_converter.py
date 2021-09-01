@@ -51,7 +51,7 @@ class MLIRConverter:
         self.context = Context()
         zamalang.register_dialects(self.context)
 
-    def _get_tensor_element_type(
+    def _get_tensor_type(
         self,
         bit_width: int,
         is_encrypted: bool,
@@ -69,13 +69,13 @@ class MLIRConverter:
         Returns:
             MLIRType: corresponding MLIR type
         """
-        element_type = self._get_scalar_element_type(bit_width, is_encrypted, is_signed)
+        element_type = self._get_scalar_integer_type(bit_width, is_encrypted, is_signed)
         if len(shape):  # randked tensor
             return RankedTensorType.get(shape, element_type)
         # unranked tensor
         return UnrankedTensorType.get(element_type)
 
-    def _get_scalar_element_type(
+    def _get_scalar_integer_type(
         self, bit_width: int, is_encrypted: bool, is_signed: bool
     ) -> MLIRType:
         """Get the MLIRType for a scalar element given its properties.
@@ -92,7 +92,7 @@ class MLIRConverter:
             return hlfhe.EncryptedIntegerType.get(self.context, bit_width)
         if is_signed and not is_encrypted:  # clear signed
             return IntegerType.get_signed(bit_width)
-        # shoulld be clear unsigned at this point
+        # should be clear unsigned at this point
         assert not is_signed and not is_encrypted
         # unsigned integer are considered signless in the compiler
         return IntegerType.get_signless(bit_width)
@@ -107,24 +107,29 @@ class MLIRConverter:
             corresponding MLIR type
         """
         if value_is_encrypted_scalar_unsigned_integer(value):
-            return self._get_scalar_element_type(
+            return self._get_scalar_integer_type(
                 cast(Integer, value.data_type).bit_width, True, False
             )
         if value_is_clear_scalar_integer(value):
             dtype = cast(Integer, value.data_type)
-            return self._get_scalar_element_type(dtype.bit_width, False, dtype.is_signed)
+            return self._get_scalar_integer_type(
+                dtype.bit_width, is_encrypted=False, is_signed=dtype.is_signed
+            )
         if value_is_encrypted_tensor_unsigned_integer(value):
             dtype = cast(Integer, value.data_type)
-            return self._get_tensor_element_type(
-                dtype.bit_width, True, False, cast(values.TensorValue, value).shape
+            return self._get_tensor_type(
+                dtype.bit_width,
+                is_encrypted=True,
+                is_signed=False,
+                shape=cast(values.TensorValue, value).shape,
             )
         if value_is_clear_tensor_integer(value):
             dtype = cast(Integer, value.data_type)
-            return self._get_tensor_element_type(
+            return self._get_tensor_type(
                 dtype.bit_width,
-                False,
-                dtype.is_signed,
-                cast(values.TensorValue, value).shape,
+                is_encrypted=False,
+                is_signed=dtype.is_signed,
+                shape=cast(values.TensorValue, value).shape,
             )
         raise TypeError(f"can't convert value of type {type(value)} to MLIR type")
 
