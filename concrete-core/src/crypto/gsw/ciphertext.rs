@@ -4,7 +4,7 @@ use crate::crypto::lwe::{LweCiphertext, LweList};
 use crate::math::decomposition::{DecompositionLevel, SignedDecomposer};
 use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
 use crate::math::torus::UnsignedTorus;
-use crate::{ck_dim_div, ck_dim_eq, zip, zip_args};
+use crate::{ck_dim_div, ck_dim_eq, zip};
 
 use super::GswLevelMatrix;
 
@@ -458,13 +458,13 @@ impl<Cont, Scalar> GswCiphertext<Cont, Scalar> {
             for (gsw_row, lwe_coeff) in iterator {
                 // We loop through the coefficients of the output, and add the
                 // corresponding product of scalars.
-                let iterator = zip!(
-                    gsw_row.as_tensor().iter(),
-                    output.as_mut_tensor().iter_mut()
+                output.as_mut_tensor().update_with_one(
+                    gsw_row.as_tensor(),
+                    |output_coeff, gsw_coeff| {
+                        *output_coeff =
+                            output_coeff.wrapping_add(gsw_coeff.wrapping_mul(*lwe_coeff))
+                    },
                 );
-                for zip_args!(gsw_coeff, output_coeff) in iterator {
-                    *output_coeff += *gsw_coeff * *lwe_coeff;
-                }
             }
         }
     }
