@@ -4,7 +4,8 @@ on:
   schedule:
     # * is a special character in YAML so you have to quote this string
     # At minute 0 for each hour from 8:00 to 22:00 inclusive from Monday to Friday inclusive
-    - cron: '0 8-22 * * 1-5'
+    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+    - cron: '0 6-20 * * 1-5'
 
 jobs:
   check_and_notify_build:
