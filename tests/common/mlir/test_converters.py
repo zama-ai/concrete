@@ -4,7 +4,7 @@ import pytest
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.mlir.converters import add, apply_lut, constant, mul, sub
-from hdk.common.values import ClearValue, EncryptedValue
+from hdk.common.values import ClearScalar, EncryptedScalar
 
 
 class MockNode:
@@ -31,21 +31,21 @@ def test_failing_converter(converter):
 def test_fail_non_integer_const():
     """Test failing constant converter with non-integer"""
     with pytest.raises(TypeError, match=r"Don't support non-integer constants"):
-        constant(MockNode(outputs=[ClearValue(Float(32))]), None, None, None)
+        constant(MockNode(outputs=[ClearScalar(Float(32))]), None, None, None)
 
 
 def test_fail_signed_integer_const():
     """Test failing constant converter with non-integer"""
     with pytest.raises(TypeError, match=r"Don't support signed constant integer"):
-        constant(MockNode(outputs=[ClearValue(Integer(8, True))]), None, None, None)
+        constant(MockNode(outputs=[ClearScalar(Integer(8, True))]), None, None, None)
 
 
 @pytest.mark.parametrize(
     "input_node",
     [
-        ClearValue(Integer(8, True)),
-        ClearValue(Integer(8, False)),
-        EncryptedValue(Integer(8, True)),
+        ClearScalar(Integer(8, True)),
+        ClearScalar(Integer(8, False)),
+        EncryptedScalar(Integer(8, True)),
     ],
 )
 def test_fail_tlu_input(input_node):
@@ -54,7 +54,7 @@ def test_fail_tlu_input(input_node):
         TypeError, match=r"Only support LUT with encrypted unsigned integers inputs"
     ):
         apply_lut(
-            MockNode(inputs=[input_node], outputs=[EncryptedValue(Integer(8, False))]),
+            MockNode(inputs=[input_node], outputs=[EncryptedScalar(Integer(8, False))]),
             [None],
             None,
             None,
@@ -64,9 +64,9 @@ def test_fail_tlu_input(input_node):
 @pytest.mark.parametrize(
     "input_node",
     [
-        ClearValue(Integer(8, True)),
-        ClearValue(Integer(8, False)),
-        EncryptedValue(Integer(8, True)),
+        ClearScalar(Integer(8, True)),
+        ClearScalar(Integer(8, False)),
+        EncryptedScalar(Integer(8, True)),
     ],
 )
 def test_fail_tlu_output(input_node):
@@ -75,7 +75,7 @@ def test_fail_tlu_output(input_node):
         TypeError, match=r"Only support LUT with encrypted unsigned integers outputs"
     ):
         apply_lut(
-            MockNode(inputs=[EncryptedValue(Integer(8, False))], outputs=[input_node]),
+            MockNode(inputs=[EncryptedScalar(Integer(8, False))], outputs=[input_node]),
             [None],
             None,
             None,

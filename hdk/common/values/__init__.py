@@ -1,5 +1,5 @@
 """Module for value structures."""
 
 from .base import BaseValue
-from .scalars import ClearValue, EncryptedValue, ScalarValue
+from .scalars import ClearScalar, EncryptedScalar, ScalarValue
 from .tensors import ClearTensor, EncryptedTensor, TensorValue

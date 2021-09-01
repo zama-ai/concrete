@@ -7,7 +7,7 @@ import pytest
 
 from hdk.common.data_types.integers import Integer
 from hdk.common.optimization.topological import fuse_float_operations
-from hdk.common.values import EncryptedValue
+from hdk.common.values import EncryptedScalar
 from hdk.hnumpy.tracing import trace_numpy_function
 
 
@@ -89,7 +89,7 @@ def test_fuse_float_operations(function_to_trace, fused, input_):
 
     op_graph = trace_numpy_function(
         function_to_trace,
-        {param_name: EncryptedValue(Integer(32, True)) for param_name in params_names},
+        {param_name: EncryptedScalar(Integer(32, True)) for param_name in params_names},
     )
     orig_num_nodes = len(op_graph.graph)
     fuse_float_operations(op_graph)

@@ -5,7 +5,7 @@ import itertools
 import pytest
 
 from hdk.common.data_types.integers import SignedInteger, UnsignedInteger
-from hdk.common.values import EncryptedValue
+from hdk.common.values import EncryptedScalar
 from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 
@@ -14,13 +14,13 @@ from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
     [
         pytest.param(
             lambda x: x + 42,
-            {"x": EncryptedValue(SignedInteger(4))},
+            {"x": EncryptedScalar(SignedInteger(4))},
             ((-2, 2),),
             id="x + 42",
         ),
         pytest.param(
             lambda x, y: x + y,
-            {"x": EncryptedValue(SignedInteger(4)), "y": EncryptedValue(UnsignedInteger(4))},
+            {"x": EncryptedScalar(SignedInteger(4)), "y": EncryptedScalar(UnsignedInteger(4))},
             ((-2, 2), (20, 30)),
             id="x + y",
         ),
@@ -43,7 +43,7 @@ def test_compilation(benchmark, function, parameters, ranges):
     [
         pytest.param(
             lambda x: x + 420,
-            {"x": EncryptedValue(SignedInteger(4))},
+            {"x": EncryptedScalar(SignedInteger(4))},
             ((-2, 2),),
             [
                 {0: -2},
@@ -54,7 +54,7 @@ def test_compilation(benchmark, function, parameters, ranges):
         ),
         pytest.param(
             lambda x, y: x + y,
-            {"x": EncryptedValue(SignedInteger(4)), "y": EncryptedValue(UnsignedInteger(4))},
+            {"x": EncryptedScalar(SignedInteger(4)), "y": EncryptedScalar(UnsignedInteger(4))},
             ((-2, 2), (20, 30)),
             [
                 {0: -2, 1: 25},

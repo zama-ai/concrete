@@ -7,7 +7,7 @@ import pytest
 
 from hdk.common.compilation import CompilationConfiguration
 from hdk.common.data_types.integers import Integer
-from hdk.common.values import EncryptedValue
+from hdk.common.values import EncryptedScalar
 from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 
@@ -46,7 +46,7 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
     op_graph = compile_numpy_function_into_op_graph(
         function_to_trace,
         {
-            param: EncryptedValue(Integer(32, is_signed=False))
+            param: EncryptedScalar(Integer(32, is_signed=False))
             for param in signature(function_to_trace).parameters.keys()
         },
         iter([(1,), (2,), (3,)]),
@@ -55,7 +55,7 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
     op_graph_not_optimized = compile_numpy_function_into_op_graph(
         function_to_trace,
         {
-            param: EncryptedValue(Integer(32, is_signed=False))
+            param: EncryptedScalar(Integer(32, is_signed=False))
             for param in signature(function_to_trace).parameters.keys()
         },
         iter([(1,), (2,), (3,)]),

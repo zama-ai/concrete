@@ -9,7 +9,7 @@ from hdk.common import is_a_power_of_2
 from hdk.common.data_types.integers import Integer
 from hdk.common.extensions.table import LookupTable
 from hdk.common.representation import intermediate as ir
-from hdk.common.values import EncryptedValue
+from hdk.common.values import EncryptedScalar
 from hdk.hnumpy import tracing
 
 
@@ -42,7 +42,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     def f(x):
         return table[x]
 
-    x = EncryptedValue(Integer(2, is_signed=False))
+    x = EncryptedScalar(Integer(2, is_signed=False))
     op_graph = tracing.trace_numpy_function(f, {"x": x})
 
     assert op_graph.output_nodes[0].get_table() == [3, 6, 0, 2]
@@ -77,7 +77,7 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     def f(x):
         return table[x] + table[0]
 
-    x = EncryptedValue(Integer(3, is_signed=False))
+    x = EncryptedScalar(Integer(3, is_signed=False))
     op_graph = tracing.trace_numpy_function(f, {"x": x})
 
     ref_graph = nx.MultiDiGraph()

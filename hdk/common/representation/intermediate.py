@@ -10,7 +10,7 @@ from ..data_types.dtypes_helpers import (
     mix_scalar_values_determine_holding_dtype,
 )
 from ..data_types.integers import Integer
-from ..values import BaseValue, ClearValue, EncryptedValue, TensorValue
+from ..values import BaseValue, ClearScalar, EncryptedScalar, TensorValue
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
 
@@ -292,9 +292,9 @@ class Dot(IntermediateNode):
         ), f"Dot only supports two vectors ({TensorValue.__name__} with ndim == 1)"
 
         output_scalar_value = (
-            EncryptedValue
+            EncryptedScalar
             if (self.inputs[0].is_encrypted or self.inputs[1].is_encrypted)
-            else ClearValue
+            else ClearScalar
         )
 
         self.outputs = [output_scalar_value(output_dtype)]

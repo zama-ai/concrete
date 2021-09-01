@@ -6,7 +6,7 @@ import pytest
 from hdk.common.data_types.integers import Integer
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
-from hdk.common.values import ClearValue, EncryptedTensor, EncryptedValue
+from hdk.common.values import ClearScalar, EncryptedScalar, EncryptedTensor
 from hdk.hnumpy import tracing
 
 LOOKUP_TABLE_FROM_2B_TO_4B = LookupTable([9, 2, 4, 11])
@@ -119,15 +119,15 @@ def issue_130_c(x, y):
     [
         pytest.param(
             (
-                EncryptedValue(Integer(64, is_signed=False)),
-                EncryptedValue(Integer(64, is_signed=False)),
+                EncryptedScalar(Integer(64, is_signed=False)),
+                EncryptedScalar(Integer(64, is_signed=False)),
             ),
             id="Encrypted uint",
         ),
         pytest.param(
             (
-                EncryptedValue(Integer(64, is_signed=False)),
-                ClearValue(Integer(64, is_signed=False)),
+                EncryptedScalar(Integer(64, is_signed=False)),
+                ClearScalar(Integer(64, is_signed=False)),
             ),
             id="Clear uint",
         ),
@@ -154,12 +154,12 @@ def test_hnumpy_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
     [
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
-            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            {"x": EncryptedScalar(Integer(2, is_signed=False))},
             "%0 = x\n%1 = TLU(0)\nreturn(%1)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
-            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            {"x": EncryptedScalar(Integer(2, is_signed=False))},
             "%0 = x\n%1 = Constant(4)\n%2 = Add(0, 1)\n%3 = TLU(2)\nreturn(%3)\n",
         ),
     ],
@@ -218,8 +218,8 @@ def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
         (
             lambda x, y: x + y,
             (
-                EncryptedValue(Integer(64, is_signed=False)),
-                EncryptedValue(Integer(32, is_signed=True)),
+                EncryptedScalar(Integer(64, is_signed=False)),
+                EncryptedScalar(Integer(32, is_signed=True)),
             ),
             "%0 = x                                   # Integer<unsigned, 64 bits>"
             "\n%1 = y                                   # Integer<signed, 32 bits>"
@@ -229,8 +229,8 @@ def test_hnumpy_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
         (
             lambda x, y: x * y,
             (
-                EncryptedValue(Integer(17, is_signed=False)),
-                EncryptedValue(Integer(23, is_signed=False)),
+                EncryptedScalar(Integer(17, is_signed=False)),
+                EncryptedScalar(Integer(23, is_signed=False)),
             ),
             "%0 = x                                   # Integer<unsigned, 17 bits>"
             "\n%1 = y                                   # Integer<unsigned, 23 bits>"
@@ -258,14 +258,14 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
     [
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
-            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            {"x": EncryptedScalar(Integer(2, is_signed=False))},
             "%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = TLU(0)                              # Integer<unsigned, 4 bits>"
             "\nreturn(%1)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
-            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            {"x": EncryptedScalar(Integer(2, is_signed=False))},
             "%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = Constant(4)                         # Integer<unsigned, 3 bits>"
             "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
@@ -274,7 +274,7 @@ def test_hnumpy_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[LOOKUP_TABLE_FROM_3B_TO_2B[x + 4]],
-            {"x": EncryptedValue(Integer(2, is_signed=False))},
+            {"x": EncryptedScalar(Integer(2, is_signed=False))},
             "%0 = x                                   # Integer<unsigned, 2 bits>"
             "\n%1 = Constant(4)                         # Integer<unsigned, 3 bits>"
             "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"

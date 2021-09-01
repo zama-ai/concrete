@@ -60,7 +60,7 @@ def _compile_numpy_function_into_op_graph_internal(
     Args:
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
-            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
             needs to be an iterator on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
@@ -146,7 +146,7 @@ def compile_numpy_function_into_op_graph(
     Args:
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
-            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
             needs to be an iterator on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
@@ -207,7 +207,7 @@ def _compile_numpy_function_internal(
     Args:
         function_to_compile (Callable): The function you want to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
-            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
             needs to be an iterator on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
@@ -262,7 +262,7 @@ def compile_numpy_function(
     Args:
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
-            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
         dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
             needs to be an iterator on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters

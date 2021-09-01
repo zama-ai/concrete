@@ -35,5 +35,5 @@ def make_encrypted_scalar(data_type: BaseDataType) -> ScalarValue:
     return ScalarValue(data_type=data_type, is_encrypted=True)
 
 
-ClearValue = make_clear_scalar
-EncryptedValue = make_encrypted_scalar
+ClearScalar = make_clear_scalar
+EncryptedScalar = make_encrypted_scalar

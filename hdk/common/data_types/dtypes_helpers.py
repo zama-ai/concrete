@@ -6,10 +6,10 @@ from typing import Callable, Union, cast
 
 from ..values import (
     BaseValue,
+    ClearScalar,
     ClearTensor,
-    ClearValue,
+    EncryptedScalar,
     EncryptedTensor,
-    EncryptedValue,
     ScalarValue,
     TensorValue,
 )
@@ -169,9 +169,9 @@ def mix_scalar_values_determine_holding_dtype(
     mixed_value: ScalarValue
 
     if value1.is_encrypted or value2.is_encrypted:
-        mixed_value = EncryptedValue(holding_type)
+        mixed_value = EncryptedScalar(holding_type)
     else:
-        mixed_value = ClearValue(holding_type)
+        mixed_value = ClearScalar(holding_type)
 
     return mixed_value
 

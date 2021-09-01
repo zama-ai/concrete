@@ -5,7 +5,7 @@ from pathlib import Path
 
 from hdk.common.compilation import CompilationArtifacts
 from hdk.common.data_types.integers import UnsignedInteger
-from hdk.common.values import EncryptedValue
+from hdk.common.values import EncryptedScalar
 from hdk.hnumpy.compile import compile_numpy_function
 
 
@@ -21,7 +21,7 @@ def test_artifacts_export():
 
         compile_numpy_function(
             function,
-            {"x": EncryptedValue(UnsignedInteger(7))},
+            {"x": EncryptedScalar(UnsignedInteger(7))},
             iter([(0,), (1,), (2,)]),
             compilation_artifacts=artifacts,
         )

@@ -7,7 +7,7 @@ import pytest
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.representation import intermediate as ir
-from hdk.common.values import ClearTensor, ClearValue, EncryptedTensor, EncryptedValue
+from hdk.common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor
 from hdk.hnumpy import tracing
 
 OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
@@ -20,17 +20,17 @@ OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
 @pytest.mark.parametrize(
     "x",
     [
-        pytest.param(EncryptedValue(Integer(64, is_signed=False)), id="x: Encrypted uint"),
+        pytest.param(EncryptedScalar(Integer(64, is_signed=False)), id="x: Encrypted uint"),
         pytest.param(
-            EncryptedValue(Integer(64, is_signed=True)),
+            EncryptedScalar(Integer(64, is_signed=True)),
             id="x: Encrypted int",
         ),
         pytest.param(
-            ClearValue(Integer(64, is_signed=False)),
+            ClearScalar(Integer(64, is_signed=False)),
             id="x: Clear uint",
         ),
         pytest.param(
-            ClearValue(Integer(64, is_signed=True)),
+            ClearScalar(Integer(64, is_signed=True)),
             id="x: Clear int",
         ),
     ],
@@ -38,17 +38,17 @@ OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
 @pytest.mark.parametrize(
     "y",
     [
-        pytest.param(EncryptedValue(Integer(64, is_signed=False)), id="y: Encrypted uint"),
+        pytest.param(EncryptedScalar(Integer(64, is_signed=False)), id="y: Encrypted uint"),
         pytest.param(
-            EncryptedValue(Integer(64, is_signed=True)),
+            EncryptedScalar(Integer(64, is_signed=True)),
             id="y: Encrypted int",
         ),
         pytest.param(
-            ClearValue(Integer(64, is_signed=False)),
+            ClearScalar(Integer(64, is_signed=False)),
             id="y: Clear uint",
         ),
         pytest.param(
-            ClearValue(Integer(64, is_signed=True)),
+            ClearScalar(Integer(64, is_signed=True)),
             id="y: Clear int",
         ),
     ],
@@ -215,9 +215,9 @@ def test_tracing_astype(
     """Test function for NPTracer.astype"""
     for input_, expected_output in input_and_expected_output_tuples:
         input_value = (
-            EncryptedValue(Integer(64, is_signed=True))
+            EncryptedScalar(Integer(64, is_signed=True))
             if isinstance(input_, int)
-            else EncryptedValue(Float(64))
+            else EncryptedScalar(Float(64))
         )
 
         op_graph = tracing.trace_numpy_function(function_to_trace, {"x": input_value})
@@ -259,30 +259,30 @@ def test_tracing_astype(
     "inputs,expected_output_node,expected_output_value",
     [
         pytest.param(
-            {"x": EncryptedValue(Integer(7, is_signed=False))},
+            {"x": EncryptedScalar(Integer(7, is_signed=False))},
             ir.ArbitraryFunction,
-            EncryptedValue(Float(64)),
+            EncryptedScalar(Float(64)),
         ),
         pytest.param(
-            {"x": EncryptedValue(Integer(32, is_signed=True))},
+            {"x": EncryptedScalar(Integer(32, is_signed=True))},
             ir.ArbitraryFunction,
-            EncryptedValue(Float(64)),
+            EncryptedScalar(Float(64)),
         ),
         pytest.param(
-            {"x": EncryptedValue(Integer(64, is_signed=True))},
+            {"x": EncryptedScalar(Integer(64, is_signed=True))},
             ir.ArbitraryFunction,
-            EncryptedValue(Float(64)),
+            EncryptedScalar(Float(64)),
         ),
         pytest.param(
-            {"x": EncryptedValue(Integer(128, is_signed=True))},
+            {"x": EncryptedScalar(Integer(128, is_signed=True))},
             ir.ArbitraryFunction,
             None,
             marks=pytest.mark.xfail(strict=True, raises=NotImplementedError),
         ),
         pytest.param(
-            {"x": EncryptedValue(Float(64))},
+            {"x": EncryptedScalar(Float(64))},
             ir.ArbitraryFunction,
-            EncryptedValue(Float(64)),
+            EncryptedScalar(Float(64)),
         ),
     ],
 )
@@ -309,7 +309,7 @@ def test_trace_hnumpy_supported_ufuncs(
                 "y": EncryptedTensor(Integer(7, is_signed=False), shape=(10,)),
             },
             ir.Dot,
-            EncryptedValue(Integer(32, False)),
+            EncryptedScalar(Integer(32, False)),
         ),
         pytest.param(
             lambda x, y: numpy.dot(x, y),
@@ -318,7 +318,7 @@ def test_trace_hnumpy_supported_ufuncs(
                 "y": EncryptedTensor(Float(64), shape=(10,)),
             },
             ir.Dot,
-            EncryptedValue(Float(64)),
+            EncryptedScalar(Float(64)),
         ),
         pytest.param(
             lambda x, y: numpy.dot(x, y),
@@ -327,7 +327,7 @@ def test_trace_hnumpy_supported_ufuncs(
                 "y": ClearTensor(Integer(64, is_signed=True), shape=(6,)),
             },
             ir.Dot,
-            ClearValue(Integer(64, is_signed=True)),
+            ClearScalar(Integer(64, is_signed=True)),
         ),
         pytest.param(
             lambda x: numpy.dot(x, numpy.array([1, 2, 3, 4, 5], dtype=numpy.int64)),
@@ -335,7 +335,7 @@ def test_trace_hnumpy_supported_ufuncs(
                 "x": EncryptedTensor(Integer(64, is_signed=True), shape=(5,)),
             },
             ir.Dot,
-            EncryptedValue(Integer(64, True)),
+            EncryptedScalar(Integer(64, True)),
         ),
         # pylint: enable=unnecessary-lambda
     ],
@@ -381,7 +381,7 @@ def test_nptracer_get_tracing_func_for_np_functions(np_function, expected_tracin
 @pytest.mark.parametrize(
     "tracer",
     [
-        tracing.NPTracer([], ir.Input(ClearValue(Integer(32, True)), "x", 0), 0),
+        tracing.NPTracer([], ir.Input(ClearScalar(Integer(32, True)), "x", 0), 0),
     ],
 )
 @pytest.mark.parametrize(

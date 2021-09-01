@@ -10,7 +10,7 @@ from zamalang.dialects import hlfhe
 from hdk.common.data_types.integers import Integer
 from hdk.common.extensions.table import LookupTable
 from hdk.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
-from hdk.common.values import ClearValue, EncryptedValue
+from hdk.common.values import ClearScalar, EncryptedScalar
 from hdk.hnumpy.compile import compile_numpy_function_into_op_graph
 
 
@@ -77,103 +77,103 @@ def datagen(*args):
         (
             add,
             {
-                "x": EncryptedValue(Integer(64, is_signed=False)),
-                "y": ClearValue(Integer(32, is_signed=False)),
+                "x": EncryptedScalar(Integer(64, is_signed=False)),
+                "y": ClearScalar(Integer(32, is_signed=False)),
             },
             (range(0, 8), range(1, 4)),
         ),
         (
             constant_add,
             {
-                "x": EncryptedValue(Integer(64, is_signed=False)),
+                "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
             (range(0, 8),),
         ),
         (
             add,
             {
-                "x": ClearValue(Integer(32, is_signed=False)),
-                "y": EncryptedValue(Integer(64, is_signed=False)),
+                "x": ClearScalar(Integer(32, is_signed=False)),
+                "y": EncryptedScalar(Integer(64, is_signed=False)),
             },
             (range(0, 8), range(1, 4)),
         ),
         (
             add,
             {
-                "x": EncryptedValue(Integer(7, is_signed=False)),
-                "y": EncryptedValue(Integer(7, is_signed=False)),
+                "x": EncryptedScalar(Integer(7, is_signed=False)),
+                "y": EncryptedScalar(Integer(7, is_signed=False)),
             },
             (range(7, 15), range(1, 5)),
         ),
         (
             sub,
             {
-                "x": ClearValue(Integer(8, is_signed=False)),
-                "y": EncryptedValue(Integer(7, is_signed=False)),
+                "x": ClearScalar(Integer(8, is_signed=False)),
+                "y": EncryptedScalar(Integer(7, is_signed=False)),
             },
             (range(5, 10), range(2, 6)),
         ),
         (
             constant_sub,
             {
-                "x": EncryptedValue(Integer(64, is_signed=False)),
+                "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
             (range(0, 5),),
         ),
         (
             mul,
             {
-                "x": EncryptedValue(Integer(7, is_signed=False)),
-                "y": ClearValue(Integer(8, is_signed=False)),
+                "x": EncryptedScalar(Integer(7, is_signed=False)),
+                "y": ClearScalar(Integer(8, is_signed=False)),
             },
             (range(1, 5), range(2, 8)),
         ),
         (
             constant_mul,
             {
-                "x": EncryptedValue(Integer(64, is_signed=False)),
+                "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
             (range(0, 8),),
         ),
         (
             mul,
             {
-                "x": ClearValue(Integer(8, is_signed=False)),
-                "y": EncryptedValue(Integer(7, is_signed=False)),
+                "x": ClearScalar(Integer(8, is_signed=False)),
+                "y": EncryptedScalar(Integer(7, is_signed=False)),
             },
             (range(1, 5), range(2, 8)),
         ),
         (
             sub_add_mul,
             {
-                "x": EncryptedValue(Integer(7, is_signed=False)),
-                "y": EncryptedValue(Integer(7, is_signed=False)),
-                "z": ClearValue(Integer(7, is_signed=False)),
+                "x": EncryptedScalar(Integer(7, is_signed=False)),
+                "y": EncryptedScalar(Integer(7, is_signed=False)),
+                "z": ClearScalar(Integer(7, is_signed=False)),
             },
             (range(0, 8), range(1, 5), range(5, 12)),
         ),
         (
             ret_multiple,
             {
-                "x": EncryptedValue(Integer(7, is_signed=False)),
-                "y": EncryptedValue(Integer(7, is_signed=False)),
-                "z": ClearValue(Integer(7, is_signed=False)),
+                "x": EncryptedScalar(Integer(7, is_signed=False)),
+                "y": EncryptedScalar(Integer(7, is_signed=False)),
+                "z": ClearScalar(Integer(7, is_signed=False)),
             },
             (range(1, 5), range(1, 5), range(1, 5)),
         ),
         (
             ret_multiple_different_order,
             {
-                "x": EncryptedValue(Integer(7, is_signed=False)),
-                "y": EncryptedValue(Integer(7, is_signed=False)),
-                "z": ClearValue(Integer(7, is_signed=False)),
+                "x": EncryptedScalar(Integer(7, is_signed=False)),
+                "y": EncryptedScalar(Integer(7, is_signed=False)),
+                "z": ClearScalar(Integer(7, is_signed=False)),
             },
             (range(1, 5), range(1, 5), range(1, 5)),
         ),
         (
             lut,
             {
-                "x": EncryptedValue(Integer(64, is_signed=False)),
+                "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
             (range(0, 8),),
         ),
@@ -190,8 +190,8 @@ def test_mlir_converter(func, args_dict, args_ranges):
 
 
 def test_hdk_encrypted_integer_to_mlir_type():
-    """Test conversion of EncryptedValue into MLIR"""
-    value = EncryptedValue(Integer(7, is_signed=False))
+    """Test conversion of EncryptedScalar into MLIR"""
+    value = EncryptedScalar(Integer(7, is_signed=False))
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     eint = converter.hdk_value_to_mlir_type(value)
     assert eint == hlfhe.EncryptedIntegerType.get(converter.context, 7)
@@ -199,8 +199,8 @@ def test_hdk_encrypted_integer_to_mlir_type():
 
 @pytest.mark.parametrize("is_signed", [True, False])
 def test_hdk_clear_integer_to_mlir_type(is_signed):
-    """Test conversion of ClearValue into MLIR"""
-    value = ClearValue(Integer(5, is_signed=is_signed))
+    """Test conversion of ClearScalar into MLIR"""
+    value = ClearScalar(Integer(5, is_signed=is_signed))
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     int_mlir = converter.hdk_value_to_mlir_type(value)
     with converter.context:

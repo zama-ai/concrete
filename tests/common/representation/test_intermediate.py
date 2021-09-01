@@ -6,36 +6,36 @@ import pytest
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.representation import intermediate as ir
-from hdk.common.values import ClearTensor, ClearValue, EncryptedTensor, EncryptedValue
+from hdk.common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor
 
 
 @pytest.mark.parametrize(
     "node,input_data,expected_result",
     [
         pytest.param(
-            ir.Add([EncryptedValue(Integer(64, False)), EncryptedValue(Integer(64, False))]),
+            ir.Add([EncryptedScalar(Integer(64, False)), EncryptedScalar(Integer(64, False))]),
             [10, 4589],
             4599,
             id="Add",
         ),
         pytest.param(
-            ir.Sub([EncryptedValue(Integer(64, False)), EncryptedValue(Integer(64, False))]),
+            ir.Sub([EncryptedScalar(Integer(64, False)), EncryptedScalar(Integer(64, False))]),
             [10, 4589],
             -4579,
             id="Sub",
         ),
         pytest.param(
-            ir.Mul([EncryptedValue(Integer(64, False)), EncryptedValue(Integer(64, False))]),
+            ir.Mul([EncryptedScalar(Integer(64, False)), EncryptedScalar(Integer(64, False))]),
             [10, 4589],
             45890,
             id="Mul",
         ),
-        pytest.param(ir.Input(ClearValue(Integer(32, True)), "in", 0), [42], 42, id="Input"),
+        pytest.param(ir.Input(ClearScalar(Integer(32, True)), "in", 0), [42], 42, id="Input"),
         pytest.param(ir.Constant(42), None, 42, id="Constant"),
         pytest.param(ir.Constant(-42), None, -42, id="Constant"),
         pytest.param(
             ir.ArbitraryFunction(
-                EncryptedValue(Integer(7, False)), lambda x: x + 3, Integer(7, False)
+                EncryptedScalar(Integer(7, False)), lambda x: x + 3, Integer(7, False)
             ),
             [10],
             13,
@@ -43,7 +43,7 @@ from hdk.common.values import ClearTensor, ClearValue, EncryptedTensor, Encrypte
         ),
         pytest.param(
             ir.ArbitraryFunction(
-                EncryptedValue(Integer(7, False)),
+                EncryptedScalar(Integer(7, False)),
                 lambda x, y: x + y,
                 Integer(7, False),
                 op_kwargs={"y": 3},
@@ -54,7 +54,7 @@ from hdk.common.values import ClearTensor, ClearValue, EncryptedTensor, Encrypte
         ),
         pytest.param(
             ir.ArbitraryFunction(
-                EncryptedValue(Integer(7, False)),
+                EncryptedScalar(Integer(7, False)),
                 lambda x, y: y[x],
                 Integer(7, False),
                 op_kwargs={"y": (1, 2, 3, 4)},
@@ -65,7 +65,7 @@ from hdk.common.values import ClearTensor, ClearValue, EncryptedTensor, Encrypte
         ),
         pytest.param(
             ir.ArbitraryFunction(
-                EncryptedValue(Integer(7, False)),
+                EncryptedScalar(Integer(7, False)),
                 lambda x, y: y[3],
                 Integer(7, False),
                 op_kwargs={"y": (1, 2, 3, 4)},
@@ -129,68 +129,68 @@ def test_evaluate(
     "node1,node2,expected_result",
     [
         (
-            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
-            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Add([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
+            ir.Add([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
             True,
         ),
         (
-            ir.Add([EncryptedValue(Integer(16, False)), EncryptedValue(Integer(32, False))]),
-            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
+            ir.Add([EncryptedScalar(Integer(16, False)), EncryptedScalar(Integer(32, False))]),
+            ir.Add([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(16, False))]),
             True,
         ),
         (
-            ir.Add([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Add([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
             False,
         ),
         (
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
             True,
         ),
         (
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(16, False))]),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(16, False))]),
             True,
         ),
         (
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(16, False))]),
-            ir.Sub([EncryptedValue(Integer(16, False)), EncryptedValue(Integer(32, False))]),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(16, False))]),
+            ir.Sub([EncryptedScalar(Integer(16, False)), EncryptedScalar(Integer(32, False))]),
             False,
         ),
         (
-            ir.Mul([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
-            ir.Mul([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Mul([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
+            ir.Mul([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
             True,
         ),
         (
-            ir.Mul([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Mul([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
             False,
         ),
         (
-            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
-            ir.Sub([EncryptedValue(Integer(32, False)), EncryptedValue(Integer(32, False))]),
+            ir.Input(EncryptedScalar(Integer(32, False)), "x", 0),
+            ir.Sub([EncryptedScalar(Integer(32, False)), EncryptedScalar(Integer(32, False))]),
             False,
         ),
         (
-            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
-            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedScalar(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedScalar(Integer(32, False)), "x", 0),
             True,
         ),
         (
-            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
-            ir.Input(EncryptedValue(Integer(32, False)), "y", 0),
+            ir.Input(EncryptedScalar(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedScalar(Integer(32, False)), "y", 0),
             False,
         ),
         (
-            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
-            ir.Input(EncryptedValue(Integer(32, False)), "x", 1),
+            ir.Input(EncryptedScalar(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedScalar(Integer(32, False)), "x", 1),
             False,
         ),
         (
-            ir.Input(EncryptedValue(Integer(32, False)), "x", 0),
-            ir.Input(EncryptedValue(Integer(8, False)), "x", 0),
+            ir.Input(EncryptedScalar(Integer(32, False)), "x", 0),
+            ir.Input(EncryptedScalar(Integer(8, False)), "x", 0),
             False,
         ),
         (
@@ -200,7 +200,7 @@ def test_evaluate(
         ),
         (
             ir.Constant(10),
-            ir.Input(EncryptedValue(Integer(8, False)), "x", 0),
+            ir.Input(EncryptedScalar(Integer(8, False)), "x", 0),
             False,
         ),
         (
@@ -209,28 +209,36 @@ def test_evaluate(
             False,
         ),
         (
-            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
-            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            ir.ArbitraryFunction(
+                EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
+            ),
+            ir.ArbitraryFunction(
+                EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
+            ),
             True,
         ),
         (
             ir.ArbitraryFunction(
-                EncryptedValue(Integer(8, False)),
+                EncryptedScalar(Integer(8, False)),
                 lambda x: x,
                 Integer(8, False),
                 op_args=(1, 2, 3),
             ),
-            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            ir.ArbitraryFunction(
+                EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
+            ),
             False,
         ),
         (
             ir.ArbitraryFunction(
-                EncryptedValue(Integer(8, False)),
+                EncryptedScalar(Integer(8, False)),
                 lambda x: x,
                 Integer(8, False),
                 op_kwargs={"tuple": (1, 2, 3)},
             ),
-            ir.ArbitraryFunction(EncryptedValue(Integer(8, False)), lambda x: x, Integer(8, False)),
+            ir.ArbitraryFunction(
+                EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
+            ),
             False,
         ),
         (

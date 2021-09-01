@@ -9,7 +9,7 @@ from hdk.common.compilation import CompilationConfiguration
 from hdk.common.data_types.integers import Integer
 from hdk.common.debugging import draw_graph, get_printable_graph
 from hdk.common.extensions.table import LookupTable
-from hdk.common.values import EncryptedTensor, EncryptedValue
+from hdk.common.values import EncryptedScalar, EncryptedTensor
 from hdk.hnumpy.compile import (
     compile_numpy_function,
     compile_numpy_function_into_op_graph,
@@ -57,7 +57,7 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
             yield prod
 
     function_parameters = {
-        arg_name: EncryptedValue(Integer(64, True)) for arg_name in list_of_arg_names
+        arg_name: EncryptedScalar(Integer(64, True)) for arg_name in list_of_arg_names
     }
 
     op_graph = compile_numpy_function_into_op_graph(
@@ -94,7 +94,7 @@ def test_compile_and_run_function_multiple_outputs(function, input_ranges, list_
             yield prod
 
     function_parameters = {
-        arg_name: EncryptedValue(Integer(64, False)) for arg_name in list_of_arg_names
+        arg_name: EncryptedScalar(Integer(64, False)) for arg_name in list_of_arg_names
     }
 
     compiler_engine = compile_numpy_function(
@@ -126,7 +126,7 @@ def test_compile_and_run_correctness(function, input_ranges, list_of_arg_names):
             yield prod
 
     function_parameters = {
-        arg_name: EncryptedValue(Integer(64, False)) for arg_name in list_of_arg_names
+        arg_name: EncryptedScalar(Integer(64, False)) for arg_name in list_of_arg_names
     }
 
     compiler_engine = compile_numpy_function(
@@ -149,7 +149,7 @@ def test_compile_function_with_direct_tlu():
 
     op_graph = compile_numpy_function_into_op_graph(
         function,
-        {"x": EncryptedValue(Integer(2, is_signed=False))},
+        {"x": EncryptedScalar(Integer(2, is_signed=False))},
         iter([(0,), (1,), (2,), (3,)]),
     )
 
@@ -168,7 +168,7 @@ def test_compile_function_with_direct_tlu_overflow():
     with pytest.raises(ValueError):
         compile_numpy_function_into_op_graph(
             function,
-            {"x": EncryptedValue(Integer(3, is_signed=False))},
+            {"x": EncryptedScalar(Integer(3, is_signed=False))},
             iter([(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)]),
             CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
         )
@@ -188,7 +188,7 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
             yield prod
 
     function_parameters = {
-        arg_name: EncryptedValue(Integer(64, True)) for arg_name in list_of_arg_names
+        arg_name: EncryptedScalar(Integer(64, True)) for arg_name in list_of_arg_names
     }
 
     with pytest.raises(TypeError, match=r"signed integers aren't supported for MLIR lowering"):
@@ -268,7 +268,7 @@ def test_compile_with_show_mlir(function, input_ranges, list_of_arg_names):
             yield prod
 
     function_parameters = {
-        arg_name: EncryptedValue(Integer(64, False)) for arg_name in list_of_arg_names
+        arg_name: EncryptedScalar(Integer(64, False)) for arg_name in list_of_arg_names
     }
 
     compile_numpy_function(

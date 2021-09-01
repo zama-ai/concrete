@@ -13,10 +13,10 @@ from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
 from hdk.common.values import (
     BaseValue,
+    ClearScalar,
     ClearTensor,
-    ClearValue,
+    EncryptedScalar,
     EncryptedTensor,
-    EncryptedValue,
 )
 
 
@@ -24,14 +24,14 @@ from hdk.common.values import (
     "value,expected_result",
     [
         pytest.param(
-            ClearValue(Integer(8, is_signed=False)),
+            ClearScalar(Integer(8, is_signed=False)),
             False,
-            id="ClearValue 8 bits unsigned Integer",
+            id="ClearScalar 8 bits unsigned Integer",
         ),
         pytest.param(
-            EncryptedValue(Integer(8, is_signed=True)),
+            EncryptedScalar(Integer(8, is_signed=True)),
             True,
-            id="EncryptedValue 8 bits signed Integer",
+            id="EncryptedScalar 8 bits signed Integer",
         ),
     ],
 )
@@ -44,19 +44,19 @@ def test_value_is_encrypted_integer(value: BaseValue, expected_result: bool):
     "value,expected_result",
     [
         pytest.param(
-            ClearValue(Integer(8, is_signed=False)),
+            ClearScalar(Integer(8, is_signed=False)),
             False,
-            id="ClearValue 8 bits unsigned Integer",
+            id="ClearScalar 8 bits unsigned Integer",
         ),
         pytest.param(
-            EncryptedValue(Integer(8, is_signed=True)),
+            EncryptedScalar(Integer(8, is_signed=True)),
             False,
-            id="EncryptedValue 8 bits signed Integer",
+            id="EncryptedScalar 8 bits signed Integer",
         ),
         pytest.param(
-            EncryptedValue(Integer(8, is_signed=False)),
+            EncryptedScalar(Integer(8, is_signed=False)),
             True,
-            id="EncryptedValue 8 bits unsigned Integer",
+            id="EncryptedScalar 8 bits unsigned Integer",
         ),
     ],
 )
@@ -136,39 +136,39 @@ def test_mix_data_types(
     "value1,value2,expected_mixed_value",
     [
         pytest.param(
-            EncryptedValue(Integer(7, False)),
-            EncryptedValue(Integer(7, False)),
-            EncryptedValue(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
             id="euint7, euint7, euint7",
         ),
         pytest.param(
-            EncryptedValue(Integer(7, False)),
-            ClearValue(Integer(7, False)),
-            EncryptedValue(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
+            ClearScalar(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
             id="euint7, cuint7, euint7",
         ),
         pytest.param(
-            ClearValue(Integer(7, False)),
-            EncryptedValue(Integer(7, False)),
-            EncryptedValue(Integer(7, False)),
+            ClearScalar(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
             id="cuint7, euint7, euint7",
         ),
         pytest.param(
-            ClearValue(Integer(7, False)),
-            ClearValue(Integer(7, False)),
-            ClearValue(Integer(7, False)),
+            ClearScalar(Integer(7, False)),
+            ClearScalar(Integer(7, False)),
+            ClearScalar(Integer(7, False)),
             id="cuint7, cuint7, cuint7",
         ),
         pytest.param(
-            ClearValue(Float(32)),
-            ClearValue(Float(32)),
-            ClearValue(Float(32)),
+            ClearScalar(Float(32)),
+            ClearScalar(Float(32)),
+            ClearScalar(Float(32)),
             id="cfloat32, cfloat32, cfloat32",
         ),
         pytest.param(
-            EncryptedValue(Float(32)),
-            ClearValue(Float(32)),
-            EncryptedValue(Float(32)),
+            EncryptedScalar(Float(32)),
+            ClearScalar(Float(32)),
+            EncryptedScalar(Float(32)),
             id="efloat32, cfloat32, efloat32",
         ),
     ],
@@ -204,7 +204,7 @@ def test_mix_scalar_values(value1, value2, expected_mixed_value):
         ),
         pytest.param(
             ClearTensor(Integer(7, False), (1, 2, 3)),
-            EncryptedValue(Integer(7, False)),
+            EncryptedScalar(Integer(7, False)),
             None,
             marks=pytest.mark.xfail(raises=AssertionError),
         ),

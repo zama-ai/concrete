@@ -7,7 +7,7 @@ import pytest
 from hdk.common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
 from hdk.common.data_types.floats import Float
 from hdk.common.data_types.integers import Integer
-from hdk.common.values import EncryptedValue
+from hdk.common.values import EncryptedScalar
 from hdk.hnumpy.tracing import trace_numpy_function
 
 
@@ -271,7 +271,7 @@ def test_eval_op_graph_bounds_on_dataset_multiple_output(
     """Test function for eval_op_graph_bounds_on_dataset"""
 
     op_graph = trace_numpy_function(
-        function, {"x": EncryptedValue(Integer(64, True)), "y": EncryptedValue(Integer(64, True))}
+        function, {"x": EncryptedScalar(Integer(64, True)), "y": EncryptedScalar(Integer(64, True))}
     )
 
     def data_gen(range_x, range_y):

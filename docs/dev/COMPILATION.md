@@ -12,7 +12,7 @@ However, one can already build interesting and impressing use cases, and more wi
 ```python
 # Import necessary HDK components
 from hdk.common.data_types.integers import UnsignedInteger
-from hdk.common.values import EncryptedValue, EncryptedTensor
+from hdk.common.values import EncryptedScalar, EncryptedTensor
 from hdk.hnumpy.compile import compile_numpy_function
 
 # Define the function to homomorphize
@@ -20,8 +20,8 @@ def f(x, y):
     return (2 * x) + y
 
 # Define the inputs of homomorphized function
-x = EncryptedValue(UnsignedInteger(2))
-y = EncryptedValue(UnsignedInteger(1))
+x = EncryptedScalar(UnsignedInteger(2))
+y = EncryptedScalar(UnsignedInteger(1))
 
 # Compile the function to its homomorphic equivalent
 engine = compile_numpy_function(
@@ -215,7 +215,7 @@ def f(x):
 ### Parameters
 
 ```
-x = EncryptedValue(UnsignedInteger(2))
+x = EncryptedScalar(UnsignedInteger(2))
 ```
 
 #### Corresponding Operation Graph
@@ -264,8 +264,8 @@ def f(x, y):
 ### Parameters
 
 ```
-x = EncryptedValue(UnsignedInteger(3))
-y = EncryptedValue(UnsignedInteger(1))
+x = EncryptedScalar(UnsignedInteger(3))
+y = EncryptedScalar(UnsignedInteger(1))
 ```
 
 #### Corresponding Operation Graph

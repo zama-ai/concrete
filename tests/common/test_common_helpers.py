@@ -7,7 +7,7 @@ import pytest
 from hdk.common import check_op_graph_is_integer_program, is_a_power_of_2
 from hdk.common.data_types.floats import Float64
 from hdk.common.data_types.integers import Integer
-from hdk.common.values import EncryptedValue
+from hdk.common.values import EncryptedScalar
 from hdk.hnumpy.tracing import trace_numpy_function
 
 
@@ -36,7 +36,7 @@ def test_check_op_graph_is_integer_program():
         return x + y - y * y + x * y
 
     op_graph = trace_numpy_function(
-        function, {"x": EncryptedValue(Integer(64, True)), "y": EncryptedValue(Integer(64, True))}
+        function, {"x": EncryptedScalar(Integer(64, True)), "y": EncryptedScalar(Integer(64, True))}
     )
 
     # Test without and with output list

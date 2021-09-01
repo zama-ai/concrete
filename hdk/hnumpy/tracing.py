@@ -287,7 +287,7 @@ def trace_numpy_function(
     Args:
         function_to_trace (Callable): The function you want to trace
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
-            function is e.g. an EncryptedValue holding a 7bits unsigned Integer
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
 
     Returns:
         OPGraph: The graph containing the ir nodes representing the computation done in the input
