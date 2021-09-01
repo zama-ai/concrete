@@ -90,10 +90,7 @@ def _compile_numpy_function_into_op_graph_internal(
     if compilation_configuration.enable_topological_optimizations:
         # Fuse float operations to have int to int ArbitraryFunction
         if not check_op_graph_is_integer_program(op_graph):
-            fuse_float_operations(op_graph)
-
-            # Add the fused floats graph as an artifact
-            compilation_artifacts.add_operation_graph("fused-float-operations", op_graph)
+            fuse_float_operations(op_graph, compilation_artifacts)
 
     # TODO: To be removed once we support more than integers
     offending_non_integer_nodes: List[ir.IntermediateNode] = []
