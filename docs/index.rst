@@ -24,6 +24,7 @@ Homomorphic Development Kit's documentation
    dev/FLOAT-FUSING.md
    dev/DOCUMENTING.md
    dev/CONTRIBUTING.md
+   dev/RELEASING.md
 
 .. toctree::
    :maxdepth: 5

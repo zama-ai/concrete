@@ -1,0 +1,48 @@
+FROM ghcr.io/zama-ai/zamalang-compiler as builder
+
+RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
+    apt-get install --no-install-recommends -y \
+    python3.8 \
+    python-is-python3 && \
+    rm -rf /var/lib/apt/lists/* && \
+    python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
+    python3 -m pip install --no-cache-dir poetry
+
+WORKDIR /build
+COPY concrete ./concrete
+COPY pyproject.toml ./pyproject.toml
+
+RUN poetry build --format wheel
+
+FROM ghcr.io/zama-ai/zamalang-compiler
+
+RUN mkdir /pkg && mkdir /app
+WORKDIR /pkg
+COPY --from=builder /build/dist/*.whl .
+COPY docker/datascience_requirements.txt .
+COPY torch_requirements.txt .
+
+RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
+    apt-get install --no-install-recommends -y \
+    python3.8 \
+    python3.8-tk \
+    python-is-python3 \
+    graphviz* && \
+    rm -rf /var/lib/apt/lists/* && \
+    python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
+    echo "export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so" >> /root/.bashrc && \
+    echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
+    python3 -m pip install --no-cache-dir ./*.whl && \
+    python3 -m pip install --no-cache-dir -r torch_requirements.txt \
+    -f https://download.pytorch.org/whl/torch_stable.html && \
+    python3 -m pip install --no-cache-dir -r datascience_requirements.txt
+
+WORKDIR /app
+RUN printf "#!/bin/bash\npython3 -m jupyter notebook --ip=0.0.0.0 --allow-root --no-browser\n" \
+    > entry_point.sh && \
+    mkdir /data
+
+WORKDIR /data
+VOLUME [ "/data" ]
+
+CMD ["/bin/bash", "-l", "/app/entry_point.sh"]

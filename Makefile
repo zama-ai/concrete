@@ -176,3 +176,7 @@ benchmark:
 jupyter:
 	poetry run jupyter notebook --allow-root --no-browser --ip=0.0.0.0
 .PHONY: jupyter
+
+release_docker:
+	./docker/build_release_image.sh
+.PHONY: release_docker
