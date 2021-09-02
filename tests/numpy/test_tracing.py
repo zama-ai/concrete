@@ -280,7 +280,7 @@ def test_trace_numpy_supported_ufuncs(inputs, expected_output_node, expected_out
         assert op_graph.output_nodes[0].outputs[0] == expected_output_value
 
 
-def test_trace_hnumpy_ufuncs_not_supported():
+def test_trace_numpy_ufuncs_not_supported():
     """Testing a failure case of trace_numpy_function"""
     inputs = {"x": EncryptedScalar(Integer(128, is_signed=True))}
 

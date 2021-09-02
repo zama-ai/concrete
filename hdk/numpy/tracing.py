@@ -42,7 +42,7 @@ class NPTracer(BaseTracer):
             tracing_func = self.get_tracing_func_for_np_function(ufunc)
             assert (
                 len(kwargs) == 0
-            ), f"hnumpy does not support **kwargs currently for numpy ufuncs, ufunc: {ufunc}"
+            ), f"**kwargs are currently not supported for numpy ufuncs, ufunc: {ufunc}"
             return tracing_func(*input_tracers, **kwargs)
         raise NotImplementedError("Only __call__ method is supported currently")
 
