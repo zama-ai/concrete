@@ -69,10 +69,10 @@ llvm::cl::opt<std::string> jitFuncname(
     llvm::cl::desc("Name of the function to execute, default 'main'"),
     llvm::cl::init<std::string>("main"));
 
-llvm::cl::list<int>
+llvm::cl::list<uint64_t>
     jitArgs("jit-args",
             llvm::cl::desc("Value of arguments to pass to the main func"),
-            llvm::cl::value_desc("passname"), llvm::cl::ZeroOrMore);
+            llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore);
 
 llvm::cl::opt<bool> toLLVM("to-llvm", llvm::cl::desc("Compile to llvm and "),
                            llvm::cl::init<bool>(false));
