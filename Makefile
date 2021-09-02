@@ -161,6 +161,10 @@ notebook_timeout:
 	poetry run python ./script/nbmake_utils/notebook_test_timeout.py examples
 .PHONY: notebook_timeout
 
+pytest_nb:
+	poetry run pytest --nbmake examples/*.ipynb
+.PHONY: pytest_nb
+
 benchmark:
 	poetry run pytest benchmarks/ --benchmark-save=findings
 .PHONY: benchmark

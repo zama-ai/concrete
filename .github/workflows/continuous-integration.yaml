@@ -82,7 +82,7 @@ jobs:
         run: |
           make strip_nb
           make notebook_timeout
-          poetry run pytest --nbmake examples/*.ipynb
+          make pytest_nb
       - name: Test coverage
         id: coverage
         if: ${{ steps.pytest.outcome != 'skipped' && !cancelled() }}
