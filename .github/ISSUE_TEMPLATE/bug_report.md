@@ -30,6 +30,8 @@ print("Minimal POC to reproduce the bug")
 
 ## Artifacts
 
+Attach all generated artifacts here (generated in the `.artifacts` directory by default, see documentation for more detailed instructions).
+
 <details><summary>Logs or output</summary>
 <p>
 
