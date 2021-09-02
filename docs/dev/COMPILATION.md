@@ -11,20 +11,18 @@ However, one can already build interesting and impressing use cases, and more wi
 
 ```python
 # Import necessary HDK components
-from hdk.common.data_types.integers import UnsignedInteger
-from hdk.common.values import EncryptedScalar, EncryptedTensor
-from hdk.numpy.compile import compile_numpy_function
+import hdk.numpy as hnp
 
 # Define the function to homomorphize
 def f(x, y):
     return (2 * x) + y
 
 # Define the inputs of homomorphized function
-x = EncryptedScalar(UnsignedInteger(2))
-y = EncryptedScalar(UnsignedInteger(1))
+x = hnp.EncryptedScalar(hnp.UnsignedInteger(2))
+y = hnp.EncryptedScalar(hnp.UnsignedInteger(1))
 
 # Compile the function to its homomorphic equivalent
-engine = compile_numpy_function(
+engine = hnp.compile_numpy_function(
     f, {"x": x, "y": y},
     iter([(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)]),
 )

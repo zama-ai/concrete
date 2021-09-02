@@ -4,9 +4,7 @@ import itertools
 
 import pytest
 
-from hdk.common.data_types.integers import SignedInteger, UnsignedInteger
-from hdk.common.values import EncryptedScalar
-from hdk.numpy.compile import compile_numpy_function_into_op_graph
+import hdk.numpy as hnp
 
 
 @pytest.mark.parametrize(
@@ -14,13 +12,16 @@ from hdk.numpy.compile import compile_numpy_function_into_op_graph
     [
         pytest.param(
             lambda x: x + 42,
-            {"x": EncryptedScalar(SignedInteger(4))},
+            {"x": hnp.EncryptedScalar(hnp.SignedInteger(4))},
             ((-2, 2),),
             id="x + 42",
         ),
         pytest.param(
             lambda x, y: x + y,
-            {"x": EncryptedScalar(SignedInteger(4)), "y": EncryptedScalar(UnsignedInteger(4))},
+            {
+                "x": hnp.EncryptedScalar(hnp.SignedInteger(4)),
+                "y": hnp.EncryptedScalar(hnp.UnsignedInteger(4)),
+            },
             ((-2, 2), (20, 30)),
             id="x + y",
         ),
@@ -35,7 +36,7 @@ def test_compilation(benchmark, function, parameters, ranges):
 
     @benchmark
     def compilation():
-        compile_numpy_function_into_op_graph(function, parameters, dataset(ranges))
+        hnp.compile_numpy_function_into_op_graph(function, parameters, dataset(ranges))
 
 
 @pytest.mark.parametrize(
@@ -43,7 +44,7 @@ def test_compilation(benchmark, function, parameters, ranges):
     [
         pytest.param(
             lambda x: x + 420,
-            {"x": EncryptedScalar(SignedInteger(4))},
+            {"x": hnp.EncryptedScalar(hnp.SignedInteger(4))},
             ((-2, 2),),
             [
                 {0: -2},
@@ -54,7 +55,10 @@ def test_compilation(benchmark, function, parameters, ranges):
         ),
         pytest.param(
             lambda x, y: x + y,
-            {"x": EncryptedScalar(SignedInteger(4)), "y": EncryptedScalar(UnsignedInteger(4))},
+            {
+                "x": hnp.EncryptedScalar(hnp.SignedInteger(4)),
+                "y": hnp.EncryptedScalar(hnp.UnsignedInteger(4)),
+            },
             ((-2, 2), (20, 30)),
             [
                 {0: -2, 1: 25},
@@ -72,7 +76,7 @@ def test_evaluation(benchmark, function, parameters, ranges, inputs):
         for prod in itertools.product(*args):
             yield prod
 
-    graph = compile_numpy_function_into_op_graph(function, parameters, dataset(ranges))
+    graph = hnp.compile_numpy_function_into_op_graph(function, parameters, dataset(ranges))
 
     @benchmark
     def evaluation():
