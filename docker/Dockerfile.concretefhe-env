@@ -1,11 +1,13 @@
 FROM ghcr.io/zama-ai/zamalang-compiler
 
-RUN apt-get install --no-install-recommends -y \
+RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
+    apt-get install --no-install-recommends -y \
     python3.8 \
     python3.8-tk \
     python3.8-venv \
     python-is-python3 \
     git \
     graphviz* && \
+    rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry
