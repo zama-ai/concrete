@@ -67,7 +67,8 @@ def ApplyLookupTable : MidLFHE_Op<"apply_lookup_table"> {
         TensorOf<[AnyInteger]>:$l_cst,
         I32Attr:$k, I32Attr:$polynomialSize,
         I32Attr:$levelKS, I32Attr:$baseLogKS,
-        I32Attr:$levelBS, I32Attr:$baseLogBS);
+        I32Attr:$levelBS, I32Attr:$baseLogBS,
+        I32Attr:$outputSizeKS);
     let results = (outs GLWECipherTextType);
 
     let verifier = [{

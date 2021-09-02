@@ -63,6 +63,8 @@ createApplyLookupTableGLWEOpFromHLFHE(mlir::PatternRewriter rewriter,
       mlir::NamedAttribute(mlir::Identifier::get("baseLogKS", context), unset),
       mlir::NamedAttribute(mlir::Identifier::get("levelBS", context), unset),
       mlir::NamedAttribute(mlir::Identifier::get("baseLogBS", context), unset),
+      mlir::NamedAttribute(mlir::Identifier::get("outputSizeKS", context),
+                           unset),
   };
   auto eint =
       result.getType().cast<mlir::zamalang::HLFHE::EncryptedIntegerType>();

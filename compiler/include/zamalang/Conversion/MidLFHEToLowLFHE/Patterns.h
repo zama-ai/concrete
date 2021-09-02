@@ -174,7 +174,7 @@ mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
                       mlir::IntegerAttr polynomialSize,
                       mlir::IntegerAttr levelKS, mlir::IntegerAttr baseLogKS,
                       mlir::IntegerAttr levelBS, mlir::IntegerAttr baseLogBS,
-                      mlir::OpResult result) {
+                      mlir::IntegerAttr outputSizeKS, mlir::OpResult result) {
   // fill the the table in the GLWE accumulator
   mlir::Value accumulator =
       rewriter
@@ -189,9 +189,9 @@ mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
   mlir::SmallVector<mlir::NamedAttribute, 6> ksAttrs{
       mlir::NamedAttribute(
           mlir::Identifier::get("inputLweSize", rewriter.getContext()), k),
-      // TODO: get the actual output size
       mlir::NamedAttribute(
-          mlir::Identifier::get("outputLweSize", rewriter.getContext()), k),
+          mlir::Identifier::get("outputLweSize", rewriter.getContext()),
+          outputSizeKS),
       mlir::NamedAttribute(
           mlir::Identifier::get("level", rewriter.getContext()), levelKS),
       mlir::NamedAttribute(

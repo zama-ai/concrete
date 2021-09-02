@@ -462,6 +462,8 @@ struct LowLFHEBootstrapLweOpPattern
     auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
                                                    rewriter.getIndexAttr(0));
     // allocate the result lwe ciphertext
+    // TODO: use right value for output lwe size
+    // LweSize output_lwe_size = { (glwe_size._0 -1) * poly_size._0 + 1}
     auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(), mlir::IntegerAttr::get(
                          mlir::IntegerType::get(rewriter.getContext(), 32),

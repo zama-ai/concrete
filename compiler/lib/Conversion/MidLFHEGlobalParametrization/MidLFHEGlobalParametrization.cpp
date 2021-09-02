@@ -114,6 +114,8 @@ struct MidLFHEApplyLookupTableParametrizationPattern
                              rewriter.getI32IntegerAttr(v0Parameter.brLevel)),
         mlir::NamedAttribute(rewriter.getIdentifier("baseLogBS"),
                              rewriter.getI32IntegerAttr(v0Parameter.brLogBase)),
+        mlir::NamedAttribute(rewriter.getIdentifier("outputSizeKS"),
+                             rewriter.getI32IntegerAttr(v0Parameter.nSmall)),
     };
 
     rewriter.replaceOpWithNewOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
