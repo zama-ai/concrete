@@ -195,8 +195,7 @@ processInputBuffer(mlir::MLIRContext &context,
               << ", brLevel: " << fheContext.parameter.brLevel
               << ", brLogBase: " << fheContext.parameter.brLogBase
               << ", ksLevel: " << fheContext.parameter.ksLevel
-              << ", polynomialSize: " << fheContext.parameter.ksLogBase
-              << "}\n");
+              << ", ksLogBase: " << fheContext.parameter.ksLogBase << "}\n");
 
   // Generate the keySet
   std::unique_ptr<mlir::zamalang::KeySet> keySet;
