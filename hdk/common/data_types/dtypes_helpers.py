@@ -31,11 +31,7 @@ def value_is_encrypted_scalar_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is an encrypted ScalarValue of type Integer
     """
-    return (
-        isinstance(value_to_check, ScalarValue)
-        and value_to_check.is_encrypted
-        and isinstance(value_to_check.data_type, INTEGER_TYPES)
-    )
+    return value_is_scalar_integer(value_to_check) and value_to_check.is_encrypted
 
 
 def value_is_encrypted_scalar_unsigned_integer(value_to_check: BaseValue) -> bool:
@@ -63,11 +59,7 @@ def value_is_clear_scalar_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is a clear ScalarValue of type Integer
     """
-    return (
-        isinstance(value_to_check, ScalarValue)
-        and value_to_check.is_clear
-        and isinstance(value_to_check.data_type, INTEGER_TYPES)
-    )
+    return value_is_scalar_integer(value_to_check) and value_to_check.is_clear
 
 
 def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
@@ -93,11 +85,7 @@ def value_is_encrypted_tensor_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is an encrypted TensorValue of type Integer
     """
-    return (
-        isinstance(value_to_check, TensorValue)
-        and value_to_check.is_encrypted
-        and isinstance(value_to_check.data_type, INTEGER_TYPES)
-    )
+    return value_is_tensor_integer(value_to_check) and value_to_check.is_encrypted
 
 
 def value_is_encrypted_tensor_unsigned_integer(value_to_check: BaseValue) -> bool:
@@ -125,11 +113,7 @@ def value_is_clear_tensor_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is a clear TensorValue of type Integer
     """
-    return (
-        isinstance(value_to_check, TensorValue)
-        and value_to_check.is_clear
-        and isinstance(value_to_check.data_type, INTEGER_TYPES)
-    )
+    return value_is_tensor_integer(value_to_check) and value_to_check.is_clear
 
 
 def value_is_tensor_integer(value_to_check: BaseValue) -> bool:
