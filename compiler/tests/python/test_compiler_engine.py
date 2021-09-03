@@ -15,6 +15,17 @@ from zamalang import CompilerEngine
             (5, 7),
             12,
         ),
+    ],
+)
+def test_compile_and_run(mlir_input, args, expected_result):
+    engine = CompilerEngine()
+    engine.compile_fhe(mlir_input)
+    assert engine.run(*args) == expected_result
+
+
+@pytest.mark.parametrize(
+    "mlir_input, args, expected_result, tab_size",
+    [
         (
             """
             func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
@@ -26,10 +37,11 @@ from zamalang import CompilerEngine
             """,
             (5,),
             5,
+            128,
         ),
     ],
 )
-def test_compile_and_run(mlir_input, args, expected_result):
+def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
     engine = CompilerEngine()
     engine.compile_fhe(mlir_input)
-    assert engine.run(*args) == expected_result
+    assert abs(engine.run(*args) - expected_result) / tab_size < 0.1
