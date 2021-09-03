@@ -162,7 +162,7 @@ def ConstCleartextOp : LowLFHE_Op<"const_cleartext", [ConstantLike]> {
 }
 
 def GlweFromTable : LowLFHE_Op<"glwe_from_table"> {
-    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$k);
+    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$k, I32Attr:$p);
     let results = (outs GlweCiphertextType:$result);
 }
 

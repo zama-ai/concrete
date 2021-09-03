@@ -175,12 +175,18 @@ mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
                       mlir::IntegerAttr levelKS, mlir::IntegerAttr baseLogKS,
                       mlir::IntegerAttr levelBS, mlir::IntegerAttr baseLogBS,
                       mlir::IntegerAttr outputSizeKS, mlir::OpResult result) {
+  // convert result type
+  GLWECipherTextType glwe_type = result.getType().cast<GLWECipherTextType>();
+  LweCiphertextType lwe_type =
+      convertTypeGLWEToLWE(rewriter.getContext(), glwe_type);
   // fill the the table in the GLWE accumulator
+  mlir::IntegerAttr precision = mlir::IntegerAttr::get(
+      mlir::IntegerType::get(rewriter.getContext(), 32), glwe_type.getP());
   mlir::Value accumulator =
       rewriter
           .create<mlir::zamalang::LowLFHE::GlweFromTable>(
               loc, LowLFHE::GlweCiphertextType::get(rewriter.getContext()),
-              table, polynomialSize, k)
+              table, polynomialSize, k, precision)
           .result();
 
   // keyswitch
@@ -204,10 +210,6 @@ mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
               ksAttrs)
           .result();
 
-  // convert result type
-  GLWECipherTextType glwe_type = result.getType().cast<GLWECipherTextType>();
-  LweCiphertextType lwe_type =
-      convertTypeGLWEToLWE(rewriter.getContext(), glwe_type);
   // bootstrap operation
   mlir::SmallVector<mlir::Value, 2> bsArgs{keyswitched, accumulator};
   mlir::SmallVector<mlir::NamedAttribute, 6> bsAttrs{

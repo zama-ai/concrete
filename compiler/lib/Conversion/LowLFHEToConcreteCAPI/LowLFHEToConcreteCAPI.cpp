@@ -266,7 +266,8 @@ struct GlweFromTableOpPattern
            //  mlir::UnrankedTensorType::get(
            //      mlir::IntegerType::get(rewriter.getContext(), 64)),
            op->getOperandTypes().front(),
-           mlir::IntegerType::get(rewriter.getContext(), 64)},
+           mlir::IntegerType::get(rewriter.getContext(), 64),
+           mlir::IntegerType::get(rewriter.getContext(), 32)},
           {mlir::zamalang::LowLFHE::ForeignPlaintextListType::get(
               rewriter.getContext())});
       if (insertForwardDeclaration(
@@ -348,8 +349,10 @@ struct GlweFromTableOpPattern
         op.getLoc(), rewriter.getIntegerAttr(
                          mlir::IntegerType::get(rewriter.getContext(), 64),
                          rankedTensorType.getDimSize(0)));
+    auto precisionOp =
+        rewriter.create<mlir::ConstantOp>(op.getLoc(), op->getAttr("p"));
     mlir::SmallVector<mlir::Value> ForeignPlaintextListOperands{
-        errOp, op->getOperand(0), sizeOp};
+        errOp, op->getOperand(0), sizeOp, precisionOp};
     auto foreignPlaintextListOp = rewriter.create<mlir::CallOp>(
         op.getLoc(), "runtime_foreign_plaintext_list_u64",
         mlir::zamalang::LowLFHE::ForeignPlaintextListType::get(
