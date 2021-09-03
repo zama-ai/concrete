@@ -14,6 +14,7 @@ target_link_libraries(zamacompiler
   LowLFHEDialect
   MidLFHEDialect
   HLFHEDialect
+  HLFHEDialectAnalysis
 
   MLIRIR
   MLIRLLVMIR
