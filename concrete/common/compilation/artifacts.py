@@ -130,11 +130,11 @@ class CompilationArtifacts:
             shutil.rmtree(output_directory)
         output_directory.mkdir()
 
-        with open(output_directory.joinpath("environment.txt"), "w") as f:
+        with open(output_directory.joinpath("environment.txt"), "w", encoding="utf-8") as f:
             f.write(f"{platform.platform()} {platform.version()}\n")
             f.write(f"Python {platform.python_version()}\n")
 
-        with open(output_directory.joinpath("requirements.txt"), "w") as f:
+        with open(output_directory.joinpath("requirements.txt"), "w", encoding="utf-8") as f:
             # example `pip list` output
 
             # Package                       Version
@@ -166,11 +166,11 @@ class CompilationArtifacts:
                 f.write(f"{name}=={version}\n")
 
         if self.source_code_of_the_function_to_compile is not None:
-            with open(output_directory.joinpath("function.txt"), "w") as f:
+            with open(output_directory.joinpath("function.txt"), "w", encoding="utf-8") as f:
                 f.write(self.source_code_of_the_function_to_compile)
 
         if len(self.parameters_of_the_function_to_compile) > 0:
-            with open(output_directory.joinpath("parameters.txt"), "w") as f:
+            with open(output_directory.joinpath("parameters.txt"), "w", encoding="utf-8") as f:
                 for name, parameter in self.parameters_of_the_function_to_compile.items():
                     f.write(f"{name} :: {parameter}\n")
 
@@ -182,12 +182,12 @@ class CompilationArtifacts:
         textual_representations = self.textual_representations_of_operation_graphs.items()
         for index, (name, representation) in enumerate(textual_representations):
             identifier = CompilationArtifacts._identifier(index, name)
-            with open(output_directory.joinpath(f"{identifier}.txt"), "w") as f:
+            with open(output_directory.joinpath(f"{identifier}.txt"), "w", encoding="utf-8") as f:
                 f.write(f"{representation}\n")
 
         if self.bounds_of_the_final_operation_graph is not None:
             assert self.final_operation_graph is not None
-            with open(output_directory.joinpath("bounds.txt"), "w") as f:
+            with open(output_directory.joinpath("bounds.txt"), "w", encoding="utf-8") as f:
                 # TODO:
                 #   if nx.topological_sort is not deterministic between calls,
                 #   the lines below will not work properly
@@ -199,7 +199,7 @@ class CompilationArtifacts:
 
         if self.mlir_of_the_final_operation_graph is not None:
             assert self.final_operation_graph is not None
-            with open(output_directory.joinpath("mlir.txt"), "w") as f:
+            with open(output_directory.joinpath("mlir.txt"), "w", encoding="utf-8") as f:
                 f.write(self.mlir_of_the_final_operation_graph)
 
     @staticmethod

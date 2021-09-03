@@ -185,7 +185,9 @@ def compile_numpy_function_into_op_graph(
 
         if compilation_configuration.dump_artifacts_on_unexpected_failures:
             compilation_artifacts.export()
-            with open(compilation_artifacts.output_directory.joinpath("traceback.txt"), "w") as f:
+
+            traceback_path = compilation_artifacts.output_directory.joinpath("traceback.txt")
+            with open(traceback_path, "w", encoding="utf-8") as f:
                 f.write(traceback.format_exc())
 
         raise
@@ -304,7 +306,9 @@ def compile_numpy_function(
 
         if compilation_configuration.dump_artifacts_on_unexpected_failures:
             compilation_artifacts.export()
-            with open(compilation_artifacts.output_directory.joinpath("traceback.txt"), "w") as f:
+
+            traceback_path = compilation_artifacts.output_directory.joinpath("traceback.txt")
+            with open(traceback_path, "w", encoding="utf-8") as f:
                 f.write(traceback.format_exc())
 
         raise

@@ -105,7 +105,7 @@ def create_graph_from_output_tracers(
 
     while current_tracers:
         # use dict as ordered set
-        next_tracers: Dict[BaseTracer, None] = dict()
+        next_tracers: Dict[BaseTracer, None] = {}
         for tracer in current_tracers:
             current_ir_node = tracer.traced_computation
             graph.add_node(current_ir_node)

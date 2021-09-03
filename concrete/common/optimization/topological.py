@@ -222,7 +222,7 @@ def find_float_subgraph_with_unique_terminal_node(
     float_subgraph_start_nodes: Set[ir.IntermediateNode] = set()
     subgraph_all_nodes: Set[ir.IntermediateNode] = set()
     while current_nodes:
-        next_nodes: Dict[ir.IntermediateNode, None] = dict()
+        next_nodes: Dict[ir.IntermediateNode, None] = {}
         for node in current_nodes:
             subgraph_all_nodes.add(node)
             predecessors = nx_graph.pred[node]
