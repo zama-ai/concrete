@@ -213,8 +213,8 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
             (4,),
             # Remark that, when you do the dot of tensors of 4 values between 0 and 3,
             # you can get a maximal value of 4*3*3 = 36, ie something on 6 bits
-            "%0 = x                                   # Integer<unsigned, 2 bits>"
-            "\n%1 = y                                   # Integer<unsigned, 2 bits>"
+            "%0 = x                                   # Integer<unsigned, 6 bits>"
+            "\n%1 = y                                   # Integer<unsigned, 6 bits>"
             "\n%2 = Dot(0, 1)                           # Integer<unsigned, 6 bits>"
             "\nreturn(%2)\n",
         ),
