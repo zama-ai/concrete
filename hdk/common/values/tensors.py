@@ -35,6 +35,10 @@ class TensorValue(BaseValue):
             and super().__eq__(other)
         )
 
+    def __str__(self) -> str:
+        encrypted_str = "Encrypted" if self._is_encrypted else "Clear"
+        return f"{encrypted_str}Tensor<{str(self.data_type)}, shape={self.shape}>"
+
     @property
     def shape(self) -> Tuple[int, ...]:
         """The TensorValue shape property.

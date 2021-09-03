@@ -17,8 +17,7 @@ class BaseValue(ABC):
         self._is_encrypted = is_encrypted
 
     def __repr__(self) -> str:  # pragma: no cover
-        encrypted_str = "Encrypted" if self._is_encrypted else "Clear"
-        return f"{encrypted_str}{self.__class__.__name__}<{self.data_type!r}>"
+        return str(self)
 
     @abstractmethod
     def __eq__(self, other: object) -> bool:

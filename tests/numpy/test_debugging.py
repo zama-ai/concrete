@@ -221,9 +221,9 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
                 EncryptedScalar(Integer(64, is_signed=False)),
                 EncryptedScalar(Integer(32, is_signed=True)),
             ),
-            "%0 = x                                   # Integer<unsigned, 64 bits>"
-            "\n%1 = y                                   # Integer<signed, 32 bits>"
-            "\n%2 = Add(0, 1)                           # Integer<signed, 65 bits>"
+            "%0 = x                                   # EncryptedScalar<Integer<unsigned, 64 bits>>"
+            "\n%1 = y                                   # EncryptedScalar<Integer<signed, 32 bits>>"
+            "\n%2 = Add(0, 1)                           # EncryptedScalar<Integer<signed, 65 bits>>"
             "\nreturn(%2)\n",
         ),
         (
@@ -232,9 +232,12 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
                 EncryptedScalar(Integer(17, is_signed=False)),
                 EncryptedScalar(Integer(23, is_signed=False)),
             ),
-            "%0 = x                                   # Integer<unsigned, 17 bits>"
-            "\n%1 = y                                   # Integer<unsigned, 23 bits>"
-            "\n%2 = Mul(0, 1)                           # Integer<unsigned, 23 bits>"
+            "%0 = x                                   "
+            "# EncryptedScalar<Integer<unsigned, 17 bits>>"
+            "\n%1 = y                                   "
+            "# EncryptedScalar<Integer<unsigned, 23 bits>>"
+            "\n%2 = Mul(0, 1)                           "
+            "# EncryptedScalar<Integer<unsigned, 23 bits>>"
             "\nreturn(%2)\n",
         ),
     ],
@@ -259,27 +262,38 @@ def test_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
             {"x": EncryptedScalar(Integer(2, is_signed=False))},
-            "%0 = x                                   # Integer<unsigned, 2 bits>"
-            "\n%1 = TLU(0)                              # Integer<unsigned, 4 bits>"
+            "%0 = x                                   "
+            "# EncryptedScalar<Integer<unsigned, 2 bits>>"
+            "\n%1 = TLU(0)                              "
+            "# EncryptedScalar<Integer<unsigned, 4 bits>>"
             "\nreturn(%1)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
             {"x": EncryptedScalar(Integer(2, is_signed=False))},
-            "%0 = x                                   # Integer<unsigned, 2 bits>"
-            "\n%1 = Constant(4)                         # Integer<unsigned, 3 bits>"
-            "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
-            "\n%3 = TLU(2)                              # Integer<unsigned, 2 bits>"
+            "%0 = x                                   "
+            "# EncryptedScalar<Integer<unsigned, 2 bits>>"
+            "\n%1 = Constant(4)                         "
+            "# ClearScalar<Integer<unsigned, 3 bits>>"
+            "\n%2 = Add(0, 1)                           "
+            "# EncryptedScalar<Integer<unsigned, 3 bits>>"
+            "\n%3 = TLU(2)                              "
+            "# EncryptedScalar<Integer<unsigned, 2 bits>>"
             "\nreturn(%3)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[LOOKUP_TABLE_FROM_3B_TO_2B[x + 4]],
             {"x": EncryptedScalar(Integer(2, is_signed=False))},
-            "%0 = x                                   # Integer<unsigned, 2 bits>"
-            "\n%1 = Constant(4)                         # Integer<unsigned, 3 bits>"
-            "\n%2 = Add(0, 1)                           # Integer<unsigned, 3 bits>"
-            "\n%3 = TLU(2)                              # Integer<unsigned, 2 bits>"
-            "\n%4 = TLU(3)                              # Integer<unsigned, 4 bits>"
+            "%0 = x                                   "
+            "# EncryptedScalar<Integer<unsigned, 2 bits>>"
+            "\n%1 = Constant(4)                         "
+            "# ClearScalar<Integer<unsigned, 3 bits>>"
+            "\n%2 = Add(0, 1)                           "
+            "# EncryptedScalar<Integer<unsigned, 3 bits>>"
+            "\n%3 = TLU(2)                              "
+            "# EncryptedScalar<Integer<unsigned, 2 bits>>"
+            "\n%4 = TLU(3)                              "
+            "# EncryptedScalar<Integer<unsigned, 4 bits>>"
             "\nreturn(%4)\n",
         ),
     ],
