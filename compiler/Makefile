@@ -4,14 +4,16 @@ build:
 	-DMLIR_DIR=${LLVM_PROJECT}/build/lib/cmake/mlir \
 	-DCONCRETE_FFI_RELEASE=${CONCRETE_PROJECT}/target/release
 
+build-end-to-end-jit:
+	make -C build/ end_to_end_jit_test
+
 zamacompiler:
 	make -C build/ zamacompiler
 
 test-check: zamacompiler
 	${LLVM_PROJECT}/build/bin/llvm-lit -v tests/
 
-test-end-to-end-jit:
-	make -C build/ end_to_end_jit_test
+test-end-to-end-jit: build-end-to-end-jit
 	./build/bin/end_to_end_jit_test
 
 test: test-check test-end-to-end-jit
