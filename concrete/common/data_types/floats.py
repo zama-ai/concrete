@@ -13,6 +13,7 @@ class Float(base.BaseDataType):
     bit_width: int
 
     def __init__(self, bit_width: int) -> None:
+        super().__init__()
         assert bit_width in (32, 64), "Only 32 and 64 bits floats are supported"
         self.bit_width = bit_width
 

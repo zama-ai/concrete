@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type
 
+from loguru import logger
+
 from ..data_types.base import BaseDataType
 from ..data_types.dtypes_helpers import (
     get_base_value_for_python_constant_data,
@@ -232,6 +234,8 @@ class ArbitraryFunction(IntermediateNode):
     def get_table(self) -> List[Any]:
         """Get the table for the current input value of this ArbitraryFunction.
 
+        This function only works if the ArbitraryFunction input value is an unsigned Integer.
+
         Returns:
             List[Any]: The table.
         """
@@ -243,11 +247,18 @@ class ArbitraryFunction(IntermediateNode):
             0
         ].data_type.is_signed, "get_table only works for an unsigned Integer input"
 
+        type_constructor = self.inputs[0].data_type.underlying_type_constructor
+        if type_constructor is None:
+            logger.info(
+                f"{self.__class__.__name__} input data type constructor was None, defaulting to int"
+            )
+            type_constructor = int
+
         min_input_range = self.inputs[0].data_type.min_value()
         max_input_range = self.inputs[0].data_type.max_value() + 1
 
         table = [
-            self.evaluate({0: input_value})
+            self.evaluate({0: type_constructor(input_value)})
             for input_value in range(min_input_range, max_input_range)
         ]
 

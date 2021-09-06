@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Type, Union
 
 import numpy
 from numpy.typing import DTypeLike
@@ -12,6 +12,7 @@ from ..common.data_types.dtypes_helpers import (
     BASE_DATA_TYPES,
     get_base_data_type_for_python_constant_data,
     get_base_value_for_python_constant_data,
+    get_type_constructor_for_python_constant_data,
 )
 from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
@@ -193,3 +194,24 @@ def get_numpy_function_output_dtype(
     numpy.seterr(**old_numpy_err_settings)
 
     return [output.dtype for output in outputs]
+
+
+def get_type_constructor_for_numpy_or_python_constant_data(constant_data: Any):
+    """Get the constructor for the numpy scalar underlying dtype or python dtype.
+
+    Args:
+        constant_data (Any): The data for which we want to determine the type constructor.
+    """
+
+    assert isinstance(
+        constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
+    ), f"Unsupported constant data of type {type(constant_data)}"
+
+    scalar_constructor: Type
+
+    if isinstance(constant_data, (numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)):
+        scalar_constructor = constant_data.dtype.type
+    else:
+        scalar_constructor = get_type_constructor_for_python_constant_data(constant_data)
+
+    return scalar_constructor

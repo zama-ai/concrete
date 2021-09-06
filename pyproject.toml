@@ -14,6 +14,7 @@ matplotlib = "^3.4.2"
 numpy = "^1.21.1"
 pygraphviz = "^1.7"
 Pillow = "^8.3.1"
+loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.2"

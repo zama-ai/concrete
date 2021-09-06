@@ -336,3 +336,12 @@ def get_base_value_for_python_constant_data(
     """
     constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
     return partial(ScalarValue, data_type=constant_data_type)
+
+
+def get_type_constructor_for_python_constant_data(constant_data: Union[int, float]):
+    """Get the constructor for the passed python constant data.
+
+    Args:
+        constant_data (Any): The data for which we want to determine the type constructor.
+    """
+    return type(constant_data)

@@ -1,12 +1,15 @@
 """Code to wrap and make manipulating networkx graphs easier."""
 
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Type, Union
 
 import networkx as nx
 
 from .data_types.base import BaseDataType
-from .data_types.dtypes_helpers import get_base_data_type_for_python_constant_data
+from .data_types.dtypes_helpers import (
+    get_base_data_type_for_python_constant_data,
+    get_type_constructor_for_python_constant_data,
+)
 from .data_types.floats import Float
 from .data_types.integers import Integer, make_integer_to_hold
 from .representation import intermediate as ir
@@ -124,8 +127,9 @@ class OPGraph:
                 curr_inputs = {}
                 for pred_node in self.graph.pred[node]:
                     edges = self.graph.get_edge_data(pred_node, node)
-                    for edge in edges.values():
-                        curr_inputs[edge["input_idx"]] = node_results[pred_node]
+                    curr_inputs.update(
+                        {edge["input_idx"]: node_results[pred_node] for edge in edges.values()}
+                    )
                 node_results[node] = node.evaluate(curr_inputs)
             else:
                 node_results[node] = node.evaluate({0: inputs[node.program_input_idx]})
@@ -138,6 +142,9 @@ class OPGraph:
         get_base_data_type_for_constant_data: Callable[
             [Any], BaseDataType
         ] = get_base_data_type_for_python_constant_data,
+        get_type_constructor_for_constant_data: Callable[
+            ..., Type
+        ] = get_type_constructor_for_python_constant_data,
     ):
         """Update values with bounds.
 
@@ -147,10 +154,13 @@ class OPGraph:
         Args:
             node_bounds (dict): Dictionary with nodes as keys, holding dicts with a 'min' and 'max'
                 keys. Those bounds will be taken as the data range to be represented, per node.
-            get_base_data_type_for_constant_data (Callable[ [Type], BaseDataType ], optional): This
+            get_base_data_type_for_constant_data (Callable[ [Any], BaseDataType ], optional): This
                 is a callback function to convert data encountered during value updates to
                 BaseDataType. This allows to manage data coming from foreign frameworks without
                 specialising OPGraph. Defaults to get_base_data_type_for_python_constant_data.
+            get_type_constructor_for_constant_data (Callable[ ..., Type ], optional): This is a
+                callback function to determine the type constructor of the data encountered while
+                updating the graph bounds. Defaults to get_type_constructor_python_constant_data.
         """
         node: ir.IntermediateNode
 
@@ -164,6 +174,16 @@ class OPGraph:
             min_data_type = get_base_data_type_for_constant_data(min_bound)
             max_data_type = get_base_data_type_for_constant_data(max_bound)
 
+            min_data_type_constructor = get_type_constructor_for_constant_data(min_bound)
+            max_data_type_constructor = get_type_constructor_for_constant_data(max_bound)
+
+            assert max_data_type_constructor == min_data_type_constructor, (
+                f"Got two different type constructors for min and max bound: "
+                f"{min_data_type_constructor}, {max_data_type_constructor}"
+            )
+
+            data_type_constructor = max_data_type_constructor
+
             if not isinstance(node, ir.Input):
                 for output_value in node.outputs:
                     if isinstance(min_data_type, Integer) and isinstance(max_data_type, Integer):
@@ -171,7 +191,15 @@ class OPGraph:
                             (min_bound, max_bound), force_signed=False
                         )
                     else:
+                        assert isinstance(min_data_type, Float) and isinstance(
+                            max_data_type, Float
+                        ), (
+                            "min_bound and max_bound have different common types, "
+                            "this should never happen.\n"
+                            f"min_bound: {min_data_type}, max_bound: {max_data_type}"
+                        )
                         output_value.data_type = Float(64)
+                    output_value.data_type.underlying_type_constructor = data_type_constructor
             else:
                 # Currently variable inputs are only allowed to be integers
                 assert isinstance(min_data_type, Integer) and isinstance(max_data_type, Integer), (
@@ -181,6 +209,8 @@ class OPGraph:
                 node.inputs[0].data_type = make_integer_to_hold(
                     (min_bound, max_bound), force_signed=False
                 )
+                node.inputs[0].data_type.underlying_type_constructor = data_type_constructor
+
                 node.outputs[0] = deepcopy(node.inputs[0])
 
             # TODO: #57 manage multiple outputs from a node, probably requires an output_idx when

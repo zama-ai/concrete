@@ -19,7 +19,10 @@ from ..common.optimization.topological import fuse_float_operations
 from ..common.representation import intermediate as ir
 from ..common.values import BaseValue
 from ..numpy.tracing import trace_numpy_function
-from .np_dtypes_helpers import get_base_data_type_for_numpy_or_python_constant_data
+from .np_dtypes_helpers import (
+    get_base_data_type_for_numpy_or_python_constant_data,
+    get_type_constructor_for_numpy_or_python_constant_data,
+)
 
 
 def numpy_max_func(lhs: Any, rhs: Any) -> Any:
@@ -115,7 +118,9 @@ def _compile_numpy_function_into_op_graph_internal(
 
     # Update the graph accordingly: after that, we have the compilable graph
     op_graph.update_values_with_bounds(
-        node_bounds, get_base_data_type_for_numpy_or_python_constant_data
+        node_bounds,
+        get_base_data_type_for_numpy_or_python_constant_data,
+        get_type_constructor_for_numpy_or_python_constant_data,
     )
 
     # Add the initial graph as an artifact
