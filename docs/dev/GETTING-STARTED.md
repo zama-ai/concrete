@@ -160,7 +160,13 @@ After you finish your work, you can leave the docker by using the `exit` command
 
 ## Contributing
 
-Now, you have a working environment, and you know what is where in the project. You are ready to contribute! Well, not so fast let's go over some other important things that you need to be careful about.
+Now, you have a working environment, and you know what is where in the project. 
+
+There are two ways to contribute to HDK:
+- you can open issues to report bugs, typos and suggest ideas
+- you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
+
+Let's go over some other important things that you need to be careful about.
 
 ### Creating a new branch
 
@@ -205,6 +211,8 @@ git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
 
 ### Before creating pull request
+
+We remind that only official contributors can send pull requests. To become such an official contributor, please email hello@zama.ai.
 
 You should rebase on top of `main` branch before you create your pull request. This is to avoid merge commits and have a clean git log. After you commit your changes to your new branch, you can use the following commands to rebase.
 
