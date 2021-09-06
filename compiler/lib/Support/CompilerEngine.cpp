@@ -67,7 +67,7 @@ CompilerEngine::buildArgument() {
   if (keySet.get() == nullptr) {
     return llvm::make_error<llvm::StringError>(
         "CompilerEngine::buildArgument: invalid engine state, the keySet has "
-        "not be generated",
+        "not been generated",
         llvm::inconvertibleErrorCode());
   }
   return JITLambda::Argument::create(*keySet);
