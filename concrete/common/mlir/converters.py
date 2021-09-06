@@ -1,4 +1,4 @@
-"""Converter functions from HDKIR to MLIR.
+"""Converter functions from the common IR to MLIR.
 
 Converter functions all have the same signature `converter(node, preds, ir_to_mlir_node, ctx)`
 - `node`: IntermediateNode to be converted

@@ -6,10 +6,10 @@ from typing import Callable, Optional, Tuple, Union
 
 import pytest
 
-from hdk.common.data_types.base import BaseDataType
-from hdk.common.data_types.floats import Float
-from hdk.common.data_types.integers import Integer
-from hdk.common.values import ClearTensor, EncryptedTensor, TensorValue
+from concrete.common.data_types.base import BaseDataType
+from concrete.common.data_types.floats import Float
+from concrete.common.data_types.integers import Integer
+from concrete.common.values import ClearTensor, EncryptedTensor, TensorValue
 
 
 class DummyDtype(BaseDataType):

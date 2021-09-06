@@ -1,8 +1,8 @@
 # Compilation Pipeline In Depth
 
-## What is HDK?
+## What is concretefhe?
 
-`HDK` is a framework for developing homomorphic applications.
+`concretefhe` is the python API of the `concrete` framework for developing homomorphic applications.
 One of its essential functionalities is to transform Python functions to their `MLIR` equivalent.
 Unfortunately, not all python functions can be converted due to the limits of current product (we are in the alpha stage), or sometimes due to inherent restrictions of FHE itself.
 However, one can already build interesting and impressing use cases, and more will be available in further versions of the framework.
@@ -10,8 +10,8 @@ However, one can already build interesting and impressing use cases, and more wi
 ## How can I use it?
 
 ```python
-# Import necessary HDK components
-import hdk.numpy as hnp
+# Import necessary concrete components
+import concrete.numpy as hnp
 
 # Define the function to homomorphize
 def f(x, y):
@@ -104,7 +104,7 @@ Tracing is also responsible for indicating whether the values in the node would 
 
 The goal of topological transforms is to make more functions compilable.
 
-With the current version of `HDK` floating point inputs and floating point outputs are not supported.
+With the current version of `concrete` floating point inputs and floating point outputs are not supported.
 However, if the floating points operations are intermediate operations, they can sometimes be fused into a single table lookup from integer to integer thanks to some specific transforms.
 
 Let's take a closer look at the transforms we perform today.

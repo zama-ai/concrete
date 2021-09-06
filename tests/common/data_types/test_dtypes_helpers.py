@@ -2,16 +2,16 @@
 
 import pytest
 
-from hdk.common.data_types.base import BaseDataType
-from hdk.common.data_types.dtypes_helpers import (
+from concrete.common.data_types.base import BaseDataType
+from concrete.common.data_types.dtypes_helpers import (
     find_type_to_hold_both_lossy,
     mix_values_determine_holding_dtype,
     value_is_encrypted_scalar_integer,
     value_is_encrypted_scalar_unsigned_integer,
 )
-from hdk.common.data_types.floats import Float
-from hdk.common.data_types.integers import Integer
-from hdk.common.values import (
+from concrete.common.data_types.floats import Float
+from concrete.common.data_types.integers import Integer
+from concrete.common.values import (
     BaseValue,
     ClearScalar,
     ClearTensor,

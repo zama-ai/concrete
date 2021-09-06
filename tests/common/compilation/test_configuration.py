@@ -5,10 +5,10 @@ from inspect import signature
 import numpy
 import pytest
 
-from hdk.common.compilation import CompilationConfiguration
-from hdk.common.data_types.integers import Integer
-from hdk.common.values import EncryptedScalar
-from hdk.numpy.compile import compile_numpy_function_into_op_graph
+from concrete.common.compilation import CompilationConfiguration
+from concrete.common.data_types.integers import Integer
+from concrete.common.values import EncryptedScalar
+from concrete.numpy.compile import compile_numpy_function_into_op_graph
 
 
 def no_fuse(x):

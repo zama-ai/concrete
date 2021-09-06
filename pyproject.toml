@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "hdk"
+name = "concretefhe"
 version = "0.1.0"
-description = "Zama Homomorphic Development frameworK"
-authors = ["Arthur Meyre <arthur.meyre@zama.ai>"]
+description = "Concrete Framework Python API"
+authors = ["A. Meyre", "U. Sahin", "A. Benaissa", "B. Chevallier", "Zama Team"]
+packages = [
+    { include = "concrete" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.7,<3.10"

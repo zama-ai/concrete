@@ -3,10 +3,10 @@
 import tempfile
 from pathlib import Path
 
-from hdk.common.compilation import CompilationArtifacts
-from hdk.common.data_types.integers import UnsignedInteger
-from hdk.common.values import EncryptedScalar
-from hdk.numpy.compile import compile_numpy_function
+from concrete.common.compilation import CompilationArtifacts
+from concrete.common.data_types.integers import UnsignedInteger
+from concrete.common.values import EncryptedScalar
+from concrete.numpy.compile import compile_numpy_function
 
 
 def test_artifacts_export():

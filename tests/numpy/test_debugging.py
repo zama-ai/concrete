@@ -3,11 +3,11 @@
 import numpy
 import pytest
 
-from hdk.common.data_types.integers import Integer
-from hdk.common.debugging import draw_graph, get_printable_graph
-from hdk.common.extensions.table import LookupTable
-from hdk.common.values import ClearScalar, EncryptedScalar, EncryptedTensor
-from hdk.numpy import tracing
+from concrete.common.data_types.integers import Integer
+from concrete.common.debugging import draw_graph, get_printable_graph
+from concrete.common.extensions.table import LookupTable
+from concrete.common.values import ClearScalar, EncryptedScalar, EncryptedTensor
+from concrete.numpy import tracing
 
 LOOKUP_TABLE_FROM_2B_TO_4B = LookupTable([9, 2, 4, 11])
 LOOKUP_TABLE_FROM_3B_TO_2B = LookupTable([0, 1, 3, 2, 2, 3, 1, 0])

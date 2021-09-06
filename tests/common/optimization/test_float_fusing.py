@@ -5,11 +5,11 @@ from inspect import signature
 import numpy
 import pytest
 
-from hdk.common.data_types.integers import Integer
-from hdk.common.optimization.topological import fuse_float_operations
-from hdk.common.values import EncryptedScalar
-from hdk.numpy import tracing
-from hdk.numpy.tracing import trace_numpy_function
+from concrete.common.data_types.integers import Integer
+from concrete.common.optimization.topological import fuse_float_operations
+from concrete.common.values import EncryptedScalar
+from concrete.numpy import tracing
+from concrete.numpy.tracing import trace_numpy_function
 
 
 def no_fuse(x):

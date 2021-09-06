@@ -5,6 +5,7 @@ set -e
 BASE_IMG_ENDPOINT_URL=
 ENV_IMG_ENDPOINT_URL=
 TOKEN=
+ORG_REPO=
 
 while [ -n "$1" ]
 do
@@ -22,6 +23,11 @@ do
         "--token" )
             shift
             TOKEN="$1"
+            ;;
+
+        "--org-repo" )
+            shift
+            ORG_REPO="$1"
             ;;
 
         *)
@@ -63,7 +69,7 @@ if [[ "${BASE_IMG_DATE}" -ge "${ENV_IMG_DATE}" ]]; then
     -X POST \
     -H "Accept: application/vnd.github.v3+json" \
     -H "Authorization: token ${TOKEN}" \
-    https://api.github.com/repos/zama-ai/hdk/dispatches \
+    https://api.github.com/repos/${ORG_REPO}/dispatches \
     -d '{"event_type":"rebuild-docker"}'
 else
     echo "Image up to date, nothing to do."

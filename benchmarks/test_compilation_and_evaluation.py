@@ -4,7 +4,7 @@ import itertools
 
 import pytest
 
-import hdk.numpy as hnp
+import concrete.numpy as hnp
 
 
 @pytest.mark.parametrize(

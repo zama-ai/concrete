@@ -2,11 +2,11 @@
 
 ## Preparation
 
-Before you can start improving `hdk` you need to set up your development environment! This section will show how you can do that.
+Before you can start improving `concretefhe` you need to set up your development environment! This section will show how you can do that.
 
 ### Installing Python v3.8
 
-`hdk` is a `Python` library. So `Python` should be installed to develop `hdk`. `v3.8` is recommended because our CI also uses `v3.8`.
+`concretefhe` is a `Python` library. So `Python` should be installed to develop `concretefhe`. `v3.8` is recommended because our CI also uses `v3.8`.
 
 You can follow [this](https://realpython.com/installing-python/) guide to install it (alternatively you can google `how to install python 3.8`).
 
@@ -41,10 +41,10 @@ On Windows check [this GitHub gist](https://gist.github.com/evanwill/0207876c324
 
 ### Cloning repository
 
-Now, it's time to get the source code of `hdk`. You can use the following command to do that.
+Now, it's time to get the source code of `concretefhe`. You can use the following command to do that.
 
 ```shell
-git clone https://github.com/zama-ai/hdk.git
+git clone https://github.com/zama-ai/concretefhe-internal.git
 ```
 
 ### Setting up environment
@@ -52,7 +52,7 @@ git clone https://github.com/zama-ai/hdk.git
 We are going to make use of virtual environments. This helps to keep the project isolated from other `Python` projects in the system. The following commands will create a new virtual environment under the project directory and install dependencies to it.
 
 ```shell
-cd hdk
+cd concrete
 make setup_env
 ```
 
@@ -95,9 +95,9 @@ In this section we will go over some terms that we use throughout the project.
 
 ## Module Structure
 
-In this section, we will discuss the module structure of hdk briefly. You are encouraged to check individual `.py` files to learn more!
+In this section, we will discuss the module structure of concretefhe briefly. You are encouraged to check individual `.py` files to learn more!
 
-- hdk
+- concrete
     - common: types and utilities that can be used by multiple frontends (e.g., numpy, torch)
       - bounds_measurement: utilities for determining bounds of intermediate representation
       - compilation: type definitions related to compilation (e.g., compilation config, compilation artifacts)
@@ -106,7 +106,7 @@ In this section, we will discuss the module structure of hdk briefly. You are en
       - extensions: utilities that provide special functionality to our users
       - representation: type definitions of intermediate representation
       - tracing: utilities for generic function tracing used during intermediate representation creation
-    - numpy: numpy frontend of hdk
+    - numpy: numpy frontend of concrete
 
 ## Working in Docker
 
@@ -140,7 +140,7 @@ Install Xming and use Xlaunch:
 
 ### Logging in and building the image
 
-Docker image of `hdk` is based on another docker image provided by the compiler team. Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
+Docker image of `concretefhe` is based on another docker image provided by the compiler team. Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
 
 Upon joining to the team, you need to log in using the following command:
 
@@ -162,7 +162,7 @@ After you finish your work, you can leave the docker by using the `exit` command
 
 Now, you have a working environment, and you know what is where in the project. 
 
-There are two ways to contribute to HDK:
+There are two ways to contribute to `concretefhe`:
 - you can open issues to report bugs, typos and suggest ideas
 - you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
 
@@ -185,7 +185,7 @@ git checkout -b fix/tracing_indexing_42
 
 ### Before committing
 
-Each commit to `hdk` should be comformant to the standards decided by the team. Conformance can be checked using the following commands.
+Each commit to `concretefhe` should be comformant to the standards decided by the team. Conformance can be checked using the following commands.
 
 ```shell
 make -k pcc

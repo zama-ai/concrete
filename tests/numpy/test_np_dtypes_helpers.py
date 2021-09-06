@@ -3,9 +3,9 @@
 import numpy
 import pytest
 
-from hdk.common.data_types.floats import Float
-from hdk.common.data_types.integers import Integer
-from hdk.numpy.np_dtypes_helpers import (
+from concrete.common.data_types.floats import Float
+from concrete.common.data_types.integers import Integer
+from concrete.numpy.np_dtypes_helpers import (
     convert_base_data_type_to_numpy_dtype,
     convert_numpy_dtype_to_base_data_type,
 )

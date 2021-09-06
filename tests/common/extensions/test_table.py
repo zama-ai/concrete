@@ -5,12 +5,12 @@ from copy import deepcopy
 import networkx as nx
 import pytest
 
-from hdk.common import is_a_power_of_2
-from hdk.common.data_types.integers import Integer
-from hdk.common.extensions.table import LookupTable
-from hdk.common.representation import intermediate as ir
-from hdk.common.values import EncryptedScalar
-from hdk.numpy import tracing
+from concrete.common import is_a_power_of_2
+from concrete.common.data_types.integers import Integer
+from concrete.common.extensions.table import LookupTable
+from concrete.common.representation import intermediate as ir
+from concrete.common.values import EncryptedScalar
+from concrete.numpy import tracing
 
 
 def test_lookup_table_size_constraints():

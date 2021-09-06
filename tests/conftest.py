@@ -5,7 +5,7 @@ import networkx as nx
 import networkx.algorithms.isomorphism as iso
 import pytest
 
-from hdk.common.representation.intermediate import (
+from concrete.common.representation.intermediate import (
     ALL_IR_NODES,
     Add,
     ArbitraryFunction,

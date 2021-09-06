@@ -4,11 +4,13 @@ from typing import Tuple
 
 import pytest
 
-from hdk.common.bounds_measurement.dataset_eval import eval_op_graph_bounds_on_dataset
-from hdk.common.data_types.floats import Float
-from hdk.common.data_types.integers import Integer
-from hdk.common.values import EncryptedScalar
-from hdk.numpy.tracing import trace_numpy_function
+from concrete.common.bounds_measurement.dataset_eval import (
+    eval_op_graph_bounds_on_dataset,
+)
+from concrete.common.data_types.floats import Float
+from concrete.common.data_types.integers import Integer
+from concrete.common.values import EncryptedScalar
+from concrete.numpy.tracing import trace_numpy_function
 
 
 @pytest.mark.parametrize(

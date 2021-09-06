@@ -4,11 +4,11 @@ from copy import deepcopy
 
 import pytest
 
-from hdk.common import check_op_graph_is_integer_program, is_a_power_of_2
-from hdk.common.data_types.floats import Float64
-from hdk.common.data_types.integers import Integer
-from hdk.common.values import EncryptedScalar
-from hdk.numpy.tracing import trace_numpy_function
+from concrete.common import check_op_graph_is_integer_program, is_a_power_of_2
+from concrete.common.data_types.floats import Float64
+from concrete.common.data_types.integers import Integer
+from concrete.common.values import EncryptedScalar
+from concrete.numpy.tracing import trace_numpy_function
 
 
 @pytest.mark.parametrize(

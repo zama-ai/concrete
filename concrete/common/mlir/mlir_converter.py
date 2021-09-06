@@ -30,13 +30,13 @@ from ..representation import intermediate as ir
 
 
 class MLIRConverter:
-    """Converter of the HDKIR to MLIR."""
+    """Converter of the common IR to MLIR."""
 
     def __init__(self, conversion_functions: dict) -> None:
         """Instantiate a converter with a given set of converters.
 
         Args:
-            conversion_functions (dict): mapping HDKIR nodes to functions that generate MLIR.
+            conversion_functions (dict): mapping common IR nodes to functions that generate MLIR.
                 every function should have 4 arguments:
                     - node (IntermediateNode): the node itself to be converted
                     - operands (IntermediateNode): predecessors of node ordered as operands
@@ -97,8 +97,8 @@ class MLIRConverter:
         # unsigned integer are considered signless in the compiler
         return IntegerType.get_signless(bit_width)
 
-    def hdk_value_to_mlir_type(self, value: values.BaseValue) -> MLIRType:
-        """Convert an HDK value to its corresponding MLIR Type.
+    def common_value_to_mlir_type(self, value: values.BaseValue) -> MLIRType:
+        """Convert a common value to its corresponding MLIR Type.
 
         Args:
             value: value to convert
@@ -147,7 +147,7 @@ class MLIRConverter:
             # collect inputs
             with InsertionPoint(module.body):
                 func_types = [
-                    self.hdk_value_to_mlir_type(input_node.inputs[0])
+                    self.common_value_to_mlir_type(input_node.inputs[0])
                     for input_node in op_graph.get_ordered_inputs()
                 ]
 

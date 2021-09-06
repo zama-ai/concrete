@@ -3,10 +3,15 @@
 import numpy
 import pytest
 
-from hdk.common.data_types.floats import Float
-from hdk.common.data_types.integers import Integer
-from hdk.common.representation import intermediate as ir
-from hdk.common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor
+from concrete.common.data_types.floats import Float
+from concrete.common.data_types.integers import Integer
+from concrete.common.representation import intermediate as ir
+from concrete.common.values import (
+    ClearScalar,
+    ClearTensor,
+    EncryptedScalar,
+    EncryptedTensor,
+)
 
 
 @pytest.mark.parametrize(

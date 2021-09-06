@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from hdk.common.data_types.integers import (
+from concrete.common.data_types.integers import (
     Integer,
     SignedInteger,
     UnsignedInteger,

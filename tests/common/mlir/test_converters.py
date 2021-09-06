@@ -1,10 +1,10 @@
 """Test converter functions"""
 import pytest
 
-from hdk.common.data_types.floats import Float
-from hdk.common.data_types.integers import Integer
-from hdk.common.mlir.converters import add, apply_lut, constant, dot, mul, sub
-from hdk.common.values import ClearScalar, EncryptedScalar
+from concrete.common.data_types.floats import Float
+from concrete.common.data_types.integers import Integer
+from concrete.common.mlir.converters import add, apply_lut, constant, dot, mul, sub
+from concrete.common.values import ClearScalar, EncryptedScalar
 
 
 class MockNode:

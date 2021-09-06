@@ -34,7 +34,7 @@ The simplified graph of operations with the float subgraph condensed in an `Arbi
 
 ![](../_static/float_fusing_example/after.png)
 
-## How is it done in HDK?
+## How is it done in concretefhe?
 
 The first step consists in detecting where we go from floating point computation back to integers. This allows to identify the potential terminal node of the float subgraph we are going to fuse.
 

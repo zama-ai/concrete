@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-from hdk.common.tracing.tracing_helpers import prepare_function_parameters
+from concrete.common.tracing.tracing_helpers import prepare_function_parameters
 
 
 @pytest.mark.parametrize(

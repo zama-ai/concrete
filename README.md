@@ -1,5 +1,5 @@
-# hdk
+# concretefhe
 
-Homomorphic Development Framework - collection of tools to FHE all the things
+Concrete Framework Python API - collection of tools to FHE all the things
 
-Developers can take a look at [ARCHITECTURE.md](docs/dev/ARCHITECTURE.md) to get the big picture and [GETTING-STARTED.md](docs/dev/GETTING-STARTED.md) to start developing.
+Developers can take a look at [GETTING-STARTED.md](docs/dev/GETTING-STARTED.md) to get all the relevant informations on the project.

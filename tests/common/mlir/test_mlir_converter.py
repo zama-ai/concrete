@@ -8,12 +8,12 @@ from mlir.ir import IntegerType, Location, RankedTensorType, UnrankedTensorType
 from zamalang import compiler
 from zamalang.dialects import hlfhe
 
-from hdk.common.data_types.integers import Integer
-from hdk.common.extensions.table import LookupTable
-from hdk.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
-from hdk.common.values import ClearScalar, EncryptedScalar
-from hdk.common.values.tensors import ClearTensor, EncryptedTensor
-from hdk.numpy.compile import compile_numpy_function_into_op_graph
+from concrete.common.data_types.integers import Integer
+from concrete.common.extensions.table import LookupTable
+from concrete.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
+from concrete.common.values import ClearScalar, EncryptedScalar
+from concrete.common.values.tensors import ClearTensor, EncryptedTensor
+from concrete.numpy.compile import compile_numpy_function_into_op_graph
 
 
 def add(x, y):
@@ -212,21 +212,21 @@ def test_mlir_converter(func, args_dict, args_ranges):
     compiler.round_trip(mlir_result)
 
 
-def test_hdk_encrypted_integer_to_mlir_type():
+def test_concrete_encrypted_integer_to_mlir_type():
     """Test conversion of EncryptedScalar into MLIR"""
     value = EncryptedScalar(Integer(7, is_signed=False))
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
-    eint = converter.hdk_value_to_mlir_type(value)
+    eint = converter.common_value_to_mlir_type(value)
     assert eint == hlfhe.EncryptedIntegerType.get(converter.context, 7)
 
 
 @pytest.mark.parametrize("is_signed", [True, False])
-def test_hdk_clear_integer_to_mlir_type(is_signed):
+def test_concrete_clear_integer_to_mlir_type(is_signed):
     """Test conversion of ClearScalar into MLIR"""
     value = ClearScalar(Integer(5, is_signed=is_signed))
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with converter.context:
-        int_mlir = converter.hdk_value_to_mlir_type(value)
+        int_mlir = converter.common_value_to_mlir_type(value)
         if is_signed:
             assert int_mlir == IntegerType.get_signed(5)
         else:
@@ -243,12 +243,12 @@ def test_hdk_clear_integer_to_mlir_type(is_signed):
         (-1, 5),
     ],
 )
-def test_hdk_clear_tensor_integer_to_mlir_type(is_signed, shape):
+def test_concrete_clear_tensor_integer_to_mlir_type(is_signed, shape):
     """Test conversion of ClearTensor into MLIR"""
     value = ClearTensor(Integer(5, is_signed=is_signed), shape)
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with converter.context, Location.unknown():
-        tensor_mlir = converter.hdk_value_to_mlir_type(value)
+        tensor_mlir = converter.common_value_to_mlir_type(value)
         if is_signed:
             element_type = IntegerType.get_signed(5)
         else:
@@ -269,12 +269,12 @@ def test_hdk_clear_tensor_integer_to_mlir_type(is_signed, shape):
         (-1, 5),
     ],
 )
-def test_hdk_encrypted_tensor_integer_to_mlir_type(shape):
+def test_concrete_encrypted_tensor_integer_to_mlir_type(shape):
     """Test conversion of EncryptedTensor into MLIR"""
     value = EncryptedTensor(Integer(6, is_signed=False), shape)
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with converter.context, Location.unknown():
-        tensor_mlir = converter.hdk_value_to_mlir_type(value)
+        tensor_mlir = converter.common_value_to_mlir_type(value)
         element_type = hlfhe.EncryptedIntegerType.get(converter.context, 6)
         if shape is None:
             expected_type = UnrankedTensorType.get(element_type)
@@ -283,12 +283,12 @@ def test_hdk_encrypted_tensor_integer_to_mlir_type(shape):
         assert tensor_mlir == expected_type
 
 
-def test_failing_hdk_to_mlir_type():
+def test_failing_concrete_to_mlir_type():
     """Test failing conversion of an unsupported type into MLIR"""
     value = "random"
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with pytest.raises(TypeError, match=r"can't convert value of type .* to MLIR type"):
-        converter.hdk_value_to_mlir_type(value)
+        converter.common_value_to_mlir_type(value)
 
 
 # pylint: enable=no-name-in-module,no-member

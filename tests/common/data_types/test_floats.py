@@ -3,7 +3,7 @@
 
 import pytest
 
-from hdk.common.data_types.floats import Float, Float32, Float64
+from concrete.common.data_types.floats import Float, Float32, Float64
 
 
 @pytest.mark.parametrize(

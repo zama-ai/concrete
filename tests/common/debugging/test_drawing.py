@@ -3,10 +3,10 @@
 import tempfile
 from pathlib import Path
 
-from hdk.common.data_types.integers import Integer
-from hdk.common.debugging import draw_graph
-from hdk.common.values import EncryptedScalar
-from hdk.numpy.compile import compile_numpy_function_into_op_graph
+from concrete.common.data_types.integers import Integer
+from concrete.common.debugging import draw_graph
+from concrete.common.values import EncryptedScalar
+from concrete.numpy.compile import compile_numpy_function_into_op_graph
 
 
 def test_draw_graph_with_saving():

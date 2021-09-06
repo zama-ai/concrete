@@ -17,7 +17,7 @@ from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
 from ..common.values import BaseValue, ScalarValue, TensorValue
 
-NUMPY_TO_HDK_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
+NUMPY_TO_COMMON_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
     numpy.dtype(numpy.int32): Integer(32, is_signed=True),
     numpy.dtype(numpy.int64): Integer(64, is_signed=True),
     numpy.dtype(numpy.uint32): Integer(32, is_signed=False),
@@ -26,8 +26,8 @@ NUMPY_TO_HDK_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
     numpy.dtype(numpy.float64): Float(64),
 }
 
-SUPPORTED_NUMPY_DTYPES = tuple(NUMPY_TO_HDK_DTYPE_MAPPING)
-SUPPORTED_NUMPY_DTYPES_CLASS_TYPES = tuple(dtype.type for dtype in NUMPY_TO_HDK_DTYPE_MAPPING)
+SUPPORTED_NUMPY_DTYPES = tuple(NUMPY_TO_COMMON_DTYPE_MAPPING)
+SUPPORTED_NUMPY_DTYPES_CLASS_TYPES = tuple(dtype.type for dtype in NUMPY_TO_COMMON_DTYPE_MAPPING)
 
 SUPPORTED_DTYPE_MSG_STRING = ", ".join(sorted(str(dtype) for dtype in SUPPORTED_NUMPY_DTYPES))
 
@@ -46,9 +46,9 @@ def convert_numpy_dtype_to_base_data_type(numpy_dtype: DTypeLike) -> BaseDataTyp
     """
     # Normalize numpy_dtype
     normalized_numpy_dtype = numpy.dtype(numpy_dtype)
-    corresponding_hdk_dtype = NUMPY_TO_HDK_DTYPE_MAPPING.get(normalized_numpy_dtype, None)
+    corresponding_common_dtype = NUMPY_TO_COMMON_DTYPE_MAPPING.get(normalized_numpy_dtype, None)
 
-    if corresponding_hdk_dtype is None:
+    if corresponding_common_dtype is None:
         raise ValueError(
             f"Unsupported numpy type: {numpy_dtype} ({normalized_numpy_dtype}), "
             f"supported numpy types: "
@@ -56,7 +56,7 @@ def convert_numpy_dtype_to_base_data_type(numpy_dtype: DTypeLike) -> BaseDataTyp
         )
 
     # deepcopy to avoid having the value from the dict modified
-    return deepcopy(corresponding_hdk_dtype)
+    return deepcopy(corresponding_common_dtype)
 
 
 def convert_base_data_type_to_numpy_dtype(common_dtype: BaseDataType) -> numpy.dtype:

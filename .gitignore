@@ -135,5 +135,5 @@ dmypy.json
 # pytest-benchmark results
 .benchmarks
 
-# HDK compilation artifacts
+# concrete compilation artifacts
 .artifacts

@@ -21,4 +21,5 @@ jobs:
           https://api.github.com/orgs/zama-ai/packages/container/zamalang-compiler/versions \
           --env_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/hdk-env/versions \
-          --token ${{ secrets.BOT_TOKEN }}
+          --token ${{ secrets.BOT_TOKEN }} \
+          --org-repo ${{ github.repository }}
