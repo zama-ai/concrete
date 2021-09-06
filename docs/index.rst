@@ -4,11 +4,26 @@ Homomorphic Development Kit's documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Developer docs
+   :caption: Installing
 
-   dev/GETTING-STARTED.md
+   install/INSTALLING.md
+   install/DOCKER.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: User doc
+
+   user/FIRST_USE.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developer doc
+
+   dev/TERMINOLOGY_AND_STRUCTURE.md
    dev/COMPILATION.md
    dev/FLOAT-FUSING.md
+   dev/DOCUMENTING.md
+   dev/CONTRIBUTING.md
 
 .. toctree::
    :maxdepth: 5
