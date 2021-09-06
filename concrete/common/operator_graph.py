@@ -109,7 +109,7 @@ class OPGraph:
         return [self.output_nodes[idx] for idx in range(len(self.output_nodes))]
 
     def evaluate(self, inputs: Dict[int, Any]) -> Dict[ir.IntermediateNode, Any]:
-        """Function to evaluate a graph and get intermediate values for all nodes.
+        """Evaluate a graph and get intermediate values for all nodes.
 
         Args:
             inputs (Dict[int, Any]): The inputs to the program
@@ -195,7 +195,7 @@ class OPGraph:
                     succ.inputs[input_idx] = deepcopy(node.outputs[0])
 
     def prune_nodes(self):
-        """Function to remove unreachable nodes from outputs."""
+        """Remove unreachable nodes from outputs."""
 
         current_nodes = set(self.output_nodes.values())
         useful_nodes: Set[ir.IntermediateNode] = set()

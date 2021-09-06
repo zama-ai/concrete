@@ -152,7 +152,7 @@ build_and_open_docs: clean_docs docs open_docs
 
 pydocstyle:
 	@# From http://www.pydocstyle.org/en/stable/error_codes.html
-	poetry run pydocstyle $(SRC_DIR) --convention google --add-ignore=D1,D202
+	poetry run pydocstyle $(SRC_DIR) --convention google --add-ignore=D1,D202 --add-select=D401
 .PHONY: pydocstyle
 
 strip_nb:

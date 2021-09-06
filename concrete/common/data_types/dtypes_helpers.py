@@ -23,7 +23,7 @@ BASE_DATA_TYPES = INTEGER_TYPES + FLOAT_TYPES
 
 
 def value_is_encrypted_scalar_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted ScalarValue of type Integer.
+    """Check that a value is an encrypted ScalarValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -35,7 +35,7 @@ def value_is_encrypted_scalar_integer(value_to_check: BaseValue) -> bool:
 
 
 def value_is_encrypted_scalar_unsigned_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted ScalarValue of type unsigned Integer.
+    """Check that a value is an encrypted ScalarValue of type unsigned Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -51,7 +51,7 @@ def value_is_encrypted_scalar_unsigned_integer(value_to_check: BaseValue) -> boo
 
 
 def value_is_clear_scalar_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is a clear ScalarValue of type Integer.
+    """Check that a value is a clear ScalarValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -63,7 +63,7 @@ def value_is_clear_scalar_integer(value_to_check: BaseValue) -> bool:
 
 
 def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is a ScalarValue of type Integer.
+    """Check that a value is a ScalarValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -77,7 +77,7 @@ def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
 
 
 def value_is_encrypted_tensor_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted TensorValue of type Integer.
+    """Check that a value is an encrypted TensorValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -89,7 +89,7 @@ def value_is_encrypted_tensor_integer(value_to_check: BaseValue) -> bool:
 
 
 def value_is_encrypted_tensor_unsigned_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is an encrypted TensorValue of type unsigned Integer.
+    """Check that a value is an encrypted TensorValue of type unsigned Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -105,7 +105,7 @@ def value_is_encrypted_tensor_unsigned_integer(value_to_check: BaseValue) -> boo
 
 
 def value_is_clear_tensor_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is a clear TensorValue of type Integer.
+    """Check that a value is a clear TensorValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -117,7 +117,7 @@ def value_is_clear_tensor_integer(value_to_check: BaseValue) -> bool:
 
 
 def value_is_tensor_integer(value_to_check: BaseValue) -> bool:
-    """Helper function to check that a value is a TensorValue of type Integer.
+    """Check that a value is a TensorValue of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
@@ -294,7 +294,7 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
 
 
 def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]) -> BaseDataType:
-    """Helper function to determine the BaseDataType to hold the input constant data.
+    """Determine the BaseDataType to hold the input constant data.
 
     Args:
         constant_data (Union[int, float]): The constant data for which to determine the
@@ -320,7 +320,7 @@ def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]
 def get_base_value_for_python_constant_data(
     constant_data: Union[int, float]
 ) -> Callable[..., ScalarValue]:
-    """Function to wrap the BaseDataType to hold the input constant data in a ScalarValue partial.
+    """Wrap the BaseDataType to hold the input constant data in a ScalarValue partial.
 
     The returned object can then be instantiated as an Encrypted or Clear version of the ScalarValue
     by calling it with the proper arguments forwarded to the ScalarValue `__init__` function

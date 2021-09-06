@@ -199,7 +199,7 @@ def _compile_numpy_function_internal(
     compilation_artifacts: CompilationArtifacts,
     show_mlir: bool,
 ) -> CompilerEngine:
-    """Internal part of the API to be able to compile an homomorphic program.
+    """Compile an homomorphic program (internal part of the API).
 
     Args:
         function_to_compile (Callable): The function you want to compile
@@ -254,7 +254,7 @@ def compile_numpy_function(
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
 ) -> CompilerEngine:
-    """Main API to be able to compile an homomorphic program.
+    """Compile an homomorphic program (main API).
 
     Args:
         function_to_compile (Callable): The function to compile

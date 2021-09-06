@@ -134,7 +134,7 @@ class NPTracer(BaseTracer):
     def _unary_operator(
         cls, unary_operator, unary_operator_string, *input_tracers: "NPTracer", **kwargs
     ) -> "NPTracer":
-        """Function to trace an unary operator.
+        """Trace an unary operator.
 
         Returns:
             NPTracer: The output NPTracer containing the traced function
@@ -158,7 +158,7 @@ class NPTracer(BaseTracer):
         return output_tracer
 
     def dot(self, other_tracer: "NPTracer", **_kwargs) -> "NPTracer":
-        """Function to trace numpy.dot.
+        """Trace numpy.dot.
 
         Returns:
             NPTracer: The output NPTracer containing the traced function
@@ -285,7 +285,7 @@ class NPTracer(BaseTracer):
 
 
 def _get_fun(function: numpy.ufunc):
-    """Helper function to wrap _unary_operator in a lambda to populate NPTRACER.UFUNC_ROUTING."""
+    """Wrap _unary_operator in a lambda to populate NPTRACER.UFUNC_ROUTING."""
 
     # We have to access this method to be able to build NPTracer.UFUNC_ROUTING
     # dynamically
@@ -303,7 +303,7 @@ NPTracer.UFUNC_ROUTING = {fun: _get_fun(fun) for fun in NPTracer.LIST_OF_SUPPORT
 def trace_numpy_function(
     function_to_trace: Callable, function_parameters: Dict[str, BaseValue]
 ) -> OPGraph:
-    """Function used to trace a numpy function.
+    """Trace a numpy function.
 
     Args:
         function_to_trace (Callable): The function you want to trace

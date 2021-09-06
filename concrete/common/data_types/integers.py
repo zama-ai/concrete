@@ -43,7 +43,7 @@ class Integer(base.BaseDataType):
         return 2 ** self.bit_width - 1
 
     def can_represent_value(self, value_to_represent: int) -> bool:
-        """A helper function to check if a value is representable by the Integer.
+        """Check if a value is representable by the Integer.
 
         Args:
             value_to_represent (int): Value to check
@@ -55,7 +55,7 @@ class Integer(base.BaseDataType):
 
 
 def create_signed_integer(bit_width: int) -> Integer:
-    """Convenience function to create a signed integer.
+    """Create a signed integer.
 
     Args:
         bit_width (int): width of the integer
@@ -70,7 +70,7 @@ SignedInteger = create_signed_integer
 
 
 def create_unsigned_integer(bit_width: int) -> Integer:
-    """Convenience function to create an unsigned integer.
+    """Create an unsigned integer.
 
     Args:
         bit_width (int): width of the integer
@@ -85,7 +85,7 @@ UnsignedInteger = create_unsigned_integer
 
 
 def make_integer_to_hold(values: Iterable[Any], force_signed: bool) -> Integer:
-    """Returns an Integer able to hold all values, it is possible to force the Integer to be signed.
+    """Return an Integer able to hold all values, it is possible to force the Integer to be signed.
 
     Args:
         values (Iterable[Any]): The values to hold
@@ -108,7 +108,7 @@ def make_integer_to_hold(values: Iterable[Any], force_signed: bool) -> Integer:
 
 
 def get_bits_to_represent_value_as_integer(value: Any, force_signed: bool) -> int:
-    """Returns how many bits are required to represent a numerical Value.
+    """Return how many bits are required to represent a numerical Value.
 
     Args:
         value (Any): The value for which we want to know how many bits are required.

@@ -16,7 +16,7 @@ class ScalarValue(BaseValue):
 
 
 def make_clear_scalar(data_type: BaseDataType) -> ScalarValue:
-    """Helper to create a clear ScalarValue.
+    """Create a clear ScalarValue.
 
     Args:
         data_type (BaseDataType): The data type for the value.
@@ -28,7 +28,7 @@ def make_clear_scalar(data_type: BaseDataType) -> ScalarValue:
 
 
 def make_encrypted_scalar(data_type: BaseDataType) -> ScalarValue:
-    """Helper to create an encrypted ScalarValue.
+    """Create an encrypted ScalarValue.
 
     Args:
         data_type (BaseDataType): The data type for the value.

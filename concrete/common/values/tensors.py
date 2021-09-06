@@ -41,7 +41,7 @@ class TensorValue(BaseValue):
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        """The TensorValue shape property.
+        """Return the TensorValue shape property.
 
         Returns:
             Tuple[int, ...]: The TensorValue shape.
@@ -50,7 +50,7 @@ class TensorValue(BaseValue):
 
     @property
     def ndim(self) -> int:
-        """The TensorValue ndim property.
+        """Return the TensorValue ndim property.
 
         Returns:
             int: The TensorValue ndim.
@@ -59,7 +59,7 @@ class TensorValue(BaseValue):
 
     @property
     def size(self) -> int:
-        """The TensorValue size property.
+        """Return the TensorValue size property.
 
         Returns:
             int: The TensorValue size.
@@ -71,7 +71,7 @@ def make_clear_tensor(
     data_type: BaseDataType,
     shape: Optional[Tuple[int, ...]] = None,
 ) -> TensorValue:
-    """Helper to create a clear TensorValue.
+    """Create a clear TensorValue.
 
     Args:
         data_type (BaseDataType): The data type for the tensor.
@@ -87,7 +87,7 @@ def make_encrypted_tensor(
     data_type: BaseDataType,
     shape: Optional[Tuple[int, ...]] = None,
 ) -> TensorValue:
-    """Helper to create an encrypted TensorValue.
+    """Create an encrypted TensorValue.
 
     Args:
         data_type (BaseDataType): The data type for the tensor.

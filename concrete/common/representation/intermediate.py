@@ -52,7 +52,7 @@ class IntermediateNode(ABC):
 
     @abstractmethod
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
-        """Function to simulate what the represented computation would output for the given inputs.
+        """Simulate what the represented computation would output for the given inputs.
 
         Args:
             inputs (Dict[int, Any]): Dict containing the inputs for the evaluation
@@ -63,7 +63,7 @@ class IntermediateNode(ABC):
 
     @classmethod
     def n_in(cls) -> int:
-        """Returns how many inputs the node has.
+        """Return how many inputs the node has.
 
         Returns:
             int: The number of inputs of the node.
@@ -72,7 +72,7 @@ class IntermediateNode(ABC):
 
     @classmethod
     def requires_mix_values_func(cls) -> bool:
-        """Function to determine whether the Class requires a mix_values_func to be built.
+        """Determine whether the Class requires a mix_values_func to be built.
 
         Returns:
             bool: True if __init__ expects a mix_values_func argument.
@@ -81,7 +81,7 @@ class IntermediateNode(ABC):
 
     @abstractmethod
     def label(self) -> str:
-        """Function to get the label of the node.
+        """Get the label of the node.
 
         Returns:
             str: the label of the node
@@ -182,7 +182,7 @@ class Constant(IntermediateNode):
 
     @property
     def constant_data(self) -> Any:
-        """Returns the constant_data stored in the Constant node.
+        """Return the constant_data stored in the Constant node.
 
         Returns:
             Any: The constant data that was stored.
@@ -230,7 +230,7 @@ class ArbitraryFunction(IntermediateNode):
         return self.op_name
 
     def get_table(self) -> List[Any]:
-        """Function to get the table for the current input value of this ArbitraryFunction.
+        """Get the table for the current input value of this ArbitraryFunction.
 
         Returns:
             List[Any]: The table.
@@ -255,7 +255,7 @@ class ArbitraryFunction(IntermediateNode):
 
 
 def default_dot_evaluation_function(lhs: Any, rhs: Any) -> Any:
-    """Default python dot implementation for 1D iterable arrays.
+    """Return the default python dot implementation for 1D iterable arrays.
 
     Args:
         lhs (Any): lhs vector of the dot.
@@ -268,7 +268,7 @@ def default_dot_evaluation_function(lhs: Any, rhs: Any) -> Any:
 
 
 class Dot(IntermediateNode):
-    """Node representing a dot product."""
+    """Return the node representing a dot product."""
 
     _n_in: int = 2
     # Optional, same issue as in ArbitraryFunction for mypy

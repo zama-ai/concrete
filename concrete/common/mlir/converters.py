@@ -25,7 +25,7 @@ from ..representation import intermediate as ir
 
 
 def add(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the addition intermediate node."""
+    """Convert an addition intermediate node."""
     assert len(node.inputs) == 2, "addition should have two inputs"
     assert len(node.outputs) == 1, "addition should have a single output"
     if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
@@ -47,7 +47,7 @@ def add(node, preds, ir_to_mlir_node, ctx):
 
 
 def _add_eint_int(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the addition intermediate node with operands (eint, int)."""
+    """Convert an addition intermediate node with (eint, int)."""
     lhs_node, rhs_node = preds
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.AddEintIntOp(
@@ -58,7 +58,7 @@ def _add_eint_int(node, preds, ir_to_mlir_node, ctx):
 
 
 def _add_eint_eint(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the addition intermediate node with operands (eint, int)."""
+    """Convert an addition intermediate node with (eint, int)."""
     lhs_node, rhs_node = preds
     lhs, rhs = lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.AddEintOp(
@@ -69,7 +69,7 @@ def _add_eint_eint(node, preds, ir_to_mlir_node, ctx):
 
 
 def sub(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the subtraction intermediate node."""
+    """Convert a subtraction intermediate node."""
     assert len(node.inputs) == 2, "subtraction should have two inputs"
     assert len(node.outputs) == 1, "subtraction should have a single output"
     if value_is_clear_scalar_integer(node.inputs[0]) and value_is_encrypted_scalar_unsigned_integer(
@@ -82,7 +82,7 @@ def sub(node, preds, ir_to_mlir_node, ctx):
 
 
 def _sub_int_eint(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the subtraction intermediate node with operands (int, eint)."""
+    """Convert a subtraction intermediate node with (int, eint)."""
     lhs_node, rhs_node = preds
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.SubIntEintOp(
@@ -93,7 +93,7 @@ def _sub_int_eint(node, preds, ir_to_mlir_node, ctx):
 
 
 def mul(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the multiplication intermediate node."""
+    """Convert a multiplication intermediate node."""
     assert len(node.inputs) == 2, "multiplication should have two inputs"
     assert len(node.outputs) == 1, "multiplication should have a single output"
     if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
@@ -111,7 +111,7 @@ def mul(node, preds, ir_to_mlir_node, ctx):
 
 
 def _mul_eint_int(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the multiplication intermediate node with operands (eint, int)."""
+    """Convert a multiplication intermediate node with (eint, int)."""
     lhs_node, rhs_node = preds
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.MulEintIntOp(
@@ -122,7 +122,7 @@ def _mul_eint_int(node, preds, ir_to_mlir_node, ctx):
 
 
 def constant(node, _, __, ctx):
-    """Converter function for constant inputs."""
+    """Convert a constant inputs."""
     if not value_is_clear_scalar_integer(node.outputs[0]):
         raise TypeError("Don't support non-integer constants")
     dtype = cast(Integer, node.outputs[0].data_type)
@@ -133,7 +133,7 @@ def constant(node, _, __, ctx):
 
 
 def apply_lut(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the arbitrary function intermediate node."""
+    """Convert an arbitrary function intermediate node."""
     assert len(node.inputs) == 1, "LUT should have a single input"
     assert len(node.outputs) == 1, "LUT should have a single output"
     if not value_is_encrypted_scalar_unsigned_integer(node.inputs[0]):
@@ -159,7 +159,7 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx):
 
 
 def dot(node, preds, ir_to_mlir_node, ctx):
-    """Converter function for the dot intermediate node."""
+    """Convert a dot intermediate node."""
     assert len(node.inputs) == 2, "Dot should have two inputs"
     assert len(node.outputs) == 1, "Dot should have a single output"
     if not (

@@ -15,7 +15,7 @@ def fuse_float_operations(
     op_graph: OPGraph,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ):
-    """Finds and fuses float domains into single Integer to Integer ArbitraryFunction.
+    """Find and fuse float domains into single Integer to Integer ArbitraryFunction.
 
     Args:
         op_graph (OPGraph): The OPGraph to simplify
@@ -90,7 +90,7 @@ def convert_float_subgraph_to_fused_node(
     terminal_node: ir.IntermediateNode,
     subgraph_all_nodes: Set[ir.IntermediateNode],
 ) -> Optional[Tuple[ir.ArbitraryFunction, ir.IntermediateNode]]:
-    """Converts a float subgraph to an equivalent fused ArbitraryFunction node.
+    """Convert a float subgraph to an equivalent fused ArbitraryFunction node.
 
     Args:
         op_graph (OPGraph): The OPGraph the float subgraph is part of.

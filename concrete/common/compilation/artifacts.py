@@ -47,7 +47,7 @@ class CompilationArtifacts:
         self.mlir_of_the_final_operation_graph = None
 
     def add_function_to_compile(self, function: Union[Callable, str]):
-        """Adds the function to compile to artifacts.
+        """Add the function to compile to artifacts.
 
         Args:
             function (Union[Callable, str]): the function to compile or source code of it
@@ -61,7 +61,7 @@ class CompilationArtifacts:
         )
 
     def add_parameter_of_function_to_compile(self, name: str, value: Union[BaseValue, str]):
-        """Adds a parameter of the function to compile to the artifacts.
+        """Add a parameter of the function to compile to the artifacts.
 
         Args:
             name (str): name of the parameter
@@ -74,7 +74,7 @@ class CompilationArtifacts:
         self.parameters_of_the_function_to_compile[name] = str(value)
 
     def add_operation_graph(self, name: str, operation_graph: OPGraph):
-        """Adds an operation graph to the artifacts.
+        """Add an operation graph to the artifacts.
 
         Args:
             name (str): name of the graph
@@ -93,7 +93,7 @@ class CompilationArtifacts:
         self.final_operation_graph = operation_graph
 
     def add_final_operation_graph_bounds(self, bounds: Dict[ir.IntermediateNode, Dict[str, Any]]):
-        """Adds the bounds of the final operation graph to the artifacts.
+        """Add the bounds of the final operation graph to the artifacts.
 
         Args:
             bounds (Dict[ir.IntermediateNode, Dict[str, Any]]): the bound dictionary
@@ -106,7 +106,7 @@ class CompilationArtifacts:
         self.bounds_of_the_final_operation_graph = bounds
 
     def add_final_operation_graph_mlir(self, mlir: str):
-        """Adds the mlir of the final operation graph to the artifacts.
+        """Add the mlir of the final operation graph to the artifacts.
 
         Args:
             mlir (str): the mlir code of the final operation graph
@@ -119,7 +119,7 @@ class CompilationArtifacts:
         self.mlir_of_the_final_operation_graph = mlir
 
     def export(self):
-        """Exports the artifacts to a the output directory.
+        """Export the artifacts to a the output directory.
 
         Returns:
             None

@@ -33,7 +33,7 @@ SUPPORTED_DTYPE_MSG_STRING = ", ".join(sorted(str(dtype) for dtype in SUPPORTED_
 
 
 def convert_numpy_dtype_to_base_data_type(numpy_dtype: DTypeLike) -> BaseDataType:
-    """Helper function to get the corresponding BaseDataType from a numpy dtype.
+    """Get the corresponding BaseDataType from a numpy dtype.
 
     Args:
         numpy_dtype (DTypeLike): Any python object that can be translated to a numpy.dtype
@@ -99,7 +99,7 @@ def convert_base_data_type_to_numpy_dtype(common_dtype: BaseDataType) -> numpy.d
 
 
 def get_base_data_type_for_numpy_or_python_constant_data(constant_data: Any) -> BaseDataType:
-    """Helper function to determine the BaseDataType to hold the input constant data.
+    """Determine the BaseDataType to hold the input constant data.
 
     Args:
         constant_data (Any): The constant data for which to determine the
@@ -124,7 +124,7 @@ def get_base_data_type_for_numpy_or_python_constant_data(constant_data: Any) -> 
 def get_base_value_for_numpy_or_python_constant_data(
     constant_data: Any,
 ) -> Callable[..., BaseValue]:
-    """Helper function to determine the BaseValue and BaseDataType to hold the input constant data.
+    """Determine the BaseValue and BaseDataType to hold the input constant data.
 
     This function is able to handle numpy types
 
@@ -158,7 +158,7 @@ def get_numpy_function_output_dtype(
     function: Union[numpy.ufunc, Callable],
     input_dtypes: List[BaseDataType],
 ) -> List[numpy.dtype]:
-    """Function to record the output dtype of a numpy function given some input types.
+    """Record the output dtype of a numpy function given some input types.
 
     Args:
         function (Union[numpy.ufunc, Callable]): The numpy function whose output types need to

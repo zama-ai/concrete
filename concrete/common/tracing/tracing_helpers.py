@@ -15,7 +15,7 @@ def make_input_tracers(
     tracer_class: Type[BaseTracer],
     function_parameters: OrderedDict[str, BaseValue],
 ) -> OrderedDict[str, BaseTracer]:
-    """Helper function to create tracers for a function's parameters.
+    """Create tracers for a function's parameters.
 
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create an Input for
@@ -37,7 +37,7 @@ def make_input_tracer(
     input_idx: int,
     input_value: BaseValue,
 ) -> BaseTracer:
-    """Helper function to create a tracer for an input value.
+    """Create a tracer for an input value.
 
     Args:
         tracer_class (Type[BaseTracer]): the class of tracer to create an Input for
@@ -55,7 +55,7 @@ def make_input_tracer(
 def prepare_function_parameters(
     function_to_trace: Callable, function_parameters: Dict[str, BaseValue]
 ) -> OrderedDict[str, BaseValue]:
-    """Function to filter the passed function_parameters to trace function_to_trace.
+    """Filter the passed function_parameters to trace function_to_trace.
 
     Args:
         function_to_trace (Callable): function that will be traced for which parameters are checked

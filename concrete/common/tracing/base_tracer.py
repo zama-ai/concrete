@@ -28,7 +28,7 @@ class BaseTracer(ABC):
 
     @abstractmethod
     def _supports_other_operand(self, other: Any) -> bool:
-        """Function to check if the current class supports tracing with the other operand.
+        """Check if the current class supports tracing with the other operand.
 
         Args:
             other (Any): the operand to check compatibility with.
@@ -40,7 +40,7 @@ class BaseTracer(ABC):
 
     @abstractmethod
     def _make_const_input_tracer(self, constant_data: Any) -> "BaseTracer":
-        """Helper function to create a tracer for a constant input.
+        """Create a tracer for a constant input.
 
         Args:
             constant_data (Any): The constant to store.
@@ -63,7 +63,7 @@ class BaseTracer(ABC):
         inputs: Iterable[Union["BaseTracer", Any]],
         computation_to_trace: Type[ir.IntermediateNode],
     ) -> Tuple["BaseTracer", ...]:
-        """Helper functions to instantiate all output BaseTracer for a given computation.
+        """Instantiate all output BaseTracer for a given computation.
 
         Args:
             inputs (Iterable[Union[BaseTracer, Any]]): Previous BaseTracer or data used as inputs
