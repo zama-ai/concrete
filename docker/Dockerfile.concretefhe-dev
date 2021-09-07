@@ -1,4 +1,4 @@
-FROM ghcr.io/zama-ai/hdk-env
+FROM ghcr.io/zama-ai/concretefhe-env
 
 ENV SRC_DIR_NAME=src
 

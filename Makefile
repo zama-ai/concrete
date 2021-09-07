@@ -1,7 +1,7 @@
 SHELL:=/bin/bash
 
-DEV_DOCKER_IMG:=hdk:dev
-DEV_DOCKERFILE:=docker/Dockerfile.hdk-dev
+DEV_DOCKER_IMG:=concretefhe-dev
+DEV_DOCKERFILE:=docker/Dockerfile.concretefhe-dev
 SRC_DIR:=concrete
 
 setup_env:

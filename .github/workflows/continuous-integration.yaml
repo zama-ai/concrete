@@ -1,4 +1,4 @@
-name: HDK CI Pipeline
+name: concretefhe CI Pipeline
 on:
   pull_request:
   push:
@@ -13,7 +13,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/zama-ai/hdk-env
+      image: ghcr.io/zama-ai/concretefhe-env
       credentials:
         username: ${{ secrets.BOT_USERNAME }}
         password: ${{ secrets.BOT_TOKEN }}

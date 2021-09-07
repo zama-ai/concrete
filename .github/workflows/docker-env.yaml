@@ -1,11 +1,11 @@
-name: Docker image (HDK dev/CI)
+name: Docker image (concretefhe dev/CI)
 
 on:
   push:
     branches:
       - main
     paths:
-      - docker/Dockerfile.hdk-env
+      - docker/Dockerfile.concretefhe-env
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -21,10 +21,10 @@ jobs:
       group: ${{ github.ref }}
       cancel-in-progress: true
 
-    name: Build & Push the HDK env Docker Image
+    name: Build & Push the concretefhe env Docker Image
     runs-on: ubuntu-20.04
     env:
-      IMAGE_URL: ghcr.io/zama-ai/hdk-env
+      IMAGE_URL: ghcr.io/zama-ai/concretefhe-env
 
     steps:
       - uses: actions/checkout@v2
@@ -38,13 +38,13 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
           password: ${{ secrets.BOT_TOKEN }}
-      - name: Build hdk-env Image
+      - name: Build concretefhe-env Image
         if: ${{ success() && !cancelled() }}
         uses: docker/build-push-action@v2
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: docker/Dockerfile.hdk-env
+          file: docker/Dockerfile.concretefhe-env
           push: true
           tags: "${{ env.IMAGE_URL }}:latest"
           no-cache: true
