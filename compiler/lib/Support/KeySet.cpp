@@ -267,8 +267,10 @@ llvm::Error KeySet::decrypt_lwe(size_t argPos, LweCiphertext_u64 *ciphertext,
       decrypt_lwe_u64(&err, std::get<2>(outputSk), ciphertext, &plaintext),
       "cannot decrypt");
   // Decode
-  output = plaintext._0 >>
-           (64 - (std::get<0>(outputSk).encryption->encoding.precision + 1));
+  double divisor = std::pow(
+      2, 64 - (std::get<0>(outputSk).encryption->encoding.precision + 1));
+  output = std::round(((double)plaintext._0) / divisor);
+  output %= (1 << (std::get<0>(outputSk).encryption->encoding.precision + 1));
 
   return llvm::Error::success();
 }
