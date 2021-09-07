@@ -51,6 +51,7 @@ jobs:
 
       - name: Slack Notification
         if: ${{ always() }}
+        continue-on-error: true
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
