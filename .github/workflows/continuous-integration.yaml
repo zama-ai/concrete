@@ -104,7 +104,7 @@ jobs:
         if: ${{ always() }}
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_CHANNEL: hdk-updates
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: 'Build finished with status ${{ job.status }}'
@@ -131,7 +131,7 @@ jobs:
         with:
           args: --delete
         env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_HDK_DOCUMENTATION_BUCKET_NAME }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -145,13 +145,13 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          DISTRIBUTION_ID: ${{ secrets.AWS_HDK_DOCUMENTATION_DISTRIBUTION_ID }}
+          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
 
       - name: Slack Notification
         if: ${{ always() }}
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_CHANNEL: hdk-updates
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: 'Publishing documentation finished with status ${{ job.status }}'

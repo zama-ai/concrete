@@ -53,7 +53,7 @@ jobs:
         if: ${{ always() }}
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_CHANNEL: hdk-updates
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "Publishing Docker Image ${{ env.IMAGE_URL }} \
