@@ -44,8 +44,9 @@ pylint_tests:
 .PHONY: pylint_tests
 
 pylint_benchmarks:
-	@# Disable duplicate code detection in benchmarks
-	poetry run pylint --disable=R0801 --rcfile=pylintrc benchmarks
+	@# Disable duplicate code detection, docstring requirement, too many locals/statements
+	poetry run pylint --disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116 \
+	--rcfile=pylintrc benchmarks
 .PHONY: pylint_benchmarks
 
 flake8:
@@ -168,7 +169,8 @@ pytest_nb:
 .PHONY: pytest_nb
 
 benchmark:
-	poetry run pytest benchmarks/ --benchmark-save=findings
+	poetry run python script/progress_tracker_utils/measure.py benchmarks \
+	--output .benchmarks.json
 .PHONY: benchmark
 
 jupyter:
