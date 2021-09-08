@@ -35,6 +35,7 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   // legalize LLVM dialect.
   mlir::LLVMConversionTarget target(getContext());
   target.addLegalOp<mlir::ModuleOp>();
+  target.addIllegalOp<mlir::UnrealizedConversionCastOp>();
 
   // Setup the LLVMTypeConverter (that converts `std` types to `llvm` types) and
   // add our types conversion to `llvm` compatible type.

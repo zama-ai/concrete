@@ -123,7 +123,7 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
                         "`ct` argument.";
     return mlir::failure();
   }
-  // Disable this check for the moment
+  // Disable this check for the moment: issue/111
   // Check the witdh of the encrypted integer and the integer of the tabulated
   // lambda are equals
   // if (result.getP() < l_cst.getElementType().cast<IntegerType>().getWidth())

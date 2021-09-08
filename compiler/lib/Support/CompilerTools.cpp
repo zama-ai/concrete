@@ -236,7 +236,7 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
   }
 
   // Setup runtime context with appropriate keys
-  keySet.generateRuntimeContext();
+  keySet.initGlobalRuntimeContext();
 }
 
 JITLambda::Argument::~Argument() {
