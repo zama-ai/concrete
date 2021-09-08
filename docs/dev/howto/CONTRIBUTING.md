@@ -95,7 +95,7 @@ git checkout $YOUR_BRANCH
 # rebase on top of main branch
 git rebase main
 
-# push the latest version of the local branch to remote 
+# push the latest version of the local branch to remote
 git push --force
 ```
 

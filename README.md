@@ -2,7 +2,7 @@
 
 Concrete Framework Python API - collection of tools to FHE all the things
 
-## Installing 
+## Installing
 
 Installation steps are described in [INSTALLING.md](docs/install/INSTALLING.md).
 

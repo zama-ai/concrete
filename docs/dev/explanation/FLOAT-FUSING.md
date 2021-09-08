@@ -24,15 +24,15 @@ Any computation where there is a single variable integer input and a single inte
 
 The `quantized_sin` graph of operations:
 
-![](../_static/float_fusing_example/before.png)
+![](../../_static/float_fusing_example/before.png)
 
 The float subgraph that was detected:
 
-![](../_static/float_fusing_example/subgraph.png)
+![](../../_static/float_fusing_example/subgraph.png)
 
 The simplified graph of operations with the float subgraph condensed in an `ArbitraryFunction` node:
 
-![](../_static/float_fusing_example/after.png)
+![](../../_static/float_fusing_example/after.png)
 
 ## How is it done in concretefhe?
 

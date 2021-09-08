@@ -4,30 +4,60 @@ Homomorphic Development Kit's documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Installing
+   :caption: Basics
 
+   README.md
    install/INSTALLING.md
    install/DOCKER.md
 
 .. toctree::
    :maxdepth: 2
-   :caption: User doc
+   :caption: Tutorial
 
-   user/FIRST_USE.md
+   user/tutorial/FIRST_TUTORIAL.md
+   user/tutorial/SECOND_TUTORIAL.md
+   user/tutorial/THIRD_TUTORIAL.md
 
 .. toctree::
    :maxdepth: 2
-   :caption: Developer doc
+   :caption: How to
 
-   dev/TERMINOLOGY_AND_STRUCTURE.md
-   dev/COMPILATION.md
-   dev/FLOAT-FUSING.md
-   dev/DOCUMENTING.md
-   dev/CONTRIBUTING.md
-   dev/RELEASING.md
+   user/howto/COMPILE.md
+   user/howto/REDUCE_NEEDED_PRECISION.md
+   user/howto/DEBUG.md
+   user/howto/SUBMIT_ISSUE.md
+   user/howto/SUPPORT.md
+   user/howto/FAQ.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Explanation
+
+   user/explanation/WHAT_IS_FHE.md
+   user/explanation/FHE_LIMITS.md
+   user/explanation/QUANTIZATION.md
+   user/explanation/FUTURE_FEATURES.md
 
 .. toctree::
    :maxdepth: 5
-   :caption: Docs from sources
+   :caption: Reference
 
-   _apidoc/modules.rst
+   API <_apidoc/modules.rst>
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developper - How To
+
+   dev/howto/DOCUMENTING.md
+   Releasing on GitHub <dev/howto/RELEASING.md>
+   dev/howto/CONTRIBUTING.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developper - Explanation
+
+   dev/explanation/COMPILATION.md
+   dev/explanation/TERMINOLOGY_AND_STRUCTURE.md
+   dev/explanation/FLOAT-FUSING.md
+   dev/explanation/MLIR.md
+   

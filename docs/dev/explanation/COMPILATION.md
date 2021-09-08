@@ -54,7 +54,7 @@ Once the MLIR is prepared, the rest of the stack, which you can learn more about
 
 Here is the visual representation of the pipeline:
 
-![Frontend Flow](../_static/compilation-pipeline/frontend_flow.svg)
+![Frontend Flow](../../_static/compilation-pipeline/frontend_flow.svg)
 
 ## Tracing
 
@@ -67,7 +67,7 @@ def f(x):
 
 the goal of tracing is to create the following operation graph without needing any change from the user.
 
-![](../_static/compilation-pipeline/two_x_plus_three.png)
+![](../../_static/compilation-pipeline/two_x_plus_three.png)
 
 (Note that the edge labels are for non-commutative operations. To give an example, a subtraction node represents `(predecessor with edge label 0) - (predecessor with edge label 1)`)
 
@@ -140,7 +140,7 @@ After the entire dataset is evaluated, we assign a data type to each node using 
 
 Here is an example, given this operation graph where `x` is encrypted:
 
-![](../_static/compilation-pipeline/two_x_plus_three.png)
+![](../../_static/compilation-pipeline/two_x_plus_three.png)
 
 and this dataset:
 
@@ -218,7 +218,7 @@ x = EncryptedScalar(UnsignedInteger(2))
 
 #### Corresponding Operation Graph
 
-![](../_static/compilation-pipeline/two_x_plus_three.png)
+![](../../_static/compilation-pipeline/two_x_plus_three.png)
 
 ### Topological Transforms
 
@@ -268,7 +268,7 @@ y = EncryptedScalar(UnsignedInteger(1))
 
 #### Corresponding Operation Graph
 
-![](../_static/compilation-pipeline/forty_two_minus_x_plus_y_times_two.png)
+![](../../_static/compilation-pipeline/forty_two_minus_x_plus_y_times_two.png)
 
 ### Topological Transforms
 
