@@ -173,7 +173,7 @@ def dot(node, preds, ir_to_mlir_node, ctx):
         )
     ):
         raise TypeError(
-            f"Don't support subtraction between {type(node.inputs[0])} and {type(node.inputs[1])}"
+            f"Don't support dot between {type(node.inputs[0])} and {type(node.inputs[1])}"
         )
     lhs_node, rhs_node = preds
     # need to flip as underlying operation need encrypted first
