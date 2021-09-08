@@ -671,7 +671,10 @@ fn regular_convert_forward_single_torus<InCont, Coef>(
         .iter()
         .zip(corr.as_tensor().iter().zip(out.as_mut_tensor().iter_mut()))
     {
-        *output = Complex64::new(input.into_torus(), 0.) * corrector;
+        // Don't you dare remove this cast
+        // It reduces the FFT noise by up to 5 bits
+        let a: f64 = input.into_signed().cast_into() * (2f64.powi(-(Coef::BITS as i32)));
+        *output = Complex64::new(a, 0.) * corrector;
     }
 }
 
@@ -696,7 +699,11 @@ fn regular_convert_forward_two_torus<InCont1, InCont2, Coef>(
             .iter()
             .zip(corr.as_tensor().iter().zip(out.as_mut_tensor().iter_mut())),
     ) {
-        *output = Complex64::new(input_1.into_torus(), input_2.into_torus()) * corrector;
+        // Don't you dare remove this cast
+        // It reduces the FFT noise by up to 5 bits
+        let a: f64 = input_1.into_signed().cast_into() * (2f64.powi(-(Coef::BITS as i32)));
+        let b: f64 = input_2.into_signed().cast_into() * (2f64.powi(-(Coef::BITS as i32)));
+        *output = Complex64::new(a, b) * corrector;
     }
 }
 
