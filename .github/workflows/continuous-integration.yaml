@@ -5,15 +5,20 @@ on:
     branches:
       - main
 
+  # Allows external webhook trigger
+  repository_dispatch:
+    types:
+      - env-docker-preflight
+
 jobs:
   build:
     concurrency:
-      group: ${{ github.ref }}
+      group: ${{ github.ref }}-${{ github.event_name }}
       cancel-in-progress: true
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/zama-ai/concretefhe-env
+      image: ${{ github.event.client_payload.image || 'ghcr.io/zama-ai/concretefhe-env' }}
       credentials:
         username: ${{ secrets.BOT_USERNAME }}
         password: ${{ secrets.BOT_TOKEN }}
@@ -100,6 +105,18 @@ jobs:
         with:
           path: diff-coverage.txt
           recreate: true
+      - name: Trigger docker push workflow
+        if: ${{ github.event_name == 'repository_dispatch' && github.event.event_type == 'env-docker-preflight' }}
+        env:
+          WORKFLOW_SUCCESSFUL: toJSON(success())
+        run: |
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.BOT_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository }}/dispatches \
+          -d '{"event_type":"publish-env-docker"}' \
+          -d '{"client_payload": {"preflight_success":"${{ env.WORKFLOW_SUCCESSFUL }}"}}'
       - name: Slack Notification
         if: ${{ always() }}
         continue-on-error: true

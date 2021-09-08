@@ -13,18 +13,24 @@ on:
   # Allows external webhook trigger
   repository_dispatch:
     types:
-      - rebuild-docker
+      - rebuild-env-docker
+      - publish-env-docker
+
+env:
+  PREFLIGHT_IMAGE: ghcr.io/zama-ai/concretefhe-env:preflight
+  LATEST_IMAGE: ghcr.io/zama-ai/concretefhe-env:latest
+  BASE_IMAGE: ghcr.io/zama-ai/concretefhe-env
 
 jobs:
-  build_publish:
+  build_preflight_docker:
+    if: ${{ github.event_name != 'repository_dispatch' || github.event.event_type == 'rebuild-env-docker' }}
+
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
 
     name: Build & Push the concretefhe env Docker Image
     runs-on: ubuntu-20.04
-    env:
-      IMAGE_URL: ghcr.io/zama-ai/concretefhe-env
 
     steps:
       - uses: actions/checkout@v2
@@ -46,8 +52,67 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: docker/Dockerfile.concretefhe-env
           push: true
-          tags: "${{ env.IMAGE_URL }}:latest"
+          tags: "${{ env.PREFLIGHT_IMAGE }}"
           no-cache: true
+      - name: Trigger CI pipeline with preflight image
+        if: ${{ success() && !cancelled() }}
+        run: |
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.BOT_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository }}/dispatches \
+          -d '{"event_type":"env-docker-preflight"}' \
+          -d '{"client_payload": {"image":"${{ env.PREFLIGHT_IMAGE }}"}}'
+      - name: Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Docker image preflight build ${{ env.PREFLIGHT_IMAGE }} finished with \
+            status ${{ job.status }}"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  push-docker-image:
+    if: ${{ github.event_name == 'repository_dispatch' && github.event.event_type == 'publish-env-docker'}}
+
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
+
+    name: Push env docker image
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Check build went well with preflight image
+        env:
+          CHECKS_OK: ${{ github.event.client_payload.preflight_success }}
+        run: |
+          if [[ "${CHECKS_OK}" == "false" ]]; then
+            echo "Build with new image failed, aborting."
+            exit 1
+          fi
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.BOT_USERNAME }}
+          password: ${{ secrets.BOT_TOKEN }}
+      - name: Pull preflight image
+        run: |
+          docker pull ${PREFLIGHT_IMAGE}
+      - name: Retag to latest and epoch and push
+        run: |
+          EPOCH=$(date +%s)
+          EPOCH_IMAGE="${BASE_IMAGE}:${EPOCH}"
+          docker tag ${PREFLIGHT_IMAGE} ${LATEST_IMAGE}
+          docker tag ${PREFLIGHT_IMAGE} ${EPOCH_IMAGE}
+          docker push ${LATEST_IMAGE}
+          docker push ${EPOCH_IMAGE}
 
       - name: Slack Notification
         if: ${{ always() }}
@@ -57,8 +122,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Publishing Docker Image ${{ env.IMAGE_URL }} \
-            finished with status ${{ job.status }}"
+          SLACK_MESSAGE: "Publishing docker image ${{ env.BASE_IMAGE }} finished with status \
+            ${{ job.status }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-

@@ -6,6 +6,7 @@ BASE_IMG_ENDPOINT_URL=
 ENV_IMG_ENDPOINT_URL=
 TOKEN=
 ORG_REPO=
+EVENT_TYPE=
 
 while [ -n "$1" ]
 do
@@ -28,6 +29,11 @@ do
         "--org-repo" )
             shift
             ORG_REPO="$1"
+            ;;
+
+        "--event-type" )
+            shift
+            EVENT_TYPE="$1"
             ;;
 
         *)
@@ -70,7 +76,7 @@ if [[ "${BASE_IMG_DATE}" -ge "${ENV_IMG_DATE}" ]]; then
     -H "Accept: application/vnd.github.v3+json" \
     -H "Authorization: token ${TOKEN}" \
     https://api.github.com/repos/${ORG_REPO}/dispatches \
-    -d '{"event_type":"rebuild-docker"}'
+    -d "{\"event_type\":\"${EVENT_TYPE}\"}"
 else
     echo "Image up to date, nothing to do."
 fi

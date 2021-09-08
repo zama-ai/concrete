@@ -22,4 +22,5 @@ jobs:
           --env_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/concretefhe-env/versions \
           --token ${{ secrets.BOT_TOKEN }} \
-          --org-repo ${{ github.repository }}
+          --org-repo ${{ github.repository }} \
+          --event-type rebuild-env-docker
