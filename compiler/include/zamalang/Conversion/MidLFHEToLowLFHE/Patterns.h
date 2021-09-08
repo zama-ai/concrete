@@ -27,6 +27,7 @@ LweCiphertextType convertTypeToLWE(mlir::MLIRContext *context,
     return lwe;
   }
   assert(false && "expect glwe or lwe");
+  return nullptr;
 }
 
 template <typename PType>
@@ -50,6 +51,7 @@ PlaintextType convertPlaintextTypeFromType(mlir::MLIRContext *context,
     return convertPlaintextTypeFromPType<LweCiphertextType>(context, lwe);
   }
   assert(false && "expect glwe or lwe");
+  return nullptr;
 }
 
 template <typename PType>
@@ -73,6 +75,7 @@ CleartextType convertCleartextTypeFromType(mlir::MLIRContext *context,
     return convertCleartextTypeFromPType<LweCiphertextType>(context, lwe);
   }
   assert(false && "expect glwe or lwe");
+  return nullptr;
 }
 
 mlir::Value createZeroLWEOpFromMidLFHE(mlir::PatternRewriter rewriter,
@@ -113,7 +116,6 @@ mlir::Value createAddPlainLweCiphertextWithGlwe(
           .create<mlir::zamalang::LowLFHE::EncodeIntOp>(loc, encoded_type, arg1)
           .plaintext();
   // convert result type
-  GLWECipherTextType glwe_type = result.getType().cast<GLWECipherTextType>();
   LweCiphertextType lwe_type =
       convertTypeToLWE(rewriter.getContext(), result.getType());
   // replace op using the encoded plaintext instead of int
