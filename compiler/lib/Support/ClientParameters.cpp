@@ -5,13 +5,19 @@
 
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
 #include "zamalang/Support/ClientParameters.h"
+#include "zamalang/Support/V0Curves.h"
 
 namespace mlir {
 namespace zamalang {
 
+const auto securityLevel = SECURITY_LEVEL_128;
+const auto keyFormat = KEY_FORMAT_BINARY;
+const auto v0Curve = getV0Curves(securityLevel, keyFormat);
+
 // For the v0 the secretKeyID and precision are the same for all gates.
 llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
                                              Precision precision,
+                                             Variance variance,
                                              mlir::Type type) {
   if (type.isIntOrIndex()) {
     // TODO - The index type is dependant of the target architecture, so
@@ -36,8 +42,7 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
     return CircuitGate{
         .encryption = llvm::Optional<EncryptionGate>({
             .secretKeyID = secretKeyID,
-            // TODO - Compute variance, wait for security estimator
-            .variance = 0.,
+            .variance = variance,
             .encoding = {.precision = precision},
         }),
         .shape = {.width = precision, .size = 0},
@@ -45,8 +50,8 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
   }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
   if (tensor != nullptr) {
-    auto gate =
-        gateFromMLIRType(secretKeyID, precision, tensor.getElementType());
+    auto gate = gateFromMLIRType(secretKeyID, precision, variance,
+                                 tensor.getElementType());
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
@@ -61,6 +66,9 @@ llvm::Expected<ClientParameters>
 createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
                             mlir::ModuleOp module) {
   auto v0Param = fheContext.parameter;
+  Variance encryptionVariance =
+      v0Curve->getVariance(1, 1 << v0Param.polynomialSize, 64);
+  Variance keyswitchVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
   ClientParameters c{
       .secretKeys{
@@ -76,8 +84,7 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
                   .level = v0Param.brLevel,
                   .baseLog = v0Param.brLogBase,
                   .k = v0Param.k,
-                  // TODO - Compute variance, wait for security estimator
-                  .variance = 0,
+                  .variance = encryptionVariance,
               },
           },
       },
@@ -89,8 +96,7 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
                   .outputSecretKeyID = "small",
                   .level = v0Param.ksLevel,
                   .baseLog = v0Param.ksLogBase,
-                  // TODO - Compute variance, wait for security estimator
-                  .variance = 0,
+                  .variance = keyswitchVariance,
               },
           },
       },
@@ -112,14 +118,14 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();
   for (auto inType : funcType.getInputs()) {
-    auto gate = gateFromMLIRType("big", precision, inType);
+    auto gate = gateFromMLIRType("big", precision, encryptionVariance, inType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
     c.inputs.push_back(gate.get());
   }
   for (auto outType : funcType.getResults()) {
-    auto gate = gateFromMLIRType("big", precision, outType);
+    auto gate = gateFromMLIRType("big", precision, encryptionVariance, outType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }

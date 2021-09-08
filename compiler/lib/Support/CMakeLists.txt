@@ -2,6 +2,7 @@ add_mlir_library(ZamalangSupport
   CompilerTools.cpp
   CompilerEngine.cpp
   V0Parameters.cpp
+  V0Curves.cpp
   ClientParameters.cpp
   KeySet.cpp
 
