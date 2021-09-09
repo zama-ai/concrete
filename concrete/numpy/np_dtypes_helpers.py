@@ -16,6 +16,7 @@ from ..common.data_types.dtypes_helpers import (
 )
 from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
+from ..common.debugging.custom_assert import custom_assert
 from ..common.values import BaseValue, ScalarValue, TensorValue
 
 NUMPY_TO_COMMON_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
@@ -69,16 +70,20 @@ def convert_base_data_type_to_numpy_dtype(common_dtype: BaseDataType) -> numpy.d
     Returns:
         numpy.dtype: The resulting numpy.dtype
     """
-    assert isinstance(
-        common_dtype, BASE_DATA_TYPES
-    ), f"Unsupported common_dtype: {type(common_dtype)}"
+    custom_assert(
+        isinstance(common_dtype, BASE_DATA_TYPES), f"Unsupported common_dtype: {type(common_dtype)}"
+    )
     type_to_return: numpy.dtype
 
     if isinstance(common_dtype, Float):
-        assert common_dtype.bit_width in (
-            32,
-            64,
-        ), "Only converting Float(32) or Float(64) is supported"
+        custom_assert(
+            common_dtype.bit_width
+            in (
+                32,
+                64,
+            ),
+            "Only converting Float(32) or Float(64) is supported",
+        )
         type_to_return = (
             numpy.dtype(numpy.float64)
             if common_dtype.bit_width == 64
@@ -110,9 +115,10 @@ def get_base_data_type_for_numpy_or_python_constant_data(constant_data: Any) -> 
         BaseDataType: The corresponding BaseDataType
     """
     base_dtype: BaseDataType
-    assert isinstance(
-        constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
-    ), f"Unsupported constant data of type {type(constant_data)}"
+    custom_assert(
+        isinstance(constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)),
+        f"Unsupported constant data of type {type(constant_data)}",
+    )
     if isinstance(constant_data, (numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)):
         # numpy
         base_dtype = convert_numpy_dtype_to_base_data_type(constant_data.dtype)
@@ -141,9 +147,10 @@ def get_base_value_for_numpy_or_python_constant_data(
             with `encrypted` as keyword argument (forwarded to the BaseValue `__init__` method).
     """
     constant_data_value: Callable[..., BaseValue]
-    assert isinstance(
-        constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
-    ), f"Unsupported constant data of type {type(constant_data)}"
+    custom_assert(
+        isinstance(constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)),
+        f"Unsupported constant data of type {type(constant_data)}",
+    )
 
     base_dtype = get_base_data_type_for_numpy_or_python_constant_data(constant_data)
     if isinstance(constant_data, numpy.ndarray):
@@ -171,9 +178,10 @@ def get_numpy_function_output_dtype(
         List[numpy.dtype]: The ordered numpy dtypes of the function outputs
     """
     if isinstance(function, numpy.ufunc):
-        assert (
-            len(input_dtypes) == function.nin
-        ), f"Expected {function.nin} types, got {len(input_dtypes)}: {input_dtypes}"
+        custom_assert(
+            (len(input_dtypes) == function.nin),
+            f"Expected {function.nin} types, got {len(input_dtypes)}: {input_dtypes}",
+        )
 
     input_numpy_dtypes = [convert_base_data_type_to_numpy_dtype(dtype) for dtype in input_dtypes]
 
@@ -203,9 +211,10 @@ def get_type_constructor_for_numpy_or_python_constant_data(constant_data: Any):
         constant_data (Any): The data for which we want to determine the type constructor.
     """
 
-    assert isinstance(
-        constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
-    ), f"Unsupported constant data of type {type(constant_data)}"
+    custom_assert(
+        isinstance(constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)),
+        f"Unsupported constant data of type {type(constant_data)}",
+    )
 
     scalar_constructor: Type
 

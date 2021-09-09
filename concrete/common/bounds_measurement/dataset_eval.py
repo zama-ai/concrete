@@ -2,6 +2,7 @@
 
 from typing import Any, Callable, Dict, Iterator, Tuple
 
+from ..debugging import custom_assert
 from ..operator_graph import OPGraph
 from ..representation.intermediate import IntermediateNode
 
@@ -35,10 +36,13 @@ def eval_op_graph_bounds_on_dataset(
     """
 
     def check_dataset_input_len_is_valid(data_to_check):
-        assert len(data_to_check) == len(op_graph.input_nodes), (
-            f"Got input data from dataset of len: {len(data_to_check)}, "
-            f"function being evaluated has {len(op_graph.input_nodes)} inputs, please make "
-            f"sure your data generator returns valid tuples of input values"
+        custom_assert(
+            len(data_to_check) == len(op_graph.input_nodes),
+            (
+                f"Got input data from dataset of len: {len(data_to_check)}, "
+                f"function being evaluated has {len(op_graph.input_nodes)} inputs, please make "
+                f"sure your data generator returns valid tuples of input values"
+            ),
         )
 
     # TODO: do we want to check coherence between the input data type and the corresponding Input ir

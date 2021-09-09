@@ -7,6 +7,7 @@ import numpy
 from numpy.typing import DTypeLike
 
 from ..common.data_types.dtypes_helpers import mix_values_determine_holding_dtype
+from ..common.debugging.custom_assert import custom_assert
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import ArbitraryFunction, Constant, Dot
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
@@ -40,9 +41,10 @@ class NPTracer(BaseTracer):
         """
         if method == "__call__":
             tracing_func = self.get_tracing_func_for_np_function(ufunc)
-            assert (
-                len(kwargs) == 0
-            ), f"**kwargs are currently not supported for numpy ufuncs, ufunc: {ufunc}"
+            custom_assert(
+                (len(kwargs) == 0),
+                f"**kwargs are currently not supported for numpy ufuncs, ufunc: {ufunc}",
+            )
             return tracing_func(*input_tracers, **kwargs)
         raise NotImplementedError("Only __call__ method is supported currently")
 
@@ -52,9 +54,10 @@ class NPTracer(BaseTracer):
         Read more: https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch
         """
         tracing_func = self.get_tracing_func_for_np_function(func)
-        assert (
-            len(kwargs) == 0
-        ), f"**kwargs are currently not supported for numpy functions, func: {func}"
+        custom_assert(
+            (len(kwargs) == 0),
+            f"**kwargs are currently not supported for numpy functions, func: {func}",
+        )
         return tracing_func(*args, **kwargs)
 
     def astype(self, numpy_dtype: DTypeLike, *args, **kwargs) -> "NPTracer":
@@ -69,10 +72,13 @@ class NPTracer(BaseTracer):
         Returns:
             NPTracer: The NPTracer representing the casting operation
         """
-        assert len(args) == 0, f"astype currently only supports tracing without *args, got {args}"
-        assert (
-            len(kwargs) == 0
-        ), f"astype currently only supports tracing without **kwargs, got {kwargs}"
+        custom_assert(
+            len(args) == 0, f"astype currently only supports tracing without *args, got {args}"
+        )
+        custom_assert(
+            (len(kwargs) == 0),
+            f"astype currently only supports tracing without **kwargs, got {kwargs}",
+        )
 
         normalized_numpy_dtype = numpy.dtype(numpy_dtype)
         output_dtype = convert_numpy_dtype_to_base_data_type(numpy_dtype)
@@ -139,9 +145,9 @@ class NPTracer(BaseTracer):
         Returns:
             NPTracer: The output NPTracer containing the traced function
         """
-        assert len(input_tracers) == 1
+        custom_assert(len(input_tracers) == 1)
         common_output_dtypes = cls._manage_dtypes(unary_operator, *input_tracers)
-        assert len(common_output_dtypes) == 1
+        custom_assert(len(common_output_dtypes) == 1)
 
         traced_computation = ArbitraryFunction(
             input_base_value=input_tracers[0].output,
@@ -167,7 +173,7 @@ class NPTracer(BaseTracer):
         dot_inputs = (self, self._sanitize(other_tracer))
 
         common_output_dtypes = self._manage_dtypes(numpy.dot, *dot_inputs)
-        assert len(common_output_dtypes) == 1
+        custom_assert(len(common_output_dtypes) == 1)
 
         traced_computation = Dot(
             [input_tracer.output for input_tracer in dot_inputs],

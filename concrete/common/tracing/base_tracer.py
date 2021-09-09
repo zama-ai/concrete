@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, List, Tuple, Type, Union
 
+from ..debugging.custom_assert import custom_assert
 from ..representation import intermediate as ir
 from ..representation.intermediate import IR_MIX_VALUES_FUNC_ARG_NAME
 from ..values import BaseValue
@@ -105,7 +106,7 @@ class BaseTracer(ABC):
             ir.Add,
         )
 
-        assert len(result_tracer) == 1
+        custom_assert(len(result_tracer) == 1)
         return result_tracer[0]
 
     # With that is that x + 1 and 1 + x have the same graph. If we want to keep
@@ -122,7 +123,7 @@ class BaseTracer(ABC):
             ir.Sub,
         )
 
-        assert len(result_tracer) == 1
+        custom_assert(len(result_tracer) == 1)
         return result_tracer[0]
 
     def __rsub__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
@@ -134,7 +135,7 @@ class BaseTracer(ABC):
             ir.Sub,
         )
 
-        assert len(result_tracer) == 1
+        custom_assert(len(result_tracer) == 1)
         return result_tracer[0]
 
     def __mul__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
@@ -146,7 +147,7 @@ class BaseTracer(ABC):
             ir.Mul,
         )
 
-        assert len(result_tracer) == 1
+        custom_assert(len(result_tracer) == 1)
         return result_tracer[0]
 
     # With that is that x * 3 and 3 * x have the same graph. If we want to keep

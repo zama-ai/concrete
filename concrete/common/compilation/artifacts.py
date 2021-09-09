@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Optional, Union
 import networkx as nx
 from PIL import Image
 
-from ..debugging import draw_graph, get_printable_graph
+from ..debugging import custom_assert, draw_graph, get_printable_graph
 from ..operator_graph import OPGraph
 from ..representation import intermediate as ir
 from ..values import BaseValue
@@ -102,7 +102,7 @@ class CompilationArtifacts:
             None
         """
 
-        assert self.final_operation_graph is not None
+        custom_assert(self.final_operation_graph is not None)
         self.bounds_of_the_final_operation_graph = bounds
 
     def add_final_operation_graph_mlir(self, mlir: str):
@@ -115,7 +115,7 @@ class CompilationArtifacts:
             None
         """
 
-        assert self.final_operation_graph is not None
+        custom_assert(self.final_operation_graph is not None)
         self.mlir_of_the_final_operation_graph = mlir
 
     def export(self):
@@ -186,7 +186,7 @@ class CompilationArtifacts:
                 f.write(f"{representation}\n")
 
         if self.bounds_of_the_final_operation_graph is not None:
-            assert self.final_operation_graph is not None
+            custom_assert(self.final_operation_graph is not None)
             with open(output_directory.joinpath("bounds.txt"), "w", encoding="utf-8") as f:
                 # TODO:
                 #   if nx.topological_sort is not deterministic between calls,
@@ -194,11 +194,11 @@ class CompilationArtifacts:
                 #   thus, we may want to change this in the future
                 for index, node in enumerate(nx.topological_sort(self.final_operation_graph.graph)):
                     bounds = self.bounds_of_the_final_operation_graph.get(node)
-                    assert bounds is not None
+                    custom_assert(bounds is not None)
                     f.write(f"%{index} :: [{bounds.get('min')}, {bounds.get('max')}]\n")
 
         if self.mlir_of_the_final_operation_graph is not None:
-            assert self.final_operation_graph is not None
+            custom_assert(self.final_operation_graph is not None)
             with open(output_directory.joinpath("mlir.txt"), "w", encoding="utf-8") as f:
                 f.write(self.mlir_of_the_final_operation_graph)
 

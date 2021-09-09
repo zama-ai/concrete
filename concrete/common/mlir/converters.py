@@ -21,13 +21,14 @@ from ..data_types.dtypes_helpers import (
     value_is_encrypted_scalar_unsigned_integer,
     value_is_encrypted_tensor_integer,
 )
+from ..debugging.custom_assert import custom_assert
 from ..representation import intermediate as ir
 
 
 def add(node, preds, ir_to_mlir_node, ctx):
     """Convert an addition intermediate node."""
-    assert len(node.inputs) == 2, "addition should have two inputs"
-    assert len(node.outputs) == 1, "addition should have a single output"
+    custom_assert(len(node.inputs) == 2, "addition should have two inputs")
+    custom_assert(len(node.outputs) == 1, "addition should have a single output")
     if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
         node.inputs[1]
     ):
@@ -70,8 +71,8 @@ def _add_eint_eint(node, preds, ir_to_mlir_node, ctx):
 
 def sub(node, preds, ir_to_mlir_node, ctx):
     """Convert a subtraction intermediate node."""
-    assert len(node.inputs) == 2, "subtraction should have two inputs"
-    assert len(node.outputs) == 1, "subtraction should have a single output"
+    custom_assert(len(node.inputs) == 2, "subtraction should have two inputs")
+    custom_assert(len(node.outputs) == 1, "subtraction should have a single output")
     if value_is_clear_scalar_integer(node.inputs[0]) and value_is_encrypted_scalar_unsigned_integer(
         node.inputs[1]
     ):
@@ -94,8 +95,8 @@ def _sub_int_eint(node, preds, ir_to_mlir_node, ctx):
 
 def mul(node, preds, ir_to_mlir_node, ctx):
     """Convert a multiplication intermediate node."""
-    assert len(node.inputs) == 2, "multiplication should have two inputs"
-    assert len(node.outputs) == 1, "multiplication should have a single output"
+    custom_assert(len(node.inputs) == 2, "multiplication should have two inputs")
+    custom_assert(len(node.outputs) == 1, "multiplication should have a single output")
     if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
         node.inputs[1]
     ):
@@ -134,8 +135,8 @@ def constant(node, _, __, ctx):
 
 def apply_lut(node, preds, ir_to_mlir_node, ctx):
     """Convert an arbitrary function intermediate node."""
-    assert len(node.inputs) == 1, "LUT should have a single input"
-    assert len(node.outputs) == 1, "LUT should have a single output"
+    custom_assert(len(node.inputs) == 1, "LUT should have a single input")
+    custom_assert(len(node.outputs) == 1, "LUT should have a single output")
     if not value_is_encrypted_scalar_unsigned_integer(node.inputs[0]):
         raise TypeError("Only support LUT with encrypted unsigned integers inputs")
     if not value_is_encrypted_scalar_unsigned_integer(node.outputs[0]):
@@ -160,8 +161,8 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx):
 
 def dot(node, preds, ir_to_mlir_node, ctx):
     """Convert a dot intermediate node."""
-    assert len(node.inputs) == 2, "Dot should have two inputs"
-    assert len(node.outputs) == 1, "Dot should have a single output"
+    custom_assert(len(node.inputs) == 2, "Dot should have two inputs")
+    custom_assert(len(node.outputs) == 1, "Dot should have a single output")
     if not (
         (
             value_is_encrypted_tensor_integer(node.inputs[0])

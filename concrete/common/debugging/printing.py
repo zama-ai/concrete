@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 import networkx as nx
 
+from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
 from ..representation import intermediate as ir
 
@@ -32,7 +33,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
     Returns:
         str: a string to print or save in a file
     """
-    assert isinstance(opgraph, OPGraph)
+    custom_assert(isinstance(opgraph, OPGraph))
     list_of_nodes_which_are_outputs = list(opgraph.output_nodes.values())
     graph = opgraph.graph
 
@@ -46,7 +47,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
         # This code doesn't work with more than a single output. For more outputs,
         # we would need to change the way the destination are created: currently,
         # they only are done by incrementing i
-        assert len(node.outputs) == 1
+        custom_assert(len(node.outputs) == 1)
 
         if isinstance(node, ir.Input):
             what_to_print = node.input_name
@@ -72,9 +73,9 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
                     list_of_arg_name += [(index["input_idx"], str(map_table[pred]))]
 
             # Some checks, because the previous algorithm is not clear
-            assert len(list_of_arg_name) == len(set(x[0] for x in list_of_arg_name))
+            custom_assert(len(list_of_arg_name) == len(set(x[0] for x in list_of_arg_name)))
             list_of_arg_name.sort()
-            assert [x[0] for x in list_of_arg_name] == list(range(len(list_of_arg_name)))
+            custom_assert([x[0] for x in list_of_arg_name] == list(range(len(list_of_arg_name))))
 
             # Then, just print the predecessors in the right order
             what_to_print += ", ".join([x[1] for x in list_of_arg_name]) + ")"

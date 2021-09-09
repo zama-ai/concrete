@@ -4,6 +4,7 @@ from copy import deepcopy
 from functools import partial
 from typing import Callable, Union, cast
 
+from ..debugging.custom_assert import custom_assert
 from ..values import (
     BaseValue,
     ClearScalar,
@@ -149,8 +150,8 @@ def find_type_to_hold_both_lossy(
     Returns:
         BaseDataType: The dtype able to hold (potentially lossy) dtype1 and dtype2
     """
-    assert isinstance(dtype1, BASE_DATA_TYPES), f"Unsupported dtype1: {type(dtype1)}"
-    assert isinstance(dtype2, BASE_DATA_TYPES), f"Unsupported dtype2: {type(dtype2)}"
+    custom_assert(isinstance(dtype1, BASE_DATA_TYPES), f"Unsupported dtype1: {type(dtype1)}")
+    custom_assert(isinstance(dtype2, BASE_DATA_TYPES), f"Unsupported dtype2: {type(dtype2)}")
 
     type_to_return: BaseDataType
 
@@ -208,8 +209,12 @@ def mix_scalar_values_determine_holding_dtype(
             value2 dtypes.
     """
 
-    assert isinstance(value1, ScalarValue), f"Unsupported value1: {value1}, expected ScalarValue"
-    assert isinstance(value2, ScalarValue), f"Unsupported value2: {value2}, expected ScalarValue"
+    custom_assert(
+        isinstance(value1, ScalarValue), f"Unsupported value1: {value1}, expected ScalarValue"
+    )
+    custom_assert(
+        isinstance(value2, ScalarValue), f"Unsupported value2: {value2}, expected ScalarValue"
+    )
 
     holding_type = find_type_to_hold_both_lossy(value1.data_type, value2.data_type)
     mixed_value: ScalarValue
@@ -241,12 +246,19 @@ def mix_tensor_values_determine_holding_dtype(
             value2 dtypes.
     """
 
-    assert isinstance(value1, TensorValue), f"Unsupported value1: {value1}, expected TensorValue"
-    assert isinstance(value2, TensorValue), f"Unsupported value2: {value2}, expected TensorValue"
+    custom_assert(
+        isinstance(value1, TensorValue), f"Unsupported value1: {value1}, expected TensorValue"
+    )
+    custom_assert(
+        isinstance(value2, TensorValue), f"Unsupported value2: {value2}, expected TensorValue"
+    )
 
-    assert value1.shape == value2.shape, (
-        f"Tensors have different shapes which is not supported.\n"
-        f"value1: {value1.shape}, value2: {value2.shape}"
+    custom_assert(
+        value1.shape == value2.shape,
+        (
+            f"Tensors have different shapes which is not supported.\n"
+            f"value1: {value1.shape}, value2: {value2.shape}"
+        ),
     )
 
     holding_type = find_type_to_hold_both_lossy(value1.data_type, value2.data_type)
@@ -279,9 +291,10 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
             dtypes.
     """
 
-    assert (
-        value1.__class__ == value2.__class__
-    ), f"Cannot mix values of different types: value 1:{type(value1)}, value2: {type(value2)}"
+    custom_assert(
+        (value1.__class__ == value2.__class__),
+        f"Cannot mix values of different types: value 1:{type(value1)}, value2: {type(value2)}",
+    )
 
     if isinstance(value1, ScalarValue) and isinstance(value2, ScalarValue):
         return mix_scalar_values_determine_holding_dtype(value1, value2)
@@ -304,9 +317,10 @@ def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]
         BaseDataType: The corresponding BaseDataType
     """
     constant_data_type: BaseDataType
-    assert isinstance(
-        constant_data, (int, float)
-    ), f"Unsupported constant data of type {type(constant_data)}"
+    custom_assert(
+        isinstance(constant_data, (int, float)),
+        f"Unsupported constant data of type {type(constant_data)}",
+    )
     if isinstance(constant_data, int):
         is_signed = constant_data < 0
         constant_data_type = Integer(

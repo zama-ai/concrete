@@ -6,6 +6,7 @@ from typing import Callable, Dict, Iterable, OrderedDict, Set, Type
 import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
 
+from ..debugging.custom_assert import custom_assert
 from ..representation import intermediate as ir
 from ..values import BaseValue
 from .base_tracer import BaseTracer
@@ -121,6 +122,6 @@ def create_graph_from_output_tracers(
 
         current_tracers = next_tracers
 
-    assert is_directed_acyclic_graph(graph)
+    custom_assert(is_directed_acyclic_graph(graph))
 
     return graph

@@ -7,6 +7,7 @@ import networkx as nx
 from ..compilation.artifacts import CompilationArtifacts
 from ..data_types.floats import Float
 from ..data_types.integers import Integer
+from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
 from ..representation import intermediate as ir
 
@@ -112,7 +113,7 @@ def convert_float_subgraph_to_fused_node(
     non_constant_start_nodes = [
         node for node in float_subgraph_start_nodes if not isinstance(node, ir.Constant)
     ]
-    assert len(non_constant_start_nodes) == 1
+    custom_assert(len(non_constant_start_nodes) == 1)
 
     current_subgraph_variable_input = non_constant_start_nodes[0]
     new_input_value = deepcopy(current_subgraph_variable_input.outputs[0])
