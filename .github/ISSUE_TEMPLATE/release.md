@@ -7,9 +7,9 @@ title: "Release vX.Y.Z (or vX.Y.Zrc?)"
 Release check-list:
 <!-- Note that some of these steps will be automated in the future -->
 - [ ] Choose the version number, e.g. `vX.Y.Z` (can be `vX.Y.Zrc?` for Release Candidates) following semantic versioning: https://semver.org/
-- [ ] Update the version in pyproject.toml to `X.Y.Z` (or `vX.Y.Zrc?`)
+- [ ] Update the version in pyproject.toml to `X.Y.Z` (or `X.Y.Zrc?`)
 - [ ] Check the release milestone issues, cut out what can't be completed in time
-- [ ] Checkout the commit for release, create a signed tag with the version name (careful for RC) `git tag -s -a -m "vX.Y.Z release" vX.Y.Z`, push it to GitHub with `git push origin refs/tags/vX.Y.Z`
+- [ ] Checkout the commit for release, create a signed tag with the version name (careful for RC) `git tag -s -a -m "vX.Y.Z release" vX.Y.Z`, (or `vX.Y.Zrc?`) push it to GitHub with `git push origin refs/tags/vX.Y.Z` (or `vX.Y.Zrc?`)
 - [ ] Run sanity checks inside the dev docker: `make pcc` and `make pytest && make coverage`
 - [ ] On the build machine with docker installed, run in your OS terminal in the project dir: `make release_docker`
 - [ ] Re-tag the image with `docker tag concretefhe-release:latest ghcr.io/zama-ai/concretefhe-release:vX.Y.Z` (or `vX.Y.Zrc?`)
