@@ -24,9 +24,7 @@ Homomorphic Development Kit's documentation
 
    user/howto/COMPILE.md
    user/howto/REDUCE_NEEDED_PRECISION.md
-   user/howto/DEBUG.md
-   user/howto/SUBMIT_ISSUE.md
-   user/howto/SUPPORT.md
+   user/howto/DEBUG_SUPPORT_SUBMIT_ISSUES.md
    user/howto/FAQ.md
 
 .. toctree::
