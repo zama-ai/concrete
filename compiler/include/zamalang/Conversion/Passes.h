@@ -9,6 +9,7 @@
 #include "zamalang/Conversion/HLFHETensorOpsToLinalg/Pass.h"
 #include "zamalang/Conversion/HLFHEToMidLFHE/Pass.h"
 #include "zamalang/Conversion/LowLFHEToConcreteCAPI/Pass.h"
+#include "zamalang/Conversion/LowLFHEUnparametrize/Pass.h"
 #include "zamalang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h"
 #include "zamalang/Conversion/MidLFHEGlobalParametrization/Pass.h"
 #include "zamalang/Conversion/MidLFHEToLowLFHE/Pass.h"

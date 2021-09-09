@@ -89,6 +89,11 @@ mlir::LogicalResult CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
     pm.enableVerifier();
   }
 
+  // Unparametrize LowLFHE
+  addFilteredPassToPassManager(
+      pm, mlir::zamalang::createConvertLowLFHEUnparametrizePass(),
+      options.enablePass);
+
   // Bufferize
   addFilteredPassToPassManager(pm, mlir::createTensorConstantBufferizePass(),
                                options.enablePass);
@@ -105,6 +110,7 @@ mlir::LogicalResult CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
   addFilteredPassToPassManager(pm, mlir::createFinalizingBufferizePass(),
                                options.enablePass);
 
+  // Convert to MLIR LLVM Dialect
   addFilteredPassToPassManager(
       pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
       options.enablePass);

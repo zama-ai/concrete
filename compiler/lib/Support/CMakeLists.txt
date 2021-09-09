@@ -14,6 +14,7 @@ add_mlir_library(ZamalangSupport
   LINK_LIBS PUBLIC
   HLFHETensorOpsToLinalg
   HLFHEToMidLFHE
+  LowLFHEUnparametrize
   MLIRLowerableDialectsToLLVM
 
   MLIRExecutionEngine
