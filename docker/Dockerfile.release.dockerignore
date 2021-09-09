@@ -4,7 +4,7 @@
 # Not our sources
 !concrete
 !pyproject.toml
-!docker/datascience_requirements.txt
+!docker/release_requirements.txt
 !torch_requirements.txt
 
 # But still ignore pycache

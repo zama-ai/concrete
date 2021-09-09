@@ -1,4 +1,4 @@
-FROM ghcr.io/zama-ai/zamalang-compiler as builder
+FROM ghcr.io/zama-ai/zamalang-compiler:bb0126a86a36b9062760c97b7e2f9d7008549899 as builder
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
@@ -14,12 +14,12 @@ COPY pyproject.toml ./pyproject.toml
 
 RUN poetry build --format wheel
 
-FROM ghcr.io/zama-ai/zamalang-compiler
+FROM ghcr.io/zama-ai/zamalang-compiler:bb0126a86a36b9062760c97b7e2f9d7008549899
 
 RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
 COPY --from=builder /build/dist/*.whl .
-COPY docker/datascience_requirements.txt .
+COPY docker/release_requirements.txt .
 COPY torch_requirements.txt .
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
@@ -35,7 +35,7 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     python3 -m pip install --no-cache-dir ./*.whl && \
     python3 -m pip install --no-cache-dir -r torch_requirements.txt \
     -f https://download.pytorch.org/whl/torch_stable.html && \
-    python3 -m pip install --no-cache-dir -r datascience_requirements.txt
+    python3 -m pip install --no-cache-dir -r release_requirements.txt
 
 WORKDIR /app
 RUN printf "#!/bin/bash\npython3 -m jupyter notebook --ip=0.0.0.0 --allow-root --no-browser\n" \
