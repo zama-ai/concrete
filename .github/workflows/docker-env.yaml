@@ -62,8 +62,7 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           -H "Authorization: token ${{ secrets.BOT_TOKEN }}" \
           https://api.github.com/repos/${{ github.repository }}/dispatches \
-          -d '{"event_type":"env-docker-preflight"}' \
-          -d '{"client_payload": {"image":"${{ env.PREFLIGHT_IMAGE }}"}}'
+          -d '{"event_type":"env-docker-preflight","client_payload":{"image":"${{ env.PREFLIGHT_IMAGE }}"}}'
       - name: Slack Notification
         if: ${{ always() }}
         continue-on-error: true
@@ -90,9 +89,9 @@ jobs:
     steps:
       - name: Check build went well with preflight image
         env:
-          CHECKS_OK: ${{ github.event.client_payload.preflight_success }}
+          PREFLIGHT_STATUS: ${{ github.event.client_payload.preflight_status }}
         run: |
-          if [[ "${CHECKS_OK}" == "false" ]]; then
+          if [[ "${PREFLIGHT_STATUS}" != "success" ]]; then
             echo "Build with new image failed, aborting."
             exit 1
           fi
