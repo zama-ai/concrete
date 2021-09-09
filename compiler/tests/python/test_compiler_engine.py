@@ -15,6 +15,18 @@ from zamalang import CompilerEngine
             (5, 7),
             12,
         ),
+        (
+            """
+            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            {
+                %ret = "HLFHE.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
+                return %ret : !HLFHE.eint<7>
+            }
+            """,
+            ([1, 2, 3, 4], [4, 3, 2, 1]),
+            20,
+        ),
     ],
 )
 def test_compile_and_run(mlir_input, args, expected_result):
