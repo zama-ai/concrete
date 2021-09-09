@@ -1,4 +1,4 @@
-Homomorphic Development Kit's documentation
+Concrete Framework's documentation
 ===========================================
 
 
@@ -7,6 +7,7 @@ Homomorphic Development Kit's documentation
    :caption: Basics
 
    README.md
+   Installing <user/howto/INSTALLING.md>
 
 .. toctree::
    :maxdepth: 2
@@ -21,7 +22,7 @@ Homomorphic Development Kit's documentation
    :caption: How to
 
    user/howto/INSTALLING.md
-   user/howto/COMPILE.md
+   user/howto/COMPILING_AND_EXECUTING.md
    user/howto/REDUCE_NEEDED_PRECISION.md
    user/howto/DEBUG_SUPPORT_SUBMIT_ISSUES.md
    user/howto/FAQ.md
@@ -31,7 +32,7 @@ Homomorphic Development Kit's documentation
    :caption: Explanation
 
    user/explanation/WHAT_IS_FHE.md
-   user/explanation/FHE_LIMITS.md
+   user/explanation/FHE_AND_FRAMEWORK_LIMITS.md
    user/explanation/QUANTIZATION.md
    user/explanation/FUTURE_FEATURES.md
 

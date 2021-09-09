@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = "Homomorphic Development Kit"
+project = "Concrete Framework"
 copyright = "2021, Zama"
 author = "Zama"
 

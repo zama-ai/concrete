@@ -26,7 +26,9 @@
     top: 0;
     left: 50%;
     padding: 0;
-    margin: 0 0 0 -100px !important;
+
+    /* Adjust this to change the adjustment of the Zama's logo, on the top left */
+    margin: 0 0 0 -80px !important;
 }
 
 .rst-content code.literal, .rst-content tt.literal {

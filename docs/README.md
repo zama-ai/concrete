@@ -20,13 +20,13 @@ Basically, we have divided our documentation into several parts:
 
 ## A work in progress
 
-Concrete is a work in progress, and is currently limited to a certain number of operators and features. In the future, there will be improvements as described in this [section](user/explanation/FUTURE_FEATURES.md). 
+Concrete is a work in progress, and is currently limited to a certain number of operators and features. In the future, there will be improvements as described in this [section](user/explanation/FUTURE_FEATURES.md).
 
 The main _current_ limits are:
 - Concrete is only supporting unsigned integers
 - Concrete needs the integer to be less than 7 bits (included)
 - Concrete is mostly restricted to scalars (by opposition to tensors). The only exception is the `dot` operator, which can dot a tensor of encrypted values with a tensor of constant values
 
-The first two limits can be taken care of with the use of quantization, as explained a bit further in [this](user/explanation/QUANTIZATION.md) and [this](user/howto/REDUCE_NEEDED_PRECISION.md) parts of the documentation. 
+The first two limits can be taken care of with the use of quantization, as explained a bit further in [this](user/explanation/QUANTIZATION.md) and [this](user/howto/REDUCE_NEEDED_PRECISION.md) parts of the documentation.
 
-The scalar limitation is mainly an engineering issue, and will be fixed in the next release. Today, one needs to split all the tensors into small scalars, which is inconvenient and will be no more needed very soon. 
+The scalar limitation is mainly an engineering issue, and will be fixed in the next release. Today, one needs to split all the tensors into small scalars, which is inconvenient and will be no more needed very soon.

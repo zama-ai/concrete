@@ -56,4 +56,4 @@ may be useful to us. Don't remember, Concrete is a project where we are open to 
 
 ## Submitting an issue
 
-In case you have a bug, which is reproducible, that you have reduced to a small piece of code,  we have our issue tracker (TODO: LINK TO BE ADDED). Remember that a well-described short issue is an issue which is more likely to be studied and fixed. The more issues we receive, the better the product will be.   
+In case you have a bug, which is reproducible, that you have reduced to a small piece of code,  we have our issue tracker (TODO: LINK TO BE ADDED). Remember that a well-described short issue is an issue which is more likely to be studied and fixed. The more issues we receive, the better the product will be.
