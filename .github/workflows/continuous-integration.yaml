@@ -106,7 +106,7 @@ jobs:
           path: diff-coverage.txt
           recreate: true
       - name: Trigger docker push workflow
-        if: ${{ always() && github.event_name == 'repository_dispatch' && github.event.event_type == 'env-docker-preflight' }}
+        if: ${{ always() && github.event_name == 'repository_dispatch' && github.event.action == 'env-docker-preflight' }}
         run: |
           curl \
           -X POST \

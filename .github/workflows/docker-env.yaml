@@ -23,7 +23,7 @@ env:
 
 jobs:
   build_preflight_docker:
-    if: ${{ github.event_name != 'repository_dispatch' || github.event.event_type == 'rebuild-env-docker' }}
+    if: ${{ github.event_name != 'repository_dispatch' || github.event.action == 'rebuild-env-docker' }}
 
     concurrency:
       group: ${{ github.ref }}
