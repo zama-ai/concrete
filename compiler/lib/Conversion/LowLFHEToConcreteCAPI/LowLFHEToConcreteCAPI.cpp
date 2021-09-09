@@ -137,14 +137,13 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
 
   // Insert forward declaration of allocate lwe ciphertext
   {
-    auto funcType = mlir::FunctionType::get(
-        rewriter.getContext(),
-        {
-            errType,
-            mlir::IntegerType::get(rewriter.getContext(), 32),
-        },
+    auto funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                            {
+                                                errType,
+                                                rewriter.getIndexType(),
+                                            },
 
-        {genericLweCiphertextType});
+                                            {genericLweCiphertextType});
     if (insertForwardDeclaration(op, rewriter, "allocate_lwe_ciphertext_u64",
                                  funcType)
             .failed()) {
@@ -266,14 +265,13 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   }
   // Insert forward declaration of the alloc_glwe function
   {
-    auto funcType = mlir::FunctionType::get(
-        rewriter.getContext(),
-        {
-            errType,
-            mlir::IntegerType::get(rewriter.getContext(), 32),
-            mlir::IntegerType::get(rewriter.getContext(), 32),
-        },
-        {genericGlweCiphertextType});
+    auto funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                            {
+                                                errType,
+                                                rewriter.getI32Type(),
+                                                rewriter.getI32Type(),
+                                            },
+                                            {genericGlweCiphertextType});
     if (insertForwardDeclaration(op, rewriter, "allocate_glwe_ciphertext_u64",
                                  funcType)
             .failed()) {
@@ -282,10 +280,9 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   }
   // Insert forward declaration of the alloc_plaintext_list function
   {
-    auto funcType = mlir::FunctionType::get(
-        rewriter.getContext(),
-        {errType, mlir::IntegerType::get(rewriter.getContext(), 32)},
-        {genericPlaintextListType});
+    auto funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                            {errType, rewriter.getI32Type()},
+                                            {genericPlaintextListType});
     if (insertForwardDeclaration(op, rewriter, "allocate_plaintext_list_u64",
                                  funcType)
             .failed()) {
@@ -357,7 +354,7 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
                                                      rewriter.getIndexAttr(0));
       // Add the call to the allocation
       auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
-          op.getLoc(), rewriter.getI32IntegerAttr(lweResultType.getSize()));
+          op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
       mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
       auto allocGeneric = rewriter.create<mlir::CallOp>(
           op.getLoc(), allocName,
@@ -418,7 +415,7 @@ struct LowLFHEZeroOpPattern
                                                    rewriter.getIndexAttr(0));
     // Allocate a fresh new ciphertext
     auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
-        op.getLoc(), rewriter.getI32IntegerAttr(lweResultType.getSize()));
+        op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
     mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
     auto allocGeneric = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",
@@ -500,9 +497,8 @@ struct GlweFromTableOpPattern
     {
       auto funcType = mlir::FunctionType::get(
           rewriter.getContext(),
-          {errType, op->getOperandTypes().front(),
-           mlir::IntegerType::get(rewriter.getContext(), 64),
-           mlir::IntegerType::get(rewriter.getContext(), 32)},
+          {errType, op->getOperandTypes().front(), rewriter.getI64Type(),
+           rewriter.getI32Type()},
           {getGenericForeignPlaintextListType(rewriter.getContext())});
       if (insertForwardDeclaration(
               op, rewriter, "runtime_foreign_plaintext_list_u64", funcType)
@@ -592,9 +588,7 @@ struct LowLFHEBootstrapLweOpPattern
     // allocate the result lwe ciphertext, should be of a generic type, to cast
     // before return
     auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
-        op.getLoc(),
-        mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32), bstOutputSize));
+        op.getLoc(), rewriter.getIndexAttr(bstOutputSize));
     mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
     auto allocateGenericLweCtOp = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",
@@ -652,8 +646,7 @@ struct LowLFHEKeySwitchLweOpPattern
     // before return
     auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
         op.getLoc(),
-        mlir::IntegerAttr::get(
-            mlir::IntegerType::get(rewriter.getContext(), 32),
+        rewriter.getIndexAttr(
             op->getAttr("outputLweSize").cast<mlir::IntegerAttr>().getInt()));
     mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
     auto allocateGenericLweCtOp = rewriter.create<mlir::CallOp>(
