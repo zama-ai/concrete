@@ -7,7 +7,8 @@ title: "Release vX.Y.Z"
 Release check-list:
 <!-- Note that some of these steps will be automated in the future -->
 - [ ] Check the release milestone issues, cut out what can't be completed in time
-- [ ] Choose the version number following semantic versioning: https://semver.org/
+- [ ] Choose the version number, e.g. `vX.Y.Z` following semantic versioning: https://semver.org/
+- [ ] Update the version in pyproject.toml to `X.Y.Z`
 - [ ] Checkout the commit for release, create a signed tag with the version name `git tag -s -a -m "vX.Y.Z release" vX.Y.Z`, push it to GitHub with `git push origin refs/tags/vX.Y.Z`
 - [ ] Run sanity checks inside the dev docker: `make pcc` and `make pytest && make coverage`
 - [ ] On the build machine with docker installed, run in your OS terminal in the project dir: `make release_docker`
