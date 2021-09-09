@@ -1,5 +1,5 @@
 
-# Installing
+# Project Setup
 
 ## Installing Python v3.8
 

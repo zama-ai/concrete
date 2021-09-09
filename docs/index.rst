@@ -7,8 +7,6 @@ Homomorphic Development Kit's documentation
    :caption: Basics
 
    README.md
-   install/INSTALLING.md
-   install/DOCKER.md
 
 .. toctree::
    :maxdepth: 2
@@ -22,6 +20,7 @@ Homomorphic Development Kit's documentation
    :maxdepth: 2
    :caption: How to
 
+   user/howto/INSTALLING.md
    user/howto/COMPILE.md
    user/howto/REDUCE_NEEDED_PRECISION.md
    user/howto/DEBUG_SUPPORT_SUBMIT_ISSUES.md
@@ -46,6 +45,8 @@ Homomorphic Development Kit's documentation
    :maxdepth: 2
    :caption: Developper - How To
 
+   dev/howto/PROJECT_SETUP.md
+   dev/howto/DOCKER.md
    dev/howto/DOCUMENTING.md
    Releasing on GitHub <dev/howto/RELEASING.md>
    dev/howto/CONTRIBUTING.md
@@ -58,4 +59,3 @@ Homomorphic Development Kit's documentation
    dev/explanation/TERMINOLOGY_AND_STRUCTURE.md
    dev/explanation/FLOAT-FUSING.md
    dev/explanation/MLIR.md
-   
