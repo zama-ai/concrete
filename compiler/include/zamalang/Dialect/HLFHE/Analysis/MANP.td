@@ -92,4 +92,14 @@ def MANP : FunctionPass<"MANP"> {
   }];
 }
 
+def MaxMANP : FunctionPass<"MaxMANP"> {
+  let summary = "Extract maximum HLFHE Minimal Arithmetic Noise Padding and maximum encrypted integer width";
+  let description = [{
+   This pass calculates the squared Minimal Arithmetic Noise Padding
+   (MANP) for each operation using the MANP pass and extracts the
+   maximum (non-squared) Minimal Arithmetic Noise Padding and the
+   maximum ecrypted integer width from.
+  }];
+}
+
 #endif
