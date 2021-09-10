@@ -220,6 +220,8 @@ def main():
 
     correct = 0
     for x_i, y_i in zip(x_q, y):
+        x_i = [int(value) for value in x_i]
+
         # Measure: Evaluation Time (ms)
         prediction = round(QuantizedArray(engine.run(*x_i), y_parameters).dequantize())
         # Measure: End

@@ -10,9 +10,9 @@ import tqdm
 def name_to_id(name):
     """Convert a human readable name to a url friendly id (e.g., `x + y` to `x-plus-y`)"""
 
+    name = name.replace("-", "minus")
     name = name.replace("**", "-to-the-power-of-")
     name = name.replace("+", "plus")
-    name = name.replace("-", "minus")
     name = name.replace("*", "times")
     name = name.replace("/", "over")
     name = name.replace("%", "percent")
@@ -191,7 +191,12 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
                 working = False
 
                 pbar.write(f"        Failed (exited with {process.returncode})")
-                pbar.write(f"")
+                pbar.write(f"        --------------------{'-' * len(str(process.returncode))}-")
+
+                stderr = process.stderr.decode("utf-8")
+                for line in stderr.split("\n"):
+                    if line.strip() != "":
+                        pbar.write(f"            {line}")
 
                 pbar.update(samples)
                 break
@@ -235,17 +240,18 @@ def main():
     parser = argparse.ArgumentParser(description="Measurement script for the progress tracker")
 
     parser.add_argument("base", type=str, help="directory which contains the benchmarks")
-    parser.add_argument("--output", type=str, help="file which the results will be saved to")
     parser.add_argument("--samples", type=int, default=30, help="number of samples to take")
     parser.add_argument("--keep", action='store_true', help="flag to keep measurement scripts")
 
     args = parser.parse_args()
 
     base = pathlib.Path(args.base)
-    output = pathlib.Path(args.output)
     samples = args.samples
 
-    result = {"metrics": {}, "targets": {}}
+    with open(".benchmarks/machine.json", "r") as f:
+        machine = json.load(f)
+
+    result = {"machine": machine, "metrics": {}, "targets": {}}
     scripts = list(base.glob("*.py"))
 
     # Process each script under the base directory
@@ -303,8 +309,8 @@ def main():
         perform_measurements(script, script_without_extension, target_id, metrics, samples, result)
 
         # Dump the latest results to the output file
-        with open(output, "w") as f:
-            json.dump(result, f, indent=2)
+        with open(".benchmarks/findings.json", "w") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
 
         # Delete the modified script if the user doesn't care
         if not args.keep:

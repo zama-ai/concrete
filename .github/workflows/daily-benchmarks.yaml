@@ -1,0 +1,67 @@
+name: Daily Benchmarks
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 22 * * *' # Everyday @ 22:00
+
+jobs:
+  perform:
+    name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3 # Europe (Paris)
+
+      - name: Start EC2 Instance
+        run: |
+          aws ec2 start-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }}
+
+      - name: Get Public IP Address of EC2 Instance
+        id: public-ip
+        run: echo "::set-output name=value::$(aws ec2 describe-instances --region eu-west-3 --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)"
+
+      - name: Connect To EC2 Instance, Perform Benchmarks, Publish Results
+        uses: appleboy/ssh-action@1d1b21ca96111b1eb4c03c21c14ebb971d2200f6
+        with:
+          host: ${{ steps.public-ip.outputs.value }}
+          username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
+          key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
+          script: |
+            cd ~/concretefhe-internal
+            make docker_publish_measurements
+
+      - name: Copy Logs
+        uses: appleboy/scp-action@edc8ec9139a2687bcebf0249d0352ff2a988df00
+        with:
+          host: ${{ steps.public-ip.outputs.value }}
+          username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
+          key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
+          source: "~/concretefhe-internal/logs/latest.log"
+          target: "~/latest.log"
+
+      - name: Stop EC2 Instance
+        if: ${{ always() }}
+        run: |
+          aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }}
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: ~/latest.log
+
+      - name: Send Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: 'Publishing benchmarks finished with status ${{ job.status }} (${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
