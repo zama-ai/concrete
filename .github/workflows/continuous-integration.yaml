@@ -91,8 +91,6 @@ jobs:
           # TODO: remove this when JIT doesn't need this
           LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
-          make strip_nb
-          make notebook_timeout
           make pytest_nb
       - name: Test coverage
         id: coverage

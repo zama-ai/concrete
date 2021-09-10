@@ -160,10 +160,6 @@ strip_nb:
 	poetry run python ./script/nbmake_utils/notebook_sanitize.py examples
 .PHONY: strip_nb
 
-notebook_timeout:
-	poetry run python ./script/nbmake_utils/notebook_test_timeout.py examples
-.PHONY: notebook_timeout
-
 pytest_nb:
 	poetry run pytest --nbmake examples/*.ipynb
 .PHONY: pytest_nb
