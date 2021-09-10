@@ -1,4 +1,4 @@
-FROM ghcr.io/zama-ai/zamalang-compiler:bb0126a86a36b9062760c97b7e2f9d7008549899 as builder
+FROM ghcr.io/zama-ai/zamalang-compiler:967fda07a05b6a410fee2027514a7114bdf781e9 as builder
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
@@ -14,12 +14,12 @@ COPY pyproject.toml ./pyproject.toml
 
 RUN poetry build --format wheel
 
-FROM ghcr.io/zama-ai/zamalang-compiler:bb0126a86a36b9062760c97b7e2f9d7008549899
+FROM ghcr.io/zama-ai/zamalang-compiler:967fda07a05b6a410fee2027514a7114bdf781e9
 
 RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
 COPY --from=builder /build/dist/*.whl .
-COPY docker/release_requirements.txt .
+COPY docker/release_resources/release_requirements.txt .
 COPY torch_requirements.txt .
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
@@ -38,11 +38,10 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
 
 WORKDIR /app
-RUN printf "#!/bin/bash\npython3 -m jupyter notebook --ip=0.0.0.0 --allow-root --no-browser\n" \
-    > entry_point.sh && \
-    mkdir /data
+COPY docker/release_resources/entry_point.sh ./entry_point.sh
+RUN mkdir /data
 
 WORKDIR /data
 VOLUME [ "/data" ]
 
-CMD ["/bin/bash", "-l", "/app/entry_point.sh"]
+CMD ["/bin/bash", "-i", "/app/entry_point.sh"]
