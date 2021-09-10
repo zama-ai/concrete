@@ -428,3 +428,35 @@ func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
   uint64_t result = maybeResult.get();
   ASSERT_EQ(result, expected);
 }
+
+TEST(CompileAndRunTLU, random_func) {
+  mlir::zamalang::CompilerEngine engine;
+  auto mlirStr = R"XXX(
+func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
+    %tlu = std.constant dense<[16, 91, 16, 83, 80, 74, 21, 96, 1, 63, 49, 122, 76, 89, 74, 55, 109, 110, 103, 54, 105, 14, 66, 47, 52, 89, 7, 10, 73, 44, 119, 92, 25, 104, 123, 100, 108, 86, 29, 121, 118, 52, 107, 48, 34, 37, 13, 122, 107, 48, 74, 59, 96, 36, 50, 55, 120, 72, 27, 45, 12, 5, 96, 12, 24, 90, 112, 121, 68, 125, 72, 36, 0, 13, 66, 64, 18, 3, 55, 102, 116, 100, 116, 59, 94, 12, 12, 41, 3, 120, 89, 69, 71, 125, 105, 113, 4, 11, 72, 38, 88, 54, 80, 84, 64, 23, 16, 13, 36, 50, 76, 55, 115, 115, 96, 37, 60, 96, 44, 31, 111, 78, 0, 5, 23, 41, 127, 6]> : tensor<128xi64>
+    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<7>, tensor<128xi64>) -> (!HLFHE.eint<7>)
+    return %1: !HLFHE.eint<7>
+}
+)XXX";
+  ASSERT_FALSE(engine.compile(mlirStr));
+  // first value
+  auto maybeResult = engine.run({5});
+  ASSERT_TRUE((bool)maybeResult);
+  uint64_t result = maybeResult.get();
+  ASSERT_EQ(result, 74);
+  // second value
+  maybeResult = engine.run({126});
+  ASSERT_TRUE((bool)maybeResult);
+  result = maybeResult.get();
+  ASSERT_EQ(result, 127);
+  // edge value low
+  maybeResult = engine.run({0});
+  ASSERT_TRUE((bool)maybeResult);
+  result = maybeResult.get();
+  ASSERT_EQ(result, 16);
+  // edge value high
+  maybeResult = engine.run({127});
+  ASSERT_TRUE((bool)maybeResult);
+  result = maybeResult.get();
+  ASSERT_EQ(result, 6);
+}
