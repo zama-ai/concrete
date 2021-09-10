@@ -13,4 +13,4 @@ RUN echo "source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc &&
 
 WORKDIR /${SRC_DIR_NAME}
 
-ENTRYPOINT ["/bin/bash", "-l"]
+CMD ["/bin/bash"]
