@@ -13,9 +13,9 @@ Concrete Framework's documentation
    :maxdepth: 2
    :caption: Tutorial
 
-   user/tutorial/FIRST_TUTORIAL.md
-   user/tutorial/SECOND_TUTORIAL.md
-   user/tutorial/THIRD_TUTORIAL.md
+   user/tutorial/ARITHMETIC_OPERATIONS.md
+   user/tutorial/WORKING_WITH_FLOATING_POINTS.md
+   user/tutorial/TABLE_LOOKUP.md
 
 .. toctree::
    :maxdepth: 2
