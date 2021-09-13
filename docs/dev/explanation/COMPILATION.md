@@ -197,9 +197,9 @@ Assigned Data Types:
 - `3`: Clear\<**uint2**>
 - `+`: Encrypted\<**uint4**>
 
-## MLIR Lowering
+## MLIR Conversion
 
-TODO: Ayoub
+The actual compilation will be done by the concrete compiler, which is expecting an MLIR input. The MLIR conversion goes from an operation graph to its MLIR equivalent. You can read more about it [here](./MLIR.md)
 
 ## Example Walkthrough #1
 
