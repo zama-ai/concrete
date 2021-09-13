@@ -10,6 +10,12 @@ on:
     types:
       - env-docker-preflight
 
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # At 22:00 on Sunday
+    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+    - cron: '0 22 * * 0'
+
 jobs:
   build:
     concurrency:
@@ -80,7 +86,7 @@ jobs:
         run: |
           make pytest
       - name: Notebooks
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        if: ${{ github.event_name == 'schedule' && steps.conformance.outcome == 'success' && !cancelled() }}
         env:
           # TODO: remove this when JIT doesn't need this
           LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
