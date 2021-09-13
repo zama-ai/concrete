@@ -5,6 +5,7 @@ add_mlir_library(ZamalangSupport
   V0Curves.cpp
   ClientParameters.cpp
   KeySet.cpp
+  logging.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/zamalang/Support

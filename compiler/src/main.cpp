@@ -20,6 +20,7 @@
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 #include "zamalang/Support/CompilerTools.h"
+#include "zamalang/Support/logging.h"
 
 namespace cmdline {
 
@@ -78,12 +79,6 @@ llvm::cl::opt<bool> toLLVM("to-llvm", llvm::cl::desc("Compile to llvm and "),
                            llvm::cl::init<bool>(false));
 }; // namespace cmdline
 
-#define LOG_VERBOSE(expr)                                                      \
-  if (cmdline::verbose)                                                        \
-    llvm::errs() << expr;
-
-#define LOG_ERROR(expr) llvm::errs() << expr;
-
 auto defaultOptPipeline = mlir::makeOptimizingTransformer(3, 0, nullptr);
 
 mlir::LogicalResult dumpLLVMIR(mlir::ModuleOp module, llvm::raw_ostream &os) {
@@ -112,25 +107,27 @@ mlir::LogicalResult runJit(mlir::ModuleOp module,
   auto maybeArguments = mlir::zamalang::JITLambda::Argument::create(keySet);
   if (auto err = maybeArguments.takeError()) {
 
-    LOG_ERROR("Cannot create lambda arguments: " << err << "\n");
+    mlir::zamalang::log_error()
+        << "Cannot create lambda arguments: " << err << "\n";
     return mlir::failure();
   }
   // Set the arguments
   auto arguments = std::move(maybeArguments.get());
   for (auto i = 0; i < cmdline::jitArgs.size(); i++) {
     if (auto err = arguments->setArg(i, cmdline::jitArgs[i])) {
-      LOG_ERROR("Cannot push argument " << i << ": " << err << "\n");
+      mlir::zamalang::log_error()
+          << "Cannot push argument " << i << ": " << err << "\n";
       return mlir::failure();
     }
   }
   // Invoke the lambda
   if (auto err = lambda->invoke(*arguments)) {
-    LOG_ERROR("Cannot invoke : " << err << "\n");
+    mlir::zamalang::log_error() << "Cannot invoke : " << err << "\n";
     return mlir::failure();
   }
   uint64_t res = 0;
   if (auto err = arguments->getResult(0, res)) {
-    LOG_ERROR("Cannot get result : " << err << "\n");
+    mlir::zamalang::log_error() << "Cannot get result : " << err << "\n";
     return mlir::failure();
   }
   llvm::errs() << res << "\n";
@@ -185,17 +182,18 @@ processInputBuffer(mlir::MLIRContext &context,
           .failed()) {
     return mlir::failure();
   }
-  LOG_VERBOSE("### Global FHE constraint: {norm2:"
-              << fheContext.constraint.norm2
-              << ", p:" << fheContext.constraint.p << "}\n");
-  LOG_VERBOSE("### FHE parameters for the atomic pattern: {k: "
-              << fheContext.parameter.k
-              << ", polynomialSize: " << fheContext.parameter.polynomialSize
-              << ", nSmall: " << fheContext.parameter.nSmall
-              << ", brLevel: " << fheContext.parameter.brLevel
-              << ", brLogBase: " << fheContext.parameter.brLogBase
-              << ", ksLevel: " << fheContext.parameter.ksLevel
-              << ", ksLogBase: " << fheContext.parameter.ksLogBase << "}\n");
+  mlir::zamalang::log_verbose()
+      << "### Global FHE constraint: {norm2:" << fheContext.constraint.norm2
+      << ", p:" << fheContext.constraint.p << "}\n";
+  mlir::zamalang::log_verbose()
+      << "### FHE parameters for the atomic pattern: {k: "
+      << fheContext.parameter.k
+      << ", polynomialSize: " << fheContext.parameter.polynomialSize
+      << ", nSmall: " << fheContext.parameter.nSmall
+      << ", brLevel: " << fheContext.parameter.brLevel
+      << ", brLogBase: " << fheContext.parameter.brLogBase
+      << ", ksLevel: " << fheContext.parameter.ksLevel
+      << ", ksLogBase: " << fheContext.parameter.ksLogBase << "}\n";
 
   // Generate the keySet
   std::unique_ptr<mlir::zamalang::KeySet> keySet;
@@ -204,10 +202,11 @@ processInputBuffer(mlir::MLIRContext &context,
     auto clientParameter = mlir::zamalang::createClientParametersForV0(
         fheContext, cmdline::jitFuncname, *module);
     if (auto err = clientParameter.takeError()) {
-      LOG_ERROR("cannot generate client parameters: " << err << "\n");
+      mlir::zamalang::log_error()
+          << "cannot generate client parameters: " << err << "\n";
       return mlir::failure();
     }
-    LOG_VERBOSE("### Generate the key set\n");
+    mlir::zamalang::log_verbose() << "### Generate the key set\n";
     auto maybeKeySet =
         mlir::zamalang::KeySet::generate(clientParameter.get(), 0,
                                          0); // TODO: seed
@@ -226,7 +225,7 @@ processInputBuffer(mlir::MLIRContext &context,
   }
 
   if (cmdline::runJit) {
-    LOG_VERBOSE("### JIT compile & running\n");
+    mlir::zamalang::log_verbose() << "### JIT compile & running\n";
     return runJit(module.get(), *keySet, os);
   }
   if (cmdline::toLLVM) {
@@ -242,6 +241,8 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
 
   // Initialize the MLIR context
   mlir::MLIRContext context;
+
+  mlir::zamalang::setupLogging(cmdline::verbose);
 
   // String for error messages from library functions
   std::string errorMessage;
