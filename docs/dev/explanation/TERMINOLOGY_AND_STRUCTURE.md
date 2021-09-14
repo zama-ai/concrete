@@ -13,7 +13,7 @@ In this section we will go over some terms that we use throughout the project.
     - before intermediate representation is sent to the compiler, we need to know which node will output which type (e.g., uint3 vs uint5)
     - there are several ways to do this but the simplest one is to evaluate the intermediate representation with all combinations of inputs and remember the maximum and the minimum values for each node, which is what we call bounds, and bounds can be used to determine the appropriate type for each node
 
-## Module Structure
+## Module structure
 
 In this section, we will discuss the module structure of `concretefhe` briefly. You are encouraged to check individual `.py` files to learn more!
 

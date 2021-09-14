@@ -1,6 +1,6 @@
 # FHE and Concrete Framework Limits
 
-## FHE Limits
+## FHE limits
 
 FHE used to be an impossible thing to imagine, twenty years ago. Then, with advances due to [Craig Gentry](https://crypto.stanford.edu/craig/), this became a dream come true. And, even more recently, with several generations of new scheme, FHE became practical. 
 
@@ -16,7 +16,7 @@ In the scheme used in the Concrete Framework, namely [TFHE](https://tfhe.github.
 
 For most FHE scheme but TFHE, the application of a non-linear function is complicated and slow, if not impossible. Typically, this is a blocker, since activation functions _are_ non-linear. However, in the Concrete Framework, we use an operation called _programmable bootstrapping_ (described in this [white paper](https://whitepaper.zama.ai)), which allows to apply any table lookup: by quantizing the non-linear function, any function can thus be replaced. 
 
-## Concrete Framework Limits
+## Concrete Framework limits
 
 Since this is an early version of the product, not everything is done, to say the least. What we wanted to tackle first was the cryptographic complexities. This is why we concentrated on the cryptographic part, and let some engineering problems for later. 
 

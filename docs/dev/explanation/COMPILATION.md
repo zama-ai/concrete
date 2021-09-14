@@ -100,7 +100,7 @@ The implementation is a bit more complex than that but the idea is the same.
 
 Tracing is also responsible for indicating whether the values in the node would be encrypted or not, and the rule for that is if a node has an encrypted predecessor, it is encrypted as well.
 
-## Topological Transforms
+## Topological transforms
 
 The goal of topological transforms is to make more functions compilable.
 
@@ -109,12 +109,12 @@ However, if the floating points operations are intermediate operations, they can
 
 Let's take a closer look at the transforms we perform today.
 
-### Fusing Floating Point Operations
+### Fusing floating point operations
 
 We decided to allocate a whole new chapter to explain float fusing.
 You can find it [here](./FLOAT-FUSING.md).
 
-## Bounds Measurement
+## Bounds measurement
 
 Given an operation graph, goal of the bound measurement step is to assign the minimal data type to each node in the graph.
 
@@ -127,7 +127,7 @@ Bounds measurement is necessary because FHE supports limited precision, and we d
 There are several ways to perform bounds measurement.
 Let's take a closer look at the options we provide today.
 
-### Dataset Evaluation
+### Inputset evaluation
 
 This is the simplest approach, but it requires an inputset to be provided by the user.
 
@@ -197,13 +197,13 @@ Assigned Data Types:
 - `3`: Clear\<**uint2**>
 - `+`: Encrypted\<**uint4**>
 
-## MLIR Conversion
+## MLIR conversion
 
 The actual compilation will be done by the concrete compiler, which is expecting an MLIR input. The MLIR conversion goes from an operation graph to its MLIR equivalent. You can read more about it [here](./MLIR.md)
 
-## Example Walkthrough #1
+## Example walkthrough #1
 
-### Function to Homomorphize
+### Function to homomorphize
 
 ```
 def f(x):
@@ -216,17 +216,17 @@ def f(x):
 x = EncryptedScalar(UnsignedInteger(2))
 ```
 
-#### Corresponding Operation Graph
+#### Corresponding operation graph
 
 ![](../../_static/compilation-pipeline/two_x_plus_three.png)
 
-### Topological Transforms
+### Topological transforms
 
-#### Fusing Floating Point Operations
+#### Fusing floating point operations
 
 This transform isn't applied since the computation doesn't involve any floating point operations.
 
-### Bounds Measurement Using [2, 3, 1] as Dataset (same settings as above)
+### Bounds measurement using [2, 3, 1] as inputset (same settings as above)
 
 Data Types:
 - `x`: Encrypted\<**uint2**>
@@ -235,7 +235,7 @@ Data Types:
 - `3`: Clear\<**uint2**>
 - `+`: Encrypted\<**uint4**>
 
-### MLIR Lowering
+### MLIR lowering
 
 ```
 module  {
@@ -250,9 +250,9 @@ module  {
 ```
 
 
-## Example Walkthrough #2
+## Example walkthrough #2
 
-### Function to Homomorphize
+### Function to homomorphize
 
 ```
 def f(x, y):
@@ -266,17 +266,17 @@ x = EncryptedScalar(UnsignedInteger(3))
 y = EncryptedScalar(UnsignedInteger(1))
 ```
 
-#### Corresponding Operation Graph
+#### Corresponding operation graph
 
 ![](../../_static/compilation-pipeline/forty_two_minus_x_plus_y_times_two.png)
 
-### Topological Transforms
+### Topological transforms
 
-#### Fusing Floating Point Operations
+#### Fusing floating point operations
 
 This transform isn't applied since the computation doesn't involve any floating point operations.
 
-### Bounds Measurement Using [(6, 0), (5, 1), (3, 0), (4, 1)] as Dataset
+### Bounds measurement using [(6, 0), (5, 1), (3, 0), (4, 1)] as inputset
 
 Evaluation Result of `(6, 0)`:
 - `42`: 42
@@ -332,7 +332,7 @@ Data Types:
 - `*`: Encrypted\<**uint2**>
 - `+`: Encrypted\<**uint6**>
 
-### MLIR Lowering
+### MLIR lowering
 
 ```
 module  {
