@@ -24,17 +24,17 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
           aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
-          aws-region: us-east-1
+          aws-region: eu-west-3
       - name: Start EC2 runner
         id: start-ec2-runner
         uses: machulav/ec2-github-runner@v2.2.0
         with:
           mode: start
           github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
-          ec2-image-id: ami-0ad14d9cfbfb4a07b
+          ec2-image-id: ami-0f7cd40eac2214b37
           ec2-instance-type: m5.2xlarge
-          subnet-id: subnet-da319dd4
-          security-group-id: sg-064a7184f24469c76
+          subnet-id: subnet-a886b4c1
+          security-group-id: sg-02982572a9dba6728
           
   run-tests-linux:
     concurrency:
@@ -101,7 +101,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_IAM_ID }}
           aws-secret-access-key: ${{ secrets.AWS_IAM_KEY }}
-          aws-region: us-east-1
+          aws-region: eu-west-3
       - name: Stop EC2 runner
         uses: machulav/ec2-github-runner@v2.2.0
         with:
