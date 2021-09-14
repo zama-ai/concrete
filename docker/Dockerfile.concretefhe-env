@@ -7,7 +7,8 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     python3.8-venv \
     python-is-python3 \
     git \
-    graphviz* && \
+    graphviz* \
+    pandoc && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry

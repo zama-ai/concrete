@@ -169,7 +169,7 @@ strip_nb:
 .PHONY: strip_nb
 
 pytest_nb:
-	poetry run pytest --nbmake examples/*.ipynb
+	poetry run pytest --nbmake docs/user/advanced_examples/*.ipynb
 .PHONY: pytest_nb
 
 benchmark:

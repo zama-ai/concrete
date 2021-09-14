@@ -29,6 +29,13 @@ Concrete Framework's documentation
 
 .. toctree::
    :maxdepth: 2
+   :caption: Advanced Examples
+
+   user/advanced_examples/QuantizedLinearRegression.ipynb
+   user/advanced_examples/QuantizedLogisticRegression.ipynb
+
+.. toctree::
+   :maxdepth: 2
    :caption: Explanation
 
    user/explanation/WHAT_IS_FHE.md
