@@ -11,6 +11,7 @@ from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from ..common.mlir.utils import (
+    extend_direct_lookup_tables,
     is_graph_values_compatible_with_mlir,
     update_bit_width_for_mlir,
 )
@@ -132,6 +133,9 @@ def _compile_numpy_function_into_op_graph_internal(
 
     # Update bit_width for MLIR
     update_bit_width_for_mlir(op_graph)
+
+    # TODO: workaround extend LUT #359
+    extend_direct_lookup_tables(op_graph)
 
     return op_graph
 

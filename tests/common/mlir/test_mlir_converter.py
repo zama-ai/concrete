@@ -67,6 +67,20 @@ def lut(x):
     return table[x]
 
 
+# TODO: remove workaround #359
+def lut_more_bits_than_table_length(x, y):
+    """Test lookup table when bit_width support longer LUT"""
+    table = LookupTable([3, 6, 0, 2, 1, 4, 5, 7])
+    return table[x] + y
+
+
+# TODO: remove workaround #359
+def lut_less_bits_than_table_length(x):
+    """Test lookup table when bit_width support smaller LUT"""
+    table = LookupTable([3, 6, 0, 2, 1, 4, 5, 7, 3, 6, 0, 2, 1, 4, 5, 7])
+    return table[x]
+
+
 def dot(x, y):
     """Test dot"""
     return numpy.dot(x, y)
@@ -179,6 +193,21 @@ def datagen(*args):
         ),
         (
             lut,
+            {
+                "x": EncryptedScalar(Integer(64, is_signed=False)),
+            },
+            (range(0, 8),),
+        ),
+        (
+            lut_more_bits_than_table_length,
+            {
+                "x": EncryptedScalar(Integer(64, is_signed=False)),
+                "y": EncryptedScalar(Integer(64, is_signed=False)),
+            },
+            (range(0, 8), range(0, 16)),
+        ),
+        (
+            lut_less_bits_than_table_length,
             {
                 "x": EncryptedScalar(Integer(64, is_signed=False)),
             },

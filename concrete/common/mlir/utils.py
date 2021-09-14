@@ -10,6 +10,7 @@ from ..data_types.dtypes_helpers import (
     value_is_scalar_integer,
 )
 from ..operator_graph import OPGraph
+from ..representation.intermediate import ArbitraryFunction
 
 
 def is_graph_values_compatible_with_mlir(op_graph: OPGraph) -> bool:
@@ -63,3 +64,21 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
             ):
                 max_bit_width = max(max_bit_width, value_out.data_type.bit_width)
     _set_all_bit_width(op_graph, max_bit_width)
+
+
+def extend_direct_lookup_tables(op_graph: OPGraph):
+    """Extend direct lookup tables to the maximum length the input bit width can support.
+
+    Args:
+        op_graph: graph to update lookup tables for
+    """
+    for node in op_graph.graph.nodes:
+        if isinstance(node, ArbitraryFunction) and node.op_name == "TLU":
+            table = node.op_kwargs["table"]
+            bit_width = cast(Integer, node.inputs[0].data_type).bit_width
+            expected_length = 2 ** bit_width
+            if len(table) > expected_length:
+                node.op_kwargs["table"] = table[:expected_length]
+            else:
+                repeat = expected_length // len(table)
+                node.op_kwargs["table"] = (table * repeat)[:expected_length]
