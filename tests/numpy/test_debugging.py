@@ -211,7 +211,7 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
 
 # Remark that the bitwidths are not particularly correct (eg, a MUL of a 17b times 23b
 # returning 23b), since they are replaced later by the real bitwidths computed on the
-# dataset
+# inputset
 @pytest.mark.parametrize(
     "lambda_f,x_y,ref_graph_str",
     [

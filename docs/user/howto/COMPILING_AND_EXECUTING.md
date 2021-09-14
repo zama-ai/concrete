@@ -28,10 +28,10 @@ y = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
 
 In this configuration, both `x` and `y` are 3-bit unsigned integers, so they have the range of `[0, 2**3 - 1]`
 
-We also need a dataset. However, it's not the dataset used in traning as it doesn't contain any labels. It is to determine the bit-widths of the intermediate results so only the inputs are necessary. It should be an iterable yielding tuples in the same order as the inputs of the function to compile.
+We also need an inputset. This latter is not to be confused with the dataset, which is used in training and contains labels. It is to determine the bit-widths of the intermediate results so only the inputs are necessary. It should be an iterable yielding tuples in the same order as the inputs of the function to compile.
 
 ```python
-dataset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]
+inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]
 ```
 
 Finally, we can compile our function to its homomorphic equivalent.
@@ -39,7 +39,7 @@ Finally, we can compile our function to its homomorphic equivalent.
 ```python
 engine = hnp.compile_numpy_function(
     f, {"x": x, "y": y},
-    dataset=iter(dataset),
+    inputset=iter(inputset),
 )
 ```
 
@@ -59,7 +59,7 @@ You can use `.run(...)` method of `engine` returned by `hnp.compile_numpy_functi
 ```
 
 Be careful about the inputs, though.
-If you were to run with values outside the range of the dataset, the result might not be correct.
+If you were to run with values outside the range of the inputset, the result might not be correct.
 
 ## Further reading
 

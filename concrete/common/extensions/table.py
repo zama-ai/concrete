@@ -58,7 +58,7 @@ class LookupTable:
         if x < 0 or x >= len(table):
             raise ValueError(
                 f"Lookup table with {len(table)} entries cannot be indexed with {x} "
-                f"(you should check your dataset)",
+                f"(you should check your inputset)",
             )
 
         return table[x]

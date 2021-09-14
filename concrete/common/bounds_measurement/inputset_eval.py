@@ -1,4 +1,4 @@
-"""Code to evaluate the IR graph on datasets."""
+"""Code to evaluate the IR graph on inputsets."""
 
 from typing import Any, Callable, Dict, Iterator, Tuple
 
@@ -7,20 +7,20 @@ from ..operator_graph import OPGraph
 from ..representation.intermediate import IntermediateNode
 
 
-def eval_op_graph_bounds_on_dataset(
+def eval_op_graph_bounds_on_inputset(
     op_graph: OPGraph,
-    dataset: Iterator[Tuple[Any, ...]],
+    inputset: Iterator[Tuple[Any, ...]],
     min_func: Callable[[Any, Any], Any] = min,
     max_func: Callable[[Any, Any], Any] = max,
 ) -> Dict[IntermediateNode, Dict[str, Any]]:
-    """Evaluate the bounds with a dataset.
+    """Evaluate the bounds with a inputset.
 
     Evaluate the bounds for all output values of the operators in the graph op_graph over data
-        coming from the dataset
+        coming from the inputset
 
     Args:
         op_graph (OPGraph): The graph for which we want to determine the bounds
-        dataset (Iterator[Tuple[Any, ...]]): The dataset over which op_graph is evaluated. It
+        inputset (Iterator[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
             needs to be an iterator on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
         min_func (Callable[[Any, Any], Any], optional): custom function to compute a scalar minimum
@@ -35,11 +35,11 @@ def eval_op_graph_bounds_on_dataset(
             op_graph, stored with the node as key and a dict with keys "min" and "max" as value.
     """
 
-    def check_dataset_input_len_is_valid(data_to_check):
+    def check_inputset_input_len_is_valid(data_to_check):
         custom_assert(
             len(data_to_check) == len(op_graph.input_nodes),
             (
-                f"Got input data from dataset of len: {len(data_to_check)}, "
+                f"Got input data from inputset of len: {len(data_to_check)}, "
                 f"function being evaluated has {len(op_graph.input_nodes)} inputs, please make "
                 f"sure your data generator returns valid tuples of input values"
             ),
@@ -48,8 +48,8 @@ def eval_op_graph_bounds_on_dataset(
     # TODO: do we want to check coherence between the input data type and the corresponding Input ir
     # node expected data type ? Not considering bit_width as they may not make sense at this stage
 
-    first_input_data = dict(enumerate(next(dataset)))
-    check_dataset_input_len_is_valid(first_input_data.values())
+    first_input_data = dict(enumerate(next(inputset)))
+    check_inputset_input_len_is_valid(first_input_data.values())
     first_output = op_graph.evaluate(first_input_data)
 
     # We evaluate the min and max func to be able to resolve the tensors min and max rather than
@@ -59,9 +59,9 @@ def eval_op_graph_bounds_on_dataset(
         for node, value in first_output.items()
     }
 
-    for input_data in dataset:
+    for input_data in inputset:
         current_input_data = dict(enumerate(input_data))
-        check_dataset_input_len_is_valid(current_input_data.values())
+        check_inputset_input_len_is_valid(current_input_data.values())
         current_output = op_graph.evaluate(current_input_data)
         for node, value in current_output.items():
             node_bounds[node]["min"] = min_func(node_bounds[node]["min"], value)

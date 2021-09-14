@@ -1,11 +1,11 @@
-"""Test file for bounds evaluation with a dataset"""
+"""Test file for bounds evaluation with a inputset"""
 
 from typing import Tuple
 
 import pytest
 
-from concrete.common.bounds_measurement.dataset_eval import (
-    eval_op_graph_bounds_on_dataset,
+from concrete.common.bounds_measurement.inputset_eval import (
+    eval_op_graph_bounds_on_inputset,
 )
 from concrete.common.data_types.floats import Float
 from concrete.common.data_types.integers import Integer
@@ -207,15 +207,15 @@ from concrete.numpy.tracing import trace_numpy_function
         ),
     ],
 )
-def test_eval_op_graph_bounds_on_dataset(
+def test_eval_op_graph_bounds_on_inputset(
     function,
     input_ranges,
     expected_output_bounds,
     expected_output_data_type: Integer,
 ):
-    """Test function for eval_op_graph_bounds_on_dataset"""
+    """Test function for eval_op_graph_bounds_on_inputset"""
 
-    test_eval_op_graph_bounds_on_dataset_multiple_output(
+    test_eval_op_graph_bounds_on_inputset_multiple_output(
         function,
         input_ranges,
         (expected_output_bounds,),
@@ -264,13 +264,13 @@ def test_eval_op_graph_bounds_on_dataset(
         ),
     ],
 )
-def test_eval_op_graph_bounds_on_dataset_multiple_output(
+def test_eval_op_graph_bounds_on_inputset_multiple_output(
     function,
     input_ranges,
     expected_output_bounds,
     expected_output_data_type: Tuple[Integer],
 ):
-    """Test function for eval_op_graph_bounds_on_dataset"""
+    """Test function for eval_op_graph_bounds_on_inputset"""
 
     op_graph = trace_numpy_function(
         function, {"x": EncryptedScalar(Integer(64, True)), "y": EncryptedScalar(Integer(64, True))}
@@ -281,7 +281,7 @@ def test_eval_op_graph_bounds_on_dataset_multiple_output(
             for y_gen in range_y:
                 yield (x_gen, y_gen)
 
-    node_bounds = eval_op_graph_bounds_on_dataset(
+    node_bounds = eval_op_graph_bounds_on_inputset(
         op_graph, data_gen(*tuple(range(x[0], x[1] + 1) for x in input_ranges))
     )
 

@@ -129,20 +129,20 @@ Let's take a closer look at the options we provide today.
 
 ### Dataset Evaluation
 
-This is the simplest approach, but it requires a dataset to be provided by the user.
+This is the simplest approach, but it requires an inputset to be provided by the user.
 
-The dataset is not the dataset in the usual sense of ML as it doesn't require labels.
+The inputset is not to be confused with the dataset which is classical in ML, as it doesn't require labels.
 Rather, it is a set of values which are typical inputs of the function.
 
-The idea is to evaluate each input in the dataset and record the result of each operation in the operation graph.
+The idea is to evaluate each input in the inputset and record the result of each operation in the operation graph.
 Then we compare the evaluation results with the current minimum/maximum values of each node and update the minimum/maximum accordingly.
-After the entire dataset is evaluated, we assign a data type to each node using the minimum and the maximum value it contained.
+After the entire inputset is evaluated, we assign a data type to each node using the minimum and the maximum value it contained.
 
 Here is an example, given this operation graph where `x` is encrypted:
 
 ![](../../_static/compilation-pipeline/two_x_plus_three.png)
 
-and this dataset:
+and this inputset:
 
 ```
 [2, 3, 1]

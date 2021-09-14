@@ -204,8 +204,8 @@ def datagen(*args):
 )
 def test_mlir_converter(func, args_dict, args_ranges):
     """Test the conversion to MLIR by calling the parser from the compiler"""
-    dataset = datagen(*args_ranges)
-    result_graph = compile_numpy_function_into_op_graph(func, args_dict, dataset)
+    inputset = datagen(*args_ranges)
+    result_graph = compile_numpy_function_into_op_graph(func, args_dict, inputset)
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
     # testing that this doesn't raise an error

@@ -203,9 +203,9 @@ def main():
     def function_to_compile(x_0, x_1):
         return table[((x_0 + zp_x) * w_0) + ((x_1 + zp_x) * w_1)]
 
-    dataset = []
+    inputset = []
     for x_i in x_q:
-        dataset.append((int(x_i[0]), int(x_i[1])))
+        inputset.append((int(x_i[0]), int(x_i[1])))
 
     # Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
@@ -214,7 +214,7 @@ def main():
             "x_0": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits)),
             "x_1": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits)),
         },
-        iter(dataset),
+        iter(inputset),
     )
     # Measure: End
 
