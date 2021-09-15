@@ -3,6 +3,7 @@ SHELL:=/bin/bash
 DEV_DOCKER_IMG:=concretefhe-dev
 DEV_DOCKERFILE:=docker/Dockerfile.concretefhe-dev
 SRC_DIR:=concrete
+NOTEBOOKS_DIR:=docs/user/advanced_examples
 
 setup_env:
 	poetry install
@@ -27,8 +28,8 @@ check_python_format:
 .PHONY: check_python_format
 
 check_strip_nb:
-	poetry run python ./script/nbmake_utils/notebook_sanitize.py examples --check
-.PHONY: strip_nb
+	poetry run python ./script/nbmake_utils/notebook_sanitize.py $(NOTEBOOKS_DIR) --check
+.PHONY: check_strip_nb
 
 pylint:
 	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks
@@ -165,11 +166,11 @@ pydocstyle:
 .PHONY: pydocstyle
 
 strip_nb:
-	poetry run python ./script/nbmake_utils/notebook_sanitize.py examples
+	poetry run python ./script/nbmake_utils/notebook_sanitize.py $(NOTEBOOKS_DIR)
 .PHONY: strip_nb
 
 pytest_nb:
-	poetry run pytest --nbmake docs/user/advanced_examples/*.ipynb
+	poetry run pytest --nbmake $(NOTEBOOKS_DIR)/*.ipynb
 .PHONY: pytest_nb
 
 benchmark:
