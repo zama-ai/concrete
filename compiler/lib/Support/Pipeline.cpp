@@ -1,5 +1,6 @@
 #include <llvm/Support/TargetSelect.h>
 
+#include <llvm/Support/Error.h>
 #include <mlir/Dialect/Linalg/Passes.h>
 #include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/Dialect/Tensor/Transforms/Passes.h>

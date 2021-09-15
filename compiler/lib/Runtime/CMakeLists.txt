@@ -4,3 +4,6 @@ add_library(ZamalangRuntime SHARED
 )
 
 target_link_libraries(ZamalangRuntime Concrete pthread m dl)
+
+install(TARGETS ZamalangRuntime EXPORT ZamalangRuntime)
+install(EXPORT ZamalangRuntime DESTINATION "./")
