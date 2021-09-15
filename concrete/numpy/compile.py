@@ -1,7 +1,7 @@
 """numpy compilation function."""
 
 import traceback
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import numpy
 from zamalang import CompilerEngine
@@ -55,7 +55,7 @@ def numpy_min_func(lhs: Any, rhs: Any) -> Any:
 def _compile_numpy_function_into_op_graph_internal(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterator[Tuple[Any, ...]],
+    inputset: Iterable[Tuple[Any, ...]],
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
 ) -> OPGraph:
@@ -65,8 +65,8 @@ def _compile_numpy_function_into_op_graph_internal(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterator[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterator on tuples which are of the same length than the number of
+        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
+            needs to be an iterable on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill
             during compilation
@@ -143,7 +143,7 @@ def _compile_numpy_function_into_op_graph_internal(
 def compile_numpy_function_into_op_graph(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterator[Tuple[Any, ...]],
+    inputset: Iterable[Tuple[Any, ...]],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ) -> OPGraph:
@@ -153,8 +153,8 @@ def compile_numpy_function_into_op_graph(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterator[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterator on tuples which are of the same length than the number of
+        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
+            needs to be an iterable on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
         compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
             during compilation
@@ -205,7 +205,7 @@ def compile_numpy_function_into_op_graph(
 def _compile_numpy_function_internal(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterator[Tuple[Any, ...]],
+    inputset: Iterable[Tuple[Any, ...]],
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
     show_mlir: bool,
@@ -216,8 +216,8 @@ def _compile_numpy_function_internal(
         function_to_compile (Callable): The function you want to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterator[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterator on tuples which are of the same length than the number of
+        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
+            needs to be an iterable on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
         compilation_configuration (CompilationConfiguration): Configuration object to use
             during compilation
@@ -260,7 +260,7 @@ def _compile_numpy_function_internal(
 def compile_numpy_function(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterator[Tuple[Any, ...]],
+    inputset: Iterable[Tuple[Any, ...]],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
@@ -271,8 +271,8 @@ def compile_numpy_function(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterator[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterator on tuples which are of the same length than the number of
+        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
+            needs to be an iterable on tuples which are of the same length than the number of
             parameters in the function, and in the same order than these same parameters
         compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
             during compilation
