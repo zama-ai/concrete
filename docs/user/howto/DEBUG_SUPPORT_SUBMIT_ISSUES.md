@@ -17,6 +17,12 @@ For the latter kind of bugs, we encourage the user to have a look at:
 
 Once the user has tried to see if the bug was not her own, it is time to go further.
 
+## Is the inputset sufficiently representative?
+
+A bug may happen if ever the inputset, which is internally used by the compilation core to set bit widths of some intermediate data, is not sufficiently representative. Notably, if ever, with all the inputs in the inputset, it appears that an intermediate data can be represented an `n`-bit integer, but for a particular computation, this same intermediate data needs a bit more bits to be represented, the FHE execution for this computation will result in a wrong output (as typically in integer overflows in classical programs).
+
+So, in general, when a bug appears, it may be a good idea to enlarge the inputset, and try to have random-looking inputs in this latter, following distribution of inputs used with the function.
+
 ## Having a reproducible bug
 
 Once you're sure it is a bug, it would be nice to try to:
