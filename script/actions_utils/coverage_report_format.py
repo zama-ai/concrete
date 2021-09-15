@@ -39,7 +39,10 @@ if __name__ == "__main__":
     parser.add_argument("--diff-cover-output", type=str, required=True)
 
     cli_args = parser.parse_args()
+
+    # pylint: disable=broad-except
     try:
         main(cli_args)
     except Exception:
         traceback.print_exc()
+    # pylint: enable=broad-except
