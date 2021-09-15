@@ -3,6 +3,14 @@
 # Run benchmarks while logging the intermediate results
 # Publish findings in the progress tracker
 
+source /src/.docker_venv/bin/activate
+if [[ "$?" != "0" ]]; then
+    python3 -m venv /src/.docker_venv
+    source /src/.docker_venv/bin/activate
+    cd /src/ && make setup_env
+fi
+export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so
+
 initial_log=logs/$(date -u --iso-8601=seconds).log
 
 mkdir -p logs

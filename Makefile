@@ -135,10 +135,8 @@ docker_publish_measurements: docker_build
 	git pull
 	mkdir -p .benchmarks
 	python script/progress_tracker_utils/extract_machine_info.py
-	docker run --rm -it \
-	--volume /"$$(pwd)":/src \
-	$(DEV_DOCKER_IMG) \
-	 /bin/bash -i ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
+	docker run --rm --volume /"$$(pwd)":/src $(DEV_DOCKER_IMG) \
+	 /bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
 .PHONY: docker_publish_measurements
 
 docs: clean_docs
