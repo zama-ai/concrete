@@ -1,10 +1,11 @@
-import cpuinfo
-import dotenv
 import json
 import os
 import platform
-import psutil
 import urllib.parse
+
+import cpuinfo
+import dotenv
+import psutil
 
 
 def main():

@@ -1,14 +1,13 @@
 import argparse
 import json
-
 from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Sanitizer for Jupyter Notebooks')
+    parser = argparse.ArgumentParser(description="Sanitizer for Jupyter Notebooks")
 
-    parser.add_argument('base', type=str, help='directory which contains the notebooks')
-    parser.add_argument('--check', action='store_true', help='flag to enable just checking mode')
+    parser.add_argument("base", type=str, help="directory which contains the notebooks")
+    parser.add_argument("--check", action="store_true", help="flag to enable just checking mode")
 
     args = parser.parse_args()
 
