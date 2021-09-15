@@ -7,3 +7,10 @@ updates:
       # Check for updates to GitHub Actions every sunday
       interval: "weekly"
       day: "sunday"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      # Check for updates to python dependencies every sunday
+      interval: "weekly"
+      day: "sunday"
