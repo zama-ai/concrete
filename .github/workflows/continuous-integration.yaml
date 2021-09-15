@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
       - name: Get changed files
-        uses: Ana06/get-changed-files@a2f6df8c195e713211f9f6258baafc445149355b
+        uses: Ana06/get-changed-files@ea75ed777daf24d6e95f43957bd26b1eab20806c
         id: files
         with:
           format: 'space-delimited'
