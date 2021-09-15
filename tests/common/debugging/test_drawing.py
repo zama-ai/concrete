@@ -18,7 +18,7 @@ def test_draw_graph_with_saving():
     op_graph = compile_numpy_function_into_op_graph(
         function,
         {"x": EncryptedScalar(Integer(7, True))},
-        iter([(-2,), (-1,), (0,), (1,), (2,)]),
+        [(-2,), (-1,), (0,), (1,), (2,)],
     )
 
     with tempfile.TemporaryDirectory() as tmp:

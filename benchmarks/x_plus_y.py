@@ -16,7 +16,7 @@ def main():
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x, "y": y},
-        iter([(6, 1), (1, 4), (5, 3), (2, 0), (7, 7)]),
+        [(6, 1), (1, 4), (5, 3), (2, 0), (7, 7)],
     )
     # Measure: End
 

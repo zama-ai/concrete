@@ -145,7 +145,7 @@ def main():
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x_0": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits))},
-        iter(inputset),
+        inputset,
     )
     # Measure: End
 

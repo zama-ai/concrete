@@ -39,7 +39,7 @@ Finally, we can compile our function to its homomorphic equivalent.
 ```python
 engine = hnp.compile_numpy_function(
     f, {"x": x, "y": y},
-    inputset=iter(inputset),
+    inputset=inputset,
 )
 ```
 

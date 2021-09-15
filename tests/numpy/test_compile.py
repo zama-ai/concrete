@@ -198,7 +198,7 @@ def test_compile_function_with_direct_tlu():
     op_graph = compile_numpy_function_into_op_graph(
         function,
         {"x": EncryptedScalar(Integer(2, is_signed=False))},
-        iter([(0,), (1,), (2,), (3,)]),
+        [(0,), (1,), (2,), (3,)],
     )
 
     str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
@@ -217,7 +217,7 @@ def test_compile_function_with_direct_tlu_overflow():
         compile_numpy_function_into_op_graph(
             function,
             {"x": EncryptedScalar(Integer(3, is_signed=False))},
-            iter([(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)]),
+            [(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)],
             CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
         )
 

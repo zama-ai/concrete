@@ -20,7 +20,7 @@ def main():
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x},
-        iter([(i,) for i in range(2 ** input_bits)]),
+        [(i,) for i in range(2 ** input_bits)],
     )
     # Measure: End
 

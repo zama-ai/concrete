@@ -214,7 +214,7 @@ def main():
             "x_0": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits)),
             "x_1": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits)),
         },
-        iter(inputset),
+        inputset,
     )
     # Measure: End
 
