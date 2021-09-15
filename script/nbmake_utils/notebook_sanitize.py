@@ -1,9 +1,11 @@
+"""Sanitizer for Jupyter notebooks."""
 import argparse
 import json
 from pathlib import Path
 
 
 def main():
+    """Sanitize"""
     parser = argparse.ArgumentParser(description="Sanitizer for Jupyter Notebooks")
 
     parser.add_argument("base", type=str, help="directory which contains the notebooks")
@@ -15,16 +17,16 @@ def main():
     notebooks = base.glob("*.ipynb")
 
     for notebook in notebooks:
-        with open(notebook, "r") as f:
+        with open(notebook, "r", encoding="utf-8") as f:
             content = json.load(f)
 
         if args.check:
             if len(content["metadata"]) != 0:
                 print("Notebooks are not sanitized. Please run `make conformance`.")
-                exit(1)
+                raise ValueError
         else:
             content["metadata"] = {}
-            with open(notebook, "w", newline="\n") as f:
+            with open(notebook, "w", newline="\n", encoding="utf-8") as f:
                 json.dump(content, f, indent=1, ensure_ascii=False)
                 f.write("\n")
 

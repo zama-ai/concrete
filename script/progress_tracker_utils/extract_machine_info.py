@@ -1,3 +1,4 @@
+"""Extract some info about the host machine."""
 import json
 import os
 import platform
@@ -9,6 +10,7 @@ import psutil
 
 
 def main():
+    """Extract some info about the host machine."""
     dotenv.load_dotenv()
 
     properties = []
@@ -43,7 +45,7 @@ def main():
     id_ = urllib.parse.quote_plus(id_)
 
     machine = {"id": id_, "name": name, "properties": properties}
-    with open(".benchmarks/machine.json", "w") as f:
+    with open(".benchmarks/machine.json", "w", encoding="utf-8") as f:
         json.dump(machine, f, indent=2, ensure_ascii=False)
 
 

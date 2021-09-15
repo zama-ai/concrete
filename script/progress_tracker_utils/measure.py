@@ -1,3 +1,4 @@
+"""Measurement script for the progress tracker"""
 import argparse
 import json
 import os
@@ -99,7 +100,7 @@ def identify_metrics(script, lines, metrics):
 def create_modified_script(script_without_extension, lines, metrics):
     """Create a modified version of the script which can be used to perform measurements"""
 
-    with open(f"{script_without_extension}.measure.py", "w") as f:
+    with open(f"{script_without_extension}.measure.py", "w", encoding="utf-8") as f:
         # Import must-have libraries
         f.write("import json\n")
         f.write("import time\n")
@@ -181,6 +182,7 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
             process = subprocess.run(
                 ["python", f"{script_without_extension}.measure.py"],
                 capture_output=True,
+                check=True,
             )
 
             # Print sample information
@@ -203,7 +205,7 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
                 break
 
             # Read the measurements and delete the temporary file
-            with open(f"{script_without_extension}.measurements") as f:
+            with open(f"{script_without_extension}.measurements", encoding="utf-8") as f:
                 results = json.load(f)
             os.unlink(f"{script_without_extension}.measurements")
 
@@ -237,6 +239,7 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
 
 
 def main():
+    """Measurement script for the progress tracker"""
     parser = argparse.ArgumentParser(description="Measurement script for the progress tracker")
 
     parser.add_argument("base", type=str, help="directory which contains the benchmarks")
@@ -248,7 +251,7 @@ def main():
     base = pathlib.Path(args.base)
     samples = args.samples
 
-    with open(".benchmarks/machine.json", "r") as f:
+    with open(".benchmarks/machine.json", "r", encoding="utf-8") as f:
         machine = json.load(f)
 
     result = {"machine": machine, "metrics": {}, "targets": {}}
@@ -257,7 +260,7 @@ def main():
     # Process each script under the base directory
     for script in filter(lambda script: not str(scripts[0]).endswith("measure.py"), scripts):
         # Read the script line by line
-        with open(script, "r") as f:
+        with open(script, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         # Find the first non-empty line
@@ -309,7 +312,7 @@ def main():
         perform_measurements(script, script_without_extension, target_id, metrics, samples, result)
 
         # Dump the latest results to the output file
-        with open(".benchmarks/findings.json", "w") as f:
+        with open(".benchmarks/findings.json", "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
 
         # Delete the modified script if the user doesn't care

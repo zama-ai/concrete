@@ -12,7 +12,7 @@ def main(args):
 
     diff_cover_content = None
 
-    with open(diff_cover_file_path, "r") as f:
+    with open(diff_cover_file_path, "r", encoding="utf-8") as f:
         diff_cover_content = f.readlines()
 
     with open(diff_cover_file_path, "w", encoding="utf-8") as f:
