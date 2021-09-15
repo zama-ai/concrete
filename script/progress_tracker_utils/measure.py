@@ -107,7 +107,7 @@ def create_modified_script(script_without_extension, lines, metrics):
         # Create a measurement dictionary to accumulate values
         f.write("_measurements_ = {\n")
         for metric_id in metrics.keys():
-            f.write(f"    \"{metric_id}\": [],\n")
+            f.write(f'    "{metric_id}": [],\n')
         f.write("}\n")
 
         # Create a variable to hold the id of the current metric
@@ -129,7 +129,7 @@ def create_modified_script(script_without_extension, lines, metrics):
                 f.write(f"{line}_end_ = time.time()\n")
 
                 value = "(_end_ - _start_) * 1000"
-                line += f"_measurements_[\"{current_metric_id}\"].append({value})\n"
+                line += f'_measurements_["{current_metric_id}"].append({value})\n'
             elif line.strip().startswith("# Measure:"):
                 # Replace `# Measure: ...` with
                 #
@@ -151,15 +151,15 @@ def create_modified_script(script_without_extension, lines, metrics):
                     line += "_start_ = time.time()\n"
                 else:
                     value = metric_details[1]
-                    line += f"_measurements_[\"{metric_id}\"].append({value.strip()})\n"
+                    line += f'_measurements_["{metric_id}"].append({value.strip()})\n'
 
             # Write the possibly replaced line back
             f.write(line)
 
         # Dump measurements to a temporary file after the script is executed from start to end
         f.write("\n")
-        f.write(f"with open(\"{script_without_extension}.measurements\", \"w\") as f:\n")
-        f.write(f"    json.dump(_measurements_, f, indent=2)\n")
+        f.write(f'with open("{script_without_extension}.measurements", "w") as f:\n')
+        f.write("    json.dump(_measurements_, f, indent=2)\n")
 
 
 def perform_measurements(script, script_without_extension, target_id, metrics, samples, result):
@@ -213,7 +213,7 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
 
                 for measurement in results[metric_id]:
                     measurements[metric_id].append(measurement)
-            pbar.write(f"")
+            pbar.write("")
 
             pbar.update(1)
     print()
@@ -222,10 +222,9 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
 
     if working:
         # Take average of all metrics and store them in `result`
-        result["targets"][target_id]["measurements"].update({
-            metric_id: sum(metric) / len(metric)
-            for metric_id, metric in measurements.items()
-        })
+        result["targets"][target_id]["measurements"].update(
+            {metric_id: sum(metric) / len(metric) for metric_id, metric in measurements.items()}
+        )
 
         # Add metrics of the current script to the result
         for metric_id, metric_label in metrics.items():
@@ -241,7 +240,7 @@ def main():
 
     parser.add_argument("base", type=str, help="directory which contains the benchmarks")
     parser.add_argument("--samples", type=int, default=30, help="number of samples to take")
-    parser.add_argument("--keep", action='store_true', help="flag to keep measurement scripts")
+    parser.add_argument("--keep", action="store_true", help="flag to keep measurement scripts")
 
     args = parser.parse_args()
 
@@ -274,9 +273,9 @@ def main():
             print("-" * len(str(script)))
 
             with tqdm.tqdm(total=samples) as pbar:
-                pbar.write(f"    Sample 1")
-                pbar.write(f"    --------")
-                pbar.write(f"        Skipped (doesn't have a `# Target:` directive)\n")
+                pbar.write("    Sample 1")
+                pbar.write("    --------")
+                pbar.write("        Skipped (doesn't have a `# Target:` directive)\n")
                 pbar.update(samples)
 
             print()

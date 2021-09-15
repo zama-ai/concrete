@@ -41,5 +41,5 @@ if __name__ == "__main__":
     cli_args = parser.parse_args()
     try:
         main(cli_args)
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
