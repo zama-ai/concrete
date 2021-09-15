@@ -19,12 +19,12 @@ sync_env:
 
 python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir benchmarks
+	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script
 .PHONY: python_format
 
 check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir benchmarks --check
+	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --check
 .PHONY: check_python_format
 
 check_strip_nb:
@@ -32,7 +32,7 @@ check_strip_nb:
 .PHONY: check_strip_nb
 
 pylint:
-	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks
+	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks pylint_script
 .PHONY: pylint
 
 pylint_src:
@@ -50,9 +50,13 @@ pylint_benchmarks:
 	--rcfile=pylintrc benchmarks
 .PHONY: pylint_benchmarks
 
+pylint_script:
+	poetry run pylint --rcfile=pylintrc script
+.PHONY: pylint_script
+
 flake8:
 	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" \
-	$(SRC_DIR)/ tests/ benchmarks/
+	$(SRC_DIR)/ tests/ benchmarks/ script/
 .PHONY: flake8
 
 python_linting: pylint flake8
@@ -93,11 +97,15 @@ mypy_benchmark:
 	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 .PHONY: mypy_benchmark
 
+mypy_script:
+	find ./script/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
+.PHONY: mypy_script
+
 # The plus indicates that make will be called by the command and allows to share the context with
 # the parent make execution. We serialize calls to these targets as they may overwrite each others
 # cache which can cause issues.
 mypy_ci:
-	$(MAKE) --keep-going mypy mypy_test mypy_benchmark
+	$(MAKE) --keep-going mypy mypy_test mypy_benchmark mypy_script
 .PHONY: mypy_ci
 
 pytest_and_coverage: pytest coverage
