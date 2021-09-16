@@ -133,7 +133,6 @@ docker_bas: docker_build_and_start
 .PHONY: docker_bas
 
 docker_publish_measurements: docker_build
-	git pull
 	mkdir -p .benchmarks
 	python script/progress_tracker_utils/extract_machine_info.py
 	docker run --rm --volume /"$$(pwd)":/src $(DEV_DOCKER_IMG) \

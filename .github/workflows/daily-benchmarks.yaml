@@ -41,7 +41,9 @@ jobs:
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
           script: |
             cd ~/concretefhe-internal
+            git pull
             make docker_publish_measurements
+            docker system prune -f
 
       - name: Write SSH Key To A File
         run: echo "$SSH_KEY" > ~/ssh-key && chmod 400 ~/ssh-key
