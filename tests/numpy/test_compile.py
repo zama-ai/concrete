@@ -330,3 +330,45 @@ def test_compile_with_show_mlir(function, input_ranges, list_of_arg_names):
         data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
         show_mlir=True,
     )
+
+
+def test_compile_too_high_bitwidth():
+    """Check that the check of maximal bitwidth of intermediate data works fine."""
+
+    def function(x, y):
+        return x + y
+
+    def data_gen(args):
+        for prod in itertools.product(*args):
+            yield prod
+
+    function_parameters = {
+        "x": EncryptedScalar(Integer(64, False)),
+        "y": EncryptedScalar(Integer(64, False)),
+    }
+
+    # A bit too much
+    input_ranges = [(0, 100), (0, 28)]
+
+    with pytest.raises(RuntimeError) as excinfo:
+        compile_numpy_function(
+            function,
+            function_parameters,
+            data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+        )
+
+    assert (
+        "max_bit_width of some nodes is too high for the current version of the "
+        "compiler (maximum must be 7 which is not compatible with" in str(excinfo.value)
+    )
+
+    assert str(excinfo.value).endswith(", 8)])")
+
+    # Just ok
+    input_ranges = [(0, 99), (0, 28)]
+
+    compile_numpy_function(
+        function,
+        function_parameters,
+        data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+    )

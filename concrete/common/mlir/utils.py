@@ -9,8 +9,12 @@ from ..data_types.dtypes_helpers import (
     value_is_encrypted_tensor_integer,
     value_is_scalar_integer,
 )
+from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import ArbitraryFunction
+
+# TODO: should come from compiler, through an API, #402
+ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
 
 
 def is_graph_values_compatible_with_mlir(op_graph: OPGraph) -> bool:
@@ -55,15 +59,35 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
         op_graph: graph to update bit_width for
     """
     max_bit_width = 0
+    offending_list = []
     for node in op_graph.graph.nodes:
         for value_out in node.outputs:
             if value_is_clear_scalar_integer(value_out) or value_is_clear_tensor_integer(value_out):
-                max_bit_width = max(max_bit_width, value_out.data_type.bit_width - 1)
-            elif value_is_encrypted_scalar_integer(value_out) or value_is_encrypted_tensor_integer(
-                value_out
-            ):
-                max_bit_width = max(max_bit_width, value_out.data_type.bit_width)
+                current_node_out_bit_width = value_out.data_type.bit_width - 1
+            else:
+
+                assert_true(
+                    value_is_encrypted_scalar_integer(value_out)
+                    or value_is_encrypted_tensor_integer(value_out)
+                )
+
+                current_node_out_bit_width = value_out.data_type.bit_width
+
+            max_bit_width = max(max_bit_width, current_node_out_bit_width)
+
+            # Check that current_node_out_bit_width is supported by the compiler
+            if current_node_out_bit_width > ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB:
+                offending_list.append((node, current_node_out_bit_width))
+
     _set_all_bit_width(op_graph, max_bit_width)
+
+    # Check that the max_bit_width is supported by the compiler
+    if len(offending_list) != 0:
+        raise RuntimeError(
+            f"max_bit_width of some nodes is too high for the current version of "
+            f"the compiler (maximum must be {ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB} "
+            f"which is not compatible with {offending_list})"
+        )
 
 
 def extend_direct_lookup_tables(op_graph: OPGraph):
