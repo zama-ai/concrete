@@ -175,9 +175,9 @@ class CompilationArtifacts:
                     f.write(f"{name} :: {parameter}\n")
 
         drawings = self.drawings_of_operation_graphs.items()
-        for index, (name, drawing) in enumerate(drawings):
+        for index, (name, drawing_filename) in enumerate(drawings):
             identifier = CompilationArtifacts._identifier(index, name)
-            drawing.save(output_directory.joinpath(f"{identifier}.png"))
+            shutil.copy(drawing_filename, output_directory.joinpath(f"{identifier}.png"))
 
         textual_representations = self.textual_representations_of_operation_graphs.items()
         for index, (name, representation) in enumerate(textual_representations):
