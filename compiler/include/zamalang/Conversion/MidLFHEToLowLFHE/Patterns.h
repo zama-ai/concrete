@@ -78,7 +78,7 @@ CleartextType convertCleartextTypeFromType(mlir::MLIRContext *context,
   return nullptr;
 }
 
-mlir::Value createZeroLWEOpFromMidLFHE(mlir::PatternRewriter rewriter,
+mlir::Value createZeroLWEOpFromMidLFHE(mlir::PatternRewriter &rewriter,
                                        mlir::Location loc,
                                        mlir::OpResult result) {
   mlir::SmallVector<mlir::Value> args{};
@@ -92,7 +92,7 @@ mlir::Value createZeroLWEOpFromMidLFHE(mlir::PatternRewriter rewriter,
 }
 
 template <class Operator>
-mlir::Value createLowLFHEOpFromMidLFHE(mlir::PatternRewriter rewriter,
+mlir::Value createLowLFHEOpFromMidLFHE(mlir::PatternRewriter &rewriter,
                                        mlir::Location loc, mlir::Value arg0,
                                        mlir::Value arg1,
                                        mlir::OpResult result) {
@@ -106,7 +106,7 @@ mlir::Value createLowLFHEOpFromMidLFHE(mlir::PatternRewriter rewriter,
 }
 
 mlir::Value createAddPlainLweCiphertextWithGlwe(
-    mlir::PatternRewriter rewriter, mlir::Location loc, mlir::Value arg0,
+    mlir::PatternRewriter &rewriter, mlir::Location loc, mlir::Value arg0,
     mlir::Value arg1, mlir::OpResult result, mlir::Type encryptedType) {
   PlaintextType encoded_type =
       convertPlaintextTypeFromType(rewriter.getContext(), encryptedType);
@@ -125,7 +125,7 @@ mlir::Value createAddPlainLweCiphertextWithGlwe(
   return op.getODSResults(0).front();
 }
 
-mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter rewriter,
+mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter &rewriter,
                                         mlir::Location loc, mlir::Value arg0,
                                         mlir::Value arg1,
                                         mlir::OpResult result) {
@@ -134,7 +134,7 @@ mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter rewriter,
                                              glwe);
 }
 
-mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter rewriter,
+mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter &rewriter,
                                       mlir::Location loc, mlir::Value arg0,
                                       mlir::Value arg1, mlir::OpResult result) {
   auto arg1_type = arg1.getType();
@@ -147,7 +147,7 @@ mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter rewriter,
                                              result, arg1_type);
 }
 
-mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter rewriter,
+mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
                                         mlir::Location loc, mlir::Value arg0,
                                         mlir::Value arg1,
                                         mlir::OpResult result) {
@@ -210,7 +210,7 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter rewriter,
 // } : (!LowLFHE.lwe_ciphertext<600, 4>, !LowLFHE.glwe_ciphertext)
 //         ->!LowLFHE.lwe_ciphertext<2048, 4>
 // ```
-mlir::Value createPBS(mlir::PatternRewriter rewriter, mlir::Location loc,
+mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
                       mlir::Value ct, mlir::Value table, mlir::IntegerAttr k,
                       mlir::IntegerAttr polynomialSize,
                       mlir::IntegerAttr levelKS, mlir::IntegerAttr baseLogKS,
