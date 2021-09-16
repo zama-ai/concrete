@@ -148,15 +148,15 @@ def test_compile_and_run_correctness(function, input_ranges, list_of_arg_names):
         ),
         pytest.param(
             4,
-            (0, 8),
+            (0, 5),
         ),
         pytest.param(
             8,
-            (0, 8),
+            (0, 4),
         ),
         pytest.param(
             16,
-            (0, 4),
+            (0, 3),
         ),
     ],
 )
@@ -164,9 +164,11 @@ def test_compile_and_run_dot_correctness(size, input_range):
     """Test correctness of results when running a compiled function"""
 
     def data_gen(input_range, size):
-        for i in range(*input_range, size):
-            vec = list(range(i, min(i + size, input_range[1])))
-            yield vec, vec[::-1]
+        for _ in range(1000):
+            low, high = input_range
+            args = [[random.randint(low, high) for _ in range(size)] for __ in range(2)]
+
+            yield args
 
     function_parameters = {
         "x": EncryptedTensor(Integer(64, False), (size,)),
