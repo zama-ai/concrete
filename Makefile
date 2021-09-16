@@ -191,3 +191,7 @@ jupyter:
 release_docker:
 	./docker/build_release_image.sh
 .PHONY: release_docker
+
+upgrade_py_deps:
+	./script/make_utils/upgrade_deps.sh
+.PHONY: upgrade_py_deps
