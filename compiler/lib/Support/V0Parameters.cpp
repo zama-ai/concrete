@@ -12,7 +12,7 @@ using namespace std;
 const int NORM2_MAX = 31;
 const int P_MAX = 7;
 
-V0Parameter parameters[NORM2_MAX][P_MAX] = {
+const static V0Parameter parameters[NORM2_MAX][P_MAX] = {
     {V0Parameter(1, 10, 514, 2, 8, 5, 2), V0Parameter(1, 10, 564, 2, 8, 5, 2),
      V0Parameter(1, 10, 599, 3, 6, 6, 2), V0Parameter(1, 10, 686, 3, 6, 7, 2),
      V0Parameter(1, 11, 736, 1, 23, 5, 3), V0Parameter(1, 12, 830, 1, 23, 4, 4),
@@ -139,7 +139,7 @@ V0Parameter parameters[NORM2_MAX][P_MAX] = {
      V0Parameter(0, 0, 0, 0, 0, 0, 0), V0Parameter(0, 0, 0, 0, 0, 0, 0),
      V0Parameter(0, 0, 0, 0, 0, 0, 0)}};
 
-V0Parameter *getV0Parameter(V0FHEConstraint constraint) {
+const V0Parameter *getV0Parameter(V0FHEConstraint constraint) {
   if (constraint.norm2 > NORM2_MAX) {
     return nullptr;
   }

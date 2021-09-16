@@ -7,7 +7,7 @@
 namespace mlir {
 namespace zamalang {
 
-V0Parameter *getV0Parameter(V0FHEConstraint constraint);
+const V0Parameter *getV0Parameter(V0FHEConstraint constraint);
 
 } // namespace zamalang
 } // namespace mlir
