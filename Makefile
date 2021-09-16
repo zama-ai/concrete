@@ -27,9 +27,9 @@ check_python_format:
 	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --check
 .PHONY: check_python_format
 
-check_strip_nb:
-	poetry run python ./script/nbmake_utils/notebook_sanitize.py $(NOTEBOOKS_DIR) --check
-.PHONY: check_strip_nb
+check_finalize_nb:
+	poetry run python ./script/nbmake_utils/notebook_finalize.py $(NOTEBOOKS_DIR) --check
+.PHONY: check_finalize_nb
 
 pylint:
 	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks pylint_script
@@ -62,7 +62,7 @@ flake8:
 python_linting: pylint flake8
 .PHONY: python_linting
 
-conformance: strip_nb python_format
+conformance: finalize_nb python_format
 .PHONY: conformance
 
 pcc:
@@ -70,7 +70,7 @@ pcc:
 	--no-print-directory pcc_internal
 .PHONY: pcc
 
-pcc_internal: check_python_format check_strip_nb python_linting mypy_ci pydocstyle
+pcc_internal: check_python_format check_finalize_nb python_linting mypy_ci pydocstyle
 .PHONY: pcc_internal
 
 pytest:
@@ -172,9 +172,9 @@ pydocstyle:
 	poetry run pydocstyle $(SRC_DIR) --convention google --add-ignore=D1,D202 --add-select=D401
 .PHONY: pydocstyle
 
-strip_nb:
-	poetry run python ./script/nbmake_utils/notebook_sanitize.py $(NOTEBOOKS_DIR)
-.PHONY: strip_nb
+finalize_nb:
+	poetry run python ./script/nbmake_utils/notebook_finalize.py $(NOTEBOOKS_DIR)
+.PHONY: finalize_nb
 
 pytest_nb:
 	poetry run pytest --nbmake $(NOTEBOOKS_DIR)/*.ipynb

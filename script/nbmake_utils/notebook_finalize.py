@@ -1,11 +1,12 @@
-"""Sanitizer for Jupyter notebooks."""
+"""Finalizer for Jupyter notebooks."""
 import argparse
 import json
 from pathlib import Path
 
 
 def main():
-    """Sanitize"""
+    """Finalize"""
+
     parser = argparse.ArgumentParser(description="Sanitizer for Jupyter Notebooks")
 
     parser.add_argument("base", type=str, help="directory which contains the notebooks")
@@ -21,11 +22,26 @@ def main():
             content = json.load(f)
 
         if args.check:
-            if len(content["metadata"]) != 0:
+            try:
+                metadata = content["metadata"]
+                assert len(metadata) == 1
+                assert "execution" in metadata
+
+                execution = metadata["execution"]
+                assert len(execution) == 1
+                assert "timeout" in execution
+
+                timeout = execution["timeout"]
+                assert timeout == 10800  # 3 hours
+            except Exception:
                 print("Notebooks are not sanitized. Please run `make conformance`.")
-                raise ValueError
+                raise
         else:
-            content["metadata"] = {}
+            content["metadata"] = {
+                "execution": {
+                    "timeout": 10800,  # 3 hours
+                }
+            }
             with open(notebook, "w", newline="\n", encoding="utf-8") as f:
                 json.dump(content, f, indent=1, ensure_ascii=False)
                 f.write("\n")
