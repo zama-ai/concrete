@@ -16,6 +16,7 @@ Concrete Framework's documentation
    user/tutorial/ARITHMETIC_OPERATIONS.md
    user/tutorial/WORKING_WITH_FLOATING_POINTS.md
    user/tutorial/TABLE_LOOKUP.md
+   user/tutorial/COMPILATION_ARTIFACTS.md
 
 .. toctree::
    :maxdepth: 2
