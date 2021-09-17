@@ -1,4 +1,4 @@
-// RUN: zamacompiler --round-trip %s  2>&1| FileCheck %s
+// RUN: zamacompiler --entry-dialect=midlfhe --action=roundtrip %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: func @apply_lookup_table(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>, %arg1: tensor<128xi2>) -> !MidLFHE.glwe<{512,10,64}{2}>
 func @apply_lookup_table(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>, %arg1: tensor<128xi2>) -> !MidLFHE.glwe<{512,10,64}{2}> {

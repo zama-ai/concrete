@@ -1,7 +1,15 @@
-#include "zamalang/Support/CompilerEngine.h"
-#include "zamalang/Conversion/Passes.h"
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
+#include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser.h>
+
+#include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
+#include <zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
+#include <zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h>
+#include <zamalang/Support/CompilerEngine.h>
+#include <zamalang/Support/Pipeline.h>
 
 namespace mlir {
 namespace zamalang {
@@ -29,10 +37,20 @@ llvm::Error CompilerEngine::compile(std::string mlirStr) {
     return llvm::make_error<llvm::StringError>("mlir parsing failed",
                                                llvm::inconvertibleErrorCode());
   }
-  mlir::zamalang::V0FHEContext fheContext;
+
+  mlir::zamalang::V0FHEConstraint defaultGlobalFHECircuitConstraint{.norm2 = 10,
+                                                                    .p = 7};
+  const mlir::zamalang::V0Parameter *parameter =
+      getV0Parameter(defaultGlobalFHECircuitConstraint);
+
+  mlir::zamalang::V0FHEContext fheContext{defaultGlobalFHECircuitConstraint,
+                                          *parameter};
+
+  mlir::ModuleOp module = module_ref.get();
+
   // Lower to MLIR Std
-  if (mlir::zamalang::CompilerTools::lowerHLFHEToMlirStdsDialect(
-          *context, module_ref.get(), fheContext)
+  if (mlir::zamalang::pipeline::lowerHLFHEToStd(*context, module, fheContext,
+                                                false)
           .failed()) {
     return llvm::make_error<llvm::StringError>("failed to lower to MLIR Std",
                                                llvm::inconvertibleErrorCode());
@@ -53,8 +71,7 @@ llvm::Error CompilerEngine::compile(std::string mlirStr) {
   keySet = std::move(maybeKeySet.get());
 
   // Lower to MLIR LLVM Dialect
-  if (mlir::zamalang::CompilerTools::lowerMlirStdsDialectToMlirLLVMDialect(
-          *context, module_ref.get())
+  if (mlir::zamalang::pipeline::lowerStdToLLVMDialect(*context, module, false)
           .failed()) {
     return llvm::make_error<llvm::StringError>(
         "failed to lower to LLVM dialect", llvm::inconvertibleErrorCode());

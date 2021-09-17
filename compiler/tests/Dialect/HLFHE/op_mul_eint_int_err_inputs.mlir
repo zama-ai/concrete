@@ -1,4 +1,4 @@
-// RUN: not zamacompiler %s 2>&1| FileCheck %s
+// RUN: not zamacompiler --entry-dialect=hlfhe --action=roundtrip %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: error: 'HLFHE.mul_eint_int' op  should have the width of plain input equals to width of encrypted input + 1
 func @mul_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {

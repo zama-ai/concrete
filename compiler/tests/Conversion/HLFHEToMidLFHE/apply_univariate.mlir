@@ -1,4 +1,4 @@
-// RUN: zamacompiler %s --passes hlfhe-to-midlfhe 2>&1| FileCheck %s
+// RUN: zamacompiler %s --entry-dialect=hlfhe --action=dump-midlfhe 2>&1| FileCheck %s
 
 // CHECK-LABEL: func @apply_lookup_table(%arg0: !MidLFHE.glwe<{_,_,_}{2}>, %arg1: tensor<4xi2>) -> !MidLFHE.glwe<{_,_,_}{2}>
 func @apply_lookup_table(%arg0: !HLFHE.eint<2>, %arg1: tensor<4xi2>) -> !HLFHE.eint<2> {

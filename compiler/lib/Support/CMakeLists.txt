@@ -1,5 +1,6 @@
 add_mlir_library(ZamalangSupport
-  CompilerTools.cpp
+  Pipeline.cpp
+  Jit.cpp
   CompilerEngine.cpp
   V0Parameters.cpp
   V0Curves.cpp

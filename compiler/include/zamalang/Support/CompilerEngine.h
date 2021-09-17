@@ -1,17 +1,7 @@
 #ifndef ZAMALANG_SUPPORT_COMPILER_ENGINE_H
 #define ZAMALANG_SUPPORT_COMPILER_ENGINE_H
 
-#include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
-#include "zamalang/Support/CompilerTools.h"
-#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
-#include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
-#include <string>
+#include "Jit.h"
 
 namespace mlir {
 namespace zamalang {

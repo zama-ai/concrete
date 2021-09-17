@@ -1,4 +1,4 @@
-// RUN: zamacompiler --split-input-file --verify-diagnostics %s
+// RUN: zamacompiler --split-input-file --verify-diagnostics --entry-dialect=hlfhe --action=roundtrip %s
 
 // Incompatible shapes
 func @dot_incompatible_shapes(
