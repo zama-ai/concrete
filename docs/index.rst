@@ -14,8 +14,8 @@ Concrete Framework's documentation
    :caption: Tutorial
 
    user/tutorial/ARITHMETIC_OPERATIONS.md
-   user/tutorial/WORKING_WITH_FLOATING_POINTS.md
    user/tutorial/TABLE_LOOKUP.md
+   user/tutorial/WORKING_WITH_FLOATING_POINTS.md
    user/tutorial/COMPILATION_ARTIFACTS.md
 
 .. toctree::
