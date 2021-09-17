@@ -30,6 +30,17 @@ def lut(x):
     return table[x]
 
 
+def small_lut(x):
+    """Test lookup table with small size and output"""
+    table = LookupTable(list(range(32)))
+    return table[x]
+
+
+def small_fused_table(x):
+    """Test with a small fused table"""
+    return (10 * (numpy.cos(x + 1) + 1)).astype(numpy.uint32)
+
+
 @pytest.mark.parametrize(
     "function,input_ranges,list_of_arg_names",
     [
@@ -84,6 +95,8 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
         pytest.param(lambda x: 8 - x, ((0, 2),), ["x"]),
         pytest.param(lambda x, y: x + y + 8, ((2, 10), (4, 8)), ["x", "y"]),
         pytest.param(lut, ((0, 127),), ["x"]),
+        pytest.param(small_lut, ((0, 31),), ["x"]),
+        pytest.param(small_fused_table, ((0, 31),), ["x"]),
     ],
 )
 def test_compile_and_run_function_multiple_outputs(function, input_ranges, list_of_arg_names):

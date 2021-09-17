@@ -79,6 +79,13 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
             if current_node_out_bit_width > ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB:
                 offending_list.append((node, current_node_out_bit_width))
 
+    # TODO: remove this workaround, which was for #279, once the compiler can handle
+    # smaller tables, #412
+    has_a_table = any(isinstance(node, ArbitraryFunction) for node in op_graph.graph.nodes)
+
+    if has_a_table:
+        max_bit_width = ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
+
     _set_all_bit_width(op_graph, max_bit_width)
 
     # Check that the max_bit_width is supported by the compiler
