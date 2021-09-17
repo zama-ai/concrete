@@ -1,6 +1,6 @@
 # MLIR
 
-MLIR is the intermediate representation used by the concrete compiler, so we need to convert the operation graph to MLIR, which will look something like the following, for a graph performing the dot between two input tensors.
+MLIR is the intermediate representation used by the **Concrete** compiler, so we need to convert the operation graph to MLIR, which will look something like the following, for a graph performing the dot between two input tensors.
 
 ```
 func @main(%arg0: tensor<4xi7>, %arg1: tensor<4x!HLFHE.eint<6>>) -> !HLFHE.eint<6> {

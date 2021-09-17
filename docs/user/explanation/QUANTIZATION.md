@@ -1,8 +1,10 @@
 # Quantization
 
-From Wikipedia https://en.wikipedia.org/wiki/Quantization :
+```{note}
+from [Wikipedia](https://en.wikipedia.org/wiki/Quantization):
 
 > Quantization is the process of constraining an input from a continuous or otherwise large set of values (such as the real numbers) to a discrete set (such as the integers).
+```
 
 ## Why is it needed?
 
@@ -14,7 +16,7 @@ The basic idea of quantization is to take a range of values represented by a _la
 
 ## Quantization in practice
 
-To quantize a range of values on a smaller range of values, we first need to choose the data type that is going to be used. ConcreteLib, the library used in the Concrete Framework, is currently limited to 7 bits unsigned integers, so we'll use that for the example. Knowing that, for a value in the range `[min_range, max_range]`, we can compute the step of the quantization, which is `(max_range - min_range) / (2**n - 1)` where n is the number of bits, here 7, so in practice the quantization step is `step = (max_range - min_range) / 127`. This means the gap between consecutive representible values cannot be smaller than that `step` value which means there can be a substantial loss of precision. Every interval of length `step = (max_range - min_range) / 127` will be represented by a value in `[0..127]`.
+To quantize a range of values on a smaller range of values, we first need to choose the data type that is going to be used. **ConcreteLib**, the library used in the **Concrete Framework**, is currently limited to 7 bits unsigned integers, so we'll use that for the example. Knowing that, for a value in the range `[min_range, max_range]`, we can compute the step of the quantization, which is `(max_range - min_range) / (2**n - 1)` where n is the number of bits, here 7, so in practice the quantization step is `step = (max_range - min_range) / 127`. This means the gap between consecutive representible values cannot be smaller than that `step` value which means there can be a substantial loss of precision. Every interval of length `step = (max_range - min_range) / 127` will be represented by a value in `[0..127]`.
 
 The IntelLabs distiller quantization documentation goes into a detailed explanation about the math to quantize values and how to keep computations consistent: [quantization algorithm documentation](https://intellabs.github.io/distiller/algo_quantization.html).
 

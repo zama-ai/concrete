@@ -1,13 +1,13 @@
 # Debugging / Support / Submitting Issues
 
-First, let's not forget that this version of Concrete framework is a beta product, meaning that it is not completely polished, contains several bugs (would they be known or unknown at this time). Also, let's not forget that FHE is a highly hot topic, and notably, that it cannot be considered as a solved problem.
+First, let's not forget that this version of **Concrete** is a beta product, meaning that it is not completely polished, contains several bugs (would they be known or unknown at this time). Also, let's not forget that FHE is a highly hot topic, and notably, that it cannot be considered as a solved problem.
 
 Anyway, let's list some ways to debug your problems here. If nothing seems conclusive, you can still report the issue, as explained in a later section of this page.
 
 ## Is it a bug by the framework or by the user?
 
 If ever your numpy program fails, it may be because:
-- of bugs due to Concrete framework
+- of bugs due to **Concrete**
 - of bugs due to the user, notably who would have a bug without even considering FHE (does the function you want to compile run well with numpy?), or who would not use the framework as expected or not consider the limits of the framework.
 
 For the latter kind of bugs, we encourage the user to have a look at:
@@ -58,7 +58,7 @@ In order to simplify our work and let us reproduce your bug easily, any informat
 - the reproducibility rate you see on your side
 - any insight you might have on the bug
 - any workaround you have been able to find
-may be useful to us. Don't remember, Concrete is a project where we are open to contribution, more information at Contributing (TODO: add a link).
+may be useful to us. Don't remember, **Concrete** is a project where we are open to contribution, more information at Contributing (TODO: add a link).
 
 ## Submitting an issue
 

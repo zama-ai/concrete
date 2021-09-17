@@ -1,9 +1,11 @@
 
 # Contributing
 
-There are two ways to contribute to `concretefhe`:
+```{important}
+There are two ways to contribute to **concretefhe**:
 - you can open issues to report bugs, typos and suggest ideas
 - you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
+```
 
 Let's go over some other important things that you need to be careful about.
 
@@ -26,7 +28,7 @@ git checkout -b fix/tracing_indexing_42
 
 ### Conformance
 
-Each commit to `concretefhe` should be comformant to the standards decided by the team. Conformance can be checked using the following commands.
+Each commit to **concretefhe**  should be conformant to the standards decided by the team. Conformance can be checked using the following commands.
 
 ```shell
 make pcc
@@ -75,7 +77,9 @@ To learn more about conventional commits, check [this](https://www.conventionalc
 
 ## Before creating pull request
 
+```{important}
 We remind that only official contributors can send pull requests. To become such an official contributor, please email hello@zama.ai.
+```
 
 You should rebase on top of `main` branch before you create your pull request. This is to avoid merge commits and have a clean git log. After you commit your changes to your new branch, you can use the following commands to rebase.
 

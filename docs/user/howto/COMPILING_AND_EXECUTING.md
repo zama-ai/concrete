@@ -10,7 +10,7 @@ import concrete.numpy as hnp
 
 ## Defining a function to compile
 
-You need to have a python function that follows the [limits](../explanation/FHE_AND_FRAMEWORK_LIMITS.md) of the Concrete Framework. Here is a simple example:
+You need to have a python function that follows the [limits](../explanation/FHE_AND_FRAMEWORK_LIMITS.md) of the **Concrete Framework**. Here is a simple example:
 
 ```python
 def f(x, y):
@@ -58,8 +58,10 @@ You can use `.run(...)` method of `engine` returned by `hnp.compile_numpy_functi
 0
 ```
 
+```{caution}
 Be careful about the inputs, though.
 If you were to run with values outside the range of the inputset, the result might not be correct.
+```
 
 ## Further reading
 

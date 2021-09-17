@@ -54,6 +54,9 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # Group member variables and methods separately (not alphabetically)
 autodoc_member_order = "groupwise"
 
+# -- Options for nbsphinx ----------------------------------------------------
+
+nbsphinx_codecell_lexer = 'ipython3'
 
 # -- Options for HTML output -------------------------------------------------
 

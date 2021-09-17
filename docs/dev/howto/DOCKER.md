@@ -6,15 +6,18 @@ Before you start this section, go ahead and install docker. You can follow [this
 
 ### Linux
 
-```console
+```shell
 xhost +localhost
 ```
 
 ### Mac OS
 
-To be able to use X forwarding on Mac OS: first, you need to install xquartz. Secondly, open XQuartz.app application, and open a new terminal within XQuartz.app. Make sure in the application parameters to authorize network connections are set (currently in the Security settings); finally, in the XQuartz.app terminal, type
+To be able to use X forwarding on Mac OS:
+- Install XQuartz
+- Open XQuartz.app application, make sure in the application parameters that `authorize network connections` are set (currently in the Security settings)
+- Open a new terminal within XQuartz.app and type:
 
-```console
+```shell
 xhost +127.0.0.1
 ```
 
@@ -24,13 +27,13 @@ and now, the X server should be all set in docker (in the regular terminal).
 
 Install Xming and use Xlaunch:
 - Multiple Windows, Display number: 0
-- Start no client
+- `Start no client`
 - **IMPORTANT**: Check `No Access Control`
 - You can save this configuration to re-launch easily, then click finish.
 
 ## Logging in and building the image
 
-Docker image of `concretefhe` is based on another docker image provided by the compiler team. Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
+Docker image of **Concrete** is based on another docker image provided by the compiler team. Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
 
 Upon joining to the team, you need to log in using the following command:
 

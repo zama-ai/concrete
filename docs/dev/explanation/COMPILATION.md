@@ -1,8 +1,8 @@
 # Compilation Pipeline In Depth
 
-## What is concretefhe?
+## What is **concretefhe**?
 
-`concretefhe` is the python API of the `concrete` framework for developing homomorphic applications.
+**concretefhe** is the python API of the **Concrete** framework for developing homomorphic applications.
 One of its essential functionalities is to transform Python functions to their `MLIR` equivalent.
 Unfortunately, not all python functions can be converted due to the limits of current product (we are in the alpha stage), or sometimes due to inherent restrictions of FHE itself.
 However, one can already build interesting and impressing use cases, and more will be available in further versions of the framework.
@@ -104,7 +104,7 @@ Tracing is also responsible for indicating whether the values in the node would 
 
 The goal of topological transforms is to make more functions compilable.
 
-With the current version of `concrete` floating point inputs and floating point outputs are not supported.
+With the current version of **Concrete** floating point inputs and floating point outputs are not supported.
 However, if the floating points operations are intermediate operations, they can sometimes be fused into a single table lookup from integer to integer thanks to some specific transforms.
 
 Let's take a closer look at the transforms we perform today.
@@ -199,7 +199,7 @@ Assigned Data Types:
 
 ## MLIR conversion
 
-The actual compilation will be done by the concrete compiler, which is expecting an MLIR input. The MLIR conversion goes from an operation graph to its MLIR equivalent. You can read more about it [here](./MLIR.md)
+The actual compilation will be done by the **Concrete** compiler, which is expecting an MLIR input. The MLIR conversion goes from an operation graph to its MLIR equivalent. You can read more about it [here](./MLIR.md)
 
 ## Example walkthrough #1
 

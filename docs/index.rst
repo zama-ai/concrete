@@ -7,7 +7,7 @@ Concrete Framework's documentation
    :caption: Basics
 
    README.md
-   Installing <user/howto/INSTALLING.md>
+   user/howto/INSTALLING.md
 
 .. toctree::
    :maxdepth: 2
@@ -21,7 +21,6 @@ Concrete Framework's documentation
    :maxdepth: 2
    :caption: How to
 
-   user/howto/INSTALLING.md
    user/howto/COMPILING_AND_EXECUTING.md
    user/howto/REDUCE_NEEDED_PRECISION.md
    user/howto/DEBUG_SUPPORT_SUBMIT_ISSUES.md

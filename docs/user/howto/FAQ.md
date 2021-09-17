@@ -1,6 +1,6 @@
 # FAQ
 
-## What is Concrete FHE?
+## What is **Concrete**?
 
 See [here](../../README.md)
 
@@ -10,5 +10,5 @@ See [here](../../README.md)
 
 ## Can I contribute?
 
-## What are the future features of Concrete?
+## What are the future features of **Concrete**?
 

@@ -3,7 +3,7 @@
 
 ## Installing Python v3.8
 
-`concretefhe` is a `Python` library. So `Python` should be installed to develop `concretefhe`. `v3.8` is the only supported version.
+**concretefhe** is a `Python` library. So `Python` should be installed to develop **concretefhe**. `v3.8` is the only supported version.
 
 You can follow [this](https://realpython.com/installing-python/) guide to install it (alternatively you can google `how to install python 3.8`).
 
@@ -21,7 +21,7 @@ On Linux you can install make from your distribution's preferred package manager
 
 On Mac OS you can install a more recent version of make via brew:
 
-```bash
+```shell
 # check for gmake
 which gmake
 # If you don't have it, it will error out, install gmake
@@ -34,11 +34,13 @@ It is possible to install gmake as make, check this [StackOverflow post](https:/
 
 On Windows check [this GitHub gist](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
-**/!\\ In the next sections, be sure to use the proper `make` tool for your system, `make`, `gmake` or other. /!\\**
+```{hint}
+In the next sections, be sure to use the proper `make` tool for your system, `make`, `gmake` or other.
+```
 
 ## Cloning repository
 
-Now, it's time to get the source code of `concretefhe`. You can use the following command to do that.
+Now, it's time to get the source code of **concretefhe**. You can use the following command to do that.
 
 ```shell
 git clone https://github.com/zama-ai/concretefhe-internal.git
