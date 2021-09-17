@@ -21,7 +21,7 @@ namespace zamalang {
 namespace pipeline {
 static void addPotentiallyNestedPass(mlir::PassManager &pm,
                                      std::unique_ptr<Pass> pass) {
-  if (!pass->getOpName() || *pass->getOpName() == "module") {
+  if (!pass->getOpName() || *pass->getOpName() == "builtin.module") {
     pm.addPass(std::move(pass));
   } else {
     pm.nest(*pass->getOpName()).addPass(std::move(pass));
