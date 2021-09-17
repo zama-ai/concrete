@@ -182,7 +182,7 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
             process = subprocess.run(
                 ["python", f"{script_without_extension}.measure.py"],
                 capture_output=True,
-                check=True,
+                check=False,
             )
 
             # Print sample information
