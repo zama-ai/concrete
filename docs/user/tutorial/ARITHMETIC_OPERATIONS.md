@@ -1,6 +1,6 @@
 # Arithmetic Operations
 
-In this tutorial, we are going to go over all arithmetic operations available in `concretefhe`. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
+In this tutorial, we are going to go over all arithmetic operations available in **concrete**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
 
 ## Addition
 
