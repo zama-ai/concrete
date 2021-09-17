@@ -1,5 +1,6 @@
 """functions to draw the different graphs we can generate in the package, eg to debug."""
 
+import os
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -90,6 +91,23 @@ def draw_graph(
 
     if save_to is None:
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            # we need to change the permissions of the temporary file
+            # so that it can be read by all users
+
+            # (https://stackoverflow.com/a/44130605)
+
+            # get the old umask and replace it with 0o666
+            old_umask = os.umask(0o666)
+
+            # restore the old umask back
+            os.umask(old_umask)
+
+            # combine the old umask with the wanted permissions
+            permissions = 0o666 & ~old_umask
+
+            # set new permissions
+            os.chmod(tmp.name, permissions)
+
             save_to_str = str(tmp.name)
     else:
         save_to_str = str(save_to)
