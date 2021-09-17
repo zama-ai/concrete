@@ -43,7 +43,7 @@ def add(node, preds, ir_to_mlir_node, ctx):
     ) and value_is_encrypted_scalar_unsigned_integer(node.inputs[1]):
         return _add_eint_eint(node, preds, ir_to_mlir_node, ctx)
     raise TypeError(
-        f"Don't support addition between {type(node.inputs[0])} and {type(node.inputs[1])}"
+        f"Don't support addition between {str(node.inputs[0])} and {str(node.inputs[1])}"
     )
 
 
@@ -78,7 +78,7 @@ def sub(node, preds, ir_to_mlir_node, ctx):
     ):
         return _sub_int_eint(node, preds, ir_to_mlir_node, ctx)
     raise TypeError(
-        f"Don't support subtraction between {type(node.inputs[0])} and {type(node.inputs[1])}"
+        f"Don't support subtraction between {str(node.inputs[0])} and {str(node.inputs[1])}"
     )
 
 
@@ -107,7 +107,7 @@ def mul(node, preds, ir_to_mlir_node, ctx):
         # flip lhs and rhs
         return _mul_eint_int(node, preds[::-1], ir_to_mlir_node, ctx)
     raise TypeError(
-        f"Don't support multiplication between {type(node.inputs[0])} and {type(node.inputs[1])}"
+        f"Don't support multiplication between {str(node.inputs[0])} and {str(node.inputs[1])}"
     )
 
 
@@ -174,7 +174,7 @@ def dot(node, preds, ir_to_mlir_node, ctx):
         )
     ):
         raise TypeError(
-            f"Don't support dot between {type(node.inputs[0])} and {type(node.inputs[1])}"
+            f"Don't support dot between {str(node.inputs[0])} and {str(node.inputs[1])}"
         )
     lhs_node, rhs_node = preds
     # need to flip as underlying operation need encrypted first
