@@ -22,7 +22,7 @@ def test_artifacts_export():
         compile_numpy_function(
             function,
             {"x": EncryptedScalar(UnsignedInteger(7))},
-            [(0,), (1,), (2,)],
+            [(i,) for i in range(10)],
             compilation_artifacts=artifacts,
         )
 

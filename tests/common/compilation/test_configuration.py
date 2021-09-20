@@ -49,7 +49,7 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
             param: EncryptedScalar(Integer(32, is_signed=False))
             for param in signature(function_to_trace).parameters.keys()
         },
-        [(1,), (2,), (3,)],
+        [(i,) for i in range(10)],
         CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
     )
     op_graph_not_optimized = compile_numpy_function_into_op_graph(
@@ -58,7 +58,7 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
             param: EncryptedScalar(Integer(32, is_signed=False))
             for param in signature(function_to_trace).parameters.keys()
         },
-        [(1,), (2,), (3,)],
+        [(i,) for i in range(10)],
         CompilationConfiguration(
             dump_artifacts_on_unexpected_failures=False,
             enable_topological_optimizations=False,

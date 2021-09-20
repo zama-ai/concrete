@@ -1,5 +1,6 @@
 """numpy compilation function."""
 
+import sys
 import traceback
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
@@ -9,6 +10,7 @@ from zamalang import CompilerEngine
 from ..common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_inputset
 from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
+from ..common.data_types import Integer
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from ..common.mlir.utils import (
     extend_direct_lookup_tables,
@@ -107,12 +109,35 @@ def _compile_numpy_function_into_op_graph_internal(
         )
 
     # Find bounds with the inputset
-    node_bounds = eval_op_graph_bounds_on_inputset(
+    inputset_size, node_bounds = eval_op_graph_bounds_on_inputset(
         op_graph,
         inputset,
         min_func=numpy_min_func,
         max_func=numpy_max_func,
     )
+
+    # Check inputset size
+    inputset_size_upper_limit = 1
+
+    # this loop will determine the number of possible inputs of the function
+    # if a function have a single 3-bit input, for example, `inputset_size_upper_limit` will be 8
+    for parameter_value in function_parameters.values():
+        if isinstance(parameter_value.data_type, Integer):
+            # multiple parameter bit-widths are multiplied as they can be combined into an input
+            inputset_size_upper_limit *= 2 ** parameter_value.data_type.bit_width
+
+            # if the upper limit of the inputset size goes above 10,
+            # break the loop as we will require at least 10 inputs in this case
+            if inputset_size_upper_limit > 10:
+                break
+
+    minimum_required_inputset_size = min(inputset_size_upper_limit, 10)
+    if inputset_size < minimum_required_inputset_size:
+        sys.stderr.write(
+            f"Provided inputset contains too few inputs "
+            f"(it should have had at least {minimum_required_inputset_size} "
+            f"but it only had {inputset_size})\n"
+        )
 
     # Add the bounds as an artifact
     compilation_artifacts.add_final_operation_graph_bounds(node_bounds)

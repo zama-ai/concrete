@@ -28,7 +28,7 @@ y = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
 
 In this configuration, both `x` and `y` are 3-bit unsigned integers, so they have the range of `[0, 2**3 - 1]`
 
-We also need an inputset. This latter is not to be confused with the dataset, which is used in training and contains labels. It is to determine the bit-widths of the intermediate results so only the inputs are necessary. It should be an iterable yielding tuples in the same order as the inputs of the function to compile.
+We also need an inputset. It is to determine the bit-widths of the intermediate results. It should be an iterable yielding tuples in the same order as the inputs of the function to compile. There should be at least 10 inputs in the input set to avoid warnings (except for functions with less than 10 possible inputs). The warning is there because the bigger the input set, the better the bounds will be.
 
 ```python
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]

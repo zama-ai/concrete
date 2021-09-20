@@ -281,7 +281,7 @@ def test_eval_op_graph_bounds_on_inputset_multiple_output(
             for y_gen in range_y:
                 yield (x_gen, y_gen)
 
-    node_bounds = eval_op_graph_bounds_on_inputset(
+    _, node_bounds = eval_op_graph_bounds_on_inputset(
         op_graph, data_gen(*tuple(range(x[0], x[1] + 1) for x in input_ranges))
     )
 

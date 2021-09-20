@@ -33,7 +33,7 @@ def sub(x, y):
 
 def constant_sub(x):
     """Test constant sub"""
-    return 8 - x
+    return 12 - x
 
 
 def mul(x, y):
@@ -108,7 +108,7 @@ def datagen(*args):
             {
                 "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
-            (range(0, 8),),
+            (range(0, 10),),
         ),
         (
             add,
@@ -139,7 +139,7 @@ def datagen(*args):
             {
                 "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
-            (range(0, 5),),
+            (range(0, 10),),
         ),
         (
             mul,
@@ -154,7 +154,7 @@ def datagen(*args):
             {
                 "x": EncryptedScalar(Integer(64, is_signed=False)),
             },
-            (range(0, 8),),
+            (range(0, 10),),
         ),
         (
             mul,
@@ -194,7 +194,7 @@ def datagen(*args):
         (
             lut,
             {
-                "x": EncryptedScalar(Integer(64, is_signed=False)),
+                "x": EncryptedScalar(Integer(3, is_signed=False)),
             },
             (range(0, 8),),
         ),
@@ -209,7 +209,7 @@ def datagen(*args):
         (
             lut_less_bits_than_table_length,
             {
-                "x": EncryptedScalar(Integer(64, is_signed=False)),
+                "x": EncryptedScalar(Integer(3, is_signed=False)),
             },
             (range(0, 8),),
         ),

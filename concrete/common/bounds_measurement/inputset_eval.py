@@ -12,7 +12,7 @@ def eval_op_graph_bounds_on_inputset(
     inputset: Iterable[Tuple[Any, ...]],
     min_func: Callable[[Any, Any], Any] = min,
     max_func: Callable[[Any, Any], Any] = max,
-) -> Dict[IntermediateNode, Dict[str, Any]]:
+) -> Tuple[int, Dict[IntermediateNode, Dict[str, Any]]]:
     """Evaluate the bounds with a inputset.
 
     Evaluate the bounds for all output values of the operators in the graph op_graph over data
@@ -31,8 +31,9 @@ def eval_op_graph_bounds_on_inputset(
             tensors). Defaults to max.
 
     Returns:
-        Dict[IntermediateNode, Dict[str, Any]]: dict containing the bounds for each node from
-            op_graph, stored with the node as key and a dict with keys "min" and "max" as value.
+        Tuple[int, Dict[IntermediateNode, Dict[str, Any]]]: number of inputs in the inputset and
+            a dict containing the bounds for each node from op_graph, stored with the node
+            as key and a dict with keys "min" and "max" as value.
     """
 
     def check_inputset_input_len_is_valid(data_to_check):
@@ -48,9 +49,12 @@ def eval_op_graph_bounds_on_inputset(
     # TODO: do we want to check coherence between the input data type and the corresponding Input ir
     # node expected data type ? Not considering bit_width as they may not make sense at this stage
 
+    inputset_size = 0
     inputset_iterator = iter(inputset)
 
     first_input_data = dict(enumerate(next(inputset_iterator)))
+    inputset_size += 1
+
     check_inputset_input_len_is_valid(first_input_data.values())
     first_output = op_graph.evaluate(first_input_data)
 
@@ -62,6 +66,7 @@ def eval_op_graph_bounds_on_inputset(
     }
 
     for input_data in inputset_iterator:
+        inputset_size += 1
         current_input_data = dict(enumerate(input_data))
         check_inputset_input_len_is_valid(current_input_data.values())
         current_output = op_graph.evaluate(current_input_data)
@@ -69,4 +74,4 @@ def eval_op_graph_bounds_on_inputset(
             node_bounds[node]["min"] = min_func(node_bounds[node]["min"], value)
             node_bounds[node]["max"] = max_func(node_bounds[node]["max"], value)
 
-    return node_bounds
+    return inputset_size, node_bounds

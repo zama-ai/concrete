@@ -44,9 +44,9 @@ def small_fused_table(x):
 @pytest.mark.parametrize(
     "function,input_ranges,list_of_arg_names",
     [
-        pytest.param(lambda x: x + 42, ((-2, 2),), ["x"]),
+        pytest.param(lambda x: x + 42, ((-5, 5),), ["x"]),
         pytest.param(lambda x, y: x + y + 8, ((2, 10), (4, 8)), ["x", "y"]),
-        pytest.param(lambda x, y: (x + 1, y + 10), ((-1, 1), (3, 4)), ["x", "y"]),
+        pytest.param(lambda x, y: (x + 1, y + 10), ((-1, 1), (3, 8)), ["x", "y"]),
         pytest.param(
             lambda x, y, z: (x + y + 1 - z, x * y + 42, z, z + 99),
             ((4, 8), (3, 4), (0, 4)),
@@ -89,10 +89,10 @@ def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_n
 @pytest.mark.parametrize(
     "function,input_ranges,list_of_arg_names",
     [
-        pytest.param(lambda x: x + 42, ((0, 2),), ["x"]),
-        pytest.param(lambda x: x + numpy.int32(42), ((0, 2),), ["x"]),
-        pytest.param(lambda x: x * 2, ((0, 2),), ["x"]),
-        pytest.param(lambda x: 8 - x, ((0, 2),), ["x"]),
+        pytest.param(lambda x: x + 42, ((0, 10),), ["x"]),
+        pytest.param(lambda x: x + numpy.int32(42), ((0, 10),), ["x"]),
+        pytest.param(lambda x: x * 2, ((0, 10),), ["x"]),
+        pytest.param(lambda x: 12 - x, ((0, 10),), ["x"]),
         pytest.param(lambda x, y: x + y + 8, ((2, 10), (4, 8)), ["x", "y"]),
         pytest.param(lut, ((0, 127),), ["x"]),
         pytest.param(small_lut, ((0, 31),), ["x"]),
@@ -240,7 +240,7 @@ def test_compile_function_with_direct_tlu_overflow():
 @pytest.mark.parametrize(
     "function,input_ranges,list_of_arg_names",
     [
-        pytest.param(lambda x: x - 10, ((-2, 2),), ["x"]),
+        pytest.param(lambda x: x - 10, ((-5, 5),), ["x"]),
     ],
 )
 def test_fail_compile(function, input_ranges, list_of_arg_names):
@@ -261,6 +261,16 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
             data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
             CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
         )
+
+
+def test_small_inputset():
+    """Test function compile_numpy_function_into_op_graph with an unacceptably small inputset"""
+    compile_numpy_function_into_op_graph(
+        lambda x: x + 42,
+        {"x": EncryptedScalar(Integer(5, is_signed=False))},
+        [(0,), (3,)],
+        CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
+    )
 
 
 @pytest.mark.parametrize(

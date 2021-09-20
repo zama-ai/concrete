@@ -108,7 +108,10 @@ def extend_direct_lookup_tables(op_graph: OPGraph):
             table = node.op_kwargs["table"]
             bit_width = cast(Integer, node.inputs[0].data_type).bit_width
             expected_length = 2 ** bit_width
-            if len(table) > expected_length:
+
+            # TODO: remove no cover once the table length workaround is removed
+            # (https://github.com/zama-ai/concretefhe-internal/issues/359)
+            if len(table) > expected_length:  # pragma: no cover
                 node.op_kwargs["table"] = table[:expected_length]
             else:
                 repeat = expected_length // len(table)
