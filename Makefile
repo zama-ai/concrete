@@ -7,7 +7,8 @@ NOTEBOOKS_DIR:=docs/user/advanced_examples
 
 setup_env:
 	poetry install
-	poetry run python -m pip install -U pip wheel setuptools
+	poetry run python -m pip install -U pip wheel
+	poetry run python -m pip install -U --force-reinstall setuptools
 	poetry run python -m pip install -r torch_requirements.txt \
 		-f https://download.pytorch.org/whl/torch_stable.html
 .PHONY: setup_env
