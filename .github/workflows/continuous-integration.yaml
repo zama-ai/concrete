@@ -164,7 +164,7 @@ jobs:
         with:
           name: html-docs
           path: docs/_build/html
-      - name: PyTest
+      - name: PyTest Source Code
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         env:
@@ -172,7 +172,14 @@ jobs:
           LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
           make pytest
-      - name: Notebooks
+      - name: Test CodeBlocks
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        env:
+          # TODO: remove this when JIT doesn't need this
+          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
+        run: |
+          make test_codeblocks
+      - name: PyTest Notebooks
         if: ${{ github.event_name == 'schedule' && steps.conformance.outcome == 'success' && !cancelled() }}
         env:
           # TODO: remove this when JIT doesn't need this

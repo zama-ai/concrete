@@ -28,7 +28,7 @@ engine = hnp.compile_numpy_function(
 )
 
 # Make homomorphic inference
-engine.run([1, 0])
+engine.run(1, 0)
 ```
 
 ## Overview

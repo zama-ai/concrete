@@ -21,6 +21,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(0) == 2
 engine.run(1) == 1
@@ -34,6 +35,7 @@ Direct tables are tedious to prepare by hand. When possible, **concrete** fuses 
 
 Here is an example function that results in fused table lookup:
 
+<!--python-test:skip-->
 ```python
 def f(x):
     return 127 - (50 * (np.sin(x) + 1)).astype(np.uint32) # astype is to go back to integer world
@@ -45,6 +47,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(0) == 77
 engine.run(1) == 35
@@ -66,12 +69,14 @@ and after floating point operations are fused, we get the following operation gr
 
 Internally, it uses the following lookup table
 
+<!--python-test:skip-->
 ```python
 table = LookupTable([50, 92, 95, 57, 12, 2, 36, 82])
 ```
 
 which is calculated by:
 
+<!--python-test:skip-->
 ```python
 [(50 * (np.sin(x) + 1)).astype(np.uint32) for x in range(2 ** 3)]
 ```

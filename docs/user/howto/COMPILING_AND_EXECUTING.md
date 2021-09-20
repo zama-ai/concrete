@@ -12,6 +12,7 @@ import concrete.numpy as hnp
 
 You need to have a python function that follows the [limits](../explanation/FHE_AND_FRAMEWORK_LIMITS.md) of the **Concrete Framework**. Here is a simple example:
 
+<!--python-test:cont-->
 ```python
 def f(x, y):
     return x + y
@@ -21,6 +22,7 @@ def f(x, y):
 
 To compile the function, you need to provide what are the inputs that it's expecting. In the example function above, `x` and `y` could be scalars or tensors (though, for now, only dot between tensors are supported), they can be encrypted or clear, they can be signed or unsigned, they can have different bit-widths. So, we need to know what they are beforehand. We can do that like so:
 
+<!--python-test:cont-->
 ```python
 x = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
 y = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
@@ -30,12 +32,14 @@ In this configuration, both `x` and `y` are 3-bit unsigned integers, so they hav
 
 We also need an inputset. It is to determine the bit-widths of the intermediate results. It should be an iterable yielding tuples in the same order as the inputs of the function to compile. There should be at least 10 inputs in the input set to avoid warnings (except for functions with less than 10 possible inputs). The warning is there because the bigger the input set, the better the bounds will be.
 
+<!--python-test:cont-->
 ```python
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]
 ```
 
 Finally, we can compile our function to its homomorphic equivalent.
 
+<!--python-test:cont-->
 ```python
 engine = hnp.compile_numpy_function(
     f, {"x": x, "y": y},
@@ -47,15 +51,16 @@ engine = hnp.compile_numpy_function(
 
 You can use `.run(...)` method of `engine` returned by `hnp.compile_numpy_function(...)` to perform fully homomorphic evaluation. Here are some examples:
 
+<!--python-test:cont-->
 ```python
->>> engine.run(3, 4)
-7
->>> engine.run(1, 2)
-3
->>> engine.run(7, 7)
-14
->>> engine.run(0, 0)
-0
+engine.run(3, 4)
+# 7
+engine.run(1, 2)
+# 3
+engine.run(7, 7)
+# 14
+engine.run(0, 0)
+# 0
 ```
 
 ```{caution}

@@ -6,6 +6,7 @@ In this tutorial, we are going to go over all arithmetic operations available in
 
 ### Static ClearScalar and EncryptedScalar
 
+<!--python-test:skip-->
 ```python
 def f(x):
     return x + 42
@@ -13,6 +14,7 @@ def f(x):
 
 or
 
+<!--python-test:skip-->
 ```python
 def f(x):
     return 42 + x
@@ -24,6 +26,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(3) == 45
 engine.run(0) == 42
@@ -31,6 +34,7 @@ engine.run(0) == 42
 
 ### Dynamic ClearScalar and EncryptedScalar
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return x + y
@@ -38,6 +42,7 @@ def f(x, y):
 
 or
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return y + x
@@ -45,6 +50,7 @@ def f(x, y):
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(6, 4) == 10
 engine.run(1, 1) == 2
@@ -57,6 +63,7 @@ where
 
 ### EncryptedScalar and EncryptedScalar
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return x + y
@@ -69,6 +76,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(7, 7) == 14
 engine.run(3, 4) == 7
@@ -78,6 +86,7 @@ engine.run(3, 4) == 7
 
 ### Static ClearScalar and EncryptedScalar 
 
+<!--python-test:skip-->
 ```python
 def f(x):
     return 3 - x
@@ -89,6 +98,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(2) == 1
 engine.run(3) == 0
@@ -96,6 +106,7 @@ engine.run(3) == 0
 
 ### Dynamic ClearScalar and EncryptedScalar
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return y - x
@@ -108,6 +119,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(2, 4) == 2
 engine.run(1, 7) == 6
@@ -117,6 +129,7 @@ engine.run(1, 7) == 6
 
 ### Static ClearScalar and EncryptedScalar
 
+<!--python-test:skip-->
 ```python
 def f(x):
     return x * 2
@@ -124,6 +137,7 @@ def f(x):
 
 or
 
+<!--python-test:skip-->
 ```python
 def f(x):
     return 2 * x
@@ -135,6 +149,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(2) == 4
 engine.run(5) == 10
@@ -142,6 +157,7 @@ engine.run(5) == 10
 
 ### Dynamic ClearScalar and EncryptedScalar
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return x * y
@@ -149,6 +165,7 @@ def f(x, y):
 
 or
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return y * x
@@ -161,6 +178,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(2, 3) == 6
 engine.run(1, 7) == 7
@@ -170,6 +188,7 @@ engine.run(1, 7) == 7
 
 ### Dynamic ClearTensor and EncryptedTensor
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return np.dot(x, y)
@@ -177,6 +196,7 @@ def f(x, y):
 
 or
 
+<!--python-test:skip-->
 ```python
 def f(x, y):
     return np.dot(y, x)
@@ -189,6 +209,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run([1, 1], [2, 3]) == 5
 engine.run([2, 3], [2, 3]) == 13
@@ -196,6 +217,7 @@ engine.run([2, 3], [2, 3]) == 13
 
 ## Combining all together
 
+<!--python-test:skip-->
 ```python
 def f(x, y, z):
     return 100 - (2 * (np.dot(x, y) + z))
@@ -209,6 +231,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run([1, 2], [4, 3], 10) == 60
 engine.run([2, 3], [3, 2], 5) == 66

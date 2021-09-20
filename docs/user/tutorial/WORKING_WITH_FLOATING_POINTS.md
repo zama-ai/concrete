@@ -2,6 +2,7 @@
 
 ## An example
 
+<!--python-test:skip-->
 ```python
 def f(x):
     np.fabs(100 * (2 * np.sin(x) * np.cos(x))).astype(np.uint32) # astype is to go back to integer world
@@ -13,6 +14,7 @@ where
 
 results in
 
+<!--python-test:skip-->
 ```python
 engine.run(3) == 27
 engine.run(0) == 0

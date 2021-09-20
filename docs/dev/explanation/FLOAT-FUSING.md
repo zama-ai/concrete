@@ -6,6 +6,7 @@ The current compiler stack only supports integers with 7 bits or less. But it's 
 
 We added fusing floating point operations to make tracing numpy functions somewhat user friendly to allow in-line quantization in the numpy code e.g.:
 
+<!--python-test:skip-->
 ```python
 import numpy
 
@@ -42,6 +43,7 @@ From the terminal node, we go back up through the nodes until we find nodes that
 
 An example of a non fusable computation with that technique is:
 
+<!--python-test:skip-->
 ```python
 import numpy
 
@@ -63,6 +65,7 @@ Firstly, it does not cover optimizing the graph, so you can end up with multiple
 
 Secondly, the current approach fails to handle some programs that in practice could be compiled. The following example could be covered by pushing the search to find a single integer input:
 
+<!--python-test:skip-->
 ```python
 def theoretically_fusable(x):
     x_1 = x + 1.5

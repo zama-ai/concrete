@@ -6,6 +6,7 @@ In this tutorial, we are going to go over the artifact system, which is designed
 
 In case of compilation failures, artifacts are exported automatically to `.artifacts` directory under the working directory. Let's intentionally create a compilation failure and show what kinds of things are exported.
 
+<!--python-test:skip-->
 ```python
 def f(x):
     return np.sin(x)
@@ -93,7 +94,7 @@ Manual exports are mostly used for visualization. Nonetheless, they can be very 
 import concrete.numpy as hnp
 import pathlib
 
-artifacts = hnp.CompilationArtifacts(pathlib.Path("/custom/export/path"))
+artifacts = hnp.CompilationArtifacts(pathlib.Path("/tmp/custom/export/path"))
 hnp.compile_numpy_function(
     lambda x: 100 - (3 * (x + 2)),
     {"x": hnp.EncryptedScalar(hnp.UnsignedInteger(3))},
