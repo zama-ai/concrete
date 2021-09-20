@@ -181,7 +181,7 @@ jobs:
           make pytest_nb
       - name: Test coverage
         id: coverage
-        if: ${{ steps.pytest.outcome != 'skipped' && !cancelled() }}
+        if: ${{ always() && steps.pytest.outcome != 'skipped' && !cancelled() }}
         run: |
           ./script/actions_utils/coverage.sh ${{ github.base_ref }}
       - name: Archive test coverage

@@ -76,7 +76,8 @@ pcc_internal: check_python_format check_finalize_nb python_linting mypy_ci pydoc
 
 pytest:
 	poetry run pytest -svv \
-	--cov=$(SRC_DIR) --cov-report=term-missing:skip-covered --cov-report=xml tests/
+	--cov=$(SRC_DIR) --cov-fail-under=100 \
+	--cov-report=term-missing:skip-covered --cov-report=xml tests/
 .PHONY: pytest
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
