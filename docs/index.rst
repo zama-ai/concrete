@@ -4,10 +4,11 @@ Concrete Framework's documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Basics
+   :caption: Getting Started
 
    README.md
    user/howto/INSTALLING.md
+   benchmarks.md
 
 .. toctree::
    :maxdepth: 2
