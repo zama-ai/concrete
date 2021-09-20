@@ -226,7 +226,7 @@ jobs:
         if: ${{ steps.download.outcome == 'success' && !cancelled() }}
         uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
         with:
-          args: --delete
+          args: --delete --acl public-read
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
