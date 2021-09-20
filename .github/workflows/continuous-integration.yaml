@@ -43,6 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
       - name: Get changed files
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
         uses: Ana06/get-changed-files@ea75ed777daf24d6e95f43957bd26b1eab20806c
         id: files
         with:
