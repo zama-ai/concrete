@@ -35,3 +35,12 @@
     color: #ffd208;
     background-color: #696969;
 }
+
+.wy-nav-top {
+    color: #696969;
+    background: #343131
+}
+
+.wy-nav-top > a {
+    color: #ffd208;
+}
