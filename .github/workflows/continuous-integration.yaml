@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -28,7 +30,7 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
-  build_preflight_docker:
+  build-preflight-docker:
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
@@ -104,14 +106,14 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   build:
-    needs: [build_preflight_docker]
+    needs: [build-preflight-docker]
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
 
     runs-on: ubuntu-20.04
     container:
-      image: ${{ needs.build_preflight_docker.outputs.image }}
+      image: ${{ needs.build-preflight-docker.outputs.image }}
       credentials:
         username: ${{ secrets.BOT_USERNAME }}
         password: ${{ secrets.BOT_TOKEN }}
@@ -269,8 +271,8 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   push-docker-image:
-    needs: [build_preflight_docker, build]
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && fromJSON(needs.build_preflight_docker.outputs.needs-push)) || fromJSON(needs.build_preflight_docker.outputs.force-rebuild-docker) }}
+    needs: [build-preflight-docker, build]
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && fromJSON(needs.build-preflight-docker.outputs.needs-push)) || fromJSON(needs.build-preflight-docker.outputs.force-rebuild-docker) }}
 
     concurrency:
       group: ${{ github.ref }}
@@ -279,7 +281,7 @@ jobs:
     name: Push env docker image
     runs-on: ubuntu-20.04
     env:
-      PREFLIGHT_IMAGE: ${{ needs.build_preflight_docker.outputs.image }}
+      PREFLIGHT_IMAGE: ${{ needs.build-preflight-docker.outputs.image }}
 
     steps:
       - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
@@ -310,7 +312,69 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Publishing docker image ${{ env.BASE_IMAGE }} finished with status \
+          SLACK_MESSAGE: "Pushing docker image ${{ env.BASE_IMAGE }} finished with status \
+            ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  package-release:
+    needs: [build]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
+
+    name: Prepare docker image release
+    runs-on: ubuntu-20.04
+
+    env:
+      RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concretefhe
+
+    steps:
+      - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
+      - name: Set tag in env
+        run: |
+          GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
+          RELEASE_IMG_TAG="${RELEASE_IMAGE_BASE}:${GIT_TAG}"
+          echo "RELEASE_IMG_TAG=${RELEASE_IMG_TAG}" >> $GITHUB_ENV
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.BOT_USERNAME }}
+          password: ${{ secrets.BOT_TOKEN }}
+      - name: Build concretefhe Image
+        if: ${{ success() && !cancelled() }}
+        uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: docker/Dockerfile.release
+          load: true
+          push: false
+          tags: "${{ env.RELEASE_IMG_TAG }}"
+          no-cache: true
+      - name: Release image sanity check and push
+        if: ${{ success() && !cancelled() }}
+        run: |
+          echo "Running sanity check for ${RELEASE_IMG_TAG}"
+          docker run --rm -it --env LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so \
+          -v "$(pwd)"/docker/release_resources:/data \
+          "${RELEASE_IMG_TAG}" /bin/bash -c "python ./sanity_check.py"
+          docker push "${RELEASE_IMG_TAG}"
+      - name: Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Pushing docker image ${{ env.RELEASE_IMG_TAG }} finished with status \
             ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
