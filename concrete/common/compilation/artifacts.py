@@ -128,7 +128,7 @@ class CompilationArtifacts:
         output_directory = self.output_directory
         if output_directory.exists():
             shutil.rmtree(output_directory)
-        output_directory.mkdir()
+        output_directory.mkdir(parents=True)
 
         with open(output_directory.joinpath("environment.txt"), "w", encoding="utf-8") as f:
             f.write(f"{platform.platform()} {platform.version()}\n")
