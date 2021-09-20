@@ -25,6 +25,7 @@ env:
   PREFLIGHT_IMAGE_BASE: ghcr.io/zama-ai/concretefhe-env:preflight
   LATEST_IMAGE: ghcr.io/zama-ai/concretefhe-env:latest
   BASE_IMAGE: ghcr.io/zama-ai/concretefhe-env
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
   build_preflight_docker:
@@ -96,7 +97,8 @@ jobs:
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "Docker image preflight build ${{ env.PREFLIGHT_IMAGE }} finished with \
-            status ${{ job.status }}. Rebuilt image: ${{ env.BUILD_DOCKER || 'false' }}."
+            status ${{ job.status }}. Rebuilt image: ${{ env.BUILD_DOCKER || 'false' }}. \
+            (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -201,7 +203,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: 'Build finished with status ${{ job.status }}'
+          SLACK_MESSAGE: "Build finished with status ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -253,7 +255,8 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: 'Publishing documentation finished with status ${{ job.status }}'
+          SLACK_MESSAGE: "Publishing documentation finished with status ${{ job.status }} \
+            (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -300,6 +303,6 @@ jobs:
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "Publishing docker image ${{ env.BASE_IMAGE }} finished with status \
-            ${{ job.status }}"
+            ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
