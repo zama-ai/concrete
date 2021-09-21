@@ -59,7 +59,7 @@ ENV_JSON=$(curl \
 "${ENV_IMG_ENDPOINT_URL}")
 
 ENV_IMG_TIMESTAMP=$(echo "${ENV_JSON}" | \
-jq -rc '.[] | select(.metadata.container.tags[] | contains("latest")).updated_at'
+jq -rc '.[] | select(.metadata.container.tags[] | contains("latest")).updated_at')
 
 echo "Base timestamp: ${BASE_IMG_TIMESTAMP}"
 echo "Env timestamp:  ${ENV_IMG_TIMESTAMP}"
