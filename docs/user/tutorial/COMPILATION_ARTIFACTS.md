@@ -12,7 +12,7 @@ def f(x):
     return np.sin(x)
 ```
 
-This function fails (for now) to compile because `concrete` doesn't support floating point outputs. When you try to compile it (you might want to check [this](../howto/COMPILING_AND_EXECUTING.md) to see how you can do that), an exception will be raised and the artifacts will be exported automatically.
+This function fails (for now) to compile because `Concrete` doesn't support floating point outputs. When you try to compile it (you might want to check [this](../howto/COMPILING_AND_EXECUTING.md) to see how you can do that), an exception will be raised and the artifacts will be exported automatically.
 
 ### environment.txt
 

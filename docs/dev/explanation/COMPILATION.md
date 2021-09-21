@@ -10,7 +10,7 @@ However, one can already build interesting and impressing use cases, and more wi
 ## How can I use it?
 
 ```python
-# Import necessary concrete components
+# Import necessary Concrete components
 import concrete.numpy as hnp
 
 # Define the function to homomorphize

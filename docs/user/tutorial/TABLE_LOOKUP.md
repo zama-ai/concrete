@@ -1,10 +1,10 @@
 # Table Lookup
 
-In this tutorial, we are going to go over the ways to perform table lookups in **concrete**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
+In this tutorial, we are going to go over the ways to perform table lookups in **Concrete**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
 
 ## Direct table lookup
 
-**concrete** provides a special class to allow direct table lookups. Here is how to import and use it:
+**Concrete** provides a special class to allow direct table lookups. Here is how to import and use it:
 
 ```python
 from concrete.common.extensions.table import LookupTable
@@ -31,7 +31,7 @@ engine.run(3) == 0
 
 ## Fused table lookup
 
-Direct tables are tedious to prepare by hand. When possible, **concrete** fuses the floating point operations into a single table lookup automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](./WORKING_WITH_FLOATING_POINTS.md).
+Direct tables are tedious to prepare by hand. When possible, **Concrete** fuses the floating point operations into a single table lookup automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](./WORKING_WITH_FLOATING_POINTS.md).
 
 Here is an example function that results in fused table lookup:
 
