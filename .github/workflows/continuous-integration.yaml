@@ -52,7 +52,7 @@ jobs:
         with:
           format: 'space-delimited'
       - name: Should rebuild docker check
-        run : |
+        run: |
           set +e
           echo "${{ steps.files.outputs.all }}" | grep "${ENV_DOCKERFILE}"
           DOCKERFILE_CHANGED=$?
@@ -434,17 +434,30 @@ jobs:
 
   send-report:
     if: ${{ always() }}
-    needs: [
-      build-preflight-docker,
-      build,
-      publish-docs,
-      push-docker-image,
-      package-release,
-    ]
+    needs:
+      [
+        build-preflight-docker,
+        build,
+        publish-docs,
+        push-docker-image,
+        package-release,
+      ]
 
     name: Send Slack notification
     runs-on: ubuntu-20.04
     steps:
+      - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
+      - name: Prepare whole job status
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          echo "${NEEDS_JSON}" > /tmp/needs_context.json
+          JOB_STATUS=$(python3 ./script/actions_utils/actions_combine_status.py \
+          --needs_context_json /tmp/needs_context.json)
+          echo "JOB_STATUS=${JOB_STATUS}" >> "$GITHUB_ENV"
+
       - name: Slack Notification
         if: ${{ always() }}
         continue-on-error: true
@@ -452,7 +465,7 @@ jobs:
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ job.status }}
+          SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
           SLACK_MESSAGE: "Full run here: ${{ env.ACTION_RUN_URL }}\n\
             - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
             - build: ${{ needs.build.outputs.report || 'Did not run.' }}\n\n\
