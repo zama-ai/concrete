@@ -362,7 +362,7 @@ jobs:
         if: ${{ success() && !cancelled() }}
         run: |
           echo "Running sanity check for ${RELEASE_IMG_TAG}"
-          docker run --rm -it --env LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so \
+          docker run --rm --env LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so \
           -v "$(pwd)"/docker/release_resources:/data \
           "${RELEASE_IMG_TAG}" /bin/bash -c "python ./sanity_check.py"
           docker push "${RELEASE_IMG_TAG}"
