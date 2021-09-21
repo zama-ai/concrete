@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '0 22 * * *' # Everyday @ 22:00
 
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
 jobs:
   perform:
     name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
@@ -21,7 +24,9 @@ jobs:
           aws ec2 start-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }}
 
       - name: Wait For The Instance To Get An IP Address
-        run: timeout 180 bash -c 'until [[ $(aws ec2 describe-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text) != "" ]]; do sleep 0.1; done'
+        run: |
+          # shellcheck disable=SC2016,2026
+          timeout 180 bash -c 'until [[ $(aws ec2 describe-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text) != "" ]]; do sleep 0.1; done'
 
       - name: Get Public IP Address of EC2 Instance
         id: public-ip
@@ -73,6 +78,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: 'Publishing benchmarks finished with status ${{ job.status }} (${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+          SLACK_MESSAGE: "Publishing benchmarks finished with status ${{ job.status }} \
+            (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

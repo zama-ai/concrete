@@ -41,6 +41,7 @@ jobs:
       image: ${{ steps.set_image.outputs.image || env.LATEST_IMAGE }}
       needs-push: ${{ env.BUILD_DOCKER }}
       force-rebuild-docker: ${{ env.FORCE_REBUILD_DOCKER }}
+      report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     steps:
       - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
@@ -53,14 +54,14 @@ jobs:
       - name: Should rebuild docker check
         run : |
           set +e
-          echo "${{ steps.files.outputs.all }}" | grep ${ENV_DOCKERFILE}
+          echo "${{ steps.files.outputs.all }}" | grep "${ENV_DOCKERFILE}"
           DOCKERFILE_CHANGED=$?
           if [[ "${DOCKERFILE_CHANGED}" == "0" || "${FORCE_REBUILD_DOCKER}" == "true" ]]; then
             echo "Should rebuild docker image!"
-            echo "BUILD_DOCKER=true" >> $GITHUB_ENV
+            echo "BUILD_DOCKER=true" >> "$GITHUB_ENV"
           else
             echo "Docker image up to date."
-            echo "BUILD_DOCKER=false" >> $GITHUB_ENV
+            echo "BUILD_DOCKER=false" >> "$GITHUB_ENV"
           fi
       - name: Set prefligh Docker image
         id: set_image
@@ -69,7 +70,7 @@ jobs:
           PREFLIGHT_IMAGE_TAG=$(echo ${{ github.ref }} | sed -e 's/\//-/g')
           PREFLIGHT_IMAGE="${PREFLIGHT_IMAGE_BASE}-${PREFLIGHT_IMAGE_TAG}"
           echo "::set-output name=image::${PREFLIGHT_IMAGE}"
-          echo "PREFLIGHT_IMAGE=${PREFLIGHT_IMAGE}" >> $GITHUB_ENV
+          echo "PREFLIGHT_IMAGE=${PREFLIGHT_IMAGE}" >> "$GITHUB_ENV"
       - name: Set up Docker Buildx
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
         id: buildx
@@ -91,17 +92,24 @@ jobs:
           push: true
           tags: "${{ env.PREFLIGHT_IMAGE }}"
           no-cache: true
-      - name: Slack Notification
+      - name: Set notification report
+        id: report
         if: ${{ always() }}
+        run: |
+          REPORT="Docker image preflight build ${{ env.PREFLIGHT_IMAGE }} finished with \
+          status ${{ job.status }}. Rebuilt image: ${{ env.BUILD_DOCKER || 'false' }}."
+          echo "${REPORT}"
+          echo "::set-output name=report::${REPORT}"
+          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+      - name: Slack Notification
+        if: ${{ always() && !success() }}
         continue-on-error: true
         uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Docker image preflight build ${{ env.PREFLIGHT_IMAGE }} finished with \
-            status ${{ job.status }}. Rebuilt image: ${{ env.BUILD_DOCKER || 'false' }}. \
-            (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -120,6 +128,9 @@ jobs:
     strategy:
       matrix:
         python-version: [3.8]
+
+    outputs:
+      report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     steps:
       - name: Checkout Code
@@ -205,15 +216,23 @@ jobs:
         with:
           path: diff-coverage.txt
           recreate: true
-      - name: Slack Notification
+      - name: Set notification report
+        id: report
         if: ${{ always() }}
+        run: |
+          REPORT="Build finished with status ${{ job.status }}."
+          echo "${REPORT}"
+          echo "::set-output name=report::${REPORT}"
+          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+      - name: Slack Notification
+        if: ${{ always() && !success() }}
         continue-on-error: true
         uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Build finished with status ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -222,6 +241,9 @@ jobs:
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
+
+    outputs:
+      report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     runs-on: ubuntu-20.04
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -257,16 +279,24 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
 
-      - name: Slack Notification
+      - name: Set notification report
+        id: report
         if: ${{ always() }}
+        run: |
+          REPORT="Publishing documentation finished with status ${{ job.status }}."
+          echo "${REPORT}"
+          echo "::set-output name=report::${REPORT}"
+          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+
+      - name: Slack Notification
+        if: ${{ always() && !success() }}
         continue-on-error: true
         uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Publishing documentation finished with status ${{ job.status }} \
-            (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -277,6 +307,9 @@ jobs:
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
+
+    outputs:
+      report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     name: Push env docker image
     runs-on: ubuntu-20.04
@@ -293,27 +326,36 @@ jobs:
           password: ${{ secrets.BOT_TOKEN }}
       - name: Pull preflight image
         run: |
-          docker pull ${PREFLIGHT_IMAGE}
+          docker pull "${PREFLIGHT_IMAGE}"
       - name: Retag to latest and epoch-sha1 and push
         run: |
           EPOCH=$(date +%s)
           SHA1=$(git rev-parse HEAD)
           TAGGED_IMAGE="${BASE_IMAGE}:${EPOCH}-${SHA1}"
-          docker tag ${PREFLIGHT_IMAGE} ${LATEST_IMAGE}
-          docker tag ${PREFLIGHT_IMAGE} ${TAGGED_IMAGE}
-          docker push ${LATEST_IMAGE}
-          docker push ${TAGGED_IMAGE}
+          docker tag "${PREFLIGHT_IMAGE}" "${LATEST_IMAGE}"
+          docker tag "${PREFLIGHT_IMAGE}" "${TAGGED_IMAGE}"
+          docker push "${LATEST_IMAGE}"
+          docker push "${TAGGED_IMAGE}"
+
+      - name: Set notification report
+        id: report
+        if: ${{ always() }}
+        run: |
+          REPORT="Pushing docker image ${{ env.BASE_IMAGE }} finished with status \
+          ${{ job.status }}."
+          echo "${REPORT}"
+          echo "::set-output name=report::${REPORT}"
+          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
 
       - name: Slack Notification
-        if: ${{ always() }}
+        if: ${{ always() && !success() }}
         continue-on-error: true
         uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Pushing docker image ${{ env.BASE_IMAGE }} finished with status \
-            ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -324,6 +366,9 @@ jobs:
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
+
+    outputs:
+      report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     name: Prepare docker image release
     runs-on: ubuntu-20.04
@@ -337,7 +382,7 @@ jobs:
         run: |
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
           RELEASE_IMG_TAG="${RELEASE_IMAGE_BASE}:${GIT_TAG}"
-          echo "RELEASE_IMG_TAG=${RELEASE_IMG_TAG}" >> $GITHUB_ENV
+          echo "RELEASE_IMG_TAG=${RELEASE_IMG_TAG}" >> "$GITHUB_ENV"
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
@@ -366,6 +411,40 @@ jobs:
           -v "$(pwd)"/docker/release_resources:/data \
           "${RELEASE_IMG_TAG}" /bin/bash -c "python ./sanity_check.py"
           docker push "${RELEASE_IMG_TAG}"
+      - name: Set notification report
+        id: report
+        if: ${{ always() }}
+        run: |
+          REPORT="Pushing docker image ${{ env.RELEASE_IMG_TAG }} finished with status \
+          ${{ job.status }}."
+          echo "${REPORT}"
+          echo "::set-output name=report::${REPORT}"
+          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+      - name: Slack Notification
+        if: ${{ always() && !success() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  send-report:
+    if: ${{ always() }}
+    needs: [
+      build-preflight-docker,
+      build,
+      publish-docs,
+      push-docker-image,
+      package-release,
+    ]
+
+    name: Send Slack notification
+    runs-on: ubuntu-20.04
+    steps:
       - name: Slack Notification
         if: ${{ always() }}
         continue-on-error: true
@@ -374,7 +453,11 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Pushing docker image ${{ env.RELEASE_IMG_TAG }} finished with status \
-            ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "Full run here: ${{ env.ACTION_RUN_URL }}\n\
+            - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
+            - build: ${{ needs.build.outputs.report || 'Did not run.' }}\n\n\
+            - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
+            - push-docker-image: ${{ needs.push-docker-image.outputs.report || 'Did not run.' }}\n\n\
+            - package-release: ${{ needs.package-release.outputs.report || 'Did not run.' }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
