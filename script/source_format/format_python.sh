@@ -30,16 +30,16 @@ do
 
         *)
             echo "Unknown param : $1"
-            exit -1
+            exit 1
             ;;
    esac
    shift
 done
 
 for SRC_DIR in "${DIRS[@]}"; do
-    isort --profile black ${CHECK} ${SRC_DIR}
+    isort --profile black "${CHECK}" "${SRC_DIR}"
     ((FAILURES+=$?))
-    black -l 100 ${CHECK} ${SRC_DIR}
+    black -l 100 "${CHECK}" "${SRC_DIR}"
     ((FAILURES+=$?))
 done
 

@@ -3,9 +3,12 @@
 # Run benchmarks while logging the intermediate results
 # Publish findings in the progress tracker
 
-source /src/.docker_venv/bin/activate
-if [[ "$?" != "0" ]]; then
+set -e
+
+# shellcheck disable=SC1091
+if source /src/.docker_venv/bin/activate; then
     python3 -m venv /src/.docker_venv
+    # shellcheck disable=SC1091
     source /src/.docker_venv/bin/activate
     cd /src/ && make setup_env
 fi
@@ -27,6 +30,7 @@ if [ -f .env ]
 then
   # Set the last two environment variables in `.env` for the curl command below
   # (https://gist.github.com/mihow/9c7f559807069a03e302605691f85572)
+  # shellcheck disable=SC2002,SC2046
   export $(cat .env | tail -n 2 | sed 's/#.*//g' | xargs  -d '\n')
 fi
 

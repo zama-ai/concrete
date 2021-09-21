@@ -9,7 +9,8 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     python-is-python3 \
     git \
     graphviz* \
-    pandoc && \
+    pandoc \
+    shellcheck && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry

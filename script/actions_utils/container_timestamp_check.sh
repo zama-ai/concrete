@@ -38,7 +38,7 @@ do
 
         *)
             echo "Unknown param : $1"
-            exit -1
+            exit 1
             ;;
    esac
    shift
@@ -64,8 +64,8 @@ jq -rc '.[] | select(.metadata.container.tags[] | contains("latest")).updated_at
 echo "Base timestamp: ${BASE_IMG_TIMESTAMP}"
 echo "Env timestamp:  ${ENV_IMG_TIMESTAMP}"
 
-BASE_IMG_DATE=$(date -d ${BASE_IMG_TIMESTAMP} +%s)
-ENV_IMG_DATE=$(date -d ${ENV_IMG_TIMESTAMP} +%s)
+BASE_IMG_DATE=$(date -d "${BASE_IMG_TIMESTAMP}" +%s)
+ENV_IMG_DATE=$(date -d "${ENV_IMG_TIMESTAMP}" +%s)
 
 echo "Base epoch: ${BASE_IMG_DATE}"
 echo "Env epoch:  ${ENV_IMG_DATE}"
@@ -76,7 +76,7 @@ if [[ "${BASE_IMG_DATE}" -ge "${ENV_IMG_DATE}" ]]; then
     -X POST \
     -H "Accept: application/vnd.github.v3+json" \
     -H "Authorization: token ${TOKEN}" \
-    https://api.github.com/repos/${ORG_REPO}/dispatches \
+    https://api.github.com/repos/"${ORG_REPO}"/dispatches \
     -d "{\"event_type\":\"${EVENT_TYPE}\"}"
 else
     echo "Image up to date, nothing to do."

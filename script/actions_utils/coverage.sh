@@ -3,13 +3,13 @@
 set -o pipefail
 set +e
 
-CURR_DIR=`dirname $0`
+CURR_DIR=$(dirname "$0")
 
 # Run diff-coverage
 if [[ "$1" == "" ]]; then
-    BB="origin/main"
+    export BB="origin/main"
 else
-    BB="origin/$1"
+    export BB="origin/$1"
 fi
 make coverage | tee diff-coverage.txt
 

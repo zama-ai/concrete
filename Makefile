@@ -71,7 +71,7 @@ pcc:
 	--no-print-directory pcc_internal
 .PHONY: pcc
 
-pcc_internal: check_python_format check_finalize_nb python_linting mypy_ci pydocstyle
+pcc_internal: check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 .PHONY: pcc_internal
 
 pytest:
@@ -203,3 +203,9 @@ upgrade_py_deps:
 test_codeblocks:
 	poetry run python ./script/make_utils/test_md_python_code.py --md_dir docs/
 .PHONY: test_codeblocks
+
+# From https://stackoverflow.com/a/63523300 for the find command
+shell_lint:
+	find \( -path "./.venv" -o -path "./.docker_venv" \) -prune -o -type f -name "*.sh" -print | \
+	xargs shellcheck
+.PHONY: shell_lint
