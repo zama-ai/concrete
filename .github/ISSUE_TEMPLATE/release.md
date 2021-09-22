@@ -2,7 +2,6 @@
 name: Release
 about: Issue template to prepare a release step by step.
 title: "Release vX.Y.Z (or vX.Y.Zrc?)"
-labels: "release"
 ---
 <!-- Make sure to set the proper version in the issue template -->
 Please check all steps if it was either done/already done, at the end of a release all check boxes must have been checked.
