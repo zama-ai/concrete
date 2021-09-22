@@ -1,5 +1,7 @@
 """Module that defines the scalar values in a program."""
 
+from typing import Tuple
+
 from ..data_types.base import BaseDataType
 from .base import BaseValue
 
@@ -13,6 +15,15 @@ class ScalarValue(BaseValue):
     def __str__(self) -> str:  # pragma: no cover
         encrypted_str = "Encrypted" if self._is_encrypted else "Clear"
         return f"{encrypted_str}Scalar<{self.data_type!r}>"
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        """Return the ScalarValue shape property.
+
+        Returns:
+            Tuple[int, ...]: The ScalarValue shape which is `()`.
+        """
+        return ()
 
 
 def make_clear_scalar(data_type: BaseDataType) -> ScalarValue:

@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from functools import partial
-from typing import Callable, Union, cast
+from typing import Callable, List, Union, cast
 
 from ..debugging.custom_assert import custom_assert
 from ..values import (
@@ -306,7 +306,9 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
     )
 
 
-def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]) -> BaseDataType:
+def get_base_data_type_for_python_constant_data(
+    constant_data: Union[int, float, List[int], List[float]]
+) -> BaseDataType:
     """Determine the BaseDataType to hold the input constant data.
 
     Args:
@@ -318,10 +320,17 @@ def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]
     """
     constant_data_type: BaseDataType
     custom_assert(
-        isinstance(constant_data, (int, float)),
+        isinstance(constant_data, (int, float, list)),
         f"Unsupported constant data of type {type(constant_data)}",
     )
-    if isinstance(constant_data, int):
+
+    if isinstance(constant_data, list):
+        custom_assert(len(constant_data) > 0, "Data type of empty list cannot be detected")
+        constant_data_type = get_base_data_type_for_python_constant_data(constant_data[0])
+        for value in constant_data:
+            other_data_type = get_base_data_type_for_python_constant_data(value)
+            constant_data_type = find_type_to_hold_both_lossy(constant_data_type, other_data_type)
+    elif isinstance(constant_data, int):
         is_signed = constant_data < 0
         constant_data_type = Integer(
             get_bits_to_represent_value_as_integer(constant_data, is_signed), is_signed
@@ -332,22 +341,29 @@ def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]
 
 
 def get_base_value_for_python_constant_data(
-    constant_data: Union[int, float]
-) -> Callable[..., ScalarValue]:
-    """Wrap the BaseDataType to hold the input constant data in a ScalarValue partial.
+    constant_data: Union[int, float, List[int], List[float]]
+) -> Callable[..., BaseValue]:
+    """Wrap the BaseDataType to hold the input constant data in BaseValue partial.
 
-    The returned object can then be instantiated as an Encrypted or Clear version of the ScalarValue
-    by calling it with the proper arguments forwarded to the ScalarValue `__init__` function
+    The returned object can then be instantiated as an Encrypted or Clear version
+    by calling it with the proper arguments forwarded to the BaseValue `__init__` function
 
     Args:
-        constant_data (Union[int, float]): The constant data for which to determine the
-            corresponding ScalarValue and BaseDataType.
+        constant_data (Union[int, float, List[int], List[float]]): The constant data
+            for which to determine the corresponding Value.
 
     Returns:
-        Callable[..., ScalarValue]: A partial object that will return the proper ScalarValue when
-            called with `encrypted` as keyword argument (forwarded to the ScalarValue `__init__`
+        Callable[..., BaseValue]: A partial object that will return the proper BaseValue when
+            called with `is_encrypted` as keyword argument (forwarded to the BaseValue `__init__`
             method).
     """
+
+    if isinstance(constant_data, list):
+        assert len(constant_data) > 0
+        constant_shape = (len(constant_data),)
+        constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
+        return partial(TensorValue, data_type=constant_data_type, shape=constant_shape)
+
     constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
     return partial(ScalarValue, data_type=constant_data_type)
 
@@ -359,3 +375,28 @@ def get_type_constructor_for_python_constant_data(constant_data: Union[int, floa
         constant_data (Any): The data for which we want to determine the type constructor.
     """
     return type(constant_data)
+
+
+def is_data_type_compatible_with(
+    dtype: BaseDataType,
+    other: BaseDataType,
+) -> bool:
+    """Determine whether dtype is compatible with other.
+
+    `dtype` being compatible with `other` means `other` can hold every value of `dtype`
+    (e.g., uint2 is compatible with uint4 and int4)
+    (e.g., int2 is compatible with int4 but not with uint4)
+
+    Note that this function is not symetric.
+    (e.g., uint2 is compatible with uint4, but uint4 is not compatible with uint2)
+
+    Args:
+        dtype (BaseDataType): dtype to check compatiblity
+        other (BaseDataType): dtype to check compatiblity against
+
+    Returns:
+        bool: Whether the dtype is compatible with other or not
+    """
+
+    combination = find_type_to_hold_both_lossy(dtype, other)
+    return other == combination

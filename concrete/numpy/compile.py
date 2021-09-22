@@ -24,6 +24,7 @@ from ..common.values import BaseValue
 from ..numpy.tracing import trace_numpy_function
 from .np_dtypes_helpers import (
     get_base_data_type_for_numpy_or_python_constant_data,
+    get_base_value_for_numpy_or_python_constant_data,
     get_type_constructor_for_numpy_or_python_constant_data,
 )
 
@@ -112,8 +113,10 @@ def _compile_numpy_function_into_op_graph_internal(
     inputset_size, node_bounds = eval_op_graph_bounds_on_inputset(
         op_graph,
         inputset,
+        compilation_configuration=compilation_configuration,
         min_func=numpy_min_func,
         max_func=numpy_max_func,
+        get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
     )
 
     # Check inputset size
@@ -134,7 +137,7 @@ def _compile_numpy_function_into_op_graph_internal(
     minimum_required_inputset_size = min(inputset_size_upper_limit, 10)
     if inputset_size < minimum_required_inputset_size:
         sys.stderr.write(
-            f"Provided inputset contains too few inputs "
+            f"Warning: Provided inputset contains too few inputs "
             f"(it should have had at least {minimum_required_inputset_size} "
             f"but it only had {inputset_size})\n"
         )

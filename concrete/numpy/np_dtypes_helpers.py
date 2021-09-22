@@ -10,6 +10,7 @@ from numpy.typing import DTypeLike
 from ..common.data_types.base import BaseDataType
 from ..common.data_types.dtypes_helpers import (
     BASE_DATA_TYPES,
+    find_type_to_hold_both_lossy,
     get_base_data_type_for_python_constant_data,
     get_base_value_for_python_constant_data,
     get_type_constructor_for_python_constant_data,
@@ -116,12 +117,26 @@ def get_base_data_type_for_numpy_or_python_constant_data(constant_data: Any) -> 
     """
     base_dtype: BaseDataType
     custom_assert(
-        isinstance(constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)),
+        isinstance(
+            constant_data, (int, float, list, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
+        ),
         f"Unsupported constant data of type {type(constant_data)}",
     )
     if isinstance(constant_data, (numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)):
+        native_type = (
+            float
+            if constant_data.dtype == numpy.float32 or constant_data.dtype == numpy.float64
+            else int
+        )
+
+        min_value = native_type(constant_data.min())
+        max_value = native_type(constant_data.max())
+
+        min_value_dtype = get_base_data_type_for_python_constant_data(min_value)
+        max_value_dtype = get_base_data_type_for_python_constant_data(max_value)
+
         # numpy
-        base_dtype = convert_numpy_dtype_to_base_data_type(constant_data.dtype)
+        base_dtype = find_type_to_hold_both_lossy(min_value_dtype, max_value_dtype)
     else:
         # python
         base_dtype = get_base_data_type_for_python_constant_data(constant_data)
@@ -148,7 +163,10 @@ def get_base_value_for_numpy_or_python_constant_data(
     """
     constant_data_value: Callable[..., BaseValue]
     custom_assert(
-        isinstance(constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)),
+        isinstance(
+            constant_data,
+            (int, float, list, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES),
+        ),
         f"Unsupported constant data of type {type(constant_data)}",
     )
 

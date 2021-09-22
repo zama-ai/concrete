@@ -303,7 +303,7 @@ def test_compile_function_with_dot(function, params, shape, ref_graph_str):
         iter_i = itertools.product(range(0, max_for_ij + 1), repeat=repeat)
         iter_j = itertools.product(range(0, max_for_ij + 1), repeat=repeat)
         for prod_i, prod_j in itertools.product(iter_i, iter_j):
-            yield (prod_i, prod_j)
+            yield (list(prod_i), list(prod_j))
 
     max_for_ij = 3
     assert len(shape) == 1

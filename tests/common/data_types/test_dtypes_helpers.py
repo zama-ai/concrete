@@ -1,5 +1,4 @@
 """Test file for data types helpers"""
-
 import pytest
 
 from concrete.common.data_types.base import BaseDataType

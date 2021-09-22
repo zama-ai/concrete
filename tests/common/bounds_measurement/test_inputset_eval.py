@@ -2,12 +2,16 @@
 
 from typing import Tuple
 
+import numpy as np
 import pytest
 
 from concrete.common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_inputset
+from concrete.common.compilation import CompilationConfiguration
 from concrete.common.data_types.floats import Float
-from concrete.common.data_types.integers import Integer
-from concrete.common.values import EncryptedScalar
+from concrete.common.data_types.integers import Integer, UnsignedInteger
+from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
+from concrete.numpy.compile import numpy_max_func, numpy_min_func
+from concrete.numpy.np_dtypes_helpers import get_base_value_for_numpy_or_python_constant_data
 from concrete.numpy.tracing import trace_numpy_function
 
 
@@ -280,7 +284,9 @@ def test_eval_op_graph_bounds_on_inputset_multiple_output(
                 yield (x_gen, y_gen)
 
     _, node_bounds = eval_op_graph_bounds_on_inputset(
-        op_graph, data_gen(*tuple(range(x[0], x[1] + 1) for x in input_ranges))
+        op_graph,
+        data_gen(*tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+        CompilationConfiguration(),
     )
 
     for i, output_node in op_graph.output_nodes.items():
@@ -291,3 +297,137 @@ def test_eval_op_graph_bounds_on_inputset_multiple_output(
 
     for i, output_node in op_graph.output_nodes.items():
         assert expected_output_data_type[i] == output_node.outputs[0].data_type
+
+
+def test_eval_op_graph_bounds_on_non_conformant_inputset_default(capsys):
+    """Test function for eval_op_graph_bounds_on_inputset with non conformant inputset"""
+
+    def f(x, y):
+        return np.dot(x, y)
+
+    x = EncryptedTensor(UnsignedInteger(2), (3,))
+    y = ClearTensor(UnsignedInteger(2), (3,))
+
+    inputset = [
+        ([2, 1, 3, 1], [1, 2, 1, 1]),
+        ([3, 3, 3], [3, 3, 5]),
+    ]
+
+    op_graph = trace_numpy_function(f, {"x": x, "y": y})
+
+    configuration = CompilationConfiguration()
+    eval_op_graph_bounds_on_inputset(op_graph, inputset, compilation_configuration=configuration)
+
+    captured = capsys.readouterr()
+    assert (
+        captured.err == "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
+        "(expected EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `x` "
+        "but got EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
+        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+    )
+
+
+def test_eval_op_graph_bounds_on_non_conformant_inputset_check_all(capsys):
+    """Test function for eval_op_graph_bounds_on_inputset with non conformant inputset, check all"""
+
+    def f(x, y):
+        return np.dot(x, y)
+
+    x = EncryptedTensor(UnsignedInteger(2), (3,))
+    y = ClearTensor(UnsignedInteger(2), (3,))
+
+    inputset = [
+        ([2, 1, 3, 1], [1, 2, 1, 1]),
+        ([3, 3, 3], [3, 3, 5]),
+    ]
+
+    op_graph = trace_numpy_function(f, {"x": x, "y": y})
+
+    configuration = CompilationConfiguration(check_every_input_in_inputset=True)
+    eval_op_graph_bounds_on_inputset(op_graph, inputset, compilation_configuration=configuration)
+
+    captured = capsys.readouterr()
+    assert (
+        captured.err == "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
+        "(expected EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `x` "
+        "but got EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
+        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "Warning: Input #1 (0-indexed) is not coherent with the hinted parameters "
+        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<Integer<unsigned, 3 bits>, shape=(3,)> which is not compatible)\n"
+    )
+
+
+def test_eval_op_graph_bounds_on_conformant_numpy_inputset_check_all(capsys):
+    """Test function for eval_op_graph_bounds_on_inputset
+    with conformant inputset of numpy arrays, check all"""
+
+    def f(x, y):
+        return np.dot(x, y)
+
+    x = EncryptedTensor(UnsignedInteger(2), (3,))
+    y = ClearTensor(UnsignedInteger(2), (3,))
+
+    inputset = [
+        (np.array([2, 1, 3]), np.array([1, 2, 1])),
+        (np.array([3, 3, 3]), np.array([3, 3, 1])),
+    ]
+
+    op_graph = trace_numpy_function(f, {"x": x, "y": y})
+
+    configuration = CompilationConfiguration(check_every_input_in_inputset=True)
+    eval_op_graph_bounds_on_inputset(
+        op_graph,
+        inputset,
+        compilation_configuration=configuration,
+        min_func=numpy_min_func,
+        max_func=numpy_max_func,
+        get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+    )
+
+    captured = capsys.readouterr()
+    assert captured.err == ""
+
+
+def test_eval_op_graph_bounds_on_non_conformant_numpy_inputset_check_all(capsys):
+    """Test function for eval_op_graph_bounds_on_inputset with non conformant inputset, check all"""
+
+    def f(x, y):
+        return np.dot(x, y)
+
+    x = EncryptedTensor(UnsignedInteger(2), (3,))
+    y = ClearTensor(UnsignedInteger(2), (3,))
+
+    inputset = [
+        (np.array([2, 1, 3, 1]), np.array([1, 2, 1, 1])),
+        (np.array([3, 3, 3]), np.array([3, 3, 5])),
+    ]
+
+    op_graph = trace_numpy_function(f, {"x": x, "y": y})
+
+    configuration = CompilationConfiguration(check_every_input_in_inputset=True)
+    eval_op_graph_bounds_on_inputset(
+        op_graph,
+        inputset,
+        compilation_configuration=configuration,
+        min_func=numpy_min_func,
+        max_func=numpy_max_func,
+        get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+    )
+
+    captured = capsys.readouterr()
+    assert (
+        captured.err == "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
+        "(expected EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `x` "
+        "but got EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
+        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "Warning: Input #1 (0-indexed) is not coherent with the hinted parameters "
+        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<Integer<unsigned, 3 bits>, shape=(3,)> which is not compatible)\n"
+    )
