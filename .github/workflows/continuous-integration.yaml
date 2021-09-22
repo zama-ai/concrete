@@ -466,7 +466,8 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Full run here: ${{ env.ACTION_RUN_URL }}\n\
+          SLACK_MESSAGE: "Full run finished with status ${{ env.JOB_STATUS || 'failure' }} \
+            (${{ env.ACTION_RUN_URL }})\n\
             - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
             - build: ${{ needs.build.outputs.report || 'Did not run.' }}\n\n\
             - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
