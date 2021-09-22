@@ -36,6 +36,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
+    "sphinx_copybutton",
 ]
 
 myst_enable_extensions = [
@@ -68,8 +69,10 @@ html_style = "css/zama.css"
 html_logo = "logo-black.png"
 html_theme_options = {
     "logo_only": False,
-    "display_version": True,
 }
+html_last_updated_fmt = None # '%b %d, %Y'
+html_show_copyright = True
+html_show_sphinx = False
 pygments_style = "zenburn"
 
 # Add any paths that contain custom static files (such as style sheets) here,

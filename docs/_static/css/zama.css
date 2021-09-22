@@ -3,12 +3,78 @@
 /* This line is theme specific - it includes the base theme CSS */
 @import 'theme.css';       /* for the Read the Docs theme */
 
-.wy-side-nav-search {
-    background-color: #ffd208;
+:root {
+    /* primary: yellow, secondary: orange, tertiary: black */
+    --primary-color: #ffd208;
+    --primary-color-darker: #cba706;
+    --secondary-color: #ffb854;
+    --secondary-color-light: #fff0d9;
+    --tertiary-color: #414042;
+    --tertiary-color-light: #e6e7e8;
+    --link-color: var(--primary-color-darker);
+    --primary-font: Telegraf, sans-serif;
 }
 
-.wy-menu-vertical header, .wy-menu-vertical p.caption {
-    color: #ffd208;
+.zama-header {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 201;
+    height: 43px;
+    background: black;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    justify-content: flex-end;
+    font-size: 16px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.zama-header > a {
+    display: flex;
+    height: 33px;
+    align-items: center;
+    color: #fff;
+    font-weight: bold   ;
+    font-family: var(--primary-font);
+    text-decoration: none;
+    margin-left: 30px;
+}
+
+.zama-header > a:hover,
+.zama-header > a:focus,
+.zama-header > a:active {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+body {
+    font-family: var(--primary-font);
+}
+
+.rst-content .toctree-wrapper>p.caption, h1, h2, h3, h4, h5, h6, legend {
+    font-family: var(--primary-font);
+}
+
+input[type=color], input[type=date], input[type=datetime-local], input[type=datetime], input[type=email], input[type=month], input[type=number], input[type=password], input[type=search], input[type=tel], input[type=text], input[type=time], input[type=url], input[type=week] {
+    font-family: var(--primary-font);
+}
+.wy-side-nav-search input[type=text]{
+    border-color: var(--primary-color);
+}
+
+.wy-side-nav-search {
+    background-color: var(--primary-color);
+}
+
+.wy-menu-vertical {
+    padding-bottom: 30px;
+}
+
+.wy-menu-vertical header,
+.wy-menu-vertical p.caption {
+    color: var(--primary-color);
 }
 
 .wy-side-nav-search > a {
@@ -28,19 +94,124 @@
     padding: 0;
 
     /* Adjust this to change the adjustment of the Zama's logo, on the top left */
-    margin: 0 0 0 -80px !important;
+    margin: 0 0 0 -88px !important;
+}
+.wy-grid-for-nav {
+    padding-top: 43px;
 }
 
-.rst-content code.literal, .rst-content tt.literal {
-    color: #ffd208;
+.wy-nav-side {
+    top: 43px;
+}
+
+.rst-content code.literal,
+.rst-content tt.literal {
+    color: var(--primary-color);
     background-color: #696969;
+}
+
+.wy-nav-content a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+.wy-nav-content a:hover,
+.wy-nav-content a:focus,
+.wy-nav-content a:active {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.wy-nav-content a.btn:hover,
+.wy-nav-content a.btn:focus,
+.wy-nav-content a.btn:active{
+    color: black;
+    text-decoration: none;
 }
 
 .wy-nav-top {
     color: #696969;
     background: #343131
 }
+.wy-nav-top a {
+    color:var(--primary-color);
+}
 
-.wy-nav-top > a {
-    color: #ffd208;
+html.writer-html4 .rst-content dl:not(.docutils)>dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt {
+    display: table;
+    margin: 6px 0;
+    font-size: 90%;
+    line-height: normal;
+    background: var(--tertiary-color-light);
+    color: var(--tertiary-color);
+    border-top: 3px solid var(--primary-color);
+    padding: 6px;
+    position: relative;
+}
+
+html.writer-html4 .rst-content dl:not(.docutils)>dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt a {
+    color: var(--tertiary-color);
+    text-decoration: underline;
+}
+
+html.writer-html4 .rst-content dl:not(.docutils)>dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt a:hover,
+html.writer-html4 .rst-content dl:not(.docutils)>dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt a:focus,
+html.writer-html4 .rst-content dl:not(.docutils)>dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt a:active {
+    color: var(--tertiary-color);
+    text-decoration: none;
+}
+
+/* Api doc
+ * Newlines (\a) and spaces (\20) before each parameter
+ * https://github.com/sphinx-doc/sphinx/issues/1514
+ */
+
+/* Newlines (\a) and spaces (\20) before each parameter */
+.sig-param::before {
+    content: "\a\20\20\20\20\20\20\20\20\20\20\20\20\20\20\20\20";
+    white-space: pre;
+}
+
+/* Newline after the last parameter (so the closing bracket is on a new line) */
+dt em.sig-param:last-of-type::after {
+    content: "\a";
+    white-space: pre;
+}
+
+/* To have blue background of width of the block (instead of width of content) */
+dl.class > dt:first-of-type {
+    display: block !important;
+}
+
+ /*
+  * Admonitions
+  */
+
+/* Important admonition */
+.rst-content .important .admonition-title {
+    background: var(--secondary-color);
+}
+
+.rst-content .important  {
+    background: var(--secondary-color-light);
+}
+
+/* Hint admonition */
+.rst-content .hint .admonition-title {
+    background: var(--tertiary-color);
+}
+
+.rst-content .hint  {
+    background: var(--tertiary-color-light);
+}
+
+/* Note admonition */
+
+.rst-content .note .admonition-title {
+    background: var(--tertiary-color);
+    color: #FFFFFF;
+}
+
+.rst-content .note {
+    background: var(--tertiary-color-light);
 }
