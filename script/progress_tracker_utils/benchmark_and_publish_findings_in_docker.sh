@@ -3,10 +3,10 @@
 # Run benchmarks while logging the intermediate results
 # Publish findings in the progress tracker
 
-set -e
+set +e
 
 # shellcheck disable=SC1091
-if source /src/.docker_venv/bin/activate; then
+if ! source /src/.docker_venv/bin/activate; then
     python3 -m venv /src/.docker_venv
     # shellcheck disable=SC1091
     source /src/.docker_venv/bin/activate
