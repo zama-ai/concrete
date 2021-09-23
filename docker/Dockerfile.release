@@ -1,4 +1,4 @@
-FROM ghcr.io/zama-ai/zamalang-compiler:967fda07a05b6a410fee2027514a7114bdf781e9 as builder
+FROM ghcr.io/zama-ai/zamalang-compiler:3a254bcb8725507a11538913d3d5e9657ac00043 as builder
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
@@ -14,7 +14,7 @@ COPY pyproject.toml ./pyproject.toml
 
 RUN poetry build --format wheel
 
-FROM ghcr.io/zama-ai/zamalang-compiler:967fda07a05b6a410fee2027514a7114bdf781e9
+FROM ghcr.io/zama-ai/zamalang-compiler:3a254bcb8725507a11538913d3d5e9657ac00043
 
 RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
