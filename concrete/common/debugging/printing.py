@@ -6,7 +6,7 @@ import networkx as nx
 
 from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
-from ..representation import intermediate as ir
+from ..representation.intermediate import ArbitraryFunction, Constant, Input
 
 
 def output_data_type_to_string(node):
@@ -49,15 +49,15 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
         # they only are done by incrementing i
         custom_assert(len(node.outputs) == 1)
 
-        if isinstance(node, ir.Input):
+        if isinstance(node, Input):
             what_to_print = node.input_name
-        elif isinstance(node, ir.Constant):
+        elif isinstance(node, Constant):
             what_to_print = f"Constant({node.constant_data})"
         else:
 
             base_name = node.__class__.__name__
 
-            if isinstance(node, ir.ArbitraryFunction):
+            if isinstance(node, ArbitraryFunction):
                 base_name = node.op_name
 
             what_to_print = base_name + "("

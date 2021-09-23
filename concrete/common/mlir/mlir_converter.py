@@ -20,7 +20,7 @@ from ..data_types.dtypes_helpers import (
 )
 from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
-from ..representation import intermediate as ir
+from ..representation.intermediate import Input
 
 
 class MLIRConverter:
@@ -151,7 +151,7 @@ class MLIRConverter:
                     for arg_num, node in op_graph.input_nodes.items():
                         ir_to_mlir_node[node] = arg[arg_num]
                     for node in nx.topological_sort(op_graph.graph):
-                        if isinstance(node, ir.Input):
+                        if isinstance(node, Input):
                             continue
                         mlir_op = self.conversion_functions.get(type(node), None)
                         if mlir_op is None:  # pragma: no cover

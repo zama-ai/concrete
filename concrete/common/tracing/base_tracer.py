@@ -4,8 +4,13 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, List, Tuple, Type, Union
 
 from ..debugging.custom_assert import custom_assert
-from ..representation import intermediate as ir
-from ..representation.intermediate import IR_MIX_VALUES_FUNC_ARG_NAME
+from ..representation.intermediate import (
+    IR_MIX_VALUES_FUNC_ARG_NAME,
+    Add,
+    IntermediateNode,
+    Mul,
+    Sub,
+)
 from ..values import BaseValue
 
 
@@ -13,14 +18,14 @@ class BaseTracer(ABC):
     """Base class for implementing tracers."""
 
     inputs: List["BaseTracer"]
-    traced_computation: ir.IntermediateNode
+    traced_computation: IntermediateNode
     output: BaseValue
     _mix_values_func: Callable[..., BaseValue]
 
     def __init__(
         self,
         inputs: Iterable["BaseTracer"],
-        traced_computation: ir.IntermediateNode,
+        traced_computation: IntermediateNode,
         output_index: int,
     ) -> None:
         self.inputs = list(inputs)
@@ -62,14 +67,14 @@ class BaseTracer(ABC):
     def instantiate_output_tracers(
         self,
         inputs: Iterable[Union["BaseTracer", Any]],
-        computation_to_trace: Type[ir.IntermediateNode],
+        computation_to_trace: Type[IntermediateNode],
     ) -> Tuple["BaseTracer", ...]:
         """Instantiate all output BaseTracer for a given computation.
 
         Args:
             inputs (Iterable[Union[BaseTracer, Any]]): Previous BaseTracer or data used as inputs
                 for a new node.
-            computation_to_trace (Type[ir.IntermediateNode]): The IntermediateNode class
+            computation_to_trace (Type[IntermediateNode]): The IntermediateNode class
                 to instantiate for the computation being traced
 
         Returns:
@@ -103,7 +108,7 @@ class BaseTracer(ABC):
 
         result_tracer = self.instantiate_output_tracers(
             [self, other],
-            ir.Add,
+            Add,
         )
 
         custom_assert(len(result_tracer) == 1)
@@ -120,7 +125,7 @@ class BaseTracer(ABC):
 
         result_tracer = self.instantiate_output_tracers(
             [self, other],
-            ir.Sub,
+            Sub,
         )
 
         custom_assert(len(result_tracer) == 1)
@@ -132,7 +137,7 @@ class BaseTracer(ABC):
 
         result_tracer = self.instantiate_output_tracers(
             [other, self],
-            ir.Sub,
+            Sub,
         )
 
         custom_assert(len(result_tracer) == 1)
@@ -144,7 +149,7 @@ class BaseTracer(ABC):
 
         result_tracer = self.instantiate_output_tracers(
             [self, other],
-            ir.Mul,
+            Mul,
         )
 
         custom_assert(len(result_tracer) == 1)

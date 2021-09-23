@@ -5,7 +5,7 @@ from typing import List, Optional
 from .data_types.integers import Integer
 from .debugging import custom_assert
 from .operator_graph import OPGraph
-from .representation import intermediate as ir
+from .representation.intermediate import IntermediateNode
 
 
 def is_a_power_of_2(x: int) -> bool:
@@ -22,11 +22,11 @@ def is_a_power_of_2(x: int) -> bool:
     return x > 0 and (x & (x - 1)) == 0
 
 
-def ir_nodes_has_integer_input_and_output(node: ir.IntermediateNode) -> bool:
+def ir_nodes_has_integer_input_and_output(node: IntermediateNode) -> bool:
     """Check if an ir node has Integer inputs and outputs.
 
     Args:
-        node (ir.IntermediateNode): Node to check
+        node (IntermediateNode): Node to check
 
     Returns:
         bool: True if all input and output values hold Integers
@@ -40,13 +40,13 @@ def ir_nodes_has_integer_input_and_output(node: ir.IntermediateNode) -> bool:
 # long run probably
 def check_op_graph_is_integer_program(
     op_graph: OPGraph,
-    offending_nodes_out: Optional[List[ir.IntermediateNode]] = None,
+    offending_nodes_out: Optional[List[IntermediateNode]] = None,
 ) -> bool:
     """Check if an op_graph inputs, outputs and intermediate values are Integers.
 
     Args:
         op_graph (OPGraph): The OPGraph to check
-        offending_nodes_out (Optional[List[ir.IntermediateNode]]): Optionally pass a list that will
+        offending_nodes_out (Optional[List[IntermediateNode]]): Optionally pass a list that will
             be populated with offending nodes, the list will be cleared before being filled
 
     Returns:

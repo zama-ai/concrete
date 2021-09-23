@@ -7,7 +7,7 @@ import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
 
 from ..debugging.custom_assert import custom_assert
-from ..representation import intermediate as ir
+from ..representation.intermediate import Input
 from ..values import BaseValue
 from .base_tracer import BaseTracer
 
@@ -50,7 +50,7 @@ def make_input_tracer(
     Returns:
         BaseTracer: The BaseTracer for that input value
     """
-    return tracer_class([], ir.Input(input_value, input_name, input_idx), 0)
+    return tracer_class([], Input(input_value, input_name, input_idx), 0)
 
 
 def prepare_function_parameters(

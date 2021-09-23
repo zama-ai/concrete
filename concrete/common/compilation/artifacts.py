@@ -12,7 +12,7 @@ from PIL import Image
 
 from ..debugging import custom_assert, draw_graph, get_printable_graph
 from ..operator_graph import OPGraph
-from ..representation import intermediate as ir
+from ..representation.intermediate import IntermediateNode
 from ..values import BaseValue
 
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
@@ -30,7 +30,7 @@ class CompilationArtifacts:
     textual_representations_of_operation_graphs: Dict[str, str]
 
     final_operation_graph: Optional[OPGraph]
-    bounds_of_the_final_operation_graph: Optional[Dict[ir.IntermediateNode, Dict[str, Any]]]
+    bounds_of_the_final_operation_graph: Optional[Dict[IntermediateNode, Dict[str, Any]]]
     mlir_of_the_final_operation_graph: Optional[str]
 
     def __init__(self, output_directory: Path = DEFAULT_OUTPUT_DIRECTORY):
@@ -92,11 +92,11 @@ class CompilationArtifacts:
 
         self.final_operation_graph = operation_graph
 
-    def add_final_operation_graph_bounds(self, bounds: Dict[ir.IntermediateNode, Dict[str, Any]]):
+    def add_final_operation_graph_bounds(self, bounds: Dict[IntermediateNode, Dict[str, Any]]):
         """Add the bounds of the final operation graph to the artifacts.
 
         Args:
-            bounds (Dict[ir.IntermediateNode, Dict[str, Any]]): the bound dictionary
+            bounds (Dict[IntermediateNode, Dict[str, Any]]): the bound dictionary
 
         Returns:
             None

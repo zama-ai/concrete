@@ -9,7 +9,7 @@ from ..data_types.floats import Float
 from ..data_types.integers import Integer
 from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
-from ..representation import intermediate as ir
+from ..representation.intermediate import ArbitraryFunction, Constant, Input, IntermediateNode
 
 
 def fuse_float_operations(
@@ -26,7 +26,7 @@ def fuse_float_operations(
     """
 
     nx_graph = op_graph.graph
-    processed_terminal_nodes: Set[ir.IntermediateNode] = set()
+    processed_terminal_nodes: Set[IntermediateNode] = set()
     number_of_fuse = 0
     while True:
         float_subgraph_search_result = find_float_subgraph_with_unique_terminal_node(
@@ -56,7 +56,7 @@ def fuse_float_operations(
         if terminal_node in op_graph.output_nodes.values():
             # Output value replace it
             # As the graph changes recreate the output_node_to_idx dict
-            output_node_to_idx: Dict[ir.IntermediateNode, List[int]] = {
+            output_node_to_idx: Dict[IntermediateNode, List[int]] = {
                 out_node: [] for out_node in op_graph.output_nodes.values()
             }
             for output_idx, output_node in op_graph.output_nodes.items():
@@ -87,21 +87,21 @@ def fuse_float_operations(
 
 def convert_float_subgraph_to_fused_node(
     op_graph: OPGraph,
-    float_subgraph_start_nodes: Set[ir.IntermediateNode],
-    terminal_node: ir.IntermediateNode,
-    subgraph_all_nodes: Set[ir.IntermediateNode],
-) -> Optional[Tuple[ir.ArbitraryFunction, ir.IntermediateNode]]:
+    float_subgraph_start_nodes: Set[IntermediateNode],
+    terminal_node: IntermediateNode,
+    subgraph_all_nodes: Set[IntermediateNode],
+) -> Optional[Tuple[ArbitraryFunction, IntermediateNode]]:
     """Convert a float subgraph to an equivalent fused ArbitraryFunction node.
 
     Args:
         op_graph (OPGraph): The OPGraph the float subgraph is part of.
-        float_subgraph_start_nodes (Set[ir.IntermediateNode]): The nodes starting the float subgraph
+        float_subgraph_start_nodes (Set[IntermediateNode]): The nodes starting the float subgraph
             in `op_graph`.
-        terminal_node (ir.IntermediateNode): The node ending the float subgraph.
-        subgraph_all_nodes (Set[ir.IntermediateNode]): All the nodes in the float subgraph.
+        terminal_node (IntermediateNode): The node ending the float subgraph.
+        subgraph_all_nodes (Set[IntermediateNode]): All the nodes in the float subgraph.
 
     Returns:
-        Optional[Tuple[ir.ArbitraryFunction, ir.IntermediateNode]]: None if the float subgraph
+        Optional[Tuple[ArbitraryFunction, IntermediateNode]]: None if the float subgraph
             cannot be fused, otherwise returns a tuple containing the fused node and the node whose
             output must be plugged as the input to the subgraph.
     """
@@ -111,7 +111,7 @@ def convert_float_subgraph_to_fused_node(
 
     # Only one variable input node, find which node feeds its input
     non_constant_start_nodes = [
-        node for node in float_subgraph_start_nodes if not isinstance(node, ir.Constant)
+        node for node in float_subgraph_start_nodes if not isinstance(node, Constant)
     ]
     custom_assert(len(non_constant_start_nodes) == 1)
 
@@ -126,7 +126,7 @@ def convert_float_subgraph_to_fused_node(
 
     float_subgraph = nx.MultiDiGraph(nx_graph.subgraph(subgraph_all_nodes))
 
-    new_subgraph_variable_input = ir.Input(new_input_value, "float_subgraph_input", 0)
+    new_subgraph_variable_input = Input(new_input_value, "float_subgraph_input", 0)
     float_subgraph.add_node(new_subgraph_variable_input)
 
     for node_after_input in nodes_after_input_set:
@@ -155,7 +155,7 @@ def convert_float_subgraph_to_fused_node(
     )
 
     # Create fused_node
-    fused_node = ir.ArbitraryFunction(
+    fused_node = ArbitraryFunction(
         deepcopy(new_subgraph_variable_input.inputs[0]),
         lambda x, float_op_subgraph, terminal_node: float_op_subgraph.evaluate({0: x})[
             terminal_node
@@ -176,8 +176,8 @@ def convert_float_subgraph_to_fused_node(
 
 def find_float_subgraph_with_unique_terminal_node(
     nx_graph: nx.MultiDiGraph,
-    processed_terminal_nodes: Set[ir.IntermediateNode],
-) -> Optional[Tuple[Set[ir.IntermediateNode], ir.IntermediateNode, Set[ir.IntermediateNode]]]:
+    processed_terminal_nodes: Set[IntermediateNode],
+) -> Optional[Tuple[Set[IntermediateNode], IntermediateNode, Set[IntermediateNode]]]:
     """Find a subgraph of the graph with float computations.
 
     The subgraph has a single terminal node with a single Integer output and has a single variable
@@ -185,24 +185,24 @@ def find_float_subgraph_with_unique_terminal_node(
 
     Args:
         nx_graph (nx.MultiDiGraph): The networkx graph to search in.
-        processed_terminal_nodes (Set[ir.IntermediateNode]): The set of terminal nodes for which
+        processed_terminal_nodes (Set[IntermediateNode]): The set of terminal nodes for which
             subgraphs have already been searched, those will be skipped.
 
     Returns:
-        Optional[Tuple[Set[ir.IntermediateNode], ir.IntermediateNode, Set[ir.IntermediateNode]]]:
+        Optional[Tuple[Set[IntermediateNode], IntermediateNode, Set[IntermediateNode]]]:
             None if there are no float subgraphs to process in `nx_graph`. Otherwise returns a tuple
             containing the set of nodes beginning a float subgraph, the terminal node of the
             subgraph and the set of all the nodes in the subgraph.
     """
 
-    def is_float_to_single_int_node(node: ir.IntermediateNode) -> bool:
+    def is_float_to_single_int_node(node: IntermediateNode) -> bool:
         return (
             any(isinstance(input_.data_type, Float) for input_ in node.inputs)
             and len(node.outputs) == 1
             and isinstance(node.outputs[0].data_type, Integer)
         )
 
-    def single_int_output_node(node: ir.IntermediateNode) -> bool:
+    def single_int_output_node(node: IntermediateNode) -> bool:
         return len(node.outputs) == 1 and isinstance(node.outputs[0].data_type, Integer)
 
     float_subgraphs_terminal_nodes = (
@@ -211,7 +211,7 @@ def find_float_subgraph_with_unique_terminal_node(
         if is_float_to_single_int_node(node) and node not in processed_terminal_nodes
     )
 
-    terminal_node: ir.IntermediateNode
+    terminal_node: IntermediateNode
 
     try:
         terminal_node = next(float_subgraphs_terminal_nodes)
@@ -220,10 +220,10 @@ def find_float_subgraph_with_unique_terminal_node(
 
     # Use dict as ordered set
     current_nodes = {terminal_node: None}
-    float_subgraph_start_nodes: Set[ir.IntermediateNode] = set()
-    subgraph_all_nodes: Set[ir.IntermediateNode] = set()
+    float_subgraph_start_nodes: Set[IntermediateNode] = set()
+    subgraph_all_nodes: Set[IntermediateNode] = set()
     while current_nodes:
-        next_nodes: Dict[ir.IntermediateNode, None] = {}
+        next_nodes: Dict[IntermediateNode, None] = {}
         for node in current_nodes:
             subgraph_all_nodes.add(node)
             predecessors = nx_graph.pred[node]
@@ -240,16 +240,16 @@ def find_float_subgraph_with_unique_terminal_node(
 
 
 def subgraph_has_unique_variable_input(
-    float_subgraph_start_nodes: Set[ir.IntermediateNode],
+    float_subgraph_start_nodes: Set[IntermediateNode],
 ) -> bool:
     """Check that only one of the nodes starting the subgraph is variable.
 
     Args:
-        float_subgraph_start_nodes (Set[ir.IntermediateNode]): The nodes starting the subgraph.
+        float_subgraph_start_nodes (Set[IntermediateNode]): The nodes starting the subgraph.
 
     Returns:
-        bool: True if only one of the nodes is not an ir.Constant
+        bool: True if only one of the nodes is not an Constant
     """
     # Only one input to the subgraph where computations are done in floats is variable, this
     # is the only case we can manage with ArbitraryFunction fusing
-    return sum(not isinstance(node, ir.Constant) for node in float_subgraph_start_nodes) == 1
+    return sum(not isinstance(node, Constant) for node in float_subgraph_start_nodes) == 1

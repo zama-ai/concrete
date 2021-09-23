@@ -11,17 +11,25 @@ from PIL import Image
 
 from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
-from ..representation import intermediate as ir
-from ..representation.intermediate import ALL_IR_NODES
+from ..representation.intermediate import (
+    ALL_IR_NODES,
+    Add,
+    ArbitraryFunction,
+    Constant,
+    Dot,
+    Input,
+    Mul,
+    Sub,
+)
 
 IR_NODE_COLOR_MAPPING = {
-    ir.Input: "blue",
-    ir.Constant: "cyan",
-    ir.Add: "red",
-    ir.Sub: "yellow",
-    ir.Mul: "green",
-    ir.ArbitraryFunction: "orange",
-    ir.Dot: "purple",
+    Input: "blue",
+    Constant: "cyan",
+    Add: "red",
+    Sub: "yellow",
+    Mul: "green",
+    ArbitraryFunction: "orange",
+    Dot: "purple",
     "ArbitraryFunction": "orange",
     "TLU": "grey",
     "output": "magenta",
@@ -63,7 +71,7 @@ def draw_graph(
         value_to_return = IR_NODE_COLOR_MAPPING[type(node)]
         if node in output_nodes:
             value_to_return = IR_NODE_COLOR_MAPPING["output"]
-        elif isinstance(node, ir.ArbitraryFunction):
+        elif isinstance(node, ArbitraryFunction):
             value_to_return = IR_NODE_COLOR_MAPPING.get(node.op_name, value_to_return)
         return value_to_return
 

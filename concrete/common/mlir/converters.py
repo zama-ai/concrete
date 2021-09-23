@@ -22,7 +22,7 @@ from ..data_types.dtypes_helpers import (
     value_is_encrypted_tensor_integer,
 )
 from ..debugging.custom_assert import custom_assert
-from ..representation import intermediate as ir
+from ..representation.intermediate import Add, ArbitraryFunction, Constant, Dot, Mul, Sub
 
 
 def add(node, preds, ir_to_mlir_node, ctx):
@@ -189,12 +189,12 @@ def dot(node, preds, ir_to_mlir_node, ctx):
 
 
 V0_OPSET_CONVERSION_FUNCTIONS = {
-    ir.Add: add,
-    ir.Sub: sub,
-    ir.Mul: mul,
-    ir.Constant: constant,
-    ir.ArbitraryFunction: apply_lut,
-    ir.Dot: dot,
+    Add: add,
+    Sub: sub,
+    Mul: mul,
+    Constant: constant,
+    ArbitraryFunction: apply_lut,
+    Dot: dot,
 }
 
 # pylint: enable=no-name-in-module,no-member

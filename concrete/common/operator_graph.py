@@ -13,7 +13,7 @@ from .data_types.dtypes_helpers import (
 from .data_types.floats import Float
 from .data_types.integers import Integer, make_integer_to_hold
 from .debugging.custom_assert import custom_assert
-from .representation import intermediate as ir
+from .representation.intermediate import Input, IntermediateNode
 from .tracing import BaseTracer
 from .tracing.tracing_helpers import create_graph_from_output_tracers
 
@@ -22,25 +22,25 @@ class OPGraph:
     """Class to make work with nx graphs easier."""
 
     graph: nx.MultiDiGraph
-    input_nodes: Dict[int, ir.Input]
-    output_nodes: Dict[int, ir.IntermediateNode]
+    input_nodes: Dict[int, Input]
+    output_nodes: Dict[int, IntermediateNode]
 
     def __init__(
         self,
         graph: nx.MultiDiGraph,
-        input_nodes: Dict[int, ir.Input],
-        output_nodes: Dict[int, ir.IntermediateNode],
+        input_nodes: Dict[int, Input],
+        output_nodes: Dict[int, IntermediateNode],
     ) -> None:
         custom_assert(
             len(input_nodes) > 0, "Got a graph without input nodes which is not supported"
         )
         custom_assert(
-            all(isinstance(node, ir.Input) for node in input_nodes.values()),
-            "Got input nodes that were not ir.Input, which is not supported",
+            all(isinstance(node, Input) for node in input_nodes.values()),
+            "Got input nodes that were not Input, which is not supported",
         )
         custom_assert(
-            all(isinstance(node, ir.IntermediateNode) for node in output_nodes.values()),
-            "Got output nodes which were not ir.IntermediateNode, which is not supported",
+            all(isinstance(node, IntermediateNode) for node in output_nodes.values()),
+            "Got output nodes which were not IntermediateNode, which is not supported",
         )
 
         self.graph = graph
@@ -75,7 +75,7 @@ class OPGraph:
         input_nodes = {
             node.program_input_idx: node
             for node in graph.nodes()
-            if len(graph.pred[node]) == 0 and isinstance(node, ir.Input)
+            if len(graph.pred[node]) == 0 and isinstance(node, Input)
         }
         output_nodes = {
             output_idx: tracer.traced_computation
@@ -86,50 +86,50 @@ class OPGraph:
     @staticmethod
     def from_graph(
         graph: nx.MultiDiGraph,
-        input_nodes: Iterable[ir.Input],
-        output_nodes: Iterable[ir.IntermediateNode],
+        input_nodes: Iterable[Input],
+        output_nodes: Iterable[IntermediateNode],
     ) -> "OPGraph":
         """Construct OPGraph from an existing networkx MultiDiGraph.
 
         Args:
             graph (nx.MultiDiGraph): The networkx MultiDiGraph to use.
-            input_nodes (Iterable[ir.Input]): The input nodes of the MultiDiGraph.
-            output_nodes (Iterable[ir.IntermediateNode]): The output nodes of the MultiDiGraph.
+            input_nodes (Iterable[Input]): The input nodes of the MultiDiGraph.
+            output_nodes (Iterable[IntermediateNode]): The output nodes of the MultiDiGraph.
 
         Returns:
             OPGraph: The resulting OPGraph.
         """
         return OPGraph(graph, dict(enumerate(input_nodes)), dict(enumerate(output_nodes)))
 
-    def get_ordered_inputs(self) -> List[ir.Input]:
+    def get_ordered_inputs(self) -> List[Input]:
         """Get the input nodes of the graph, ordered by their index.
 
         Returns:
-            List[ir.Input]: ordered input nodes
+            List[Input]: ordered input nodes
         """
         return [self.input_nodes[idx] for idx in range(len(self.input_nodes))]
 
-    def get_ordered_outputs(self) -> List[ir.IntermediateNode]:
+    def get_ordered_outputs(self) -> List[IntermediateNode]:
         """Get the output nodes of the graph, ordered by their index.
 
         Returns:
-            List[ir.IntermediateNode]: ordered input nodes
+            List[IntermediateNode]: ordered input nodes
         """
         return [self.output_nodes[idx] for idx in range(len(self.output_nodes))]
 
-    def evaluate(self, inputs: Dict[int, Any]) -> Dict[ir.IntermediateNode, Any]:
+    def evaluate(self, inputs: Dict[int, Any]) -> Dict[IntermediateNode, Any]:
         """Evaluate a graph and get intermediate values for all nodes.
 
         Args:
             inputs (Dict[int, Any]): The inputs to the program
 
         Returns:
-            Dict[ir.IntermediateNode, Any]: Dictionary with node as keys and resulting values
+            Dict[IntermediateNode, Any]: Dictionary with node as keys and resulting values
         """
-        node_results: Dict[ir.IntermediateNode, Any] = {}
+        node_results: Dict[IntermediateNode, Any] = {}
 
         for node in nx.topological_sort(self.graph):
-            if not isinstance(node, ir.Input):
+            if not isinstance(node, Input):
                 curr_inputs = {}
                 for pred_node in self.graph.pred[node]:
                     edges = self.graph.get_edge_data(pred_node, node)
@@ -168,7 +168,7 @@ class OPGraph:
                 callback function to determine the type constructor of the data encountered while
                 updating the graph bounds. Defaults to get_type_constructor_python_constant_data.
         """
-        node: ir.IntermediateNode
+        node: IntermediateNode
 
         for node in self.graph.nodes():
             current_node_bounds = node_bounds[node]
@@ -193,7 +193,7 @@ class OPGraph:
 
             data_type_constructor = max_data_type_constructor
 
-            if not isinstance(node, ir.Input):
+            if not isinstance(node, Input):
                 for output_value in node.outputs:
                     if isinstance(min_data_type, Integer) and isinstance(max_data_type, Integer):
                         output_value.data_type = make_integer_to_hold(
@@ -242,9 +242,9 @@ class OPGraph:
         """Remove unreachable nodes from outputs."""
 
         current_nodes = set(self.output_nodes.values())
-        useful_nodes: Set[ir.IntermediateNode] = set()
+        useful_nodes: Set[IntermediateNode] = set()
         while current_nodes:
-            next_nodes: Set[ir.IntermediateNode] = set()
+            next_nodes: Set[IntermediateNode] = set()
             useful_nodes.update(current_nodes)
             for node in current_nodes:
                 next_nodes.update(self.graph.pred[node])
