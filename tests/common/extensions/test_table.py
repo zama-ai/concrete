@@ -54,13 +54,16 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     input_x = ir.Input(input_value=x, input_name="x", program_input_idx=0)
     ref_graph.add_node(input_x)
 
+    # pylint: disable=protected-access
+    # Need access to _checked_indexing to have is_equivalent_to work for ir.ArbitraryFunction
     output_arbitrary_function = ir.ArbitraryFunction(
         input_base_value=x,
-        arbitrary_func=lambda x, table: table[x],
+        arbitrary_func=LookupTable._checked_indexing,
         output_dtype=table.output_dtype,
         op_kwargs={"table": deepcopy(table.table)},
         op_name="TLU",
     )
+    # pylint: enable=protected-access
     ref_graph.add_node(output_arbitrary_function)
 
     ref_graph.add_edge(input_x, output_arbitrary_function, input_idx=0)
@@ -91,13 +94,16 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     input_x = ir.Input(input_value=x, input_name="x", program_input_idx=0)
     ref_graph.add_node(input_x)
 
+    # pylint: disable=protected-access
+    # Need access to _checked_indexing to have is_equivalent_to work for ir.ArbitraryFunction
     intermediate_arbitrary_function = ir.ArbitraryFunction(
         input_base_value=x,
-        arbitrary_func=lambda x, table: table[x],
+        arbitrary_func=LookupTable._checked_indexing,
         output_dtype=table.output_dtype,
         op_kwargs={"table": deepcopy(table.table)},
         op_name="TLU",
     )
+    # pylint: enable=protected-access
     ref_graph.add_node(intermediate_arbitrary_function)
 
     constant_3 = ir.Constant(3)
