@@ -37,7 +37,7 @@ do
 done
 
 for SRC_DIR in "${DIRS[@]}"; do
-    isort --profile black ${CHECK:+"$CHECK"} "${SRC_DIR}"
+    isort -l 100 --profile black ${CHECK:+"$CHECK"} "${SRC_DIR}"
     ((FAILURES+=$?))
     black -l 100 ${CHECK:+"$CHECK"} "${SRC_DIR}"
     ((FAILURES+=$?))

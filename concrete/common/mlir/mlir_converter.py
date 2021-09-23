@@ -5,14 +5,7 @@ from typing import Tuple, cast
 import networkx as nx
 import zamalang
 from mlir.dialects import builtin
-from mlir.ir import (
-    Context,
-    InsertionPoint,
-    IntegerType,
-    Location,
-    Module,
-    RankedTensorType,
-)
+from mlir.ir import Context, InsertionPoint, IntegerType, Location, Module, RankedTensorType
 from mlir.ir import Type as MLIRType
 from mlir.ir import UnrankedTensorType
 from zamalang.dialects import hlfhe

@@ -7,12 +7,7 @@ import pytest
 from concrete.common.data_types.floats import Float
 from concrete.common.data_types.integers import Integer
 from concrete.common.representation import intermediate as ir
-from concrete.common.values import (
-    ClearScalar,
-    ClearTensor,
-    EncryptedScalar,
-    EncryptedTensor,
-)
+from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor
 from concrete.numpy import tracing
 
 OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]

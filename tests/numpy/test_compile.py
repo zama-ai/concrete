@@ -10,10 +10,7 @@ from concrete.common.data_types.integers import Integer
 from concrete.common.debugging import draw_graph, get_printable_graph
 from concrete.common.extensions.table import LookupTable
 from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
-from concrete.numpy.compile import (
-    compile_numpy_function,
-    compile_numpy_function_into_op_graph,
-)
+from concrete.numpy.compile import compile_numpy_function, compile_numpy_function_into_op_graph
 
 
 def no_fuse_unhandled(x, y):

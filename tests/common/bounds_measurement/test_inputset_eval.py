@@ -4,9 +4,7 @@ from typing import Tuple
 
 import pytest
 
-from concrete.common.bounds_measurement.inputset_eval import (
-    eval_op_graph_bounds_on_inputset,
-)
+from concrete.common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_inputset
 from concrete.common.data_types.floats import Float
 from concrete.common.data_types.integers import Integer
 from concrete.common.values import EncryptedScalar
