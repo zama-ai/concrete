@@ -31,7 +31,7 @@ Once you're sure it is a bug, it would be nice to try to:
 
 ## Asking the community
 
-We have created a Slack channel (TODO: LINK TO BE ADDED), such that you can directly ask the developpers and community about your issue.
+We have created a Slack channel (TODO: LINK TO BE ADDED), such that you can directly ask the developers and community about your issue.
 
 Hopefully, it is just a misunderstanding or a small mistake on your side, that one can help you fix easily. And, the good point with your feedback is that, once we have heard the problem or misunderstanding, we can make the documentation even clearer (such as, completing the FAQ).
 

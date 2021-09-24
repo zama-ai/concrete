@@ -22,7 +22,7 @@ In the first version of Concrete, there is a single frontend, called homomorphic
 Basically, we have divided our documentation into several parts:
 - one about basic elements, notably description of the installation, that you are currently reading
 - one dedicated to _users_ of **Concrete**, with tutorials, how-to's and deeper explanations
-- and finally, one dedicated to _developpers_ of **Concrete**, who could be internal or external contributors to the framework
+- and finally, one dedicated to _developers_ of **Concrete**, who could be internal or external contributors to the framework
 
 ## A work in progress
 

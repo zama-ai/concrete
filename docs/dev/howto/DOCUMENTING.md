@@ -11,7 +11,7 @@ make docs
 
 Remark that this needs to be done in docker.
 
-The documentation contains both files written by hand by developpers (the .md files) and files automatically created by parsing the source files.
+The documentation contains both files written by hand by developers (the .md files) and files automatically created by parsing the source files.
 
 ### Opening doc
 

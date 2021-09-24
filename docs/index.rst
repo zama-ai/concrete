@@ -52,7 +52,7 @@ Concrete Framework's documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Developper - How To
+   :caption: Developer - How To
 
    dev/howto/PROJECT_SETUP.md
    dev/howto/DOCKER.md
@@ -62,7 +62,7 @@ Concrete Framework's documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Developper - Explanation
+   :caption: Developer - Explanation
 
    dev/explanation/COMPILATION.md
    dev/explanation/TERMINOLOGY_AND_STRUCTURE.md
