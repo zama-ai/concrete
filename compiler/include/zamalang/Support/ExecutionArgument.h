@@ -1,10 +1,10 @@
-#ifndef ZAMALANG_PYTHON_COMPILER_API_MODULE_H
-#define ZAMALANG_PYTHON_COMPILER_API_MODULE_H
+#ifndef ZAMALANG_SUPPORT_EXECUTION_ARGUMENT_H
+#define ZAMALANG_SUPPORT_EXECUTION_ARGUMENT_H
 
-#include <pybind11/pybind11.h>
+#include <vector>
 
+namespace mlir {
 namespace zamalang {
-namespace python {
 
 // Frontend object to abstract the different types of possible arguments,
 // namely, integers, and tensors.
@@ -31,8 +31,7 @@ public:
   }
 
 private:
-  ExecutionArgument(int arg)
-      : isTensorArg(false), intArg(arg) {}
+  ExecutionArgument(int arg) : isTensorArg(false), intArg(arg) {}
 
   ExecutionArgument(std::vector<uint8_t> tensor)
       : isTensorArg(true), tensorArg(tensor) {}
@@ -42,9 +41,7 @@ private:
   bool isTensorArg;
 };
 
-void populateCompilerAPISubmodule(pybind11::module &m);
-
-} // namespace python
 } // namespace zamalang
+} // namespace mlir
 
-#endif // ZAMALANG_PYTHON_DIALECTMODULES_H
+#endif

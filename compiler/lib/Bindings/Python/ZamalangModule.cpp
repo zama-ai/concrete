@@ -32,8 +32,8 @@ PYBIND11_MODULE(_zamalang, m) {
       "Register Zamalang dialects on a PyMlirContext.");
 
   py::module hlfhe = m.def_submodule("_hlfhe", "HLFHE API");
-  zamalang::python::populateDialectHLFHESubmodule(hlfhe);
+  mlir::zamalang::python::populateDialectHLFHESubmodule(hlfhe);
 
   py::module api = m.def_submodule("_compiler", "Compiler API");
-  zamalang::python::populateCompilerAPISubmodule(api);
+  mlir::zamalang::python::populateCompilerAPISubmodule(api);
 }
