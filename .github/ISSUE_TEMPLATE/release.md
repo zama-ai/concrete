@@ -21,7 +21,7 @@ Then:
 This is the release markdown template you should copy and update:
 ```
 **Docker Image:** ghcr.io/zama-ai/concretefhe:vX.Y.Z
-**Documentation:** https://docs.zama.ai/concrete
+**Documentation:** https://docs.zama.ai/concrete/
 ```
 
 To continue the release cycle:
