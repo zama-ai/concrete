@@ -20,6 +20,7 @@ add_mlir_library(ZamalangSupport
   HLFHEToMidLFHE
   LowLFHEUnparametrize
   MLIRLowerableDialectsToLLVM
+  HLFHEDialectAnalysis
 
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}

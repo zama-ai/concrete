@@ -9,6 +9,8 @@
 namespace mlir {
 namespace zamalang {
 namespace pipeline {
+mlir::LogicalResult invokeMANPPass(mlir::MLIRContext &context,
+                                   mlir::ModuleOp &module, bool debug);
 
 mlir::LogicalResult lowerHLFHEToMidLFHE(mlir::MLIRContext &context,
                                         mlir::ModuleOp &module, bool verbose);

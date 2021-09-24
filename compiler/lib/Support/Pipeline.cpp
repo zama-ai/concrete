@@ -10,6 +10,7 @@
 #include <mlir/Transforms/Passes.h>
 
 #include <zamalang/Conversion/Passes.h>
+#include <zamalang/Dialect/HLFHE/Analysis/MANP.h>
 #include <zamalang/Support/Pipeline.h>
 #include <zamalang/Support/logging.h>
 
@@ -23,6 +24,15 @@ static void addPotentiallyNestedPass(mlir::PassManager &pm,
   } else {
     pm.nest(*pass->getOpName()).addPass(std::move(pass));
   }
+}
+
+// Creates an instance of the Minimal Arithmetic Noise Padding pass
+// and invokes it for all functions of `module`.
+mlir::LogicalResult invokeMANPPass(mlir::MLIRContext &context,
+                                   mlir::ModuleOp &module, bool debug) {
+  mlir::PassManager pm(&context);
+  pm.addNestedPass<mlir::FuncOp>(mlir::zamalang::createMANPPass(debug));
+  return pm.run(module);
 }
 
 mlir::LogicalResult lowerHLFHEToMidLFHE(mlir::MLIRContext &context,

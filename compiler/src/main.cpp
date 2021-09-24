@@ -15,7 +15,6 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "zamalang/Conversion/Passes.h"
 #include "zamalang/Conversion/Utils/GlobalFHEContext.h"
-#include "zamalang/Dialect/HLFHE/Analysis/MANP.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
@@ -31,7 +30,7 @@ enum EntryDialect { HLFHE, MIDLFHE, LOWLFHE, STD, LLVM };
 
 enum Action {
   ROUND_TRIP,
-  DEBUG_MANP,
+  DUMP_HLFHE_MANP,
   DUMP_MIDLFHE,
   DUMP_LOWLFHE,
   DUMP_STD,
@@ -86,9 +85,9 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(
         clEnumValN(Action::ROUND_TRIP, "roundtrip",
                    "Parse input module and regenerate textual representation")),
-    llvm::cl::values(clEnumValN(
-        Action::DEBUG_MANP, "debug-manp",
-        "Minimal Arithmetic Noise Padding for each HLFHE operation")),
+    llvm::cl::values(clEnumValN(Action::DUMP_HLFHE_MANP, "dump-hlfhe-manp",
+                                "Dump HLFHE module after running the Minimal "
+                                "Arithmetic Noise Padding pass")),
     llvm::cl::values(clEnumValN(Action::DUMP_MIDLFHE, "dump-midlfhe",
                                 "Lower to MidLFHE and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_LOWLFHE, "dump-lowlfhe",
@@ -258,28 +257,20 @@ mlir::LogicalResult processInputBuffer(
   // a fallthrough mechanism to the next stage. Actions act as exit
   // points from the pipeline.
   switch (entryDialect) {
-  case EntryDialect::HLFHE: {
-    bool debugMANP = (action == Action::DEBUG_MANP);
+  case EntryDialect::HLFHE:
+    if (mlir::zamalang::pipeline::invokeMANPPass(context, module, false)
+	.failed()) {
+      return mlir::failure();
+    }
 
-    mlir::LogicalResult manpRes =
-        mlir::zamalang::invokeMANPPass(module, debugMANP);
-
-    if (action == Action::DEBUG_MANP) {
-      if (manpRes.failed()) {
-        mlir::zamalang::log_error()
-            << "Could not calculate Minimal Arithmetic Noise Padding";
-
-        if (!verifyDiagnostics)
-          return mlir::failure();
-      } else {
-        return mlir::success();
-      }
+    if (action == Action::DUMP_HLFHE_MANP) {
+      module.print(os);
+      return mlir::success();
     }
 
     if (mlir::zamalang::pipeline::lowerHLFHEToMidLFHE(context, module, verbose)
             .failed())
       return mlir::failure();
-  }
 
     // fallthrough
   case EntryDialect::MIDLFHE:
@@ -372,6 +363,13 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
 
   // String for error messages from library functions
   std::string errorMessage;
+
+  if (cmdline::action == Action::DUMP_HLFHE_MANP &&
+      cmdline::entryDialect != EntryDialect::HLFHE) {
+    mlir::zamalang::log_error()
+        << "Can only invoke Minimal Arithmetic Noise pass on HLFHE programs";
+    return mlir::failure();
+  }
 
   if (cmdline::action == Action::JIT_INVOKE &&
       cmdline::entryDialect != EntryDialect::HLFHE &&
