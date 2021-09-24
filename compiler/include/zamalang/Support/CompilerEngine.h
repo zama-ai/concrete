@@ -20,7 +20,9 @@ public:
   }
 
   // Compile an mlir programs from it's textual representation.
-  llvm::Error compile(std::string mlirStr);
+  llvm::Error compile(
+      std::string mlirStr,
+      llvm::Optional<mlir::zamalang::V0FHEConstraint> overrideConstraints = {});
 
   // Build the jit lambda argument.
   llvm::Expected<std::unique_ptr<JITLambda::Argument>> buildArgument();

@@ -31,22 +31,54 @@ std::string CompilerEngine::getCompiledModule() {
   return os.str();
 }
 
-llvm::Error CompilerEngine::compile(std::string mlirStr) {
+llvm::Error CompilerEngine::compile(
+    std::string mlirStr,
+    llvm::Optional<mlir::zamalang::V0FHEConstraint> overrideConstraints) {
   module_ref = mlir::parseSourceString(mlirStr, context);
   if (!module_ref) {
     return llvm::make_error<llvm::StringError>("mlir parsing failed",
                                                llvm::inconvertibleErrorCode());
   }
 
-  mlir::zamalang::V0FHEConstraint defaultGlobalFHECircuitConstraint{.norm2 = 10,
-                                                                    .p = 7};
-  const mlir::zamalang::V0Parameter *parameter =
-      getV0Parameter(defaultGlobalFHECircuitConstraint);
-
-  mlir::zamalang::V0FHEContext fheContext{defaultGlobalFHECircuitConstraint,
-                                          *parameter};
-
   mlir::ModuleOp module = module_ref.get();
+
+  llvm::Optional<mlir::zamalang::V0FHEConstraint> fheConstraintsOpt =
+      overrideConstraints;
+
+  if (!fheConstraintsOpt.hasValue()) {
+    llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+        fheConstraintsOrErr =
+            mlir::zamalang::pipeline::getFHEConstraintsFromHLFHE(*context,
+                                                                 module);
+
+    if (auto err = fheConstraintsOrErr.takeError())
+      return std::move(err);
+
+    if (!fheConstraintsOrErr.get().hasValue()) {
+      return llvm::make_error<llvm::StringError>(
+          "Could not determine maximum required precision for encrypted "
+          "integers "
+          "and maximum value for the Minimal Arithmetic Noise Padding",
+          llvm::inconvertibleErrorCode());
+    }
+
+    fheConstraintsOpt = fheConstraintsOrErr.get();
+  }
+
+  mlir::zamalang::V0FHEConstraint fheConstraints = fheConstraintsOpt.getValue();
+  const mlir::zamalang::V0Parameter *parameter = getV0Parameter(fheConstraints);
+
+  if (!parameter) {
+    std::string buffer;
+    llvm::raw_string_ostream strs(buffer);
+    strs << "Could not determine V0 parameters for 2-norm of "
+         << fheConstraints.norm2 << " and p of " << fheConstraints.p;
+
+    return llvm::make_error<llvm::StringError>(strs.str(),
+                                               llvm::inconvertibleErrorCode());
+  }
+
+  mlir::zamalang::V0FHEContext fheContext{fheConstraints, *parameter};
 
   // Lower to MLIR Std
   if (mlir::zamalang::pipeline::lowerHLFHEToStd(*context, module, fheContext,

@@ -2,6 +2,8 @@
 
 #include "zamalang/Support/CompilerEngine.h"
 
+mlir::zamalang::V0FHEConstraint defaultV0Constraints = {.norm2 = 10, .p = 7};
+
 #define ASSERT_LLVM_ERROR(err)                                                 \
   if (err) {                                                                   \
     llvm::errs() << "error: " << std::move(err) << "\n";                       \
@@ -31,7 +33,7 @@ func @main(%t: tensor<10xi64>, %i: index) -> i64{
   return %c : i64
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint64_t t_arg[size]{0xFFFFFFFFFFFFFFFF,
                        0,
@@ -68,7 +70,7 @@ func @main(%t: tensor<10xi32>, %i: index) -> i32{
   return %c : i32
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint32_t t_arg[size]{0xFFFFFFFF, 0,      8978,  2587490, 90,
                        197864,     698735, 72132, 87474,   42};
@@ -97,7 +99,7 @@ func @main(%t: tensor<10xi16>, %i: index) -> i16{
   return %c : i16
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint16_t t_arg[size]{0xFFFF, 0,     59589, 47826, 16227,
                        63269,  36435, 52380, 7401,  13313};
@@ -126,7 +128,7 @@ func @main(%t: tensor<10xi8>, %i: index) -> i8{
   return %c : i8
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint8_t t_arg[size]{0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93};
   for (size_t i = 0; i < size; i++) {
@@ -154,7 +156,7 @@ func @main(%t: tensor<10xi5>, %i: index) -> i5{
   return %c : i5
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint8_t t_arg[size]{32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
   for (size_t i = 0; i < size; i++) {
@@ -182,7 +184,7 @@ func @main(%t: tensor<10xi1>, %i: index) -> i1{
   return %c : i1
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint8_t t_arg[size]{0, 0, 1, 0, 1, 1, 0, 1, 1, 0};
   for (size_t i = 0; i < size; i++) {
@@ -210,7 +212,7 @@ func @main(%t: tensor<10x!HLFHE.eint<5>>, %i: index) -> !HLFHE.eint<5>{
   return %c : !HLFHE.eint<5>
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint8_t t_arg[size]{32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
   for (size_t i = 0; i < size; i++) {
@@ -240,7 +242,7 @@ func @main(%t: tensor<10x!HLFHE.eint<5>>, %i: index, %j: index) -> !HLFHE.eint<5
   return %c : !HLFHE.eint<5>
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint8_t t_arg[size]{32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
   for (size_t i = 0; i < size; i++) {
@@ -273,7 +275,7 @@ func @main(%t: tensor<10x!HLFHE.eint<5>>) -> index{
   return %c : index
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   const size_t size = 10;
   uint8_t t_arg[size]{32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
   auto maybeArgument = engine.buildArgument();
@@ -297,7 +299,7 @@ func @main(%0: !HLFHE.eint<5>) -> tensor<1x!HLFHE.eint<5>> {
   return %t: tensor<1x!HLFHE.eint<5>>
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   auto maybeArgument = engine.buildArgument();
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
@@ -327,7 +329,7 @@ func @main(%in: tensor<2x!HLFHE.eint<5>>) -> tensor<3x!HLFHE.eint<5>> {
   return %out: tensor<3x!HLFHE.eint<5>>
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   auto maybeArgument = engine.buildArgument();
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
@@ -364,7 +366,7 @@ func @main(%arg0: tensor<2x!HLFHE.eint<7>>, %arg1: tensor<2xi8>, %acc: !HLFHE.ei
   return %ret : !HLFHE.eint<7>
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints));
   auto maybeArgument = engine.buildArgument();
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());

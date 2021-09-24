@@ -11,6 +11,7 @@
 #include <mlir/Support/FileUtilities.h>
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Support/ToolUtilities.h>
+#include <sstream>
 
 #include "mlir/IR/BuiltinOps.h"
 #include "zamalang/Conversion/Passes.h"
@@ -41,6 +42,26 @@ enum Action {
 };
 
 namespace cmdline {
+class OptionalSizeTParser : public llvm::cl::parser<llvm::Optional<size_t>> {
+public:
+  OptionalSizeTParser(llvm::cl::Option &option)
+      : llvm::cl::parser<llvm::Optional<size_t>>(option) {}
+
+  bool parse(llvm::cl::Option &option, llvm::StringRef argName,
+             llvm::StringRef arg, llvm::Optional<size_t> &value) {
+    size_t parsedVal;
+    std::istringstream iss(arg.str());
+
+    iss >> parsedVal;
+
+    if (iss.fail())
+      return option.error("Invalid value " + arg);
+
+    value.emplace(parsedVal);
+
+    return false;
+  }
+};
 
 llvm::cl::list<std::string> inputs(llvm::cl::Positional,
                                    llvm::cl::desc("<Input files>"),
@@ -126,6 +147,17 @@ llvm::cl::list<uint64_t>
     jitArgs("jit-args",
             llvm::cl::desc("Value of arguments to pass to the main func"),
             llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore);
+
+llvm::cl::opt<llvm::Optional<size_t>, false, OptionalSizeTParser>
+    assumeMaxEintPrecision(
+        "assume-max-eint-precision",
+        llvm::cl::desc("Assume a maximum precision for encrypted integers"));
+
+llvm::cl::opt<llvm::Optional<size_t>, false, OptionalSizeTParser> assumeMaxMANP(
+    "assume-max-manp",
+    llvm::cl::desc(
+        "Assume a maximum for the Minimum Arithmetic Noise Padding"));
+
 }; // namespace cmdline
 
 std::function<llvm::Error(llvm::Module *)> defaultOptPipeline =
@@ -171,6 +203,64 @@ generateKeySet(mlir::ModuleOp &module, mlir::zamalang::V0FHEContext &fheContext,
   return std::move(maybeKeySet.get());
 }
 
+llvm::Expected<mlir::zamalang::V0FHEContext> buildFHEContext(
+    llvm::Optional<mlir::zamalang::V0FHEConstraint> autoFHEConstraints,
+    llvm::Optional<size_t> overrideMaxEintPrecision,
+    llvm::Optional<size_t> overrideMaxMANP) {
+  if (!autoFHEConstraints.hasValue() &&
+      (!overrideMaxMANP.hasValue() || !overrideMaxEintPrecision.hasValue())) {
+    return llvm::make_error<llvm::StringError>(
+        "Maximum encrypted integer precision and maximum for the Minimal"
+        "Arithmetic Noise Passing are required, but were neither specified"
+        "explicitly nor determined automatically",
+        llvm::inconvertibleErrorCode());
+  }
+
+  mlir::zamalang::V0FHEConstraint fheConstraints{
+      .norm2 = overrideMaxMANP.hasValue() ? overrideMaxMANP.getValue()
+                                          : autoFHEConstraints.getValue().norm2,
+      .p = overrideMaxEintPrecision.hasValue()
+               ? overrideMaxEintPrecision.getValue()
+               : autoFHEConstraints.getValue().p};
+
+  const mlir::zamalang::V0Parameter *parameter = getV0Parameter(fheConstraints);
+
+  if (!parameter) {
+    std::string buffer;
+    llvm::raw_string_ostream strs(buffer);
+    strs << "Could not determine V0 parameters for 2-norm of "
+         << fheConstraints.norm2 << " and p of " << fheConstraints.p;
+
+    return llvm::make_error<llvm::StringError>(strs.str(),
+                                               llvm::inconvertibleErrorCode());
+  }
+
+  return mlir::zamalang::V0FHEContext{fheConstraints, *parameter};
+}
+
+mlir::LogicalResult buildAssignFHEContext(
+    llvm::Optional<mlir::zamalang::V0FHEContext> &fheContext,
+    llvm::Optional<mlir::zamalang::V0FHEConstraint> autoFHEConstraints,
+    llvm::Optional<size_t> overrideMaxEintPrecision,
+    llvm::Optional<size_t> overrideMaxMANP) {
+
+  if (fheContext.hasValue())
+    return mlir::success();
+
+  llvm::Expected<mlir::zamalang::V0FHEContext> fheContextOrErr =
+      buildFHEContext(autoFHEConstraints, overrideMaxEintPrecision,
+                      overrideMaxMANP);
+
+  if (auto err = fheContextOrErr.takeError()) {
+    mlir::zamalang::log_error() << err;
+    return mlir::failure();
+  }
+
+  fheContext.emplace(fheContextOrErr.get());
+
+  return mlir::success();
+}
+
 // Process a single source buffer
 //
 // The parameter `entryDialect` must specify the FHE dialect to which
@@ -190,6 +280,12 @@ generateKeySet(mlir::ModuleOp &module, mlir::zamalang::V0FHEContext &fheContext,
 // `entryDialect` and `action` does not involve any MidlFHE
 // manipulation, this parameter does not have any effect.
 //
+// The parameters `overrideMaxEintPrecision` and `overrideMaxMANP`, if
+// set, override the values for the maximum required precision of
+// encrypted integers and the maximum value for the Minimum Arithmetic
+// Noise Padding otherwise determined automatically if the entry
+// dialect is HLFHE..
+//
 // If `verifyDiagnostics` is `true`, the procedure only checks if the
 // diagnostic messages provided in the source buffer using
 // `expected-error` are produced. If `verifyDiagnostics` is `false`,
@@ -204,8 +300,9 @@ mlir::LogicalResult processInputBuffer(
     mlir::MLIRContext &context, std::unique_ptr<llvm::MemoryBuffer> buffer,
     enum EntryDialect entryDialect, enum Action action,
     const std::string &jitFuncName, llvm::ArrayRef<uint64_t> jitArgs,
-    bool parametrizeMidlHFE, bool verifyDiagnostics, bool verbose,
-    llvm::raw_ostream &os) {
+    bool parametrizeMidlHFE, llvm::Optional<size_t> overrideMaxEintPrecision,
+    llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
+    bool verbose, llvm::raw_ostream &os) {
   llvm::SourceMgr sourceMgr;
   sourceMgr.AddNewSourceBuffer(std::move(buffer), llvm::SMLoc());
 
@@ -213,27 +310,10 @@ mlir::LogicalResult processInputBuffer(
                                                             &context);
   mlir::OwningModuleRef moduleRef = mlir::parseSourceFile(sourceMgr, &context);
 
-  // This is temporary until we have the high-level verification pass
-  // determining these parameters automatically
-  mlir::zamalang::V0FHEConstraint defaultGlobalFHECircuitConstraint{.norm2 = 10,
-                                                                    .p = 7};
+  llvm::Optional<mlir::zamalang::V0FHEConstraint> fheConstraints;
+  llvm::Optional<mlir::zamalang::V0FHEContext> fheContext;
 
   std::unique_ptr<mlir::zamalang::KeySet> keySet = nullptr;
-
-  const mlir::zamalang::V0Parameter *parameter =
-      getV0Parameter(defaultGlobalFHECircuitConstraint);
-
-  if (!parameter) {
-    mlir::zamalang::log_error()
-        << "Could not determine V0 parameters for 2-norm of "
-        << defaultGlobalFHECircuitConstraint.norm2 << " and p of "
-        << defaultGlobalFHECircuitConstraint.p << "\n";
-
-    return mlir::failure();
-  }
-
-  mlir::zamalang::V0FHEContext fheContext{defaultGlobalFHECircuitConstraint,
-                                          *parameter};
 
   if (verbose)
     context.disableMultithreading();
@@ -258,14 +338,25 @@ mlir::LogicalResult processInputBuffer(
   // points from the pipeline.
   switch (entryDialect) {
   case EntryDialect::HLFHE:
-    if (mlir::zamalang::pipeline::invokeMANPPass(context, module, false)
-	.failed()) {
-      return mlir::failure();
-    }
-
     if (action == Action::DUMP_HLFHE_MANP) {
+      if (mlir::zamalang::pipeline::invokeMANPPass(context, module, false)
+              .failed()) {
+        return mlir::failure();
+      }
+
       module.print(os);
       return mlir::success();
+    } else {
+      llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+          fheConstraintsOrErr =
+              mlir::zamalang::pipeline::getFHEConstraintsFromHLFHE(context,
+                                                                   module);
+      if (auto err = fheConstraintsOrErr.takeError()) {
+        mlir::zamalang::log_error() << err;
+        return mlir::failure();
+      } else {
+        fheConstraints = fheConstraintsOrErr.get();
+      }
     }
 
     if (mlir::zamalang::pipeline::lowerHLFHEToMidLFHE(context, module, verbose)
@@ -279,8 +370,14 @@ mlir::LogicalResult processInputBuffer(
       return mlir::success();
     }
 
+    if (buildAssignFHEContext(fheContext, fheConstraints,
+                              overrideMaxEintPrecision, overrideMaxMANP)
+            .failed()) {
+      return mlir::failure();
+    }
+
     if (mlir::zamalang::pipeline::lowerMidLFHEToLowLFHE(
-            context, module, fheContext, parametrizeMidlHFE)
+            context, module, fheContext.getValue(), parametrizeMidlHFE)
             .failed())
       return mlir::failure();
 
@@ -300,7 +397,13 @@ mlir::LogicalResult processInputBuffer(
       module.print(os);
       return mlir::success();
     } else if (action == Action::JIT_INVOKE) {
-      keySet = generateKeySet(module, fheContext, jitFuncName);
+      if (buildAssignFHEContext(fheContext, fheConstraints,
+                                overrideMaxEintPrecision, overrideMaxMANP)
+              .failed()) {
+        return mlir::failure();
+      }
+
+      keySet = generateKeySet(module, fheContext.getValue(), jitFuncName);
     }
 
     if (mlir::zamalang::pipeline::lowerStdToLLVMDialect(context, module,
@@ -422,8 +525,9 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
                 return processInputBuffer(
                     context, std::move(inputBuffer), cmdline::entryDialect,
                     cmdline::action, cmdline::jitFuncName, cmdline::jitArgs,
-                    cmdline::parametrizeMidLFHE, cmdline::verifyDiagnostics,
-                    cmdline::verbose, os);
+                    cmdline::parametrizeMidLFHE,
+                    cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
+                    cmdline::verifyDiagnostics, cmdline::verbose, os);
               },
               output->os())))
         return mlir::failure();
@@ -431,6 +535,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
       return processInputBuffer(
           context, std::move(file), cmdline::entryDialect, cmdline::action,
           cmdline::jitFuncName, cmdline::jitArgs, cmdline::parametrizeMidLFHE,
+          cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
           cmdline::verifyDiagnostics, cmdline::verbose, output->os());
     }
   }

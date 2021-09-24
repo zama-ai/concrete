@@ -9,8 +9,12 @@
 namespace mlir {
 namespace zamalang {
 namespace pipeline {
+
 mlir::LogicalResult invokeMANPPass(mlir::MLIRContext &context,
                                    mlir::ModuleOp &module, bool debug);
+
+llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module);
 
 mlir::LogicalResult lowerHLFHEToMidLFHE(mlir::MLIRContext &context,
                                         mlir::ModuleOp &module, bool verbose);

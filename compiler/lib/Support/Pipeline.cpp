@@ -13,6 +13,7 @@
 #include <zamalang/Dialect/HLFHE/Analysis/MANP.h>
 #include <zamalang/Support/Pipeline.h>
 #include <zamalang/Support/logging.h>
+#include <zamalang/Support/math.h>
 
 namespace mlir {
 namespace zamalang {
@@ -33,6 +34,51 @@ mlir::LogicalResult invokeMANPPass(mlir::MLIRContext &context,
   mlir::PassManager pm(&context);
   pm.addNestedPass<mlir::FuncOp>(mlir::zamalang::createMANPPass(debug));
   return pm.run(module);
+}
+
+llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module) {
+  llvm::Optional<size_t> oMax2norm;
+  llvm::Optional<size_t> oMaxWidth;
+
+  mlir::PassManager pm(&context);
+
+  addPotentiallyNestedPass(pm, mlir::zamalang::createMANPPass());
+  addPotentiallyNestedPass(
+      pm, mlir::zamalang::createMaxMANPPass([&](const llvm::APInt &currMaxMANP,
+                                                unsigned currMaxWidth) {
+        assert((uint64_t)currMaxWidth < std::numeric_limits<size_t>::max() &&
+               "Maximum width does not fit into size_t");
+
+        assert(sizeof(uint64_t) >= sizeof(size_t) &&
+               currMaxMANP.ult(std::numeric_limits<size_t>::max()) &&
+               "Maximum MANP does not fit into size_t");
+
+        size_t manp = (size_t)currMaxMANP.getZExtValue();
+        size_t width = (size_t)currMaxWidth;
+
+        if (!oMax2norm.hasValue() || oMax2norm.getValue() < manp)
+          oMax2norm.emplace(manp);
+
+        if (!oMaxWidth.hasValue() || oMaxWidth.getValue() < width)
+          oMaxWidth.emplace(width);
+      }));
+
+  if (pm.run(module.getOperation()).failed()) {
+    return llvm::make_error<llvm::StringError>(
+        "Failed to determine the maximum Arithmetic Noise Padding and maximum"
+        "required precision",
+        llvm::inconvertibleErrorCode());
+  }
+
+  llvm::Optional<mlir::zamalang::V0FHEConstraint> ret;
+
+  if (oMax2norm.hasValue() && oMaxWidth.hasValue()) {
+    ret = llvm::Optional<mlir::zamalang::V0FHEConstraint>(
+        {.norm2 = ceilLog2(oMax2norm.getValue()), .p = oMaxWidth.getValue()});
+  }
+
+  return ret;
 }
 
 mlir::LogicalResult lowerHLFHEToMidLFHE(mlir::MLIRContext &context,
