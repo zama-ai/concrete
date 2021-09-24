@@ -21,6 +21,7 @@
     right: 0;
     z-index: 201;
     height: 43px;
+    max-width: 1100px;
     background: black;
     color: white;
     display: flex;
@@ -98,6 +99,13 @@ input[type=color], input[type=date], input[type=datetime-local], input[type=date
 }
 .wy-grid-for-nav {
     padding-top: 43px;
+}
+
+.wy-body-for-nav {
+    background: rgba(0,0,0,.05);
+}
+.wy-nav-content-wrap {
+    background: none;
 }
 
 .wy-nav-side {
