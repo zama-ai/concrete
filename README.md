@@ -30,7 +30,7 @@ Information about how to use Docker for development are available in [DOCKER.md]
 
 ### Documenting
 
-Some information about how to build the documentation of `concretefhe` are available in [DOCUMENTING.md](docs/dev/howto/DOCUMENTING.md). Notably, our documentation is pushed to [https://hdk.zama.ai](https://hdk.zama.ai).
+Some information about how to build the documentation of `concretefhe` are available in [DOCUMENTING.md](docs/dev/howto/DOCUMENTING.md). Notably, our documentation is pushed to [https://docs.zama.ai/concretefhe/](https://docs.zama.ai/concretefhe/).
 
 ### Developing
 
