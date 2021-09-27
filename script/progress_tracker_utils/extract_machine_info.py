@@ -30,9 +30,10 @@ def main():
         os_value = f"{platform.system()} {platform.release()}"
     properties.append(["OS", os_value])
 
-    name = os.getenv("MACHINE_NAME").strip()
+    name = os.getenv("MACHINE_NAME")
     if name is None:
-        name = platform.node().strip()
+        name = platform.node()
+    name = name.strip()
 
     id_ = name.lower()
     id_ = id_.replace(" ", "-")

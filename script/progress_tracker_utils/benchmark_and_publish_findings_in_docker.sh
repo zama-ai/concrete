@@ -17,7 +17,7 @@ export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so
 initial_log=logs/$(date -u --iso-8601=seconds).log
 
 mkdir -p logs
-make -s benchmark > "$initial_log"
+poetry run python script/progress_tracker_utils/measure.py benchmarks > "$initial_log"
 
 final_log=logs/$(date -u --iso-8601=seconds).log
 
