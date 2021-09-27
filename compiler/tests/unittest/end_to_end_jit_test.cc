@@ -414,6 +414,23 @@ func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
   ASSERT_EQ(res, 14);
 }
 
+TEST(CompileAndRunTLU, identity_func_5) {
+  mlir::zamalang::CompilerEngine engine;
+  auto mlirStr = R"XXX(
+func @main(%arg0: !HLFHE.eint<5>) -> !HLFHE.eint<5> {
+    %tlu = std.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]> : tensor<32xi64>
+    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<5>, tensor<32xi64>) -> (!HLFHE.eint<5>)
+    return %1: !HLFHE.eint<5>
+}
+)XXX";
+  ASSERT_FALSE(engine.compile(mlirStr));
+  uint64_t expected = 3;
+  auto maybeResult = engine.run({expected});
+  ASSERT_TRUE((bool)maybeResult);
+  uint64_t result = maybeResult.get();
+  ASSERT_EQ(result, expected);
+}
+
 TEST(CompileAndRunTLU, identity_func) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
