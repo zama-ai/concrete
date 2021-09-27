@@ -146,6 +146,9 @@ jobs:
       credentials:
         username: ${{ secrets.BOT_USERNAME }}
         password: ${{ secrets.BOT_TOKEN }}
+    defaults:
+      run:
+        shell: '/usr/bin/bash -e {0}'
     strategy:
       matrix:
         python-version: [3.8]
@@ -177,21 +180,66 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Install dependencies
+        id: install-deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
-      - name: Conformance and Docs build
-        id: conformance
-        if: ${{ success() && !cancelled() }}
+      - name: Check commits first line format
+        id: ccfl
+        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
+        uses: gsactions/commit-message-checker@f27f413dcf8ebcb469d2ce4ae4e45e131d105de6
+        with:
+          pattern: '^((feat|fix|chore|refactor|style|test|docs)(\(\w+\))?\:) .+$'
+          flags: 'gs'
+          error: "Your first line has to contain a commit type and scope like \"feat(my_feature): msg\".\
+            Pattern: '^((feat|fix|chore|refactor|style|test|docs)(\\(\\w+\\))?\\:)'"
+          excludeDescription: 'true' # optional: this excludes the description body of a pull request
+          excludeTitle: 'true' # optional: this excludes the title of a pull request
+          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+      - name: Check commits line length
+        id: ccll
+        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
+        uses: gsactions/commit-message-checker@f27f413dcf8ebcb469d2ce4ae4e45e131d105de6
+        with:
+          pattern: '(^.{0,74}$\r?\n?){0,20}'
+          flags: 'gm'
+          error: 'The maximum line length of 74 characters is exceeded.'
+          excludeDescription: 'true' # optional: this excludes the description body of a pull request
+          excludeTitle: 'true' # optional: this excludes the title of a pull request
+          checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+      - name: Source code Conformance
+        id: cs
+        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         env:
           # TODO: remove this when JIT doesn't need this
           # Required to be sure that docs reads all files with MLIR imports properly
           LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         # pcc launches an internal target with proper flags
-        # docs is run here too as it can fail and we catch errors during the build
         run: |
-          make --keep-going pcc docs
+          make pcc
+      - name: Build docs
+        id: cbd
+        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
+        env:
+          # TODO: remove this when JIT doesn't need this
+          # Required to be sure that docs reads all files with MLIR imports properly
+          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
+        run: |
+          make docs
+      - name: Conformance status
+        id: conformance
+        if: ${{ always() && !cancelled() }}
+        env:
+          CONFORMANCE_STATUS: ${{ steps.ccfl.outcome == 'success' && steps.ccll.outcome == 'success' && steps.cs.outcome == 'success' && steps.cbd.outcome == 'success' }}
+        run: |
+          if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
+            echo "Conformance failed, check logs"
+            exit 1
+          fi
+
       - name: Archive docs artifacts
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
