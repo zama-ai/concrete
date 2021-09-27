@@ -3,6 +3,7 @@
 #include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
 #include <zamalang/Dialect/HLFHE/IR/HLFHEOps.h>
 #include <zamalang/Dialect/HLFHE/IR/HLFHETypes.h>
+#include <zamalang/Support/math.h>
 
 #include <limits>
 #include <llvm/ADT/APInt.h>
@@ -181,22 +182,6 @@ static llvm::APInt denseCstTensorNorm2Sq(mlir::ConstantOp cstOp) {
   }
 
   return accu;
-}
-
-// Calculates (T)ceil(log2f(v))
-// TODO: Replace with some fancy bit twiddling hack
-template <typename T> static T ceilLog2(const T v) {
-  T tmp = v;
-  T log2 = 0;
-
-  while (tmp >>= 1)
-    log2++;
-
-  // If more than MSB set, round to next highest power of 2
-  if (v & ~((T)1 << log2))
-    log2 += 1;
-
-  return log2;
 }
 
 // Calculates the square of the 2-norm of a 1D tensor of signless
