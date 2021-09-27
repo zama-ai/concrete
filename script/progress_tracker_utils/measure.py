@@ -258,7 +258,7 @@ def main():
     scripts = list(base.glob("*.py"))
 
     # Process each script under the base directory
-    for script in filter(lambda script: not str(scripts[0]).endswith("measure.py"), scripts):
+    for script in filter(lambda script: not str(script).endswith("measure.py"), scripts):
         # Read the script line by line
         with open(script, "r", encoding="utf-8") as f:
             lines = f.readlines()
