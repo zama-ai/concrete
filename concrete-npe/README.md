@@ -5,5 +5,5 @@ operators defined in the [`concrete`](https://crates.io/crates/concrete) library
 
 ## License
 
-Concrete-npe is licensed under AGPLv3. If this does not fit your requirements, get in touch
-at hello@zama.ai for other licensing options
+This software is distributed under the BSD-3-Clause-Clear license. If you have any question,
+please contact us at `hello@zama.ai`.
