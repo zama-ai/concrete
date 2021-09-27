@@ -178,8 +178,10 @@ finalize_nb:
 	poetry run python ./script/nbmake_utils/notebook_finalize.py $(NOTEBOOKS_DIR)
 .PHONY: finalize_nb
 
+# A warning in a package unrelated to the project made pytest fail with notebooks
+# Run notebook tests without warnings as sources are already tested with warnings treated as errors
 pytest_nb:
-	poetry run pytest --nbmake $(NOTEBOOKS_DIR)/*.ipynb
+	poetry run pytest -Wignore --nbmake $(NOTEBOOKS_DIR)/*.ipynb
 .PHONY: pytest_nb
 
 benchmark:
