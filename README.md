@@ -103,5 +103,5 @@ We thank [Daniel May](https://gitlab.com/danieljrmay) for supporting this projec
 
 # License
 
-This software is distributed under the AGPL-v3 license. If you have any question, please contact us
-at `hello@zama.ai`.
+This software is distributed under the BSD-3-Clause-Clear license. If you have any question, 
+please contact us at `hello@zama.ai`. 

@@ -57,5 +57,5 @@ assert_eq!((output_cleartext.0 - 50.).abs() < 0.01);
 
 ## License
 
-Concrete-core is licensed under AGPLv3. If this does not fit your requirements, get in touch
-at hello@zama.ai for other licensing options
+This software is distributed under the BSD-3-Clause-Clear license. If you have any question,
+please contact us at `hello@zama.ai`.
