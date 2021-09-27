@@ -146,8 +146,8 @@ const V0Parameter *getV0Parameter(V0FHEConstraint constraint) {
   if (constraint.p > P_MAX) {
     return nullptr;
   }
-  // - 1 is an offset as norm and p are in [1, ...] and not [0, ...]
-  auto param = &parameters[constraint.norm2 - 1][constraint.p - 1];
+  // - 1 is an offset as p is in [1, ...] and not [0, ...]
+  auto param = &parameters[constraint.norm2][constraint.p - 1];
   if (param->k == 0) {
     return nullptr;
   }
