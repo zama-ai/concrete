@@ -1,15 +1,44 @@
 # Building the compiler
 
+Install MLIR following https://mlir.llvm.org/getting_started/
+Use commit c2415d67a564
+
+Install pybind11:
+
+```sh
+pip install pybind11
+```
+
+Build concrete library:
+
+```sh
+git clone https://github.com/zama-ai/concrete
+cd concrete
+git checkout feature/core_c_api
+cd concrete-ffi
+RUSTFLAGS="-C target-cpu=native" cargo build --release 
+```
+
 Generate the compiler build system, in the `build` directory
 
 ```sh
-cmake -B build . -DLLVM_DIR=$LLVM_PROJECT/build/lib/cmake/llvm    -DMLIR_DIR=$LLVM_PROJECT/build/lib/cmake/mlir
+export LLVM_PROJECT="PATH_TO_LLVM_PROJECT"
+export CONCRETE_PROJECT="PATH_TO_CONCRETE_PROJECT"
+make build
 ```
 
 Build the compiler
 
 ```sh
-make -C build/ zamacompiler
+make zamacompiler
+```
+
+Test the compiler
+
+```sh
+#TODO: let cmake set this PATH
+export LD_LIBRARY_PATH="path_to_homomorphizer/compiler/build/lib/Runtime/"
+make test
 ```
 
 Run the compiler
