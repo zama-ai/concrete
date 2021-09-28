@@ -414,35 +414,63 @@ func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
   ASSERT_EQ(res, 14);
 }
 
-TEST(CompileAndRunTLU, identity_func_5) {
+class CompileAndRunWithPrecision : public ::testing::TestWithParam<int> {
+protected:
   mlir::zamalang::CompilerEngine engine;
-  auto mlirStr = R"XXX(
-func @main(%arg0: !HLFHE.eint<5>) -> !HLFHE.eint<5> {
-    %tlu = std.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]> : tensor<32xi64>
-    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<5>, tensor<32xi64>) -> (!HLFHE.eint<5>)
-    return %1: !HLFHE.eint<5>
-}
-)XXX";
-  ASSERT_FALSE(engine.compile(mlirStr));
-  uint64_t expected = 3;
-  auto maybeResult = engine.run({expected});
-  ASSERT_TRUE((bool)maybeResult);
-  uint64_t result = maybeResult.get();
-  ASSERT_EQ(result, expected);
+  void compile(std::string mlirStr) { ASSERT_FALSE(engine.compile(mlirStr)); }
+  void run(std::vector<uint64_t> args, uint64_t expected) {
+    auto maybeResult = engine.run(args);
+    ASSERT_TRUE((bool)maybeResult);
+    uint64_t result = maybeResult.get();
+    ASSERT_EQ(result, expected);
+  }
+};
+
+TEST_P(CompileAndRunWithPrecision, identity_func) {
+  int precision = GetParam();
+  std::ostringstream mlirProgram;
+  auto sizeOfTLU = 1 << precision;
+  mlirProgram << "func @main(%arg0: !HLFHE.eint<" << precision
+              << ">) -> !HLFHE.eint<" << precision << "> { \n";
+  mlirProgram << "    %tlu = std.constant dense<[0";
+  for (auto i = 1; i < sizeOfTLU; i++) {
+    mlirProgram << ", " << i;
+  }
+  mlirProgram << "]> : tensor<" << sizeOfTLU << "xi64>\n";
+  mlirProgram << "    %1 = \"HLFHE.apply_lookup_table\"(%arg0, %tlu): "
+                 "(!HLFHE.eint<"
+              << precision << ">, tensor<" << sizeOfTLU
+              << "xi64>) -> (!HLFHE.eint<" << precision << ">)\n ";
+  mlirProgram << "return %1: !HLFHE.eint<" << precision << ">\n";
+
+  mlirProgram << "}\n";
+  llvm::errs() << mlirProgram.str();
+  compile(mlirProgram.str());
+  for (auto i = 0; i < sizeOfTLU; i++) {
+    run({(uint64_t)i}, i);
+  }
 }
 
-TEST(CompileAndRunTLU, identity_func) {
+INSTANTIATE_TEST_CASE_P(TestHLFHEApplyLookupTable, CompileAndRunWithPrecision,
+                        ::testing::Values(1, 2, 3, 4, 5, 6, 7));
+
+TEST(TestHLFHEApplyLookupTable, multiple_precision) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
-func @main(%arg0: !HLFHE.eint<6>) -> !HLFHE.eint<6> {
-    %tlu = std.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]> : tensor<64xi64>
-    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<6>, tensor<64xi64>) -> (!HLFHE.eint<6>)
-    return %1: !HLFHE.eint<6>
+func @main(%arg0: !HLFHE.eint<6>, %arg1: !HLFHE.eint<3>) -> !HLFHE.eint<6> {
+    %tlu_7 = std.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]> : tensor<64xi64>
+    %tlu_3 = std.constant dense<[0, 1, 2, 3, 4, 5, 6, 7]> : tensor<8xi64>
+    %a = "HLFHE.apply_lookup_table"(%arg0, %tlu_7): (!HLFHE.eint<6>, tensor<64xi64>) -> (!HLFHE.eint<6>)
+    %b = "HLFHE.apply_lookup_table"(%arg1, %tlu_3): (!HLFHE.eint<3>, tensor<8xi64>) -> (!HLFHE.eint<6>)
+    %a_plus_b = "HLFHE.add_eint"(%a, %b): (!HLFHE.eint<6>, !HLFHE.eint<6>) -> (!HLFHE.eint<6>)
+    return %a_plus_b: !HLFHE.eint<6>
 }
 )XXX";
   ASSERT_FALSE(engine.compile(mlirStr));
-  uint64_t expected = 5;
-  auto maybeResult = engine.run({expected});
+  uint64_t arg0 = 23;
+  uint64_t arg1 = 7;
+  uint64_t expected = 30;
+  auto maybeResult = engine.run({arg0, arg1});
   ASSERT_TRUE((bool)maybeResult);
   uint64_t result = maybeResult.get();
   ASSERT_EQ(result, expected);
