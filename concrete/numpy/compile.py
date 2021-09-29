@@ -125,9 +125,9 @@ def _compile_numpy_function_into_op_graph_internal(
     # this loop will determine the number of possible inputs of the function
     # if a function have a single 3-bit input, for example, `inputset_size_upper_limit` will be 8
     for parameter_value in function_parameters.values():
-        if isinstance(parameter_value.data_type, Integer):
+        if isinstance(parameter_value.dtype, Integer):
             # multiple parameter bit-widths are multiplied as they can be combined into an input
-            inputset_size_upper_limit *= 2 ** parameter_value.data_type.bit_width
+            inputset_size_upper_limit *= 2 ** parameter_value.dtype.bit_width
 
             # if the upper limit of the inputset size goes above 10,
             # break the loop as we will require at least 10 inputs in this case

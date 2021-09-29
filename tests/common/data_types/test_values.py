@@ -60,26 +60,26 @@ def test_tensor_value(
 ):
     """Test function for TensorValue"""
 
-    tensor_value = tensor_constructor(data_type=data_type, shape=shape)
+    tensor_value = tensor_constructor(dtype=data_type, shape=shape)
 
     assert expected_is_encrypted == tensor_value.is_encrypted
     assert expected_shape == tensor_value.shape
     assert expected_ndim == tensor_value.ndim
     assert expected_size == tensor_value.size
 
-    assert data_type == tensor_value.data_type
+    assert data_type == tensor_value.dtype
 
     other_tensor = deepcopy(tensor_value)
 
     assert other_tensor == tensor_value
 
     other_tensor_value = deepcopy(other_tensor)
-    other_tensor_value.data_type = DummyDtype()
+    other_tensor_value.dtype = DummyDtype()
     assert other_tensor_value != tensor_value
 
     other_shape = tuple(val + 1 for val in shape) if shape is not None else ()
     other_shape += (2,)
-    other_tensor_value = tensor_constructor(data_type=data_type, shape=other_shape)
+    other_tensor_value = tensor_constructor(dtype=data_type, shape=other_shape)
 
     assert other_tensor_value.shape != tensor_value.shape
     assert other_tensor_value.ndim != tensor_value.ndim

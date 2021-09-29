@@ -172,9 +172,9 @@ def get_base_value_for_numpy_or_python_constant_data(
 
     base_dtype = get_base_data_type_for_numpy_or_python_constant_data(constant_data)
     if isinstance(constant_data, numpy.ndarray):
-        constant_data_value = partial(TensorValue, data_type=base_dtype, shape=constant_data.shape)
+        constant_data_value = partial(TensorValue, dtype=base_dtype, shape=constant_data.shape)
     elif isinstance(constant_data, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES):
-        constant_data_value = partial(ScalarValue, data_type=base_dtype)
+        constant_data_value = partial(ScalarValue, dtype=base_dtype)
     else:
         constant_data_value = get_base_value_for_python_constant_data(constant_data)
     return constant_data_value

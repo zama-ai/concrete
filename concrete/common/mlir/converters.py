@@ -52,7 +52,7 @@ def _add_eint_int(node, preds, ir_to_mlir_node, ctx):
     lhs_node, rhs_node = preds
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.AddEintIntOp(
-        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].data_type.bit_width),
+        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].dtype.bit_width),
         lhs,
         rhs,
     ).result
@@ -63,7 +63,7 @@ def _add_eint_eint(node, preds, ir_to_mlir_node, ctx):
     lhs_node, rhs_node = preds
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.AddEintOp(
-        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].data_type.bit_width),
+        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].dtype.bit_width),
         lhs,
         rhs,
     ).result
@@ -87,7 +87,7 @@ def _sub_int_eint(node, preds, ir_to_mlir_node, ctx):
     lhs_node, rhs_node = preds
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.SubIntEintOp(
-        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].data_type.bit_width),
+        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].dtype.bit_width),
         lhs,
         rhs,
     ).result
@@ -116,7 +116,7 @@ def _mul_eint_int(node, preds, ir_to_mlir_node, ctx):
     lhs_node, rhs_node = preds
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.MulEintIntOp(
-        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].data_type.bit_width),
+        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].dtype.bit_width),
         lhs,
         rhs,
     ).result
@@ -126,7 +126,7 @@ def constant(node, _, __, ctx):
     """Convert a constant inputs."""
     if not value_is_clear_scalar_integer(node.outputs[0]):
         raise TypeError("Don't support non-integer constants")
-    dtype = cast(Integer, node.outputs[0].data_type)
+    dtype = cast(Integer, node.outputs[0].dtype)
     if dtype.is_signed:
         raise TypeError("Don't support signed constant integer")
     int_type = IntegerType.get_signless(dtype.bit_width, context=ctx)
@@ -145,7 +145,7 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx):
     x_node = preds[0]
     x = ir_to_mlir_node[x_node]
     table = node.get_table()
-    out_dtype = cast(Integer, node.outputs[0].data_type)
+    out_dtype = cast(Integer, node.outputs[0].dtype)
     # Create table
     dense_elem = DenseElementsAttr.get(np.array(table, dtype=np.uint64), context=ctx)
     tensor_lut = std_dialect.ConstantOp(
@@ -182,7 +182,7 @@ def dot(node, preds, ir_to_mlir_node, ctx):
         lhs_node, rhs_node = rhs_node, lhs_node
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.Dot(
-        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].data_type.bit_width),
+        hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].dtype.bit_width),
         lhs,
         rhs,
     ).result

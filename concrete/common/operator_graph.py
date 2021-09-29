@@ -196,7 +196,7 @@ class OPGraph:
             if not isinstance(node, Input):
                 for output_value in node.outputs:
                     if isinstance(min_data_type, Integer) and isinstance(max_data_type, Integer):
-                        output_value.data_type = make_integer_to_hold(
+                        output_value.dtype = make_integer_to_hold(
                             (min_bound, max_bound), force_signed=False
                         )
                     else:
@@ -208,8 +208,8 @@ class OPGraph:
                                 f"min_bound: {min_data_type}, max_bound: {max_data_type}"
                             ),
                         )
-                        output_value.data_type = Float(64)
-                    output_value.data_type.underlying_type_constructor = data_type_constructor
+                        output_value.dtype = Float(64)
+                    output_value.dtype.underlying_type_constructor = data_type_constructor
             else:
                 # Currently variable inputs are only allowed to be integers
                 custom_assert(
@@ -220,10 +220,10 @@ class OPGraph:
                         f"max: {max_bound} ({type(max_bound)})"
                     ),
                 )
-                node.inputs[0].data_type = make_integer_to_hold(
+                node.inputs[0].dtype = make_integer_to_hold(
                     (min_bound, max_bound), force_signed=False
                 )
-                node.inputs[0].data_type.underlying_type_constructor = data_type_constructor
+                node.inputs[0].dtype.underlying_type_constructor = data_type_constructor
 
                 node.outputs[0] = deepcopy(node.inputs[0])
 

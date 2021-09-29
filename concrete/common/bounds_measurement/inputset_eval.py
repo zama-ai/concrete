@@ -42,7 +42,7 @@ def _check_input_coherency(
         base_value = base_value_class(is_encrypted=parameter_base_value.is_encrypted)
 
         if base_value.shape != parameter_base_value.shape or not is_data_type_compatible_with(
-            base_value.data_type, parameter_base_value.data_type
+            base_value.dtype, parameter_base_value.dtype
         ):
             warnings.append(
                 f"expected {str(parameter_base_value)} "

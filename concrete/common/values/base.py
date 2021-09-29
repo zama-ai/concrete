@@ -9,11 +9,11 @@ from ..data_types.base import BaseDataType
 class BaseValue(ABC):
     """Abstract base class to represent any kind of value in a program."""
 
-    data_type: BaseDataType
+    dtype: BaseDataType
     _is_encrypted: bool
 
-    def __init__(self, data_type: BaseDataType, is_encrypted: bool) -> None:
-        self.data_type = deepcopy(data_type)
+    def __init__(self, dtype: BaseDataType, is_encrypted: bool) -> None:
+        self.dtype = deepcopy(dtype)
         self._is_encrypted = is_encrypted
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -21,7 +21,7 @@ class BaseValue(ABC):
 
     @abstractmethod
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, self.__class__) and self.data_type == other.data_type
+        return isinstance(other, self.__class__) and self.dtype == other.dtype
 
     @property
     def is_encrypted(self) -> bool:

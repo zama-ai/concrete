@@ -222,7 +222,7 @@ def test_tracing_astype(
 
         op_graph = tracing.trace_numpy_function(function_to_trace, {"x": input_value})
         output_node = op_graph.output_nodes[0]
-        assert op_graph_expected_output_type == output_node.outputs[0].data_type
+        assert op_graph_expected_output_type == output_node.outputs[0].dtype
 
         node_results = op_graph.evaluate({0: numpy.array(input_)})
         evaluated_output = node_results[output_node]

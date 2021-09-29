@@ -46,7 +46,7 @@ def test_check_op_graph_is_integer_program():
     assert len(offending_nodes) == 0
 
     op_graph_copy = deepcopy(op_graph)
-    op_graph_copy.output_nodes[0].outputs[0].data_type = Float64
+    op_graph_copy.output_nodes[0].outputs[0].dtype = Float64
 
     offending_nodes = []
     assert not check_op_graph_is_integer_program(op_graph_copy)
@@ -55,7 +55,7 @@ def test_check_op_graph_is_integer_program():
     assert offending_nodes == [op_graph_copy.output_nodes[0]]
 
     op_graph_copy = deepcopy(op_graph)
-    op_graph_copy.input_nodes[0].inputs[0].data_type = Float64
+    op_graph_copy.input_nodes[0].inputs[0].dtype = Float64
 
     offending_nodes = []
     assert not check_op_graph_is_integer_program(op_graph_copy)
@@ -64,8 +64,8 @@ def test_check_op_graph_is_integer_program():
     assert offending_nodes == [op_graph_copy.input_nodes[0]]
 
     op_graph_copy = deepcopy(op_graph)
-    op_graph_copy.input_nodes[0].inputs[0].data_type = Float64
-    op_graph_copy.input_nodes[1].inputs[0].data_type = Float64
+    op_graph_copy.input_nodes[0].inputs[0].dtype = Float64
+    op_graph_copy.input_nodes[1].inputs[0].dtype = Float64
 
     offending_nodes = []
     assert not check_op_graph_is_integer_program(op_graph_copy)

@@ -129,7 +129,7 @@ class NPTracer(BaseTracer):
     @staticmethod
     def _manage_dtypes(ufunc: Union[numpy.ufunc, Callable], *input_tracers: BaseTracer):
         output_dtypes = get_numpy_function_output_dtype(
-            ufunc, [input_tracer.output.data_type for input_tracer in input_tracers]
+            ufunc, [input_tracer.output.dtype for input_tracer in input_tracers]
         )
         common_output_dtypes = [
             convert_numpy_dtype_to_base_data_type(dtype) for dtype in output_dtypes

@@ -160,7 +160,7 @@ def convert_float_subgraph_to_fused_node(
         lambda x, float_op_subgraph, terminal_node: float_op_subgraph.evaluate({0: x})[
             terminal_node
         ],
-        deepcopy(terminal_node.outputs[0].data_type),
+        deepcopy(terminal_node.outputs[0].dtype),
         op_kwargs={
             "float_op_subgraph": float_op_subgraph,
             "terminal_node": terminal_node,
@@ -197,13 +197,13 @@ def find_float_subgraph_with_unique_terminal_node(
 
     def is_float_to_single_int_node(node: IntermediateNode) -> bool:
         return (
-            any(isinstance(input_.data_type, Float) for input_ in node.inputs)
+            any(isinstance(input_.dtype, Float) for input_ in node.inputs)
             and len(node.outputs) == 1
-            and isinstance(node.outputs[0].data_type, Integer)
+            and isinstance(node.outputs[0].dtype, Integer)
         )
 
     def single_int_output_node(node: IntermediateNode) -> bool:
-        return len(node.outputs) == 1 and isinstance(node.outputs[0].data_type, Integer)
+        return len(node.outputs) == 1 and isinstance(node.outputs[0].dtype, Integer)
 
     float_subgraphs_terminal_nodes = (
         node

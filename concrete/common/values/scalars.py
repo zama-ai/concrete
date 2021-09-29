@@ -14,7 +14,7 @@ class ScalarValue(BaseValue):
 
     def __str__(self) -> str:  # pragma: no cover
         encrypted_str = "Encrypted" if self._is_encrypted else "Clear"
-        return f"{encrypted_str}Scalar<{self.data_type!r}>"
+        return f"{encrypted_str}Scalar<{self.dtype!r}>"
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -26,28 +26,28 @@ class ScalarValue(BaseValue):
         return ()
 
 
-def make_clear_scalar(data_type: BaseDataType) -> ScalarValue:
+def make_clear_scalar(dtype: BaseDataType) -> ScalarValue:
     """Create a clear ScalarValue.
 
     Args:
-        data_type (BaseDataType): The data type for the value.
+        dtype (BaseDataType): The data type for the value.
 
     Returns:
         ScalarValue: The corresponding ScalarValue.
     """
-    return ScalarValue(data_type=data_type, is_encrypted=False)
+    return ScalarValue(dtype=dtype, is_encrypted=False)
 
 
-def make_encrypted_scalar(data_type: BaseDataType) -> ScalarValue:
+def make_encrypted_scalar(dtype: BaseDataType) -> ScalarValue:
     """Create an encrypted ScalarValue.
 
     Args:
-        data_type (BaseDataType): The data type for the value.
+        dtype (BaseDataType): The data type for the value.
 
     Returns:
         ScalarValue: The corresponding ScalarValue.
     """
-    return ScalarValue(data_type=data_type, is_encrypted=True)
+    return ScalarValue(dtype=dtype, is_encrypted=True)
 
 
 ClearScalar = make_clear_scalar

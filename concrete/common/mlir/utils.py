@@ -28,7 +28,7 @@ def is_graph_values_compatible_with_mlir(op_graph: OPGraph) -> bool:
     """
     return all(
         all(
-            value_is_scalar_integer(out) and not cast(Integer, out.data_type).is_signed
+            value_is_scalar_integer(out) and not cast(Integer, out.dtype).is_signed
             for out in out_node.outputs
         )
         for out_node in op_graph.output_nodes.values()
@@ -45,11 +45,11 @@ def _set_all_bit_width(op_graph: OPGraph, p: int):
     for node in op_graph.graph.nodes:
         for value in node.outputs + node.inputs:
             if value_is_clear_scalar_integer(value) or value_is_clear_tensor_integer(value):
-                value.data_type.bit_width = p + 1
+                value.dtype.bit_width = p + 1
             elif value_is_encrypted_scalar_integer(value) or value_is_encrypted_tensor_integer(
                 value
             ):
-                value.data_type.bit_width = p
+                value.dtype.bit_width = p
 
 
 def update_bit_width_for_mlir(op_graph: OPGraph):
@@ -63,7 +63,7 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
     for node in op_graph.graph.nodes:
         for value_out in node.outputs:
             if value_is_clear_scalar_integer(value_out) or value_is_clear_tensor_integer(value_out):
-                current_node_out_bit_width = value_out.data_type.bit_width - 1
+                current_node_out_bit_width = value_out.dtype.bit_width - 1
             else:
 
                 assert_true(
@@ -71,7 +71,7 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
                     or value_is_encrypted_tensor_integer(value_out)
                 )
 
-                current_node_out_bit_width = value_out.data_type.bit_width
+                current_node_out_bit_width = value_out.dtype.bit_width
 
             max_bit_width = max(max_bit_width, current_node_out_bit_width)
 
@@ -106,7 +106,7 @@ def extend_direct_lookup_tables(op_graph: OPGraph):
     for node in op_graph.graph.nodes:
         if isinstance(node, ArbitraryFunction) and node.op_name == "TLU":
             table = node.op_kwargs["table"]
-            bit_width = cast(Integer, node.inputs[0].data_type).bit_width
+            bit_width = cast(Integer, node.inputs[0].dtype).bit_width
             expected_length = 2 ** bit_width
 
             # TODO: remove no cover once the table length workaround is removed

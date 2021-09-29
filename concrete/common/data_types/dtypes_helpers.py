@@ -47,7 +47,7 @@ def value_is_encrypted_scalar_unsigned_integer(value_to_check: BaseValue) -> boo
     """
     return (
         value_is_encrypted_scalar_integer(value_to_check)
-        and not cast(Integer, value_to_check.data_type).is_signed
+        and not cast(Integer, value_to_check.dtype).is_signed
     )
 
 
@@ -73,7 +73,7 @@ def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
         bool: True if the passed value_to_check is a ScalarValue of type Integer
     """
     return isinstance(value_to_check, ScalarValue) and isinstance(
-        value_to_check.data_type, INTEGER_TYPES
+        value_to_check.dtype, INTEGER_TYPES
     )
 
 
@@ -101,7 +101,7 @@ def value_is_encrypted_tensor_unsigned_integer(value_to_check: BaseValue) -> boo
     """
     return (
         value_is_encrypted_tensor_integer(value_to_check)
-        and not cast(Integer, value_to_check.data_type).is_signed
+        and not cast(Integer, value_to_check.dtype).is_signed
     )
 
 
@@ -127,7 +127,7 @@ def value_is_tensor_integer(value_to_check: BaseValue) -> bool:
         bool: True if the passed value_to_check is a TensorValue of type Integer
     """
     return isinstance(value_to_check, TensorValue) and isinstance(
-        value_to_check.data_type, INTEGER_TYPES
+        value_to_check.dtype, INTEGER_TYPES
     )
 
 
@@ -216,7 +216,7 @@ def mix_scalar_values_determine_holding_dtype(
         isinstance(value2, ScalarValue), f"Unsupported value2: {value2}, expected ScalarValue"
     )
 
-    holding_type = find_type_to_hold_both_lossy(value1.data_type, value2.data_type)
+    holding_type = find_type_to_hold_both_lossy(value1.dtype, value2.dtype)
     mixed_value: ScalarValue
 
     if value1.is_encrypted or value2.is_encrypted:
@@ -261,13 +261,13 @@ def mix_tensor_values_determine_holding_dtype(
         ),
     )
 
-    holding_type = find_type_to_hold_both_lossy(value1.data_type, value2.data_type)
+    holding_type = find_type_to_hold_both_lossy(value1.dtype, value2.dtype)
     shape = value1.shape
 
     if value1.is_encrypted or value2.is_encrypted:
-        mixed_value = EncryptedTensor(data_type=holding_type, shape=shape)
+        mixed_value = EncryptedTensor(dtype=holding_type, shape=shape)
     else:
-        mixed_value = ClearTensor(data_type=holding_type, shape=shape)
+        mixed_value = ClearTensor(dtype=holding_type, shape=shape)
 
     return mixed_value
 
@@ -362,10 +362,10 @@ def get_base_value_for_python_constant_data(
         assert len(constant_data) > 0
         constant_shape = (len(constant_data),)
         constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
-        return partial(TensorValue, data_type=constant_data_type, shape=constant_shape)
+        return partial(TensorValue, dtype=constant_data_type, shape=constant_shape)
 
     constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
-    return partial(ScalarValue, data_type=constant_data_type)
+    return partial(ScalarValue, dtype=constant_data_type)
 
 
 def get_type_constructor_for_python_constant_data(constant_data: Union[int, float]):

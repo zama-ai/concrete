@@ -101,16 +101,14 @@ class MLIRConverter:
             corresponding MLIR type
         """
         if value_is_encrypted_scalar_unsigned_integer(value):
-            return self._get_scalar_integer_type(
-                cast(Integer, value.data_type).bit_width, True, False
-            )
+            return self._get_scalar_integer_type(cast(Integer, value.dtype).bit_width, True, False)
         if value_is_clear_scalar_integer(value):
-            dtype = cast(Integer, value.data_type)
+            dtype = cast(Integer, value.dtype)
             return self._get_scalar_integer_type(
                 dtype.bit_width, is_encrypted=False, is_signed=dtype.is_signed
             )
         if value_is_encrypted_tensor_unsigned_integer(value):
-            dtype = cast(Integer, value.data_type)
+            dtype = cast(Integer, value.dtype)
             return self._get_tensor_type(
                 dtype.bit_width,
                 is_encrypted=True,
@@ -118,7 +116,7 @@ class MLIRConverter:
                 shape=cast(values.TensorValue, value).shape,
             )
         if value_is_clear_tensor_integer(value):
-            dtype = cast(Integer, value.data_type)
+            dtype = cast(Integer, value.dtype)
             return self._get_tensor_type(
                 dtype.bit_width,
                 is_encrypted=False,

@@ -242,21 +242,21 @@ class ArbitraryFunction(IntermediateNode):
         """
         # Check the input is an unsigned integer to be able to build a table
         assert isinstance(
-            self.inputs[0].data_type, Integer
+            self.inputs[0].dtype, Integer
         ), "get_table only works for an unsigned Integer input"
         assert not self.inputs[
             0
-        ].data_type.is_signed, "get_table only works for an unsigned Integer input"
+        ].dtype.is_signed, "get_table only works for an unsigned Integer input"
 
-        type_constructor = self.inputs[0].data_type.underlying_type_constructor
+        type_constructor = self.inputs[0].dtype.underlying_type_constructor
         if type_constructor is None:
             logger.info(
                 f"{self.__class__.__name__} input data type constructor was None, defaulting to int"
             )
             type_constructor = int
 
-        min_input_range = self.inputs[0].data_type.min_value()
-        max_input_range = self.inputs[0].data_type.max_value() + 1
+        min_input_range = self.inputs[0].dtype.min_value()
+        max_input_range = self.inputs[0].dtype.max_value() + 1
 
         table = [
             self.evaluate({0: type_constructor(input_value)})

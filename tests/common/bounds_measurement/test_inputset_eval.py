@@ -296,7 +296,7 @@ def test_eval_op_graph_bounds_on_inputset_multiple_output(
     op_graph.update_values_with_bounds(node_bounds)
 
     for i, output_node in op_graph.output_nodes.items():
-        assert expected_output_data_type[i] == output_node.outputs[0].data_type
+        assert expected_output_data_type[i] == output_node.outputs[0].dtype
 
 
 def test_eval_op_graph_bounds_on_non_conformant_inputset_default(capsys):

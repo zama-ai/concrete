@@ -16,11 +16,11 @@ class TensorValue(BaseValue):
 
     def __init__(
         self,
-        data_type: BaseDataType,
+        dtype: BaseDataType,
         is_encrypted: bool,
         shape: Optional[Tuple[int, ...]] = None,
     ) -> None:
-        super().__init__(data_type, is_encrypted)
+        super().__init__(dtype, is_encrypted)
         # Managing tensors as in numpy, no shape or () is treated as a 0-D array of size 1
         self._shape = shape if shape is not None else ()
         self._ndim = len(self._shape)
@@ -37,7 +37,7 @@ class TensorValue(BaseValue):
 
     def __str__(self) -> str:
         encrypted_str = "Encrypted" if self._is_encrypted else "Clear"
-        return f"{encrypted_str}Tensor<{str(self.data_type)}, shape={self.shape}>"
+        return f"{encrypted_str}Tensor<{str(self.dtype)}, shape={self.shape}>"
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -68,35 +68,35 @@ class TensorValue(BaseValue):
 
 
 def make_clear_tensor(
-    data_type: BaseDataType,
+    dtype: BaseDataType,
     shape: Optional[Tuple[int, ...]] = None,
 ) -> TensorValue:
     """Create a clear TensorValue.
 
     Args:
-        data_type (BaseDataType): The data type for the tensor.
+        dtype (BaseDataType): The data type for the tensor.
         shape (Optional[Tuple[int, ...]], optional): The tensor shape. Defaults to None.
 
     Returns:
         TensorValue: The corresponding TensorValue.
     """
-    return TensorValue(data_type=data_type, is_encrypted=False, shape=shape)
+    return TensorValue(dtype=dtype, is_encrypted=False, shape=shape)
 
 
 def make_encrypted_tensor(
-    data_type: BaseDataType,
+    dtype: BaseDataType,
     shape: Optional[Tuple[int, ...]] = None,
 ) -> TensorValue:
     """Create an encrypted TensorValue.
 
     Args:
-        data_type (BaseDataType): The data type for the tensor.
+        dtype (BaseDataType): The data type for the tensor.
         shape (Optional[Tuple[int, ...]], optional): The tensor shape. Defaults to None.
 
     Returns:
         TensorValue: The corresponding TensorValue.
     """
-    return TensorValue(data_type=data_type, is_encrypted=True, shape=shape)
+    return TensorValue(dtype=dtype, is_encrypted=True, shape=shape)
 
 
 ClearTensor = make_clear_tensor
