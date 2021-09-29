@@ -460,8 +460,27 @@ jobs:
       - name: Set tag in env
         run: |
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
-          RELEASE_IMG_TAG="${RELEASE_IMAGE_BASE}:${GIT_TAG}"
-          echo "RELEASE_IMG_TAG=${RELEASE_IMG_TAG}" >> "$GITHUB_ENV"
+          RELEASE_IMG_GIT_TAG="${RELEASE_IMAGE_BASE}:${GIT_TAG}"
+          echo "RELEASE_IMG_GIT_TAG=${RELEASE_IMG_GIT_TAG}" >> "$GITHUB_ENV"
+          RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_GIT_TAG}"
+
+          EXISTING_TAGS=$(curl \
+          -X GET \
+          -H "Authorization: Bearer $(echo ${{ secrets.BOT_TOKEN }} | base64)" \
+          https://ghcr.io/v2/zama-ai/concretefhe/tags/list | jq -rc '.tags | join(" ")')
+
+          # We want the space separated list of versions to be expanded
+          # shellcheck disable=SC2086
+          REQUIRES_LATEST_TAG=$(python script/actions_utils/version_comparison.py \
+          --new-version "${GIT_TAG}" \
+          --existing-versions $EXISTING_TAGS)
+
+          if [[ "${REQUIRES_LATEST_TAG}" == "true" ]]; then
+            RELEASE_IMG_LATEST_TAG="${RELEASE_IMAGE_BASE}:latest"
+            RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${RELEASE_IMG_LATEST_TAG}"
+          fi
+
+          echo "RELEASE_IMG_TAGS_TO_PUSH=${RELEASE_IMG_TAGS_TO_PUSH}" >> "$GITHUB_ENV"
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
@@ -480,21 +499,21 @@ jobs:
           file: docker/Dockerfile.release
           load: true
           push: false
-          tags: "${{ env.RELEASE_IMG_TAG }}"
+          tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
           no-cache: true
       - name: Release image sanity check and push
         if: ${{ success() && !cancelled() }}
         run: |
-          echo "Running sanity check for ${RELEASE_IMG_TAG}"
+          echo "Running sanity check for ${RELEASE_IMG_GIT_TAG}"
           docker run --rm --env LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so \
           -v "$(pwd)"/docker/release_resources:/data \
-          "${RELEASE_IMG_TAG}" /bin/bash -c "python ./sanity_check.py"
-          docker push "${RELEASE_IMG_TAG}"
+          "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
+          docker image push --all-tags "${RELEASE_IMAGE_BASE}"
       - name: Set notification report
         id: report
         if: ${{ always() }}
         run: |
-          REPORT="Pushing docker image ${{ env.RELEASE_IMG_TAG }} finished with status \
+          REPORT="Pushing docker image ${{ env.RELEASE_IMG_TAGS_TO_PUSH }} finished with status \
           ${{ job.status }}."
           echo "${REPORT}"
           echo "::set-output name=report::${REPORT}"
