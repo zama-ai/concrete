@@ -254,7 +254,7 @@ class NPTracer(BaseTracer):
         # numpy.minimum,
         # numpy.modf,
         # numpy.multiply,
-        # numpy.negative,
+        numpy.negative,
         # numpy.nextafter,
         # numpy.not_equal,
         # numpy.positive,
