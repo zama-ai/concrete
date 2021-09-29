@@ -45,6 +45,8 @@ def main():
     id_ = id_.strip()
     id_ = urllib.parse.quote_plus(id_)
 
+    os.makedirs(".benchmarks", exist_ok=True)
+
     machine = {"id": id_, "name": name, "properties": properties}
     with open(".benchmarks/machine.json", "w", encoding="utf-8") as f:
         json.dump(machine, f, indent=2, ensure_ascii=False)

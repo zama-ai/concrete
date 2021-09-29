@@ -97,10 +97,10 @@ def identify_metrics(script, lines, metrics):
         )
 
 
-def create_modified_script(script_without_extension, lines, metrics):
+def create_modified_script(script, lines, metrics):
     """Create a modified version of the script which can be used to perform measurements"""
 
-    with open(f"{script_without_extension}.measure.py", "w", encoding="utf-8") as f:
+    with open(f".benchmarks/scripts/{script}", "w", encoding="utf-8") as f:
         # Import must-have libraries
         f.write("import json\n")
         f.write("import time\n")
@@ -160,19 +160,19 @@ def create_modified_script(script_without_extension, lines, metrics):
 
         # Dump measurements to a temporary file after the script is executed from start to end
         f.write("\n")
-        f.write(f'with open("{script_without_extension}.measurements", "w") as f:\n')
+        f.write(f'with open(".benchmarks/scripts/{script}.measurements", "w") as f:\n')
         f.write("    json.dump(_measurements_, f, indent=2)\n")
 
 
-def perform_measurements(script, script_without_extension, target_id, metrics, samples, result):
+def perform_measurements(path, script, target_id, metrics, samples, result):
     """Run the modified script multiple times and update the result"""
 
     # Create a flag to keep track of the working status
     working = True
 
     print()
-    print(script)
-    print("-" * len(str(script)))
+    print(path)
+    print("-" * len(str(path)))
 
     # Run the modified script `samples` times and accumulate measurements
     measurements = {metric_id: [] for metric_id in metrics.keys()}
@@ -180,7 +180,7 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
         for i in range(samples):
             # Create the subprocess
             process = subprocess.run(
-                ["python", f"{script_without_extension}.measure.py"],
+                ["python", f".benchmarks/scripts/{script}"],
                 capture_output=True,
                 check=False,
             )
@@ -200,14 +200,15 @@ def perform_measurements(script, script_without_extension, target_id, metrics, s
                 for line in stderr.split("\n"):
                     if line.strip() != "":
                         pbar.write(f"            {line}")
+                pbar.write("")
 
                 pbar.update(samples)
                 break
 
             # Read the measurements and delete the temporary file
-            with open(f"{script_without_extension}.measurements", encoding="utf-8") as f:
+            with open(f".benchmarks/scripts/{script}.measurements", encoding="utf-8") as f:
                 results = json.load(f)
-            os.unlink(f"{script_without_extension}.measurements")
+            os.unlink(f".benchmarks/scripts/{script}.measurements")
 
             # Add the `results` of the current run to `measurements`
             for metric_id in metrics.keys():
@@ -257,10 +258,13 @@ def main():
     result = {"machine": machine, "metrics": {}, "targets": {}}
     scripts = list(base.glob("*.py"))
 
+    # Create a directory to store temporary scripts
+    os.makedirs(".benchmarks/scripts", exist_ok=True)
+
     # Process each script under the base directory
-    for script in filter(lambda script: not str(script).endswith("measure.py"), scripts):
+    for path in scripts:
         # Read the script line by line
-        with open(script, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         # Find the first non-empty line
@@ -273,8 +277,8 @@ def main():
         # Check whether the script is a target or not
         if not first_line.startswith("# Target:"):
             print()
-            print(script)
-            print("-" * len(str(script)))
+            print(path)
+            print("-" * len(str(path)))
 
             with tqdm.tqdm(total=samples) as pbar:
                 pbar.write("    Sample 1")
@@ -300,24 +304,25 @@ def main():
         metrics = {}
 
         # Identify metrics of the current script
-        identify_metrics(script, lines, metrics)
+        identify_metrics(path, lines, metrics)
 
-        # Extract the script name without extension
-        script_without_extension = os.path.splitext(script)[0]
+        # Extract the script name
+        name = os.path.basename(path)
 
         # Create another script to hold the modified version of the current script
-        create_modified_script(script_without_extension, lines, metrics)
+        create_modified_script(name, lines, metrics)
 
         # Perform and save measurements
-        perform_measurements(script, script_without_extension, target_id, metrics, samples, result)
+        perform_measurements(path, name, target_id, metrics, samples, result)
 
         # Dump the latest results to the output file
         with open(".benchmarks/findings.json", "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
 
-        # Delete the modified script if the user doesn't care
-        if not args.keep:
-            os.unlink(f"{os.path.splitext(script)[0]}.measure.py")
+    # Delete the modified scripts if the user doesn't care
+    if not args.keep:
+        os.unlink(".benchmarks/scripts")
+
     print()
 
 
