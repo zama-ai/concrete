@@ -61,7 +61,7 @@ def _add_eint_int(node, preds, ir_to_mlir_node, ctx):
 def _add_eint_eint(node, preds, ir_to_mlir_node, ctx):
     """Convert an addition intermediate node with (eint, int)."""
     lhs_node, rhs_node = preds
-    lhs, rhs = lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
+    lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
     return hlfhe.AddEintOp(
         hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].data_type.bit_width),
         lhs,
