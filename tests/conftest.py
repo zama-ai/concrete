@@ -23,7 +23,7 @@ def _is_equivalent_to_binary_commutative(lhs: IntermediateNode, rhs: object) -> 
     """is_equivalent_to for a binary and commutative operation."""
     return (
         isinstance(rhs, lhs.__class__)
-        and (lhs.inputs == rhs.inputs or lhs.inputs == rhs.inputs[::-1])
+        and (lhs.inputs in (rhs.inputs, rhs.inputs[::-1]))
         and lhs.outputs == rhs.outputs
     )
 

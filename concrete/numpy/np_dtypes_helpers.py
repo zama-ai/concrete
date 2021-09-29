@@ -123,11 +123,7 @@ def get_base_data_type_for_numpy_or_python_constant_data(constant_data: Any) -> 
         f"Unsupported constant data of type {type(constant_data)}",
     )
     if isinstance(constant_data, (numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)):
-        native_type = (
-            float
-            if constant_data.dtype == numpy.float32 or constant_data.dtype == numpy.float64
-            else int
-        )
+        native_type = float if (constant_data.dtype in (numpy.float32, numpy.float64)) else int
 
         min_value = native_type(constant_data.min())
         max_value = native_type(constant_data.max())
