@@ -157,7 +157,7 @@ def _compile_numpy_function_into_op_graph_internal(
 
     # Make sure the graph can be lowered to MLIR
     if not is_graph_values_compatible_with_mlir(op_graph):
-        raise TypeError("signed integers aren't supported for MLIR lowering")
+        raise RuntimeError("function you are trying to compile isn't supported for MLIR lowering")
 
     # Update bit_width for MLIR
     update_bit_width_for_mlir(op_graph)

@@ -251,7 +251,7 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
         arg_name: EncryptedScalar(Integer(64, True)) for arg_name in list_of_arg_names
     }
 
-    with pytest.raises(TypeError, match=r"signed integers aren't supported for MLIR lowering"):
+    with pytest.raises(RuntimeError, match=".*isn't supported for MLIR lowering.*"):
         compile_numpy_function_into_op_graph(
             function,
             function_parameters,
