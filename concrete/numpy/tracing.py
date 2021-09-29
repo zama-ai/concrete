@@ -189,8 +189,7 @@ class NPTracer(BaseTracer):
         return output_tracer
 
     LIST_OF_SUPPORTED_UFUNC: List[numpy.ufunc] = [
-        # The commented functions are functions which don't work for the moment, often
-        # if not always because they require more than a single argument
+        # The commented functions are functions require more than a single argument
         numpy.absolute,
         # numpy.add,
         numpy.arccos,
