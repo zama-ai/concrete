@@ -314,6 +314,7 @@ def test_trace_numpy_supported_ufuncs(inputs, expected_output_node):
             assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Float(64))
         else:
             assert op_graph.output_nodes[0].outputs[0] in [
+                EncryptedScalar(Integer(8, is_signed=False)),
                 EncryptedScalar(Integer(32, is_signed=False)),
                 EncryptedScalar(Integer(32, is_signed=True)),
                 EncryptedScalar(Integer(64, is_signed=True)),

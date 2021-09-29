@@ -27,7 +27,7 @@ NUMPY_TO_COMMON_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
     numpy.dtype(numpy.uint64): Integer(64, is_signed=False),
     numpy.dtype(numpy.float32): Float(32),
     numpy.dtype(numpy.float64): Float(64),
-    numpy.dtype(bool): Integer(32, is_signed=False),
+    numpy.dtype(bool): Integer(8, is_signed=False),
 }
 
 SUPPORTED_NUMPY_DTYPES = tuple(NUMPY_TO_COMMON_DTYPE_MAPPING)
