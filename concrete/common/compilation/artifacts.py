@@ -183,7 +183,7 @@ class CompilationArtifacts:
         for index, (name, representation) in enumerate(textual_representations):
             identifier = CompilationArtifacts._identifier(index, name)
             with open(output_directory.joinpath(f"{identifier}.txt"), "w", encoding="utf-8") as f:
-                f.write(f"{representation}\n")
+                f.write(f"{representation}")
 
         if self.bounds_of_the_final_operation_graph is not None:
             custom_assert(self.final_operation_graph is not None)
