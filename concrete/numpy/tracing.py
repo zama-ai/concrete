@@ -271,7 +271,7 @@ class NPTracer(BaseTracer):
         numpy.sinh,
         numpy.spacing,
         numpy.sqrt,
-        # numpy.square,
+        numpy.square,
         # numpy.subtract,
         numpy.tan,
         numpy.tanh,
