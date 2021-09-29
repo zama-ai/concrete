@@ -309,14 +309,21 @@ def test_eval_op_graph_bounds_on_non_conformant_inputset_default(capsys):
     y = ClearTensor(UnsignedInteger(2), (3,))
 
     inputset = [
-        ([2, 1, 3, 1], [1, 2, 1, 1]),
-        ([3, 3, 3], [3, 3, 5]),
+        (np.array([2, 1, 3, 1]), np.array([1, 2, 1, 1])),
+        (np.array([3, 3, 3]), np.array([3, 3, 5])),
     ]
 
     op_graph = trace_numpy_function(f, {"x": x, "y": y})
 
     configuration = CompilationConfiguration()
-    eval_op_graph_bounds_on_inputset(op_graph, inputset, compilation_configuration=configuration)
+    eval_op_graph_bounds_on_inputset(
+        op_graph,
+        inputset,
+        compilation_configuration=configuration,
+        min_func=numpy_min_func,
+        max_func=numpy_max_func,
+        get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+    )
 
     captured = capsys.readouterr()
     assert (
@@ -339,14 +346,21 @@ def test_eval_op_graph_bounds_on_non_conformant_inputset_check_all(capsys):
     y = ClearTensor(UnsignedInteger(2), (3,))
 
     inputset = [
-        ([2, 1, 3, 1], [1, 2, 1, 1]),
-        ([3, 3, 3], [3, 3, 5]),
+        (np.array([2, 1, 3, 1]), np.array([1, 2, 1, 1])),
+        (np.array([3, 3, 3]), np.array([3, 3, 5])),
     ]
 
     op_graph = trace_numpy_function(f, {"x": x, "y": y})
 
     configuration = CompilationConfiguration(check_every_input_in_inputset=True)
-    eval_op_graph_bounds_on_inputset(op_graph, inputset, compilation_configuration=configuration)
+    eval_op_graph_bounds_on_inputset(
+        op_graph,
+        inputset,
+        compilation_configuration=configuration,
+        min_func=numpy_min_func,
+        max_func=numpy_max_func,
+        get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+    )
 
     captured = capsys.readouterr()
     assert (

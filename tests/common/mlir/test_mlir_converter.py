@@ -256,7 +256,10 @@ def test_mlir_converter_dot_between_vectors(func, args_dict, args_ranges):
     result_graph = compile_numpy_function_into_op_graph(
         func,
         args_dict,
-        (([data[0]] * n, [data[1]] * n) for data in datagen(*args_ranges)),
+        (
+            (numpy.array([data[0]] * n), numpy.array([data[1]] * n))
+            for data in datagen(*args_ranges)
+        ),
     )
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
@@ -289,7 +292,6 @@ def test_concrete_clear_integer_to_mlir_type(is_signed):
 @pytest.mark.parametrize(
     "shape",
     [
-        None,
         (5,),
         (5, 8),
         (-1, 5),
@@ -315,7 +317,6 @@ def test_concrete_clear_tensor_integer_to_mlir_type(is_signed, shape):
 @pytest.mark.parametrize(
     "shape",
     [
-        None,
         (5,),
         (5, 8),
         (-1, 5),

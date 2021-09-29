@@ -31,7 +31,6 @@ class DummyDtype(BaseDataType):
 @pytest.mark.parametrize(
     "shape,expected_shape,expected_ndim,expected_size",
     [
-        (None, (), 0, 1),
         ((), (), 0, 1),
         ((3, 256, 256), (3, 256, 256), 3, 196_608),
         ((1920, 1080, 3), (1920, 1080, 3), 3, 6_220_800),

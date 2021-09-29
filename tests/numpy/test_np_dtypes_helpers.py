@@ -8,6 +8,7 @@ from concrete.common.data_types.integers import Integer
 from concrete.numpy.np_dtypes_helpers import (
     convert_base_data_type_to_numpy_dtype,
     convert_numpy_dtype_to_base_data_type,
+    get_base_value_for_numpy_or_python_constant_data,
     get_type_constructor_for_numpy_or_python_constant_data,
 )
 
@@ -76,3 +77,14 @@ def test_get_type_constructor_for_numpy_or_python_constant_data(
     assert expected_constructor == get_type_constructor_for_numpy_or_python_constant_data(
         constant_data
     )
+
+
+def test_get_base_value_for_numpy_or_python_constant_data_with_list():
+    """Test function for get_base_value_for_numpy_or_python_constant_data called with list"""
+
+    with pytest.raises(
+        AssertionError,
+        match="Unsupported constant data of type list "
+        "\\(if you meant to use a list as an array, please use numpy\\.array instead\\)",
+    ):
+        get_base_value_for_numpy_or_python_constant_data([1, 2, 3])

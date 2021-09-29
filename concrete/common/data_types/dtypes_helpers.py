@@ -2,18 +2,10 @@
 
 from copy import deepcopy
 from functools import partial
-from typing import Callable, List, Union, cast
+from typing import Callable, Union, cast
 
 from ..debugging.custom_assert import custom_assert
-from ..values import (
-    BaseValue,
-    ClearScalar,
-    ClearTensor,
-    EncryptedScalar,
-    EncryptedTensor,
-    ScalarValue,
-    TensorValue,
-)
+from ..values import BaseValue, ClearTensor, EncryptedTensor, TensorValue
 from .base import BaseDataType
 from .floats import Float
 from .integers import Integer, get_bits_to_represent_value_as_integer
@@ -24,25 +16,25 @@ BASE_DATA_TYPES = INTEGER_TYPES + FLOAT_TYPES
 
 
 def value_is_encrypted_scalar_integer(value_to_check: BaseValue) -> bool:
-    """Check that a value is an encrypted ScalarValue of type Integer.
+    """Check that a value is an encrypted scalar of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is an encrypted ScalarValue of type Integer
+        bool: True if the passed value_to_check is an encrypted scalar of type Integer
     """
     return value_is_scalar_integer(value_to_check) and value_to_check.is_encrypted
 
 
 def value_is_encrypted_scalar_unsigned_integer(value_to_check: BaseValue) -> bool:
-    """Check that a value is an encrypted ScalarValue of type unsigned Integer.
+    """Check that a value is an encrypted scalar of type unsigned Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is an encrypted ScalarValue of type Integer and
+        bool: True if the passed value_to_check is an encrypted scalar of type Integer and
             unsigned
     """
     return (
@@ -52,28 +44,30 @@ def value_is_encrypted_scalar_unsigned_integer(value_to_check: BaseValue) -> boo
 
 
 def value_is_clear_scalar_integer(value_to_check: BaseValue) -> bool:
-    """Check that a value is a clear ScalarValue of type Integer.
+    """Check that a value is a clear scalar of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is a clear ScalarValue of type Integer
+        bool: True if the passed value_to_check is a clear scalar of type Integer
     """
     return value_is_scalar_integer(value_to_check) and value_to_check.is_clear
 
 
 def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
-    """Check that a value is a ScalarValue of type Integer.
+    """Check that a value is a scalar of type Integer.
 
     Args:
         value_to_check (BaseValue): The value to check
 
     Returns:
-        bool: True if the passed value_to_check is a ScalarValue of type Integer
+        bool: True if the passed value_to_check is a scalar of type Integer
     """
-    return isinstance(value_to_check, ScalarValue) and isinstance(
-        value_to_check.dtype, INTEGER_TYPES
+    return (
+        isinstance(value_to_check, TensorValue)
+        and value_to_check.is_scalar
+        and isinstance(value_to_check.dtype, INTEGER_TYPES)
     )
 
 
@@ -126,8 +120,10 @@ def value_is_tensor_integer(value_to_check: BaseValue) -> bool:
     Returns:
         bool: True if the passed value_to_check is a TensorValue of type Integer
     """
-    return isinstance(value_to_check, TensorValue) and isinstance(
-        value_to_check.dtype, INTEGER_TYPES
+    return (
+        isinstance(value_to_check, TensorValue)
+        and not value_to_check.is_scalar
+        and isinstance(value_to_check.dtype, INTEGER_TYPES)
     )
 
 
@@ -190,43 +186,6 @@ def find_type_to_hold_both_lossy(
     return type_to_return
 
 
-def mix_scalar_values_determine_holding_dtype(
-    value1: ScalarValue,
-    value2: ScalarValue,
-) -> ScalarValue:
-    """Return mixed ScalarValue with data type able to hold both value1 and value2 dtypes.
-
-    Returns a ScalarValue that would result from computation on both value1 and value2 while
-    determining the data type able to hold both value1 and value2 data type (this can be lossy
-    with floats).
-
-    Args:
-        value1 (ScalarValue): first ScalarValue to mix.
-        value2 (ScalarValue): second ScalarValue to mix.
-
-    Returns:
-        ScalarValue: The resulting mixed ScalarValue with data type able to hold both value1 and
-            value2 dtypes.
-    """
-
-    custom_assert(
-        isinstance(value1, ScalarValue), f"Unsupported value1: {value1}, expected ScalarValue"
-    )
-    custom_assert(
-        isinstance(value2, ScalarValue), f"Unsupported value2: {value2}, expected ScalarValue"
-    )
-
-    holding_type = find_type_to_hold_both_lossy(value1.dtype, value2.dtype)
-    mixed_value: ScalarValue
-
-    if value1.is_encrypted or value2.is_encrypted:
-        mixed_value = EncryptedScalar(holding_type)
-    else:
-        mixed_value = ClearScalar(holding_type)
-
-    return mixed_value
-
-
 def mix_tensor_values_determine_holding_dtype(
     value1: TensorValue,
     value2: TensorValue,
@@ -284,7 +243,7 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
         value2 (BaseValue): second BaseValue to mix.
 
     Raises:
-        ValueError: raised if the BaseValue is not one of (ScalarValue, TensorValue)
+        ValueError: raised if the BaseValue is not one of (TensorValue)
 
     Returns:
         BaseValue: The resulting mixed BaseValue with data type able to hold both value1 and value2
@@ -296,8 +255,6 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
         f"Cannot mix values of different types: value 1:{type(value1)}, value2: {type(value2)}",
     )
 
-    if isinstance(value1, ScalarValue) and isinstance(value2, ScalarValue):
-        return mix_scalar_values_determine_holding_dtype(value1, value2)
     if isinstance(value1, TensorValue) and isinstance(value2, TensorValue):
         return mix_tensor_values_determine_holding_dtype(value1, value2)
 
@@ -306,9 +263,7 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
     )
 
 
-def get_base_data_type_for_python_constant_data(
-    constant_data: Union[int, float, List[int], List[float]]
-) -> BaseDataType:
+def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]) -> BaseDataType:
     """Determine the BaseDataType to hold the input constant data.
 
     Args:
@@ -320,28 +275,23 @@ def get_base_data_type_for_python_constant_data(
     """
     constant_data_type: BaseDataType
     custom_assert(
-        isinstance(constant_data, (int, float, list)),
+        isinstance(constant_data, (int, float)),
         f"Unsupported constant data of type {type(constant_data)}",
     )
 
-    if isinstance(constant_data, list):
-        custom_assert(len(constant_data) > 0, "Data type of empty list cannot be detected")
-        constant_data_type = get_base_data_type_for_python_constant_data(constant_data[0])
-        for value in constant_data:
-            other_data_type = get_base_data_type_for_python_constant_data(value)
-            constant_data_type = find_type_to_hold_both_lossy(constant_data_type, other_data_type)
-    elif isinstance(constant_data, int):
+    if isinstance(constant_data, int):
         is_signed = constant_data < 0
         constant_data_type = Integer(
             get_bits_to_represent_value_as_integer(constant_data, is_signed), is_signed
         )
     elif isinstance(constant_data, float):
         constant_data_type = Float(64)
+
     return constant_data_type
 
 
 def get_base_value_for_python_constant_data(
-    constant_data: Union[int, float, List[int], List[float]]
+    constant_data: Union[int, float]
 ) -> Callable[..., BaseValue]:
     """Wrap the BaseDataType to hold the input constant data in BaseValue partial.
 
@@ -349,8 +299,8 @@ def get_base_value_for_python_constant_data(
     by calling it with the proper arguments forwarded to the BaseValue `__init__` function
 
     Args:
-        constant_data (Union[int, float, List[int], List[float]]): The constant data
-            for which to determine the corresponding Value.
+        constant_data (Union[int, float]): The constant data for which to determine the
+            corresponding Value.
 
     Returns:
         Callable[..., BaseValue]: A partial object that will return the proper BaseValue when
@@ -358,14 +308,8 @@ def get_base_value_for_python_constant_data(
             method).
     """
 
-    if isinstance(constant_data, list):
-        assert len(constant_data) > 0
-        constant_shape = (len(constant_data),)
-        constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
-        return partial(TensorValue, dtype=constant_data_type, shape=constant_shape)
-
     constant_data_type = get_base_data_type_for_python_constant_data(constant_data)
-    return partial(ScalarValue, dtype=constant_data_type)
+    return partial(TensorValue, dtype=constant_data_type, shape=())
 
 
 def get_type_constructor_for_python_constant_data(constant_data: Union[int, float]):

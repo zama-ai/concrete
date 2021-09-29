@@ -9,7 +9,7 @@ from loguru import logger
 from ..data_types.base import BaseDataType
 from ..data_types.dtypes_helpers import (
     get_base_value_for_python_constant_data,
-    mix_scalar_values_determine_holding_dtype,
+    mix_values_determine_holding_dtype,
 )
 from ..data_types.integers import Integer
 from ..debugging.custom_assert import custom_assert
@@ -43,7 +43,7 @@ class IntermediateNode(ABC):
     def _init_binary(
         self,
         inputs: Iterable[BaseValue],
-        mix_values_func: Callable[..., BaseValue] = mix_scalar_values_determine_holding_dtype,
+        mix_values_func: Callable[..., BaseValue] = mix_values_determine_holding_dtype,
         **_kwargs,  # Required to conform to __init__ typing
     ) -> None:
         """__init__ for a binary operation, ie two inputs."""
@@ -221,7 +221,11 @@ class ArbitraryFunction(IntermediateNode):
         self.arbitrary_func = arbitrary_func
         self.op_args = op_args if op_args is not None else ()
         self.op_kwargs = op_kwargs if op_kwargs is not None else {}
-        self.outputs = [input_base_value.__class__(output_dtype, input_base_value.is_encrypted)]
+
+        output = deepcopy(input_base_value)
+        output.dtype = output_dtype
+        self.outputs = [output]
+
         self.op_name = op_name if op_name is not None else self.__class__.__name__
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:

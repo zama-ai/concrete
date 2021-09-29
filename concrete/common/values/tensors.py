@@ -1,7 +1,7 @@
 """Module that defines the tensor values in a program."""
 
 from math import prod
-from typing import Optional, Tuple
+from typing import Tuple
 
 from ..data_types.base import BaseDataType
 from .base import BaseValue
@@ -18,13 +18,13 @@ class TensorValue(BaseValue):
         self,
         dtype: BaseDataType,
         is_encrypted: bool,
-        shape: Optional[Tuple[int, ...]] = None,
-    ) -> None:
+        shape: Tuple[int, ...],
+    ):
         super().__init__(dtype, is_encrypted)
-        # Managing tensors as in numpy, no shape or () is treated as a 0-D array of size 1
-        self._shape = shape if shape is not None else ()
+        # Managing tensors as in numpy, shape of () means the value is scalar
+        self._shape = shape
         self._ndim = len(self._shape)
-        self._size = prod(self._shape) if self._shape else 1
+        self._size = prod(self._shape) if self._shape != () else 1
 
     def __eq__(self, other: object) -> bool:
         return (
@@ -37,7 +37,9 @@ class TensorValue(BaseValue):
 
     def __str__(self) -> str:
         encrypted_str = "Encrypted" if self._is_encrypted else "Clear"
-        return f"{encrypted_str}Tensor<{str(self.dtype)}, shape={self.shape}>"
+        tensor_or_scalar_str = "Scalar" if self.is_scalar else "Tensor"
+        shape_str = f", shape={self.shape}" if self.shape != () else ""
+        return f"{encrypted_str}{tensor_or_scalar_str}<{str(self.dtype)}{shape_str}>"
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -66,10 +68,19 @@ class TensorValue(BaseValue):
         """
         return self._size
 
+    @property
+    def is_scalar(self) -> bool:
+        """Whether Value is scalar or not.
+
+        Returns:
+            bool: True if scalar False otherwise
+        """
+        return self.shape == ()
+
 
 def make_clear_tensor(
     dtype: BaseDataType,
-    shape: Optional[Tuple[int, ...]] = None,
+    shape: Tuple[int, ...],
 ) -> TensorValue:
     """Create a clear TensorValue.
 
@@ -85,7 +96,7 @@ def make_clear_tensor(
 
 def make_encrypted_tensor(
     dtype: BaseDataType,
-    shape: Optional[Tuple[int, ...]] = None,
+    shape: Tuple[int, ...],
 ) -> TensorValue:
     """Create an encrypted TensorValue.
 
@@ -101,3 +112,31 @@ def make_encrypted_tensor(
 
 ClearTensor = make_clear_tensor
 EncryptedTensor = make_encrypted_tensor
+
+
+def make_clear_scalar(dtype: BaseDataType) -> TensorValue:
+    """Create a clear scalar value.
+
+    Args:
+        dtype (BaseDataType): The data type for the value.
+
+    Returns:
+        TensorValue: The corresponding TensorValue.
+    """
+    return TensorValue(dtype=dtype, is_encrypted=False, shape=())
+
+
+def make_encrypted_scalar(dtype: BaseDataType) -> TensorValue:
+    """Create an encrypted scalar value.
+
+    Args:
+        dtype (BaseDataType): The data type for the value.
+
+    Returns:
+        TensorValue: The corresponding TensorValue.
+    """
+    return TensorValue(dtype=dtype, is_encrypted=True, shape=())
+
+
+ClearScalar = make_clear_scalar
+EncryptedScalar = make_encrypted_scalar

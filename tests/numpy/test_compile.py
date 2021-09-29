@@ -176,7 +176,9 @@ def test_compile_and_run_dot_correctness(size, input_range):
     def data_gen(input_range, size):
         for _ in range(1000):
             low, high = input_range
-            args = [[random.randint(low, high) for _ in range(size)] for __ in range(2)]
+            args = [
+                numpy.array([random.randint(low, high) for _ in range(size)]) for __ in range(2)
+            ]
 
             yield args
 
@@ -303,7 +305,7 @@ def test_compile_function_with_dot(function, params, shape, ref_graph_str):
         iter_i = itertools.product(range(0, max_for_ij + 1), repeat=repeat)
         iter_j = itertools.product(range(0, max_for_ij + 1), repeat=repeat)
         for prod_i, prod_j in itertools.product(iter_i, iter_j):
-            yield (list(prod_i), list(prod_j))
+            yield numpy.array(prod_i), numpy.array(prod_j)
 
     max_for_ij = 3
     assert len(shape) == 1

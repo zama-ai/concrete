@@ -7,7 +7,6 @@ import zamalang
 from mlir.dialects import builtin
 from mlir.ir import Context, InsertionPoint, IntegerType, Location, Module, RankedTensorType
 from mlir.ir import Type as MLIRType
-from mlir.ir import UnrankedTensorType
 from zamalang.dialects import hlfhe
 
 from .. import values
@@ -64,10 +63,7 @@ class MLIRConverter:
             MLIRType: corresponding MLIR type
         """
         element_type = self._get_scalar_integer_type(bit_width, is_encrypted, is_signed)
-        if len(shape):  # randked tensor
-            return RankedTensorType.get(shape, element_type)
-        # unranked tensor
-        return UnrankedTensorType.get(element_type)
+        return RankedTensorType.get(shape, element_type)
 
     def _get_scalar_integer_type(
         self, bit_width: int, is_encrypted: bool, is_signed: bool
