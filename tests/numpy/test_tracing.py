@@ -259,7 +259,7 @@ def test_tracing_astype(
 def test_trace_numpy_supported_ufuncs(inputs, expected_output_node):
     """Function to trace supported numpy ufuncs"""
 
-    LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64: List[numpy.ufunc] = [
+    list_of_ufunc_whose_output_is_float64 = [
         # The commented functions are functions which don't work for the moment, often
         # if not always because they require more than a single argument
         # numpy.absolute,
@@ -365,7 +365,7 @@ def test_trace_numpy_supported_ufuncs(inputs, expected_output_node):
         assert isinstance(op_graph.output_nodes[0], expected_output_node)
         assert len(op_graph.output_nodes[0].outputs) == 1
 
-        if function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64:
+        if function_to_trace_def in list_of_ufunc_whose_output_is_float64:
             assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Float(64))
         else:
             assert op_graph.output_nodes[0].outputs[0] in [
