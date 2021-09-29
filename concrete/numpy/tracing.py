@@ -261,7 +261,7 @@ class NPTracer(BaseTracer):
         # numpy.power,
         numpy.rad2deg,
         numpy.radians,
-        # numpy.reciprocal,
+        numpy.reciprocal,
         # numpy.remainder,
         # numpy.right_shift,
         numpy.rint,
