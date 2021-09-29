@@ -368,7 +368,12 @@ def test_trace_numpy_supported_ufuncs(inputs, expected_output_node):
         if function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64:
             assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Float(64))
         else:
-            assert op_graph.output_nodes[0].outputs[0] == "to be done"
+            assert op_graph.output_nodes[0].outputs[0] in [
+                EncryptedScalar(Integer(32, is_signed=False)),
+                EncryptedScalar(Integer(32, is_signed=True)),
+                EncryptedScalar(Integer(64, is_signed=True)),
+                EncryptedScalar(Float(64)),
+            ]
 
 
 def test_trace_numpy_ufuncs_not_supported():
