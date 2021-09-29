@@ -257,7 +257,7 @@ class NPTracer(BaseTracer):
         numpy.negative,
         # numpy.nextafter,
         # numpy.not_equal,
-        # numpy.positive,
+        numpy.positive,
         # numpy.power,
         numpy.rad2deg,
         numpy.radians,
