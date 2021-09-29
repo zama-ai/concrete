@@ -1,5 +1,7 @@
 """Test file for numpy tracing"""
 
+from copy import deepcopy
+
 import networkx as nx
 import numpy
 import pytest
@@ -11,6 +13,55 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
 from concrete.numpy import tracing
 
 OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
+
+# Functions from tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC, whose output
+# is a float64, whatever the input type
+LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64 = set(
+    [
+        numpy.arccos,
+        numpy.arccosh,
+        numpy.arcsin,
+        numpy.arcsinh,
+        numpy.arctan,
+        numpy.arctanh,
+        numpy.cbrt,
+        numpy.ceil,
+        numpy.cos,
+        numpy.cosh,
+        numpy.deg2rad,
+        numpy.degrees,
+        numpy.exp,
+        numpy.exp2,
+        numpy.expm1,
+        numpy.fabs,
+        numpy.floor,
+        numpy.log,
+        numpy.log10,
+        numpy.log1p,
+        numpy.log2,
+        numpy.rad2deg,
+        numpy.radians,
+        numpy.rint,
+        numpy.sin,
+        numpy.sinh,
+        numpy.spacing,
+        numpy.sqrt,
+        numpy.tan,
+        numpy.tanh,
+        numpy.trunc,
+    ]
+)
+
+# Functions from tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC, whose output
+# is a boolean, whatever the input type
+LIST_OF_UFUNC_WHOSE_OUTPUT_IS_BOOL = set(
+    [
+        numpy.isfinite,
+        numpy.isinf,
+        numpy.isnan,
+        numpy.signbit,
+    ]
+)
 
 
 @pytest.mark.parametrize(
@@ -259,42 +310,6 @@ def test_tracing_astype(
 def test_trace_numpy_supported_ufuncs(inputs, expected_output_node):
     """Function to trace supported numpy ufuncs"""
 
-    # Functions from tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC, whose output
-    # is a float64, whatever the input type
-    list_of_ufunc_whose_output_is_float64 = [
-        numpy.arccos,
-        numpy.arccosh,
-        numpy.arcsin,
-        numpy.arcsinh,
-        numpy.arctan,
-        numpy.arctanh,
-        numpy.cbrt,
-        numpy.ceil,
-        numpy.cos,
-        numpy.cosh,
-        numpy.deg2rad,
-        numpy.degrees,
-        numpy.exp,
-        numpy.exp2,
-        numpy.expm1,
-        numpy.fabs,
-        numpy.floor,
-        numpy.log,
-        numpy.log10,
-        numpy.log1p,
-        numpy.log2,
-        numpy.rad2deg,
-        numpy.radians,
-        numpy.rint,
-        numpy.sin,
-        numpy.sinh,
-        numpy.spacing,
-        numpy.sqrt,
-        numpy.tan,
-        numpy.tanh,
-        numpy.trunc,
-    ]
-
     for function_to_trace_def in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC:
 
         # We really need a lambda (because numpy functions are not playing
@@ -310,16 +325,26 @@ def test_trace_numpy_supported_ufuncs(inputs, expected_output_node):
         assert isinstance(op_graph.output_nodes[0], expected_output_node)
         assert len(op_graph.output_nodes[0].outputs) == 1
 
-        if function_to_trace_def in list_of_ufunc_whose_output_is_float64:
+        if function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64:
             assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Float(64))
+        elif function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_BOOL:
+
+            # Boolean function
+            assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(
+                Integer(8, is_signed=False)
+            )
         else:
-            assert op_graph.output_nodes[0].outputs[0] in [
-                EncryptedScalar(Integer(8, is_signed=False)),
-                EncryptedScalar(Integer(32, is_signed=False)),
-                EncryptedScalar(Integer(32, is_signed=True)),
-                EncryptedScalar(Integer(64, is_signed=True)),
-                EncryptedScalar(Float(64)),
-            ]
+
+            # Function keeping more or less input type
+            input_node_type = inputs["x"]
+
+            expected_output_node_type = deepcopy(input_node_type)
+
+            expected_output_node_type.dtype.bit_width = max(
+                expected_output_node_type.dtype.bit_width, 32
+            )
+
+            assert op_graph.output_nodes[0].outputs[0] == expected_output_node_type
 
 
 def test_trace_numpy_ufuncs_not_supported():
