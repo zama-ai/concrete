@@ -1,5 +1,9 @@
 # Target: Linear Regression
 
+# Disable line length warnings as we have a looooong metric...
+# flake8: noqa: E501
+# pylint: disable=C0301
+
 import numpy as np
 
 import concrete.numpy as hnp
@@ -149,17 +153,40 @@ def main():
     )
     # Measure: End
 
-    loss = 0
-    for x_i, y_i in zip(x_q, y):
+    non_homomorphic_loss = 0
+    homomorphic_loss = 0
+
+    for i, (x_i, y_i) in enumerate(zip(x_q, y)):
         x_i = [int(value) for value in x_i]
 
+        non_homomorphic_prediction = model.evaluate(x[i])[0]
         # Measure: Evaluation Time (ms)
-        prediction = QuantizedArray(engine.run(*x_i), y_parameters).dequantize()
+        homomorphic_prediction = QuantizedArray(engine.run(*x_i), y_parameters).dequantize()
         # Measure: End
 
-        loss += (prediction - y_i) ** 2
+        non_homomorphic_loss += (non_homomorphic_prediction - y_i) ** 2
+        homomorphic_loss += (homomorphic_prediction - y_i) ** 2
 
-    # Measure: Loss = loss / len(y)
+        print()
+
+        print(f"input = {x[i][0]}")
+        print(f"output = {y_i:.4f}")
+
+        print(f"non homomorphic prediction = {non_homomorphic_loss:.4f}")
+        print(f"homomorphic prediction = {homomorphic_prediction:.4f}")
+
+    non_homomorphic_loss /= len(y)
+    homomorphic_loss /= len(y)
+    difference = abs(homomorphic_loss - non_homomorphic_loss) * 100 / non_homomorphic_loss
+
+    print()
+    print(f"Non Homomorphic Loss: {non_homomorphic_loss:.4f}")
+    print(f"Homomorphic Loss: {homomorphic_loss:.4f}")
+    print(f"Relative Difference Percentage: {difference:.2f}%")
+
+    # Measure: Non Homomorphic Loss = non_homomorphic_loss
+    # Measure: Homomorphic Loss = homomorphic_loss
+    # Measure: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
 
 
 if __name__ == "__main__":
