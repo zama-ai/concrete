@@ -14,6 +14,7 @@
 #include <zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h>
 #include <zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
 #include <zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h>
+#include <zamalang/Dialect/RT/IR/RTDialect.h>
 #include <zamalang/Support/CompilerEngine.h>
 #include <zamalang/Support/Error.h>
 #include <zamalang/Support/Jit.h>
@@ -43,6 +44,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
   if (this->mlirContext == nullptr) {
     this->mlirContext = new mlir::MLIRContext();
 
+    this->mlirContext->getOrLoadDialect<mlir::zamalang::RT::RTDialect>();
     this->mlirContext->getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
     this->mlirContext
         ->getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();

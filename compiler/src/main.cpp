@@ -23,6 +23,7 @@
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "zamalang/Dialect/RT/IR/RTDialect.h"
 #include "zamalang/Support/Error.h"
 #include "zamalang/Support/JitCompilerEngine.h"
 #include "zamalang/Support/KeySet.h"
