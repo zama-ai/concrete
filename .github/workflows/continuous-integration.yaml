@@ -186,7 +186,7 @@ jobs:
           make setup_env
       - name: Check commits first line format
         id: ccfl
-        if: ${{ env.IS_PR && steps.install-deps.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@f27f413dcf8ebcb469d2ce4ae4e45e131d105de6
         with:
           pattern: '^((feat|fix|chore|refactor|style|test|docs)(\(\w+\))?\:) .+$'
@@ -199,7 +199,7 @@ jobs:
           accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
       - name: Check commits line length
         id: ccll
-        if: ${{ env.IS_PR && steps.install-deps.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@f27f413dcf8ebcb469d2ce4ae4e45e131d105de6
         with:
           pattern: '(^.{0,74}$\r?\n?){0,20}'
@@ -213,8 +213,8 @@ jobs:
         id: commit-conformance
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         env:
-          CCFL_OK: ${{ (env.IS_PR && steps.ccfl.outcome == 'success') || steps.ccfl.outcome == 'skipped' }}
-          CCLL_OK: ${{ (env.IS_PR && steps.ccll.outcome == 'success') || steps.ccll.outcome == 'skipped' }}
+          CCFL_OK: ${{ (fromJSON(env.IS_PR) && steps.ccfl.outcome == 'success') || steps.ccfl.outcome == 'skipped' }}
+          CCLL_OK: ${{ (fromJSON(env.IS_PR) && steps.ccll.outcome == 'success') || steps.ccll.outcome == 'skipped' }}
         run: |
           if [[ "${CCFL_OK}" != "true" || "${CCLL_OK}" != "true" ]]; then
             echo "Issues with commits. First line ok: ${CCFL_OK}. Line length ok: ${CCLL_OK}."
