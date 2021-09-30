@@ -10,6 +10,7 @@ from ..data_types.integers import Integer
 from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
 from ..representation.intermediate import ArbitraryFunction, Constant, Input, IntermediateNode
+from ..values import TensorValue
 
 
 def fuse_float_operations(
@@ -37,6 +38,10 @@ def fuse_float_operations(
 
         float_subgraph_start_nodes, terminal_node, subgraph_all_nodes = float_subgraph_search_result
         processed_terminal_nodes.add(terminal_node)
+
+        # TODO: #199 To be removed when doing tensor management
+        if not subgraph_is_scalar_only(subgraph_all_nodes):
+            continue
 
         subgraph_conversion_result = convert_float_subgraph_to_fused_node(
             op_graph,
@@ -237,6 +242,23 @@ def find_float_subgraph_with_unique_terminal_node(
         current_nodes = next_nodes
 
     return float_subgraph_start_nodes, terminal_node, subgraph_all_nodes
+
+
+# TODO: #199 To be removed when doing tensor management
+def subgraph_is_scalar_only(subgraph_all_nodes: Set[IntermediateNode]) -> bool:
+    """Check subgraph only processes scalars.
+
+    Args:
+        subgraph_all_nodes (Set[IntermediateNode]): The nodes of the float subgraph.
+
+    Returns:
+        bool: True if all inputs and outputs of the nodes in the subgraph are scalars.
+    """
+    return all(
+        all(isinstance(input_, TensorValue) and input_.is_scalar for input_ in node.inputs)
+        and all(isinstance(output, TensorValue) and output.is_scalar for output in node.outputs)
+        for node in subgraph_all_nodes
+    )
 
 
 def subgraph_has_unique_variable_input(
