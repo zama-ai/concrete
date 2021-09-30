@@ -71,22 +71,11 @@ jobs:
       if: ${{ !cancelled() }}
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
+        toolchain: stable
         override: true
     - name: Run concrete tests
       if: ${{ !cancelled() }}
-      run: cargo xtask cov
-    - name: Coverage
-      if: ${{ !cancelled() }}
-      uses: actions-rs/grcov@v0.1
-      with:
-        config: grcov.yml
-    - name: Coveralls upload
-      if: ${{ !cancelled() }}
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./lcov.info
+      run: cargo xtask test
 
   stop-runner:
     name: Stop EC2 runner
