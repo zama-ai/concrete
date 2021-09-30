@@ -107,17 +107,10 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
                         "`ct` argument.";
     return mlir::failure();
   }
-  // Disable this check for the moment: issue/111
-  // Check the witdh of the encrypted integer and the integer of the tabulated
-  // lambda are equals
-  // if (ct.getWidth() != l_cst.getElementType().cast<IntegerType>().getWidth())
-  // {
-  //   op.emitOpError()
-  //       << " should have equals width beetwen the encrypted integer result
-  //       and "
-  //          "integers of the `tabulated_lambda` argument";
-  //   return mlir::failure();
-  // }
+  if (!l_cst.getElementType().isInteger(64)) {
+    op.emitOpError() << "should have the i64 constant";
+    return mlir::failure();
+  }
   return mlir::success();
 }
 

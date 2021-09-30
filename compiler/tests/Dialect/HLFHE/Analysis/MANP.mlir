@@ -108,9 +108,9 @@ func @single_dyn_mul_eint_int(%e: !HLFHE.eint<2>, %i: i3) -> !HLFHE.eint<2>
 
 // -----
 
-func @single_apply_lookup_table(%arg0: !HLFHE.eint<2>, %arg1: tensor<4xi2>) -> !HLFHE.eint<2> {
-  // CHECK: %[[ret:.*]] = "HLFHE.apply_lookup_table"(%[[op0:.*]], %[[op1:.*]]) {MANP = 1 : ui{{[0-9]+}}} : (!HLFHE.eint<2>, tensor<4xi2>) -> !HLFHE.eint<2> 
-  %1 = "HLFHE.apply_lookup_table"(%arg0, %arg1): (!HLFHE.eint<2>, tensor<4xi2>) -> !HLFHE.eint<2>
+func @single_apply_lookup_table(%arg0: !HLFHE.eint<2>, %arg1: tensor<4xi64>) -> !HLFHE.eint<2> {
+  // CHECK: %[[ret:.*]] = "HLFHE.apply_lookup_table"(%[[op0:.*]], %[[op1:.*]]) {MANP = 1 : ui{{[0-9]+}}} : (!HLFHE.eint<2>, tensor<4xi64>) -> !HLFHE.eint<2> 
+  %1 = "HLFHE.apply_lookup_table"(%arg0, %arg1): (!HLFHE.eint<2>, tensor<4xi64>) -> !HLFHE.eint<2>
   return %1: !HLFHE.eint<2>
 }
 
