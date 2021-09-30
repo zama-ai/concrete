@@ -6,7 +6,8 @@ members = [
     "concrete-core",
     "concrete-csprng",
     "concrete-commons",
-    "concrete-tasks"
+    "concrete-tasks",
+    "concrete-boolean",
 ]
 
 [profile.bench]
@@ -20,3 +21,4 @@ concrete-npe = {path="concrete-npe"}
 concrete-core = {path="concrete-core"}
 concrete-csprng = {path="concrete-csprng"}
 concrete-commons = {path="concrete-commons"}
+concrete-boolean = {path= "concrete-boolean"}

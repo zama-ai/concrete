@@ -14,3 +14,7 @@ jobs:
           toolchain: stable
       - name: Compile doc
         run: cargo xtask check_doc
+      - name: Install mdbook
+        run: cargo install mdbook
+      - name: Check boolean book
+        run: cargo xtask test_book_boolean
