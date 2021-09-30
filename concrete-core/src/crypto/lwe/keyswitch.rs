@@ -28,7 +28,7 @@ use super::{LweCiphertext, LweList};
 /// The keyswitch key will be composed of $m$ encryptions of each bits of the $s_{out}$ key, under
 /// the key $s_{in}$; encryptions which will be stored as their decomposition over a given basis
 /// $B_{ks}\in\mathbb{N}$, up to a level $l_{ks}\in\mathbb{N}$.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct LweKeyswitchKey<Cont> {
     tensor: Tensor<Cont>,
     decomp_base_log: DecompositionBaseLog,
