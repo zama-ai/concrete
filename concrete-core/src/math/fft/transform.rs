@@ -445,7 +445,7 @@ impl Fft {
         // We perform the forward fft
         self.plans.forward(
             self.buffer.borrow().as_tensor().as_slice(),
-            &mut fourier_poly.as_mut_tensor().as_mut_slice(),
+            fourier_poly.as_mut_tensor().as_mut_slice(),
         );
     }
 
@@ -484,13 +484,13 @@ impl Fft {
         // We perform the forward on the first fourier polynomial.
         self.plans.forward(
             self.buffer.borrow().as_tensor().as_slice(),
-            &mut fourier_poly_1.as_mut_tensor().as_mut_slice(),
+            fourier_poly_1.as_mut_tensor().as_mut_slice(),
         );
 
         // We replicate the coefficients on the second fourier polynomial.
         replicate_coefficients(
-            &mut fourier_poly_1.as_mut_tensor().as_mut_slice(),
-            &mut fourier_poly_2.as_mut_tensor().as_mut_slice(),
+            fourier_poly_1.as_mut_tensor().as_mut_slice(),
+            fourier_poly_2.as_mut_tensor().as_mut_slice(),
             self.polynomial_size().0,
         );
     }
@@ -509,8 +509,8 @@ impl Fft {
         FourierPolynomial<InCont>: AsMutTensor<Element = Complex64>,
     {
         // We propagate the values to their conjugates that were not computed.
-        let mut first_view = fourier_poly.as_mut_tensor().as_mut_slice();
-        let (b_first, b_second) = split_in_imut_mut(&mut first_view, self.polynomial_size().0);
+        let first_view = fourier_poly.as_mut_tensor().as_mut_slice();
+        let (b_first, b_second) = split_in_imut_mut(first_view, self.polynomial_size().0);
         for (fft_bj, rot_fft_bj) in zip!(b_first.iter(), b_second.iter_mut().rev()) {
             *rot_fft_bj = fft_bj.conj();
         }
@@ -518,7 +518,7 @@ impl Fft {
         // We perform the backward fft
         self.plans.backward(
             fourier_poly.as_tensor().as_slice(),
-            &mut self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
+            self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
         );
 
         // We fill the polynomial with the conversion function
@@ -556,8 +556,8 @@ impl Fft {
         fp1[0] = Complex64::new(fp1[0].re - fp2[0].im, fp1[0].im + fp2[0].re);
         fp1[1] = Complex64::new(fp1[1].re - fp2[1].im, fp1[1].im + fp2[1].re);
 
-        let mut first_view = fourier_poly_1.as_mut_tensor().as_mut_slice();
-        let (a_first, a_second) = split_in_mut_mut(&mut first_view, self.polynomial_size().0);
+        let first_view = fourier_poly_1.as_mut_tensor().as_mut_slice();
+        let (a_first, a_second) = split_in_mut_mut(first_view, self.polynomial_size().0);
 
         for (fft_aj, (rot_fft_aj, fft_bj)) in zip!(
             a_first.iter_mut(),
@@ -573,7 +573,7 @@ impl Fft {
         // We perform the backward fft
         self.plans.backward(
             fourier_poly_1.as_tensor().as_slice(),
-            &mut self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
+            self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
         );
 
         convert_function(

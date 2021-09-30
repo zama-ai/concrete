@@ -723,7 +723,7 @@ where
             .update_with_wrapping_monic_monomial_div(MonomialDegree(modulus_switch(lwe_body.0)));
 
         // We initialize the ct_0 and ct_1 used for the successive cmuxes
-        let mut ct_0 = lut;
+        let ct_0 = lut;
         let mut ct_1 = GlweCiphertext::allocate(Scalar::ZERO, ct_0.polynomial_size(), ct_0.size());
 
         // We iterate over the bootstrap key elements and perform the blind rotation.
@@ -743,7 +743,7 @@ where
                         *lwe_mask_element,
                     )));
                 // We perform the cmux.
-                self.cmux(&mut ct_0, &mut ct_1, &bootstrap_key_ggsw);
+                self.cmux(ct_0, &mut ct_1, &bootstrap_key_ggsw);
             }
         }
     }

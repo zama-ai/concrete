@@ -538,11 +538,7 @@ impl<Cont> LweKeyswitchKey<Cont> {
         {
             let mask_rounded = decomposer.closest_representable(*before_mask);
 
-            torus_small_sign_decompose(
-                &mut decomp.as_mut_slice(),
-                mask_rounded,
-                self.decomp_base_log.0,
-            );
+            torus_small_sign_decompose(decomp.as_mut_slice(), mask_rounded, self.decomp_base_log.0);
 
             // loop over the number of levels
             for (level_key_cipher, decomposed) in block

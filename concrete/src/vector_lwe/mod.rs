@@ -2303,21 +2303,18 @@ impl VectorLWE {
             for _i in 0..noise {
                 noise_res.push('o');
             }
-            if noise > 64 {
-                panic!(
-                    "noise = {} ; {}",
-                    noise,
-                    (f64::log2(3. * f64::sqrt(*variance))).floor()
-                );
-            }
+            assert!(
+                noise <= 64,
+                "noise = {} ; {}",
+                noise,
+                (f64::log2(3. * f64::sqrt(*variance))).floor()
+            );
 
             let nothing = <Torus as Numeric>::BITS
                 - encoder.nb_bit_padding
                 - encoder.nb_bit_precision
                 - noise;
-            if nothing > 64 {
-                panic!("nothing = {} ", nothing,);
-            }
+            assert!(nothing <= 64, "nothing = {} ", nothing);
             let mut nothing_res: String = "".to_string();
             // nth part
             for _i in 0..nothing {

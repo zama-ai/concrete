@@ -81,9 +81,7 @@
 macro_rules! assert_delta {
     ($A:expr, $B:expr, $d:expr) => {
         for (x, y) in $A.iter().zip($B) {
-            if (*x as i64 - y as i64).abs() > $d {
-                panic!("{} != {} ", *x, y);
-            }
+            assert!((*x as i64 - y as i64).abs() <= $d, "{} != {} ", *x, y);
         }
     };
 }
@@ -91,18 +89,20 @@ macro_rules! assert_delta {
 #[allow(unused_macros)]
 macro_rules! assert_delta_scalar {
     ($A:expr, $B:expr, $d:expr) => {
-        if ($A as i64 - $B as i64).abs() > $d {
-            panic!("{} != {} +- {}", $A, $B, $d);
-        }
+        assert!(
+            ($A as i64 - $B as i64).abs() <= $d,
+            "{} != {} +- {}",
+            $A,
+            $B,
+            $d
+        );
     };
 }
 
 #[allow(unused_macros)]
 macro_rules! assert_delta_scalar_float {
     ($A:expr, $B:expr, $d:expr) => {
-        if ($A - $B).abs() > $d {
-            panic!("{} != {} +- {}", $A, $B, $d);
-        }
+        assert!(($A - $B).abs() <= $d, "{} != {} +- {}", $A, $B, $d);
     };
 }
 
@@ -164,9 +164,12 @@ pub mod test_tools {
             println!("{}", dist.get_standard_dev());
             let distance: f64 = modular_distance(*x, *y).cast_into();
             let torus_distance = distance / 2_f64.powi(Element::BITS as i32);
-            if torus_distance > 5. * dist.get_standard_dev() {
-                panic!("{} != {} ", x, y);
-            }
+            assert!(
+                torus_distance <= 5. * dist.get_standard_dev(),
+                "{} != {} ",
+                x,
+                y
+            );
         }
     }
 
@@ -219,14 +222,15 @@ pub mod test_tools {
             let th_std_log2 = f64::log2(std_dev).round();
 
             // test if theoretical_std_dev > sdk_std_dev
-            if sdk_std_log2 > th_std_log2 {
-                panic!(
-                    "Statistical test failed :
+            assert!(
+                sdk_std_log2 <= th_std_log2,
+                "Statistical test failed :
                     -> inputs are not from the same distribution with a probability {}
                     -> sdk_std = {} ; th_std {}.",
-                    result.reject_probability, sdk_std_log2, th_std_log2
-                );
-            }
+                result.reject_probability,
+                sdk_std_log2,
+                th_std_log2
+            );
         }
     }
 

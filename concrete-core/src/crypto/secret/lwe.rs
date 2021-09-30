@@ -585,8 +585,8 @@ where
             output.count().0,
             cipher.count().0
         );
-        for (cipher, mut output) in cipher.ciphertext_iter().zip(output.plaintext_iter_mut()) {
-            self.decrypt_lwe(&mut output, &cipher);
+        for (cipher, output) in cipher.ciphertext_iter().zip(output.plaintext_iter_mut()) {
+            self.decrypt_lwe(output, &cipher);
         }
     }
 

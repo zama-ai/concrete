@@ -256,8 +256,11 @@ fn margins_with_reals() {
 
     // test
     for (m, d) in izip!(messages.iter(), decoding.iter()) {
-        if f64::abs(m - d) > encoder.get_granularity() {
-            panic!("error: m {} d {} ", m, d);
-        }
+        assert!(
+            f64::abs(m - d) <= encoder.get_granularity(),
+            "error: m {} d {} ",
+            m,
+            d
+        );
     }
 }
