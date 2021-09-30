@@ -103,5 +103,5 @@ We thank [Daniel May](https://gitlab.com/danieljrmay) for supporting this projec
 
 # License
 
-This software is distributed under the BSD-3-Clause-Clear license. If you have any question, 
+This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, 
 please contact us at `hello@zama.ai`. 

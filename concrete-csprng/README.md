@@ -11,5 +11,5 @@ generic implementation in the future.
 
 ## License
 
-This software is distributed under the BSD-3-Clause-Clear license. If you have any question,
+This software is distributed under the BSD-3-Clause-Clear license. If you have any questions,
 please contact us at `hello@zama.ai`.
