@@ -71,7 +71,9 @@ pcc:
 	--no-print-directory pcc_internal
 .PHONY: pcc
 
-pcc_internal: check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
+PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
+PCC_DEPS += check_version_coherence
+pcc_internal: $(PCC_DEPS)
 .PHONY: pcc_internal
 
 pytest:
@@ -214,3 +216,23 @@ shell_lint:
 	find \( -path "./.venv" -o -path "./.docker_venv" \) -prune -o -type f -name "*.sh" -print | \
 	xargs shellcheck
 .PHONY: shell_lint
+
+set_version:
+	@if [[ "$$VERSION" == "" ]]; then											\
+		echo "VERSION env variable is empty. Please set to desired version.";	\
+		exit 1;																	\
+	fi;
+	./script/make_utils/set_version.sh --version "$${VERSION}" --src-dir "$(SRC_DIR)"
+.PHONY: set_version
+
+check_version_coherence:
+	@SRC_VER=$$(poetry run python -c "from $(SRC_DIR) import __version__; print(__version__);");\
+	PROJECT_VER=($$(poetry version));															\
+	PROJECT_VER="$${PROJECT_VER[1]}";															\
+	echo "Source version:  $${SRC_VER}";														\
+	echo "Project version: $${PROJECT_VER}";													\
+	if [[ "$${SRC_VER}" != "$${PROJECT_VER}" ]]; then											\
+		echo "Version mismatch between source and pyproject.toml re-run make set_version";		\
+		exit 1;																					\
+	fi
+.PHONY: check_version_coherence

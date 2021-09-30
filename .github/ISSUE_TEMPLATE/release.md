@@ -10,7 +10,13 @@ Release check-list:
 <!-- Note that some of these steps will be automated in the future -->
 If it was not already done:
 - [ ] Choose the version number, e.g. `vX.Y.Z` (can be `vX.Y.Zrc?` for Release Candidates) following semantic versioning: https://semver.org/
-- [ ] Update the version in pyproject.toml to `X.Y.Z` (or `X.Y.Zrc?`)
+- [ ] Update the project version to `X.Y.Z` (or `X.Y.Zrc?`) by running:
+
+```bash
+VERSION=X.Y.Z make set_version
+# or
+VERSION=X.Y.Zrc? make set_version
+```
 
 Then:
 - [ ] For non RC releases: check the release milestone issues, cut out what can't be completed in time and change the milestones for these issues
@@ -26,6 +32,12 @@ This is the release markdown template you should copy and update:
 
 To continue the release cycle:
 - [ ] Choose the version number for next release, e.g. `vA.B.C` (can be `vA.B.Crc?` for Release Candidates) following semantic versioning: https://semver.org/
-- [ ] Update the version in pyproject.toml to `A.B.C` (or `A.B.Crc?`)
+- [ ] Update the project version to `A.B.C` (or `A.B.Crc?`) by running:
+
+```bash
+VERSION=A.B.C make set_version
+# or
+VERSION=A.B.Crc? make set_version
+```
 
 All done!
