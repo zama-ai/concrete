@@ -601,9 +601,13 @@ where
         let delta_max: i64 = ((5. * f64::sqrt(npe::cross::drift_index_lut(lwe_dimension.0)))
             * 2_f64.powi(<T as Numeric>::BITS as i32 - log_degree - 1))
             as i64;
-        if (i64::cast_from(m0.0) - i64::cast_from(m1.0)).abs() > delta_max {
-            panic!("{:?} != {:?} +- {:?}", m0.0, m1.0, delta_max);
-        }
+        assert!(
+            (i64::cast_from(m0.0) - i64::cast_from(m1.0)).abs() <= delta_max,
+            "{:?} != {:?} +- {:?}",
+            m0.0,
+            m1.0,
+            delta_max
+        );
     }
 }
 

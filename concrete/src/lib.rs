@@ -23,16 +23,15 @@ pub type Torus = u64;
 #[allow(unused_macros)]
 macro_rules! assert_eq_granularity {
     ($A:expr, $B:expr, $ENC:expr) => {
-        if ($A - $B).abs() >= $ENC.get_granularity() {
-            panic!(
-                "{} != {} +- {} (|delta|={})-> encoder: {}",
-                $A,
-                $B,
-                $ENC.get_granularity(),
-                ($A - $B).abs(),
-                $ENC
-            );
-        }
+        assert!(
+            ($A - $B).abs() < $ENC.get_granularity(),
+            "{} != {} +- {} (|delta|={})-> encoder: {}",
+            $A,
+            $B,
+            $ENC.get_granularity(),
+            ($A - $B).abs(),
+            $ENC
+        );
     };
 }
 

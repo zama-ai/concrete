@@ -281,9 +281,10 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         if let Some(bound) = self.bound.as_ref() {
             let reached_bound =
                 self.state.aes_ctr == bound.aes_ctr && self.state.byte_ctr == bound.byte_ctr;
-            if reached_bound {
-                panic!("Tried to generate a byte outside the generator bound.");
-            }
+            assert!(
+                !reached_bound,
+                "Tried to generate a byte outside the generator bound."
+            );
         }
         match self.state.increment() {
             ShouldGenerateBatch::GenerateBatch => {
