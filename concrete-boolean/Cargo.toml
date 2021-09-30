@@ -1,0 +1,27 @@
+[package]
+name = "concrete-boolean"
+version = "0.1.0"
+edition = "2018"
+authors = ["Zama team"]
+license = "BSD-3-Clause-Clear"
+description = "Homomorphic Boolean circuit interface for the concrete FHE library."
+homepage = "https://crates.io/crates/concrete"
+documentation = "https://concrete.zama.ai"
+repository = "https://github.com/zama-ai/concrete"
+readme = "README.md"
+keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+concrete-core = {version = "=0.1.10", features=["multithread"]}
+concrete-commons = "=0.1.1"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+criterion = "0.3.4"
+
+[[bench]]
+name = "bench"
+harness = false
+

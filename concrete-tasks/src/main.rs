@@ -12,6 +12,7 @@ use std::sync::atomic::Ordering::Relaxed;
 mod build;
 mod check;
 mod chore;
+mod doc;
 mod test;
 mod utils;
 
@@ -84,6 +85,7 @@ fn main() -> Result<(), std::io::Error> {
             App::new("test_and_cov_crates")
                 .about("Compute tests coverage of all crates in native mode"),
         )
+        .subcommand(App::new("test_book_boolean").about("Test the book for concrete-boolean"))
         .subcommand(App::new("build_debug_crates").about("Build all the crates in debug mode"))
         .subcommand(App::new("build_release_crates").about("Build all the crates in release mode"))
         .subcommand(App::new("build_simd_crates").about("Build all the crates in simd mode"))
@@ -160,6 +162,9 @@ fn main() -> Result<(), std::io::Error> {
     }
     if matches.subcommand_matches("test_and_cov_crates").is_some() {
         test::cov_crates()?;
+    }
+    if matches.subcommand_matches("test_book_boolean").is_some() {
+        doc::test_book_boolean()?;
     }
     if matches.subcommand_matches("build_debug_crates").is_some() {
         build::debug::crates()?;
