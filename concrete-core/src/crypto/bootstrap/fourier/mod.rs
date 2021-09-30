@@ -320,6 +320,30 @@ where
         self.glwe_size
     }
 
+    /// Returns the dimension of the output LWE ciphertext after a bootstrap.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, PolynomialSize,
+    /// };
+    /// use concrete_core::crypto::bootstrap::FourierBootstrapKey;
+    /// use concrete_core::math::fft::Complex64;
+    /// let bsk: FourierBootstrapKey<_, u32> = FourierBootstrapKey::allocate(
+    ///     Complex64::new(9., 8.),
+    ///     GlweSize(7),
+    ///     PolynomialSize(256),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(5),
+    ///     LweDimension(4),
+    /// );
+    /// assert_eq!(bsk.output_lwe_dimension(), LweDimension(1536));
+    /// ```
+    pub fn output_lwe_dimension(&self) -> LweDimension {
+        LweDimension((self.glwe_size.0 - 1) * self.poly_size.0)
+    }
+
     /// Returns the number of levels used to decompose the key bits.
     ///
     /// # Example
