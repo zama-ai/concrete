@@ -7,7 +7,7 @@ The server however has to know the boolean circuit to be evaluated.
 At the end of the computation, the server returns the encryption of the result to the user.
 
 ## Quick Example
- The following piece of code shows how to generate keys and run a swall Boolean circuit
+ The following piece of code shows how to generate keys and run a small Boolean circuit
  homomorphically.
 
  ```rust
@@ -32,6 +32,11 @@ At the end of the computation, the server returns the encryption of the result t
  let output = client_key.decrypt(&ct_6);
  assert_eq!(output, true);
  ```
+
+## Links
+
+- [documentation](https://docs.zama.ai/concrete/boolean-lib)
+- [TFHE's gate bootstrapping](https://eprint.iacr.org/2018/421.pdf)
 
 ## License
 

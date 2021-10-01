@@ -6,7 +6,7 @@ authors = ["Zama team"]
 license = "BSD-3-Clause-Clear"
 description = "Homomorphic Boolean circuit interface for the concrete FHE library."
 homepage = "https://crates.io/crates/concrete"
-documentation = "https://concrete.zama.ai"
+documentation = "https://docs.zama.ai/concrete/boolean-lib"
 repository = "https://github.com/zama-ai/concrete"
 readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
@@ -25,3 +25,5 @@ criterion = "0.3.4"
 name = "bench"
 harness = false
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "katex-header.html"]

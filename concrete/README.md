@@ -71,6 +71,11 @@ fn main() -> Result<(), CryptoAPIError> {
   Ok(())
 }
 ```
+## Links
+
+- [documentation](https://docs.zama.ai/concrete/lib)
+- [TFHE](https://eprint.iacr.org/2018/421.pdf)
+
 
 ## License
 

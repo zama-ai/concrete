@@ -13,7 +13,7 @@
 //!
 //! # Quick Example
 //!
-//! The following piece of code shows how to generate keys and run a swall Boolean circuit
+//! The following piece of code shows how to generate keys and run a small Boolean circuit
 //! homomorphically.
 //!
 //! ```rust

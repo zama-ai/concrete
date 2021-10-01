@@ -36,7 +36,7 @@ pub struct ServerKey {
 }
 
 impl ServerKey {
-    /// Allocates and generate a server key.
+    /// Allocates and generates a server key.
     ///
     /// # Example
     ///

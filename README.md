@@ -15,7 +15,7 @@ studied cryptographic hardness assumptions believed to be secure even against qu
 
 ## Links
 
-- [documentation](https://concrete.zama.ai)
+- [documentation](https://docs.zama.ai/concrete/lib)
 - [whitepaper](http://whitepaper.zama.ai)
 
 ## Concrete crates
@@ -30,10 +30,14 @@ The ecosystem is composed of several crates (packages in the Rust language):
   implementation.
 + [`concrete-core`](concrete-core): A low-level library, useful to cryptographers who want the
   fastest implementation possible, with all the settings at their disposal.
++ [`concrete-boolean`](concrete-boolean): A high-level library, implementing homomorphic Boolean 
+  gates, making it easy to run any kind of circuits over encrypted data.
 + [`concrete-npe`](concrete-npe): A noise propagation estimator, used in `concrete` to simulate the
   evolution of the noise in ciphertexts, through homomorphic operations.
 + [`concrete-csprng`](concrete-csprng): A fast cryptographically secure pseudorandom number
   generator used in `concrete-core`.
++ [`concrete-commons`](concrete-commons): contains types and traits to manipulate objects in a 
+  consistent way throughout the ecosystem.
 
 ## Installation
 
