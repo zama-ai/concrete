@@ -28,8 +28,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(3) == 45
-engine.run(0) == 42
+circuit.run(3) == 45
+circuit.run(0) == 42
 ```
 
 ### Dynamic ClearScalar and EncryptedScalar
@@ -52,8 +52,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(6, 4) == 10
-engine.run(1, 1) == 2
+circuit.run(6, 4) == 10
+circuit.run(1, 1) == 2
 ```
 
 where
@@ -78,8 +78,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(7, 7) == 14
-engine.run(3, 4) == 7
+circuit.run(7, 7) == 14
+circuit.run(3, 4) == 7
 ```
 
 ## Subtraction
@@ -100,8 +100,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(2) == 1
-engine.run(3) == 0
+circuit.run(2) == 1
+circuit.run(3) == 0
 ```
 
 ### Dynamic ClearScalar and EncryptedScalar
@@ -121,8 +121,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(2, 4) == 2
-engine.run(1, 7) == 6
+circuit.run(2, 4) == 2
+circuit.run(1, 7) == 6
 ```
 
 ## Multiplication
@@ -151,8 +151,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(2) == 4
-engine.run(5) == 10
+circuit.run(2) == 4
+circuit.run(5) == 10
 ```
 
 ### Dynamic ClearScalar and EncryptedScalar
@@ -180,8 +180,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(2, 3) == 6
-engine.run(1, 7) == 7
+circuit.run(2, 3) == 6
+circuit.run(1, 7) == 7
 ```
 
 ## Dot Product
@@ -211,8 +211,8 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run([1, 1], [2, 3]) == 5
-engine.run([2, 3], [2, 3]) == 13
+circuit.run([1, 1], [2, 3]) == 5
+circuit.run([2, 3], [2, 3]) == 13
 ```
 
 ## Combining all together
@@ -233,6 +233,6 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run([1, 2], [4, 3], 10) == 60
-engine.run([2, 3], [3, 2], 5) == 66
+circuit.run([1, 2], [4, 3], 10) == 60
+circuit.run([2, 3], [3, 2], 5) == 66
 ```

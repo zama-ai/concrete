@@ -11,6 +11,7 @@ from ..common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_in
 from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Integer
+from ..common.fhe_circuit import FHECircuit
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from ..common.mlir.utils import (
     extend_direct_lookup_tables,
@@ -237,7 +238,7 @@ def _compile_numpy_function_internal(
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
     show_mlir: bool,
-) -> CompilerEngine:
+) -> FHECircuit:
     """Compile an homomorphic program (internal part of the API).
 
     Args:
@@ -282,7 +283,7 @@ def _compile_numpy_function_internal(
     engine = CompilerEngine()
     engine.compile_fhe(mlir_result)
 
-    return engine
+    return FHECircuit(op_graph, engine)
 
 
 def compile_numpy_function(
@@ -292,7 +293,7 @@ def compile_numpy_function(
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
-) -> CompilerEngine:
+) -> FHECircuit:
     """Compile an homomorphic program (main API).
 
     Args:

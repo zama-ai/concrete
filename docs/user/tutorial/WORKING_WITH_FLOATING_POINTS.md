@@ -16,11 +16,11 @@ results in
 
 <!--python-test:skip-->
 ```python
-engine.run(3) == 27
-engine.run(0) == 0
-engine.run(1) == 90
-engine.run(10) == 91
-engine.run(60) == 58
+circuit.run(3) == 27
+circuit.run(0) == 0
+circuit.run(1) == 90
+circuit.run(10) == 91
+circuit.run(60) == 58
 ```
 
 ## Supported operations

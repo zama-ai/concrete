@@ -22,13 +22,13 @@ x = hnp.EncryptedScalar(hnp.UnsignedInteger(2))
 y = hnp.EncryptedScalar(hnp.UnsignedInteger(1))
 
 # Compile the function to its homomorphic equivalent
-engine = hnp.compile_numpy_function(
+circuit = hnp.compile_numpy_function(
     f, {"x": x, "y": y},
     [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)],
 )
 
 # Make homomorphic inference
-engine.run(1, 0)
+circuit.run(1, 0)
 ```
 
 ## Overview

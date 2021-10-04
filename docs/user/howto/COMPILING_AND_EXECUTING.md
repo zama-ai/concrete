@@ -41,7 +41,7 @@ Finally, we can compile our function to its homomorphic equivalent.
 
 <!--python-test:cont-->
 ```python
-engine = hnp.compile_numpy_function(
+circuit = hnp.compile_numpy_function(
     f, {"x": x, "y": y},
     inputset=inputset,
 )
@@ -49,17 +49,17 @@ engine = hnp.compile_numpy_function(
 
 ## Performing homomorphic evaluation
 
-You can use `.run(...)` method of `engine` returned by `hnp.compile_numpy_function(...)` to perform fully homomorphic evaluation. Here are some examples:
+You can use `.run(...)` method of `FHECircuit` returned by `hnp.compile_numpy_function(...)` to perform fully homomorphic evaluation. Here are some examples:
 
 <!--python-test:cont-->
 ```python
-engine.run(3, 4)
+circuit.run(3, 4)
 # 7
-engine.run(1, 2)
+circuit.run(1, 2)
 # 3
-engine.run(7, 7)
+circuit.run(7, 7)
 # 14
-engine.run(0, 0)
+circuit.run(0, 0)
 # 0
 ```
 

@@ -12,6 +12,10 @@ In this section we will go over some terms that we use throughout the project.
 - bounds
     - before intermediate representation is sent to the compiler, we need to know which node will output which type (e.g., uint3 vs uint5)
     - there are several ways to do this but the simplest one is to evaluate the intermediate representation with all combinations of inputs and remember the maximum and the minimum values for each node, which is what we call bounds, and bounds can be used to determine the appropriate type for each node
+- fhe circuit
+   - it is the result of compilation
+   - it contains the operation graph and the compiler engine in it
+   - it has methods for printing, visualizing, and evaluating
 
 ## Module structure
 
