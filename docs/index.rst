@@ -24,6 +24,7 @@ Concrete Framework's documentation
    :caption: How to
 
    user/howto/COMPILING_AND_EXECUTING.md
+   user/howto/PRINTING_AND_DRAWING.md
    user/howto/REDUCE_NEEDED_PRECISION.md
    user/howto/DEBUG_SUPPORT_SUBMIT_ISSUES.md
    user/howto/FAQ.md
