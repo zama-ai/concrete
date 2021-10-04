@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import urllib
 
@@ -322,7 +323,7 @@ def main():
 
     # Delete the modified scripts if the user doesn't care
     if not args.keep:
-        os.unlink(".benchmarks/scripts")
+        shutil.rmtree(".benchmarks/scripts", ignore_errors=True)
 
     print()
 
