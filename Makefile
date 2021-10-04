@@ -222,17 +222,9 @@ set_version:
 		echo "VERSION env variable is empty. Please set to desired version.";	\
 		exit 1;																	\
 	fi;
-	./script/make_utils/set_version.sh --version "$${VERSION}" --src-dir "$(SRC_DIR)"
+	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}"
 .PHONY: set_version
 
 check_version_coherence:
-	@SRC_VER=$$(poetry run python -c "from $(SRC_DIR) import __version__; print(__version__);");\
-	PROJECT_VER=($$(poetry version));															\
-	PROJECT_VER="$${PROJECT_VER[1]}";															\
-	echo "Source version:  $${SRC_VER}";														\
-	echo "Project version: $${PROJECT_VER}";													\
-	if [[ "$${SRC_VER}" != "$${PROJECT_VER}" ]]; then											\
-		echo "Version mismatch between source and pyproject.toml re-run make set_version";		\
-		exit 1;																					\
-	fi
+	poetry run python ./script/make_utils/version_utils.py check-version
 .PHONY: check_version_coherence

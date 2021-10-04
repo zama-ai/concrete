@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "concretefhe"
-version = "0.2.0rc1"
+version = "0.2.0-rc1"
 description = "Concrete Framework"
 authors = ["Zama <hello@zama.ai>"]
 packages = [
@@ -40,6 +40,7 @@ sphinx-copybutton = "^0.4.0"
 nbmake = "^0.9"
 python-semantic-release = "^7.19.2"
 semver = "^2.13.0"
+tomlkit = "^0.7.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -460,7 +460,8 @@ jobs:
 
           # We want the space separated list of versions to be expanded
           # shellcheck disable=SC2086
-          REQUIRES_LATEST_TAG=$(python script/actions_utils/version_comparison.py \
+          REQUIRES_LATEST_TAG=$(python script/make_utils/version_utils.py \
+          islatest \
           --new-version "${GIT_TAG}" \
           --existing-versions $EXISTING_TAGS)
 
