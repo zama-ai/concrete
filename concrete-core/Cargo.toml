@@ -1,6 +1,6 @@
 [package]
 name = "concrete-core"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2018"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "BSD-3-Clause-Clear"
