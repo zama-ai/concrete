@@ -304,6 +304,35 @@ def _get_fun(function: numpy.ufunc):
 # We are populating NPTracer.UFUNC_ROUTING dynamically
 NPTracer.UFUNC_ROUTING = {fun: _get_fun(fun) for fun in NPTracer.LIST_OF_SUPPORTED_UFUNC}
 
+# We are adding initial support for `np.array(...)` +,-,* `BaseTracer`
+# (note that this is not the proper complete handling of these functions)
+
+
+def _on_numpy_add(lhs, rhs):
+    if isinstance(lhs, BaseTracer):
+        return lhs.__add__(rhs)
+
+    return rhs.__radd__(lhs)
+
+
+def _on_numpy_subtract(lhs, rhs):
+    if isinstance(lhs, BaseTracer):
+        return lhs.__sub__(rhs)
+
+    return rhs.__rsub__(lhs)
+
+
+def _on_numpy_multiply(lhs, rhs):
+    if isinstance(lhs, BaseTracer):
+        return lhs.__mul__(rhs)
+
+    return rhs.__rmul__(lhs)
+
+
+NPTracer.UFUNC_ROUTING[numpy.add] = _on_numpy_add
+NPTracer.UFUNC_ROUTING[numpy.subtract] = _on_numpy_subtract
+NPTracer.UFUNC_ROUTING[numpy.multiply] = _on_numpy_multiply
+
 
 def trace_numpy_function(
     function_to_trace: Callable, function_parameters: Dict[str, BaseValue]
