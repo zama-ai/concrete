@@ -45,7 +45,9 @@ class NPTracer(BaseTracer):
                 (len(kwargs) == 0),
                 f"**kwargs are currently not supported for numpy ufuncs, ufunc: {ufunc}",
             )
-            return tracing_func(*input_tracers, **kwargs)
+            # Create constant tracers when needed
+            sanitized_input_tracers = [self._sanitize(inp) for inp in input_tracers]
+            return tracing_func(*sanitized_input_tracers, **kwargs)
         raise NotImplementedError("Only __call__ method is supported currently")
 
     def __array_function__(self, func, _types, args, kwargs):
@@ -163,6 +165,61 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
+    @classmethod
+    def _binary_operator(
+        cls, binary_operator, binary_operator_string, *input_tracers: "NPTracer", **kwargs
+    ) -> "NPTracer":
+        """Trace a binary operator, supposing one of the input is a constant.
+
+        If no input is a constant, raises an error.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        custom_assert(len(input_tracers) == 2)
+
+        # One of the inputs has to be constant
+        if isinstance(input_tracers[0].traced_computation, Constant):
+            in_which_input_is_constant = 0
+            baked_constant = deepcopy(input_tracers[0].traced_computation.constant_data)
+        elif isinstance(input_tracers[1].traced_computation, Constant):
+            in_which_input_is_constant = 1
+            baked_constant = deepcopy(input_tracers[1].traced_computation.constant_data)
+        else:
+            raise NotImplementedError(f"Can't manage binary operator {binary_operator}")
+
+        in_which_input_is_variable = 1 - in_which_input_is_constant
+
+        if in_which_input_is_constant == 0:
+
+            def arbitrary_func(x, baked_constant, **kwargs):
+                return binary_operator(baked_constant, x, **kwargs)
+
+        else:
+
+            def arbitrary_func(x, baked_constant, **kwargs):
+                return binary_operator(x, baked_constant, **kwargs)
+
+        common_output_dtypes = cls._manage_dtypes(binary_operator, *input_tracers)
+        custom_assert(len(common_output_dtypes) == 1)
+
+        op_kwargs = deepcopy(kwargs)
+        op_kwargs["baked_constant"] = baked_constant
+
+        traced_computation = ArbitraryFunction(
+            input_base_value=input_tracers[in_which_input_is_variable].output,
+            arbitrary_func=arbitrary_func,
+            output_dtype=common_output_dtypes[0],
+            op_kwargs=op_kwargs,
+            op_name=binary_operator_string,
+        )
+        output_tracer = cls(
+            (input_tracers[in_which_input_is_variable],),
+            traced_computation=traced_computation,
+            output_index=0,
+        )
+        return output_tracer
+
     def dot(self, other_tracer: "NPTracer", **_kwargs) -> "NPTracer":
         """Trace numpy.dot.
 
@@ -188,8 +245,9 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
+    # Supported functions are either univariate or bivariate for which one of the two
+    # sources is a constant
     LIST_OF_SUPPORTED_UFUNC: List[numpy.ufunc] = [
-        # The commented functions are functions require more than a single argument
         numpy.absolute,
         # numpy.add,
         numpy.arccos,
@@ -197,7 +255,7 @@ class NPTracer(BaseTracer):
         numpy.arcsin,
         numpy.arcsinh,
         numpy.arctan,
-        # numpy.arctan2,
+        numpy.arctan2,
         numpy.arctanh,
         # numpy.bitwise_and,
         # numpy.bitwise_or,
@@ -216,7 +274,7 @@ class NPTracer(BaseTracer):
         numpy.exp2,
         numpy.expm1,
         numpy.fabs,
-        # numpy.float_power,
+        numpy.float_power,
         numpy.floor,
         # numpy.floor_divide,
         # numpy.fmax,
@@ -289,7 +347,7 @@ class NPTracer(BaseTracer):
     }
 
 
-def _get_fun(function: numpy.ufunc):
+def _get_unary_fun(function: numpy.ufunc):
     """Wrap _unary_operator in a lambda to populate NPTRACER.UFUNC_ROUTING."""
 
     # We have to access this method to be able to build NPTracer.UFUNC_ROUTING
@@ -301,32 +359,41 @@ def _get_fun(function: numpy.ufunc):
     # pylint: enable=protected-access
 
 
+def _get_binary_fun(function: numpy.ufunc):
+    """Wrap _binary_operator in a lambda to populate NPTRACER.UFUNC_ROUTING."""
+
+    # We have to access this method to be able to build NPTracer.UFUNC_ROUTING
+    # dynamically
+    # pylint: disable=protected-access
+    return lambda *input_tracers, **kwargs: NPTracer._binary_operator(
+        function, f"np.{function.__name__}", *input_tracers, **kwargs
+    )
+    # pylint: enable=protected-access
+
+
 # We are populating NPTracer.UFUNC_ROUTING dynamically
-NPTracer.UFUNC_ROUTING = {fun: _get_fun(fun) for fun in NPTracer.LIST_OF_SUPPORTED_UFUNC}
+NPTracer.UFUNC_ROUTING = {
+    fun: _get_unary_fun(fun) for fun in NPTracer.LIST_OF_SUPPORTED_UFUNC if fun.nin == 1
+}
+
+NPTracer.UFUNC_ROUTING[numpy.arctan2] = _get_binary_fun(numpy.arctan2)
+NPTracer.UFUNC_ROUTING[numpy.float_power] = _get_binary_fun(numpy.float_power)
+
 
 # We are adding initial support for `np.array(...)` +,-,* `BaseTracer`
 # (note that this is not the proper complete handling of these functions)
 
 
 def _on_numpy_add(lhs, rhs):
-    if isinstance(lhs, BaseTracer):
-        return lhs.__add__(rhs)
-
-    return rhs.__radd__(lhs)
+    return lhs.__add__(rhs)
 
 
 def _on_numpy_subtract(lhs, rhs):
-    if isinstance(lhs, BaseTracer):
-        return lhs.__sub__(rhs)
-
-    return rhs.__rsub__(lhs)
+    return lhs.__sub__(rhs)
 
 
 def _on_numpy_multiply(lhs, rhs):
-    if isinstance(lhs, BaseTracer):
-        return lhs.__mul__(rhs)
-
-    return rhs.__rmul__(lhs)
+    return lhs.__mul__(rhs)
 
 
 NPTracer.UFUNC_ROUTING[numpy.add] = _on_numpy_add

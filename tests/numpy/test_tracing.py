@@ -195,11 +195,11 @@ def test_numpy_tracing_tensors():
 %5 = x                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %6 = Constant([[1 2] [3 4]])             # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
 %7 = Add(5, 6)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%8 = Add(7, 4)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%8 = Add(4, 7)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %9 = Sub(3, 8)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %10 = Sub(9, 2)                          # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %11 = Mul(10, 1)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%12 = Mul(11, 0)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%12 = Mul(0, 11)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 return(%12)
 """.lstrip()
 
@@ -234,11 +234,11 @@ def test_numpy_explicit_tracing_tensors():
 %5 = x                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %6 = Constant([[1 2] [3 4]])             # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
 %7 = Add(5, 6)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%8 = Add(7, 4)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%8 = Add(4, 7)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %9 = Sub(3, 8)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %10 = Sub(9, 2)                          # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %11 = Mul(10, 1)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%12 = Mul(11, 0)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%12 = Mul(0, 11)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 return(%12)
 """.lstrip()
 
@@ -406,44 +406,43 @@ def test_tracing_astype(
         ),
     ],
 )
-def test_trace_numpy_supported_ufuncs(inputs, expected_output_node):
+@pytest.mark.parametrize(
+    "function_to_trace_def", [f for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1]
+)
+def test_trace_numpy_supported_unary_ufuncs(inputs, expected_output_node, function_to_trace_def):
     """Function to trace supported numpy ufuncs"""
 
-    for function_to_trace_def in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC:
+    # We really need a lambda (because numpy functions are not playing
+    # nice with inspect.signature), but pylint and flake8 are not happy
+    # with it
+    # pylint: disable=unnecessary-lambda,cell-var-from-loop
+    function_to_trace = lambda x: function_to_trace_def(x)  # noqa: E731
+    # pylint: enable=unnecessary-lambda,cell-var-from-loop
 
-        # We really need a lambda (because numpy functions are not playing
-        # nice with inspect.signature), but pylint and flake8 are not happy
-        # with it
-        # pylint: disable=unnecessary-lambda,cell-var-from-loop
-        function_to_trace = lambda x: function_to_trace_def(x)  # noqa: E731
-        # pylint: enable=unnecessary-lambda,cell-var-from-loop
+    op_graph = tracing.trace_numpy_function(function_to_trace, inputs)
 
-        op_graph = tracing.trace_numpy_function(function_to_trace, inputs)
+    assert len(op_graph.output_nodes) == 1
+    assert isinstance(op_graph.output_nodes[0], expected_output_node)
+    assert len(op_graph.output_nodes[0].outputs) == 1
 
-        assert len(op_graph.output_nodes) == 1
-        assert isinstance(op_graph.output_nodes[0], expected_output_node)
-        assert len(op_graph.output_nodes[0].outputs) == 1
+    if function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64:
+        assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Float(64))
+    elif function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_BOOL:
 
-        if function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64:
-            assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Float(64))
-        elif function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_BOOL:
+        # Boolean function
+        assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Integer(8, is_signed=False))
+    else:
 
-            # Boolean function
-            assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(
-                Integer(8, is_signed=False)
-            )
-        else:
+        # Function keeping more or less input type
+        input_node_type = inputs["x"]
 
-            # Function keeping more or less input type
-            input_node_type = inputs["x"]
+        expected_output_node_type = deepcopy(input_node_type)
 
-            expected_output_node_type = deepcopy(input_node_type)
+        expected_output_node_type.dtype.bit_width = max(
+            expected_output_node_type.dtype.bit_width, 32
+        )
 
-            expected_output_node_type.dtype.bit_width = max(
-                expected_output_node_type.dtype.bit_width, 32
-            )
-
-            assert op_graph.output_nodes[0].outputs[0] == expected_output_node_type
+        assert op_graph.output_nodes[0].outputs[0] == expected_output_node_type
 
 
 def test_trace_numpy_ufuncs_not_supported():
@@ -516,15 +515,13 @@ def test_trace_numpy_dot(function_to_trace, inputs, expected_output_node, expect
     assert op_graph.output_nodes[0].outputs[0] == expected_output_value
 
 
-def test_nptracer_get_tracing_func_for_np_functions():
+@pytest.mark.parametrize("np_function", tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC)
+def test_nptracer_get_tracing_func_for_np_functions(np_function):
     """Test NPTracer get_tracing_func_for_np_function"""
 
-    for np_function in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC:
-        expected_tracing_func = tracing.NPTracer.UFUNC_ROUTING[np_function]
+    expected_tracing_func = tracing.NPTracer.UFUNC_ROUTING[np_function]
 
-        assert (
-            tracing.NPTracer.get_tracing_func_for_np_function(np_function) == expected_tracing_func
-        )
+    assert tracing.NPTracer.get_tracing_func_for_np_function(np_function) == expected_tracing_func
 
 
 def test_nptracer_get_tracing_func_for_np_functions_not_implemented():
