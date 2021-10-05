@@ -79,3 +79,23 @@ gtest_discover_tests(end_to_end_jit_encrypted_tensor)
 gtest_discover_tests(end_to_end_jit_hlfhelinalg)
 gtest_discover_tests(end_to_end_jit_lambda)
 
+if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
+  add_executable(
+    end_to_end_jit_dfr
+    end_to_end_jit_dfr.cc
+  )
+  set_source_files_properties(
+    end_to_end_jit_dfr.cc
+    PROPERTIES COMPILE_FLAGS "-fno-rtti"
+  )
+  target_link_libraries(
+    end_to_end_jit_dfr
+    gtest_main
+    ZamalangSupport
+    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
+    -Wl,-rpath,${HPX_DIR}/../../
+    -Wl,--no-as-needed
+    DFRuntime
+  )
+  gtest_discover_tests(end_to_end_jit_dfr)
+endif()

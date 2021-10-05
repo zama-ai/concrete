@@ -85,6 +85,23 @@ else()
 endif()
 
 #-------------------------------------------------------------------------------
+# DFR - parallel execution configuration
+#-------------------------------------------------------------------------------
+
+option(ZAMALANG_PARALLEL_EXECUTION_ENABLED "Enables parallel execution for ZamaLang." ON)
+
+if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
+  message(STATUS "ZamaLang parallel execution enabled.")
+
+  find_package(HPX REQUIRED CONFIG)
+  include_directories(SYSTEM ${HPX_INCLUDE_DIRS})
+  list(APPEND CMAKE_MODULE_PATH "${HPX_CMAKE_DIR}")
+
+else()
+  message(STATUS "ZamaLang parallel execution disabled.")
+endif()
+
+#-------------------------------------------------------------------------------
 # Unit tests
 #-------------------------------------------------------------------------------
 

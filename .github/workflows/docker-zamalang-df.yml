@@ -1,0 +1,35 @@
+name: Docker image (dataflow)
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types: [created]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build_publish:
+    name: Build & Publish the Docker image (dataflow)
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/zama-ai/zamalang-df-compiler
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: login
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      - name: build
+        run: docker image build --no-cache --label "commit-sha=${{ github.sha }}" -t $IMAGE -f builders/Dockerfile.zamalang-df-env .
+
+      - name: tag and publish
+        run: |
+          docker image tag $IMAGE $IMAGE:${{ github.sha }}
+          docker image push $IMAGE:latest
+          docker image push $IMAGE:${{ github.sha }}

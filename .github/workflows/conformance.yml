@@ -52,3 +52,31 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache
+  BuildAndTestDF:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build and test compiler (dataflow)
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ghcr.io/zama-ai/zamalang-df-compiler:latest
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: -v ${{ github.workspace }}/compiler:/compiler
+          shell: bash
+          run: |
+            set -e
+            echo "Debug: ccache statistics (prior to the build):"
+            ccache -s
+            cd /compiler
+            pip install pytest
+            rm -rf /build
+            export PYTHONPATH=""
+            make PARALLEL_EXECUTION_ENABLED=ON CCACHE=ON BUILD_DIR=/build test test-dataflow
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+            chmod -R ugo+rwx /tmp/KeySetCache

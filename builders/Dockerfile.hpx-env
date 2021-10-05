@@ -1,0 +1,22 @@
+FROM ubuntu:latest
+
+RUN apt-get update --fix-missing
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-essential python3 python3-pip python3-setuptools ninja-build git libboost-filesystem-dev libhwloc-dev
+RUN pip install numpy pybind11==2.6.2 PyYAML
+RUN mkdir /cmake-build
+ADD https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.0-linux-x86_64.tar.gz /cmake-build/cmake.tar.gz
+RUN cd /cmake-build && tar xzf cmake.tar.gz
+ENV PATH=/cmake-build/cmake-3.22.0-linux-x86_64/bin:${PATH}
+RUN git clone https://github.com/STEllAR-GROUP/hpx.git
+ENV HPX=$PWD/hpx
+RUN cd ${HPX} && git checkout 1.7.1
+RUN mkdir ${HPX}/build
+RUN cd ${HPX}/build && cmake \
+       		    -DHPX_WITH_FETCH_ASIO=on \
+		    -DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
+		    -DHPX_WITH_MALLOC=system ..
+RUN cd ${HPX}/build && make -j2
+
+FROM ubuntu:latest
+COPY --from=0 /hpx/ /hpx/
+COPY --from=0 /cmake-build/ /cmake/
