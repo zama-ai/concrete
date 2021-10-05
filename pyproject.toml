@@ -9,35 +9,35 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.9"
-networkx = "^2.6.1"
-matplotlib = "^3.4.2"
-numpy = "^1.21.1"
+networkx = "^2.6.3"
+matplotlib = "^3.4.3"
+numpy = "^1.21.2"
 pygraphviz = "^1.7"
-Pillow = "^8.3.1"
+Pillow = "^8.3.2"
 loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
-isort = "^5.9.2"
-black = "21.7b0"
-pylint = "^2.9.3"
-pytest = "^6.2.4"
-pytest-cov = "^2.12.1"
-diff-cover = "^6.2.0"
+isort = "^5.9.3"
+black = "^21.9b0"
+pylint = "^2.11.1"
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
+diff-cover = "^6.4.1"
 mypy = "^0.910"
 pydocstyle = "^6.1.1"
 jupyter = "^1.0.0"
-nbmake = "^0.5"
 flake8 = "^3.9.2"
-flake8-bugbear = "^21.4.3"
-Sphinx = "^4.1.1"
+flake8-bugbear = "^21.9.2"
+Sphinx = "^4.2.0"
 sphinx-rtd-theme = "^1.0.0"
-myst-parser = "^0.15.1"
+myst-parser = "^0.15.2"
 nbsphinx = "^0.8.7"
-tqdm = "^4.62.2"
+tqdm = "^4.62.3"
 psutil = "^5.8.0"
 py-cpuinfo = "^8.0.0"
 python-dotenv = "^0.19.0"
 sphinx-copybutton = "^0.4.0"
+nbmake = "^0.9"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -47,5 +47,3 @@ build-backend = "poetry.core.masonry.api"
 filterwarnings = [
     "error"
 ]
-
-
