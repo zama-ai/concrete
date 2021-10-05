@@ -6,6 +6,7 @@ import networkx as nx
 import numpy
 import pytest
 
+from concrete.common.data_types.dtypes_helpers import broadcast_shapes
 from concrete.common.data_types.floats import Float
 from concrete.common.data_types.integers import Integer
 from concrete.common.debugging import get_printable_graph
@@ -242,6 +243,51 @@ return(%12)
 """.lstrip()
 
     assert get_printable_graph(op_graph, show_data_types=True) == expected
+
+
+@pytest.mark.parametrize(
+    "x_shape,y_shape",
+    [
+        pytest.param((), ()),
+        pytest.param((3,), ()),
+        pytest.param((3,), (1,)),
+        pytest.param((3,), (2,), marks=pytest.mark.xfail(raises=AssertionError, strict=True)),
+        pytest.param((3,), (3,)),
+        pytest.param((2, 3), ()),
+        pytest.param((2, 3), (1,)),
+        pytest.param((2, 3), (2,), marks=pytest.mark.xfail(raises=AssertionError, strict=True)),
+        pytest.param((2, 3), (3,)),
+        pytest.param((2, 3), (1, 1)),
+        pytest.param((2, 3), (2, 1)),
+        pytest.param((2, 3), (3, 1), marks=pytest.mark.xfail(raises=AssertionError, strict=True)),
+        pytest.param((2, 3), (1, 2), marks=pytest.mark.xfail(raises=AssertionError, strict=True)),
+        pytest.param((2, 3), (2, 2), marks=pytest.mark.xfail(raises=AssertionError, strict=True)),
+        pytest.param((2, 3), (3, 2), marks=pytest.mark.xfail(raises=AssertionError, strict=True)),
+        pytest.param((2, 3), (1, 3)),
+        pytest.param((2, 3), (2, 3)),
+        pytest.param((2, 3), (3, 3), marks=pytest.mark.xfail(raises=AssertionError, strict=True)),
+        pytest.param((2, 1, 3), (1, 1, 1)),
+        pytest.param((2, 1, 3), (1, 4, 1)),
+        pytest.param((2, 1, 3), (2, 4, 3)),
+    ],
+)
+def test_numpy_tracing_broadcasted_tensors(x_shape, y_shape):
+    """Test numpy tracing broadcasted tensors"""
+
+    def f(x, y):
+        return x + y
+
+    op_graph = tracing.trace_numpy_function(
+        f,
+        {
+            "x": EncryptedTensor(Integer(3, True), shape=x_shape),
+            "y": EncryptedTensor(Integer(3, True), shape=y_shape),
+        },
+    )
+
+    assert op_graph.input_nodes[0].outputs[0].shape == x_shape
+    assert op_graph.input_nodes[1].outputs[0].shape == y_shape
+    assert op_graph.output_nodes[0].outputs[0].shape == broadcast_shapes(x_shape, y_shape)
 
 
 @pytest.mark.parametrize(

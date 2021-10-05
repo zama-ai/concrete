@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from functools import partial
-from typing import Callable, Union, cast
+from typing import Callable, Optional, Tuple, Union, cast
 
 from ..debugging.custom_assert import custom_assert
 from ..values import BaseValue, ClearTensor, EncryptedTensor, TensorValue
@@ -212,21 +212,21 @@ def mix_tensor_values_determine_holding_dtype(
         isinstance(value2, TensorValue), f"Unsupported value2: {value2}, expected TensorValue"
     )
 
+    resulting_shape = broadcast_shapes(value1.shape, value2.shape)
     custom_assert(
-        value1.shape == value2.shape,
+        resulting_shape is not None,
         (
-            f"Tensors have different shapes which is not supported.\n"
+            f"Tensors have incompatible shapes which is not supported.\n"
             f"value1: {value1.shape}, value2: {value2.shape}"
         ),
     )
+    assert resulting_shape is not None  # this is to make mypy happy
 
     holding_type = find_type_to_hold_both_lossy(value1.dtype, value2.dtype)
-    shape = value1.shape
-
     if value1.is_encrypted or value2.is_encrypted:
-        mixed_value = EncryptedTensor(dtype=holding_type, shape=shape)
+        mixed_value = EncryptedTensor(dtype=holding_type, shape=resulting_shape)
     else:
-        mixed_value = ClearTensor(dtype=holding_type, shape=shape)
+        mixed_value = ClearTensor(dtype=holding_type, shape=resulting_shape)
 
     return mixed_value
 
@@ -344,3 +344,37 @@ def is_data_type_compatible_with(
 
     combination = find_type_to_hold_both_lossy(dtype, other)
     return other == combination
+
+
+def broadcast_shapes(shape1: Tuple[int, ...], shape2: Tuple[int, ...]) -> Optional[Tuple[int, ...]]:
+    """Broadcast two shapes into a single shape.
+
+    We are mimicing the exact semantics of broadcasting in numpy.
+    You can learn more about it here: https://numpy.org/doc/stable/user/theory.broadcasting.html
+
+    Args:
+        shape1 (Tuple[int, ...]): first shape to broadcast
+        shape2 (Tuple[int, ...]): second shape to broadcast
+
+    Returns:
+        Optional[Tuple[int, ...]]: None if the shapes are not broadcastable else broadcasted shape
+    """
+
+    result = []
+    for size1, size2 in zip(shape1[::-1], shape2[::-1]):
+        if size1 != size2 and size1 != 1 and size2 != 1 and size1 != 0 and size2 != 0:
+            return None
+
+        if size1 == 0 or size2 == 0:
+            result.append(0)
+        else:
+            result.append(max(size1, size2))
+
+    if len(result) < len(shape1):
+        for i in reversed(range(len(shape1) - len(result))):
+            result.append(shape1[i])
+    elif len(result) < len(shape2):
+        for i in reversed(range(len(shape2) - len(result))):
+            result.append(shape2[i])
+
+    return tuple(reversed(result))
