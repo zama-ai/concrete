@@ -15,7 +15,8 @@ using namespace mlir::zamalang;
 using namespace mlir::python::adaptors;
 
 /// Populate the hlfhe python module.
-void mlir::zamalang::python::populateDialectHLFHESubmodule(pybind11::module &m) {
+void mlir::zamalang::python::populateDialectHLFHESubmodule(
+    pybind11::module &m) {
   m.doc() = "HLFHE dialect Python native extension";
 
   mlir_type_subclass(m, "EncryptedIntegerType",

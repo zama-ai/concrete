@@ -9,7 +9,6 @@ config.target_triple = ""
 # Set the llvm
 config.environment['PATH'] = os.pathsep.join([
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "build", "bin"),
-    os.path.join(os.environ['LLVM_PROJECT'], "build", "bin"),
     config.environment['PATH']]
 )
 print(config.environment['PATH'])

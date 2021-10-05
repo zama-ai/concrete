@@ -1,4 +1,4 @@
-name: Docker image (ZamaLang)
+name: Docker image
 
 on:
   push:
@@ -19,21 +19,23 @@ jobs:
       
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       
       - name: login
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: build
-        run: docker build -t $IMAGE -f builders/Dockerfile.zamalang-env .
+        run: docker image build --no-cache --label "commit-sha=${{ github.sha }}" -t $IMAGE -f builders/Dockerfile.zamalang-env .
       
       - name: tag and publish
         run: |
-          docker tag $IMAGE $IMAGE:${{ github.sha }}
-          docker push $IMAGE:latest
-          docker push $IMAGE:${{ github.sha }}
+          docker image tag $IMAGE $IMAGE:${{ github.sha }}
+          docker image push $IMAGE:latest
+          docker image push $IMAGE:${{ github.sha }}
 
       - name: tag and publish release image
         if: github.event_name == 'release'
         run: |
-          docker tag $IMAGE $IMAGE:${{ github.event.release.tag_name }}
-          docker push $IMAGE:${{ github.event.release.tag_name }}
+          docker image tag $IMAGE $IMAGE:${{ github.event.release.tag_name }}
+          docker image push $IMAGE:${{ github.event.release.tag_name }}

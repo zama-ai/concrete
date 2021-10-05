@@ -1,5 +1,5 @@
-#include "DialectModules.h"
 #include "CompilerAPIModule.h"
+#include "DialectModules.h"
 
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/Registration.h"

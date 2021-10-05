@@ -1,5 +1,8 @@
+BUILD_DIR=./build
+
+
 build:
-	cmake -B build -GNinja ${LLVM_PROJECT}/llvm/ \
+	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
 	-DLLVM_ENABLE_PROJECTS=mlir \
 	-DLLVM_BUILD_EXAMPLES=OFF \
 	-DLLVM_TARGETS_TO_BUILD="host" \
@@ -12,30 +15,30 @@ build:
 	-DLLVM_EXTERNAL_ZAMALANG_SOURCE_DIR=.
 
 build-end-to-end-jit: build
-	cmake --build build --target end_to_end_jit_test
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
 
 zamacompiler: build
-	cmake --build build --target zamacompiler
+	cmake --build $(BUILD_DIR) --target zamacompiler
 
 python-bindings: build
-	cmake --build build --target ZamalangMLIRPythonModules ZamalangPythonModules
+	cmake --build $(BUILD_DIR) --target ZamalangMLIRPythonModules ZamalangPythonModules
 
 test-check: zamacompiler file-check not
-	./build/bin/llvm-lit -v tests/
+	$(BUILD_DIR)/bin/llvm-lit -v tests/
 
 test-end-to-end-jit: build-end-to-end-jit
-	./build/bin/end_to_end_jit_test
-
-test: test-check test-end-to-end-jit
+	$(BUILD_DIR)/bin/end_to_end_jit_test
 
 test-python: python-bindings
-	PYTHONPATH=${PYTHONPATH}:./build/tools/zamalang/python_packages/zamalang_core:./build/tools/zamalang/python_packages/zamalang_core/mlir/_mlir_libs/ LD_PRELOAD=./build/lib/libZamalangRuntime.so pytest -vs tests/python
+	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core/mlir/_mlir_libs/ LD_PRELOAD=$(BUILD_DIR)/lib/libZamalangRuntime.so pytest -vs tests/python
+
+test: test-check test-end-to-end-jit test-python
 
 # LLVM/MLIR dependencies
 
 all-deps: file-check not
 
 file-check:
-	cmake --build build/ --target FileCheck
+	cmake --build $(BUILD_DIR) --target FileCheck
 not:
-	cmake --build build/ --target not
+	cmake --build $(BUILD_DIR) --target not

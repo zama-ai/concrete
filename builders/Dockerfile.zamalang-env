@@ -1,9 +1,19 @@
-FROM qbozama/mlir:69c6ea9038e5f3ef91a3c5ab59fae3276f95628b
+FROM ubuntu:latest
 
-ENV PYTHONPATH=/llvm-project/build/python:/compiler/build/python:$PYTHONPATH
-
+RUN apt-get update
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-essential python3 python3-pip python3-setuptools ninja-build git zlib1g-dev
+RUN pip install numpy pybind11==2.6.2 PyYAML
+# Setup Concrete
 COPY --from=ghcr.io/zama-ai/concrete-api-env:latest /target/release /concrete/target/release
+ENV CONCRETE_PROJECT=/concrete
+# Setup LLVM
+COPY /llvm-project /llvm-project
+# Setup and build compiler
 COPY /compiler /compiler
 WORKDIR /compiler
-ENV CONCRETE_PROJECT=/concrete
-RUN mkdir -p build && make -B build && make -C build all zamacompiler
+RUN mkdir -p /build
+RUN make BUILD_DIR=/build -B build
+RUN make BUILD_DIR=/build zamacompiler python-bindings
+ENV PYTHONPATH "$PYTHONPATH:/build/tools/zamalang/python_packages/zamalang_core:/build/tools/zamalang/python_packages/zamalang_core/mlir/_mlir_libs/"
+ENV PATH "$PATH:/build/bin"
+ENV RT_LIB "/build/lib/libZamalangRuntime.so"
