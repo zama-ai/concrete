@@ -52,7 +52,11 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
         if isinstance(node, Input):
             what_to_print = node.input_name
         elif isinstance(node, Constant):
-            what_to_print = f"Constant({node.constant_data})"
+            content = str(node.constant_data).replace("\n", "")
+            # if content is longer than 25 chars, only show the first and the last 10 chars of it
+            # 25 is selected using the spaces available before data type information
+            to_show = f"{content[:10]} ... {content[-10:]}" if len(content) > 25 else content
+            what_to_print = f"Constant({to_show})"
         else:
 
             base_name = node.__class__.__name__
