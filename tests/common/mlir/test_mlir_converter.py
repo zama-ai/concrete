@@ -267,6 +267,36 @@ def test_mlir_converter_dot_between_vectors(func, args_dict, args_ranges):
     compiler.round_trip(mlir_result)
 
 
+def test_mlir_converter_dot_vector_and_constant():
+    """Test the conversion to MLIR by calling the parser from the compiler"""
+
+    def left_dot_with_constant(x):
+        return numpy.dot(x, numpy.array([1, 2]))
+
+    def right_dot_with_constant(x):
+        return numpy.dot(numpy.array([1, 2]), x)
+
+    left_graph = compile_numpy_function_into_op_graph(
+        left_dot_with_constant,
+        {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2,))},
+        [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
+    )
+    left_converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    left_mlir = left_converter.convert(left_graph)
+
+    right_graph = compile_numpy_function_into_op_graph(
+        right_dot_with_constant,
+        {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2,))},
+        [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
+    )
+    right_converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    right_mlir = right_converter.convert(right_graph)
+
+    # testing that this doesn't raise an error
+    compiler.round_trip(left_mlir)
+    compiler.round_trip(right_mlir)
+
+
 def test_concrete_encrypted_integer_to_mlir_type():
     """Test conversion of EncryptedScalar into MLIR"""
     value = EncryptedScalar(Integer(7, is_signed=False))

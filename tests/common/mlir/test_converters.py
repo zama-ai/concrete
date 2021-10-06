@@ -4,7 +4,7 @@ import pytest
 from concrete.common.data_types.floats import Float
 from concrete.common.data_types.integers import Integer
 from concrete.common.mlir.converters import add, apply_lut, constant, dot, mul, sub
-from concrete.common.values import ClearScalar, EncryptedScalar
+from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar
 
 
 class MockNode:
@@ -30,14 +30,19 @@ def test_failing_converter(converter):
 
 def test_fail_non_integer_const():
     """Test failing constant converter with non-integer"""
-    with pytest.raises(TypeError, match=r"Don't support non-integer constants"):
+    with pytest.raises(TypeError, match=r"Don't support .* constants"):
         constant(MockNode(outputs=[ClearScalar(Float(32))]), None, None, None)
+
+    with pytest.raises(TypeError, match=r"Don't support .* constants"):
+        constant(MockNode(outputs=[ClearTensor(Float(32), shape=(2,))]), None, None, None)
 
 
 def test_fail_signed_integer_const():
     """Test failing constant converter with non-integer"""
     with pytest.raises(TypeError, match=r"Don't support signed constant integer"):
         constant(MockNode(outputs=[ClearScalar(Integer(8, True))]), None, None, None)
+    with pytest.raises(TypeError, match=r"Don't support signed constant integer tensor"):
+        constant(MockNode(outputs=[ClearTensor(Integer(8, True), shape=(2,))]), None, None, None)
 
 
 @pytest.mark.parametrize(

@@ -161,11 +161,11 @@ def test_compile_and_run_correctness(function, input_ranges, list_of_arg_names):
             (0, 5),
         ),
         pytest.param(
-            8,
+            6,
             (0, 4),
         ),
         pytest.param(
-            16,
+            10,
             (0, 3),
         ),
     ],
@@ -173,18 +173,22 @@ def test_compile_and_run_correctness(function, input_ranges, list_of_arg_names):
 def test_compile_and_run_dot_correctness(size, input_range):
     """Test correctness of results when running a compiled function"""
 
-    def data_gen(input_range, size):
-        for _ in range(1000):
-            low, high = input_range
-            args = [
-                numpy.array([random.randint(low, high) for _ in range(size)]) for __ in range(2)
-            ]
+    low, high = input_range
+    shape = (size,)
 
-            yield args
+    inputset = [
+        (numpy.zeros(shape, dtype=numpy.uint32), numpy.zeros(shape, dtype=numpy.uint32)),
+        (
+            numpy.ones(shape, dtype=numpy.uint32) * high,
+            numpy.ones(shape, dtype=numpy.uint32) * high,
+        ),
+    ]
+    for _ in range(8):
+        inputset.append((numpy.random.randint(low, high + 1), numpy.random.randint(low, high + 1)))
 
     function_parameters = {
-        "x": EncryptedTensor(Integer(64, False), (size,)),
-        "y": ClearTensor(Integer(64, False), (size,)),
+        "x": EncryptedTensor(Integer(64, False), shape),
+        "y": ClearTensor(Integer(64, False), shape),
     }
 
     def function(x, y):
@@ -193,12 +197,69 @@ def test_compile_and_run_dot_correctness(size, input_range):
     compiler_engine = compile_numpy_function(
         function,
         function_parameters,
-        data_gen(input_range, size),
+        inputset,
     )
 
-    low, high = input_range
     args = [[random.randint(low, high) for _ in range(size)] for __ in range(2)]
     assert compiler_engine.run(*args) == function(*args)
+
+
+@pytest.mark.parametrize(
+    "size,input_range",
+    [
+        pytest.param(
+            1,
+            (0, 8),
+        ),
+        pytest.param(
+            4,
+            (0, 5),
+        ),
+        pytest.param(
+            6,
+            (0, 4),
+        ),
+        pytest.param(
+            10,
+            (0, 3),
+        ),
+    ],
+)
+def test_compile_and_run_constant_dot_correctness(size, input_range):
+    """Test correctness of results when running a compiled function"""
+
+    low, high = input_range
+    shape = (size,)
+
+    inputset = [
+        (numpy.zeros(shape, dtype=numpy.uint32),),
+        (numpy.ones(shape, dtype=numpy.uint32) * high,),
+    ]
+    for _ in range(8):
+        inputset.append((numpy.random.randint(low, high + 1),))
+
+    constant = numpy.random.randint(low, high + 1, size=shape)
+
+    def left(x):
+        return numpy.dot(x, constant)
+
+    def right(x):
+        return numpy.dot(constant, x)
+
+    left_circuit = compile_numpy_function(
+        left,
+        {"x": EncryptedTensor(Integer(64, False), shape)},
+        inputset,
+    )
+    right_circuit = compile_numpy_function(
+        left,
+        {"x": EncryptedTensor(Integer(64, False), shape)},
+        inputset,
+    )
+
+    args = (numpy.random.randint(low, high + 1, size=shape).tolist(),)
+    assert left_circuit.run(*args) == left(*args)
+    assert right_circuit.run(*args) == right(*args)
 
 
 def test_compile_function_with_direct_tlu():

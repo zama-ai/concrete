@@ -11,18 +11,19 @@ from typing import cast
 # pylint: disable=no-name-in-module,no-member
 import numpy as np
 from mlir.dialects import std as std_dialect
-from mlir.ir import DenseElementsAttr, IntegerAttr, IntegerType, RankedTensorType
+from mlir.ir import Attribute, DenseElementsAttr, IntegerAttr, IntegerType, RankedTensorType
 from zamalang.dialects import hlfhe
 
-from ...common.data_types.integers import Integer
 from ..data_types.dtypes_helpers import (
     value_is_clear_scalar_integer,
     value_is_clear_tensor_integer,
     value_is_encrypted_scalar_unsigned_integer,
     value_is_encrypted_tensor_integer,
 )
+from ..data_types.integers import Integer
 from ..debugging.custom_assert import custom_assert
 from ..representation.intermediate import Add, ArbitraryFunction, Constant, Dot, Mul, Sub
+from ..values import TensorValue
 
 
 def add(node, preds, ir_to_mlir_node, ctx):
@@ -123,14 +124,44 @@ def _mul_eint_int(node, preds, ir_to_mlir_node, ctx):
 
 
 def constant(node, _, __, ctx):
-    """Convert a constant inputs."""
-    if not value_is_clear_scalar_integer(node.outputs[0]):
-        raise TypeError("Don't support non-integer constants")
-    dtype = cast(Integer, node.outputs[0].dtype)
-    if dtype.is_signed:
-        raise TypeError("Don't support signed constant integer")
-    int_type = IntegerType.get_signless(dtype.bit_width, context=ctx)
-    return std_dialect.ConstantOp(int_type, IntegerAttr.get(int_type, node.constant_data)).result
+    """Convert a constant input."""
+    value = node.outputs[0]
+
+    if value_is_clear_scalar_integer(value):
+        value = cast(TensorValue, value)
+
+        dtype = cast(Integer, value.dtype)
+        if dtype.is_signed:
+            raise TypeError("Don't support signed constant integer")
+        data = node.constant_data
+
+        int_type = IntegerType.get_signless(dtype.bit_width, context=ctx)
+        return std_dialect.ConstantOp(int_type, IntegerAttr.get(int_type, data)).result
+
+    if value_is_clear_tensor_integer(value):
+        value = cast(TensorValue, value)
+
+        dtype = cast(Integer, value.dtype)
+        if dtype.is_signed:
+            raise TypeError("Don't support signed constant integer tensor")
+        data = node.constant_data
+
+        int_type = IntegerType.get_signless(dtype.bit_width, context=ctx)
+        vec_type = RankedTensorType.get(value.shape, int_type)
+
+        # usage of `Attribute.parse` is the result of some limitations in the MLIR module
+        # provided by LLVM
+
+        # `DenseElementsAttr` should have been used instead but it's impossible to assign
+        # custom bit-widths using it (e.g., uint5)
+
+        # since we coudn't create a `DenseElementsAttr` with a custom bit width using python api
+        # we use `Attribute.parse` to let the underlying library do it by itself
+
+        value_attr = Attribute.parse(f"dense<{str(data.tolist())}> : {vec_type}")
+        return std_dialect.ConstantOp(vec_type, value_attr).result
+
+    raise TypeError(f"Don't support {value} constants")
 
 
 def apply_lut(node, preds, ir_to_mlir_node, ctx):
