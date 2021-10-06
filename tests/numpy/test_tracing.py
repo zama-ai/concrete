@@ -406,8 +406,11 @@ def test_tracing_astype(
         ),
     ],
 )
+# numpy.logical_not is removed from the following test since it is expecting inputs which are
+# integer only, as opposed to other functions in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC
 @pytest.mark.parametrize(
-    "function_to_trace_def", [f for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1]
+    "function_to_trace_def",
+    [f for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1 if f != numpy.logical_not],
 )
 def test_trace_numpy_supported_unary_ufuncs(inputs, expected_output_node, function_to_trace_def):
     """Function to trace supported numpy ufuncs"""

@@ -259,13 +259,13 @@ class NPTracer(BaseTracer):
         numpy.arctan,
         numpy.arctan2,
         numpy.arctanh,
-        # numpy.bitwise_and,
-        # numpy.bitwise_or,
-        # numpy.bitwise_xor,
+        numpy.bitwise_and,
+        numpy.bitwise_or,
+        numpy.bitwise_xor,
         numpy.cbrt,
         numpy.ceil,
         # numpy.conjugate,
-        # numpy.copysign,
+        numpy.copysign,
         numpy.cos,
         numpy.cosh,
         numpy.deg2rad,
@@ -278,51 +278,51 @@ class NPTracer(BaseTracer):
         numpy.fabs,
         numpy.float_power,
         numpy.floor,
-        # numpy.floor_divide,
-        # numpy.fmax,
-        # numpy.fmin,
-        # numpy.fmod,
+        numpy.floor_divide,
+        numpy.fmax,
+        numpy.fmin,
+        numpy.fmod,
         # numpy.frexp,
-        # numpy.gcd,
+        numpy.gcd,
         # numpy.greater,
         # numpy.greater_equal,
-        # numpy.heaviside,
-        # numpy.hypot,
+        numpy.heaviside,
+        numpy.hypot,
         # numpy.invert,
         numpy.isfinite,
         numpy.isinf,
         numpy.isnan,
         # numpy.isnat,
-        # numpy.lcm,
-        # numpy.ldexp,
-        # numpy.left_shift,
+        numpy.lcm,
+        numpy.ldexp,
+        numpy.left_shift,
         # numpy.less,
         # numpy.less_equal,
         numpy.log,
         numpy.log10,
         numpy.log1p,
         numpy.log2,
-        # numpy.logaddexp,
-        # numpy.logaddexp2,
-        # numpy.logical_and,
-        # numpy.logical_not,
-        # numpy.logical_or,
-        # numpy.logical_xor,
+        numpy.logaddexp,
+        numpy.logaddexp2,
+        numpy.logical_and,
+        numpy.logical_not,
+        numpy.logical_or,
+        numpy.logical_xor,
         # numpy.matmul,
-        # numpy.maximum,
-        # numpy.minimum,
+        numpy.maximum,
+        numpy.minimum,
         # numpy.modf,
         # numpy.multiply,
         numpy.negative,
-        # numpy.nextafter,
+        numpy.nextafter,
         # numpy.not_equal,
         numpy.positive,
-        # numpy.power,
+        numpy.power,
         numpy.rad2deg,
         numpy.radians,
         numpy.reciprocal,
-        # numpy.remainder,
-        # numpy.right_shift,
+        numpy.remainder,
+        numpy.right_shift,
         numpy.rint,
         numpy.sign,
         numpy.signbit,
@@ -334,7 +334,7 @@ class NPTracer(BaseTracer):
         # numpy.subtract,
         numpy.tan,
         numpy.tanh,
-        # numpy.true_divide,
+        numpy.true_divide,
         numpy.trunc,
     ]
 
@@ -378,9 +378,18 @@ NPTracer.UFUNC_ROUTING = {
     fun: _get_unary_fun(fun) for fun in NPTracer.LIST_OF_SUPPORTED_UFUNC if fun.nin == 1
 }
 
-NPTracer.UFUNC_ROUTING[numpy.arctan2] = _get_binary_fun(numpy.arctan2)
-NPTracer.UFUNC_ROUTING[numpy.float_power] = _get_binary_fun(numpy.float_power)
+NPTracer.UFUNC_ROUTING.update(
+    {fun: _get_binary_fun(fun) for fun in NPTracer.LIST_OF_SUPPORTED_UFUNC if fun.nin == 2}
+)
 
+list_of_not_supported = [
+    (ufunc.__name__, ufunc.nin)
+    for ufunc in NPTracer.LIST_OF_SUPPORTED_UFUNC
+    if ufunc.nin not in [1, 2]
+]
+
+custom_assert(len(list_of_not_supported) == 0, f"Not supported nin's, {list_of_not_supported}")
+del list_of_not_supported
 
 # We are adding initial support for `np.array(...)` +,-,* `BaseTracer`
 # (note that this is not the proper complete handling of these functions)
