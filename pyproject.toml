@@ -38,9 +38,10 @@ py-cpuinfo = "^8.0.0"
 python-dotenv = "^0.19.0"
 sphinx-copybutton = "^0.4.0"
 nbmake = "^0.9"
-python-semantic-release = "^7.19.2"
+python-semantic-release = "7.19.2"
 semver = "^2.13.0"
 tomlkit = "^0.7.0"
+GitPython = "^3.1.24"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

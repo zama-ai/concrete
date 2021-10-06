@@ -228,3 +228,9 @@ set_version:
 check_version_coherence:
 	poetry run python ./script/make_utils/version_utils.py check-version
 .PHONY: check_version_coherence
+
+changelog: check_version_coherence
+	PROJECT_VER=($$(poetry version));\
+	PROJECT_VER="$${PROJECT_VER[1]}";\
+	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
+.PHONY: changelog

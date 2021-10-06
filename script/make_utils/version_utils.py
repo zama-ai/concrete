@@ -13,9 +13,7 @@ from semver import VersionInfo
 
 def strip_leading_v(version_str: str):
     """Strip leading v of a version which is not SemVer compatible."""
-    if version_str and version_str[0] == "v":
-        return version_str[1:]
-    return version_str
+    return version_str[1:] if version_str.startswith("v") else version_str
 
 
 def islatest(args):
