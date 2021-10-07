@@ -89,8 +89,10 @@ jobs:
         run: |
           PREFLIGHT_IMAGE_TAG=$(echo ${{ github.ref }} | sed -e 's/\//-/g')
           PREFLIGHT_IMAGE="${PREFLIGHT_IMAGE_BASE}-${PREFLIGHT_IMAGE_TAG}"
+          LABEL_SHA1=$(git rev-parse HEAD)
           echo "::set-output name=image::${PREFLIGHT_IMAGE}"
           echo "PREFLIGHT_IMAGE=${PREFLIGHT_IMAGE}" >> "$GITHUB_ENV"
+          echo "LABEL_SHA1=${LABEL_SHA1}" >> "$GITHUB_ENV"
       - name: Set up Docker Buildx
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
         id: buildx
@@ -109,9 +111,11 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: docker/Dockerfile.concretefhe-env
+          no-cache: true
           push: true
           tags: "${{ env.PREFLIGHT_IMAGE }}"
-          no-cache: true
+          labels: |
+            concretefhe_sha=${{ env.LABEL_SHA1 }}
       - name: Set notification report
         id: report
         if: ${{ always() }}
@@ -390,11 +394,12 @@ jobs:
       - name: Pull preflight image
         run: |
           docker pull "${PREFLIGHT_IMAGE}"
-      - name: Retag to latest and epoch-sha1 and push
+      - name: Retag to latest and zamalang_sha1-concretefhe_sha1 and push
         run: |
-          EPOCH=$(date +%s)
           SHA1=$(git rev-parse HEAD)
-          TAGGED_IMAGE="${BASE_IMAGE}:${EPOCH}-${SHA1}"
+          ZAMALANG_SHA1=$(docker inspect "${PREFLIGHT_IMAGE}" | \
+          jq -rc '.[0].ContainerConfig.Labels["commit-sha"]')
+          TAGGED_IMAGE="${BASE_IMAGE}:${ZAMALANG_SHA1}-${SHA1}"
           docker tag "${PREFLIGHT_IMAGE}" "${LATEST_IMAGE}"
           docker tag "${PREFLIGHT_IMAGE}" "${TAGGED_IMAGE}"
           docker push "${LATEST_IMAGE}"
