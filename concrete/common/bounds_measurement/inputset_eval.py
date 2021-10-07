@@ -59,6 +59,7 @@ def _print_input_coherency_warnings(
     parameters: Dict[str, Any],
     parameter_index_to_parameter_name: Dict[int, str],
     get_base_value_for_constant_data_func: Callable[[Any], Any],
+    treat_warnings_as_errors: bool,
 ):
     """Print coherency warning for `input_to_check` against `parameters`.
 
@@ -84,11 +85,20 @@ def _print_input_coherency_warnings(
         parameters,
         get_base_value_for_constant_data_func,
     )
-    for problem in problems:
-        sys.stderr.write(
-            f"Warning: Input #{current_input_index} (0-indexed) "
-            f"is not coherent with the hinted parameters ({problem})\n",
+    messages = [
+        (
+            f"Input #{current_input_index} (0-indexed) "
+            f"is not coherent with the hinted parameters ({problem})\n"
         )
+        for problem in problems
+    ]
+
+    if len(messages) > 0:
+        if treat_warnings_as_errors:
+            raise ValueError(", ".join(messages))
+
+        for message in messages:
+            sys.stderr.write(f"Warning: {message}")
 
 
 def eval_op_graph_bounds_on_inputset(
@@ -161,6 +171,7 @@ def eval_op_graph_bounds_on_inputset(
         parameters,
         parameter_index_to_parameter_name,
         get_base_value_for_constant_data_func,
+        compilation_configuration.treat_warnings_as_errors,
     )
 
     first_output = op_graph.evaluate(current_input_data)
@@ -184,6 +195,7 @@ def eval_op_graph_bounds_on_inputset(
                 parameters,
                 parameter_index_to_parameter_name,
                 get_base_value_for_constant_data_func,
+                compilation_configuration.treat_warnings_as_errors,
             )
 
         current_output = op_graph.evaluate(current_input_data)

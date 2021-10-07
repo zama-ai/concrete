@@ -445,3 +445,31 @@ def test_eval_op_graph_bounds_on_non_conformant_numpy_inputset_check_all(capsys)
         "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
         "but got ClearTensor<Integer<unsigned, 3 bits>, shape=(3,)> which is not compatible)\n"
     )
+
+
+def test_eval_op_graph_bounds_on_non_conformant_inputset_treating_warnings_as_errors():
+    """Test function for eval_op_graph_bounds_on_inputset with non conformant inputset and errors"""
+
+    def f(x, y):
+        return np.dot(x, y)
+
+    x = EncryptedTensor(UnsignedInteger(2), (3,))
+    y = ClearTensor(UnsignedInteger(2), (3,))
+
+    inputset = [
+        (np.array([2, 1, 3, 1]), np.array([1, 2, 1, 1])),
+        (np.array([3, 3, 3]), np.array([3, 3, 5])),
+    ]
+
+    op_graph = trace_numpy_function(f, {"x": x, "y": y})
+
+    with pytest.raises(ValueError, match=".* is not coherent with the hinted parameters .*"):
+        configuration = CompilationConfiguration(treat_warnings_as_errors=True)
+        eval_op_graph_bounds_on_inputset(
+            op_graph,
+            inputset,
+            compilation_configuration=configuration,
+            min_func=numpy_min_func,
+            max_func=numpy_max_func,
+            get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+        )

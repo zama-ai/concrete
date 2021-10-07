@@ -333,6 +333,20 @@ def test_small_inputset():
     )
 
 
+def test_small_inputset_treat_warnings_as_errors():
+    """Test function compile_numpy_function_into_op_graph with an unacceptably small inputset"""
+    with pytest.raises(ValueError, match=".* inputset contains too few inputs .*"):
+        compile_numpy_function_into_op_graph(
+            lambda x: x + 42,
+            {"x": EncryptedScalar(Integer(5, is_signed=False))},
+            [(0,), (3,)],
+            CompilationConfiguration(
+                dump_artifacts_on_unexpected_failures=False,
+                treat_warnings_as_errors=True,
+            ),
+        )
+
+
 @pytest.mark.parametrize(
     "function,params,shape,ref_graph_str",
     [

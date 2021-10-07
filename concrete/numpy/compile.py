@@ -137,11 +137,16 @@ def _compile_numpy_function_into_op_graph_internal(
 
     minimum_required_inputset_size = min(inputset_size_upper_limit, 10)
     if inputset_size < minimum_required_inputset_size:
-        sys.stderr.write(
-            f"Warning: Provided inputset contains too few inputs "
+        message = (
+            f"Provided inputset contains too few inputs "
             f"(it should have had at least {minimum_required_inputset_size} "
             f"but it only had {inputset_size})\n"
         )
+
+        if compilation_configuration.treat_warnings_as_errors:
+            raise ValueError(message)
+
+        sys.stderr.write(f"Warning: {message}")
 
     # Add the bounds as an artifact
     compilation_artifacts.add_final_operation_graph_bounds(node_bounds)
