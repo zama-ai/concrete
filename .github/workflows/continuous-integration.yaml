@@ -398,7 +398,7 @@ jobs:
         run: |
           SHA1=$(git rev-parse HEAD)
           ZAMALANG_SHA1=$(docker inspect "${PREFLIGHT_IMAGE}" | \
-          jq -rc '.[0].ContainerConfig.Labels["commit-sha"]')
+          jq -rc '.[0].Config.Labels["commit-sha"]')
           TAGGED_IMAGE="${BASE_IMAGE}:${ZAMALANG_SHA1}-${SHA1}"
           docker tag "${PREFLIGHT_IMAGE}" "${LATEST_IMAGE}"
           docker tag "${PREFLIGHT_IMAGE}" "${TAGGED_IMAGE}"
