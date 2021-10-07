@@ -249,9 +249,17 @@ class NPTracer(BaseTracer):
 
     # Supported functions are either univariate or bivariate for which one of the two
     # sources is a constant
+    #
+    # numpy.add, numpy.multiply and numpy.subtract are not there since already managed
+    # by leveled operations
+    #
+    # numpy.conjugate is not there since working on complex numbers
+    #
+    # numpy.isnat is not there since it is about timings
+    #
+    # numpy.divmod, numpy.modf and numpy.frexp are not there since output two values
     LIST_OF_SUPPORTED_UFUNC: List[numpy.ufunc] = [
         numpy.absolute,
-        # numpy.add,
         numpy.arccos,
         numpy.arccosh,
         numpy.arcsin,
@@ -264,14 +272,12 @@ class NPTracer(BaseTracer):
         numpy.bitwise_xor,
         numpy.cbrt,
         numpy.ceil,
-        # numpy.conjugate,
         numpy.copysign,
         numpy.cos,
         numpy.cosh,
         numpy.deg2rad,
         numpy.degrees,
-        # numpy.divmod,
-        # numpy.equal,
+        numpy.equal,
         numpy.exp,
         numpy.exp2,
         numpy.expm1,
@@ -282,22 +288,20 @@ class NPTracer(BaseTracer):
         numpy.fmax,
         numpy.fmin,
         numpy.fmod,
-        # numpy.frexp,
         numpy.gcd,
-        # numpy.greater,
-        # numpy.greater_equal,
+        numpy.greater,
+        numpy.greater_equal,
         numpy.heaviside,
         numpy.hypot,
-        # numpy.invert,
+        numpy.invert,
         numpy.isfinite,
         numpy.isinf,
         numpy.isnan,
-        # numpy.isnat,
         numpy.lcm,
         numpy.ldexp,
         numpy.left_shift,
-        # numpy.less,
-        # numpy.less_equal,
+        numpy.less,
+        numpy.less_equal,
         numpy.log,
         numpy.log10,
         numpy.log1p,
@@ -311,11 +315,9 @@ class NPTracer(BaseTracer):
         # numpy.matmul,
         numpy.maximum,
         numpy.minimum,
-        # numpy.modf,
-        # numpy.multiply,
         numpy.negative,
         numpy.nextafter,
-        # numpy.not_equal,
+        numpy.not_equal,
         numpy.positive,
         numpy.power,
         numpy.rad2deg,
@@ -331,7 +333,6 @@ class NPTracer(BaseTracer):
         numpy.spacing,
         numpy.sqrt,
         numpy.square,
-        # numpy.subtract,
         numpy.tan,
         numpy.tanh,
         numpy.true_divide,

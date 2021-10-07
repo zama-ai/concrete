@@ -62,6 +62,7 @@ LIST_OF_UFUNC_WHOSE_OUTPUT_IS_BOOL = set(
         numpy.isinf,
         numpy.isnan,
         numpy.signbit,
+        numpy.logical_not,
     ]
 )
 
@@ -406,14 +407,16 @@ def test_tracing_astype(
         ),
     ],
 )
-# numpy.logical_not is removed from the following test since it is expecting inputs which are
-# integer only, as opposed to other functions in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC
 @pytest.mark.parametrize(
     "function_to_trace_def",
-    [f for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1 if f != numpy.logical_not],
+    [f for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1],
 )
 def test_trace_numpy_supported_unary_ufuncs(inputs, expected_output_node, function_to_trace_def):
     """Function to trace supported numpy ufuncs"""
+
+    # numpy.invert is expecting inputs which are integer only
+    if function_to_trace_def == numpy.invert and not isinstance(inputs["x"].dtype, Integer):
+        return
 
     # We really need a lambda (because numpy functions are not playing
     # nice with inspect.signature), but pylint and flake8 are not happy
