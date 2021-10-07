@@ -2,6 +2,8 @@
 
 import random
 
+from common import BENCHMARK_CONFIGURATION
+
 import concrete.numpy as hnp
 
 
@@ -16,7 +18,8 @@ def main():
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x, "y": y},
-        [(6, 1), (1, 4), (5, 3), (2, 0), (7, 7)],
+        [(random.randint(0, 7), random.randint(0, 7)) for _ in range(32)],
+        compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # Measure: End
 

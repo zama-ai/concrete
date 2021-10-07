@@ -2,13 +2,40 @@
 
 import numpy as np
 import torch
+from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
 
 
 def main():
-    x = torch.tensor([[1, 1], [1, 2], [2, 1], [4, 1], [3, 2], [4, 2]]).float()
-    y = torch.tensor([[0], [0], [0], [1], [1], [1]]).float()
+    x = torch.tensor(
+        [
+            [1, 1],
+            [1, 1.5],
+            [1.5, 1.2],
+            [1, 2],
+            [2, 1],
+            [4, 1],
+            [4, 1.5],
+            [3.5, 1.8],
+            [3, 2],
+            [4, 2],
+        ]
+    ).float()
+    y = torch.tensor(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+            [1],
+            [1],
+            [1],
+            [1],
+        ]
+    ).float()
 
     class Model(torch.nn.Module):
         def __init__(self, n):
@@ -218,6 +245,7 @@ def main():
             "x_1": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits)),
         },
         inputset,
+        compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # Measure: End
 

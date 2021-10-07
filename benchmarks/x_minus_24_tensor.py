@@ -1,6 +1,7 @@
 # Target: x - 24 (Tensor)
 
 import numpy as np
+from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
 
@@ -11,15 +12,15 @@ def main():
 
     x = hnp.EncryptedTensor(hnp.UnsignedInteger(6), shape=(3,))
 
-    inputset = [
-        (np.array([36, 50, 24]),),
-        (np.array([41, 60, 51]),),
-        (np.array([25, 31, 24]),),
-        (np.array([34, 47, 27]),),
-    ]
+    inputset = [(np.random.randint(0, 2 ** 5, size=(3,)) + 24,) for _ in range(32)]
 
     # Measure: Compilation Time (ms)
-    engine = hnp.compile_numpy_function(function_to_compile, {"x": x}, inputset)
+    engine = hnp.compile_numpy_function(
+        function_to_compile,
+        {"x": x},
+        inputset,
+        compilation_configuration=BENCHMARK_CONFIGURATION,
+    )
     # Measure: End
 
     inputs = []

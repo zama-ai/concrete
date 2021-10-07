@@ -3,6 +3,7 @@
 import random
 
 import numpy as np
+from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
 
@@ -12,17 +13,17 @@ def main():
         return x - y
 
     x = hnp.EncryptedTensor(hnp.UnsignedInteger(3), shape=(3,))
-    y = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
+    y = hnp.EncryptedScalar(hnp.UnsignedInteger(2))
 
-    inputset = [
-        (np.array([6, 2, 4]), 2),
-        (np.array([1, 3, 1]), 1),
-        (np.array([5, 4, 7]), 4),
-        (np.array([5, 7, 6]), 5),
-    ]
+    inputset = [(np.random.randint(4, 8, size=(3,)), random.randint(0, 3)) for _ in range(32)]
 
     # Measure: Compilation Time (ms)
-    engine = hnp.compile_numpy_function(function_to_compile, {"x": x, "y": y}, inputset)
+    engine = hnp.compile_numpy_function(
+        function_to_compile,
+        {"x": x, "y": y},
+        inputset,
+        compilation_configuration=BENCHMARK_CONFIGURATION,
+    )
     # Measure: End
 
     inputs = []

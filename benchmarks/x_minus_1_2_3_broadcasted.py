@@ -1,6 +1,7 @@
 # Target: x - [1, 2, 3] (Broadcasted)
 
 import numpy as np
+from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
 
@@ -12,14 +13,16 @@ def main():
     x = hnp.EncryptedTensor(hnp.UnsignedInteger(3), shape=(2, 3))
 
     inputset = [
-        (np.array([[4, 7, 7], [6, 2, 4]]),),
-        (np.array([[6, 2, 4], [1, 3, 1]]),),
-        (np.array([[6, 2, 4], [5, 7, 5]]),),
-        (np.array([[5, 7, 5], [4, 7, 7]]),),
+        (np.random.randint(0, 2 ** 2, size=(2, 3)) + np.array([1, 2, 3]),) for _ in range(32)
     ]
 
     # Measure: Compilation Time (ms)
-    engine = hnp.compile_numpy_function(function_to_compile, {"x": x}, inputset)
+    engine = hnp.compile_numpy_function(
+        function_to_compile,
+        {"x": x},
+        inputset,
+        compilation_configuration=BENCHMARK_CONFIGURATION,
+    )
     # Measure: End
 
     inputs = []

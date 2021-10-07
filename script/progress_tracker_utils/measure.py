@@ -261,7 +261,8 @@ def main():
     scripts = list(base.glob("*.py"))
 
     # Create a directory to store temporary scripts
-    os.makedirs(".benchmarks/scripts", exist_ok=True)
+    shutil.rmtree(".benchmarks/scripts", ignore_errors=True)
+    shutil.copytree(base, ".benchmarks/scripts")
 
     # Process each script under the base directory
     for path in scripts:

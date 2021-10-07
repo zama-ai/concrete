@@ -1,6 +1,7 @@
 # Target: x + y (Broadcasted Tensors)
 
 import numpy as np
+from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
 
@@ -13,14 +14,17 @@ def main():
     y = hnp.EncryptedTensor(hnp.UnsignedInteger(3), shape=(2, 3))
 
     inputset = [
-        (np.array([6, 2, 4]), np.array([[5, 1, 2], [0, 7, 7]])),
-        (np.array([1, 3, 1]), np.array([[0, 7, 7], [6, 2, 4]])),
-        (np.array([5, 1, 2]), np.array([[6, 2, 4], [1, 3, 1]])),
-        (np.array([0, 7, 7]), np.array([[1, 3, 1], [5, 1, 2]])),
+        (np.random.randint(0, 2 ** 3, size=(3,)), np.random.randint(0, 2 ** 3, size=(2, 3)))
+        for _ in range(32)
     ]
 
     # Measure: Compilation Time (ms)
-    engine = hnp.compile_numpy_function(function_to_compile, {"x": x, "y": y}, inputset)
+    engine = hnp.compile_numpy_function(
+        function_to_compile,
+        {"x": x, "y": y},
+        inputset,
+        compilation_configuration=BENCHMARK_CONFIGURATION,
+    )
     # Measure: End
 
     inputs = []

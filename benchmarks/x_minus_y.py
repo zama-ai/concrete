@@ -3,6 +3,8 @@
 import itertools
 import random
 
+from common import BENCHMARK_CONFIGURATION
+
 import concrete.numpy as hnp
 
 
@@ -16,7 +18,12 @@ def main():
     inputset = itertools.product(range(4, 8), range(0, 4))
 
     # Measure: Compilation Time (ms)
-    engine = hnp.compile_numpy_function(function_to_compile, {"x": x, "y": y}, inputset)
+    engine = hnp.compile_numpy_function(
+        function_to_compile,
+        {"x": x, "y": y},
+        inputset,
+        compilation_configuration=BENCHMARK_CONFIGURATION,
+    )
     # Measure: End
 
     inputs = []

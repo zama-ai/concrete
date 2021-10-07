@@ -5,13 +5,16 @@
 # pylint: disable=C0301
 
 import numpy as np
+from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
 
 
 def main():
-    x = np.array([[130], [110], [100], [145], [160], [185], [200], [80], [50]], dtype=np.float32)
-    y = np.array([325, 295, 268, 400, 420, 500, 520, 220, 120], dtype=np.float32)
+    x = np.array(
+        [[69], [130], [110], [100], [145], [160], [185], [200], [80], [50]], dtype=np.float32
+    )
+    y = np.array([181, 325, 295, 268, 400, 420, 500, 520, 220, 120], dtype=np.float32)
 
     class Model:
         w = None
@@ -150,6 +153,7 @@ def main():
         function_to_compile,
         {"x_0": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits))},
         inputset,
+        compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # Measure: End
 
