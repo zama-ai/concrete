@@ -235,6 +235,17 @@ jobs:
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         run: |
           make docs
+      - name: Generate release changelog
+        id: changelog
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && steps.install-deps.outcome == 'success' && !cancelled() }}
+        run: |
+          GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
+          CHANGELOG_FILE="CHANGELOG_${GIT_TAG}.md"
+          echo "::set-output name=changelog-file::${CHANGELOG_FILE}"
+          poetry run python ./script/make_utils/changelog_helper.py \
+          --to-ref "${GIT_TAG}" \
+          --to-ref-must-have-tag \
+          --ancestor-must-have-tag > "${CHANGELOG_FILE}"
       - name: Conformance status
         id: conformance
         if: ${{ always() && !cancelled() }}
@@ -245,13 +256,18 @@ jobs:
             echo "Conformance failed, check logs"
             exit 1
           fi
-
       - name: Archive docs artifacts
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
         with:
           name: html-docs
           path: docs/_build/html
+      - name: Upload changelog artifacts
+        if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+        with:
+          name: changelog
+          path: ${{ steps.changelog.outputs.changelog-file }}
       - name: PyTest Source Code
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
