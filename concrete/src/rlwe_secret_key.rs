@@ -1,7 +1,4 @@
 use super::{read_from_file, write_to_file};
-use concrete_core::crypto::GlweDimension;
-use concrete_core::math::polynomial::PolynomialSize;
-use concrete_core::math::random::RandomGenerator;
 use concrete_core::{
     crypto::secret::{GlweSecretKey, LweSecretKey},
     math::tensor::IntoTensor,
@@ -9,10 +6,13 @@ use concrete_core::{
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;
+use concrete_commons::key_kinds::BinaryKeyKind;
+use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+use concrete_core::crypto::secret::generators::SecretRandomGenerator;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct RLWESecretKey {
-    pub val: GlweSecretKey<Vec<bool>>,
+    pub val: GlweSecretKey<BinaryKeyKind, Vec<u64>> ,
     pub polynomial_size: usize,
     pub dimension: usize,
     pub std_dev: f64,
@@ -25,10 +25,10 @@ impl RLWESecretKey {
     /// # Output
     /// * a new RLWESecretKey
     pub fn new(params: &crate::RLWEParams) -> RLWESecretKey {
-        let val = GlweSecretKey::generate(
+        let val = GlweSecretKey::generate_binary(
             GlweDimension(params.dimension),
             PolynomialSize(params.polynomial_size),
-            &mut RandomGenerator::new(None),
+            &mut SecretRandomGenerator::new(None),
         );
         RLWESecretKey {
             val,
@@ -45,10 +45,10 @@ impl RLWESecretKey {
     /// # Output
     /// * a new RLWESecretKey
     pub fn new_raw(polynomial_size: usize, dimension: usize, std_dev: f64) -> RLWESecretKey {
-        let val = GlweSecretKey::generate(
+        let val = GlweSecretKey::generate_binary(
             GlweDimension(dimension),
             PolynomialSize(polynomial_size),
-            &mut RandomGenerator::new(None),
+            &mut SecretRandomGenerator::new(None),
         );
         RLWESecretKey {
             val,
@@ -63,7 +63,7 @@ impl RLWESecretKey {
     /// * an LWE secret key
     pub fn to_lwe_secret_key(&self) -> crate::LWESecretKey {
         crate::LWESecretKey {
-            val: LweSecretKey::from_container(self.val.clone().into_tensor().into_container()),
+            val: LweSecretKey::binary_from_container(self.val.clone().into_tensor().into_container()),
             dimension: self.dimension * self.polynomial_size,
             std_dev: self.std_dev,
         }

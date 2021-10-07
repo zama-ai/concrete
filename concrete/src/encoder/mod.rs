@@ -9,13 +9,13 @@ use serde::{Deserialize, Serialize};
 use crate::error::CryptoAPIError;
 use crate::Torus;
 use concrete_core::crypto;
-use concrete_core::math::decomposition::SignedDecomposable;
+use concrete_core::math::decomposition::SignedDecomposer;
 use concrete_npe as npe;
 
 use super::{read_from_file, write_to_file};
 use crate::plaintext::Plaintext;
-use concrete_commons::Numeric;
-use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
 
 /// Structure describing one particular Encoding
 /// # Attributes
@@ -153,13 +153,14 @@ impl Encoder {
         variance: f64,
     ) -> Result<usize, CryptoAPIError> {
         // check output noise
-        let nb_noise_bit: usize = npe::nb_bit_from_variance_99(variance, <Torus as Numeric>::BITS);
+        let nb_noise_bit: usize = npe::nb_bit_from_variance_99(variance, <Torus as Numeric>::BITS
+                                                               as usize);
 
         // check if there actually some noise in the ciphertext
         if nb_noise_bit == 0 {
             Err(NoNoiseInCiphertext!(variance))
         } else if nb_noise_bit + self.nb_bit_precision + self.nb_bit_padding
-            > <Torus as Numeric>::BITS
+            > <Torus as Numeric>::BITS as usize
         {
             // compute the number of bits which can be overwritten by the noise
             let nb_bit_overlap = nb_noise_bit + self.nb_bit_precision + self.nb_bit_padding
@@ -506,10 +507,11 @@ impl Encoder {
 
         // round if in rounding context
         if self.round {
-            res = res.round_to_closest_multiple(
+            let decomposer = SignedDecomposer::<Torus>::new(
                 DecompositionBaseLog(self.nb_bit_precision),
                 DecompositionLevelCount(1),
             );
+            res = decomposer.closest_representable(res);
         }
 
         // shift if there is some padding
@@ -551,10 +553,11 @@ impl Encoder {
 
         // round if asked
         let mut tmp: Torus = if self.round {
-            pt.round_to_closest_multiple(
+            let decomposer = SignedDecomposer::<Torus>::new(
                 DecompositionBaseLog(self.nb_bit_precision + self.nb_bit_padding),
                 DecompositionLevelCount(1),
-            )
+            );
+            decomposer.closest_representable(pt)
         } else {
             pt
         };
@@ -567,11 +570,12 @@ impl Encoder {
         // round if round is set to false and if in the security margin
         let starting_value_security_margin: Torus = ((1 << (self.nb_bit_precision + 1)) - 1)
             << (<Torus as Numeric>::BITS - self.nb_bit_precision);
+        let decomposer = SignedDecomposer::<Torus>::new(
+            DecompositionBaseLog(self.nb_bit_precision),
+            DecompositionLevelCount(1),
+        );
         tmp = if tmp > starting_value_security_margin {
-            tmp.round_to_closest_multiple(
-                DecompositionBaseLog(self.nb_bit_precision),
-                DecompositionLevelCount(1),
-            )
+            decomposer.closest_representable(tmp)
         } else {
             tmp
         };

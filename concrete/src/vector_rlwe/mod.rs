@@ -7,18 +7,17 @@ use backtrace::Backtrace;
 use colored::Colorize;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
-
-use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::{
-    crypto::{encoding::PlaintextList, glwe::GlweList, CiphertextCount, GlweDimension},
+    crypto::{encoding::PlaintextList, glwe::GlweList},
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor},
 };
 use concrete_npe as npe;
-
 use crate::error::CryptoAPIError;
 use crate::{read_from_file, write_to_file, Torus};
-use concrete_commons::{Numeric, StandardDev};
-use concrete_core::math::random::EncryptionRandomGenerator;
+use concrete_commons::dispersion::StandardDev;
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{CiphertextCount, GlweDimension, PolynomialSize};
+use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
 
 #[cfg(test)]
 mod tests;
@@ -455,8 +454,8 @@ impl VectorRLWE {
     ///
     /// # Output
     /// * an array of f64
-    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are differents
-    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
+    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are different
+    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are different
     ///
     /// # Example
     /// ```rust
@@ -519,8 +518,8 @@ impl VectorRLWE {
     ///
     /// # Output
     /// * an array of f64
-    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are differents
-    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
+    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are different
+    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are different
     ///
     /// # Example
     /// ```rust
@@ -592,8 +591,8 @@ impl VectorRLWE {
     /// # Output
     /// * an array of f64
     /// * an array of encoders
-    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are differents
-    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
+    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are different
+    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are different
     /// # Example
     /// ```rust
     /// use concrete::*;
@@ -1524,11 +1523,11 @@ impl fmt::Display for VectorRLWE {
 
         if self.ciphertexts.as_tensor().len() <= 2 * n {
             for elt in self.ciphertexts.as_tensor().iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
             to_be_print += "...";
             for elt in self
@@ -1537,7 +1536,7 @@ impl fmt::Display for VectorRLWE {
                 .get_sub(self.ciphertexts.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
         }
         to_be_print += "]\n";
