@@ -462,6 +462,40 @@ def test_trace_numpy_ufuncs_not_supported():
     assert "Only __call__ method is supported currently" in str(excinfo.value)
 
 
+def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
+    """Test a case where kwargs are not allowed and too many inputs are passed"""
+    inputs = {
+        "x": EncryptedScalar(Integer(32, is_signed=True)),
+        "y": EncryptedScalar(Integer(32, is_signed=True)),
+        "z": EncryptedScalar(Integer(32, is_signed=True)),
+    }
+
+    # We really need a lambda (because numpy functions are not playing
+    # nice with inspect.signature), but pylint and flake8 are not happy
+    # with it
+    # pylint: disable=unnecessary-lambda
+    function_to_trace = lambda x, y, z: numpy.add(x, y, z)  # noqa: E731
+    # pylint: enable=unnecessary-lambda
+
+    with pytest.raises(AssertionError) as excinfo:
+        tracing.trace_numpy_function(function_to_trace, inputs)
+
+    # numpy only passes ufunc.nin tracers so the extra arguments are passed as kwargs
+    assert "**kwargs are currently not supported for numpy ufuncs, ufunc: add" in str(excinfo.value)
+
+    # We really need a lambda (because numpy functions are not playing
+    # nice with inspect.signature), but pylint and flake8 are not happy
+    # with it
+    # pylint: disable=unnecessary-lambda
+    function_to_trace = lambda x, y, z: numpy.add(x, y, out=z)  # noqa: E731
+    # pylint: enable=unnecessary-lambda
+
+    with pytest.raises(AssertionError) as excinfo:
+        tracing.trace_numpy_function(function_to_trace, inputs)
+
+    assert "**kwargs are currently not supported for numpy ufuncs, ufunc: add" in str(excinfo.value)
+
+
 @pytest.mark.parametrize(
     "function_to_trace,inputs,expected_output_node,expected_output_value",
     [

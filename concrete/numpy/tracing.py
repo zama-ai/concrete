@@ -34,7 +34,7 @@ class NPTracer(BaseTracer):
 
     _mix_values_func: Callable[..., BaseValue] = mix_values_determine_holding_dtype
 
-    def __array_ufunc__(self, ufunc, method, *input_tracers, **kwargs):
+    def __array_ufunc__(self, ufunc: numpy.ufunc, method, *args, **kwargs):
         """Catch calls to numpy ufunc and routes them to tracing functions if supported.
 
         Read more: https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch
@@ -43,11 +43,13 @@ class NPTracer(BaseTracer):
             tracing_func = self.get_tracing_func_for_np_function(ufunc)
             custom_assert(
                 (len(kwargs) == 0),
-                f"**kwargs are currently not supported for numpy ufuncs, ufunc: {ufunc}",
+                f"**kwargs are currently not supported for numpy ufuncs, ufunc: {ufunc.__name__}",
             )
-            # Create constant tracers when needed
-            sanitized_input_tracers = [self._sanitize(inp) for inp in input_tracers]
-            return tracing_func(*sanitized_input_tracers, **kwargs)
+
+            # Create constant tracers for args, numpy only passes ufunc.nin args so we can
+            # sanitize all of them without issues
+            sanitized_args = [self._sanitize(arg) for arg in args]
+            return tracing_func(*sanitized_args, **kwargs)
         raise NotImplementedError("Only __call__ method is supported currently")
 
     def __array_function__(self, func, _types, args, kwargs):
