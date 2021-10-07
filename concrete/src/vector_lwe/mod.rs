@@ -3,29 +3,30 @@
 use std::error::Error;
 use std::fmt;
 
+use crate::error::CryptoAPIError;
+use crate::{read_from_file, write_to_file, Torus};
 use backtrace::Backtrace;
 use colored::Colorize;
-use itertools::izip;
-use serde::{Deserialize, Serialize};
-
-use concrete_core::math::polynomial::PolynomialSize;
+use concrete_commons::dispersion::StandardDev;
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{CiphertextCount, GlweSize, LweSize, PolynomialSize};
+use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
 use concrete_core::{
     crypto::{
-        self,
         encoding::PlaintextList,
         glwe::GlweCiphertext,
         lwe::{LweCiphertext, LweList},
-        CiphertextCount, GlweSize, LweSize,
     },
     math::tensor::Tensor,
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor},
 };
-use concrete_npe as npe;
 
-use crate::error::CryptoAPIError;
-use crate::{read_from_file, write_to_file, Torus};
-use concrete_commons::{Numeric, StandardDev};
-use concrete_core::math::random::EncryptionRandomGenerator;
+use concrete_core::crypto::bootstrap::Bootstrap;
+
+use concrete_npe as npe;
+use concrete_npe::{ LWE};
+use itertools::izip;
+use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 mod tests;
@@ -188,7 +189,7 @@ impl VectorLWE {
             .as_slice()
             .to_owned();
         let result = VectorLWE {
-            ciphertexts: LweList::from_container(ct, LweSize(self.dimension + 1)),
+            ciphertexts: LweList::from_container(ct.to_vec(), LweSize(self.dimension + 1)),
             variances: vec![self.variances[n]; 1],
             dimension: self.dimension,
             nb_ciphertexts: 1,
@@ -1889,7 +1890,7 @@ impl VectorLWE {
             self.variances.iter()
         ) {
             // calls the NPE to find out the amount of noise after KS
-            *vout = <Torus as npe::LWE>::key_switch(
+            *vout = <Torus as LWE>::key_switch(
                 self.dimension,
                 ksk.level,
                 ksk.base_log,
@@ -1977,7 +1978,7 @@ impl VectorLWE {
     ///
     /// # Argument
     /// * `bsk` - the bootstrapping key
-    /// * `f` - the function to aply
+    /// * `f` - the function to apply
     /// * `encoder_output` - a list of output encoders
     /// * `n` - the index of the ciphertext to bootstrap
     ///
@@ -2078,11 +2079,10 @@ impl VectorLWE {
                 .update_with_scalar_shl(&(self.encoders[n].nb_bit_padding - 1));
 
             // compute the bootstrap
-            crypto::cross::bootstrap(
+            bsk.ciphertexts.bootstrap(
                 &mut result,
                 &LweCiphertext::from_container(ct_clone),
-                &bsk.ciphertexts,
-                &mut accumulator,
+                & accumulator,
             );
         } else {
             // compute the bootstrap
@@ -2092,7 +2092,8 @@ impl VectorLWE {
                 .get_sub(n * (self.get_ciphertext_size())..((n + 1) * (self.get_ciphertext_size())))
                 .into_container();
             let ct = LweCiphertext::from_container(ct_view);
-            crypto::cross::bootstrap(&mut result, &ct, &bsk.ciphertexts, &mut accumulator);
+            bsk.ciphertexts
+                .bootstrap(&mut result, &ct, & accumulator);
         }
 
         // compute the new variance (without the drift)
@@ -2296,7 +2297,7 @@ impl VectorLWE {
             for _i in 0..encoder.nb_bit_precision {
                 message_res.push('o');
             }
-            let noise = npe::nb_bit_from_variance_99(*variance, <Torus as Numeric>::BITS);
+            let noise = npe::nb_bit_from_variance_99(*variance, <Torus as Numeric>::BITS as usize);
             // <Torus as Types>::TORUS_BIT  + (f64::log2(3. * f64::sqrt(*variance))).floor() as usize;
             let mut noise_res: String = "".to_string();
             // nose part
@@ -2504,11 +2505,11 @@ impl fmt::Display for VectorLWE {
 
         if self.ciphertexts.as_tensor().len() <= 2 * n {
             for elt in self.ciphertexts.as_tensor().iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
             to_be_print += "...";
 
@@ -2518,7 +2519,7 @@ impl fmt::Display for VectorLWE {
                 .get_sub(self.ciphertexts.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
         }
         to_be_print += "]\n";

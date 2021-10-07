@@ -1,16 +1,21 @@
 use std::fs::remove_file;
 use std::path::Path;
 
+use concrete_commons::parameters::{
+    DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, PolynomialSize,
+};
+use concrete_core::crypto::bootstrap::FourierBootstrapKey;
+use concrete_core::crypto::lwe::LweKeyswitchKey;
+use concrete_core::math::fft::Complex64;
+
+use crate::{
+    Encoder, LWEParams, LWESecretKey, RLWEParams, RLWESecretKey, VectorLWE, LWEBSK, LWEKSK,
+};
+
 fn delete_file<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
     remove_file(path)?;
     Ok(())
 }
-
-use crate::Encoder;
-use concrete_core::crypto::bootstrap::BootstrapKey;
-use concrete_core::crypto::lwe::LweKeyswitchKey;
-use concrete_core::crypto::GlweSize;
-use concrete_core::math::fft::Complex64;
 
 #[test]
 fn test_encoder_save() {
@@ -23,7 +28,6 @@ fn test_encoder_save() {
     assert!(encoder_1 == encoder_2, "encoder_1 != encoder_2");
 }
 
-use crate::VectorLWE;
 #[test]
 fn test_lwe_save() {
     let filename: &str = "lwe.json";
@@ -35,8 +39,6 @@ fn test_lwe_save() {
     assert!(lwe_1 == lwe_2, "lwe_1 != lwe_2");
 }
 
-use crate::LWEBSK;
-
 #[test]
 fn test_lwebsk_save() {
     let filename: &str = "lwebsk.json";
@@ -45,17 +47,17 @@ fn test_lwebsk_save() {
     // sk_input.key_size: 20
 
     let a = LWEBSK {
-        ciphertexts: BootstrapKey::allocate(
+        ciphertexts: FourierBootstrapKey::allocate(
             Complex64::new(2., 0.),
-            GlweSize(16 + 1),
-            PolynomialSize(4),
+            GlweSize(2),
+            PolynomialSize(512),
             DecompositionLevelCount(4),
             DecompositionBaseLog(5),
             LweDimension(20),
         ),
         variance: 0.5,
-        dimension: 16,
-        polynomial_size: 3 + 1,
+        dimension: 1,
+        polynomial_size: 512,
         base_log: 5,
         level: 4,
     };
@@ -65,8 +67,6 @@ fn test_lwebsk_save() {
     println!("{} \n {}", a, b);
     assert!(a == b, "a != b");
 }
-
-use crate::LWEKSK;
 
 #[test]
 fn test_lweksk_save() {
@@ -92,8 +92,6 @@ fn test_lweksk_save() {
     assert!(ksk1 == ksk2, "ksk1 != ksk2");
 }
 
-use crate::LWEParams;
-
 #[test]
 fn test_lweparams_save() {
     let filename: &str = "lweparams.json";
@@ -109,7 +107,6 @@ fn test_lweparams_save() {
     assert!(params1 == params2, "params1 != params2");
 }
 
-use crate::LWESecretKey;
 #[test]
 fn test_lwesecretkey_save() {
     let filename: &str = "lwesk.json";
@@ -128,7 +125,6 @@ fn test_lwesecretkey_save() {
     assert!(sk1 == sk2, "sk1 != sk2");
 }
 
-use crate::RLWEParams;
 #[test]
 fn test_rlweparams_save() {
     let filename: &str = "rlweparams.json";
@@ -144,11 +140,6 @@ fn test_rlweparams_save() {
     delete_file(filename).unwrap();
     assert!(p1 == p2, "p1 != p2");
 }
-
-use crate::RLWESecretKey;
-use concrete_core::crypto::LweDimension;
-use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::polynomial::PolynomialSize;
 
 #[test]
 fn test_rlwesecretkey_save() {

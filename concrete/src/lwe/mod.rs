@@ -8,20 +8,22 @@ use crate::traits::GenericAdd;
 use crate::{read_from_file, write_to_file, Torus};
 use backtrace::Backtrace;
 use colored::Colorize;
-use concrete_commons::{Numeric, StandardDev};
-use concrete_core::math::polynomial::PolynomialSize;
-use concrete_core::math::random::EncryptionRandomGenerator;
+use concrete_commons::dispersion::StandardDev;
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{GlweSize, LweSize, PolynomialSize};
+use concrete_core::crypto::bootstrap::Bootstrap;
+use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
 use concrete_core::{
     crypto::{
         self,
         encoding::{Cleartext, Plaintext},
         glwe::GlweCiphertext,
         lwe::LweCiphertext,
-        GlweSize, LweSize,
     },
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor},
 };
 use concrete_npe as npe;
+use concrete_npe::{LWE as NPELWE};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt;
@@ -1639,7 +1641,7 @@ impl LWE {
 
         // deal with encoders, noise and new precision
         // calls the NPE to find out the amount of noise after KS
-        res.variance = <Torus as npe::LWE>::key_switch(
+        res.variance = <Torus as NPELWE>::key_switch(
             self.dimension,
             ksk.level,
             ksk.base_log,
@@ -1806,24 +1808,16 @@ impl LWE {
             self_clone.remove_padding_inplace(self.encoder.nb_bit_padding - 1)?;
 
             // compute the bootstrap
-            crypto::cross::bootstrap(
-                &mut result,
-                &self_clone.ciphertext,
-                &bsk.ciphertexts,
-                &mut accumulator,
-            );
+            bsk.ciphertexts
+                .bootstrap(&mut result, &self_clone.ciphertext, & accumulator);
         } else {
             // compute the bootstrap
-            crypto::cross::bootstrap(
-                &mut result,
-                &self.ciphertext,
-                &bsk.ciphertexts,
-                &mut accumulator,
-            );
+            bsk.ciphertexts
+                .bootstrap(&mut result, &self.ciphertext, & accumulator);
         }
 
         // compute the new variance (without the drift)
-        let new_var = <Torus as npe::Cross>::bootstrap(
+        let new_var: f64 = <Torus as npe::cross::Cross>::bootstrap(
             self.dimension,
             bsk.dimension,
             bsk.level,
@@ -2054,11 +2048,11 @@ impl fmt::Display for LWE {
 
         if self.ciphertext.as_tensor().len() <= 2 * n {
             for elt in self.ciphertext.as_tensor().iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
         } else {
             for elt in self.ciphertext.as_tensor().get_sub(0..n).iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
             to_be_print += "...";
 
@@ -2068,7 +2062,7 @@ impl fmt::Display for LWE {
                 .get_sub(self.ciphertext.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
         }
         to_be_print += "]\n";
