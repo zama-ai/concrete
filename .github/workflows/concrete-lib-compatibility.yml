@@ -1,0 +1,73 @@
+name: Concrete-lib Compatibility
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 00 * * 1-5' # Everyday @ 00:00 from Monday to Friday
+
+jobs:
+  build_publish:
+    name: Test the Docker image with latest concrete-ffi
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Compare image timestamps
+        continue-on-error: true
+        run: |
+          ./.github/workflows/scripts/container_timestamp_check.sh \
+          --base_img_url \
+          https://api.github.com/orgs/zama-ai/packages/container/concrete-api-env/versions \
+          --env_img_url \
+          https://api.github.com/orgs/zama-ai/packages/container/zamalang-compiler/versions \
+          --token ${{ secrets.BOT_TOKEN }}
+      
+      - name: Send Slack Notification 
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: success
+          SLACK_MESSAGE: "No new update on Concrete-FFI, skipping compatibility check"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Get the concrete CAPI release
+        if: ${{ success() }}
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ghcr.io/zama-ai/concrete-api-env:latest
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: -v ${{ github.workspace }}:/workspace
+          run: mkdir -p /workspace/concrete/target && cp -r /target/release /workspace/concrete/target
+
+      - name: Test compiler with latest concrete-ffi
+        if: ${{ success() }}
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ghcr.io/zama-ai/zamalang-compiler
+          options: -v /workspace/concrete:/concrete
+          run: |
+            cd /compiler
+            pip install pytest
+            export CONCRETE_PROJECT=/concrete
+            make -B BUILD_DIR=/build build
+            make BUILD_DIR=/build test
+
+      - name: Send Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Compatibility check with Concrete-FFI finished with status ${{ job.status }} \
+            (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
