@@ -14,18 +14,16 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Compare image timestamps
-        continue-on-error: true
         run: |
           ./.github/workflows/scripts/container_timestamp_check.sh \
           --base_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/concrete-api-env/versions \
           --env_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/zamalang-compiler/versions \
-          --token ${{ secrets.BOT_TOKEN }}
+          --token ${{ secrets.GH_TOKEN }}
       
       - name: Send Slack Notification 
-        if: ${{ failure() }}
-        continue-on-error: true
+        if: ${{ always() && failure() }}
         uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -47,11 +45,10 @@ jobs:
           run: mkdir -p /workspace/concrete/target && cp -r /target/release /workspace/concrete/target
 
       - name: Test compiler with latest concrete-ffi
-        if: ${{ success() }}
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/zama-ai/zamalang-compiler
-          options: -v /workspace/concrete:/concrete
+          options: -v ${{ github.workspace }}/concrete:/concrete
           run: |
             cd /compiler
             pip install pytest

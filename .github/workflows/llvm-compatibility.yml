@@ -21,6 +21,9 @@ jobs:
       - name: Log LLVM commit
         run: echo "LLVM commit" && cd ${{ github.workspace }}/llvm-project && git log -1
 
+      - name: login
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
       - name: Build
         run: docker image build --no-cache -t compiler-latest-llvm -f builders/Dockerfile.zamalang-env .
 
