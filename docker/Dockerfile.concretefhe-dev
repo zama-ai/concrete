@@ -8,7 +8,6 @@ RUN echo "source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc &&
     echo "    source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc && \
     echo "    cd /${SRC_DIR_NAME}/ && make setup_env" >> /root/.bashrc && \
     echo "fi" >> /root/.bashrc && \
-    echo "export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so" >> /root/.bashrc && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc
 
 WORKDIR /${SRC_DIR_NAME}

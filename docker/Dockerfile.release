@@ -1,4 +1,4 @@
-FROM ghcr.io/zama-ai/zamalang-compiler:3a254bcb8725507a11538913d3d5e9657ac00043 as builder
+FROM ghcr.io/zama-ai/zamalang-compiler:a9fae4c19b96ee61c7ea0a2ce26b1cd8d049e159 as builder
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
@@ -14,7 +14,7 @@ COPY pyproject.toml ./pyproject.toml
 
 RUN poetry build --format wheel
 
-FROM ghcr.io/zama-ai/zamalang-compiler:3a254bcb8725507a11538913d3d5e9657ac00043
+FROM ghcr.io/zama-ai/zamalang-compiler:a9fae4c19b96ee61c7ea0a2ce26b1cd8d049e159
 
 RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
@@ -30,12 +30,13 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     graphviz* && \
     rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
-    echo "export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so" >> /root/.bashrc && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
     python3 -m pip install --no-cache-dir ./*.whl && \
     python3 -m pip install --no-cache-dir -r torch_requirements.txt \
     -f https://download.pytorch.org/whl/torch_stable.html && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
+
+ENV LD_PRELOAD=${RT_LIB}:${LD_PRELOAD}
 
 WORKDIR /app
 COPY docker/release_resources/entry_point.sh ./entry_point.sh

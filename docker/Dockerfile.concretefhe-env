@@ -14,3 +14,5 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry
+
+ENV LD_PRELOAD=${RT_LIB}:${LD_PRELOAD}

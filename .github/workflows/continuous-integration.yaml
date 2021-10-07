@@ -223,20 +223,12 @@ jobs:
       - name: Source code Conformance
         id: cs
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
-        env:
-          # TODO: remove this when JIT doesn't need this
-          # Required to be sure that docs reads all files with MLIR imports properly
-          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         # pcc launches an internal target with proper flags
         run: |
           make pcc
       - name: Build docs
         id: cbd
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
-        env:
-          # TODO: remove this when JIT doesn't need this
-          # Required to be sure that docs reads all files with MLIR imports properly
-          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
           make docs
       - name: Conformance status
@@ -259,23 +251,14 @@ jobs:
       - name: PyTest Source Code
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        env:
-          # TODO: remove this when JIT doesn't need this
-          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
           make pytest
       - name: Test CodeBlocks
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        env:
-          # TODO: remove this when JIT doesn't need this
-          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
           make test_codeblocks
       - name: PyTest Notebooks
         if: ${{ github.event_name == 'schedule' && steps.conformance.outcome == 'success' && !cancelled() }}
-        env:
-          # TODO: remove this when JIT doesn't need this
-          LD_PRELOAD: /compiler/build/lib/Runtime/libZamalangRuntime.so
         run: |
           make pytest_nb
       - name: Test coverage
@@ -505,8 +488,7 @@ jobs:
         if: ${{ success() && !cancelled() }}
         run: |
           echo "Running sanity check for ${RELEASE_IMG_GIT_TAG}"
-          docker run --rm --env LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so \
-          -v "$(pwd)"/docker/release_resources:/data \
+          docker run --rm -v "$(pwd)"/docker/release_resources:/data \
           "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
           docker image push --all-tags "${RELEASE_IMAGE_BASE}"
       - name: Set notification report

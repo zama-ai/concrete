@@ -12,7 +12,6 @@ if ! source /src/.docker_venv/bin/activate; then
     source /src/.docker_venv/bin/activate
     cd /src/ && make setup_env
 fi
-export LD_PRELOAD=/compiler/build/lib/Runtime/libZamalangRuntime.so
 
 initial_log=logs/$(date -u --iso-8601=seconds).log
 
