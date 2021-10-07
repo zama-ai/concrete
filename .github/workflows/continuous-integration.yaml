@@ -275,6 +275,7 @@ jobs:
       - name: Comment with coverage
         uses: marocchino/sticky-pull-request-comment@82e7a0d3c51217201b3fedc4ddde6632e969a477
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
+        continue-on-error: true
         with:
           path: diff-coverage.txt
           recreate: true
