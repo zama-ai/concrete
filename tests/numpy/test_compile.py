@@ -53,7 +53,7 @@ def small_fused_table(x):
             no_fuse_unhandled,
             ((-2, 2), (-2, 2)),
             ["x", "y"],
-            marks=pytest.mark.xfail(raises=ValueError),
+            marks=pytest.mark.xfail(strict=True, raises=ValueError),
         ),
     ],
 )

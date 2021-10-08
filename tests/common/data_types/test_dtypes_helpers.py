@@ -206,13 +206,13 @@ def test_mix_scalar_values(value1, value2, expected_mixed_value):
             ClearTensor(Integer(7, False), (1, 2, 3)),
             EncryptedScalar(Integer(7, False)),
             None,
-            marks=pytest.mark.xfail(raises=AssertionError),
+            marks=pytest.mark.xfail(strict=True, raises=AssertionError),
         ),
         pytest.param(
             ClearTensor(Integer(7, False), (1, 2, 3)),
             ClearTensor(Integer(7, False), (3, 2, 1)),
             None,
-            marks=pytest.mark.xfail(raises=AssertionError),
+            marks=pytest.mark.xfail(strict=True, raises=AssertionError),
         ),
     ],
 )
