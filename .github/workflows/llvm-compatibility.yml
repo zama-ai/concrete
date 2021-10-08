@@ -3,7 +3,7 @@ name: LLVM Compatibility
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 00 * * 1-5' # Everyday @ 00:00 from Monday to Friday
+    - cron: '0 00 * * 1' # Every Monday @ 00:00 UTC
 
 jobs:
   build_test:
@@ -35,6 +35,12 @@ jobs:
             cd /compiler
             pip install pytest
             make BUILD_DIR=/build test
+
+      - name: Commit latest LLVM version
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: ./llvm-project
+          default_author: github_actions
 
       - name: Send Slack Notification
         if: ${{ always() }}
