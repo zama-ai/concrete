@@ -1,13 +1,14 @@
 """File holding topological optimization/simplification code."""
+import itertools
 from copy import deepcopy
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, cast
 
 import networkx as nx
 
 from ..compilation.artifacts import CompilationArtifacts
 from ..data_types.floats import Float
 from ..data_types.integers import Integer
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true, custom_assert
 from ..operator_graph import OPGraph
 from ..representation.intermediate import ArbitraryFunction, Constant, Input, IntermediateNode
 from ..values import TensorValue
@@ -38,10 +39,6 @@ def fuse_float_operations(
 
         float_subgraph_start_nodes, terminal_node, subgraph_all_nodes = float_subgraph_search_result
         processed_terminal_nodes.add(terminal_node)
-
-        # TODO: #199 To be removed when doing tensor management
-        if not subgraph_is_scalar_only(subgraph_all_nodes):
-            continue
 
         subgraph_conversion_result = convert_float_subgraph_to_fused_node(
             op_graph,
@@ -111,16 +108,20 @@ def convert_float_subgraph_to_fused_node(
             output must be plugged as the input to the subgraph.
     """
 
-    if not subgraph_has_unique_variable_input(float_subgraph_start_nodes):
+    subgraph_can_be_fused = subgraph_has_unique_variable_input(
+        float_subgraph_start_nodes
+    ) and subgraph_values_allow_fusing(float_subgraph_start_nodes, subgraph_all_nodes)
+
+    if not subgraph_can_be_fused:
         return None
 
     # Only one variable input node, find which node feeds its input
-    non_constant_start_nodes = [
+    variable_input_nodes = [
         node for node in float_subgraph_start_nodes if not isinstance(node, Constant)
     ]
-    custom_assert(len(non_constant_start_nodes) == 1)
+    custom_assert(len(variable_input_nodes) == 1)
 
-    current_subgraph_variable_input = non_constant_start_nodes[0]
+    current_subgraph_variable_input = variable_input_nodes[0]
     new_input_value = deepcopy(current_subgraph_variable_input.outputs[0])
 
     nx_graph = op_graph.graph
@@ -244,20 +245,89 @@ def find_float_subgraph_with_unique_terminal_node(
     return float_subgraph_start_nodes, terminal_node, subgraph_all_nodes
 
 
-# TODO: #199 To be removed when doing tensor management
-def subgraph_is_scalar_only(subgraph_all_nodes: Set[IntermediateNode]) -> bool:
-    """Check subgraph only processes scalars.
+def subgraph_values_allow_fusing(
+    float_subgraph_start_nodes: Set[IntermediateNode],
+    subgraph_all_nodes: Set[IntermediateNode],
+):
+    """Check if a subgraph's values are compatible with fusing.
+
+    A fused subgraph for example only works on an input tensor if the resulting ArbitraryFunction
+    can be applied per cell, hence shuffling or tensor shape changes make fusing impossible.
 
     Args:
-        subgraph_all_nodes (Set[IntermediateNode]): The nodes of the float subgraph.
+        float_subgraph_start_nodes (Set[IntermediateNode]): The nodes starting the float subgraph.
+        subgraph_all_nodes (Set[IntermediateNode]): All the nodes in the float subgraph.
 
     Returns:
-        bool: True if all inputs and outputs of the nodes in the subgraph are scalars.
+        bool: True if all inputs and outputs of the nodes in the subgraph are compatible with fusing
+            i.e. outputs have the same shapes equal to the variable input.
     """
-    return all(
-        all(isinstance(input_, TensorValue) and input_.is_scalar for input_ in node.inputs)
-        and all(isinstance(output, TensorValue) and output.is_scalar for output in node.outputs)
+
+    variable_input_nodes = [
+        node for node in float_subgraph_start_nodes if not isinstance(node, Constant)
+    ]
+
+    assert_true(
+        (num_variable_input_nodes := len(variable_input_nodes)) == 1,
+        f"{subgraph_values_allow_fusing.__name__} "
+        f"only works for subgraphs with 1 variable input node, got {num_variable_input_nodes}",
+    )
+
+    # Some ArbitraryFunction nodes have baked constants that need to be taken into account for the
+    # max size computation
+    baked_constants_ir_nodes = [
+        baked_constant_base_value
         for node in subgraph_all_nodes
+        if isinstance(node, ArbitraryFunction)
+        if (baked_constant_base_value := node.op_attributes.get("baked_constant_ir_node", None))
+        is not None
+    ]
+
+    all_values_are_tensors = all(
+        all(isinstance(input_, TensorValue) for input_ in node.inputs)
+        and all(isinstance(output, TensorValue) for output in node.outputs)
+        for node in itertools.chain(subgraph_all_nodes, baked_constants_ir_nodes)
+    )
+
+    if not all_values_are_tensors:
+        # This cannot be reached today as scalars are Tensors with shape == () (numpy convention)
+        return False  # pragma: no cover
+
+    variable_input_node = variable_input_nodes[0]
+
+    # A cheap check is that the variable input node must have the biggest size, i.e. have the most
+    # elements, meaning all constants will broadcast to its shape. This is because the
+    # ArbitraryFunction input and output must have the same shape so that it can be applied to each
+    # of the input tensor cells.
+    # There *may* be a way to manage the other case by simulating the broadcast of the smaller input
+    # array and then concatenating/stacking the results. This is not currently doable as we don't
+    # have a concatenate operator on the compiler side.
+    # TODO: #587 https://github.com/zama-ai/concretefhe-internal/issues/587
+
+    variable_input_node_output = cast(TensorValue, variable_input_node.outputs[0])
+    variable_input_node_output_size, variable_input_node_output_shape = (
+        variable_input_node_output.size,
+        variable_input_node_output.shape,
+    )
+    max_inputs_size = max(
+        cast(TensorValue, input_node.outputs[0]).size
+        for input_node in itertools.chain(subgraph_all_nodes, baked_constants_ir_nodes)
+    )
+
+    if variable_input_node_output_size < max_inputs_size:
+        return False
+
+    # Now that we know the variable input node has the biggest size we can check shapes are
+    # consistent throughout the subgraph: outputs of ir nodes that are not constant must be equal.
+
+    non_constant_nodes = (node for node in subgraph_all_nodes if not isinstance(node, Constant))
+
+    return all(
+        all(
+            isinstance(output, TensorValue) and output.shape == variable_input_node_output_shape
+            for output in node.outputs
+        )
+        for node in non_constant_nodes
     )
 
 

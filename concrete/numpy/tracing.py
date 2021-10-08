@@ -208,6 +208,15 @@ class NPTracer(BaseTracer):
 
         op_kwargs = deepcopy(kwargs)
         op_kwargs["baked_constant"] = baked_constant
+        # Store info on the operation being treated
+        # Currently: the base value and type corresponding to the baked constant and which input idx
+        # it was feeding
+        op_attributes = {
+            "baked_constant_ir_node": deepcopy(
+                input_tracers[in_which_input_is_constant].traced_computation
+            ),
+            "in_which_input_is_constant": in_which_input_is_constant,
+        }
 
         traced_computation = ArbitraryFunction(
             input_base_value=input_tracers[in_which_input_is_variable].output,
@@ -215,6 +224,7 @@ class NPTracer(BaseTracer):
             output_dtype=common_output_dtypes[0],
             op_kwargs=op_kwargs,
             op_name=binary_operator_string,
+            op_attributes=op_attributes,
         )
         output_tracer = cls(
             (input_tracers[in_which_input_is_variable],),

@@ -7,6 +7,7 @@ import numpy
 import pytest
 
 from concrete.common.data_types.integers import Integer
+from concrete.common.debugging.custom_assert import assert_not_reached
 from concrete.common.optimization.topological import fuse_float_operations
 from concrete.common.values import EncryptedScalar, EncryptedTensor
 from concrete.numpy import tracing
@@ -134,17 +135,27 @@ def test_fuse_float_operations(function_to_trace, fused, input_):
     assert function_to_trace(*inputs) == op_graph(*inputs)
 
 
-# TODO: #199 To be removed when doing tensor management
-def test_tensor_no_fuse():
+def subtest_tensor_no_fuse(fun, tensor_shape):
     """Test case to verify float fusing is only applied on functions on scalars."""
 
-    ndim = random.randint(1, 3)
-    tensor_shape = tuple(random.randint(1, 10) for _ in range(ndim + 1))
+    if tensor_shape == ():
+        # We want tensors
+        return
+
+    if fun in LIST_OF_UFUNC_WHICH_HAVE_INTEGER_ONLY_SOURCES:
+        # We need at least one input of the bivariate function to be float
+        return
+
+    # Float fusing currently cannot work if the constant in a bivariate operator is bigger than the
+    # variable input.
+    # Make a broadcastable shape but with the constant being bigger
+    variable_tensor_shape = (1,) + tensor_shape
+    constant_bigger_shape = (random.randint(2, 10),) + tensor_shape
 
     def tensor_no_fuse(x):
         intermediate = x.astype(numpy.float64)
-        intermediate = intermediate.astype(numpy.int32)
-        return intermediate + numpy.ones(tensor_shape)
+        intermediate = fun(intermediate, numpy.ones(constant_bigger_shape))
+        return intermediate.astype(numpy.int32)
 
     function_to_trace = tensor_no_fuse
     params_names = signature(function_to_trace).parameters.keys()
@@ -152,7 +163,7 @@ def test_tensor_no_fuse():
     op_graph = trace_numpy_function(
         function_to_trace,
         {
-            param_name: EncryptedTensor(Integer(32, True), shape=tensor_shape)
+            param_name: EncryptedTensor(Integer(32, True), shape=variable_tensor_shape)
             for param_name in params_names
         },
     )
@@ -163,7 +174,24 @@ def test_tensor_no_fuse():
     assert orig_num_nodes == fused_num_nodes
 
 
-def subtest_fuse_float_unary_operations_correctness(fun):
+def check_results_are_equal(function_result, op_graph_result):
+    """Check the output of function execution and OPGraph evaluation are equal."""
+
+    if isinstance(function_result, tuple) and isinstance(op_graph_result, tuple):
+        assert len(function_result) == len(op_graph_result)
+        are_equal = (
+            function_output == op_graph_output
+            for function_output, op_graph_output in zip(function_result, op_graph_result)
+        )
+    elif not isinstance(function_result, tuple) and not isinstance(op_graph_result, tuple):
+        are_equal = (function_result == op_graph_result,)
+    else:
+        assert_not_reached(f"Incompatible outputs: {function_result}, {op_graph_result}")
+
+    return all(value.all() if isinstance(value, numpy.ndarray) else value for value in are_equal)
+
+
+def subtest_fuse_float_unary_operations_correctness(fun, tensor_shape):
     """Test a unary function with fuse_float_operations."""
 
     # Some manipulation to avoid issues with domain of definitions of functions
@@ -193,7 +221,10 @@ def subtest_fuse_float_unary_operations_correctness(fun):
 
             op_graph = trace_numpy_function(
                 function_to_trace,
-                {param_name: EncryptedScalar(Integer(32, True)) for param_name in params_names},
+                {
+                    param_name: EncryptedTensor(Integer(32, True), tensor_shape)
+                    for param_name in params_names
+                },
             )
             orig_num_nodes = len(op_graph.graph)
             fuse_float_operations(op_graph)
@@ -201,12 +232,20 @@ def subtest_fuse_float_unary_operations_correctness(fun):
 
             assert fused_num_nodes < orig_num_nodes
 
-            input_ = numpy.int32(input_)
+            ones_input = (
+                numpy.ones(tensor_shape, dtype=numpy.dtype(type(input_)))
+                if tensor_shape != ()
+                else 1
+            )
+            input_ = numpy.int32(input_ * ones_input)
 
             num_params = len(params_names)
             inputs = (input_,) * num_params
 
-            assert function_to_trace(*inputs) == op_graph(*inputs)
+            function_result = function_to_trace(*inputs)
+            op_graph_result = op_graph(*inputs)
+
+            assert check_results_are_equal(function_result, op_graph_result)
 
 
 LIST_OF_UFUNC_WHICH_HAVE_INTEGER_ONLY_SOURCES = {
@@ -227,7 +266,7 @@ LIST_OF_UFUNC_WHICH_HAVE_INTEGER_ONLY_SOURCES = {
 }
 
 
-def subtest_fuse_float_binary_operations_correctness(fun):
+def subtest_fuse_float_binary_operations_correctness(fun, tensor_shape):
     """Test a binary functions with fuse_float_operations, with a constant as a source."""
 
     for i in range(4):
@@ -248,23 +287,37 @@ def subtest_fuse_float_binary_operations_correctness(fun):
         # For bivariate functions: fix one of the inputs
         if i == 0:
             # With an integer in first position
+            ones_0 = numpy.ones(tensor_shape, dtype=numpy.int64) if tensor_shape != () else 1
+
             def get_function_to_trace():
-                return lambda x, y: fun(3, x + y).astype(numpy.float64).astype(numpy.int32)
+                return lambda x, y: fun(3 * ones_0, x + y).astype(numpy.float64).astype(numpy.int32)
 
         elif i == 1:
             # With a float in first position
+            ones_1 = numpy.ones(tensor_shape, dtype=numpy.float64) if tensor_shape != () else 1
+
             def get_function_to_trace():
-                return lambda x, y: fun(2.3, x + y).astype(numpy.float64).astype(numpy.int32)
+                return (
+                    lambda x, y: fun(2.3 * ones_1, x + y).astype(numpy.float64).astype(numpy.int32)
+                )
 
         elif i == 2:
             # With an integer in second position
+            ones_2 = numpy.ones(tensor_shape, dtype=numpy.int64) if tensor_shape != () else 1
+
             def get_function_to_trace():
-                return lambda x, y: fun(x + y, 4).astype(numpy.float64).astype(numpy.int32)
+                return lambda x, y: fun(x + y, 4 * ones_2).astype(numpy.float64).astype(numpy.int32)
 
         else:
             # With a float in second position
+            ones_else = numpy.ones(tensor_shape, dtype=numpy.float64) if tensor_shape != () else 1
+
             def get_function_to_trace():
-                return lambda x, y: fun(x + y, 5.7).astype(numpy.float64).astype(numpy.int32)
+                return (
+                    lambda x, y: fun(x + y, 5.7 * ones_else)
+                    .astype(numpy.float64)
+                    .astype(numpy.int32)
+                )
 
         input_list = [0, 2, 42, 44]
 
@@ -273,6 +326,12 @@ def subtest_fuse_float_binary_operations_correctness(fun):
             input_list = [2, 42, 44]
 
         for input_ in input_list:
+            ones_input = (
+                numpy.ones(tensor_shape, dtype=numpy.dtype(type(input_)))
+                if tensor_shape != ()
+                else 1
+            )
+            input_ = input_ * ones_input
 
             function_to_trace = get_function_to_trace()
 
@@ -280,7 +339,10 @@ def subtest_fuse_float_binary_operations_correctness(fun):
 
             op_graph = trace_numpy_function(
                 function_to_trace,
-                {param_name: EncryptedScalar(Integer(32, True)) for param_name in params_names},
+                {
+                    param_name: EncryptedTensor(Integer(32, True), tensor_shape)
+                    for param_name in params_names
+                },
             )
             orig_num_nodes = len(op_graph.graph)
             fuse_float_operations(op_graph)
@@ -293,10 +355,13 @@ def subtest_fuse_float_binary_operations_correctness(fun):
             num_params = len(params_names)
             inputs = (input_,) * num_params
 
-            assert function_to_trace(*inputs) == op_graph(*inputs)
+            function_result = function_to_trace(*inputs)
+            op_graph_result = op_graph(*inputs)
+
+            assert check_results_are_equal(function_result, op_graph_result)
 
 
-def subtest_fuse_float_binary_operations_dont_support_two_variables(fun):
+def subtest_fuse_float_binary_operations_dont_support_two_variables(fun, tensor_shape):
     """Test a binary function with fuse_float_operations, with no constant as
     a source."""
 
@@ -310,18 +375,23 @@ def subtest_fuse_float_binary_operations_dont_support_two_variables(fun):
     with pytest.raises(NotImplementedError, match=r"Can't manage binary operator"):
         trace_numpy_function(
             function_to_trace,
-            {param_name: EncryptedScalar(Integer(32, True)) for param_name in params_names},
+            {
+                param_name: EncryptedTensor(Integer(32, True), tensor_shape)
+                for param_name in params_names
+            },
         )
 
 
 @pytest.mark.parametrize("fun", tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC)
-def test_ufunc_operations(fun):
+@pytest.mark.parametrize("tensor_shape", [(), (3, 1, 2)])
+def test_ufunc_operations(fun, tensor_shape):
     """Test functions which are in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC."""
 
     if fun.nin == 1:
-        subtest_fuse_float_unary_operations_correctness(fun)
+        subtest_fuse_float_unary_operations_correctness(fun, tensor_shape)
     elif fun.nin == 2:
-        subtest_fuse_float_binary_operations_correctness(fun)
-        subtest_fuse_float_binary_operations_dont_support_two_variables(fun)
+        subtest_fuse_float_binary_operations_correctness(fun, tensor_shape)
+        subtest_fuse_float_binary_operations_dont_support_two_variables(fun, tensor_shape)
+        subtest_tensor_no_fuse(fun, tensor_shape)
     else:
         raise NotImplementedError("Only unary and binary functions are tested for now")

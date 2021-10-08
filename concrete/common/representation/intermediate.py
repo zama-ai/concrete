@@ -202,9 +202,10 @@ class ArbitraryFunction(IntermediateNode):
     # The arbitrary_func is not optional but mypy has a long standing bug and is not able to
     # understand this properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623
     arbitrary_func: Optional[Callable]
+    op_name: str
     op_args: Tuple[Any, ...]
     op_kwargs: Dict[str, Any]
-    op_name: str
+    op_attributes: Dict[str, Any]
     _n_in: int = 1
 
     def __init__(
@@ -215,12 +216,14 @@ class ArbitraryFunction(IntermediateNode):
         op_name: Optional[str] = None,
         op_args: Optional[Tuple[Any, ...]] = None,
         op_kwargs: Optional[Dict[str, Any]] = None,
+        op_attributes: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__([input_base_value])
         custom_assert(len(self.inputs) == 1)
         self.arbitrary_func = arbitrary_func
         self.op_args = op_args if op_args is not None else ()
         self.op_kwargs = op_kwargs if op_kwargs is not None else {}
+        self.op_attributes = op_attributes if op_attributes is not None else {}
 
         output = deepcopy(input_base_value)
         output.dtype = output_dtype
