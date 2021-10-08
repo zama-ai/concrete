@@ -308,7 +308,11 @@ def main():
             raise RuntimeError(f"Target `{target_name}` is already registered")
 
         # Create an entry in the result for the current target
-        result["targets"][target_id] = {"name": target_name, "measurements": {}}
+        result["targets"][target_id] = {
+            "name": target_name,
+            "measurements": {},
+            "code": "\n".join(lines),
+        }
 
         # Create a dictionary to hold `metric_id` to `metric_name`
         metrics = {}
