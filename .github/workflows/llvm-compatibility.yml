@@ -16,7 +16,10 @@ jobs:
           submodules: recursive
 
       - name: Update LLVM
-        run: git submodule update --remote
+        id: update-llvm
+        run: |
+          git submodule update --remote
+          echo "::set-output name=commit::$(cd llvm-project && git rev-parse --short HEAD)"
 
       - name: Log LLVM commit
         run: echo "LLVM commit" && cd ${{ github.workspace }}/llvm-project && git log -1
@@ -41,6 +44,7 @@ jobs:
         with:
           add: ./llvm-project
           default_author: github_actions
+          message: "chore: update LLVM to ${{ steps.update-llvm.outputs.commit }}"
 
       - name: Send Slack Notification
         if: ${{ always() }}
