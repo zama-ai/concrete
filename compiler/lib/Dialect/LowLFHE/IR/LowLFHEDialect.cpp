@@ -47,7 +47,7 @@ void LowLFHEDialect::initialize() {
 
   for (const std::string &type_str : types_str) {
     if (parser.parseOptionalKeyword(type_str).succeeded()) {
-      generatedTypeParser(this->getContext(), parser, type_str, type);
+      generatedTypeParser(parser, type_str, type);
       return type;
     }
   }

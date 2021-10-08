@@ -25,7 +25,7 @@ void HLFHEDialect::initialize() {
   mlir::Type type;
 
   if (parser.parseOptionalKeyword("eint").succeeded()) {
-    generatedTypeParser(this->getContext(), parser, "eint", type);
+    generatedTypeParser(parser, "eint", type);
     return type;
   }
 

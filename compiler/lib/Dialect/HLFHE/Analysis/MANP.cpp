@@ -176,7 +176,7 @@ static llvm::APInt denseCstTensorNorm2Sq(mlir::ConstantOp cstOp) {
 
   llvm::APInt accu{1, 0, false};
 
-  for (llvm::APInt val : denseVals.getIntValues()) {
+  for (llvm::APInt val : denseVals.getValues<llvm::APInt>()) {
     llvm::APInt valSq = APIntWidthExtendUSq(val);
     accu = APIntWidthExtendUAdd(accu, valSq);
   }

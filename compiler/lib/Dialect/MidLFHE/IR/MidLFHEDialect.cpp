@@ -23,7 +23,7 @@ void MidLFHEDialect::initialize() {
 
 ::mlir::Type MidLFHEDialect::parseType(::mlir::DialectAsmParser &parser) const {
   if (parser.parseOptionalKeyword("glwe").succeeded())
-    return GLWECipherTextType::parse(this->getContext(), parser);
+    return GLWECipherTextType::parse(parser);
   parser.emitError(parser.getCurrentLocation(), "Unknown MidLFHE type");
   return ::mlir::Type();
 }
