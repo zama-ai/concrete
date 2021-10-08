@@ -260,9 +260,16 @@ def main():
     result = {"machine": machine, "metrics": {}, "targets": {}}
     scripts = list(base.glob("*.py"))
 
-    # Create a directory to store temporary scripts
+    # Clear the previous temporary scripts directory
     shutil.rmtree(".benchmarks/scripts", ignore_errors=True)
+
+    # Copy the base directory to the new temporary scripts directory
     shutil.copytree(base, ".benchmarks/scripts")
+
+    # Because we copy the entire base directory to the new temporary scripts directory,
+    # the modified scripts will have access to helper modules defined within the base directory
+    # (e.g., we copy `benchmarks/common.py` to `.benchmarks/scripts/common.py` which allows
+    #  the modified `.benchmarks/scripts/x_plus_42.py` to access `common` module`)
 
     # Process each script under the base directory
     for path in scripts:
