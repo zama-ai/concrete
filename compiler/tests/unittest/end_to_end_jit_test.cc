@@ -417,10 +417,10 @@ func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
 TEST(CompileAndRunTLU, identity_func) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
-func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
-    %tlu = std.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
-    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<7>, tensor<128xi64>) -> (!HLFHE.eint<7>)
-    return %1: !HLFHE.eint<7>
+func @main(%arg0: !HLFHE.eint<6>) -> !HLFHE.eint<6> {
+    %tlu = std.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]> : tensor<64xi64>
+    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<6>, tensor<64xi64>) -> (!HLFHE.eint<6>)
+    return %1: !HLFHE.eint<6>
 }
 )XXX";
   ASSERT_FALSE(engine.compile(mlirStr));
@@ -434,10 +434,10 @@ func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
 TEST(CompileAndRunTLU, random_func) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
-func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
-    %tlu = std.constant dense<[16, 91, 16, 83, 80, 74, 21, 96, 1, 63, 49, 122, 76, 89, 74, 55, 109, 110, 103, 54, 105, 14, 66, 47, 52, 89, 7, 10, 73, 44, 119, 92, 25, 104, 123, 100, 108, 86, 29, 121, 118, 52, 107, 48, 34, 37, 13, 122, 107, 48, 74, 59, 96, 36, 50, 55, 120, 72, 27, 45, 12, 5, 96, 12, 24, 90, 112, 121, 68, 125, 72, 36, 0, 13, 66, 64, 18, 3, 55, 102, 116, 100, 116, 59, 94, 12, 12, 41, 3, 120, 89, 69, 71, 125, 105, 113, 4, 11, 72, 38, 88, 54, 80, 84, 64, 23, 16, 13, 36, 50, 76, 55, 115, 115, 96, 37, 60, 96, 44, 31, 111, 78, 0, 5, 23, 41, 127, 6]> : tensor<128xi64>
-    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<7>, tensor<128xi64>) -> (!HLFHE.eint<7>)
-    return %1: !HLFHE.eint<7>
+func @main(%arg0: !HLFHE.eint<6>) -> !HLFHE.eint<6> {
+    %tlu = std.constant dense<[16, 91, 16, 83, 80, 74, 21, 96, 1, 63, 49, 122, 76, 89, 74, 55, 109, 110, 103, 54, 105, 14, 66, 47, 52, 89, 7, 10, 73, 44, 119, 92, 25, 104, 123, 100, 108, 86, 29, 121, 118, 52, 107, 48, 34, 37, 13, 122, 107, 48, 74, 59, 96, 36, 50, 55, 120, 72, 27, 45, 12, 5, 96, 12]> : tensor<64xi64>
+    %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<6>, tensor<64xi64>) -> (!HLFHE.eint<6>)
+    return %1: !HLFHE.eint<6>
 }
 )XXX";
   ASSERT_FALSE(engine.compile(mlirStr));
@@ -447,18 +447,18 @@ func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
   uint64_t result = maybeResult.get();
   ASSERT_EQ(result, 74);
   // second value
-  maybeResult = engine.run({126});
+  maybeResult = engine.run({62});
   ASSERT_TRUE((bool)maybeResult);
   result = maybeResult.get();
-  ASSERT_EQ(result, 127);
+  ASSERT_EQ(result, 96);
   // edge value low
   maybeResult = engine.run({0});
   ASSERT_TRUE((bool)maybeResult);
   result = maybeResult.get();
   ASSERT_EQ(result, 16);
   // edge value high
-  maybeResult = engine.run({127});
+  maybeResult = engine.run({63});
   ASSERT_TRUE((bool)maybeResult);
   result = maybeResult.get();
-  ASSERT_EQ(result, 6);
+  ASSERT_EQ(result, 12);
 }
