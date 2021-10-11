@@ -11,7 +11,7 @@ from ..data_types.dtypes_helpers import (
 )
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
-from ..representation.intermediate import ArbitraryFunction
+from ..representation.intermediate import UnivariateFunction
 
 # TODO: should come from compiler, through an API, #402
 ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
@@ -81,7 +81,7 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
 
     # TODO: remove this workaround, which was for #279, once the compiler can handle
     # smaller tables, #412
-    has_a_table = any(isinstance(node, ArbitraryFunction) for node in op_graph.graph.nodes)
+    has_a_table = any(isinstance(node, UnivariateFunction) for node in op_graph.graph.nodes)
 
     if has_a_table:
         max_bit_width = ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
@@ -104,7 +104,7 @@ def extend_direct_lookup_tables(op_graph: OPGraph):
         op_graph: graph to update lookup tables for
     """
     for node in op_graph.graph.nodes:
-        if isinstance(node, ArbitraryFunction) and node.op_name == "TLU":
+        if isinstance(node, UnivariateFunction) and node.op_name == "TLU":
             table = node.op_kwargs["table"]
             bit_width = cast(Integer, node.inputs[0].dtype).bit_width
             expected_length = 2 ** bit_width

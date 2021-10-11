@@ -10,7 +10,7 @@ from ..data_types.floats import Float
 from ..data_types.integers import Integer
 from ..debugging.custom_assert import assert_true, custom_assert
 from ..operator_graph import OPGraph
-from ..representation.intermediate import ArbitraryFunction, Constant, Input, IntermediateNode
+from ..representation.intermediate import Constant, Input, IntermediateNode, UnivariateFunction
 from ..values import TensorValue
 
 
@@ -18,7 +18,7 @@ def fuse_float_operations(
     op_graph: OPGraph,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ):
-    """Find and fuse float domains into single Integer to Integer ArbitraryFunction.
+    """Find and fuse float domains into single Integer to Integer UnivariateFunction.
 
     Args:
         op_graph (OPGraph): The OPGraph to simplify
@@ -92,8 +92,8 @@ def convert_float_subgraph_to_fused_node(
     float_subgraph_start_nodes: Set[IntermediateNode],
     terminal_node: IntermediateNode,
     subgraph_all_nodes: Set[IntermediateNode],
-) -> Optional[Tuple[ArbitraryFunction, IntermediateNode]]:
-    """Convert a float subgraph to an equivalent fused ArbitraryFunction node.
+) -> Optional[Tuple[UnivariateFunction, IntermediateNode]]:
+    """Convert a float subgraph to an equivalent fused UnivariateFunction node.
 
     Args:
         op_graph (OPGraph): The OPGraph the float subgraph is part of.
@@ -103,7 +103,7 @@ def convert_float_subgraph_to_fused_node(
         subgraph_all_nodes (Set[IntermediateNode]): All the nodes in the float subgraph.
 
     Returns:
-        Optional[Tuple[ArbitraryFunction, IntermediateNode]]: None if the float subgraph
+        Optional[Tuple[UnivariateFunction, IntermediateNode]]: None if the float subgraph
             cannot be fused, otherwise returns a tuple containing the fused node and the node whose
             output must be plugged as the input to the subgraph.
     """
@@ -161,7 +161,7 @@ def convert_float_subgraph_to_fused_node(
     )
 
     # Create fused_node
-    fused_node = ArbitraryFunction(
+    fused_node = UnivariateFunction(
         deepcopy(new_subgraph_variable_input.inputs[0]),
         lambda x, float_op_subgraph, terminal_node: float_op_subgraph.evaluate({0: x})[
             terminal_node
@@ -251,7 +251,7 @@ def subgraph_values_allow_fusing(
 ):
     """Check if a subgraph's values are compatible with fusing.
 
-    A fused subgraph for example only works on an input tensor if the resulting ArbitraryFunction
+    A fused subgraph for example only works on an input tensor if the resulting UnivariateFunction
     can be applied per cell, hence shuffling or tensor shape changes make fusing impossible.
 
     Args:
@@ -273,12 +273,12 @@ def subgraph_values_allow_fusing(
         f"only works for subgraphs with 1 variable input node, got {num_variable_input_nodes}",
     )
 
-    # Some ArbitraryFunction nodes have baked constants that need to be taken into account for the
+    # Some UnivariateFunction nodes have baked constants that need to be taken into account for the
     # max size computation
     baked_constants_ir_nodes = [
         baked_constant_base_value
         for node in subgraph_all_nodes
-        if isinstance(node, ArbitraryFunction)
+        if isinstance(node, UnivariateFunction)
         if (baked_constant_base_value := node.op_attributes.get("baked_constant_ir_node", None))
         is not None
     ]
@@ -297,7 +297,7 @@ def subgraph_values_allow_fusing(
 
     # A cheap check is that the variable input node must have the biggest size, i.e. have the most
     # elements, meaning all constants will broadcast to its shape. This is because the
-    # ArbitraryFunction input and output must have the same shape so that it can be applied to each
+    # UnivariateFunction input and output must have the same shape so that it can be applied to each
     # of the input tensor cells.
     # There *may* be a way to manage the other case by simulating the broadcast of the smaller input
     # array and then concatenating/stacking the results. This is not currently doable as we don't
@@ -343,5 +343,5 @@ def subgraph_has_unique_variable_input(
         bool: True if only one of the nodes is not an Constant
     """
     # Only one input to the subgraph where computations are done in floats is variable, this
-    # is the only case we can manage with ArbitraryFunction fusing
+    # is the only case we can manage with UnivariateFunction fusing
     return sum(not isinstance(node, Constant) for node in float_subgraph_start_nodes) == 1

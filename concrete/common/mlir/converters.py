@@ -22,7 +22,7 @@ from ..data_types.dtypes_helpers import (
 )
 from ..data_types.integers import Integer
 from ..debugging.custom_assert import custom_assert
-from ..representation.intermediate import Add, ArbitraryFunction, Constant, Dot, Mul, Sub
+from ..representation.intermediate import Add, Constant, Dot, Mul, Sub, UnivariateFunction
 from ..values import TensorValue
 
 
@@ -165,7 +165,7 @@ def constant(node, _, __, ctx):
 
 
 def apply_lut(node, preds, ir_to_mlir_node, ctx):
-    """Convert an arbitrary function intermediate node."""
+    """Convert a UnivariateFunction intermediate node."""
     custom_assert(len(node.inputs) == 1, "LUT should have a single input")
     custom_assert(len(node.outputs) == 1, "LUT should have a single output")
     if not value_is_encrypted_scalar_unsigned_integer(node.inputs[0]):
@@ -224,7 +224,7 @@ V0_OPSET_CONVERSION_FUNCTIONS = {
     Sub: sub,
     Mul: mul,
     Constant: constant,
-    ArbitraryFunction: apply_lut,
+    UnivariateFunction: apply_lut,
     Dot: dot,
 }
 

@@ -9,13 +9,13 @@ import pytest
 from concrete.common.representation.intermediate import (
     ALL_IR_NODES,
     Add,
-    ArbitraryFunction,
     Constant,
     Dot,
     Input,
     IntermediateNode,
     Mul,
     Sub,
+    UnivariateFunction,
 )
 
 
@@ -66,10 +66,10 @@ def python_functions_are_equal_or_equivalent(lhs: object, rhs: object) -> bool:
         return False
 
 
-def is_equivalent_arbitrary_function(lhs: ArbitraryFunction, rhs: object) -> bool:
-    """Helper function to check if an ArbitraryFunction node is equivalent to an other object."""
+def is_equivalent_arbitrary_function(lhs: UnivariateFunction, rhs: object) -> bool:
+    """Helper function to check if an UnivariateFunction node is equivalent to an other object."""
     return (
-        isinstance(rhs, ArbitraryFunction)
+        isinstance(rhs, UnivariateFunction)
         and python_functions_are_equal_or_equivalent(lhs.arbitrary_func, rhs.arbitrary_func)
         and lhs.op_args == rhs.op_args
         and lhs.op_kwargs == rhs.op_kwargs
@@ -127,7 +127,7 @@ def is_equivalent_intermediate_node(lhs: IntermediateNode, rhs: object) -> bool:
 
 EQUIVALENT_TEST_FUNC: Dict[Type, Callable[..., bool]] = {
     Add: is_equivalent_add,
-    ArbitraryFunction: is_equivalent_arbitrary_function,
+    UnivariateFunction: is_equivalent_arbitrary_function,
     Constant: is_equivalent_constant,
     Dot: is_equivalent_dot,
     Input: is_equivalent_input,

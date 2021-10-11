@@ -196,11 +196,14 @@ class Constant(IntermediateNode):
         return str(self.constant_data)
 
 
-class ArbitraryFunction(IntermediateNode):
-    """Node representing a univariate arbitrary function, e.g. sin(x)."""
+class UnivariateFunction(IntermediateNode):
+    """Node representing an univariate arbitrary function, e.g. sin(x)."""
 
     # The arbitrary_func is not optional but mypy has a long standing bug and is not able to
     # understand this properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623
+    # arbitrary_func can take more than one argument but during evaluation the input variable will
+    # be the first argument passed to it. You can add other constant arguments needed for the proper
+    # execution of the function through op_args and op_kwargs.
     arbitrary_func: Optional[Callable]
     op_name: str
     op_args: Tuple[Any, ...]
@@ -240,9 +243,9 @@ class ArbitraryFunction(IntermediateNode):
         return self.op_name
 
     def get_table(self) -> List[Any]:
-        """Get the table for the current input value of this ArbitraryFunction.
+        """Get the table for the current input value of this UnivariateFunction.
 
-        This function only works if the ArbitraryFunction input value is an unsigned Integer.
+        This function only works if the UnivariateFunction input value is an unsigned Integer.
 
         Returns:
             List[Any]: The table.
@@ -290,7 +293,7 @@ class Dot(IntermediateNode):
     """Return the node representing a dot product."""
 
     _n_in: int = 2
-    # Optional, same issue as in ArbitraryFunction for mypy
+    # Optional, same issue as in UnivariateFunction for mypy
     evaluation_function: Optional[Callable[[Any, Any], Any]]
     # Allows to use specialized implementations from e.g. numpy
 

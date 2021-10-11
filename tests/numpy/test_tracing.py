@@ -386,24 +386,24 @@ def test_tracing_astype(
     [
         pytest.param(
             {"x": EncryptedScalar(Integer(7, is_signed=False))},
-            ir.ArbitraryFunction,
+            ir.UnivariateFunction,
         ),
         pytest.param(
             {"x": EncryptedScalar(Integer(32, is_signed=True))},
-            ir.ArbitraryFunction,
+            ir.UnivariateFunction,
         ),
         pytest.param(
             {"x": EncryptedScalar(Integer(64, is_signed=True))},
-            ir.ArbitraryFunction,
+            ir.UnivariateFunction,
         ),
         pytest.param(
             {"x": EncryptedScalar(Integer(128, is_signed=True))},
-            ir.ArbitraryFunction,
+            ir.UnivariateFunction,
             marks=pytest.mark.xfail(strict=True, raises=NotImplementedError),
         ),
         pytest.param(
             {"x": EncryptedScalar(Float(64))},
-            ir.ArbitraryFunction,
+            ir.UnivariateFunction,
         ),
     ],
 )

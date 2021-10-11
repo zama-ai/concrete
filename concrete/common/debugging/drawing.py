@@ -14,12 +14,12 @@ from ..operator_graph import OPGraph
 from ..representation.intermediate import (
     ALL_IR_NODES,
     Add,
-    ArbitraryFunction,
     Constant,
     Dot,
     Input,
     Mul,
     Sub,
+    UnivariateFunction,
 )
 
 IR_NODE_COLOR_MAPPING = {
@@ -28,9 +28,9 @@ IR_NODE_COLOR_MAPPING = {
     Add: "red",
     Sub: "yellow",
     Mul: "green",
-    ArbitraryFunction: "orange",
+    UnivariateFunction: "orange",
     Dot: "purple",
-    "ArbitraryFunction": "orange",
+    "UnivariateFunction": "orange",
     "TLU": "grey",
     "output": "magenta",
 }
@@ -71,7 +71,7 @@ def draw_graph(
         value_to_return = IR_NODE_COLOR_MAPPING[type(node)]
         if node in output_nodes:
             value_to_return = IR_NODE_COLOR_MAPPING["output"]
-        elif isinstance(node, ArbitraryFunction):
+        elif isinstance(node, UnivariateFunction):
             value_to_return = IR_NODE_COLOR_MAPPING.get(node.op_name, value_to_return)
         return value_to_return
 

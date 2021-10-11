@@ -6,7 +6,7 @@ from typing import Iterable, Tuple, Union
 from ..common_helpers import is_a_power_of_2
 from ..data_types.base import BaseDataType
 from ..data_types.integers import make_integer_to_hold
-from ..representation.intermediate import ArbitraryFunction
+from ..representation.intermediate import UnivariateFunction
 from ..tracing.base_tracer import BaseTracer
 
 
@@ -32,10 +32,10 @@ class LookupTable:
 
     def __getitem__(self, key: Union[int, BaseTracer]):
         # if a tracer is used for indexing,
-        # we need to create an `ArbitraryFunction` node
+        # we need to create an `UnivariateFunction` node
         # because the result will be determined during the runtime
         if isinstance(key, BaseTracer):
-            traced_computation = ArbitraryFunction(
+            traced_computation = UnivariateFunction(
                 input_base_value=key.output,
                 arbitrary_func=LookupTable._checked_indexing,
                 output_dtype=self.output_dtype,

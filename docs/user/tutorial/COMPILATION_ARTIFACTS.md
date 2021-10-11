@@ -83,7 +83,7 @@ Traceback (most recent call last):
   File "/src/concrete/numpy/compile.py", line 103, in _compile_numpy_function_into_op_graph_internal
     raise ValueError(
 ValueError: <lambda> cannot be compiled as it has nodes with either float inputs or outputs.
-Offending nodes : <concrete.common.representation.intermediate.ArbitraryFunction object at 0x7f6689fd37f0>
+Offending nodes : <concrete.common.representation.intermediate.UnivariateFunction object at 0x7f6689fd37f0>
 ```
 
 ## Manual export

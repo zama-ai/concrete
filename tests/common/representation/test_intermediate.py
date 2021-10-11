@@ -34,15 +34,15 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         pytest.param(ir.Constant(42), None, 42, id="Constant"),
         pytest.param(ir.Constant(-42), None, -42, id="Constant"),
         pytest.param(
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(7, False)), lambda x: x + 3, Integer(7, False)
             ),
             [10],
             13,
-            id="ArbitraryFunction, x + 3",
+            id="UnivariateFunction, x + 3",
         ),
         pytest.param(
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(7, False)),
                 lambda x, y: x + y,
                 Integer(7, False),
@@ -50,10 +50,10 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
             ),
             [10],
             13,
-            id="ArbitraryFunction, (x, y) -> x + y, where y is constant == 3",
+            id="UnivariateFunction, (x, y) -> x + y, where y is constant == 3",
         ),
         pytest.param(
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(7, False)),
                 lambda x, y: y[x],
                 Integer(7, False),
@@ -61,10 +61,10 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
             ),
             [2],
             3,
-            id="ArbitraryFunction, (x, y) -> y[x], where y is constant == (1, 2, 3, 4)",
+            id="UnivariateFunction, (x, y) -> y[x], where y is constant == (1, 2, 3, 4)",
         ),
         pytest.param(
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(7, False)),
                 lambda x, y: y[3],
                 Integer(7, False),
@@ -72,7 +72,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
             ),
             [2],
             4,
-            id="ArbitraryFunction, x, y -> y[3], where y is constant == (1, 2, 3, 4)",
+            id="UnivariateFunction, x, y -> y[3], where y is constant == (1, 2, 3, 4)",
         ),
         pytest.param(
             ir.Dot(
@@ -209,34 +209,34 @@ def test_evaluate(
             False,
         ),
         (
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
             ),
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
             ),
             True,
         ),
         (
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(8, False)),
                 lambda x: x,
                 Integer(8, False),
                 op_args=(1, 2, 3),
             ),
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
             ),
             False,
         ),
         (
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(8, False)),
                 lambda x: x,
                 Integer(8, False),
                 op_kwargs={"tuple": (1, 2, 3)},
             ),
-            ir.ArbitraryFunction(
+            ir.UnivariateFunction(
                 EncryptedScalar(Integer(8, False)), lambda x: x, Integer(8, False)
             ),
             False,

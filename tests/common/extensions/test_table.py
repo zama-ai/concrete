@@ -55,8 +55,8 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     ref_graph.add_node(input_x)
 
     # pylint: disable=protected-access
-    # Need access to _checked_indexing to have is_equivalent_to work for ir.ArbitraryFunction
-    output_arbitrary_function = ir.ArbitraryFunction(
+    # Need access to _checked_indexing to have is_equivalent_to work for ir.UnivariateFunction
+    output_arbitrary_function = ir.UnivariateFunction(
         input_base_value=x,
         arbitrary_func=LookupTable._checked_indexing,
         output_dtype=table.output_dtype,
@@ -68,7 +68,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
 
     ref_graph.add_edge(input_x, output_arbitrary_function, input_idx=0)
 
-    # TODO: discuss if this check is enough as == is not overloaded properly for ArbitraryFunction
+    # TODO: discuss if this check is enough as == is not overloaded properly for UnivariateFunction
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)
 
 
@@ -95,8 +95,8 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     ref_graph.add_node(input_x)
 
     # pylint: disable=protected-access
-    # Need access to _checked_indexing to have is_equivalent_to work for ir.ArbitraryFunction
-    intermediate_arbitrary_function = ir.ArbitraryFunction(
+    # Need access to _checked_indexing to have is_equivalent_to work for ir.UnivariateFunction
+    intermediate_arbitrary_function = ir.UnivariateFunction(
         input_base_value=x,
         arbitrary_func=LookupTable._checked_indexing,
         output_dtype=table.output_dtype,
@@ -117,5 +117,5 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     ref_graph.add_edge(intermediate_arbitrary_function, output_add, input_idx=0)
     ref_graph.add_edge(constant_3, output_add, input_idx=1)
 
-    # TODO: discuss if this check is enough as == is not overloaded properly for ArbitraryFunction
+    # TODO: discuss if this check is enough as == is not overloaded properly for UnivariateFunction
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)

@@ -9,7 +9,7 @@ from numpy.typing import DTypeLike
 from ..common.data_types.dtypes_helpers import mix_values_determine_holding_dtype
 from ..common.debugging.custom_assert import assert_true, custom_assert
 from ..common.operator_graph import OPGraph
-from ..common.representation.intermediate import ArbitraryFunction, Constant, Dot
+from ..common.representation.intermediate import Constant, Dot, UnivariateFunction
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 from ..common.values import BaseValue
 from .np_dtypes_helpers import (
@@ -87,7 +87,7 @@ class NPTracer(BaseTracer):
 
         normalized_numpy_dtype = numpy.dtype(numpy_dtype)
         output_dtype = convert_numpy_dtype_to_base_data_type(numpy_dtype)
-        traced_computation = ArbitraryFunction(
+        traced_computation = UnivariateFunction(
             input_base_value=self.output,
             arbitrary_func=normalized_numpy_dtype.type,
             output_dtype=output_dtype,
@@ -154,7 +154,7 @@ class NPTracer(BaseTracer):
         common_output_dtypes = cls._manage_dtypes(unary_operator, *input_tracers)
         custom_assert(len(common_output_dtypes) == 1)
 
-        traced_computation = ArbitraryFunction(
+        traced_computation = UnivariateFunction(
             input_base_value=input_tracers[0].output,
             arbitrary_func=unary_operator,
             output_dtype=common_output_dtypes[0],
@@ -218,7 +218,7 @@ class NPTracer(BaseTracer):
             "in_which_input_is_constant": in_which_input_is_constant,
         }
 
-        traced_computation = ArbitraryFunction(
+        traced_computation = UnivariateFunction(
             input_base_value=input_tracers[in_which_input_is_variable].output,
             arbitrary_func=arbitrary_func,
             output_dtype=common_output_dtypes[0],

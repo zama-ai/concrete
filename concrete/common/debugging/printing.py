@@ -6,7 +6,7 @@ import networkx as nx
 
 from ..debugging.custom_assert import custom_assert
 from ..operator_graph import OPGraph
-from ..representation.intermediate import ArbitraryFunction, Constant, Input
+from ..representation.intermediate import Constant, Input, UnivariateFunction
 
 
 def output_data_type_to_string(node):
@@ -61,7 +61,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
 
             base_name = node.__class__.__name__
 
-            if isinstance(node, ArbitraryFunction):
+            if isinstance(node, UnivariateFunction):
                 base_name = node.op_name
 
             what_to_print = base_name + "("
