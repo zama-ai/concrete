@@ -154,7 +154,9 @@ jobs:
         shell: '/usr/bin/bash -e {0}'
     strategy:
       matrix:
-        python-version: [3.8]
+        # YAML footgun : https://twitter.com/webology/status/1445394072492023811?s=20
+        # Versions need to be quoted or risk being interpreted as floating point numbers
+        python-version: ["3.8"]
 
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
@@ -470,11 +472,10 @@ jobs:
           path: |
             ~/.cache/pip
             ~/.cache/pypoetry
-          # Ignore line break in the evaluated double quoted string
-          key: "${{ runner.os }}-build-${{ matrix.python-version }}-\
-            ${{ hashFiles('poetry.lock') }}"
+          # Use python 3.8 as it is the version available in ubuntu 20.04 and we develop with it
+          key: "${{ runner.os }}-build-3.8-${{ hashFiles('poetry.lock') }}"
           restore-keys: |
-            ${{ runner.os }}-build-${{ matrix.python-version }}-
+            ${{ runner.os }}-build-3.8-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Install dependencies
@@ -485,6 +486,7 @@ jobs:
       - name: Set tag in env
         run: |
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
+          echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
           RELEASE_IMG_GIT_TAG="${RELEASE_IMAGE_BASE}:${GIT_TAG}"
           echo "RELEASE_IMG_GIT_TAG=${RELEASE_IMG_GIT_TAG}" >> "$GITHUB_ENV"
           RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_GIT_TAG}"
@@ -496,10 +498,14 @@ jobs:
 
           # We want the space separated list of versions to be expanded
           # shellcheck disable=SC2086
-          REQUIRES_LATEST_TAG=$(poetry run python script/make_utils/version_utils.py \
+          IS_LATEST_INFO=$(poetry run python script/make_utils/version_utils.py \
           islatest \
           --new-version "${GIT_TAG}" \
           --existing-versions $EXISTING_TAGS)
+
+          REQUIRES_LATEST_TAG=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_latest')
+          IS_PRERELEASE=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_prerelease')
+          echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
 
           if [[ "${REQUIRES_LATEST_TAG}" == "true" ]]; then
             RELEASE_IMG_LATEST_TAG="${RELEASE_IMAGE_BASE}:latest"
@@ -534,12 +540,61 @@ jobs:
           docker run --rm -v "$(pwd)"/docker/release_resources:/data \
           "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
           docker image push --all-tags "${RELEASE_IMAGE_BASE}"
+      - name: Create directory for artifacts
+        if: ${{ success() && !cancelled() }}
+        run: |
+          ARTIFACTS_RAW_DIR=/tmp/release_artifacts/raw/
+          mkdir -p "${ARTIFACTS_RAW_DIR}"
+          echo "ARTIFACTS_RAW_DIR=${ARTIFACTS_RAW_DIR}" >> "$GITHUB_ENV"
+
+          ARTIFACTS_PACKAGED_DIR=/tmp/release_artifacts/packaged/
+          mkdir -p "${ARTIFACTS_PACKAGED_DIR}"
+          echo "ARTIFACTS_PACKAGED_DIR=${ARTIFACTS_PACKAGED_DIR}" >> "$GITHUB_ENV"
+      - name: Download Documentation
+        if: ${{ success() && !cancelled() }}
+        id: download-docs
+        uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+        with:
+          name: html-docs
+          path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
+      - name: Download changelog
+        if: ${{ success() && !cancelled() }}
+        id: download-changelog
+        uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+        with:
+          name: changelog
+          path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
+      - name: Create ready to upload/packaged artifacts
+        if: ${{ success() && !cancelled() }}
+        env:
+          RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
+          RAW_CHANGELOG_DIR: ${{ steps.download-changelog.outputs.download-path }}
+        run: |
+          pushd "${RAW_DOCS_DIR}"
+          zip -r "${ARTIFACTS_PACKAGED_DIR}/html-docs.zip" ./*
+          tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
+          popd
+          cp "${RAW_CHANGELOG_DIR}/*" "${ARTIFACTS_PACKAGED_DIR}"
+      - name: Create GitHub release
+        if: ${{ success() && !cancelled() }}
+        id: create-release
+        uses: softprops/action-gh-release@6034af24fba4e5a8e975aaa6056554efe4c794d0
+        with:
+          body: |
+            **Docker Image:** ${{ env.RELEASE_IMG_GIT_TAG }}
+            **Documentation:** https://docs.zama.ai/concrete/
+          prerelease: ${{ fromJSON(env.IS_PRERELEASE) }}
+          files: |
+            '${{ env.ARTIFACTS_PACKAGED_DIR }}/*'
+          tag_name: ${{ env.GIT_TAG }}
+          fail_on_unmatched_files: true
+          token: ${{ secrets.BOT_TOKEN }}
       - name: Set notification report
         id: report
         if: ${{ always() }}
         run: |
-          REPORT="Pushing docker image ${{ env.RELEASE_IMG_TAGS_TO_PUSH }} finished with status \
-          ${{ job.status }}."
+          REPORT="Creating release for ${GIT_TAG} finished with status ${{ job.status }}. \
+          GitHub release link: ${{ steps.create-release.outputs.url }}."
           echo "${REPORT}"
           echo "::set-output name=report::${REPORT}"
           echo "REPORT=${REPORT}" >> "$GITHUB_ENV"

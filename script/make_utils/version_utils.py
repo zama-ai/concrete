@@ -1,6 +1,7 @@
 """Tool to manage version in the project"""
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -20,7 +21,8 @@ def islatest(args):
     """islatest command entry point."""
     print(args, file=sys.stderr)
 
-    new_version_is_latest = False
+    # This is the safest default
+    result = {"is_latest": False, "is_prerelease": True}
 
     new_version_str = strip_leading_v(args.new_version)
     if VersionInfo.isvalid(new_version_str):
@@ -43,7 +45,10 @@ def islatest(args):
             all_non_prerelease_version_infos.append(new_version_info)
 
             new_version_is_latest = max(all_non_prerelease_version_infos) == new_version_info
-    print(str(new_version_is_latest).lower())
+            result["is_latest"] = new_version_is_latest
+            result["is_prerelease"] = False
+
+    print(json.dumps(result))
 
 
 def update_variable_in_py_file(file_path: Path, var_name: str, version_str: str):

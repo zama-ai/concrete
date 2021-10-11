@@ -21,14 +21,7 @@ VERSION=X.Y.Z-rc? make set_version
 Then:
 - [ ] For non RC releases: check the release milestone issues, cut out what can't be completed in time and change the milestones for these issues
 - [ ] Checkout the commit for release, create a signed tag (requires GPG keys setup, see [here](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification)) with the version name (careful for RC) `git tag -s -a -m "vX.Y.Z release" vX.Y.Z`, (or `vX.Y.Z-rc?`) push it to GitHub with `git push origin refs/tags/vX.Y.Z` (or `vX.Y.Z-rc?`)
-- [ ] Wait for the release workflow to finish and get the image url from the notification or the logs
-- [ ] See [here](https://docs.github.com/en/github/administering-a-repository/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release) to create the release in GitHub using the existing tag, add the pull link copied from the step before \(`ghcr.io/zama-ai/concretefhe:vX.Y.Z`\) (or `vX.Y.Z-rc?`) for the uploaded docker image. Mark release as pre-release for an `rc` version. See template below:
-
-This is the release markdown template you should copy and update:
-```
-**Docker Image:** ghcr.io/zama-ai/concretefhe:vX.Y.Z
-**Documentation:** https://docs.zama.ai/concrete/
-```
+- [ ] Wait for the release workflow to finish and check everything went well.
 
 To continue the release cycle:
 - [ ] Choose the version number for next release, e.g. `vA.B.C` (can be `vA.B.C-rc?` for Release Candidates) following semantic versioning: https://semver.org/
