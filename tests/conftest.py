@@ -1,5 +1,7 @@
 """PyTest configuration file"""
+import json
 import operator
+from pathlib import Path
 from typing import Callable, Dict, Type
 
 import networkx as nx
@@ -17,6 +19,34 @@ from concrete.common.representation.intermediate import (
     Sub,
     UnivariateFunction,
 )
+
+
+def pytest_addoption(parser):
+    """Options for pytest"""
+
+    parser.addoption(
+        "--global-coverage-infos-json",
+        type=str,
+        help="To dump pytest-cov term report to a text file.",
+    )
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus):
+    """Pytest callback when testing ends."""
+    # Hacked together from the source code, they don't have an option to export to file and it's too
+    # much work to get a PR in for such a little thing
+    # https://github.com/pytest-dev/pytest-cov/blob/
+    # ec344d8adf2d78238d8f07cb20ed2463d7536970/src/pytest_cov/plugin.py#L329
+    if session.config.pluginmanager.hasplugin("_cov"):
+        global_coverage_file = session.config.getoption(
+            "--global-coverage-infos-json", default=None
+        )
+        if global_coverage_file is not None:
+            cov_plugin = session.config.pluginmanager.getplugin("_cov")
+            coverage_txt = cov_plugin.cov_report.getvalue()
+            global_coverage_file_path = Path(global_coverage_file).resolve()
+            with open(global_coverage_file_path, "w", encoding="utf-8") as f:
+                json.dump({"exit_code": exitstatus, "content": coverage_txt}, f)
 
 
 def _is_equivalent_to_binary_commutative(lhs: IntermediateNode, rhs: object) -> bool:

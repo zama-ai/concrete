@@ -78,8 +78,9 @@ pcc_internal: $(PCC_DEPS)
 
 pytest:
 	poetry run pytest -svv \
+	--global-coverage-infos-json global-coverage-infos.json \
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
-	--cov-report=term-missing:skip-covered --cov-report=xml tests/
+	--cov-report=term-missing:skip-covered tests/
 .PHONY: pytest
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs

@@ -52,6 +52,7 @@ diff-coverage.txt
 *.py,cover
 .hypothesis/
 .pytest_cache/
+global-coverage-infos.json
 
 # Translations
 *.mo
