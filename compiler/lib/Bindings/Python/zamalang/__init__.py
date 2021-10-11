@@ -1,3 +1,3 @@
 """Zamalang python module"""
-from _zamalang import *
+from mlir._mlir_libs._zamalang import *
 from .compiler import CompilerEngine

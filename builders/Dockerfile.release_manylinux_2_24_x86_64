@@ -1,0 +1,24 @@
+FROM quay.io/pypa/manylinux_2_24_x86_64
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y build-essential ninja-build 
+# Set the python path. Options: [cp38-cp38, cp39-cp39, cp310-cp310]
+ARG python_tag=cp38-cp38
+# Install python deps
+RUN /opt/python/${python_tag}/bin/pip install numpy pybind11==2.6.2 PyYAML
+# Setup LLVM
+COPY /llvm-project /llvm-project
+# Setup Concrete
+COPY --from=ghcr.io/zama-ai/concrete-api-env:latest /target/release /concrete/target/release
+ENV CONCRETE_PROJECT=/concrete
+# Setup and build compiler
+COPY /compiler /compiler
+WORKDIR /compiler
+RUN make Python3_EXECUTABLE=/opt/python/${python_tag}/bin/python build
+RUN make python-bindings
+# Fix MLIR package
+RUN touch build/tools/zamalang/python_packages/zamalang_core/mlir/__init__.py
+RUN touch build/tools/zamalang/python_packages/zamalang_core/mlir/dialects/__init__.py
+# Build wheel
+RUN /opt/python/${python_tag}/bin/pip wheel --no-deps -w /wheels .
+RUN auditwheel repair /wheels/*.whl --plat manylinux_2_24_x86_64 -w /wheels

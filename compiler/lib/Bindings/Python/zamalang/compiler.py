@@ -1,8 +1,8 @@
 """Compiler submodule"""
 from typing import List, Union
-from _zamalang._compiler import CompilerEngine as _CompilerEngine
-from _zamalang._compiler import ExecutionArgument as _ExecutionArgument
-from _zamalang._compiler import round_trip as _round_trip
+from mlir._mlir_libs._zamalang._compiler import CompilerEngine as _CompilerEngine
+from mlir._mlir_libs._zamalang._compiler import ExecutionArgument as _ExecutionArgument
+from mlir._mlir_libs._zamalang._compiler import round_trip as _round_trip
 
 
 def round_trip(mlir_str: str) -> str:
