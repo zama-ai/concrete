@@ -22,9 +22,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Log LLVM commit
-        run: echo "LLVM commit" && cd ${{ github.workspace }}/llvm-project && git log -1
-
       - name: Build and test compiler
         uses: addnab/docker-run-action@v3
         with:
