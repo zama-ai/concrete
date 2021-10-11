@@ -42,6 +42,7 @@ def main():
             correct += 1
 
     # Measure: Accuracy (%) = (correct / len(inputs)) * 100
+    # Alert: Accuracy (%) != 100
 
 
 if __name__ == "__main__":

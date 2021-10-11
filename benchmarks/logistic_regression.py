@@ -264,6 +264,7 @@ def main():
     print(f"Accuracy: {accuracy:.2f}%")
 
     # Measure: Accuracy (%) = accuracy
+    # Alert: Accuracy (%) < 85
 
 
 if __name__ == "__main__":

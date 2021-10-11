@@ -191,6 +191,7 @@ def main():
     # Measure: Non Homomorphic Loss = non_homomorphic_loss
     # Measure: Homomorphic Loss = homomorphic_loss
     # Measure: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
+    # Alert: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) > 20
 
 
 if __name__ == "__main__":
