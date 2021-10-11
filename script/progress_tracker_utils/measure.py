@@ -27,7 +27,48 @@ def name_to_id(name):
     return urllib.parse.quote_plus(name.lower())
 
 
-def identify_metrics(script, lines, metrics):
+def register_alert(script, index, line, metrics, alerts):
+    """Parse line, check its correctness, add it to list of alerts if it's valid"""
+
+    # Extract the alert details
+    alert_line = line.replace("# Alert:", "")
+
+    # Parse the alert and append it to list of alerts
+    supported_operators = ["==", "!=", "<=", ">=", "<", ">"]
+    for operator in supported_operators:
+        alert_details = alert_line.split(operator)
+
+        # An alert should be of form `{metric} {operator} {constant}`
+        if len(alert_details) == 2:
+            metric_label = alert_details[0].strip()
+            metric_id = name_to_id(metric_label)
+
+            if metric_id not in metrics:
+                raise SyntaxError(
+                    f"An alert is using an undefined metric `{metric_label}` "
+                    f"(at line {index + 1} of {script})",
+                )
+
+            value_str = alert_details[1].strip()
+            try:
+                value = float(value_str)
+                alerts.append({"metric": metric_id, "comparison": operator, "value": value})
+            except ValueError as error:
+                raise SyntaxError(
+                    f"An alert is not using a constant floating point for comparison "
+                    f"(at line {index + 1} of {script})",
+                ) from error
+
+            break
+    else:
+        raise SyntaxError(
+            f"An alert is not using any of the supported comparisons "
+            f"{', '.join(supported_operators)} "
+            f"(at line {index + 1} of {script})",
+        )
+
+
+def identify_metrics_and_alerts(script, lines, metrics, alerts):
     """Identify the metrics of a script and make sure the annotations are well-formed"""
 
     # Create a flag to detect `# Measure: End` without a measurement start
@@ -90,6 +131,8 @@ def identify_metrics(script, lines, metrics):
                 in_measurement = True
                 measurement_line = index + 1
                 measurement_indentation = indentation
+        elif line.startswith("# Alert:"):
+            register_alert(script, index, line, metrics, alerts)
 
     # Make sure there isn't an active measurement that hasn't finished
     if in_measurement:
@@ -307,24 +350,28 @@ def main():
         if target_id in result["targets"]:
             raise RuntimeError(f"Target `{target_name}` is already registered")
 
-        # Create an entry in the result for the current target
-        result["targets"][target_id] = {
-            "name": target_name,
-            "measurements": {},
-            "code": "\n".join(lines),
-        }
-
         # Create a dictionary to hold `metric_id` to `metric_name`
         metrics = {}
 
+        # Create a list to hold alerts in form { "metric": ..., "comparison": ..., "value": ... }
+        alerts = []
+
         # Identify metrics of the current script
-        identify_metrics(path, lines, metrics)
+        identify_metrics_and_alerts(path, lines, metrics, alerts)
 
         # Extract the script name
         name = os.path.basename(path)
 
         # Create another script to hold the modified version of the current script
         create_modified_script(name, lines, metrics)
+
+        # Create an entry in the result for the current target
+        result["targets"][target_id] = {
+            "name": target_name,
+            "measurements": {},
+            "alerts": alerts,
+            "code": "\n".join(lines),
+        }
 
         # Perform and save measurements
         perform_measurements(path, name, target_id, metrics, samples, result)
