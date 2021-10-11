@@ -32,6 +32,7 @@ runJit(mlir::ModuleOp module, llvm::StringRef func,
   if (auto err = maybeArguments.takeError()) {
     ::mlir::zamalang::log_error()
         << "Cannot create lambda arguments: " << err << "\n";
+    llvm::consumeError(std::move(err));
     return mlir::failure();
   }
 
@@ -41,17 +42,20 @@ runJit(mlir::ModuleOp module, llvm::StringRef func,
     if (auto err = arguments->setArg(i, funcArgs[i])) {
       ::mlir::zamalang::log_error()
           << "Cannot push argument " << i << ": " << err << "\n";
+      llvm::consumeError(std::move(err));
       return mlir::failure();
     }
   }
   // Invoke the lambda
   if (auto err = lambda->invoke(*arguments)) {
     ::mlir::zamalang::log_error() << "Cannot invoke : " << err << "\n";
+    llvm::consumeError(std::move(err));
     return mlir::failure();
   }
   uint64_t res = 0;
   if (auto err = arguments->getResult(0, res)) {
     ::mlir::zamalang::log_error() << "Cannot get result : " << err << "\n";
+    llvm::consumeError(std::move(err));
     return mlir::failure();
   }
   llvm::errs() << res << "\n";

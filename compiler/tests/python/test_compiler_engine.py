@@ -37,6 +37,29 @@ def test_compile_and_run(mlir_input, args, expected_result):
     assert engine.run(*args) == expected_result
 
 
+
+@pytest.mark.parametrize(
+    "mlir_input, args",
+    [
+        pytest.param(
+            """
+            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
+                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
+                return %1: !HLFHE.eint<7>
+            }
+            """,
+            (5, 7, 8),
+            id="add_eint_int_invalid_arg_number"
+        ),
+    ],
+)
+def test_compile_and_run_invalid_arg_number(mlir_input, args):
+    engine = CompilerEngine()
+    engine.compile_fhe(mlir_input)
+    with pytest.raises(RuntimeError, match=r"failed pushing integer argument"):
+        engine.run(*args)
+
+
 @pytest.mark.parametrize(
     "mlir_input, args, expected_result, tab_size",
     [
@@ -59,3 +82,25 @@ def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
     engine = CompilerEngine()
     engine.compile_fhe(mlir_input)
     assert abs(engine.run(*args) - expected_result) / tab_size < 0.1
+
+
+@pytest.mark.parametrize(
+    "mlir_input",
+    [
+        pytest.param(
+            """
+            func @test(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            {
+                %ret = "HLFHE.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
+                return %ret : !HLFHE.eint<7>
+            }
+            """,
+            id="not @main"
+        ),
+    ],
+)
+def test_compile_invalid(mlir_input):
+    engine = CompilerEngine()
+    with pytest.raises(RuntimeError, match=r"failed compiling"):
+        engine.compile_fhe(mlir_input)

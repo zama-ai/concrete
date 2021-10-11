@@ -91,14 +91,12 @@ llvm::Error CompilerEngine::compile(
   auto clientParameter = mlir::zamalang::createClientParametersForV0(
       fheContext, "main", module_ref.get());
   if (auto err = clientParameter.takeError()) {
-    return llvm::make_error<llvm::StringError>(
-        "cannot generate client parameters", llvm::inconvertibleErrorCode());
+    return std::move(err);
   }
   auto maybeKeySet =
       mlir::zamalang::KeySet::generate(clientParameter.get(), 0, 0);
   if (auto err = maybeKeySet.takeError()) {
-    return llvm::make_error<llvm::StringError>("cannot generate keyset",
-                                               llvm::inconvertibleErrorCode());
+    return std::move(err);
   }
   keySet = std::move(maybeKeySet.get());
 
@@ -148,8 +146,7 @@ llvm::Expected<uint64_t> CompilerEngine::run(std::vector<uint64_t> args) {
   auto arguments = std::move(maybeArgument.get());
   for (auto i = 0; i < args.size(); i++) {
     if (auto err = arguments->setArg(i, args[i])) {
-      return llvm::make_error<llvm::StringError>(
-          "cannot push argument", llvm::inconvertibleErrorCode());
+      return std::move(err);
     }
   }
   // Invoke the lambda

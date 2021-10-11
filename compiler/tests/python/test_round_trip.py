@@ -47,14 +47,14 @@ VALID_INPUTS = [
 ]
 
 INVALID_INPUTS = [
-    pytest.param("nothing really mlir", id="add_eint_int_cst"),
+    pytest.param("nothing really mlir", id="english sentence"),
     pytest.param(
         """
         func @test(%arg0: !HLFHE.eint<0>) {
             return
         }
         """,
-        id="add_eint_int_cst",
+        id="eint<0>",
     ),
 ]
 
