@@ -16,6 +16,24 @@
 <!DOCTYPE html>
 <html class="{{ sphinx_writer }}" lang="{{ lang_attr }}" >
 <head>
+  <!-- theme v0.4.1 -->
+  {#- Do not conflict with RTD insertion of analytics script #}
+  {%- if not READTHEDOCS %}
+    {%- if theme_analytics_id %}
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ theme_analytics_id }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', '{{ theme_analytics_id }}', {
+          'anonymize_ip': 'true',
+      });
+    </script>
+    {%- endif %}
+  {%- endif %}
+
   <meta charset="utf-8" />
   {{- metatags }}
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -125,7 +143,9 @@
 
 <body class="wy-body-for-nav">
   <div class="zama-header">
-    <a href="https://docs.zama.ai/concrete/">Docs home</a>
+    {%- if show_docs_home_link %}
+	  <a href="https://docs.zama.ai/concrete/">Docs home</a>
+    {%- endif %}
     <a href="https://zama.ai">Visit Zama</a>
   </div>
   {%- block extrabody %} {% endblock %}
@@ -235,24 +255,6 @@
           SphinxRtdTheme.Navigation.enable({{ 'true' if theme_sticky_navigation|tobool else 'false' }});
       });
   </script>
-
-  {#- Do not conflict with RTD insertion of analytics script #}
-  {%- if not READTHEDOCS %}
-    {%- if theme_analytics_id %}
-    <!-- Theme Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ theme_analytics_id }}"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', '{{ theme_analytics_id }}', {
-          'anonymize_ip': {{ 'true' if theme_analytics_anonymize_ip|tobool else 'false' }},
-      });
-    </script>
-
-    {%- endif %}
-  {%- endif %}
 
   {%- block footer %} {% endblock %}
 

@@ -11,8 +11,8 @@
     --secondary-color-light: #fff0d9;
     --tertiary-color: #414042;
     --tertiary-color-light: #e6e7e8;
-    --link-color: var(--primary-color-darker);
-    --primary-font: Telegraf, sans-serif;
+    --link-color: black;
+    --primary-font: Archivo, sans-serif;
 }
 
 .zama-header {
@@ -21,7 +21,6 @@
     right: 0;
     z-index: 201;
     height: 43px;
-    max-width: 1100px;
     background: black;
     color: white;
     display: flex;
@@ -52,6 +51,11 @@
 
 body {
     font-family: var(--primary-font);
+}
+
+/* Change code blocks font size slightly (normally 12px)*/
+.rst-content pre.literal-block, .rst-content div[class^="highlight"] pre, .rst-content .linenodiv pre {
+	font-size: 13px !important;
 }
 
 .rst-content .toctree-wrapper>p.caption, h1, h2, h3, h4, h5, h6, legend {
@@ -120,6 +124,10 @@ input[type=color], input[type=date], input[type=datetime-local], input[type=date
 
 .wy-nav-content a {
     color: var(--link-color);
+    text-decoration: underline;
+}
+
+.rst-footer-buttons a {
     text-decoration: none;
 }
 
@@ -127,7 +135,7 @@ input[type=color], input[type=date], input[type=datetime-local], input[type=date
 .wy-nav-content a:focus,
 .wy-nav-content a:active {
     color: var(--link-color);
-    text-decoration: underline;
+    text-decoration: none;
 }
 
 .wy-nav-content a.btn:hover,
@@ -136,6 +144,19 @@ input[type=color], input[type=date], input[type=datetime-local], input[type=date
     color: black;
     text-decoration: none;
 }
+
+.wy-nav-content {
+    max-width: none;
+    background-color: white;
+}
+
+.rst-content {
+    max-width: 800px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 
 .wy-nav-top {
     color: #696969;
@@ -190,6 +211,8 @@ dt em.sig-param:last-of-type::after {
 dl.class > dt:first-of-type {
     display: block !important;
 }
+
+
 
  /*
   * Admonitions

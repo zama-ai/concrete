@@ -66,14 +66,20 @@ nbsphinx_codecell_lexer = 'ipython3'
 #
 html_theme = "sphinx_rtd_theme"
 html_style = "css/zama.css"
-html_logo = "logo-black.png"
+html_logo = "_static/logo.png"
+html_favicon = "_static/favicon.ico"
 html_theme_options = {
     "logo_only": False,
+    "analytics_id": "G-XRM93J9QBW",
+    "collapse_navigation": True,
 }
+pygments_style = "zenburn"
 html_last_updated_fmt = None # '%b %d, %Y'
 html_show_copyright = True
 html_show_sphinx = False
-pygments_style = "zenburn"
+html_context = {
+    "show_docs_home_link": True, # Show/hide docs link in top menu
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
