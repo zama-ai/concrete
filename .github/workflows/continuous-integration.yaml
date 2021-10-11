@@ -195,10 +195,10 @@ jobs:
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@f27f413dcf8ebcb469d2ce4ae4e45e131d105de6
         with:
-          pattern: '^((feat|fix|chore|refactor|style|test|docs)(\(\w+\))?\:) .+$'
+          pattern: '^((feat|fix|chore|refactor|style|test|docs)(\((bounds|helpers|data_types|debugging|extensions|fhe_circuit|mlir|graph|optimization|representation|tracing|values)\))?\:) .+$'
           flags: 'gs'
           error: "Your first line has to contain a commit type and scope like \"feat(my_feature): msg\".\
-            Pattern: '^((feat|fix|chore|refactor|style|test|docs)(\\(\\w+\\))?\\:)'"
+            Pattern: '^((feat|fix|chore|refactor|style|test|docs)(\\((bounds|helpers|data_types|debugging|extensions|fhe_circuit|mlir|graph|optimization|representation|tracing|values)\\))?\\:)'"
           excludeDescription: 'true' # optional: this excludes the description body of a pull request
           excludeTitle: 'true' # optional: this excludes the title of a pull request
           checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
