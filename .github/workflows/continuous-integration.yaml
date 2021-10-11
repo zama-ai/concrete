@@ -478,8 +478,11 @@ jobs:
             ${{ runner.os }}-build-3.8-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      # See #570 To be updated to only install required dependencies group with poetry 1.2 and
+      # remove graphviz installs which are only required for the actual package and not dev tools
       - name: Install dependencies
         run: |
+          sudo apt-get install --no-install-recommends -y graphviz*
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
