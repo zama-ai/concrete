@@ -360,11 +360,11 @@ def test_small_inputset_treat_warnings_as_errors():
             (4,),
             # Remark that, when you do the dot of tensors of 4 values between 0 and 3,
             # you can get a maximal value of 4*3*3 = 36, ie something on 6 bits
-            "%0 = x                                   "
+            "%0 = x                                             "
             "# EncryptedTensor<Integer<unsigned, 6 bits>, shape=(4,)>"
-            "\n%1 = y                                   "
+            "\n%1 = y                                             "
             "# EncryptedTensor<Integer<unsigned, 6 bits>, shape=(4,)>"
-            "\n%2 = Dot(%0, %1)                         "
+            "\n%2 = Dot(%0, %1)                                   "
             "# EncryptedScalar<Integer<unsigned, 6 bits>>"
             "\nreturn(%2)\n",
         ),

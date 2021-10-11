@@ -188,21 +188,21 @@ def test_numpy_tracing_tensors():
     )
 
     expected = """
-%0 = Constant([[2 1] [1 2]])             # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
-%1 = Constant([[1 2] [2 1]])             # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
-%2 = Constant([[10 20] [30 40]])         # ClearTensor<Integer<unsigned, 6 bits>, shape=(2, 2)>
-%3 = Constant([[100 200] [300 400]])     # ClearTensor<Integer<unsigned, 9 bits>, shape=(2, 2)>
-%4 = Constant([[5 6] [7 8]])             # ClearTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
-%5 = x                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%6 = Constant([[1 2] [3 4]])             # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
-%7 = Add(%5, %6)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%8 = Add(%4, %7)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%9 = Sub(%3, %8)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%10 = Sub(%9, %2)                        # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%11 = Mul(%10, %1)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%12 = Mul(%0, %11)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%0 = Constant([[2 1] [1 2]])                       # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
+%1 = Constant([[1 2] [2 1]])                       # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
+%2 = Constant([[10 20] [30 40]])                   # ClearTensor<Integer<unsigned, 6 bits>, shape=(2, 2)>
+%3 = Constant([[100 200] [300 400]])               # ClearTensor<Integer<unsigned, 9 bits>, shape=(2, 2)>
+%4 = Constant([[5 6] [7 8]])                       # ClearTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
+%5 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%6 = Constant([[1 2] [3 4]])                       # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
+%7 = Add(%5, %6)                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%8 = Add(%4, %7)                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%9 = Sub(%3, %8)                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%10 = Sub(%9, %2)                                  # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%11 = Mul(%10, %1)                                 # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%12 = Mul(%0, %11)                                 # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 return(%12)
-""".lstrip()
+""".lstrip()  # noqa: E501
 
     assert get_printable_graph(op_graph, show_data_types=True) == expected
 
@@ -227,21 +227,21 @@ def test_numpy_explicit_tracing_tensors():
     )
 
     expected = """
-%0 = Constant([[2 1] [1 2]])             # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
-%1 = Constant([[1 2] [2 1]])             # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
-%2 = Constant([[10 20] [30 40]])         # ClearTensor<Integer<unsigned, 6 bits>, shape=(2, 2)>
-%3 = Constant([[100 200] [300 400]])     # ClearTensor<Integer<unsigned, 9 bits>, shape=(2, 2)>
-%4 = Constant([[5 6] [7 8]])             # ClearTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
-%5 = x                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%6 = Constant([[1 2] [3 4]])             # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
-%7 = Add(%5, %6)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%8 = Add(%4, %7)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%9 = Sub(%3, %8)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%10 = Sub(%9, %2)                        # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%11 = Mul(%10, %1)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%12 = Mul(%0, %11)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%0 = Constant([[2 1] [1 2]])                       # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
+%1 = Constant([[1 2] [2 1]])                       # ClearTensor<Integer<unsigned, 2 bits>, shape=(2, 2)>
+%2 = Constant([[10 20] [30 40]])                   # ClearTensor<Integer<unsigned, 6 bits>, shape=(2, 2)>
+%3 = Constant([[100 200] [300 400]])               # ClearTensor<Integer<unsigned, 9 bits>, shape=(2, 2)>
+%4 = Constant([[5 6] [7 8]])                       # ClearTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
+%5 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%6 = Constant([[1 2] [3 4]])                       # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
+%7 = Add(%5, %6)                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%8 = Add(%4, %7)                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%9 = Sub(%3, %8)                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%10 = Sub(%9, %2)                                  # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%11 = Mul(%10, %1)                                 # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%12 = Mul(%0, %11)                                 # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 return(%12)
-""".lstrip()
+""".lstrip()  # noqa: E501
 
     assert get_printable_graph(op_graph, show_data_types=True) == expected
 

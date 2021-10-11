@@ -22,6 +22,23 @@ def output_data_type_to_string(node):
     return ", ".join([str(o) for o in node.outputs])
 
 
+def shorten_a_constant(constant_data: str):
+    """Return a constant (if small) or an extra of the constant (if too large).
+
+    Args:
+        constant (str): The constant we want to shorten
+
+    Returns:
+        str: a string to represent the constant
+    """
+
+    content = str(constant_data).replace("\n", "")
+    # if content is longer than 25 chars, only show the first and the last 10 chars of it
+    # 25 is selected using the spaces available before data type information
+    short_content = f"{content[:10]} ... {content[-10:]}" if len(content) > 25 else content
+    return short_content
+
+
 def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
     """Return a string representing a graph.
 
@@ -52,10 +69,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
         if isinstance(node, Input):
             what_to_print = node.input_name
         elif isinstance(node, Constant):
-            content = str(node.constant_data).replace("\n", "")
-            # if content is longer than 25 chars, only show the first and the last 10 chars of it
-            # 25 is selected using the spaces available before data type information
-            to_show = f"{content[:10]} ... {content[-10:]}" if len(content) > 25 else content
+            to_show = shorten_a_constant(node.constant_data)
             what_to_print = f"Constant({to_show})"
         else:
 
@@ -81,15 +95,34 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
             list_of_arg_name.sort()
             custom_assert([x[0] for x in list_of_arg_name] == list(range(len(list_of_arg_name))))
 
+            prefix_to_add_to_what_to_print = ""
+            suffix_to_add_to_what_to_print = ""
+
+            # Print constant that may be in the UnivariateFunction. For the moment, it considers
+            # there is a single constant maximally and that there is 2 inputs maximally
+            if isinstance(node, UnivariateFunction) and "baked_constant" in node.op_kwargs:
+                baked_constant = node.op_kwargs["baked_constant"]
+                if node.op_attributes["in_which_input_is_constant"] == 0:
+                    prefix_to_add_to_what_to_print = f"{shorten_a_constant(baked_constant)}, "
+                else:
+                    custom_assert(
+                        node.op_attributes["in_which_input_is_constant"] == 1,
+                        "'in_which_input_is_constant' should be a key of node.op_attributes",
+                    )
+                    suffix_to_add_to_what_to_print = f", {shorten_a_constant(baked_constant)}"
+
             # Then, just print the predecessors in the right order
-            what_to_print += ", ".join(["%" + x[1] for x in list_of_arg_name]) + ")"
+            what_to_print += prefix_to_add_to_what_to_print
+            what_to_print += ", ".join(["%" + x[1] for x in list_of_arg_name])
+            what_to_print += suffix_to_add_to_what_to_print
+            what_to_print += ")"
 
         # This code doesn't work with more than a single output
         new_line = f"%{i} = {what_to_print}"
 
         # Manage datatypes
         if show_data_types:
-            new_line = f"{new_line: <40s} # {output_data_type_to_string(node)}"
+            new_line = f"{new_line: <50s} # {output_data_type_to_string(node)}"
 
         returned_str += f"{new_line}\n"
 
