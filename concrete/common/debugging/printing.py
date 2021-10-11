@@ -82,7 +82,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
             custom_assert([x[0] for x in list_of_arg_name] == list(range(len(list_of_arg_name))))
 
             # Then, just print the predecessors in the right order
-            what_to_print += ", ".join([x[1] for x in list_of_arg_name]) + ")"
+            what_to_print += ", ".join(["%" + x[1] for x in list_of_arg_name]) + ")"
 
         # This code doesn't work with more than a single output
         new_line = f"%{i} = {what_to_print}"

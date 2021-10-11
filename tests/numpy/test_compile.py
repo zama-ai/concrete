@@ -364,7 +364,7 @@ def test_small_inputset_treat_warnings_as_errors():
             "# EncryptedTensor<Integer<unsigned, 6 bits>, shape=(4,)>"
             "\n%1 = y                                   "
             "# EncryptedTensor<Integer<unsigned, 6 bits>, shape=(4,)>"
-            "\n%2 = Dot(0, 1)                           "
+            "\n%2 = Dot(%0, %1)                         "
             "# EncryptedScalar<Integer<unsigned, 6 bits>>"
             "\nreturn(%2)\n",
         ),

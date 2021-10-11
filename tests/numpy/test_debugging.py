@@ -40,23 +40,23 @@ def issue_130_c(x, y):
 @pytest.mark.parametrize(
     "lambda_f,ref_graph_str",
     [
-        (lambda x, y: x + y, "%0 = x\n%1 = y\n%2 = Add(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: x - y, "%0 = x\n%1 = y\n%2 = Sub(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: x + x, "%0 = x\n%1 = Add(0, 0)\nreturn(%1)\n"),
+        (lambda x, y: x + y, "%0 = x\n%1 = y\n%2 = Add(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: x - y, "%0 = x\n%1 = y\n%2 = Sub(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: x + x, "%0 = x\n%1 = Add(%0, %0)\nreturn(%1)\n"),
         (
             lambda x, y: x + x - y * y * y + x,
-            "%0 = x\n%1 = y\n%2 = Add(0, 0)\n%3 = Mul(1, 1)"
-            "\n%4 = Mul(3, 1)\n%5 = Sub(2, 4)\n%6 = Add(5, 0)\nreturn(%6)\n",
+            "%0 = x\n%1 = y\n%2 = Add(%0, %0)\n%3 = Mul(%1, %1)"
+            "\n%4 = Mul(%3, %1)\n%5 = Sub(%2, %4)\n%6 = Add(%5, %0)\nreturn(%6)\n",
         ),
-        (lambda x, y: x + 1, "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: 1 + x, "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: (-1) + x, "%0 = x\n%1 = Constant(-1)\n%2 = Add(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: 3 * x, "%0 = x\n%1 = Constant(3)\n%2 = Mul(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: x * 3, "%0 = x\n%1 = Constant(3)\n%2 = Mul(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: x * (-3), "%0 = x\n%1 = Constant(-3)\n%2 = Mul(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: x - 11, "%0 = x\n%1 = Constant(11)\n%2 = Sub(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: 11 - x, "%0 = Constant(11)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2)\n"),
-        (lambda x, y: (-11) - x, "%0 = Constant(-11)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2)\n"),
+        (lambda x, y: x + 1, "%0 = x\n%1 = Constant(1)\n%2 = Add(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: 1 + x, "%0 = x\n%1 = Constant(1)\n%2 = Add(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: (-1) + x, "%0 = x\n%1 = Constant(-1)\n%2 = Add(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: 3 * x, "%0 = x\n%1 = Constant(3)\n%2 = Mul(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: x * 3, "%0 = x\n%1 = Constant(3)\n%2 = Mul(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: x * (-3), "%0 = x\n%1 = Constant(-3)\n%2 = Mul(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: x - 11, "%0 = x\n%1 = Constant(11)\n%2 = Sub(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: 11 - x, "%0 = Constant(11)\n%1 = x\n%2 = Sub(%0, %1)\nreturn(%2)\n"),
+        (lambda x, y: (-11) - x, "%0 = Constant(-11)\n%1 = x\n%2 = Sub(%0, %1)\nreturn(%2)\n"),
         (
             lambda x, y: x + 13 - y * (-21) * y + 44,
             "%0 = Constant(44)"
@@ -64,11 +64,11 @@ def issue_130_c(x, y):
             "\n%2 = Constant(13)"
             "\n%3 = y"
             "\n%4 = Constant(-21)"
-            "\n%5 = Add(1, 2)"
-            "\n%6 = Mul(3, 4)"
-            "\n%7 = Mul(6, 3)"
-            "\n%8 = Sub(5, 7)"
-            "\n%9 = Add(8, 0)"
+            "\n%5 = Add(%1, %2)"
+            "\n%6 = Mul(%3, %4)"
+            "\n%7 = Mul(%6, %3)"
+            "\n%8 = Sub(%5, %7)"
+            "\n%9 = Add(%8, %0)"
             "\nreturn(%9)\n",
         ),
         # Multiple outputs
@@ -78,9 +78,9 @@ def issue_130_c(x, y):
             "\n%1 = Constant(1)"
             "\n%2 = Constant(2)"
             "\n%3 = y"
-            "\n%4 = Add(0, 1)"
-            "\n%5 = Add(0, 3)"
-            "\n%6 = Add(5, 2)"
+            "\n%4 = Add(%0, %1)"
+            "\n%5 = Add(%0, %3)"
+            "\n%6 = Add(%5, %2)"
             "\nreturn(%4, %6)\n",
         ),
         (
@@ -89,28 +89,28 @@ def issue_130_c(x, y):
         ),
         (
             lambda x, y: (x, x + 1),
-            "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%0, %2)\n",
+            "%0 = x\n%1 = Constant(1)\n%2 = Add(%0, %1)\nreturn(%0, %2)\n",
         ),
         (
             lambda x, y: (x + 1, x + 1),
             "%0 = x"
             "\n%1 = Constant(1)"
             "\n%2 = Constant(1)"
-            "\n%3 = Add(0, 1)"
-            "\n%4 = Add(0, 2)"
+            "\n%3 = Add(%0, %1)"
+            "\n%4 = Add(%0, %2)"
             "\nreturn(%3, %4)\n",
         ),
         (
             issue_130_a,
-            "%0 = x\n%1 = Constant(1)\n%2 = Add(0, 1)\nreturn(%2, %2)\n",
+            "%0 = x\n%1 = Constant(1)\n%2 = Add(%0, %1)\nreturn(%2, %2)\n",
         ),
         (
             issue_130_b,
-            "%0 = x\n%1 = Constant(1)\n%2 = Sub(0, 1)\nreturn(%2, %2)\n",
+            "%0 = x\n%1 = Constant(1)\n%2 = Sub(%0, %1)\nreturn(%2, %2)\n",
         ),
         (
             issue_130_c,
-            "%0 = Constant(1)\n%1 = x\n%2 = Sub(0, 1)\nreturn(%2, %2)\n",
+            "%0 = Constant(1)\n%1 = x\n%2 = Sub(%0, %1)\nreturn(%2, %2)\n",
         ),
     ],
 )
@@ -155,12 +155,12 @@ def test_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
         (
             lambda x: LOOKUP_TABLE_FROM_2B_TO_4B[x],
             {"x": EncryptedScalar(Integer(2, is_signed=False))},
-            "%0 = x\n%1 = TLU(0)\nreturn(%1)\n",
+            "%0 = x\n%1 = TLU(%0)\nreturn(%1)\n",
         ),
         (
             lambda x: LOOKUP_TABLE_FROM_3B_TO_2B[x + 4],
             {"x": EncryptedScalar(Integer(2, is_signed=False))},
-            "%0 = x\n%1 = Constant(4)\n%2 = Add(0, 1)\n%3 = TLU(2)\nreturn(%3)\n",
+            "%0 = x\n%1 = Constant(4)\n%2 = Add(%0, %1)\n%3 = TLU(%2)\nreturn(%3)\n",
         ),
     ],
 )
@@ -189,7 +189,7 @@ def test_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
                 "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3,)),
                 "y": EncryptedTensor(Integer(2, is_signed=False), shape=(3,)),
             },
-            "%0 = x\n%1 = y\n%2 = Dot(0, 1)\nreturn(%2)\n",
+            "%0 = x\n%1 = y\n%2 = Dot(%0, %1)\nreturn(%2)\n",
         ),
         # pylint: enable=unnecessary-lambda
     ],
@@ -223,7 +223,7 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
             ),
             "%0 = x                                   # EncryptedScalar<Integer<unsigned, 64 bits>>"
             "\n%1 = y                                   # EncryptedScalar<Integer<signed, 32 bits>>"
-            "\n%2 = Add(0, 1)                           # EncryptedScalar<Integer<signed, 65 bits>>"
+            "\n%2 = Add(%0, %1)                         # EncryptedScalar<Integer<signed, 65 bits>>"
             "\nreturn(%2)\n",
         ),
         (
@@ -236,7 +236,7 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
             "# EncryptedScalar<Integer<unsigned, 17 bits>>"
             "\n%1 = y                                   "
             "# EncryptedScalar<Integer<unsigned, 23 bits>>"
-            "\n%2 = Mul(0, 1)                           "
+            "\n%2 = Mul(%0, %1)                         "
             "# EncryptedScalar<Integer<unsigned, 23 bits>>"
             "\nreturn(%2)\n",
         ),
@@ -264,7 +264,7 @@ def test_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
             {"x": EncryptedScalar(Integer(2, is_signed=False))},
             "%0 = x                                   "
             "# EncryptedScalar<Integer<unsigned, 2 bits>>"
-            "\n%1 = TLU(0)                              "
+            "\n%1 = TLU(%0)                             "
             "# EncryptedScalar<Integer<unsigned, 4 bits>>"
             "\nreturn(%1)\n",
         ),
@@ -275,9 +275,9 @@ def test_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
             "# EncryptedScalar<Integer<unsigned, 2 bits>>"
             "\n%1 = Constant(4)                         "
             "# ClearScalar<Integer<unsigned, 3 bits>>"
-            "\n%2 = Add(0, 1)                           "
+            "\n%2 = Add(%0, %1)                         "
             "# EncryptedScalar<Integer<unsigned, 3 bits>>"
-            "\n%3 = TLU(2)                              "
+            "\n%3 = TLU(%2)                             "
             "# EncryptedScalar<Integer<unsigned, 2 bits>>"
             "\nreturn(%3)\n",
         ),
@@ -288,11 +288,11 @@ def test_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
             "# EncryptedScalar<Integer<unsigned, 2 bits>>"
             "\n%1 = Constant(4)                         "
             "# ClearScalar<Integer<unsigned, 3 bits>>"
-            "\n%2 = Add(0, 1)                           "
+            "\n%2 = Add(%0, %1)                         "
             "# EncryptedScalar<Integer<unsigned, 3 bits>>"
-            "\n%3 = TLU(2)                              "
+            "\n%3 = TLU(%2)                             "
             "# EncryptedScalar<Integer<unsigned, 2 bits>>"
-            "\n%4 = TLU(3)                              "
+            "\n%4 = TLU(%3)                             "
             "# EncryptedScalar<Integer<unsigned, 4 bits>>"
             "\nreturn(%4)\n",
         ),

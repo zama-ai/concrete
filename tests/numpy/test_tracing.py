@@ -195,12 +195,12 @@ def test_numpy_tracing_tensors():
 %4 = Constant([[5 6] [7 8]])             # ClearTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
 %5 = x                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %6 = Constant([[1 2] [3 4]])             # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
-%7 = Add(5, 6)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%8 = Add(4, 7)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%9 = Sub(3, 8)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%10 = Sub(9, 2)                          # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%11 = Mul(10, 1)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%12 = Mul(0, 11)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%7 = Add(%5, %6)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%8 = Add(%4, %7)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%9 = Sub(%3, %8)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%10 = Sub(%9, %2)                        # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%11 = Mul(%10, %1)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%12 = Mul(%0, %11)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 return(%12)
 """.lstrip()
 
@@ -234,12 +234,12 @@ def test_numpy_explicit_tracing_tensors():
 %4 = Constant([[5 6] [7 8]])             # ClearTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
 %5 = x                                   # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 %6 = Constant([[1 2] [3 4]])             # ClearTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
-%7 = Add(5, 6)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%8 = Add(4, 7)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%9 = Sub(3, 8)                           # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%10 = Sub(9, 2)                          # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%11 = Mul(10, 1)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
-%12 = Mul(0, 11)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%7 = Add(%5, %6)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%8 = Add(%4, %7)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%9 = Sub(%3, %8)                         # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%10 = Sub(%9, %2)                        # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%11 = Mul(%10, %1)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
+%12 = Mul(%0, %11)                       # EncryptedTensor<Integer<signed, 32 bits>, shape=(2, 2)>
 return(%12)
 """.lstrip()
 
