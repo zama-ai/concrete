@@ -302,7 +302,7 @@ def main():
     # Measure: Non Homomorphic Accuracy = non_homomorphic_accuracy
     # Measure: Homomorphic Accuracy = homomorphic_accuracy
     # Measure: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
-    # Alert: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) > 5
+    # Alert: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) > 2
 
 
 if __name__ == "__main__":
