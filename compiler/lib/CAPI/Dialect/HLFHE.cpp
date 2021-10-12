@@ -22,6 +22,8 @@ bool hlfheTypeIsAnEncryptedIntegerType(MlirType type) {
   return unwrap(type).isa<EncryptedIntegerType>();
 }
 
-MlirType hlfheEncryptedIntegerTypeGet(MlirContext ctx, unsigned width) {
-  return wrap(EncryptedIntegerType::get(unwrap(ctx), width));
+MlirType hlfheEncryptedIntegerTypeGetChecked(
+    MlirContext ctx, unsigned width,
+    mlir::function_ref<mlir::InFlightDiagnostic()> emitError) {
+  return wrap(EncryptedIntegerType::getChecked(emitError, unwrap(ctx), width));
 }

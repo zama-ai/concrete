@@ -4,16 +4,17 @@ from zamalang import register_dialects
 from zamalang.dialects import hlfhe
 
 
-def test_eint():
+@pytest.mark.parametrize("width", list(range(1, 8)))
+def test_eint(width):
     ctx = Context()
     register_dialects(ctx)
-    eint = hlfhe.EncryptedIntegerType.get(ctx, 6)
-    assert eint.__str__() == "!HLFHE.eint<6>"
+    eint = hlfhe.EncryptedIntegerType.get(ctx, width)
+    assert eint.__str__() == f"!HLFHE.eint<{width}>"
 
 
-# FIXME: need to handle error on call to hlfhe.EncryptedIntegerType.get and throw an exception to python
-# def test_invalid_eint():
-#     ctx = Context()
-#     register_dialects(ctx)
-#     with pytest.raises(RuntimeError, match=r"mlir parsing failed"):
-#         eint = hlfhe.EncryptedIntegerType.get(ctx, 16)
+@pytest.mark.parametrize("width", [0, 8, 10, 12])
+def test_invalid_eint(width):
+    ctx = Context()
+    register_dialects(ctx)
+    with pytest.raises(ValueError, match=r"can't create eint with the given width"):
+        eint = hlfhe.EncryptedIntegerType.get(ctx, width)
