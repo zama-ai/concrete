@@ -577,7 +577,7 @@ jobs:
           zip -r "${ARTIFACTS_PACKAGED_DIR}/html-docs.zip" ./*
           tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
           popd
-          cp "${RAW_CHANGELOG_DIR}/*" "${ARTIFACTS_PACKAGED_DIR}"
+          cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
