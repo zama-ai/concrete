@@ -233,7 +233,7 @@ impl EncryptionRandomGenerator {
         output: &mut Tensorable,
         std: impl DispersionParameter,
     ) where
-        (Scalar, Scalar): RandomGenerable<Gaussian<f64>>,
+        Scalar: RandomGenerable<Gaussian<f64>>,
         Tensorable: AsMutTensor<Element = Scalar>,
     {
         self.noise
@@ -280,9 +280,9 @@ fn mask_bytes_per_ggsw<T: UnsignedInteger>(
 }
 
 fn noise_bytes_per_coef() -> usize {
-    // We use f64 to sample the noise for every precision, and we need 4/pi inputs to generate
-    // such an output (here we take 6 to keep a safety margin).
-    8 * 6
+    // We use f64 to sample the noise for every precision, and we only need
+    // to sample one f64 uniformly.
+    8
 }
 fn noise_bytes_per_polynomial(poly_size: PolynomialSize) -> usize {
     poly_size.0 * noise_bytes_per_coef()

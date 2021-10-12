@@ -516,7 +516,7 @@ impl RandomGenerator {
             .collect()
     }
 
-    /// Generates two floating point values drawn from a gaussian distribution with input mean and
+    /// Generates a floating point value drawn from a gaussian distribution with input mean and
     /// standard deviation.
     ///
     /// # Example
@@ -525,22 +525,20 @@ impl RandomGenerator {
     /// use concrete_core::math::random::RandomGenerator;
     /// let mut generator = RandomGenerator::new(None);
     /// // for f32
-    /// let (g1, g2): (f32, f32) = generator.random_gaussian(0. as f32, 1. as f32);
-    /// // check that both samples are in 6 sigmas.
-    /// assert!(g1.abs() <= 6.);
-    /// assert!(g2.abs() <= 6.);
+    /// let g: f32 = generator.random_gaussian(0. as f32, 1. as f32);
+    /// // check that the sample is within 6 sigmas.
+    /// assert!(g.abs() <= 6.);
     /// // for f64
-    /// let (g1, g2): (f64, f64) = generator.random_gaussian(0. as f64, 1. as f64);
-    /// // check that both samples are in 6 sigmas.
-    /// assert!(g1.abs() <= 6.);
-    /// assert!(g2.abs() <= 6.);
+    /// let g: f64 = generator.random_gaussian(0. as f64, 1. as f64);
+    /// // check that the sample is within 6 sigmas.
+    /// assert!(g.abs() <= 6.);
     /// ```
-    pub fn random_gaussian<Float, Scalar>(&mut self, mean: Float, std: Float) -> (Scalar, Scalar)
+    pub fn random_gaussian<Float, Scalar>(&mut self, mean: Float, std: Float) -> Scalar
     where
         Float: FloatingPoint,
-        (Scalar, Scalar): RandomGenerable<Gaussian<Float>>,
+        Scalar: RandomGenerable<Gaussian<Float>>,
     {
-        <(Scalar, Scalar)>::generate_one(self, Gaussian { std, mean })
+        Scalar::generate_one(self, Gaussian { std, mean })
     }
 
     /// Fills an `AsMutTensor` value with random gaussian values.
@@ -562,21 +560,15 @@ impl RandomGenerator {
         std: Float,
     ) where
         Float: FloatingPoint,
-        (Scalar, Scalar): RandomGenerable<Gaussian<Float>>,
+        Scalar: RandomGenerable<Gaussian<Float>>,
         Tensorable: AsMutTensor<Element = Scalar>,
     {
         output
             .as_mut_tensor()
             .as_mut_slice()
-            .chunks_mut(2)
+            .iter_mut()
             .for_each(|s| {
-                let (g1, g2) = <(Scalar, Scalar)>::generate_one(self, Gaussian { std, mean });
-                if let Some(elem) = s.get_mut(0) {
-                    *elem = g1;
-                }
-                if let Some(elem) = s.get_mut(1) {
-                    *elem = g2;
-                }
+                *s = Scalar::generate_one(self, Gaussian { std, mean });
             });
     }
 
@@ -601,8 +593,7 @@ impl RandomGenerator {
     ) -> Tensor<Vec<Scalar>>
     where
         Float: FloatingPoint,
-        (Scalar, Scalar): RandomGenerable<Gaussian<Float>>,
-        Scalar: Numeric,
+        Scalar: RandomGenerable<Gaussian<Float>> + Numeric,
     {
         let mut tensor = Tensor::allocate(Scalar::ZERO, size);
         self.fill_tensor_with_random_gaussian(&mut tensor, mean, std);

@@ -82,10 +82,8 @@ where
     }
 }
 
-impl<Scalar> LweSecretKey<GaussianKeyKind, Vec<Scalar>>
-where
-    (Scalar, Scalar): RandomGenerable<Gaussian<f64>>,
-    Scalar: UnsignedTorus,
+impl<Scalar: RandomGenerable<Gaussian<f64>> + UnsignedTorus>
+    LweSecretKey<GaussianKeyKind, Vec<Scalar>>
 {
     /// Generates a new gaussian secret key; e.g. allocates a storage and samples random values for
     /// the key.

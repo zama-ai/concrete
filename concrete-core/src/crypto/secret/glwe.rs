@@ -101,10 +101,8 @@ where
     }
 }
 
-impl<Scalar> GlweSecretKey<GaussianKeyKind, Vec<Scalar>>
-where
-    (Scalar, Scalar): RandomGenerable<Gaussian<f64>>,
-    Scalar: UnsignedTorus,
+impl<Scalar: RandomGenerable<Gaussian<f64>> + UnsignedTorus>
+    GlweSecretKey<GaussianKeyKind, Vec<Scalar>>
 {
     /// Allocates a container for a new key, and fill it with random gaussian values.
     ///

@@ -49,8 +49,7 @@ impl SecretRandomGenerator {
     // Returns a tensor with random gaussian values.
     pub(crate) fn random_gaussian_tensor<Scalar>(&mut self, length: usize) -> Tensor<Vec<Scalar>>
     where
-        (Scalar, Scalar): RandomGenerable<Gaussian<f64>>,
-        Scalar: UnsignedTorus,
+        Scalar: RandomGenerable<Gaussian<f64>> + UnsignedTorus,
     {
         self.0
             .random_gaussian_tensor(length, 0.0, Scalar::GAUSSIAN_KEY_LOG_STD.get_standard_dev())
