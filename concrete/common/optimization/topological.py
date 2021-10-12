@@ -73,10 +73,14 @@ def fuse_float_operations(
             succ_edge_data = deepcopy(nx_graph.get_edge_data(terminal_node, succ))
             for edge_key, edge_data in succ_edge_data.items():
                 nx_graph.remove_edge(terminal_node, succ, key=edge_key)
-                nx_graph.add_edge(fused_node, succ, key=edge_key, **edge_data)
+                # fused_node is always a UnivariateFunction so output_idx == 0 always
+                new_edge_data = deepcopy(edge_data)
+                new_edge_data["output_idx"] = 0
+                nx_graph.add_edge(fused_node, succ, key=edge_key, **new_edge_data)
 
         # Connect the node feeding the subgraph contained in fused_node
-        nx_graph.add_edge(node_before_subgraph, fused_node, input_idx=0)
+        # node_before_subgraph has a single integer output currently so output_idx == 0
+        nx_graph.add_edge(node_before_subgraph, fused_node, input_idx=0, output_idx=0)
 
         op_graph.prune_nodes()
         if compilation_artifacts is not None:
@@ -122,6 +126,7 @@ def convert_float_subgraph_to_fused_node(
     assert_true(len(variable_input_nodes) == 1)
 
     current_subgraph_variable_input = variable_input_nodes[0]
+    assert_true(len(current_subgraph_variable_input.outputs) == 1)
     new_input_value = deepcopy(current_subgraph_variable_input.outputs[0])
 
     nx_graph = op_graph.graph
@@ -147,11 +152,14 @@ def convert_float_subgraph_to_fused_node(
             float_subgraph.remove_edge(
                 current_subgraph_variable_input, node_after_input, key=edge_key
             )
+            # new_subgraph_variable_input is always an Input so output_idx == 0 always
+            new_edge_data = deepcopy(edge_data)
+            new_edge_data["output_idx"] = 0
             float_subgraph.add_edge(
                 new_subgraph_variable_input,
                 node_after_input,
                 key=edge_key,
-                **edge_data,
+                **new_edge_data,
             )
 
     float_op_subgraph = OPGraph.from_graph(
@@ -159,6 +167,8 @@ def convert_float_subgraph_to_fused_node(
         [new_subgraph_variable_input],
         [terminal_node],
     )
+
+    assert_true(len(terminal_node.outputs) == 1)
 
     # Create fused_node
     fused_node = UnivariateFunction(

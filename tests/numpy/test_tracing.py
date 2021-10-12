@@ -159,11 +159,11 @@ def test_numpy_tracing_binary_op(operation, x, y, test_helpers):
     ref_graph.add_node(add_node_z)
     ref_graph.add_node(returned_final_node)
 
-    ref_graph.add_edge(input_x, add_node_z, input_idx=0)
-    ref_graph.add_edge(input_x, add_node_z, input_idx=1)
+    ref_graph.add_edge(input_x, add_node_z, input_idx=0, output_idx=0)
+    ref_graph.add_edge(input_x, add_node_z, input_idx=1, output_idx=0)
 
-    ref_graph.add_edge(add_node_z, returned_final_node, input_idx=0)
-    ref_graph.add_edge(input_y, returned_final_node, input_idx=1)
+    ref_graph.add_edge(add_node_z, returned_final_node, input_idx=0, output_idx=0)
+    ref_graph.add_edge(input_y, returned_final_node, input_idx=1, output_idx=0)
 
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)
 

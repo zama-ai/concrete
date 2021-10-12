@@ -28,27 +28,27 @@ def test_digraphs_are_equivalent(test_helpers):
     t_1 = TestNode("Mul")
     t_2 = TestNode("TLU")
 
-    g_1.add_edge(t_0, t_2, input_idx=0)
-    g_1.add_edge(t_1, t_2, input_idx=1)
+    g_1.add_edge(t_0, t_2, input_idx=0, output_idx=0)
+    g_1.add_edge(t_1, t_2, input_idx=1, output_idx=0)
 
     t0p = TestNode("Add")
     t1p = TestNode("Mul")
     t2p = TestNode("TLU")
 
-    g_2.add_edge(t1p, t2p, input_idx=1)
-    g_2.add_edge(t0p, t2p, input_idx=0)
+    g_2.add_edge(t1p, t2p, input_idx=1, output_idx=0)
+    g_2.add_edge(t0p, t2p, input_idx=0, output_idx=0)
 
     bad_g2 = nx.MultiDiGraph()
 
     bad_t0 = TestNode("Not Add")
 
-    bad_g2.add_edge(bad_t0, t_2, input_idx=0)
-    bad_g2.add_edge(t_1, t_2, input_idx=1)
+    bad_g2.add_edge(bad_t0, t_2, input_idx=0, output_idx=0)
+    bad_g2.add_edge(t_1, t_2, input_idx=1, output_idx=0)
 
     bad_g3 = nx.MultiDiGraph()
 
-    bad_g3.add_edge(t_0, t_2, input_idx=1)
-    bad_g3.add_edge(t_1, t_2, input_idx=0)
+    bad_g3.add_edge(t_0, t_2, input_idx=1, output_idx=0)
+    bad_g3.add_edge(t_1, t_2, input_idx=0, output_idx=0)
 
     assert test_helpers.digraphs_are_equivalent(g_1, g_2), "Graphs should be equivalent"
     assert not test_helpers.digraphs_are_equivalent(g_1, bad_g2), "Graphs should not be equivalent"

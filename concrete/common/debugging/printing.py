@@ -61,6 +61,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
 
     for node in nx.topological_sort(graph):
 
+        # TODO: #640
         # This code doesn't work with more than a single output. For more outputs,
         # we would need to change the way the destination are created: currently,
         # they only are done by incrementing i

@@ -89,6 +89,7 @@ def draw_graph(
     }
     nx.set_node_attributes(graph, attributes)
 
+    # TODO: #639 adapt drawing routine to manage output_idx
     for edge in graph.edges(keys=True):
         idx = graph.edges[edge]["input_idx"]
         graph.edges[edge]["label"] = f" {idx} "  # spaces are there intentionally for a better look

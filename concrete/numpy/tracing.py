@@ -93,9 +93,7 @@ class NPTracer(BaseTracer):
             output_dtype=output_dtype,
             op_name=f"astype({normalized_numpy_dtype})",
         )
-        output_tracer = self.__class__(
-            [self], traced_computation=traced_computation, output_index=0
-        )
+        output_tracer = self.__class__([self], traced_computation=traced_computation, output_idx=0)
         return output_tracer
 
     @staticmethod
@@ -164,7 +162,7 @@ class NPTracer(BaseTracer):
         output_tracer = cls(
             input_tracers,
             traced_computation=traced_computation,
-            output_index=0,
+            output_idx=0,
         )
         return output_tracer
 
@@ -229,7 +227,7 @@ class NPTracer(BaseTracer):
         output_tracer = cls(
             (input_tracers[in_which_input_is_variable],),
             traced_computation=traced_computation,
-            output_index=0,
+            output_idx=0,
         )
         return output_tracer
 
@@ -253,7 +251,7 @@ class NPTracer(BaseTracer):
         output_tracer = self.__class__(
             args,
             traced_computation=traced_computation,
-            output_index=0,
+            output_idx=0,
         )
         return output_tracer
 

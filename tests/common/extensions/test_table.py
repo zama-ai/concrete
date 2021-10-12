@@ -66,7 +66,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     # pylint: enable=protected-access
     ref_graph.add_node(output_arbitrary_function)
 
-    ref_graph.add_edge(input_x, output_arbitrary_function, input_idx=0)
+    ref_graph.add_edge(input_x, output_arbitrary_function, input_idx=0, output_idx=0)
 
     # TODO: discuss if this check is enough as == is not overloaded properly for UnivariateFunction
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)
@@ -112,10 +112,10 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     output_add = ir.Add((intermediate_arbitrary_function.outputs[0], constant_3.outputs[0]))
     ref_graph.add_node(output_add)
 
-    ref_graph.add_edge(input_x, intermediate_arbitrary_function, input_idx=0)
+    ref_graph.add_edge(input_x, intermediate_arbitrary_function, input_idx=0, output_idx=0)
 
-    ref_graph.add_edge(intermediate_arbitrary_function, output_add, input_idx=0)
-    ref_graph.add_edge(constant_3, output_add, input_idx=1)
+    ref_graph.add_edge(intermediate_arbitrary_function, output_add, input_idx=0, output_idx=0)
+    ref_graph.add_edge(constant_3, output_add, input_idx=1, output_idx=0)
 
     # TODO: discuss if this check is enough as == is not overloaded properly for UnivariateFunction
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)

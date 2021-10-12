@@ -45,7 +45,7 @@ class LookupTable:
             return key.__class__(
                 inputs=[key],
                 traced_computation=traced_computation,
-                output_index=0,
+                output_idx=0,
             )
 
         # if not, it means table is indexed with a constant

@@ -19,6 +19,7 @@ class BaseTracer(ABC):
 
     inputs: List["BaseTracer"]
     traced_computation: IntermediateNode
+    output_idx: int
     output: BaseValue
     _mix_values_func: Callable[..., BaseValue]
 
@@ -26,11 +27,12 @@ class BaseTracer(ABC):
         self,
         inputs: Iterable["BaseTracer"],
         traced_computation: IntermediateNode,
-        output_index: int,
+        output_idx: int,
     ) -> None:
         self.inputs = list(inputs)
         self.traced_computation = traced_computation
-        self.output = traced_computation.outputs[output_index]
+        self.output_idx = output_idx
+        self.output = traced_computation.outputs[output_idx]
 
     @abstractmethod
     def _supports_other_operand(self, other: Any) -> bool:
@@ -96,8 +98,8 @@ class BaseTracer(ABC):
         )
 
         output_tracers = tuple(
-            self.__class__(sanitized_inputs, traced_computation, output_index)
-            for output_index in range(len(traced_computation.outputs))
+            self.__class__(sanitized_inputs, traced_computation, output_idx)
+            for output_idx in range(len(traced_computation.outputs))
         )
 
         return output_tracers

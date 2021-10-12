@@ -126,13 +126,44 @@ class OPGraph:
         """
         node_results: Dict[IntermediateNode, Any] = {}
 
+        def get_result_of_node_at_index(node: IntermediateNode, output_idx: int) -> Any:
+            """Get the output result at index output_idx for a node.
+
+            Args:
+                node (IntermediateNode): the node from which we want the output.
+                output_idx (int): which output we want.
+
+            Returns:
+                Any: the output value of the evaluation of node.
+            """
+            result = node_results[node]
+            # TODO: #81 remove no cover once we have nodes with multiple outputs
+            if isinstance(result, tuple):  # pragma: no cover
+                # If the node has multiple outputs (i.e. the result is a tuple), return the
+                # requested output
+                return result[output_idx]
+            # If the result is not a tuple, then the result is the node's only output. Check that
+            # the requested index is 0 (as it's the only valid value) and return the result itself.
+            assert_true(
+                output_idx == 0,
+                f"Unable to get output at index {output_idx} for node {node}.\n"
+                f"Node result: {result}",
+            )
+            return result
+
         for node in nx.topological_sort(self.graph):
             if not isinstance(node, Input):
                 curr_inputs = {}
                 for pred_node in self.graph.pred[node]:
                     edges = self.graph.get_edge_data(pred_node, node)
                     curr_inputs.update(
-                        {edge["input_idx"]: node_results[pred_node] for edge in edges.values()}
+                        {
+                            edge["input_idx"]: get_result_of_node_at_index(
+                                pred_node,
+                                output_idx=edge["output_idx"],
+                            )
+                            for edge in edges.values()
+                        }
                     )
                 node_results[node] = node.evaluate(curr_inputs)
             else:
@@ -225,16 +256,12 @@ class OPGraph:
 
                 node.outputs[0] = deepcopy(node.inputs[0])
 
-            # TODO: #57 manage multiple outputs from a node, probably requires an output_idx when
-            # adding an edge
-            assert_true(len(node.outputs) == 1)
-
             successors = self.graph.succ[node]
             for succ in successors:
                 edge_data = self.graph.get_edge_data(node, succ)
                 for edge in edge_data.values():
-                    input_idx = edge["input_idx"]
-                    succ.inputs[input_idx] = deepcopy(node.outputs[0])
+                    input_idx, output_idx = edge["input_idx"], edge["output_idx"]
+                    succ.inputs[input_idx] = deepcopy(node.outputs[output_idx])
 
     def prune_nodes(self):
         """Remove unreachable nodes from outputs."""

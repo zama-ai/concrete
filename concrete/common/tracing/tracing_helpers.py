@@ -115,8 +115,14 @@ def create_graph_from_output_tracers(
 
             for input_idx, input_tracer in enumerate(tracer.inputs):
                 input_ir_node = input_tracer.traced_computation
+                output_idx = input_tracer.output_idx
                 graph.add_node(input_ir_node)
-                graph.add_edge(input_ir_node, current_ir_node, input_idx=input_idx)
+                graph.add_edge(
+                    input_ir_node,
+                    current_ir_node,
+                    input_idx=input_idx,
+                    output_idx=output_idx,
+                )
                 if input_tracer not in visited_tracers:
                     next_tracers.update({input_tracer: None})
 
