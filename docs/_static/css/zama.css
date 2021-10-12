@@ -12,6 +12,8 @@
     --tertiary-color: #414042;
     --tertiary-color-light: #e6e7e8;
     --link-color: black;
+    --button-accept-color: #ffd208;
+    --button-decline-color: grey;
     --primary-font: Archivo, sans-serif;
 }
 
@@ -212,11 +214,9 @@ dl.class > dt:first-of-type {
     display: block !important;
 }
 
-
-
- /*
-  * Admonitions
-  */
+/*
+ * Admonitions
+ */
 
 /* Important admonition */
 .rst-content .important .admonition-title {
@@ -245,4 +245,90 @@ dl.class > dt:first-of-type {
 
 .rst-content .note {
     background: var(--tertiary-color-light);
+}
+
+/*
+ * RGPD
+ */
+
+.rgpd {
+    z-index: 300;
+    position: fixed;
+    width: calc(100% - 40px);
+    height: 76px;
+    padding: 17px 0px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.9);
+    bottom: 20px;
+    left: 20px;
+    font-size: 16px;
+    padding-left: 12.5%;
+    padding-right: 12.5%;
+    background: black;
+    color: white;
+    opacity: 75%;
+    font-size: 17px;
+    white-space: nowrap;
+}
+
+.zama-container {
+    max-width: 1440px;
+    margin: auto;
+    width: 100%;
+}
+
+.rgpd .zama-container .padded {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rgpd .consent {
+    text-overflow: ellipsis;
+    overflow: hidden;
+
+}
+
+.rgpd .button {
+    text-decoration: none;
+    white-space: nowrap;
+    position: relative;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    padding: 0px 10px;
+    margin-left: 15px;
+    height: 46px;
+    text-transform: uppercase;
+    font-family: var(--primary-font);
+    font-weight: bold;
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+    cursor: pointer;
+    color: black;
+    transition: all 0.33s cubic-bezier(0.33, 0, 0, 1);
+}
+
+.rgpd .button::after {
+    background-color: white;
+    height: 46px;
+    content: '';
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 3px;
+    width: 100%;
+    height: 40px;
+    border-radius: 25px;
+    z-index: -1;
+}
+
+.rgpd .button-accept::after{
+    background-color: var(--button-accept-color);
+}
+
+.rgpd .button-decline::after{
+    background-color: var(--button-decline-color);
 }

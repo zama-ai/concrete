@@ -71,7 +71,6 @@ html_favicon = "_static/favicon.ico"
 html_theme_options = {
     "logo_only": False,
     "analytics_id": "G-XRM93J9QBW",
-    "collapse_navigation": True,
 }
 pygments_style = "zenburn"
 html_last_updated_fmt = None # '%b %d, %Y'

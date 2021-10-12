@@ -16,7 +16,19 @@
 <!DOCTYPE html>
 <html class="{{ sphinx_writer }}" lang="{{ lang_attr }}" >
 <head>
-  <!-- theme v0.4.1 -->
+  <!-- theme v0.5.0 -->
+	<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+  <script>
+	  if(Cookies.get("zama-accept-cookies") !== "yes") {
+        window.YETT_BLACKLIST = [
+          /google/,
+          /googletagmanager\.com/,
+        ];
+	  }
+  </script>
+  <script src="https://unpkg.com/yett"></script>
   {#- Do not conflict with RTD insertion of analytics script #}
   {%- if not READTHEDOCS %}
     {%- if theme_analytics_id %}
@@ -250,13 +262,37 @@
   </div>
   {% include "versions.html" -%}
 
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable({{ 'true' if theme_sticky_navigation|tobool else 'false' }});
-      });
-  </script>
-
   {%- block footer %} {% endblock %}
 
+  {%- if theme_analytics_id %}
+  <div class="rgpd">
+    <div class="zama-container">
+      <div class="padded">
+        <div class="consent">
+          We use analytics cookies to understand how people view and
+          use our documentation.
+        </div>
+        <div class="button button--black button-accept">Accept</div>
+        <div class="button button--black button-decline">Decline</div>
+        <script>
+          $(document).ready(function () {
+            if ((Cookies.get("zama-accept-cookies") === "yes") || Cookies.get("zama-accept-cookies") === "no") {
+              $(".rgpd").hide();
+            }
+            $(".rgpd .button-accept").click(function () {
+              window.yett.unblock();
+              $(".rgpd").hide();
+              Cookies.set("zama-accept-cookies", "yes");
+            });
+            $(".rgpd .button-decline").click(function () {
+              $(".rgpd").hide();
+              Cookies.set("zama-accept-cookies", "no");
+            });
+          });
+        </script>
+      </div>
+    </div>
+  </div>
+  {%- endif%}
 </body>
 </html>
