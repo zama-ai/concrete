@@ -13,7 +13,9 @@ criterion_group!(
     random::bench_16,
     random::bench_32,
     random::bench_64,
-    random::bench_128
+    random::bench_128,
+    random::gaussian_32,
+    random::gaussian_64
 );
 criterion_group!(
     decomposition_b,
