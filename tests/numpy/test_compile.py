@@ -38,6 +38,20 @@ def small_fused_table(x):
     return (10 * (numpy.cos(x + 1) + 1)).astype(numpy.uint32)
 
 
+def complicated_topology(x):
+    """Mix x in an intricated way."""
+    intermediate = x
+    x_p_1 = intermediate + 1
+    x_p_2 = intermediate + 2
+    x_p_3 = x_p_1 + x_p_2
+    return (
+        x_p_3.astype(numpy.int32),
+        x_p_2.astype(numpy.int32),
+        (x_p_2 + 3).astype(numpy.int32),
+        x_p_3.astype(numpy.int32) + 67,
+    )
+
+
 @pytest.mark.parametrize(
     "function,input_ranges,list_of_arg_names",
     [
@@ -55,6 +69,7 @@ def small_fused_table(x):
             ["x", "y"],
             marks=pytest.mark.xfail(strict=True, raises=ValueError),
         ),
+        pytest.param(complicated_topology, ((0, 10),), ["x"]),
     ],
 )
 def test_compile_function_multiple_outputs(function, input_ranges, list_of_arg_names):

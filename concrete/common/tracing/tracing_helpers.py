@@ -6,7 +6,7 @@ from typing import Callable, Dict, Iterable, OrderedDict, Set, Type
 import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
 
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true, custom_assert
 from ..representation.intermediate import Input
 from ..values import BaseValue
 from .base_tracer import BaseTracer
@@ -108,6 +108,8 @@ def create_graph_from_output_tracers(
         # use dict as ordered set
         next_tracers: Dict[BaseTracer, None] = {}
         for tracer in current_tracers:
+            if tracer in visited_tracers:
+                continue
             current_ir_node = tracer.traced_computation
             graph.add_node(current_ir_node)
 
@@ -123,5 +125,13 @@ def create_graph_from_output_tracers(
         current_tracers = next_tracers
 
     custom_assert(is_directed_acyclic_graph(graph))
+
+    # Check each edge is unique
+    unique_edges = set(
+        (pred, succ, tuple((k, v) for k, v in edge_data.items()))
+        for pred, succ, edge_data in graph.edges(data=True)
+    )
+    number_of_edges = len(graph.edges)
+    assert_true(len(unique_edges) == number_of_edges)
 
     return graph
