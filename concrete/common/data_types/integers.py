@@ -3,7 +3,7 @@
 import math
 from typing import Any, Iterable
 
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true
 from . import base
 
 
@@ -15,7 +15,7 @@ class Integer(base.BaseDataType):
 
     def __init__(self, bit_width: int, is_signed: bool) -> None:
         super().__init__()
-        custom_assert(bit_width > 0, "bit_width must be > 0")
+        assert_true(bit_width > 0, "bit_width must be > 0")
         self.bit_width = bit_width
         self.is_signed = is_signed
 

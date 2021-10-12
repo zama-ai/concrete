@@ -6,7 +6,7 @@ from typing import Callable, Dict, Iterable, OrderedDict, Set, Type
 import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
 
-from ..debugging.custom_assert import assert_true, custom_assert
+from ..debugging.custom_assert import assert_true
 from ..representation.intermediate import Input
 from ..values import BaseValue
 from .base_tracer import BaseTracer
@@ -124,7 +124,7 @@ def create_graph_from_output_tracers(
 
         current_tracers = next_tracers
 
-    custom_assert(is_directed_acyclic_graph(graph))
+    assert_true(is_directed_acyclic_graph(graph))
 
     # Check each edge is unique
     unique_edges = set(

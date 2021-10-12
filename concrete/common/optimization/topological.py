@@ -8,7 +8,7 @@ import networkx as nx
 from ..compilation.artifacts import CompilationArtifacts
 from ..data_types.floats import Float
 from ..data_types.integers import Integer
-from ..debugging.custom_assert import assert_true, custom_assert
+from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import Constant, Input, IntermediateNode, UnivariateFunction
 from ..values import TensorValue
@@ -119,7 +119,7 @@ def convert_float_subgraph_to_fused_node(
     variable_input_nodes = [
         node for node in float_subgraph_start_nodes if not isinstance(node, Constant)
     ]
-    custom_assert(len(variable_input_nodes) == 1)
+    assert_true(len(variable_input_nodes) == 1)
 
     current_subgraph_variable_input = variable_input_nodes[0]
     new_input_value = deepcopy(current_subgraph_variable_input.outputs[0])

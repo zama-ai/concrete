@@ -8,7 +8,7 @@ from ..data_types.dtypes_helpers import (
     get_base_value_for_python_constant_data,
     is_data_type_compatible_with,
 )
-from ..debugging import custom_assert
+from ..debugging import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import IntermediateNode
 
@@ -139,7 +139,7 @@ def eval_op_graph_bounds_on_inputset(
     """
 
     def check_inputset_input_len_is_valid(data_to_check):
-        custom_assert(
+        assert_true(
             len(data_to_check) == len(op_graph.input_nodes),
             (
                 f"Got input data from inputset of len: {len(data_to_check)}, "

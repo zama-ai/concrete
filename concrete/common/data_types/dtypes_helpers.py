@@ -4,7 +4,7 @@ from copy import deepcopy
 from functools import partial
 from typing import Callable, Optional, Tuple, Union, cast
 
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true
 from ..values import BaseValue, ClearTensor, EncryptedTensor, TensorValue
 from .base import BaseDataType
 from .floats import Float
@@ -146,8 +146,8 @@ def find_type_to_hold_both_lossy(
     Returns:
         BaseDataType: The dtype able to hold (potentially lossy) dtype1 and dtype2
     """
-    custom_assert(isinstance(dtype1, BASE_DATA_TYPES), f"Unsupported dtype1: {type(dtype1)}")
-    custom_assert(isinstance(dtype2, BASE_DATA_TYPES), f"Unsupported dtype2: {type(dtype2)}")
+    assert_true(isinstance(dtype1, BASE_DATA_TYPES), f"Unsupported dtype1: {type(dtype1)}")
+    assert_true(isinstance(dtype2, BASE_DATA_TYPES), f"Unsupported dtype2: {type(dtype2)}")
 
     type_to_return: BaseDataType
 
@@ -205,15 +205,15 @@ def mix_tensor_values_determine_holding_dtype(
             value2 dtypes.
     """
 
-    custom_assert(
+    assert_true(
         isinstance(value1, TensorValue), f"Unsupported value1: {value1}, expected TensorValue"
     )
-    custom_assert(
+    assert_true(
         isinstance(value2, TensorValue), f"Unsupported value2: {value2}, expected TensorValue"
     )
 
     resulting_shape = broadcast_shapes(value1.shape, value2.shape)
-    custom_assert(
+    assert_true(
         resulting_shape is not None,
         (
             f"Tensors have incompatible shapes which is not supported.\n"
@@ -250,7 +250,7 @@ def mix_values_determine_holding_dtype(value1: BaseValue, value2: BaseValue) -> 
             dtypes.
     """
 
-    custom_assert(
+    assert_true(
         (value1.__class__ == value2.__class__),
         f"Cannot mix values of different types: value 1:{type(value1)}, value2: {type(value2)}",
     )
@@ -274,7 +274,7 @@ def get_base_data_type_for_python_constant_data(constant_data: Union[int, float]
         BaseDataType: The corresponding BaseDataType
     """
     constant_data_type: BaseDataType
-    custom_assert(
+    assert_true(
         isinstance(constant_data, (int, float)),
         f"Unsupported constant data of type {type(constant_data)}",
     )

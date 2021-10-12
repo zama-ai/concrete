@@ -17,7 +17,7 @@ from ..data_types.dtypes_helpers import (
     value_is_encrypted_scalar_unsigned_integer,
     value_is_encrypted_tensor_unsigned_integer,
 )
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import Input
 
@@ -83,7 +83,7 @@ class MLIRConverter:
         if is_signed and not is_encrypted:  # clear signed
             return IntegerType.get_signed(bit_width)
         # should be clear unsigned at this point
-        custom_assert(not is_signed and not is_encrypted)
+        assert_true(not is_signed and not is_encrypted)
         # unsigned integer are considered signless in the compiler
         return IntegerType.get_signless(bit_width)
 

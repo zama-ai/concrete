@@ -12,7 +12,7 @@ from .data_types.dtypes_helpers import (
 )
 from .data_types.floats import Float
 from .data_types.integers import Integer, make_integer_to_hold
-from .debugging.custom_assert import custom_assert
+from .debugging.custom_assert import assert_true
 from .representation.intermediate import Input, IntermediateNode
 from .tracing import BaseTracer
 from .tracing.tracing_helpers import create_graph_from_output_tracers
@@ -31,14 +31,12 @@ class OPGraph:
         input_nodes: Dict[int, Input],
         output_nodes: Dict[int, IntermediateNode],
     ) -> None:
-        custom_assert(
-            len(input_nodes) > 0, "Got a graph without input nodes which is not supported"
-        )
-        custom_assert(
+        assert_true(len(input_nodes) > 0, "Got a graph without input nodes which is not supported")
+        assert_true(
             all(isinstance(node, Input) for node in input_nodes.values()),
             "Got input nodes that were not Input, which is not supported",
         )
-        custom_assert(
+        assert_true(
             all(isinstance(node, IntermediateNode) for node in output_nodes.values()),
             "Got output nodes which were not IntermediateNode, which is not supported",
         )
@@ -51,7 +49,7 @@ class OPGraph:
     def __call__(self, *args) -> Union[Any, Tuple[Any, ...]]:
         inputs = dict(enumerate(args))
 
-        custom_assert(
+        assert_true(
             len(inputs) == len(self.input_nodes),
             f"Expected {len(self.input_nodes)} arguments, got {len(inputs)} : {args}",
         )
@@ -183,7 +181,7 @@ class OPGraph:
             min_data_type_constructor = get_type_constructor_for_constant_data(min_bound)
             max_data_type_constructor = get_type_constructor_for_constant_data(max_bound)
 
-            custom_assert(
+            assert_true(
                 max_data_type_constructor == min_data_type_constructor,
                 (
                     f"Got two different type constructors for min and max bound: "
@@ -200,7 +198,7 @@ class OPGraph:
                             (min_bound, max_bound), force_signed=False
                         )
                     else:
-                        custom_assert(
+                        assert_true(
                             isinstance(min_data_type, Float) and isinstance(max_data_type, Float),
                             (
                                 "min_bound and max_bound have different common types, "
@@ -212,7 +210,7 @@ class OPGraph:
                     output_value.dtype.underlying_type_constructor = data_type_constructor
             else:
                 # Currently variable inputs are only allowed to be integers
-                custom_assert(
+                assert_true(
                     isinstance(min_data_type, Integer) and isinstance(max_data_type, Integer),
                     (
                         f"Inputs to a graph should be integers, got bounds that were float, \n"
@@ -229,7 +227,7 @@ class OPGraph:
 
             # TODO: #57 manage multiple outputs from a node, probably requires an output_idx when
             # adding an edge
-            custom_assert(len(node.outputs) == 1)
+            assert_true(len(node.outputs) == 1)
 
             successors = self.graph.succ[node]
             for succ in successors:

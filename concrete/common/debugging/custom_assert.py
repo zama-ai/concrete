@@ -1,7 +1,7 @@
 """Provide some variants of assert."""
 
 
-def custom_assert(condition: bool, on_error_msg: str = "") -> None:
+def _custom_assert(condition: bool, on_error_msg: str = "") -> None:
     """Provide a custom assert which is kept even if the optimized python mode is used.
 
     See https://docs.python.org/3/reference/simple_stmts.html#assert for the documentation
@@ -25,7 +25,7 @@ def assert_true(condition: bool, on_error_msg: str = ""):
         on_error_msg(str): optional message for precising the error, in case of error
 
     """
-    return custom_assert(condition, on_error_msg)
+    return _custom_assert(condition, on_error_msg)
 
 
 def assert_false(condition: bool, on_error_msg: str = ""):
@@ -36,7 +36,7 @@ def assert_false(condition: bool, on_error_msg: str = ""):
         on_error_msg(str): optional message for precising the error, in case of error
 
     """
-    return custom_assert(not condition, on_error_msg)
+    return _custom_assert(not condition, on_error_msg)
 
 
 def assert_not_reached(on_error_msg: str):
@@ -46,4 +46,4 @@ def assert_not_reached(on_error_msg: str):
         on_error_msg(str): message for precising the error
 
     """
-    return custom_assert(False, on_error_msg)
+    return _custom_assert(False, on_error_msg)

@@ -12,7 +12,7 @@ from ..data_types.dtypes_helpers import (
     mix_values_determine_holding_dtype,
 )
 from ..data_types.integers import Integer
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true
 from ..values import BaseValue, ClearScalar, EncryptedScalar, TensorValue
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
@@ -33,7 +33,7 @@ class IntermediateNode(ABC):
         **_kwargs,  # This is to be able to feed arbitrary arguments to IntermediateNodes
     ) -> None:
         self.inputs = list(inputs)
-        custom_assert(all(isinstance(x, BaseValue) for x in self.inputs))
+        assert_true(all(isinstance(x, BaseValue) for x in self.inputs))
 
     # Register all IR nodes
     def __init_subclass__(cls, **kwargs):
@@ -49,7 +49,7 @@ class IntermediateNode(ABC):
         """__init__ for a binary operation, ie two inputs."""
         IntermediateNode.__init__(self, inputs)
 
-        custom_assert(len(self.inputs) == 2)
+        assert_true(len(self.inputs) == 2)
 
         self.outputs = [mix_values_func(self.inputs[0], self.inputs[1])]
 
@@ -148,7 +148,7 @@ class Input(IntermediateNode):
         program_input_idx: int,
     ) -> None:
         super().__init__((input_value,))
-        custom_assert(len(self.inputs) == 1)
+        assert_true(len(self.inputs) == 1)
         self.input_name = input_name
         self.program_input_idx = program_input_idx
         self.outputs = [deepcopy(self.inputs[0])]
@@ -222,7 +222,7 @@ class UnivariateFunction(IntermediateNode):
         op_attributes: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__([input_base_value])
-        custom_assert(len(self.inputs) == 1)
+        assert_true(len(self.inputs) == 1)
         self.arbitrary_func = arbitrary_func
         self.op_args = op_args if op_args is not None else ()
         self.op_kwargs = op_kwargs if op_kwargs is not None else {}
@@ -306,9 +306,9 @@ class Dot(IntermediateNode):
         ] = default_dot_evaluation_function,
     ) -> None:
         super().__init__(inputs)
-        custom_assert(len(self.inputs) == 2)
+        assert_true(len(self.inputs) == 2)
 
-        custom_assert(
+        assert_true(
             all(
                 isinstance(input_value, TensorValue) and input_value.ndim == 1
                 for input_value in self.inputs

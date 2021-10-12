@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from PIL import Image
 
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import (
     ALL_IR_NODES,
@@ -36,7 +36,7 @@ IR_NODE_COLOR_MAPPING = {
 }
 
 _missing_nodes_in_mapping = ALL_IR_NODES - IR_NODE_COLOR_MAPPING.keys()
-custom_assert(
+assert_true(
     len(_missing_nodes_in_mapping) == 0,
     (
         f"Missing IR node in IR_NODE_COLOR_MAPPING : "

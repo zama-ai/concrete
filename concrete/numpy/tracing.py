@@ -7,7 +7,7 @@ import numpy
 from numpy.typing import DTypeLike
 
 from ..common.data_types.dtypes_helpers import mix_values_determine_holding_dtype
-from ..common.debugging.custom_assert import assert_true, custom_assert
+from ..common.debugging.custom_assert import assert_true
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import Constant, Dot, UnivariateFunction
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
@@ -41,7 +41,7 @@ class NPTracer(BaseTracer):
         """
         if method == "__call__":
             tracing_func = self.get_tracing_func_for_np_function(ufunc)
-            custom_assert(
+            assert_true(
                 (len(kwargs) == 0),
                 f"**kwargs are currently not supported for numpy ufuncs, ufunc: {ufunc.__name__}",
             )
@@ -58,7 +58,7 @@ class NPTracer(BaseTracer):
         Read more: https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch
         """
         tracing_func = self.get_tracing_func_for_np_function(func)
-        custom_assert(
+        assert_true(
             (len(kwargs) == 0),
             f"**kwargs are currently not supported for numpy functions, func: {func}",
         )
@@ -77,10 +77,10 @@ class NPTracer(BaseTracer):
         Returns:
             NPTracer: The NPTracer representing the casting operation
         """
-        custom_assert(
+        assert_true(
             len(args) == 0, f"astype currently only supports tracing without *args, got {args}"
         )
-        custom_assert(
+        assert_true(
             (len(kwargs) == 0),
             f"astype currently only supports tracing without **kwargs, got {kwargs}",
         )
@@ -150,9 +150,9 @@ class NPTracer(BaseTracer):
         Returns:
             NPTracer: The output NPTracer containing the traced function
         """
-        custom_assert(len(input_tracers) == 1)
+        assert_true(len(input_tracers) == 1)
         common_output_dtypes = cls._manage_dtypes(unary_operator, *input_tracers)
-        custom_assert(len(common_output_dtypes) == 1)
+        assert_true(len(common_output_dtypes) == 1)
 
         traced_computation = UnivariateFunction(
             input_base_value=input_tracers[0].output,
@@ -179,7 +179,7 @@ class NPTracer(BaseTracer):
         Returns:
             NPTracer: The output NPTracer containing the traced function
         """
-        custom_assert(len(input_tracers) == 2)
+        assert_true(len(input_tracers) == 2)
 
         # One of the inputs has to be constant
         if isinstance(input_tracers[0].traced_computation, Constant):
@@ -204,7 +204,7 @@ class NPTracer(BaseTracer):
                 return binary_operator(x, baked_constant, **kwargs)
 
         common_output_dtypes = cls._manage_dtypes(binary_operator, *input_tracers)
-        custom_assert(len(common_output_dtypes) == 1)
+        assert_true(len(common_output_dtypes) == 1)
 
         op_kwargs = deepcopy(kwargs)
         op_kwargs["baked_constant"] = baked_constant
@@ -242,7 +242,7 @@ class NPTracer(BaseTracer):
         assert_true((num_args := len(args)) == 2, f"dot expects 2 inputs got {num_args}")
 
         common_output_dtypes = self._manage_dtypes(numpy.dot, *args)
-        custom_assert(len(common_output_dtypes) == 1)
+        assert_true(len(common_output_dtypes) == 1)
 
         traced_computation = Dot(
             [input_tracer.output for input_tracer in args],
@@ -399,7 +399,7 @@ list_of_not_supported = [
     if ufunc.nin not in [1, 2]
 ]
 
-custom_assert(len(list_of_not_supported) == 0, f"Not supported nin's, {list_of_not_supported}")
+assert_true(len(list_of_not_supported) == 0, f"Not supported nin's, {list_of_not_supported}")
 del list_of_not_supported
 
 # We are adding initial support for `np.array(...)` +,-,* `BaseTracer`

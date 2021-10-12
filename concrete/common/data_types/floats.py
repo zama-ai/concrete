@@ -2,7 +2,7 @@
 
 from functools import partial
 
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true
 from . import base
 
 
@@ -15,7 +15,7 @@ class Float(base.BaseDataType):
 
     def __init__(self, bit_width: int) -> None:
         super().__init__()
-        custom_assert(bit_width in (32, 64), "Only 32 and 64 bits floats are supported")
+        assert_true(bit_width in (32, 64), "Only 32 and 64 bits floats are supported")
         self.bit_width = bit_width
 
     def __repr__(self) -> str:

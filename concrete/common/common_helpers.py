@@ -3,7 +3,7 @@
 from typing import List, Optional
 
 from .data_types.integers import Integer
-from .debugging import custom_assert
+from .debugging import assert_true
 from .operator_graph import OPGraph
 from .representation.intermediate import IntermediateNode
 
@@ -54,7 +54,7 @@ def check_op_graph_is_integer_program(
     """
     offending_nodes = [] if offending_nodes_out is None else offending_nodes_out
 
-    custom_assert(
+    assert_true(
         isinstance(offending_nodes, list),
         f"offending_nodes_out must be a list, got {type(offending_nodes_out)}",
     )

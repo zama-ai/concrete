@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import networkx as nx
 
-from ..debugging.custom_assert import custom_assert
+from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import Constant, Input, UnivariateFunction
 
@@ -50,7 +50,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
     Returns:
         str: a string to print or save in a file
     """
-    custom_assert(isinstance(opgraph, OPGraph))
+    assert_true(isinstance(opgraph, OPGraph))
     list_of_nodes_which_are_outputs = list(opgraph.output_nodes.values())
     graph = opgraph.graph
 
@@ -64,7 +64,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
         # This code doesn't work with more than a single output. For more outputs,
         # we would need to change the way the destination are created: currently,
         # they only are done by incrementing i
-        custom_assert(len(node.outputs) == 1)
+        assert_true(len(node.outputs) == 1)
 
         if isinstance(node, Input):
             what_to_print = node.input_name
@@ -91,9 +91,9 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
                     list_of_arg_name += [(index["input_idx"], str(map_table[pred]))]
 
             # Some checks, because the previous algorithm is not clear
-            custom_assert(len(list_of_arg_name) == len(set(x[0] for x in list_of_arg_name)))
+            assert_true(len(list_of_arg_name) == len(set(x[0] for x in list_of_arg_name)))
             list_of_arg_name.sort()
-            custom_assert([x[0] for x in list_of_arg_name] == list(range(len(list_of_arg_name))))
+            assert_true([x[0] for x in list_of_arg_name] == list(range(len(list_of_arg_name))))
 
             prefix_to_add_to_what_to_print = ""
             suffix_to_add_to_what_to_print = ""
@@ -105,7 +105,7 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
                 if node.op_attributes["in_which_input_is_constant"] == 0:
                     prefix_to_add_to_what_to_print = f"{shorten_a_constant(baked_constant)}, "
                 else:
-                    custom_assert(
+                    assert_true(
                         node.op_attributes["in_which_input_is_constant"] == 1,
                         "'in_which_input_is_constant' should be a key of node.op_attributes",
                     )
