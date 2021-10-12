@@ -546,11 +546,11 @@ jobs:
       - name: Create directory for artifacts
         if: ${{ success() && !cancelled() }}
         run: |
-          ARTIFACTS_RAW_DIR=/tmp/release_artifacts/raw/
+          ARTIFACTS_RAW_DIR=/tmp/release_artifacts/raw
           mkdir -p "${ARTIFACTS_RAW_DIR}"
           echo "ARTIFACTS_RAW_DIR=${ARTIFACTS_RAW_DIR}" >> "$GITHUB_ENV"
 
-          ARTIFACTS_PACKAGED_DIR=/tmp/release_artifacts/packaged/
+          ARTIFACTS_PACKAGED_DIR=/tmp/release_artifacts/packaged
           mkdir -p "${ARTIFACTS_PACKAGED_DIR}"
           echo "ARTIFACTS_PACKAGED_DIR=${ARTIFACTS_PACKAGED_DIR}" >> "$GITHUB_ENV"
       - name: Download Documentation
@@ -578,6 +578,7 @@ jobs:
           tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
           popd
           cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
+          ls -a .
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
@@ -588,7 +589,7 @@ jobs:
             **Documentation:** https://docs.zama.ai/concrete/
           prerelease: ${{ fromJSON(env.IS_PRERELEASE) }}
           files: |
-            '${{ env.ARTIFACTS_PACKAGED_DIR }}/*'
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
           tag_name: ${{ env.GIT_TAG }}
           fail_on_unmatched_files: true
           token: ${{ secrets.BOT_TOKEN }}
