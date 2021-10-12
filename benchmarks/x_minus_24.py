@@ -1,4 +1,4 @@
-# Target: x - 24
+# Unit Target: x - 24
 
 import random
 

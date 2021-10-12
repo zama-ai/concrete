@@ -1,4 +1,4 @@
-# Target: x * 7
+# Unit Target: x * 7
 
 import random
 

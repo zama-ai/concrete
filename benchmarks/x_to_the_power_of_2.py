@@ -1,4 +1,4 @@
-# Target: x**2
+# Unit Target: x**2
 
 import random
 

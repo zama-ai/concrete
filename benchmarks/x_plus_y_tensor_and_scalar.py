@@ -1,4 +1,4 @@
-# Target: x + y (Tensor & Scalar)
+# Unit Target: x + y (Tensor & Scalar)
 
 import random
 

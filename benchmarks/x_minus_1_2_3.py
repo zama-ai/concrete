@@ -1,4 +1,4 @@
-# Target: x - [1, 2, 3]
+# Unit Target: x - [1, 2, 3]
 
 import numpy as np
 from common import BENCHMARK_CONFIGURATION

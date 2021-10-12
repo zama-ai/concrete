@@ -1,4 +1,4 @@
-# Target: 124 - x (Tensor)
+# Unit Target: 124 - x (Tensor)
 
 import numpy as np
 from common import BENCHMARK_CONFIGURATION

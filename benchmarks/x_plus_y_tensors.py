@@ -1,4 +1,4 @@
-# Target: x + y (Tensors)
+# Unit Target: x + y (Tensors)
 
 import numpy as np
 from common import BENCHMARK_CONFIGURATION

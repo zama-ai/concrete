@@ -1,4 +1,4 @@
-# Target: x + [1, 2, 3] (Broadcasted)
+# Unit Target: x + [1, 2, 3] (Broadcasted)
 
 import numpy as np
 from common import BENCHMARK_CONFIGURATION

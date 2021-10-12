@@ -1,4 +1,4 @@
-# Target: x - y (Broadcasted Tensors)
+# Unit Target: x - y (Broadcasted Tensors)
 
 import numpy as np
 from common import BENCHMARK_CONFIGURATION

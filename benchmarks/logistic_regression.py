@@ -1,4 +1,4 @@
-# Target: Logistic Regression
+# Full Target: Logistic Regression
 
 import numpy as np
 import torch

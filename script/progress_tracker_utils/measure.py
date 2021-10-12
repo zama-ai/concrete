@@ -284,15 +284,8 @@ def perform_measurements(path, script, target_id, metrics, samples, result):
         del result["targets"][target_id]["measurements"]
 
 
-def main():
+def main(args):
     """Measurement script for the progress tracker"""
-    parser = argparse.ArgumentParser(description="Measurement script for the progress tracker")
-
-    parser.add_argument("base", type=str, help="directory which contains the benchmarks")
-    parser.add_argument("--samples", type=int, default=30, help="number of samples to take")
-    parser.add_argument("--keep", action="store_true", help="flag to keep measurement scripts")
-
-    args = parser.parse_args()
 
     base = pathlib.Path(args.base)
     samples = args.samples
@@ -328,7 +321,15 @@ def main():
                 break
 
         # Check whether the script is a target or not
-        if not first_line.startswith("# Target:"):
+        if first_line.startswith("# Unit Target:"):
+            # Extract target name
+            target_name = first_line.replace("# Unit Target:", "").strip()
+            is_unit = True
+        elif first_line.startswith("# Full Target:"):
+            # Extract target name
+            target_name = first_line.replace("# Full Target:", "").strip()
+            is_unit = False
+        else:
             print()
             print(path)
             print("-" * len(str(path)))
@@ -342,8 +343,7 @@ def main():
             print()
             continue
 
-        # Extract target name and id
-        target_name = first_line.replace("# Target:", "").strip()
+        # Extract target id
         target_id = name_to_id(target_name)
 
         # Check whether the target is already registered
@@ -371,6 +371,7 @@ def main():
             "measurements": {},
             "alerts": alerts,
             "code": "\n".join(lines),
+            "isUnit": is_unit,
         }
 
         # Perform and save measurements
@@ -388,4 +389,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Measurement script for the progress tracker")
+
+    parser.add_argument("base", type=str, help="directory which contains the benchmarks")
+    parser.add_argument("--samples", type=int, default=30, help="number of samples to take")
+    parser.add_argument("--keep", action="store_true", help="flag to keep measurement scripts")
+
+    main(parser.parse_args())

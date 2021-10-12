@@ -1,4 +1,4 @@
-# Target: x + 42
+# Unit Target: x + 42
 
 import random
 

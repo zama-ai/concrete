@@ -1,4 +1,4 @@
-# Target: Single Table Lookup
+# Unit Target: Single Table Lookup
 
 import random
 

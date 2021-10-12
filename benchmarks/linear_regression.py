@@ -1,4 +1,4 @@
-# Target: Linear Regression
+# Full Target: Linear Regression
 
 # Disable line length warnings as we have a looooong metric...
 # flake8: noqa: E501

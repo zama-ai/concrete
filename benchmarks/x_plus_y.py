@@ -1,4 +1,4 @@
-# Target: x + y
+# Unit Target: x + y
 
 import random
 

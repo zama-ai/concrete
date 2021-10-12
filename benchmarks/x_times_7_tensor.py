@@ -1,4 +1,4 @@
-# Target: x * 7 (Tensor)
+# Unit Target: x * 7 (Tensor)
 
 import numpy as np
 from common import BENCHMARK_CONFIGURATION
