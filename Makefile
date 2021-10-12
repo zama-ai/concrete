@@ -78,7 +78,7 @@ pcc_internal: $(PCC_DEPS)
 
 pytest:
 	poetry run pytest -svv \
-	--global-coverage-infos-json global-coverage-infos.json \
+	--global-coverage-infos-json=global-coverage-infos.json \
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--cov-report=term-missing:skip-covered tests/
 .PHONY: pytest

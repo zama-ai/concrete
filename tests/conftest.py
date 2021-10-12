@@ -26,6 +26,8 @@ def pytest_addoption(parser):
 
     parser.addoption(
         "--global-coverage-infos-json",
+        action="store",
+        default=None,
         type=str,
         help="To dump pytest-cov term report to a text file.",
     )
