@@ -75,6 +75,23 @@ def mix_x_and_y_and_call_f(function, x, y):
     )
 
 
+def mix_x_and_y_into_range_0_to_1_and_call_f(function, x, y):
+    """Mix x and y and then call function, in such a way that the input to function is between
+    0 and 1"""
+    x_p_1 = x + 0.1
+    x_p_2 = x + 0.2
+    x_p_4 = 1 - numpy.abs(numpy.sin(x_p_1 + x_p_2 + 0.3))
+    x_p_3 = function(x_p_4)
+    return (
+        x_p_3.astype(numpy.int32),
+        x_p_2.astype(numpy.int32),
+        (x_p_2 + 3).astype(numpy.int32),
+        x_p_3.astype(numpy.int32) + 67,
+        y,
+        (y + 4.7).astype(numpy.int32) + 3,
+    )
+
+
 def mix_x_and_y_into_integer_and_call_f(function, x, y):
     """Mix x and y but keep the entry to function as an integer"""
     x_p_1 = x + 1
@@ -200,9 +217,9 @@ def subtest_fuse_float_unary_operations_correctness(fun, tensor_shape):
         input_list = [1, 2, 42, 44]
         super_fun_list = [mix_x_and_y_and_call_f]
     elif fun in [numpy.arctanh, numpy.arccos, numpy.arcsin, numpy.arctan]:
-        # Needs values between 0 and 1
-        input_list = [0, 0.1, 0.2]
-        super_fun_list = [mix_x_and_y_and_call_f]
+        # Needs values between 0 and 1 in the call function
+        input_list = [0, 2, 42, 44]
+        super_fun_list = [mix_x_and_y_into_range_0_to_1_and_call_f]
     elif fun in [numpy.cosh, numpy.sinh, numpy.exp, numpy.exp2, numpy.expm1]:
         # Not too large values to avoid overflows
         input_list = [1, 2, 5, 11]
