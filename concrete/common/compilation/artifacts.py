@@ -146,7 +146,9 @@ class CompilationArtifacts:
             # wrapt                         1.12.1
             # zipp                          3.5.0
 
-            pip_process = subprocess.run(["pip", "list"], stdout=subprocess.PIPE, check=True)
+            pip_process = subprocess.run(
+                ["pip", "--disable-pip-version-check", "list"], stdout=subprocess.PIPE, check=True
+            )
             dependencies = iter(pip_process.stdout.decode("utf-8").split("\n"))
 
             # skip 'Package ... Version' line
