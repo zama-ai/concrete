@@ -1,6 +1,6 @@
 # Save and Load Keys From Files
 
-Since the `ServerKey` and `ClientKey` type both implement the `Serialize` and 
+Since the `ServerKey` and `ClientKey` types both implement the `Serialize` and
 `Deserialize` traits, you are free to use any serializer that suits you to save and load the 
 keys to disk.
 
