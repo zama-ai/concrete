@@ -312,7 +312,7 @@ def get_base_value_for_python_constant_data(
     return partial(TensorValue, dtype=constant_data_type, shape=())
 
 
-def get_type_constructor_for_python_constant_data(constant_data: Union[int, float]):
+def get_constructor_for_python_constant_data(constant_data: Union[int, float]):
     """Get the constructor for the passed python constant data.
 
     Args:

@@ -283,17 +283,17 @@ def test_eval_op_graph_bounds_on_inputset_multiple_output(
             for y_gen in range_y:
                 yield (x_gen, y_gen)
 
-    _, node_bounds = eval_op_graph_bounds_on_inputset(
+    _, node_bounds_and_samples = eval_op_graph_bounds_on_inputset(
         op_graph,
         data_gen(*tuple(range(x[0], x[1] + 1) for x in input_ranges)),
         CompilationConfiguration(),
     )
 
     for i, output_node in op_graph.output_nodes.items():
-        output_node_bounds = node_bounds[output_node]
+        output_node_bounds = node_bounds_and_samples[output_node]
         assert (output_node_bounds["min"], output_node_bounds["max"]) == expected_output_bounds[i]
 
-    op_graph.update_values_with_bounds(node_bounds)
+    op_graph.update_values_with_bounds_and_samples(node_bounds_and_samples)
 
     for i, output_node in op_graph.output_nodes.items():
         assert expected_output_data_type[i] == output_node.outputs[0].dtype

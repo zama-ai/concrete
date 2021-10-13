@@ -250,26 +250,25 @@ class UnivariateFunction(IntermediateNode):
         Returns:
             List[Any]: The table.
         """
+        input_dtype = self.inputs[0].dtype
         # Check the input is an unsigned integer to be able to build a table
         assert isinstance(
-            self.inputs[0].dtype, Integer
+            input_dtype, Integer
         ), "get_table only works for an unsigned Integer input"
-        assert not self.inputs[
-            0
-        ].dtype.is_signed, "get_table only works for an unsigned Integer input"
+        assert not input_dtype.is_signed, "get_table only works for an unsigned Integer input"
 
-        type_constructor = self.inputs[0].dtype.underlying_type_constructor
-        if type_constructor is None:
+        input_value_constructor = self.inputs[0].underlying_constructor
+        if input_value_constructor is None:
             logger.info(
                 f"{self.__class__.__name__} input data type constructor was None, defaulting to int"
             )
-            type_constructor = int
+            input_value_constructor = int
 
-        min_input_range = self.inputs[0].dtype.min_value()
-        max_input_range = self.inputs[0].dtype.max_value() + 1
+        min_input_range = input_dtype.min_value()
+        max_input_range = input_dtype.max_value() + 1
 
         table = [
-            self.evaluate({0: type_constructor(input_value)})
+            self.evaluate({0: input_value_constructor(input_value)})
             for input_value in range(min_input_range, max_input_range)
         ]
 

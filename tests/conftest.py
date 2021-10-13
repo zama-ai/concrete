@@ -215,6 +215,14 @@ class TestHelpers:
 
         return graphs_are_isomorphic
 
+    @staticmethod
+    def python_functions_are_equal_or_equivalent(lhs, rhs):
+        """Helper function to check if two functions are equal or their code are equivalent.
+
+        This is not perfect, but will be good enough for tests.
+        """
+        return python_functions_are_equal_or_equivalent(lhs, rhs)
+
 
 @pytest.fixture
 def test_helpers():

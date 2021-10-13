@@ -26,7 +26,7 @@ from ..numpy.tracing import trace_numpy_function
 from .np_dtypes_helpers import (
     get_base_data_type_for_numpy_or_python_constant_data,
     get_base_value_for_numpy_or_python_constant_data,
-    get_type_constructor_for_numpy_or_python_constant_data,
+    get_constructor_for_numpy_or_python_constant_data,
 )
 
 
@@ -111,7 +111,7 @@ def _compile_numpy_function_into_op_graph_internal(
         )
 
     # Find bounds with the inputset
-    inputset_size, node_bounds = eval_op_graph_bounds_on_inputset(
+    inputset_size, node_bounds_and_samples = eval_op_graph_bounds_on_inputset(
         op_graph,
         inputset,
         compilation_configuration=compilation_configuration,
@@ -149,13 +149,13 @@ def _compile_numpy_function_into_op_graph_internal(
         sys.stderr.write(f"Warning: {message}")
 
     # Add the bounds as an artifact
-    compilation_artifacts.add_final_operation_graph_bounds(node_bounds)
+    compilation_artifacts.add_final_operation_graph_bounds(node_bounds_and_samples)
 
     # Update the graph accordingly: after that, we have the compilable graph
-    op_graph.update_values_with_bounds(
-        node_bounds,
+    op_graph.update_values_with_bounds_and_samples(
+        node_bounds_and_samples,
         get_base_data_type_for_numpy_or_python_constant_data,
-        get_type_constructor_for_numpy_or_python_constant_data,
+        get_constructor_for_numpy_or_python_constant_data,
     )
 
     # Add the initial graph as an artifact

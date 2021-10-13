@@ -9,7 +9,7 @@ from concrete.numpy.np_dtypes_helpers import (
     convert_base_data_type_to_numpy_dtype,
     convert_numpy_dtype_to_base_data_type,
     get_base_value_for_numpy_or_python_constant_data,
-    get_type_constructor_for_numpy_or_python_constant_data,
+    get_constructor_for_numpy_or_python_constant_data,
 )
 
 
@@ -65,18 +65,31 @@ def test_convert_common_dtype_to_numpy_dtype(common_dtype, expected_numpy_dtype)
         (10, int),
         (42.0, float),
         (numpy.int32(10), numpy.int32),
-        (numpy.array([[0, 1], [3, 4]], dtype=numpy.uint64), numpy.uint64),
-        (numpy.array([[0, 1], [3, 4]], dtype=numpy.float64), numpy.float64),
     ],
 )
-def test_get_type_constructor_for_numpy_or_python_constant_data(
-    constant_data, expected_constructor
-):
-    """Test function for get_type_constructor_for_numpy_or_python_constant_data"""
+def test_get_constructor_for_numpy_or_python_constant_data(constant_data, expected_constructor):
+    """Test function for get_constructor_for_numpy_or_python_constant_data"""
 
-    assert expected_constructor == get_type_constructor_for_numpy_or_python_constant_data(
-        constant_data
-    )
+    assert expected_constructor == get_constructor_for_numpy_or_python_constant_data(constant_data)
+
+
+def test_get_constructor_for_numpy_arrays(test_helpers):
+    """Test function for get_constructor_for_numpy_or_python_constant_data for numpy arrays."""
+
+    arrays = [
+        numpy.array([[0, 1], [3, 4]], dtype=numpy.uint64),
+        numpy.array([[0, 1], [3, 4]], dtype=numpy.float64),
+    ]
+
+    def get_expected_constructor(array: numpy.ndarray):
+        return lambda x: numpy.full(array.shape, x, dtype=array.dtype)
+
+    expected_constructors = [get_expected_constructor(array) for array in arrays]
+
+    for array, expected_constructor in zip(arrays, expected_constructors):
+        assert test_helpers.python_functions_are_equal_or_equivalent(
+            expected_constructor, get_constructor_for_numpy_or_python_constant_data(array)
+        )
 
 
 def test_get_base_value_for_numpy_or_python_constant_data_with_list():

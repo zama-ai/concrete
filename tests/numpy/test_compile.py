@@ -330,7 +330,7 @@ def test_fail_compile(function, input_ranges, list_of_arg_names):
     }
 
     with pytest.raises(RuntimeError, match=".*isn't supported for MLIR lowering.*"):
-        compile_numpy_function_into_op_graph(
+        compile_numpy_function(
             function,
             function_parameters,
             data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),

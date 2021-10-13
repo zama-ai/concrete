@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from typing import Callable, Optional
 
 from ..data_types.base import BaseDataType
 
@@ -11,10 +12,12 @@ class BaseValue(ABC):
 
     dtype: BaseDataType
     _is_encrypted: bool
+    underlying_constructor: Optional[Callable]
 
     def __init__(self, dtype: BaseDataType, is_encrypted: bool) -> None:
         self.dtype = deepcopy(dtype)
         self._is_encrypted = is_encrypted
+        self.underlying_constructor = None
 
     def __repr__(self) -> str:  # pragma: no cover
         return str(self)

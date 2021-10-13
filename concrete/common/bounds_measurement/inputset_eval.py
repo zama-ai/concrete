@@ -135,7 +135,7 @@ def eval_op_graph_bounds_on_inputset(
     Returns:
         Tuple[int, Dict[IntermediateNode, Dict[str, Any]]]: number of inputs in the inputset and
             a dict containing the bounds for each node from op_graph, stored with the node
-            as key and a dict with keys "min" and "max" as value.
+            as key and a dict with keys "min", "max" and "sample" as value.
     """
 
     def check_inputset_input_len_is_valid(data_to_check):
@@ -178,8 +178,12 @@ def eval_op_graph_bounds_on_inputset(
 
     # We evaluate the min and max func to be able to resolve the tensors min and max rather than
     # having the tensor itself as the stored min and max values.
-    node_bounds = {
-        node: {"min": min_func(value, value), "max": max_func(value, value)}
+    node_bounds_and_samples = {
+        node: {
+            "min": min_func(value, value),
+            "max": max_func(value, value),
+            "sample": value,
+        }
         for node, value in first_output.items()
     }
 
@@ -200,7 +204,11 @@ def eval_op_graph_bounds_on_inputset(
 
         current_output = op_graph.evaluate(current_input_data)
         for node, value in current_output.items():
-            node_bounds[node]["min"] = min_func(node_bounds[node]["min"], value)
-            node_bounds[node]["max"] = max_func(node_bounds[node]["max"], value)
+            node_bounds_and_samples[node]["min"] = min_func(
+                node_bounds_and_samples[node]["min"], value
+            )
+            node_bounds_and_samples[node]["max"] = max_func(
+                node_bounds_and_samples[node]["max"], value
+            )
 
-    return inputset_size, node_bounds
+    return inputset_size, node_bounds_and_samples

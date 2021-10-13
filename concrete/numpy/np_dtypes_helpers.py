@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable, Dict, List, Type, Union
+from typing import Any, Callable, Dict, List, Union
 
 import numpy
 from numpy.typing import DTypeLike
@@ -13,7 +13,7 @@ from ..common.data_types.dtypes_helpers import (
     find_type_to_hold_both_lossy,
     get_base_data_type_for_python_constant_data,
     get_base_value_for_python_constant_data,
-    get_type_constructor_for_python_constant_data,
+    get_constructor_for_python_constant_data,
 )
 from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
@@ -224,8 +224,8 @@ def get_numpy_function_output_dtype(
     return [output.dtype for output in outputs]
 
 
-def get_type_constructor_for_numpy_or_python_constant_data(constant_data: Any):
-    """Get the constructor for the numpy scalar underlying dtype or python dtype.
+def get_constructor_for_numpy_or_python_constant_data(constant_data: Any):
+    """Get the constructor for the numpy constant data or python dtype.
 
     Args:
         constant_data (Any): The data for which we want to determine the type constructor.
@@ -236,11 +236,8 @@ def get_type_constructor_for_numpy_or_python_constant_data(constant_data: Any):
         f"Unsupported constant data of type {type(constant_data)}",
     )
 
-    scalar_constructor: Type
-
     if isinstance(constant_data, (numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)):
-        scalar_constructor = constant_data.dtype.type
-    else:
-        scalar_constructor = get_type_constructor_for_python_constant_data(constant_data)
-
-    return scalar_constructor
+        if isinstance(constant_data, numpy.ndarray):
+            return lambda x: numpy.full(constant_data.shape, x, dtype=constant_data.dtype)
+        return constant_data.dtype.type
+    return get_constructor_for_python_constant_data(constant_data)
