@@ -76,10 +76,13 @@ PCC_DEPS += check_version_coherence
 pcc_internal: $(PCC_DEPS)
 .PHONY: pcc_internal
 
+# One can reproduce pytest thanks to the --randomly-seed which is given by
+# pytest-randomly
 pytest:
 	poetry run pytest -svv \
 	--global-coverage-infos-json=global-coverage-infos.json \
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
+	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/
 .PHONY: pytest
 
