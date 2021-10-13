@@ -3,7 +3,7 @@ authors = ["aPere3"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Concrete Boolean Lib"
+title = "Concrete-Boolean Lib"
 description = "A guide to help you begin with `concrete-boolean` !"
 
 

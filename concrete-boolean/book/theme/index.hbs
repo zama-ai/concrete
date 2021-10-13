@@ -1,6 +1,7 @@
 <!DOCTYPE HTML>
 <html lang="{{ language }}" class="sidebar-visible no-js {{ default_theme }}">
     <head>
+        <!-- theme v0.3.0 -->
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>{{ title }}</title>
@@ -10,7 +11,31 @@
         {{#if base_url}}
         <base href="{{ base_url }}">
         {{/if}}
-
+        <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet" />
+        {{#if google_analytics}}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+        <script>
+        if(Cookies.get("zama-accept-cookies") !== "yes") {
+            window.YETT_BLACKLIST = [
+            /google/,
+            /googletagmanager\.com/,
+            ];
+        }
+        else {
+            window.YETT_BLACKLIST = [];
+        }
+        </script>
+        <script src="https://unpkg.com/yett"></script>
+        <!-- Google Analytics Tag -->
+        <script async type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id={{google_analytics}}"></script>
+        <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{google_analytics}}', {"anonymize_ip":true});
+        </script>
+        {{/if}}
 
         <!-- Custom HTML head -->
         {{> head}}
@@ -102,7 +127,7 @@
         </script>
 
         <div class="zama-header">
-            <a href="https://docs.zama.ai/concrete/">Docs home</a>
+            {{!-- <a href="https://docs.zama.ai/concrete/">Docs home</a> --}}
             <a href="https://zama.ai">Visit Zama</a>
         </div>
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
@@ -244,25 +269,6 @@
         </script>
         {{/if}}
 
-        {{#if google_analytics}}
-        <!-- Google Analytics Tag -->
-        <script type="text/javascript">
-            var localAddrs = ["localhost", "127.0.0.1", ""];
-
-            // make sure we don't activate google analytics if the developer is
-            // inspecting the book locally...
-            if (localAddrs.indexOf(document.location.hostname) === -1) {
-                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-                ga('create', '{{google_analytics}}', 'auto');
-                ga('send', 'pageview');
-            }
-        </script>
-        {{/if}}
-
         {{#if playground_line_numbers}}
         <script type="text/javascript">
             window.playground_line_numbers = true;
@@ -314,6 +320,36 @@
         });
         </script>
         {{/if}}
+        {{/if}}
+        {{#if google_analytics}}
+        <div class="rgpd">
+            <div class="zama-container">
+            <div class="padded">
+                <div class="consent">
+                We use analytics cookies to understand how people view and
+                use our documentation.
+                </div>
+                <div class="button button--black button-accept">Accept</div>
+                <div class="button button--black button-decline">Decline</div>
+                <script>
+                $(document).ready(function () {
+                    if ((Cookies.get("zama-accept-cookies") === "yes") || Cookies.get("zama-accept-cookies") === "no") {
+                        $(".rgpd").hide();
+                    }
+                    $(".rgpd .button-accept").click(function () {
+                        window.yett.unblock();
+                        $(".rgpd").hide();
+                        Cookies.set("zama-accept-cookies", "yes");
+                    });
+                    $(".rgpd .button-decline").click(function () {
+                        $(".rgpd").hide();
+                        Cookies.set("zama-accept-cookies", "no");
+                    });
+                });
+                </script>
+            </div>
+            </div>
+        </div>
         {{/if}}
 
     </body>
