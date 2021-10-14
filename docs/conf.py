@@ -71,6 +71,7 @@ html_favicon = "_static/favicon.ico"
 html_theme_options = {
     "logo_only": False,
     "analytics_id": "G-XRM93J9QBW",
+    "display_version": True,
 }
 pygments_style = "zenburn"
 html_last_updated_fmt = None # '%b %d, %Y'
@@ -78,6 +79,8 @@ html_show_copyright = True
 html_show_sphinx = False
 html_context = {
     "show_docs_home_link": True, # Show/hide docs link in top menu
+    "versions_url": "/concretefhe/versions.html",
+    "version_name": release,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

@@ -53,6 +53,7 @@
 
 body {
     font-family: var(--primary-font);
+    color: black;
 }
 
 /* Change code blocks font size slightly (normally 12px)*/
@@ -123,6 +124,25 @@ input[type=color], input[type=date], input[type=datetime-local], input[type=date
     color: var(--primary-color);
     background-color: #696969;
 }
+
+/* increase padding for top menu + version bar */
+.wy-menu-vertical {
+    padding-bottom: 60px;
+}
+
+/* fix version box font */
+.rst-versions {
+    font-family: var(--primary-font);
+}
+/* fix version fa-caret-down empty space on click */
+.rst-versions.shift-up {
+    overflow-y: unset;
+}
+/* current version color */
+.rst-versions .rst-current-version {
+    color: var(--primary-color)
+}
+
 
 .wy-nav-content a {
     color: var(--link-color);
