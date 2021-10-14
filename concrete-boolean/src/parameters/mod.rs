@@ -16,7 +16,7 @@
 //! with an higher probability error in comparison with the `TFHE_LIB_PARAMETERS`.
 //! Note that if you desire, you can also create your own set of parameters.
 //! This is an unsafe operation as failing to properly fix the parameters will potentially result
-//! with an incorrect and/or unsecure computation.
+//! with an incorrect and/or insecure computation.
 
 use concrete_commons::dispersion::StandardDev;
 use concrete_commons::parameters::{
@@ -44,11 +44,11 @@ impl BooleanParameters {
     /// # Safety
     ///
     /// This function is unsafe, as failing to fix the parameters properly would yield incorrect
-    /// and unsecure computation. Unless you are a cryptographer who really knows the impact of each
+    /// and insecure computation. Unless you are a cryptographer who really knows the impact of each
     /// of those parameters, you __must__ stick with the provided parameters [`DEFAULT_PARAMETERS`]
     /// and [`TFHE_LIB_PARAMETERS`], which both offer correct results with 128 bits of security.
     #[allow(clippy::too_many_arguments)]
-    pub unsafe fn new_unsecure(
+    pub unsafe fn new_insecure(
         lwe_dimension: LweDimension,
         glwe_dimension: GlweDimension,
         polynomial_size: PolynomialSize,
