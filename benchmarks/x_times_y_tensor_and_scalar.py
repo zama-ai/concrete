@@ -1,4 +1,4 @@
-# Unit Target: x * y (Tensor & Scalar)
+# bench: Unit Target: x * y (Tensor & Scalar)
 
 import random
 
@@ -17,14 +17,14 @@ def main():
 
     inputset = [(np.random.randint(0, 8, size=(3,)), random.randint(0, 7)) for _ in range(32)]
 
-    # Measure: Compilation Time (ms)
+    # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x, "y": y},
         inputset,
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
-    # Measure: End
+    # bench: Measure: End
 
     inputs = []
     labels = []
@@ -37,15 +37,15 @@ def main():
 
     correct = 0
     for input_i, label_i in zip(inputs, labels):
-        # Measure: Evaluation Time (ms)
+        # bench: Measure: Evaluation Time (ms)
         result_i = engine.run(*input_i)
-        # Measure: End
+        # bench: Measure: End
 
         if result_i == label_i:
             correct += 1
 
-    # Measure: Accuracy (%) = (correct / len(inputs)) * 100
-    # Alert: Accuracy (%) != 100
+    # bench: Measure: Accuracy (%) = (correct / len(inputs)) * 100
+    # bench: Alert: Accuracy (%) != 100
 
 
 if __name__ == "__main__":

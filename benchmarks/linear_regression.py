@@ -1,4 +1,4 @@
-# Full Target: Linear Regression
+# bench: Full Target: Linear Regression
 
 # Disable line length warnings as we have a looooong metric...
 # flake8: noqa: E501
@@ -172,14 +172,14 @@ def main():
     for x_i in x_q:
         inputset.append((int(x_i[0]),))
 
-    # Measure: Compilation Time (ms)
+    # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x_0": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits))},
         inputset,
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
-    # Measure: End
+    # bench: Measure: End
 
     non_homomorphic_loss = 0
     homomorphic_loss = 0
@@ -198,9 +198,9 @@ def main():
             )
             .dequantize()[0]
         )
-        # Measure: Evaluation Time (ms)
+        # bench: Measure: Evaluation Time (ms)
         homomorphic_prediction = QuantizedArray(engine.run(*x_i), y_parameters).dequantize()
-        # Measure: End
+        # bench: Measure: End
 
         non_homomorphic_loss += (non_homomorphic_prediction - y_i) ** 2
         homomorphic_loss += (homomorphic_prediction - y_i) ** 2
@@ -222,10 +222,10 @@ def main():
     print(f"Homomorphic Loss: {homomorphic_loss:.4f}")
     print(f"Relative Difference Percentage: {difference:.2f}%")
 
-    # Measure: Non Homomorphic Loss = non_homomorphic_loss
-    # Measure: Homomorphic Loss = homomorphic_loss
-    # Measure: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
-    # Alert: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) > 2
+    # bench: Measure: Non Homomorphic Loss = non_homomorphic_loss
+    # bench: Measure: Homomorphic Loss = homomorphic_loss
+    # bench: Measure: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
+    # bench: Alert: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) > 2
 
 
 if __name__ == "__main__":

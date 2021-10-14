@@ -31,7 +31,7 @@ def register_alert(script, index, line, metrics, alerts):
     """Parse line, check its correctness, add it to list of alerts if it's valid"""
 
     # Extract the alert details
-    alert_line = line.replace("# Alert:", "")
+    alert_line = line.replace("# bench: Alert:", "")
 
     # Parse the alert and append it to list of alerts
     supported_operators = ["==", "!=", "<=", ">=", "<", ">"]
@@ -89,7 +89,7 @@ def identify_metrics_and_alerts(script, lines, metrics, alerts):
         line = line.strip()
 
         # Check whether the line is a special line or not
-        if line == "# Measure: End":
+        if line == "# bench: Measure: End":
             # Make sure a measurement is active already
             if not in_measurement:
                 raise SyntaxError(
@@ -107,7 +107,7 @@ def identify_metrics_and_alerts(script, lines, metrics, alerts):
 
             # Set in_measurement to false as the active measurement has ended
             in_measurement = False
-        elif line.startswith("# Measure:"):
+        elif line.startswith("# bench: Measure:"):
             # Make sure a measurement is not active already
             if in_measurement:
                 raise SyntaxError(
@@ -116,7 +116,7 @@ def identify_metrics_and_alerts(script, lines, metrics, alerts):
                 )
 
             # Extract the measurement details
-            measurement_details = line.replace("# Measure:", "").split("=")
+            measurement_details = line.replace("# bench: Measure:", "").split("=")
 
             # Extract metric name and id
             metric_label = measurement_details[0].strip()
@@ -131,7 +131,7 @@ def identify_metrics_and_alerts(script, lines, metrics, alerts):
                 in_measurement = True
                 measurement_line = index + 1
                 measurement_indentation = indentation
-        elif line.startswith("# Alert:"):
+        elif line.startswith("# bench: Alert:"):
             register_alert(script, index, line, metrics, alerts)
 
     # Make sure there isn't an active measurement that hasn't finished
@@ -164,20 +164,20 @@ def create_modified_script(script, lines, metrics):
         # Copy the lines of the original script into the new script
         for line in lines[1:]:
             # And modify special lines along the way
-            if line.strip() == "# Measure: End":
+            if line.strip() == "# bench: Measure: End":
                 # Replace `# Measure: End` with
                 #
                 #   _end_ = time.time()
                 #   _measurements_["id"].append((_end_ - _start_) * 1000)
 
-                index = line.find("# Measure: End")
+                index = line.find("# bench: Measure: End")
                 line = line[:index]
 
                 f.write(f"{line}_end_ = time.time()\n")
 
                 value = "(_end_ - _start_) * 1000"
                 line += f'_measurements_["{current_metric_id}"].append({value})\n'
-            elif line.strip().startswith("# Measure:"):
+            elif line.strip().startswith("# bench: Measure:"):
                 # Replace `# Measure: ...` with
                 #
                 #   _start_ = time.time()
@@ -186,11 +186,11 @@ def create_modified_script(script, lines, metrics):
                 #
                 #  _measurements_["id"].append(expression)
 
-                metric_details = line.replace("# Measure:", "").split("=")
+                metric_details = line.replace("# bench: Measure:", "").split("=")
                 metric_label = metric_details[0].strip()
                 metric_id = name_to_id(metric_label)
 
-                index = line.find("# Measure:")
+                index = line.find("# bench: Measure:")
                 line = line[:index]
 
                 if len(metric_details) == 1:
@@ -321,13 +321,13 @@ def main(args):
                 break
 
         # Check whether the script is a target or not
-        if first_line.startswith("# Unit Target:"):
+        if first_line.startswith("# bench: Unit Target:"):
             # Extract target name
-            target_name = first_line.replace("# Unit Target:", "").strip()
+            target_name = first_line.replace("# bench: Unit Target:", "").strip()
             is_unit = True
-        elif first_line.startswith("# Full Target:"):
+        elif first_line.startswith("# bench: Full Target:"):
             # Extract target name
-            target_name = first_line.replace("# Full Target:", "").strip()
+            target_name = first_line.replace("# bench: Full Target:", "").strip()
             is_unit = False
         else:
             print()
@@ -337,7 +337,9 @@ def main(args):
             with tqdm.tqdm(total=samples) as pbar:
                 pbar.write("    Sample 1")
                 pbar.write("    --------")
-                pbar.write("        Skipped (doesn't have a `# Target:` directive)\n")
+                pbar.write(
+                    "        Skipped (doesn't have a `# bench: Unit/Full Target:` directive)\n"
+                )
                 pbar.update(samples)
 
             print()

@@ -1,4 +1,4 @@
-# Unit Target: Single Table Lookup
+# bench: Unit Target: Single Table Lookup
 
 import random
 
@@ -18,14 +18,14 @@ def main():
 
     x = hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits))
 
-    # Measure: Compilation Time (ms)
+    # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x},
         [(i,) for i in range(2 ** input_bits)],
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
-    # Measure: End
+    # bench: Measure: End
 
     inputs = []
     labels = []
@@ -37,15 +37,15 @@ def main():
 
     correct = 0
     for input_i, label_i in zip(inputs, labels):
-        # Measure: Evaluation Time (ms)
+        # bench: Measure: Evaluation Time (ms)
         result_i = engine.run(*input_i)
-        # Measure: End
+        # bench: Measure: End
 
         if result_i == label_i:
             correct += 1
 
-    # Measure: Accuracy (%) = (correct / len(inputs)) * 100
-    # Alert: Accuracy (%) != 100
+    # bench: Measure: Accuracy (%) = (correct / len(inputs)) * 100
+    # bench: Alert: Accuracy (%) != 100
 
 
 if __name__ == "__main__":

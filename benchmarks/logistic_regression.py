@@ -1,4 +1,4 @@
-# Full Target: Logistic Regression
+# bench: Full Target: Logistic Regression
 
 # Disable line length warnings as we have a looooong metric...
 # flake8: noqa: E501
@@ -244,7 +244,7 @@ def main():
     for x_i in x_q:
         inputset.append((int(x_i[0]), int(x_i[1])))
 
-    # Measure: Compilation Time (ms)
+    # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {
@@ -254,7 +254,7 @@ def main():
         inputset,
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
-    # Measure: End
+    # bench: Measure: End
 
     non_homomorphic_correct = 0
     homomorphic_correct = 0
@@ -273,9 +273,9 @@ def main():
                 )
             ).dequantize()[0]
         )
-        # Measure: Evaluation Time (ms)
+        # bench: Measure: Evaluation Time (ms)
         homomorphic_prediction = round(QuantizedArray(engine.run(*x_i), y_parameters).dequantize())
-        # Measure: End
+        # bench: Measure: End
 
         if non_homomorphic_prediction == y_i:
             non_homomorphic_correct += 1
@@ -299,10 +299,10 @@ def main():
     print(f"Homomorphic Accuracy: {homomorphic_accuracy:.4f}")
     print(f"Difference Percentage: {difference:.2f}%")
 
-    # Measure: Non Homomorphic Accuracy = non_homomorphic_accuracy
-    # Measure: Homomorphic Accuracy = homomorphic_accuracy
-    # Measure: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
-    # Alert: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) > 2
+    # bench: Measure: Non Homomorphic Accuracy = non_homomorphic_accuracy
+    # bench: Measure: Homomorphic Accuracy = homomorphic_accuracy
+    # bench: Measure: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
+    # bench: Alert: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) > 2
 
 
 if __name__ == "__main__":
