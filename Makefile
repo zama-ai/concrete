@@ -249,3 +249,11 @@ show_scope:
 show_type:show_scope
 .PHONY: show_type
 
+# grep recursively, ignore binary files, print file line, print file name
+# exclude dot dirs, exclude pylintrc (would match the notes)
+# exclude notebooks (sometimes matches in svg text), match the notes in this directory
+todo:
+	@NOTES_ARGS=$$(poetry run python ./script/make_utils/get_pylintrc_notes.py \
+	--pylintrc-path pylintrc);\
+	grep -rInH --exclude-dir='.[^.]*' --exclude=pylintrc --exclude='*.ipynb' "$${NOTES_ARGS}" .
+.PHONY: todo
