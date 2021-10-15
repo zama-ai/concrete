@@ -63,7 +63,7 @@ flake8:
 python_linting: pylint flake8
 .PHONY: python_linting
 
-conformance: finalize_nb python_format
+conformance: finalize_nb python_format supported_functions
 .PHONY: conformance
 
 pcc:
@@ -72,7 +72,7 @@ pcc:
 .PHONY: pcc
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence
+PCC_DEPS += check_version_coherence check_supported_functions
 pcc_internal: $(PCC_DEPS)
 .PHONY: pcc_internal
 
@@ -158,7 +158,7 @@ docker_publish_measurements: docker_build
 	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
 .PHONY: docker_publish_measurements
 
-docs: clean_docs
+docs: clean_docs supported_functions
 	@# Generate the auto summary of documentations
 	poetry run sphinx-apidoc -o docs/_apidoc $(SRC_DIR)
 
@@ -257,3 +257,12 @@ todo:
 	--pylintrc-path pylintrc);\
 	grep -rInH --exclude-dir='.[^.]*' --exclude=pylintrc --exclude='*.ipynb' "$${NOTES_ARGS}" .
 .PHONY: todo
+
+# Update docs with supported functions
+supported_functions:
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/tutorial/WORKING_WITH_FLOATING_POINTS.md
+.PHONY: supported_functions
+
+check_supported_functions:
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/tutorial/WORKING_WITH_FLOATING_POINTS.md --check
+.PHONY: check_supported_functions
