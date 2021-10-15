@@ -456,7 +456,7 @@ jobs:
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
-    name: Prepare docker image release
+    name: Package and artifacts release
     runs-on: ubuntu-20.04
 
     env:
@@ -506,11 +506,12 @@ jobs:
           --new-version "${GIT_TAG}" \
           --existing-versions $EXISTING_TAGS)
 
-          REQUIRES_LATEST_TAG=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_latest')
+          IS_LATEST=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_latest')
+          echo "IS_LATEST=${IS_LATEST}" >> "$GITHUB_ENV"
           IS_PRERELEASE=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_prerelease')
           echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
 
-          if [[ "${REQUIRES_LATEST_TAG}" == "true" ]]; then
+          if [[ "${IS_LATEST}" == "true" ]]; then
             RELEASE_IMG_LATEST_TAG="${RELEASE_IMAGE_BASE}:latest"
             RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${RELEASE_IMG_LATEST_TAG}"
           fi
@@ -536,13 +537,12 @@ jobs:
           push: false
           tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
           no-cache: true
-      - name: Release image sanity check and push
+      - name: Release image sanity check
         if: ${{ success() && !cancelled() }}
         run: |
           echo "Running sanity check for ${RELEASE_IMG_GIT_TAG}"
           docker run --rm -v "$(pwd)"/docker/release_resources:/data \
           "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
-          docker image push --all-tags "${RELEASE_IMAGE_BASE}"
       - name: Create directory for artifacts
         if: ${{ success() && !cancelled() }}
         run: |
@@ -579,6 +579,21 @@ jobs:
           popd
           cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
           ls -a .
+      - name: Push release docker image
+        if: ${{ success() && !cancelled() }}
+        run: |
+          docker image push --all-tags "${RELEASE_IMAGE_BASE}"
+      - name: Push release documentation
+        if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) }}
+        run: |
+          echo "Should push release documentation as ${GIT_TAG}"
+          echo "The dir to push would be: ${{ steps.download-docs.outputs.download-path }}"
+          echo "It contains:"
+          ls -la "${{ steps.download-docs.outputs.download-path }}"
+      - name: Push release documentation as stable
+        if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
+        run: |
+          echo "Should push release documentation as stable"
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
