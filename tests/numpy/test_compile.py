@@ -116,13 +116,6 @@ def mix_x_and_y_and_call_binary_f_two(func, c, x, y):
     return z
 
 
-def mix_x_and_y_and_call_binary_f_two_avoid_0_input(func, c, x, y):
-    """Create an upper function to test `func`"""
-    z = numpy.abs(func(c, x + 1) + 1)
-    z = z.astype(numpy.uint32) + y
-    return z
-
-
 def check_is_good_execution(compiler_engine, function, args):
     """Run several times the check compiler_engine.run(*args) == function(*args). If always wrong,
     return an error. One can set the expected probability of success of one execution and the
@@ -223,13 +216,9 @@ def test_binary_ufunc_operations(ufunc):
             ufunc, mix_x_and_y_and_call_binary_f_two, 2, ((0, 4), (0, 5))
         )
     elif ufunc in [numpy.floor_divide, numpy.fmod, numpy.remainder, numpy.true_divide]:
-        # 0 not in the domain of definition
-        # Can't make it work, #649
-        # TODO: fixme
-        pass
-        # subtest_compile_and_run_binary_ufunc_correctness(
-        #     ufunc, mix_x_and_y_and_call_binary_f_two_avoid_0_input, 31, ((1, 5), (1, 5))
-        # )
+        subtest_compile_and_run_binary_ufunc_correctness(
+            ufunc, mix_x_and_y_and_call_binary_f_two, 31, ((1, 5), (1, 5))
+        )
     elif ufunc in [numpy.lcm, numpy.left_shift]:
         # Need small constants to keep results sufficiently small
         subtest_compile_and_run_binary_ufunc_correctness(

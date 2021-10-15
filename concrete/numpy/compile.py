@@ -217,13 +217,15 @@ def compile_numpy_function_into_op_graph(
 
     # Try to compile the function and save partial artifacts on failure
     try:
-        return _compile_numpy_function_into_op_graph_internal(
-            function_to_compile,
-            function_parameters,
-            inputset,
-            compilation_configuration,
-            compilation_artifacts,
-        )
+        # Use context manager to restore numpy error handling
+        with numpy.errstate(**numpy.geterr()):
+            return _compile_numpy_function_into_op_graph_internal(
+                function_to_compile,
+                function_parameters,
+                inputset,
+                compilation_configuration,
+                compilation_artifacts,
+            )
     except Exception:  # pragma: no cover
         # This branch is reserved for unexpected issues and hence it shouldn't be tested.
         # If it could be tested, we would have fixed the underlying issue.
@@ -280,7 +282,10 @@ def _compile_numpy_function_internal(
 
     # Convert graph to an MLIR representation
     converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
-    mlir_result = converter.convert(op_graph)
+
+    # Disable numpy warnings during conversion to avoid issues during TLU generation
+    with numpy.errstate(all="ignore"):
+        mlir_result = converter.convert(op_graph)
 
     # Show MLIR representation if requested
     if show_mlir:
@@ -337,14 +342,16 @@ def compile_numpy_function(
 
     # Try to compile the function and save partial artifacts on failure
     try:
-        return _compile_numpy_function_internal(
-            function_to_compile,
-            function_parameters,
-            inputset,
-            compilation_configuration,
-            compilation_artifacts,
-            show_mlir,
-        )
+        # Use context manager to restore numpy error handling
+        with numpy.errstate(**numpy.geterr()):
+            return _compile_numpy_function_internal(
+                function_to_compile,
+                function_parameters,
+                inputset,
+                compilation_configuration,
+                compilation_artifacts,
+                show_mlir,
+            )
     except Exception:  # pragma: no cover
         # This branch is reserved for unexpected issues and hence it shouldn't be tested.
         # If it could be tested, we would have fixed the underlying issue.

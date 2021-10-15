@@ -1,5 +1,7 @@
 """Test file for intermediate representation"""
 
+from copy import deepcopy
+
 import numpy
 import pytest
 
@@ -292,3 +294,23 @@ def test_is_equivalent_to(
         == test_helpers.nodes_are_equivalent(node2, node1)
         == expected_result
     )
+
+
+@pytest.mark.parametrize(
+    "list_to_fill,expected_list",
+    [
+        pytest.param([None, 1, 2, 3, None, None], [1, 1, 2, 3, 3, 3]),
+        pytest.param([None], None, marks=pytest.mark.xfail(strict=True)),
+        pytest.param([None, None, None, None, 7, None, None, None], [7, 7, 7, 7, 7, 7, 7, 7]),
+        pytest.param([None, None, 3, None, None, None, 2, None], [3, 3, 3, 3, 3, 2, 2, 2]),
+    ],
+)
+def test_flood_replace_none_values(list_to_fill: list, expected_list: list):
+    """Unit test for flood_replace_none_values"""
+
+    # avoid modifying the test input
+    list_to_fill_copy = deepcopy(list_to_fill)
+    ir.flood_replace_none_values(list_to_fill_copy)
+
+    assert all(value is not None for value in list_to_fill_copy)
+    assert list_to_fill_copy == expected_list

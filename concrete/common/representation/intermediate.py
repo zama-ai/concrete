@@ -1,6 +1,7 @@
 """File containing code to represent source programs operations."""
 
 from abc import ABC, abstractmethod
+from collections import deque
 from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type
 
@@ -196,6 +197,31 @@ class Constant(IntermediateNode):
         return str(self.constant_data)
 
 
+def flood_replace_none_values(table: list):
+    """Use a flooding algorithm to replace None values.
+
+    Args:
+        table (list): the list in which there are None values that need to be replaced by copies of
+            the closest non None data from the list.
+    """
+    assert_true(any(value is not None for value in table))
+
+    not_none_values_idx = deque(idx for idx, value in enumerate(table) if value is not None)
+    while not_none_values_idx:
+        current_idx = not_none_values_idx.popleft()
+        current_value = table[current_idx]
+        previous_idx = current_idx - 1
+        next_idx = current_idx + 1
+        if previous_idx >= 0 and table[previous_idx] is None:
+            table[previous_idx] = deepcopy(current_value)
+            not_none_values_idx.append(previous_idx)
+        if next_idx < len(table) and table[next_idx] is None:
+            table[next_idx] = deepcopy(current_value)
+            not_none_values_idx.append(next_idx)
+
+    assert_true(all(value is not None for value in table))
+
+
 class UnivariateFunction(IntermediateNode):
     """Node representing an univariate arbitrary function, e.g. sin(x)."""
 
@@ -267,10 +293,19 @@ class UnivariateFunction(IntermediateNode):
         min_input_range = input_dtype.min_value()
         max_input_range = input_dtype.max_value() + 1
 
+        def catch(func, *args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            # We currently cannot trigger exceptions in the code during evaluation
+            except Exception:  # pragma: no cover # pylint: disable=broad-except
+                return None
+
         table = [
-            self.evaluate({0: input_value_constructor(input_value)})
+            catch(self.evaluate, {0: input_value_constructor(input_value)})
             for input_value in range(min_input_range, max_input_range)
         ]
+
+        flood_replace_none_values(table)
 
         return table
 
