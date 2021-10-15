@@ -13,9 +13,21 @@ inline void
 populateWithTensorTypeConverterPatterns(mlir::RewritePatternSet &patterns,
                                         mlir::ConversionTarget &target,
                                         mlir::TypeConverter &typeConverter) {
+  // ExtractOp
   patterns.add<GenericTypeConverterPattern<mlir::tensor::ExtractOp>>(
       patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::ExtractOp>(target, typeConverter);
+  // ExtractSliceOp
+  patterns.add<GenericTypeConverterPattern<mlir::tensor::ExtractSliceOp>>(
+      patterns.getContext(), typeConverter);
+  addDynamicallyLegalTypeOp<mlir::tensor::ExtractSliceOp>(target,
+                                                          typeConverter);
+  // InsertSliceOp
+  patterns.add<GenericTypeConverterPattern<mlir::tensor::InsertSliceOp>>(
+      patterns.getContext(), typeConverter);
+  addDynamicallyLegalTypeOp<mlir::tensor::InsertSliceOp>(target, typeConverter);
+
+  // FromElementsOp
   patterns.add<GenericTypeConverterPattern<mlir::tensor::FromElementsOp>>(
       patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::FromElementsOp>(target,
