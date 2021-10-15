@@ -164,7 +164,7 @@ def subtest_compile_and_run_binary_ufunc_correctness(ufunc, upper_function, c, i
         for prod in itertools.product(*args):
             yield prod
 
-    function_parameters = {arg_name: EncryptedScalar(Integer(64, False)) for arg_name in ["x", "y"]}
+    function_parameters = {arg_name: EncryptedScalar(Integer(64, True)) for arg_name in ["x", "y"]}
 
     compiler_engine = compile_numpy_function(
         function,
@@ -222,14 +222,10 @@ def test_binary_ufunc_operations(ufunc):
             ufunc, mix_x_and_y_and_call_binary_f_two, 2, ((0, 5), (0, 5))
         )
     elif ufunc in [numpy.ldexp]:
-        # Can't make it work
-        # TODO: fixme
-        pass
-
         # Need small constants to keep results sufficiently small
-        # subtest_compile_and_run_binary_ufunc_correctness(
-        #     ufunc, mix_x_and_y_and_call_binary_f_two, 2, ((0, 5), (0, 5))
-        # )
+        subtest_compile_and_run_binary_ufunc_correctness(
+            ufunc, mix_x_and_y_and_call_binary_f_two, 2, ((0, 5), (0, 5))
+        )
     else:
         # General case
         subtest_compile_and_run_binary_ufunc_correctness(
