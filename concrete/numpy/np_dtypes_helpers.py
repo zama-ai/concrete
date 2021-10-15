@@ -205,21 +205,17 @@ def get_numpy_function_output_dtype(
 
     input_numpy_dtypes = [convert_base_data_type_to_numpy_dtype(dtype) for dtype in input_dtypes]
 
-    # Store numpy old error settings and ignore all errors in this function
-    # We ignore errors as we may call functions with invalid inputs just to get the proper output
-    # dtypes
-    old_numpy_err_settings = numpy.seterr(all="ignore")
-
     dummy_inputs = tuple(
         dtype.type(1000.0 * numpy.random.random_sample()) for dtype in input_numpy_dtypes
     )
 
-    outputs = function(*dummy_inputs)
+    # We ignore errors as we may call functions with invalid inputs just to get the proper output
+    # dtypes
+    with numpy.errstate(all="ignore"):
+        outputs = function(*dummy_inputs)
+
     if not isinstance(outputs, tuple):
         outputs = (outputs,)
-
-    # Restore numpy error settings
-    numpy.seterr(**old_numpy_err_settings)
 
     return [output.dtype for output in outputs]
 
