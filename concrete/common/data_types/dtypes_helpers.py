@@ -71,6 +71,30 @@ def value_is_scalar_integer(value_to_check: BaseValue) -> bool:
     )
 
 
+def value_is_scalar(value_to_check: BaseValue) -> bool:
+    """Check that a value is a scalar.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is a scalar
+    """
+    return isinstance(value_to_check, TensorValue) and value_to_check.is_scalar
+
+
+def value_is_integer(value_to_check: BaseValue) -> bool:
+    """Check that a value is of type Integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is of type Integer
+    """
+    return isinstance(value_to_check.dtype, INTEGER_TYPES)
+
+
 def value_is_encrypted_tensor_integer(value_to_check: BaseValue) -> bool:
     """Check that a value is an encrypted TensorValue of type Integer.
 

@@ -560,29 +560,50 @@ def test_compile_function_with_direct_tlu_overflow():
 
 
 @pytest.mark.parametrize(
-    "function,input_ranges,list_of_arg_names",
+    "function,parameters,inputset,match",
     [
-        pytest.param(lambda x: x - 10, ((-5, 5),), ["x"]),
+        pytest.param(
+            lambda x: 1 - x,
+            {"x": EncryptedScalar(Integer(3, is_signed=False))},
+            [(i,) for i in range(8)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
+                "%1 = x                                             # EncryptedScalar<Integer<unsigned, 3 bits>>\n"  # noqa: E501
+                "%2 = Sub(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integer outputs aren't supported\n"  # noqa: E501
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: x + 1,
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
+            [(numpy.random.randint(0, 8, size=(2, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501
+                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
+                "%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ non scalar outputs aren't supported\n"  # noqa: E501
+                "return(%2)\n"
+            ),
+        ),
     ],
 )
-def test_fail_compile(function, input_ranges, list_of_arg_names):
+def test_fail_compile(function, parameters, inputset, match):
     """Test function compile_numpy_function_into_op_graph for a program with signed values"""
 
-    def data_gen(args):
-        for prod in itertools.product(*args):
-            yield prod
-
-    function_parameters = {
-        arg_name: EncryptedScalar(Integer(64, True)) for arg_name in list_of_arg_names
-    }
-
-    with pytest.raises(RuntimeError, match=".*isn't supported for MLIR lowering.*"):
+    try:
         compile_numpy_function(
             function,
-            function_parameters,
-            data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+            parameters,
+            inputset,
             CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
         )
+    except RuntimeError as error:
+        assert str(error) == match
 
 
 def test_small_inputset():

@@ -1,5 +1,5 @@
 """Utilities for MLIR conversion."""
-from typing import cast
+from typing import Dict, Optional, cast
 
 from ..data_types import Integer
 from ..data_types.dtypes_helpers import (
@@ -7,32 +7,41 @@ from ..data_types.dtypes_helpers import (
     value_is_clear_tensor_integer,
     value_is_encrypted_scalar_integer,
     value_is_encrypted_tensor_integer,
-    value_is_scalar_integer,
+    value_is_integer,
+    value_is_scalar,
 )
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
-from ..representation.intermediate import UnivariateFunction
+from ..representation.intermediate import IntermediateNode, UnivariateFunction
 
 # TODO: should come from compiler, through an API, #402
 ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
 
 
-def is_graph_values_compatible_with_mlir(op_graph: OPGraph) -> bool:
+def check_graph_values_compatibility_with_mlir(
+    op_graph: OPGraph,
+) -> Optional[Dict[IntermediateNode, str]]:
     """Make sure the graph outputs are unsigned integers, which is what the compiler supports.
 
     Args:
         op_graph: computation graph to check
 
     Returns:
-        bool: is the graph compatible with the expected MLIR representation
+        Dict[IntermediateNode, str]: None if the graph is compatible
+            information about offending nodes otherwise
     """
-    return all(
-        all(
-            value_is_scalar_integer(out) and not cast(Integer, out.dtype).is_signed
-            for out in out_node.outputs
-        )
-        for out_node in op_graph.output_nodes.values()
-    )
+
+    offending_nodes = {}
+
+    for out_node in op_graph.output_nodes.values():
+        for out in out_node.outputs:
+            if not value_is_scalar(out):
+                offending_nodes[out_node] = "non scalar outputs aren't supported"
+
+            if value_is_integer(out) and cast(Integer, out.dtype).is_signed:
+                offending_nodes[out_node] = "signed integer outputs aren't supported"
+
+    return None if len(offending_nodes) == 0 else offending_nodes
 
 
 def _set_all_bit_width(op_graph: OPGraph, p: int):

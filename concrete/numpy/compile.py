@@ -11,11 +11,12 @@ from ..common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_in
 from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Integer
+from ..common.debugging import get_printable_graph
 from ..common.fhe_circuit import FHECircuit
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
 from ..common.mlir.utils import (
+    check_graph_values_compatibility_with_mlir,
     extend_direct_lookup_tables,
-    is_graph_values_compatible_with_mlir,
     update_bit_width_for_mlir,
 )
 from ..common.operator_graph import OPGraph
@@ -162,8 +163,12 @@ def _compile_numpy_function_into_op_graph_internal(
     compilation_artifacts.add_operation_graph("final", op_graph)
 
     # Make sure the graph can be lowered to MLIR
-    if not is_graph_values_compatible_with_mlir(op_graph):
-        raise RuntimeError("function you are trying to compile isn't supported for MLIR lowering")
+    offending_nodes = check_graph_values_compatibility_with_mlir(op_graph)
+    if offending_nodes is not None:
+        raise RuntimeError(
+            "function you are trying to compile isn't supported for MLIR lowering\n\n"
+            + get_printable_graph(op_graph, show_data_types=True, highlighted_nodes=offending_nodes)
+        )
 
     # Update bit_width for MLIR
     update_bit_width_for_mlir(op_graph)
