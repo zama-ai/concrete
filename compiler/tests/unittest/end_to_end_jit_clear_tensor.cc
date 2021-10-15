@@ -4,7 +4,7 @@
 // 1D tensor //////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(End2EndJit_StdTensor_1D, identity) {
+TEST(End2EndJit_ClearTensor_1D, identity) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
@@ -38,7 +38,7 @@ func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
   }
 }
 
-TEST(End2EndJit_StdTensor_1D, extract_64) {
+TEST(End2EndJit_ClearTensor_1D, extract_64) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<10xi64>, %i: index) -> i64{
@@ -75,7 +75,7 @@ func @main(%t: tensor<10xi64>, %i: index) -> i64{
   }
 }
 
-TEST(End2EndJit_StdTensor_1D, extract_32) {
+TEST(End2EndJit_ClearTensor_1D, extract_32) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<10xi32>, %i: index) -> i32{
@@ -104,7 +104,7 @@ func @main(%t: tensor<10xi32>, %i: index) -> i32{
   }
 }
 
-TEST(End2EndJit_StdTensor_1D, extract_16) {
+TEST(End2EndJit_ClearTensor_1D, extract_16) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<10xi16>, %i: index) -> i16{
@@ -133,7 +133,7 @@ func @main(%t: tensor<10xi16>, %i: index) -> i16{
   }
 }
 
-TEST(End2EndJit_StdTensor_1D, extract_8) {
+TEST(End2EndJit_ClearTensor_1D, extract_8) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<10xi8>, %i: index) -> i8{
@@ -161,7 +161,7 @@ func @main(%t: tensor<10xi8>, %i: index) -> i8{
   }
 }
 
-TEST(End2EndJit_StdTensor_1D, extract_5) {
+TEST(End2EndJit_ClearTensor_1D, extract_5) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<10xi5>, %i: index) -> i5{
@@ -189,7 +189,7 @@ func @main(%t: tensor<10xi5>, %i: index) -> i5{
   }
 }
 
-TEST(End2EndJit_StdTensor_1D, extract_1) {
+TEST(End2EndJit_ClearTensor_1D, extract_1) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<10xi1>, %i: index) -> i1{
@@ -231,7 +231,7 @@ const uint64_t tensor2D[dim0][dim1]{
     {986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433},
 };
 
-TEST(End2EndJit_StdTensor_2D, identity) {
+TEST(End2EndJit_ClearTensor_2D, identity) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
@@ -259,7 +259,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
   }
 }
 
-TEST(End2EndJit_StdTensor_2D, extract) {
+TEST(End2EndJit_ClearTensor_2D, extract) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
@@ -288,7 +288,7 @@ func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
   }
 }
 
-TEST(End2EndJit_StdTensor_2D, extract_slice) {
+TEST(End2EndJit_ClearTensor_2D, extract_slice) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
@@ -317,7 +317,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   }
 }
 
-TEST(End2EndJit_StdTensor_2D, extract_slice_stride) {
+TEST(End2EndJit_ClearTensor_2D, extract_slice_stride) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
@@ -346,7 +346,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   }
 }
 
-TEST(End2EndJit_StdTensor_2D, insert_slice) {
+TEST(End2EndJit_ClearTensor_2D, insert_slice) {
   mlir::zamalang::CompilerEngine engine;
   auto mlirStr = R"XXX(
 func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
