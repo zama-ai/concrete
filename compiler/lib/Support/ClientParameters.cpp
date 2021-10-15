@@ -29,11 +29,7 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
     }
     return CircuitGate{
         .encryption = llvm::None,
-        .shape =
-            {
-                .width = width,
-                .size = 0,
-            },
+        .shape = {.width = width, .size = 0},
     };
   }
   if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
@@ -55,7 +51,11 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
-    gate->shape.size = tensor.getDimSize(0);
+    gate->shape.dimensions = tensor.getShape().vec();
+    gate->shape.size = 1;
+    for (auto dimSize : gate->shape.dimensions) {
+      gate->shape.size *= dimSize;
+    }
     return gate;
   }
   return llvm::make_error<llvm::StringError>(
@@ -113,7 +113,6 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
 
   // For the v0 the precision is global
   auto precision = fheContext.constraint.p;
-  Encoding encoding = {.precision = fheContext.constraint.p};
 
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();

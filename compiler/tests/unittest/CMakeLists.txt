@@ -5,6 +5,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_executable(
   end_to_end_jit_test
+  end_to_end_jit_std_tensor.cc
   end_to_end_jit_test.cc
 )
 target_link_libraries(

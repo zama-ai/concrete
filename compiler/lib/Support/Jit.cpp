@@ -98,7 +98,7 @@ JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
 }
 
 llvm::Error JITLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
-  size_t nbReturn = 0;
+  // size_t nbReturn = 0;
   // TODO - This check break with memref as we have 5 returns args.
   // if (!this->type.getReturnType().isa<mlir::LLVM::LLVMVoidType>()) {
   // nbReturn = 1;
@@ -127,13 +127,16 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
       auto offset = numInputs;
       auto gate = keySet.inputGate(i);
       inputGates.push_back({gate, offset});
-      if (keySet.inputGate(i).shape.size == 0) {
+      if (keySet.inputGate(i).shape.dimensions.empty()) {
         // scalar gate
         numInputs = numInputs + 1;
         continue;
       }
       // memref gate, as we follow the standard calling convention
-      numInputs = numInputs + 5;
+      numInputs = numInputs + 3;
+      // Offsets and strides are array of size N where N is the number of
+      // dimension of the tensor.
+      numInputs = numInputs + 2 * keySet.inputGate(i).shape.dimensions.size();
     }
     inputs = std::vector<void *>(numInputs);
   }
@@ -145,13 +148,17 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
       auto offset = numOutputs;
       auto gate = keySet.outputGate(i);
       outputGates.push_back({gate, offset});
-      if (gate.shape.size == 0) {
+      if (gate.shape.dimensions.empty()) {
         // scalar gate
         numOutputs = numOutputs + 1;
         continue;
       }
       // memref gate, as we follow the standard calling convention
-      numOutputs = numOutputs + 5;
+      numOutputs = numOutputs + 3;
+      // Offsets and strides are array of size N where N is the number of
+      // dimension of the tensor.
+      numOutputs =
+          numOutputs + 2 * keySet.outputGate(i).shape.dimensions.size();
     }
     outputs = std::vector<void *>(numOutputs);
   }
@@ -196,7 +203,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
   auto offset = std::get<1>(gate);
 
   // Check is the argument is a scalar
-  if (info.shape.size != 0) {
+  if (!info.shape.dimensions.empty()) {
     return llvm::make_error<llvm::StringError>(
         llvm::Twine("argument is not a scalar: pos=").concat(llvm::Twine(pos)),
         llvm::inconvertibleErrorCode());
@@ -223,7 +230,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
 }
 
 llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
-                                        size_t size) {
+                                        size_t numDim, const size_t *dims) {
   auto gate = inputGates[pos];
   auto info = std::get<0>(gate);
   auto offset = std::get<1>(gate);
@@ -260,16 +267,34 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
         llvm::inconvertibleErrorCode());
   }
   // Check the size
-  if (info.shape.size == 0) {
+  if (info.shape.dimensions.empty()) {
     return llvm::make_error<llvm::StringError>(
         llvm::Twine("argument is not a vector: pos=").concat(llvm::Twine(pos)),
         llvm::inconvertibleErrorCode());
   }
-  if (info.shape.size != size) {
+  if (numDim != info.shape.dimensions.size()) {
     return llvm::make_error<llvm::StringError>(
-        llvm::Twine("vector argument has not the expected size")
-            .concat(llvm::Twine(pos)),
+        llvm::Twine("tensor argument #")
+            .concat(llvm::Twine(pos))
+            .concat(" has not the expected number of dimension, got ")
+            .concat(llvm::Twine(numDim))
+            .concat(" expected ")
+            .concat(llvm::Twine(info.shape.dimensions.size())),
         llvm::inconvertibleErrorCode());
+  }
+  for (size_t i = 0; i < numDim; i++) {
+    if (dims[i] != info.shape.dimensions[i]) {
+      return llvm::make_error<llvm::StringError>(
+          llvm::Twine("tensor argument #")
+              .concat(llvm::Twine(pos))
+              .concat(" has not the expected dimension #")
+              .concat(llvm::Twine(i))
+              .concat(" , got ")
+              .concat(llvm::Twine(dims[i]))
+              .concat(" expected ")
+              .concat(llvm::Twine(info.shape.dimensions[i])),
+          llvm::inconvertibleErrorCode());
+    }
   }
   // If argument is not encrypted, just save with the right calling convention.
   if (info.encryption.hasValue()) {
@@ -285,11 +310,11 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
     }
 
     // Allocate a buffer for ciphertexts.
-    auto ctBuffer =
-        (LweCiphertext_u64 **)malloc(size * sizeof(LweCiphertext_u64 *));
+    auto ctBuffer = (LweCiphertext_u64 **)malloc(info.shape.size *
+                                                 sizeof(LweCiphertext_u64 *));
     ciphertextBuffers.push_back(ctBuffer);
     // Allocate ciphertexts and encrypt
-    for (auto i = 0; i < size; i++) {
+    for (size_t i = 0; i < info.shape.size; i++) {
       if (auto err = this->keySet.allocate_lwe(pos, &ctBuffer[i])) {
         return std::move(err);
       }
@@ -303,20 +328,30 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
   }
   // Set the buffer as the memref calling convention expect.
   // allocated
-  inputs[offset] = (void *)0; // TODO - Better understand how it is used.
+  inputs[offset] =
+      (void *)0; // Indicates that it's not allocated by the MLIR program
   rawArg[offset] = &inputs[offset];
+  offset++;
   // aligned
-  inputs[offset + 1] = data;
-  rawArg[offset + 1] = &inputs[offset + 1];
+  inputs[offset] = data;
+  rawArg[offset] = &inputs[offset];
+  offset++;
   // offset
-  inputs[offset + 2] = (void *)0;
-  rawArg[offset + 2] = &inputs[offset + 2];
-  // size
-  inputs[offset + 3] = (void *)size;
-  rawArg[offset + 3] = &inputs[offset + 3];
-  // stride
-  inputs[offset + 4] = (void *)0;
-  rawArg[offset + 4] = &inputs[offset + 4];
+  inputs[offset] = (void *)0;
+  rawArg[offset] = &inputs[offset];
+  offset++;
+  // sizes is an array of size equals to numDim
+  for (size_t i = 0; i < numDim; i++) {
+    inputs[offset] = (void *)dims[i];
+    rawArg[offset] = &inputs[offset];
+    offset++;
+  }
+  // strides is an array of size equals to numDim
+  for (size_t i = 0; i < numDim; i++) {
+    inputs[offset] = (void *)0;
+    rawArg[offset] = &inputs[offset];
+    offset++;
+  }
   return llvm::Error::success();
 }
 
@@ -346,41 +381,45 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t &res) {
 
 llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t *res,
                                            size_t size) {
+
   auto gate = outputGates[pos];
   auto info = std::get<0>(gate);
   auto offset = std::get<1>(gate);
 
   // Check is the argument is a scalar
-  if (info.shape.size == 0) {
+  if (info.shape.dimensions.empty()) {
     return llvm::make_error<llvm::StringError>(
         llvm::Twine("output is not a tensor, pos=").concat(llvm::Twine(pos)),
         llvm::inconvertibleErrorCode());
   }
-  if (!info.encryption.hasValue()) {
+  // Check is the argument is a scalar
+  if (info.shape.size != size) {
     return llvm::make_error<llvm::StringError>(
-        "unencrypted result as tensor output NYI",
+        llvm::Twine("result #")
+            .concat(llvm::Twine(pos))
+            .concat(" has not the expected size, got ")
+            .concat(llvm::Twine(size))
+            .concat(" expect ")
+            .concat(llvm::Twine(info.shape.size)),
         llvm::inconvertibleErrorCode());
   }
+
   // Get the values as the memref calling convention expect.
-  void *allocated = outputs[offset]; // TODO - Better understand how it is used.
   // aligned
+  void *allocated = outputs[offset];
   void *aligned = outputs[offset + 1];
-  // offset
-  size_t offset_r = (size_t)outputs[offset + 2];
-  // size
-  size_t size_r = (size_t)outputs[offset + 3];
-  // stride
-  size_t stride = (size_t)outputs[offset + 4];
-  // Check the sizes
-  if (info.shape.size != size || size_r != size) {
-    return llvm::make_error<llvm::StringError>("output bad result buffer size",
-                                               llvm::inconvertibleErrorCode());
-  }
-  // decrypt and fill the result buffer
-  for (auto i = 0; i < size_r; i++) {
-    LweCiphertext_u64 *ct = ((LweCiphertext_u64 **)(aligned))[i];
-    if (auto err = this->keySet.decrypt_lwe(pos, ct, res[i])) {
-      return std::move(err);
+  if (!info.encryption.hasValue()) {
+    // just copy values
+    for (size_t i = 0; i < size; i++) {
+      res[i] = ((uint64_t *)(aligned))[i];
+    }
+  } else {
+    // decrypt and fill the result buffer
+    for (size_t i = 0; i < size; i++) {
+      LweCiphertext_u64 *ct = ((LweCiphertext_u64 **)(aligned))[i];
+      if (auto err = this->keySet.decrypt_lwe(pos, ct, res[i])) {
+        return std::move(err);
+      }
     }
   }
   return llvm::Error::success();

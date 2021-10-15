@@ -58,7 +58,9 @@ struct EncryptionGate {
 struct CircuitGateShape {
   // Width of the scalar value
   size_t width;
-  // Size of the buffer
+  // Dimensions of the tensor, empty if scalar
+  std::vector<int64_t> dimensions;
+  // Size of the buffer containing the tensor
   size_t size;
 };
 

@@ -31,34 +31,63 @@ public:
     // Set a scalar argument at the given pos as a uint64_t.
     llvm::Error setArg(size_t pos, uint64_t arg);
 
+    // Set a argument at the given pos as a 1D tensor of int64.
+    llvm::Error setArg(size_t pos, uint64_t *data, size_t dim1) {
+      return setArg(pos, 64, (void *)data, 1, &dim1);
+    }
+
+    // Set a argument at the given pos as a 1D tensor of int32.
+    llvm::Error setArg(size_t pos, uint32_t *data, size_t dim1) {
+      return setArg(pos, 32, (void *)data, 1, &dim1);
+    }
+
+    // Set a argument at the given pos as a 1D tensor of int16.
+    llvm::Error setArg(size_t pos, uint16_t *data, size_t dim1) {
+      return setArg(pos, 16, (void *)data, 1, &dim1);
+    }
+
+    // Set a argument at the given pos as a 1D tensor of int8.
+    llvm::Error setArg(size_t pos, uint8_t *data, size_t dim1) {
+      return setArg(pos, 8, (void *)data, 1, &dim1);
+    }
+
     // Set a argument at the given pos as a tensor of int64.
-    llvm::Error setArg(size_t pos, uint64_t *data, size_t size) {
-      return setArg(pos, 64, (void *)data, size);
+    llvm::Error setArg(size_t pos, uint64_t *data, size_t numDim,
+                       const size_t *dims) {
+      return setArg(pos, 64, (void *)data, numDim, dims);
     }
 
     // Set a argument at the given pos as a tensor of int32.
-    llvm::Error setArg(size_t pos, uint32_t *data, size_t size) {
-      return setArg(pos, 32, (void *)data, size);
+    llvm::Error setArg(size_t pos, uint32_t *data, size_t numDim,
+                       const size_t *dims) {
+      return setArg(pos, 32, (void *)data, numDim, dims);
     }
 
     // Set a argument at the given pos as a tensor of int32.
-    llvm::Error setArg(size_t pos, uint16_t *data, size_t size) {
-      return setArg(pos, 16, (void *)data, size);
+    llvm::Error setArg(size_t pos, uint16_t *data, size_t numDim,
+                       const size_t *dims) {
+      return setArg(pos, 16, (void *)data, numDim, dims);
     }
 
     // Set a tensor argument at the given pos as a uint64_t.
-    llvm::Error setArg(size_t pos, uint8_t *data, size_t size) {
-      return setArg(pos, 8, (void *)data, size);
+    llvm::Error setArg(size_t pos, uint8_t *data, size_t numDim,
+                       const size_t *dims) {
+      return setArg(pos, 8, (void *)data, numDim, dims);
     }
 
     // Get the result at the given pos as an uint64_t.
     llvm::Error getResult(size_t pos, uint64_t &res);
 
-    // Fill the result.
+    // Get a result for tensors, fill the `res` buffer with the value of the
+    // tensor result.
+    // Returns an error:
+    // - if the result is a scalar
+    // - or the size of the `res` buffser doesn't match the size of the tensor.
     llvm::Error getResult(size_t pos, uint64_t *res, size_t size);
 
   private:
-    llvm::Error setArg(size_t pos, size_t width, void *data, size_t size);
+    llvm::Error setArg(size_t pos, size_t width, void *data, size_t numDim,
+                       const size_t *dims);
 
     friend JITLambda;
     // Store the pointer on inputs values and outputs values
