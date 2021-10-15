@@ -42,17 +42,17 @@ pylint_src:
 
 pylint_tests:
 	@# Disable duplicate code detection in tests
-	poetry run pylint --disable=R0801 --rcfile=pylintrc tests
+	find ./tests/ -type f -name "*.py" | xargs poetry run pylint --disable=R0801 --rcfile=pylintrc
 .PHONY: pylint_tests
 
 pylint_benchmarks:
 	@# Disable duplicate code detection, docstring requirement, too many locals/statements
-	poetry run pylint --disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116 \
-	--rcfile=pylintrc benchmarks
+	find ./benchmarks/ -type f -name "*.py" | xargs poetry run pylint \
+	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116 --rcfile=pylintrc
 .PHONY: pylint_benchmarks
 
 pylint_script:
-	poetry run pylint --rcfile=pylintrc script
+	find ./script/ -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
 .PHONY: pylint_script
 
 flake8:

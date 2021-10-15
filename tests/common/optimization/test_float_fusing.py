@@ -283,10 +283,9 @@ def subtest_fuse_float_unary_operations_correctness(fun, tensor_shape):
             # Create inputs which are either of the form [x, x] or [x, y]
             for j in range(4):
 
-                if fun in [numpy.arctanh, numpy.arccos, numpy.arcsin, numpy.arctan]:
-                    if j > 0:
-                        # Domain of definition for these functions
-                        break
+                if fun in [numpy.arctanh, numpy.arccos, numpy.arcsin, numpy.arctan] and j > 0:
+                    # Domain of definition for these functions
+                    break
 
                 input_a = input_
                 input_b = input_ + j
@@ -295,10 +294,7 @@ def subtest_fuse_float_unary_operations_correctness(fun, tensor_shape):
                     numpy.random.shuffle(input_a)
                     numpy.random.shuffle(input_b)
 
-                if random.randint(0, 1) == 0:
-                    inputs = (input_a, input_b)
-                else:
-                    inputs = (input_b, input_a)
+                inputs = (input_a, input_b) if random.randint(0, 1) == 0 else (input_b, input_a)
 
                 function_result = function_to_trace(*inputs)
                 op_graph_result = op_graph(*inputs)

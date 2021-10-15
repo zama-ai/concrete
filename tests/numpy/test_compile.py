@@ -716,10 +716,10 @@ def test_compile_function_with_direct_tlu_overflow():
             (
                 "function you are trying to compile isn't supported for MLIR lowering\n"
                 "\n"
-                "%0 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
-                "%1 = x                                             # EncryptedScalar<Integer<unsigned, 3 bits>>\n"  # noqa: E501
-                "%2 = Sub(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integer outputs aren't supported\n"  # noqa: E501
+                "%0 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = x                                             # EncryptedScalar<Integer<unsigned, 3 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = Sub(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integer outputs aren't supported\n"  # noqa: E501  # pylint: disable=line-too-long
                 "return(%2)\n"
             ),
         ),
@@ -730,10 +730,10 @@ def test_compile_function_with_direct_tlu_overflow():
             (
                 "function you are trying to compile isn't supported for MLIR lowering\n"
                 "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
-                "%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ non scalar outputs aren't supported\n"  # noqa: E501
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ non scalar outputs aren't supported\n"  # noqa: E501  # pylint: disable=line-too-long
                 "return(%2)\n"
             ),
         ),
