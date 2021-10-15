@@ -169,9 +169,15 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx):
     assert_true(len(node.inputs) == 1, "LUT should have a single input")
     assert_true(len(node.outputs) == 1, "LUT should have a single output")
     if not value_is_encrypted_scalar_unsigned_integer(node.inputs[0]):
-        raise TypeError("Only support LUT with encrypted unsigned integers inputs")
+        raise TypeError(
+            f"Only support LUT with encrypted unsigned integers inputs "
+            f"(but {node.inputs[0]} is provided)"
+        )
     if not value_is_encrypted_scalar_unsigned_integer(node.outputs[0]):
-        raise TypeError("Only support LUT with encrypted unsigned integers outputs")
+        raise TypeError(
+            f"Only support LUT with encrypted unsigned integers outputs "
+            f"(but {node.outputs[0]} is provided)"
+        )
 
     x_node = preds[0]
     x = ir_to_mlir_node[x_node]
