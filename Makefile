@@ -238,3 +238,13 @@ changelog: check_version_coherence
 	PROJECT_VER="$${PROJECT_VER[1]}";\
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 .PHONY: changelog
+
+# Show the accepted types and optional scopes
+show_scope:
+	@echo "Accepted types and optional scopes:"
+	@cat .github/workflows/continuous-integration.yaml | grep feat | grep pattern | cut -f 2- -d ":" | cut -f 2- -d " "
+.PHONY: show_scope
+
+show_type:show_scope
+.PHONY: show_type
+
