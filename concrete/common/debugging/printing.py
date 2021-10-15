@@ -1,12 +1,12 @@
 """functions to print the different graphs we can generate in the package, eg to debug."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import networkx as nx
 
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
-from ..representation.intermediate import Constant, Input, UnivariateFunction
+from ..representation.intermediate import Constant, Input, IntermediateNode, UnivariateFunction
 
 
 def output_data_type_to_string(node):
@@ -39,18 +39,26 @@ def shorten_a_constant(constant_data: str):
     return short_content
 
 
-def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
+def get_printable_graph(
+    opgraph: OPGraph,
+    show_data_types: bool = False,
+    highlighted_nodes: Optional[Dict[IntermediateNode, str]] = None,
+) -> str:
     """Return a string representing a graph.
 
     Args:
         opgraph (OPGraph): The graph that we want to draw
-        show_data_types (bool): Whether or not showing data_types of nodes, eg
-            to see their width
+        show_data_types (bool): Whether or not showing data_types of nodes, eg to see their width
+        highlighted_nodes (Optional[Dict[IntermediateNode, str]]):
+            The dict of nodes which will be highlighted and their corresponding messages
 
     Returns:
         str: a string to print or save in a file
     """
     assert_true(isinstance(opgraph, OPGraph))
+
+    highlighted_nodes = highlighted_nodes if highlighted_nodes is not None else {}
+
     list_of_nodes_which_are_outputs = list(opgraph.output_nodes.values())
     graph = opgraph.graph
 
@@ -126,6 +134,10 @@ def get_printable_graph(opgraph: OPGraph, show_data_types: bool = False) -> str:
             new_line = f"{new_line: <50s} # {output_data_type_to_string(node)}"
 
         returned_str += f"{new_line}\n"
+
+        if node in highlighted_nodes:
+            message = highlighted_nodes[node]
+            returned_str += f"{'^' * len(new_line)} {message}\n"
 
         map_table[node] = i
         i += 1
