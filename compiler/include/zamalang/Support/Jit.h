@@ -57,6 +57,10 @@ public:
     // Fill the result.
     llvm::Error getResult(size_t pos, uint64_t *res, size_t size);
 
+    // Returns the number of elements of the result vector at position
+    // `pos` or an error if the result is a scalar value
+    llvm::Expected<size_t> getResultVectorSize(size_t pos);
+
   private:
     llvm::Error setArg(size_t pos, size_t width, void *data, size_t size);
 

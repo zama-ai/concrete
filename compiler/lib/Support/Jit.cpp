@@ -344,6 +344,20 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t &res) {
   return llvm::Error::success();
 }
 
+// Returns the number of elements of the result vector at position
+// `pos` or an error if the result is a scalar value
+llvm::Expected<size_t> JITLambda::Argument::getResultVectorSize(size_t pos) {
+  auto gate = outputGates[pos];
+  auto info = std::get<0>(gate);
+
+  if (info.shape.size == 0) {
+    return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                   "Result at pos %zu is not a tensor", pos);
+  }
+
+  return info.shape.size;
+}
+
 llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t *res,
                                            size_t size) {
   auto gate = outputGates[pos];
