@@ -49,7 +49,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) -> !HLFHE.eint
   return %c : !HLFHE.eint<6>
 }
 )XXX";
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints()));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
   auto maybeArgument = engine.buildArgument();
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
@@ -79,7 +79,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 }
 )XXX";
 
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints()));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
   auto maybeArgument = engine.buildArgument();
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
@@ -108,7 +108,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 }
 )XXX";
 
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints()));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
   auto maybeArgument = engine.buildArgument();
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
@@ -137,7 +137,7 @@ func @main(%t0: tensor<2x10x!HLFHE.eint<6>>, %t1: tensor<2x2x!HLFHE.eint<6>>) ->
 }
 )XXX";
 
-  ASSERT_LLVM_ERROR(engine.compile(mlirStr, defaultV0Constraints()));
+  ASSERT_LLVM_ERROR(engine.compile(mlirStr));
   auto maybeArgument = engine.buildArgument();
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
