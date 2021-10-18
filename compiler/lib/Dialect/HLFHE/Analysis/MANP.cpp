@@ -11,6 +11,7 @@
 #include <llvm/ADT/SmallString.h>
 #include <mlir/Analysis/DataFlowAnalysis.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
+#include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/Pass/PassManager.h>
@@ -119,6 +120,16 @@ static llvm::APInt APIntWidthExtendUMul(const llvm::APInt &lhs,
 
   unsigned targetWidth = lhs.getBitWidth() + rhs.getBitWidth();
   return lhs.zext(targetWidth) * rhs.zext(targetWidth);
+}
+
+// Returns the maximum value beetwen `lhs` and `rhs`, where both values are
+// assumed to be positive. The bit width of the smaller `APInt` is extended
+// before comparison via `APInt::ult`.
+static llvm::APInt APIntUMax(const llvm::APInt &lhs, const llvm::APInt &rhs) {
+  if (APIntWidthExtendULT(lhs, rhs)) {
+    return rhs;
+  }
+  return lhs;
 }
 
 // Calculates the square of `i`. The bit width `i` is extended in
@@ -372,6 +383,58 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUMul(sqNorm, eNorm);
 }
 
+static llvm::APInt getSqMANP(
+    mlir::tensor::ExtractOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
+
+  return eNorm;
+}
+
+static llvm::APInt getSqMANP(
+    mlir::tensor::FromElementsOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  auto max = std::max_element(
+      operandMANPs.begin(), operandMANPs.end(),
+      [](mlir::LatticeElement<MANPLatticeValue> *const a,
+         mlir::LatticeElement<MANPLatticeValue> *const b) {
+        return APIntWidthExtendULT(a->getValue().getMANP().getValue(),
+                                   b->getValue().getMANP().getValue());
+      });
+  return (*max)->getValue().getMANP().getValue();
+}
+
+static llvm::APInt getSqMANP(
+    mlir::tensor::ExtractSliceOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  return operandMANPs[0]->getValue().getMANP().getValue();
+}
+
+static llvm::APInt getSqMANP(
+    mlir::tensor::InsertSliceOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() >= 2 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      operandMANPs[1]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  return APIntUMax(operandMANPs[0]->getValue().getMANP().getValue(),
+                   operandMANPs[1]->getValue().getMANP().getValue());
+}
+
 struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
   using ForwardDataFlowAnalysis<MANPLatticeValue>::ForwardDataFlowAnalysis;
   MANPAnalysis(mlir::MLIRContext *ctx, bool debug)
@@ -387,6 +450,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     bool isDummy = false;
     llvm::APInt norm2SqEquiv;
 
+    // HLFHE Operaors
     if (auto dotOp = llvm::dyn_cast<mlir::zamalang::HLFHE::Dot>(op)) {
       norm2SqEquiv = getSqMANP(dotOp, operands);
     } else if (auto addEintIntOp =
@@ -404,7 +468,58 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     } else if (llvm::isa<mlir::zamalang::HLFHE::ZeroEintOp>(op) ||
                llvm::isa<mlir::zamalang::HLFHE::ApplyLookupTableEintOp>(op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
-    } else if (llvm::isa<mlir::ConstantOp>(op)) {
+    }
+    // Tensor Operators
+    // ExtractOp
+    else if (auto extractOp = llvm::dyn_cast<mlir::tensor::ExtractOp>(op)) {
+      if (extractOp.result()
+              .getType()
+              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+        norm2SqEquiv = getSqMANP(extractOp, operands);
+      } else {
+        isDummy = true;
+      }
+    }
+    // ExtractSliceOp
+    else if (auto extractSliceOp =
+                 llvm::dyn_cast<mlir::tensor::ExtractSliceOp>(op)) {
+      if (extractSliceOp.result()
+              .getType()
+              .cast<mlir::TensorType>()
+              .getElementType()
+              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+        norm2SqEquiv = getSqMANP(extractSliceOp, operands);
+      } else {
+        isDummy = true;
+      }
+    }
+    // InsertSliceOp
+    else if (auto insertSliceOp =
+                 llvm::dyn_cast<mlir::tensor::InsertSliceOp>(op)) {
+      if (insertSliceOp.result()
+              .getType()
+              .cast<mlir::TensorType>()
+              .getElementType()
+              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+        norm2SqEquiv = getSqMANP(insertSliceOp, operands);
+      } else {
+        isDummy = true;
+      }
+    }
+    // FromElementOp
+    else if (auto fromOp = llvm::dyn_cast<mlir::tensor::FromElementsOp>(op)) {
+      if (fromOp.result()
+              .getType()
+              .cast<mlir::TensorType>()
+              .getElementType()
+              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+        norm2SqEquiv = getSqMANP(fromOp, operands);
+      } else {
+        isDummy = true;
+      }
+    }
+
+    else if (llvm::isa<mlir::ConstantOp>(op)) {
       isDummy = true;
     } else if (llvm::isa<mlir::zamalang::HLFHE::HLFHEDialect>(
                    *op->getDialect())) {
@@ -488,6 +603,14 @@ protected:
       mlir::zamalang::HLFHE::EncryptedIntegerType eTy =
           res.getType()
               .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+      if (eTy == nullptr) {
+        auto tensorTy = res.getType().dyn_cast_or_null<mlir::TensorType>();
+        if (tensorTy != nullptr) {
+          eTy = tensorTy.getElementType()
+                    .dyn_cast_or_null<
+                        mlir::zamalang::HLFHE::EncryptedIntegerType>();
+        }
+      }
 
       if (eTy) {
         bool upd = false;
