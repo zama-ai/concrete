@@ -40,7 +40,9 @@ def simple_fuse_not_output(x):
         ),
     ],
 )
-def test_enable_topological_optimizations(test_helpers, function_to_trace, fused):
+def test_enable_topological_optimizations(
+    test_helpers, function_to_trace, fused, default_compilation_configuration
+):
     """Test function for enable_topological_optimizations flag of compilation configuration"""
 
     op_graph = compile_numpy_function_into_op_graph(
@@ -50,7 +52,7 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
             for param in signature(function_to_trace).parameters.keys()
         },
         [(i,) for i in range(10)],
-        CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
+        default_compilation_configuration,
     )
     op_graph_not_optimized = compile_numpy_function_into_op_graph(
         function_to_trace,
@@ -62,6 +64,7 @@ def test_enable_topological_optimizations(test_helpers, function_to_trace, fused
         CompilationConfiguration(
             dump_artifacts_on_unexpected_failures=False,
             enable_topological_optimizations=False,
+            treat_warnings_as_errors=True,
         ),
     )
 

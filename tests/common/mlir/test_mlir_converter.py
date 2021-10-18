@@ -216,10 +216,15 @@ def datagen(*args):
         ),
     ],
 )
-def test_mlir_converter(func, args_dict, args_ranges):
+def test_mlir_converter(func, args_dict, args_ranges, default_compilation_configuration):
     """Test the conversion to MLIR by calling the parser from the compiler"""
     inputset = datagen(*args_ranges)
-    result_graph = compile_numpy_function_into_op_graph(func, args_dict, inputset)
+    result_graph = compile_numpy_function_into_op_graph(
+        func,
+        args_dict,
+        inputset,
+        default_compilation_configuration,
+    )
     converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
     # testing that this doesn't raise an error
@@ -247,7 +252,9 @@ def test_mlir_converter(func, args_dict, args_ranges):
         ),
     ],
 )
-def test_mlir_converter_dot_between_vectors(func, args_dict, args_ranges):
+def test_mlir_converter_dot_between_vectors(
+    func, args_dict, args_ranges, default_compilation_configuration
+):
     """Test the conversion to MLIR by calling the parser from the compiler"""
     assert len(args_dict["x"].shape) == 1
     assert len(args_dict["y"].shape) == 1
@@ -261,6 +268,7 @@ def test_mlir_converter_dot_between_vectors(func, args_dict, args_ranges):
             (numpy.array([data[0]] * n), numpy.array([data[1]] * n))
             for data in datagen(*args_ranges)
         ),
+        default_compilation_configuration,
     )
     converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
@@ -268,7 +276,7 @@ def test_mlir_converter_dot_between_vectors(func, args_dict, args_ranges):
     compiler.round_trip(mlir_result)
 
 
-def test_mlir_converter_dot_vector_and_constant():
+def test_mlir_converter_dot_vector_and_constant(default_compilation_configuration):
     """Test the conversion to MLIR by calling the parser from the compiler"""
 
     def left_dot_with_constant(x):
@@ -281,6 +289,7 @@ def test_mlir_converter_dot_vector_and_constant():
         left_dot_with_constant,
         {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2,))},
         [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
+        default_compilation_configuration,
     )
     left_converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     left_mlir = left_converter.convert(left_graph)
@@ -289,6 +298,7 @@ def test_mlir_converter_dot_vector_and_constant():
         right_dot_with_constant,
         {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2,))},
         [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
+        default_compilation_configuration,
     )
     right_converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     right_mlir = right_converter.convert(right_graph)

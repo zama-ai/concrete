@@ -6,7 +6,7 @@ from concrete.common.values import EncryptedScalar
 from concrete.numpy.compile import compile_numpy_function_into_op_graph
 
 
-def test_get_printable_graph_with_offending_nodes():
+def test_get_printable_graph_with_offending_nodes(default_compilation_configuration):
     """Test get_printable_graph with offending nodes"""
 
     def function(x):
@@ -16,6 +16,7 @@ def test_get_printable_graph_with_offending_nodes():
         function,
         {"x": EncryptedScalar(Integer(7, True))},
         [(i,) for i in range(-5, 5)],
+        default_compilation_configuration,
     )
 
     highlighted_nodes = {opgraph.input_nodes[0]: "foo"}

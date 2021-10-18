@@ -8,6 +8,7 @@ import networkx as nx
 import networkx.algorithms.isomorphism as iso
 import pytest
 
+from concrete.common.compilation import CompilationConfiguration
 from concrete.common.representation.intermediate import (
     ALL_IR_NODES,
     Add,
@@ -228,3 +229,12 @@ class TestHelpers:
 def test_helpers():
     """Fixture to return the static helper class"""
     return TestHelpers
+
+
+@pytest.fixture
+def default_compilation_configuration():
+    """Return the default test compilation configuration"""
+    return CompilationConfiguration(
+        dump_artifacts_on_unexpected_failures=False,
+        treat_warnings_as_errors=True,
+    )

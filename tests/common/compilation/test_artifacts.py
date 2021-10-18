@@ -9,7 +9,7 @@ from concrete.common.values import EncryptedScalar
 from concrete.numpy.compile import compile_numpy_function
 
 
-def test_artifacts_export():
+def test_artifacts_export(default_compilation_configuration):
     """Test function to check exporting compilation artifacts"""
 
     def function(x):
@@ -23,6 +23,7 @@ def test_artifacts_export():
             function,
             {"x": EncryptedScalar(UnsignedInteger(7))},
             [(i,) for i in range(10)],
+            default_compilation_configuration,
             compilation_artifacts=artifacts,
         )
 

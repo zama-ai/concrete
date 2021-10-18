@@ -9,7 +9,7 @@ from concrete.common.values import EncryptedScalar
 from concrete.numpy.compile import compile_numpy_function_into_op_graph
 
 
-def test_draw_graph_with_saving():
+def test_draw_graph_with_saving(default_compilation_configuration):
     """Tests drawing and saving a graph"""
 
     def function(x):
@@ -19,6 +19,7 @@ def test_draw_graph_with_saving():
         function,
         {"x": EncryptedScalar(Integer(7, True))},
         [(i,) for i in range(-5, 5)],
+        default_compilation_configuration,
     )
 
     with tempfile.TemporaryDirectory() as tmp:
