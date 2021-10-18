@@ -334,7 +334,21 @@ jobs:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
     steps:
+      - name: Prepare docs push
+        id: docs-push-infos
+        run: |
+          if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
+             [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]]; then
+            REF_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///g')
+            echo "::set-output name=has-preprod::true"
+            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
+            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
+            echo "::set-output name=dest-dir::concretefhe/${REF_NAME}"
+          else
+            echo "::set-output name=has-preprod::false"
+          fi
       - name: Download Documentation
+        if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
         id: download
         uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
         with:
@@ -347,28 +361,29 @@ jobs:
         with:
           args: --delete --acl public-read
         env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
+          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           SOURCE_DIR: '.'
-          DEST_DIR: 'concretefhe'
+          DEST_DIR: ${{ steps.docs-push-infos.outputs.dest-dir }}
 
       - name: Invalidate CloudFront Cache
         if: ${{ steps.publish.outcome == 'success' }}
         uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
         env:
-          SOURCE_PATH: '/concretefhe/*'
+          SOURCE_PATH: "/${{ steps.docs-push-infos.outputs.dest-dir }}/*"
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
+          DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
 
       - name: Set notification report
         id: report
         if: ${{ always() }}
         run: |
-          REPORT="Publishing documentation finished with status ${{ job.status }}."
+          REPORT="Publishing documentation finished with status ${{ job.status }}. \
+          Pushed to preprod: ${{ steps.docs-push-infos.outputs.has-preprod }}"
           echo "${REPORT}"
           echo "::set-output name=report::${REPORT}"
           echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
