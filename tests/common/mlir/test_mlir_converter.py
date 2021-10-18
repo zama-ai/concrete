@@ -10,10 +10,11 @@ from zamalang.dialects import hlfhe
 
 from concrete.common.data_types.integers import Integer
 from concrete.common.extensions.table import LookupTable
-from concrete.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
+from concrete.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS
 from concrete.common.values import ClearScalar, EncryptedScalar
 from concrete.common.values.tensors import ClearTensor, EncryptedTensor
 from concrete.numpy.compile import compile_numpy_function_into_op_graph
+from concrete.numpy.np_mlir_converter import NPMLIRConverter
 
 
 def add(x, y):
@@ -219,7 +220,7 @@ def test_mlir_converter(func, args_dict, args_ranges):
     """Test the conversion to MLIR by calling the parser from the compiler"""
     inputset = datagen(*args_ranges)
     result_graph = compile_numpy_function_into_op_graph(func, args_dict, inputset)
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
     # testing that this doesn't raise an error
     compiler.round_trip(mlir_result)
@@ -261,7 +262,7 @@ def test_mlir_converter_dot_between_vectors(func, args_dict, args_ranges):
             for data in datagen(*args_ranges)
         ),
     )
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
     # testing that this doesn't raise an error
     compiler.round_trip(mlir_result)
@@ -281,7 +282,7 @@ def test_mlir_converter_dot_vector_and_constant():
         {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2,))},
         [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
     )
-    left_converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    left_converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     left_mlir = left_converter.convert(left_graph)
 
     right_graph = compile_numpy_function_into_op_graph(
@@ -289,7 +290,7 @@ def test_mlir_converter_dot_vector_and_constant():
         {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2,))},
         [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
     )
-    right_converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    right_converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     right_mlir = right_converter.convert(right_graph)
 
     # testing that this doesn't raise an error
@@ -300,7 +301,7 @@ def test_mlir_converter_dot_vector_and_constant():
 def test_concrete_encrypted_integer_to_mlir_type():
     """Test conversion of EncryptedScalar into MLIR"""
     value = EncryptedScalar(Integer(7, is_signed=False))
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     eint = converter.common_value_to_mlir_type(value)
     assert eint == hlfhe.EncryptedIntegerType.get(converter.context, 7)
 
@@ -309,7 +310,7 @@ def test_concrete_encrypted_integer_to_mlir_type():
 def test_concrete_clear_integer_to_mlir_type(is_signed):
     """Test conversion of ClearScalar into MLIR"""
     value = ClearScalar(Integer(5, is_signed=is_signed))
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with converter.context:
         int_mlir = converter.common_value_to_mlir_type(value)
         if is_signed:
@@ -330,7 +331,7 @@ def test_concrete_clear_integer_to_mlir_type(is_signed):
 def test_concrete_clear_tensor_integer_to_mlir_type(is_signed, shape):
     """Test conversion of ClearTensor into MLIR"""
     value = ClearTensor(Integer(5, is_signed=is_signed), shape)
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with converter.context, Location.unknown():
         tensor_mlir = converter.common_value_to_mlir_type(value)
         if is_signed:
@@ -355,7 +356,7 @@ def test_concrete_clear_tensor_integer_to_mlir_type(is_signed, shape):
 def test_concrete_encrypted_tensor_integer_to_mlir_type(shape):
     """Test conversion of EncryptedTensor into MLIR"""
     value = EncryptedTensor(Integer(6, is_signed=False), shape)
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with converter.context, Location.unknown():
         tensor_mlir = converter.common_value_to_mlir_type(value)
         element_type = hlfhe.EncryptedIntegerType.get(converter.context, 6)
@@ -369,7 +370,7 @@ def test_concrete_encrypted_tensor_integer_to_mlir_type(shape):
 def test_failing_concrete_to_mlir_type():
     """Test failing conversion of an unsupported type into MLIR"""
     value = "random"
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     with pytest.raises(TypeError, match=r"can't convert value of type .* to MLIR type"):
         converter.common_value_to_mlir_type(value)
 

@@ -63,6 +63,7 @@ def test_fail_tlu_input(input_node):
             [None],
             None,
             None,
+            None,
         )
 
 
@@ -82,6 +83,7 @@ def test_fail_tlu_output(input_node):
         apply_lut(
             MockNode(inputs=[EncryptedScalar(Integer(8, False))], outputs=[input_node]),
             [None],
+            None,
             None,
             None,
         )

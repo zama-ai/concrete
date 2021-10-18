@@ -26,7 +26,7 @@ from ..representation.intermediate import Add, Constant, Dot, Mul, Sub, Univaria
 from ..values import TensorValue
 
 
-def add(node, preds, ir_to_mlir_node, ctx):
+def add(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert an addition intermediate node."""
     assert_true(len(node.inputs) == 2, "addition should have two inputs")
     assert_true(len(node.outputs) == 1, "addition should have a single output")
@@ -70,7 +70,7 @@ def _add_eint_eint(node, preds, ir_to_mlir_node, ctx):
     ).result
 
 
-def sub(node, preds, ir_to_mlir_node, ctx):
+def sub(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert a subtraction intermediate node."""
     assert_true(len(node.inputs) == 2, "subtraction should have two inputs")
     assert_true(len(node.outputs) == 1, "subtraction should have a single output")
@@ -94,7 +94,7 @@ def _sub_int_eint(node, preds, ir_to_mlir_node, ctx):
     ).result
 
 
-def mul(node, preds, ir_to_mlir_node, ctx):
+def mul(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert a multiplication intermediate node."""
     assert_true(len(node.inputs) == 2, "multiplication should have two inputs")
     assert_true(len(node.outputs) == 1, "multiplication should have a single output")
@@ -123,7 +123,7 @@ def _mul_eint_int(node, preds, ir_to_mlir_node, ctx):
     ).result
 
 
-def constant(node, _, __, ctx):
+def constant(node, _preds, _ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert a constant input."""
     value = node.outputs[0]
 
@@ -164,7 +164,7 @@ def constant(node, _, __, ctx):
     raise TypeError(f"Don't support {value} constants")
 
 
-def apply_lut(node, preds, ir_to_mlir_node, ctx):
+def apply_lut(node, preds, ir_to_mlir_node, ctx, additional_conversion_info):
     """Convert a UnivariateFunction intermediate node."""
     assert_true(len(node.inputs) == 1, "LUT should have a single input")
     assert_true(len(node.outputs) == 1, "LUT should have a single output")
@@ -181,7 +181,7 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx):
 
     x_node = preds[0]
     x = ir_to_mlir_node[x_node]
-    table = node.get_table()
+    table = additional_conversion_info["tables"][node]
     out_dtype = cast(Integer, node.outputs[0].dtype)
     # Create table
     dense_elem = DenseElementsAttr.get(np.array(table, dtype=np.uint64), context=ctx)
@@ -196,7 +196,7 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx):
     ).result
 
 
-def dot(node, preds, ir_to_mlir_node, ctx):
+def dot(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert a dot intermediate node."""
     assert_true(len(node.inputs) == 2, "Dot should have two inputs")
     assert_true(len(node.outputs) == 1, "Dot should have a single output")

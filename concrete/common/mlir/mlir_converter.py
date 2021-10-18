@@ -1,6 +1,7 @@
 """File containing code to convert a DAG containing ir nodes to the compiler opset."""
 # pylint: disable=no-name-in-module,no-member
-from typing import Tuple, cast
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Tuple, cast
 
 import networkx as nx
 import zamalang
@@ -22,7 +23,7 @@ from ..operator_graph import OPGraph
 from ..representation.intermediate import Input
 
 
-class MLIRConverter:
+class MLIRConverter(ABC):
     """Converter of the common IR to MLIR."""
 
     def __init__(self, conversion_functions: dict) -> None:
@@ -87,6 +88,18 @@ class MLIRConverter:
         # unsigned integer are considered signless in the compiler
         return IntegerType.get_signless(bit_width)
 
+    @staticmethod
+    @abstractmethod
+    def _generate_additional_info_dict(op_graph: OPGraph) -> Dict[str, Any]:
+        """Generate the additional_conversion_info dict for the MLIR converter.
+
+        Args:
+            op_graph (OPGraph): the OPGraph for which we need the conversion infos.
+
+        Returns:
+            Dict[str, Any]: The dict with the additional conversion infos.
+        """
+
     def common_value_to_mlir_type(self, value: values.BaseValue) -> MLIRType:
         """Convert a common value to its corresponding MLIR Type.
 
@@ -125,11 +138,16 @@ class MLIRConverter:
         """Convert the graph of IntermediateNode to an MLIR textual representation.
 
         Args:
-            graph: graph of IntermediateNode to be converted
+            op_graph (OPGraph): graph of IntermediateNode to be converted
+
+        Raises:
+            NotImplementedError: raised if an unknown node type is encountered.
 
         Returns:
-            textual MLIR representation
+            str: textual MLIR representation
         """
+        additional_conversion_info = self._generate_additional_info_dict(op_graph)
+
         with self.context, Location.unknown():
             module = Module.create()
             # collect inputs
@@ -162,7 +180,13 @@ class MLIRConverter:
                                 idx_to_pred[data["input_idx"]] = pred
                         preds = [idx_to_pred[i] for i in range(len(idx_to_pred))]
                         # convert to mlir
-                        result = mlir_op(node, preds, ir_to_mlir_node, self.context)
+                        result = mlir_op(
+                            node,
+                            preds,
+                            ir_to_mlir_node,
+                            self.context,
+                            additional_conversion_info,
+                        )
                         ir_to_mlir_node[node] = result
 
                     results = (

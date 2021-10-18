@@ -13,7 +13,7 @@ from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Integer
 from ..common.debugging import get_printable_graph
 from ..common.fhe_circuit import FHECircuit
-from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS, MLIRConverter
+from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS
 from ..common.mlir.utils import (
     check_graph_values_compatibility_with_mlir,
     extend_direct_lookup_tables,
@@ -29,6 +29,7 @@ from .np_dtypes_helpers import (
     get_base_value_for_numpy_or_python_constant_data,
     get_constructor_for_numpy_or_python_constant_data,
 )
+from .np_mlir_converter import NPMLIRConverter
 
 
 def numpy_max_func(lhs: Any, rhs: Any) -> Any:
@@ -281,11 +282,8 @@ def _compile_numpy_function_internal(
     )
 
     # Convert graph to an MLIR representation
-    converter = MLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
-
-    # Disable numpy warnings during conversion to avoid issues during TLU generation
-    with numpy.errstate(all="ignore"):
-        mlir_result = converter.convert(op_graph)
+    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    mlir_result = converter.convert(op_graph)
 
     # Show MLIR representation if requested
     if show_mlir:
