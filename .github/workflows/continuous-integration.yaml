@@ -45,7 +45,7 @@ jobs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     steps:
-      - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
+      - uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
         with:
           fetch-depth: 0
       - name: Get changed files
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
+        uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
         with:
           fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
@@ -402,7 +402,7 @@ jobs:
       PREFLIGHT_IMAGE: ${{ needs.build-preflight-docker.outputs.image }}
 
     steps:
-      - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
+      - uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
       - name: Login to GitHub Container Registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
@@ -463,7 +463,7 @@ jobs:
       RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concretefhe
 
     steps:
-      - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
+      - uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
       # To be removed once poetry 1.2 is released to manage dependencies with groups
       - name: Cache Installation Files
         uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
@@ -643,7 +643,7 @@ jobs:
     name: Send Slack notification
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f
+      - uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
       - name: Prepare whole job status
         if: ${{ always() }}
         continue-on-error: true
