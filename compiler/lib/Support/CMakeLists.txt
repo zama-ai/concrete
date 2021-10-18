@@ -1,4 +1,5 @@
 add_mlir_library(ZamalangSupport
+  Error.cpp
   Pipeline.cpp
   Jit.cpp
   CompilerEngine.cpp
