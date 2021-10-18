@@ -9,11 +9,6 @@
 
 namespace mlir {
 namespace zamalang {
-mlir::LogicalResult
-runJit(mlir::ModuleOp module, llvm::StringRef func,
-       llvm::ArrayRef<uint64_t> funcArgs, mlir::zamalang::KeySet &keySet,
-       std::function<llvm::Error(llvm::Module *)> optPipeline,
-       llvm::raw_ostream &os);
 
 /// JITLambda is a tool to JIT compile an mlir module and to invoke a function
 /// of the module.

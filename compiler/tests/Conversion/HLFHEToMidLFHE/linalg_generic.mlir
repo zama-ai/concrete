@@ -1,4 +1,4 @@
-// RUN: zamacompiler %s --entry-dialect=hlfhe --action=dump-midlfhe 2>&1| FileCheck %s
+// RUN: zamacompiler %s --action=dump-midlfhe --assume-max-manp=10 --assume-max-eint-precision=2 2>&1| FileCheck %s
 
 // CHECK: #map0 = affine_map<(d0) -> (d0)>
 // CHECK-NEXT: #map1 = affine_map<(d0) -> (0)>

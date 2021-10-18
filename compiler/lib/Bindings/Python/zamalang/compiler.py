@@ -1,9 +1,8 @@
 """Compiler submodule"""
 from typing import List, Union
-from mlir._mlir_libs._zamalang._compiler import CompilerEngine as _CompilerEngine
+from mlir._mlir_libs._zamalang._compiler import JitCompilerEngine as _JitCompilerEngine
 from mlir._mlir_libs._zamalang._compiler import ExecutionArgument as _ExecutionArgument
 from mlir._mlir_libs._zamalang._compiler import round_trip as _round_trip
-
 
 def round_trip(mlir_str: str) -> str:
     """Parse the MLIR input, then return it back.
@@ -49,25 +48,24 @@ def create_execution_argument(value: Union[int, List[int]]) -> "_ExecutionArgume
 
 class CompilerEngine:
     def __init__(self, mlir_str: str = None):
-        self._engine = _CompilerEngine()
+        self._engine = _JitCompilerEngine()
+        self._lambda = None
         if mlir_str is not None:
             self.compile_fhe(mlir_str)
 
-    def compile_fhe(self, mlir_str: str) -> "CompilerEngine":
-        """Compile the MLIR input and build a CompilerEngine.
+    def compile_fhe(self, mlir_str: str, func_name: str = "main"):
+        """Compile the MLIR input.
 
         Args:
             mlir_str (str): MLIR to compile.
+            func_name (str): name of the function to set as entrypoint.
 
         Raises:
             TypeError: if the argument is not an str.
-
-        Returns:
-            CompilerEngine: engine used for execution.
         """
         if not isinstance(mlir_str, str):
             raise TypeError("input must be an `str`")
-        return self._engine.compile_fhe(mlir_str)
+        self._lambda = self._engine.build_lambda(mlir_str, func_name)
 
     def run(self, *args: List[Union[int, List[int]]]) -> int:
         """Run the compiled code.
@@ -77,17 +75,12 @@ class CompilerEngine:
 
         Raises:
             TypeError: if execution arguments can't be constructed
+            RuntimeError: if the engine has not compiled any code yet
 
         Returns:
             int: result of execution.
         """
+        if self._lambda is None:
+            raise RuntimeError("need to compile an MLIR code first")
         execution_arguments = [create_execution_argument(arg) for arg in args]
-        return self._engine.run(execution_arguments)
-
-    def get_compiled_module(self) -> str:
-        """Compiled module in printable form.
-
-        Returns:
-            str: Compiled module in printable form.
-        """
-        return self._engine.get_compiled_module()
+        return self._lambda.invoke(execution_arguments)

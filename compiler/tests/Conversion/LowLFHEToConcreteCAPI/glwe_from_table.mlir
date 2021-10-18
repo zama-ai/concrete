@@ -1,4 +1,4 @@
-// RUN: zamacompiler --entry-dialect=lowlfhe --action=dump-std %s 2>&1| FileCheck %s
+// RUN: zamacompiler --action=dump-std %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: module
 // CHECK-NEXT: func private @runtime_foreign_plaintext_list_u64(index, tensor<16xi64>, i64, i32) -> !LowLFHE.foreign_plaintext_list

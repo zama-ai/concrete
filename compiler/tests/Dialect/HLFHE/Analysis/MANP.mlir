@@ -1,4 +1,4 @@
-// RUN: zamacompiler --split-input-file --entry-dialect=hlfhe --action=dump-hlfhe-manp %s 2>&1 | FileCheck %s
+// RUN: zamacompiler --split-input-file --action=dump-hlfhe-manp %s 2>&1 | FileCheck %s
 
 func @single_zero() -> !HLFHE.eint<2>
 {

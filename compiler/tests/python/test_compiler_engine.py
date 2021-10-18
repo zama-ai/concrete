@@ -56,7 +56,7 @@ def test_compile_and_run(mlir_input, args, expected_result):
 def test_compile_and_run_invalid_arg_number(mlir_input, args):
     engine = CompilerEngine()
     engine.compile_fhe(mlir_input)
-    with pytest.raises(RuntimeError, match=r"failed pushing integer argument"):
+    with pytest.raises(ValueError, match=r"wrong number of arguments"):
         engine.run(*args)
 
 

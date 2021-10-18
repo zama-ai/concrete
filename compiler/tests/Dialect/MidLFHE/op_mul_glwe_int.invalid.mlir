@@ -1,4 +1,4 @@
-// RUN: zamacompiler --split-input-file --verify-diagnostics --entry-dialect=midlfhe --action=roundtrip %s
+// RUN: zamacompiler --split-input-file --verify-diagnostics --action=roundtrip %s
 
 // GLWE p parameter
 func @mul_glwe_int(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>) -> !MidLFHE.glwe<{1024,12,64}{6}> {

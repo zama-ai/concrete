@@ -5,15 +5,17 @@
 #include "mlir-c/Registration.h"
 #include "zamalang/Support/CompilerEngine.h"
 #include "zamalang/Support/ExecutionArgument.h"
+#include "zamalang/Support/Jit.h"
+#include "zamalang/Support/JitCompilerEngine.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct compilerEngine {
-  mlir::zamalang::CompilerEngine *ptr;
+struct lambda {
+  mlir::zamalang::JitCompilerEngine::Lambda *ptr;
 };
-typedef struct compilerEngine compilerEngine;
+typedef struct lambda lambda;
 
 struct executionArguments {
   mlir::zamalang::ExecutionArgument *data;
@@ -21,13 +23,12 @@ struct executionArguments {
 };
 typedef struct executionArguments exectuionArguments;
 
-// Compile an MLIR module
-MLIR_CAPI_EXPORTED void compilerEngineCompile(compilerEngine engine,
-                                              const char *module);
+MLIR_CAPI_EXPORTED mlir::zamalang::JitCompilerEngine::Lambda
+buildLambda(const char *module, const char *funcName);
 
-// Run the compiled module
-MLIR_CAPI_EXPORTED uint64_t compilerEngineRun(compilerEngine e,
-                                              executionArguments args);
+MLIR_CAPI_EXPORTED uint64_t invokeLambda(lambda l, executionArguments args);
+
+MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 
 #ifdef __cplusplus
 }

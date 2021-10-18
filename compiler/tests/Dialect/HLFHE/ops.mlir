@@ -1,4 +1,4 @@
-// RUN: zamacompiler --entry-dialect=hlfhe --action=roundtrip %s 2>&1| FileCheck %s
+// RUN: zamacompiler --action=roundtrip %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: func @zero() -> !HLFHE.eint<2>
 func @zero() -> !HLFHE.eint<2> {
