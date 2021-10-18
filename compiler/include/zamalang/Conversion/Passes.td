@@ -47,7 +47,7 @@ def LowLFHEUnparametrize : Pass<"lowlfhe-unparametrize", "mlir::ModuleOp"> {
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
   let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
   let constructor = "mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass()";
-  let dependentDialects = ["mlir::StandardOpsDialect", "mlir::scf::SCFDialect", "mlir::LLVM::LLVMDialect"];
+  let dependentDialects = ["mlir::StandardOpsDialect", "mlir::arith::ArithmeticDialect", "mlir::scf::SCFDialect", "mlir::LLVM::LLVMDialect"];
   let options = [];
 }
 

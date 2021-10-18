@@ -11,6 +11,7 @@
 #include <llvm/ADT/Optional.h>
 #include <llvm/ADT/SmallString.h>
 #include <mlir/Analysis/DataFlowAnalysis.h>
+#include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/IR/Attributes.h>
@@ -210,7 +211,7 @@ static std::string APIntToStringValUnsigned(const llvm::APInt &i) {
 // Calculates the square of the 2-norm of a tensor initialized with a
 // dense matrix of constant, signless integers. Aborts if the value
 // type or initialization of of `cstOp` is incorrect.
-static llvm::APInt denseCstTensorNorm2Sq(mlir::ConstantOp cstOp) {
+static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp) {
   mlir::DenseIntElementsAttr denseVals =
       cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value");
 
@@ -272,8 +273,9 @@ static llvm::APInt getSqMANP(
          "Only dot operations with tensors that are function arguments are "
          "currently supported");
 
-  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
-      op->getOpOperand(1).get().getDefiningOp());
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(1).get().getDefiningOp());
 
   if (cstOp) {
     // Dot product between a vector of encrypted integers and a vector
@@ -320,8 +322,9 @@ static llvm::APInt getSqMANP(
       operandMANPs[0]->getValue().getMANP().hasValue() &&
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
-  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
-      op->getOpOperand(1).get().getDefiningOp());
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(1).get().getDefiningOp());
 
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
   llvm::APInt sqNorm;
@@ -374,8 +377,9 @@ static llvm::APInt getSqMANP(
   llvm::APInt eNorm = operandMANPs[1]->getValue().getMANP().getValue();
   llvm::APInt sqNorm;
 
-  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
-      op->getOpOperand(0).get().getDefiningOp());
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(0).get().getDefiningOp());
 
   if (cstOp) {
     // For constant plaintext operands simply use the constant value
@@ -404,8 +408,9 @@ static llvm::APInt getSqMANP(
       operandMANPs[0]->getValue().getMANP().hasValue() &&
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
-  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
-      op->getOpOperand(1).get().getDefiningOp());
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(1).get().getDefiningOp());
 
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
   llvm::APInt sqNorm;
@@ -445,8 +450,9 @@ static llvm::APInt getSqMANP(
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
   llvm::APInt sqNorm;
 
-  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
-      op->getOpOperand(1).get().getDefiningOp());
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(1).get().getDefiningOp());
   mlir::DenseIntElementsAttr denseVals =
       cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
             : nullptr;
@@ -507,8 +513,9 @@ static llvm::APInt getSqMANP(
   llvm::APInt eNorm = operandMANPs[1]->getValue().getMANP().getValue();
   llvm::APInt sqNorm;
 
-  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
-      op->getOpOperand(0).get().getDefiningOp());
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(0).get().getDefiningOp());
   mlir::DenseIntElementsAttr denseVals =
       cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
             : nullptr;
@@ -553,8 +560,9 @@ static llvm::APInt getSqMANP(
   llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
   llvm::APInt sqNorm;
 
-  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
-      op->getOpOperand(1).get().getDefiningOp());
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(1).get().getDefiningOp());
   mlir::DenseIntElementsAttr denseVals =
       cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
             : nullptr;
@@ -734,7 +742,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
       }
     }
 
-    else if (llvm::isa<mlir::ConstantOp>(op)) {
+    else if (llvm::isa<mlir::arith::ConstantOp>(op)) {
       isDummy = true;
     } else if (llvm::isa<mlir::zamalang::HLFHE::HLFHEDialect>(
                    *op->getDialect())) {

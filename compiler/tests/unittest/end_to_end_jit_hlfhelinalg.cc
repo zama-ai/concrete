@@ -881,7 +881,7 @@ TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
     // [3,0,1] lut [1,3,5,7] = [7,1,3]
     // [2,3,0]                 [5,7,1]
     func @main(%t: tensor<3x3x!HLFHE.eint<2>>) -> tensor<3x3x!HLFHE.eint<3>> {
-      %lut = std.constant dense<[1,3,5,7]> : tensor<4xi64>
+      %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
       %res = "HLFHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!HLFHE.eint<3>>
       return %res : tensor<3x3x!HLFHE.eint<3>>
     }

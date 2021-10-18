@@ -327,7 +327,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
 /// ```
 /// to
 /// ```
-/// err = constant 0 : i64
+/// err = arith.constant 0 : i64
 /// call_op(err, out, arg0, arg1);
 /// ```
 template <typename Op>
@@ -350,10 +350,10 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
     // Replace the operation with a call to the `funcName`
     {
       // Create the err value
-      auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
-                                                     rewriter.getIndexAttr(0));
+      auto errOp = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(), rewriter.getIndexAttr(0));
       // Add the call to the allocation
-      auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+      auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
           op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
       mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
       auto allocGeneric = rewriter.create<mlir::CallOp>(
@@ -411,10 +411,10 @@ struct LowLFHEZeroOpPattern
     auto lweResultType =
         resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>();
     // Create the err value
-    auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
-                                                   rewriter.getIndexAttr(0));
+    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(0));
     // Allocate a fresh new ciphertext
-    auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+    auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
     mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
     auto allocGeneric = rewriter.create<mlir::CallOp>(
@@ -439,14 +439,14 @@ struct LowLFHEEncodeIntOpPattern
   matchAndRewrite(mlir::zamalang::LowLFHE::EncodeIntOp op,
                   mlir::PatternRewriter &rewriter) const override {
     {
-      mlir::Value castedInt = rewriter.create<mlir::ZeroExtendIOp>(
+      mlir::Value castedInt = rewriter.create<mlir::arith::ExtUIOp>(
           op.getLoc(), rewriter.getIntegerType(64), op->getOperands().front());
-      mlir::Value constantShiftOp = rewriter.create<mlir::ConstantOp>(
+      mlir::Value constantShiftOp = rewriter.create<mlir::arith::ConstantOp>(
           op.getLoc(), rewriter.getI64IntegerAttr(64 - op.getType().getP()));
 
       mlir::Type resultType = rewriter.getIntegerType(64);
-      rewriter.replaceOpWithNewOp<mlir::ShiftLeftOp>(op, resultType, castedInt,
-                                                     constantShiftOp);
+      rewriter.replaceOpWithNewOp<mlir::arith::ShLIOp>(
+          op, resultType, castedInt, constantShiftOp);
     }
     return mlir::success();
   };
@@ -462,7 +462,7 @@ struct LowLFHEIntToCleartextOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::zamalang::LowLFHE::IntToCleartextOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    mlir::Value castedInt = rewriter.replaceOpWithNewOp<mlir::ZeroExtendIOp>(
+    mlir::Value castedInt = rewriter.replaceOpWithNewOp<mlir::arith::ExtUIOp>(
         op, rewriter.getIntegerType(64), op->getOperands().front());
     return mlir::success();
   };
@@ -507,12 +507,12 @@ struct GlweFromTableOpPattern
       }
     }
 
-    auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
-                                                   rewriter.getIndexAttr(0));
+    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(0));
     // allocate two glwe to build accumulator
     auto glweSizeOp =
-        rewriter.create<mlir::ConstantOp>(op.getLoc(), op->getAttr("k"));
-    auto polySizeOp = rewriter.create<mlir::ConstantOp>(
+        rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op->getAttr("k"));
+    auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), op->getAttr("polynomialSize"));
     mlir::SmallVector<mlir::Value> allocGlweOperands{errOp, glweSizeOp,
                                                      polySizeOp};
@@ -536,11 +536,11 @@ struct GlweFromTableOpPattern
         op->getOperandTypes().front().cast<mlir::RankedTensorType>();
     assert(rankedTensorType.getRank() == 1 &&
            "table lookup must be of a single dimension");
-    auto sizeOp = rewriter.create<mlir::ConstantOp>(
+    auto sizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(),
         rewriter.getI64IntegerAttr(rankedTensorType.getDimSize(0)));
     auto precisionOp =
-        rewriter.create<mlir::ConstantOp>(op.getLoc(), op->getAttr("p"));
+        rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op->getAttr("p"));
     mlir::SmallVector<mlir::Value> ForeignPlaintextListOperands{
         errOp, op->getOperand(0), sizeOp, precisionOp};
     auto foreignPlaintextListOp = rewriter.create<mlir::CallOp>(
@@ -583,11 +583,11 @@ struct LowLFHEBootstrapLweOpPattern
     auto resultType = op->getResultTypes().front();
     auto bstOutputSize =
         resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>().getSize();
-    auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
-                                                   rewriter.getIndexAttr(0));
+    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(0));
     // allocate the result lwe ciphertext, should be of a generic type, to cast
     // before return
-    auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+    auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(bstOutputSize));
     mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
     auto allocateGenericLweCtOp = rewriter.create<mlir::CallOp>(
@@ -640,11 +640,11 @@ struct LowLFHEKeySwitchLweOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::zamalang::LowLFHE::KeySwitchLweOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto errOp = rewriter.create<mlir::ConstantOp>(op.getLoc(),
-                                                   rewriter.getIndexAttr(0));
+    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(0));
     // allocate the result lwe ciphertext, should be of a generic type, to cast
     // before return
-    auto lweSizeOp = rewriter.create<mlir::ConstantOp>(
+    auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(),
         rewriter.getIndexAttr(
             op->getAttr("outputLweSize").cast<mlir::IntegerAttr>().getInt()));
@@ -717,7 +717,8 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
   mlir::ConversionTarget target(getContext());
   target.addIllegalDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
   target.addLegalDialect<mlir::BuiltinDialect, mlir::StandardOpsDialect,
-                         mlir::memref::MemRefDialect>();
+                         mlir::memref::MemRefDialect,
+                         mlir::arith::ArithmeticDialect>();
 
   // Setup rewrite patterns
   mlir::RewritePatternSet patterns(&getContext());

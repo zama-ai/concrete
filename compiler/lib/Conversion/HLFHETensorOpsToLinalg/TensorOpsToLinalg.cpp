@@ -112,7 +112,7 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
     // element and use it as a replacement for the result of the dot
     // operation
     mlir::Value idx0 =
-        rewriter.create<mlir::ConstantIndexOp>(dotOp.getLoc(), 0);
+        rewriter.create<mlir::arith::ConstantIndexOp>(dotOp.getLoc(), 0);
     llvm::SmallVector<mlir::Value, 1> indexes{idx0};
     mlir::Value res = rewriter.create<mlir::tensor::ExtractOp>(
         dotOp.getLoc(), gop.getResult(0), indexes);
@@ -360,6 +360,7 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
   target.addLegalDialect<mlir::memref::MemRefDialect>();
   target.addLegalDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   target.addLegalDialect<mlir::tensor::TensorDialect>();
+  target.addLegalDialect<mlir::arith::ArithmeticDialect>();
   target.addIllegalOp<mlir::zamalang::HLFHE::Dot>();
   target.addIllegalDialect<mlir::zamalang::HLFHELinalg::HLFHELinalgDialect>();
 

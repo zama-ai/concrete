@@ -148,8 +148,8 @@ struct MidLFHEApplyLookupTablePaddingPattern
         op.getType().cast<mlir::zamalang::MidLFHE::GLWECipherTextType>();
     auto expectedSize = 1 << glweInType.getP();
     if (tabulatedLambdaType.getShape()[0] < expectedSize) {
-      auto constantOp =
-          mlir::dyn_cast_or_null<mlir::ConstantOp>(op.l_cst().getDefiningOp());
+      auto constantOp = mlir::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op.l_cst().getDefiningOp());
       if (constantOp == nullptr) {
         op.emitError() << "padding for non-constant operator is NYI";
         return mlir::failure();
@@ -174,8 +174,8 @@ struct MidLFHEApplyLookupTablePaddingPattern
           {expectedSize}, rewriter.getIntegerType(integerSize));
       auto newDenseVals =
           mlir::DenseIntElementsAttr::get(newDenseValsType, rawNewDenseVals);
-      auto newConstantOp =
-          rewriter.create<mlir::ConstantOp>(constantOp.getLoc(), newDenseVals);
+      auto newConstantOp = rewriter.create<mlir::arith::ConstantOp>(
+          constantOp.getLoc(), newDenseVals);
       // Replace the apply_lookup_table with the new constant
       mlir::SmallVector<mlir::Type> newResultTypes{op.getType()};
       llvm::SmallVector<mlir::Value> newOperands{op.ct(), newConstantOp};
@@ -227,7 +227,7 @@ void populateWithMidLFHEApplyLookupTableParametrizationPattern(
 void populateWithMidLFHEApplyLookupTablePaddingPattern(
     mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target) {
   patterns.add<MidLFHEApplyLookupTablePaddingPattern>(patterns.getContext());
-  target.addLegalOp<mlir::ConstantOp>();
+  target.addLegalOp<mlir::arith::ConstantOp>();
   target.addDynamicallyLegalOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
       [&](mlir::zamalang::MidLFHE::ApplyLookupTable op) {
         auto glweInType =

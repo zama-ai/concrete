@@ -3,6 +3,7 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
+#include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
@@ -54,6 +55,8 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::RewritePatternSet patterns(&getContext());
   mlir::populateLoopToStdConversionPatterns(patterns);
   mlir::populateStdToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
+                                                          patterns);
   mlir::populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
 
   // Apply a `FullConversion` to `llvm`.

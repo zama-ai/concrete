@@ -181,10 +181,10 @@ func @const_cleartext() -> (!LowLFHE.cleartext<8>) {
 
 // CHECK-LABEL: func @int_to_cleartext() -> !LowLFHE.cleartext<6>
 func @int_to_cleartext() -> !LowLFHE.cleartext<6> {
-  // CHECK-NEXT: %[[V0:.*]] = constant 5 : i6
+  // CHECK-NEXT: %[[V0:.*]] = arith.constant 5 : i6
   // CHECK-NEXT: %[[V1:.*]] = "LowLFHE.int_to_cleartext"(%[[V0]]) : (i6) -> !LowLFHE.cleartext<6>
   // CHECK-NEXT: return %[[V1]] : !LowLFHE.cleartext<6>
-  %0 = constant 5 : i6
+  %0 = arith.constant 5 : i6
   %1 = "LowLFHE.int_to_cleartext"(%0) : (i6) -> !LowLFHE.cleartext<6>
   return %1 : !LowLFHE.cleartext<6>
 }

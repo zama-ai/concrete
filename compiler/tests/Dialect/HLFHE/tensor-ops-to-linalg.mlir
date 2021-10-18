@@ -12,7 +12,7 @@
 //CHECK-NEXT:       %5 = "MidLFHE.add_glwe"(%4, %arg4) : (!MidLFHE.glwe<{_,_,_}{2}>, !MidLFHE.glwe<{_,_,_}{2}>) -> !MidLFHE.glwe<{_,_,_}{2}>
 //CHECK-NEXT:       linalg.yield %5 : !MidLFHE.glwe<{_,_,_}{2}>
 //CHECK-NEXT:     } -> tensor<1x!MidLFHE.glwe<{_,_,_}{2}>>
-//CHECK-NEXT:     %c0 = constant 0 : index
+//CHECK-NEXT:     %c0 = arith.constant 0 : index
 //CHECK-NEXT:     %3 = tensor.extract %2[%c0] : tensor<1x!MidLFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:     return %3 : !MidLFHE.glwe<{_,_,_}{2}>
 //CHECK-NEXT:   }
