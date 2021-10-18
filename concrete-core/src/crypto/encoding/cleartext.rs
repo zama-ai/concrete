@@ -1,7 +1,7 @@
-use crate::crypto::CleartextCount;
 use crate::math::tensor::{AsMutTensor, AsRefTensor, Tensor};
-use crate::numeric::Numeric;
 use crate::{ck_dim_div, tensor_traits};
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::CleartextCount;
 
 /// A clear, non-encoded, value.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -23,7 +23,8 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{CleartextCount, encoding::*};
+    /// use concrete_commons::parameters::CleartextCount;
+    /// use concrete_core::crypto::encoding::*;
     /// let clear_list = CleartextList::allocate(1 as u8, CleartextCount(100));
     /// assert_eq!(clear_list.count(), CleartextCount(100));
     /// ```
@@ -38,7 +39,8 @@ impl<Cont> CleartextList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{CleartextCount, encoding::CleartextList};
+    /// use concrete_commons::parameters::CleartextCount;
+    /// use concrete_core::crypto::encoding::CleartextList;
     /// let clear_list = CleartextList::from_container(vec![1 as u8; 100]);
     /// assert_eq!(clear_list.count(), CleartextCount(100));
     /// ```
@@ -53,7 +55,8 @@ impl<Cont> CleartextList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{CleartextCount, encoding::CleartextList};
+    /// use concrete_commons::parameters::CleartextCount;
+    /// use concrete_core::crypto::encoding::CleartextList;
     /// let clear_list = CleartextList::from_container(vec![1 as u8; 100]);
     /// assert_eq!(clear_list.count(), CleartextCount(100));
     /// ```
@@ -69,10 +72,9 @@ impl<Cont> CleartextList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{CleartextCount, encoding::CleartextList};
+    /// use concrete_core::crypto::encoding::CleartextList;
     /// let clear_list = CleartextList::from_container(vec![1 as u8; 100]);
-    /// clear_list.cleartext_iter()
-    ///     .for_each(|a| assert_eq!(a.0, 1));
+    /// clear_list.cleartext_iter().for_each(|a| assert_eq!(a.0, 1));
     /// assert_eq!(clear_list.cleartext_iter().count(), 100);
     /// ```
     pub fn cleartext_iter(&self) -> impl Iterator<Item = &Cleartext<<Self as AsRefTensor>::Element>>
@@ -93,12 +95,12 @@ impl<Cont> CleartextList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{CleartextCount, encoding::{CleartextList, Cleartext}};
+    /// use concrete_core::crypto::encoding::{Cleartext, CleartextList};
     /// let mut clear_list = CleartextList::from_container(vec![1 as u8; 100]);
-    /// clear_list.cleartext_iter_mut()
+    /// clear_list
+    ///     .cleartext_iter_mut()
     ///     .for_each(|a| *a = Cleartext(2));
-    /// clear_list.cleartext_iter()
-    ///     .for_each(|a| assert_eq!(a.0, 2));
+    /// clear_list.cleartext_iter().for_each(|a| assert_eq!(a.0, 2));
     /// assert_eq!(clear_list.cleartext_iter_mut().count(), 100);
     /// ```
     pub fn cleartext_iter_mut(
@@ -121,9 +123,11 @@ impl<Cont> CleartextList<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::{CleartextCount, encoding::CleartextList};
+    /// use concrete_commons::parameters::CleartextCount;
+    /// use concrete_core::crypto::encoding::CleartextList;
     /// let clear_list = CleartextList::from_container(vec![1 as u8; 100]);
-    /// clear_list.sublist_iter(CleartextCount(10))
+    /// clear_list
+    ///     .sublist_iter(CleartextCount(10))
     ///     .for_each(|a| assert_eq!(a.count(), CleartextCount(10)));
     /// assert_eq!(clear_list.sublist_iter(CleartextCount(10)).count(), 10);
     /// ```
@@ -145,11 +149,14 @@ impl<Cont> CleartextList<Cont> {
     /// #Example
     ///
     /// ```
-    /// use concrete_core::crypto::{CleartextCount, encoding::{Cleartext, CleartextList}};
+    /// use concrete_commons::parameters::CleartextCount;
+    /// use concrete_core::crypto::encoding::{Cleartext, CleartextList};
     /// let mut clear_list = CleartextList::from_container(vec![1 as u8; 100]);
-    /// clear_list.sublist_iter_mut(CleartextCount(10))
+    /// clear_list
+    ///     .sublist_iter_mut(CleartextCount(10))
     ///     .for_each(|mut a| a.cleartext_iter_mut().for_each(|b| *b = Cleartext(3)));
-    /// clear_list.cleartext_iter()
+    /// clear_list
+    ///     .cleartext_iter()
     ///     .for_each(|a| assert_eq!(*a, Cleartext(3)));
     /// assert_eq!(clear_list.sublist_iter_mut(CleartextCount(10)).count(), 10);
     /// ```

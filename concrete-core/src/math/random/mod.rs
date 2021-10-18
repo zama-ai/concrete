@@ -1,47 +1,40 @@
 //! A module containing random sampling functions.
 //!
-//! This module contains generic functions to sample numeric values randomly according to a given
-//! distribution, for instance:
+//! This module contains a [`RandomGenerator`] type, which exposes methods to sample numeric values
+//! randomly according to a given distribution, for instance:
 //!
-//! + [`random_uniform`] samples a random unsigned integer with uniform probability over
-//! the set of representable values.
-//! + [`random_gaussian`] samples a random float with using a gaussian distribution.
+//! + [`RandomGenerator::random_uniform`] samples a random unsigned integer with uniform
+//! probability over the set of representable values.
+//! + [`RandomGenerator::random_gaussian`] samples a random float with using a gaussian
+//! distribution.
 //!
 //! The implementation relies on the [`RandomGenerable`] trait, which gives a type the ability to
 //! be randomly generated according to a given distribution. The module contains multiple
 //! implementations of this trait, for different distributions. Note, though, that instead of
-//! using the [`RandomGenerable`] method, you should use the provided generic functions instead:
-//!
-//! + [`random_uniform`]
-//! + [`random_uniform_n_msb`]
-//! + [`random_uniform_n_lsb`]
-//! + [`random_gaussian`]
+//! using the [`RandomGenerable`] methods, you should use the various methods exposed by
+//! [`RandomGenerator`] instead.
 use crate::math::tensor::{AsMutTensor, Tensor};
-use crate::numeric::{FloatingPoint, Numeric};
+use concrete_commons::numeric::FloatingPoint;
+pub use gaussian::*;
+pub use generator::*;
+pub use uniform::*;
+pub use uniform_binary::*;
+pub use uniform_lsb::*;
+pub use uniform_msb::*;
+pub use uniform_ternary::*;
+pub use uniform_with_zeros::*;
 
 #[cfg(test)]
 mod tests;
 
-mod uniform;
-pub use uniform::*;
-
-mod uniform_msb;
-pub use uniform_msb::*;
-
-mod uniform_lsb;
-pub use uniform_lsb::*;
-
 mod gaussian;
-pub use gaussian::*;
-
-mod uniform_with_zeros;
-pub use uniform_with_zeros::*;
-
-mod uniform_boolean;
-pub use uniform_boolean::*;
-
 mod generator;
-pub use generator::*;
+mod uniform;
+mod uniform_binary;
+mod uniform_lsb;
+mod uniform_msb;
+mod uniform_ternary;
+mod uniform_with_zeros;
 
 pub trait RandomGenerable<D: Distribution>
 where
@@ -75,12 +68,14 @@ mod seal {
     impl Sealed for super::UniformMsb {}
     impl Sealed for super::UniformLsb {}
     impl Sealed for super::UniformWithZeros {}
-    impl Sealed for super::UniformBoolean {}
+    impl Sealed for super::UniformBinary {}
+    impl Sealed for super::UniformTernary {}
     impl<T: super::FloatingPoint> Sealed for super::Gaussian<T> {}
 }
 impl Distribution for Uniform {}
 impl Distribution for UniformMsb {}
 impl Distribution for UniformLsb {}
 impl Distribution for UniformWithZeros {}
-impl Distribution for UniformBoolean {}
+impl Distribution for UniformBinary {}
+impl Distribution for UniformTernary {}
 impl<T: FloatingPoint> Distribution for Gaussian<T> {}

@@ -1,25 +1,22 @@
 use std::fmt;
-
 use backtrace::Backtrace;
 use colored::Colorize;
-
-use concrete_core::crypto::LweDimension;
-use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::dispersion::StandardDev;
-use concrete_core::math::polynomial::PolynomialSize;
+use concrete_commons::dispersion::StandardDev;
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, PolynomialSize};
 use concrete_core::{
-    crypto::{bootstrap::BootstrapKey, GlweSize},
     math::tensor::{AsMutTensor, AsRefTensor},
     math::{fft::Complex64, tensor::Tensor},
-    numeric::Numeric,
 };
-
+use concrete_core::crypto::bootstrap::{FourierBootstrapKey,StandardBootstrapKey};
+use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
+use concrete_core::math::fft::AlignedVec;
 use crate::error::CryptoAPIError;
 use crate::Torus;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LWEBSK {
-    pub ciphertexts: BootstrapKey<Vec<Complex64>>,
+    pub ciphertexts: FourierBootstrapKey<AlignedVec<Complex64>,u64>,
     pub variance: f64,
     pub dimension: usize,
     pub polynomial_size: usize,
@@ -132,7 +129,7 @@ impl LWEBSK {
         level: usize,
     ) -> LWEBSK {
         // allocation for the bootstrapping key
-        let mut coef_bsk = BootstrapKey::allocate(
+        let mut coef_bsk  = StandardBootstrapKey::allocate(
             0_u64,
             GlweSize(sk_output.val.key_size().0 + 1),
             sk_output.val.polynomial_size(),
@@ -144,8 +141,10 @@ impl LWEBSK {
             &sk_input.val,
             &sk_output.val,
             StandardDev::from_standard_dev(sk_output.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
-        let mut fourier_bsk = BootstrapKey::allocate(
+        let mut fourier_bsk : FourierBootstrapKey<AlignedVec<Complex64>,u64>=
+            FourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             GlweSize(sk_output.val.key_size().0 + 1),
             sk_output.val.polynomial_size(),
@@ -182,7 +181,7 @@ impl LWEBSK {
         level: usize,
     ) -> LWEBSK {
         // allocation for the bootstrapping key
-        let fourier_bsk = BootstrapKey::allocate(
+        let fourier_bsk = FourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             GlweSize(sk_output.val.key_size().0 + 1),
             sk_output.val.polynomial_size(),
@@ -232,7 +231,7 @@ impl LWEBSK {
             polynomial_size: *tensor.get_element(2) as usize,
             base_log: *tensor.get_element(3) as usize,
             level: *tensor.get_element(4) as usize,
-            ciphertexts: BootstrapKey::allocate(
+            ciphertexts: FourierBootstrapKey::allocate(
                 Complex64::new(0., 0.),
                 GlweSize(*tensor.get_element(1) as usize + 1),
                 PolynomialSize(*tensor.get_element(2) as usize),
@@ -266,12 +265,11 @@ impl fmt::Display for LWEBSK {
 
         if self.ciphertexts.as_tensor().len() <= 2 * n {
             for elt in self.ciphertexts.as_tensor().iter() {
-                to_be_print += &format!("{}, ", elt);
+                to_be_print += &format!("{}, ", *elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
-                to_be_print += &format!("{}, ", elt);
+                to_be_print += &format!("{}, ", *elt);
             }
             to_be_print += "...";
 
@@ -281,10 +279,10 @@ impl fmt::Display for LWEBSK {
                 .get_sub(self.ciphertexts.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print += &format!("{}, ", elt);
+                to_be_print += &format!("{}, ", *elt);
             }
-            to_be_print += "]\n";
         }
+        to_be_print += "]\n";
 
         to_be_print += &format!("         -> variance = {}\n", self.variance);
         to_be_print += &format!("         -> dimension = {}\n", self.dimension);

@@ -1,11 +1,12 @@
 use crate::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
 use crate::math::fft::{Complex64, Fft, FourierPolynomial, SerializableComplex64};
-use crate::math::polynomial::{Polynomial, PolynomialSize};
+use crate::math::polynomial::Polynomial;
 use crate::math::random::RandomGenerator;
 use crate::math::tensor::{AsMutTensor, AsRefTensor};
-use crate::numeric::*;
-use fftw::array::AlignedVec;
-use serde_test::{Token, assert_tokens};
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::PolynomialSize;
+use concrete_fftw::array::AlignedVec;
+use serde_test::{assert_tokens, Token};
 
 #[test]
 fn test_single_forward_backward() {
@@ -38,7 +39,7 @@ fn test_single_forward_backward() {
     let mut generator = RandomGenerator::new(None);
     for _ in 0..100 {
         for size in &[256, 512, 1024, 2048] {
-            let mut fft = Fft::new(PolynomialSize(*size));
+            let fft = Fft::new(PolynomialSize(*size));
             let mut poly = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
             generator.fill_tensor_with_random_gaussian(&mut poly, 0., 1.);
             let mut fourier_poly =
@@ -91,7 +92,7 @@ fn test_two_forward_backward() {
     let mut generator = RandomGenerator::new(None);
     for _ in 0..100 {
         for size in &[256, 512, 1024, 2048] {
-            let mut fft = Fft::new(PolynomialSize(*size));
+            let fft = Fft::new(PolynomialSize(*size));
             let mut poly1 = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
             generator.fill_tensor_with_random_gaussian(&mut poly1, 0., 1.);
             let mut poly2 = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
@@ -132,12 +133,18 @@ fn test_two_forward_backward() {
 
 #[test]
 fn test_ser_de_complex64() {
-    let x = SerializableComplex64(Complex64{re:1.234, im:5.678});
+    let x = SerializableComplex64(Complex64 {
+        re: 1.234,
+        im: 5.678,
+    });
 
-    assert_tokens(&x, &[
-        Token::Tuple { len: 2 },
-        Token::F64(1.234),
-        Token::F64(5.678),
-        Token::TupleEnd,
-    ]);
+    assert_tokens(
+        &x,
+        &[
+            Token::Tuple { len: 2 },
+            Token::F64(1.234),
+            Token::F64(5.678),
+            Token::TupleEnd,
+        ],
+    );
 }

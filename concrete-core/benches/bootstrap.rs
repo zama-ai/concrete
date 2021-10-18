@@ -1,41 +1,32 @@
-use criterion::{criterion_group, criterion_main, Benchmark, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion};
 use itertools::iproduct;
-use rand::Rng;
 
-use concrete_core::crypto::bootstrap::BootstrapKey;
-use concrete_core::crypto::cross::{bootstrap, cmux, constant_sample_extract, external_product};
-use concrete_core::crypto::encoding::{Plaintext, PlaintextList};
-use concrete_core::crypto::glwe::{GlweCiphertext, GlweList};
-use concrete_core::crypto::lwe::{LweCiphertext, LweKeyswitchKey};
-use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
-use concrete_core::crypto::{
-    CiphertextCount, GlweDimension, LweDimension, LweSize, PlaintextCount, UnsignedTorus,
+use concrete_commons::dispersion::LogStandardDev;
+use concrete_commons::numeric::{CastFrom, Numeric};
+use concrete_commons::parameters::{
+    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
+    PolynomialSize,
 };
-use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_core::math::fft::{Complex64, Fft, FourierPolynomial};
-use concrete_core::math::polynomial::PolynomialSize;
-use concrete_core::math::random::{
-    fill_with_random_uniform, fill_with_random_uniform_boolean, random_uniform_n_msb,
-    RandomGenerable, UniformMsb,
-};
-use concrete_core::math::tensor::{
-    AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
-};
-use concrete_core::numeric::{CastFrom, CastInto, Numeric};
+
+use concrete_core::crypto::bootstrap::{Bootstrap, FourierBootstrapKey};
+use concrete_core::crypto::encoding::Plaintext;
+use concrete_core::crypto::glwe::GlweCiphertext;
+use concrete_core::crypto::lwe::LweCiphertext;
+use concrete_core::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
+use concrete_core::crypto::secret::LweSecretKey;
+use concrete_core::math::fft::Complex64;
+use concrete_core::math::tensor::AsMutTensor;
+use concrete_core::math::torus::UnsignedTorus;
 
 pub fn bench<T: UnsignedTorus + CastFrom<u64>>(c: &mut Criterion) {
     let lwe_dimensions = vec![512]; // 512;
     let l_gadgets = vec![1, 3, 10];
     let rlwe_dimensions = vec![1, 2, 3];
     let degrees = vec![1024];
-    let n_slots = 1;
-    let base_log = 7;
-    let std = f64::powi(2., -23);
-
     let params = iproduct!(lwe_dimensions, l_gadgets, rlwe_dimensions, degrees);
-
     let mut group = c.benchmark_group("compilo-bootstrap");
+    let mut secret_generator = SecretRandomGenerator::new(None);
+    let mut encryption_generator = EncryptionRandomGenerator::new(None);
     for p in params {
         // group.throughput(Throughput::Bytes(*size as u64));
         group.bench_with_input(
@@ -57,32 +48,20 @@ pub fn bench<T: UnsignedTorus + CastFrom<u64>>(c: &mut Criterion) {
                 let base_log = DecompositionBaseLog(7);
                 let std = LogStandardDev::from_log_standard_dev(-29.);
 
-                // allocate secret keys
-                let mut rlwe_sk = GlweSecretKey::generate(rlwe_dimension, polynomial_size);
-                let mut lwe_sk = LweSecretKey::generate(lwe_dimension);
+                let lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
 
-                let mut fourier_bsk = BootstrapKey::from_container(
-                    vec![
-                        Complex64::new(0., 0.);
-                        rlwe_dimension.0
-                            * (rlwe_dimension.0 + 1)
-                            * polynomial_size.0
-                            * level.0
-                            * lwe_dimension.0
-                            + polynomial_size.0
-                                * level.0
-                                * (rlwe_dimension.0 + 1)
-                                * lwe_dimension.0
-                    ],
+                let fourier_bsk = FourierBootstrapKey::allocate(
+                    Complex64::new(0., 0.),
                     rlwe_dimension.to_glwe_size(),
                     polynomial_size,
                     level,
                     base_log,
+                    lwe_dimension,
                 );
 
                 // msg to bootstrap
                 let m0 = T::cast_from(
-                    ((2. / polynomial_size.0 as f64) * f64::powi(2., <T as Numeric>::BITS as i32)),
+                    (2. / polynomial_size.0 as f64) * f64::powi(2., <T as Numeric>::BITS as i32),
                 );
                 let m0 = Plaintext(m0);
                 let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
@@ -97,7 +76,7 @@ pub fn bench<T: UnsignedTorus + CastFrom<u64>>(c: &mut Criterion) {
                     rlwe_dimension.to_glwe_size(),
                 );
 
-                lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std);
+                lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut encryption_generator);
 
                 // fill accumulator
                 for (i, elt) in accumulator
@@ -113,7 +92,7 @@ pub fn bench<T: UnsignedTorus + CastFrom<u64>>(c: &mut Criterion) {
                     *elt = T::cast_from(val);
                 }
                 b.iter(|| {
-                    bootstrap(&mut lwe_out, &lwe_in, &fourier_bsk, &mut accumulator);
+                    fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator);
                 });
             },
         );

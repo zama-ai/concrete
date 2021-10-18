@@ -7,18 +7,17 @@ use backtrace::Backtrace;
 use colored::Colorize;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
-
-use concrete_core::math::dispersion::StandardDev;
-use concrete_core::math::polynomial::PolynomialSize;
 use concrete_core::{
-    crypto::{encoding::PlaintextList, glwe::GlweList, CiphertextCount, GlweDimension},
+    crypto::{encoding::PlaintextList, glwe::GlweList},
     math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor},
-    numeric::Numeric,
 };
 use concrete_npe as npe;
-
 use crate::error::CryptoAPIError;
 use crate::{read_from_file, write_to_file, Torus};
+use concrete_commons::dispersion::StandardDev;
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{CiphertextCount, GlweDimension, PolynomialSize};
+use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
 
 #[cfg(test)]
 mod tests;
@@ -442,6 +441,7 @@ impl VectorRLWE {
             &mut self.ciphertexts,
             &PlaintextList::from_container(plaintexts),
             StandardDev::from_standard_dev(sk.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
 
         Ok(())
@@ -454,8 +454,8 @@ impl VectorRLWE {
     ///
     /// # Output
     /// * an array of f64
-    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are differents
-    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
+    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are different
+    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are different
     ///
     /// # Example
     /// ```rust
@@ -518,8 +518,8 @@ impl VectorRLWE {
     ///
     /// # Output
     /// * an array of f64
-    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are differents
-    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
+    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are different
+    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are different
     ///
     /// # Example
     /// ```rust
@@ -591,8 +591,8 @@ impl VectorRLWE {
     /// # Output
     /// * an array of f64
     /// * an array of encoders
-    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are differents
-    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are differents
+    /// * PolynomialSizeError - if the polynomial size of the secret key and the polynomial size of the RLWE ciphertext are different
+    /// * DimensionError - if the dimension of the secret key and the dimension of the RLWE cipertext are different
     /// # Example
     /// ```rust
     /// use concrete::*;
@@ -729,6 +729,7 @@ impl VectorRLWE {
         for mut polynomial in res
             .ciphertexts
             .as_mut_tensor()
+            .get_sub_mut(0..(self.dimension * self.polynomial_size))
             .subtensor_iter_mut(self.polynomial_size)
         {
             if polynomial.len() == self.polynomial_size {
@@ -933,7 +934,7 @@ impl VectorRLWE {
         // add ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_add(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_add(ct.ciphertexts.as_tensor());
 
         // correction related to the addition
         for (mut ciphertext, encoders, encoders_ct, self_variances, ct_variances) in izip!(
@@ -1057,7 +1058,7 @@ impl VectorRLWE {
         // add the ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_add(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_add(ct.ciphertexts.as_tensor());
 
         // update the Encoder list
         for (self_enc, ct_enc, self_var, ct_var) in izip!(
@@ -1159,7 +1160,7 @@ impl VectorRLWE {
         // subtract ciphertexts together
         self.ciphertexts
             .as_mut_tensor()
-            .update_with_wrapping_sub(&ct.ciphertexts.as_tensor());
+            .update_with_wrapping_sub(ct.ciphertexts.as_tensor());
 
         // correction related to the subtraction
         for (mut ciphertext, enc1_list, enc2_list) in izip!(
@@ -1522,12 +1523,11 @@ impl fmt::Display for VectorRLWE {
 
         if self.ciphertexts.as_tensor().len() <= 2 * n {
             for elt in self.ciphertexts.as_tensor().iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
             to_be_print += "...";
             for elt in self
@@ -1536,16 +1536,15 @@ impl fmt::Display for VectorRLWE {
                 .get_sub(self.ciphertexts.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
-            to_be_print += "]\n";
         }
+        to_be_print += "]\n";
         to_be_print += "         -> variances = [";
         if self.variances.len() <= 2 * n {
             for elt in self.variances.iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.variances[0..n].iter() {
                 to_be_print = to_be_print + &format!("{}, ", elt);
@@ -1556,9 +1555,9 @@ impl fmt::Display for VectorRLWE {
                 to_be_print = to_be_print + &format!("{}, ", elt);
                 // write!(f, "{}, ", elt);
             }
-            to_be_print += "]\n";
             // writeln!(f, "]");
         }
+        to_be_print += "]\n";
         to_be_print = to_be_print + &format!("         -> dimension = {}\n", self.dimension);
         to_be_print =
             to_be_print + &format!("         -> polynomial_size = {}\n", self.polynomial_size);

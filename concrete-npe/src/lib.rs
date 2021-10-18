@@ -1,51 +1,43 @@
-//! Noise Propagation Estimator Module
-//! * Contains material needed to estimate the growth of the noise when performing homomophic computation
+//! Welcome the the `concrete-npe` documentation!
+//!
+//! # Description
+//! This library makes it possible to estimate the noise propagation after homomorphic operations.
+//! It makes it possible to obtain characteristics of the output distribution of the noise, that we
+//! call **dispersion**, which regroups the
+//! variance and expectation. This is particularly useful to track the noise growth during the
+//! homomorphic evaluation of a circuit. The explanations and the proofs of these formula can be
+//! found in the appendices of the article [Improved Programmable Bootstrapping with Larger
+//! Precision
+//! and Efficient Arithmetic Circuits for TFHE]([https://eprint.iacr.org/2021/729]) by *Ilaria
+//! Chillotti, Damien Ligier, Jean-Baptiste Orfila and Samuel Tap*.
+//!
+//! # Quick Example
+//! The following piece of code shows how to obtain the variance $\sigma_{add}$ of the noise
+//! after a simulated homomorphic addition between two ciphertexts which have variances
+//! $\sigma_{ct_1}$ and $\sigma_{ct_2}$, respectively.
+//!
+//! # Example:
+//! ```rust
+//! use concrete_commons::dispersion::{DispersionParameter, Variance};
+//! use concrete_npe::estimate_addition_noise;
+//! //We suppose that the two ciphertexts have the same variance.
+//! let var1 = Variance(2_f64.powf(-25.));
+//! let var2 = Variance(2_f64.powf(-25.));
+//!
+//! //We call the npe to estimate characteristics of the noise after an addition
+//! //between these two variances.
+//! //Here, we assume that ciphertexts are encoded over 64 bits.
+//! let var_out = estimate_addition_noise::<u64, _, _>(var1, var2);
+//! println!("Expect Variance (2^24) =  {}", f64::powi(2., -24));
+//! println!("Output Variance {}", var_out.get_variance());
+//! assert!((f64::powi(2., -24) - var_out.get_variance()).abs() < 0.0001);
+//! ```
 
-pub mod cross;
-pub mod lwe;
-pub mod rlwe;
+#![allow(clippy::upper_case_acronyms)]
+mod key_dispersion;
+mod operators;
+mod tools;
 
-pub use cross::Cross;
-pub use lwe::LWE;
-pub use rlwe::RLWE;
-
-/// Computes the variance of the error distribution after the addition of two uncorrelated ciphertexts
-/// Arguments
-/// * `var_ct1` - noise variance of the first ciphertext
-/// * `var_ct2` - noise variance of the second ciphertext
-/// Output
-/// * the variance of the sum of the first and the second ciphertext
-pub fn add_ciphertexts(var_ct1: f64, var_ct2: f64) -> f64 {
-    var_ct1 + var_ct2
-}
-
-/// Computes the variance of the error distribution after the addition several uncorrelated
-/// ciphertexts
-/// Argument
-/// * `var_cts` - noise variance of the ciphertexts
-/// Output
-/// * the variance of the sum of the ciphertexts
-pub fn add_several_ciphertexts(var_cts: &[f64]) -> f64 {
-    let mut res: f64 = 0.;
-    for var in var_cts.iter() {
-        res += *var;
-    }
-    res
-}
-
-/// Computes the number of bits affected by the noise with a variance var describing a normal
-/// distribution takes into account the number of bits of the integers
-pub fn nb_bit_from_variance_99(var: f64, torus_bit: usize) -> usize {
-    // compute sigma
-    let sigma: f64 = f64::sqrt(var);
-
-    // the constant to get 99% of the normal distribution
-    let z: f64 = 3.;
-    let tmp = torus_bit as f64 + f64::log2(sigma * z);
-    if tmp < 0. {
-        // means no bits are affected by the noise in the integer representation (discrete space)
-        0usize
-    } else {
-        tmp.ceil() as usize
-    }
-}
+pub use key_dispersion::*;
+pub use operators::*;
+pub use tools::*;

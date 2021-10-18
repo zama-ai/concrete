@@ -1,13 +1,13 @@
 [package]
 name = "concrete"
-version = "0.1.8"
+version = "0.1.11"
 edition = "2018"
 build = "build.rs"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
-license = "AGPL-3.0"
+license = "BSD-3-Clause-Clear"
 description = "Concrete is a fully homomorphic encryption (FHE) library that implements Zama's variant of TFHE."
 homepage = "https://crates.io/crates/concrete"
-documentation = "https://concrete.zama.ai"
+documentation = "https://docs.zama.ai/concrete/lib"
 repository = "https://github.com/zama-ai/concrete"
 readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
@@ -16,8 +16,9 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 cmake = { version = "0.1", optional = true}
 
 [dependencies]
-concrete-core = {version = "0.1.8", path = "../concrete-core"}
-concrete-npe = {version = "0.1.7", path = "../concrete-npe"}
+concrete-core = "=0.1.10"
+concrete-npe = "=0.1.9"
+concrete-commons = "=0.1.1"
 itertools = "0.9.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.57"

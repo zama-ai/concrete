@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Low-overhead fhe library.
 //!
 //! Welcome to the `concrete-core` documentation!
@@ -24,17 +25,24 @@
 //! ```
 //! // This examples shows how to multiply a secret value by a public one homomorphically. First
 //! // we import the proper symbols:
-//! use concrete_core::crypto::encoding::{RealEncoder, Cleartext, Encoder, Plaintext};
-//! use concrete_core::crypto::secret::LweSecretKey;
-//! use concrete_core::crypto::LweDimension;
+//! use concrete_commons::dispersion::LogStandardDev;
+//! use concrete_commons::parameters::LweDimension;
+//! use concrete_core::crypto::encoding::{Cleartext, Encoder, Plaintext, RealEncoder};
 //! use concrete_core::crypto::lwe::LweCiphertext;
-//! use concrete_core::math::dispersion::LogStandardDev;
-//! use concrete_core::math::random::RandomGenerator;
+//! use concrete_core::crypto::secret::generators::{
+//!     EncryptionRandomGenerator, SecretRandomGenerator,
+//! };
+//! use concrete_core::crypto::secret::LweSecretKey;
 //!
-//! // We initialize a prng that will be used to generate every random samples.
-//! let mut generator = RandomGenerator::new(None);
+//! // We initialize a prng that will be used to generate secret keys.
+//! let mut secret_generator = SecretRandomGenerator::new(None);
+//! // We initialize a prng used to encrypt data.
+//! let mut encryption_generator = EncryptionRandomGenerator::new(None);
 //! // We initialize an encoder that will allow us to turn cleartext values into plaintexts.
-//! let encoder = RealEncoder{offset: 0., delta: 100.};
+//! let encoder = RealEncoder {
+//!     offset: 0.,
+//!     delta: 100.,
+//! };
 //! // Our secret value will be 10.,
 //! let cleartext = Cleartext(10_f64);
 //! let public_multiplier = Cleartext(5);
@@ -43,7 +51,7 @@
 //!
 //! // We generate a new secret key which is used to encrypt the message
 //! let secret_key_size = LweDimension(710);
-//! let secret_key = LweSecretKey::generate(secret_key_size, &mut generator);
+//! let secret_key = LweSecretKey::generate_binary(secret_key_size, &mut secret_generator);
 //!
 //! // We allocate a ciphertext and encrypt the plaintext with a secure parameter
 //! let mut ciphertext = LweCiphertext::allocate(0u32, secret_key_size.to_lwe_size());
@@ -51,7 +59,7 @@
 //!     &mut ciphertext,
 //!     &plaintext,
 //!     LogStandardDev::from_log_standard_dev(-17.),
-//!     &mut generator
+//!     &mut encryption_generator,
 //! );
 //!
 //! // We perform the homomorphic operation:
@@ -73,9 +81,7 @@
 macro_rules! assert_delta {
     ($A:expr, $B:expr, $d:expr) => {
         for (x, y) in $A.iter().zip($B) {
-            if (*x as i64 - y as i64).abs() > $d {
-                panic!("{} != {} ", *x, y);
-            }
+            assert!((*x as i64 - y as i64).abs() <= $d, "{} != {} ", *x, y);
         }
     };
 }
@@ -83,18 +89,20 @@ macro_rules! assert_delta {
 #[allow(unused_macros)]
 macro_rules! assert_delta_scalar {
     ($A:expr, $B:expr, $d:expr) => {
-        if ($A as i64 - $B as i64).abs() > $d {
-            panic!("{} != {} +- {}", $A, $B, $d);
-        }
+        assert!(
+            ($A as i64 - $B as i64).abs() <= $d,
+            "{} != {} +- {}",
+            $A,
+            $B,
+            $d
+        );
     };
 }
 
 #[allow(unused_macros)]
 macro_rules! assert_delta_scalar_float {
     ($A:expr, $B:expr, $d:expr) => {
-        if ($A - $B).abs() > $d {
-            panic!("{} != {} +- {}", $A, $B, $d);
-        }
+        assert!(($A - $B).abs() <= $d, "{} != {} +- {}", $A, $B, $d);
     };
 }
 
@@ -107,7 +115,6 @@ macro_rules! modular_distance {
 
 pub mod crypto;
 pub mod math;
-pub mod numeric;
 pub mod utils;
 
 #[doc(hidden)]
@@ -115,15 +122,15 @@ pub mod utils;
 pub mod test_tools {
     use rand::Rng;
 
-    use crate::crypto::{
-        CiphertextCount, GlweDimension, LweDimension, PlaintextCount, UnsignedTorus,
-    };
-    use crate::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-    use crate::math::dispersion::DispersionParameter;
-    use crate::math::polynomial::PolynomialSize;
-    use crate::math::random::RandomGenerator;
+    use crate::math::random::{RandomGenerable, RandomGenerator, Uniform};
     use crate::math::tensor::{AsRefSlice, AsRefTensor};
-    use crate::numeric::UnsignedInteger;
+    use crate::math::torus::UnsignedTorus;
+    use concrete_commons::dispersion::DispersionParameter;
+    use concrete_commons::numeric::UnsignedInteger;
+    use concrete_commons::parameters::{
+        CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, GlweDimension,
+        LweDimension, PlaintextCount, PolynomialSize,
+    };
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
         let d0 = first.wrapping_sub(other);
@@ -157,9 +164,12 @@ pub mod test_tools {
             println!("{}", dist.get_standard_dev());
             let distance: f64 = modular_distance(*x, *y).cast_into();
             let torus_distance = distance / 2_f64.powi(Element::BITS as i32);
-            if torus_distance > 5. * dist.get_standard_dev() {
-                panic!("{} != {} ", x, y);
-            }
+            assert!(
+                torus_distance <= 5. * dist.get_standard_dev(),
+                "{} != {} ",
+                x,
+                y
+            );
         }
     }
 
@@ -179,11 +189,12 @@ pub mod test_tools {
         let n_slots = first.as_tensor().len();
         let mut generator = RandomGenerator::new(None);
 
-        // allocate 2 slices: one for the error samples obtained, the second for fresh samples according to the std_dev computed
-        let mut sdk_samples = Tensor::allocate(0. as f64, n_slots);
+        // allocate 2 slices: one for the error samples obtained, the second for fresh samples
+        // according to the std_dev computed
+        let mut sdk_samples = Tensor::allocate(0.0_f64, n_slots);
 
         // recover the errors from each ciphertexts
-        sdk_samples.fill_with_two(&first.as_tensor(), &second.as_tensor(), |a, b| {
+        sdk_samples.fill_with_two(first.as_tensor(), second.as_tensor(), |a, b| {
             torus_modular_distance(*a, *b)
         });
 
@@ -211,14 +222,15 @@ pub mod test_tools {
             let th_std_log2 = f64::log2(std_dev).round();
 
             // test if theoretical_std_dev > sdk_std_dev
-            if sdk_std_log2 > th_std_log2 {
-                panic!(
-                    "Statistical test failed :
+            assert!(
+                sdk_std_log2 <= th_std_log2,
+                "Statistical test failed :
                     -> inputs are not from the same distribution with a probability {}
                     -> sdk_std = {} ; th_std {}.",
-                    result.reject_probability, sdk_std_log2, th_std_log2
-                );
-            }
+                result.reject_probability,
+                sdk_std_log2,
+                th_std_log2
+            );
         }
     }
 
@@ -289,13 +301,15 @@ pub mod test_tools {
         random_usize_between(0..usize::MAX)
     }
 
-    pub fn random_utorus_between<T: UnsignedTorus>(range: std::ops::Range<T>) -> T {
+    pub fn random_uint_between<T: UnsignedInteger + RandomGenerable<Uniform>>(
+        range: std::ops::Range<T>,
+    ) -> T {
         let mut generator = RandomGenerator::new(None);
         let val: T = generator.random_uniform();
         val % (range.end - range.start) + range.start
     }
 
-    pub fn any_utorus<T: UnsignedTorus>() -> T {
+    pub fn any_uint<T: UnsignedInteger + RandomGenerable<Uniform>>() -> T {
         let mut generator = RandomGenerator::new(None);
         generator.random_uniform()
     }

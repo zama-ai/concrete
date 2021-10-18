@@ -1,9 +1,8 @@
-use crate::crypto::UnsignedTorus;
 use crate::math::tensor::{AsMutTensor, AsRefTensor};
-use crate::math::torus::{FromTorus, IntoTorus};
-use crate::numeric::{FloatingPoint, Numeric};
+use crate::math::torus::{FromTorus, IntoTorus, UnsignedTorus};
 
 use super::{Cleartext, CleartextList, Plaintext, PlaintextList};
+use concrete_commons::numeric::{FloatingPoint, Numeric};
 
 /// A trait for types that encode cleartext to plaintext.
 ///
@@ -18,7 +17,10 @@ pub trait Encoder<Enc: Numeric> {
     ///
     /// ```rust
     /// use concrete_core::crypto::encoding::*;
-    /// let encoder = RealEncoder{ offset: 1. as f32, delta: 10.};
+    /// let encoder = RealEncoder {
+    ///     offset: 1. as f32,
+    ///     delta: 10.,
+    /// };
     /// let cleartext = Cleartext(7. as f32);
     /// let encoded: Plaintext<u32> = encoder.encode(cleartext.clone());
     /// let decoded = encoder.decode(encoded);
@@ -37,13 +39,19 @@ pub trait Encoder<Enc: Numeric> {
     ///
     /// ```rust
     /// use concrete_core::crypto::encoding::*;
-    /// let encoder = RealEncoder{ offset: 1. as f32, delta: 10.};
-    /// let clear_values = CleartextList::from_container(vec![7. as f32;100]);
+    /// let encoder = RealEncoder {
+    ///     offset: 1. as f32,
+    ///     delta: 10.,
+    /// };
+    /// let clear_values = CleartextList::from_container(vec![7. as f32; 100]);
     /// let mut plain_values = PlaintextList::from_container(vec![0 as u32; 100]);
     /// encoder.encode_list(&mut plain_values, &clear_values);
     /// let mut decoded_values = CleartextList::from_container(vec![0. as f32; 100]);
     /// encoder.decode_list(&mut decoded_values, &plain_values);
-    /// for (clear, decoded) in clear_values.cleartext_iter().zip(decoded_values.cleartext_iter()) {
+    /// for (clear, decoded) in clear_values
+    ///     .cleartext_iter()
+    ///     .zip(decoded_values.cleartext_iter())
+    /// {
     ///     assert!((clear.0 - decoded.0).abs() < 0.1);
     /// }
     /// ```

@@ -1,14 +1,14 @@
 use crate::crypto::encoding::{Cleartext, Encoder, Plaintext, RealEncoder};
-use crate::crypto::UnsignedTorus;
-use crate::test_tools::{any_utorus, random_utorus_between};
+use crate::math::torus::UnsignedTorus;
+use crate::test_tools::{any_uint, random_uint_between};
 
 fn test_encoding_decoding<T: UnsignedTorus>() {
     //! Encodes and decodes random messages
     let n_tests = 1000;
     for _i in 0..n_tests {
         // the real interval is [int_o,int_beta]
-        let mut int_o: T = any_utorus();
-        let mut int_beta: T = any_utorus();
+        let mut int_o: T = any_uint();
+        let mut int_beta: T = any_uint();
 
         // if int_o > int_beta, we swap them
         if int_beta < int_o {
@@ -20,7 +20,7 @@ fn test_encoding_decoding<T: UnsignedTorus>() {
         let delta: f64 = (int_beta - int_o).cast_into();
 
         // generates a random message
-        let int_m: T = random_utorus_between(int_o..int_beta);
+        let int_m: T = random_uint_between(int_o..int_beta);
         let m: f64 = int_m.cast_into();
 
         // encodes and decodes

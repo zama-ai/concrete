@@ -1,3 +1,5 @@
+#![allow(clippy::modulo_one)]
+
 use crate::traits::GenericAdd;
 
 #[test]
@@ -479,6 +481,7 @@ fn test_encode_encrypt_x_mul_constant_with_padding_inplace_x_decrypt() {
 }
 
 #[test]
+#[ignore]
 fn test_encode_encrypt_x_keyswitch_x_decrypt() {
     // random settings
     let (min, max) = generate_random_interval!();
@@ -518,11 +521,11 @@ fn test_encode_encrypt_x_keyswitch_x_decrypt() {
 #[test]
 fn test_encode_encrypt_x_bootstrap_x_decrypt() {
     // random settings
-    let (min, max) = generate_random_interval!();
-    let padding: usize = random_index!(3) + 1;
-    let precision: usize = random_index!(3) + 1;
-    let base_log: usize = random_index!(3) + 7;
-    let level: usize = random_index!(1) + 3;
+    let (min, max) = (0., 7.);
+    let padding: usize = 1;
+    let precision: usize = 3;
+    let base_log: usize = 7;
+    let level: usize = 3;
 
     // encoders
     let encoder_input = crate::Encoder::new(min, max, precision, padding).unwrap();

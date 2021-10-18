@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::crypto::encoding::{CleartextList, PlaintextList};
-use crate::crypto::{CiphertextCount, CleartextCount, LweDimension, LweSize, UnsignedTorus};
 use crate::math::tensor::{AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
+use crate::math::torus::UnsignedTorus;
 use crate::{ck_dim_div, tensor_traits, zip, zip_args};
 
 use super::LweCiphertext;
+use concrete_commons::parameters::{CiphertextCount, CleartextCount, LweDimension, LweSize};
 
 /// A list of ciphertext encoded with the LWE scheme.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -25,7 +26,9 @@ where
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::{*, lwe::LweList};
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
+    /// use concrete_core::crypto::lwe::LweList;
+    /// use concrete_core::crypto::*;
     /// let list = LweList::allocate(0 as u8, LweSize(10), CiphertextCount(20));
     /// assert_eq!(list.count(), CiphertextCount(20));
     /// assert_eq!(list.lwe_size(), LweSize(10));
@@ -44,7 +47,9 @@ impl<Cont> LweList<Cont> {
     /// # Example:
     ///
     /// ```
-    /// use concrete_core::crypto::{*, lwe::LweList};
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
+    /// use concrete_core::crypto::lwe::LweList;
+    /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
     /// assert_eq!(list.count(), CiphertextCount(20));
     /// assert_eq!(list.lwe_size(), LweSize(10));
@@ -63,7 +68,9 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, lwe::LweList};
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
+    /// use concrete_core::crypto::lwe::LweList;
+    /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
     /// assert_eq!(list.count(), CiphertextCount(20));
     /// ```
@@ -80,7 +87,9 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, lwe::LweList};
+    /// use concrete_commons::parameters::LweSize;
+    /// use concrete_core::crypto::lwe::LweList;
+    /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
     /// assert_eq!(list.lwe_size(), LweSize(10));
     /// ```
@@ -96,7 +105,9 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, lwe::LweList};
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
+    /// use concrete_core::crypto::lwe::LweList;
+    /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
     /// assert_eq!(list.mask_size(), LweDimension(9));
     /// ```
@@ -112,12 +123,17 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, lwe::*};
+    /// use concrete_commons::parameters::LweSize;
+    /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
-    /// for ciphertext in list.ciphertext_iter(){
+    /// for ciphertext in list.ciphertext_iter() {
     ///     let (body, masks) = ciphertext.get_body_and_mask();
     ///     assert_eq!(body, &LweBody(0));
-    ///     assert_eq!(masks, LweMask::from_container(&[0 as u8, 0, 0, 0, 0 ,0, 0, 0, 0][..]));
+    ///     assert_eq!(
+    ///         masks,
+    ///         LweMask::from_container(&[0 as u8, 0, 0, 0, 0, 0, 0, 0, 0][..])
+    ///     );
     /// }
     /// assert_eq!(list.ciphertext_iter().count(), 20);
     /// ```
@@ -138,13 +154,15 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, lwe::*};
+    /// use concrete_commons::parameters::LweSize;
+    /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::*;
     /// let mut list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
-    /// for mut ciphertext in list.ciphertext_iter_mut(){
+    /// for mut ciphertext in list.ciphertext_iter_mut() {
     ///     let body = ciphertext.get_mut_body();
     ///     *body = LweBody(2);
     /// }
-    /// for ciphertext in list.ciphertext_iter(){
+    /// for ciphertext in list.ciphertext_iter() {
     ///     let body = ciphertext.get_body();
     ///     assert_eq!(body, &LweBody(2));
     /// }
@@ -168,14 +186,19 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::{*, lwe::*};
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
+    /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::*;
     /// let list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
-    /// for sublist in list.sublist_iter(CiphertextCount(5)){
+    /// for sublist in list.sublist_iter(CiphertextCount(5)) {
     ///     assert_eq!(sublist.count(), CiphertextCount(5));
-    ///     for ciphertext in sublist.ciphertext_iter(){
+    ///     for ciphertext in sublist.ciphertext_iter() {
     ///         let (body, masks) = ciphertext.get_body_and_mask();
     ///         assert_eq!(body, &LweBody(0));
-    ///         assert_eq!(masks, LweMask::from_container(&[0 as u8, 0, 0, 0, 0 ,0, 0, 0, 0][..]));
+    ///         assert_eq!(
+    ///             masks,
+    ///             LweMask::from_container(&[0 as u8, 0, 0, 0, 0, 0, 0, 0, 0][..])
+    ///         );
     ///     }
     /// }
     /// assert_eq!(list.sublist_iter(CiphertextCount(5)).count(), 4);
@@ -199,22 +222,27 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::{*, lwe::*};
+    /// use concrete_commons::parameters::{CiphertextCount, LweSize};
+    /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::*;
     /// let mut list = LweList::from_container(vec![0 as u8; 200], LweSize(10));
-    /// for mut sublist in list.sublist_iter_mut(CiphertextCount(5)){
+    /// for mut sublist in list.sublist_iter_mut(CiphertextCount(5)) {
     ///     assert_eq!(sublist.count(), CiphertextCount(5));
-    ///     for mut ciphertext in sublist.ciphertext_iter_mut(){
+    ///     for mut ciphertext in sublist.ciphertext_iter_mut() {
     ///         let (body, mut masks) = ciphertext.get_mut_body_and_mask();
     ///         *body = LweBody(9);
-    ///         for mut mask in masks.mask_element_iter_mut(){
+    ///         for mut mask in masks.mask_element_iter_mut() {
     ///             *mask = 8;
     ///         }
     ///     }
     /// }
-    /// for ciphertext in list.ciphertext_iter(){
+    /// for ciphertext in list.ciphertext_iter() {
     ///     let (body, masks) = ciphertext.get_body_and_mask();
     ///     assert_eq!(body, &LweBody(9));
-    ///     assert_eq!(masks, LweMask::from_container(&[8 as u8, 8, 8, 8, 8 ,8, 8, 8, 8][..]));
+    ///     assert_eq!(
+    ///         masks,
+    ///         LweMask::from_container(&[8 as u8, 8, 8, 8, 8, 8, 8, 8, 8][..])
+    ///     );
     /// }
     /// assert_eq!(list.sublist_iter_mut(CiphertextCount(5)).count(), 4);
     /// ```
@@ -245,31 +273,43 @@ impl<Cont> LweList<Cont> {
     /// # Example
     ///
     /// ```
-    /// use concrete_core::crypto::{*, lwe::*, secret::*};
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
     /// use concrete_core::crypto::encoding::*;
+    /// use concrete_core::crypto::lwe::*;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::tensor::AsRefTensor;
-    /// use concrete_core::math::dispersion::LogStandardDev;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
     ///
-    /// let secret_key = LweSecretKey::generate(LweDimension(4), &mut generator);
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    ///
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(4), &mut secret_generator);
     /// let parameters = LogStandardDev::from_log_standard_dev(-15.);
-    /// let encoder = RealEncoder{offset: 0. as f32, delta: 200.};
+    /// let encoder = RealEncoder {
+    ///     offset: 0. as f32,
+    ///     delta: 200.,
+    /// };
     ///
     /// let clear_values = CleartextList::from_container(vec![1f32, 2., 3., 4., 5., 6.]);
     /// let mut plain_values = PlaintextList::from_container(vec![0u32; 6]);
     /// encoder.encode_list(&mut plain_values, &clear_values);
-    /// let mut cipher_values = LweList::from_container(
-    ///     vec![0. as u32; 5*6],
-    ///     LweSize(5)
+    /// let mut cipher_values = LweList::from_container(vec![0. as u32; 5 * 6], LweSize(5));
+    /// secret_key.encrypt_lwe_list(
+    ///     &mut cipher_values,
+    ///     &plain_values,
+    ///     parameters,
+    ///     &mut encryption_generator,
     /// );
-    /// secret_key.encrypt_lwe_list(&mut cipher_values, &plain_values, parameters, &mut generator);
     ///
-    /// let mut output = LweList::from_container(vec![0u32 ;5*2], LweSize(5));
+    /// let mut output = LweList::from_container(vec![0u32; 5 * 2], LweSize(5));
     /// let weights = CleartextList::from_container(vec![7, 8, 9, 10, 11, 12]);
     /// let biases = PlaintextList::from_container(vec![
     ///     encoder.encode(Cleartext(13.)).0,
-    ///     encoder.encode(Cleartext(14.)).0
+    ///     encoder.encode(Cleartext(14.)).0,
     /// ]);
     ///
     /// output.fill_with_multisums_with_biases(&cipher_values, &weights, &biases);
@@ -278,8 +318,8 @@ impl<Cont> LweList<Cont> {
     /// secret_key.decrypt_lwe_list(&mut decrypted, &output);
     /// let mut decoded = CleartextList::from_container(vec![0f32; 2]);
     /// encoder.decode_list(&mut decoded, &decrypted);
-    /// assert!((decoded.as_tensor().first()-63.).abs() < 0.3);
-    /// assert!((decoded.as_tensor().last()-181.).abs() < 0.3);
+    /// assert!((decoded.as_tensor().first() - 63.).abs() < 0.3);
+    /// assert!((decoded.as_tensor().last() - 181.).abs() < 0.3);
     /// ```
     pub fn fill_with_multisums_with_biases<Scalar, InputCont, WeightCont, BiasesCont>(
         &mut self,
@@ -303,7 +343,7 @@ impl<Cont> LweList<Cont> {
             weights_list.sublist_iter(CleartextCount(count)),
             biases_list.plaintext_iter()
         ) {
-            output.fill_with_multisum_with_bias(&input, &weights, &bias);
+            output.fill_with_multisum_with_bias(&input, &weights, bias);
         }
     }
 }

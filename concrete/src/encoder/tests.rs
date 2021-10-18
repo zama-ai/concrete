@@ -1,6 +1,8 @@
+#![allow(clippy::float_cmp)]
+
 use itertools::izip;
 
-use concrete_core::math::{random, tensor::Tensor};
+use concrete_core::math::tensor::Tensor;
 
 #[test]
 fn test_new_x_encode_single_x_decode_single() {
@@ -54,7 +56,7 @@ fn test_new_x_is_valid() {
     let encoder = crate::Encoder::new(min, max, precision, padding).unwrap();
 
     //test
-    assert_eq!(true, encoder.is_valid());
+    assert!(encoder.is_valid());
 }
 
 #[test]
@@ -69,7 +71,7 @@ fn test_new_centered_x_is_valid() {
             .unwrap();
 
     //test
-    assert_eq!(true, encoder.is_valid());
+    assert!(encoder.is_valid());
 }
 
 #[test]
@@ -78,7 +80,7 @@ fn test_zero_x_is_valid() {
     let encoder = crate::Encoder::zero();
 
     //test
-    assert_eq!(false, encoder.is_valid());
+    assert!(!encoder.is_valid());
 }
 
 #[test]
@@ -244,8 +246,8 @@ fn margins_with_reals() {
     let mut plaintext = encoder.encode(&messages).unwrap();
 
     // add some error
-    let random_errors: Tensor<Vec<u64>> =
-        random::random_gaussian_tensor(nb_messages, 0., f64::powi(2., -25));
+    let random_errors: Tensor<Vec<u64>> = concrete_core::math::random::RandomGenerator::new(None)
+        .random_gaussian_tensor(nb_messages, 0., f64::powi(2., -25));
     Tensor::from_container(plaintext.plaintexts.as_mut_slice())
         .update_with_wrapping_add(&random_errors);
 
@@ -254,8 +256,11 @@ fn margins_with_reals() {
 
     // test
     for (m, d) in izip!(messages.iter(), decoding.iter()) {
-        if f64::abs(m - d) > encoder.get_granularity() {
-            panic!("error: m {} d {} ", m, d);
-        }
+        assert!(
+            f64::abs(m - d) <= encoder.get_granularity(),
+            "error: m {} d {} ",
+            m,
+            d
+        );
     }
 }

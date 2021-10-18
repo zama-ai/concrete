@@ -1,102 +1,200 @@
-use std::ops::Add;
-
-use serde::{Deserialize, Serialize};
-
 use crate::crypto::encoding::{Plaintext, PlaintextList};
 use crate::crypto::ggsw::GgswCiphertext;
 use crate::crypto::glwe::{GlweCiphertext, GlweList};
 use crate::crypto::secret::LweSecretKey;
-use crate::crypto::{GlweDimension, PlaintextCount, UnsignedTorus};
-use crate::math::dispersion::DispersionParameter;
-use crate::math::polynomial::{PolynomialList, PolynomialSize};
-use crate::math::random::RandomGenerator;
-use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor};
-use crate::numeric::Numeric;
-use crate::{ck_dim_div, ck_dim_eq, tensor_traits};
+use crate::math::tensor::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor};
+use crate::{ck_dim_div, ck_dim_eq};
+
+use crate::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
+use crate::math::polynomial::PolynomialList;
+use crate::math::random::{Gaussian, RandomGenerable};
+use crate::math::torus::UnsignedTorus;
+use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::key_kinds::{
+    BinaryKeyKind, GaussianKeyKind, KeyKind, TernaryKeyKind, UniformKeyKind,
+};
+use concrete_commons::numeric::Numeric;
+use concrete_commons::parameters::{GlweDimension, PlaintextCount, PolynomialSize};
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
+use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
+use std::ops::Add;
 
 /// A GLWE secret key
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct GlweSecretKey<Container> {
+pub struct GlweSecretKey<Kind, Container>
+where
+    Kind: KeyKind,
+{
     tensor: Tensor<Container>,
     poly_size: PolynomialSize,
+    kind: PhantomData<Kind>,
 }
 
-tensor_traits!(GlweSecretKey);
-
-impl GlweSecretKey<Vec<bool>> {
-    /// Allocates a container for a new key, and fill it with random values.
+impl<Scalar> GlweSecretKey<BinaryKeyKind, Vec<Scalar>>
+where
+    Scalar: UnsignedTorus,
+{
+    /// Allocates a container for a new key, and fills it with random binary values.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_commons::key_kinds::BinaryKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let mut generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<BinaryKeyKind, Vec<u32>> =
+    ///     GlweSecretKey::generate_binary(GlweDimension(256), PolynomialSize(10), &mut generator);
+    /// assert_eq!(secret_key.key_size(), GlweDimension(256));
+    /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
+    /// ```
+    pub fn generate_binary(
+        dimension: GlweDimension,
+        poly_size: PolynomialSize,
+        generator: &mut SecretRandomGenerator,
+    ) -> Self {
+        GlweSecretKey {
+            tensor: generator.random_binary_tensor(poly_size.0 * dimension.0),
+            poly_size,
+            kind: PhantomData,
+        }
+    }
+}
+
+impl<Scalar> GlweSecretKey<TernaryKeyKind, Vec<Scalar>>
+where
+    Scalar: UnsignedTorus,
+{
+    /// Allocates a container for a new key, and fill it with random ternary values.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::key_kinds::TernaryKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<_, Vec<u32>> = GlweSecretKey::generate_ternary(
     ///     GlweDimension(256),
     ///     PolynomialSize(10),
-    ///     &mut generator,
+    ///     &mut secret_generator,
     /// );
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
     /// ```
-    pub fn generate(
+    pub fn generate_ternary(
         dimension: GlweDimension,
         poly_size: PolynomialSize,
-        generator: &mut RandomGenerator,
+        generator: &mut SecretRandomGenerator,
     ) -> Self {
         GlweSecretKey {
-            tensor: generator.random_uniform_boolean_tensor(poly_size.0 * dimension.0),
+            tensor: generator.random_ternary_tensor(poly_size.0 * dimension.0),
             poly_size,
+            kind: PhantomData,
         }
-    }
-
-    /// Consumes the current GLWE secret key and turns it into an LWE secret key.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::crypto::{GlweDimension, LweDimension};
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let glwe_secret_key = GlweSecretKey::generate(
-    ///     GlweDimension(2),
-    ///     PolynomialSize(10),
-    ///     &mut generator,
-    /// );
-    /// let lwe_secret_key = glwe_secret_key.into_lwe_secret_key();
-    /// assert_eq!(lwe_secret_key.key_size(), LweDimension(20))
-    /// ```
-    pub fn into_lwe_secret_key(self) -> LweSecretKey<Vec<bool>> {
-        LweSecretKey::from_container(self.tensor.into_container())
     }
 }
 
-impl<Cont> GlweSecretKey<Cont> {
-    /// Creates a key from a container.
+impl<Scalar> GlweSecretKey<GaussianKeyKind, Vec<Scalar>>
+where
+    (Scalar, Scalar): RandomGenerable<Gaussian<f64>>,
+    Scalar: UnsignedTorus,
+{
+    /// Allocates a container for a new key, and fill it with random gaussian values.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::key_kinds::GaussianKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<GaussianKeyKind, Vec<u32>> = GlweSecretKey::generate_gaussian(
+    ///     GlweDimension(256),
+    ///     PolynomialSize(10),
+    ///     &mut secret_generator,
+    /// );
+    /// assert_eq!(secret_key.key_size(), GlweDimension(256));
+    /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
+    /// ```
+    pub fn generate_gaussian(
+        dimension: GlweDimension,
+        poly_size: PolynomialSize,
+        generator: &mut SecretRandomGenerator,
+    ) -> Self {
+        GlweSecretKey {
+            tensor: generator.random_gaussian_tensor(poly_size.0 * dimension.0),
+            poly_size,
+            kind: PhantomData,
+        }
+    }
+}
+
+impl<Scalar> GlweSecretKey<UniformKeyKind, Vec<Scalar>>
+where
+    Scalar: UnsignedTorus,
+{
+    /// Allocates a container for a new key, and fill it with random uniform values.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::key_kinds::UniformKeyKind;
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<UniformKeyKind, Vec<u32>> = GlweSecretKey::generate_uniform(
+    ///     GlweDimension(256),
+    ///     PolynomialSize(10),
+    ///     &mut secret_generator,
+    /// );
+    /// assert_eq!(secret_key.key_size(), GlweDimension(256));
+    /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
+    /// ```
+    pub fn generate_uniform(
+        dimension: GlweDimension,
+        poly_size: PolynomialSize,
+        generator: &mut SecretRandomGenerator,
+    ) -> Self {
+        GlweSecretKey {
+            tensor: generator.random_uniform_tensor(poly_size.0 * dimension.0),
+            poly_size,
+            kind: PhantomData,
+        }
+    }
+}
+
+impl<Cont> GlweSecretKey<BinaryKeyKind, Cont> {
+    /// Creates a binary key from a container.
     ///
     /// # Notes
     ///
     /// This method does not fill the container with random data. It merely wraps the container in
     /// the appropriate type. For a method that generate a new random key see
-    /// [`GlweSecretKey::generate`].
+    /// [`GlweSecretKey::generate_binary`].
     ///
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// let secret_key = GlweSecretKey::from_container(
-    ///     vec![0 as u8; 11 * 256],
-    ///     PolynomialSize(11),
-    /// );
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let secret_key =
+    ///     GlweSecretKey::binary_from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
     /// ```
-    pub fn from_container(cont: Cont, poly_size: PolynomialSize) -> Self
+    pub fn binary_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
     where
         Cont: AsRefSlice,
     {
@@ -104,9 +202,140 @@ impl<Cont> GlweSecretKey<Cont> {
         GlweSecretKey {
             tensor: Tensor::from_container(cont),
             poly_size,
+            kind: PhantomData,
         }
     }
+}
 
+impl<Cont> GlweSecretKey<TernaryKeyKind, Cont> {
+    /// Creates a ternary key from a container.
+    ///
+    /// # Notes
+    ///
+    /// This method does not fill the container with random data. It merely wraps the container in
+    /// the appropriate type. For a method that generate a new random key see
+    /// [`GlweSecretKey::generate_ternary`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let secret_key =
+    ///     GlweSecretKey::ternary_from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
+    /// assert_eq!(secret_key.key_size(), GlweDimension(256));
+    /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
+    /// ```
+    pub fn ternary_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
+    where
+        Cont: AsRefSlice,
+    {
+        ck_dim_div!(cont.as_slice().len() => poly_size.0);
+        GlweSecretKey {
+            tensor: Tensor::from_container(cont),
+            poly_size,
+            kind: PhantomData,
+        }
+    }
+}
+
+impl<Cont> GlweSecretKey<GaussianKeyKind, Cont> {
+    /// Creates a gaussian key from a container.
+    ///
+    /// # Notes
+    ///
+    /// This method does not fill the container with random data. It merely wraps the container in
+    /// the appropriate type. For a method that generate a new random key see
+    /// [`GlweSecretKey::generate_gaussian`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let secret_key =
+    ///     GlweSecretKey::binary_from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
+    /// assert_eq!(secret_key.key_size(), GlweDimension(256));
+    /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
+    /// ```
+    pub fn gaussian_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
+    where
+        Cont: AsRefSlice,
+    {
+        ck_dim_div!(cont.as_slice().len() => poly_size.0);
+        GlweSecretKey {
+            tensor: Tensor::from_container(cont),
+            poly_size,
+            kind: PhantomData,
+        }
+    }
+}
+
+impl<Cont> GlweSecretKey<UniformKeyKind, Cont> {
+    /// Creates a uniform key from a container.
+    ///
+    /// # Notes
+    ///
+    /// This method does not fill the container with random data. It merely wraps the container in
+    /// the appropriate type. For a method that generate a new random key see
+    /// [`GlweSecretKey::generate_uniform`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let secret_key =
+    ///     GlweSecretKey::binary_from_container(vec![0 as u8; 11 * 256], PolynomialSize(11));
+    /// assert_eq!(secret_key.key_size(), GlweDimension(256));
+    /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(11));
+    /// ```
+    pub fn uniform_from_container(cont: Cont, poly_size: PolynomialSize) -> Self
+    where
+        Cont: AsRefSlice,
+    {
+        ck_dim_div!(cont.as_slice().len() => poly_size.0);
+        GlweSecretKey {
+            tensor: Tensor::from_container(cont),
+            poly_size,
+            kind: PhantomData,
+        }
+    }
+}
+
+impl<Kind, Scalar> GlweSecretKey<Kind, Vec<Scalar>>
+where
+    Kind: KeyKind,
+{
+    /// Consumes the current GLWE secret key and turns it into an LWE secret key.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::parameters::{GlweDimension, LweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::GlweSecretKey;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let glwe_secret_key: GlweSecretKey<_, Vec<u32>> =
+    ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut secret_generator);
+    /// let lwe_secret_key = glwe_secret_key.into_lwe_secret_key();
+    /// assert_eq!(lwe_secret_key.key_size(), LweDimension(20))
+    /// ```
+    pub fn into_lwe_secret_key(self) -> LweSecretKey<Kind, Vec<Scalar>> {
+        LweSecretKey {
+            tensor: self.tensor,
+            kind: PhantomData,
+        }
+    }
+}
+
+impl<Kind, Cont> GlweSecretKey<Kind, Cont>
+where
+    Kind: KeyKind,
+{
     /// Returns the size of the secret key.
     ///
     /// This is equivalent to the number of masks in the [`GlweCiphertext`].
@@ -114,14 +343,15 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<_, Vec<u32>> = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(10),
-    ///     &mut generator,
+    ///     &mut secret_generator,
     /// );
     /// assert_eq!(secret_key.key_size(), GlweDimension(256));
     /// ```
@@ -137,14 +367,15 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<_, Vec<u32>> = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(10),
-    ///     &mut generator,
+    ///     &mut secret_generator,
     /// );
     /// assert_eq!(secret_key.polynomial_size(), PolynomialSize(10));
     /// ```
@@ -157,14 +388,15 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialCount, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<_, Vec<u32>> = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(10),
-    ///     &mut generator
+    ///     &mut secret_generator,
     /// );
     /// let poly = secret_key.as_polynomial_list();
     /// assert_eq!(poly.polynomial_count(), PolynomialCount(256));
@@ -182,19 +414,20 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::{PolynomialCount, PolynomialSize};
+    /// use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+    /// use concrete_core::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
     /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let mut secret_key = GlweSecretKey::generate(
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut secret_key: GlweSecretKey<_, Vec<u32>> = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(10),
-    ///     &mut generator,
+    ///     &mut secret_generator,
     /// );
     /// let mut poly = secret_key.as_mut_polynomial_list();
-    /// poly.as_mut_tensor().fill_with_element(true);
-    /// assert!(secret_key.as_tensor().iter().all(|a| *a));
+    /// poly.as_mut_tensor().fill_with_element(1);
+    /// assert!(secret_key.as_tensor().iter().all(|a| *a == 1));
     /// ```
     pub fn as_mut_polynomial_list(
         &mut self,
@@ -211,58 +444,63 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
-    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{GlweDimension, GlweSize, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
-    /// use concrete_core::math::dispersion::LogStandardDev;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(5),
-    ///     &mut generator
+    ///     &mut secret_generator,
     /// );
     /// let noise = LogStandardDev::from_log_standard_dev(-25.);
-    /// let plaintexts = PlaintextList::from_container(
-    ///     vec![100000 as u32,200000,300000,400000, 500000]
+    /// let plaintexts =
+    ///     PlaintextList::from_container(vec![100000 as u32, 200000, 300000, 400000, 500000]);
+    /// let mut ciphertext = GlweCiphertext::allocate(0 as u32, PolynomialSize(5), GlweSize(257));
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.encrypt_glwe(
+    ///     &mut ciphertext,
+    ///     &plaintexts,
+    ///     noise,
+    ///     &mut encryption_generator,
     /// );
-    /// let mut  ciphertext = GlweCiphertext::allocate(0 as u32, PolynomialSize(5), GlweSize(257));
-    /// secret_key.encrypt_glwe(&mut ciphertext, &plaintexts, noise, &mut generator);
-    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32,0,0,0,0]);
+    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32, 0, 0, 0, 0]);
     /// secret_key.decrypt_glwe(&mut decrypted, &ciphertext);
-    /// for (dec, plain) in decrypted.plaintext_iter().zip(plaintexts.plaintext_iter()){
+    /// for (dec, plain) in decrypted.plaintext_iter().zip(plaintexts.plaintext_iter()) {
     ///     let d0 = dec.0.wrapping_sub(plain.0);
     ///     let d1 = plain.0.wrapping_sub(dec.0);
     ///     let dist = std::cmp::min(d0, d1);
     ///     assert!(dist < 400, "dist: {:?}", dist);
     /// }
     /// ```
-    pub fn encrypt_glwe<OutputCont, EncCont, Scalar>(
+    pub fn encrypt_glwe<Cont1, Cont2, Scalar>(
         &self,
-        encrypted: &mut GlweCiphertext<OutputCont>,
-        encoded: &PlaintextList<EncCont>,
+        encrypted: &mut GlweCiphertext<Cont1>,
+        encoded: &PlaintextList<Cont2>,
         noise_parameter: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRandomGenerator,
     ) where
-        Self: AsRefTensor<Element = bool>,
-        GlweCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
-        PlaintextList<EncCont>: AsRefTensor<Element = Scalar>,
+        Self: AsRefTensor<Element = Scalar>,
+        GlweCiphertext<Cont1>: AsMutTensor<Element = Scalar>,
+        PlaintextList<Cont2>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
+        ck_dim_eq!(encoded.count().0 => encrypted.polynomial_size().0);
+        ck_dim_eq!(encrypted.mask_size().0 => self.key_size().0);
         let (mut body, mut masks) = encrypted.get_mut_body_and_mask();
-        generator.fill_tensor_with_random_gaussian(
-            &mut body,
-            0.,
-            noise_parameter.get_standard_dev(),
+        generator.fill_tensor_with_random_noise(&mut body, noise_parameter);
+        generator.fill_tensor_with_random_mask(&mut masks);
+        body.as_mut_polynomial().update_with_wrapping_add_multisum(
+            &masks.as_mut_polynomial_list(),
+            &self.as_polynomial_list(),
         );
-        generator.fill_tensor_with_random_uniform(&mut masks);
-        body.as_mut_polynomial()
-            .update_with_wrapping_add_binary_multisum(
-                &masks.as_mut_polynomial_list(),
-                &self.as_polynomial_list(),
-            );
         body.as_mut_polynomial()
             .update_with_wrapping_add(&encoded.as_polynomial());
     }
@@ -272,53 +510,53 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
-    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{GlweDimension, GlweSize, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::GlweCiphertext;
-    /// use concrete_core::math::dispersion::LogStandardDev;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(5),
-    ///     &mut generator,
+    ///     &mut secret_generator,
     /// );
     /// let noise = LogStandardDev::from_log_standard_dev(-25.);
-    /// let mut  ciphertext = GlweCiphertext::allocate(0 as u32, PolynomialSize(5), GlweSize(257));
-    /// secret_key.encrypt_zero_glwe(&mut ciphertext, noise, &mut generator);
-    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32,0,0,0,0]);
+    /// let mut ciphertext = GlweCiphertext::allocate(0 as u32, PolynomialSize(5), GlweSize(257));
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.encrypt_zero_glwe(&mut ciphertext, noise, &mut encryption_generator);
+    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32, 0, 0, 0, 0]);
     /// secret_key.decrypt_glwe(&mut decrypted, &ciphertext);
-    /// for dec in decrypted.plaintext_iter(){
+    /// for dec in decrypted.plaintext_iter() {
     ///     let d0 = dec.0.wrapping_sub(0u32);
     ///     let d1 = 0u32.wrapping_sub(dec.0);
     ///     let dist = std::cmp::min(d0, d1);
     ///     assert!(dist < 500, "dist: {:?}", dist);
     /// }
     /// ```
-    pub fn encrypt_zero_glwe<Scalar, OutputCont>(
+    pub fn encrypt_zero_glwe<Scalar, Cont1>(
         &self,
-        encrypted: &mut GlweCiphertext<OutputCont>,
+        encrypted: &mut GlweCiphertext<Cont1>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRandomGenerator,
     ) where
-        Self: AsRefTensor<Element = bool>,
-        GlweCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
+        Self: AsRefTensor<Element = Scalar>,
+        GlweCiphertext<Cont1>: AsMutTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
+        ck_dim_eq!(encrypted.mask_size().0 => self.key_size().0);
         let (mut body, mut masks) = encrypted.get_mut_body_and_mask();
-        generator.fill_tensor_with_random_gaussian(
-            &mut body,
-            0.,
-            noise_parameters.get_standard_dev(),
+        generator.fill_tensor_with_random_noise(&mut body, noise_parameters);
+        generator.fill_tensor_with_random_mask(&mut masks);
+        body.as_mut_polynomial().update_with_wrapping_add_multisum(
+            &masks.as_mut_polynomial_list(),
+            &self.as_polynomial_list(),
         );
-        generator.fill_tensor_with_random_uniform(&mut masks);
-        body.as_mut_polynomial()
-            .update_with_wrapping_add_binary_multisum(
-                &masks.as_mut_polynomial_list(),
-                &self.as_polynomial_list(),
-            );
     }
 
     /// Encrypts a list of GLWE ciphertexts.
@@ -326,31 +564,40 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
-    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{CiphertextCount, GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::{GlweCiphertext, GlweList};
-    /// use concrete_core::math::dispersion::LogStandardDev;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(2),
-    ///     &mut generator
+    ///     &mut secret_generator,
     /// );
     /// let noise = LogStandardDev::from_log_standard_dev(-25.);
-    /// let plaintexts = PlaintextList::from_container(vec![1000 as u32,2000,3000,4000]);
-    /// let mut  ciphertexts = GlweList::allocate(
+    /// let plaintexts = PlaintextList::from_container(vec![1000 as u32, 2000, 3000, 4000]);
+    /// let mut ciphertexts = GlweList::allocate(
     ///     0 as u32,
     ///     PolynomialSize(2),
     ///     GlweDimension(256),
-    ///     CiphertextCount(2)
+    ///     CiphertextCount(2),
     /// );
-    /// secret_key.encrypt_glwe_list(&mut ciphertexts, &plaintexts, noise, &mut generator);
-    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32,0,0,0]);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.encrypt_glwe_list(
+    ///     &mut ciphertexts,
+    ///     &plaintexts,
+    ///     noise,
+    ///     &mut encryption_generator,
+    /// );
+    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32, 0, 0, 0]);
     /// secret_key.decrypt_glwe_list(&mut decrypted, &ciphertexts);
-    /// for (dec, plain) in decrypted.plaintext_iter().zip(plaintexts.plaintext_iter()){
+    /// for (dec, plain) in decrypted.plaintext_iter().zip(plaintexts.plaintext_iter()) {
     ///     let d0 = dec.0.wrapping_sub(plain.0);
     ///     let d1 = plain.0.wrapping_sub(dec.0);
     ///     let dist = std::cmp::min(d0, d1);
@@ -362,9 +609,9 @@ impl<Cont> GlweSecretKey<Cont> {
         encrypt: &mut GlweList<CiphCont>,
         encoded: &PlaintextList<EncCont>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRandomGenerator,
     ) where
-        Self: AsRefTensor<Element = bool>,
+        Self: AsRefTensor<Element = Scalar>,
         GlweList<CiphCont>: AsMutTensor<Element = Scalar>,
         PlaintextList<EncCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
@@ -378,12 +625,7 @@ impl<Cont> GlweSecretKey<Cont> {
             .ciphertext_iter_mut()
             .zip(encoded.sublist_iter(count))
         {
-            self.encrypt_glwe(
-                &mut ciphertext,
-                &encoded,
-                noise_parameters.clone(),
-                generator,
-            );
+            self.encrypt_glwe(&mut ciphertext, &encoded, noise_parameters, generator);
         }
     }
 
@@ -392,30 +634,34 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_core::crypto::{*, secret::*};
-    /// use concrete_core::math::polynomial::{PolynomialSize, PolynomialCount};
-    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{CiphertextCount, GlweDimension, PolynomialSize};
     /// use concrete_core::crypto::encoding::PlaintextList;
     /// use concrete_core::crypto::glwe::{GlweCiphertext, GlweList};
-    /// use concrete_core::math::dispersion::LogStandardDev;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::*;
+    /// use concrete_core::crypto::*;
+    /// use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = GlweSecretKey::generate_binary(
     ///     GlweDimension(256),
     ///     PolynomialSize(2),
-    ///     &mut generator
+    ///     &mut secret_generator,
     /// );
     /// let noise = LogStandardDev::from_log_standard_dev(-25.);
     /// let mut ciphertexts = GlweList::allocate(
     ///     0 as u32,
     ///     PolynomialSize(2),
     ///     GlweDimension(256),
-    ///     CiphertextCount(2)
+    ///     CiphertextCount(2),
     /// );
-    /// secret_key.encrypt_zero_glwe_list(&mut ciphertexts, noise, &mut generator);
-    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32,0,0,0]);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.encrypt_zero_glwe_list(&mut ciphertexts, noise, &mut encryption_generator);
+    /// let mut decrypted = PlaintextList::from_container(vec![0 as u32, 0, 0, 0]);
     /// secret_key.decrypt_glwe_list(&mut decrypted, &ciphertexts);
-    /// for dec in decrypted.plaintext_iter(){
+    /// for dec in decrypted.plaintext_iter() {
     ///     let d0 = dec.0.wrapping_sub(0u32);
     ///     let d1 = 0u32.wrapping_sub(dec.0);
     ///     let dist = std::cmp::min(d0, d1);
@@ -426,14 +672,14 @@ impl<Cont> GlweSecretKey<Cont> {
         &self,
         encrypted: &mut GlweList<OutputCont>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRandomGenerator,
     ) where
-        Self: AsRefTensor<Element = bool>,
+        Self: AsRefTensor<Element = Scalar>,
         GlweList<OutputCont>: AsMutTensor<Element = Scalar>,
         Scalar: UnsignedTorus + Add,
     {
         for mut ciphertext in encrypted.ciphertext_iter_mut() {
-            self.encrypt_zero_glwe(&mut ciphertext, noise_parameters.clone(), generator);
+            self.encrypt_zero_glwe(&mut ciphertext, noise_parameters, generator);
         }
     }
 
@@ -445,7 +691,7 @@ impl<Cont> GlweSecretKey<Cont> {
         encoded: &mut PlaintextList<EncCont>,
         encrypted: &GlweCiphertext<CiphCont>,
     ) where
-        Self: AsRefTensor<Element = bool>,
+        Self: AsRefTensor<Element = Scalar>,
         PlaintextList<EncCont>: AsMutTensor<Element = Scalar>,
         GlweCiphertext<CiphCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus + Add,
@@ -457,7 +703,7 @@ impl<Cont> GlweSecretKey<Cont> {
             .fill_with_one(body.as_tensor(), |a| *a);
         encoded
             .as_mut_polynomial()
-            .update_with_wrapping_sub_binary_multisum(
+            .update_with_wrapping_sub_multisum(
                 &masks.as_polynomial_list(),
                 &self.as_polynomial_list(),
             );
@@ -471,7 +717,7 @@ impl<Cont> GlweSecretKey<Cont> {
         encoded: &mut PlaintextList<EncCont>,
         encrypted: &GlweList<CiphCont>,
     ) where
-        Self: AsRefTensor<Element = bool>,
+        Self: AsRefTensor<Element = Scalar>,
         PlaintextList<EncCont>: AsMutTensor<Element = Scalar>,
         GlweList<CiphCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus + Add,
@@ -492,58 +738,70 @@ impl<Cont> GlweSecretKey<Cont> {
     /// # Examples
     ///
     /// ```rust
-    /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::crypto::{GlweSize, GlweDimension};
-    /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
-    /// use concrete_core::math::dispersion::LogStandardDev;
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::ggsw::GgswCiphertext;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
-    ///     GlweDimension(2),
-    ///     PolynomialSize(10),
-    ///     &mut generator
-    /// );
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::GlweSecretKey;
+    /// let mut generator = SecretRandomGenerator::new(None);
+    /// let secret_key =
+    ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut generator);
     /// let mut ciphertext = GgswCiphertext::allocate(
     ///     0 as u32,
     ///     PolynomialSize(10),
     ///     GlweSize(3),
     ///     DecompositionLevelCount(3),
-    ///     DecompositionBaseLog(7)
+    ///     DecompositionBaseLog(7),
     /// );
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
-    /// secret_key.encrypt_constant_ggsw(&mut ciphertext, &Plaintext(10), noise, &mut generator);
+    /// let mut secret_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.encrypt_constant_ggsw(
+    ///     &mut ciphertext,
+    ///     &Plaintext(10),
+    ///     noise,
+    ///     &mut secret_generator,
+    /// );
     /// ```
     pub fn encrypt_constant_ggsw<OutputCont, Scalar>(
         &self,
         encrypted: &mut GgswCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRandomGenerator,
     ) where
-        Self: AsRefTensor<Element = bool>,
+        Self: AsRefTensor<Element = Scalar>,
         GgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
         ck_dim_eq!(self.polynomial_size() => encrypted.polynomial_size());
         ck_dim_eq!(self.key_size() => encrypted.glwe_size().to_glwe_dimension());
-        self.encrypt_zero_glwe_list(
-            &mut encrypted.as_mut_glwe_list(),
-            noise_parameters,
-            generator,
-        );
+        let gen_iter = generator
+            .fork_ggsw_to_ggsw_levels::<Scalar>(
+                encrypted.decomposition_level_count(),
+                self.key_size().to_glwe_size(),
+                self.poly_size,
+            )
+            .expect("Failed to split generator into ggsw levels");
         let base_log = encrypted.decomposition_base_log();
-        for mut matrix in encrypted.level_matrix_iter_mut() {
+        for (mut matrix, mut generator) in encrypted.level_matrix_iter_mut().zip(gen_iter) {
             let decomposition = encoded.0
                 * (Scalar::ONE
                     << (<Scalar as Numeric>::BITS
-                        - (base_log.0 * (matrix.decomposition_level().0 + 1))));
+                        - (base_log.0 * (matrix.decomposition_level().0))));
+            let gen_iter = generator
+                .fork_ggsw_level_to_glwe::<Scalar>(self.key_size().to_glwe_size(), self.poly_size)
+                .expect("Failed to split generator into rlwe");
             // We iterate over the rowe of the level matrix
-            for (index, row) in matrix.row_iter_mut().enumerate() {
-                let rlwe_ct = row.into_rlwe();
+            for ((index, row), mut generator) in matrix.row_iter_mut().enumerate().zip(gen_iter) {
+                let mut rlwe_ct = row.into_glwe();
+                // We issue a fresh  encryption of zero
+                self.encrypt_zero_glwe(&mut rlwe_ct, noise_parameters, &mut generator);
                 // We retrieve the row as a polynomial list
                 let mut polynomial_list = rlwe_ct.into_polynomial_list();
                 // We retrieve the polynomial in the diagonal
@@ -556,38 +814,134 @@ impl<Cont> GlweSecretKey<Cont> {
         }
     }
 
-    /// This function encrypts a message as a GGSW ciphertext whose rlwe masks are all zeros.
+    /// This function encrypts a message as a GGSW ciphertext, using as many threads as possible.
+    ///
+    /// # Notes
+    /// This method is hidden behind the "multithread" feature gate.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// use concrete_core::crypto::secret::GlweSecretKey;
-    /// use concrete_core::math::polynomial::PolynomialSize;
-    /// use concrete_core::crypto::{GlweSize, GlweDimension};
-    /// use concrete_core::math::decomposition::{DecompositionLevelCount, DecompositionBaseLog};
-    /// use concrete_core::math::dispersion::LogStandardDev;
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
     /// use concrete_core::crypto::encoding::Plaintext;
     /// use concrete_core::crypto::ggsw::GgswCiphertext;
-    /// use concrete_core::math::random::RandomGenerator;
-    /// let mut generator = RandomGenerator::new(None);
-    /// let secret_key = GlweSecretKey::generate(
-    ///     GlweDimension(2),
-    ///     PolynomialSize(10),
-    ///     &mut generator
-    /// );
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::GlweSecretKey;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key =
+    ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut secret_generator);
     /// let mut ciphertext = GgswCiphertext::allocate(
     ///     0 as u32,
     ///     PolynomialSize(10),
     ///     GlweSize(3),
     ///     DecompositionLevelCount(3),
-    ///     DecompositionBaseLog(7)
+    ///     DecompositionBaseLog(7),
     /// );
     /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// secret_key.par_encrypt_constant_ggsw(
+    ///     &mut ciphertext,
+    ///     &Plaintext(10),
+    ///     noise,
+    ///     &mut encryption_generator,
+    /// );
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_encrypt_constant_ggsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut GgswCiphertext<OutputCont>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter + Send + Sync,
+        generator: &mut EncryptionRandomGenerator,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        GgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus + Send + Sync,
+        Cont: Sync,
+    {
+        ck_dim_eq!(self.polynomial_size() => encrypted.polynomial_size());
+        ck_dim_eq!(self.key_size() => encrypted.glwe_size().to_glwe_dimension());
+        let generators = generator
+            .par_fork_ggsw_to_ggsw_levels::<Scalar>(
+                encrypted.decomposition_level_count(),
+                self.key_size().to_glwe_size(),
+                self.poly_size,
+            )
+            .expect("Failed to split generator into ggsw levels");
+        let base_log = encrypted.decomposition_base_log();
+        encrypted
+            .par_level_matrix_iter_mut()
+            .zip(generators)
+            .for_each(move |(mut matrix, mut generator)| {
+                let decomposition = encoded.0
+                    * (Scalar::ONE
+                        << (<Scalar as Numeric>::BITS
+                            - (base_log.0 * (matrix.decomposition_level().0))));
+                let gen_iter = generator
+                    .par_fork_ggsw_level_to_glwe::<Scalar>(
+                        self.key_size().to_glwe_size(),
+                        self.poly_size,
+                    )
+                    .expect("Failed to split generator into glwe");
+                // We iterate over the rowe of the level matrix
+                matrix
+                    .par_row_iter_mut()
+                    .enumerate()
+                    .zip(gen_iter)
+                    .for_each(|((index, row), mut generator)| {
+                        let mut rlwe_ct = row.into_glwe();
+                        // We issue a fresh  encryption of zero
+                        self.encrypt_zero_glwe(&mut rlwe_ct, noise_parameters, &mut generator);
+                        // We retrieve the row as a polynomial list
+                        let mut polynomial_list = rlwe_ct.into_polynomial_list();
+                        // We retrieve the polynomial in the diagonal
+                        let mut level_polynomial = polynomial_list.get_mut_polynomial(index);
+                        // We get the first coefficient
+                        let first_coef = level_polynomial.as_mut_tensor().first_mut();
+                        // We update the first coefficient
+                        *first_coef = first_coef.wrapping_add(decomposition);
+                    })
+            })
+    }
+
+    /// This function encrypts a message as a GGSW ciphertext whose rlwe masks are all zeros.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
+    /// use concrete_core::crypto::encoding::Plaintext;
+    /// use concrete_core::crypto::ggsw::GgswCiphertext;
+    /// use concrete_core::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::crypto::secret::GlweSecretKey;
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key: GlweSecretKey<_, Vec<u32>> =
+    ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut secret_generator);
+    /// let mut ciphertext = GgswCiphertext::allocate(
+    ///     0 as u32,
+    ///     PolynomialSize(10),
+    ///     GlweSize(3),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
     /// secret_key.trivial_encrypt_constant_ggsw(
     ///     &mut ciphertext,
     ///     &Plaintext(10),
     ///     noise,
-    ///     &mut generator
+    ///     &mut encryption_generator,
     /// );
     /// ```
     pub fn trivial_encrypt_constant_ggsw<OutputCont, Scalar>(
@@ -595,9 +949,9 @@ impl<Cont> GlweSecretKey<Cont> {
         encrypted: &mut GgswCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut RandomGenerator,
+        generator: &mut EncryptionRandomGenerator,
     ) where
-        Self: AsRefTensor<Element = bool>,
+        Self: AsRefTensor<Element = Scalar>,
         GgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus,
@@ -608,21 +962,17 @@ impl<Cont> GlweSecretKey<Cont> {
         for mut glwe in encrypted.as_mut_glwe_list().ciphertext_iter_mut() {
             let (mut body, mut mask) = glwe.get_mut_body_and_mask();
             mask.as_mut_tensor().fill_with_element(Scalar::ZERO);
-            generator.fill_tensor_with_random_gaussian(
-                &mut body,
-                0.,
-                noise_parameters.get_standard_dev(),
-            );
+            generator.fill_tensor_with_random_noise(&mut body, noise_parameters);
         }
         let base_log = encrypted.decomposition_base_log();
         for mut matrix in encrypted.level_matrix_iter_mut() {
             let decomposition = encoded.0
                 * (Scalar::ONE
                     << (<Scalar as Numeric>::BITS
-                        - (base_log.0 * (matrix.decomposition_level().0 + 1))));
+                        - (base_log.0 * (matrix.decomposition_level().0))));
             // We iterate over the rowe of the level matrix
             for (index, row) in matrix.row_iter_mut().enumerate() {
-                let rlwe_ct = row.into_rlwe();
+                let rlwe_ct = row.into_glwe();
                 // We retrieve the row as a polynomial list
                 let mut polynomial_list = rlwe_ct.into_polynomial_list();
                 // We retrieve the polynomial in the diagonal
@@ -633,5 +983,41 @@ impl<Cont> GlweSecretKey<Cont> {
                 *first_coef = first_coef.wrapping_add(decomposition);
             }
         }
+    }
+}
+
+impl<Kind, Element, Cont> AsRefTensor for GlweSecretKey<Kind, Cont>
+where
+    Kind: KeyKind,
+    Cont: AsRefSlice<Element = Element>,
+{
+    type Element = Element;
+    type Container = Cont;
+    fn as_tensor(&self) -> &Tensor<Self::Container> {
+        &self.tensor
+    }
+}
+
+impl<Kind, Element, Cont> AsMutTensor for GlweSecretKey<Kind, Cont>
+where
+    Kind: KeyKind,
+    Cont: AsMutSlice<Element = Element>,
+{
+    type Element = Element;
+    type Container = Cont;
+    fn as_mut_tensor(&mut self) -> &mut Tensor<<Self as AsMutTensor>::Container> {
+        &mut self.tensor
+    }
+}
+
+impl<Kind, Cont> IntoTensor for GlweSecretKey<Kind, Cont>
+where
+    Kind: KeyKind,
+    Cont: AsRefSlice,
+{
+    type Element = <Cont as AsRefSlice>::Element;
+    type Container = Cont;
+    fn into_tensor(self) -> Tensor<Self::Container> {
+        self.tensor
     }
 }

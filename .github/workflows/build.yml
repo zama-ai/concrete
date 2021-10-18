@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Fftw
+        if: ${{ !cancelled() }}
+        run: sudo apt-get install -y libfftw3-dev
+      - name: Build debug
+        if: ${{ !cancelled() }}
+        run: cargo xtask build_debug_crates
+      - name: Build release
+        if: ${{ !cancelled() }}
+        run: cargo xtask build_release_crates
+      - name: Build native
+        if: ${{ !cancelled() }}
+        run: cargo xtask build_simd_crates
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Fftw
+        if: ${{ !cancelled() }}
+        run: brew install fftw
+      - name: Build debug
+        if: ${{ !cancelled() }}
+        run: cargo xtask build_debug_crates
+      - name: Build release
+        if: ${{ !cancelled() }}
+        run: cargo xtask build_release_crates
+      - name: Build native
+        if: ${{ !cancelled() }}
+        run: cargo xtask build_simd_crates

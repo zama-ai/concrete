@@ -1,7 +1,8 @@
-use crate::crypto::UnsignedTorus;
-use crate::math::dispersion::LogStandardDev;
+use concrete_commons::dispersion::LogStandardDev;
+
 use crate::math::random::RandomGenerator;
 use crate::math::tensor::Tensor;
+use crate::math::torus::UnsignedTorus;
 use crate::test_tools::assert_noise_distribution;
 
 fn test_normal_random<T: UnsignedTorus>() {

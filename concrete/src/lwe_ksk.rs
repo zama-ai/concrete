@@ -1,7 +1,4 @@
 use crate::Torus;
-use concrete_core::crypto::LweDimension;
-use concrete_core::math::decomposition::{DecompositionBaseLog, DecompositionLevelCount};
-use concrete_core::math::dispersion::StandardDev;
 use concrete_core::{
     crypto,
     math::tensor::Tensor,
@@ -9,6 +6,9 @@ use concrete_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use concrete_commons::dispersion::StandardDev;
+use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweDimension};
+use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct LWEKSK {
@@ -82,6 +82,7 @@ impl LWEKSK {
             &sk_before.val,
             &sk_after.val,
             StandardDev::from_standard_dev(sk_after.std_dev),
+            &mut EncryptionRandomGenerator::new(None),
         );
 
         LWEKSK {
@@ -150,12 +151,11 @@ impl fmt::Display for LWEKSK {
 
         if self.ciphertexts.as_tensor().len() <= 2 * n {
             for elt in self.ciphertexts.as_tensor().iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
-            to_be_print += "]\n";
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
             to_be_print += "...";
 
@@ -165,10 +165,10 @@ impl fmt::Display for LWEKSK {
                 .get_sub(self.ciphertexts.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print = to_be_print + &format!("{}, ", elt);
+                to_be_print = to_be_print + &format!("{}, ", *elt);
             }
-            to_be_print += "]\n";
         }
+        to_be_print += "]\n";
 
         to_be_print = to_be_print + &format!("         -> variance = {}\n", self.variance);
         to_be_print =

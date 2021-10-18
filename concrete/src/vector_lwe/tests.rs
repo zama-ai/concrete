@@ -1,3 +1,5 @@
+#![allow(clippy::modulo_one)]
+
 use itertools::izip;
 
 #[test]
@@ -581,7 +583,7 @@ fn test_encode_encrypt_x_bootstrap_nth_x_decrypt() {
             crate::VectorLWE::encode_encrypt(&secret_key_input, &message, &encoder_input).unwrap();
 
         let mut cpt: usize = 0;
-        for index in 0..nb_messages {
+        for (index, item) in message.iter().enumerate() {
             // bootstrap
             let ciphertext_output = ciphertext_input
                 .bootstrap_nth(&bootstrapping_key, index)
@@ -592,7 +594,7 @@ fn test_encode_encrypt_x_bootstrap_nth_x_decrypt() {
                 .decrypt_decode_round(&secret_key_output)
                 .unwrap();
             assert_eq_granularity!(
-                message[index],
+                item,
                 decryption2[0],
                 ciphertext_output.encoders[0]
             );
@@ -722,7 +724,7 @@ fn test_encode_encrypt_several_encoders_x_sum_with_padding_x_decrypt_decode_roun
     let encoder_1 = crate::Encoder::new(min1, max1, precision, padding).unwrap();
 
     // generate nb_messages encoders with the same length
-    let mut encoders: Vec<crate::Encoder> = vec![encoder_1.clone(); nb_messages];
+    let mut encoders: Vec<crate::Encoder> = vec![encoder_1; nb_messages];
     for enc_in in encoders.iter_mut() {
         let (new_min, _) = generate_random_interval!();
         enc_in.o = new_min;

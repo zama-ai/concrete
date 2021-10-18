@@ -55,3 +55,11 @@ let output_cleartext = encoder.decode(output_plaintext);
 assert_eq!((output_cleartext.0 - 50.).abs() < 0.01);
 ```
 
+## Links
+
+- [TFHE](https://eprint.iacr.org/2018/421.pdf)
+
+## License
+
+This software is distributed under the BSD-3-Clause-Clear license. If you have any questions,
+please contact us at `hello@zama.ai`.

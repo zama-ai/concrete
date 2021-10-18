@@ -1,4 +1,4 @@
-//! Utilities for the
+//! Utilities for the library.
 
 /// This macro is used in tandem with the [`zip_args`] macro, to allow to zip iterators and access
 /// them in an non-nested fashion. This makes large zip iterators easier to write, but also,
@@ -13,12 +13,12 @@
 /// let c = [4, 5, 6];
 ///
 /// // Normally we would do:
-/// for (a, (b, c)) in a.iter().zip(b.iter().zip(c.iter())){
-///     println!("{}{}{}", a,b,c);
+/// for (a, (b, c)) in a.iter().zip(b.iter().zip(c.iter())) {
+///     println!("{}{}{}", a, b, c);
 /// }
 ///
 /// // Now we can do:
-/// for zip_args!(a, b, c) in zip!(a.iter(), b.iter(), c.iter()){
+/// for zip_args!(a, b, c) in zip!(a.iter(), b.iter(), c.iter()) {
 ///     println!("{}{}{}", a, b, c);
 /// }
 /// ```
@@ -49,8 +49,17 @@ macro_rules! zip_args {
     };
 }
 
+/// A macro which emits a compile time warning
+#[macro_export]
+macro_rules! compile_warning {
+    ($mess: literal) => {
+        const COMPILE_WARN: &str = $mess;
+    };
+}
+
 #[cfg(test)]
 mod test {
+    #![allow(clippy::many_single_char_names)]
 
     #[test]
     fn test_zip() {

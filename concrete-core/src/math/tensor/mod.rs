@@ -1,7 +1,7 @@
 //! Operations on collections of values.
 //!
 //! This module contains a [`Tensor`] type, central to the whole library. In essence, a tensor
-//! wraps a collection container, and provides a set of methods to operate with other tensors of
+//! wraps a data container, and provides a set of methods to operate with other tensors of
 //! the same length:
 //! ```
 //! use concrete_core::math::tensor::Tensor;
@@ -34,30 +34,31 @@
 //! several structures representing multi-dimensional collections. The pattern we use for such
 //! structures is pretty simple:
 //! ```
-//! use concrete_core::math::tensor::{Tensor, AsRefTensor, AsRefSlice};
+//! use concrete_core::math::tensor::{AsRefSlice, AsRefTensor, Tensor};
 //!
 //! // We want to have a matrix structure stored row-major.
-//! pub struct Matrix<Cont>{
+//! pub struct Matrix<Cont> {
 //!     tensor: Tensor<Cont>,
 //!     row_length: usize,
 //! }
 //!
 //! // Our matrix is row-major, so we must be able to iterate over rows.
-//! pub struct Row<Cont>{
-//!     tensor: Tensor<Cont>
+//! pub struct Row<Cont> {
+//!     tensor: Tensor<Cont>,
 //! }
 //!
 //! impl<Cont> Matrix<Cont> {
-//!     
 //!     // Returns an iterator over the matrix rows.
 //!     pub fn row_iter(&self) -> impl Iterator<Item = Row<&[<Self as AsRefTensor>::Element]>>
 //!     where
-//!         Self: AsRefTensor
+//!         Self: AsRefTensor,
 //!     {
 //!         self.as_tensor()
 //!             .as_slice()
 //!             .chunks(self.row_length)
-//!             .map(|sub| Row{tensor: Tensor::from_container(sub)})
+//!             .map(|sub| Row {
+//!                 tensor: Tensor::from_container(sub),
+//!             })
 //!     }
 //! }
 //! ```
@@ -74,73 +75,23 @@
 #[macro_export]
 macro_rules! tensor_traits {
     ($Type:ident) => {
-        impl<Element> $crate::math::tensor::AsRefTensor for $Type<Vec<Element>> {
-            type Element = Element;
-            type Container = Vec<Element>;
-            fn as_tensor(&self) -> &Tensor<Self::Container> {
-                &self.tensor
-            }
-        }
-
-        impl<Element> $crate::math::tensor::AsRefTensor
-            for $Type<fftw::array::AlignedVec<Element>>
+        impl<Element, Cont> $crate::math::tensor::AsRefTensor for $Type<Cont>
+        where
+            Cont: $crate::math::tensor::AsRefSlice<Element = Element>,
         {
             type Element = Element;
-            type Container = fftw::array::AlignedVec<Element>;
+            type Container = Cont;
             fn as_tensor(&self) -> &Tensor<Self::Container> {
                 &self.tensor
             }
         }
 
-        impl<Element> $crate::math::tensor::AsRefTensor for $Type<[Element; 1]> {
-            type Element = Element;
-            type Container = [Element; 1];
-            fn as_tensor(&self) -> &Tensor<Self::Container> {
-                &self.tensor
-            }
-        }
-
-        impl<'a, Element> $crate::math::tensor::AsRefTensor for $Type<&'a [Element]> {
-            type Element = Element;
-            type Container = &'a [Element];
-            fn as_tensor(&self) -> &Tensor<Self::Container> {
-                &self.tensor
-            }
-        }
-
-        impl<'a, Element> $crate::math::tensor::AsRefTensor for $Type<&'a mut [Element]> {
-            type Element = Element;
-            type Container = &'a mut [Element];
-            fn as_tensor(&self) -> &Tensor<Self::Container> {
-                &self.tensor
-            }
-        }
-
-        impl<Element> $crate::math::tensor::AsMutTensor for $Type<Vec<Element>> {
-            type Element = Element;
-            type Container = Vec<Element>;
-            fn as_mut_tensor(
-                &mut self,
-            ) -> &mut Tensor<<Self as $crate::math::tensor::AsMutTensor>::Container> {
-                &mut self.tensor
-            }
-        }
-
-        impl<Element> $crate::math::tensor::AsMutTensor for $Type<[Element; 1]> {
-            type Element = Element;
-            type Container = [Element; 1];
-            fn as_mut_tensor(
-                &mut self,
-            ) -> &mut Tensor<<Self as $crate::math::tensor::AsMutTensor>::Container> {
-                &mut self.tensor
-            }
-        }
-
-        impl<Element> $crate::math::tensor::AsMutTensor
-            for $Type<fftw::array::AlignedVec<Element>>
+        impl<Element, Cont> $crate::math::tensor::AsMutTensor for $Type<Cont>
+        where
+            Cont: $crate::math::tensor::AsMutSlice<Element = Element>,
         {
             type Element = Element;
-            type Container = fftw::array::AlignedVec<Element>;
+            type Container = Cont;
             fn as_mut_tensor(
                 &mut self,
             ) -> &mut Tensor<<Self as $crate::math::tensor::AsMutTensor>::Container> {
@@ -148,51 +99,12 @@ macro_rules! tensor_traits {
             }
         }
 
-        impl<'a, Element> $crate::math::tensor::AsMutTensor for $Type<&'a mut [Element]> {
-            type Element = Element;
-            type Container = &'a mut [Element];
-            fn as_mut_tensor(
-                &mut self,
-            ) -> &mut Tensor<<Self as $crate::math::tensor::AsMutTensor>::Container> {
-                &mut self.tensor
-            }
-        }
-
-        impl<Element> $crate::math::tensor::IntoTensor for $Type<Vec<Element>> {
-            type Element = Element;
-            type Container = Vec<Element>;
-            fn into_tensor(self) -> Tensor<Self::Container> {
-                self.tensor
-            }
-        }
-
-        impl<Element> $crate::math::tensor::IntoTensor for $Type<fftw::array::AlignedVec<Element>> {
-            type Element = Element;
-            type Container = fftw::array::AlignedVec<Element>;
-            fn into_tensor(self) -> Tensor<Self::Container> {
-                self.tensor
-            }
-        }
-
-        impl<Element> $crate::math::tensor::IntoTensor for $Type<[Element; 1]> {
-            type Element = Element;
-            type Container = [Element; 1];
-            fn into_tensor(self) -> Tensor<Self::Container> {
-                self.tensor
-            }
-        }
-
-        impl<'a, Element> $crate::math::tensor::IntoTensor for $Type<&'a [Element]> {
-            type Element = Element;
-            type Container = &'a [Element];
-            fn into_tensor(self) -> Tensor<Self::Container> {
-                self.tensor
-            }
-        }
-
-        impl<'a, Element> $crate::math::tensor::IntoTensor for $Type<&'a mut [Element]> {
-            type Element = Element;
-            type Container = &'a mut [Element];
+        impl<Cont> $crate::math::tensor::IntoTensor for $Type<Cont>
+        where
+            Cont: $crate::math::tensor::AsRefSlice,
+        {
+            type Element = <Cont as $crate::math::tensor::AsRefSlice>::Element;
+            type Container = Cont;
             fn into_tensor(self) -> Tensor<Self::Container> {
                 self.tensor
             }

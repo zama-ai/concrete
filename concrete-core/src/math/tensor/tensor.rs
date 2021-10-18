@@ -8,10 +8,13 @@ use std::slice::SliceIndex;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use crate::numeric::{CastFrom, UnsignedInteger};
 use crate::zip;
 
 use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, LoadError, SaveError};
+
+use concrete_commons::numeric::{CastFrom, UnsignedInteger};
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
 
 /// A generic type to perform operations on collections of scalar values.
 ///
@@ -23,9 +26,8 @@ use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, LoadError, SaveErr
 ///
 /// + Methods prefixed with `update_with` use the current values of `self` when performing the
 /// operation.
-/// + Methods prefixed with `fill_with` discard the current vales of `self`, and overwrite it with the
-/// result of an operation on other values.
-///
+/// + Methods prefixed with `fill_with` discard the current vales of `self`, and overwrite it with
+/// the result of an operation on other values.
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[repr(transparent)]
 pub struct Tensor<Container: ?Sized>(Container);
@@ -310,15 +312,40 @@ impl<Container> Tensor<Container> {
     /// ```
     /// use concrete_core::math::tensor::Tensor;
     /// let tensor = Tensor::allocate(9 as u8, 1000);
-    /// for scalar in tensor.iter(){
+    /// for scalar in tensor.iter() {
     ///     assert_eq!(*scalar, 9);
     /// }
     /// ```
-    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &<Self as AsRefSlice>::Element>
+    pub fn iter(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = &<Self as AsRefSlice>::Element> + ExactSizeIterator
     where
         Self: AsRefSlice,
     {
         self.as_slice().iter()
+    }
+
+    /// Returns a parallel iterator over `&Scalar` elements.
+    ///
+    /// # Notes:
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// use rayon::iter::ParallelIterator;
+    /// let tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.par_iter().for_each(|scalar| {
+    ///     assert_eq!(*scalar, 9);
+    /// });
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_iter(&self) -> impl IndexedParallelIterator<Item = &<Self as AsRefSlice>::Element>
+    where
+        Self: AsRefSlice,
+        <Self as AsRefSlice>::Element: Sync,
+    {
+        self.as_slice().as_parallel_slice().par_iter()
     }
 
     /// Returns an iterator over `&mut T` elements.
@@ -327,20 +354,47 @@ impl<Container> Tensor<Container> {
     /// ```
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
-    /// for mut scalar in tensor.iter_mut(){
+    /// for mut scalar in tensor.iter_mut() {
     ///     *scalar = 8;
     /// }
-    /// for scalar in tensor.iter(){
+    /// for scalar in tensor.iter() {
     ///     assert_eq!(*scalar, 8);
     /// }
     /// ```
     pub fn iter_mut(
         &mut self,
-    ) -> impl DoubleEndedIterator<Item = &mut <Self as AsMutSlice>::Element>
+    ) -> impl DoubleEndedIterator<Item = &mut <Self as AsMutSlice>::Element> + ExactSizeIterator
     where
         Self: AsMutSlice,
     {
         self.as_mut_slice().iter_mut()
+    }
+
+    /// Returns a parallel iterator over `&mut T` elements.
+    ///
+    /// # Notes:
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example:
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.iter_mut().for_each(|mut scalar| {
+    ///     *scalar = 8;
+    /// });
+    /// for scalar in tensor.iter() {
+    ///     assert_eq!(*scalar, 8);
+    /// }
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_iter_mut(
+        &mut self,
+    ) -> impl IndexedParallelIterator<Item = &mut <Self as AsMutSlice>::Element>
+    where
+        Self: AsMutSlice,
+        <Self as AsMutSlice>::Element: Sync + Send,
+    {
+        self.as_mut_slice().as_parallel_slice_mut().par_iter_mut()
     }
 
     /// Returns an iterator over sub tensors `Tensor<&[Scalar]>`.
@@ -352,19 +406,47 @@ impl<Container> Tensor<Container> {
     /// ```
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
-    /// for sub in tensor.subtensor_iter(10){
+    /// for sub in tensor.subtensor_iter(10) {
     ///     assert_eq!(sub.len(), 10);
     /// }
     /// ```
     pub fn subtensor_iter(
         &self,
         size: usize,
-    ) -> impl DoubleEndedIterator<Item = Tensor<&[<Self as AsRefSlice>::Element]>>
+    ) -> impl DoubleEndedIterator<Item = Tensor<&[<Self as AsRefSlice>::Element]>> + ExactSizeIterator
     where
         Self: AsRefSlice,
     {
         debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
         self.as_slice().chunks(size).map(Tensor::from_container)
+    }
+
+    /// Returns a parallel iterator over sub tensors `Tensor<&[Scalar]>`.
+    ///
+    /// # Note:
+    /// The length of the sub-tensors must divide the size of the tensor.
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example:
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// use rayon::iter::ParallelIterator;
+    /// let mut tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.par_subtensor_iter(10).for_each(|sub| {
+    ///     assert_eq!(sub.len(), 10);
+    /// });
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_subtensor_iter(
+        &self,
+        size: usize,
+    ) -> impl IndexedParallelIterator<Item = Tensor<&[<Self as AsRefSlice>::Element]>>
+    where
+        Self: AsRefSlice,
+        <Self as AsRefSlice>::Element: Sync,
+    {
+        debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
+        self.as_slice().par_chunks(size).map(Tensor::from_container)
     }
 
     /// Returns an iterator over mutable sub tensors `Tensor<&mut [Scalar]>`.
@@ -376,11 +458,11 @@ impl<Container> Tensor<Container> {
     /// ```
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
-    /// for mut sub in tensor.subtensor_iter_mut(10){
+    /// for mut sub in tensor.subtensor_iter_mut(10) {
     ///     assert_eq!(sub.len(), 10);
     ///     *sub.get_element_mut(0) = 1;
     /// }
-    /// for sub in tensor.subtensor_iter(20){
+    /// for sub in tensor.subtensor_iter(20) {
     ///     assert_eq!(*sub.get_element(0), 1);
     ///     assert_eq!(*sub.get_element(10), 1);
     /// }
@@ -388,13 +470,49 @@ impl<Container> Tensor<Container> {
     pub fn subtensor_iter_mut(
         &mut self,
         size: usize,
-    ) -> impl DoubleEndedIterator<Item = Tensor<&mut [<Self as AsMutSlice>::Element]>>
+    ) -> impl DoubleEndedIterator<Item = Tensor<&mut [<Self as AsMutSlice>::Element]>> + ExactSizeIterator
     where
         Self: AsMutSlice,
     {
         debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
         self.as_mut_slice()
             .chunks_mut(size)
+            .map(Tensor::from_container)
+    }
+
+    /// Returns a parallel iterator over mutable sub tensors `Tensor<&mut [Scalar]>`.
+    ///
+    /// # Note:
+    ///
+    /// The length of the sub-tensors must divide the size of the tensor.
+    /// This iterator is hidden behind the "multithread" feature gate.
+    ///
+    /// # Example:
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// use rayon::iter::ParallelIterator;
+    /// let mut tensor = Tensor::allocate(9 as u8, 1000);
+    /// tensor.par_subtensor_iter_mut(10).for_each(|mut sub| {
+    ///     assert_eq!(sub.len(), 10);
+    ///     *sub.get_element_mut(0) = 1;
+    /// });
+    /// for sub in tensor.subtensor_iter(20) {
+    ///     assert_eq!(*sub.get_element(0), 1);
+    ///     assert_eq!(*sub.get_element(10), 1);
+    /// }
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_subtensor_iter_mut(
+        &mut self,
+        size: usize,
+    ) -> impl IndexedParallelIterator<Item = Tensor<&mut [<Self as AsMutSlice>::Element]>>
+    where
+        Self: AsMutSlice,
+        <Self as AsMutSlice>::Element: Sync + Send,
+    {
+        debug_assert!(self.as_slice().len() % size == 0, "Uneven chunks size");
+        self.as_mut_slice()
+            .par_chunks_mut(size)
             .map(Tensor::from_container)
     }
 
@@ -669,7 +787,7 @@ impl<Container> Tensor<Container> {
     /// ```rust
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
-    /// *tensor.get_element_mut(0) =  8;
+    /// *tensor.get_element_mut(0) = 8;
     /// assert_eq!(*tensor.get_element(0), 8);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
@@ -691,7 +809,7 @@ impl<Container> Tensor<Container> {
     /// ```rust
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
-    /// *tensor.get_element_mut(0) =  8;
+    /// *tensor.get_element_mut(0) = 8;
     /// assert_eq!(*tensor.get_element(0), 8);
     /// assert_eq!(*tensor.get_element(1), 9);
     /// ```
@@ -700,6 +818,27 @@ impl<Container> Tensor<Container> {
         Self: AsMutSlice,
     {
         self.as_mut_slice()[index] = val;
+    }
+
+    /// Fills a tensor with the values of another tensor, using memcpy.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor1 = Tensor::allocate(9 as u8, 1000);
+    /// let tensor2 = Tensor::allocate(10 as u8, 1000);
+    /// tensor1.fill_with_copy(&tensor2);
+    /// assert_eq!(*tensor2.get_element(0), 10);
+    /// ```
+    pub fn fill_with_copy<InputCont, Element>(&mut self, other: &Tensor<InputCont>)
+    where
+        Self: AsMutSlice<Element = Element>,
+        Tensor<InputCont>: AsRefSlice<Element = Element>,
+        Element: Copy,
+    {
+        ck_dim_eq!(self.len() => other.len());
+        self.as_mut_slice().copy_from_slice(other.as_slice());
     }
 
     /// Fills two tensors with the result of the operation on a single one.
@@ -748,7 +887,7 @@ impl<Container> Tensor<Container> {
     /// let t2 = Tensor::allocate(1 as u8, 1000);
     /// let t3 = Tensor::allocate(2 as u8, 1000);
     /// t1.fill_with_two(&t2, &t3, |t2, t3| t3 + t2);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 3);
     /// }
     /// ```
@@ -784,7 +923,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(2 as u8, 1000);
     /// t1.fill_with_one(&t2, |t2| t2.pow(2));
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 4);
     /// }
     /// ```
@@ -808,7 +947,7 @@ impl<Container> Tensor<Container> {
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// tensor.fill_with_element(8);
-    /// for scalar in tensor.iter(){
+    /// for scalar in tensor.iter() {
     ///     assert_eq!(*scalar, 8);
     /// }
     /// ```
@@ -829,7 +968,10 @@ impl<Container> Tensor<Container> {
     /// use std::cell::RefCell;
     /// let mut tensor = Tensor::allocate(9 as u16, 1000);
     /// let mut boxed = RefCell::from(0);
-    /// tensor.fill_with(|| {*boxed.borrow_mut()+=1; *boxed.borrow()});
+    /// tensor.fill_with(|| {
+    ///     *boxed.borrow_mut() += 1;
+    ///     *boxed.borrow()
+    /// });
     /// assert_eq!(*tensor.get_element(0), 1);
     /// assert_eq!(*tensor.get_element(1), 2);
     /// assert_eq!(*tensor.get_element(2), 3);
@@ -850,7 +992,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u16, 1000);
     /// let mut t2 = Tensor::allocate(8. as f32, 1000);
     /// t1.fill_with_cast(&t2);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 8);
     /// }
     /// ```
@@ -927,7 +1069,7 @@ impl<Container> Tensor<Container> {
     /// let t2 = Tensor::allocate(1 as u8, 1000);
     /// let t3 = Tensor::allocate(2 as u8, 1000);
     /// t1.update_with_two(&t2, &t3, |t1, t2, t3| *t1 += t3 + t2);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 12);
     /// }
     /// ```
@@ -964,7 +1106,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(2 as u8, 1000);
     /// t1.update_with_one(&t2, |t1, t2| *t1 += t2.pow(2));
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 13);
     /// }
     /// ```
@@ -988,7 +1130,7 @@ impl<Container> Tensor<Container> {
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// tensor.update_with_element(8, |t, s| *t += s);
-    /// for scalar in tensor.iter(){
+    /// for scalar in tensor.iter() {
     ///     assert_eq!(*scalar, 17);
     /// }
     /// ```
@@ -1012,7 +1154,10 @@ impl<Container> Tensor<Container> {
     /// use std::cell::RefCell;
     /// let mut tensor = Tensor::allocate(9 as u16, 1000);
     /// let mut boxed = RefCell::from(0);
-    /// tensor.update_with(|t| {*boxed.borrow_mut()+=1; *t += *boxed.borrow()});
+    /// tensor.update_with(|t| {
+    ///     *boxed.borrow_mut() += 1;
+    ///     *t += *boxed.borrow()
+    /// });
     /// assert_eq!(*tensor.get_element(0), 10);
     /// assert_eq!(*tensor.get_element(1), 11);
     /// assert_eq!(*tensor.get_element(2), 12);
@@ -1069,7 +1214,7 @@ impl<Container> Tensor<Container> {
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as i16, 1000);
     /// tensor.update_with_neg();
-    /// for scalar in tensor.iter(){
+    /// for scalar in tensor.iter() {
     ///     assert_eq!(*scalar, -9);
     /// }
     /// ```
@@ -1088,7 +1233,7 @@ impl<Container> Tensor<Container> {
     /// use concrete_core::math::tensor::Tensor;
     /// let mut tensor = Tensor::allocate(9 as u8, 1000);
     /// tensor.update_with_wrapping_neg();
-    /// for scalar in tensor.iter(){
+    /// for scalar in tensor.iter() {
     ///     assert_eq!(*scalar, 247);
     /// }
     /// ```
@@ -1109,7 +1254,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(3 as u8, 1000);
     /// t1.fill_with_element_mul(&t2, 2);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 6);
     /// }
     /// ```
@@ -1134,7 +1279,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(3 as u8, 1000);
     /// t1.fill_with_wrapping_element_mul(&t2, 250);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 238);
     /// }
     /// ```
@@ -1160,7 +1305,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(2 as u8, 1000);
     /// t1.update_with_sub_element_mul(&t2, 4);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 1);
     /// }
     /// ```
@@ -1189,7 +1334,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(2 as u8, 1000);
     /// t1.update_with_wrapping_sub_element_mul(&t2, 250);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 21);
     /// }
     /// ```
@@ -1215,7 +1360,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(2 as u8, 1000);
     /// t1.update_with_add_element_mul(&t2, 4);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 17);
     /// }
     /// ```
@@ -1244,7 +1389,7 @@ impl<Container> Tensor<Container> {
     /// let mut t1 = Tensor::allocate(9 as u8, 1000);
     /// let t2 = Tensor::allocate(2 as u8, 1000);
     /// t1.update_with_wrapping_add_element_mul(&t2, 250);
-    /// for scalar in t1.iter(){
+    /// for scalar in t1.iter() {
     ///     assert_eq!(*scalar, 253);
     /// }
     /// ```
@@ -1268,7 +1413,10 @@ impl<Container> Tensor<Container> {
     /// use concrete_core::math::tensor::Tensor;
     /// let t1 = Tensor::allocate(10 as u16, 10);
     /// let t2 = Tensor::allocate(2 as u16, 10);
-    /// let val = t1.fold_with_one(&t2, 0, |mut a, t1, t2| {a+= t1+t2; a});
+    /// let val = t1.fold_with_one(&t2, 0, |mut a, t1, t2| {
+    ///     a += t1 + t2;
+    ///     a
+    /// });
     /// assert_eq!(val, 120);
     /// ```
     pub fn fold_with_one<Cont, Output>(
@@ -1289,6 +1437,57 @@ impl<Container> Tensor<Container> {
         self.iter()
             .zip(other.as_slice().iter())
             .fold(acc, |acc, (s_i, o_i)| ope(acc, s_i, o_i))
+    }
+
+    /// Reverses the elements of the tensor inplace.
+    ///
+    /// # Example
+    ///  
+    /// ```rust
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::from_container(vec![1u8, 2, 3, 4]);
+    /// tensor.reverse();
+    /// assert_eq!(*tensor.get_element(0), 4);
+    /// ```
+    pub fn reverse(&mut self)
+    where
+        Self: AsMutSlice,
+    {
+        self.as_mut_slice().reverse()
+    }
+
+    /// Rotates the elements of the tensor to the right, inplace.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::from_container(vec![1u8, 2, 3, 4]);
+    /// tensor.rotate_right(2);
+    /// assert_eq!(*tensor.get_element(0), 3);
+    /// ```
+    pub fn rotate_right(&mut self, n: usize)
+    where
+        Self: AsMutSlice,
+    {
+        self.as_mut_slice().rotate_right(n)
+    }
+
+    /// Rotates the elements of the tensor to the left, inplace.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use concrete_core::math::tensor::Tensor;
+    /// let mut tensor = Tensor::from_container(vec![1u8, 2, 3, 4]);
+    /// tensor.rotate_left(2);
+    /// assert_eq!(*tensor.get_element(0), 3);
+    /// ```
+    pub fn rotate_left(&mut self, n: usize)
+    where
+        Self: AsMutSlice,
+    {
+        self.as_mut_slice().rotate_left(n)
     }
 }
 
@@ -1329,7 +1528,7 @@ where
     type Element = Cont::Element;
     type Container = Cont;
     fn as_tensor(&self) -> &Tensor<Cont> {
-        &self
+        self
     }
 }
 
