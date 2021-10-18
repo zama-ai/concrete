@@ -110,6 +110,15 @@ class NPTracer(BaseTracer):
             Callable: the tracing function that needs to be called to trace func
         """
         tracing_func: Optional[Callable]
+
+        # numpy.invert is not great in term of types it supports, so we've decided not to support it
+        # and to propose to the user to use numpy.bitwise_not
+        if func == numpy.invert:
+            raise RuntimeError(
+                f"NPTracer does not manage the following func: {func.__name__}. Please replace by "
+                f"calls to bitwise_xor with appropriate mask"
+            )
+
         if isinstance(func, numpy.ufunc):
             tracing_func = NPTracer.UFUNC_ROUTING.get(func, None)
         else:
@@ -266,6 +275,9 @@ class NPTracer(BaseTracer):
     # numpy.isnat is not there since it is about timings
     #
     # numpy.divmod, numpy.modf and numpy.frexp are not there since output two values
+    #
+    # numpy.invert (as known as numpy.bitwise_not) is not here, because it has strange input type.
+    # We ask the user to replace bitwise_xor instead
     LIST_OF_SUPPORTED_UFUNC: List[numpy.ufunc] = [
         numpy.absolute,
         numpy.arccos,
@@ -301,7 +313,6 @@ class NPTracer(BaseTracer):
         numpy.greater_equal,
         numpy.heaviside,
         numpy.hypot,
-        numpy.invert,
         numpy.isfinite,
         numpy.isinf,
         numpy.isnan,

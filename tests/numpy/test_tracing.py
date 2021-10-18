@@ -382,6 +382,35 @@ def test_tracing_astype(
 
 
 @pytest.mark.parametrize(
+    "inputs",
+    [
+        pytest.param(
+            {"x": EncryptedScalar(Integer(32, is_signed=True))},
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "function_to_trace",
+    # We really need a lambda (because numpy functions are not playing
+    # nice with inspect.signature), but pylint is not happy
+    # with it
+    # pylint: disable=unnecessary-lambda
+    [lambda x: numpy.invert(x), lambda x: numpy.bitwise_not(x)],
+    # pylint: enable=unnecessary-lambda
+)
+def test_trace_numpy_fails_for_invert(inputs, function_to_trace):
+    """Check we catch calls to numpy.invert and tell user to change their code"""
+
+    with pytest.raises(RuntimeError) as excinfo:
+        tracing.trace_numpy_function(function_to_trace, inputs)
+
+    assert (
+        "NPTracer does not manage the following func: invert. Please replace by calls to "
+        "bitwise_xor with appropriate mask" in str(excinfo.value)
+    )
+
+
+@pytest.mark.parametrize(
     "inputs,expected_output_node",
     [
         pytest.param(
@@ -413,10 +442,6 @@ def test_tracing_astype(
 )
 def test_trace_numpy_supported_unary_ufuncs(inputs, expected_output_node, function_to_trace_def):
     """Function to trace supported numpy ufuncs"""
-
-    # numpy.invert is expecting inputs which are integer only
-    if function_to_trace_def == numpy.invert and not isinstance(inputs["x"].dtype, Integer):
-        return
 
     # We really need a lambda (because numpy functions are not playing
     # nice with inspect.signature), but pylint and flake8 are not happy

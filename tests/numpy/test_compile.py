@@ -394,15 +394,6 @@ def test_unary_ufunc_operations(ufunc, default_compilation_configuration):
             default_compilation_configuration,
         )
     elif ufunc in [
-        numpy.invert,
-    ]:
-        # Can't make it work, to have a fusable function
-        # TODO: fixme
-        pass
-        # subtest_compile_and_run_unary_ufunc_correctness(
-        #     ufunc, mix_x_and_y_and_call_f_with_integer_inputs, ((0, 5), (0, 5))
-        # )
-    elif ufunc in [
         numpy.arccosh,
         numpy.log,
         numpy.log2,

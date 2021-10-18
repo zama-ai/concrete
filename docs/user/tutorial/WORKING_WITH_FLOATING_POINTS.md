@@ -48,7 +48,6 @@ List of supported unary functions:
 - expm1
 - fabs
 - floor
-- invert
 - isfinite
 - isinf
 - isnan

@@ -224,10 +224,6 @@ def subtest_fuse_float_unary_operations_correctness(fun, tensor_shape):
         # Not too large values to avoid overflows
         input_list = [1, 2, 5, 11]
         super_fun_list = [mix_x_and_y_and_call_f, mix_x_and_y_intricately_and_call_f]
-    elif fun == numpy.invert:
-        # 0 is not in the domain of definition + expect integer inputs
-        input_list = [1, 2, 42, 44]
-        super_fun_list = [mix_x_and_y_into_integer_and_call_f]
     else:
         # Regular case
         input_list = [0, 2, 42, 44]
@@ -307,7 +303,6 @@ LIST_OF_UFUNC_WHICH_HAVE_INTEGER_ONLY_SOURCES = {
     numpy.bitwise_or,
     numpy.bitwise_xor,
     numpy.gcd,
-    numpy.invert,
     numpy.lcm,
     numpy.ldexp,
     numpy.left_shift,
