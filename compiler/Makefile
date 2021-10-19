@@ -2,7 +2,7 @@ BUILD_DIR=./build
 Python3_EXECUTABLE=
 
 
-build:
+$(BUILD_DIR)/configured.stamp:
 	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
 	-DLLVM_ENABLE_PROJECTS=mlir \
 	-DLLVM_BUILD_EXAMPLES=OFF \
@@ -15,14 +15,17 @@ build:
 	-DLLVM_EXTERNAL_PROJECTS=zamalang \
 	-DLLVM_EXTERNAL_ZAMALANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE}
+	touch $@
 
-build-end-to-end-jit: build
+build-initialized: $(BUILD_DIR)/configured.stamp
+
+build-end-to-end-jit: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
 
-zamacompiler: build
+zamacompiler: build-initialized
 	cmake --build $(BUILD_DIR) --target zamacompiler
 
-python-bindings: build
+python-bindings: build-initialized
 	cmake --build $(BUILD_DIR) --target ZamalangMLIRPythonModules ZamalangPythonModules
 
 test-check: zamacompiler file-check not
