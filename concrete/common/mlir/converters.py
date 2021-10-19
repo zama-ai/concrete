@@ -181,7 +181,18 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx, additional_conversion_info):
 
     x_node = preds[0]
     x = ir_to_mlir_node[x_node]
-    table = additional_conversion_info["tables"][node]
+    tables = additional_conversion_info["tables"][node]
+
+    # TODO: #559 adapt the code to support multi TLUs
+    # This cannot be reached today as compilation fails if the intermediate values are not all
+    # scalars
+    if len(tables) > 1:  # pragma: no cover
+        raise RuntimeError(
+            "MLIR conversion currently does not support multiple test vectors for LUT"
+        )
+
+    table = tables[0][0]
+
     out_dtype = cast(Integer, node.outputs[0].dtype)
     # Create table
     dense_elem = DenseElementsAttr.get(np.array(table, dtype=np.uint64), context=ctx)
