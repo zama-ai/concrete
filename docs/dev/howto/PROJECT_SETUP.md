@@ -1,6 +1,10 @@
 
 # Project Setup
 
+```{note}  
+You will need Zama's specific environment with zamalang module to have the project fully functional. It is currently only delivered via the docker image (see the [docker](./DOCKER.md) guide).
+```
+
 ## Installing Python v3.8
 
 **concretefhe** is a `Python` library. So `Python` should be installed to develop **concretefhe**. `v3.8` is the only supported version.
