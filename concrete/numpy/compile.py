@@ -163,20 +163,6 @@ def _compile_numpy_function_into_op_graph_internal(
     # Add the initial graph as an artifact
     compilation_artifacts.add_operation_graph("final", op_graph)
 
-    # Make sure the graph can be lowered to MLIR
-    offending_nodes = check_graph_values_compatibility_with_mlir(op_graph)
-    if offending_nodes is not None:
-        raise RuntimeError(
-            "function you are trying to compile isn't supported for MLIR lowering\n\n"
-            + get_printable_graph(op_graph, show_data_types=True, highlighted_nodes=offending_nodes)
-        )
-
-    # Update bit_width for MLIR
-    update_bit_width_for_mlir(op_graph)
-
-    # TODO: workaround extend LUT #359
-    extend_direct_lookup_tables(op_graph)
-
     return op_graph
 
 
@@ -244,6 +230,33 @@ def compile_numpy_function_into_op_graph(
         raise
 
 
+def prepare_op_graph_for_mlir(op_graph):
+    """Prepare OPGraph for MLIR lowering.
+
+    This includes checking compatibility, changing bit-widths, and modifying lookup tables.
+
+    Args:
+        op_graph (OPGraph): The operation graph to prepare
+
+    Returns:
+        None
+    """
+
+    # Make sure the graph can be lowered to MLIR
+    offending_nodes = check_graph_values_compatibility_with_mlir(op_graph)
+    if offending_nodes is not None:
+        raise RuntimeError(
+            "function you are trying to compile isn't supported for MLIR lowering\n\n"
+            + get_printable_graph(op_graph, show_data_types=True, highlighted_nodes=offending_nodes)
+        )
+
+    # Update bit_width for MLIR
+    update_bit_width_for_mlir(op_graph)
+
+    # TODO: workaround extend LUT #359
+    extend_direct_lookup_tables(op_graph)
+
+
 def _compile_numpy_function_internal(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
@@ -280,6 +293,8 @@ def _compile_numpy_function_internal(
         compilation_configuration,
         compilation_artifacts,
     )
+
+    prepare_op_graph_for_mlir(op_graph)
 
     # Convert graph to an MLIR representation
     converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)

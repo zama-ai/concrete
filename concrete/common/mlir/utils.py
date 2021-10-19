@@ -7,15 +7,84 @@ from ..data_types.dtypes_helpers import (
     value_is_clear_tensor_integer,
     value_is_encrypted_scalar_integer,
     value_is_encrypted_tensor_integer,
-    value_is_integer,
     value_is_scalar,
+    value_is_unsigned_integer,
 )
-from ..debugging.custom_assert import assert_true
+from ..debugging.custom_assert import assert_not_reached, assert_true
 from ..operator_graph import OPGraph
+from ..representation import intermediate
 from ..representation.intermediate import IntermediateNode, UnivariateFunction
 
 # TODO: should come from compiler, through an API, #402
 ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
+
+
+def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) -> Optional[str]:
+    """Check if node is compatible with MLIR.
+
+    Args:
+        node (IntermediateNode): node to check
+        is_output (bool): whether the node is an output node or not
+
+    Returns:
+        Optional[str]: None if the node is compatible else reason for incompatibility
+    """
+
+    # pylint: disable=too-many-branches,too-many-return-statements
+
+    inputs = node.inputs
+    outputs = node.outputs
+
+    if isinstance(node, intermediate.Add):  # constraints for addition
+        for inp in inputs:
+            if not value_is_scalar(inp):
+                return "only scalar addition is supported"
+
+    elif isinstance(node, intermediate.Sub):  # constraints for subtraction
+        for inp in inputs:
+            if not value_is_scalar(inp):
+                return "only scalar subtraction is supported"
+
+    elif isinstance(node, intermediate.Mul):  # constraints for multiplication
+        for inp in inputs:
+            if not value_is_scalar(inp):
+                return "only scalar multiplication is supported"
+
+    elif isinstance(node, intermediate.Input):  # constraints for inputs
+        assert_true(len(outputs) == 1)
+        if not value_is_unsigned_integer(outputs[0]):
+            return "only unsigned integer inputs are supported"
+
+    elif isinstance(node, intermediate.Constant):  # constraints for constants
+        assert_true(len(outputs) == 1)
+        if not value_is_unsigned_integer(outputs[0]):
+            return "only unsigned integer constants are supported"
+
+    elif isinstance(node, intermediate.UnivariateFunction):  # constraints for univariate functions
+        assert_true(len(inputs) == 1)
+        if not value_is_scalar(inputs[0]) or not value_is_unsigned_integer(inputs[0]):
+            return "only unsigned integer scalar lookup tables are supported"
+
+    elif isinstance(node, intermediate.Dot):  # constraints for dot product
+        assert_true(len(inputs) == 2)
+        if not value_is_unsigned_integer(inputs[0]) or not value_is_unsigned_integer(inputs[1]):
+            return "only unsigned integer dot product is supported"
+
+    else:  # pragma: no cover
+        assert_not_reached("Non IntermediateNode object in the OPGraph")
+
+    if is_output:
+        for out in outputs:
+            if not value_is_scalar(out) or not value_is_unsigned_integer(out):
+                return "only scalar unsigned integer outputs are supported"
+    else:
+        for out in outputs:
+            if not value_is_unsigned_integer(out):
+                return "only unsigned integer intermediates are supported"
+
+    # pylint: enable=too-many-branches,too-many-return-statements
+
+    return None
 
 
 def check_graph_values_compatibility_with_mlir(
@@ -33,13 +102,10 @@ def check_graph_values_compatibility_with_mlir(
 
     offending_nodes = {}
 
-    for out_node in op_graph.output_nodes.values():
-        for out in out_node.outputs:
-            if not value_is_scalar(out):
-                offending_nodes[out_node] = "non scalar outputs aren't supported"
-
-            if value_is_integer(out) and cast(Integer, out.dtype).is_signed:
-                offending_nodes[out_node] = "signed integer outputs aren't supported"
+    for node in op_graph.graph.nodes:
+        is_output = node in op_graph.output_nodes.values()
+        if (reason := check_node_compatibility_with_mlir(node, is_output)) is not None:
+            offending_nodes[node] = reason
 
     return None if len(offending_nodes) == 0 else offending_nodes
 

@@ -45,9 +45,9 @@ return(%2)
         with_types
         == """
 
-%0 = x                                             # EncryptedScalar<Integer<signed, 6 bits>>
+%0 = x                                             # EncryptedScalar<Integer<signed, 4 bits>>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ foo
-%1 = Constant(42)                                  # ClearScalar<Integer<unsigned, 7 bits>>
+%1 = Constant(42)                                  # ClearScalar<Integer<unsigned, 6 bits>>
 %2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 6 bits>>
 return(%2)
 
@@ -81,9 +81,9 @@ return(%2)
         with_types
         == """
 
-%0 = x                                             # EncryptedScalar<Integer<signed, 6 bits>>
+%0 = x                                             # EncryptedScalar<Integer<signed, 4 bits>>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ foo
-%1 = Constant(42)                                  # ClearScalar<Integer<unsigned, 7 bits>>
+%1 = Constant(42)                                  # ClearScalar<Integer<unsigned, 6 bits>>
 %2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 6 bits>>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ bar
 return(%2)

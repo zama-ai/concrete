@@ -13,6 +13,8 @@ from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
 from concrete.numpy import tracing
 from concrete.numpy.compile import compile_numpy_function, compile_numpy_function_into_op_graph
 
+# pylint: disable=too-many-lines
+
 
 def no_fuse_unhandled(x, y):
     """No fuse unhandled"""
@@ -746,7 +748,21 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 "%0 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
                 "%1 = x                                             # EncryptedScalar<Integer<unsigned, 3 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
                 "%2 = Sub(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ signed integer outputs aren't supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar unsigned integer outputs are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: x + (-1),
+            {"x": EncryptedScalar(Integer(4, is_signed=False))},
+            [(i,) for i in range(1, 2 ** 4)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = Constant(-1)                                  # ClearScalar<Integer<signed, 2 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer constants are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
                 "return(%2)\n"
             ),
         ),
@@ -760,7 +776,79 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
                 "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
                 "%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ non scalar outputs aren't supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar addition is supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: x + 1,
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(2, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar addition is supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: x * 1,
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(2, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = Mul(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar multiplication is supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: 127 - x,
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(2, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = Constant(127)                                 # ClearScalar<Integer<unsigned, 7 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = Sub(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 7 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar subtraction is supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x, y: numpy.dot(x, y),  # pylint: disable=unnecessary-lambda
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=True), shape=(1,)),
+                "y": EncryptedTensor(Integer(2, is_signed=True), shape=(1,)),
+            },
+            [
+                (numpy.array([-1]), numpy.array([-1])),
+                (numpy.array([-1]), numpy.array([0])),
+                (numpy.array([0]), numpy.array([-1])),
+                (numpy.array([0]), numpy.array([0])),
+                (numpy.array([1]), numpy.array([1])),
+                (numpy.array([1]), numpy.array([0])),
+                (numpy.array([0]), numpy.array([1])),
+                (numpy.array([0]), numpy.array([0])),
+                (numpy.array([-2]), numpy.array([-2])),
+                (numpy.array([-2]), numpy.array([1])),
+            ],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = y                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = Dot(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer dot product is supported\n"  # noqa: E501  # pylint: disable=line-too-long
                 "return(%2)\n"
             ),
         ),
@@ -769,15 +857,58 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
 def test_fail_compile(function, parameters, inputset, match, default_compilation_configuration):
     """Test function compile_numpy_function_into_op_graph for a program with signed values"""
 
-    try:
-        compile_numpy_function(
-            function,
-            parameters,
-            inputset,
-            default_compilation_configuration,
-        )
-    except RuntimeError as error:
-        assert str(error) == match
+    with pytest.raises(RuntimeError):
+        try:
+            compile_numpy_function(
+                function,
+                parameters,
+                inputset,
+                default_compilation_configuration,
+            )
+        except RuntimeError as error:
+            assert str(error) == match
+            raise
+
+
+def test_fail_with_intermediate_signed_values(default_compilation_configuration):
+    """Test function with failing compilation due to intermediate signed integers."""
+
+    def function(x, y):
+        z = numpy.abs(10 * numpy.negative(x))
+        z = z.astype(numpy.int32) + y
+        return z
+
+    with pytest.raises(RuntimeError):
+        try:
+            compile_numpy_function(
+                function,
+                {
+                    "x": EncryptedScalar(Integer(2, is_signed=False)),
+                    "y": EncryptedScalar(Integer(2, is_signed=False)),
+                },
+                [(i, j) for i in range(2 ** 2) for j in range(2 ** 2)],
+                default_compilation_configuration,
+                show_mlir=True,
+            )
+        except RuntimeError as error:
+            match = (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = y                                             # EncryptedScalar<Integer<unsigned, 2 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = Constant(10)                                  # ClearScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%2 = x                                             # EncryptedScalar<Integer<unsigned, 2 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%3 = np.negative(%2)                               # EncryptedScalar<Integer<signed, 3 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer intermediates are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%4 = Mul(%3, %1)                                   # EncryptedScalar<Integer<signed, 6 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer intermediates are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%5 = np.absolute(%4)                               # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer scalar lookup tables are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%6 = astype(int32)(%5)                             # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%7 = Add(%6, %0)                                   # EncryptedScalar<Integer<unsigned, 6 bits>>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "return(%7)\n"
+            )
+            assert str(error) == match
+            raise
 
 
 def test_small_inputset_no_fail():
@@ -818,9 +949,9 @@ def test_small_inputset_treat_warnings_as_errors():
             # Remark that, when you do the dot of tensors of 4 values between 0 and 3,
             # you can get a maximal value of 4*3*3 = 36, ie something on 6 bits
             "%0 = x                                             "
-            "# EncryptedTensor<Integer<unsigned, 6 bits>, shape=(4,)>"
+            "# EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)>"
             "\n%1 = y                                             "
-            "# EncryptedTensor<Integer<unsigned, 6 bits>, shape=(4,)>"
+            "# EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)>"
             "\n%2 = Dot(%0, %1)                                   "
             "# EncryptedScalar<Integer<unsigned, 6 bits>>"
             "\nreturn(%2)\n",

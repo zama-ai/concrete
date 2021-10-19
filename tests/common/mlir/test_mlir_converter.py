@@ -13,7 +13,7 @@ from concrete.common.extensions.table import LookupTable
 from concrete.common.mlir import V0_OPSET_CONVERSION_FUNCTIONS
 from concrete.common.values import ClearScalar, EncryptedScalar
 from concrete.common.values.tensors import ClearTensor, EncryptedTensor
-from concrete.numpy.compile import compile_numpy_function_into_op_graph
+from concrete.numpy.compile import compile_numpy_function_into_op_graph, prepare_op_graph_for_mlir
 from concrete.numpy.np_mlir_converter import NPMLIRConverter
 
 
@@ -225,6 +225,7 @@ def test_mlir_converter(func, args_dict, args_ranges, default_compilation_config
         inputset,
         default_compilation_configuration,
     )
+    prepare_op_graph_for_mlir(result_graph)
     converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
     # testing that this doesn't raise an error
@@ -270,6 +271,7 @@ def test_mlir_converter_dot_between_vectors(
         ),
         default_compilation_configuration,
     )
+    prepare_op_graph_for_mlir(result_graph)
     converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     mlir_result = converter.convert(result_graph)
     # testing that this doesn't raise an error
@@ -291,6 +293,7 @@ def test_mlir_converter_dot_vector_and_constant(default_compilation_configuratio
         [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
         default_compilation_configuration,
     )
+    prepare_op_graph_for_mlir(left_graph)
     left_converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     left_mlir = left_converter.convert(left_graph)
 
@@ -300,6 +303,7 @@ def test_mlir_converter_dot_vector_and_constant(default_compilation_configuratio
         [(numpy.random.randint(0, 2 ** 3, size=(2,)),) for _ in range(10)],
         default_compilation_configuration,
     )
+    prepare_op_graph_for_mlir(right_graph)
     right_converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
     right_mlir = right_converter.convert(right_graph)
 
