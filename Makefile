@@ -240,6 +240,15 @@ changelog: check_version_coherence
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 .PHONY: changelog
 
+release: check_version_coherence
+	@PROJECT_VER=($$(poetry version));\
+	PROJECT_VER="$${PROJECT_VER[1]}";\
+	TAG_NAME="v$${PROJECT_VER}";\
+	git fetch --tags --force;\
+	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}";\
+	git push origin "refs/tags/$${TAG_NAME}"
+.PHONY: release
+
 # Show the accepted types and optional scopes
 show_scope:
 	@echo "Accepted types and optional scopes:"

@@ -20,7 +20,8 @@ VERSION=X.Y.Z-rc? make set_version
 
 Then:
 - [ ] For non RC releases: check the release milestone issues, cut out what can't be completed in time and change the milestones for these issues
-- [ ] Checkout the commit for release, create a signed tag (requires GPG keys setup, see [here](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification)) with the version name (careful for RC) `git tag -s -a -m "vX.Y.Z release" vX.Y.Z`, (or `vX.Y.Z-rc?`) push it to GitHub with `git push origin refs/tags/vX.Y.Z` (or `vX.Y.Z-rc?`)
+- [ ] Checkout the commit for release
+- [ ] Call `make release`, which creates a signed tag (requires GPG keys setup, see [here](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification)) and pushes it
 - [ ] Wait for the release workflow to finish and check everything went well.
 
 To continue the release cycle:
