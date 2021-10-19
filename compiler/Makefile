@@ -26,7 +26,8 @@ zamacompiler: build-initialized
 	cmake --build $(BUILD_DIR) --target zamacompiler
 
 python-bindings: build-initialized
-	cmake --build $(BUILD_DIR) --target ZamalangMLIRPythonModules ZamalangPythonModules
+	cmake --build $(BUILD_DIR) --target ZamalangMLIRPythonModules
+	cmake --build $(BUILD_DIR) --target ZamalangPythonModules
 
 test-check: zamacompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/
