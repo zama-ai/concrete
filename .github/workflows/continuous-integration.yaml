@@ -502,8 +502,19 @@ jobs:
           python -m pip install poetry
           make setup_env
       - name: Set tag in env
+        # 'poetry version' cannot be piped properly so do it in 2 steps
+        # the project version does not have the leading v to be semver compatible
         run: |
+          PROJECT_VERSION=$(poetry version)
+          PROJECT_VERSION=$(echo "$PROJECT_VERSION" | cut -d ' ' -f 2)
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
+
+          if [[ "v${PROJECT_VERSION}" != "${GIT_TAG}" ]]; then
+            echo "Mismatch between tag and version: ${GIT_TAG}, v${PROJECT_VERSION}"
+            exit 1
+          fi
+
+          echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
           RELEASE_IMG_GIT_TAG="${RELEASE_IMAGE_BASE}:${GIT_TAG}"
           echo "RELEASE_IMG_GIT_TAG=${RELEASE_IMG_GIT_TAG}" >> "$GITHUB_ENV"
@@ -600,15 +611,37 @@ jobs:
           docker image push --all-tags "${RELEASE_IMAGE_BASE}"
       - name: Push release documentation
         if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) }}
-        run: |
-          echo "Should push release documentation as ${GIT_TAG}"
-          echo "The dir to push would be: ${{ steps.download-docs.outputs.download-path }}"
-          echo "It contains:"
-          ls -la "${{ steps.download-docs.outputs.download-path }}"
+        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
+        with:
+          args: --delete --acl public-read
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
+          DEST_DIR: 'concretefhe/${{ env.PROJECT_VERSION }}'
       - name: Push release documentation as stable
         if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
-        run: |
-          echo "Should push release documentation as stable"
+        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
+        with:
+          args: --delete --acl public-read
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
+          DEST_DIR: 'concretefhe/stable'
+      - name: Invalidate CloudFront Cache for stable
+        if: ${{ success() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
+        uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
+        env:
+          SOURCE_PATH: "/concretefhe/stable/*"
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
