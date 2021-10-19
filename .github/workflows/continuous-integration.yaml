@@ -593,7 +593,7 @@ jobs:
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
-      - name: Create ready to upload/packaged artifacts
+      - name: Create ready to upload/packaged artifacts and release body
         if: ${{ success() && !cancelled() }}
         env:
           RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
@@ -604,7 +604,18 @@ jobs:
           tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
           popd
           cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
-          ls -a .
+          ls -a "${ARTIFACTS_PACKAGED_DIR}"
+
+          RELEASE_BODY_FILE=RELEASE_BODY.md
+          echo "RELEASE_BODY_FILE=${RELEASE_BODY_FILE}" >> "$GITHUB_ENV"
+
+          cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
+          echo "Docker Image: ${RELEASE_IMG_GIT_TAG}" >> "${RELEASE_BODY_FILE}"
+          if [[ "${IS_PRERELEASE}" == "false" ]]; then
+            echo "Documentation: https://docs.zama.ai/concretefhe/${PROJECT_VERSION}" >> "${RELEASE_BODY_FILE}"
+          fi
+          echo "" >> "${RELEASE_BODY_FILE}"
+          cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
       - name: Push release docker image
         if: ${{ success() && !cancelled() }}
         run: |
@@ -647,9 +658,7 @@ jobs:
         id: create-release
         uses: softprops/action-gh-release@6034af24fba4e5a8e975aaa6056554efe4c794d0
         with:
-          body: |
-            **Docker Image:** ${{ env.RELEASE_IMG_GIT_TAG }}
-            **Documentation:** https://docs.zama.ai/concrete/
+          body_path: ${{ env.RELEASE_BODY_FILE }}
           prerelease: ${{ fromJSON(env.IS_PRERELEASE) }}
           files: |
             ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
