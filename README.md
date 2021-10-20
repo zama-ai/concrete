@@ -74,6 +74,13 @@ To install FFTW on a debian-based distribution, you can use the following comman
 sudo apt-get update && sudo apt-get install -y libfftw3-dev
 ```
 
+You will also need to make sure that your machine has a C linker installed. On Linux, this
+can be done with the following command:
+
+```bash
+sudo apt install build-essential
+```
+
 # Credits
 
 This library uses several dependencies and we would like to thank the contributors of those
