@@ -1,4 +1,4 @@
-# bench: Unit Target: x + 42
+# bench: Unit Target: x + 42 (9b)
 
 import random
 
@@ -8,16 +8,19 @@ import concrete.numpy as hnp
 
 
 def main():
+
+    max_precision = 9
+
     def function_to_compile(x):
         return x + 42
 
-    x = hnp.EncryptedScalar(hnp.UnsignedInteger(10))
+    x = hnp.EncryptedScalar(hnp.UnsignedInteger(max_precision))
 
     # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x},
-        [(i,) for i in range(2 ** 10)],
+        [(i,) for i in range(2 ** max_precision - 42)],
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # bench: Measure: End
@@ -25,7 +28,7 @@ def main():
     inputs = []
     labels = []
     for _ in range(4):
-        sample_x = random.randint(0, 2 ** 10 - 1)
+        sample_x = random.randint(0, 2 ** max_precision - 1 - 42)
 
         inputs.append([sample_x])
         labels.append(function_to_compile(*inputs[-1]))
