@@ -18,6 +18,7 @@
 #include "zamalang/Conversion/Utils/GlobalFHEContext.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
+#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
@@ -485,6 +486,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   }
 
   // Load our Dialect in this MLIR Context.
+  context.getOrLoadDialect<mlir::zamalang::HLFHELinalg::HLFHELinalgDialect>();
   context.getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   context.getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
   context.getOrLoadDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();

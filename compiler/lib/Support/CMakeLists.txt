@@ -16,6 +16,7 @@ add_mlir_library(ZamalangSupport
   MLIRConversionPassIncGen
 
   LINK_LIBS PUBLIC
+  HLFHELinalgDialect
   HLFHETensorOpsToLinalg
   HLFHEToMidLFHE
   LowLFHEUnparametrize
