@@ -284,17 +284,17 @@ def perform_measurements(path, script, target_id, metrics, samples, result):
         del result["targets"][target_id]["measurements"]
 
 
-def main(args):
-    """Measurement script for the progress tracker"""
-
+def get_scripts_to_benchmark(args):
+    """Get the list of files to benchmark"""
     base = pathlib.Path(args.base)
-    samples = args.samples
 
-    with open(".benchmarks/machine.json", "r", encoding="utf-8") as f:
-        machine = json.load(f)
+    if args.files_to_benchmark is None:
+        scripts = list(base.glob("*.py"))
+    else:
+        scripts = [pathlib.Path(f) for f in args.files_to_benchmark]
 
-    result = {"machine": machine, "metrics": {}, "targets": {}}
-    scripts = list(base.glob("*.py"))
+    print("Will benchmark following files:\n")
+    print("    - " + "\n    - ".join(str(s) for s in scripts))
 
     # Clear the previous temporary scripts directory
     shutil.rmtree(".benchmarks/scripts", ignore_errors=True)
@@ -306,6 +306,21 @@ def main(args):
     # the modified scripts will have access to helper modules defined within the base directory
     # (e.g., we copy `benchmarks/common.py` to `.benchmarks/scripts/common.py` which allows
     #  the modified `.benchmarks/scripts/x_plus_42.py` to access `common` module`)
+
+    return scripts
+
+
+def main(args):
+    """Measurement script for the progress tracker"""
+
+    samples = args.samples
+
+    with open(".benchmarks/machine.json", "r", encoding="utf-8") as f:
+        machine = json.load(f)
+
+    result = {"machine": machine, "metrics": {}, "targets": {}}
+
+    scripts = get_scripts_to_benchmark(args)
 
     # Process each script under the base directory
     for path in scripts:
@@ -396,5 +411,13 @@ if __name__ == "__main__":
     parser.add_argument("base", type=str, help="directory which contains the benchmarks")
     parser.add_argument("--samples", type=int, default=30, help="number of samples to take")
     parser.add_argument("--keep", action="store_true", help="flag to keep measurement scripts")
+    parser.add_argument(
+        "--files_to_benchmark",
+        "-f",
+        nargs="+",
+        type=str,
+        default=None,
+        help="files to benchmark in base directory (with base directory as a prefix)",
+    )
 
     main(parser.parse_args())
