@@ -71,6 +71,11 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
         if not value_is_unsigned_integer(inputs[0]) or not value_is_unsigned_integer(inputs[1]):
             return "only unsigned integer dot product is supported"
 
+    elif isinstance(node, intermediate.IndexConstant):  # constraints for constant indexing
+        assert_true(len(outputs) == 1)
+        if not value_is_unsigned_integer(outputs[0]):
+            return "only unsigned integer tensor constant indexing is supported"
+
     else:  # pragma: no cover
         assert_not_reached("Non IntermediateNode object in the OPGraph")
 

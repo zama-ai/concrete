@@ -116,6 +116,54 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
             20,
             id="Dot, np.array([1, 2, 3, 4]), np.array([4, 3, 2, 1])",
         ),
+        pytest.param(
+            ir.IndexConstant(EncryptedTensor(Integer(4, True), shape=(4,)), (0,)),
+            [
+                numpy.array([1, 2, 3, 4], dtype=numpy.int32),
+            ],
+            1,
+            id="IndexConstant, np.array([1, 2, 3, 4])[0]",
+        ),
+        pytest.param(
+            ir.IndexConstant(EncryptedTensor(Integer(4, True), shape=(4,)), (slice(1, 3, None),)),
+            [
+                numpy.array([1, 2, 3, 4], dtype=numpy.int32),
+            ],
+            numpy.array([2, 3]),
+            id="IndexConstant, np.array([1, 2, 3, 4])[1:3]",
+        ),
+        pytest.param(
+            ir.IndexConstant(EncryptedTensor(Integer(4, True), shape=(4,)), (slice(3, 1, -1),)),
+            [
+                numpy.array([1, 2, 3, 4], dtype=numpy.int32),
+            ],
+            numpy.array([4, 3], dtype=numpy.int32),
+            id="IndexConstant, np.array([1, 2, 3, 4])[3:1:-1]",
+        ),
+        pytest.param(
+            ir.IndexConstant(
+                EncryptedTensor(Integer(5, True), shape=(4, 4)), (slice(1, 3, 1), slice(2, 0, -1))
+            ),
+            [
+                numpy.array(
+                    [
+                        [1, 2, 3, 4],
+                        [5, 6, 7, 8],
+                        [9, 10, 11, 12],
+                        [13, 14, 15, 16],
+                    ],
+                    dtype=numpy.int32,
+                ),
+            ],
+            numpy.array(
+                [
+                    [7, 6],
+                    [11, 10],
+                ],
+                dtype=numpy.int32,
+            ),
+            id="IndexConstant, np.array([[1, 2, 3, 4]...[13, 14, 15, 16]])[1:3, 2:0:-1]",
+        ),
     ],
 )
 def test_evaluate(
@@ -124,7 +172,10 @@ def test_evaluate(
     expected_result: int,
 ):
     """Test evaluate methods on IntermediateNodes"""
-    assert node.evaluate(input_data) == expected_result
+    if isinstance(expected_result, numpy.ndarray):
+        assert (node.evaluate(input_data) == expected_result).all()
+    else:
+        assert node.evaluate(input_data) == expected_result
 
 
 @pytest.mark.parametrize(

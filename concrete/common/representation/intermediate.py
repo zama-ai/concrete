@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, Union
 
 from loguru import logger
 
@@ -14,7 +14,15 @@ from ..data_types.dtypes_helpers import (
 )
 from ..data_types.integers import Integer
 from ..debugging.custom_assert import assert_true
-from ..values import BaseValue, ClearScalar, EncryptedScalar, TensorValue
+from ..helpers import indexing_helpers
+from ..values import (
+    BaseValue,
+    ClearScalar,
+    ClearTensor,
+    EncryptedScalar,
+    EncryptedTensor,
+    TensorValue,
+)
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
 
@@ -195,6 +203,56 @@ class Constant(IntermediateNode):
 
     def label(self) -> str:
         return str(self.constant_data)
+
+
+class IndexConstant(IntermediateNode):
+    """Node representing a constant indexing in the program.
+
+    What we mean by constant indexing is that the index part of the operation is a constant.
+    Here are some examples: `x[2]`, `x[0, 1]`, `y[:, 0]`, `y[3:, :5]`
+
+    The opposite is to have dynamic indexing, which this node does not support.
+    Some examples of dynamic indexing are: `x[y]`, `x[y, z]`, `x[:, y]`
+    """
+
+    _n_in: int = 1
+
+    index: Tuple[Union[int, slice], ...]
+
+    def __init__(
+        self,
+        input_: BaseValue,
+        index: Union[int, slice, Tuple[Union[int, slice], ...]],
+    ) -> None:
+        super().__init__((input_,))
+
+        if not isinstance(self.inputs[0], TensorValue) or self.inputs[0].is_scalar:
+            raise TypeError(f"Only tensors can be indexed but you tried to index {self.inputs[0]}")
+
+        self.index = indexing_helpers.validate_index(index)
+
+        output_dtype = self.inputs[0].dtype
+        output_shape = indexing_helpers.determine_output_shape(self.inputs[0].shape, self.index)
+
+        self.outputs = [
+            EncryptedTensor(output_dtype, output_shape)
+            if self.inputs[0].is_encrypted
+            else ClearTensor(output_dtype, output_shape)
+        ]
+
+    def evaluate(self, inputs: Dict[int, Any]) -> Any:
+        return inputs[0][self.index]
+
+    def label(self) -> str:
+        """Label of the node to show during drawings.
+
+        It can be used for some other places after `"value"` below is replaced by `""`.
+        This note will no longer be necessary after #707 is addressed.
+
+        """
+        elements = [indexing_helpers.format_indexing_element(element) for element in self.index]
+        index = ", ".join(elements)
+        return f"value[{index}]"
 
 
 def flood_replace_none_values(table: list):

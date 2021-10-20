@@ -7,6 +7,7 @@ from ..debugging.custom_assert import assert_true
 from ..representation.intermediate import (
     IR_MIX_VALUES_FUNC_ARG_NAME,
     Add,
+    IndexConstant,
     IntermediateNode,
     Mul,
     Sub,
@@ -161,3 +162,7 @@ class BaseTracer(ABC):
     # the order, we need to do as in __rmul__, ie mostly a copy of __mul__ +
     # some changes
     __rmul__ = __mul__
+
+    def __getitem__(self, item):
+        traced_computation = IndexConstant(self.output, item)
+        return self.__class__([self], traced_computation, 0)

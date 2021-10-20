@@ -18,6 +18,7 @@ from .np_dtypes_helpers import (
     get_base_value_for_numpy_or_python_constant_data,
     get_numpy_function_output_dtype,
 )
+from .np_indexing_helpers import process_indexing_element
 
 SUPPORTED_TYPES_FOR_TRACING = (int, float, numpy.ndarray) + tuple(
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES
@@ -263,6 +264,14 @@ class NPTracer(BaseTracer):
             output_idx=0,
         )
         return output_tracer
+
+    def __getitem__(self, item):
+        if isinstance(item, tuple):
+            item = tuple(process_indexing_element(indexing_element) for indexing_element in item)
+        else:
+            item = process_indexing_element(item)
+
+        return BaseTracer.__getitem__(self, item)
 
     # Supported functions are either univariate or bivariate for which one of the two
     # sources is a constant

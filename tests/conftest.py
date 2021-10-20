@@ -14,6 +14,7 @@ from concrete.common.representation.intermediate import (
     Add,
     Constant,
     Dot,
+    IndexConstant,
     Input,
     IntermediateNode,
     Mul,
@@ -147,6 +148,15 @@ def is_equivalent_input(lhs: Input, rhs: object) -> bool:
     )
 
 
+def is_equivalent_index_constant(lhs: IndexConstant, rhs: object) -> bool:
+    """Helper function to check if an IndexConstant node is equivalent to an other object."""
+    return (
+        isinstance(rhs, IndexConstant)
+        and lhs.index == rhs.index
+        and is_equivalent_intermediate_node(lhs, rhs)
+    )
+
+
 def is_equivalent_mul(lhs: Mul, rhs: object) -> bool:
     """Helper function to check if a Mul node is equivalent to an other object."""
     return _is_equivalent_to_binary_commutative(lhs, rhs)
@@ -171,6 +181,7 @@ EQUIVALENT_TEST_FUNC: Dict[Type, Callable[..., bool]] = {
     UnivariateFunction: is_equivalent_arbitrary_function,
     Constant: is_equivalent_constant,
     Dot: is_equivalent_dot,
+    IndexConstant: is_equivalent_index_constant,
     Input: is_equivalent_input,
     Mul: is_equivalent_mul,
     Sub: is_equivalent_sub,

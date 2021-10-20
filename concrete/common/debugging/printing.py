@@ -6,7 +6,13 @@ import networkx as nx
 
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
-from ..representation.intermediate import Constant, Input, IntermediateNode, UnivariateFunction
+from ..representation.intermediate import (
+    Constant,
+    IndexConstant,
+    Input,
+    IntermediateNode,
+    UnivariateFunction,
+)
 
 
 def output_data_type_to_string(node):
@@ -124,6 +130,9 @@ def get_printable_graph(
             what_to_print += prefix_to_add_to_what_to_print
             what_to_print += ", ".join(["%" + x[1] for x in list_of_arg_name])
             what_to_print += suffix_to_add_to_what_to_print
+            what_to_print += (
+                f"{node.label().replace('value', '')}" if isinstance(node, IndexConstant) else ""
+            )
             what_to_print += ")"
 
         # This code doesn't work with more than a single output

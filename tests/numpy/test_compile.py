@@ -852,6 +852,20 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 "return(%2)\n"
             ),
         ),
+        pytest.param(
+            lambda x: x[0],
+            {"x": EncryptedTensor(Integer(3, is_signed=True), shape=(2, 2))},
+            [(numpy.random.randint(-4, 2 ** 2, size=(2, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<signed, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "%1 = IndexConstant(%0[0])                          # EncryptedTensor<Integer<signed, 3 bits>, shape=(2,)>\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer tensor constant indexing is supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "return(%1)\n"
+            ),
+        ),
     ],
 )
 def test_fail_compile(function, parameters, inputset, match, default_compilation_configuration):
