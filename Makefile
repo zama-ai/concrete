@@ -32,6 +32,11 @@ check_finalize_nb:
 	poetry run python ./script/nbmake_utils/notebook_finalize.py $(NOTEBOOKS_DIR) --check
 .PHONY: check_finalize_nb
 
+check_benchmarks:
+	poetry run python script/progress_tracker_utils/extract_machine_info.py
+	poetry run python script/progress_tracker_utils/measure.py benchmarks --check
+.PHONY: check_benchmarks
+
 pylint:
 	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks pylint_script
 .PHONY: pylint
@@ -72,7 +77,7 @@ pcc:
 .PHONY: pcc
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_supported_functions
+PCC_DEPS += check_version_coherence check_supported_functions check_benchmarks
 pcc_internal: $(PCC_DEPS)
 .PHONY: pcc_internal
 

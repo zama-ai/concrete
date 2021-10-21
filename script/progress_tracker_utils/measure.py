@@ -293,8 +293,9 @@ def get_scripts_to_benchmark(args):
     else:
         scripts = [pathlib.Path(f) for f in args.files_to_benchmark]
 
-    print("Will benchmark following files:\n")
-    print("    - " + "\n    - ".join(str(s) for s in scripts))
+    if not args.check:
+        print("Will benchmark following files:\n")
+        print("    - " + "\n    - ".join(str(s) for s in scripts))
 
     # Clear the previous temporary scripts directory
     shutil.rmtree(".benchmarks/scripts", ignore_errors=True)
@@ -344,7 +345,7 @@ def main(args):
             # Extract target name
             target_name = first_line.replace("# bench: Full Target:", "").strip()
             is_unit = False
-        else:
+        elif not args.check:
             print()
             print(path)
             print("-" * len(str(path)))
@@ -382,33 +383,36 @@ def main(args):
         # Create another script to hold the modified version of the current script
         create_modified_script(name, lines, metrics)
 
-        # Create an entry in the result for the current target
-        result["targets"][target_id] = {
-            "name": target_name,
-            "measurements": {},
-            "alerts": alerts,
-            "code": "\n".join(lines),
-            "isUnit": is_unit,
-        }
+        if not args.check:
+            # Create an entry in the result for the current target
+            result["targets"][target_id] = {
+                "name": target_name,
+                "measurements": {},
+                "alerts": alerts,
+                "code": "\n".join(lines),
+                "isUnit": is_unit,
+            }
 
-        # Perform and save measurements
-        perform_measurements(path, name, target_id, metrics, samples, result)
+            # Perform and save measurements
+            perform_measurements(path, name, target_id, metrics, samples, result)
 
-        # Dump the latest results to the output file
-        with open(".benchmarks/findings.json", "w", encoding="utf-8") as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
+            # Dump the latest results to the output file
+            with open(".benchmarks/findings.json", "w", encoding="utf-8") as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
 
     # Delete the modified scripts if the user doesn't care
     if not args.keep:
         shutil.rmtree(".benchmarks/scripts", ignore_errors=True)
 
-    print()
+    if not args.check:
+        print()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Measurement script for the progress tracker")
 
     parser.add_argument("base", type=str, help="directory which contains the benchmarks")
+    parser.add_argument("--check", action="store_true", help="flag to enable just checking mode")
     parser.add_argument("--samples", type=int, default=30, help="number of samples to take")
     parser.add_argument("--keep", action="store_true", help="flag to keep measurement scripts")
     parser.add_argument(
