@@ -13,6 +13,7 @@ class HLFHELinalg_Op<string mnemonic, list<OpTrait> traits = []> :
 // TensorBroadcastingRules verify that the operands and result verify the broadcasting rules
 def TensorBroadcastingRules : NativeOpTrait<"TensorBroadcastingRules">;
 def TensorBinaryEintInt : NativeOpTrait<"TensorBinaryEintInt">;
+def TensorBinaryIntEint : NativeOpTrait<"TensorBinaryIntEint">;
 def TensorBinaryEint : NativeOpTrait<"TensorBinaryEint">;
 
 
@@ -117,6 +118,59 @@ def AddEintOp : HLFHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinar
     let builders = [
         OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
          build($_builder, $_state, rhs.getType(), rhs, lhs);
+        }]>
+    ];
+}
+
+def SubIntEintOp : HLFHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, TensorBinaryIntEint]> {
+    let summary = "Returns a tensor that contains the substraction of a tensor of clear integers and a tensor of encrypted integers.";
+
+    let description = [{
+        Performs a substraction following the broadcasting rules between a tensor of clear integers and a tensor of encrypted integers.
+        The width of the clear integers should be less or equals than the witdh of encrypted integers.
+
+        Examples:
+        ```mlir
+        // Returns the term to term substraction of `%a0` with `%a1`
+        "HLFHELinalg.sub_eint_int"(%a0, %a1) : (tensor<4xi5>, tensor<4x!HLFHE.eint<4>>) -> tensor<4x!HLFHE.eint<4>>
+
+        // Returns the term to term substraction of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi5>, tensor<1x4x4x!HLFHE.eint<4>>) -> tensor<4x4x4x!HLFHE.eint<4>>
+
+        // Returns the substraction of a 3x3 matrix of integers and a 3x1 matrix (a column) of encrypted integers.
+        //
+        // [1,2,3]   [1]   [0,2,3]
+        // [4,5,6] + [2] = [2,3,4]
+        // [7,8,9]   [3]   [4,5,6]
+        //
+        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        "HLFHELinalg.sub_int_eint(%a0, %a1)" : (tensor<3x1xi5>, tensor<3x4x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
+
+        // Returns the substraction of a 3x3 matrix of integers and a 1x3 matrix (a line) of encrypted integers.
+        //
+        // [1,2,3]             [0,0,0]
+        // [4,5,6] + [1,2,3] = [3,3,3]
+        // [7,8,9]             [6,6,6]
+        //
+        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        "HLFHELinalg.sub_int_eint(%a0, %a1)" : (tensor<1x3xi5>, tensor<3x4x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
+
+        // Same behavior than the previous one, but as the dimension #2 is missing of operand #2.
+        "HLFHELinalg.sub_int_eint(%a0, %a1)" : (tensor<3xi5>, tensor<3x4x!HLFHE.eint<4>>) -> tensor<4x4x4x!HLFHE.eint<4>>
+
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let builders = [
+        OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
+         build($_builder, $_state, lhs.getType(), rhs, lhs);
         }]>
     ];
 }

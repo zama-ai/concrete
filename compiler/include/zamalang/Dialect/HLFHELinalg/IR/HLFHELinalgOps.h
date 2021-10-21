@@ -14,6 +14,7 @@ namespace OpTrait {
 namespace impl {
 LogicalResult verifyTensorBroadcastingRules(mlir::Operation *op);
 LogicalResult verifyTensorBinaryEintInt(mlir::Operation *op);
+LogicalResult verifyTensorBinaryIntEint(mlir::Operation *op);
 LogicalResult verifyTensorBinaryEint(mlir::Operation *op);
 } // namespace impl
 
@@ -45,6 +46,19 @@ class TensorBinaryEintInt
 public:
   static LogicalResult verifyTrait(Operation *op) {
     return impl::verifyTensorBinaryEintInt(op);
+  }
+};
+
+/// TensorBinaryEintInt verifies that the operation matches the following
+/// signature
+/// `(tensor<...xi$p'>, tensor<...x!HLFHE.eint<$p>>) ->
+/// tensor<...x!HLFHE.eint<$p>>` where `$p <= $p+1`.
+template <typename ConcreteType>
+class TensorBinaryIntEint
+    : public mlir::OpTrait::TraitBase<ConcreteType, TensorBinaryEintInt> {
+public:
+  static LogicalResult verifyTrait(Operation *op) {
+    return impl::verifyTensorBinaryIntEint(op);
   }
 };
 
