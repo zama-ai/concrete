@@ -23,6 +23,8 @@ def name_to_id(name):
     name = name.replace(" ", "-")
     name = name.replace("(", "")
     name = name.replace(")", "")
+    name = name.replace(",", "")
+    name = name.replace(".", "-")
 
     return urllib.parse.quote_plus(name.lower())
 
