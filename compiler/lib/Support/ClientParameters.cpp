@@ -28,24 +28,24 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
       width = type.getIntOrFloatBitWidth();
     }
     return CircuitGate{
-        .encryption = llvm::None,
-        .shape =
-            {
-                .width = width,
-                .size = 0,
-            },
+        /*.encryption = */ llvm::None,
+        /*.shape = */
+        {
+            /*.width = */ width,
+            /*.size = */ 0,
+        },
     };
   }
   if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
     // TODO - Get the width from the LWECiphertextType instead of global
     // precision (could be possible after merge lowlfhe-ciphertext-parameter)
     return CircuitGate{
-        .encryption = llvm::Optional<EncryptionGate>({
-            .secretKeyID = secretKeyID,
-            .variance = variance,
-            .encoding = {.precision = precision},
+        /*.encryption = */ llvm::Optional<EncryptionGate>({
+            /*.secretKeyID = */ secretKeyID,
+            /*.variance = */ variance,
+            /*.encoding = */ {/*.precision = */ precision},
         }),
-        .shape = {.width = precision, .size = 0},
+        /*.shape = */ {/*.width = */ precision, /*.size = */ 0},
     };
   }
   auto tensor = type.dyn_cast_or_null<mlir::RankedTensorType>();
@@ -70,37 +70,37 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
       v0Curve->getVariance(1, 1 << v0Param.polynomialSize, 64);
   Variance keyswitchVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
-  ClientParameters c{
-      .secretKeys{
-          {"small", {.size = v0Param.nSmall}},
-          {"big", {.size = v0Param.getNBigGlweSize()}},
-      },
-      .bootstrapKeys{
+  ClientParameters c = {};
+  c.secretKeys = {
+      {"small", {/*.size = */ v0Param.nSmall}},
+      {"big", {/*.size = */ v0Param.getNBigGlweSize()}},
+  };
+  c.bootstrapKeys = {
+      {
+          "bsk_v0",
           {
-              "bsk_v0",
-              {
-                  .inputSecretKeyID = "small",
-                  .outputSecretKeyID = "big",
-                  .level = v0Param.brLevel,
-                  .baseLog = v0Param.brLogBase,
-                  .k = v0Param.k,
-                  .variance = encryptionVariance,
-              },
-          },
-      },
-      .keyswitchKeys{
-          {
-              "ksk_v0",
-              {
-                  .inputSecretKeyID = "big",
-                  .outputSecretKeyID = "small",
-                  .level = v0Param.ksLevel,
-                  .baseLog = v0Param.ksLogBase,
-                  .variance = keyswitchVariance,
-              },
+              /*.inputSecretKeyID = */ "small",
+              /*.outputSecretKeyID = */ "big",
+              /*.level = */ v0Param.brLevel,
+              /*.baseLog = */ v0Param.brLogBase,
+              /*.k = */ v0Param.k,
+              /*.variance = */ encryptionVariance,
           },
       },
   };
+  c.keyswitchKeys = {
+      {
+          "ksk_v0",
+          {
+              /*.inputSecretKeyID = */ "big",
+              /*.outputSecretKeyID = */ "small",
+              /*.level = */ v0Param.ksLevel,
+              /*.baseLog = */ v0Param.ksLogBase,
+              /*.variance = */ keyswitchVariance,
+          },
+      },
+  };
+
   // Find the input function
   auto rangeOps = module.getOps<mlir::FuncOp>();
   auto funcOp = llvm::find_if(
@@ -113,7 +113,7 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
 
   // For the v0 the precision is global
   auto precision = fheContext.constraint.p;
-  Encoding encoding = {.precision = fheContext.constraint.p};
+  Encoding encoding = {/*.precision = */ fheContext.constraint.p};
 
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();

@@ -76,7 +76,8 @@ getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module) {
 
   if (oMax2norm.hasValue() && oMaxWidth.hasValue()) {
     ret = llvm::Optional<mlir::zamalang::V0FHEConstraint>(
-        {.norm2 = ceilLog2(oMax2norm.getValue()), .p = oMaxWidth.getValue()});
+        {/*.norm2 = */ ceilLog2(oMax2norm.getValue()),
+         /*.p = */ oMaxWidth.getValue()});
   }
 
   return ret;
