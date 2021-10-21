@@ -1049,12 +1049,17 @@ def test_compile_too_high_bitwidth(default_compilation_configuration):
             default_compilation_configuration,
         )
 
+    # pylint: disable=line-too-long
     assert (
-        "max_bit_width of some nodes is too high for the current version of the "
-        "compiler (maximum must be 7 which is not compatible with" in str(excinfo.value)
+        str(excinfo.value)
+        == "max_bit_width of some nodes is too high for the current version of the compiler (maximum must be 7) which is not compatible with:\n"  # noqa: E501
+        "%0 = x                                             # EncryptedScalar<Integer<unsigned, 7 bits>>\n"  # noqa: E501
+        "%1 = y                                             # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
+        "%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 8 bits>>\n"  # noqa: E501
+        "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 8 bits is not supported for the time being\n"  # noqa: E501
+        "return(%2)\n"
     )
-
-    assert str(excinfo.value).endswith(", 8)])")
+    # pylint: enable=line-too-long
 
     # Just ok
     input_ranges = [(0, 99), (0, 28)]
