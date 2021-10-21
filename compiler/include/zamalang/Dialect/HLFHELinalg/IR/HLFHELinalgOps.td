@@ -175,4 +175,52 @@ def SubIntEintOp : HLFHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, Tens
     ];
 }
 
+def MulEintIntOp : HLFHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
+    let summary = "Returns a tensor that contains the multiplication of a tensor of encrypted integers and a tensor of clear integers.";
+
+    let description = [{
+        Performs a multiplication following the broadcasting rules between a tensor of encrypted integers and a tensor of clear integers.
+        The width of the clear integers should be less or equals than the witdh of encrypted integers.
+
+        Examples:
+        ```mlir
+        // Returns the term to term multiplication of `%a0` with `%a1`
+        "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<4>>, tensor<4xi5>) -> tensor<4x!HLFHE.eint<4>>
+
+        // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equal to one are stretched.
+        "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!HLFHE.eint<4>>, tensor<1x4x4xi5>) -> tensor<4x4x4x!HLFHE.eint<4>>
+
+        // Returns the multiplication of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of integers.
+        //
+        // [1,2,3]   [1]   [1,2,3]
+        // [4,5,6] * [2] = [8,10,18]
+        // [7,8,9]   [3]   [21,24,27]
+        //
+        // The dimension #1 of operand #2 is stretched as it is equals to 1.
+        "HLFHELinalg.mul_eint_int(%a0, %a1)" : (tensor<3x4x!HLFHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!HLFHE.eint<4>>
+
+        // Returns the multiplication of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of integers.
+        //
+        // [1,2,3]             [2,4,6]
+        // [4,5,6] * [1,2,3] = [5,7,9]
+        // [7,8,9]             [8,10,12]
+        //
+        // The dimension #2 of operand #2 is stretched as it is equals to 1.
+        "HLFHELinalg.mul_eint_int(%a0, %a1)" : (tensor<3x4x!HLFHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!HLFHE.eint<4>>
+
+        // Same behavior than the previous one, but as the dimension #2 is missing of operand #2.
+        "HLFHELinalg.mul_eint_int(%a0, %a1)" : (tensor<3x4x!HLFHE.eint<4>>, tensor<3xi5>) -> tensor<4x4x4x!HLFHE.eint<4>>
+
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$rhs
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+}
+
 #endif
