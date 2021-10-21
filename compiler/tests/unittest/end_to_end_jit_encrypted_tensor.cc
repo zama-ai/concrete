@@ -5,13 +5,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 const size_t numDim = 2;
-const size_t dim0 = 2;
-const size_t dim1 = 10;
-const size_t dims[numDim]{dim0, dim1};
+const int64_t dim0 = 2;
+const int64_t dim1 = 10;
+const int64_t dims[numDim]{dim0, dim1};
 const uint8_t tensor2D[dim0][dim1]{
     {63, 12, 7, 43, 52, 9, 26, 34, 22, 0},
     {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
 };
+const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
 
 TEST(End2EndJit_EncryptedTensor_2D, identity) {
   mlir::zamalang::CompilerEngine engine;
@@ -26,7 +27,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<2x10x!HLFHE.eint<6>> {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, shape2D));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result
@@ -54,7 +55,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) -> !HLFHE.eint
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, shape2D));
   for (size_t i = 0; i < dims[0]; i++) {
     for (size_t j = 0; j < dims[1]; j++) {
       // Set %i, %j
@@ -84,7 +85,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, shape2D));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result
@@ -113,7 +114,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, shape2D));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result
@@ -142,11 +143,12 @@ func @main(%t0: tensor<2x10x!HLFHE.eint<6>>, %t1: tensor<2x2x!HLFHE.eint<6>>) ->
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t0 argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint8_t *)tensor2D, shape2D));
   // Set the %t1 argument
-  uint64_t t1_dim[2] = {2, 2};
+  int64_t t1_dim[2] = {2, 2};
   uint8_t t1[2][2]{{6, 9}, {4, 0}};
-  ASSERT_LLVM_ERROR(argument->setArg(1, (uint8_t *)t1, 2, t1_dim));
+  ASSERT_LLVM_ERROR(
+      argument->setArg(1, (uint8_t *)t1, llvm::ArrayRef<int64_t>(t1_dim, 2)));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result

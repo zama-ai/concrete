@@ -230,7 +230,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
 }
 
 llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
-                                        size_t numDim, const size_t *dims) {
+                                        llvm::ArrayRef<int64_t> shape) {
   auto gate = inputGates[pos];
   auto info = std::get<0>(gate);
   auto offset = std::get<1>(gate);
@@ -272,25 +272,25 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
         llvm::Twine("argument is not a vector: pos=").concat(llvm::Twine(pos)),
         llvm::inconvertibleErrorCode());
   }
-  if (numDim != info.shape.dimensions.size()) {
+  if (shape.size() != info.shape.dimensions.size()) {
     return llvm::make_error<llvm::StringError>(
         llvm::Twine("tensor argument #")
             .concat(llvm::Twine(pos))
             .concat(" has not the expected number of dimension, got ")
-            .concat(llvm::Twine(numDim))
+            .concat(llvm::Twine(shape.size()))
             .concat(" expected ")
             .concat(llvm::Twine(info.shape.dimensions.size())),
         llvm::inconvertibleErrorCode());
   }
-  for (size_t i = 0; i < numDim; i++) {
-    if (dims[i] != info.shape.dimensions[i]) {
+  for (size_t i = 0; i < shape.size(); i++) {
+    if (shape[i] != info.shape.dimensions[i]) {
       return llvm::make_error<llvm::StringError>(
           llvm::Twine("tensor argument #")
               .concat(llvm::Twine(pos))
               .concat(" has not the expected dimension #")
               .concat(llvm::Twine(i))
               .concat(" , got ")
-              .concat(llvm::Twine(dims[i]))
+              .concat(llvm::Twine(shape[i]))
               .concat(" expected ")
               .concat(llvm::Twine(info.shape.dimensions[i])),
           llvm::inconvertibleErrorCode());
@@ -341,13 +341,13 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
   rawArg[offset] = &inputs[offset];
   offset++;
   // sizes is an array of size equals to numDim
-  for (size_t i = 0; i < numDim; i++) {
-    inputs[offset] = (void *)dims[i];
+  for (size_t i = 0; i < shape.size(); i++) {
+    inputs[offset] = (void *)shape[i];
     rawArg[offset] = &inputs[offset];
     offset++;
   }
   // strides is an array of size equals to numDim
-  for (size_t i = 0; i < numDim; i++) {
+  for (size_t i = 0; i < shape.size(); i++) {
     inputs[offset] = (void *)0;
     rawArg[offset] = &inputs[offset];
     offset++;
@@ -411,12 +411,12 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t *res,
   if (!info.encryption.hasValue()) {
     // just copy values
     for (size_t i = 0; i < size; i++) {
-      res[i] = ((uint64_t *)(aligned))[i];
+      res[i] = ((uint64_t *)aligned)[i];
     }
   } else {
     // decrypt and fill the result buffer
     for (size_t i = 0; i < size; i++) {
-      LweCiphertext_u64 *ct = ((LweCiphertext_u64 **)(aligned))[i];
+      LweCiphertext_u64 *ct = ((LweCiphertext_u64 **)aligned)[i];
       if (auto err = this->keySet.decrypt_lwe(pos, ct, res[i])) {
         return std::move(err);
       }

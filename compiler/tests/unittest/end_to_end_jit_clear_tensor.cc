@@ -222,14 +222,15 @@ func @main(%t: tensor<10xi1>, %i: index) -> i1{
 ///////////////////////////////////////////////////////////////////////////////
 
 const size_t numDim = 2;
-const size_t dim0 = 2;
-const size_t dim1 = 10;
-const size_t dims[numDim]{dim0, dim1};
+const int64_t dim0 = 2;
+const int64_t dim1 = 10;
+const int64_t dims[numDim]{dim0, dim1};
 const uint64_t tensor2D[dim0][dim1]{
     {0xFFFFFFFFFFFFFFFF, 0, 8978, 2587490, 90, 197864, 698735, 72132, 87474,
      42},
     {986, 1873, 298493, 34939, 443, 59874, 43, 743, 8409, 9433},
 };
+const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
 
 TEST(End2EndJit_ClearTensor_2D, identity) {
   mlir::zamalang::CompilerEngine engine;
@@ -244,7 +245,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, shape2D));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result
@@ -272,7 +273,7 @@ func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, shape2D));
   for (size_t i = 0; i < dims[0]; i++) {
     for (size_t j = 0; j < dims[1]; j++) {
       // Set %i, %j
@@ -302,7 +303,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, shape2D));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result
@@ -331,7 +332,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, shape2D));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result
@@ -360,11 +361,12 @@ func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
   ASSERT_LLVM_ERROR(maybeArgument.takeError());
   auto argument = std::move(maybeArgument.get());
   // Set the %t0 argument
-  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, numDim, dims));
+  ASSERT_LLVM_ERROR(argument->setArg(0, (uint64_t *)tensor2D, shape2D));
   // Set the %t1 argument
-  uint64_t t1_dim[2] = {2, 2};
+  int64_t t1_dim[2] = {2, 2};
   uint64_t t1[2][2]{{6, 9}, {4, 0}};
-  ASSERT_LLVM_ERROR(argument->setArg(1, (uint64_t *)t1, 2, t1_dim));
+  ASSERT_LLVM_ERROR(
+      argument->setArg(1, (uint64_t *)t1, llvm::ArrayRef<int64_t>(t1_dim, 2)));
   // Invoke the function
   ASSERT_LLVM_ERROR(engine.invoke(*argument));
   // Get and assert the result
