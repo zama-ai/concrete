@@ -1,12 +1,13 @@
 """Test file for numpy compilation functions"""
 import itertools
 import random
+from copy import deepcopy
 
 import numpy
 import pytest
 
 from concrete.common.compilation import CompilationConfiguration
-from concrete.common.data_types.integers import Integer
+from concrete.common.data_types.integers import Integer, UnsignedInteger
 from concrete.common.debugging import draw_graph, get_printable_graph
 from concrete.common.extensions.table import LookupTable
 from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
@@ -1131,3 +1132,59 @@ def test_failure_for_signed_output(default_compilation_configuration):
         "return(%2)\n"
     )
     # pylint: enable=line-too-long
+
+
+def test_compile_with_random_inputset(default_compilation_configuration):
+    """Test function for compile with random input set"""
+
+    configuration_to_use = deepcopy(default_compilation_configuration)
+    configuration_to_use.enable_unsafe_features = True
+
+    compile_numpy_function_into_op_graph(
+        lambda x: x + 1,
+        {"x": EncryptedScalar(UnsignedInteger(6))},
+        inputset="random",
+        compilation_configuration=configuration_to_use,
+    )
+    compile_numpy_function(
+        lambda x: x + 32,
+        {"x": EncryptedScalar(UnsignedInteger(6))},
+        inputset="random",
+        compilation_configuration=configuration_to_use,
+    )
+
+
+def test_fail_compile_with_random_inputset(default_compilation_configuration):
+    """Test function for failed compile with random input set"""
+
+    with pytest.raises(ValueError):
+        try:
+            compile_numpy_function_into_op_graph(
+                lambda x: x + 1,
+                {"x": EncryptedScalar(UnsignedInteger(3))},
+                inputset="unsupported",
+                compilation_configuration=default_compilation_configuration,
+            )
+        except Exception as error:
+            expected = (
+                "inputset can only be an iterable of tuples or the string 'random' "
+                "but you specified 'unsupported' for it"
+            )
+            assert str(error) == expected
+            raise
+
+    with pytest.raises(RuntimeError):
+        try:
+            compile_numpy_function(
+                lambda x: x + 1,
+                {"x": EncryptedScalar(UnsignedInteger(3))},
+                inputset="random",
+                compilation_configuration=default_compilation_configuration,
+            )
+        except Exception as error:
+            expected = (
+                "Random inputset generation is an unsafe feature "
+                "and should not be used if you don't know what you are doing"
+            )
+            assert str(error) == expected
+            raise

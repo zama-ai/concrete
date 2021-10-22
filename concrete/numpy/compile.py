@@ -2,7 +2,7 @@
 
 import sys
 import traceback
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
 
 import numpy
 from zamalang import CompilerEngine
@@ -28,6 +28,7 @@ from .np_dtypes_helpers import (
     get_base_value_for_numpy_or_python_constant_data,
     get_constructor_for_numpy_or_python_constant_data,
 )
+from .np_inputset_helpers import _check_special_inputset_availability, _generate_random_inputset
 from .np_mlir_converter import NPMLIRConverter
 
 
@@ -158,7 +159,7 @@ def _compile_numpy_function_into_op_graph_internal(
 def compile_numpy_function_into_op_graph(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterable[Tuple[Any, ...]],
+    inputset: Union[Iterable[Tuple[Any, ...]], str],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ) -> OPGraph:
@@ -168,9 +169,11 @@ def compile_numpy_function_into_op_graph(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterable on tuples which are of the same length than the number of
-            parameters in the function, and in the same order than these same parameters
+        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph
+            is evaluated. It needs to be an iterable on tuples which are of the same length than
+            the number of parameters in the function, and in the same order than these same
+            parameters. Alternatively, it can be "random" but that's an unstable feature and should
+            not be used in production.
         compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
             during compilation
         compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
@@ -190,6 +193,11 @@ def compile_numpy_function_into_op_graph(
     # Create temporary artifacts if custom artifacts is not specified (in case of exceptions)
     if compilation_artifacts is None:
         compilation_artifacts = CompilationArtifacts()
+
+    # Generate random inputset if it is requested and available
+    if isinstance(inputset, str):
+        _check_special_inputset_availability(inputset, compilation_configuration)
+        inputset = _generate_random_inputset(function_parameters, compilation_configuration)
 
     # Try to compile the function and save partial artifacts on failure
     try:
@@ -306,7 +314,7 @@ def _compile_numpy_function_internal(
 def compile_numpy_function(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterable[Tuple[Any, ...]],
+    inputset: Union[Iterable[Tuple[Any, ...]], str],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
@@ -317,9 +325,11 @@ def compile_numpy_function(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterable on tuples which are of the same length than the number of
-            parameters in the function, and in the same order than these same parameters
+        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph
+            is evaluated. It needs to be an iterable on tuples which are of the same length than
+            the number of parameters in the function, and in the same order than these same
+            parameters. Alternatively, it can be "random" but that's an unstable feature and should
+            not be used in production.
         compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
             during compilation
         compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
@@ -341,6 +351,11 @@ def compile_numpy_function(
     # Create temporary artifacts if custom artifacts is not specified (in case of exceptions)
     if compilation_artifacts is None:
         compilation_artifacts = CompilationArtifacts()
+
+    # Generate random inputset if it is requested and available
+    if isinstance(inputset, str):
+        _check_special_inputset_availability(inputset, compilation_configuration)
+        inputset = _generate_random_inputset(function_parameters, compilation_configuration)
 
     # Try to compile the function and save partial artifacts on failure
     try:
