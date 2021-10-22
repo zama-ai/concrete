@@ -34,7 +34,7 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_sessionfinish(session: pytest.Session, exitstatus):
+def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disable=unused-argument
     """Pytest callback when testing ends."""
     # Hacked together from the source code, they don't have an option to export to file and it's too
     # much work to get a PR in for such a little thing
@@ -47,9 +47,17 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
         if global_coverage_file is not None:
             cov_plugin = session.config.pluginmanager.getplugin("_cov")
             coverage_txt = cov_plugin.cov_report.getvalue()
+            coverage_status = 0
+            if (
+                cov_plugin.options.cov_fail_under is not None
+                and cov_plugin.options.cov_fail_under > 0
+            ):
+                failed = cov_plugin.cov_total < cov_plugin.options.cov_fail_under
+                # If failed is False coverage_status is 0, if True it's 1
+                coverage_status = int(failed)
             global_coverage_file_path = Path(global_coverage_file).resolve()
             with open(global_coverage_file_path, "w", encoding="utf-8") as f:
-                json.dump({"exit_code": exitstatus, "content": coverage_txt}, f)
+                json.dump({"exit_code": coverage_status, "content": coverage_txt}, f)
 
 
 def _is_equivalent_to_binary_commutative(lhs: IntermediateNode, rhs: object) -> bool:
