@@ -8,7 +8,6 @@
 #include <mlir/IR/MLIRContext.h>
 #include <zamalang/Conversion/Utils/GlobalFHEContext.h>
 #include <zamalang/Support/ClientParameters.h>
-#include <zamalang/Support/KeySet.h>
 
 namespace mlir {
 namespace zamalang {
@@ -43,7 +42,6 @@ public:
 
     llvm::Optional<mlir::OwningModuleRef> mlirModuleRef;
     llvm::Optional<mlir::zamalang::ClientParameters> clientParameters;
-    std::unique_ptr<mlir::zamalang::KeySet> keySet;
     std::unique_ptr<llvm::Module> llvmModule;
     llvm::Optional<mlir::zamalang::V0FHEContext> fheContext;
 
@@ -93,8 +91,8 @@ public:
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(),
         clientParametersFuncName(), verifyDiagnostics(false),
-        generateKeySet(false), generateClientParameters(false),
-        parametrizeMidLFHE(true), compilationContext(compilationContext) {}
+        generateClientParameters(false), parametrizeMidLFHE(true),
+        compilationContext(compilationContext) {}
 
   llvm::Expected<CompilationResult> compile(llvm::StringRef s, Target target);
 
@@ -107,7 +105,6 @@ public:
   void setMaxEintPrecision(size_t v);
   void setMaxMANP(size_t v);
   void setVerifyDiagnostics(bool v);
-  void setGenerateKeySet(bool v);
   void setGenerateClientParameters(bool v);
   void setParametrizeMidLFHE(bool v);
   void setClientParametersFuncName(const llvm::StringRef &name);
@@ -117,7 +114,6 @@ protected:
   llvm::Optional<size_t> overrideMaxMANP;
   llvm::Optional<std::string> clientParametersFuncName;
   bool verifyDiagnostics;
-  bool generateKeySet;
   bool generateClientParameters;
   bool parametrizeMidLFHE;
 

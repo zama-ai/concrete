@@ -74,8 +74,6 @@ void CompilerEngine::setVerifyDiagnostics(bool v) {
   this->verifyDiagnostics = v;
 }
 
-void CompilerEngine::setGenerateKeySet(bool v) { this->generateKeySet = v; }
-
 void CompilerEngine::setGenerateClientParameters(bool v) {
   this->generateClientParameters = v;
 }
@@ -347,22 +345,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
       return std::move(err);
 
     res.clientParameters = clientParametersOrErr.get();
-  }
-
-  // Generate Key set if requested
-  if (this->generateKeySet) {
-    if (!res.clientParameters.hasValue()) {
-      return StreamStringError("Generation of keyset requested without request "
-                               "for generation of client parameters");
-    }
-
-    llvm::Expected<std::unique_ptr<mlir::zamalang::KeySet>> keySetOrErr =
-        mlir::zamalang::KeySet::generate(*res.clientParameters, 0, 0);
-
-    if (auto err = keySetOrErr.takeError())
-      return std::move(err);
-
-    res.keySet = std::move(*keySetOrErr);
   }
 
   // MLIR canonical dialects -> LLVM Dialect

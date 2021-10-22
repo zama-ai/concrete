@@ -64,7 +64,6 @@ llvm::Expected<JitCompilerEngine::Lambda>
 JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName) {
   MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
 
-  this->setGenerateKeySet(true);
   this->setGenerateClientParameters(true);
   this->setClientParametersFuncName(funcName);
 
@@ -95,11 +94,25 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName) {
   llvm::Expected<std::unique_ptr<JITLambda>> lambdaOrErr =
       mlir::zamalang::JITLambda::create(funcName, module, optPipeline);
 
+  // Generate the KeySet for encrypting lambda arguments, decrypting lambda
+  // results
+  if (!compResOrErr->clientParameters.hasValue()) {
+    return StreamStringError("Cannot generate the keySet since client "
+                             "parameters has not been computed");
+  }
+
+  llvm::Expected<std::unique_ptr<mlir::zamalang::KeySet>> keySetOrErr =
+      mlir::zamalang::KeySet::generate(*compResOrErr->clientParameters, 0, 0);
+
+  if (auto err = keySetOrErr.takeError())
+    return std::move(err);
+
   if (!lambdaOrErr)
     return std::move(lambdaOrErr.takeError());
 
   return Lambda{this->compilationContext, std::move(lambdaOrErr.get()),
-                std::move(compResOrErr->keySet)};
+                std::move(*keySetOrErr)};
 }
+
 } // namespace zamalang
 } // namespace mlir
