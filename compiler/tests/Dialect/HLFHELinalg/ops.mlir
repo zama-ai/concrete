@@ -217,3 +217,16 @@ func @mul_eint_int_broadcast_2(%a0: tensor<4x!HLFHE.eint<2>>, %a1: tensor<3x4xi3
  %1 ="HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<2>>, tensor<3x4xi3>) -> tensor<3x4x!HLFHE.eint<2>>
  return %1: tensor<3x4x!HLFHE.eint<2>>
 }
+
+/////////////////////////////////////////////////
+// HLFHELinalg.apply_lookup_table
+/////////////////////////////////////////////////
+
+// CHECK-LABEL: func @apply_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>>
+func @apply_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>> {
+  // CHECK-NEXT: %[[V1:.*]] = "HLFHELinalg.apply_lookup_table"(%arg0, %arg1) : (tensor<2x3x4x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>>
+  // CHECK-NEXT: return %[[V1]] : tensor<2x3x4x!HLFHE.eint<2>>
+
+  %1 = "HLFHELinalg.apply_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!HLFHE.eint<2>>, tensor<4xi64>) -> (tensor<2x3x4x!HLFHE.eint<2>>)
+  return %1: tensor<2x3x4x!HLFHE.eint<2>>
+}

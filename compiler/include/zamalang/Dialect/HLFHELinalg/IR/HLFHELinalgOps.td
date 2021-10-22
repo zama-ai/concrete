@@ -220,7 +220,45 @@ def MulEintIntOp : HLFHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, Tens
     );
 
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+}
 
+def ApplyLookupTableEintOp : HLFHELinalg_Op<"apply_lookup_table", []> {
+    let summary = "Returns a tensor that contains the result of the lookup on a table.";
+
+    let description = [{
+        Performs for each encrypted indices a lookup on a table of clear integers.
+
+        ```mlir
+        // The result of this operation, is a tensor that contains the result of the lookup on a table.
+        // i.e. %res[i, ..., k] = %lut[%t[i, ..., k]]
+        %res = HLFHELinalg.apply_lookup_table(%t, %lut): tensor<DNx...xD1x!HLFHE.eint<$p>>, tensor<D2^$pxi64> -> tensor<DNx...xD1x!HLFHE.eint<$p>>
+        ```
+
+        The `%lut` argument should be a tensor with one dimension, where its dimension is equals to `2^p` where `p` is the width of the encrypted integers.
+
+        Examples:
+        ```mlir
+
+        // Returns the lookup of 3x3 matrix of encrypted indices of with 2 on a table of size 4=2² of clear integers.
+        //
+        // [0,1,2]                 [2,4,6]
+        // [3,0,1] lut [2,4,6,8] = [8,2,4]
+        // [2,3,0]                 [6,8,0]
+        //
+        "HLFHELinalg.apply_lookup_table(%t, %lut)" : (tensor<3x3x!HLFHE.eint<2>>, tensor<4xi4>) -> tensor<3x3x!HLFHE.eint<3>>
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$lut
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHELinalg::verifyApplyLookupTable(*this);
+    }];
 }
 
 #endif

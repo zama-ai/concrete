@@ -202,5 +202,38 @@ LogicalResult verifyTensorBinaryEint(mlir::Operation *op) {
 } // namespace OpTrait
 } // namespace mlir
 
+namespace mlir {
+namespace zamalang {
+namespace HLFHELinalg {
+
+mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
+  auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
+  auto tEltTy =
+      tTy.getElementType().cast<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+  auto lutTy = op.lut().getType().cast<mlir::RankedTensorType>();
+  auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
+  auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
+
+  // Check the shape of lut argument
+  auto tEltwidth = tEltTy.getWidth();
+  mlir::SmallVector<int64_t, 1> expectedShape{1 << tEltwidth};
+  if (!lutTy.hasStaticShape(expectedShape) || !lutEltTy.isInteger(64)) {
+    op.emitOpError()
+        << "should have as operand #2 a tensor<2^pxi64>, where p is the width "
+           "of the encrypted integer of the operand #1,"
+        << "expect tensor <" << expectedShape[0] << "xi64>";
+    return mlir::failure();
+  }
+  if (!resultTy.hasStaticShape(tTy.getShape())) {
+    op.emitOpError()
+        << " should have same shapes for operand #1 and the result";
+  }
+  return mlir::success();
+}
+
+} // namespace HLFHELinalg
+} // namespace zamalang
+} // namespace mlir
+
 #define GET_OP_CLASSES
 #include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.cpp.inc"
