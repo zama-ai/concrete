@@ -82,180 +82,61 @@ void CompilerEngine::setMaxEintPrecision(size_t v) {
   this->overrideMaxEintPrecision = v;
 }
 
-void CompilerEngine::setParametrizeMidLFHE(bool v) {
-  this->parametrizeMidLFHE = v;
-}
-
 void CompilerEngine::setMaxMANP(size_t v) { this->overrideMaxMANP = v; }
 
 void CompilerEngine::setClientParametersFuncName(const llvm::StringRef &name) {
   this->clientParametersFuncName = name.str();
 }
 
-// Helper function detecting the FHE dialect with the highest level of
-// abstraction used in `module`. If no FHE dialect is used, the
-// function returns `CompilerEngine::FHEDialect::NONE`.
-CompilerEngine::FHEDialect
-CompilerEngine::detectHighestFHEDialect(mlir::ModuleOp module) {
-  CompilerEngine::FHEDialect highestDialect = CompilerEngine::FHEDialect::NONE;
-
-  mlir::TypeID hlfheID =
-      mlir::TypeID::get<mlir::zamalang::HLFHE::HLFHEDialect>();
-  mlir::TypeID midlfheID =
-      mlir::TypeID::get<mlir::zamalang::MidLFHE::MidLFHEDialect>();
-  mlir::TypeID lowlfheID =
-      mlir::TypeID::get<mlir::zamalang::LowLFHE::LowLFHEDialect>();
-
-  // Helper lambda updating the currently highest dialect if necessary
-  // by dialect type ID
-  auto updateDialectFromDialectID = [&](mlir::TypeID dialectID) {
-    if (dialectID == hlfheID) {
-      highestDialect = CompilerEngine::FHEDialect::HLFHE;
-      return true;
-    } else if (dialectID == lowlfheID &&
-               highestDialect == CompilerEngine::FHEDialect::NONE) {
-      highestDialect = CompilerEngine::FHEDialect::LOWLFHE;
-    } else if (dialectID == midlfheID &&
-               (highestDialect == CompilerEngine::FHEDialect::NONE ||
-                highestDialect == CompilerEngine::FHEDialect::LOWLFHE)) {
-      highestDialect = CompilerEngine::FHEDialect::MIDLFHE;
-    }
-
-    return false;
-  };
-
-  // Helper lambda updating the currently highest dialect if necessary
-  // by value type
-  std::function<bool(mlir::Type)> updateDialectFromType =
-      [&](mlir::Type ty) -> bool {
-    if (updateDialectFromDialectID(ty.getDialect().getTypeID()))
-      return true;
-
-    if (mlir::TensorType tensorTy = ty.dyn_cast_or_null<mlir::TensorType>())
-      return updateDialectFromType(tensorTy.getElementType());
-
-    return false;
-  };
-
-  module.walk([&](mlir::Operation *op) {
-    // Check operation itself
-    if (updateDialectFromDialectID(op->getDialect()->getTypeID()))
-      return mlir::WalkResult::interrupt();
-
-    // Check types of operands
-    for (mlir::Value operand : op->getOperands()) {
-      if (updateDialectFromType(operand.getType()))
-        return mlir::WalkResult::interrupt();
-    }
-
-    // Check types of results
-    for (mlir::Value res : op->getResults()) {
-      if (updateDialectFromType(res.getType())) {
-        return mlir::WalkResult::interrupt();
-      }
-    }
-
-    return mlir::WalkResult::advance();
-  });
-
-  return highestDialect;
+void CompilerEngine::setEnablePass(
+    std::function<bool(mlir::Pass *)> enablePass) {
+  this->enablePass = enablePass;
 }
 
-// Sets the FHE parameters of `res` either through autodetection or
-// fixed constraints provided in
-// `CompilerEngine::overrideMaxEintPrecision` and
-// `CompilerEngine::overrideMaxMANP`.
-//
-// Autodetected values can be partially or fully overridden through
-// `CompilerEngine::overrideMaxEintPrecision` and
-// `CompilerEngine::overrideMaxMANP`.
-//
-// If `noOverrideAutodetected` is true, autodetected values are not
-// overriden and used directly for `res`.
-//
-// Return an error if autodetection fails.
-llvm::Error
-CompilerEngine::determineFHEParameters(CompilationResult &res,
-                                       bool noOverrideAutodetected) {
+// Returns the overwritten V0FHEConstraint or try to compute them from HLFHE
+llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
   mlir::ModuleOp module = res.mlirModuleRef->get();
   llvm::Optional<mlir::zamalang::V0FHEConstraint> fheConstraints;
-
-  // Determine FHE constraints either through autodetection or through
-  // overridden values
+  // If the values has been overwritten returns
   if (this->overrideMaxEintPrecision.hasValue() &&
-      this->overrideMaxMANP.hasValue() && !noOverrideAutodetected) {
-    fheConstraints.emplace(mlir::zamalang::V0FHEConstraint{
+      this->overrideMaxMANP.hasValue()) {
+    return mlir::zamalang::V0FHEConstraint{
         this->overrideMaxMANP.getValue(),
-        this->overrideMaxEintPrecision.getValue()});
-
-  } else {
-    llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
-        fheConstraintsOrErr =
-            mlir::zamalang::pipeline::getFHEConstraintsFromHLFHE(mlirContext,
-                                                                 module);
-
-    if (auto err = fheConstraintsOrErr.takeError())
-      return std::move(err);
-
-    if (!fheConstraintsOrErr.get().hasValue()) {
-      return StreamStringError("Could not determine maximum required precision "
-                               "for encrypted integers and maximum value for "
-                               "the Minimal Arithmetic Noise Padding");
-    }
-
-    if (noOverrideAutodetected)
-      return llvm::Error::success();
-
-    fheConstraints = fheConstraintsOrErr.get();
-
-    // Override individual values if requested
-    if (this->overrideMaxEintPrecision.hasValue())
-      fheConstraints->p = this->overrideMaxEintPrecision.getValue();
-
-    if (this->overrideMaxMANP.hasValue())
-      fheConstraints->norm2 = this->overrideMaxMANP.getValue();
+        this->overrideMaxEintPrecision.getValue()};
   }
+  // Else compute constraint from HLFHE
+  llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+      fheConstraintsOrErr =
+          mlir::zamalang::pipeline::getFHEConstraintsFromHLFHE(
+              mlirContext, module, enablePass);
 
+  if (auto err = fheConstraintsOrErr.takeError())
+    return std::move(err);
+
+  return fheConstraintsOrErr.get();
+}
+
+// set the fheContext field if the v0Constraint can be computed
+llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
+  auto fheConstraintOrErr = getV0FHEConstraint(res);
+  if (auto err = fheConstraintOrErr.takeError())
+    return std::move(err);
+  if (!fheConstraintOrErr.get().hasValue()) {
+    return llvm::Error::success();
+  }
   const mlir::zamalang::V0Parameter *fheParams =
-      getV0Parameter(fheConstraints.getValue());
+      getV0Parameter(fheConstraintOrErr.get().getValue());
 
   if (!fheParams) {
     return StreamStringError()
            << "Could not determine V0 parameters for 2-norm of "
-           << fheConstraints->norm2 << " and p of " << fheConstraints->p;
+           << (*fheConstraintOrErr)->norm2 << " and p of "
+           << (*fheConstraintOrErr)->p;
   }
-
-  res.fheContext.emplace(
-      mlir::zamalang::V0FHEContext{*fheConstraints, *fheParams});
-
-  return llvm::Error::success();
-}
-
-// Performs all lowering from HLFHE to the FHE dialect with the lwoest
-// level of abstraction that requires FHE parameters.
-//
-// Returns an error if any of the lowerings fails.
-llvm::Error CompilerEngine::lowerParamDependentHalf(Target target,
-                                                    CompilationResult &res) {
-  mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
-  mlir::ModuleOp module = res.mlirModuleRef->get();
-
-  // HLFHE -> MidLFHE
-  if (mlir::zamalang::pipeline::lowerHLFHEToMidLFHE(mlirContext, module, false)
-          .failed()) {
-    return StreamStringError("Lowering from HLFHE to MidLFHE failed");
-  }
-
-  if (target == Target::MIDLFHE)
-    return llvm::Error::success();
-
-  // MidLFHE -> LowLFHE
-  if (mlir::zamalang::pipeline::lowerMidLFHEToLowLFHE(
-          mlirContext, module, *res.fheContext, this->parametrizeMidLFHE)
-          .failed()) {
-    return StreamStringError("Lowering from MidLFHE to LowLFHE failed");
-  }
+  res.fheContext.emplace(mlir::zamalang::V0FHEContext{
+      (*fheConstraintOrErr).getValue(), *fheParams});
 
   return llvm::Error::success();
 }
@@ -289,43 +170,40 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   res.mlirModuleRef = std::move(mlirModuleRef);
   mlir::ModuleOp module = res.mlirModuleRef->get();
 
-  if (target == Target::HLFHE || target == Target::ROUND_TRIP)
+  if (target == Target::ROUND_TRIP)
     return res;
 
-  // Detect highest FHE dialect and check if FHE parameter
-  // autodetection / lowering of parameter-dependent dialects can be
-  // skipped
-  FHEDialect highestFHEDialect = this->detectHighestFHEDialect(module);
-
-  if (highestFHEDialect == FHEDialect::HLFHE ||
-      highestFHEDialect == FHEDialect::MIDLFHE ||
-      this->generateClientParameters) {
-    bool noOverrideAutoDetected = (target == Target::HLFHE_MANP);
-    if (auto err = this->determineFHEParameters(res, noOverrideAutoDetected))
-      return std::move(err);
-  }
-
-  // return early if only the MANP pass was requested
-  if (target == Target::HLFHE_MANP)
+  // HLFHE High level pass to determine FHE parameters
+  if (auto err = this->determineFHEParameters(res))
+    return std::move(err);
+  if (target == Target::HLFHE)
     return res;
 
-  if (highestFHEDialect == FHEDialect::HLFHE ||
-      highestFHEDialect == FHEDialect::MIDLFHE) {
-    if (llvm::Error err = this->lowerParamDependentHalf(target, res))
-      return std::move(err);
+  // HLFHE -> MidLFHE
+  if (mlir::zamalang::pipeline::lowerHLFHEToMidLFHE(mlirContext, module,
+                                                    enablePass)
+          .failed()) {
+    return StreamStringError("Lowering from HLFHE to MidLFHE failed");
   }
+  if (target == Target::MIDLFHE)
+    return res;
 
-  if (target == Target::HLFHE_MANP || target == Target::MIDLFHE ||
-      target == Target::LOWLFHE)
+  // MidLFHE -> LowLFHE
+  if (mlir::zamalang::pipeline::lowerMidLFHEToLowLFHE(
+          mlirContext, module, res.fheContext, this->enablePass)
+          .failed()) {
+    return StreamStringError("Lowering from MidLFHE to LowLFHE failed");
+  }
+  if (target == Target::LOWLFHE)
     return res;
 
   // LowLFHE -> Canonical dialects
-  if (mlir::zamalang::pipeline::lowerLowLFHEToStd(mlirContext, module)
+  if (mlir::zamalang::pipeline::lowerLowLFHEToStd(mlirContext, module,
+                                                  enablePass)
           .failed()) {
     return StreamStringError(
         "Lowering from LowLFHE to canonical MLIR dialects failed");
   }
-
   if (target == Target::STD)
     return res;
 
@@ -335,6 +213,10 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
       return StreamStringError(
           "Generation of client parameters requested, but no function name "
           "specified");
+    }
+    if (!res.fheContext.hasValue()) {
+      return StreamStringError(
+          "Cannot generate client parameters, the fhe context is empty");
     }
 
     llvm::Expected<mlir::zamalang::ClientParameters> clientParametersOrErr =
@@ -349,7 +231,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
 
   // MLIR canonical dialects -> LLVM Dialect
   if (mlir::zamalang::pipeline::lowerStdToLLVMDialect(mlirContext, module,
-                                                      false)
+                                                      enablePass)
           .failed()) {
     return StreamStringError("Failed to lower to LLVM dialect");
   }

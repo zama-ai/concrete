@@ -1,4 +1,4 @@
-// RUN: zamacompiler --action=dump-std %s 2>&1| FileCheck %s
+// RUN: zamacompiler --passes lowlfhe-to-concrete-c-api --action=dump-std %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: module
 // CHECK-NEXT: func private @add_plaintext_list_glwe_ciphertext_u64(index, !LowLFHE.glwe_ciphertext, !LowLFHE.glwe_ciphertext, !LowLFHE.plaintext_list)

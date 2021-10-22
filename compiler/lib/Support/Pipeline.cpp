@@ -19,8 +19,30 @@
 namespace mlir {
 namespace zamalang {
 namespace pipeline {
-static void addPotentiallyNestedPass(mlir::PassManager &pm,
-                                     std::unique_ptr<Pass> pass) {
+
+static void pipelinePrinting(llvm::StringRef name, mlir::PassManager &pm,
+                             mlir::MLIRContext &ctx) {
+  if (mlir::zamalang::isVerbose()) {
+    mlir::zamalang::log_verbose()
+        << "##################################################\n"
+        << "### " << name << " pipeline\n";
+    auto isModule = [](mlir::Pass *, mlir::Operation *op) {
+      return mlir::isa<mlir::ModuleOp>(op);
+    };
+    ctx.disableMultithreading(true);
+    pm.enableIRPrinting(isModule, isModule);
+    pm.enableStatistics();
+    pm.enableTiming();
+    pm.enableVerifier();
+  }
+}
+
+static void
+addPotentiallyNestedPass(mlir::PassManager &pm, std::unique_ptr<Pass> pass,
+                         std::function<bool(mlir::Pass *)> enablePass) {
+  if (!enablePass(pass.get())) {
+    return;
+  }
   if (!pass->getOpName() || *pass->getOpName() == "builtin.module") {
     pm.addPass(std::move(pass));
   } else {
@@ -29,26 +51,20 @@ static void addPotentiallyNestedPass(mlir::PassManager &pm,
   }
 }
 
-// Creates an instance of the Minimal Arithmetic Noise Padding pass
-// and invokes it for all functions of `module`.
-mlir::LogicalResult invokeMANPPass(mlir::MLIRContext &context,
-                                   mlir::ModuleOp &module, bool debug) {
-  mlir::PassManager pm(&context);
-  pm.addNestedPass<mlir::FuncOp>(mlir::zamalang::createMANPPass(debug));
-  return pm.run(module);
-}
-
 llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
-getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module) {
+getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                           std::function<bool(mlir::Pass *)> enablePass) {
   llvm::Optional<size_t> oMax2norm;
   llvm::Optional<size_t> oMaxWidth;
 
   mlir::PassManager pm(&context);
 
-  addPotentiallyNestedPass(pm, mlir::zamalang::createMANPPass());
+  pipelinePrinting("ComputeFHEConstraintOnHLFHE", pm, context);
+  addPotentiallyNestedPass(pm, mlir::zamalang::createMANPPass(), enablePass);
   addPotentiallyNestedPass(
-      pm, mlir::zamalang::createMaxMANPPass([&](const llvm::APInt &currMaxMANP,
-                                                unsigned currMaxWidth) {
+      pm,
+      mlir::zamalang::createMaxMANPPass([&](const llvm::APInt &currMaxMANP,
+                                            unsigned currMaxWidth) {
         assert((uint64_t)currMaxWidth < std::numeric_limits<size_t>::max() &&
                "Maximum width does not fit into size_t");
 
@@ -64,15 +80,14 @@ getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module) {
 
         if (!oMaxWidth.hasValue() || oMaxWidth.getValue() < width)
           oMaxWidth.emplace(width);
-      }));
-
+      }),
+      enablePass);
   if (pm.run(module.getOperation()).failed()) {
     return llvm::make_error<llvm::StringError>(
         "Failed to determine the maximum Arithmetic Noise Padding and maximum"
         "required precision",
         llvm::inconvertibleErrorCode());
   }
-
   llvm::Optional<mlir::zamalang::V0FHEConstraint> ret;
 
   if (oMax2norm.hasValue() && oMaxWidth.hasValue()) {
@@ -84,86 +99,76 @@ getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module) {
   return ret;
 }
 
-mlir::LogicalResult lowerHLFHEToMidLFHE(mlir::MLIRContext &context,
-                                        mlir::ModuleOp &module, bool verbose) {
+mlir::LogicalResult
+lowerHLFHEToMidLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                    std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
+  pipelinePrinting("HLFHEToMidLFHE", pm, context);
 
-  if (verbose) {
-    mlir::zamalang::log_verbose()
-        << "##################################################\n"
-        << "### HLFHE to MidLFHE pipeline\n";
+  addPotentiallyNestedPass(
+      pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::zamalang::createConvertHLFHEToMidLFHEPass(), enablePass);
 
-    pm.enableIRPrinting();
-    pm.enableStatistics();
-    pm.enableTiming();
-    pm.enableVerifier();
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+lowerMidLFHEToLowLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      llvm::Optional<V0FHEContext> &fheContext,
+                      std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("MidLFHEToLowLFHE", pm, context);
+
+  if (fheContext.hasValue()) {
+    addPotentiallyNestedPass(
+        pm,
+        mlir::zamalang::createConvertMidLFHEGlobalParametrizationPass(
+            fheContext.getValue()),
+        enablePass);
   }
 
   addPotentiallyNestedPass(
-      pm, mlir::zamalang::createConvertHLFHETensorOpsToLinalg());
-  addPotentiallyNestedPass(pm,
-                           mlir::zamalang::createConvertHLFHEToMidLFHEPass());
+      pm, mlir::zamalang::createConvertMidLFHEToLowLFHEPass(), enablePass);
 
   return pm.run(module.getOperation());
 }
 
-mlir::LogicalResult lowerMidLFHEToLowLFHE(mlir::MLIRContext &context,
-                                          mlir::ModuleOp &module,
-                                          V0FHEContext &fheContext,
-                                          bool parametrize) {
+mlir::LogicalResult
+lowerLowLFHEToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                  std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-
-  if (parametrize) {
-    addPotentiallyNestedPass(
-        pm, mlir::zamalang::createConvertMidLFHEGlobalParametrizationPass(
-                fheContext));
-  }
-
-  addPotentiallyNestedPass(pm,
-                           mlir::zamalang::createConvertMidLFHEToLowLFHEPass());
-
-  return pm.run(module.getOperation());
-}
-
-mlir::LogicalResult lowerLowLFHEToStd(mlir::MLIRContext &context,
-                                      mlir::ModuleOp &module) {
-  mlir::PassManager pm(&context);
+  pipelinePrinting("LowLFHEToStd", pm, context);
   pm.addPass(mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass());
   return pm.run(module.getOperation());
 }
 
-mlir::LogicalResult lowerStdToLLVMDialect(mlir::MLIRContext &context,
-                                          mlir::ModuleOp &module,
-                                          bool verbose) {
+mlir::LogicalResult
+lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-
-  if (verbose) {
-    mlir::zamalang::log_verbose()
-        << "##################################################\n"
-        << "### MlirStdsDialectToMlirLLVMDialect pipeline\n";
-    context.disableMultithreading();
-    pm.enableIRPrinting();
-    pm.enableStatistics();
-    pm.enableTiming();
-    pm.enableVerifier();
-  }
+  pipelinePrinting("StdToLLVM", pm, context);
 
   // Unparametrize LowLFHE
   addPotentiallyNestedPass(
-      pm, mlir::zamalang::createConvertLowLFHEUnparametrizePass());
+      pm, mlir::zamalang::createConvertLowLFHEUnparametrizePass(), enablePass);
 
   // Bufferize
-  addPotentiallyNestedPass(pm, mlir::createTensorConstantBufferizePass());
-  addPotentiallyNestedPass(pm, mlir::createStdBufferizePass());
-  addPotentiallyNestedPass(pm, mlir::createTensorBufferizePass());
-  addPotentiallyNestedPass(pm, mlir::createLinalgBufferizePass());
-  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass());
-  addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass());
-  addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass());
+  addPotentiallyNestedPass(pm, mlir::createTensorConstantBufferizePass(),
+                           enablePass);
+  addPotentiallyNestedPass(pm, mlir::createStdBufferizePass(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::createTensorBufferizePass(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::createLinalgBufferizePass(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
+                           enablePass);
+  addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass(),
+                           enablePass);
 
   // Convert to MLIR LLVM Dialect
   addPotentiallyNestedPass(
-      pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass());
+      pm, mlir::zamalang::createConvertMLIRLowerableDialectsToLLVMPass(),
+      enablePass);
 
   return pm.run(module);
 }
@@ -181,25 +186,13 @@ lowerLLVMDialectToLLVMIR(mlir::MLIRContext &context,
 
 mlir::LogicalResult optimizeLLVMModule(llvm::LLVMContext &llvmContext,
                                        llvm::Module &module) {
-  std::function<llvm::Error(llvm::Module *)> optPipeline =
+  llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline =
       mlir::makeOptimizingTransformer(3, 0, nullptr);
 
   if (optPipeline(&module))
     return mlir::failure();
   else
     return mlir::success();
-}
-
-mlir::LogicalResult lowerHLFHEToStd(mlir::MLIRContext &context,
-                                    mlir::ModuleOp &module,
-                                    V0FHEContext &fheContext, bool verbose) {
-  if (lowerHLFHEToMidLFHE(context, module, verbose).failed() ||
-      lowerMidLFHEToLowLFHE(context, module, fheContext, true).failed() ||
-      lowerLowLFHEToStd(context, module).failed()) {
-    return mlir::failure();
-  } else {
-    return mlir::success();
-  }
 }
 
 } // namespace pipeline

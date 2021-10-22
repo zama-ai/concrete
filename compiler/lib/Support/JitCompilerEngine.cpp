@@ -88,7 +88,7 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName) {
   llvm::InitializeNativeTargetAsmPrinter();
   mlir::registerLLVMDialectTranslation(mlirContext);
 
-  std::function<llvm::Error(llvm::Module *)> optPipeline =
+  llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline =
       mlir::makeOptimizingTransformer(3, 0, nullptr);
 
   llvm::Expected<std::unique_ptr<JITLambda>> lambdaOrErr =

@@ -6,6 +6,7 @@
 #include <llvm/Support/SourceMgr.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/MLIRContext.h>
+#include <mlir/Pass/Pass.h>
 #include <zamalang/Conversion/Utils/GlobalFHEContext.h>
 #include <zamalang/Support/ClientParameters.h>
 
@@ -57,10 +58,6 @@ public:
     // Read sources and exit before any lowering
     HLFHE,
 
-    // Read sources and attempt to run the Minimal Arithmetic Noise
-    // Padding pass
-    HLFHE_MANP,
-
     // Read sources and lower all HLFHE operations to MidLFHE
     // operations
     MIDLFHE,
@@ -91,7 +88,8 @@ public:
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(),
         clientParametersFuncName(), verifyDiagnostics(false),
-        generateClientParameters(false), parametrizeMidLFHE(true),
+        generateClientParameters(false),
+        enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
   llvm::Expected<CompilationResult> compile(llvm::StringRef s, Target target);
@@ -106,8 +104,8 @@ public:
   void setMaxMANP(size_t v);
   void setVerifyDiagnostics(bool v);
   void setGenerateClientParameters(bool v);
-  void setParametrizeMidLFHE(bool v);
   void setClientParametersFuncName(const llvm::StringRef &name);
+  void setEnablePass(std::function<bool(mlir::Pass *)> enablePass);
 
 protected:
   llvm::Optional<size_t> overrideMaxEintPrecision;
@@ -115,18 +113,14 @@ protected:
   llvm::Optional<std::string> clientParametersFuncName;
   bool verifyDiagnostics;
   bool generateClientParameters;
-  bool parametrizeMidLFHE;
+  std::function<bool(mlir::Pass *)> enablePass;
 
   std::shared_ptr<CompilationContext> compilationContext;
 
-  // Helper enum identifying an FHE dialect (`HLFHE`, `MIDLFHE`, `LOWLFHE`)
-  // or indicating that no FHE dialect is used (`NONE`).
-  enum class FHEDialect { HLFHE, MIDLFHE, LOWLFHE, NONE };
-  static FHEDialect detectHighestFHEDialect(mlir::ModuleOp module);
-
 private:
-  llvm::Error lowerParamDependentHalf(Target target, CompilationResult &res);
-  llvm::Error determineFHEParameters(CompilationResult &res, bool noOverride);
+  llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+  getV0FHEConstraint(CompilationResult &res);
+  llvm::Error determineFHEParameters(CompilationResult &res);
 };
 
 } // namespace zamalang

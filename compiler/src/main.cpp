@@ -32,7 +32,6 @@
 enum Action {
   ROUND_TRIP,
   DUMP_HLFHE,
-  DUMP_HLFHE_MANP,
   DUMP_MIDLFHE,
   DUMP_LOWLFHE,
   DUMP_STD,
@@ -76,10 +75,10 @@ llvm::cl::opt<std::string> output("o",
 llvm::cl::opt<bool> verbose("verbose", llvm::cl::desc("verbose logs"),
                             llvm::cl::init<bool>(false));
 
-llvm::cl::opt<bool> parametrizeMidLFHE(
-    "parametrize-midlfhe",
-    llvm::cl::desc("Perform MidLFHE global parametrization pass"),
-    llvm::cl::init<bool>(true));
+llvm::cl::list<std::string> passes(
+    "passes",
+    llvm::cl::desc("Specify the passes to run (use only for compiler tests)"),
+    llvm::cl::value_desc("passname"), llvm::cl::ZeroOrMore);
 
 static llvm::cl::opt<enum Action> action(
     "a", "action", llvm::cl::desc("output mode"), llvm::cl::ValueRequired,
@@ -87,9 +86,6 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(
         clEnumValN(Action::ROUND_TRIP, "roundtrip",
                    "Parse input module and regenerate textual representation")),
-    llvm::cl::values(clEnumValN(Action::DUMP_HLFHE_MANP, "dump-hlfhe-manp",
-                                "Dump HLFHE module after running the Minimal "
-                                "Arithmetic Noise Padding pass")),
     llvm::cl::values(clEnumValN(Action::DUMP_HLFHE, "dump-hlfhe",
                                 "Dump HLFHE module")),
     llvm::cl::values(clEnumValN(Action::DUMP_MIDLFHE, "dump-midlfhe",
@@ -218,7 +214,7 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &os,
 mlir::LogicalResult
 processInputBuffer(std::unique_ptr<llvm::MemoryBuffer> buffer,
                    enum Action action, const std::string &jitFuncName,
-                   llvm::ArrayRef<uint64_t> jitArgs, bool parametrizeMidlHFE,
+                   llvm::ArrayRef<uint64_t> jitArgs,
                    llvm::Optional<size_t> overrideMaxEintPrecision,
                    llvm::Optional<size_t> overrideMaxMANP,
                    bool verifyDiagnostics, llvm::raw_ostream &os) {
@@ -228,7 +224,13 @@ processInputBuffer(std::unique_ptr<llvm::MemoryBuffer> buffer,
   mlir::zamalang::JitCompilerEngine ce{ccx};
 
   ce.setVerifyDiagnostics(verifyDiagnostics);
-  ce.setParametrizeMidLFHE(parametrizeMidlHFE);
+  if (cmdline::passes.size() != 0) {
+    ce.setEnablePass([](mlir::Pass *pass) {
+      return std::any_of(
+          cmdline::passes.begin(), cmdline::passes.end(),
+          [&](const std::string &p) { return pass->getArgument() == p; });
+    });
+  }
 
   if (overrideMaxEintPrecision.hasValue())
     ce.setMaxEintPrecision(overrideMaxEintPrecision.getValue());
@@ -266,9 +268,6 @@ processInputBuffer(std::unique_ptr<llvm::MemoryBuffer> buffer,
       break;
     case Action::DUMP_HLFHE:
       target = mlir::zamalang::CompilerEngine::Target::HLFHE;
-      break;
-    case Action::DUMP_HLFHE_MANP:
-      target = mlir::zamalang::CompilerEngine::Target::HLFHE_MANP;
       break;
     case Action::DUMP_MIDLFHE:
       target = mlir::zamalang::CompilerEngine::Target::MIDLFHE;
@@ -353,7 +352,6 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
                 return processInputBuffer(
                     std::move(inputBuffer), cmdline::action,
                     cmdline::jitFuncName, cmdline::jitArgs,
-                    cmdline::parametrizeMidLFHE,
                     cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
                     cmdline::verifyDiagnostics, os);
               },
@@ -362,9 +360,8 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
     } else {
       return processInputBuffer(
           std::move(file), cmdline::action, cmdline::jitFuncName,
-          cmdline::jitArgs, cmdline::parametrizeMidLFHE,
-          cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
-          cmdline::verifyDiagnostics, output->os());
+          cmdline::jitArgs, cmdline::assumeMaxEintPrecision,
+          cmdline::assumeMaxMANP, cmdline::verifyDiagnostics, output->os());
     }
   }
 
