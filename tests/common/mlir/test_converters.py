@@ -37,14 +37,6 @@ def test_fail_non_integer_const():
         constant(MockNode(outputs=[ClearTensor(Float(32), shape=(2,))]), None, None, None)
 
 
-def test_fail_signed_integer_const():
-    """Test failing constant converter with non-integer"""
-    with pytest.raises(TypeError, match=r"Don't support signed constant integer"):
-        constant(MockNode(outputs=[ClearScalar(Integer(8, True))]), None, None, None)
-    with pytest.raises(TypeError, match=r"Don't support signed constant integer tensor"):
-        constant(MockNode(outputs=[ClearTensor(Integer(8, True), shape=(2,))]), None, None, None)
-
-
 @pytest.mark.parametrize(
     "input_node",
     [

@@ -7,6 +7,7 @@ from ..data_types.dtypes_helpers import (
     value_is_clear_tensor_integer,
     value_is_encrypted_scalar_integer,
     value_is_encrypted_tensor_integer,
+    value_is_integer,
     value_is_scalar,
     value_is_unsigned_integer,
 )
@@ -58,8 +59,10 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
 
     elif isinstance(node, intermediate.Constant):  # constraints for constants
         assert_true(len(outputs) == 1)
-        if not value_is_unsigned_integer(outputs[0]):
-            return "only unsigned integer constants are supported"
+        # We currently can't fail on the following assert, but let it for possible changes in the
+        # future
+        if not value_is_integer(outputs[0]):
+            return "only integer constants are supported"  # pragma: no cover
 
     elif isinstance(node, intermediate.UnivariateFunction):  # constraints for univariate functions
         assert_true(len(inputs) == 1)
@@ -84,8 +87,10 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
                 return "only scalar unsigned integer outputs are supported"
     else:
         for out in outputs:
-            if not value_is_unsigned_integer(out):
-                return "only unsigned integer intermediates are supported"
+            # We currently can't fail on the following assert, but let it for possible changes in
+            # the future
+            if not value_is_integer(out):
+                return "only integer intermediates are supported"  # pragma: no cover
 
     # pylint: enable=too-many-branches,too-many-return-statements
 

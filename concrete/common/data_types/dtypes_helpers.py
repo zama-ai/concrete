@@ -83,6 +83,19 @@ def value_is_scalar(value_to_check: BaseValue) -> bool:
     return isinstance(value_to_check, TensorValue) and value_to_check.is_scalar
 
 
+def value_is_integer(value_to_check: BaseValue) -> bool:
+    """Check that a value is of type Integer.
+
+    Args:
+        value_to_check (BaseValue): The value to check
+
+    Returns:
+        bool: True if the passed value_to_check is of type Integer
+    """
+
+    return isinstance(value_to_check.dtype, INTEGER_TYPES)
+
+
 def value_is_unsigned_integer(value_to_check: BaseValue) -> bool:
     """Check that a value is of type Integer and is unsigned.
 

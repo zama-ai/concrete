@@ -482,6 +482,15 @@ def test_compile_function_multiple_outputs(
 @pytest.mark.parametrize(
     "function,input_ranges,list_of_arg_names",
     [
+        pytest.param(lambda x: (-27) + 4 * (x + 8), ((0, 10),), ["x"]),
+        pytest.param(lambda x: x + (-33), ((40, 60),), ["x"]),
+        pytest.param(lambda x: 17 - (0 - x), ((0, 10),), ["x"]),
+        pytest.param(lambda x: 42 + x * (-3), ((0, 10),), ["x"]),
+        pytest.param(lambda x: 43 + (-4) * x, ((0, 10),), ["x"]),
+        pytest.param(lambda x: 3 - (-5) * x, ((0, 10),), ["x"]),
+        pytest.param(lambda x: (-2) * (-5) * x, ((0, 10),), ["x"]),
+        pytest.param(lambda x: (-2) * x * (-5), ((0, 10),), ["x"]),
+        pytest.param(lambda x, y: 40 - (-3 * x) + (-2 * y), ((0, 20), (0, 20)), ["x", "y"]),
         pytest.param(lambda x: x + numpy.int32(42), ((0, 10),), ["x"]),
         pytest.param(lambda x: x + 64, ((0, 10),), ["x"]),
         pytest.param(lambda x: x * 3, ((0, 40),), ["x"]),
@@ -748,20 +757,6 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             ),
         ),
         pytest.param(
-            lambda x: x + (-1),
-            {"x": EncryptedScalar(Integer(4, is_signed=False))},
-            [(i,) for i in range(1, 2 ** 4)],
-            (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
-                "%1 = Constant(-1)                                  # ClearScalar<Integer<signed, 2 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer constants are supported\n"  # noqa: E501
-                "%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
-                "return(%2)\n"
-            ),
-        ),
-        pytest.param(
             lambda x: x + 1,
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
             [(numpy.random.randint(0, 8, size=(2, 2)),) for i in range(10)],
@@ -869,16 +864,16 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 "function you are trying to compile isn't supported for MLIR lowering\n\n"
                 "%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
                 "%1 = Constant(2.8)                                 # ClearScalar<Float<64 bits>>\n"
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer constants are supported\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported\n"  # noqa: E501
                 "%2 = y                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
                 "%3 = Constant(9.3)                                 # ClearScalar<Float<64 bits>>\n"
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer constants are supported\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported\n"  # noqa: E501
                 "%4 = Add(%0, %1)                                   # EncryptedScalar<Float<64 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer intermediates are supported\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported\n"  # noqa: E501
                 "%5 = Add(%2, %3)                                   # EncryptedScalar<Float<64 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer intermediates are supported\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported\n"  # noqa: E501
                 "%6 = Add(%4, %5)                                   # EncryptedScalar<Float<64 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer intermediates are supported\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported\n"  # noqa: E501
                 "%7 = astype(int32)(%6)                             # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
                 "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer scalar lookup tables are supported\n"  # noqa: E501
                 "return(%7)\n"
@@ -930,9 +925,7 @@ def test_fail_with_intermediate_signed_values(default_compilation_configuration)
                 "%1 = Constant(10)                                  # ClearScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
                 "%2 = x                                             # EncryptedScalar<Integer<unsigned, 2 bits>>\n"  # noqa: E501
                 "%3 = np.negative(%2)                               # EncryptedScalar<Integer<signed, 3 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer intermediates are supported\n"  # noqa: E501
                 "%4 = Mul(%3, %1)                                   # EncryptedScalar<Integer<signed, 6 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer intermediates are supported\n"  # noqa: E501
                 "%5 = np.absolute(%4)                               # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
                 "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer scalar lookup tables are supported\n"  # noqa: E501
                 "%6 = astype(int32)(%5)                             # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
@@ -1103,3 +1096,38 @@ def test_compile_too_high_bitwidth(default_compilation_configuration):
         data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
         default_compilation_configuration,
     )
+
+
+def test_failure_for_signed_output(default_compilation_configuration):
+    """Test that we don't accept signed output"""
+    function = lambda x: x + (-3)  # pylint: disable=unnecessary-lambda # noqa: E731
+    input_ranges = ((0, 10),)
+    list_of_arg_names = ["x"]
+
+    def data_gen(args):
+        for prod in itertools.product(*args):
+            yield prod
+
+    function_parameters = {
+        arg_name: EncryptedScalar(Integer(64, False)) for arg_name in list_of_arg_names
+    }
+
+    with pytest.raises(RuntimeError) as excinfo:
+        compile_numpy_function(
+            function,
+            function_parameters,
+            data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+            default_compilation_configuration,
+        )
+
+    # pylint: disable=line-too-long
+    assert (
+        str(excinfo.value)
+        == "function you are trying to compile isn't supported for MLIR lowering\n\n"  # noqa: E501
+        "%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
+        "%1 = Constant(-3)                                  # ClearScalar<Integer<signed, 3 bits>>\n"  # noqa: E501
+        "%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501
+        "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar unsigned integer outputs are supported\n"  # noqa: E501
+        "return(%2)\n"
+    )
+    # pylint: enable=line-too-long

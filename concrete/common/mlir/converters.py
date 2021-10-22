@@ -17,6 +17,7 @@ from zamalang.dialects import hlfhe
 from ..data_types.dtypes_helpers import (
     value_is_clear_scalar_integer,
     value_is_clear_tensor_integer,
+    value_is_encrypted_scalar_integer,
     value_is_encrypted_scalar_unsigned_integer,
     value_is_encrypted_tensor_integer,
 )
@@ -30,18 +31,18 @@ def add(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert an addition intermediate node."""
     assert_true(len(node.inputs) == 2, "addition should have two inputs")
     assert_true(len(node.outputs) == 1, "addition should have a single output")
-    if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
+    if value_is_encrypted_scalar_integer(node.inputs[0]) and value_is_clear_scalar_integer(
         node.inputs[1]
     ):
         return _add_eint_int(node, preds, ir_to_mlir_node, ctx)
-    if value_is_encrypted_scalar_unsigned_integer(node.inputs[1]) and value_is_clear_scalar_integer(
+    if value_is_encrypted_scalar_integer(node.inputs[1]) and value_is_clear_scalar_integer(
         node.inputs[0]
     ):
         # flip lhs and rhs
         return _add_eint_int(node, preds[::-1], ir_to_mlir_node, ctx)
-    if value_is_encrypted_scalar_unsigned_integer(
-        node.inputs[0]
-    ) and value_is_encrypted_scalar_unsigned_integer(node.inputs[1]):
+    if value_is_encrypted_scalar_integer(node.inputs[0]) and value_is_encrypted_scalar_integer(
+        node.inputs[1]
+    ):
         return _add_eint_eint(node, preds, ir_to_mlir_node, ctx)
     raise TypeError(
         f"Don't support addition between {str(node.inputs[0])} and {str(node.inputs[1])}"
@@ -74,7 +75,7 @@ def sub(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert a subtraction intermediate node."""
     assert_true(len(node.inputs) == 2, "subtraction should have two inputs")
     assert_true(len(node.outputs) == 1, "subtraction should have a single output")
-    if value_is_clear_scalar_integer(node.inputs[0]) and value_is_encrypted_scalar_unsigned_integer(
+    if value_is_clear_scalar_integer(node.inputs[0]) and value_is_encrypted_scalar_integer(
         node.inputs[1]
     ):
         return _sub_int_eint(node, preds, ir_to_mlir_node, ctx)
@@ -98,11 +99,11 @@ def mul(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     """Convert a multiplication intermediate node."""
     assert_true(len(node.inputs) == 2, "multiplication should have two inputs")
     assert_true(len(node.outputs) == 1, "multiplication should have a single output")
-    if value_is_encrypted_scalar_unsigned_integer(node.inputs[0]) and value_is_clear_scalar_integer(
+    if value_is_encrypted_scalar_integer(node.inputs[0]) and value_is_clear_scalar_integer(
         node.inputs[1]
     ):
         return _mul_eint_int(node, preds, ir_to_mlir_node, ctx)
-    if value_is_encrypted_scalar_unsigned_integer(node.inputs[1]) and value_is_clear_scalar_integer(
+    if value_is_encrypted_scalar_integer(node.inputs[1]) and value_is_clear_scalar_integer(
         node.inputs[0]
     ):
         # flip lhs and rhs
@@ -131,8 +132,6 @@ def constant(node, _preds, _ir_to_mlir_node, ctx, _additional_conversion_info=No
         value = cast(TensorValue, value)
 
         dtype = cast(Integer, value.dtype)
-        if dtype.is_signed:
-            raise TypeError("Don't support signed constant integer")
         data = node.constant_data
 
         int_type = IntegerType.get_signless(dtype.bit_width, context=ctx)
@@ -142,8 +141,6 @@ def constant(node, _preds, _ir_to_mlir_node, ctx, _additional_conversion_info=No
         value = cast(TensorValue, value)
 
         dtype = cast(Integer, value.dtype)
-        if dtype.is_signed:
-            raise TypeError("Don't support signed constant integer tensor")
         data = node.constant_data
 
         int_type = IntegerType.get_signless(dtype.bit_width, context=ctx)
