@@ -11,13 +11,13 @@ def main():
     def function_to_compile(x):
         return x + 42
 
-    x = hnp.EncryptedScalar(hnp.UnsignedInteger(10))
+    x = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
 
     # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x},
-        [(i,) for i in range(2 ** 10)],
+        [(i,) for i in range(2 ** 3)],
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # bench: Measure: End
@@ -25,7 +25,7 @@ def main():
     inputs = []
     labels = []
     for _ in range(4):
-        sample_x = random.randint(0, 2 ** 10 - 1)
+        sample_x = random.randint(0, 2 ** 3 - 1)
 
         inputs.append([sample_x])
         labels.append(function_to_compile(*inputs[-1]))
