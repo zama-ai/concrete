@@ -24,7 +24,8 @@ static void addPotentiallyNestedPass(mlir::PassManager &pm,
   if (!pass->getOpName() || *pass->getOpName() == "builtin.module") {
     pm.addPass(std::move(pass));
   } else {
-    pm.nest(*pass->getOpName()).addPass(std::move(pass));
+    mlir::OpPassManager &p = pm.nest(*pass->getOpName());
+    p.addPass(std::move(pass));
   }
 }
 
