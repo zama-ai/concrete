@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "concretefhe"
-version = "0.2.0-rc3"
+version = "0.2.0-rc4"
 description = "Concrete Framework"
 authors = ["Zama <hello@zama.ai>"]
 packages = [
