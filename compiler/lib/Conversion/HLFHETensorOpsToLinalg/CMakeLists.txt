@@ -6,10 +6,12 @@ add_mlir_dialect_library(HLFHETensorOpsToLinalg
 
   DEPENDS
   HLFHEDialect
+  HLFHELinalgDialect
   MLIRConversionPassIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR
-  HLFHEDialect)
+  HLFHEDialect
+  HLFHELinalgDialect)
 
 target_link_libraries(HLFHEDialect PUBLIC MLIRIR)

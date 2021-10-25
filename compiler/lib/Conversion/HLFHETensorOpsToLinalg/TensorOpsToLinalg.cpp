@@ -13,6 +13,8 @@
 #include "zamalang/Conversion/Passes.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
+#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h"
+#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
 
 struct DotToLinalgGeneric : public ::mlir::RewritePattern {
   DotToLinalgGeneric(::mlir::MLIRContext *context)
@@ -121,6 +123,125 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
   };
 };
 
+mlir::AffineMap
+getBroadcastedAffineMap(const mlir::RankedTensorType &resultType,
+                        const mlir::RankedTensorType &operandType,
+                        ::mlir::PatternRewriter &rewriter) {
+  mlir::SmallVector<mlir::AffineExpr, 4> affineExprs;
+  auto resultShape = resultType.getShape();
+  auto operandShape = operandType.getShape();
+  affineExprs.reserve(resultShape.size());
+  size_t deltaNumDim = resultShape.size() - operandShape.size();
+  for (auto i = 0; i < operandShape.size(); i++) {
+    if (operandShape[i] == 1) {
+      affineExprs.push_back(rewriter.getAffineConstantExpr(0));
+    } else {
+      affineExprs.push_back(rewriter.getAffineDimExpr(i + deltaNumDim));
+    }
+  }
+  return mlir::AffineMap::get(resultShape.size(), 0, affineExprs,
+                              rewriter.getContext());
+}
+
+// This template rewrite pattern transforms any instance of
+// operators `HLFHELinalgOp` that implements the broadasting rules to an
+// instance of `linalg.generic` with an appropriate region using `HLFHEOp`
+// operation, an appropriate specification for the iteration dimensions and
+// appropriate operaztions managing the accumulator of `linalg.generic`.
+//
+// Example:
+//
+// %res = HLFHELinalg.op(%lhs, %rhs):
+// (tensor<D$Ax...xD1x!HLFHE.eint<p>>, tensor<D$B'x...xD1'xT>)
+//    -> tensor<DR"x...xD1"x!HLFHE.eint<p>>
+//
+// becomes:
+//
+// #maps_0 = [
+//    affine_map<(a$R", ..., a$A, ..., a1) ->
+//        (dim(lhs, $A) == 1 ? 0 : a$A,..., dim(lhs, 1) == 1 ? 0 : a1)>,
+//    affine_map<(a$R", ..., a1) ->
+//        (dim(rhs, $B') == 1 ? 0 : a$B', ..., dim(rhs, 1) == 1 ? 0 : a1)>,
+//    affine_map<(a$R", ..., a1) -> (a$R", ..., a1)
+// ]
+// #attributes_0 {
+//     indexing_maps = #maps_0,
+//     iterator_types = ["parallel", ..., "parallel"], // $R" parallel
+// }
+// %init = linalg.init_tensor [DR",...,D1"]
+//            : tensor<DR"x...xD1"x!HLFHE.eint<p>>
+// %res = linalg.generic {
+//     ins(%lhs, %rhs: tensor<DAx...xD1x!HLFHE.eint<p>>,tensor<DB'x...xD1'xT>)
+//     outs(%init : tensor<DR"x...xD1"x!HLFHE.eint<p>>)
+//     {
+//         ^bb0(%arg0: !HLFHE.eint<p>, %arg1: T):
+//             %0 = HLFHE.op(%arg0, %arg1): !HLFHE.eint<p>, T ->
+//             !HLFHE.eint<p>
+//         linalg.yield %0 : !HLFHE.eint<p>
+//     }
+// }
+//
+template <typename HLFHELinalgOp, typename HLFHEOp>
+struct HLFHELinalgOpToLinalgGeneric
+    : public mlir::OpRewritePattern<HLFHELinalgOp> {
+  HLFHELinalgOpToLinalgGeneric(::mlir::MLIRContext *context,
+                               mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<HLFHELinalgOp>(context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(HLFHELinalgOp linalgOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    mlir::RankedTensorType resultTy =
+        ((mlir::Type)linalgOp->getResult(0).getType())
+            .cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType lhsTy =
+        ((mlir::Type)linalgOp.lhs().getType()).cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType rhsTy =
+        ((mlir::Type)linalgOp.rhs().getType()).cast<mlir::RankedTensorType>();
+    //  linalg.init_tensor for initial value
+    mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
+        linalgOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+
+    // Create the affine #maps_0
+    llvm::SmallVector<mlir::AffineMap, 3> maps{
+        getBroadcastedAffineMap(resultTy, lhsTy, rewriter),
+        getBroadcastedAffineMap(resultTy, rhsTy, rewriter),
+        getBroadcastedAffineMap(resultTy, resultTy, rewriter),
+    };
+
+    // Create the iterator_types
+    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
+                                                     "parallel");
+
+    // Create the body of the `linalg.generic` op
+    auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                           mlir::Location nestedLoc,
+                           mlir::ValueRange blockArgs) {
+      HLFHEOp hlfheOp = nestedBuilder.create<HLFHEOp>(
+          linalgOp.getLoc(), blockArgs[0], blockArgs[1]);
+
+      nestedBuilder.create<mlir::linalg::YieldOp>(linalgOp.getLoc(),
+                                                  hlfheOp.getResult());
+    };
+
+    // Create the `linalg.generic` op
+    llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
+    llvm::SmallVector<mlir::Value, 2> ins{linalgOp.lhs(), linalgOp.rhs()};
+    llvm::SmallVector<mlir::Value, 1> outs{init};
+    llvm::StringRef doc{""};
+    llvm::StringRef call{""};
+
+    mlir::linalg::GenericOp genericOp =
+        rewriter.create<mlir::linalg::GenericOp>(linalgOp.getLoc(), resTypes,
+                                                 ins, outs, maps, iteratorTypes,
+                                                 doc, call, bodyBuilder);
+
+    rewriter.replaceOp(linalgOp, {genericOp.getResult(0)});
+
+    return ::mlir::success();
+  };
+};
+
 namespace {
 struct HLFHETensorOpsToLinalg
     : public HLFHETensorOpsToLinalgBase<HLFHETensorOpsToLinalg> {
@@ -139,9 +260,14 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
   target.addLegalDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   target.addLegalDialect<mlir::tensor::TensorDialect>();
   target.addIllegalOp<mlir::zamalang::HLFHE::Dot>();
+  target.addIllegalDialect<mlir::zamalang::HLFHELinalg::HLFHELinalgDialect>();
 
   mlir::OwningRewritePatternList patterns(&getContext());
   patterns.insert<DotToLinalgGeneric>(&getContext());
+  patterns.insert<
+      HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::AddEintOp,
+                                   mlir::zamalang::HLFHE::AddEintOp>>(
+      &getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())

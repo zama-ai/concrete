@@ -6,6 +6,7 @@
 #include <mlir/Parser.h>
 
 #include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
+#include <zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h>
 #include <zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
 #include <zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h>
 #include <zamalang/Support/CompilerEngine.h>
@@ -15,6 +16,7 @@ namespace mlir {
 namespace zamalang {
 
 void CompilerEngine::loadDialects() {
+  context->getOrLoadDialect<mlir::zamalang::HLFHELinalg::HLFHELinalgDialect>();
   context->getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   context->getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
   context->getOrLoadDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
