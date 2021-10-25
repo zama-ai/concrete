@@ -58,6 +58,12 @@ def SubIntEintOp : HLFHE_Op<"sub_int_eint"> {
     let arguments = (ins AnyInteger:$a, EncryptedIntegerType:$b);
     let results = (outs EncryptedIntegerType);
 
+    let builders = [
+        OpBuilder<(ins "Value":$a, "Value":$b), [{
+         build($_builder, $_state, b.getType(), a, b);
+        }]>
+    ];
+
     let verifier = [{
         return ::mlir::zamalang::HLFHE::verifySubIntEintOp(*this);
     }];

@@ -272,6 +272,10 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
       HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::AddEintIntOp,
                                    mlir::zamalang::HLFHE::AddEintIntOp>>(
       &getContext());
+  patterns.insert<
+      HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::SubIntEintOp,
+                                   mlir::zamalang::HLFHE::SubIntEintOp>>(
+      &getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())
