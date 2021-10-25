@@ -129,9 +129,8 @@ mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter &rewriter,
                                         mlir::Location loc, mlir::Value arg0,
                                         mlir::Value arg1,
                                         mlir::OpResult result) {
-  auto glwe = arg0.getType().cast<GLWECipherTextType>();
   return createAddPlainLweCiphertextWithGlwe(rewriter, loc, arg0, arg1, result,
-                                             glwe);
+                                             arg0.getType());
 }
 
 mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter &rewriter,
