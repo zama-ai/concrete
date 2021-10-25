@@ -7,6 +7,7 @@ add_executable(
   end_to_end_jit_test
   end_to_end_jit_clear_tensor.cc
   end_to_end_jit_encrypted_tensor.cc
+  end_to_end_jit_hlfhelinalg.cc
   end_to_end_jit_test.cc
 )
 target_link_libraries(
