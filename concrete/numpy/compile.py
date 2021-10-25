@@ -2,7 +2,7 @@
 
 import sys
 import traceback
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
 import numpy
 from zamalang import CompilerEngine
@@ -21,7 +21,6 @@ from ..common.mlir.utils import (
 )
 from ..common.operator_graph import OPGraph
 from ..common.optimization.topological import fuse_float_operations
-from ..common.representation.intermediate import IntermediateNode
 from ..common.values import BaseValue
 from ..numpy.tracing import trace_numpy_function
 from .np_dtypes_helpers import (
@@ -101,16 +100,6 @@ def _compile_numpy_function_into_op_graph_internal(
         # Fuse float operations to have int to int UnivariateFunction
         if not check_op_graph_is_integer_program(op_graph):
             fuse_float_operations(op_graph, compilation_artifacts)
-
-    # TODO: To be removed once we support more than integers
-    offending_non_integer_nodes: List[IntermediateNode] = []
-    op_grap_is_int_prog = check_op_graph_is_integer_program(op_graph, offending_non_integer_nodes)
-    if not op_grap_is_int_prog:
-        raise ValueError(
-            f"{function_to_compile.__name__} cannot be compiled as it has nodes with either float"
-            f" inputs or outputs.\nOffending nodes : "
-            f"{', '.join(str(node) for node in offending_non_integer_nodes)}"
-        )
 
     # Find bounds with the inputset
     inputset_size, node_bounds_and_samples = eval_op_graph_bounds_on_inputset(

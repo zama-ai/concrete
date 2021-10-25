@@ -35,8 +35,6 @@ def simple_fuse_not_output(x):
             simple_fuse_not_output,
             True,
             id="simple_fuse_not_output",
-            marks=pytest.mark.xfail(strict=True),
-            # fails because it connot be compiled without topological optimizations
         ),
     ],
 )
