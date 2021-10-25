@@ -231,7 +231,7 @@ set_version:
 	@if [[ "$$VERSION" == "" ]]; then											\
 		echo "VERSION env variable is empty. Please set to desired version.";	\
 		exit 1;																	\
-	fi;
+	fi && \
 	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}"
 .PHONY: set_version
 
@@ -240,17 +240,17 @@ check_version_coherence:
 .PHONY: check_version_coherence
 
 changelog: check_version_coherence
-	PROJECT_VER=($$(poetry version));\
-	PROJECT_VER="$${PROJECT_VER[1]}";\
+	PROJECT_VER=($$(poetry version)) && \
+	PROJECT_VER="$${PROJECT_VER[1]}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 .PHONY: changelog
 
 release: check_version_coherence
-	@PROJECT_VER=($$(poetry version));\
-	PROJECT_VER="$${PROJECT_VER[1]}";\
-	TAG_NAME="v$${PROJECT_VER}";\
-	git fetch --tags --force;\
-	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}";\
+	@PROJECT_VER=($$(poetry version)) && \
+	PROJECT_VER="$${PROJECT_VER[1]}" && \
+	TAG_NAME="v$${PROJECT_VER}" && \
+	git fetch --tags --force && \
+	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}" && \
 	git push origin "refs/tags/$${TAG_NAME}"
 .PHONY: release
 
@@ -268,7 +268,7 @@ show_type:show_scope
 # exclude notebooks (sometimes matches in svg text), match the notes in this directory
 todo:
 	@NOTES_ARGS=$$(poetry run python ./script/make_utils/get_pylintrc_notes.py \
-	--pylintrc-path pylintrc);\
+	--pylintrc-path pylintrc) && \
 	grep -rInH --exclude-dir='.[^.]*' --exclude=pylintrc --exclude='*.ipynb' "$${NOTES_ARGS}" .
 .PHONY: todo
 
