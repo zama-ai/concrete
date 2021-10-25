@@ -862,7 +862,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 "%0 = x                                             # EncryptedTensor<Integer<signed, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
                 "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported\n"  # noqa: E501  # pylint: disable=line-too-long
                 "%1 = IndexConstant(%0[0])                          # EncryptedTensor<Integer<signed, 3 bits>, shape=(2,)>\n"  # noqa: E501  # pylint: disable=line-too-long
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer tensor constant indexing is supported\n"  # noqa: E501  # pylint: disable=line-too-long
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ indexing is not supported for the time being\n"  # noqa: E501  # pylint: disable=line-too-long
                 "return(%1)\n"
             ),
         ),
