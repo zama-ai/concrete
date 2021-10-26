@@ -14,7 +14,9 @@ use concrete_core::math::fft::AlignedVec;
 use crate::error::CryptoAPIError;
 use crate::Torus;
 
-#[derive(Debug, PartialEq, Clone)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct LWEBSK {
     pub ciphertexts: FourierBootstrapKey<AlignedVec<Complex64>,u64>,
     pub variance: f64,
