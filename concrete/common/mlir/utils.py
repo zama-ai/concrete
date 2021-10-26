@@ -1,5 +1,5 @@
 """Utilities for MLIR conversion."""
-from typing import Dict, Optional, cast
+from typing import Dict, List, Optional, cast
 
 from ..data_types import Integer
 from ..data_types.dtypes_helpers import (
@@ -99,7 +99,7 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
 
 def check_graph_values_compatibility_with_mlir(
     op_graph: OPGraph,
-) -> Optional[Dict[IntermediateNode, str]]:
+) -> Optional[Dict[IntermediateNode, List[str]]]:
     """Make sure the graph outputs are unsigned integers, which is what the compiler supports.
 
     Args:
@@ -115,7 +115,7 @@ def check_graph_values_compatibility_with_mlir(
     for node in op_graph.graph.nodes:
         is_output = node in op_graph.output_nodes.values()
         if (reason := check_node_compatibility_with_mlir(node, is_output)) is not None:
-            offending_nodes[node] = reason
+            offending_nodes[node] = [reason]
 
     return None if len(offending_nodes) == 0 else offending_nodes
 
@@ -162,9 +162,9 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
 
             # Check that current_node_out_bit_width is supported by the compiler
             if current_node_out_bit_width > ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB:
-                offending_nodes[
-                    node
-                ] = f"{current_node_out_bit_width} bits is not supported for the time being"
+                offending_nodes[node] = [
+                    f"{current_node_out_bit_width} bits is not supported for the time being"
+                ]
 
     if len(offending_nodes) != 0:
         raise RuntimeError(

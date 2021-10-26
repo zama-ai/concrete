@@ -1,6 +1,6 @@
 """functions to print the different graphs we can generate in the package, eg to debug."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import networkx as nx
 
@@ -48,15 +48,16 @@ def shorten_a_constant(constant_data: str):
 def get_printable_graph(
     opgraph: OPGraph,
     show_data_types: bool = False,
-    highlighted_nodes: Optional[Dict[IntermediateNode, str]] = None,
+    highlighted_nodes: Optional[Dict[IntermediateNode, List[str]]] = None,
 ) -> str:
     """Return a string representing a graph.
 
     Args:
         opgraph (OPGraph): The graph that we want to draw
-        show_data_types (bool): Whether or not showing data_types of nodes, eg to see their width
-        highlighted_nodes (Optional[Dict[IntermediateNode, str]]):
-            The dict of nodes which will be highlighted and their corresponding messages
+        show_data_types (bool, optional): Whether or not showing data_types of nodes, eg to see
+            their width. Defaults to False.
+        highlighted_nodes (Optional[Dict[IntermediateNode, List[str]]], optional): The dict of nodes
+            which will be highlighted and their corresponding messages. Defaults to None.
 
     Returns:
         str: a string to print or save in a file
@@ -145,8 +146,9 @@ def get_printable_graph(
         returned_str += f"{new_line}\n"
 
         if node in highlighted_nodes:
-            message = highlighted_nodes[node]
-            returned_str += f"{'^' * len(new_line)} {message}\n"
+            new_line_len = len(new_line)
+            message = f"\n{' ' * new_line_len} ".join(highlighted_nodes[node])
+            returned_str += f"{'^' * new_line_len} {message}\n"
 
         map_table[node] = i
         i += 1

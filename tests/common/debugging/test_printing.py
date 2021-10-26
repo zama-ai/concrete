@@ -19,7 +19,7 @@ def test_get_printable_graph_with_offending_nodes(default_compilation_configurat
         default_compilation_configuration,
     )
 
-    highlighted_nodes = {opgraph.input_nodes[0]: "foo"}
+    highlighted_nodes = {opgraph.input_nodes[0]: ["foo"]}
 
     without_types = get_printable_graph(
         opgraph, show_data_types=False, highlighted_nodes=highlighted_nodes
@@ -54,7 +54,7 @@ return(%2)
 """.strip()
     )
 
-    highlighted_nodes = {opgraph.input_nodes[0]: "foo", opgraph.output_nodes[0]: "bar"}
+    highlighted_nodes = {opgraph.input_nodes[0]: ["foo"], opgraph.output_nodes[0]: ["bar", "baz"]}
 
     without_types = get_printable_graph(
         opgraph, show_data_types=False, highlighted_nodes=highlighted_nodes
@@ -72,6 +72,7 @@ return(%2)
 %1 = Constant(42)
 %2 = Add(%0, %1)
 ^^^^^^^^^^^^^^^^ bar
+                 baz
 return(%2)
 
 """.strip()
@@ -86,6 +87,7 @@ return(%2)
 %1 = Constant(42)                                  # ClearScalar<Integer<unsigned, 6 bits>>
 %2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 6 bits>>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ bar
+                                                                                                baz
 return(%2)
 
 """.strip()
