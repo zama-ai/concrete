@@ -15,6 +15,7 @@ from concrete.common.representation.intermediate import (
     Add,
     Constant,
     Dot,
+    GenericFunction,
     IndexConstant,
     Input,
     IntermediateNode,
@@ -186,6 +187,7 @@ def is_equivalent_intermediate_node(lhs: IntermediateNode, rhs: object) -> bool:
 EQUIVALENT_TEST_FUNC: Dict[Type, Callable[..., bool]] = {
     Add: is_equivalent_add,
     UnivariateFunction: is_equivalent_arbitrary_function,
+    GenericFunction: is_equivalent_arbitrary_function,
     Constant: is_equivalent_constant,
     Dot: is_equivalent_dot,
     IndexConstant: is_equivalent_index_constant,

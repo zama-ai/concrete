@@ -1,17 +1,23 @@
 """numpy tracing utilities."""
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import numpy
 from numpy.typing import DTypeLike
 
 from ..common.data_types.dtypes_helpers import mix_values_determine_holding_dtype
-from ..common.debugging.custom_assert import assert_true
+from ..common.debugging.custom_assert import assert_false, assert_true
 from ..common.operator_graph import OPGraph
-from ..common.representation.intermediate import Constant, Dot, MatMul, UnivariateFunction
+from ..common.representation.intermediate import (
+    Constant,
+    Dot,
+    GenericFunction,
+    MatMul,
+    UnivariateFunction,
+)
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
-from ..common.values import BaseValue
+from ..common.values import BaseValue, TensorValue
 from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
     convert_numpy_dtype_to_base_data_type,
@@ -261,6 +267,62 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
+    def transpose(self, *args: "NPTracer", **_kwargs) -> "NPTracer":
+        """Trace numpy.transpose.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        assert_true((num_args := len(args)) == 1, f"transpose expect 1 input got {num_args}")
+
+        first_arg_output = args[0].output
+        assert_true(isinstance(first_arg_output, TensorValue))
+        first_arg_output = cast(TensorValue, first_arg_output)
+        assert_false(first_arg_output.is_scalar)
+
+        traced_computation = GenericFunction(
+            input_base_value=first_arg_output,
+            arbitrary_func=numpy.transpose,
+            output_dtype=first_arg_output.dtype,
+            output_shape=first_arg_output.shape[::-1],
+            op_kwargs=deepcopy(_kwargs),
+            op_name="np.transpose",
+        )
+        output_tracer = self.__class__(
+            args,
+            traced_computation=traced_computation,
+            output_idx=0,
+        )
+        return output_tracer
+
+    def ravel(self, *args: "NPTracer", **_kwargs) -> "NPTracer":
+        """Trace numpy.ravel.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        assert_true((num_args := len(args)) == 1, f"ravel expect 1 input got {num_args}")
+
+        first_arg_output = args[0].output
+        assert_true(isinstance(first_arg_output, TensorValue))
+        first_arg_output = cast(TensorValue, first_arg_output)
+        assert_false(first_arg_output.is_scalar)
+
+        traced_computation = GenericFunction(
+            input_base_value=first_arg_output,
+            arbitrary_func=numpy.ravel,
+            output_dtype=first_arg_output.dtype,
+            output_shape=(numpy.product(first_arg_output.shape),),
+            op_kwargs=deepcopy(_kwargs),
+            op_name="np.ravel",
+        )
+        output_tracer = self.__class__(
+            args,
+            traced_computation=traced_computation,
+            output_idx=0,
+        )
+        return output_tracer
+
     def __getitem__(self, item):
         if isinstance(item, tuple):
             item = tuple(process_indexing_element(indexing_element) for indexing_element in item)
@@ -373,6 +435,8 @@ class NPTracer(BaseTracer):
 
     FUNC_ROUTING: Dict[Callable, Callable] = {
         numpy.dot: dot,
+        numpy.transpose: transpose,
+        numpy.ravel: ravel,
     }
 
 

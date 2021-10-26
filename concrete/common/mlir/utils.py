@@ -69,6 +69,9 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
         if not value_is_scalar(inputs[0]) or not value_is_unsigned_integer(inputs[0]):
             return "only unsigned integer scalar lookup tables are supported"
 
+    elif isinstance(node, intermediate.GenericFunction):  # constraints for generic functions
+        return f"{node.op_name} is not supported for the time being"  # pragma: no cover
+
     elif isinstance(node, intermediate.Dot):  # constraints for dot product
         assert_true(len(inputs) == 2)
         if not value_is_unsigned_integer(inputs[0]) or not value_is_unsigned_integer(inputs[1]):

@@ -215,6 +215,40 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
     )
 
 
+@pytest.mark.parametrize(
+    "lambda_f,params,ref_graph_str",
+    [
+        (
+            lambda x: numpy.transpose(x),
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3, 5)),
+            },
+            "%0 = x\n%1 = np.transpose(%0)\nreturn(%1)\n",
+        ),
+        (
+            lambda x: numpy.ravel(x),
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3, 5)),
+            },
+            "%0 = x\n%1 = np.ravel(%0)\nreturn(%1)\n",
+        ),
+    ],
+)
+def test_print_and_draw_graph_with_generic_function(lambda_f, params, ref_graph_str):
+    "Test get_printable_graph and draw_graph on graphs with generic function"
+    graph = tracing.trace_numpy_function(lambda_f, params)
+
+    draw_graph(graph, show=False)
+
+    str_of_the_graph = get_printable_graph(graph)
+
+    assert str_of_the_graph == ref_graph_str, (
+        f"\n==================\nGot \n{str_of_the_graph}"
+        f"==================\nExpected \n{ref_graph_str}"
+        f"==================\n"
+    )
+
+
 # Remark that the bitwidths are not particularly correct (eg, a MUL of a 17b times 23b
 # returning 23b), since they are replaced later by the real bitwidths computed on the
 # inputset

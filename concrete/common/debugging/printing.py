@@ -8,6 +8,7 @@ from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import (
     Constant,
+    GenericFunction,
     IndexConstant,
     Input,
     IntermediateNode,
@@ -91,7 +92,7 @@ def get_printable_graph(
 
             base_name = node.__class__.__name__
 
-            if isinstance(node, UnivariateFunction):
+            if isinstance(node, (UnivariateFunction, GenericFunction)):
                 base_name = node.op_name
 
             what_to_print = base_name + "("

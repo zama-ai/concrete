@@ -608,3 +608,44 @@ def test_nptracer_unsupported_operands(operation, tracer):
     """Test cases where NPTracer cannot be used with other operands."""
     with pytest.raises(TypeError):
         tracer = operation(tracer)
+
+
+@pytest.mark.parametrize(
+    "function_to_trace,input_value,input_and_expected_output_tuples",
+    [
+        (
+            lambda x: numpy.transpose(x),
+            EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+            [
+                (numpy.arange(4).reshape(2, 2), numpy.array([[0, 2], [1, 3]])),
+                (numpy.arange(4, 8).reshape(2, 2), numpy.array([[4, 6], [5, 7]])),
+            ],
+        ),
+        (
+            lambda x: numpy.transpose(x) + 42,
+            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+            [
+                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(3, 5).transpose()),
+            ],
+        ),
+        (
+            lambda x: numpy.ravel(x),
+            EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+            [
+                (numpy.arange(4), numpy.array([0, 1, 2, 3])),
+                (numpy.arange(4).reshape(2, 2), numpy.array([0, 1, 2, 3])),
+            ],
+        ),
+    ],
+)
+def test_tracing_generic_function(function_to_trace, input_value, input_and_expected_output_tuples):
+    """Test function for managed by GenericFunction node"""
+    for input_, expected_output in input_and_expected_output_tuples:
+
+        op_graph = tracing.trace_numpy_function(function_to_trace, {"x": input_value})
+        output_node = op_graph.output_nodes[0]
+
+        node_results = op_graph.evaluate({0: input_})
+        evaluated_output = node_results[output_node]
+        assert isinstance(evaluated_output, type(expected_output))
+        assert numpy.array_equal(expected_output, evaluated_output)

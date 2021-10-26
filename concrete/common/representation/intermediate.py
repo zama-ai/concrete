@@ -470,3 +470,52 @@ class MatMul(IntermediateNode):
 
     def label(self) -> str:
         return "@"
+
+
+class GenericFunction(IntermediateNode):
+    """Return the node representing a generic function."""
+
+    # The arbitrary_func is not optional but mypy has a long standing bug and is not able to
+    # understand this properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623
+    # arbitrary_func can take more than one argument but during evaluation the input variable will
+    # be the first argument passed to it. You can add other constant arguments needed for the proper
+    # execution of the function through op_args and op_kwargs.
+    arbitrary_func: Optional[Callable]
+    op_name: str
+    op_args: Tuple[Any, ...]
+    op_kwargs: Dict[str, Any]
+    op_attributes: Dict[str, Any]
+    _n_in: int = 1
+
+    def __init__(
+        self,
+        input_base_value: TensorValue,
+        arbitrary_func: Callable,
+        output_dtype: BaseDataType,
+        output_shape: Tuple,
+        op_name: Optional[str] = None,
+        op_args: Optional[Tuple[Any, ...]] = None,
+        op_kwargs: Optional[Dict[str, Any]] = None,
+        op_attributes: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        super().__init__([input_base_value])
+        assert_true(len(self.inputs) == 1)
+        self.arbitrary_func = arbitrary_func
+        self.op_args = op_args if op_args is not None else ()
+        self.op_kwargs = op_kwargs if op_kwargs is not None else {}
+        self.op_attributes = op_attributes if op_attributes is not None else {}
+
+        self.outputs = [
+            EncryptedTensor(output_dtype, output_shape)
+            if self.inputs[0].is_encrypted
+            else ClearTensor(output_dtype, output_shape)
+        ]
+        self.op_name = op_name if op_name is not None else self.__class__.__name__
+
+    def evaluate(self, inputs: Dict[int, Any]) -> Any:
+        # This is the continuation of the mypy bug workaround
+        assert self.arbitrary_func is not None
+        return self.arbitrary_func(inputs[0], *self.op_args, **self.op_kwargs)
+
+    def label(self) -> str:
+        return self.op_name

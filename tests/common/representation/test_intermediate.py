@@ -175,6 +175,28 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
             numpy.array([[9, 12, 15], [19, 26, 33], [29, 40, 51]]),
             id="MatMul, numpy.arange(1, 7).reshape(3, 2), numpy.arange(1, 7).reshape(2, 3)",
         ),
+        pytest.param(
+            ir.GenericFunction(
+                EncryptedTensor(Integer(32, False), shape=(3, 5)),
+                lambda x: numpy.transpose(x),
+                Integer(32, False),
+                output_shape=(5, 3),
+            ),
+            [numpy.arange(15).reshape(3, 5)],
+            numpy.array([[0, 5, 10], [1, 6, 11], [2, 7, 12], [3, 8, 13], [4, 9, 14]]),
+            id="GenericFunction, x transpose",
+        ),
+        pytest.param(
+            ir.GenericFunction(
+                EncryptedTensor(Integer(32, False), shape=(3, 5)),
+                lambda x: numpy.ravel(x),
+                Integer(32, False),
+                output_shape=(5, 3),
+            ),
+            [numpy.arange(15).reshape(3, 5)],
+            numpy.arange(15),
+            id="GenericFunction, x ravel",
+        ),
     ],
 )
 def test_evaluate(
@@ -184,7 +206,7 @@ def test_evaluate(
 ):
     """Test evaluate methods on IntermediateNodes"""
     if isinstance(expected_result, numpy.ndarray):
-        assert (node.evaluate(input_data) == expected_result).all()
+        assert numpy.array_equal(node.evaluate(input_data), expected_result)
     else:
         assert node.evaluate(input_data) == expected_result
 
