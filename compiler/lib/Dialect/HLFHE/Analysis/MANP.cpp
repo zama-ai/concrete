@@ -3,6 +3,7 @@
 #include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
 #include <zamalang/Dialect/HLFHE/IR/HLFHEOps.h>
 #include <zamalang/Dialect/HLFHE/IR/HLFHETypes.h>
+#include <zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
 #include <zamalang/Support/math.h>
 
 #include <limits>
@@ -422,6 +423,161 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUMul(sqNorm, eNorm);
 }
 
+// Calculates the squared Minimal Arithmetic Noise Padding of an
+// `HLFHELinalg.add_eint_int` operation.
+static llvm::APInt getSqMANP(
+    mlir::zamalang::HLFHELinalg::AddEintIntOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  mlir::RankedTensorType op1Ty =
+      op->getOpOperand(1).get().getType().cast<mlir::RankedTensorType>();
+
+  mlir::Type iTy = op1Ty.getElementType();
+
+  assert(iTy.isSignlessInteger() &&
+         "Only additions with signless integers are currently allowed");
+
+  assert(
+      operandMANPs.size() == 2 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
+  llvm::APInt sqNorm;
+
+  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
+      op->getOpOperand(1).get().getDefiningOp());
+  mlir::DenseIntElementsAttr denseVals =
+      cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
+            : nullptr;
+
+  if (denseVals) {
+    // For a constant operand use actual constant to calculate 2-norm
+    llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
+    for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
+      llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
+      if (maxCst.ult(iCst)) {
+        maxCst = iCst;
+      }
+    }
+    sqNorm = APIntWidthExtendUSq(maxCst);
+  } else {
+    // For a dynamic operand conservatively assume that the value is
+    // the maximum for the integer width
+    sqNorm = conservativeIntNorm2Sq(iTy);
+  }
+
+  return APIntWidthExtendUAdd(sqNorm, eNorm);
+}
+
+static llvm::APInt getSqMANP(
+    mlir::zamalang::HLFHELinalg::AddEintOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+  assert(operandMANPs.size() == 2 &&
+         operandMANPs[0]->getValue().getMANP().hasValue() &&
+         operandMANPs[1]->getValue().getMANP().hasValue() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+
+  llvm::APInt a = operandMANPs[0]->getValue().getMANP().getValue();
+  llvm::APInt b = operandMANPs[1]->getValue().getMANP().getValue();
+
+  return APIntWidthExtendUAdd(a, b);
+}
+
+// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+// that is equivalent to an `HLFHELinalg.sub_int_eint` operation.
+static llvm::APInt getSqMANP(
+    mlir::zamalang::HLFHELinalg::SubIntEintOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  mlir::RankedTensorType op0Ty =
+      op->getOpOperand(0).get().getType().cast<mlir::RankedTensorType>();
+
+  mlir::Type iTy = op0Ty.getElementType();
+
+  assert(iTy.isSignlessInteger() &&
+         "Only subtractions with signless integers are currently allowed");
+
+  assert(
+      operandMANPs.size() == 2 &&
+      operandMANPs[1]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[1]->getValue().getMANP().getValue();
+  llvm::APInt sqNorm;
+
+  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
+      op->getOpOperand(0).get().getDefiningOp());
+  mlir::DenseIntElementsAttr denseVals =
+      cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
+            : nullptr;
+
+  if (denseVals) {
+    // For a constant operand use actual constant to calculate 2-norm
+    llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
+    for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
+      llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
+      if (maxCst.ult(iCst)) {
+        maxCst = iCst;
+      }
+    }
+    sqNorm = APIntWidthExtendUSq(maxCst);
+  } else {
+    // For dynamic plaintext operands conservatively assume that the integer has
+    // its maximum possible value
+    sqNorm = conservativeIntNorm2Sq(iTy);
+  }
+  return APIntWidthExtendUAdd(sqNorm, eNorm);
+}
+
+// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+// that is equivalent to an `HLFHE.mul_eint_int` operation.
+static llvm::APInt getSqMANP(
+    mlir::zamalang::HLFHELinalg::MulEintIntOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  mlir::RankedTensorType op0Ty =
+      op->getOpOperand(1).get().getType().cast<mlir::RankedTensorType>();
+
+  mlir::Type iTy = op0Ty.getElementType();
+
+  assert(iTy.isSignlessInteger() &&
+         "Only multiplications with signless integers are currently allowed");
+
+  assert(
+      operandMANPs.size() == 2 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
+  llvm::APInt sqNorm;
+
+  mlir::ConstantOp cstOp = llvm::dyn_cast_or_null<mlir::ConstantOp>(
+      op->getOpOperand(1).get().getDefiningOp());
+  mlir::DenseIntElementsAttr denseVals =
+      cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
+            : nullptr;
+
+  if (denseVals) {
+    // For a constant operand use actual constant to calculate 2-norm
+    llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
+    for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
+      llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
+      if (maxCst.ult(iCst)) {
+        maxCst = iCst;
+      }
+    }
+    sqNorm = APIntWidthExtendUSq(maxCst);
+  } else {
+    // For a dynamic operand conservatively assume that the value is
+    // the maximum for the integer width
+    sqNorm = conservativeIntNorm2Sq(iTy);
+  }
+
+  return APIntWidthExtendUMul(sqNorm, eNorm);
+}
+
 static llvm::APInt getSqMANP(
     mlir::tensor::ExtractOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -507,6 +663,23 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     } else if (llvm::isa<mlir::zamalang::HLFHE::ZeroEintOp>(op) ||
                llvm::isa<mlir::zamalang::HLFHE::ApplyLookupTableEintOp>(op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
+    }
+    // HLFHELinalg Operators
+    else if (auto addEintIntOp =
+                 llvm::dyn_cast<mlir::zamalang::HLFHELinalg::AddEintIntOp>(
+                     op)) {
+      norm2SqEquiv = getSqMANP(addEintIntOp, operands);
+    } else if (auto addEintOp =
+                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::AddEintOp>(op)) {
+      norm2SqEquiv = getSqMANP(addEintOp, operands);
+    } else if (auto subIntEintOp =
+                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::SubIntEintOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(subIntEintOp, operands);
+    } else if (auto mulEintIntOp =
+                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MulEintIntOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
     }
     // Tensor Operators
     // ExtractOp

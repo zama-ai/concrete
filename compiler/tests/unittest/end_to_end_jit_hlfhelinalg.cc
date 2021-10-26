@@ -11,12 +11,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x!HLFHE.eint<4>>, %a1: tensor<4xi5>) -> tensor<4x!HLFHE.eint<4>> {
-    %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<4>>, tensor<4xi5>) -> tensor<4x!HLFHE.eint<4>>
-    return %res : tensor<4x!HLFHE.eint<4>>
+  func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>> {
+    %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>>
+    return %res : tensor<4x!HLFHE.eint<6>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   std::vector<uint8_t> a0{31, 6, 12, 9};
   std::vector<uint8_t> a1{32, 9, 2, 3};
 
@@ -43,12 +42,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_broadcast) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x1x4x!HLFHE.eint<4>>, %a1: tensor<1x4x4xi5>) -> tensor<4x4x4x!HLFHE.eint<4>> {
-    %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x1x4x!HLFHE.eint<4>>, tensor<1x4x4xi5>) -> tensor<4x4x4x!HLFHE.eint<4>>
-    return %res : tensor<4x4x4x!HLFHE.eint<4>>
+  func @main(%a0: tensor<4x1x4x!HLFHE.eint<5>>, %a1: tensor<1x4x4xi6>) -> tensor<4x4x4x!HLFHE.eint<5>> {
+    %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x1x4x!HLFHE.eint<5>>, tensor<1x4x4xi6>) -> tensor<4x4x4x!HLFHE.eint<5>>
+    return %res : tensor<4x4x4x!HLFHE.eint<5>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   uint8_t a0[4][1][4]{
       {{1, 2, 3, 4}},
       {{5, 6, 7, 8}},
@@ -102,8 +100,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_column) {
     %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -149,8 +146,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line) {
     %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -188,8 +184,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line_missing_dim) {
      %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!HLFHE.eint<4>>
      return %res : tensor<3x3x!HLFHE.eint<4>>
    }
- )XXX",
-                                                                "main", true);
+ )XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -228,12 +223,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x!HLFHE.eint<4>>, %a1: tensor<4x!HLFHE.eint<4>>) -> tensor<4x!HLFHE.eint<4>> {
-    %res = "HLFHELinalg.add_eint"(%a0, %a1) : (tensor<4x!HLFHE.eint<4>>, tensor<4x!HLFHE.eint<4>>) -> tensor<4x!HLFHE.eint<4>>
-    return %res : tensor<4x!HLFHE.eint<4>>
+  func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4x!HLFHE.eint<6>>) -> tensor<4x!HLFHE.eint<6>> {
+    %res = "HLFHELinalg.add_eint"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4x!HLFHE.eint<6>>) -> tensor<4x!HLFHE.eint<6>>
+    return %res : tensor<4x!HLFHE.eint<6>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
 
   std::vector<uint8_t> a0{31, 6, 12, 9};
   std::vector<uint8_t> a1{32, 9, 2, 3};
@@ -263,14 +257,13 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term_broadcast) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x1x4x!HLFHE.eint<4>>, %a1:
-  tensor<1x4x4x!HLFHE.eint<4>>) -> tensor<4x4x4x!HLFHE.eint<4>> {
+  func @main(%a0: tensor<4x1x4x!HLFHE.eint<5>>, %a1:
+  tensor<1x4x4x!HLFHE.eint<5>>) -> tensor<4x4x4x!HLFHE.eint<5>> {
     %res = "HLFHELinalg.add_eint"(%a0, %a1) :
-    (tensor<4x1x4x!HLFHE.eint<4>>, tensor<1x4x4x!HLFHE.eint<4>>) ->
-    tensor<4x4x4x!HLFHE.eint<4>> return %res : tensor<4x4x4x!HLFHE.eint<4>>
+    (tensor<4x1x4x!HLFHE.eint<5>>, tensor<1x4x4x!HLFHE.eint<5>>) ->
+    tensor<4x4x4x!HLFHE.eint<5>> return %res : tensor<4x4x4x!HLFHE.eint<5>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   uint8_t a0[4][1][4]{
       {{1, 2, 3, 4}},
       {{5, 6, 7, 8}},
@@ -325,8 +318,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_column) {
     %res = "HLFHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3x1x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -375,8 +367,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line) {
     tensor<1x3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>> return %res :
     tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -415,8 +406,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line_missing_dim) {
     %res = "HLFHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -459,8 +449,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term) {
     %res = "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi5>, tensor<4x!HLFHE.eint<4>>) -> tensor<4x!HLFHE.eint<4>>
     return %res : tensor<4x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   std::vector<uint8_t> a0{32, 9, 12, 9};
   std::vector<uint8_t> a1{31, 6, 2, 3};
 
@@ -487,12 +476,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term_broadcast) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term substraction of `%a0` with `%a1`, where dimensions equals to one are stretched.
-  func @main(%a0: tensor<4x1x4xi5>, %a1: tensor<1x4x4x!HLFHE.eint<4>>) -> tensor<4x4x4x!HLFHE.eint<4>> {
-    %res = "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi5>, tensor<1x4x4x!HLFHE.eint<4>>) -> tensor<4x4x4x!HLFHE.eint<4>>
-    return %res : tensor<4x4x4x!HLFHE.eint<4>>
+  func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!HLFHE.eint<7>>) -> tensor<4x4x4x!HLFHE.eint<7>> {
+    %res = "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi8>, tensor<1x4x4x!HLFHE.eint<7>>) -> tensor<4x4x4x!HLFHE.eint<7>>
+    return %res : tensor<4x4x4x!HLFHE.eint<7>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[4][1][4]{
       {{1, 2, 3, 4}},
       {{5, 6, 7, 8}},
@@ -547,8 +535,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_column) {
     tensor<3x1x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>> return %res :
     tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -597,8 +584,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line) {
     tensor<1x3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>> return %res :
     tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -637,8 +623,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line_missing_dim) {
     %res = "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>, tensor<3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -677,12 +662,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`
-  func @main(%a0: tensor<4x!HLFHE.eint<4>>, %a1: tensor<4xi5>) -> tensor<4x!HLFHE.eint<4>> {
-    %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<4>>, tensor<4xi5>) -> tensor<4x!HLFHE.eint<4>>
-    return %res : tensor<4x!HLFHE.eint<4>>
+  func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>> {
+    %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>>
+    return %res : tensor<4x!HLFHE.eint<6>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   std::vector<uint8_t> a0{31, 6, 12, 9};
   std::vector<uint8_t> a1{2, 3, 2, 3};
 
@@ -709,12 +693,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term_broadcast) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equals to one are stretched.
-  func @main(%a0: tensor<4x1x4x!HLFHE.eint<4>>, %a1: tensor<1x4x4xi5>) -> tensor<4x4x4x!HLFHE.eint<4>> {
-    %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!HLFHE.eint<4>>, tensor<1x4x4xi5>) -> tensor<4x4x4x!HLFHE.eint<4>>
-    return %res : tensor<4x4x4x!HLFHE.eint<4>>
+  func @main(%a0: tensor<4x1x4x!HLFHE.eint<6>>, %a1: tensor<1x4x4xi7>) -> tensor<4x4x4x!HLFHE.eint<6>> {
+    %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!HLFHE.eint<6>>, tensor<1x4x4xi7>) -> tensor<4x4x4x!HLFHE.eint<6>>
+    return %res : tensor<4x4x4x!HLFHE.eint<6>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[4][1][4]{
       {{1, 2, 3, 4}},
       {{5, 6, 7, 8}},
@@ -768,8 +751,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_column) {
     %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -816,8 +798,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line) {
     %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
@@ -856,8 +837,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line_missing_dim) {
     %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!HLFHE.eint<4>>
     return %res : tensor<3x3x!HLFHE.eint<4>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t a0[3][3]{
       {1, 2, 3},
       {4, 5, 6},
