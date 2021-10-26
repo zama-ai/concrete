@@ -64,3 +64,18 @@ package_py39:
 
 package_py310:
 	$(call build_image_and_copy_wheels,cp310-cp310)
+
+.PHONY: build-initialized \
+	build-end-to-end-jit \
+	zamacompiler \
+	python-bindings \
+	test-check \
+	test-end-to-end-jit \
+	test-python \
+	test \
+	add-deps \
+	file-check \
+	not \
+	package_py38 \
+	package_py39 \
+	package_py310
