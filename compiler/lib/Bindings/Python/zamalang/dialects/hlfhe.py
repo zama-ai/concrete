@@ -1,3 +1,3 @@
 """HLFHE dialect module"""
 from ._HLFHE_ops_gen import *
-from _zamalang._hlfhe import *
+from mlir._mlir_libs._zamalang._hlfhe import *

@@ -32,6 +32,7 @@ private:
 StreamWrap<llvm::raw_ostream> &log_error(void);
 StreamWrap<llvm::raw_ostream> &log_verbose(void);
 void setupLogging(bool verbose);
+bool isVerbose();
 } // namespace zamalang
 } // namespace mlir
 

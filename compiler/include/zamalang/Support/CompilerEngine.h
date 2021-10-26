@@ -1,49 +1,128 @@
 #ifndef ZAMALANG_SUPPORT_COMPILER_ENGINE_H
 #define ZAMALANG_SUPPORT_COMPILER_ENGINE_H
 
-#include "Jit.h"
+#include <llvm/IR/Module.h>
+#include <llvm/Support/Error.h>
+#include <llvm/Support/SourceMgr.h>
+#include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/MLIRContext.h>
+#include <mlir/Pass/Pass.h>
+#include <zamalang/Conversion/Utils/GlobalFHEContext.h>
+#include <zamalang/Support/ClientParameters.h>
 
 namespace mlir {
 namespace zamalang {
 
-/// CompilerEngine is an tools that provides tools to implements the compilation
-/// flow and manage the compilation flow state.
+// Compilation context that acts as the root owner of LLVM and MLIR
+// data structures directly and indirectly referenced by artefacts
+// produced by the `CompilerEngine`.
+class CompilationContext {
+public:
+  CompilationContext();
+  ~CompilationContext();
+
+  mlir::MLIRContext *getMLIRContext();
+  llvm::LLVMContext *getLLVMContext();
+
+  static std::shared_ptr<CompilationContext> createShared();
+
+protected:
+  mlir::MLIRContext *mlirContext;
+  llvm::LLVMContext *llvmContext;
+};
+
 class CompilerEngine {
 public:
-  CompilerEngine() {
-    context = new mlir::MLIRContext();
-    loadDialects();
-  }
-  ~CompilerEngine() {
-    if (context != nullptr)
-      delete context;
-  }
+  // Result of an invocation of the `CompilerEngine` with optional
+  // fields for the results produced by different stages.
+  class CompilationResult {
+  public:
+    CompilationResult(std::shared_ptr<CompilationContext> compilationContext =
+                          CompilationContext::createShared())
+        : compilationContext(compilationContext) {}
 
-  // Compile an mlir programs from it's textual representation.
-  llvm::Error compile(
-      std::string mlirStr,
-      llvm::Optional<mlir::zamalang::V0FHEConstraint> overrideConstraints = {});
+    llvm::Optional<mlir::OwningModuleRef> mlirModuleRef;
+    llvm::Optional<mlir::zamalang::ClientParameters> clientParameters;
+    std::unique_ptr<llvm::Module> llvmModule;
+    llvm::Optional<mlir::zamalang::V0FHEContext> fheContext;
 
-  // Build the jit lambda argument.
-  llvm::Expected<std::unique_ptr<JITLambda::Argument>> buildArgument();
+  protected:
+    std::shared_ptr<CompilationContext> compilationContext;
+  };
 
-  // Call the compiled function with and argument object.
-  llvm::Error invoke(JITLambda::Argument &arg);
+  // Specification of the exit stage of the compilation pipeline
+  enum class Target {
+    // Only read sources and produce corresponding MLIR module
+    ROUND_TRIP,
 
-  // Call the compiled function with a list of integer arguments.
-  llvm::Expected<uint64_t> run(std::vector<uint64_t> args);
+    // Read sources and exit before any lowering
+    HLFHE,
 
-  // Get a printable representation of the compiled module
-  std::string getCompiledModule();
+    // Read sources and lower all HLFHE operations to MidLFHE
+    // operations
+    MIDLFHE,
+
+    // Read sources and lower all HLFHE and MidLFHE operations to LowLFHE
+    // operations
+    LOWLFHE,
+
+    // Read sources and lower all HLFHE, MidLFHE and LowLFHE
+    // operations to canonical MLIR dialects. Cryptographic operations
+    // are lowered to invocations of the concrete library.
+    STD,
+
+    // Read sources and lower all HLFHE, MidLFHE and LowLFHE
+    // operations to operations from the LLVM dialect. Cryptographic
+    // operations are lowered to invocations of the concrete library.
+    LLVM,
+
+    // Same as `LLVM`, but lowers to actual LLVM IR instead of the
+    // LLVM dialect
+    LLVM_IR,
+
+    // Same as `LLVM_IR`, but invokes the LLVM optimization pipeline
+    // to produce optimized LLVM IR
+    OPTIMIZED_LLVM_IR
+  };
+
+  CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
+      : overrideMaxEintPrecision(), overrideMaxMANP(),
+        clientParametersFuncName(), verifyDiagnostics(false),
+        generateClientParameters(false),
+        enablePass([](mlir::Pass *pass) { return true; }),
+        compilationContext(compilationContext) {}
+
+  llvm::Expected<CompilationResult> compile(llvm::StringRef s, Target target);
+
+  llvm::Expected<CompilationResult>
+  compile(std::unique_ptr<llvm::MemoryBuffer> buffer, Target target);
+
+  llvm::Expected<CompilationResult> compile(llvm::SourceMgr &sm, Target target);
+
+  void setFHEConstraints(const mlir::zamalang::V0FHEConstraint &c);
+  void setMaxEintPrecision(size_t v);
+  void setMaxMANP(size_t v);
+  void setVerifyDiagnostics(bool v);
+  void setGenerateClientParameters(bool v);
+  void setClientParametersFuncName(const llvm::StringRef &name);
+  void setEnablePass(std::function<bool(mlir::Pass *)> enablePass);
+
+protected:
+  llvm::Optional<size_t> overrideMaxEintPrecision;
+  llvm::Optional<size_t> overrideMaxMANP;
+  llvm::Optional<std::string> clientParametersFuncName;
+  bool verifyDiagnostics;
+  bool generateClientParameters;
+  std::function<bool(mlir::Pass *)> enablePass;
+
+  std::shared_ptr<CompilationContext> compilationContext;
 
 private:
-  // Load the necessary dialects into the engine's context
-  void loadDialects();
-
-  mlir::OwningModuleRef module_ref;
-  mlir::MLIRContext *context;
-  std::unique_ptr<mlir::zamalang::KeySet> keySet;
+  llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+  getV0FHEConstraint(CompilationResult &res);
+  llvm::Error determineFHEParameters(CompilationResult &res);
 };
+
 } // namespace zamalang
 } // namespace mlir
 

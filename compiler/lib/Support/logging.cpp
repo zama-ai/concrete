@@ -18,5 +18,6 @@ StreamWrap<llvm::raw_ostream> &log_verbose(void) {
 // Sets up logging. If `verbose` is false, messages passed to
 // `log_verbose` will be discarded.
 void setupLogging(bool verbose) { ::mlir::zamalang::verbose = verbose; }
+bool isVerbose() { return verbose; }
 } // namespace zamalang
 } // namespace mlir

@@ -12,7 +12,6 @@ COPY /llvm-project /llvm-project
 COPY /compiler /compiler
 WORKDIR /compiler
 RUN mkdir -p /build
-RUN make BUILD_DIR=/build -B build
 RUN make BUILD_DIR=/build zamacompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/zamalang/python_packages/zamalang_core:/build/tools/zamalang/python_packages/zamalang_core/mlir/_mlir_libs/"
 ENV PATH "$PATH:/build/bin"

@@ -9,11 +9,6 @@
 
 namespace mlir {
 namespace zamalang {
-mlir::LogicalResult
-runJit(mlir::ModuleOp module, llvm::StringRef func,
-       llvm::ArrayRef<uint64_t> funcArgs, mlir::zamalang::KeySet &keySet,
-       std::function<llvm::Error(llvm::Module *)> optPipeline,
-       llvm::raw_ostream &os);
 
 /// JITLambda is a tool to JIT compile an mlir module and to invoke a function
 /// of the module.
@@ -52,6 +47,10 @@ public:
     // - if the result is a scalar
     // - or the size of the `res` buffser doesn't match the size of the tensor.
     llvm::Error getResult(size_t pos, uint64_t *res, size_t size);
+
+    // Returns the number of elements of the result vector at position
+    // `pos` or an error if the result is a scalar value
+    llvm::Expected<size_t> getResultVectorSize(size_t pos);
 
   private:
     llvm::Error setArg(size_t pos, size_t width, void *data,
@@ -97,7 +96,7 @@ public:
 
 private:
   mlir::LLVM::LLVMFunctionType type;
-  llvm::StringRef name;
+  std::string name;
   std::unique_ptr<mlir::ExecutionEngine> engine;
 };
 

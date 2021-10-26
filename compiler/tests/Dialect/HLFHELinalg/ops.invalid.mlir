@@ -1,4 +1,4 @@
-// RUN: zamacompiler --split-input-file --verify-diagnostics --entry-dialect=hlfhe --action=roundtrip %s
+// RUN: zamacompiler --split-input-file --verify-diagnostics --action=roundtrip %s
 
 /////////////////////////////////////////////////
 // HLFHELinalg.add_eint_int

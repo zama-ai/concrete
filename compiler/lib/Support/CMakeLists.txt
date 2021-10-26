@@ -1,7 +1,10 @@
 add_mlir_library(ZamalangSupport
+  Error.cpp
   Pipeline.cpp
   Jit.cpp
   CompilerEngine.cpp
+  JitCompilerEngine.cpp
+  LambdaArgument.cpp
   V0Parameters.cpp
   V0Curves.cpp
   ClientParameters.cpp

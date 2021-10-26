@@ -27,6 +27,7 @@ declare_mlir_python_sources(ZamalangBindingsPythonSources
   SOURCES
     zamalang/__init__.py
     zamalang/compiler.py
+    zamalang/dialects/__init__.py
     zamalang/dialects/_ods_common.py)
 
 ################################################################################

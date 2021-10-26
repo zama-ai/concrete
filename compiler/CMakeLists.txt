@@ -56,7 +56,18 @@ if(ZAMALANG_BINDINGS_PYTHON_ENABLED)
   message(STATUS "ZamaLang Python bindings are enabled.")
 
   include(MLIRDetectPythonEnv)
-  find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+  # After CMake 3.18, we are able to limit the scope of the search to just
+  # Development.Module. Searching for Development will fail in situations where
+  # the Python libraries are not available. When possible, limit to just
+  # Development.Module.
+  # See https://pybind11.readthedocs.io/en/stable/compiling.html#findpython-mode
+  if(CMAKE_VERSION VERSION_LESS "3.18.0")
+    set(_python_development_component Development)
+  else()
+    set(_python_development_component Development.Module)
+  endif()
+  find_package(Python3 COMPONENTS Interpreter ${_python_development_component} REQUIRED)
+  unset(_python_development_component)
   message(STATUS "Found Python include dirs: ${Python3_INCLUDE_DIRS}")
   message(STATUS "Found Python libraries: ${Python3_LIBRARIES}")
   message(STATUS "Found Python executable: ${Python3_EXECUTABLE}")

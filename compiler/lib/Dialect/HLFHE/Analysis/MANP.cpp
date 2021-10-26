@@ -23,6 +23,51 @@
 namespace mlir {
 namespace zamalang {
 namespace {
+
+// Returns `true` if the given value is a scalar or tensor argument of
+// a function, for which a MANP of 1 can be assumed.
+static bool isEncryptedFunctionParameter(mlir::Value value) {
+  if (!value.isa<mlir::BlockArgument>())
+    return false;
+
+  mlir::Block *block = value.cast<mlir::BlockArgument>().getOwner();
+
+  if (!block || !block->getParentOp() ||
+      !llvm::isa<mlir::FuncOp>(block->getParentOp())) {
+    return false;
+  }
+
+  return (value.getType().isa<mlir::zamalang::HLFHE::EncryptedIntegerType>() ||
+          (value.getType().isa<mlir::TensorType>() &&
+           value.getType()
+               .cast<mlir::TensorType>()
+               .getElementType()
+               .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()));
+}
+
+// Returns the bit width of `value` if `value` is an encrypted integer
+// or the bit width of the elements if `value` is a tensor of
+// encrypted integers.
+static unsigned int getEintPrecision(mlir::Value value) {
+  if (auto ty = value.getType()
+                    .dyn_cast_or_null<
+                        mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+    return ty.getWidth();
+  } else if (auto tensorTy =
+                 value.getType().dyn_cast_or_null<mlir::TensorType>()) {
+    if (auto ty = tensorTy.getElementType()
+                      .dyn_cast_or_null<
+                          mlir::zamalang::HLFHE::EncryptedIntegerType>())
+      return ty.getWidth();
+  }
+
+  assert(false &&
+         "Value is neither an encrypted integer nor a tensor of encrypted "
+         "integers");
+
+  return 0;
+}
+
 // The `MANPLatticeValue` represents the squared Minimal Arithmetic
 // Noise Padding for an operation using the squared 2-norm of an
 // equivalent dot operation. This can either be an actual value if the
@@ -41,13 +86,7 @@ struct MANPLatticeValue {
     //
     // TODO: Provide a mechanism to propagate Minimal Arithmetic Noise
     // Padding across function calls.
-    if (value.isa<mlir::BlockArgument>() &&
-        (value.getType().isa<mlir::zamalang::HLFHE::EncryptedIntegerType>() ||
-         (value.getType().isa<mlir::TensorType>() &&
-          value.getType()
-              .cast<mlir::TensorType>()
-              .getElementType()
-              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()))) {
+    if (isEncryptedFunctionParameter(value)) {
       return MANPLatticeValue(llvm::APInt{1, 1, false});
     } else {
       // All other operations have an unknown Minimal Arithmetic Noise
@@ -450,7 +489,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     bool isDummy = false;
     llvm::APInt norm2SqEquiv;
 
-    // HLFHE Operaors
+    // HLFHE Operators
     if (auto dotOp = llvm::dyn_cast<mlir::zamalang::HLFHE::Dot>(op)) {
       norm2SqEquiv = getSqMANP(dotOp, operands);
     } else if (auto addEintIntOp =
@@ -599,6 +638,29 @@ struct MaxMANPPass : public MaxMANPBase<MaxMANPPass> {
 
 protected:
   void processOperation(mlir::Operation *op) {
+    static const llvm::APInt one{1, 1, false};
+    bool upd = false;
+
+    // Process all function arguments and use the default value of 1
+    // for MANP and the declarend precision
+    if (mlir::FuncOp func = llvm::dyn_cast_or_null<mlir::FuncOp>(op)) {
+      for (mlir::BlockArgument blockArg : func.getBody().getArguments()) {
+        if (isEncryptedFunctionParameter(blockArg)) {
+          unsigned int width = getEintPrecision(blockArg);
+
+          if (this->maxEintWidth < width) {
+            this->maxEintWidth = width;
+          }
+
+          if (APIntWidthExtendULT(this->maxMANP, one)) {
+            this->maxMANP = one;
+            upd = true;
+          }
+        }
+      }
+    }
+
+    // Process all results using MANP attribute from MANP pas
     for (mlir::OpResult res : op->getResults()) {
       mlir::zamalang::HLFHE::EncryptedIntegerType eTy =
           res.getType()
@@ -613,7 +675,6 @@ protected:
       }
 
       if (eTy) {
-        bool upd = false;
         if (this->maxEintWidth < eTy.getWidth()) {
           this->maxEintWidth = eTy.getWidth();
           upd = true;
@@ -630,11 +691,11 @@ protected:
           this->maxMANP = MANP.getValue();
           upd = true;
         }
-
-        if (upd)
-          this->updateMax(this->maxMANP, this->maxEintWidth);
       }
     }
+
+    if (upd)
+      this->updateMax(this->maxMANP, this->maxEintWidth);
   }
 
   std::function<void(const llvm::APInt &, unsigned)> updateMax;
