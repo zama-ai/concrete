@@ -543,7 +543,7 @@ def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
         pytest.param(
             lambda x, y: numpy.dot(x, y),
             {
-                "x": EncryptedTensor(Float(64), shape=(42,)),
+                "x": EncryptedTensor(Float(64), shape=(10,)),
                 "y": EncryptedTensor(Float(64), shape=(10,)),
             },
             ir.Dot,
