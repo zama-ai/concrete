@@ -880,6 +880,34 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 "return(%7)\n"
             ),
         ),
+        pytest.param(
+            lambda x: x @ numpy.ones(shape=(2, 3), dtype=numpy.uint32),
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
+                "%1 = Constant([[1 1 1] [1 1 1]])                   # ClearTensor<Integer<unsigned, 1 bits>, shape=(2, 3)>\n"  # noqa: E501
+                "%2 = MatMul(%0, %1)                                # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(3, 3)>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being\n"  # noqa: E501
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.matmul(x, numpy.ones(shape=(2, 3), dtype=numpy.uint32)),
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
+                "%1 = Constant([[1 1 1] [1 1 1]])                   # ClearTensor<Integer<unsigned, 1 bits>, shape=(2, 3)>\n"  # noqa: E501
+                "%2 = MatMul(%0, %1)                                # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(3, 3)>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being\n"  # noqa: E501
+                "return(%2)\n"
+            ),
+        ),
     ],
 )
 # pylint: enable=line-too-long,unnecessary-lambda
@@ -894,7 +922,7 @@ def test_fail_compile(function, parameters, inputset, match, default_compilation
             default_compilation_configuration,
         )
 
-    assert str(excinfo.value) == match
+    assert str(excinfo.value) == match, str(excinfo.value)
 
 
 def test_fail_with_intermediate_signed_values(default_compilation_configuration):

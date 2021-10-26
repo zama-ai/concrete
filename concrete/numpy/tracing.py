@@ -9,14 +9,14 @@ from numpy.typing import DTypeLike
 from ..common.data_types.dtypes_helpers import mix_values_determine_holding_dtype
 from ..common.debugging.custom_assert import assert_true
 from ..common.operator_graph import OPGraph
-from ..common.representation.intermediate import Constant, Dot, UnivariateFunction
+from ..common.representation.intermediate import Constant, Dot, MatMul, UnivariateFunction
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
 from ..common.values import BaseValue
 from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
     convert_numpy_dtype_to_base_data_type,
     get_base_value_for_numpy_or_python_constant_data,
-    get_numpy_function_output_dtype,
+    get_numpy_function_output_dtype_from_input_tracers,
 )
 from .np_indexing_helpers import process_indexing_element
 
@@ -139,16 +139,6 @@ class NPTracer(BaseTracer):
     def _make_const_input_tracer(self, constant_data: Any) -> "NPTracer":
         return self.__class__([], NPConstant(constant_data), 0)
 
-    @staticmethod
-    def _manage_dtypes(ufunc: Union[numpy.ufunc, Callable], *input_tracers: BaseTracer):
-        output_dtypes = get_numpy_function_output_dtype(
-            ufunc, [input_tracer.output.dtype for input_tracer in input_tracers]
-        )
-        common_output_dtypes = [
-            convert_numpy_dtype_to_base_data_type(dtype) for dtype in output_dtypes
-        ]
-        return common_output_dtypes
-
     @classmethod
     def _unary_operator(
         cls, unary_operator, unary_operator_string, *input_tracers: "NPTracer", **kwargs
@@ -159,7 +149,10 @@ class NPTracer(BaseTracer):
             NPTracer: The output NPTracer containing the traced function
         """
         assert_true(len(input_tracers) == 1)
-        common_output_dtypes = cls._manage_dtypes(unary_operator, *input_tracers)
+        common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(
+            unary_operator,
+            *input_tracers,
+        )
         assert_true(len(common_output_dtypes) == 1)
 
         traced_computation = UnivariateFunction(
@@ -211,7 +204,10 @@ class NPTracer(BaseTracer):
             def arbitrary_func(x, baked_constant, **kwargs):
                 return binary_operator(x, baked_constant, **kwargs)
 
-        common_output_dtypes = cls._manage_dtypes(binary_operator, *input_tracers)
+        common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(
+            binary_operator,
+            *input_tracers,
+        )
         assert_true(len(common_output_dtypes) == 1)
 
         op_kwargs = deepcopy(kwargs)
@@ -249,7 +245,7 @@ class NPTracer(BaseTracer):
         """
         assert_true((num_args := len(args)) == 2, f"dot expects 2 inputs got {num_args}")
 
-        common_output_dtypes = self._manage_dtypes(numpy.dot, *args)
+        common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(numpy.dot, *args)
         assert_true(len(common_output_dtypes) == 1)
 
         traced_computation = Dot(
@@ -272,6 +268,9 @@ class NPTracer(BaseTracer):
             item = process_indexing_element(item)
 
         return BaseTracer.__getitem__(self, item)
+
+    def __matmul__(self, other):
+        return self.__array_ufunc__(numpy.matmul, "__call__", self, other)
 
     # Supported functions are either univariate or bivariate for which one of the two
     # sources is a constant
@@ -340,7 +339,6 @@ class NPTracer(BaseTracer):
         numpy.logical_not,
         numpy.logical_or,
         numpy.logical_xor,
-        # numpy.matmul,
         numpy.maximum,
         numpy.minimum,
         numpy.negative,
@@ -436,9 +434,23 @@ def _on_numpy_multiply(lhs, rhs):
     return lhs.__mul__(rhs)
 
 
+def _on_numpy_matmul(lhs, rhs):
+    common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(
+        numpy.matmul, lhs, rhs
+    )
+    assert_true(len(common_output_dtypes) == 1)
+
+    traced_computation = MatMul(
+        [lhs.output, rhs.output],
+        common_output_dtypes[0],
+    )
+    return NPTracer([lhs, rhs], traced_computation, output_idx=0)
+
+
 NPTracer.UFUNC_ROUTING[numpy.add] = _on_numpy_add
 NPTracer.UFUNC_ROUTING[numpy.subtract] = _on_numpy_subtract
 NPTracer.UFUNC_ROUTING[numpy.multiply] = _on_numpy_multiply
+NPTracer.UFUNC_ROUTING[numpy.matmul] = _on_numpy_matmul
 
 
 def trace_numpy_function(

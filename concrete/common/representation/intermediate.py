@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
 
 from loguru import logger
 
@@ -424,3 +424,49 @@ class Dot(IntermediateNode):
 
     def label(self) -> str:
         return "dot"
+
+
+class MatMul(IntermediateNode):
+    """Return the node representing a matrix multiplication."""
+
+    _n_in: int = 2
+
+    def __init__(
+        self,
+        inputs: Iterable[BaseValue],
+        output_dtype: BaseDataType,
+    ) -> None:
+        super().__init__(inputs)
+        assert_true(len(self.inputs) == 2)
+
+        assert_true(
+            all(
+                isinstance(input_value, TensorValue) and input_value.ndim == 2
+                for input_value in self.inputs
+            ),
+            f"MatMul only supports two matrices ({TensorValue.__name__} with ndim == 2)",
+        )
+
+        # regular assertions are for mypy to see the inputs are TensorValue
+        lhs = cast(TensorValue, self.inputs[0])
+        rhs = cast(TensorValue, self.inputs[1])
+
+        assert_true(
+            lhs.shape[1] == rhs.shape[0],
+            f"MatMul between matrices of shapes {lhs.shape} and {rhs.shape} " f"is not supported",
+        )
+
+        output_shape = (lhs.shape[0], rhs.shape[1])
+        output_value = (
+            EncryptedTensor(dtype=output_dtype, shape=output_shape)
+            if (lhs.is_encrypted or rhs.is_encrypted)
+            else ClearTensor(dtype=output_dtype, shape=output_shape)
+        )
+
+        self.outputs = [output_value]
+
+    def evaluate(self, inputs: Dict[int, Any]) -> Any:
+        return inputs[0] @ inputs[1]
+
+    def label(self) -> str:
+        return "@"

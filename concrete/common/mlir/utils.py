@@ -78,6 +78,9 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
         assert_true(len(outputs) == 1)
         return "indexing is not supported for the time being"
 
+    elif isinstance(node, intermediate.MatMul):  # constraints for matrix multiplication
+        return "matrix multiplication is not supported for the time being"
+
     else:  # pragma: no cover
         assert_not_reached("Non IntermediateNode object in the OPGraph")
 

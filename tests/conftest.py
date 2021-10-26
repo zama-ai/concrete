@@ -17,6 +17,7 @@ from concrete.common.representation.intermediate import (
     IndexConstant,
     Input,
     IntermediateNode,
+    MatMul,
     Mul,
     Sub,
     UnivariateFunction,
@@ -167,6 +168,11 @@ def is_equivalent_sub(lhs: Sub, rhs: object) -> bool:
     return _is_equivalent_to_binary_non_commutative(lhs, rhs)
 
 
+def is_equivalent_matmul(lhs: MatMul, rhs: object) -> bool:
+    """Helper function to check if a MatMul node is equivalent to an other object."""
+    return isinstance(rhs, MatMul) and is_equivalent_intermediate_node(lhs, rhs)
+
+
 def is_equivalent_intermediate_node(lhs: IntermediateNode, rhs: object) -> bool:
     """Helper function to check if an IntermediateNode node is equivalent to an other object."""
     return (
@@ -185,6 +191,7 @@ EQUIVALENT_TEST_FUNC: Dict[Type, Callable[..., bool]] = {
     Input: is_equivalent_input,
     Mul: is_equivalent_mul,
     Sub: is_equivalent_sub,
+    MatMul: is_equivalent_matmul,
 }
 
 _missing_nodes_in_mapping = ALL_IR_NODES - EQUIVALENT_TEST_FUNC.keys()

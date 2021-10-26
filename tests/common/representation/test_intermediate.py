@@ -1,5 +1,4 @@
 """Test file for intermediate representation"""
-
 from copy import deepcopy
 
 import numpy
@@ -163,6 +162,18 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
                 dtype=numpy.int32,
             ),
             id="IndexConstant, np.array([[1, 2, 3, 4]...[13, 14, 15, 16]])[1:3, 2:0:-1]",
+        ),
+        pytest.param(
+            ir.MatMul(
+                [
+                    EncryptedTensor(Integer(32, True), shape=(3, 2)),
+                    ClearTensor(Integer(32, True), shape=(2, 3)),
+                ],
+                Integer(32, True),
+            ),
+            [numpy.arange(1, 7).reshape(3, 2), numpy.arange(1, 7).reshape(2, 3)],
+            numpy.array([[9, 12, 15], [19, 26, 33], [29, 40, 51]]),
+            id="MatMul, numpy.arange(1, 7).reshape(3, 2), numpy.arange(1, 7).reshape(2, 3)",
         ),
     ],
 )

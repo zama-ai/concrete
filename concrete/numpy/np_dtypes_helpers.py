@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy
 from numpy.typing import DTypeLike
@@ -18,6 +18,7 @@ from ..common.data_types.dtypes_helpers import (
 from ..common.data_types.floats import Float
 from ..common.data_types.integers import Integer
 from ..common.debugging.custom_assert import assert_true
+from ..common.tracing import BaseTracer
 from ..common.values import BaseValue, TensorValue
 
 NUMPY_TO_COMMON_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
@@ -182,9 +183,10 @@ def get_base_value_for_numpy_or_python_constant_data(
     return constant_data_value
 
 
-def get_numpy_function_output_dtype(
+def get_numpy_function_output_dtype_from_input_dtypes(
     function: Union[numpy.ufunc, Callable],
     input_dtypes: List[BaseDataType],
+    input_shapes: List[Tuple[int, ...]],
 ) -> List[numpy.dtype]:
     """Record the output dtype of a numpy function given some input types.
 
@@ -192,6 +194,8 @@ def get_numpy_function_output_dtype(
         function (Union[numpy.ufunc, Callable]): The numpy function whose output types need to
             be recorded
         input_dtypes (List[BaseDataType]): BaseDataTypes in the same order as they will be used with
+            the function inputs
+        input_shapes (List[Tuple[int, ...]]): Shapes in the same order as they will be used with
             the function inputs
 
     Returns:
@@ -206,7 +210,12 @@ def get_numpy_function_output_dtype(
     input_numpy_dtypes = [convert_base_data_type_to_numpy_dtype(dtype) for dtype in input_dtypes]
 
     dummy_inputs = tuple(
-        dtype.type(1000.0 * numpy.random.random_sample()) for dtype in input_numpy_dtypes
+        (
+            dtype.type(10.0 * numpy.random.random_sample())
+            if shape == ()
+            else numpy.abs(numpy.random.randn(*shape) * 10.0).astype(dtype)
+        )
+        for dtype, shape in zip(input_numpy_dtypes, input_shapes)
     )
 
     # We ignore errors as we may call functions with invalid inputs just to get the proper output
@@ -218,6 +227,36 @@ def get_numpy_function_output_dtype(
         outputs = (outputs,)
 
     return [output.dtype for output in outputs]
+
+
+def get_numpy_function_output_dtype_from_input_tracers(
+    func: Union[numpy.ufunc, Callable],
+    *input_tracers: BaseTracer,
+) -> List[BaseDataType]:
+    """Determine output dtypes for a numpy function.
+
+    This function is responsible for determining the output dtype
+    of a numpy function after inputs with specific dtypes are passed to it.
+
+    Args:
+        func (Union[numpy.ufunc, Callable]): function that is being managed
+        *input_tracers (BaseTracer): inputs to the function
+
+    Returns:
+        List[numpy.dtype]: appropriate BaseDataType for each output of the function
+    """
+
+    input_shapes = [
+        input_tracer.output.shape if isinstance(input_tracer.output, TensorValue) else ()
+        for input_tracer in input_tracers
+    ]
+    output_dtypes = get_numpy_function_output_dtype_from_input_dtypes(
+        func,
+        [input_tracer.output.dtype for input_tracer in input_tracers],
+        input_shapes,
+    )
+    common_output_dtypes = [convert_numpy_dtype_to_base_data_type(dtype) for dtype in output_dtypes]
+    return common_output_dtypes
 
 
 def get_constructor_for_numpy_or_python_constant_data(constant_data: Any):
