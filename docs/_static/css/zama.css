@@ -134,6 +134,12 @@ input[type=color], input[type=date], input[type=datetime-local], input[type=date
 .rst-versions {
     font-family: var(--primary-font);
 }
+
+/* fix version link color */
+.rst-versions a {
+    color: var(--primary-color);
+}
+
 /* fix version fa-caret-down empty space on click */
 .rst-versions.shift-up {
     overflow-y: unset;
