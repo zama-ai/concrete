@@ -680,6 +680,9 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MulEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
+    } else if (llvm::isa<mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp>(
+                   op)) {
+      norm2SqEquiv = llvm::APInt{1, 1, false};
     }
     // Tensor Operators
     // ExtractOp

@@ -885,8 +885,7 @@ TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
       %res = "HLFHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!HLFHE.eint<3>>
       return %res : tensor<3x3x!HLFHE.eint<3>>
     }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t t[3][3]{
       {0, 1, 2},
       {3, 0, 1},
