@@ -241,11 +241,10 @@ def ApplyLookupTableEintOp : HLFHELinalg_Op<"apply_lookup_table", []> {
 
         // Returns the lookup of 3x3 matrix of encrypted indices of with 2 on a table of size 4=2² of clear integers.
         //
-        // [0,1,2]                 [2,4,6]
-        // [3,0,1] lut [2,4,6,8] = [8,2,4]
-        // [2,3,0]                 [6,8,0]
-        //
-        "HLFHELinalg.apply_lookup_table(%t, %lut)" : (tensor<3x3x!HLFHE.eint<2>>, tensor<4xi4>) -> tensor<3x3x!HLFHE.eint<3>>
+        // [0,1,2]                 [1,3,5]
+        // [3,0,1] lut [1,3,5,7] = [7,1,3]
+        // [2,3,0]                 [5,7,1]
+        "HLFHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!HLFHE.eint<3>>
         ```
     }];
 

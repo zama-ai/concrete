@@ -242,6 +242,107 @@ struct HLFHELinalgOpToLinalgGeneric
   };
 };
 
+// This template rewrite pattern transforms any instance of
+// operators `HLFHELinalg.apply_lookup_table` that implements the broadasting
+// rules to an instance of `linalg.generic` with an appropriate region using
+// `HLFHE.apply_lookup_table` operation, an appropriate specification for the
+// iteration dimensions and appropriate operaztions managing the accumulator of
+// `linalg.generic`.
+//
+// Example:
+//
+// HLFHELinalg.apply_lookup_table(%t, %lut):
+//  tensor<DNx...xD1x!HLFHE.eint<p>>, tensor<DAxi64>
+//      -> tensor<DNx...xD1x!HLFHE.eint<p'>>
+//
+// becomes:
+//
+// #maps_0 = [
+//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>,
+//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>
+// ]
+// #attributes_0 {
+//     indexing_maps = #maps_0,
+//     iterator_types = ["parallel",..],//N parallel
+// }
+// %init = linalg.init_tensor [DN,...,D1]
+//            : tensor<DNx...xD1x!HLFHE.eint<p'>>
+// %res = linalg.generic {
+//     ins(%t: tensor<DNx...xD1x!HLFHE.eint<p>>)
+//     outs(%init : tensor<DNx...xD1x!HLFHE.eint<p'>>)
+//     {
+//         ^bb0(%arg0: !HLFHE.eint<p>):
+//             %0 = HLFHE.apply_lookup_table(%arg0, %lut): !HLFHE.eint<p>,
+//             tensor<4xi64> -> !HLFHE.eint<p'>
+//         linalg.yield %0 : !HLFHE.eint<p'>
+//     }
+// }
+//
+struct HLFHELinalgApplyLookupTableToLinalgGeneric
+    : public mlir::OpRewritePattern<
+          mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp> {
+  HLFHELinalgApplyLookupTableToLinalgGeneric(::mlir::MLIRContext *context,
+                                             mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<
+            mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp>(context,
+                                                                 benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp lutOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    mlir::RankedTensorType resultTy =
+        ((mlir::Type)lutOp->getResult(0).getType())
+            .cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType tTy =
+        ((mlir::Type)lutOp.t().getType()).cast<mlir::RankedTensorType>();
+
+    //  linalg.init_tensor for initial value
+    mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
+        lutOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+
+    // Create the affine #maps_0
+    llvm::SmallVector<mlir::AffineMap, 2> maps{
+        mlir::AffineMap::getMultiDimIdentityMap(tTy.getShape().size(),
+                                                this->getContext()),
+        mlir::AffineMap::getMultiDimIdentityMap(resultTy.getShape().size(),
+                                                this->getContext()),
+    };
+
+    // Create the iterator_types
+    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
+                                                     "parallel");
+
+    // Create the body of the `linalg.generic` op
+    auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                           mlir::Location nestedLoc,
+                           mlir::ValueRange blockArgs) {
+      mlir::zamalang::HLFHE::ApplyLookupTableEintOp hlfheOp =
+          nestedBuilder.create<mlir::zamalang::HLFHE::ApplyLookupTableEintOp>(
+              lutOp.getLoc(), resultTy.getElementType(), blockArgs[0],
+              lutOp.lut());
+
+      nestedBuilder.create<mlir::linalg::YieldOp>(lutOp.getLoc(),
+                                                  hlfheOp.getResult());
+    };
+
+    // Create the `linalg.generic` op
+    llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
+    llvm::SmallVector<mlir::Value, 1> ins{lutOp.t()};
+    llvm::SmallVector<mlir::Value, 1> outs{init};
+    llvm::StringRef doc{""};
+    llvm::StringRef call{""};
+
+    mlir::linalg::GenericOp genericOp =
+        rewriter.create<mlir::linalg::GenericOp>(lutOp.getLoc(), resTypes, ins,
+                                                 outs, maps, iteratorTypes, doc,
+                                                 call, bodyBuilder);
+
+    rewriter.replaceOp(lutOp, {genericOp.getResult(0)});
+
+    return ::mlir::success();
+  };
+};
+
 namespace {
 struct HLFHETensorOpsToLinalg
     : public HLFHETensorOpsToLinalgBase<HLFHETensorOpsToLinalg> {
@@ -280,6 +381,7 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
       HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::MulEintIntOp,
                                    mlir::zamalang::HLFHE::MulEintIntOp>>(
       &getContext());
+  patterns.insert<HLFHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())

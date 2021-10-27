@@ -216,11 +216,10 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
                       mlir::IntegerAttr levelBS, mlir::IntegerAttr baseLogBS,
                       mlir::IntegerAttr outputSizeKS, mlir::OpResult result) {
   // convert result type
-  GLWECipherTextType glwe_type = result.getType().cast<GLWECipherTextType>();
   LweCiphertextType lwe_type =
-      convertTypeToLWE(rewriter.getContext(), glwe_type);
+      convertTypeToLWE(rewriter.getContext(), result.getType());
   // fill the the table in the GLWE accumulator
-  mlir::IntegerAttr precision = rewriter.getI32IntegerAttr(glwe_type.getP());
+  mlir::IntegerAttr precision = rewriter.getI32IntegerAttr(lwe_type.getP());
   mlir::Value accumulator =
       rewriter
           .create<mlir::zamalang::LowLFHE::GlweFromTable>(
@@ -229,7 +228,6 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
           .result();
 
   // keyswitch
-  auto ct_type = ct.getType().cast<GLWECipherTextType>();
   mlir::SmallVector<mlir::Value> ksArgs{ct};
   mlir::SmallVector<mlir::NamedAttribute> ksAttrs{
       mlir::NamedAttribute(
@@ -242,8 +240,10 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
       mlir::NamedAttribute(
           mlir::Identifier::get("baseLog", rewriter.getContext()), baseLogKS),
   };
-  auto ksOutType = LweCiphertextType::get(
-      rewriter.getContext(), outputSizeKS.getInt(), ct_type.getP());
+  // convert result type
+  LweCiphertextType ksOutType = LweCiphertextType::get(
+      rewriter.getContext(), outputSizeKS.getInt(), precision.getInt());
+  convertTypeToLWE(rewriter.getContext(), result.getType());
   mlir::Value keyswitched =
       rewriter
           .create<mlir::zamalang::LowLFHE::KeySwitchLweOp>(loc, ksOutType,
