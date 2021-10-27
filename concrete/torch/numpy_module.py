@@ -1,13 +1,12 @@
 """A torch to numpy module."""
 import numpy
-from numpy.typing import ArrayLike
 from torch import nn
 
 
 class NumpyModule:
     """General interface to transform a torch.nn.Module to numpy module."""
 
-    IMPLEMENTED_MODULES = [nn.Linear, nn.Sigmoid]
+    IMPLEMENTED_MODULES = {nn.Linear, nn.Sigmoid}
 
     def __init__(self, torch_model: nn.Module):
         """Initialize our numpy module.
@@ -22,7 +21,20 @@ class NumpyModule:
             torch_model (nn.Module): A fully trained, torch model alond with its parameters.
         """
         self.torch_model = torch_model
+        self.check_compatibility()
         self.convert_to_numpy()
+
+    def check_compatibility(self):
+        """Check the compatibility of all layers in the torch model."""
+
+        for _, layer in self.torch_model.named_children():
+            if (layer_type := type(layer)) not in self.IMPLEMENTED_MODULES:
+                raise ValueError(
+                    f"The following module is currently not implemented: {layer_type.__name__}. "
+                    f"Please stick to the available torch modules: "
+                    f"{', '.join(sorted(module.__name__ for module in self.IMPLEMENTED_MODULES))}."
+                )
+        return True
 
     def convert_to_numpy(self):
         """Transform all parameters from torch tensor to numpy arrays."""
@@ -33,11 +45,11 @@ class NumpyModule:
             params = weights.detach().numpy()
             self.numpy_module_dict[name] = params
 
-    def __call__(self, x: ArrayLike):
+    def __call__(self, x: numpy.ndarray):
         """Return the function to be compiled by concretefhe.numpy."""
         return self.forward(x)
 
-    def forward(self, x: ArrayLike) -> ArrayLike:
+    def forward(self, x: numpy.ndarray) -> numpy.ndarray:
         """Apply a forward pass with numpy function only.
 
         Args:
@@ -56,14 +68,6 @@ class NumpyModule:
                     + self.numpy_module_dict[f"{name}.bias"]
                 )
             elif isinstance(layer, nn.Sigmoid):
-                # concrete currently does not accept the "-" python operator
-                # hence the use of numpy.negative which is supported.
-                x = 1 / (1 + numpy.exp(numpy.negative(x)))
-            else:
-                raise ValueError(
-                    f"The follwing module is currently not implemented: {type(layer).__name__}"
-                    f"Please stick to the available torch modules:"
-                    f"{', '.join([module.__name__ for module in self.IMPLEMENTED_MODULES])}."
-                )
+                x = 1 / (1 + numpy.exp(-x))
 
         return x
