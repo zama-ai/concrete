@@ -748,13 +748,15 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {"x": EncryptedScalar(Integer(3, is_signed=False))},
             [(i,) for i in range(8)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
-                "%1 = x                                             # EncryptedScalar<Integer<unsigned, 3 bits>>\n"  # noqa: E501
-                "%2 = Sub(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar unsigned integer outputs are supported\n"  # noqa: E501
-                "return(%2)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>
+%1 = x                                             # EncryptedScalar<Integer<unsigned, 3 bits>>
+%2 = Sub(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar unsigned integer outputs are supported
+return(%2)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -762,13 +764,15 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
             [(numpy.random.randint(0, 8, size=(2, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
-                "%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar addition is supported\n"  # noqa: E501
-                "return(%2)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
+%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>
+%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar addition is supported
+return(%2)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -776,13 +780,15 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(2, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
-                "%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar addition is supported\n"  # noqa: E501
-                "return(%2)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
+%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>
+%2 = Add(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar addition is supported
+return(%2)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -790,13 +796,15 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(2, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>\n"  # noqa: E501
-                "%2 = Mul(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar multiplication is supported\n"  # noqa: E501
-                "return(%2)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
+%1 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>
+%2 = Mul(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar multiplication is supported
+return(%2)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -804,13 +812,15 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(2, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(2, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = Constant(127)                                 # ClearScalar<Integer<unsigned, 7 bits>>\n"  # noqa: E501
-                "%1 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "%2 = Sub(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 7 bits>, shape=(2, 2)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar subtraction is supported\n"  # noqa: E501
-                "return(%2)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = Constant(127)                                 # ClearScalar<Integer<unsigned, 7 bits>>
+%1 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 2)>
+%2 = Sub(%0, %1)                                   # EncryptedTensor<Integer<unsigned, 7 bits>, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar subtraction is supported
+return(%2)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -832,15 +842,17 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 (numpy.array([-2]), numpy.array([1])),
             ],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported\n"  # noqa: E501
-                "%1 = y                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported\n"  # noqa: E501
-                "%2 = Dot(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer dot product is supported\n"  # noqa: E501
-                "return(%2)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+%1 = y                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+%2 = Dot(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer dot product is supported
+return(%2)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -848,13 +860,15 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {"x": EncryptedTensor(Integer(3, is_signed=True), shape=(2, 2))},
             [(numpy.random.randint(-4, 2 ** 2, size=(2, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<signed, 3 bits>, shape=(2, 2)>\n"  # noqa: E501  # pylint: disable=line-too-long
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported\n"  # noqa: E501  # pylint: disable=line-too-long
-                "%1 = IndexConstant(%0[0])                          # EncryptedTensor<Integer<signed, 3 bits>, shape=(2,)>\n"  # noqa: E501  # pylint: disable=line-too-long
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ indexing is not supported for the time being\n"  # noqa: E501  # pylint: disable=line-too-long
-                "return(%1)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<signed, 3 bits>, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+%1 = IndexConstant(%0[0])                          # EncryptedTensor<Integer<signed, 3 bits>, shape=(2,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ indexing is not supported for the time being
+return(%1)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -862,22 +876,24 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {"x": EncryptedScalar(Integer(2, False)), "y": EncryptedScalar(Integer(2, False))},
             [(i, i) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n\n"
-                "%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
-                "%1 = Constant(2.8)                                 # ClearScalar<Float<64 bits>>\n"
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported\n"  # noqa: E501
-                "%2 = y                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
-                "%3 = Constant(9.3)                                 # ClearScalar<Float<64 bits>>\n"
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported\n"  # noqa: E501
-                "%4 = Add(%0, %1)                                   # EncryptedScalar<Float<64 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported\n"  # noqa: E501
-                "%5 = Add(%2, %3)                                   # EncryptedScalar<Float<64 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported\n"  # noqa: E501
-                "%6 = Add(%4, %5)                                   # EncryptedScalar<Float<64 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported\n"  # noqa: E501
-                "%7 = astype(int32)(%6)                             # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer scalar lookup tables are supported\n"  # noqa: E501
-                "return(%7)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering\n
+%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>
+%1 = Constant(2.8)                                 # ClearScalar<Float<64 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
+%2 = y                                             # EncryptedScalar<Integer<unsigned, 4 bits>>
+%3 = Constant(9.3)                                 # ClearScalar<Float<64 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
+%4 = Add(%0, %1)                                   # EncryptedScalar<Float<64 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported
+%5 = Add(%2, %3)                                   # EncryptedScalar<Float<64 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported
+%6 = Add(%4, %5)                                   # EncryptedScalar<Float<64 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer intermediates are supported
+%7 = astype(int32)(%6)                             # EncryptedScalar<Integer<unsigned, 5 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer scalar lookup tables are supported
+return(%7)
+""".lstrip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -946,22 +962,20 @@ def test_fail_with_intermediate_signed_values(default_compilation_configuration)
                 show_mlir=True,
             )
         except RuntimeError as error:
-            # pylint: disable=line-too-long
-            match = (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = y                                             # EncryptedScalar<Integer<unsigned, 2 bits>>\n"  # noqa: E501
-                "%1 = Constant(10)                                  # ClearScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
-                "%2 = x                                             # EncryptedScalar<Integer<unsigned, 2 bits>>\n"  # noqa: E501
-                "%3 = np.negative(%2)                               # EncryptedScalar<Integer<signed, 3 bits>>\n"  # noqa: E501
-                "%4 = Mul(%3, %1)                                   # EncryptedScalar<Integer<signed, 6 bits>>\n"  # noqa: E501
-                "%5 = np.absolute(%4)                               # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer scalar lookup tables are supported\n"  # noqa: E501
-                "%6 = astype(int32)(%5)                             # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
-                "%7 = Add(%6, %0)                                   # EncryptedScalar<Integer<unsigned, 6 bits>>\n"  # noqa: E501
-                "return(%7)\n"
-            )
-            # pylint: enable=line-too-long
+            match = """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = y                                             # EncryptedScalar<Integer<unsigned, 2 bits>>
+%1 = Constant(10)                                  # ClearScalar<Integer<unsigned, 4 bits>>
+%2 = x                                             # EncryptedScalar<Integer<unsigned, 2 bits>>
+%3 = np.negative(%2)                               # EncryptedScalar<Integer<signed, 3 bits>>
+%4 = Mul(%3, %1)                                   # EncryptedScalar<Integer<signed, 6 bits>>
+%5 = np.absolute(%4)                               # EncryptedScalar<Integer<unsigned, 5 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer scalar lookup tables are supported
+%6 = astype(int32)(%5)                             # EncryptedScalar<Integer<unsigned, 5 bits>>
+%7 = Add(%6, %0)                                   # EncryptedScalar<Integer<unsigned, 6 bits>>
+return(%7)
+""".lstrip()  # noqa: E501 # pylint: disable=line-too-long
             assert str(error) == match
             raise
 
@@ -1102,17 +1116,17 @@ def test_compile_too_high_bitwidth(default_compilation_configuration):
             default_compilation_configuration,
         )
 
-    # pylint: disable=line-too-long
     assert (
         str(excinfo.value)
-        == "max_bit_width of some nodes is too high for the current version of the compiler (maximum must be 7) which is not compatible with:\n"  # noqa: E501
-        "%0 = x                                             # EncryptedScalar<Integer<unsigned, 7 bits>>\n"  # noqa: E501
-        "%1 = y                                             # EncryptedScalar<Integer<unsigned, 5 bits>>\n"  # noqa: E501
-        "%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 8 bits>>\n"  # noqa: E501
-        "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 8 bits is not supported for the time being\n"  # noqa: E501
-        "return(%2)\n"
+        == """
+max_bit_width of some nodes is too high for the current version of the compiler (maximum must be 7) which is not compatible with:
+%0 = x                                             # EncryptedScalar<Integer<unsigned, 7 bits>>
+%1 = y                                             # EncryptedScalar<Integer<unsigned, 5 bits>>
+%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 8 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 8 bits is not supported for the time being
+return(%2)
+""".lstrip()  # noqa: E501 # pylint: disable=line-too-long
     )
-    # pylint: enable=line-too-long
 
     # Just ok
     input_ranges = [(0, 99), (0, 28)]
@@ -1147,17 +1161,18 @@ def test_failure_for_signed_output(default_compilation_configuration):
             default_compilation_configuration,
         )
 
-    # pylint: disable=line-too-long
     assert (
         str(excinfo.value)
-        == "function you are trying to compile isn't supported for MLIR lowering\n\n"  # noqa: E501
-        "%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>\n"  # noqa: E501
-        "%1 = Constant(-3)                                  # ClearScalar<Integer<signed, 3 bits>>\n"  # noqa: E501
-        "%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>\n"  # noqa: E501
-        "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar unsigned integer outputs are supported\n"  # noqa: E501
-        "return(%2)\n"
+        == """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>
+%1 = Constant(-3)                                  # ClearScalar<Integer<signed, 3 bits>>
+%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only scalar unsigned integer outputs are supported
+return(%2)
+""".lstrip()  # noqa: E501 # pylint: disable=line-too-long
     )
-    # pylint: enable=line-too-long
 
 
 def test_compile_with_random_inputset(default_compilation_configuration):
