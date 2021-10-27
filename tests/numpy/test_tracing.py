@@ -394,9 +394,7 @@ def test_tracing_astype(
     # We really need a lambda (because numpy functions are not playing
     # nice with inspect.signature), but pylint is not happy
     # with it
-    # pylint: disable=unnecessary-lambda
     [lambda x: numpy.invert(x), lambda x: numpy.bitwise_not(x)],
-    # pylint: enable=unnecessary-lambda
 )
 def test_trace_numpy_fails_for_invert(inputs, function_to_trace):
     """Check we catch calls to numpy.invert and tell user to change their code"""
@@ -446,9 +444,9 @@ def test_trace_numpy_supported_unary_ufuncs(inputs, expected_output_node, functi
     # We really need a lambda (because numpy functions are not playing
     # nice with inspect.signature), but pylint and flake8 are not happy
     # with it
-    # pylint: disable=unnecessary-lambda,cell-var-from-loop
+    # pylint: disable=cell-var-from-loop
     function_to_trace = lambda x: function_to_trace_def(x)  # noqa: E731
-    # pylint: enable=unnecessary-lambda,cell-var-from-loop
+    # pylint: enable=cell-var-from-loop
 
     op_graph = tracing.trace_numpy_function(function_to_trace, inputs)
 
@@ -483,9 +481,7 @@ def test_trace_numpy_ufuncs_not_supported():
     # We really need a lambda (because numpy functions are not playing
     # nice with inspect.signature), but pylint and flake8 are not happy
     # with it
-    # pylint: disable=unnecessary-lambda
     function_to_trace = lambda x: numpy.add.reduce(x)  # noqa: E731
-    # pylint: enable=unnecessary-lambda
 
     with pytest.raises(NotImplementedError) as excinfo:
         tracing.trace_numpy_function(function_to_trace, inputs)
@@ -504,9 +500,7 @@ def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
     # We really need a lambda (because numpy functions are not playing
     # nice with inspect.signature), but pylint and flake8 are not happy
     # with it
-    # pylint: disable=unnecessary-lambda
     function_to_trace = lambda x, y, z: numpy.add(x, y, z)  # noqa: E731
-    # pylint: enable=unnecessary-lambda
 
     with pytest.raises(AssertionError) as excinfo:
         tracing.trace_numpy_function(function_to_trace, inputs)
@@ -517,9 +511,7 @@ def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
     # We really need a lambda (because numpy functions are not playing
     # nice with inspect.signature), but pylint and flake8 are not happy
     # with it
-    # pylint: disable=unnecessary-lambda
     function_to_trace = lambda x, y, z: numpy.add(x, y, out=z)  # noqa: E731
-    # pylint: enable=unnecessary-lambda
 
     with pytest.raises(AssertionError) as excinfo:
         tracing.trace_numpy_function(function_to_trace, inputs)
@@ -530,7 +522,6 @@ def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
 @pytest.mark.parametrize(
     "function_to_trace,inputs,expected_output_node,expected_output_value",
     [
-        # pylint: disable=unnecessary-lambda
         pytest.param(
             lambda x, y: numpy.dot(x, y),
             {
@@ -566,7 +557,6 @@ def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
             ir.Dot,
             EncryptedScalar(Integer(64, True)),
         ),
-        # pylint: enable=unnecessary-lambda
     ],
 )
 def test_trace_numpy_dot(function_to_trace, inputs, expected_output_node, expected_output_value):

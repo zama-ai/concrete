@@ -190,7 +190,6 @@ def test_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
 @pytest.mark.parametrize(
     "lambda_f,params,ref_graph_str",
     [
-        # pylint: disable=unnecessary-lambda
         (
             lambda x, y: numpy.dot(x, y),
             {
@@ -199,7 +198,6 @@ def test_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
             },
             "%0 = x\n%1 = y\n%2 = Dot(%0, %1)\nreturn(%2)\n",
         ),
-        # pylint: enable=unnecessary-lambda
     ],
 )
 def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):

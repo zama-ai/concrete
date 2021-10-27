@@ -739,7 +739,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
         )
 
 
-# pylint: disable=line-too-long,unnecessary-lambda
+# pylint: disable=line-too-long
 @pytest.mark.parametrize(
     "function,parameters,inputset,match",
     [
@@ -910,7 +910,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
         ),
     ],
 )
-# pylint: enable=line-too-long,unnecessary-lambda
+# pylint: enable=line-too-long
 def test_fail_compile(function, parameters, inputset, match, default_compilation_configuration):
     """Test function compile_numpy_function_into_op_graph for a program with signed values"""
 
@@ -993,7 +993,6 @@ def test_small_inputset_treat_warnings_as_errors():
 @pytest.mark.parametrize(
     "function,params,shape,ref_graph_str",
     [
-        # pylint: disable=unnecessary-lambda
         (
             lambda x, y: numpy.dot(x, y),
             {
@@ -1011,7 +1010,6 @@ def test_small_inputset_treat_warnings_as_errors():
             "# EncryptedScalar<Integer<unsigned, 6 bits>>"
             "\nreturn(%2)\n",
         ),
-        # pylint: enable=unnecessary-lambda
     ],
 )
 def test_compile_function_with_dot(
@@ -1129,7 +1127,7 @@ def test_compile_too_high_bitwidth(default_compilation_configuration):
 
 def test_failure_for_signed_output(default_compilation_configuration):
     """Test that we don't accept signed output"""
-    function = lambda x: x + (-3)  # pylint: disable=unnecessary-lambda # noqa: E731
+    function = lambda x: x + (-3)  # noqa: E731
     input_ranges = ((0, 10),)
     list_of_arg_names = ["x"]
 
