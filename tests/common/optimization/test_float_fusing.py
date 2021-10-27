@@ -27,6 +27,11 @@ def no_fuse_unhandled(x, y):
     return intermediate.astype(numpy.int32)
 
 
+def no_fuse_dot(x):
+    """No fuse dot"""
+    return numpy.dot(x, numpy.full((10,), 1.33, dtype=numpy.float64)).astype(numpy.int32)
+
+
 def simple_fuse_not_output(x):
     """Simple fuse not output"""
     intermediate = x.astype(numpy.float64)
@@ -107,34 +112,96 @@ def mix_x_and_y_into_integer_and_call_f(function, x, y):
     )
 
 
+def get_func_params_scalar_int32(func):
+    """Returns a dict with parameters as scalar int32"""
+
+    return {
+        param_name: EncryptedScalar(Integer(32, True))
+        for param_name in signature(func).parameters.keys()
+    }
+
+
 @pytest.mark.parametrize(
-    "function_to_trace,fused",
+    "function_to_trace,fused,params,warning_message",
     [
-        pytest.param(no_fuse, False, id="no_fuse"),
-        pytest.param(no_fuse_unhandled, False, id="no_fuse_unhandled"),
-        pytest.param(simple_fuse_not_output, True, id="no_fuse"),
-        pytest.param(simple_fuse_output, True, id="no_fuse"),
+        pytest.param(no_fuse, False, get_func_params_scalar_int32(no_fuse), "", id="no_fuse"),
+        pytest.param(
+            no_fuse_unhandled,
+            False,
+            get_func_params_scalar_int32(no_fuse_unhandled),
+            """The following subgraph is not fusable:
+%0 = x                                             # EncryptedScalar<Integer<signed, 32 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of 2 variable inputs (can only have 1 for fusing)
+%1 = Constant(0.7)                                 # ClearScalar<Float<64 bits>>
+%2 = y                                             # EncryptedScalar<Integer<signed, 32 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of 2 variable inputs (can only have 1 for fusing)
+%3 = Constant(1.3)                                 # ClearScalar<Float<64 bits>>
+%4 = Add(%0, %1)                                   # EncryptedScalar<Float<64 bits>>
+%5 = Add(%2, %3)                                   # EncryptedScalar<Float<64 bits>>
+%6 = Add(%4, %5)                                   # EncryptedScalar<Float<64 bits>>
+%7 = astype(int32)(%6)                             # EncryptedScalar<Integer<signed, 32 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot fuse here as the subgraph has 2 variable inputs
+return(%7)""",  # noqa: E501 # pylint: disable=line-too-long
+            id="no_fuse_unhandled",
+        ),
+        pytest.param(
+            no_fuse_dot,
+            False,
+            {"x": EncryptedTensor(Integer(32, True), (10,))},
+            """The following subgraph is not fusable:
+%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(10,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ input node with shape (10,)
+%1 = Constant([1.33 1.33 ... 1.33 1.33])           # ClearTensor<Float<64 bits>, shape=(10,)>
+%2 = Dot(%0, %1)                                   # EncryptedScalar<Float<64 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ output shapes: #0, () are not the same as the subgraph's input: (10,)
+%3 = astype(int32)(%2)                             # EncryptedScalar<Integer<signed, 32 bits>>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ output shapes: #0, () are not the same as the subgraph's input: (10,)
+return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            id="no_fuse_dot",
+        ),
+        pytest.param(
+            simple_fuse_not_output,
+            True,
+            get_func_params_scalar_int32(simple_fuse_not_output),
+            None,
+            id="simple_fuse_not_output",
+        ),
+        pytest.param(
+            simple_fuse_output,
+            True,
+            get_func_params_scalar_int32(simple_fuse_output),
+            None,
+            id="simple_fuse_output",
+        ),
         pytest.param(
             lambda x, y: mix_x_and_y_intricately_and_call_f(numpy.rint, x, y),
             True,
+            get_func_params_scalar_int32(lambda x, y: None),
+            None,
             id="mix_x_and_y_intricately_and_call_f_with_rint",
         ),
         pytest.param(
             lambda x, y: mix_x_and_y_and_call_f(numpy.rint, x, y),
             True,
+            get_func_params_scalar_int32(lambda x, y: None),
+            None,
             id="mix_x_and_y_and_call_f_with_rint",
         ),
     ],
 )
-@pytest.mark.parametrize("input_", [0, 2, 42, 44])
-def test_fuse_float_operations(function_to_trace, fused, input_):
+def test_fuse_float_operations(
+    function_to_trace,
+    fused,
+    params,
+    warning_message,
+    capfd,
+    remove_color_codes,
+):
     """Test function for fuse_float_operations"""
-
-    params_names = signature(function_to_trace).parameters.keys()
 
     op_graph = trace_numpy_function(
         function_to_trace,
-        {param_name: EncryptedScalar(Integer(32, True)) for param_name in params_names},
+        params,
     )
     orig_num_nodes = len(op_graph.graph)
     fuse_float_operations(op_graph)
@@ -144,12 +211,19 @@ def test_fuse_float_operations(function_to_trace, fused, input_):
         assert fused_num_nodes < orig_num_nodes
     else:
         assert fused_num_nodes == orig_num_nodes
+        captured = capfd.readouterr()
+        assert warning_message in remove_color_codes(captured.err)
 
-    input_ = numpy.int32(input_)
+    for input_ in [0, 2, 42, 44]:
+        inputs = ()
+        for param_input_value in params.values():
+            if param_input_value.is_scalar:
+                input_ = numpy.int32(input_)
+            else:
+                input_ = numpy.full(param_input_value.shape, input_, dtype=numpy.int32)
+            inputs += (input_,)
 
-    num_params = len(params_names)
-    inputs = (input_,) * num_params
-    assert function_to_trace(*inputs) == op_graph(*inputs)
+        assert numpy.array_equal(function_to_trace(*inputs), op_graph(*inputs))
 
 
 def subtest_tensor_no_fuse(fun, tensor_shape):

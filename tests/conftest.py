@@ -1,6 +1,7 @@
 """PyTest configuration file"""
 import json
 import operator
+import re
 from pathlib import Path
 from typing import Callable, Dict, Type
 
@@ -264,3 +265,12 @@ def default_compilation_configuration():
         dump_artifacts_on_unexpected_failures=False,
         treat_warnings_as_errors=True,
     )
+
+
+REMOVE_COLOR_CODES_RE = re.compile(r"\x1b[^m]*m")
+
+
+@pytest.fixture
+def remove_color_codes():
+    """Return the re object to remove color codes"""
+    return lambda x: REMOVE_COLOR_CODES_RE.sub("", x)

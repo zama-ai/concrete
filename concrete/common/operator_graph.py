@@ -31,7 +31,6 @@ class OPGraph:
         input_nodes: Dict[int, Input],
         output_nodes: Dict[int, IntermediateNode],
     ) -> None:
-        assert_true(len(input_nodes) > 0, "Got a graph without input nodes which is not supported")
         assert_true(
             all(isinstance(node, Input) for node in input_nodes.values()),
             "Got input nodes that were not Input, which is not supported",
@@ -47,6 +46,7 @@ class OPGraph:
         self.prune_nodes()
 
     def __call__(self, *args) -> Union[Any, Tuple[Any, ...]]:
+        assert_true(len(self.input_nodes) > 0, "Cannot evaluate a graph with no input nodes")
         inputs = dict(enumerate(args))
 
         assert_true(

@@ -1,13 +1,16 @@
 """File holding topological optimization/simplification code."""
 import itertools
+from collections import defaultdict
 from copy import deepcopy
-from typing import Dict, List, Optional, Set, Tuple, cast
+from typing import DefaultDict, Dict, List, Optional, Set, Tuple, cast
 
 import networkx as nx
+from loguru import logger
 
 from ..compilation.artifacts import CompilationArtifacts
 from ..data_types.floats import Float
 from ..data_types.integers import Integer
+from ..debugging import get_printable_graph
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import Constant, Input, IntermediateNode, UnivariateFunction
@@ -112,11 +115,30 @@ def convert_float_subgraph_to_fused_node(
             output must be plugged as the input to the subgraph.
     """
 
-    subgraph_can_be_fused = subgraph_has_unique_variable_input(
-        float_subgraph_start_nodes
-    ) and subgraph_values_allow_fusing(float_subgraph_start_nodes, subgraph_all_nodes)
+    node_with_issues_for_fusing: DefaultDict[IntermediateNode, List[str]] = defaultdict(list)
 
+    subgraph_can_be_fused = subgraph_has_unique_variable_input(
+        float_subgraph_start_nodes, terminal_node, node_with_issues_for_fusing
+    )
+
+    if subgraph_can_be_fused:
+        # subgraph_values_allow_fusing can be called iff the subgraph has a unique variable input
+        subgraph_can_be_fused = subgraph_values_allow_fusing(
+            float_subgraph_start_nodes, subgraph_all_nodes, node_with_issues_for_fusing
+        )
+
+    # This test is separate from the previous one to only handle printing issues once
     if not subgraph_can_be_fused:
+        float_subgraph = nx.MultiDiGraph(op_graph.graph.subgraph(subgraph_all_nodes))
+        float_subgraph_as_op_graph = OPGraph.from_graph(float_subgraph, [], [terminal_node])
+
+        printable_graph = get_printable_graph(
+            float_subgraph_as_op_graph,
+            show_data_types=True,
+            highlighted_nodes=node_with_issues_for_fusing,
+        )
+        message = f"The following subgraph is not fusable:\n{printable_graph}"
+        logger.warning(message)
         return None
 
     # Only one variable input node, find which node feeds its input
@@ -258,7 +280,8 @@ def find_float_subgraph_with_unique_terminal_node(
 def subgraph_values_allow_fusing(
     float_subgraph_start_nodes: Set[IntermediateNode],
     subgraph_all_nodes: Set[IntermediateNode],
-):
+    node_with_issues_for_fusing: DefaultDict[IntermediateNode, List[str]],
+) -> bool:
     """Check if a subgraph's values are compatible with fusing.
 
     A fused subgraph for example only works on an input tensor if the resulting UnivariateFunction
@@ -267,6 +290,8 @@ def subgraph_values_allow_fusing(
     Args:
         float_subgraph_start_nodes (Set[IntermediateNode]): The nodes starting the float subgraph.
         subgraph_all_nodes (Set[IntermediateNode]): All the nodes in the float subgraph.
+        node_with_issues_for_fusing (DefaultDict[IntermediateNode, List[str]]): Dictionary to fill
+            with potential nodes issues preventing fusing.
 
     Returns:
         bool: True if all inputs and outputs of the nodes in the subgraph are compatible with fusing
@@ -286,10 +311,10 @@ def subgraph_values_allow_fusing(
     # Some UnivariateFunction nodes have baked constants that need to be taken into account for the
     # max size computation
     baked_constants_ir_nodes = [
-        baked_constant_base_value
+        baked_constant_ir_node
         for node in subgraph_all_nodes
         if isinstance(node, UnivariateFunction)
-        if (baked_constant_base_value := node.op_attributes.get("baked_constant_ir_node", None))
+        if (baked_constant_ir_node := node.op_attributes.get("baked_constant_ir_node", None))
         is not None
     ]
 
@@ -332,26 +357,72 @@ def subgraph_values_allow_fusing(
 
     non_constant_nodes = (node for node in subgraph_all_nodes if not isinstance(node, Constant))
 
-    return all(
-        all(
-            isinstance(output, TensorValue) and output.shape == variable_input_node_output_shape
+    nodes_with_different_output_shapes = {
+        node: [
+            (output_idx, output.shape)
+            for output_idx, output in enumerate(node.outputs)
+            if isinstance(output, TensorValue) and output.shape != variable_input_node
+        ]
+        for node in non_constant_nodes
+        if any(
+            isinstance(output, TensorValue) and output.shape != variable_input_node_output_shape
             for output in node.outputs
         )
-        for node in non_constant_nodes
-    )
+    }
+
+    for node, node_shape_infos in nodes_with_different_output_shapes.items():
+        shape_issue_details = "; ".join(
+            f"#{output_idx}, {output_shape}" for output_idx, output_shape in node_shape_infos
+        )
+        node_with_issues_for_fusing[node].append(
+            f"output shapes: {shape_issue_details} are not the same as the subgraph's input: "
+            f"{variable_input_node_output_shape}"
+        )
+
+    all_nodes_have_same_shape_as_input = len(nodes_with_different_output_shapes) == 0
+
+    if not all_nodes_have_same_shape_as_input:
+        node_with_issues_for_fusing[variable_input_node].append(
+            f"input node with shape {variable_input_node_output_shape}"
+        )
+
+    # All non constant node outputs currently need to have the same shape
+    return all_nodes_have_same_shape_as_input
 
 
 def subgraph_has_unique_variable_input(
     float_subgraph_start_nodes: Set[IntermediateNode],
+    terminal_node: IntermediateNode,
+    node_with_issues_for_fusing: DefaultDict[IntermediateNode, List[str]],
 ) -> bool:
     """Check that only one of the nodes starting the subgraph is variable.
 
     Args:
         float_subgraph_start_nodes (Set[IntermediateNode]): The nodes starting the subgraph.
+        terminal_node (IntermediateNode): The node ending the float subgraph.
+        node_with_issues_for_fusing (DefaultDict[IntermediateNode, List[str]]): Dictionary to fill
+            with potential nodes issues preventing fusing.
 
     Returns:
         bool: True if only one of the nodes is not an Constant
     """
-    # Only one input to the subgraph where computations are done in floats is variable, this
+
+    variable_inputs_list = [
+        node for node in float_subgraph_start_nodes if not isinstance(node, Constant)
+    ]
+    variable_inputs_num = len(variable_inputs_list)
+
+    # Only one input to the subgraph where computations are done in floats can be variable, this
     # is the only case we can manage with UnivariateFunction fusing
-    return sum(not isinstance(node, Constant) for node in float_subgraph_start_nodes) == 1
+    has_unique_variable_input = variable_inputs_num == 1
+
+    if not has_unique_variable_input:
+        for node in variable_inputs_list:
+            node_with_issues_for_fusing[node].append(
+                f"one of {variable_inputs_num} variable inputs (can only have 1 for fusing)"
+            )
+        node_with_issues_for_fusing[terminal_node].append(
+            f"cannot fuse here as the subgraph has {variable_inputs_num} variable inputs"
+        )
+
+    return has_unique_variable_input
