@@ -66,6 +66,8 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
 
     elif isinstance(node, intermediate.UnivariateFunction):  # constraints for univariate functions
         assert_true(len(inputs) == 1)
+        if node.op_name == "MultiTLU":
+            return "direct multi table lookup is not supported for the time being"
         if not value_is_scalar(inputs[0]) or not value_is_unsigned_integer(inputs[0]):
             return "only unsigned integer scalar lookup tables are supported"
 

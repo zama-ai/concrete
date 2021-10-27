@@ -267,12 +267,20 @@ def get_constructor_for_numpy_or_python_constant_data(constant_data: Any):
     """
 
     assert_true(
-        isinstance(constant_data, (int, float, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)),
+        isinstance(
+            constant_data, (int, float, list, numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)
+        ),
         f"Unsupported constant data of type {type(constant_data)}",
     )
+
+    if isinstance(constant_data, list):
+        # this is required because some operations return python lists from their evaluate function
+        # an example of such operation is evaluation of multi tlu during bound measurements
+        constant_data = numpy.array(constant_data)
 
     if isinstance(constant_data, (numpy.ndarray, SUPPORTED_NUMPY_DTYPES_CLASS_TYPES)):
         if isinstance(constant_data, numpy.ndarray):
             return lambda x: numpy.full(constant_data.shape, x, dtype=constant_data.dtype)
         return constant_data.dtype.type
+
     return get_constructor_for_python_constant_data(constant_data)

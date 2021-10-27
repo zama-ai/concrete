@@ -9,6 +9,7 @@ import pytest
 from concrete.common.compilation import CompilationConfiguration
 from concrete.common.data_types.integers import Integer, UnsignedInteger
 from concrete.common.debugging import draw_graph, get_printable_graph
+from concrete.common.extensions.multi_table import MultiLookupTable
 from concrete.common.extensions.table import LookupTable
 from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
 from concrete.numpy import tracing
@@ -120,6 +121,19 @@ def random_lut_7b(x):
     )
     # fmt: on
 
+    return table[x]
+
+
+def multi_lut(x):
+    """2-bit multi table lookup"""
+
+    table = MultiLookupTable(
+        [
+            [LookupTable([1, 2, 1, 0]), LookupTable([2, 2, 1, 3])],
+            [LookupTable([1, 0, 1, 0]), LookupTable([0, 2, 3, 3])],
+            [LookupTable([0, 2, 3, 0]), LookupTable([2, 1, 2, 0])],
+        ]
+    )
     return table[x]
 
 
@@ -922,6 +936,21 @@ return(%7)
                 "%2 = MatMul(%0, %1)                                # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(3, 3)>\n"  # noqa: E501
                 "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being\n"  # noqa: E501
                 "return(%2)\n"
+            ),
+        ),
+        pytest.param(
+            multi_lut,
+            {"x": EncryptedTensor(UnsignedInteger(2), shape=(3, 2))},
+            [(numpy.random.randint(0, 2 ** 2, size=(3, 2)),) for _ in range(32)],
+            (
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3, 2)>
+%1 = MultiTLU(%0)                                  # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ direct multi table lookup is not supported for the time being
+return(%1)
+""".lstrip()  # noqa: E501
             ),
         ),
     ],
