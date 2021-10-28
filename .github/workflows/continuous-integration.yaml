@@ -353,30 +353,32 @@ jobs:
         uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
         with:
           name: html-docs
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0d9a5be0dceea74e09396820e1e522ba4a110d2f
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Publish Documentation to S3
         id: publish
         if: ${{ steps.download.outcome == 'success' && !cancelled() }}
-        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
-        with:
-          args: --delete --acl public-read
         env:
           AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
           SOURCE_DIR: '.'
           DEST_DIR: ${{ steps.docs-push-infos.outputs.dest-dir }}
+        run: |
+          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
 
       - name: Invalidate CloudFront Cache
         if: ${{ steps.publish.outcome == 'success' }}
-        uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
         env:
           SOURCE_PATH: "/${{ steps.docs-push-infos.outputs.dest-dir }}/*"
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
+        run: |
+          aws cloudfront create-invalidation \
+          --distribution-id "${DISTRIBUTION_ID}" \
+          --paths "${SOURCE_PATH}"
 
       - name: Set notification report
         id: report
@@ -620,39 +622,38 @@ jobs:
         if: ${{ success() && !cancelled() }}
         run: |
           docker image push --all-tags "${RELEASE_IMAGE_BASE}"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0d9a5be0dceea74e09396820e1e522ba4a110d2f
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
       - name: Push release documentation
         if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) }}
-        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
-        with:
-          args: --delete --acl public-read
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
           SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
           DEST_DIR: 'concretefhe/${{ env.PROJECT_VERSION }}'
+        run: |
+          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
+
       - name: Push release documentation as stable
         if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
-        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
-        with:
-          args: --delete --acl public-read
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
           SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
           DEST_DIR: 'concretefhe/stable'
+        run: |
+          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
       - name: Invalidate CloudFront Cache for stable
         if: ${{ success() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
-        uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
         env:
           SOURCE_PATH: "/concretefhe/stable/*"
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
+        run: |
+          aws cloudfront create-invalidation \
+          --distribution-id "${DISTRIBUTION_ID}" \
+          --paths "${SOURCE_PATH}"
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
