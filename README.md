@@ -2,7 +2,14 @@
 
 The homomorphizer is a compiler that takes a high level computation model and produces a programs that evaluate the model in an homomorphic way.
 
+## Build tarball
 
+The final tarball contains intallation instructions. We only support Linux x86_64 for the moment. You can find the output tarball under `/tarballs`.
+
+```bash
+$ cd compiler
+$ make release_tarballs
+```
 
 ## Build the Python Package
 

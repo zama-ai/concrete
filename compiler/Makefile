@@ -1,5 +1,6 @@
 BUILD_DIR=./build
 Python3_EXECUTABLE=
+BINDINGS_PYTHON_ENABLED=ON
 
 
 $(BUILD_DIR)/configured.stamp:
@@ -9,8 +10,8 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_TARGETS_TO_BUILD="host" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DLLVM_ENABLE_ASSERTIONS=ON \
-	-DMLIR_ENABLE_BINDINGS_PYTHON=ON \
-	-DZAMALANG_BINDINGS_PYTHON_ENABLED=ON \
+	-DMLIR_ENABLE_BINDINGS_PYTHON=$(BINDINGS_PYTHON_ENABLED) \
+	-DZAMALANG_BINDINGS_PYTHON_ENABLED=$(BINDINGS_PYTHON_ENABLED) \
 	-DCONCRETE_FFI_RELEASE=${CONCRETE_PROJECT}/target/release \
 	-DLLVM_EXTERNAL_PROJECTS=zamalang \
 	-DLLVM_EXTERNAL_ZAMALANG_SOURCE_DIR=. \
@@ -65,6 +66,10 @@ package_py39:
 package_py310:
 	$(call build_image_and_copy_wheels,cp310-cp310)
 
+release_tarballs:
+	docker image build -t concretefhe-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
+	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concretefhe-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
+
 .PHONY: build-initialized \
 	build-end-to-end-jit \
 	zamacompiler \
@@ -78,4 +83,5 @@ package_py310:
 	not \
 	package_py38 \
 	package_py39 \
-	package_py310
+	package_py310 \
+	release_tarballs
