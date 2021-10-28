@@ -104,7 +104,7 @@ public:
 
 private:
   mlir::LLVM::LLVMFunctionType type;
-  llvm::StringRef name;
+  std::string name;
   std::unique_ptr<mlir::ExecutionEngine> engine;
 };
 
