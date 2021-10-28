@@ -53,7 +53,7 @@ jobs:
             cd /compiler
             pip install pytest
             export CONCRETE_PROJECT=/concrete
-            make -B BUILD_DIR=/build build
+            make -B BUILD_DIR=/build build-initialized
             make BUILD_DIR=/build test
 
       - name: Send Slack Notification

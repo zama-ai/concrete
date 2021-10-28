@@ -14,8 +14,7 @@ ENV CONCRETE_PROJECT=/concrete
 # Setup and build compiler
 COPY /compiler /compiler
 WORKDIR /compiler
-RUN make Python3_EXECUTABLE=/opt/python/${python_tag}/bin/python build
-RUN make python-bindings
+RUN make Python3_EXECUTABLE=/opt/python/${python_tag}/bin/python python-bindings
 # Fix MLIR package
 RUN touch build/tools/zamalang/python_packages/zamalang_core/mlir/__init__.py
 RUN touch build/tools/zamalang/python_packages/zamalang_core/mlir/dialects/__init__.py
