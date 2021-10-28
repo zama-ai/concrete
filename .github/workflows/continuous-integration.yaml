@@ -598,6 +598,49 @@ jobs:
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
+      - name: Prepare docs push
+        id: docs-push-infos
+        run: |
+          if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
+             [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]] && \
+             [[ "${IS_PRERELEASE}" == "true" ]]; then
+            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
+            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
+          else
+            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}"
+            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}"
+          fi
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0d9a5be0dceea74e09396820e1e522ba4a110d2f
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Update versions.html for docs
+        if: ${{ success() && !cancelled() }}
+        run: |
+          DOWNLOADED_HTML_FILE=$(mktemp --suffix=.html)
+          OUTPUT_HTML_FILE=$(mktemp --suffix=.html)
+
+          aws s3api get-object \
+          --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
+          --key concretefhe/versions.html "${DOWNLOADED_HTML_FILE}"
+
+          python3 ./script/actions_utils/generate_versions_html.py \
+          --add-versions "${PROJECT_VERSION}" \
+          --versions-html-file "${DOWNLOADED_HTML_FILE}" \
+          --output-html "${OUTPUT_HTML_FILE}"
+
+          aws s3 cp "${OUTPUT_HTML_FILE}" \
+          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concretefhe/versions.html \
+          --acl public-read
+
+          aws cloudfront create-invalidation \
+          --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
+          --paths /concretefhe/versions.html
+
+          # Copy to docs to keep a version in docs artifacts
+          cp "${OUTPUT_HTML_FILE}" "${RAW_DOCS_DIR}"/versions.html
       - name: Create ready to upload/packaged artifacts and release body
         if: ${{ success() && !cancelled() }}
         env:
@@ -607,6 +650,8 @@ jobs:
           pushd "${RAW_DOCS_DIR}"
           zip -r "${ARTIFACTS_PACKAGED_DIR}/html-docs.zip" ./*
           tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
+          # Remove the versions.html to avoid pushing it to S3 but have it in release artifacts
+          rm versions.html
           popd
           cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
           ls -a "${ARTIFACTS_PACKAGED_DIR}"
@@ -615,26 +660,20 @@ jobs:
           echo "RELEASE_BODY_FILE=${RELEASE_BODY_FILE}" >> "$GITHUB_ENV"
 
           cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
-          echo "Docker Image: ${RELEASE_IMG_GIT_TAG}" >> "${RELEASE_BODY_FILE}"
-          if [[ "${IS_PRERELEASE}" == "false" ]]; then
-            echo "Documentation: https://docs.zama.ai/concretefhe/${PROJECT_VERSION}" >> "${RELEASE_BODY_FILE}"
-          fi
-          echo "" >> "${RELEASE_BODY_FILE}"
+          {
+            echo "Docker Image: ${RELEASE_IMG_GIT_TAG}";
+            echo "Documentation: https://${{ steps.docs-push-infos.outputs.aws-bucket }}/concretefhe/${PROJECT_VERSION}";
+            echo "";
+          } >> "${RELEASE_BODY_FILE}"
           cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
       - name: Push release docker image
         if: ${{ success() && !cancelled() }}
         run: |
           docker image push --all-tags "${RELEASE_IMAGE_BASE}"
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@0d9a5be0dceea74e09396820e1e522ba4a110d2f
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
       - name: Push release documentation
-        if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) }}
+        if: ${{ success() && !cancelled() }}
         env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
+          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
           SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
           DEST_DIR: 'concretefhe/${{ env.PROJECT_VERSION }}'
         run: |
@@ -643,7 +682,7 @@ jobs:
       - name: Push release documentation as stable
         if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
         env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}
+          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
           SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
           DEST_DIR: 'concretefhe/stable'
         run: |
@@ -652,7 +691,7 @@ jobs:
         if: ${{ success() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
         env:
           SOURCE_PATH: "/concretefhe/stable/*"
-          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
+          DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
         run: |
           aws cloudfront create-invalidation \
           --distribution-id "${DISTRIBUTION_ID}" \
