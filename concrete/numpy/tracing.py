@@ -1,7 +1,7 @@
 """numpy tracing utilities."""
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 import numpy
 from numpy.typing import DTypeLike
@@ -69,7 +69,15 @@ class NPTracer(BaseTracer):
             (len(kwargs) == 0),
             f"**kwargs are currently not supported for numpy functions, func: {func}",
         )
-        sanitized_args = [self._sanitize(arg) for arg in args]
+
+        # Fixme: Special case to be removed once #772 is done
+        if func is not numpy.reshape:
+            sanitized_args = [self._sanitize(arg) for arg in args]
+        else:
+            # In numpy.reshape, the second argument is the new shape
+            sanitized_args = [self._sanitize(args[0]), args[1]]
+            return tracing_func(self, sanitized_args[0], sanitized_args[1], **kwargs)
+
         return tracing_func(self, *sanitized_args, **kwargs)
 
     def astype(self, numpy_dtype: DTypeLike, *args, **kwargs) -> "NPTracer":
@@ -267,7 +275,7 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
-    def transpose(self, *args: "NPTracer", **_kwargs) -> "NPTracer":
+    def transpose(self, *args: "NPTracer", **kwargs) -> "NPTracer":
         """Trace numpy.transpose.
 
         Returns:
@@ -285,7 +293,7 @@ class NPTracer(BaseTracer):
             arbitrary_func=numpy.transpose,
             output_dtype=first_arg_output.dtype,
             output_shape=first_arg_output.shape[::-1],
-            op_kwargs=deepcopy(_kwargs),
+            op_kwargs=deepcopy(kwargs),
             op_name="np.transpose",
         )
         output_tracer = self.__class__(
@@ -295,7 +303,7 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
-    def ravel(self, *args: "NPTracer", **_kwargs) -> "NPTracer":
+    def ravel(self, *args: "NPTracer", **kwargs) -> "NPTracer":
         """Trace numpy.ravel.
 
         Returns:
@@ -313,11 +321,59 @@ class NPTracer(BaseTracer):
             arbitrary_func=numpy.ravel,
             output_dtype=first_arg_output.dtype,
             output_shape=(numpy.product(first_arg_output.shape),),
-            op_kwargs=deepcopy(_kwargs),
+            op_kwargs=deepcopy(kwargs),
             op_name="np.ravel",
         )
         output_tracer = self.__class__(
             args,
+            traced_computation=traced_computation,
+            output_idx=0,
+        )
+        return output_tracer
+
+    def reshape(self, arg0: "NPTracer", arg1: Tuple[Any, ...], **kwargs) -> "NPTracer":
+        """Trace numpy.reshape.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+
+        # FIXME: #772, restore reshape(self, *args, **kwargs) signature when possible, with mypy
+        # types
+
+        # FIXME: #772, restore
+        # assert_true((num_args := len(args)) == 2, f"reshape expect 2 input got {num_args}")
+        # when possible
+
+        assert_true((num_kwargs := len(kwargs)) == 0, f"reshape expect 0 kwargs got {num_kwargs}")
+
+        first_arg_output = arg0.output
+        assert_true(isinstance(first_arg_output, TensorValue))
+        first_arg_output = cast(TensorValue, first_arg_output)
+
+        newshape = deepcopy(arg1)
+
+        if isinstance(newshape, int):
+            # Make numpy.reshape(x, (170)) and numpy.reshape(x, 170) work, while classical form is
+            # numpy.reshape(x, (170,))
+            newshape = (newshape,)
+
+        # Check shape compatibility
+        assert_true(
+            numpy.product(newshape) == numpy.product(first_arg_output.shape),
+            f"shapes are not compatible (old shape {first_arg_output.shape}, new shape {newshape})",
+        )
+
+        traced_computation = GenericFunction(
+            input_base_value=first_arg_output,
+            arbitrary_func=numpy.reshape,
+            output_dtype=first_arg_output.dtype,
+            output_shape=newshape,
+            op_kwargs={"newshape": newshape},
+            op_name="np.reshape",
+        )
+        output_tracer = self.__class__(
+            [arg0],
             traced_computation=traced_computation,
             output_idx=0,
         )
@@ -436,6 +492,7 @@ class NPTracer(BaseTracer):
     FUNC_ROUTING: Dict[Callable, Callable] = {
         numpy.dot: dot,
         numpy.transpose: transpose,
+        numpy.reshape: reshape,
         numpy.ravel: ravel,
     }
 

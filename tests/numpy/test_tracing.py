@@ -636,6 +636,13 @@ def test_nptracer_unsupported_operands(operation, tracer):
                 (numpy.arange(4).reshape(2, 2), numpy.array([0, 1, 2, 3])),
             ],
         ),
+        (
+            lambda x: numpy.reshape(x, (5, 3)) + 42,
+            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+            [
+                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(5, 3)),
+            ],
+        ),
     ],
 )
 def test_tracing_generic_function(function_to_trace, input_value, input_and_expected_output_tuples):
@@ -649,3 +656,22 @@ def test_tracing_generic_function(function_to_trace, input_value, input_and_expe
         evaluated_output = node_results[output_node]
         assert isinstance(evaluated_output, type(expected_output))
         assert numpy.array_equal(expected_output, evaluated_output)
+
+
+@pytest.mark.parametrize(
+    "lambda_f,params",
+    [
+        (
+            lambda x: numpy.reshape(x, (5, 3)),
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=False), shape=(7, 5)),
+            },
+        ),
+    ],
+)
+def test_errors_with_generic_function(lambda_f, params):
+    "Test some errors with generic function"
+    with pytest.raises(AssertionError) as excinfo:
+        tracing.trace_numpy_function(lambda_f, params)
+
+    assert "shapes are not compatible (old shape (7, 5), new shape (5, 3))" in str(excinfo.value)

@@ -215,6 +215,7 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
     )
 
 
+# pylint: disable=line-too-long
 @pytest.mark.parametrize(
     "lambda_f,params,ref_graph_str",
     [
@@ -223,14 +224,55 @@ def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
             {
                 "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3, 5)),
             },
-            "%0 = x\n%1 = np.transpose(%0)\nreturn(%1)\n",
+            """
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3, 5)>
+%1 = np.transpose(%0)                              # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(5, 3)>
+return(%1)
+""".lstrip(),  # noqa: E501
         ),
         (
             lambda x: numpy.ravel(x),
             {
                 "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3, 5)),
             },
-            "%0 = x\n%1 = np.ravel(%0)\nreturn(%1)\n",
+            """
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3, 5)>
+%1 = np.ravel(%0)                                  # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(15,)>
+return(%1)
+""".lstrip(),  # noqa: E501
+        ),
+        (
+            lambda x: numpy.reshape(x, (5, 3)),
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=False), shape=(3, 5)),
+            },
+            """
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3, 5)>
+%1 = np.reshape(%0)                                # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(5, 3)>
+return(%1)
+""".lstrip(),  # noqa: E501
+        ),
+        (
+            lambda x: numpy.reshape(x, (170,)),
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=False), shape=(17, 10)),
+            },
+            """
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(17, 10)>
+%1 = np.reshape(%0)                                # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(170,)>
+return(%1)
+""".lstrip(),  # noqa: E501
+        ),
+        (
+            lambda x: numpy.reshape(x, (170)),
+            {
+                "x": EncryptedTensor(Integer(2, is_signed=False), shape=(17, 10)),
+            },
+            """
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(17, 10)>
+%1 = np.reshape(%0)                                # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(170,)>
+return(%1)
+""".lstrip(),  # noqa: E501
         ),
     ],
 )
@@ -240,13 +282,16 @@ def test_print_and_draw_graph_with_generic_function(lambda_f, params, ref_graph_
 
     draw_graph(graph, show=False)
 
-    str_of_the_graph = get_printable_graph(graph)
+    str_of_the_graph = get_printable_graph(graph, show_data_types=True)
 
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
         f"==================\nExpected \n{ref_graph_str}"
         f"==================\n"
     )
+
+
+# pylint: enable=line-too-long
 
 
 # Remark that the bitwidths are not particularly correct (eg, a MUL of a 17b times 23b

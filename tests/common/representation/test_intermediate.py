@@ -197,6 +197,17 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
             numpy.arange(15),
             id="GenericFunction, x ravel",
         ),
+        pytest.param(
+            ir.GenericFunction(
+                EncryptedTensor(Integer(32, False), shape=(3, 5)),
+                lambda x: numpy.reshape(x, (5, 3)),
+                Integer(32, False),
+                output_shape=(5, 3),
+            ),
+            [numpy.arange(15).reshape(3, 5)],
+            numpy.arange(15).reshape(5, 3),
+            id="GenericFunction, x reshape",
+        ),
     ],
 )
 def test_evaluate(
