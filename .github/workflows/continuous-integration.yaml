@@ -178,12 +178,13 @@ jobs:
             ~/.cache/pip
             ~/.cache/pypoetry
           # Ignore line break in the evaluated double quoted string
-          key: "${{ runner.os }}-build-${{ matrix.python-version }}-\
+          key: "${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-\
             ${{ hashFiles('poetry.lock') }}"
           restore-keys: |
-            ${{ runner.os }}-build-${{ matrix.python-version }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-
+            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
+            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
+            ${{ secrets.CACHE_VERSION }}-
       - name: Install dependencies
         id: install-deps
         run: |
@@ -490,11 +491,13 @@ jobs:
             ~/.cache/pip
             ~/.cache/pypoetry
           # Use python 3.8 as it is the version available in ubuntu 20.04 and we develop with it
-          key: "${{ runner.os }}-build-3.8-${{ hashFiles('poetry.lock') }}"
+          key: "$${{ secrets.CACHE_VERSION }}-{{ runner.os }}-build-3.8-\
+            ${{ hashFiles('poetry.lock') }}"
           restore-keys: |
-            ${{ runner.os }}-build-3.8-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-3.8-
+            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
+            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
+            ${{ secrets.CACHE_VERSION }}-
       # See #570 To be updated to only install required dependencies group with poetry 1.2 and
       # remove graphviz installs which are only required for the actual package and not dev tools
       - name: Install dependencies
