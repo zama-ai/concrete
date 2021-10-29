@@ -228,12 +228,28 @@ shell_lint:
 	xargs shellcheck
 .PHONY: shell_lint
 
-set_version:
+set_version_no_commit:
 	@if [[ "$$VERSION" == "" ]]; then											\
 		echo "VERSION env variable is empty. Please set to desired version.";	\
 		exit 1;																	\
 	fi && \
 	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}"
+.PHONY: set_version_no_commit
+
+set_version:
+	@if [[ "$$VERSION" == "" ]]; then											\
+		echo "VERSION env variable is empty. Please set to desired version.";	\
+		exit 1;																	\
+	fi && \
+	STASH_COUNT="$(git stash list | wc -l)" && \
+	git stash && \
+	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}" && \
+	git add -u && \
+	git commit -m "chore: bump version to $${VERSION}" && \
+	NEW_STASH_COUNT="$(git stash list | wc -l)" && \
+	if [[ "$$NEW_STASH_COUNT" != "$$STASH_COUNT" ]]; then \
+		git stash pop; \
+	fi
 .PHONY: set_version
 
 check_version_coherence:
