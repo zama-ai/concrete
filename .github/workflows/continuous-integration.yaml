@@ -170,21 +170,21 @@ jobs:
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Cache Installation Files
-        uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
-        with:
-          # Paths are Unix specific for now
-          path: |
-            ~/.cache/pip
-            ~/.cache/pypoetry
-          # Ignore line break in the evaluated double quoted string
-          key: "${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-\
-            ${{ hashFiles('poetry.lock') }}"
-          restore-keys: |
-            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-
-            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
-            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
-            ${{ secrets.CACHE_VERSION }}-
+      # - name: Cache Installation Files
+      #   uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
+      #   with:
+      #     # Paths are Unix specific for now
+      #     path: |
+      #       ~/.cache/pip
+      #       ~/.cache/pypoetry
+      #     # Ignore line break in the evaluated double quoted string
+      #     key: "${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-\
+      #       ${{ hashFiles('poetry.lock') }}"
+      #     restore-keys: |
+      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-
+      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
+      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
+      #       ${{ secrets.CACHE_VERSION }}-
       - name: Install dependencies
         id: install-deps
         run: |
@@ -483,21 +483,21 @@ jobs:
     steps:
       - uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
       # To be removed once poetry 1.2 is released to manage dependencies with groups
-      - name: Cache Installation Files
-        uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
-        with:
-          # Paths are Unix specific for now
-          path: |
-            ~/.cache/pip
-            ~/.cache/pypoetry
-          # Use python 3.8 as it is the version available in ubuntu 20.04 and we develop with it
-          key: "$${{ secrets.CACHE_VERSION }}-{{ runner.os }}-build-3.8-\
-            ${{ hashFiles('poetry.lock') }}"
-          restore-keys: |
-            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-3.8-
-            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
-            ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
-            ${{ secrets.CACHE_VERSION }}-
+      # - name: Cache Installation Files
+      #   uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
+      #   with:
+      #     # Paths are Unix specific for now
+      #     path: |
+      #       ~/.cache/pip
+      #       ~/.cache/pypoetry
+      #     # Use python 3.8 as it is the version available in ubuntu 20.04 and we develop with it
+      #     key: "$${{ secrets.CACHE_VERSION }}-{{ runner.os }}-build-3.8-\
+      #       ${{ hashFiles('poetry.lock') }}"
+      #     restore-keys: |
+      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-3.8-
+      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
+      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
+      #       ${{ secrets.CACHE_VERSION }}-
       # See #570 To be updated to only install required dependencies group with poetry 1.2 and
       # remove graphviz installs which are only required for the actual package and not dev tools
       - name: Install dependencies
