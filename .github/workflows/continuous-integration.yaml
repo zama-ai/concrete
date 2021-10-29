@@ -626,7 +626,7 @@ jobs:
           --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
           --key concretefhe/versions.html "${DOWNLOADED_HTML_FILE}"
 
-          python3 ./script/actions_utils/generate_versions_html.py \
+          poetry run python ./script/actions_utils/generate_versions_html.py \
           --add-versions "${PROJECT_VERSION}" \
           --versions-html-file "${DOWNLOADED_HTML_FILE}" \
           --output-html "${OUTPUT_HTML_FILE}"
