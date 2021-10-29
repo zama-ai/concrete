@@ -618,29 +618,25 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Update versions.html for docs
         if: ${{ success() && !cancelled() }}
+        env:
+          RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
         run: |
-          DOWNLOADED_HTML_FILE=$(mktemp --suffix=.html)
-          OUTPUT_HTML_FILE=$(mktemp --suffix=.html)
+          DOWNLOADED_VERSIONS_HTML_FILE=$(mktemp --suffix=.html)
+          OUTPUT_VERSIONS_HTML_FILE=$(mktemp --suffix=.html)
 
           aws s3api get-object \
           --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
-          --key concretefhe/versions.html "${DOWNLOADED_HTML_FILE}"
+          --key concretefhe/versions.html "${DOWNLOADED_VERSIONS_HTML_FILE}"
 
           poetry run python ./script/actions_utils/generate_versions_html.py \
           --add-versions "${PROJECT_VERSION}" \
-          --versions-html-file "${DOWNLOADED_HTML_FILE}" \
-          --output-html "${OUTPUT_HTML_FILE}"
+          --versions-html-file "${DOWNLOADED_VERSIONS_HTML_FILE}" \
+          --output-html "${OUTPUT_VERSIONS_HTML_FILE}"
 
-          aws s3 cp "${OUTPUT_HTML_FILE}" \
-          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concretefhe/versions.html \
-          --acl public-read
-
-          aws cloudfront create-invalidation \
-          --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
-          --paths /concretefhe/versions.html
+          echo "OUTPUT_VERSIONS_HTML_FILE=${OUTPUT_VERSIONS_HTML_FILE}" >> "$GITHUB_ENV"
 
           # Copy to docs to keep a version in docs artifacts
-          cp "${OUTPUT_HTML_FILE}" "${RAW_DOCS_DIR}"/versions.html
+          cp "${OUTPUT_VERSIONS_HTML_FILE}" "${RAW_DOCS_DIR}"/versions.html
       - name: Create ready to upload/packaged artifacts and release body
         if: ${{ success() && !cancelled() }}
         env:
@@ -708,6 +704,16 @@ jobs:
           tag_name: ${{ env.GIT_TAG }}
           fail_on_unmatched_files: true
           token: ${{ secrets.BOT_TOKEN }}
+      - name: Push updated versions.html
+        if: ${{ success() }}
+        run: |
+          aws s3 cp "${OUTPUT_VERSIONS_HTML_FILE}" \
+          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concretefhe/versions.html \
+          --acl public-read
+
+          aws cloudfront create-invalidation \
+          --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
+          --paths /concretefhe/versions.html
       - name: Set notification report
         id: report
         if: ${{ always() }}
