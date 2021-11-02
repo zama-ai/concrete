@@ -15,9 +15,22 @@ jobs:
     name: Check timestamps and notify build
     runs-on: ubuntu-20.04
     steps:
+      - name: Should run
+        run: |
+          SHOULD_RUN=${{ secrets.PACKAGE_WATCHER_ENABLED }}
+          if [[ "${SHOULD_RUN}" == "PACKAGE_WATCHER_PREFIX_ENABLED" ]]; then
+            SHOULD_RUN="true"
+            echo "Running package watcher"
+          else
+            SHOULD_RUN="false"
+            echo "Won't run package watcher"
+          fi
+          echo "SHOULD_RUN=${SHOULD_RUN}" >> "$GITHUB_ENV"
       - name: Checkout Code
+        if: ${{ fromJSON(env.SHOULD_RUN) }}
         uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
       - name: Compare image timestamps and notify
+        if: ${{ fromJSON(env.SHOULD_RUN) }}
         run: |
           ./script/actions_utils/container_timestamp_check.sh \
           --base_img_url \
