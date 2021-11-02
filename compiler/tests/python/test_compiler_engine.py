@@ -102,5 +102,5 @@ def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
 )
 def test_compile_invalid(mlir_input):
     engine = CompilerEngine()
-    with pytest.raises(RuntimeError, match=r"failed compiling"):
+    with pytest.raises(RuntimeError, match=r"Compilation failed:"):
         engine.compile_fhe(mlir_input)
