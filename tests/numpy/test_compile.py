@@ -953,6 +953,45 @@ return(%1)
 """.lstrip()  # noqa: E501
             ),
         ),
+        pytest.param(
+            lambda x: numpy.transpose(x),
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
+                "%1 = np.transpose(%0)                              # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 3)>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.transpose is not supported for the time being\n"  # noqa: E501
+                "return(%1)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.ravel(x),
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
+                "%1 = np.ravel(%0)                                  # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(6,)>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.ravel is not supported for the time being\n"  # noqa: E501
+                "return(%1)\n"
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.reshape(x, (2, 6)),
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 4))},
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 4)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 4)>\n"  # noqa: E501
+                "%1 = np.reshape(%0)                                # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 6)>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.reshape is not supported for the time being\n"  # noqa: E501
+                "return(%1)\n"
+            ),
+        ),
     ],
 )
 # pylint: enable=line-too-long
