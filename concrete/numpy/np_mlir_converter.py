@@ -10,7 +10,7 @@ import numpy
 from ..common.debugging import assert_true
 from ..common.mlir.mlir_converter import MLIRConverter
 from ..common.operator_graph import OPGraph
-from ..common.representation.intermediate import UnivariateFunction
+from ..common.representation.intermediate import GenericFunction
 
 
 class HashableNPArray:
@@ -33,12 +33,12 @@ class HashableNPArray:
 
 
 def generate_deduplicated_tables(
-    node: UnivariateFunction,
+    node: GenericFunction,
 ) -> Tuple[Tuple[numpy.ndarray, List[Tuple[int, ...]]], ...]:
     """Deduplicate the tables for the different cells of a tensor if needed.
 
     Args:
-        node (UnivariateFunction): the node for which to deduplicate the table
+        node (GenericFunction): the node for which to deduplicate the table
 
     Returns:
         Tuple[Tuple[numpy.ndarray, List[Tuple[int, ...]]], ...]: A tuple containing tuples whose
@@ -87,7 +87,7 @@ class NPMLIRConverter(MLIRConverter):
             additional_conversion_info["tables"] = {
                 node: generate_deduplicated_tables(node)
                 for node in op_graph.graph.nodes()
-                if isinstance(node, UnivariateFunction)
+                if isinstance(node, GenericFunction)
             }
 
         return additional_conversion_info

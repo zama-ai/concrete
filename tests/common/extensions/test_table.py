@@ -54,12 +54,16 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     input_x = ir.Input(input_value=x, input_name="x", program_input_idx=0)
     ref_graph.add_node(input_x)
 
+    generic_function_output_value = deepcopy(x)
+    generic_function_output_value.dtype = table.output_dtype
+
     # pylint: disable=protected-access
-    # Need access to _checked_indexing to have is_equivalent_to work for ir.UnivariateFunction
-    output_arbitrary_function = ir.UnivariateFunction(
+    # Need access to _checked_indexing to have is_equivalent_to work for ir.GenericFunction
+    output_arbitrary_function = ir.GenericFunction(
         input_base_value=x,
         arbitrary_func=LookupTable._checked_indexing,
-        output_dtype=table.output_dtype,
+        output_value=generic_function_output_value,
+        op_kind="TLU",
         op_kwargs={"table": deepcopy(table.table)},
         op_name="TLU",
     )
@@ -68,7 +72,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
 
     ref_graph.add_edge(input_x, output_arbitrary_function, input_idx=0, output_idx=0)
 
-    # TODO: discuss if this check is enough as == is not overloaded properly for UnivariateFunction
+    # TODO: discuss if this check is enough as == is not overloaded properly for GenericFunction
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)
 
 
@@ -94,12 +98,16 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     input_x = ir.Input(input_value=x, input_name="x", program_input_idx=0)
     ref_graph.add_node(input_x)
 
+    generic_function_output_value = deepcopy(x)
+    generic_function_output_value.dtype = table.output_dtype
+
     # pylint: disable=protected-access
-    # Need access to _checked_indexing to have is_equivalent_to work for ir.UnivariateFunction
-    intermediate_arbitrary_function = ir.UnivariateFunction(
+    # Need access to _checked_indexing to have is_equivalent_to work for ir.GenericFunction
+    intermediate_arbitrary_function = ir.GenericFunction(
         input_base_value=x,
         arbitrary_func=LookupTable._checked_indexing,
-        output_dtype=table.output_dtype,
+        output_value=generic_function_output_value,
+        op_kind="TLU",
         op_kwargs={"table": deepcopy(table.table)},
         op_name="TLU",
     )
@@ -117,5 +125,5 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     ref_graph.add_edge(intermediate_arbitrary_function, output_add, input_idx=0, output_idx=0)
     ref_graph.add_edge(constant_3, output_add, input_idx=1, output_idx=0)
 
-    # TODO: discuss if this check is enough as == is not overloaded properly for UnivariateFunction
+    # TODO: discuss if this check is enough as == is not overloaded properly for GenericFunction
     assert test_helpers.digraphs_are_equivalent(ref_graph, op_graph.graph)

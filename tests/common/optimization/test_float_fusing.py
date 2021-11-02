@@ -32,6 +32,26 @@ def no_fuse_dot(x):
     return numpy.dot(x, numpy.full((10,), 1.33, dtype=numpy.float64)).astype(numpy.int32)
 
 
+def no_fuse_explicitely(f, x):
+    """No fuse because the function is explicitely marked as unfusable in our code."""
+    return f(x.astype(numpy.float64)).astype(numpy.int32)
+
+
+def no_fuse_explicitely_ravel(x):
+    """No fuse ravel"""
+    return no_fuse_explicitely(numpy.ravel, x)
+
+
+def no_fuse_explicitely_transpose(x):
+    """No fuse transpose"""
+    return no_fuse_explicitely(numpy.transpose, x)
+
+
+def no_fuse_explicitely_reshape(x):
+    """No fuse reshape"""
+    return no_fuse_explicitely(lambda x: numpy.reshape(x, (1,)), x)
+
+
 def simple_fuse_not_output(x):
     """Simple fuse not output"""
     intermediate = x.astype(numpy.float64)
@@ -112,11 +132,13 @@ def mix_x_and_y_into_integer_and_call_f(function, x, y):
     )
 
 
-def get_func_params_scalar_int32(func):
+def get_func_params_int32(func, scalar=True):
     """Returns a dict with parameters as scalar int32"""
 
     return {
         param_name: EncryptedScalar(Integer(32, True))
+        if scalar
+        else EncryptedTensor(Integer(32, True), (1,))
         for param_name in signature(func).parameters.keys()
     }
 
@@ -124,11 +146,11 @@ def get_func_params_scalar_int32(func):
 @pytest.mark.parametrize(
     "function_to_trace,fused,params,warning_message",
     [
-        pytest.param(no_fuse, False, get_func_params_scalar_int32(no_fuse), "", id="no_fuse"),
+        pytest.param(no_fuse, False, get_func_params_int32(no_fuse), "", id="no_fuse"),
         pytest.param(
             no_fuse_unhandled,
             False,
-            get_func_params_scalar_int32(no_fuse_unhandled),
+            get_func_params_int32(no_fuse_unhandled),
             """The following subgraph is not fusable:
 %0 = x                                             # EncryptedScalar<Integer<signed, 32 bits>>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of 2 variable inputs (can only have 1 for fusing)
@@ -160,30 +182,69 @@ return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
             id="no_fuse_dot",
         ),
         pytest.param(
+            no_fuse_explicitely_ravel,
+            False,
+            get_func_params_int32(no_fuse_explicitely_ravel, scalar=False),
+            """The following subgraph is not fusable:
+%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(1,)>
+%1 = astype(float64)(%0)                           # EncryptedTensor<Float<64 bits>, shape=(1,)>
+%2 = np.ravel(%1)                                  # EncryptedTensor<Float<64 bits>, shape=(1,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
+%3 = astype(int32)(%2)                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(1,)>
+return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            id="no_fuse_explicitely_ravel",
+        ),
+        pytest.param(
+            no_fuse_explicitely_transpose,
+            False,
+            get_func_params_int32(no_fuse_explicitely_transpose, scalar=False),
+            """The following subgraph is not fusable:
+%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(1,)>
+%1 = astype(float64)(%0)                           # EncryptedTensor<Float<64 bits>, shape=(1,)>
+%2 = np.transpose(%1)                              # EncryptedTensor<Float<64 bits>, shape=(1,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
+%3 = astype(int32)(%2)                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(1,)>
+return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            id="no_fuse_explicitely_transpose",
+        ),
+        pytest.param(
+            no_fuse_explicitely_reshape,
+            False,
+            get_func_params_int32(no_fuse_explicitely_reshape, scalar=False),
+            """The following subgraph is not fusable:
+%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(1,)>
+%1 = astype(float64)(%0)                           # EncryptedTensor<Float<64 bits>, shape=(1,)>
+%2 = np.reshape(%1)                                # EncryptedTensor<Float<64 bits>, shape=(1,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
+%3 = astype(int32)(%2)                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(1,)>
+return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            id="no_fuse_explicitely_reshape",
+        ),
+        pytest.param(
             simple_fuse_not_output,
             True,
-            get_func_params_scalar_int32(simple_fuse_not_output),
+            get_func_params_int32(simple_fuse_not_output),
             None,
             id="simple_fuse_not_output",
         ),
         pytest.param(
             simple_fuse_output,
             True,
-            get_func_params_scalar_int32(simple_fuse_output),
+            get_func_params_int32(simple_fuse_output),
             None,
             id="simple_fuse_output",
         ),
         pytest.param(
             lambda x, y: mix_x_and_y_intricately_and_call_f(numpy.rint, x, y),
             True,
-            get_func_params_scalar_int32(lambda x, y: None),
+            get_func_params_int32(lambda x, y: None),
             None,
             id="mix_x_and_y_intricately_and_call_f_with_rint",
         ),
         pytest.param(
             lambda x, y: mix_x_and_y_and_call_f(numpy.rint, x, y),
             True,
-            get_func_params_scalar_int32(lambda x, y: None),
+            get_func_params_int32(lambda x, y: None),
             None,
             id="mix_x_and_y_and_call_f_with_rint",
         ),

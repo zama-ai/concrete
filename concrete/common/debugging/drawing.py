@@ -22,7 +22,6 @@ from ..representation.intermediate import (
     MatMul,
     Mul,
     Sub,
-    UnivariateFunction,
 )
 
 IR_NODE_COLOR_MAPPING = {
@@ -31,12 +30,10 @@ IR_NODE_COLOR_MAPPING = {
     Add: "red",
     Sub: "yellow",
     Mul: "green",
-    UnivariateFunction: "orange",
     GenericFunction: "orange",
     IndexConstant: "black",
     Dot: "purple",
     MatMul: "brown",
-    "UnivariateFunction": "orange",
     "GenericFunction": "orange",
     "TLU": "grey",
     "output": "magenta",
@@ -78,7 +75,7 @@ def draw_graph(
         value_to_return = IR_NODE_COLOR_MAPPING[type(node)]
         if node in output_nodes:
             value_to_return = IR_NODE_COLOR_MAPPING["output"]
-        elif isinstance(node, UnivariateFunction):
+        elif isinstance(node, GenericFunction):
             value_to_return = IR_NODE_COLOR_MAPPING.get(node.op_name, value_to_return)
         return value_to_return
 

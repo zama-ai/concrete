@@ -6,7 +6,7 @@ import numpy
 import pytest
 
 import concrete.numpy as hnp
-from concrete.common.representation.intermediate import UnivariateFunction
+from concrete.common.representation.intermediate import GenericFunction
 from concrete.numpy.np_mlir_converter import generate_deduplicated_tables
 
 
@@ -50,7 +50,7 @@ def test_generate_deduplicated_tables(
     )
 
     univariate_function_nodes = [
-        node for node in op_graph.graph.nodes() if isinstance(node, UnivariateFunction)
+        node for node in op_graph.graph.nodes() if isinstance(node, GenericFunction)
     ]
 
     assert len(univariate_function_nodes) == 1
@@ -75,7 +75,7 @@ def test_deduplicated_tables_correctness(default_compilation_configuration):
     )
 
     univariate_function_nodes = [
-        node for node in op_graph.graph.nodes() if isinstance(node, UnivariateFunction)
+        node for node in op_graph.graph.nodes() if isinstance(node, GenericFunction)
     ]
 
     assert len(univariate_function_nodes) == 1

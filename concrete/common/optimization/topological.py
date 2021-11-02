@@ -13,7 +13,7 @@ from ..data_types.integers import Integer
 from ..debugging import get_printable_graph
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
-from ..representation.intermediate import Constant, Input, IntermediateNode, UnivariateFunction
+from ..representation.intermediate import Constant, GenericFunction, Input, IntermediateNode
 from ..values import TensorValue
 
 
@@ -21,7 +21,7 @@ def fuse_float_operations(
     op_graph: OPGraph,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ):
-    """Find and fuse float domains into single Integer to Integer UnivariateFunction.
+    """Find and fuse float domains into single Integer to Integer GenericFunction.
 
     Args:
         op_graph (OPGraph): The OPGraph to simplify
@@ -76,7 +76,7 @@ def fuse_float_operations(
             succ_edge_data = deepcopy(nx_graph.get_edge_data(terminal_node, succ))
             for edge_key, edge_data in succ_edge_data.items():
                 nx_graph.remove_edge(terminal_node, succ, key=edge_key)
-                # fused_node is always a UnivariateFunction so output_idx == 0 always
+                # fused_node is always a GenericFunction so output_idx == 0 always
                 new_edge_data = deepcopy(edge_data)
                 new_edge_data["output_idx"] = 0
                 nx_graph.add_edge(fused_node, succ, key=edge_key, **new_edge_data)
@@ -99,8 +99,8 @@ def convert_float_subgraph_to_fused_node(
     float_subgraph_start_nodes: Set[IntermediateNode],
     terminal_node: IntermediateNode,
     subgraph_all_nodes: Set[IntermediateNode],
-) -> Optional[Tuple[UnivariateFunction, IntermediateNode]]:
-    """Convert a float subgraph to an equivalent fused UnivariateFunction node.
+) -> Optional[Tuple[GenericFunction, IntermediateNode]]:
+    """Convert a float subgraph to an equivalent fused GenericFunction node.
 
     Args:
         op_graph (OPGraph): The OPGraph the float subgraph is part of.
@@ -110,7 +110,7 @@ def convert_float_subgraph_to_fused_node(
         subgraph_all_nodes (Set[IntermediateNode]): All the nodes in the float subgraph.
 
     Returns:
-        Optional[Tuple[UnivariateFunction, IntermediateNode]]: None if the float subgraph
+        Optional[Tuple[GenericFunction, IntermediateNode]]: None if the float subgraph
             cannot be fused, otherwise returns a tuple containing the fused node and the node whose
             output must be plugged as the input to the subgraph.
     """
@@ -123,7 +123,7 @@ def convert_float_subgraph_to_fused_node(
 
     if subgraph_can_be_fused:
         # subgraph_values_allow_fusing can be called iff the subgraph has a unique variable input
-        subgraph_can_be_fused = subgraph_values_allow_fusing(
+        subgraph_can_be_fused = subgraph_nodes_and_values_allow_fusing(
             float_subgraph_start_nodes, subgraph_all_nodes, node_with_issues_for_fusing
         )
 
@@ -193,12 +193,13 @@ def convert_float_subgraph_to_fused_node(
     assert_true(len(terminal_node.outputs) == 1)
 
     # Create fused_node
-    fused_node = UnivariateFunction(
+    fused_node = GenericFunction(
         deepcopy(new_subgraph_variable_input.inputs[0]),
         lambda x, float_op_subgraph, terminal_node: float_op_subgraph.evaluate({0: x})[
             terminal_node
         ],
-        deepcopy(terminal_node.outputs[0].dtype),
+        terminal_node.outputs[0],
+        op_kind="TLU",
         op_kwargs={
             "float_op_subgraph": float_op_subgraph,
             "terminal_node": terminal_node,
@@ -277,14 +278,14 @@ def find_float_subgraph_with_unique_terminal_node(
     return float_subgraph_start_nodes, terminal_node, subgraph_all_nodes
 
 
-def subgraph_values_allow_fusing(
+def subgraph_nodes_and_values_allow_fusing(
     float_subgraph_start_nodes: Set[IntermediateNode],
     subgraph_all_nodes: Set[IntermediateNode],
     node_with_issues_for_fusing: DefaultDict[IntermediateNode, List[str]],
 ) -> bool:
     """Check if a subgraph's values are compatible with fusing.
 
-    A fused subgraph for example only works on an input tensor if the resulting UnivariateFunction
+    A fused subgraph for example only works on an input tensor if the resulting GenericFunction
     can be applied per cell, hence shuffling or tensor shape changes make fusing impossible.
 
     Args:
@@ -298,22 +299,36 @@ def subgraph_values_allow_fusing(
             i.e. outputs have the same shapes equal to the variable input.
     """
 
+    node: IntermediateNode
+
     variable_input_nodes = [
         node for node in float_subgraph_start_nodes if not isinstance(node, Constant)
     ]
 
     assert_true(
         (num_variable_input_nodes := len(variable_input_nodes)) == 1,
-        f"{subgraph_values_allow_fusing.__name__} "
+        f"{subgraph_nodes_and_values_allow_fusing.__name__} "
         f"only works for subgraphs with 1 variable input node, got {num_variable_input_nodes}",
     )
 
-    # Some UnivariateFunction nodes have baked constants that need to be taken into account for the
+    explicitely_non_fusable = [
+        node
+        for node in subgraph_all_nodes
+        if isinstance(node, GenericFunction) and not node.op_attributes["fusable"]
+    ]
+    for node in explicitely_non_fusable:
+        node_with_issues_for_fusing[node].append(
+            "this node is explicitely marked by the package as non-fusable"
+        )
+    if len(explicitely_non_fusable) > 0:
+        return False
+
+    # Some GenericFunction nodes have baked constants that need to be taken into account for the
     # max size computation
     baked_constants_ir_nodes = [
         baked_constant_ir_node
         for node in subgraph_all_nodes
-        if isinstance(node, UnivariateFunction)
+        if isinstance(node, GenericFunction)
         if (baked_constant_ir_node := node.op_attributes.get("baked_constant_ir_node", None))
         is not None
     ]
@@ -332,7 +347,7 @@ def subgraph_values_allow_fusing(
 
     # A cheap check is that the variable input node must have the biggest size, i.e. have the most
     # elements, meaning all constants will broadcast to its shape. This is because the
-    # UnivariateFunction input and output must have the same shape so that it can be applied to each
+    # GenericFunction input and output must have the same shape so that it can be applied to each
     # of the input tensor cells.
     # There *may* be a way to manage the other case by simulating the broadcast of the smaller input
     # array and then concatenating/stacking the results. This is not currently doable as we don't
@@ -413,7 +428,7 @@ def subgraph_has_unique_variable_input(
     variable_inputs_num = len(variable_inputs_list)
 
     # Only one input to the subgraph where computations are done in floats can be variable, this
-    # is the only case we can manage with UnivariateFunction fusing
+    # is the only case we can manage with GenericFunction fusing
     has_unique_variable_input = variable_inputs_num == 1
 
     if not has_unique_variable_input:

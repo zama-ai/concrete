@@ -98,7 +98,7 @@ def _compile_numpy_function_into_op_graph_internal(
 
     # Apply topological optimizations if they are enabled
     if compilation_configuration.enable_topological_optimizations:
-        # Fuse float operations to have int to int UnivariateFunction
+        # Fuse float operations to have int to int GenericFunction
         if not check_op_graph_is_integer_program(op_graph):
             fuse_float_operations(op_graph, compilation_artifacts)
 

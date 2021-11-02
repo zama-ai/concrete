@@ -31,7 +31,7 @@ The float subgraph that was detected:
 
 ![](../../_static/float_fusing_example/subgraph.png)
 
-The simplified graph of operations with the float subgraph condensed in an `UnivariateFunction` node:
+The simplified graph of operations with the float subgraph condensed in an `GenericFunction` node:
 
 ![](../../_static/float_fusing_example/after.png)
 
@@ -39,7 +39,7 @@ The simplified graph of operations with the float subgraph condensed in an `Univ
 
 The first step consists in detecting where we go from floating point computation back to integers. This allows to identify the potential terminal node of the float subgraph we are going to fuse.
 
-From the terminal node, we go back up through the nodes until we find nodes that go from integers to floats. If we can guarantee the identified float subgraph has a single variable integer input then we can replace it by an equivalent UnivariateFunction node.
+From the terminal node, we go back up through the nodes until we find nodes that go from integers to floats. If we can guarantee the identified float subgraph has a single variable integer input then we can replace it by an equivalent GenericFunction node.
 
 An example of a non fusable computation with that technique is:
 

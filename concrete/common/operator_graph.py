@@ -190,7 +190,7 @@ class OPGraph:
             node_bounds_and_samples (dict): Dictionary with nodes as keys, holding dicts with a
                 'min', 'max' and 'sample' keys. Those bounds will be taken as the data range to be
                 represented, per node. The sample allows to determine the data constructors to
-                prepare the UnivariateFunction nodes for table generation.
+                prepare the GenericFunction nodes for table generation.
             get_base_data_type_for_constant_data (Callable[ [Any], BaseDataType ], optional): This
                 is a callback function to convert data encountered during value updates to
                 BaseDataType. This allows to manage data coming from foreign frameworks without

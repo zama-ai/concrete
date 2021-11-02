@@ -12,7 +12,6 @@ from ..representation.intermediate import (
     IndexConstant,
     Input,
     IntermediateNode,
-    UnivariateFunction,
 )
 
 
@@ -92,7 +91,7 @@ def get_printable_graph(
 
             base_name = node.__class__.__name__
 
-            if isinstance(node, (UnivariateFunction, GenericFunction)):
+            if isinstance(node, GenericFunction):
                 base_name = node.op_name
 
             what_to_print = base_name + "("
@@ -115,9 +114,9 @@ def get_printable_graph(
             prefix_to_add_to_what_to_print = ""
             suffix_to_add_to_what_to_print = ""
 
-            # Print constant that may be in the UnivariateFunction. For the moment, it considers
+            # Print constant that may be in the GenericFunction. For the moment, it considers
             # there is a single constant maximally and that there is 2 inputs maximally
-            if isinstance(node, UnivariateFunction) and "baked_constant" in node.op_kwargs:
+            if isinstance(node, GenericFunction) and "baked_constant" in node.op_kwargs:
                 baked_constant = node.op_kwargs["baked_constant"]
                 if node.op_attributes["in_which_input_is_constant"] == 0:
                     prefix_to_add_to_what_to_print = f"{shorten_a_constant(baked_constant)}, "

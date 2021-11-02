@@ -22,7 +22,6 @@ from concrete.common.representation.intermediate import (
     MatMul,
     Mul,
     Sub,
-    UnivariateFunction,
 )
 
 
@@ -111,13 +110,15 @@ def python_functions_are_equal_or_equivalent(lhs: object, rhs: object) -> bool:
         return False
 
 
-def is_equivalent_arbitrary_function(lhs: UnivariateFunction, rhs: object) -> bool:
-    """Helper function to check if an UnivariateFunction node is equivalent to an other object."""
+def is_equivalent_arbitrary_function(lhs: GenericFunction, rhs: object) -> bool:
+    """Helper function to check if an GenericFunction node is equivalent to an other object."""
     return (
-        isinstance(rhs, UnivariateFunction)
+        isinstance(rhs, GenericFunction)
         and python_functions_are_equal_or_equivalent(lhs.arbitrary_func, rhs.arbitrary_func)
+        and lhs.op_kind == rhs.op_kind
         and lhs.op_args == rhs.op_args
         and lhs.op_kwargs == rhs.op_kwargs
+        and lhs.op_attributes == rhs.op_attributes
         and lhs.op_name == rhs.op_name
         and is_equivalent_intermediate_node(lhs, rhs)
     )
@@ -186,7 +187,6 @@ def is_equivalent_intermediate_node(lhs: IntermediateNode, rhs: object) -> bool:
 
 EQUIVALENT_TEST_FUNC: Dict[Type, Callable[..., bool]] = {
     Add: is_equivalent_add,
-    UnivariateFunction: is_equivalent_arbitrary_function,
     GenericFunction: is_equivalent_arbitrary_function,
     Constant: is_equivalent_constant,
     Dot: is_equivalent_dot,

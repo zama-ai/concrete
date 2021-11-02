@@ -972,12 +972,13 @@ return(%1)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
-                "%1 = np.transpose(%0)                              # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 3)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.transpose is not supported for the time being\n"  # noqa: E501
-                "return(%1)\n"
+                """function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>
+%1 = np.transpose(%0)                              # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 3)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.transpose of kind Memory is not supported for the time being
+return(%1)
+"""  # noqa: E501
             ),
         ),
         pytest.param(
@@ -985,12 +986,13 @@ return(%1)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
-                "%1 = np.ravel(%0)                                  # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(6,)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.ravel is not supported for the time being\n"  # noqa: E501
-                "return(%1)\n"
+                """function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>
+%1 = np.ravel(%0)                                  # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(6,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.ravel of kind Memory is not supported for the time being
+return(%1)
+"""  # noqa: E501
             ),
         ),
         pytest.param(
@@ -998,12 +1000,13 @@ return(%1)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 4))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 4)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 4)>\n"  # noqa: E501
-                "%1 = np.reshape(%0)                                # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 6)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.reshape is not supported for the time being\n"  # noqa: E501
-                "return(%1)\n"
+                """function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 4)>
+%1 = np.reshape(%0)                                # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 6)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.reshape of kind Memory is not supported for the time being
+return(%1)
+"""  # noqa: E501
             ),
         ),
     ],

@@ -15,7 +15,7 @@ from ..debugging import get_printable_graph
 from ..debugging.custom_assert import assert_not_reached, assert_true
 from ..operator_graph import OPGraph
 from ..representation import intermediate
-from ..representation.intermediate import IntermediateNode, UnivariateFunction
+from ..representation.intermediate import GenericFunction, IntermediateNode
 
 # TODO: should come from compiler, through an API, #402
 ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
@@ -64,15 +64,17 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
         if not value_is_integer(outputs[0]):
             return "only integer constants are supported"  # pragma: no cover
 
-    elif isinstance(node, intermediate.UnivariateFunction):  # constraints for univariate functions
-        assert_true(len(inputs) == 1)
-        if node.op_name == "MultiTLU":
-            return "direct multi table lookup is not supported for the time being"
-        if not value_is_scalar(inputs[0]) or not value_is_unsigned_integer(inputs[0]):
-            return "only unsigned integer scalar lookup tables are supported"
-
-    elif isinstance(node, intermediate.GenericFunction):  # constraints for generic functions
-        return f"{node.op_name} is not supported for the time being"  # pragma: no cover
+    elif isinstance(node, intermediate.GenericFunction):  # constraints for univariate functions
+        if node.op_kind == "TLU":
+            assert_true(len(inputs) == 1)
+            if node.op_name == "MultiTLU":
+                return "direct multi table lookup is not supported for the time being"
+            if not value_is_scalar(inputs[0]) or not value_is_unsigned_integer(inputs[0]):
+                return "only unsigned integer scalar lookup tables are supported"
+        else:
+            return (
+                f"{node.op_name} of kind {node.op_kind.value} is not supported for the time being"
+            )
 
     elif isinstance(node, intermediate.Dot):  # constraints for dot product
         assert_true(len(inputs) == 2)
@@ -192,7 +194,7 @@ def extend_direct_lookup_tables(op_graph: OPGraph):
         op_graph: graph to update lookup tables for
     """
     for node in op_graph.graph.nodes:
-        if isinstance(node, UnivariateFunction) and node.op_name == "TLU":
+        if isinstance(node, GenericFunction) and node.op_name == "TLU":
             table = node.op_kwargs["table"]
             bit_width = cast(Integer, node.inputs[0].dtype).bit_width
             expected_length = 2 ** bit_width

@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from copy import deepcopy
+from enum import Enum, unique
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
 
 from loguru import logger
@@ -280,7 +281,15 @@ def flood_replace_none_values(table: list):
     assert_true(all(value is not None for value in table))
 
 
-class UnivariateFunction(IntermediateNode):
+@unique
+class GenericFunctionKind(str, Enum):
+    """Enum to validate GenericFunction op_kind."""
+
+    TLU = "TLU"
+    MEMORY = "Memory"
+
+
+class GenericFunction(IntermediateNode):
     """Node representing an univariate arbitrary function, e.g. sin(x)."""
 
     # The arbitrary_func is not optional but mypy has a long standing bug and is not able to
@@ -289,17 +298,23 @@ class UnivariateFunction(IntermediateNode):
     # be the first argument passed to it. You can add other constant arguments needed for the proper
     # execution of the function through op_args and op_kwargs.
     arbitrary_func: Optional[Callable]
+    op_kind: GenericFunctionKind
     op_name: str
     op_args: Tuple[Any, ...]
     op_kwargs: Dict[str, Any]
     op_attributes: Dict[str, Any]
     _n_in: int = 1
 
+    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/798 have a proper attribute
+    # system
+    DEFAULT_OP_ATTRIBUTES: Dict[str, Any] = {"fusable": True}
+
     def __init__(
         self,
         input_base_value: BaseValue,
         arbitrary_func: Callable,
-        output_dtype: BaseDataType,
+        output_value: BaseValue,
+        op_kind: Union[str, GenericFunctionKind],
         op_name: Optional[str] = None,
         op_args: Optional[Tuple[Any, ...]] = None,
         op_kwargs: Optional[Dict[str, Any]] = None,
@@ -308,13 +323,14 @@ class UnivariateFunction(IntermediateNode):
         super().__init__([input_base_value])
         assert_true(len(self.inputs) == 1)
         self.arbitrary_func = arbitrary_func
+        self.op_kind = GenericFunctionKind(op_kind)
         self.op_args = op_args if op_args is not None else ()
         self.op_kwargs = op_kwargs if op_kwargs is not None else {}
-        self.op_attributes = op_attributes if op_attributes is not None else {}
+        self.op_attributes = deepcopy(self.DEFAULT_OP_ATTRIBUTES)
+        if op_attributes is not None:
+            self.op_attributes.update(op_attributes)
 
-        output = deepcopy(input_base_value)
-        output.dtype = output_dtype
-        self.outputs = [output]
+        self.outputs = [deepcopy(output_value)]
 
         self.op_name = op_name if op_name is not None else self.__class__.__name__
 
@@ -327,9 +343,9 @@ class UnivariateFunction(IntermediateNode):
         return self.op_name
 
     def get_table(self) -> List[Any]:
-        """Get the table for the current input value of this UnivariateFunction.
+        """Get the table for the current input value of this GenericFunction.
 
-        This function only works if the UnivariateFunction input value is an unsigned Integer.
+        This function only works if the GenericFunction input value is an unsigned Integer.
 
         Returns:
             List[Any]: The table.
@@ -385,7 +401,7 @@ class Dot(IntermediateNode):
     """Return the node representing a dot product."""
 
     _n_in: int = 2
-    # Optional, same issue as in UnivariateFunction for mypy
+    # Optional, same issue as in GenericFunction for mypy
     evaluation_function: Optional[Callable[[Any, Any], Any]]
     # Allows to use specialized implementations from e.g. numpy
 
@@ -475,52 +491,3 @@ class MatMul(IntermediateNode):
 
     def label(self) -> str:
         return "@"
-
-
-class GenericFunction(IntermediateNode):
-    """Return the node representing a generic function."""
-
-    # The arbitrary_func is not optional but mypy has a long standing bug and is not able to
-    # understand this properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623
-    # arbitrary_func can take more than one argument but during evaluation the input variable will
-    # be the first argument passed to it. You can add other constant arguments needed for the proper
-    # execution of the function through op_args and op_kwargs.
-    arbitrary_func: Optional[Callable]
-    op_name: str
-    op_args: Tuple[Any, ...]
-    op_kwargs: Dict[str, Any]
-    op_attributes: Dict[str, Any]
-    _n_in: int = 1
-
-    def __init__(
-        self,
-        input_base_value: TensorValue,
-        arbitrary_func: Callable,
-        output_dtype: BaseDataType,
-        output_shape: Tuple,
-        op_name: Optional[str] = None,
-        op_args: Optional[Tuple[Any, ...]] = None,
-        op_kwargs: Optional[Dict[str, Any]] = None,
-        op_attributes: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        super().__init__([input_base_value])
-        assert_true(len(self.inputs) == 1)
-        self.arbitrary_func = arbitrary_func
-        self.op_args = op_args if op_args is not None else ()
-        self.op_kwargs = op_kwargs if op_kwargs is not None else {}
-        self.op_attributes = op_attributes if op_attributes is not None else {}
-
-        self.outputs = [
-            EncryptedTensor(output_dtype, output_shape)
-            if self.inputs[0].is_encrypted
-            else ClearTensor(output_dtype, output_shape)
-        ]
-        self.op_name = op_name if op_name is not None else self.__class__.__name__
-
-    def evaluate(self, inputs: Dict[int, Any]) -> Any:
-        # This is the continuation of the mypy bug workaround
-        assert self.arbitrary_func is not None
-        return self.arbitrary_func(inputs[0], *self.op_args, **self.op_kwargs)
-
-    def label(self) -> str:
-        return self.op_name

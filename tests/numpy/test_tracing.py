@@ -425,24 +425,24 @@ def test_trace_numpy_fails_for_invert(inputs, function_to_trace):
     [
         pytest.param(
             {"x": EncryptedScalar(Integer(7, is_signed=False))},
-            ir.UnivariateFunction,
+            ir.GenericFunction,
         ),
         pytest.param(
             {"x": EncryptedScalar(Integer(32, is_signed=True))},
-            ir.UnivariateFunction,
+            ir.GenericFunction,
         ),
         pytest.param(
             {"x": EncryptedScalar(Integer(64, is_signed=True))},
-            ir.UnivariateFunction,
+            ir.GenericFunction,
         ),
         pytest.param(
             {"x": EncryptedScalar(Integer(128, is_signed=True))},
-            ir.UnivariateFunction,
+            ir.GenericFunction,
             marks=pytest.mark.xfail(strict=True, raises=NotImplementedError),
         ),
         pytest.param(
             {"x": EncryptedScalar(Float(64))},
-            ir.UnivariateFunction,
+            ir.GenericFunction,
         ),
     ],
 )
