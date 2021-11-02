@@ -939,6 +939,20 @@ return(%7)
             ),
         ),
         pytest.param(
+            lambda x: x.matmul(numpy.ones(shape=(2, 3), dtype=numpy.uint32)),
+            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            (
+                "function you are trying to compile isn't supported for MLIR lowering\n"
+                "\n"
+                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
+                "%1 = Constant([[1 1 1] [1 1 1]])                   # ClearTensor<Integer<unsigned, 1 bits>, shape=(2, 3)>\n"  # noqa: E501
+                "%2 = MatMul(%0, %1)                                # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(3, 3)>\n"  # noqa: E501
+                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being\n"  # noqa: E501
+                "return(%2)\n"
+            ),
+        ),
+        pytest.param(
             multi_lut,
             {"x": EncryptedTensor(UnsignedInteger(2), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 2, size=(3, 2)),) for _ in range(32)],

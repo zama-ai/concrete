@@ -251,7 +251,7 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
-    def dot(self, *args: "NPTracer", **_kwargs) -> "NPTracer":
+    def numpy_dot(self, *args: "NPTracer", **_kwargs) -> "NPTracer":
         """Trace numpy.dot.
 
         Returns:
@@ -275,7 +275,27 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
+    def dot(self, *args: "NPTracer", **kwargs) -> "NPTracer":
+        """Trace x.dot.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        assert len(args) == 1
+        arg0 = self._sanitize(args[0])
+        assert_true(isinstance(arg0, NPTracer))
+        arg0 = cast(NPTracer, arg0)
+        return self.numpy_dot(self, arg0, **kwargs)
+
     def transpose(self, *args: "NPTracer", **kwargs) -> "NPTracer":
+        """Trace x.transpose.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self.numpy_transpose(self, *args, **kwargs)
+
+    def numpy_transpose(self, *args: "NPTracer", **kwargs) -> "NPTracer":
         """Trace numpy.transpose.
 
         Returns:
@@ -304,6 +324,14 @@ class NPTracer(BaseTracer):
         return output_tracer
 
     def ravel(self, *args: "NPTracer", **kwargs) -> "NPTracer":
+        """Trace x.ravel.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self.numpy_ravel(self, *args, **kwargs)
+
+    def numpy_ravel(self, *args: "NPTracer", **kwargs) -> "NPTracer":
         """Trace numpy.ravel.
 
         Returns:
@@ -331,7 +359,15 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
-    def reshape(self, arg0: "NPTracer", arg1: Tuple[Any, ...], **kwargs) -> "NPTracer":
+    def reshape(self, arg1: Tuple[Any, ...], **kwargs) -> "NPTracer":
+        """Trace x.reshape.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self.numpy_reshape(self, arg1, **kwargs)
+
+    def numpy_reshape(self, arg0: "NPTracer", arg1: Tuple[Any, ...], **kwargs) -> "NPTracer":
         """Trace numpy.reshape.
 
         Returns:
@@ -388,6 +424,11 @@ class NPTracer(BaseTracer):
         return BaseTracer.__getitem__(self, item)
 
     def __matmul__(self, other):
+        """Trace numpy.matmul."""
+        return self.__array_ufunc__(numpy.matmul, "__call__", self, other)
+
+    def matmul(self, other):
+        """Trace x.matmul."""
         return self.__array_ufunc__(numpy.matmul, "__call__", self, other)
 
     # Supported functions are either univariate or bivariate for which one of the two
@@ -490,10 +531,10 @@ class NPTracer(BaseTracer):
     UFUNC_ROUTING: Dict[numpy.ufunc, Callable] = {}
 
     FUNC_ROUTING: Dict[Callable, Callable] = {
-        numpy.dot: dot,
-        numpy.transpose: transpose,
-        numpy.reshape: reshape,
-        numpy.ravel: ravel,
+        numpy.dot: numpy_dot,
+        numpy.transpose: numpy_transpose,
+        numpy.reshape: numpy_reshape,
+        numpy.ravel: numpy_ravel,
     }
 
 

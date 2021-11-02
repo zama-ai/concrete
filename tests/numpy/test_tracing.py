@@ -557,6 +557,14 @@ def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
             ir.Dot,
             EncryptedScalar(Integer(64, True)),
         ),
+        pytest.param(
+            lambda x: x.dot(numpy.array([1, 2, 3, 4, 5], dtype=numpy.int64)),
+            {
+                "x": EncryptedTensor(Integer(64, is_signed=True), shape=(5,)),
+            },
+            ir.Dot,
+            EncryptedScalar(Integer(64, True)),
+        ),
     ],
 )
 def test_trace_numpy_dot(function_to_trace, inputs, expected_output_node, expected_output_value):
@@ -613,6 +621,7 @@ def test_nptracer_unsupported_operands(operation, tracer):
 @pytest.mark.parametrize(
     "function_to_trace,input_value,input_and_expected_output_tuples",
     [
+        # Indirect calls, like numpy.function(x, ...)
         (
             lambda x: numpy.transpose(x),
             EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
@@ -638,6 +647,29 @@ def test_nptracer_unsupported_operands(operation, tracer):
         ),
         (
             lambda x: numpy.reshape(x, (5, 3)) + 42,
+            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+            [
+                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(5, 3)),
+            ],
+        ),
+        # Direct calls, like x.function(...)
+        (
+            lambda x: x.transpose() + 42,
+            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+            [
+                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(3, 5).transpose()),
+            ],
+        ),
+        (
+            lambda x: x.ravel(),
+            EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+            [
+                (numpy.arange(4), numpy.array([0, 1, 2, 3])),
+                (numpy.arange(4).reshape(2, 2), numpy.array([0, 1, 2, 3])),
+            ],
+        ),
+        (
+            lambda x: x.reshape((5, 3)) + 42,
             EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
             [
                 (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(5, 3)),
