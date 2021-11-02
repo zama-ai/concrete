@@ -46,6 +46,15 @@ declare_mlir_dialect_python_bindings(
     zamalang/dialects/hlfhe.py
 	DIALECT_NAME HLFHE)
 
+declare_mlir_dialect_python_bindings(
+  ADD_TO_PARENT ZamalangBindingsPythonSources.Dialects
+  ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+  ZAMALANGBindingsPythonHLFHELinalgOps
+  TD_FILE zamalang/dialects/HLFHELinalgOps.td
+  SOURCES
+    zamalang/dialects/hlfhelinalg.py
+  DIALECT_NAME HLFHELinalg)
+
 
 ################################################################################
 # Build composite binaries
