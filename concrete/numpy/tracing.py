@@ -104,8 +104,9 @@ class NPTracer(BaseTracer):
         output_dtype = convert_numpy_dtype_to_base_data_type(numpy_dtype)
         traced_computation = UnivariateFunction(
             input_base_value=self.output,
-            arbitrary_func=normalized_numpy_dtype.type,
+            arbitrary_func=lambda x, dtype: x.astype(dtype),
             output_dtype=output_dtype,
+            op_kwargs={"dtype": normalized_numpy_dtype.type},
             op_name=f"astype({normalized_numpy_dtype})",
         )
         output_tracer = self.__class__([self], traced_computation=traced_computation, output_idx=0)

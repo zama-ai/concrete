@@ -473,7 +473,7 @@ def test_compile_function_multiple_outputs(
 
     def data_gen(args):
         for prod in itertools.product(*args):
-            yield prod
+            yield tuple(numpy.array(val) for val in prod)
 
     function_parameters = {
         arg_name: EncryptedScalar(Integer(64, True)) for arg_name in list_of_arg_names
@@ -888,7 +888,7 @@ return(%1)
         pytest.param(
             no_fuse_unhandled,
             {"x": EncryptedScalar(Integer(2, False)), "y": EncryptedScalar(Integer(2, False))},
-            [(i, i) for i in range(10)],
+            [(numpy.array(i), numpy.array(i)) for i in range(10)],
             (
                 """
 function you are trying to compile isn't supported for MLIR lowering\n

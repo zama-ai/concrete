@@ -377,8 +377,20 @@ def test_tracing_astype(
 
         node_results = op_graph.evaluate({0: numpy.array(input_)})
         evaluated_output = node_results[output_node]
-        assert isinstance(evaluated_output, type(expected_output))
+        assert evaluated_output.dtype == expected_output.dtype
         assert expected_output == evaluated_output
+
+
+def test_tracing_astype_single_element_array_corner_case():
+    """Test corner case where an array could be transformed to its scalar element"""
+    a = numpy.array([1], dtype=numpy.float64)
+
+    op_graph = tracing.trace_numpy_function(
+        lambda x: x.astype(numpy.int32), {"x": EncryptedTensor(Float(64), (1,))}
+    )
+
+    eval_result = op_graph(a)
+    assert numpy.array_equal(numpy.array([1], dtype=numpy.int32), eval_result)
 
 
 @pytest.mark.parametrize(
