@@ -16,7 +16,7 @@ from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
     convert_numpy_dtype_to_base_data_type,
     get_base_value_for_numpy_or_python_constant_data,
-    get_numpy_function_output_dtype_from_input_tracers,
+    get_numpy_function_output_dtype_and_shape_from_input_tracers,
 )
 from .np_indexing_helpers import process_indexing_element
 
@@ -161,14 +161,19 @@ class NPTracer(BaseTracer):
             NPTracer: The output NPTracer containing the traced function
         """
         assert_true(len(input_tracers) == 1)
-        common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(
-            unary_operator,
-            *input_tracers,
+        common_output_dtypes_and_shapes = (
+            get_numpy_function_output_dtype_and_shape_from_input_tracers(
+                unary_operator,
+                *input_tracers,
+            )
         )
-        assert_true(len(common_output_dtypes) == 1)
+        assert_true(len(common_output_dtypes_and_shapes) == 1)
 
-        generic_function_output_value = deepcopy(input_tracers[0].output)
-        generic_function_output_value.dtype = common_output_dtypes[0]
+        output_dtype, output_shape = common_output_dtypes_and_shapes[0]
+
+        generic_function_output_value = TensorValue(
+            output_dtype, input_tracers[0].output.is_encrypted, output_shape
+        )
 
         traced_computation = GenericFunction(
             inputs=[deepcopy(input_tracers[0].output)],
@@ -201,58 +206,40 @@ class NPTracer(BaseTracer):
         # One of the inputs has to be constant
         if isinstance(input_tracers[0].traced_computation, Constant):
             in_which_input_is_constant = 0
-            baked_constant = deepcopy(input_tracers[0].traced_computation.constant_data)
         elif isinstance(input_tracers[1].traced_computation, Constant):
             in_which_input_is_constant = 1
-            baked_constant = deepcopy(input_tracers[1].traced_computation.constant_data)
         else:
             raise NotImplementedError(f"Can't manage binary operator {binary_operator}")
 
         in_which_input_is_variable = 1 - in_which_input_is_constant
-
-        if in_which_input_is_constant == 0:
-
-            def arbitrary_func(x, baked_constant, **kwargs):
-                return binary_operator(baked_constant, x, **kwargs)
-
-        else:
-
-            def arbitrary_func(x, baked_constant, **kwargs):
-                return binary_operator(x, baked_constant, **kwargs)
-
-        common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(
-            binary_operator,
-            *input_tracers,
+        common_output_dtypes_and_shapes = (
+            get_numpy_function_output_dtype_and_shape_from_input_tracers(
+                binary_operator,
+                *input_tracers,
+            )
         )
-        assert_true(len(common_output_dtypes) == 1)
+        assert_true(len(common_output_dtypes_and_shapes) == 1)
+
+        output_dtype, output_shape = common_output_dtypes_and_shapes[0]
+
+        generic_function_output_value = TensorValue(
+            output_dtype,
+            input_tracers[in_which_input_is_variable].output.is_encrypted,
+            output_shape,
+        )
 
         op_kwargs = deepcopy(kwargs)
-        op_kwargs["baked_constant"] = baked_constant
-        # Store info on the operation being treated
-        # Currently: the base value and type corresponding to the baked constant and which input idx
-        # it was feeding
-        op_attributes = {
-            "baked_constant_ir_node": deepcopy(
-                input_tracers[in_which_input_is_constant].traced_computation
-            ),
-            "in_which_input_is_constant": in_which_input_is_constant,
-        }
 
-        generic_function_output_value = deepcopy(input_tracers[in_which_input_is_variable].output)
-        generic_function_output_value.dtype = common_output_dtypes[0]
-
-        # TODO: update inputs for #600 refactor
         traced_computation = GenericFunction(
-            inputs=[deepcopy(input_tracers[in_which_input_is_variable].output)],
-            arbitrary_func=arbitrary_func,
+            inputs=[deepcopy(input_tracer.output) for input_tracer in input_tracers],
+            arbitrary_func=binary_operator,
             output_value=generic_function_output_value,
             op_kind="TLU",
             op_kwargs=op_kwargs,
             op_name=binary_operator_string,
-            op_attributes=op_attributes,
         )
         output_tracer = cls(
-            (input_tracers[in_which_input_is_variable],),
+            input_tracers,
             traced_computation=traced_computation,
             output_idx=0,
         )
@@ -266,12 +253,14 @@ class NPTracer(BaseTracer):
         """
         assert_true((num_args := len(args)) == 2, f"dot expects 2 inputs got {num_args}")
 
-        common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(numpy.dot, *args)
-        assert_true(len(common_output_dtypes) == 1)
+        common_output_dtypes_and_shapes = (
+            get_numpy_function_output_dtype_and_shape_from_input_tracers(numpy.dot, *args)
+        )
+        assert_true(len(common_output_dtypes_and_shapes) == 1)
 
         traced_computation = Dot(
             [input_tracer.output for input_tracer in args],
-            common_output_dtypes[0],
+            common_output_dtypes_and_shapes[0][0],
             delegate_evaluation_function=numpy.dot,
         )
 
@@ -638,14 +627,14 @@ def _on_numpy_multiply(lhs, rhs):
 
 
 def _on_numpy_matmul(lhs, rhs):
-    common_output_dtypes = get_numpy_function_output_dtype_from_input_tracers(
+    common_output_dtypes_and_shapes = get_numpy_function_output_dtype_and_shape_from_input_tracers(
         numpy.matmul, lhs, rhs
     )
-    assert_true(len(common_output_dtypes) == 1)
+    assert_true(len(common_output_dtypes_and_shapes) == 1)
 
     traced_computation = MatMul(
         [lhs.output, rhs.output],
-        common_output_dtypes[0],
+        common_output_dtypes_and_shapes[0][0],
     )
     return NPTracer([lhs, rhs], traced_computation, output_idx=0)
 

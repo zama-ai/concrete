@@ -323,20 +323,10 @@ def subgraph_nodes_and_values_allow_fusing(
     if len(explicitely_non_fusable) > 0:
         return False
 
-    # Some GenericFunction nodes have baked constants that need to be taken into account for the
-    # max size computation
-    baked_constants_ir_nodes = [
-        baked_constant_ir_node
-        for node in subgraph_all_nodes
-        if isinstance(node, GenericFunction)
-        if (baked_constant_ir_node := node.op_attributes.get("baked_constant_ir_node", None))
-        is not None
-    ]
-
     all_values_are_tensors = all(
         all(isinstance(input_, TensorValue) for input_ in node.inputs)
         and all(isinstance(output, TensorValue) for output in node.outputs)
-        for node in itertools.chain(subgraph_all_nodes, baked_constants_ir_nodes)
+        for node in subgraph_all_nodes
     )
 
     if not all_values_are_tensors:
@@ -360,8 +350,14 @@ def subgraph_nodes_and_values_allow_fusing(
         variable_input_node_output.shape,
     )
     max_inputs_size = max(
-        cast(TensorValue, input_node.outputs[0]).size
-        for input_node in itertools.chain(subgraph_all_nodes, baked_constants_ir_nodes)
+        itertools.chain(
+            (variable_input_node_output_size,),
+            (
+                cast(TensorValue, constant_input_node.outputs[0]).size
+                for constant_input_node in subgraph_all_nodes
+                if isinstance(constant_input_node, Constant)
+            ),
+        )
     )
 
     if variable_input_node_output_size < max_inputs_size:

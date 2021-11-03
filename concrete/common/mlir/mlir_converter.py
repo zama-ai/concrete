@@ -171,14 +171,7 @@ class MLIRConverter(ABC):
                                 f"we don't yet support conversion to MLIR of computations using"
                                 f"{type(node)}"
                             )
-                        # get sorted preds: sorted by their input index
-                        # replication of pred is possible (e.g lambda x: x + x)
-                        idx_to_pred = {}
-                        for pred in op_graph.graph.pred[node]:
-                            edge_data = op_graph.graph.get_edge_data(pred, node)
-                            for data in edge_data.values():
-                                idx_to_pred[data["input_idx"]] = pred
-                        preds = [idx_to_pred[i] for i in range(len(idx_to_pred))]
+                        preds = op_graph.get_ordered_preds(node)
                         # convert to mlir
                         result = mlir_op(
                             node,

@@ -57,7 +57,9 @@ def test_generate_deduplicated_tables(
 
     tlu_node = univariate_function_nodes[0]
 
-    deduplication_result = generate_deduplicated_tables(tlu_node)
+    deduplication_result = generate_deduplicated_tables(
+        tlu_node, op_graph.get_ordered_preds(tlu_node)
+    )
 
     assert len(deduplication_result) == expected_number_of_tables
 
@@ -82,7 +84,9 @@ def test_deduplicated_tables_correctness(default_compilation_configuration):
 
     tlu_node = univariate_function_nodes[0]
 
-    deduplication_result = generate_deduplicated_tables(tlu_node)
+    deduplication_result = generate_deduplicated_tables(
+        tlu_node, op_graph.get_ordered_preds(tlu_node)
+    )
 
     expected_result = tuple(
         (

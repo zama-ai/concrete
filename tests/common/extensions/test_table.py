@@ -45,7 +45,9 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     x = EncryptedScalar(Integer(2, is_signed=False))
     op_graph = tracing.trace_numpy_function(f, {"x": x})
 
-    assert op_graph.output_nodes[0].get_table() == [3, 6, 0, 2]
+    table_node = op_graph.output_nodes[0]
+
+    assert table_node.get_table(op_graph.get_ordered_preds(table_node)) == [3, 6, 0, 2]
 
     ref_graph = nx.MultiDiGraph()
     # Here is the ASCII drawing of the expected graph:

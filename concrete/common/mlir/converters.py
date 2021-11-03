@@ -9,7 +9,7 @@ Converter functions all have the same signature `converter(node, preds, ir_to_ml
 from typing import cast
 
 # pylint: disable=no-name-in-module,no-member
-import numpy as np
+import numpy
 from mlir.dialects import arith as arith_dialect
 from mlir.ir import Attribute, DenseElementsAttr, IntegerAttr, IntegerType, RankedTensorType
 from zamalang.dialects import hlfhe
@@ -163,12 +163,24 @@ def constant(node, _preds, _ir_to_mlir_node, ctx, _additional_conversion_info=No
 
 def apply_lut(node, preds, ir_to_mlir_node, ctx, additional_conversion_info):
     """Convert a GenericFunction intermediate node."""
-    assert_true(len(node.inputs) == 1, "LUT should have a single input")
+
+    variable_input_indices = [
+        idx for idx, pred in enumerate(preds) if not isinstance(pred, Constant)
+    ]
+
+    assert_true(
+        (non_constant_pred_count := len(variable_input_indices)) == 1,
+        f"LUT should have a single variable input (got {non_constant_pred_count})",
+    )
+
+    variable_input_idx = variable_input_indices[0]
+    variable_input_value = node.inputs[variable_input_idx]
+
     assert_true(len(node.outputs) == 1, "LUT should have a single output")
-    if not value_is_encrypted_scalar_unsigned_integer(node.inputs[0]):
+    if not value_is_encrypted_scalar_unsigned_integer(variable_input_value):
         raise TypeError(
             f"Only support LUT with encrypted unsigned integers inputs "
-            f"(but {node.inputs[0]} is provided)"
+            f"(but {variable_input_value} is provided)"
         )
     if not value_is_encrypted_scalar_unsigned_integer(node.outputs[0]):
         raise TypeError(
@@ -176,7 +188,7 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx, additional_conversion_info):
             f"(but {node.outputs[0]} is provided)"
         )
 
-    x_node = preds[0]
+    x_node = preds[variable_input_idx]
     x = ir_to_mlir_node[x_node]
     tables = additional_conversion_info["tables"][node]
 
@@ -192,7 +204,7 @@ def apply_lut(node, preds, ir_to_mlir_node, ctx, additional_conversion_info):
 
     out_dtype = cast(Integer, node.outputs[0].dtype)
     # Create table
-    dense_elem = DenseElementsAttr.get(np.array(table, dtype=np.uint64), context=ctx)
+    dense_elem = DenseElementsAttr.get(numpy.array(table, dtype=numpy.uint64), context=ctx)
     tensor_lut = arith_dialect.ConstantOp(
         RankedTensorType.get([len(table)], IntegerType.get_signless(64, context=ctx)),
         dense_elem,

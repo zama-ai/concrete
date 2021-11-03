@@ -1,6 +1,8 @@
 """Utilities for MLIR conversion."""
 from typing import Dict, List, Optional, cast
 
+import networkx as nx
+
 from ..data_types import Integer
 from ..data_types.dtypes_helpers import (
     value_is_clear_scalar_integer,
@@ -21,11 +23,16 @@ from ..representation.intermediate import GenericFunction, IntermediateNode
 ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
 
 
-def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) -> Optional[str]:
+def check_node_compatibility_with_mlir(
+    node: IntermediateNode,
+    nx_graph: nx.MultiDiGraph,
+    is_output: bool,
+) -> Optional[str]:
     """Check if node is compatible with MLIR.
 
     Args:
         node (IntermediateNode): node to check
+        nx_graph (nx.MultiDiGraph): the networkx graph to which node belongs
         is_output (bool): whether the node is an output node or not
 
     Returns:
@@ -66,7 +73,16 @@ def check_node_compatibility_with_mlir(node: IntermediateNode, is_output: bool) 
 
     elif isinstance(node, intermediate.GenericFunction):  # constraints for univariate functions
         if node.op_kind == "TLU":
-            assert_true(len(inputs) == 1)
+            assert_true(
+                len(
+                    [
+                        pred_node
+                        for pred_node in nx_graph.pred[node]
+                        if not isinstance(pred_node, intermediate.Constant)
+                    ]
+                )
+                == 1
+            )
             if node.op_name == "MultiTLU":
                 return "direct multi table lookup is not supported for the time being"
             if not value_is_scalar(inputs[0]) or not value_is_unsigned_integer(inputs[0]):
@@ -124,7 +140,9 @@ def check_graph_values_compatibility_with_mlir(
 
     for node in op_graph.graph.nodes:
         is_output = node in op_graph.output_nodes.values()
-        if (reason := check_node_compatibility_with_mlir(node, is_output)) is not None:
+        if (
+            reason := check_node_compatibility_with_mlir(node, op_graph.graph, is_output)
+        ) is not None:
             offending_nodes[node] = [reason]
 
     return None if len(offending_nodes) == 0 else offending_nodes

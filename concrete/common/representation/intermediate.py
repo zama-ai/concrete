@@ -322,7 +322,6 @@ class GenericFunction(IntermediateNode):
     ) -> None:
         super().__init__(inputs)
         self._n_in = len(self.inputs)
-        assert_true(self._n_in == 1)  # TODO: remove in later parts of refactoring of #600
         self.arbitrary_func = arbitrary_func
         self.op_kind = GenericFunctionKind(op_kind)
         self.op_args = op_args if op_args is not None else ()
@@ -344,22 +343,42 @@ class GenericFunction(IntermediateNode):
     def label(self) -> str:
         return self.op_name
 
-    def get_table(self) -> List[Any]:
+    def get_table(self, ordered_preds: List[IntermediateNode]) -> List[Any]:
         """Get the table for the current input value of this GenericFunction.
 
-        This function only works if the GenericFunction input value is an unsigned Integer.
+        This function only works if the GenericFunction variable input value is an unsigned Integer.
+        It only works if there is a single variable input node among ordered_preds.
+
+        Args:
+            ordered_preds (List[IntermediateNode]): List of predecessors of the node. This list must
+                contain a single non constant node and any number of Constant nodes.
 
         Returns:
             List[Any]: The table.
         """
 
-        input_dtype = self.inputs[0].dtype
+        variable_input_indices = [
+            idx for idx, pred in enumerate(ordered_preds) if not isinstance(pred, Constant)
+        ]
+
+        assert_true(
+            (non_constant_pred_count := len(variable_input_indices)) == 1,
+            f"Can only have 1 non constant predecessor in {self.get_table.__name__}, "
+            f"got {non_constant_pred_count}",
+        )
+
+        variable_input_idx = variable_input_indices[0]
+        variable_input_dtype = self.inputs[variable_input_idx].dtype
         # Check the input is an unsigned integer to be able to build a table
         assert_true(
-            isinstance(input_dtype, Integer), "get_table only works for an unsigned Integer input"
+            isinstance(variable_input_dtype, Integer),
+            f"{self.get_table.__name__} only works for an unsigned Integer input",
         )
-        input_dtype = cast(Integer, input_dtype)
-        assert_true(not input_dtype.is_signed, "get_table only works for an unsigned Integer input")
+        variable_input_dtype = cast(Integer, variable_input_dtype)
+        assert_true(
+            not variable_input_dtype.is_signed,
+            f"{self.get_table.__name__} only works for an unsigned Integer input",
+        )
 
         input_value_constructor = self.inputs[0].underlying_constructor
         if input_value_constructor is None:
@@ -368,8 +387,8 @@ class GenericFunction(IntermediateNode):
             )
             input_value_constructor = int
 
-        min_input_range = input_dtype.min_value()
-        max_input_range = input_dtype.max_value() + 1
+        min_input_range = variable_input_dtype.min_value()
+        max_input_range = variable_input_dtype.max_value() + 1
 
         def catch(func, *args, **kwargs):
             try:
@@ -378,8 +397,22 @@ class GenericFunction(IntermediateNode):
             except Exception:  # pragma: no cover # pylint: disable=broad-except
                 return None
 
+        template_input_dict = {
+            idx: node.evaluate({}) if isinstance(node, Constant) else None
+            for idx, node in enumerate(ordered_preds)
+        }
+
+        def update_and_return_dict(dict_to_update: dict, update_values):
+            dict_to_update.update(update_values)
+            return dict_to_update
+
         table = [
-            catch(self.evaluate, {0: input_value_constructor(input_value)})
+            catch(
+                self.evaluate,
+                update_and_return_dict(
+                    template_input_dict, {variable_input_idx: input_value_constructor(input_value)}
+                ),
+            )
             for input_value in range(min_input_range, max_input_range)
         ]
 

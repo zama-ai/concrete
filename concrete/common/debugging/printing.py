@@ -114,19 +114,6 @@ def get_printable_graph(
             prefix_to_add_to_what_to_print = ""
             suffix_to_add_to_what_to_print = ""
 
-            # Print constant that may be in the GenericFunction. For the moment, it considers
-            # there is a single constant maximally and that there is 2 inputs maximally
-            if isinstance(node, GenericFunction) and "baked_constant" in node.op_kwargs:
-                baked_constant = node.op_kwargs["baked_constant"]
-                if node.op_attributes["in_which_input_is_constant"] == 0:
-                    prefix_to_add_to_what_to_print = f"{shorten_a_constant(baked_constant)}, "
-                else:
-                    assert_true(
-                        node.op_attributes["in_which_input_is_constant"] == 1,
-                        "'in_which_input_is_constant' should be a key of node.op_attributes",
-                    )
-                    suffix_to_add_to_what_to_print = f", {shorten_a_constant(baked_constant)}"
-
             # Then, just print the predecessors in the right order
             what_to_print += prefix_to_add_to_what_to_print
             what_to_print += ", ".join(["%" + x[1] for x in list_of_arg_name])

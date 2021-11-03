@@ -10,7 +10,7 @@ import numpy
 from ..common.debugging import assert_true
 from ..common.mlir.mlir_converter import MLIRConverter
 from ..common.operator_graph import OPGraph
-from ..common.representation.intermediate import GenericFunction
+from ..common.representation.intermediate import GenericFunction, IntermediateNode
 
 
 class HashableNPArray:
@@ -33,12 +33,13 @@ class HashableNPArray:
 
 
 def generate_deduplicated_tables(
-    node: GenericFunction,
+    node: GenericFunction, ordered_preds: List[IntermediateNode]
 ) -> Tuple[Tuple[numpy.ndarray, List[Tuple[int, ...]]], ...]:
     """Deduplicate the tables for the different cells of a tensor if needed.
 
     Args:
-        node (GenericFunction): the node for which to deduplicate the table
+        node (GenericFunction): the node for which to deduplicate the table.
+        ordered_preds (List[IntermediateNode]): ordered list of predecessors of the node.
 
     Returns:
         Tuple[Tuple[numpy.ndarray, List[Tuple[int, ...]]], ...]: A tuple containing tuples whose
@@ -47,7 +48,7 @@ def generate_deduplicated_tables(
     """
     # This is the tensor containing the tables for each cell of the tensor for node
     node_complete_table = numpy.concatenate(
-        tuple(numpy.expand_dims(array, -1) for array in node.get_table()), axis=-1
+        tuple(numpy.expand_dims(array, -1) for array in node.get_table(ordered_preds)), axis=-1
     )
 
     all_cells_idx = product(*tuple(range(max_val) for max_val in node_complete_table.shape[:-1]))
@@ -85,7 +86,7 @@ class NPMLIRConverter(MLIRConverter):
         # Disable numpy warnings during conversion to avoid issues during TLU generation
         with numpy.errstate(all="ignore"):
             additional_conversion_info["tables"] = {
-                node: generate_deduplicated_tables(node)
+                node: generate_deduplicated_tables(node, op_graph.get_ordered_preds(node))
                 for node in op_graph.graph.nodes()
                 if isinstance(node, GenericFunction)
             }

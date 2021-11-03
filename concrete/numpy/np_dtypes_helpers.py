@@ -183,11 +183,11 @@ def get_base_value_for_numpy_or_python_constant_data(
     return constant_data_value
 
 
-def get_numpy_function_output_dtype_from_input_dtypes(
+def get_numpy_function_output_dtype_and_shape_from_input_dtypes(
     function: Union[numpy.ufunc, Callable],
     input_dtypes: List[BaseDataType],
     input_shapes: List[Tuple[int, ...]],
-) -> List[numpy.dtype]:
+) -> List[Tuple[numpy.dtype, Tuple[int, ...]]]:
     """Record the output dtype of a numpy function given some input types.
 
     Args:
@@ -199,7 +199,8 @@ def get_numpy_function_output_dtype_from_input_dtypes(
             the function inputs
 
     Returns:
-        List[numpy.dtype]: The ordered numpy dtypes of the function outputs
+        List[Tuple[numpy.dtype, Tuple[int, ...]]]: appropriate (numpy.dtype, shape) tuple for each
+            output of the function
     """
     if isinstance(function, numpy.ufunc):
         assert_true(
@@ -226,14 +227,14 @@ def get_numpy_function_output_dtype_from_input_dtypes(
     if not isinstance(outputs, tuple):
         outputs = (outputs,)
 
-    return [output.dtype for output in outputs]
+    return [(output.dtype, output.shape) for output in outputs]
 
 
-def get_numpy_function_output_dtype_from_input_tracers(
+def get_numpy_function_output_dtype_and_shape_from_input_tracers(
     func: Union[numpy.ufunc, Callable],
     *input_tracers: BaseTracer,
-) -> List[BaseDataType]:
-    """Determine output dtypes for a numpy function.
+) -> List[Tuple[BaseDataType, Tuple[int, ...]]]:
+    """Determine output dtypes and shapes for a numpy function.
 
     This function is responsible for determining the output dtype
     of a numpy function after inputs with specific dtypes are passed to it.
@@ -243,19 +244,23 @@ def get_numpy_function_output_dtype_from_input_tracers(
         *input_tracers (BaseTracer): inputs to the function
 
     Returns:
-        List[numpy.dtype]: appropriate BaseDataType for each output of the function
+        List[Tuple[BaseDataType, Tuple[int, ...]]]: appropriate (BaseDataType, shape) tuple for each
+            output of the function
     """
 
     input_shapes = [
         input_tracer.output.shape if isinstance(input_tracer.output, TensorValue) else ()
         for input_tracer in input_tracers
     ]
-    output_dtypes = get_numpy_function_output_dtype_from_input_dtypes(
+    output_dtypes_and_shapes = get_numpy_function_output_dtype_and_shape_from_input_dtypes(
         func,
         [input_tracer.output.dtype for input_tracer in input_tracers],
         input_shapes,
     )
-    common_output_dtypes = [convert_numpy_dtype_to_base_data_type(dtype) for dtype in output_dtypes]
+    common_output_dtypes = [
+        (convert_numpy_dtype_to_base_data_type(dtype), shape)
+        for dtype, shape in output_dtypes_and_shapes
+    ]
     return common_output_dtypes
 
 

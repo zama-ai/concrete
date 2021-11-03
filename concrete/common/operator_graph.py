@@ -115,6 +115,22 @@ class OPGraph:
         """
         return [self.output_nodes[idx] for idx in range(len(self.output_nodes))]
 
+    def get_ordered_preds(self, node: IntermediateNode) -> List[IntermediateNode]:
+        """Get node predecessors ordered by their indices.
+
+        Args:
+            node (IntermediateNode): The node for which we want the ordered predecessors.
+
+        Returns:
+            List[IntermediateNode]: The list of predecessors ordered by input index.
+        """
+        # Replication of pred is managed e.g. x + x will yield the proper pred x twice
+        idx_to_pred: Dict[int, IntermediateNode] = {}
+        for pred in self.graph.pred[node]:
+            edge_data = self.graph.get_edge_data(pred, node)
+            idx_to_pred.update((data["input_idx"], pred) for data in edge_data.values())
+        return [idx_to_pred[i] for i in range(len(idx_to_pred))]
+
     def evaluate(self, inputs: Dict[int, Any]) -> Dict[IntermediateNode, Any]:
         """Evaluate a graph and get intermediate values for all nodes.
 
