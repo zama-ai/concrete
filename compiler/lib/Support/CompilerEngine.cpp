@@ -150,11 +150,15 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
 // on the target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
+  std::string diagnosticsMsg;
+  llvm::raw_string_ostream diagnosticsOS(diagnosticsMsg);
+
   CompilationResult res(this->compilationContext);
 
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
 
-  mlir::SourceMgrDiagnosticVerifierHandler smHandler(sm, &mlirContext);
+  mlir::SourceMgrDiagnosticVerifierHandler smHandler(sm, &mlirContext,
+                                                     diagnosticsOS);
   mlirContext.printOpOnDiagnostic(false);
 
   mlir::OwningModuleRef mlirModuleRef =
@@ -167,8 +171,11 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
       return res;
   }
 
-  if (!mlirModuleRef)
-    return StreamStringError("Could not parse source");
+  if (!mlirModuleRef) {
+    diagnosticsOS.flush();
+    return StreamStringError("Could not parse source")
+           << (diagnosticsMsg.empty() ? "" : ": ") << diagnosticsMsg;
+  }
 
   res.mlirModuleRef = std::move(mlirModuleRef);
   mlir::ModuleOp module = res.mlirModuleRef->get();
