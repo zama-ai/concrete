@@ -7,11 +7,11 @@ import numpy
 from numpy.typing import DTypeLike
 
 from ..common.data_types.dtypes_helpers import mix_values_determine_holding_dtype
-from ..common.debugging.custom_assert import assert_false, assert_true
+from ..common.debugging.custom_assert import assert_true
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import Constant, Dot, GenericFunction, MatMul
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
-from ..common.values import BaseValue, ClearTensor, EncryptedTensor, TensorValue
+from ..common.values import BaseValue, TensorValue
 from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
     convert_numpy_dtype_to_base_data_type,
@@ -99,7 +99,7 @@ class NPTracer(BaseTracer):
         generic_function_output_value = deepcopy(self.output)
         generic_function_output_value.dtype = output_dtype
         traced_computation = GenericFunction(
-            input_base_value=self.output,
+            inputs=[deepcopy(self.output)],
             arbitrary_func=lambda x, dtype: x.astype(dtype),
             output_value=generic_function_output_value,
             op_kind="TLU",
@@ -171,7 +171,7 @@ class NPTracer(BaseTracer):
         generic_function_output_value.dtype = common_output_dtypes[0]
 
         traced_computation = GenericFunction(
-            input_base_value=input_tracers[0].output,
+            inputs=[deepcopy(input_tracers[0].output)],
             arbitrary_func=unary_operator,
             output_value=generic_function_output_value,
             op_kind="TLU",
@@ -241,8 +241,9 @@ class NPTracer(BaseTracer):
         generic_function_output_value = deepcopy(input_tracers[in_which_input_is_variable].output)
         generic_function_output_value.dtype = common_output_dtypes[0]
 
+        # TODO: update inputs for #600 refactor
         traced_computation = GenericFunction(
-            input_base_value=input_tracers[in_which_input_is_variable].output,
+            inputs=[deepcopy(input_tracers[in_which_input_is_variable].output)],
             arbitrary_func=arbitrary_func,
             output_value=generic_function_output_value,
             op_kind="TLU",
@@ -312,25 +313,26 @@ class NPTracer(BaseTracer):
         first_arg_output = args[0].output
         assert_true(isinstance(first_arg_output, TensorValue))
         first_arg_output = cast(TensorValue, first_arg_output)
-        assert_false(first_arg_output.is_scalar)
+
+        transpose_is_fusable = first_arg_output.is_scalar or first_arg_output.ndim == 1
 
         out_dtype = first_arg_output.dtype
         out_shape = first_arg_output.shape[::-1]
 
-        generic_function_output_value = (
-            EncryptedTensor(out_dtype, out_shape)
-            if first_arg_output.is_encrypted
-            else ClearTensor(out_dtype, out_shape)
+        generic_function_output_value = TensorValue(
+            out_dtype,
+            first_arg_output.is_encrypted,
+            out_shape,
         )
 
         traced_computation = GenericFunction(
-            input_base_value=first_arg_output,
+            inputs=[deepcopy(first_arg_output)],
             arbitrary_func=numpy.transpose,
             output_value=generic_function_output_value,
             op_kind="Memory",
             op_kwargs=deepcopy(kwargs),
             op_name="np.transpose",
-            op_attributes={"fusable": False},
+            op_attributes={"fusable": transpose_is_fusable},
         )
         output_tracer = self.__class__(
             args,
@@ -358,25 +360,26 @@ class NPTracer(BaseTracer):
         first_arg_output = args[0].output
         assert_true(isinstance(first_arg_output, TensorValue))
         first_arg_output = cast(TensorValue, first_arg_output)
-        assert_false(first_arg_output.is_scalar)
+
+        ravel_is_fusable = first_arg_output.ndim == 1
 
         out_dtype = first_arg_output.dtype
-        out_shape = (numpy.product(first_arg_output.shape),)
+        out_shape = (1,) if first_arg_output.is_scalar else (numpy.product(first_arg_output.shape),)
 
-        generic_function_output_value = (
-            EncryptedTensor(out_dtype, out_shape)
-            if first_arg_output.is_encrypted
-            else ClearTensor(out_dtype, out_shape)
+        generic_function_output_value = TensorValue(
+            out_dtype,
+            first_arg_output.is_encrypted,
+            out_shape,
         )
 
         traced_computation = GenericFunction(
-            input_base_value=first_arg_output,
+            inputs=[deepcopy(first_arg_output)],
             arbitrary_func=numpy.ravel,
             output_value=generic_function_output_value,
             op_kind="Memory",
             op_kwargs=deepcopy(kwargs),
             op_name="np.ravel",
-            op_attributes={"fusable": False},
+            op_attributes={"fusable": ravel_is_fusable},
         )
         output_tracer = self.__class__(
             args,
@@ -422,27 +425,29 @@ class NPTracer(BaseTracer):
 
         # Check shape compatibility
         assert_true(
-            numpy.product(newshape) == numpy.product(first_arg_output.shape),
+            numpy.product(newshape) == first_arg_output.size,
             f"shapes are not compatible (old shape {first_arg_output.shape}, new shape {newshape})",
         )
+
+        reshape_is_fusable = newshape == first_arg_output.shape
 
         out_dtype = first_arg_output.dtype
         out_shape = newshape
 
-        generic_function_output_value = (
-            EncryptedTensor(out_dtype, out_shape)
-            if first_arg_output.is_encrypted
-            else ClearTensor(out_dtype, out_shape)
+        generic_function_output_value = TensorValue(
+            out_dtype,
+            first_arg_output.is_encrypted,
+            out_shape,
         )
 
         traced_computation = GenericFunction(
-            input_base_value=first_arg_output,
+            inputs=[first_arg_output],
             arbitrary_func=numpy.reshape,
             output_value=generic_function_output_value,
             op_kind="Memory",
             op_kwargs={"newshape": newshape},
             op_name="np.reshape",
-            op_attributes={"fusable": False},
+            op_attributes={"fusable": reshape_is_fusable},
         )
         output_tracer = self.__class__(
             [arg0],

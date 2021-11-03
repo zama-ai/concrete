@@ -8,7 +8,7 @@ from ..data_types.base import BaseDataType
 from ..data_types.dtypes_helpers import find_type_to_hold_both_lossy
 from ..representation.intermediate import GenericFunction
 from ..tracing.base_tracer import BaseTracer
-from ..values import ClearTensor, EncryptedTensor
+from ..values import TensorValue
 from .table import LookupTable
 
 
@@ -97,14 +97,14 @@ class MultiLookupTable:
             out_dtype = deepcopy(key.output.dtype)
             out_shape = deepcopy(self.input_shape)
 
-            generic_function_output_value = (
-                EncryptedTensor(out_dtype, out_shape)
-                if key.output.is_encrypted
-                else ClearTensor(out_dtype, out_shape)
+            generic_function_output_value = TensorValue(
+                out_dtype,
+                key.output.is_encrypted,
+                out_shape,
             )
 
             traced_computation = GenericFunction(
-                input_base_value=key.output,
+                inputs=[deepcopy(key.output)],
                 arbitrary_func=MultiLookupTable._checked_indexing,
                 output_value=generic_function_output_value,
                 op_kind="TLU",

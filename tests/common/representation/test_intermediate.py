@@ -36,7 +36,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         pytest.param(ir.Constant(-42), None, -42, id="Constant"),
         pytest.param(
             ir.GenericFunction(
-                EncryptedScalar(Integer(7, False)),
+                [EncryptedScalar(Integer(7, False))],
                 lambda x: x + 3,
                 EncryptedScalar(Integer(7, False)),
                 op_kind="TLU",
@@ -47,7 +47,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         ),
         pytest.param(
             ir.GenericFunction(
-                EncryptedScalar(Integer(7, False)),
+                [EncryptedScalar(Integer(7, False))],
                 lambda x, y: x + y,
                 EncryptedScalar(Integer(7, False)),
                 op_kind="TLU",
@@ -59,7 +59,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         ),
         pytest.param(
             ir.GenericFunction(
-                EncryptedScalar(Integer(7, False)),
+                [EncryptedScalar(Integer(7, False))],
                 lambda x, y: y[x],
                 EncryptedScalar(Integer(7, False)),
                 op_kind="TLU",
@@ -71,7 +71,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         ),
         pytest.param(
             ir.GenericFunction(
-                EncryptedScalar(Integer(7, False)),
+                [EncryptedScalar(Integer(7, False))],
                 lambda x, y: y[3],
                 EncryptedScalar(Integer(7, False)),
                 op_kind="TLU",
@@ -183,7 +183,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         ),
         pytest.param(
             ir.GenericFunction(
-                EncryptedTensor(Integer(32, False), shape=(3, 5)),
+                [EncryptedTensor(Integer(32, False), shape=(3, 5))],
                 lambda x: numpy.transpose(x),
                 EncryptedTensor(Integer(32, False), shape=(5, 3)),
                 op_kind="Memory",
@@ -194,7 +194,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         ),
         pytest.param(
             ir.GenericFunction(
-                EncryptedTensor(Integer(32, False), shape=(3, 5)),
+                [EncryptedTensor(Integer(32, False), shape=(3, 5))],
                 lambda x: numpy.ravel(x),
                 EncryptedTensor(Integer(32, False), shape=(5, 3)),
                 op_kind="Memory",
@@ -205,7 +205,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
         ),
         pytest.param(
             ir.GenericFunction(
-                EncryptedTensor(Integer(32, False), shape=(3, 5)),
+                [EncryptedTensor(Integer(32, False), shape=(3, 5))],
                 lambda x: numpy.reshape(x, (5, 3)),
                 output_value=EncryptedTensor(Integer(32, False), shape=(5, 3)),
                 op_kind="Memory",
@@ -313,13 +313,13 @@ def test_evaluate(
         ),
         (
             ir.GenericFunction(
-                EncryptedScalar(Integer(8, False)),
+                [EncryptedScalar(Integer(8, False))],
                 lambda x: x,
                 EncryptedScalar(Integer(8, False)),
                 op_kind="TLU",
             ),
             ir.GenericFunction(
-                EncryptedScalar(Integer(8, False)),
+                [EncryptedScalar(Integer(8, False))],
                 lambda x: x,
                 EncryptedScalar(Integer(8, False)),
                 op_kind="TLU",
@@ -328,14 +328,14 @@ def test_evaluate(
         ),
         (
             ir.GenericFunction(
-                EncryptedScalar(Integer(8, False)),
+                [EncryptedScalar(Integer(8, False))],
                 lambda x: x,
                 EncryptedScalar(Integer(8, False)),
                 op_kind="TLU",
                 op_args=(1, 2, 3),
             ),
             ir.GenericFunction(
-                EncryptedScalar(Integer(8, False)),
+                [EncryptedScalar(Integer(8, False))],
                 lambda x: x,
                 EncryptedScalar(Integer(8, False)),
                 op_kind="TLU",
@@ -344,14 +344,14 @@ def test_evaluate(
         ),
         (
             ir.GenericFunction(
-                EncryptedScalar(Integer(8, False)),
+                [EncryptedScalar(Integer(8, False))],
                 lambda x: x,
                 EncryptedScalar(Integer(8, False)),
                 op_kind="TLU",
                 op_kwargs={"tuple": (1, 2, 3)},
             ),
             ir.GenericFunction(
-                EncryptedScalar(Integer(8, False)),
+                [EncryptedScalar(Integer(8, False))],
                 lambda x: x,
                 EncryptedScalar(Integer(8, False)),
                 op_kind="TLU",

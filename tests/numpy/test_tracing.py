@@ -631,74 +631,146 @@ def test_nptracer_unsupported_operands(operation, tracer):
 
 
 @pytest.mark.parametrize(
-    "function_to_trace,input_value,input_and_expected_output_tuples",
+    "function_to_trace,input_value_input_and_expected_output_tuples",
     [
         # Indirect calls, like numpy.function(x, ...)
         (
             lambda x: numpy.transpose(x),
-            EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
             [
-                (numpy.arange(4).reshape(2, 2), numpy.array([[0, 2], [1, 3]])),
-                (numpy.arange(4, 8).reshape(2, 2), numpy.array([[4, 6], [5, 7]])),
+                (
+                    EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+                    numpy.arange(4).reshape(2, 2),
+                    numpy.array([[0, 2], [1, 3]]),
+                ),
+                (
+                    EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+                    numpy.arange(4, 8).reshape(2, 2),
+                    numpy.array([[4, 6], [5, 7]]),
+                ),
+                (
+                    EncryptedTensor(Integer(6, is_signed=False), shape=()),
+                    numpy.int64(42),
+                    numpy.int64(42),
+                ),
             ],
         ),
         (
             lambda x: numpy.transpose(x) + 42,
-            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
             [
-                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(3, 5).transpose()),
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(42, 57).reshape(3, 5).transpose(),
+                ),
+                (
+                    EncryptedTensor(Integer(6, is_signed=False), shape=()),
+                    numpy.int64(42),
+                    numpy.int64(84),
+                ),
             ],
         ),
         (
             lambda x: numpy.ravel(x),
-            EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
             [
-                (numpy.arange(4), numpy.array([0, 1, 2, 3])),
-                (numpy.arange(4).reshape(2, 2), numpy.array([0, 1, 2, 3])),
+                (
+                    EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+                    numpy.arange(4),
+                    numpy.array([0, 1, 2, 3]),
+                ),
+                (
+                    EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+                    numpy.arange(4).reshape(2, 2),
+                    numpy.array([0, 1, 2, 3]),
+                ),
+                (
+                    EncryptedTensor(Integer(6, is_signed=False), shape=()),
+                    numpy.int64(42),
+                    numpy.array([42], dtype=numpy.int64),
+                ),
             ],
         ),
         (
             lambda x: numpy.reshape(x, (5, 3)) + 42,
-            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
             [
-                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(5, 3)),
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(42, 57).reshape(5, 3),
+                ),
             ],
         ),
         # Direct calls, like x.function(...)
         (
             lambda x: x.transpose() + 42,
-            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
             [
-                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(3, 5).transpose()),
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(42, 57).reshape(3, 5).transpose(),
+                ),
+                (
+                    EncryptedTensor(Integer(6, is_signed=False), shape=()),
+                    numpy.int64(42),
+                    numpy.int64(84),
+                ),
             ],
         ),
         (
             lambda x: x.ravel(),
-            EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
             [
-                (numpy.arange(4), numpy.array([0, 1, 2, 3])),
-                (numpy.arange(4).reshape(2, 2), numpy.array([0, 1, 2, 3])),
+                (
+                    EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+                    numpy.arange(4),
+                    numpy.array([0, 1, 2, 3]),
+                ),
+                (
+                    EncryptedTensor(Integer(4, is_signed=False), shape=(2, 2)),
+                    numpy.arange(4).reshape(2, 2),
+                    numpy.array([0, 1, 2, 3]),
+                ),
+                (
+                    EncryptedTensor(Integer(6, is_signed=False), shape=()),
+                    numpy.int64(42),
+                    numpy.array([42], dtype=numpy.int64),
+                ),
             ],
         ),
         (
             lambda x: x.reshape((5, 3)) + 42,
-            EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
             [
-                (numpy.arange(15).reshape(3, 5), numpy.arange(42, 57).reshape(5, 3)),
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(42, 57).reshape(5, 3),
+                ),
             ],
+        ),
+        pytest.param(
+            lambda x: x.reshape((5, 3)),
+            [
+                (
+                    EncryptedTensor(Integer(6, is_signed=False), shape=()),
+                    numpy.int64(42),
+                    None,
+                )
+            ],
+            marks=pytest.mark.xfail(strict=True, raises=AssertionError),
         ),
     ],
 )
-def test_tracing_generic_function(function_to_trace, input_value, input_and_expected_output_tuples):
-    """Test function for managed by GenericFunction node"""
-    for input_, expected_output in input_and_expected_output_tuples:
+def test_tracing_generic_function_memory_ops(
+    function_to_trace,
+    input_value_input_and_expected_output_tuples,
+):
+    """Test memory function managed by GenericFunction node"""
+    for input_value, input_, expected_output in input_value_input_and_expected_output_tuples:
 
         op_graph = tracing.trace_numpy_function(function_to_trace, {"x": input_value})
         output_node = op_graph.output_nodes[0]
 
         node_results = op_graph.evaluate({0: input_})
         evaluated_output = node_results[output_node]
-        assert isinstance(evaluated_output, type(expected_output))
+        assert isinstance(evaluated_output, type(expected_output)), type(evaluated_output)
         assert numpy.array_equal(expected_output, evaluated_output)
 
 

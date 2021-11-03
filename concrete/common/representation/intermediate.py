@@ -290,7 +290,7 @@ class GenericFunctionKind(str, Enum):
 
 
 class GenericFunction(IntermediateNode):
-    """Node representing an univariate arbitrary function, e.g. sin(x)."""
+    """Node representing an arbitrary function with a single output, e.g. sin(x)."""
 
     # The arbitrary_func is not optional but mypy has a long standing bug and is not able to
     # understand this properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623
@@ -303,7 +303,7 @@ class GenericFunction(IntermediateNode):
     op_args: Tuple[Any, ...]
     op_kwargs: Dict[str, Any]
     op_attributes: Dict[str, Any]
-    _n_in: int = 1
+    _n_in: int
 
     # TODO: https://github.com/zama-ai/concretefhe-internal/issues/798 have a proper attribute
     # system
@@ -311,7 +311,7 @@ class GenericFunction(IntermediateNode):
 
     def __init__(
         self,
-        input_base_value: BaseValue,
+        inputs: Iterable[BaseValue],
         arbitrary_func: Callable,
         output_value: BaseValue,
         op_kind: Union[str, GenericFunctionKind],
@@ -320,8 +320,9 @@ class GenericFunction(IntermediateNode):
         op_kwargs: Optional[Dict[str, Any]] = None,
         op_attributes: Optional[Dict[str, Any]] = None,
     ) -> None:
-        super().__init__([input_base_value])
-        assert_true(len(self.inputs) == 1)
+        super().__init__(inputs)
+        self._n_in = len(self.inputs)
+        assert_true(self._n_in == 1)  # TODO: remove in later parts of refactoring of #600
         self.arbitrary_func = arbitrary_func
         self.op_kind = GenericFunctionKind(op_kind)
         self.op_args = op_args if op_args is not None else ()
@@ -330,14 +331,15 @@ class GenericFunction(IntermediateNode):
         if op_attributes is not None:
             self.op_attributes.update(op_attributes)
 
-        self.outputs = [deepcopy(output_value)]
+        self.outputs = [output_value]
 
         self.op_name = op_name if op_name is not None else self.__class__.__name__
 
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         # This is the continuation of the mypy bug workaround
         assert self.arbitrary_func is not None
-        return self.arbitrary_func(inputs[0], *self.op_args, **self.op_kwargs)
+        ordered_inputs = [inputs[idx] for idx in range(len(inputs))]
+        return self.arbitrary_func(*ordered_inputs, *self.op_args, **self.op_kwargs)
 
     def label(self) -> str:
         return self.op_name
@@ -350,12 +352,14 @@ class GenericFunction(IntermediateNode):
         Returns:
             List[Any]: The table.
         """
+
         input_dtype = self.inputs[0].dtype
         # Check the input is an unsigned integer to be able to build a table
-        assert isinstance(
-            input_dtype, Integer
-        ), "get_table only works for an unsigned Integer input"
-        assert not input_dtype.is_signed, "get_table only works for an unsigned Integer input"
+        assert_true(
+            isinstance(input_dtype, Integer), "get_table only works for an unsigned Integer input"
+        )
+        input_dtype = cast(Integer, input_dtype)
+        assert_true(not input_dtype.is_signed, "get_table only works for an unsigned Integer input")
 
         input_value_constructor = self.inputs[0].underlying_constructor
         if input_value_constructor is None:

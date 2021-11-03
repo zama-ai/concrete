@@ -60,7 +60,7 @@ def test_lookup_table_encrypted_lookup(test_helpers):
     # pylint: disable=protected-access
     # Need access to _checked_indexing to have is_equivalent_to work for ir.GenericFunction
     output_arbitrary_function = ir.GenericFunction(
-        input_base_value=x,
+        inputs=[x],
         arbitrary_func=LookupTable._checked_indexing,
         output_value=generic_function_output_value,
         op_kind="TLU",
@@ -104,7 +104,7 @@ def test_lookup_table_encrypted_and_plain_lookup(test_helpers):
     # pylint: disable=protected-access
     # Need access to _checked_indexing to have is_equivalent_to work for ir.GenericFunction
     intermediate_arbitrary_function = ir.GenericFunction(
-        input_base_value=x,
+        inputs=[x],
         arbitrary_func=LookupTable._checked_indexing,
         output_value=generic_function_output_value,
         op_kind="TLU",
