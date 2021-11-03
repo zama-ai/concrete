@@ -344,6 +344,25 @@ llvm::Expected<size_t> JITLambda::Argument::getResultVectorSize(size_t pos) {
   return info.shape.size;
 }
 
+llvm::Expected<enum JITLambda::Argument::ResultType>
+JITLambda::Argument::getResultType(size_t pos) {
+  if (pos >= outputGates.size()) {
+    return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                   "Requesting type for result at index %zu, "
+                                   "but lambda only generates %zu results",
+                                   pos, outputGates.size());
+  }
+
+  auto gate = outputGates[pos];
+  auto info = std::get<0>(gate);
+
+  if (info.shape.size == 0) {
+    return ResultType::SCALAR;
+  } else {
+    return ResultType::TENSOR;
+  }
+}
+
 llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t *res,
                                            size_t size) {
 

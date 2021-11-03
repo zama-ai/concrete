@@ -41,6 +41,13 @@ public:
     // Get the result at the given pos as an uint64_t.
     llvm::Error getResult(size_t pos, uint64_t &res);
 
+    // Specifies the type of a result
+    enum ResultType { SCALAR, TENSOR };
+
+    // Returns the result type at position `pos`. If pos is invalid,
+    // an error is returned.
+    llvm::Expected<enum ResultType> getResultType(size_t pos);
+
     // Get a result for tensors, fill the `res` buffer with the value of the
     // tensor result.
     // Returns an error:
