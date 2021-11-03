@@ -51,6 +51,43 @@ typedResult(JITLambda::Argument &arguments) {
   return std::move(res);
 }
 
+// Specialization of `typedResult()` for a single result wrapped into
+// a `LambdaArgument`.
+template <>
+inline llvm::Expected<std::unique_ptr<LambdaArgument>>
+typedResult(JITLambda::Argument &arguments) {
+  llvm::Expected<enum JITLambda::Argument::ResultType> resTy =
+      arguments.getResultType(0);
+
+  if (!resTy)
+    return std::move(resTy.takeError());
+
+  switch (*resTy) {
+  case JITLambda::Argument::ResultType::SCALAR: {
+    uint64_t res;
+
+    if (llvm::Error err = arguments.getResult(0, res))
+      return std::move(err);
+
+    return std::move(std::make_unique<IntLambdaArgument<uint64_t>>(res));
+  }
+
+  case JITLambda::Argument::ResultType::TENSOR: {
+    llvm::Expected<std::vector<uint64_t>> tensorOrError =
+        typedResult<std::vector<uint64_t>>(arguments);
+
+    if (!tensorOrError)
+      return std::move(tensorOrError.takeError());
+
+    return std::move(
+        std::make_unique<TensorLambdaArgument<IntLambdaArgument<uint64_t>>>(
+            *tensorOrError));
+  }
+  }
+
+  return StreamStringError("Unknown result type");
+}
+
 // Adaptor class that adds arguments specified as instances of
 // `LambdaArgument` to `JitLambda::Argument`.
 class JITLambdaArgumentAdaptor {
