@@ -15,6 +15,7 @@ declare_mlir_python_extension(ZamalangBindingsPythonExtension.Core
     CompilerAPIModule.cpp
   EMBED_CAPI_LINK_LIBS
     ZAMALANGCAPIHLFHE
+    ZAMALANGCAPIHLFHELINALG
     ZAMALANGCAPISupport
 )
 

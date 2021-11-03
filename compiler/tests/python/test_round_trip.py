@@ -44,6 +44,15 @@ VALID_INPUTS = [
         """,
         id="add_eint_int_cst",
     ),
+    pytest.param(
+        """
+        func @main(%a0: tensor<4x!HLFHE.eint<2>>, %a1: tensor<4xi3>) -> tensor<4x!HLFHE.eint<2>> {
+            %1 = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> tensor<4x!HLFHE.eint<2>>
+            return %1: tensor<4x!HLFHE.eint<2>>
+        }
+        """,
+        id="add_eint_int_1D",
+    ),
 ]
 
 INVALID_INPUTS = [
@@ -55,6 +64,16 @@ INVALID_INPUTS = [
         }
         """,
         id="eint<0>",
+    ),
+    pytest.param(
+        """
+        func @main(%a0: tensor<2x2x3x4x!HLFHE.eint<2>>, %a1: tensor<2x2x2x4xi3>) -> tensor<2x2x3x4x!HLFHE.eint<2>> {
+            // expected-error @+1 {{'HLFHELinalg.add_eint_int' op has the dimension #2 of the operand #1 incompatible with other operands, got 2 expect 1 or 3}}
+            %1 = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<2x2x3x4x!HLFHE.eint<2>>, tensor<2x2x2x4xi3>) -> tensor<2x2x3x4x!HLFHE.eint<2>>
+            return %1 : tensor<2x2x3x4x!HLFHE.eint<2>>
+        }
+        """,
+        id="incompatible dimensions",
     ),
 ]
 

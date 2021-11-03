@@ -5,6 +5,7 @@
 #include "mlir-c/Registration.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
 #include "zamalang-c/Dialect/HLFHE.h"
+#include "zamalang-c/Dialect/HLFHELinalg.h"
 
 #include "llvm-c/ErrorHandling.h"
 #include "llvm/Support/Signals.h"
@@ -28,6 +29,9 @@ PYBIND11_MODULE(_zamalang, m) {
         MlirDialectHandle hlfhe = mlirGetDialectHandle__hlfhe__();
         mlirDialectHandleRegisterDialect(hlfhe, context);
         mlirDialectHandleLoadDialect(hlfhe, context);
+        MlirDialectHandle hlfhelinalg = mlirGetDialectHandle__hlfhelinalg__();
+        mlirDialectHandleRegisterDialect(hlfhelinalg, context);
+        mlirDialectHandleLoadDialect(hlfhelinalg, context);
       },
       "Register Zamalang dialects on a PyMlirContext.");
 

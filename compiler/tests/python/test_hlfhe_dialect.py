@@ -1,5 +1,5 @@
 import pytest
-from mlir.ir import Context
+from mlir.ir import Context, RankedTensorType, Location
 from zamalang import register_dialects
 from zamalang.dialects import hlfhe
 
@@ -10,6 +10,17 @@ def test_eint(width):
     register_dialects(ctx)
     eint = hlfhe.EncryptedIntegerType.get(ctx, width)
     assert eint.__str__() == f"!HLFHE.eint<{width}>"
+
+
+@pytest.mark.parametrize("shape", [(1,), (2,), (1, 1), (1, 2), (2, 1), (3, 3, 3)])
+def test_eint_tensor(shape):
+    with Context() as ctx, Location.unknown(context=ctx):
+        register_dialects(ctx)
+        eint = hlfhe.EncryptedIntegerType.get(ctx, 3)
+        tensor = RankedTensorType.get(shape, eint)
+        assert (
+            tensor.__str__() == f"tensor<{'x'.join(map(str, shape))}x!HLFHE.eint<{3}>>"
+        )
 
 
 @pytest.mark.parametrize("width", [0, 8, 10, 12])
