@@ -10,16 +10,30 @@
 use rayon::prelude::*;
 use std::fmt::{Debug, Display, Formatter, Result};
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod aesni;
+
+#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+mod aesni {
+    compile_error!("Only x86 and x86_64 architectures are supported");
+    #[cfg(target_os = "macos")]
+    compile_error!(
+        "For macs with an Apple Silicon chip, \
+         refer to the github readme on how to install \
+         https://github.com/zama-ai/concrete"
+    );
+}
+
 mod counter;
 mod software;
+
 use crate::counter::{AesKey, BytesPerChild, ChildCount, HardAesCtrGenerator, SoftAesCtrGenerator};
 pub use software::set_soft_rdseed_secret;
 
 /// The pseudorandom number generator.
 ///
 /// If the correct instructions sets are available on the machine, an hardware accelerated version
-/// of the generator can be used.  
+/// of the generator can be used.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum RandomGenerator {
@@ -51,17 +65,24 @@ impl RandomGenerator {
 
     /// Tries to build a new hardware random generator, optionally seeding it with a given value.
     pub fn new_hardware(seed: Option<u128>) -> Option<RandomGenerator> {
-        if !is_x86_feature_detected!("aes")
-            || !is_x86_feature_detected!("rdseed")
-            || !is_x86_feature_detected!("sse2")
+        #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
         {
             return None;
         }
-        Some(RandomGenerator::Hardware(HardAesCtrGenerator::new(
-            seed.map(AesKey),
-            None,
-            None,
-        )))
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if !is_x86_feature_detected!("aes")
+                || !is_x86_feature_detected!("rdseed")
+                || !is_x86_feature_detected!("sse2")
+            {
+                return None;
+            }
+            Some(RandomGenerator::Hardware(HardAesCtrGenerator::new(
+                seed.map(AesKey),
+                None,
+                None,
+            )))
+        }
     }
 
     /// Yields the next byte from the generator.
