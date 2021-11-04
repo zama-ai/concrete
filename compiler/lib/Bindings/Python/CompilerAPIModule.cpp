@@ -17,6 +17,7 @@
 
 using mlir::zamalang::ExecutionArgument;
 using mlir::zamalang::JitCompilerEngine;
+using mlir::zamalang::LambdaArgument;
 
 /// Populate the compiler API python module.
 void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
@@ -40,6 +41,27 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
                   [](std::string mlir_input, std::string func_name) {
                     return buildLambda(mlir_input.c_str(), func_name.c_str());
                   });
+
+  pybind11::class_<lambdaArgument>(m, "LambdaArgument")
+      .def("is_tensor",
+           [](lambdaArgument &lambda_arg) {
+             return lambdaArgumentIsTensor(lambda_arg);
+           })
+      .def("get_tensor_data",
+           [](lambdaArgument &lambda_arg) {
+             return lambdaArgumentGetTensorData(lambda_arg);
+           })
+      .def("get_tensor_shape",
+           [](lambdaArgument &lambda_arg) {
+             return lambdaArgumentGetTensorDimensions(lambda_arg);
+           })
+      .def("is_scalar",
+           [](lambdaArgument &lambda_arg) {
+             return lambdaArgumentIsScalar(lambda_arg);
+           })
+      .def("get_scalar", [](lambdaArgument &lambda_arg) {
+        return lambdaArgumentGetScalar(lambda_arg);
+      });
 
   pybind11::class_<JitCompilerEngine::Lambda>(m, "Lambda")
       .def("invoke", [](JitCompilerEngine::Lambda &py_lambda,

@@ -23,7 +23,7 @@ mlir::zamalang::JitCompilerEngine::Lambda buildLambda(const char *module,
   return std::move(*lambdaOrErr);
 }
 
-uint64_t invokeLambda(lambda l, executionArguments args) {
+lambdaArgument invokeLambda(lambda l, executionArguments args) {
   mlir::zamalang::JitCompilerEngine::Lambda *lambda_ptr =
       (mlir::zamalang::JitCompilerEngine::Lambda *)l.ptr;
 
@@ -45,8 +45,12 @@ uint64_t invokeLambda(lambda l, executionArguments args) {
     }
   }
   // Run lambda
-  llvm::Expected<uint64_t> resOrError = (*lambda_ptr)(
-      llvm::ArrayRef<mlir::zamalang::LambdaArgument *>(lambdaArgumentsRef));
+  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> resOrError =
+      (*lambda_ptr)
+          .
+          operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+              llvm::ArrayRef<mlir::zamalang::LambdaArgument *>(
+                  lambdaArgumentsRef));
   // Free heap
   for (size_t i = 0; i < lambdaArgumentsRef.size(); i++)
     delete lambdaArgumentsRef[i];
@@ -58,7 +62,8 @@ uint64_t invokeLambda(lambda l, executionArguments args) {
        << llvm::toString(std::move(resOrError.takeError()));
     throw std::runtime_error(os.str());
   }
-  return *resOrError;
+  lambdaArgument result{std::move(*resOrError)};
+  return result;
 }
 
 std::string roundTrip(const char *module) {
@@ -79,4 +84,60 @@ std::string roundTrip(const char *module) {
 
   retOrErr->mlirModuleRef->get().print(os);
   return os.str();
+}
+
+bool lambdaArgumentIsTensor(lambdaArgument &lambda_arg) {
+  return lambda_arg.ptr->isa<mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint64_t>>>();
+}
+
+std::vector<uint64_t> lambdaArgumentGetTensorData(lambdaArgument &lambda_arg) {
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint64_t>> *arg =
+      lambda_arg.ptr->dyn_cast<mlir::zamalang::TensorLambdaArgument<
+          mlir::zamalang::IntLambdaArgument<uint64_t>>>();
+  if (arg == nullptr) {
+    throw std::invalid_argument(
+        "LambdaArgument isn't a tensor, should "
+        "be a TensorLambdaArgument<IntLambdaArgument<uint64_t>>");
+  }
+
+  llvm::Expected<size_t> sizeOrErr = arg->getNumElements();
+  if (!sizeOrErr) {
+    std::string backingString;
+    llvm::raw_string_ostream os(backingString);
+    os << "Couldn't get size of tensor: "
+       << llvm::toString(std::move(sizeOrErr.takeError()));
+    throw std::runtime_error(os.str());
+  }
+  std::vector<uint64_t> data(arg->getValue(), arg->getValue() + *sizeOrErr);
+  return data;
+}
+
+std::vector<int64_t>
+lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg) {
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint64_t>> *arg =
+      lambda_arg.ptr->dyn_cast<mlir::zamalang::TensorLambdaArgument<
+          mlir::zamalang::IntLambdaArgument<uint64_t>>>();
+  if (arg == nullptr) {
+    throw std::invalid_argument(
+        "LambdaArgument isn't a tensor, should "
+        "be a TensorLambdaArgument<IntLambdaArgument<uint64_t>>");
+  }
+  return arg->getDimensions();
+}
+
+bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg) {
+  return lambda_arg.ptr->isa<mlir::zamalang::IntLambdaArgument<uint64_t>>();
+}
+
+uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
+  mlir::zamalang::IntLambdaArgument<uint64_t> *arg =
+      lambda_arg.ptr->dyn_cast<mlir::zamalang::IntLambdaArgument<uint64_t>>();
+  if (arg == nullptr) {
+    throw std::invalid_argument("LambdaArgument isn't a scalar, should "
+                                "be an IntLambdaArgument<uint64_t>");
+  }
+  return arg->getValue();
 }

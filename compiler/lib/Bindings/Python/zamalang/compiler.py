@@ -3,6 +3,8 @@ from typing import List, Union
 from mlir._mlir_libs._zamalang._compiler import JitCompilerEngine as _JitCompilerEngine
 from mlir._mlir_libs._zamalang._compiler import ExecutionArgument as _ExecutionArgument
 from mlir._mlir_libs._zamalang._compiler import round_trip as _round_trip
+import numpy as np
+
 
 def round_trip(mlir_str: str) -> str:
     """Parse the MLIR input, then return it back.
@@ -67,7 +69,7 @@ class CompilerEngine:
             raise TypeError("input must be an `str`")
         self._lambda = self._engine.build_lambda(mlir_str, func_name)
 
-    def run(self, *args: List[Union[int, List[int]]]) -> int:
+    def run(self, *args: List[Union[int, List[int]]]) -> Union[int, np.array]:
         """Run the compiled code.
 
         Args:
@@ -76,11 +78,20 @@ class CompilerEngine:
         Raises:
             TypeError: if execution arguments can't be constructed
             RuntimeError: if the engine has not compiled any code yet
+            RuntimeError: if the return type is unknown
 
         Returns:
-            int: result of execution.
+            int or numpy.array: result of execution.
         """
         if self._lambda is None:
             raise RuntimeError("need to compile an MLIR code first")
         execution_arguments = [create_execution_argument(arg) for arg in args]
-        return self._lambda.invoke(execution_arguments)
+        lambda_arg = self._lambda.invoke(execution_arguments)
+        if lambda_arg.is_scalar():
+            return lambda_arg.get_scalar()
+        elif lambda_arg.is_tensor():
+            shape = lambda_arg.get_tensor_shape()
+            tensor = np.array(lambda_arg.get_tensor_data()).reshape(shape)
+            return tensor
+        else:
+            raise RuntimeError("unknown return type")
