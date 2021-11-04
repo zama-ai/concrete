@@ -20,6 +20,7 @@ def name_to_id(name):
     name = name.replace("/", "over")
     name = name.replace("%", "percent")
     name = name.replace("&", "and")
+    name = name.replace(":", "colon")
     name = name.replace(" ", "-")
     name = name.replace("(", "")
     name = name.replace(")", "")
