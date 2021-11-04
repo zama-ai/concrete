@@ -1,7 +1,10 @@
 FROM ubuntu:latest
 
 RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-essential python3 python3-pip python3-setuptools ninja-build git zlib1g-dev
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-essential python3 python3-pip python3-setuptools ninja-build git zlib1g-dev ccache
+# setup ccache with an unlimited amount of files and storage
+RUN ccache -M 0
+RUN ccache -F 0
 RUN pip install numpy pybind11==2.6.2 PyYAML
 # Setup Concrete
 COPY --from=ghcr.io/zama-ai/concrete-api-env:latest /target/release /concrete/target/release
@@ -12,7 +15,7 @@ COPY /llvm-project /llvm-project
 COPY /compiler /compiler
 WORKDIR /compiler
 RUN mkdir -p /build
-RUN make BUILD_DIR=/build zamacompiler python-bindings
+RUN make BUILD_DIR=/build CCACHE=ON zamacompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/zamalang/python_packages/zamalang_core:/build/tools/zamalang/python_packages/zamalang_core/mlir/_mlir_libs/"
 ENV PATH "$PATH:/build/bin"
 ENV RT_LIB "/build/lib/libZamalangRuntime.so"
