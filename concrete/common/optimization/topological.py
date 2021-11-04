@@ -1,5 +1,4 @@
 """File holding topological optimization/simplification code."""
-import itertools
 from collections import defaultdict
 from copy import deepcopy
 from typing import DefaultDict, Dict, List, Optional, Set, Tuple, cast
@@ -349,18 +348,25 @@ def subgraph_nodes_and_values_allow_fusing(
         variable_input_node_output.size,
         variable_input_node_output.shape,
     )
-    max_inputs_size = max(
-        itertools.chain(
-            (variable_input_node_output_size,),
-            (
-                cast(TensorValue, constant_input_node.outputs[0]).size
-                for constant_input_node in subgraph_all_nodes
-                if isinstance(constant_input_node, Constant)
-            ),
-        )
-    )
 
-    if variable_input_node_output_size < max_inputs_size:
+    constant_nodes_with_bigger_size_than_variable_input = [
+        constant_input_node
+        for constant_input_node in subgraph_all_nodes
+        if isinstance(constant_input_node, Constant)
+        and cast(TensorValue, constant_input_node.outputs[0]).size > variable_input_node_output_size
+    ]
+
+    for bigger_constant_node in constant_nodes_with_bigger_size_than_variable_input:
+        bigger_constant_node_shape = cast(TensorValue, bigger_constant_node.outputs[0]).shape
+        node_with_issues_for_fusing[bigger_constant_node].append(
+            f"this constant node has a bigger shape {bigger_constant_node_shape} "
+            f"than the subgraph's input: {variable_input_node_output_shape}"
+        )
+
+    if len(constant_nodes_with_bigger_size_than_variable_input) > 0:
+        node_with_issues_for_fusing[variable_input_node].append(
+            f"input node with shape {variable_input_node_output_shape}"
+        )
         return False
 
     # Now that we know the variable input node has the biggest size we can check shapes are
