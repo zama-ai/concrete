@@ -28,14 +28,15 @@ public:
 
     // Set a argument at the given pos as a 1D tensor of T.
     template <typename T>
-    llvm::Error setArg(size_t pos, T *data, int64_t dim1) {
+    llvm::Error setArg(size_t pos, const T *data, int64_t dim1) {
       return setArg<T>(pos, data, llvm::ArrayRef<int64_t>(&dim1, 1));
     }
 
     // Set a argument at the given pos as a tensor of T.
     template <typename T>
-    llvm::Error setArg(size_t pos, T *data, llvm::ArrayRef<int64_t> shape) {
-      return setArg(pos, 8 * sizeof(T), static_cast<void *>(data), shape);
+    llvm::Error setArg(size_t pos, const T *data,
+                       llvm::ArrayRef<int64_t> shape) {
+      return setArg(pos, 8 * sizeof(T), static_cast<const void *>(data), shape);
     }
 
     // Get the result at the given pos as an uint64_t.
@@ -60,14 +61,14 @@ public:
     llvm::Expected<size_t> getResultVectorSize(size_t pos);
 
   private:
-    llvm::Error setArg(size_t pos, size_t width, void *data,
+    llvm::Error setArg(size_t pos, size_t width, const void *data,
                        llvm::ArrayRef<int64_t> shape);
 
     friend JITLambda;
     // Store the pointer on inputs values and outputs values
     std::vector<void *> rawArg;
     // Store the values of inputs
-    std::vector<void *> inputs;
+    std::vector<const void *> inputs;
     // Store the values of outputs
     std::vector<void *> outputs;
     // Store the input gates description and the offset of the argument.

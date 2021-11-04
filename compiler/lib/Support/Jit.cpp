@@ -89,7 +89,7 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
       // dimension of the tensor.
       numInputs = numInputs + 2 * keySet.inputGate(i).shape.dimensions.size();
     }
-    inputs = std::vector<void *>(numInputs);
+    inputs = std::vector<const void *>(numInputs);
   }
 
   // Setting the outputs
@@ -180,7 +180,8 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
   return llvm::Error::success();
 }
 
-llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width, void *data,
+llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
+                                        const void *data,
                                         llvm::ArrayRef<int64_t> shape) {
   auto gate = inputGates[pos];
   auto info = std::get<0>(gate);
