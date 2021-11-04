@@ -16,6 +16,7 @@ from ..data_types.dtypes_helpers import (
 from ..data_types.integers import Integer
 from ..debugging.custom_assert import assert_true
 from ..helpers import indexing_helpers
+from ..helpers.python_helpers import catch, update_and_return_dict
 from ..values import (
     BaseValue,
     ClearScalar,
@@ -390,21 +391,10 @@ class GenericFunction(IntermediateNode):
         min_input_range = variable_input_dtype.min_value()
         max_input_range = variable_input_dtype.max_value() + 1
 
-        def catch(func, *args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            # We currently cannot trigger exceptions in the code during evaluation
-            except Exception:  # pragma: no cover # pylint: disable=broad-except
-                return None
-
         template_input_dict = {
             idx: node.evaluate({}) if isinstance(node, Constant) else None
             for idx, node in enumerate(ordered_preds)
         }
-
-        def update_and_return_dict(dict_to_update: dict, update_values):
-            dict_to_update.update(update_values)
-            return dict_to_update
 
         table = [
             catch(
