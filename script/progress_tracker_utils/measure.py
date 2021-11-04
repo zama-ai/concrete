@@ -347,20 +347,21 @@ def main(args):
             # Extract target name
             target_name = first_line.replace("# bench: Full Target:", "").strip()
             is_unit = False
-        elif not args.check:
-            print()
-            print(path)
-            print("-" * len(str(path)))
+        else:
+            if not args.check:
+                print()
+                print(path)
+                print("-" * len(str(path)))
 
-            with tqdm.tqdm(total=samples) as pbar:
-                pbar.write("    Sample 1")
-                pbar.write("    --------")
-                pbar.write(
-                    "        Skipped (doesn't have a `# bench: Unit/Full Target:` directive)\n"
-                )
-                pbar.update(samples)
+                with tqdm.tqdm(total=samples) as pbar:
+                    pbar.write("    Sample 1")
+                    pbar.write("    --------")
+                    pbar.write(
+                        "        Skipped (doesn't have a `# bench: Unit/Full Target:` directive)\n"
+                    )
+                    pbar.update(samples)
 
-            print()
+                print()
             continue
 
         # Extract target id
@@ -385,16 +386,16 @@ def main(args):
         # Create another script to hold the modified version of the current script
         create_modified_script(name, lines, metrics)
 
-        if not args.check:
-            # Create an entry in the result for the current target
-            result["targets"][target_id] = {
-                "name": target_name,
-                "measurements": {},
-                "alerts": alerts,
-                "code": "\n".join(lines),
-                "isUnit": is_unit,
-            }
+        # Create an entry in the result for the current target
+        result["targets"][target_id] = {
+            "name": target_name,
+            "measurements": {},
+            "alerts": alerts,
+            "code": "\n".join(lines),
+            "isUnit": is_unit,
+        }
 
+        if not args.check:
             # Perform and save measurements
             perform_measurements(path, name, target_id, metrics, samples, result)
 
