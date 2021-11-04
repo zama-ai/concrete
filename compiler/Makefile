@@ -1,10 +1,17 @@
 BUILD_DIR=./build
 Python3_EXECUTABLE=
 BINDINGS_PYTHON_ENABLED=ON
+CCACHE=OFF
 
+ifeq ($(CCACHE),ON)
+        CMAKE_CCACHE_OPTIONS=-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+else
+        CMAKE_CCACHE_OPTIONS=
+endif
 
 $(BUILD_DIR)/configured.stamp:
 	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
+	$(CMAKE_CCACHE_OPTIONS) \
 	-DLLVM_ENABLE_PROJECTS=mlir \
 	-DLLVM_BUILD_EXAMPLES=OFF \
 	-DLLVM_TARGETS_TO_BUILD="host" \
