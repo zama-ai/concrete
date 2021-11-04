@@ -305,7 +305,7 @@ func @main(%0: !HLFHE.eint<5>) -> tensor<1x!HLFHE.eint<5>> {
   ASSERT_EQ(resp.getDimensions().size(), (size_t)1);
   ASSERT_EQ(resp.getDimensions().at(0), 1);
   ASSERT_EXPECTED_VALUE(resp.getNumElements(), 1);
-  // ASSERT_EQ(resp.getValue()[0], 10_u64);
+  ASSERT_EQ(resp.getValue()[0], 10_u64);
 }
 
 TEST(CompileAndRunTensorEncrypted, in_out_tensor_with_op_5) {
