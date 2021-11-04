@@ -31,18 +31,6 @@ This will build the image for the appropriate python version then copy the wheel
 
 ### Build wheels in your environment
 
-#### Temporary MLIR issue
-
-Due to an issue with MLIR, you will need to manually add `__init__.py` files to the `mlir` python package after the build.
-
-```bash
-$ make python-bindings
-$ touch build/tools/zamalang/python_packages/zamalang_core/mlir/__init__.py
-$ touch build/tools/zamalang/python_packages/zamalang_core/mlir/dialects/__init__.py
-```
-
-#### Build wheel
-
 Building the wheels is actually simple.
 
 ```bash

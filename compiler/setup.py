@@ -38,7 +38,11 @@ setuptools.setup(
     url="https://github.com/zama-ai/homomorphizer",
     packages=setuptools.find_packages(
         where="build/tools/zamalang/python_packages/zamalang_core",
-        include=["zamalang", "zamalang.*", "mlir", "mlir.*"],
+        include=["zamalang", "zamalang.*"],
+    )
+    + setuptools.find_namespace_packages(
+        where="build/tools/zamalang/python_packages/zamalang_core",
+        include=["mlir", "mlir.*"],
     ),
     package_dir={"": "build/tools/zamalang/python_packages/zamalang_core"},
     include_package_data=True,
