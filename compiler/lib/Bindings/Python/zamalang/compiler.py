@@ -1,7 +1,7 @@
 """Compiler submodule"""
 from typing import List, Union
 from mlir._mlir_libs._zamalang._compiler import JitCompilerEngine as _JitCompilerEngine
-from mlir._mlir_libs._zamalang._compiler import ExecutionArgument as _ExecutionArgument
+from mlir._mlir_libs._zamalang._compiler import LambdaArgument as _LambdaArgument
 from mlir._mlir_libs._zamalang._compiler import round_trip as _round_trip
 import numpy as np
 
@@ -23,29 +23,29 @@ def round_trip(mlir_str: str) -> str:
     return _round_trip(mlir_str)
 
 
-def create_execution_argument(value: Union[int, List[int]]) -> "_ExecutionArgument":
+def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument":
     """Create an execution argument holding either an int or tensor value.
 
     Args:
-        value (Union[int, List[int]]): value of the argument, either an int, or a list of int
+        value (Union[int, numpy.array]): value of the argument, either an int, or a numpy array
 
     Raises:
         TypeError: if the values aren't in the expected range, or using a wrong type
 
     Returns:
-        _ExecutionArgument: execution argument holding the appropriate value
+        _LambdaArgument: lambda argument holding the appropriate value
     """
-    if not isinstance(value, (int, list)):
-        raise TypeError("value of execution argument must be either int or list[int]")
+    if not isinstance(value, (int, np.ndarray)):
+        raise TypeError("value of execution argument must be either int or numpy.array")
     if isinstance(value, int):
         if not (0 <= value < (2 ** 64 - 1)):
             raise TypeError("single integer must be in the range [0, 2**64 - 1] (uint64)")
+        return _LambdaArgument.from_scalar(value)
     else:
-        assert isinstance(value, list)
-        for elem in value:
-            if not (0 <= elem < (2 ** 8 - 1)):
-                raise TypeError("values of the list must be in the range [0, 255] (uint8)")
-    return _ExecutionArgument.create(value)
+        assert isinstance(value, np.ndarray)
+        if value.dtype != np.uint8:
+            raise TypeError("numpy.array must be of dtype uint8")
+        return _LambdaArgument.from_tensor(value.flatten().tolist(), value.shape)
 
 
 class CompilerEngine:
@@ -69,11 +69,11 @@ class CompilerEngine:
             raise TypeError("input must be an `str`")
         self._lambda = self._engine.build_lambda(mlir_str, func_name)
 
-    def run(self, *args: List[Union[int, List[int]]]) -> Union[int, np.array]:
+    def run(self, *args: List[Union[int, np.ndarray]]) -> Union[int, np.ndarray]:
         """Run the compiled code.
 
         Args:
-            *args: list of arguments for execution. Each argument can be an int, or a list of int
+            *args: list of arguments for execution. Each argument can be an int, or a numpy.array
 
         Raises:
             TypeError: if execution arguments can't be constructed

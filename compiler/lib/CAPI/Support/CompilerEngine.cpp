@@ -1,11 +1,8 @@
 #include "zamalang-c/Support/CompilerEngine.h"
 #include "zamalang/Support/CompilerEngine.h"
-#include "zamalang/Support/ExecutionArgument.h"
 #include "zamalang/Support/Jit.h"
 #include "zamalang/Support/JitCompilerEngine.h"
 
-// using mlir::zamalang::CompilerEngine;
-using mlir::zamalang::ExecutionArgument;
 using mlir::zamalang::JitCompilerEngine;
 
 mlir::zamalang::JitCompilerEngine::Lambda buildLambda(const char *module,
@@ -33,16 +30,7 @@ lambdaArgument invokeLambda(lambda l, executionArguments args) {
   // Set the integer/tensor arguments
   std::vector<mlir::zamalang::LambdaArgument *> lambdaArgumentsRef;
   for (auto i = 0; i < args.size; i++) {
-    if (args.data[i].isInt()) { // integer argument
-      lambdaArgumentsRef.push_back(new mlir::zamalang::IntLambdaArgument<>(
-          args.data[i].getIntegerArgument()));
-    } else { // tensor argument
-      llvm::MutableArrayRef<uint8_t> tensor(args.data[i].getTensorArgument(),
-                                            args.data[i].getTensorSize());
-      lambdaArgumentsRef.push_back(
-          new mlir::zamalang::TensorLambdaArgument<
-              mlir::zamalang::IntLambdaArgument<uint8_t>>(tensor));
-    }
+    lambdaArgumentsRef.push_back(args.data[i].ptr.get());
   }
   // Run lambda
   llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> resOrError =
@@ -51,9 +39,6 @@ lambdaArgument invokeLambda(lambda l, executionArguments args) {
           operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
               llvm::ArrayRef<mlir::zamalang::LambdaArgument *>(
                   lambdaArgumentsRef));
-  // Free heap
-  for (size_t i = 0; i < lambdaArgumentsRef.size(); i++)
-    delete lambdaArgumentsRef[i];
 
   if (!resOrError) {
     std::string backingString;
@@ -63,7 +48,7 @@ lambdaArgument invokeLambda(lambda l, executionArguments args) {
     throw std::runtime_error(os.str());
   }
   lambdaArgument result{std::move(*resOrError)};
-  return result;
+  return std::move(result);
 }
 
 std::string roundTrip(const char *module) {
@@ -140,4 +125,18 @@ uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
                                 "be an IntLambdaArgument<uint64_t>");
   }
   return arg->getValue();
+}
+
+lambdaArgument lambdaArgumentFromTensor(std::vector<uint8_t> data,
+                                        std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::zamalang::TensorLambdaArgument<
+          mlir::zamalang::IntLambdaArgument<uint8_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromScalar(uint64_t scalar) {
+  lambdaArgument scalar_arg{
+      std::make_shared<mlir::zamalang::IntLambdaArgument<uint64_t>>(scalar)};
+  return scalar_arg;
 }

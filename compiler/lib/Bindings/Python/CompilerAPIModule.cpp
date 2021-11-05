@@ -1,7 +1,6 @@
 #include "CompilerAPIModule.h"
 #include "zamalang-c/Support/CompilerEngine.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEOpsDialect.h.inc"
-#include "zamalang/Support/ExecutionArgument.h"
 #include "zamalang/Support/Jit.h"
 #include "zamalang/Support/JitCompilerEngine.h"
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
@@ -15,7 +14,6 @@
 #include <stdexcept>
 #include <string>
 
-using mlir::zamalang::ExecutionArgument;
 using mlir::zamalang::JitCompilerEngine;
 using mlir::zamalang::LambdaArgument;
 
@@ -26,15 +24,6 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
   m.def("round_trip",
         [](std::string mlir_input) { return roundTrip(mlir_input.c_str()); });
 
-  pybind11::class_<ExecutionArgument, std::shared_ptr<ExecutionArgument>>(
-      m, "ExecutionArgument")
-      .def("create",
-           pybind11::overload_cast<uint64_t>(&ExecutionArgument::create))
-      .def("create", pybind11::overload_cast<std::vector<uint8_t>>(
-                         &ExecutionArgument::create))
-      .def("is_tensor", &ExecutionArgument::isTensor)
-      .def("is_int", &ExecutionArgument::isInt);
-
   pybind11::class_<JitCompilerEngine>(m, "JitCompilerEngine")
       .def(pybind11::init())
       .def_static("build_lambda",
@@ -43,6 +32,8 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
                   });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
+      .def_static("from_tensor", lambdaArgumentFromTensor)
+      .def_static("from_scalar", lambdaArgumentFromScalar)
       .def("is_tensor",
            [](lambdaArgument &lambda_arg) {
              return lambdaArgumentIsTensor(lambda_arg);
@@ -65,7 +56,7 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
 
   pybind11::class_<JitCompilerEngine::Lambda>(m, "Lambda")
       .def("invoke", [](JitCompilerEngine::Lambda &py_lambda,
-                        std::vector<ExecutionArgument> args) {
+                        std::vector<lambdaArgument> args) {
         // wrap and call CAPI
         lambda c_lambda{&py_lambda};
         exectuionArguments a{args.data(), args.size()};

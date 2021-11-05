@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 from zamalang import CompilerEngine
 
 
@@ -14,7 +15,7 @@ from zamalang import CompilerEngine
             """,
             (5, 7),
             12,
-            id="add_eint_int"
+            id="add_eint_int",
         ),
         pytest.param(
             """
@@ -25,9 +26,12 @@ from zamalang import CompilerEngine
                 return %ret : !HLFHE.eint<7>
             }
             """,
-            ([1, 2, 3, 4], [4, 3, 2, 1]),
+            (
+                np.array([1, 2, 3, 4], dtype=np.uint8),
+                np.array([4, 3, 2, 1], dtype=np.uint8),
+            ),
             20,
-            id="dot_eint_int"
+            id="dot_eint_int",
         ),
         pytest.param(
             """
@@ -36,9 +40,63 @@ from zamalang import CompilerEngine
                 return %res : tensor<4x!HLFHE.eint<6>>
             }
             """,
-            ([31, 6, 12, 9], [32, 9, 2, 3]),
-            [63, 15, 14, 12],
-            id="add_eint_int_1D"
+            (
+                np.array([31, 6, 12, 9], dtype=np.uint8),
+                np.array([32, 9, 2, 3], dtype=np.uint8),
+            ),
+            np.array([63, 15, 14, 12]),
+            id="add_eint_int_1D",
+        ),
+        pytest.param(
+            """
+            func @main(%a0: tensor<4x4x!HLFHE.eint<6>>, %a1: tensor<4x4xi7>) -> tensor<4x4x!HLFHE.eint<6>> {
+                %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x4x!HLFHE.eint<6>>, tensor<4x4xi7>) -> tensor<4x4x!HLFHE.eint<6>>
+                return %res : tensor<4x4x!HLFHE.eint<6>>
+            }
+            """,
+            (
+                np.array(
+                    [[31, 6, 12, 9], [31, 6, 12, 9], [31, 6, 12, 9], [31, 6, 12, 9]],
+                    dtype=np.uint8,
+                ),
+                np.array(
+                    [[32, 9, 2, 3], [32, 9, 2, 3], [32, 9, 2, 3], [32, 9, 2, 3]],
+                    dtype=np.uint8,
+                ),
+            ),
+            np.array(
+                [
+                    [63, 15, 14, 12],
+                    [63, 15, 14, 12],
+                    [63, 15, 14, 12],
+                    [63, 15, 14, 12],
+                ],
+                dtype=np.uint8,
+            ),
+            id="add_eint_int_2D",
+        ),
+        pytest.param(
+            """
+            func @main(%a0: tensor<2x2x2x!HLFHE.eint<6>>, %a1: tensor<2x2x2xi7>) -> tensor<2x2x2x!HLFHE.eint<6>> {
+                %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<2x2x2x!HLFHE.eint<6>>, tensor<2x2x2xi7>) -> tensor<2x2x2x!HLFHE.eint<6>>
+                return %res : tensor<2x2x2x!HLFHE.eint<6>>
+            }
+            """,
+            (
+                np.array(
+                    [[[1, 2], [3, 4]], [[5, 6], [7, 8]]],
+                    dtype=np.uint8,
+                ),
+                np.array(
+                    [[[9, 10], [11, 12]], [[13, 14], [15, 16]]],
+                    dtype=np.uint8,
+                ),
+            ),
+            np.array(
+                [[[10, 12], [14, 16]], [[18, 20], [22, 24]]],
+                dtype=np.uint8,
+            ),
+            id="add_eint_int_3D",
         ),
     ],
 )
@@ -48,10 +106,8 @@ def test_compile_and_run(mlir_input, args, expected_result):
     if isinstance(expected_result, int):
         assert engine.run(*args) == expected_result
     else:
-        # numpy array on the left
-        assert (engine.run(*args) == expected_result).all()
-
-
+        # numpy array
+        assert np.all(engine.run(*args) == expected_result)
 
 
 @pytest.mark.parametrize(
@@ -65,7 +121,7 @@ def test_compile_and_run(mlir_input, args, expected_result):
             }
             """,
             (5, 7, 8),
-            id="add_eint_int_invalid_arg_number"
+            id="add_eint_int_invalid_arg_number",
         ),
     ],
 )
@@ -90,7 +146,7 @@ def test_compile_and_run_invalid_arg_number(mlir_input, args):
             (73,),
             73,
             128,
-            id="apply_lookup_table"
+            id="apply_lookup_table",
         ),
     ],
 )
@@ -112,7 +168,7 @@ def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
                 return %ret : !HLFHE.eint<7>
             }
             """,
-            id="not @main"
+            id="not @main",
         ),
     ],
 )
