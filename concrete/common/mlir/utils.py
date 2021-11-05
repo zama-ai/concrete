@@ -10,7 +10,6 @@ from ..data_types.dtypes_helpers import (
     value_is_encrypted_scalar_integer,
     value_is_encrypted_tensor_integer,
     value_is_integer,
-    value_is_scalar,
     value_is_unsigned_integer,
 )
 from ..debugging import format_operation_graph
@@ -46,18 +45,18 @@ def check_node_compatibility_with_mlir(
 
     if isinstance(node, intermediate.Add):  # constraints for addition
         for inp in inputs:
-            if not value_is_scalar(inp):
-                return "only scalar addition is supported"
+            if not value_is_integer(inp):
+                return "only integer addition is supported"
 
     elif isinstance(node, intermediate.Sub):  # constraints for subtraction
         for inp in inputs:
-            if not value_is_scalar(inp):
-                return "only scalar subtraction is supported"
+            if not value_is_integer(inp):
+                return "only integer subtraction is supported"
 
     elif isinstance(node, intermediate.Mul):  # constraints for multiplication
         for inp in inputs:
-            if not value_is_scalar(inp):
-                return "only scalar multiplication is supported"
+            if not value_is_integer(inp):
+                return "only integer multiplication is supported"
 
     elif isinstance(node, intermediate.Input):  # constraints for inputs
         assert_true(len(outputs) == 1)
@@ -85,8 +84,14 @@ def check_node_compatibility_with_mlir(
             )
             if node.op_name == "MultiTLU":
                 return "direct multi table lookup is not supported for the time being"
-            if not value_is_scalar(inputs[0]) or not value_is_unsigned_integer(inputs[0]):
-                return "only unsigned integer scalar lookup tables are supported"
+
+            if not value_is_unsigned_integer(inputs[0]):
+                # this branch is not reachable because compilation fails during inputset evaluation
+                if node.op_name == "TLU":  # pragma: no cover
+                    return "only unsigned integer lookup tables are supported"
+
+                # e.g., `np.absolute is not supported for the time being`
+                return f"{node.op_name} is not supported for the time being"
         else:
             return (
                 f"{node.op_name} of kind {node.op_kind.value} is not supported for the time being"
@@ -109,8 +114,8 @@ def check_node_compatibility_with_mlir(
 
     if is_output:
         for out in outputs:
-            if not value_is_scalar(out) or not value_is_unsigned_integer(out):
-                return "only scalar unsigned integer outputs are supported"
+            if not value_is_unsigned_integer(out):
+                return "only unsigned integer outputs are supported"
     else:
         for out in outputs:
             # We currently can't fail on the following assert, but let it for possible changes in

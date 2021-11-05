@@ -1,7 +1,7 @@
 """This file contains a wrapper class for direct table lookups."""
 
 from copy import deepcopy
-from typing import Iterable, Tuple, Union
+from typing import Any, Iterable, List, Tuple, Union
 
 from ..common_helpers import is_a_power_of_2
 from ..data_types.base import BaseDataType
@@ -30,7 +30,7 @@ class LookupTable:
         self.table = table
         self.output_dtype = make_integer_to_hold(table, force_signed=False)
 
-    def __getitem__(self, key: Union[int, BaseTracer]):
+    def __getitem__(self, key: Union[int, Iterable, BaseTracer]):
         # if a tracer is used for indexing,
         # we need to create an `GenericFunction` node
         # because the result will be determined during the runtime
@@ -58,11 +58,58 @@ class LookupTable:
         return LookupTable._checked_indexing(key, self.table)
 
     @staticmethod
-    def _checked_indexing(x, table):
+    def _check_index_out_of_range(x, table):
         if x < 0 or x >= len(table):
             raise ValueError(
                 f"Lookup table with {len(table)} entries cannot be indexed with {x} "
                 f"(you should check your inputset)",
             )
 
-        return table[x]
+    @staticmethod
+    def _checked_indexing(x, table):
+        """Index `table` using `x`.
+
+        There is a single table and the indexing works with the following semantics:
+        - when x == c
+            - table[x] == table[c]
+        - when x == [c1, c2]
+            - table[x] == [table[c1], table[c2]]
+        - when x == [[c1, c2], [c3, c4], [c5, c6]]
+            - table[x] == [[table[c1], table[c2]], [table[c3], table[c4]], [table[c5], table[c6]]]
+
+        Args:
+            x (Union[int, Iterable]): index to use
+            table (Tuple[int, ...]): table to index
+
+        Returns:
+            Union[int, List[int]]: result of indexing
+        """
+
+        if not isinstance(x, Iterable):
+            LookupTable._check_index_out_of_range(x, table)
+            return table[x]
+
+        def fill_result(partial_result: List[Any], partial_x: Iterable[Any]):
+            """Fill partial result with partial x.
+
+            This function implements the recursive indexing of nested iterables.
+
+            Args:
+                partial_result (List[Any]): currently accumulated result
+                partial_x (Iterable[Any]): current index to use
+
+            Returns:
+                None
+            """
+
+            for item in partial_x:
+                if isinstance(item, Iterable):
+                    partial_result.append([])
+                    fill_result(partial_result[-1], item)
+                else:
+                    LookupTable._check_index_out_of_range(item, table)
+                    partial_result.append(table[item])
+
+        result = []
+        fill_result(result, x)
+        return result
