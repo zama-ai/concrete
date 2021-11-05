@@ -60,6 +60,10 @@ public:
     // `pos` or an error if the result is a scalar value
     llvm::Expected<size_t> getResultVectorSize(size_t pos);
 
+    // Returns the dimensions of the result tensor at position `pos` or
+    // an error if the result is a scalar value
+    llvm::Expected<std::vector<int64_t>> getResultDimensions(size_t pos);
+
   private:
     llvm::Error setArg(size_t pos, size_t width, const void *data,
                        llvm::ArrayRef<int64_t> shape);

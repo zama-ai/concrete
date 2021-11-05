@@ -79,9 +79,14 @@ typedResult(JITLambda::Argument &arguments) {
     if (!tensorOrError)
       return std::move(tensorOrError.takeError());
 
+    llvm::Expected<std::vector<int64_t>> tensorDimOrError =
+        arguments.getResultDimensions(0);
+    if (!tensorDimOrError)
+      return std::move(tensorDimOrError.takeError());
+
     return std::move(
         std::make_unique<TensorLambdaArgument<IntLambdaArgument<uint64_t>>>(
-            *tensorOrError));
+            *tensorOrError, *tensorDimOrError));
   }
   }
 
