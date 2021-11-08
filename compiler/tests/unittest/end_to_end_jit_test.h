@@ -6,7 +6,7 @@
 #include "zamalang/Support/CompilerEngine.h"
 #include "zamalang/Support/JitCompilerEngine.h"
 
-mlir::zamalang::V0FHEConstraint defaultV0Constraints();
+extern const mlir::zamalang::V0FHEConstraint defaultV0Constraints;
 
 #define ASSERT_LLVM_ERROR(err)                                                 \
   if (err) {                                                                   \
@@ -87,7 +87,7 @@ internalCheckedJit(F checkfunc, llvm::StringRef src,
   mlir::zamalang::JitCompilerEngine engine;
 
   if (useDefaultFHEConstraints)
-    engine.setFHEConstraints(defaultV0Constraints());
+    engine.setFHEConstraints(defaultV0Constraints);
 
   llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
       engine.buildLambda(src, func);

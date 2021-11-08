@@ -27,9 +27,6 @@ $(BUILD_DIR)/configured.stamp:
 
 build-initialized: $(BUILD_DIR)/configured.stamp
 
-build-end-to-end-jit: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
-
 zamacompiler: build-initialized
 	cmake --build $(BUILD_DIR) --target zamacompiler
 
@@ -40,13 +37,40 @@ python-bindings: build-initialized
 test-check: zamacompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/
 
-test-end-to-end-jit: build-end-to-end-jit
-	$(BUILD_DIR)/bin/end_to_end_jit_test
-
 test-python: python-bindings
 	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core LD_PRELOAD=$(BUILD_DIR)/lib/libZamalangRuntime.so pytest -vs tests/python
 
 test: test-check test-end-to-end-jit test-python
+
+# Unittests
+
+build-end-to-end-jit-test: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
+
+build-end-to-end-jit-clear-tensor: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_clear_tensor
+
+build-end-to-end-jit-encrypted-tensor: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_encrypted_tensor
+
+build-end-to-end-jit-hlfhelinalg: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_hlfhelinalg
+
+build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-hlfhelinalg
+
+test-end-to-end-jit-test: build-end-to-end-jit-test
+	$(BUILD_DIR)/bin/end_to_end_jit_test
+
+test-end-to-end-jit-clear-tensor: build-end-to-end-jit-clear-tensor
+	$(BUILD_DIR)/bin/end_to_end_jit_clear_tensor
+
+test-end-to-end-jit-encrypted-tensor: build-end-to-end-jit-encrypted-tensor
+	$(BUILD_DIR)/bin/end_to_end_jit_encrypted_tensor
+
+test-end-to-end-jit-hlfhelinalg: build-end-to-end-jit-hlfhelinalg
+	$(BUILD_DIR)/bin/end_to_end_jit_hlfhelinalg
+
+test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-hlfhelinalg
 
 # LLVM/MLIR dependencies
 
@@ -83,6 +107,10 @@ release_tarballs:
 	python-bindings \
 	test-check \
 	test-end-to-end-jit \
+	test-end-to-end-jit-test \
+	test-end-to-end-jit-clear-tensor \
+	test-end-to-end-jit-encrypted-tensor \
+	test-end-to-end-jit-hlfhelinalg \
 	test-python \
 	test \
 	add-deps \
