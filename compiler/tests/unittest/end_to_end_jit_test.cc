@@ -77,6 +77,91 @@ func @main(%arg0: !HLFHE.eint<7>, %arg1: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
   eval(ila2, ila7, 9);
 }
 
+TEST(CompileAndRunHLFHE, neg_eint) {
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
+  %1 = "HLFHE.neg_eint"(%arg0): (!HLFHE.eint<7>) -> (!HLFHE.eint<7>)
+  return %1: !HLFHE.eint<7>
+}
+)XXX");
+
+  ASSERT_EXPECTED_VALUE(lambda(0_u64), 0);
+  ASSERT_EXPECTED_VALUE(lambda(1_u64), 255);
+  ASSERT_EXPECTED_VALUE(lambda(4_u64), 252);
+  ASSERT_EXPECTED_VALUE(lambda(250_u64), 6);
+}
+
+// Same as CompileAndRunHLFHE::neg_eint above, but using 3 bits
+TEST(CompileAndRunHLFHE, neg_eint_3bits) {
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%arg0: !HLFHE.eint<3>) -> !HLFHE.eint<3> {
+  %1 = "HLFHE.neg_eint"(%arg0): (!HLFHE.eint<3>) -> (!HLFHE.eint<3>)
+  return %1: !HLFHE.eint<3>
+}
+)XXX");
+
+  ASSERT_EXPECTED_VALUE(lambda(0_u64), 0);
+  ASSERT_EXPECTED_VALUE(lambda(1_u64), 15);
+  ASSERT_EXPECTED_VALUE(lambda(4_u64), 12);
+  ASSERT_EXPECTED_VALUE(lambda(13_u64), 3);
+}
+
+// Same as CompileAndRunHLFHE::neg_eint above, but using
+// `LambdaArgument` instances as arguments
+TEST(CompileAndRunHLFHE, neg_eint_lambda_argument) {
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
+  %1 = "HLFHE.neg_eint"(%arg0): (!HLFHE.eint<7>) -> (!HLFHE.eint<7>)
+  return %1: !HLFHE.eint<7>
+}
+)XXX");
+
+  mlir::zamalang::IntLambdaArgument<> ila0(0);
+  mlir::zamalang::IntLambdaArgument<> ila2(2);
+  mlir::zamalang::IntLambdaArgument<> ila7(7);
+  mlir::zamalang::IntLambdaArgument<> ila150(150);
+  mlir::zamalang::IntLambdaArgument<> ila249(249);
+
+  ASSERT_EXPECTED_VALUE(lambda({&ila0}), 0);
+  ASSERT_EXPECTED_VALUE(lambda({&ila2}), 254);
+  ASSERT_EXPECTED_VALUE(lambda({&ila7}), 249);
+  ASSERT_EXPECTED_VALUE(lambda({&ila150}), 106);
+  ASSERT_EXPECTED_VALUE(lambda({&ila249}), 7);
+}
+
+// Same as CompileAndRunHLFHE::neg_eint above, but using
+// `LambdaArgument` instances as arguments and as a result type
+TEST(CompileAndRunHLFHE, neg_eint_lambda_argument_res) {
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
+  %1 = "HLFHE.neg_eint"(%arg0): (!HLFHE.eint<7>) -> (!HLFHE.eint<7>)
+  return %1: !HLFHE.eint<7>
+}
+)XXX");
+
+  mlir::zamalang::IntLambdaArgument<> ila1(1);
+  mlir::zamalang::IntLambdaArgument<> ila2(2);
+  mlir::zamalang::IntLambdaArgument<> ila7(7);
+  mlir::zamalang::IntLambdaArgument<> ila9(9);
+
+  auto eval = [&](mlir::zamalang::IntLambdaArgument<> &arg0,
+                  uint64_t expected) {
+    llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res0 =
+        lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+            {&arg0});
+
+    ASSERT_EXPECTED_SUCCESS(res0);
+    ASSERT_TRUE((*res0)->isa<mlir::zamalang::IntLambdaArgument<>>());
+    ASSERT_EQ((*res0)->cast<mlir::zamalang::IntLambdaArgument<>>().getValue(),
+              expected);
+  };
+
+  eval(ila1, 255);
+  eval(ila2, 254);
+  eval(ila7, 249);
+  eval(ila9, 247);
+}
+
 TEST(CompileAndRunHLFHE, add_u64) {
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%arg0: i64, %arg1: i64) -> i64 {
