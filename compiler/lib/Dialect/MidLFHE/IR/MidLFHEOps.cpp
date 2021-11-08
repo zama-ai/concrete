@@ -105,6 +105,36 @@ mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
   return mlir::success();
 }
 
+// verifyUnaryGLWEOperator verify parameters of operators that has the following
+// signature (!MidLFHE.glwe<{dim,poly,bits}{p}>) ->
+// (!MidLFHE.glwe<{dim,poly,bits}{p}>))
+template <class Operator>
+mlir::LogicalResult verifyUnaryGLWEOperator(Operator &op) {
+  auto a = ((mlir::Type)(op.a().getType())).cast<GLWECipherTextType>();
+  auto result =
+      ((mlir::Type)(op.getResult().getType())).cast<GLWECipherTextType>();
+
+  // verify consistency of a and result GLWE parameter
+  if (a.getDimension() != result.getDimension()) {
+    emitOpErrorForIncompatibleGLWEParameter(op, "dimension");
+    return mlir::failure();
+  }
+  if (a.getPolynomialSize() != result.getPolynomialSize()) {
+    emitOpErrorForIncompatibleGLWEParameter(op, "polynomialSize");
+    return mlir::failure();
+  }
+  if (a.getBits() != result.getBits()) {
+    emitOpErrorForIncompatibleGLWEParameter(op, "bits");
+    return mlir::failure();
+  }
+  if (a.getP() != result.getP()) {
+    emitOpErrorForIncompatibleGLWEParameter(op, "p");
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 /// verifyApplyLookupTable verify the GLWE parameters follow the rules:
 /// - The l_cst argument must be a memref of one dimension of size 2^p
 /// - The lookup table contains integer values of the same width of the output

@@ -50,6 +50,15 @@ def SubIntGLWEOp : MidLFHE_Op<"sub_int_glwe"> {
     }];
 }
 
+def NegGLWEOp : MidLFHE_Op<"neg_glwe"> {
+    let arguments = (ins GLWECipherTextType:$a);
+    let results = (outs GLWECipherTextType);
+
+    let verifier = [{
+        return ::mlir::zamalang::MidLFHE::verifyUnaryGLWEOperator<NegGLWEOp>(*this);
+    }];
+}
+
 
 def MulGLWEIntOp : MidLFHE_Op<"mul_glwe_int"> {
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
