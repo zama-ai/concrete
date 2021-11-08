@@ -4,7 +4,7 @@ import numpy
 import pytest
 
 from concrete.common.data_types.integers import Integer
-from concrete.common.debugging import draw_graph, get_printable_graph
+from concrete.common.debugging import draw_graph, format_operation_graph
 from concrete.common.extensions.table import LookupTable
 from concrete.common.values import ClearScalar, EncryptedScalar, EncryptedTensor
 from concrete.numpy import tracing
@@ -154,13 +154,13 @@ return(%4)
     ],
 )
 def test_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
-    "Test get_printable_graph and draw_graph"
+    "Test format_operation_graph and draw_graph"
     x, y = x_y
     graph = tracing.trace_numpy_function(lambda_f, {"x": x, "y": y})
 
     draw_graph(graph, show=False)
 
-    str_of_the_graph = get_printable_graph(graph)
+    str_of_the_graph = format_operation_graph(graph)
 
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
@@ -185,12 +185,12 @@ def test_print_and_draw_graph(lambda_f, ref_graph_str, x_y):
     ],
 )
 def test_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
-    "Test get_printable_graph and draw_graph on graphs with direct table lookup"
+    "Test format_operation_graph and draw_graph on graphs with direct table lookup"
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)
 
-    str_of_the_graph = get_printable_graph(graph)
+    str_of_the_graph = format_operation_graph(graph)
 
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
@@ -213,12 +213,12 @@ def test_print_and_draw_graph_with_direct_tlu(lambda_f, params, ref_graph_str):
     ],
 )
 def test_print_and_draw_graph_with_dot(lambda_f, params, ref_graph_str):
-    "Test get_printable_graph and draw_graph on graphs with dot"
+    "Test format_operation_graph and draw_graph on graphs with dot"
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)
 
-    str_of_the_graph = get_printable_graph(graph)
+    str_of_the_graph = format_operation_graph(graph)
 
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
@@ -289,12 +289,12 @@ return(%1)
     ],
 )
 def test_print_and_draw_graph_with_generic_function(lambda_f, params, ref_graph_str):
-    "Test get_printable_graph and draw_graph on graphs with generic function"
+    "Test format_operation_graph and draw_graph on graphs with generic function"
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)
 
-    str_of_the_graph = get_printable_graph(graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(graph, show_data_types=True)
 
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
@@ -343,11 +343,11 @@ def test_print_and_draw_graph_with_generic_function(lambda_f, params, ref_graph_
     ],
 )
 def test_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
-    """Test get_printable_graph with show_data_types"""
+    """Test format_operation_graph with show_data_types"""
     x, y = x_y
     graph = tracing.trace_numpy_function(lambda_f, {"x": x, "y": y})
 
-    str_of_the_graph = get_printable_graph(graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(graph, show_data_types=True)
 
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
@@ -399,12 +399,12 @@ def test_print_with_show_data_types(lambda_f, x_y, ref_graph_str):
     ],
 )
 def test_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref_graph_str):
-    """Test get_printable_graph with show_data_types on graphs with direct table lookup"""
+    """Test format_operation_graph with show_data_types on graphs with direct table lookup"""
     graph = tracing.trace_numpy_function(lambda_f, params)
 
     draw_graph(graph, show=False)
 
-    str_of_the_graph = get_printable_graph(graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(graph, show_data_types=True)
 
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
@@ -414,7 +414,7 @@ def test_print_with_show_data_types_with_direct_tlu(lambda_f, params, ref_graph_
 
 
 def test_numpy_long_constant():
-    "Test get_printable_graph with long constant"
+    "Test format_operation_graph with long constant"
 
     def all_explicit_operations(x):
         intermediate = numpy.add(x, numpy.arange(100).reshape(10, 10))
@@ -440,7 +440,7 @@ def test_numpy_long_constant():
 return(%8)
 """.lstrip()  # noqa: E501
 
-    str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(op_graph, show_data_types=True)
 
     assert str_of_the_graph == expected, (
         f"\n==================\nGot \n{str_of_the_graph}"

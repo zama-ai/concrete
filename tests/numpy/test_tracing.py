@@ -9,7 +9,7 @@ import pytest
 from concrete.common.data_types.dtypes_helpers import broadcast_shapes
 from concrete.common.data_types.floats import Float
 from concrete.common.data_types.integers import Integer
-from concrete.common.debugging import get_printable_graph
+from concrete.common.debugging import format_operation_graph
 from concrete.common.representation import intermediate as ir
 from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor
 from concrete.numpy import tracing
@@ -204,7 +204,7 @@ def test_numpy_tracing_tensors():
 return(%12)
 """.lstrip()  # noqa: E501
 
-    assert get_printable_graph(op_graph, show_data_types=True) == expected
+    assert format_operation_graph(op_graph, show_data_types=True) == expected
 
 
 def test_numpy_explicit_tracing_tensors():
@@ -243,7 +243,7 @@ def test_numpy_explicit_tracing_tensors():
 return(%12)
 """.lstrip()  # noqa: E501
 
-    assert get_printable_graph(op_graph, show_data_types=True) == expected
+    assert format_operation_graph(op_graph, show_data_types=True) == expected
 
 
 @pytest.mark.parametrize(

@@ -2,7 +2,7 @@
 
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Float, Float32, Float64, Integer, SignedInteger, UnsignedInteger
-from ..common.debugging import draw_graph, get_printable_graph
+from ..common.debugging import draw_graph, format_operation_graph
 from ..common.extensions.multi_table import MultiLookupTable
 from ..common.extensions.table import LookupTable
 from ..common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor, TensorValue

@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 from zamalang import CompilerEngine
 
-from .debugging import draw_graph, get_printable_graph
+from .debugging import draw_graph, format_operation_graph
 from .operator_graph import OPGraph
 
 
@@ -20,7 +20,7 @@ class FHECircuit:
         self.engine = engine
 
     def __str__(self):
-        return get_printable_graph(self.opgraph, show_data_types=True)
+        return format_operation_graph(self.opgraph, show_data_types=True)
 
     def draw(
         self,

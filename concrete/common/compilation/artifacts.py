@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Optional, Union
 import networkx as nx
 from PIL import Image
 
-from ..debugging import assert_true, draw_graph, get_printable_graph
+from ..debugging import assert_true, draw_graph, format_operation_graph
 from ..operator_graph import OPGraph
 from ..representation.intermediate import IntermediateNode
 from ..values import BaseValue
@@ -85,7 +85,7 @@ class CompilationArtifacts:
         """
 
         drawing = draw_graph(operation_graph)
-        textual_representation = get_printable_graph(operation_graph, show_data_types=True)
+        textual_representation = format_operation_graph(operation_graph, show_data_types=True)
 
         self.drawings_of_operation_graphs[name] = drawing
         self.textual_representations_of_operation_graphs[name] = textual_representation

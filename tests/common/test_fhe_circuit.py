@@ -3,7 +3,7 @@
 import filecmp
 
 import concrete.numpy as hnp
-from concrete.common.debugging import draw_graph, get_printable_graph
+from concrete.common.debugging import draw_graph, format_operation_graph
 
 
 def test_circuit_str(default_compilation_configuration):
@@ -17,7 +17,7 @@ def test_circuit_str(default_compilation_configuration):
     inputset = [(i,) for i in range(2 ** 3)]
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
-    assert str(circuit) == get_printable_graph(circuit.opgraph, show_data_types=True)
+    assert str(circuit) == format_operation_graph(circuit.opgraph, show_data_types=True)
 
 
 def test_circuit_draw(default_compilation_configuration):

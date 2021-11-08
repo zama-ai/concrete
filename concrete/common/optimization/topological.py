@@ -9,7 +9,7 @@ from loguru import logger
 from ..compilation.artifacts import CompilationArtifacts
 from ..data_types.floats import Float
 from ..data_types.integers import Integer
-from ..debugging import get_printable_graph
+from ..debugging import format_operation_graph
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
 from ..representation.intermediate import Constant, GenericFunction, Input, IntermediateNode
@@ -131,7 +131,7 @@ def convert_float_subgraph_to_fused_node(
         float_subgraph = nx.MultiDiGraph(op_graph.graph.subgraph(subgraph_all_nodes))
         float_subgraph_as_op_graph = OPGraph.from_graph(float_subgraph, [], [terminal_node])
 
-        printable_graph = get_printable_graph(
+        printable_graph = format_operation_graph(
             float_subgraph_as_op_graph,
             show_data_types=True,
             highlighted_nodes=node_with_issues_for_fusing,

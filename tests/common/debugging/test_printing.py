@@ -1,13 +1,13 @@
 """Test file for printing"""
 
 from concrete.common.data_types.integers import Integer
-from concrete.common.debugging import get_printable_graph
+from concrete.common.debugging import format_operation_graph
 from concrete.common.values import EncryptedScalar
 from concrete.numpy.compile import compile_numpy_function_into_op_graph
 
 
-def test_get_printable_graph_with_offending_nodes(default_compilation_configuration):
-    """Test get_printable_graph with offending nodes"""
+def test_format_operation_graph_with_offending_nodes(default_compilation_configuration):
+    """Test format_operation_graph with offending nodes"""
 
     def function(x):
         return x + 42
@@ -21,10 +21,10 @@ def test_get_printable_graph_with_offending_nodes(default_compilation_configurat
 
     highlighted_nodes = {opgraph.input_nodes[0]: ["foo"]}
 
-    without_types = get_printable_graph(
+    without_types = format_operation_graph(
         opgraph, show_data_types=False, highlighted_nodes=highlighted_nodes
     ).strip()
-    with_types = get_printable_graph(
+    with_types = format_operation_graph(
         opgraph, show_data_types=True, highlighted_nodes=highlighted_nodes
     ).strip()
 
@@ -56,10 +56,10 @@ return(%2)
 
     highlighted_nodes = {opgraph.input_nodes[0]: ["foo"], opgraph.output_nodes[0]: ["bar", "baz"]}
 
-    without_types = get_printable_graph(
+    without_types = format_operation_graph(
         opgraph, show_data_types=False, highlighted_nodes=highlighted_nodes
     ).strip()
-    with_types = get_printable_graph(
+    with_types = format_operation_graph(
         opgraph, show_data_types=True, highlighted_nodes=highlighted_nodes
     ).strip()
 

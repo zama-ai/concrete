@@ -45,7 +45,7 @@ def shorten_a_constant(constant_data: str):
     return short_content
 
 
-def get_printable_graph(
+def format_operation_graph(
     opgraph: OPGraph,
     show_data_types: bool = False,
     highlighted_nodes: Optional[Dict[IntermediateNode, List[str]]] = None,

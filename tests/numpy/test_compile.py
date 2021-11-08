@@ -8,7 +8,7 @@ import pytest
 
 from concrete.common.compilation import CompilationConfiguration
 from concrete.common.data_types.integers import Integer, UnsignedInteger
-from concrete.common.debugging import draw_graph, get_printable_graph
+from concrete.common.debugging import draw_graph, format_operation_graph
 from concrete.common.extensions.multi_table import MultiLookupTable
 from concrete.common.extensions.table import LookupTable
 from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
@@ -490,7 +490,7 @@ def test_compile_function_multiple_outputs(
     # when we have the converter, we can check the MLIR
     draw_graph(op_graph, show=False)
 
-    str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(op_graph, show_data_types=True)
     print(f"\n{str_of_the_graph}\n")
 
 
@@ -732,7 +732,7 @@ def test_compile_function_with_direct_tlu(default_compilation_configuration):
         default_compilation_configuration,
     )
 
-    str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(op_graph, show_data_types=True)
     print(f"\n{str_of_the_graph}\n")
 
 
@@ -1134,7 +1134,7 @@ def test_compile_function_with_dot(
         data_gen(max_for_ij, repeat),
         default_compilation_configuration,
     )
-    str_of_the_graph = get_printable_graph(op_graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(op_graph, show_data_types=True)
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
         f"==================\nExpected \n{ref_graph_str}"

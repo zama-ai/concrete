@@ -11,7 +11,7 @@ from ..common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_in
 from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Integer
-from ..common.debugging import get_printable_graph
+from ..common.debugging import format_operation_graph
 from ..common.fhe_circuit import FHECircuit
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS
 from ..common.mlir.utils import (
@@ -244,7 +244,9 @@ def prepare_op_graph_for_mlir(op_graph):
     if offending_nodes is not None:
         raise RuntimeError(
             "function you are trying to compile isn't supported for MLIR lowering\n\n"
-            + get_printable_graph(op_graph, show_data_types=True, highlighted_nodes=offending_nodes)
+            + format_operation_graph(
+                op_graph, show_data_types=True, highlighted_nodes=offending_nodes
+            )
         )
 
     # Update bit_width for MLIR

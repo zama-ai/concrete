@@ -13,7 +13,7 @@ from ..data_types.dtypes_helpers import (
     value_is_scalar,
     value_is_unsigned_integer,
 )
-from ..debugging import get_printable_graph
+from ..debugging import format_operation_graph
 from ..debugging.custom_assert import assert_not_reached, assert_true
 from ..operator_graph import OPGraph
 from ..representation import intermediate
@@ -199,7 +199,9 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
             f"max_bit_width of some nodes is too high for the current version of "
             f"the compiler (maximum must be {ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB}) "
             f"which is not compatible with:\n"
-            + get_printable_graph(op_graph, show_data_types=True, highlighted_nodes=offending_nodes)
+            + format_operation_graph(
+                op_graph, show_data_types=True, highlighted_nodes=offending_nodes
+            )
         )
 
     _set_all_bit_width(op_graph, max_bit_width)
