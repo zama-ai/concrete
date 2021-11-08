@@ -35,6 +35,12 @@ def SubIntGLWEPattern : Pat<
     (SubIntGLWEOp:$result $arg0, $arg1),
     (createSubIntLweOp $arg0, $arg1, $result)>;
 
+def createNegLweOp : NativeCodeCall<"mlir::zamalang::createNegLweCiphertext($_builder, $_loc, $0, $1)">;
+
+def NegGLWEPattern : Pat<
+    (NegGLWEOp:$result $arg0),
+    (createNegLweOp $arg0, $result)>;
+
 def createPBS : NativeCodeCall<"mlir::zamalang::createPBS($_builder, $_loc, $0, $1, $2, $3, $4, $5, $6, $7, $8, $9)">;
 
 def ApplyLookupTableGLWEPattern : Pat<

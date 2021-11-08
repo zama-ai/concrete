@@ -146,6 +146,16 @@ mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter &rewriter,
                                              result, arg1_type);
 }
 
+mlir::Value createNegLweCiphertext(mlir::PatternRewriter &rewriter,
+                                   mlir::Location loc, mlir::Value arg0,
+                                   mlir::OpResult result) {
+  auto arg0_type = arg0.getType();
+  auto negated =
+      rewriter.create<mlir::zamalang::LowLFHE::NegateLweCiphertextOp>(
+          loc, convertTypeToLWE(rewriter.getContext(), arg0_type), arg0);
+  return negated.getODSResults(0).front();
+}
+
 mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
                                         mlir::Location loc, mlir::Value arg0,
                                         mlir::Value arg1,

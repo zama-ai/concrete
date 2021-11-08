@@ -257,6 +257,8 @@ void populateWithMidLFHEOpTypeConversionPatterns(
   populateWithMidLFHEOpTypeConversionPattern<
       mlir::zamalang::MidLFHE::SubIntGLWEOp>(patterns, target, typeConverter);
   populateWithMidLFHEOpTypeConversionPattern<
+      mlir::zamalang::MidLFHE::NegGLWEOp>(patterns, target, typeConverter);
+  populateWithMidLFHEOpTypeConversionPattern<
       mlir::zamalang::MidLFHE::MulGLWEIntOp>(patterns, target, typeConverter);
   populateWithMidLFHEApplyLookupTableParametrizationPattern(
       patterns, target, typeConverter, v0Parameter);

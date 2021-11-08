@@ -47,6 +47,20 @@ mlir::Value createGLWEOpFromHLFHE(mlir::PatternRewriter &rewriter,
   return op.getODSResults(0).front();
 }
 
+template <class Operator>
+mlir::Value createGLWEOpFromHLFHE(mlir::PatternRewriter &rewriter,
+                                  mlir::Location loc, mlir::Value arg0,
+                                  mlir::OpResult result) {
+  mlir::SmallVector<mlir::Value, 1> args{arg0};
+  mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
+  auto eint =
+      result.getType().cast<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+  mlir::SmallVector<mlir::Type, 1> resTypes{
+      convertTypeEncryptedIntegerToGLWE(rewriter.getContext(), eint)};
+  Operator op = rewriter.create<Operator>(loc, resTypes, args, attrs);
+  return op.getODSResults(0).front();
+}
+
 mlir::Value
 createApplyLookupTableGLWEOpFromHLFHE(mlir::PatternRewriter &rewriter,
                                       mlir::Location loc, mlir::Value arg0,

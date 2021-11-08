@@ -28,6 +28,12 @@ def SubIntEintPattern : Pat<
     (SubIntEintOp:$result $arg0, $arg1),
     (createSubIntGLWEOp $arg0, $arg1, $result)>;
 
+def createNegGLWEOp : NativeCodeCall<"mlir::zamalang::createGLWEOpFromHLFHE<mlir::zamalang::MidLFHE::NegGLWEOp>($_builder, $_loc, $0, $1)">;
+
+def NegEintPattern : Pat<
+    (NegEintOp:$result $arg0),
+    (createNegGLWEOp $arg0, $result)>;
+
 def createMulGLWEIntOp : NativeCodeCall<"mlir::zamalang::createGLWEOpFromHLFHE<mlir::zamalang::MidLFHE::MulGLWEIntOp>($_builder, $_loc, $0, $1, $2)">;
 
 def MulEintIntPattern : Pat<
