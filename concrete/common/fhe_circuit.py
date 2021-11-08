@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import List, Optional, Union
 
+import numpy
 from zamalang import CompilerEngine
 
 from .debugging import draw_graph, format_operation_graph
@@ -43,14 +44,14 @@ class FHECircuit:
 
         return draw_graph(self.opgraph, show, vertical, save_to)
 
-    def run(self, *args: List[Union[int, List[int]]]) -> int:
+    def run(self, *args: List[Union[int, numpy.ndarray]]) -> Union[int, numpy.ndarray]:
         """Encrypt, evaluate, and decrypt the inputs on the circuit.
 
         Args:
-            *args (List[Union[int, List[int]]]): inputs to the circuit
+            *args (List[Union[int, numpy.ndarray]]): inputs to the circuit
 
         Returns:
-            int: homomorphic evaluation result
+            Union[int, numpy.ndarray]: homomorphic evaluation result
 
         """
 

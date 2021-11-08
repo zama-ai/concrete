@@ -591,7 +591,7 @@ def test_compile_and_run_dot_correctness(size, input_range, default_compilation_
         default_compilation_configuration,
     )
 
-    args = [[random.randint(low, high) for _ in range(size)] for __ in range(2)]
+    args = [numpy.random.randint(low, high + 1, size=(size,), dtype=numpy.uint8) for __ in range(2)]
     assert compiler_engine.run(*args) == function(*args)
 
 
@@ -652,7 +652,7 @@ def test_compile_and_run_constant_dot_correctness(
         default_compilation_configuration,
     )
 
-    args = (numpy.random.randint(low, high + 1, size=shape).tolist(),)
+    args = (numpy.random.randint(low, high + 1, size=shape, dtype=numpy.uint8),)
     assert left_circuit.run(*args) == left(*args)
     assert right_circuit.run(*args) == right(*args)
 
