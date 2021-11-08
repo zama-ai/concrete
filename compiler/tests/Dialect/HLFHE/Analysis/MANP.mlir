@@ -86,6 +86,16 @@ func @single_dyn_sub_int_eint(%e: !HLFHE.eint<2>, %i: i3) -> !HLFHE.eint<2>
 
 // -----
 
+func @single_neg_eint(%e: !HLFHE.eint<2>) -> !HLFHE.eint<2>
+{
+  // CHECK: %[[ret:.*]] = "HLFHE.neg_eint"(%[[op0:.*]]) {MANP = 1 : ui{{[0-9]+}}} : (!HLFHE.eint<2>) -> !HLFHE.eint<2>
+  %0 = "HLFHE.neg_eint"(%e) : (!HLFHE.eint<2>) -> !HLFHE.eint<2>
+
+  return %0 : !HLFHE.eint<2>
+}
+
+// -----
+
 func @single_cst_mul_eint_int(%e: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 {
   %cst = arith.constant 3 : i3
@@ -196,4 +206,19 @@ func @chain_add_eint(%e0: !HLFHE.eint<2>, %e1: !HLFHE.eint<2>, %e2: !HLFHE.eint<
   %3 = "HLFHE.add_eint"(%2, %e4) : (!HLFHE.eint<2>, !HLFHE.eint<2>) -> !HLFHE.eint<2>
 
   return %3 : !HLFHE.eint<2>
+}
+
+
+// -----
+
+func @chain_add_eint_neg_eint(%e: !HLFHE.eint<2>) -> !HLFHE.eint<2>
+{
+  %cst0 = arith.constant 3 : i3
+
+  // CHECK: %[[ret:.*]] = "HLFHE.add_eint_int"(%[[op0:.*]], %[[op1:.*]]) {MANP = 4 : ui{{[0-9]+}}} : (!HLFHE.eint<2>, i3) -> !HLFHE.eint<2>
+  %0 = "HLFHE.add_eint_int"(%e, %cst0) : (!HLFHE.eint<2>, i3) -> !HLFHE.eint<2>
+  // CHECK-NEXT: %[[ret:.*]] = "HLFHE.neg_eint"(%[[op0:.*]]) {MANP = 4 : ui{{[0-9]+}}} : (!HLFHE.eint<2>) -> !HLFHE.eint<2>
+  %1 = "HLFHE.neg_eint"(%0) : (!HLFHE.eint<2>) -> !HLFHE.eint<2>
+
+  return %1 : !HLFHE.eint<2>
 }

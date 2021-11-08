@@ -20,6 +20,7 @@ def MANP : FunctionPass<"MANP"> {
     - HLFHE.add_eint_int
     - HLFHE.add_eint
     - HLFHE.sub_int_eint
+    - HLFHE.neg_eint
     - HLFHE.mul_eint_int
     - HLFHE.apply_lookup_table
   
@@ -47,6 +48,7 @@ def MANP : FunctionPass<"MANP"> {
     - HLFHE.add_eint_int(e, c) -> HLFHELinalg.dot_eint_int([e, 1], [1, c])
     - HLFHE.add_eint(e0, e1)   -> HLFHELinalg.dot_eint_int([e0, e1], [1, 1])
     - HLFHE.sub_int_eint(c, e) -> HLFHELinalg.dot_eint_int([e, c], [1, -1])
+    - HLFHE.neg_eint(e) -> HLFHELinalg.dot_eint_int([e], [-1])
     - HLFHE.mul_eint_int(e, c) -> HLFHELinalg.dot_eint_int([e], [c])
   
    Dependent dot operations, e.g.,
@@ -85,6 +87,7 @@ def MANP : FunctionPass<"MANP"> {
     - HLFHE.add_eint_int(e, c) -> 1*1*sqN(e) + c*c*1*1 = sqN(e) + c*c
     - HLFHE.add_eint(e0, e1)   -> 1*1*sqN(e0) + 1*1*sqN(e2) = sqN(e1) + sqN(e2)
     - HLFHE.sub_int_eint(c, e) -> 1*1*sqN(e) + c*c*(-1)*(-1) = sqN(e) + c*c
+    - HLFHE.neg_eint(e) -> (-1)*(-1)*sqN(e) = sqN(e)
     - HLFHE.mul_eint_int(e, c) -> c*c*sqN(e)
 
    The final, non-squared 2-norm of an operation is the square root of the
