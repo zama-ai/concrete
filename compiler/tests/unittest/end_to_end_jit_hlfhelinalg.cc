@@ -78,6 +78,52 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
   }
 }
 
+// Same as add_eint_int_term_to_term_ret_lambda_argument, but returning a
+// multi-dimensional tensor
+TEST(End2EndJit_HLFHELinalg,
+     add_eint_int_term_to_term_ret_lambda_argument_multi_dim) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  // Returns the term to term addition of `%a0` with `%a1`
+  func @main(%a0: tensor<4x2x3x!HLFHE.eint<6>>, %a1: tensor<4x2x3xi7>) -> tensor<4x2x3x!HLFHE.eint<6>> {
+    %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x2x3x!HLFHE.eint<6>>, tensor<4x2x3xi7>) -> tensor<4x2x3x!HLFHE.eint<6>>
+    return %res : tensor<4x2x3x!HLFHE.eint<6>>
+  }
+)XXX");
+  std::vector<uint8_t> a0{31, 6, 12, 9, 1, 2, 3, 4, 9, 0, 3, 2,
+                          2,  1, 0,  6, 3, 6, 2, 8, 0, 0, 4, 3};
+  std::vector<uint8_t> a1{32, 9, 2, 3, 6, 6, 2, 1, 1, 6, 9, 7,
+                          3,  5, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      arg0(a0, {4, 2, 3});
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      arg1(a1, {4, 2, 3});
+
+  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+          {&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+      &resp = (*res)
+                  ->cast<mlir::zamalang::TensorLambdaArgument<
+                      mlir::zamalang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(resp.getDimensions().at(0), 4);
+  ASSERT_EQ(resp.getDimensions().at(1), 2);
+  ASSERT_EQ(resp.getDimensions().at(2), 3);
+  ASSERT_EXPECTED_VALUE(resp.getNumElements(), 4 * 3 * 2);
+
+  for (size_t i = 0; i < 4 * 3 * 2; i++) {
+    ASSERT_EQ(resp.getValue()[i], a0[i] + a1[i]);
+  }
+}
+
 TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_broadcast) {
 
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
