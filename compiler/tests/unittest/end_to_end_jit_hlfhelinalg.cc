@@ -1001,3 +1001,26 @@ TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
     }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// HLFHELinalg dot_eint_int ///////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(CompileAndRunTensorEncrypted, dot_eint_int_7) {
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
+                   %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+{
+  %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
+    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
+  return %ret : !HLFHE.eint<7>
+}
+)XXX");
+  static uint8_t arg0[] = {0, 1, 2, 3};
+  static uint8_t arg1[] = {0, 1, 2, 3};
+
+  llvm::Expected<uint64_t> res =
+      lambda(arg0, ARRAY_SIZE(arg0), arg1, ARRAY_SIZE(arg1));
+
+  ASSERT_EXPECTED_VALUE(res, 14);
+}

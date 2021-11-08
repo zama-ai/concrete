@@ -20,7 +20,7 @@
 func @dot_eint_int(%arg0: tensor<2x!HLFHE.eint<2>>,
                    %arg1: tensor<2xi3>) -> !HLFHE.eint<2>
 {
-  %o = "HLFHE.dot_eint_int"(%arg0, %arg1) :
+  %o = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
     (tensor<2x!HLFHE.eint<2>>, tensor<2xi3>) -> !HLFHE.eint<2>
   return %o : !HLFHE.eint<2>
 }

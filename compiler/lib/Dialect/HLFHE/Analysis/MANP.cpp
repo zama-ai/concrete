@@ -265,9 +265,9 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy) {
 }
 
 // Calculates the squared Minimal Arithmetic Noise Padding of an
-// `HLFHE.dot_eint_int` operation.
+// `HLFHELinalg.dot_eint_int` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHE::Dot op,
+    mlir::zamalang::HLFHELinalg::Dot op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
   assert(op->getOpOperand(0).get().isa<mlir::BlockArgument>() &&
          "Only dot operations with tensors that are function arguments are "
@@ -654,10 +654,8 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     llvm::APInt norm2SqEquiv;
 
     // HLFHE Operators
-    if (auto dotOp = llvm::dyn_cast<mlir::zamalang::HLFHE::Dot>(op)) {
-      norm2SqEquiv = getSqMANP(dotOp, operands);
-    } else if (auto addEintIntOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHE::AddEintIntOp>(op)) {
+    if (auto addEintIntOp =
+            llvm::dyn_cast<mlir::zamalang::HLFHE::AddEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(addEintIntOp, operands);
     } else if (auto addEintOp =
                    llvm::dyn_cast<mlir::zamalang::HLFHE::AddEintOp>(op)) {
@@ -673,9 +671,12 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
       norm2SqEquiv = llvm::APInt{1, 1, false};
     }
     // HLFHELinalg Operators
-    else if (auto addEintIntOp =
-                 llvm::dyn_cast<mlir::zamalang::HLFHELinalg::AddEintIntOp>(
-                     op)) {
+    else if (auto dotOp =
+                 llvm::dyn_cast<mlir::zamalang::HLFHELinalg::Dot>(op)) {
+      norm2SqEquiv = getSqMANP(dotOp, operands);
+    } else if (auto addEintIntOp =
+                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::AddEintIntOp>(
+                       op)) {
       norm2SqEquiv = getSqMANP(addEintIntOp, operands);
     } else if (auto addEintOp =
                    llvm::dyn_cast<mlir::zamalang::HLFHELinalg::AddEintOp>(op)) {

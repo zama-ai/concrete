@@ -93,17 +93,4 @@ def ApplyLookupTableEintOp : HLFHE_Op<"apply_lookup_table"> {
         return ::mlir::zamalang::HLFHE::verifyApplyLookupTable(*this);
     }];
 }
-
-// Tensor operations
-
-// Dot product
-def Dot : HLFHE_Op<"dot_eint_int"> {
-    let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$lhs,
-        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$rhs);
-    let results = (outs EncryptedIntegerType:$out);
-    let verifier = [{
-        return ::mlir::zamalang::HLFHE::verifyDotEintInt(*this);
-    }];
-}
 #endif

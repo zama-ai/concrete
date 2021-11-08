@@ -230,3 +230,19 @@ func @apply_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<4xi6
   %1 = "HLFHELinalg.apply_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!HLFHE.eint<2>>, tensor<4xi64>) -> (tensor<2x3x4x!HLFHE.eint<2>>)
   return %1: tensor<2x3x4x!HLFHE.eint<2>>
 }
+
+/////////////////////////////////////////////////
+// HLFHELinalg.dot_eint_int
+/////////////////////////////////////////////////
+
+// CHECK-LABEL: func @dot_eint_int(%arg0: tensor<2x!HLFHE.eint<2>>, %arg1: tensor<2xi3>) -> !HLFHE.eint<2>
+func @dot_eint_int(%arg0: tensor<2x!HLFHE.eint<2>>,
+                   %arg1: tensor<2xi3>) -> !HLFHE.eint<2>
+{
+  // CHECK-NEXT: %[[RET:.*]] = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) : (tensor<2x!HLFHE.eint<2>>, tensor<2xi3>) -> !HLFHE.eint<2>
+  %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
+    (tensor<2x!HLFHE.eint<2>>, tensor<2xi3>) -> !HLFHE.eint<2>
+
+  //CHECK-NEXT: return %[[RET]] : !HLFHE.eint<2>
+  return %ret : !HLFHE.eint<2>
+}

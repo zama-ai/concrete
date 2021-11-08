@@ -15,7 +15,7 @@ def MANP : FunctionPass<"MANP"> {
   
    The pass supports the following operations:
   
-    - HLFHE.dot_eint_int
+    - HLFHELinalg.dot_eint_int
     - HLFHE.zero
     - HLFHE.add_eint_int
     - HLFHE.add_eint
@@ -41,23 +41,23 @@ def MANP : FunctionPass<"MANP"> {
   
    with the following replacement rules:
   
-    - Function argument a      -> HLFHE.dot_eint_int([a], [1])
-    - HLFHE.apply_lookup_table -> HLFHE.dot_eint_int([LUT result], [1])
-    - HLFHE.zero()             -> HLFHE.dot_eint_int([encrypted 0], [1])
-    - HLFHE.add_eint_int(e, c) -> HLFHE.dot_eint_int([e, 1], [1, c])
-    - HLFHE.add_eint(e0, e1)   -> HLFHE.dot_eint_int([e0, e1], [1, 1])
-    - HLFHE.sub_int_eint(c, e) -> HLFHE.dot_eint_int([e, c], [1, -1])
-    - HLFHE.mul_eint_int(e, c) -> HLFHE.dot_eint_int([e], [c])
+    - Function argument a      -> HLFHELinalg.dot_eint_int([a], [1])
+    - HLFHE.apply_lookup_table -> HLFHELinalg.dot_eint_int([LUT result], [1])
+    - HLFHE.zero()             -> HLFHELinalg.dot_eint_int([encrypted 0], [1])
+    - HLFHE.add_eint_int(e, c) -> HLFHELinalg.dot_eint_int([e, 1], [1, c])
+    - HLFHE.add_eint(e0, e1)   -> HLFHELinalg.dot_eint_int([e0, e1], [1, 1])
+    - HLFHE.sub_int_eint(c, e) -> HLFHELinalg.dot_eint_int([e, c], [1, -1])
+    - HLFHE.mul_eint_int(e, c) -> HLFHELinalg.dot_eint_int([e], [c])
   
    Dependent dot operations, e.g.,
   
-     a = HLFHE.dot_eint_int([a0, a1, ...], [c0, c1, ...])
-     b = HLFHE.dot_eint_int([b0, b1, ...], [d0, d1, ...])
-     x = HLFHE.dot_eint_int([a, b, ...], [f0, f1, ...])
+     a = HLFHELinalg.dot_eint_int([a0, a1, ...], [c0, c1, ...])
+     b = HLFHELinalg.dot_eint_int([b0, b1, ...], [d0, d1, ...])
+     x = HLFHELinalg.dot_eint_int([a, b, ...], [f0, f1, ...])
   
    are merged as follows:
   
-     x = HLFHE.dot_eint_int([a0, a1, ..., b0, b1, ...],
+     x = HLFHELinalg.dot_eint_int([a0, a1, ..., b0, b1, ...],
                             [f0*c0, f0*c1, ..., f1*d0, f1*d1, ...])
   
    However, the implementation does not explicitly create the
@@ -80,7 +80,7 @@ def MANP : FunctionPass<"MANP"> {
     - Function argument        -> 1
     - HLFHE.apply_lookup_table -> 1
     - HLFHE.zero()             -> 1
-    - HLFHE.dot_eint_int([e0, e1, ...], [c0, c1, ...]) ->
+    - HLFHELinalg.dot_eint_int([e0, e1, ...], [c0, c1, ...]) ->
          c0*c0*sqN(e0) + c1*c1*sqN(e1) + ...
     - HLFHE.add_eint_int(e, c) -> 1*1*sqN(e) + c*c*1*1 = sqN(e) + c*c
     - HLFHE.add_eint(e0, e1)   -> 1*1*sqN(e0) + 1*1*sqN(e2) = sqN(e1) + sqN(e2)

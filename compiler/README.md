@@ -24,7 +24,7 @@ Generate the compiler build system, in the `build` directory
 ```sh
 export LLVM_PROJECT="PATH_TO_LLVM_PROJECT"
 export CONCRETE_PROJECT="PATH_TO_CONCRETE_PROJECT"
-make build
+make build-initialized
 ```
 
 Build the compiler

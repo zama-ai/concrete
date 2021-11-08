@@ -16,21 +16,22 @@
 #include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h"
 #include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
 
-struct DotToLinalgGeneric : public ::mlir::RewritePattern {
+struct DotToLinalgGeneric
+    : public ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::Dot> {
   DotToLinalgGeneric(::mlir::MLIRContext *context)
-      : ::mlir::RewritePattern("HLFHE.dot_eint_int", 1, context,
-                               {"linalg.generic"}) {}
+      : ::mlir::OpRewritePattern<::mlir::zamalang::HLFHELinalg::Dot>(context,
+                                                                     1) {}
 
   // This rewrite pattern transforms any instance of
-  // `HLFHE.dot_eint_int` to an instance of `linalg.generic` with an
+  // `HLFHELinalg.dot_eint_int` to an instance of `linalg.generic` with an
   // appropriate region using `HLFHE.mul_eint_int` and
-  // `HLFHE.add_eint` operations, an appropriate specification for the
+  // `HLFHELinalg.add_eint` operations, an appropriate specification for the
   // iteration dimensions and appropriate operaztions managing the
   // accumulator of `linalg.generic`.
   //
   // Example:
   //
-  //   %o = "HLFHE.dot_eint_int"(%arg0, %arg1) :
+  //   %o = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
   //     (tensor<4x!HLFHE.eint<0>>,
   //      tensor<4xi32>) -> (!HLFHE.eint<0>)
   //
@@ -58,11 +59,8 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
   //   %o = tensor.extract %2[%c0] : tensor<1x!HLFHE.eint<0>>
   //
   ::mlir::LogicalResult
-  matchAndRewrite(::mlir::Operation *op0,
+  matchAndRewrite(::mlir::zamalang::HLFHELinalg::Dot dotOp,
                   ::mlir::PatternRewriter &rewriter) const override {
-    ::mlir::zamalang::HLFHE::Dot &&dotOp =
-        ::llvm::dyn_cast_or_null<::mlir::zamalang::HLFHE::Dot>(op0);
-
     // Zero value to initialize accumulator
     mlir::Value zeroCst = rewriter.create<mlir::zamalang::HLFHE::ZeroEintOp>(
         dotOp.getLoc(),
@@ -117,7 +115,7 @@ struct DotToLinalgGeneric : public ::mlir::RewritePattern {
     mlir::Value res = rewriter.create<mlir::tensor::ExtractOp>(
         dotOp.getLoc(), gop.getResult(0), indexes);
 
-    rewriter.replaceOp(op0, {res});
+    rewriter.replaceOp(dotOp, {res});
 
     return ::mlir::success();
   };
@@ -361,7 +359,7 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
   target.addLegalDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
   target.addLegalDialect<mlir::tensor::TensorDialect>();
   target.addLegalDialect<mlir::arith::ArithmeticDialect>();
-  target.addIllegalOp<mlir::zamalang::HLFHE::Dot>();
+  target.addIllegalOp<mlir::zamalang::HLFHELinalg::Dot>();
   target.addIllegalDialect<mlir::zamalang::HLFHELinalg::HLFHELinalgDialect>();
 
   mlir::OwningRewritePatternList patterns(&getContext());

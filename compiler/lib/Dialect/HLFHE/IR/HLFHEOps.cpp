@@ -114,33 +114,6 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
   return mlir::success();
 }
 
-::mlir::LogicalResult verifyDotEintInt(Dot &op) {
-  if (::mlir::failed(mlir::verifyCompatibleShape(op.lhs().getType(),
-                                                 op.rhs().getType()))) {
-    return op.emitOpError("arguments have incompatible shapes");
-  }
-  auto lhsEltType = op.lhs()
-                        .getType()
-                        .cast<mlir::TensorType>()
-                        .getElementType()
-                        .cast<EncryptedIntegerType>();
-  auto rhsEltType = op.rhs()
-                        .getType()
-                        .cast<mlir::TensorType>()
-                        .getElementType()
-                        .cast<mlir::IntegerType>();
-  auto resultType = op.getResult().getType().cast<EncryptedIntegerType>();
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(op, lhsEltType,
-                                                         rhsEltType)) {
-    return ::mlir::failure();
-  }
-  if (!verifyEncryptedIntegerInputAndResultConsistency(op, lhsEltType,
-                                                       resultType)) {
-    return ::mlir::failure();
-  }
-  return ::mlir::success();
-}
-
 } // namespace HLFHE
 } // namespace zamalang
 } // namespace mlir

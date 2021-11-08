@@ -8,6 +8,21 @@
 
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
 
+namespace mlir {
+namespace zamalang {
+namespace HLFHE {
+
+bool verifyEncryptedIntegerInputAndResultConsistency(
+    OpState &op, EncryptedIntegerType &input, EncryptedIntegerType &result);
+
+bool verifyEncryptedIntegerAndIntegerInputsConsistency(OpState &op,
+                                                       EncryptedIntegerType &a,
+                                                       IntegerType &b);
+
+} // namespace HLFHE
+} // namespace zamalang
+} // namespace mlir
+
 #define GET_OP_CLASSES
 #include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h.inc"
 

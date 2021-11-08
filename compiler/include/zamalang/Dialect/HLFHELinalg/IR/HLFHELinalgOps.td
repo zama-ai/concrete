@@ -260,4 +260,31 @@ def ApplyLookupTableEintOp : HLFHELinalg_Op<"apply_lookup_table", []> {
     }];
 }
 
+
+// Dot product
+def Dot : HLFHELinalg_Op<"dot_eint_int"> {
+    let summary = "Returns the encrypted dot product between a vector of encrypted integers and a vector of clean integers.";
+
+    let description = [{
+        Performs a dot product between a vector of encrypted integers and a vector of clear integers.
+
+        Examples:
+        ```mlir
+        // Returns the dot product of `%a0` with `%a1`
+        "HLFHELinalg.dot_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<4>>, tensor<4xi5>) -> !HLFHE.eint<4>
+
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$lhs,
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$rhs);
+
+    let results = (outs EncryptedIntegerType:$out);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHELinalg::verifyDotEintInt(*this);
+    }];
+}
+
 #endif

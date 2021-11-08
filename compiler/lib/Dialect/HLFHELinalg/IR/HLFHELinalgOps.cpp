@@ -1,4 +1,6 @@
+#include "mlir/IR/TypeUtilities.h"
 
+#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
 #include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
 #include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgTypes.h"
 
@@ -229,6 +231,34 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
         << " should have same shapes for operand #1 and the result";
   }
   return mlir::success();
+}
+
+::mlir::LogicalResult verifyDotEintInt(Dot &op) {
+  if (::mlir::failed(mlir::verifyCompatibleShape(op.lhs().getType(),
+                                                 op.rhs().getType()))) {
+    return op.emitOpError("arguments have incompatible shapes");
+  }
+  auto lhsEltType = op.lhs()
+                        .getType()
+                        .cast<mlir::TensorType>()
+                        .getElementType()
+                        .cast<HLFHE::EncryptedIntegerType>();
+  auto rhsEltType = op.rhs()
+                        .getType()
+                        .cast<mlir::TensorType>()
+                        .getElementType()
+                        .cast<mlir::IntegerType>();
+  auto resultType =
+      op.getResult().getType().cast<HLFHE::EncryptedIntegerType>();
+  if (!mlir::zamalang::HLFHE::verifyEncryptedIntegerAndIntegerInputsConsistency(
+          op, lhsEltType, rhsEltType)) {
+    return ::mlir::failure();
+  }
+  if (!HLFHE::verifyEncryptedIntegerInputAndResultConsistency(op, lhsEltType,
+                                                              resultType)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
 }
 
 } // namespace HLFHELinalg
