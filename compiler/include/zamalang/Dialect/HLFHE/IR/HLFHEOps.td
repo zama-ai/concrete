@@ -69,6 +69,21 @@ def SubIntEintOp : HLFHE_Op<"sub_int_eint"> {
     }];
 }
 
+def NegEintOp : HLFHE_Op<"neg_eint"> {
+    let arguments = (ins EncryptedIntegerType:$a);
+    let results = (outs EncryptedIntegerType);
+
+    let builders = [
+        OpBuilder<(ins "Value":$a), [{
+         build($_builder, $_state, a.getType(), a);
+        }]>
+    ];
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHE::verifyNegEintOp(*this);
+    }];
+}
+
 def MulEintIntOp : HLFHE_Op<"mul_eint_int"> {
     let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
     let results = (outs EncryptedIntegerType);

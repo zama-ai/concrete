@@ -31,6 +31,15 @@ func @sub_int_eint(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
   return %1: !HLFHE.eint<2>
 }
 
+// CHECK-LABEL: func @neg_eint(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
+func @neg_eint(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
+  // CHECK-NEXT: %[[V1:.*]] = "HLFHE.neg_eint"(%arg0) : (!HLFHE.eint<2>) -> !HLFHE.eint<2>
+  // CHECK-NEXT: return %[[V1]] : !HLFHE.eint<2>
+
+  %1 = "HLFHE.neg_eint"(%arg0): (!HLFHE.eint<2>) -> (!HLFHE.eint<2>)
+  return %1: !HLFHE.eint<2>
+}
+
 // CHECK-LABEL: func @mul_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 func @mul_eint_int(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
   // CHECK-NEXT: %[[V1:.*]] = arith.constant 1 : i3

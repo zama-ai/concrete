@@ -79,6 +79,15 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
   return ::mlir::success();
 }
 
+::mlir::LogicalResult verifyNegEintOp(NegEintOp &op) {
+  auto a = op.a().getType().cast<EncryptedIntegerType>();
+  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
 ::mlir::LogicalResult verifyMulEintIntOp(MulEintIntOp &op) {
   auto a = op.a().getType().cast<EncryptedIntegerType>();
   auto b = op.b().getType().cast<IntegerType>();
