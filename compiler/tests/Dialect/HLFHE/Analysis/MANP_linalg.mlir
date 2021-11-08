@@ -44,6 +44,16 @@ func @single_cst_sub_int_eint(%e: tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.e
 
 // -----
 
+func @single_neg_eint(%e: tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2>>
+{
+  // CHECK: %[[ret:.*]] = "HLFHELinalg.neg_eint"(%[[op0:.*]]) {MANP = 1 : ui{{[0-9]+}}} : (tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2>>
+  %0 = "HLFHELinalg.neg_eint"(%e) : (tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2>>
+
+  return %0 : tensor<8x!HLFHE.eint<2>>
+}
+
+// -----
+
 func @single_dyn_sub_int_eint(%e: tensor<8x!HLFHE.eint<2>>, %i: tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
 {
   // CHECK: %[[ret:.*]] = "HLFHELinalg.sub_int_eint"(%[[op0:.*]], %[[op1:.*]]) {MANP = 9 : ui{{[0-9]+}}} : (tensor<8xi3>, tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2>>
@@ -91,6 +101,18 @@ func @chain_add_eint_int(%e: tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2
   // CHECK-NEXT: %[[ret:.*]] = "HLFHELinalg.add_eint_int"(%[[op0:.*]], %[[op1:.*]]) {MANP = 8 : ui{{[0-9]+}}} : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
   %3 = "HLFHELinalg.add_eint_int"(%2, %cst3) : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
   return %3 : tensor<8x!HLFHE.eint<2>>
+}
+
+// -----
+
+func @chain_add_eint_int_neg_eint(%e: tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2>>
+{
+  %cst0 = arith.constant dense<[0, 1, 2, 3, 3, 2, 1, 0]> : tensor<8xi3>
+  // CHECK: %[[ret:.*]] = "HLFHELinalg.add_eint_int"(%[[op0:.*]], %[[op1:.*]]) {MANP = 4 : ui{{[0-9]+}}} : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
+  %0 = "HLFHELinalg.add_eint_int"(%e, %cst0) : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
+  // CHECK-NEXT: %[[ret:.*]] = "HLFHELinalg.neg_eint"(%[[op0:.*]]) {MANP = 4 : ui{{[0-9]+}}} : (tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2>>
+  %1 = "HLFHELinalg.neg_eint"(%0) : (tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLFHE.eint<2>>
+  return %1 : tensor<8x!HLFHE.eint<2>>
 }
 
 // -----

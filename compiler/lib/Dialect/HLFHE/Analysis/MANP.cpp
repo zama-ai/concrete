@@ -555,6 +555,22 @@ static llvm::APInt getSqMANP(
 }
 
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+// that is equivalent to an `HLFHELinalg.neg_eint` operation.
+static llvm::APInt getSqMANP(
+    mlir::zamalang::HLFHELinalg::NegEintOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() == 1 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
+
+  return eNorm;
+}
+
+// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::zamalang::HLFHELinalg::MulEintIntOp op,
@@ -704,6 +720,9 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::zamalang::HLFHELinalg::SubIntEintOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(subIntEintOp, operands);
+    } else if (auto negEintOp =
+                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::NegEintOp>(op)) {
+      norm2SqEquiv = getSqMANP(negEintOp, operands);
     } else if (auto mulEintIntOp =
                    llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MulEintIntOp>(
                        op)) {
