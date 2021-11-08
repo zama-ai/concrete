@@ -16,6 +16,7 @@ LogicalResult verifyTensorBroadcastingRules(mlir::Operation *op);
 LogicalResult verifyTensorBinaryEintInt(mlir::Operation *op);
 LogicalResult verifyTensorBinaryIntEint(mlir::Operation *op);
 LogicalResult verifyTensorBinaryEint(mlir::Operation *op);
+LogicalResult verifyTensorUnaryEint(mlir::Operation *op);
 } // namespace impl
 
 /// TensorBroadcastingRules is a trait for operators that should respect the
@@ -71,6 +72,17 @@ class TensorBinaryEint
 public:
   static LogicalResult verifyTrait(Operation *op) {
     return impl::verifyTensorBinaryEint(op);
+  }
+};
+
+/// TensorBinary verify the operation match the following signature
+/// `(tensor<...x!HLFHE.eint<$p>>) -> tensor<...x!HLFHE.eint<$p>>`
+template <typename ConcreteType>
+class TensorUnaryEint
+    : public mlir::OpTrait::TraitBase<ConcreteType, TensorUnaryEint> {
+public:
+  static LogicalResult verifyTrait(Operation *op) {
+    return impl::verifyTensorUnaryEint(op);
   }
 };
 

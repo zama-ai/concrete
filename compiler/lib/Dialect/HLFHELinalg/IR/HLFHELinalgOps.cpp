@@ -199,6 +199,27 @@ LogicalResult verifyTensorBinaryEint(mlir::Operation *op) {
   return mlir::success();
 }
 
+LogicalResult verifyTensorUnaryEint(mlir::Operation *op) {
+  if (op->getNumOperands() != 1) {
+    op->emitOpError() << "should have exactly 1 operands";
+    return mlir::failure();
+  }
+  auto op0Ty = op->getOperand(0).getType().dyn_cast_or_null<mlir::TensorType>();
+  if (op0Ty == nullptr) {
+    op->emitOpError() << "should have operand as tensor";
+    return mlir::failure();
+  }
+  auto el0Ty =
+      op0Ty.getElementType()
+          .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+  if (el0Ty == nullptr) {
+    op->emitOpError() << "should have a !HLFHE.eint as the element type of the "
+                         "tensor operand";
+    return mlir::failure();
+  }
+  return mlir::success();
+}
+
 } // namespace impl
 
 } // namespace OpTrait

@@ -165,6 +165,41 @@ func @sub_int_eint_broadcast_2(%a0: tensor<3x4xi3>, %a1: tensor<4x!HLFHE.eint<2>
 
 
 /////////////////////////////////////////////////
+// HLFHELinalg.neg_eint
+/////////////////////////////////////////////////
+
+// 1D tensor
+// CHECK: func @neg_eint_1D(%[[a0:.*]]: tensor<4x!HLFHE.eint<2>>) -> tensor<4x!HLFHE.eint<2>> {
+// CHECK-NEXT: %[[V0:.*]] = "HLFHELinalg.neg_eint"(%[[a0]]) : (tensor<4x!HLFHE.eint<2>>) -> tensor<4x!HLFHE.eint<2>>
+// CHECK-NEXT: return %[[V0]] : tensor<4x!HLFHE.eint<2>>
+// CHECK-NEXT: }
+func @neg_eint_1D(%a0: tensor<4x!HLFHE.eint<2>>) -> tensor<4x!HLFHE.eint<2>> {
+  %1 = "HLFHELinalg.neg_eint"(%a0) : (tensor<4x!HLFHE.eint<2>>) -> tensor<4x!HLFHE.eint<2>>
+  return %1: tensor<4x!HLFHE.eint<2>>
+}
+
+// 1D tensor
+// CHECK: func @neg_eint_2D(%[[a0:.*]]: tensor<4x4x!HLFHE.eint<2>>) -> tensor<4x4x!HLFHE.eint<2>> {
+// CHECK-NEXT: %[[V0:.*]] = "HLFHELinalg.neg_eint"(%[[a0]]) : (tensor<4x4x!HLFHE.eint<2>>) -> tensor<4x4x!HLFHE.eint<2>>
+// CHECK-NEXT: return %[[V0]] : tensor<4x4x!HLFHE.eint<2>>
+// CHECK-NEXT: }
+func @neg_eint_2D(%a0: tensor<4x4x!HLFHE.eint<2>>) -> tensor<4x4x!HLFHE.eint<2>> {
+  %1 = "HLFHELinalg.neg_eint"(%a0) : (tensor<4x4x!HLFHE.eint<2>>) -> tensor<4x4x!HLFHE.eint<2>>
+  return %1: tensor<4x4x!HLFHE.eint<2>>
+}
+
+// 10D tensor
+// CHECK: func @neg_eint_10D(%[[a0:.*]]: tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>) -> tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>> {
+// CHECK-NEXT: %[[V0:.*]] = "HLFHELinalg.neg_eint"(%[[a0]]) : (tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>) -> tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>
+// CHECK-NEXT: return %[[V0]] : tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>
+// CHECK-NEXT: }
+func @neg_eint_10D(%a0: tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>) -> tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>> {
+  %1 = "HLFHELinalg.neg_eint"(%a0) : (tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>) -> tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>
+  return %1: tensor<1x2x3x4x5x6x7x8x9x10x!HLFHE.eint<2>>
+}
+
+
+/////////////////////////////////////////////////
 // HLFHELinalg.mul_eint_int
 /////////////////////////////////////////////////
 

@@ -15,6 +15,7 @@ def TensorBroadcastingRules : NativeOpTrait<"TensorBroadcastingRules">;
 def TensorBinaryEintInt : NativeOpTrait<"TensorBinaryEintInt">;
 def TensorBinaryIntEint : NativeOpTrait<"TensorBinaryIntEint">;
 def TensorBinaryEint : NativeOpTrait<"TensorBinaryEint">;
+def TensorUnaryEint : NativeOpTrait<"TensorUnaryEint">;
 
 
 def AddEintIntOp : HLFHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
@@ -171,6 +172,38 @@ def SubIntEintOp : HLFHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, Tens
     let builders = [
         OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
          build($_builder, $_state, lhs.getType(), rhs, lhs);
+        }]>
+    ];
+}
+
+def NegEintOp : HLFHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
+    let summary = "Returns a tensor that contains the negation of a tensor of encrypted integers.";
+
+    let description = [{
+        Performs a negation to a tensor of encrypted integers.
+
+        Examples:
+        ```mlir
+        // Returns the term to term negation of `%a0`
+        "HLFHELinalg.neg_eint"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
+        //
+        //        ( [1,2,3] )   [31,30,29]
+        // negate ( [4,5,6] ) = [28,27,26]
+        //        ( [7,8,9] )   [25,24,23]
+        //
+        // The negation is computed as `2**(p+1) - a` where p=4 here.
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let builders = [
+        OpBuilder<(ins "Value":$tensor), [{
+         build($_builder, $_state, tensor.getType(), tensor);
         }]>
     ];
 }
