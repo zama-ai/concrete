@@ -149,6 +149,18 @@ func @apply_lookup_table(%arg0: tensor<3x4x!HLFHE.eint<2>>, %arg1: tensor<4xi64>
 // -----
 
 /////////////////////////////////////////////////
+// HLFHELinalg.apply_multi_lookup_table
+/////////////////////////////////////////////////
+
+func @apply_multi_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<2x6xi64>) -> tensor<2x3x4x!HLFHE.eint<2>> {
+  // expected-error @+1 {{'HLFHELinalg.apply_multi_lookup_table' op should have as operand #2 a tensor<DMx...xD1X2^pxi64>, where p is the width of the encrypted integer of the operand #1,expect tensor <DMx...xD1X4xi64>}}
+  %1 = "HLFHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!HLFHE.eint<2>>, tensor<2x6xi64>) -> (tensor<2x3x4x!HLFHE.eint<2>>)
+  return %1: tensor<2x3x4x!HLFHE.eint<2>>
+}
+
+// -----
+
+/////////////////////////////////////////////////
 // HLFHELinalg.matmul_eint_int
 /////////////////////////////////////////////////
 
@@ -181,3 +193,5 @@ func @matmul_eint_int(%arg0: tensor<3x4x!HLFHE.eint<2>>, %arg1: tensor<4x2xi3>) 
   %1 = "HLFHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<3x4x!HLFHE.eint<2>>, tensor<4x2xi3>) -> tensor<4x2x!HLFHE.eint<2>>
   return %1 : tensor<4x2x!HLFHE.eint<2>>
 }
+
+

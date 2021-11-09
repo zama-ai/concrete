@@ -254,6 +254,33 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
   return mlir::success();
 }
 
+mlir::LogicalResult
+verifyApplyMultiLookupTable(ApplyMultiLookupTableEintOp &op) {
+  auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
+  auto tEltTy =
+      tTy.getElementType().cast<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+  auto lutTy = op.luts().getType().cast<mlir::RankedTensorType>();
+  auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
+  auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
+
+  // Check the shape of luts argument
+  auto lut_size = lutTy.getShape()[lutTy.getShape().size() - 1];
+  auto expected_lut_size = 1 << tEltTy.getWidth();
+  if (lut_size != expected_lut_size || !lutEltTy.isInteger(64)) {
+    op.emitOpError() << "should have as operand #2 a "
+                        "tensor<DMx...xD1X2^pxi64>, where p is the width "
+                        "of the encrypted integer of the operand #1,"
+                     << "expect tensor <DMx...xD1X" << expected_lut_size
+                     << "xi64>";
+    return mlir::failure();
+  }
+  if (!resultTy.hasStaticShape(tTy.getShape())) {
+    op.emitOpError()
+        << " should have same shapes for operand #1 and the result";
+  }
+  return mlir::success();
+}
+
 ::mlir::LogicalResult verifyDotEintInt(Dot &op) {
   if (::mlir::failed(mlir::verifyCompatibleShape(op.lhs().getType(),
                                                  op.rhs().getType()))) {

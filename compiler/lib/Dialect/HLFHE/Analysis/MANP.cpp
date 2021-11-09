@@ -798,7 +798,9 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(matmulEintIntOp, operands);
-    } else if (llvm::isa<mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp>(
+    } else if (llvm::isa<
+                   mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp,
+                   mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp>(
                    op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
     }

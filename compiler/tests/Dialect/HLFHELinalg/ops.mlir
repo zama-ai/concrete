@@ -267,6 +267,28 @@ func @apply_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<4xi6
 }
 
 /////////////////////////////////////////////////
+// HLFHELinalg.apply_multi_lookup_table
+/////////////////////////////////////////////////
+
+// CHECK-LABEL: func @apply_multi_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<2x3x4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>>
+func @apply_multi_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<2x3x4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>> {
+  // CHECK-NEXT: %[[V1:.*]] = "HLFHELinalg.apply_multi_lookup_table"(%arg0, %arg1) : (tensor<2x3x4x!HLFHE.eint<2>>, tensor<2x3x4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>>
+  // CHECK-NEXT: return %[[V1]] : tensor<2x3x4x!HLFHE.eint<2>>
+
+  %1 = "HLFHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!HLFHE.eint<2>>, tensor<2x3x4xi64>) -> (tensor<2x3x4x!HLFHE.eint<2>>)
+  return %1: tensor<2x3x4x!HLFHE.eint<2>>
+}
+
+// CHECK-LABEL: func @apply_multi_lookup_table_broadcast(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<2x4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>>
+func @apply_multi_lookup_table_broadcast(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tensor<2x4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>> {
+  // CHECK-NEXT: %[[V1:.*]] = "HLFHELinalg.apply_multi_lookup_table"(%arg0, %arg1) : (tensor<2x3x4x!HLFHE.eint<2>>, tensor<2x4xi64>) -> tensor<2x3x4x!HLFHE.eint<2>>
+  // CHECK-NEXT: return %[[V1]] : tensor<2x3x4x!HLFHE.eint<2>>
+
+  %1 = "HLFHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<2x3x4x!HLFHE.eint<2>>, tensor<2x4xi64>) -> (tensor<2x3x4x!HLFHE.eint<2>>)
+  return %1: tensor<2x3x4x!HLFHE.eint<2>>
+}
+
+/////////////////////////////////////////////////
 // HLFHELinalg.dot_eint_int
 /////////////////////////////////////////////////
 

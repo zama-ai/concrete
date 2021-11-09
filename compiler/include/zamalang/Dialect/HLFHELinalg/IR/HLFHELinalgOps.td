@@ -293,6 +293,55 @@ def ApplyLookupTableEintOp : HLFHELinalg_Op<"apply_lookup_table", []> {
     }];
 }
 
+def ApplyMultiLookupTableEintOp : HLFHELinalg_Op<"apply_multi_lookup_table", []> {
+    let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element.";
+
+    let description = [{
+        Performs for each encrypted indice a lookup on a table of clear integers. Multiple lookup tables are passed, and the application of lookup tables 
+        is performed following the broadcasting rules.
+
+        ```mlir
+        // The result of this operation, is a tensor that contains the result of the lookup on different tables.
+        // i.e. %res[i, ..., k] = [ %luts[i][%t[i]], ..., %luts[k][%t[k]] ]
+        %res = HLFHELinalg.apply_multi_lookup_table(%t, %lut): tensor<DNx...xD1x!HLFHE.eint<$p>>, tensor<DMx...xD1xD2^$pxi64> -> tensor<DNx...xD1x!HLFHE.eint<$p>>
+        ```
+
+        The `%luts` argument should be a tensor with M dimension, where the first M-1 dimensions are broadcastable with the N dimensions of the encrypted tensor,
+        and where the last dimension dimension is equals to `2^p` where `p` is the width of the encrypted integers.
+
+        Examples:
+        ```mlir
+
+        // Returns the lookup of 3x2 matrix of encrypted indices of width 2 on a vector of 2 tables of size 4=2² of clear integers.
+        // The tables are broadcasted along the first dimension of the tensor.
+        //
+        // [0,1]                            = [1,2]
+        // [3,0] lut [[1,3,5,7], [0,2,4,6]] = [7,0]
+        // [2,3]                            = [5,6]
+        "HLFHELinalg.apply_multi_lookup_table"(%t, %luts) : (tensor<3x2x!HLFHE.eint<2>>, tensor<2x4xi64>) -> tensor<3x2x!HLFHE.eint<3>>
+        ```
+
+        ```mlir
+
+        // Returns the lookup of a vector of 3 encrypted indices of width 2 on a vector of 3 tables of size 4=2² of clear integers.
+        //
+        // [3,0,1] lut [[1,3,5,7], [0,2,4,6], [1,2,3,4]] = [7,0,2]
+        "HLFHELinalg.apply_multi_lookup_table"(%t, %luts) : (tensor<3x!HLFHE.eint<2>>, tensor<3x4xi64>) -> tensor<3x!HLFHE.eint<3>>
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$luts
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHELinalg::verifyApplyMultiLookupTable(*this);
+    }];
+}
+
 // Dot product
 def Dot : HLFHELinalg_Op<"dot_eint_int"> {
     let summary = "Returns the encrypted dot product between a vector of encrypted integers and a vector of clean integers.";
