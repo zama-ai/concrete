@@ -55,7 +55,6 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) ->
 
   for (int64_t i = 0; i < dims[0]; i++) {
     for (int64_t j = 0; j < dims[1]; j++) {
-      auto pos = i * dims[1] + j;
       mlir::zamalang::IntLambdaArgument<size_t> argi(i);
       mlir::zamalang::IntLambdaArgument<size_t> argj(j);
       ASSERT_EXPECTED_VALUE(lambda({&arg, &argi, &argj}), TENSOR2D_GET(i, j));
