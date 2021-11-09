@@ -7,6 +7,9 @@ on:
     # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
     - cron: '0 6-20 * * 1-5'
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
