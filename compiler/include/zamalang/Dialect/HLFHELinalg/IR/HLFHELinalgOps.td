@@ -23,7 +23,7 @@ def AddEintIntOp : HLFHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, Tens
 
     let description = [{
         Performs an addition follwing the broadcasting rules between a tensor of encrypted integers and a tensor of clear integers.
-        The width of the clear integers should be less or equals than the witdh of encrypted integers.
+        The width of the clear integers must be less than or equals to the witdh of encrypted integers.
 
         Examples:
         ```mlir
@@ -76,7 +76,7 @@ def AddEintOp : HLFHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinar
 
     let description = [{
         Performs an addition follwing the broadcasting rules between two tensors of encrypted integers.
-        The width of the encrypted integers should be equals.
+        The width of the encrypted integers must be equals.
 
         Examples:
         ```mlir
@@ -128,7 +128,7 @@ def SubIntEintOp : HLFHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, Tens
 
     let description = [{
         Performs a substraction following the broadcasting rules between a tensor of clear integers and a tensor of encrypted integers.
-        The width of the clear integers should be less or equals than the witdh of encrypted integers.
+        The width of the clear integers must be less than or equals to the witdh of encrypted integers.
 
         Examples:
         ```mlir
@@ -213,7 +213,7 @@ def MulEintIntOp : HLFHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, Tens
 
     let description = [{
         Performs a multiplication following the broadcasting rules between a tensor of encrypted integers and a tensor of clear integers.
-        The width of the clear integers should be less or equals than the witdh of encrypted integers.
+        The width of the clear integers must be less than or equals to the witdh of encrypted integers.
 
         Examples:
         ```mlir
@@ -267,7 +267,7 @@ def ApplyLookupTableEintOp : HLFHELinalg_Op<"apply_lookup_table", []> {
         %res = HLFHELinalg.apply_lookup_table(%t, %lut): tensor<DNx...xD1x!HLFHE.eint<$p>>, tensor<D2^$pxi64> -> tensor<DNx...xD1x!HLFHE.eint<$p>>
         ```
 
-        The `%lut` argument should be a tensor with one dimension, where its dimension is equals to `2^p` where `p` is the width of the encrypted integers.
+        The `%lut` argument must be a tensor with one dimension, where its dimension is equals to `2^p` where `p` is the width of the encrypted integers.
 
         Examples:
         ```mlir
@@ -293,7 +293,6 @@ def ApplyLookupTableEintOp : HLFHELinalg_Op<"apply_lookup_table", []> {
     }];
 }
 
-
 // Dot product
 def Dot : HLFHELinalg_Op<"dot_eint_int"> {
     let summary = "Returns the encrypted dot product between a vector of encrypted integers and a vector of clean integers.";
@@ -317,6 +316,44 @@ def Dot : HLFHELinalg_Op<"dot_eint_int"> {
 
     let verifier = [{
         return ::mlir::zamalang::HLFHELinalg::verifyDotEintInt(*this);
+    }];
+}
+
+def MatMulEintIntOp : HLFHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
+    let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.";
+
+    let description = [{
+        Performs a matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.
+        The width of the clear integers must be less than or equals to the witdh of encrypted integers.
+
+        ```mlir
+        "HLFHELinalg.matmul_eint_int(%a, %b) : (tensor<MxNx!HLFHE.eint<p>>, tensor<NxPxip'>) -> tensor<MxPx!HLFHE.eint<p>>"
+        ```
+
+        Examples:
+        ```mlir
+        // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
+        //         [ 1, 2, 3]
+        //         [ 2, 3, 4]
+        //       *
+        // [1,2]   [ 5, 8,11]
+        // [3,4] = [11,18,25]
+        // [5,6]   [17,28,39]
+        //
+        "HLFHELinalg.matmul_eint_int"(%a, %b) : (tensor<3x2x!HLFHE.eint<6>>, tensor<2x3xi7>) -> tensor<3x3x!HLFHE.eint<6>>
+
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$rhs
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHELinalg::verifyMatmul(*this);
     }];
 }
 

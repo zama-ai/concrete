@@ -281,3 +281,16 @@ func @dot_eint_int(%arg0: tensor<2x!HLFHE.eint<2>>,
   //CHECK-NEXT: return %[[RET]] : !HLFHE.eint<2>
   return %ret : !HLFHE.eint<2>
 }
+
+/////////////////////////////////////////////////
+// HLFHELinalg.matmul_eint_int
+/////////////////////////////////////////////////
+
+// CHECK-LABEL:  @matmul_eint_int(%arg0: tensor<3x4x!HLFHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>>
+func @matmul_eint_int(%arg0: tensor<3x4x!HLFHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>> {
+  // CHECK-NEXT: %[[V1:.*]] = "HLFHELinalg.matmul_eint_int"(%arg0, %arg1) : (tensor<3x4x!HLFHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>>
+  // CHECK-NEXT: return %[[V1]] : tensor<3x2x!HLFHE.eint<2>>
+
+  %1 = "HLFHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<3x4x!HLFHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>>
+  return %1 : tensor<3x2x!HLFHE.eint<2>>
+}

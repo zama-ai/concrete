@@ -282,6 +282,37 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
   return ::mlir::success();
 }
 
+/// Verify the matmul shapes, the type of tensor elements are checked by
+/// TensorBinaryEintInt
+mlir::LogicalResult verifyMatmul(MatMulEintIntOp &op) {
+  auto lhsTy = op.lhs().getType().cast<mlir::RankedTensorType>();
+
+  auto rhsTy = op.rhs().getType().cast<mlir::RankedTensorType>();
+
+  auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
+
+  if (lhsTy.getShape().size() != 2 || rhsTy.getShape().size() != 2) {
+    op.emitOpError() << "should have 2D tensors as operands";
+    return mlir::failure();
+  }
+  if (lhsTy.getDimSize(1) != rhsTy.getDimSize(0)) {
+    op.emitOpError() << "should have the dimension #0 of operand #1"
+                        "equals to the dimension #1 of operand #0, expect "
+                     << lhsTy.getDimSize(1) << " got " << rhsTy.getDimSize(0);
+    return mlir::failure();
+  }
+  // Check the shape of lut argument
+  mlir::SmallVector<int64_t, 2> expectedShape{lhsTy.getDimSize(0),
+                                              rhsTy.getDimSize(1)};
+  if (!resultTy.hasStaticShape(expectedShape)) {
+    op.emitOpError() << "should have the result shape compatible with operands "
+                        "shape, expect "
+                     << expectedShape[0] << "x" << expectedShape[1]
+                     << " as the shape of the result";
+    return mlir::failure();
+  }
+  return mlir::success();
+}
 } // namespace HLFHELinalg
 } // namespace zamalang
 } // namespace mlir
