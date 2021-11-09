@@ -25,8 +25,8 @@ struct DotToLinalgGeneric
   // This rewrite pattern transforms any instance of
   // `HLFHELinalg.dot_eint_int` to an instance of `linalg.generic` with an
   // appropriate region using `HLFHE.mul_eint_int` and
-  // `HLFHELinalg.add_eint` operations, an appropriate specification for the
-  // iteration dimensions and appropriate operaztions managing the
+  // `HLFHE.add_eint` operations, an appropriate specification for the
+  // iteration dimensions and appropriate operations managing the
   // accumulator of `linalg.generic`.
   //
   // Example:
@@ -145,7 +145,7 @@ getBroadcastedAffineMap(const mlir::RankedTensorType &resultType,
 // operators `HLFHELinalgOp` that implements the broadasting rules to an
 // instance of `linalg.generic` with an appropriate region using `HLFHEOp`
 // operation, an appropriate specification for the iteration dimensions and
-// appropriate operaztions managing the accumulator of `linalg.generic`.
+// appropriate operations managing the accumulator of `linalg.generic`.
 //
 // Example:
 //
@@ -244,7 +244,7 @@ struct HLFHELinalgOpToLinalgGeneric
 // operators `HLFHELinalg.apply_lookup_table` that implements the broadasting
 // rules to an instance of `linalg.generic` with an appropriate region using
 // `HLFHE.apply_lookup_table` operation, an appropriate specification for the
-// iteration dimensions and appropriate operaztions managing the accumulator of
+// iteration dimensions and appropriate operations managing the accumulator of
 // `linalg.generic`.
 //
 // Example:
@@ -341,6 +341,101 @@ struct HLFHELinalgApplyLookupTableToLinalgGeneric
   };
 };
 
+// This template rewrite pattern transforms any instance of
+// operators `HLFHELinalg.neg_eint` to an instance of `linalg.generic` with an
+// appropriate region using `HLFHE.neg_eint` operation, an appropriate
+// specification for the iteration dimensions and appropriate operations
+// managing the accumulator of `linalg.generic`.
+//
+// Example:
+//
+// HLFHELinalg.neg_eint(%tensor):
+//  tensor<DNx...xD1x!HLFHE.eint<p>> -> tensor<DNx...xD1x!HLFHE.eint<p'>>
+//
+// becomes:
+//
+// #maps_0 = [
+//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>,
+//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>
+// ]
+// #attributes_0 {
+//     indexing_maps = #maps_0,
+//     iterator_types = ["parallel",..],//N parallel
+// }
+// %init = linalg.init_tensor [DN,...,D1]
+//            : tensor<DNx...xD1x!HLFHE.eint<p'>>
+// %res = linalg.generic {
+//     ins(%tensor: tensor<DNx...xD1x!HLFHE.eint<p>>)
+//     outs(%init : tensor<DNx...xD1x!HLFHE.eint<p'>>)
+//     {
+//         ^bb0(%arg0: !HLFHE.eint<p>):
+//             %0 = HLFHE.neg_eint(%arg0): !HLFHE.eint<p> -> !HLFHE.eint<p'>
+//         linalg.yield %0 : !HLFHE.eint<p'>
+//     }
+// }
+//
+struct HLFHELinalgNegEintToLinalgGeneric
+    : public mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::NegEintOp> {
+  HLFHELinalgNegEintToLinalgGeneric(::mlir::MLIRContext *context,
+                                    mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::NegEintOp>(
+            context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::HLFHELinalg::NegEintOp negEintOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    mlir::RankedTensorType resultTy =
+        ((mlir::Type)negEintOp->getResult(0).getType())
+            .cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType tensorTy = ((mlir::Type)negEintOp.tensor().getType())
+                                          .cast<mlir::RankedTensorType>();
+
+    //  linalg.init_tensor for initial value
+    mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
+        negEintOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+
+    // Create the affine #maps_0
+    llvm::SmallVector<mlir::AffineMap, 2> maps{
+        mlir::AffineMap::getMultiDimIdentityMap(tensorTy.getShape().size(),
+                                                this->getContext()),
+        mlir::AffineMap::getMultiDimIdentityMap(resultTy.getShape().size(),
+                                                this->getContext()),
+    };
+
+    // Create the iterator_types
+    llvm::SmallVector<llvm::StringRef> iteratorTypes(resultTy.getShape().size(),
+                                                     "parallel");
+
+    // Create the body of the `linalg.generic` op
+    auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                           mlir::Location nestedLoc,
+                           mlir::ValueRange blockArgs) {
+      mlir::zamalang::HLFHE::NegEintOp hlfheOp =
+          nestedBuilder.create<mlir::zamalang::HLFHE::NegEintOp>(
+              negEintOp.getLoc(), resultTy.getElementType(), blockArgs[0]);
+
+      nestedBuilder.create<mlir::linalg::YieldOp>(negEintOp.getLoc(),
+                                                  hlfheOp.getResult());
+    };
+
+    // Create the `linalg.generic` op
+    llvm::SmallVector<mlir::Type, 1> resTypes{init.getType()};
+    llvm::SmallVector<mlir::Value, 1> ins{negEintOp.tensor()};
+    llvm::SmallVector<mlir::Value, 1> outs{init};
+    llvm::StringRef doc{""};
+    llvm::StringRef call{""};
+
+    mlir::linalg::GenericOp genericOp =
+        rewriter.create<mlir::linalg::GenericOp>(negEintOp.getLoc(), resTypes,
+                                                 ins, outs, maps, iteratorTypes,
+                                                 doc, call, bodyBuilder);
+
+    rewriter.replaceOp(negEintOp, {genericOp.getResult(0)});
+
+    return ::mlir::success();
+  };
+};
+
 namespace {
 struct HLFHETensorOpsToLinalg
     : public HLFHETensorOpsToLinalgBase<HLFHETensorOpsToLinalg> {
@@ -381,6 +476,7 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
                                    mlir::zamalang::HLFHE::MulEintIntOp>>(
       &getContext());
   patterns.insert<HLFHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
+  patterns.insert<HLFHELinalgNegEintToLinalgGeneric>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())

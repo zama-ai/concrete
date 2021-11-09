@@ -1024,3 +1024,50 @@ func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
 
   ASSERT_EXPECTED_VALUE(res, 14);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// HLFHELinalg neg_eint /////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_HLFHELinalg, neg_eint) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+    // Returns the negation of a 3x3 matrix of encrypted integers of width 2.
+    //
+    //        ([0,1,2])   [0,7,6]
+    // negate ([3,4,5]) = [5,4,3]
+    //        ([6,7,0])   [2,1,0]
+    func @main(%t: tensor<3x3x!HLFHE.eint<2>>) -> tensor<3x3x!HLFHE.eint<2>> {
+      %res = "HLFHELinalg.neg_eint"(%t) : (tensor<3x3x!HLFHE.eint<2>>) -> tensor<3x3x!HLFHE.eint<2>>
+      return %res : tensor<3x3x!HLFHE.eint<2>>
+    }
+)XXX");
+  const uint8_t t[3][3]{
+      {0, 1, 2},
+      {3, 4, 5},
+      {6, 7, 0},
+  };
+  const uint8_t expected[3][3]{
+      {0, 7, 6},
+      {5, 4, 3},
+      {2, 1, 0},
+  };
+
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      tArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)t, 3 * 3), {3, 3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&tArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), 3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
