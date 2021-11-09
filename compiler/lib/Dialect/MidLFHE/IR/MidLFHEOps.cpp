@@ -71,8 +71,8 @@ mlir::LogicalResult verifyIntegerGLWEOperator(Operator &op) {
   return _verifyGLWEIntegerOperator(op, b, a, result);
 }
 
-// verifyIntegerOperator verify parameters of operators that has the following
-// signature (!MidLFHE.glwe<{dim,poly,bits}{p}>,
+// verifyBinaryGLWEOperator verify parameters of operators that has the
+// following signature (!MidLFHE.glwe<{dim,poly,bits}{p}>,
 // !MidLFHE.glwe<{dim,poly,bits}{p}>) ->
 // (!MidLFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
