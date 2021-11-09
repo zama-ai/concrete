@@ -31,7 +31,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4);
+  ASSERT_EQ(res->size(), (size_t)4);
 
   for (size_t i = 0; i < 4; i++) {
     EXPECT_EQ((*res)[i], a0[i] + a1[i]);

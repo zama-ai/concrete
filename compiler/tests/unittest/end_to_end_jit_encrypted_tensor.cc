@@ -53,8 +53,8 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) ->
       mlir::zamalang::IntLambdaArgument<uint8_t>>
       arg(tensor2D, shape2D);
 
-  for (size_t i = 0; i < dims[0]; i++) {
-    for (size_t j = 0; j < dims[1]; j++) {
+  for (int64_t i = 0; i < dims[0]; i++) {
+    for (int64_t j = 0; j < dims[1]; j++) {
       auto pos = i * dims[1] + j;
       mlir::zamalang::IntLambdaArgument<size_t> argi(i);
       mlir::zamalang::IntLambdaArgument<size_t> argj(j);
@@ -81,7 +81,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 1 * 5);
+  ASSERT_EQ(res->size(), (size_t)1 * 5);
 
   // Check the sub slice
   for (size_t j = 0; j < 5; j++) {
@@ -109,7 +109,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 1 * 5);
+  ASSERT_EQ(res->size(), (size_t)1 * 5);
 
   // Check the sub slice
   for (size_t j = 0; j < 5; j++) {
