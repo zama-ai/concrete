@@ -6,7 +6,7 @@ BASE_IMG_ENDPOINT_URL=
 ENV_IMG_ENDPOINT_URL=
 TOKEN=
 ENV_DOCKERFILE=./docker/Dockerfile.concretefhe-env
-GITHUB_ENV_FILE=
+GITHUB_ENV_FILE=debug.txt
 
 while [ -n "$1" ]
 do
@@ -49,7 +49,7 @@ LATEST_BASE_IMG_JSON=$(echo "${BASE_JSON}" | jq -rc 'sort_by(.updated_at)[-1]')
 
 echo "Latest base image json: ${LATEST_BASE_IMG_JSON}"
 
-BASE_IMG_TIMESTAMP=$(echo "${LATEST_BASE_IMG_JSON}" | jq -r '.updated_at')
+LATEST_BASE_IMG_TIMESTAMP=$(echo "${LATEST_BASE_IMG_JSON}" | jq -r '.updated_at')
 
 ENV_JSON=$(curl \
 -X GET \
@@ -57,19 +57,35 @@ ENV_JSON=$(curl \
 -H "Authorization: token ${TOKEN}" \
 "${ENV_IMG_ENDPOINT_URL}")
 
-ENV_IMG_TIMESTAMP=$(echo "${ENV_JSON}" | \
-jq -rc '.[] | select(.metadata.container.tags[] | contains("latest")).updated_at')
+LATEST_ENV_IMG_JSON=$(echo "${ENV_JSON}" | jq -rc 'sort_by(.updated_at)[-1]')
 
-echo "Base timestamp: ${BASE_IMG_TIMESTAMP}"
-echo "Env timestamp:  ${ENV_IMG_TIMESTAMP}"
+ENV_IMG_TAG=$(echo "${LATEST_ENV_IMG_JSON}" | \
+jq -rc '.metadata.container.tags - ["latest"] | .[0]')
 
-BASE_IMG_DATE=$(date -d "${BASE_IMG_TIMESTAMP}" +%s)
-ENV_IMG_DATE=$(date -d "${ENV_IMG_TIMESTAMP}" +%s)
+echo "env image tag: ${ENV_IMG_TAG}"
 
-echo "Base epoch: ${BASE_IMG_DATE}"
-echo "Env epoch:  ${ENV_IMG_DATE}"
+IFS='-' read -ra ENV_IMG_SPLIT <<< "${ENV_IMG_TAG}"
+ENV_IMG_BASE_IMG_TAG="${ENV_IMG_SPLIT[0]}"
 
-if [[ "${BASE_IMG_DATE}" -ge "${ENV_IMG_DATE}" ]]; then
+echo "env image base image tag: ${ENV_IMG_BASE_IMG_TAG}"
+
+CURRENT_BASE_IMG_JSON=$(echo "${BASE_JSON}" | \
+jq -rc ".[] | select(.metadata.container.tags[] | contains(\"${ENV_IMG_BASE_IMG_TAG}\"))")
+
+echo "current base image json: ${CURRENT_BASE_IMG_JSON}"
+
+CURRENT_BASE_IMG_TIMESTAMP=$(echo "${CURRENT_BASE_IMG_JSON}" | jq -r '.updated_at')
+
+echo "Latest base timestamp: ${LATEST_BASE_IMG_TIMESTAMP}"
+echo "Current base timestamp:  ${CURRENT_BASE_IMG_TIMESTAMP}"
+
+LATEST_BASE_IMG_TIMESTAMP=$(date -d "${LATEST_BASE_IMG_TIMESTAMP}" +%s)
+CURRENT_BASE_IMG_DATE=$(date -d "${CURRENT_BASE_IMG_TIMESTAMP}" +%s)
+
+echo "Base epoch: ${LATEST_BASE_IMG_TIMESTAMP}"
+echo "Env epoch:  ${CURRENT_BASE_IMG_DATE}"
+
+if [[ "${LATEST_BASE_IMG_TIMESTAMP}" -ge "${CURRENT_BASE_IMG_DATE}" ]]; then
     echo "Env image out of date, sending rebuild request."
     NEW_BASE_IMG_TAG=$(echo "${LATEST_BASE_IMG_JSON}" | \
     jq -rc '.metadata.container.tags - ["latest"] | .[0]')
