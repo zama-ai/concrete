@@ -364,7 +364,7 @@ def dot(node, preds, ir_to_mlir_node, ctx, _additional_conversion_info=None):
     if value_is_clear_tensor_integer(node.inputs[0]):
         lhs_node, rhs_node = rhs_node, lhs_node
     lhs, rhs = ir_to_mlir_node[lhs_node], ir_to_mlir_node[rhs_node]
-    return hlfhe.Dot(
+    return hlfhelinalg.Dot(
         hlfhe.EncryptedIntegerType.get(ctx, node.outputs[0].dtype.bit_width),
         lhs,
         rhs,

@@ -1,4 +1,4 @@
-FROM ghcr.io/zama-ai/zamalang-compiler:0670d4efc18ffb951de0dbab6d76dea1f0754eaa
+FROM ghcr.io/zama-ai/zamalang-compiler:97389a3b06439ad0182cb8820ab4c0b227920cf6
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
