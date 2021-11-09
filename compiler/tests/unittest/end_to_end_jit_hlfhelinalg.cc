@@ -244,10 +244,10 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {1, 3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -282,10 +282,10 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line_missing_dim) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -418,10 +418,10 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_column) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3, 1});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3, 1});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -465,10 +465,10 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {1, 3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -504,10 +504,10 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line_missing_dim) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -583,10 +583,10 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term_broadcast) {
   };
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -635,10 +635,10 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_column) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3, 1});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3, 1});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -682,10 +682,10 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {1, 3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -721,10 +721,10 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line_missing_dim) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -801,10 +801,10 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term_broadcast) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -851,10 +851,10 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_column) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3, 1});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3, 1});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -896,10 +896,10 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {1, 3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -935,10 +935,10 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line_missing_dim) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3});
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
@@ -985,7 +985,7 @@ TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      tArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)t, 3 * 3), {3, 3});
+      tArg(llvm::ArrayRef<uint8_t>((const uint8_t *)t, 3 * 3), {3, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&tArg});
