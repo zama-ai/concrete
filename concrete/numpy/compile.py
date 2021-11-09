@@ -12,6 +12,7 @@ from ..common.common_helpers import check_op_graph_is_integer_program
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Integer
 from ..common.debugging import format_operation_graph
+from ..common.debugging.custom_assert import assert_true
 from ..common.fhe_circuit import FHECircuit
 from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS
 from ..common.mlir.utils import (
@@ -82,6 +83,23 @@ def _compile_numpy_function_into_op_graph_internal(
     Returns:
         OPGraph: compiled function into a graph
     """
+
+    # Check function parameters
+    wrong_inputs = {
+        inp: function_parameters[inp]
+        for inp in function_parameters.keys()
+        if not isinstance(function_parameters[inp], BaseValue)
+    }
+    list_of_possible_basevalue = [
+        "ClearTensor",
+        "EncryptedTensor",
+        "ClearScalar",
+        "EncryptedScalar",
+    ]
+    assert_true(
+        len(wrong_inputs.keys()) == 0,
+        f"wrong type for inputs {wrong_inputs}, needs to be one of {list_of_possible_basevalue}",
+    )
 
     # Add the function to compile as an artifact
     compilation_artifacts.add_function_to_compile(function_to_compile)

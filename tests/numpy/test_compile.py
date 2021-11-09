@@ -1481,3 +1481,33 @@ def test_fail_compile_with_random_inputset(default_compilation_configuration):
             )
             assert str(error) == expected
             raise
+
+
+def test_wrong_inputs(default_compilation_configuration):
+    """Test compilation with faulty inputs"""
+
+    def data_gen(args):
+        for prod in itertools.product(*args):
+            yield prod
+
+    # x should have been something like EncryptedScalar(UnsignedInteger(3))
+    x = [1, 2, 3]
+    input_ranges = ((0, 10),)
+    inputset = data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges))
+    dict_for_inputs = {"x": x}
+
+    with pytest.raises(AssertionError) as excinfo:
+        compile_numpy_function(
+            lambda x: 2 * x, dict_for_inputs, inputset, default_compilation_configuration
+        )
+
+    list_of_possible_basevalue = [
+        "ClearTensor",
+        "EncryptedTensor",
+        "ClearScalar",
+        "EncryptedScalar",
+    ]
+    assert (
+        str(excinfo.value) == f"wrong type for inputs {dict_for_inputs}, "
+        f"needs to be one of {list_of_possible_basevalue}"
+    )
