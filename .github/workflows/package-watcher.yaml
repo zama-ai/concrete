@@ -12,7 +12,7 @@ env:
 
 jobs:
   check_and_notify_build:
-    name: Check timestamps and notify build
+    name: Check timestamps and open PR
     runs-on: ubuntu-20.04
     steps:
       - name: Should run
@@ -32,14 +32,24 @@ jobs:
       - name: Compare image timestamps and notify
         if: ${{ fromJSON(env.SHOULD_RUN) }}
         run: |
-          ./script/actions_utils/container_timestamp_check.sh \
+          ./script/actions_utils/timestamp_check_update_container.sh \
           --base_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/zamalang-compiler/versions \
           --env_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/concretefhe-env/versions \
           --token ${{ secrets.BOT_TOKEN }} \
-          --org-repo ${{ github.repository }} \
-          --event-type rebuild-env-docker
+          --github-env "$GITHUB_ENV"
+      - name: Open PR
+        if: ${{ fromJSON(env.SHOULD_RUN) && env.NEW_BASE_IMG_TAG != '' }}
+        uses: peter-evans/create-pull-request@67df31e08a133c6a77008b89689677067fef169e
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          commit-message: "chore(deps): bump compiler to ${{ env.NEW_BASE_IMG_TAG }}"
+          branch: chore/update-docker-env-compiler
+          base: main
+          title: "Docker env compiler update to ${{ env.NEW_BASE_IMG_TAG }}"
+          body: "Automatic PR for docker env compiler update"
+          labels: dependencies
       - name: Send Slack Notification
         if: ${{ always() && failure() }}
         continue-on-error: true

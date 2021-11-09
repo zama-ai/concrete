@@ -5,8 +5,8 @@ set -e
 BASE_IMG_ENDPOINT_URL=
 ENV_IMG_ENDPOINT_URL=
 TOKEN=
-ORG_REPO=
-EVENT_TYPE=
+ENV_DOCKERFILE=./docker/Dockerfile.concretefhe-env
+GITHUB_ENV_FILE=
 
 while [ -n "$1" ]
 do
@@ -26,14 +26,9 @@ do
             TOKEN="$1"
             ;;
 
-        "--org-repo" )
+        "--github-env")
             shift
-            ORG_REPO="$1"
-            ;;
-
-        "--event-type" )
-            shift
-            EVENT_TYPE="$1"
+            GITHUB_ENV_FILE="$1"
             ;;
 
         *)
@@ -50,7 +45,11 @@ BASE_JSON=$(curl \
 -H "Authorization: token ${TOKEN}" \
 "${BASE_IMG_ENDPOINT_URL}")
 
-BASE_IMG_TIMESTAMP=$(echo "${BASE_JSON}" | jq -r 'sort_by(.updated_at)[-1].updated_at')
+LATEST_BASE_IMG_JSON=$(echo "${BASE_JSON}" | jq -rc 'sort_by(.updated_at)[-1]')
+
+echo "Latest base image json: ${LATEST_BASE_IMG_JSON}"
+
+BASE_IMG_TIMESTAMP=$(echo "${LATEST_BASE_IMG_JSON}" | jq -r '.updated_at')
 
 ENV_JSON=$(curl \
 -X GET \
@@ -72,12 +71,15 @@ echo "Env epoch:  ${ENV_IMG_DATE}"
 
 if [[ "${BASE_IMG_DATE}" -ge "${ENV_IMG_DATE}" ]]; then
     echo "Env image out of date, sending rebuild request."
-    curl \
-    -X POST \
-    -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: token ${TOKEN}" \
-    https://api.github.com/repos/"${ORG_REPO}"/dispatches \
-    -d "{\"event_type\":\"${EVENT_TYPE}\"}"
+    NEW_BASE_IMG_TAG=$(echo "${LATEST_BASE_IMG_JSON}" | \
+    jq -rc '.metadata.container.tags - ["latest"] | .[0]')
+    echo "NEW_BASE_IMG_TAG=${NEW_BASE_IMG_TAG}" >> "${GITHUB_ENV_FILE}"
+    echo "New base img tag: ${NEW_BASE_IMG_TAG}"
+    TMP_DOCKER_FILE="$(mktemp)"
+    sed "s/\(FROM\ ghcr\.io\/zama-ai\/zamalang-compiler:\)\(.*\)/\1${NEW_BASE_IMG_TAG}/g" \
+        "${ENV_DOCKERFILE}" > "${TMP_DOCKER_FILE}"
+    cp -f "${TMP_DOCKER_FILE}" "${ENV_DOCKERFILE}"
+    rm -f "${TMP_DOCKER_FILE}"
 else
     echo "Image up to date, nothing to do."
 fi
