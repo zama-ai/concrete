@@ -252,7 +252,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
   if (info.encryption.hasValue()) {
     // Else if is encrypted
     // For moment we support only 8 bits inputs
-    uint8_t *data8 = (uint8_t *)data;
+    const uint8_t *data8 = (const uint8_t *)data;
     if (width != 8) {
       return llvm::make_error<llvm::StringError>(
           llvm::Twine(
@@ -379,8 +379,9 @@ JITLambda::Argument::getResultType(size_t pos) {
   }
 }
 
-llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t *res,
-                                           size_t size) {
+llvm::Error JITLambda::Argument::getResult(size_t pos, void *res,
+                                           size_t elementSize,
+                                           size_t numElements) {
 
   auto gate = outputGates[pos];
   auto info = std::get<0>(gate);
@@ -393,12 +394,12 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t *res,
         llvm::inconvertibleErrorCode());
   }
   // Check is the argument is a scalar
-  if (info.shape.size != size) {
+  if (info.shape.size != numElements) {
     return llvm::make_error<llvm::StringError>(
         llvm::Twine("result #")
             .concat(llvm::Twine(pos))
             .concat(" has not the expected size, got ")
-            .concat(llvm::Twine(size))
+            .concat(llvm::Twine(numElements))
             .concat(" expect ")
             .concat(llvm::Twine(info.shape.size)),
         llvm::inconvertibleErrorCode());
@@ -406,18 +407,22 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t *res,
 
   // Get the values as the memref calling convention expect.
   // aligned
-  void *allocated = outputs[offset];
-  void *aligned = outputs[offset + 1];
+  uint8_t *alignedBytes = static_cast<uint8_t *>(outputs[offset + 1]);
+  uint8_t *resBytes = static_cast<uint8_t *>(res);
   if (!info.encryption.hasValue()) {
     // just copy values
-    for (size_t i = 0; i < size; i++) {
-      res[i] = ((uint64_t *)aligned)[i];
+    for (size_t i = 0; i < numElements; i++) {
+      for (size_t j = 0; j < elementSize; j++) {
+        *resBytes = *alignedBytes;
+        resBytes++;
+        alignedBytes++;
+      }
     }
   } else {
     // decrypt and fill the result buffer
-    for (size_t i = 0; i < size; i++) {
-      LweCiphertext_u64 *ct = ((LweCiphertext_u64 **)aligned)[i];
-      if (auto err = this->keySet.decrypt_lwe(pos, ct, res[i])) {
+    for (size_t i = 0; i < numElements; i++) {
+      LweCiphertext_u64 *ct = ((LweCiphertext_u64 **)alignedBytes)[i];
+      if (auto err = this->keySet.decrypt_lwe(pos, ct, ((uint64_t *)res)[i])) {
         return std::move(err);
       }
     }

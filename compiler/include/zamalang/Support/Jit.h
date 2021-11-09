@@ -54,7 +54,13 @@ public:
     // Returns an error:
     // - if the result is a scalar
     // - or the size of the `res` buffser doesn't match the size of the tensor.
-    llvm::Error getResult(size_t pos, uint64_t *res, size_t size);
+    template <typename T>
+    llvm::Error getResult(size_t pos, T *res, size_t size) {
+      return std::move(this->getResult(pos, res, sizeof(T), size));
+    }
+
+    llvm::Error getResult(size_t pos, void *res, size_t elementSize,
+                          size_t numElements);
 
     // Returns the number of elements of the result vector at position
     // `pos` or an error if the result is a scalar value
