@@ -122,6 +122,9 @@ class BaseTracer(ABC):
     # some changes
     __radd__ = __add__
 
+    def __neg__(self) -> "BaseTracer":
+        return 0 - self
+
     def __sub__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented

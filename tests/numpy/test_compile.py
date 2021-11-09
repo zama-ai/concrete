@@ -513,6 +513,7 @@ def test_compile_function_multiple_outputs(
         pytest.param(lambda x, y: x + y + 64, ((0, 20), (0, 20)), ["x", "y"]),
         pytest.param(lambda x, y: 100 - y + x, ((0, 20), (0, 20)), ["x", "y"]),
         pytest.param(lambda x, y: 50 - y * 2 + x, ((0, 20), (0, 20)), ["x", "y"]),
+        pytest.param(lambda x: -x + 50, ((0, 20),), ["x"]),
     ],
 )
 def test_compile_and_run_correctness(
