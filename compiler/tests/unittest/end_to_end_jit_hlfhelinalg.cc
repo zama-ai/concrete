@@ -1114,3 +1114,60 @@ TEST(End2EndJit_HLFHELinalg, neg_eint) {
     }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// HLFHELinalg matmul_eint_int ////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
+  //         [ 1, 2, 3]
+  //         [ 2, 3, 4]
+  //       *
+  // [1,2]   [ 5, 8,11]
+  // [3,4] = [11,18,25]
+  // [5,6]   [17,28,39]
+  func @main(%a: tensor<3x2x!HLFHE.eint<6>>, %b: tensor<2x3xi7>) -> tensor<3x3x!HLFHE.eint<6>> {
+    %0 = "HLFHELinalg.matmul_eint_int"(%a, %b) : (tensor<3x2x!HLFHE.eint<6>>, tensor<2x3xi7>) -> tensor<3x3x!HLFHE.eint<6>>
+    return %0 : tensor<3x3x!HLFHE.eint<6>>
+  }
+)XXX",
+                                                                "main", true);
+  const uint8_t A[3][2]{
+      {1, 2},
+      {3, 4},
+      {5, 6},
+  };
+  const uint8_t B[2][3]{
+      {1, 2, 3},
+      {2, 3, 4},
+  };
+  const uint8_t expected[3][3]{
+      {5, 8, 11},
+      {11, 18, 25},
+      {17, 28, 39},
+  };
+
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      aArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)A, 3 * 2), {3, 2});
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      bArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)B, 2 * 3), {2, 3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&aArg, &bArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), 3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}

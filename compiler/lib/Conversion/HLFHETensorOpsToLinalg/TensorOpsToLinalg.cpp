@@ -436,6 +436,138 @@ struct HLFHELinalgNegEintToLinalgGeneric
   };
 };
 
+// This rewrite pattern transforms any instance of
+// operators `HLFHELinalg.matmul_eint_int` to an instance of `linalg.generic`
+// with an appropriate region using `HLFHE.mul_eint_int` and `HLFHE.add_eint`
+// operation, an appropriate specification for the iteration dimensions and
+// appropriate operations managing the accumulator of `linalg.generic`.
+//
+// Example:
+//
+//  "HLFHELinalg.matmul_eint_int(%a, %b) :
+//      (tensor<MxPx!HLFHE.eint<p>>, tensor<PxNxip'>) ->
+//          tensor<MxNx!HLFHE.eint<p>>"
+
+//
+// becomes:
+//
+// #maps_0 = [
+//   (m, n, p) -> (m, p),
+//   (m, n, p) -> (p, n),
+//   (m, n, p) -> (m, n)
+// ]
+// #attributes_0 = {
+//   indexing_maps = #maps_0,
+//   iterator_types = ["parallel", "parallel", "reduction"]
+// }
+// %init = linalg.generate {
+//   ^bb0(%i : index, %j : index, %k : index):
+//     %z = "HLFHE.zero" : () -> !HLFHE.eint<2>
+//     linalg.yield %z
+// }: tensor<MxNx!HLFHE.eint<p>>
+// linalg.generic #attributes_0
+//   ins(%A, %B : tensor<MxPx!HLFHE.eint<p>>,
+//                tensor<PxNxip'>)
+//   outs(%C : tensor<MxNx!HLFHE.eint<p>>)
+//   {
+//      ^bb0(%a: !HLFHE.eint<p>, %b: ip', %c: !HLFHE.eint<p>) :
+//        %d = "HLFHE.mul_eint_int"(%a, %b) :
+//              (!HLFHE.eint<p>, ip') -> !HLFHE.eint<p>
+//        %e = "HLFHE.add_eint"(%c, %d):
+//              (!HLFHE.eint<p>, !HLFHE.eint<p>) -> !HLFHE.eint<p>
+//        linalg.yield %e : !HLFHE.eint<p>
+//   }
+//
+struct HLFHELinalgMatmulEintIntToLinalgGeneric
+    : public mlir::OpRewritePattern<
+          mlir::zamalang::HLFHELinalg::MatMulEintIntOp> {
+  HLFHELinalgMatmulEintIntToLinalgGeneric(::mlir::MLIRContext *context,
+                                          mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(
+            context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::zamalang::HLFHELinalg::MatMulEintIntOp matmulOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    mlir::RankedTensorType resultTy =
+        ((mlir::Type)matmulOp->getResult(0).getType())
+            .cast<mlir::RankedTensorType>();
+    // Create tensor.generate for initial value
+    auto generateBody = [&](mlir::OpBuilder &nestedBuilder,
+                            mlir::Location nestedLoc,
+                            mlir::ValueRange blockArgs) {
+      // %z = "HLFHE.zero" : () -> !HLFHE.eint<2>
+      mlir::zamalang::HLFHE::ZeroEintOp zeroOp =
+          nestedBuilder.create<mlir::zamalang::HLFHE::ZeroEintOp>(
+              matmulOp.getLoc(), resultTy.getElementType());
+      // linalg.yield %z : !HLFHE.eint<p>
+      nestedBuilder.create<mlir::tensor::YieldOp>(matmulOp.getLoc(),
+                                                  zeroOp.getResult());
+    };
+    mlir::tensor::GenerateOp init = rewriter.create<mlir::tensor::GenerateOp>(
+        matmulOp.getLoc(), (mlir::Type)resultTy, mlir::ValueRange{},
+        generateBody);
+    //  linalg.init_tensor for initial value
+    // mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
+    //    matmulOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+    // Create the affine #maps_0
+    llvm::SmallVector<mlir::AffineMap> maps{
+        // (m, n, p) -> (m, p),
+        mlir::AffineMap::get(
+            3, 0, {rewriter.getAffineDimExpr(0), rewriter.getAffineDimExpr(2)},
+            rewriter.getContext()),
+        // (m, n, p) -> (p, n),
+        mlir::AffineMap::get(
+            3, 0, {rewriter.getAffineDimExpr(2), rewriter.getAffineDimExpr(1)},
+            rewriter.getContext()),
+        // (m, n, p) -> (m, n)
+        mlir::AffineMap::get(
+            3, 0, {rewriter.getAffineDimExpr(0), rewriter.getAffineDimExpr(1)},
+            rewriter.getContext()),
+    };
+
+    // Create the iterator_types
+    llvm::SmallVector<llvm::StringRef> iteratorTypes{"parallel", "parallel",
+                                                     "reduction"};
+
+    // Create the body of the `linalg.generic` op
+    auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                           mlir::Location nestedLoc,
+                           mlir::ValueRange blockArgs) {
+      // "HLFHE.mul_eint_int"(%a, %b) : (!HLFHE.eint<p>, ip') -> !HLFHE.eint<p>
+      mlir::zamalang::HLFHE::MulEintIntOp mulEintIntOp =
+          nestedBuilder.create<mlir::zamalang::HLFHE::MulEintIntOp>(
+              matmulOp.getLoc(), resultTy.getElementType(), blockArgs[0],
+              blockArgs[1]);
+      // "HLFHE.add_eint"(%c, %d): (!HLFHE.eint<p>, !HLFHE.eint<p>) ->
+      // !HLFHE.eint<p>
+      mlir::zamalang::HLFHE::AddEintOp addEintOp =
+          nestedBuilder.create<mlir::zamalang::HLFHE::AddEintOp>(
+              matmulOp.getLoc(), resultTy.getElementType(), blockArgs[2],
+              mulEintIntOp);
+      // linalg.yield %e : !HLFHE.eint<p>
+      nestedBuilder.create<mlir::linalg::YieldOp>(matmulOp.getLoc(),
+                                                  addEintOp.getResult());
+    };
+
+    // Create the `linalg.generic` op
+    llvm::SmallVector<mlir::Type> resTypes{init.getType()};
+    llvm::SmallVector<mlir::Value> ins{matmulOp.lhs(), matmulOp.rhs()};
+    llvm::SmallVector<mlir::Value> outs{init};
+    llvm::StringRef doc{""};
+    llvm::StringRef call{""};
+
+    mlir::linalg::GenericOp genericOp =
+        rewriter.create<mlir::linalg::GenericOp>(matmulOp.getLoc(), resTypes,
+                                                 ins, outs, maps, iteratorTypes,
+                                                 doc, call, bodyBuilder);
+
+    rewriter.replaceOp(matmulOp, {genericOp.getResult(0)});
+
+    return ::mlir::success();
+  };
+};
+
 namespace {
 struct HLFHETensorOpsToLinalg
     : public HLFHETensorOpsToLinalgBase<HLFHETensorOpsToLinalg> {
@@ -477,6 +609,7 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
       &getContext());
   patterns.insert<HLFHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<HLFHELinalgNegEintToLinalgGeneric>(&getContext());
+  patterns.insert<HLFHELinalgMatmulEintIntToLinalgGeneric>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())
