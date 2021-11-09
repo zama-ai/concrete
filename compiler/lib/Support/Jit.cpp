@@ -379,6 +379,24 @@ JITLambda::Argument::getResultType(size_t pos) {
   }
 }
 
+llvm::Expected<size_t> JITLambda::Argument::getResultWidth(size_t pos) {
+  if (pos >= outputGates.size()) {
+    return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                   "Requesting width for result at index %zu, "
+                                   "but lambda only generates %zu results",
+                                   pos, outputGates.size());
+  }
+
+  auto gate = outputGates[pos];
+  auto info = std::get<0>(gate);
+
+  // Encrypted values are always returned as 64-bit values for now
+  if (info.encryption.hasValue())
+    return 64;
+  else
+    return info.shape.width;
+}
+
 llvm::Error JITLambda::Argument::getResult(size_t pos, void *res,
                                            size_t elementSize,
                                            size_t numElements) {
