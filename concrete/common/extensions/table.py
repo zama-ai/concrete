@@ -30,6 +30,9 @@ class LookupTable:
         self.table = table
         self.output_dtype = make_integer_to_hold(table, force_signed=False)
 
+    def __repr__(self):
+        return str(list(self.table))
+
     def __getitem__(self, key: Union[int, Iterable, BaseTracer]):
         # if a tracer is used for indexing,
         # we need to create an `GenericFunction` node

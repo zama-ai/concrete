@@ -157,88 +157,118 @@ def get_func_params_int32(func, scalar=True):
             no_fuse_unhandled,
             False,
             get_func_params_int32(no_fuse_unhandled),
-            """The following subgraph is not fusable:
-%0 = x                                             # EncryptedScalar<Integer<signed, 32 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of 2 variable inputs (can only have 1 for fusing)
-%1 = Constant(0.7)                                 # ClearScalar<Float<64 bits>>
-%2 = y                                             # EncryptedScalar<Integer<signed, 32 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of 2 variable inputs (can only have 1 for fusing)
-%3 = Constant(1.3)                                 # ClearScalar<Float<64 bits>>
-%4 = Add(%0, %1)                                   # EncryptedScalar<Float<64 bits>>
-%5 = Add(%2, %3)                                   # EncryptedScalar<Float<64 bits>>
-%6 = Add(%4, %5)                                   # EncryptedScalar<Float<64 bits>>
-%7 = astype(int32)(%6)                             # EncryptedScalar<Integer<signed, 32 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot fuse here as the subgraph has 2 variable inputs
-return(%7)""",  # noqa: E501 # pylint: disable=line-too-long
+            """
+
+The following subgraph is not fusable:
+
+%0 = x                              # EncryptedScalar<int32>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of 2 variable inputs (can only have 1 for fusing)
+%1 = 0.7                            # ClearScalar<float64>
+%2 = y                              # EncryptedScalar<int32>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one of 2 variable inputs (can only have 1 for fusing)
+%3 = 1.3                            # ClearScalar<float64>
+%4 = add(%0, %1)                    # EncryptedScalar<float64>
+%5 = add(%2, %3)                    # EncryptedScalar<float64>
+%6 = add(%4, %5)                    # EncryptedScalar<float64>
+%7 = astype(%6, dtype=int32)        # EncryptedScalar<int32>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot fuse here as the subgraph has 2 variable inputs
+return %7
+
+            """.strip(),  # noqa: E501 # pylint: disable=line-too-long
             id="no_fuse_unhandled",
         ),
         pytest.param(
             no_fuse_dot,
             False,
             {"x": EncryptedTensor(Integer(32, True), (10,))},
-            """The following subgraph is not fusable:
-%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(10,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ input node with shape (10,)
-%1 = Constant([1.33 1.33 ... 1.33 1.33])           # ClearTensor<Float<64 bits>, shape=(10,)>
-%2 = Dot(%0, %1)                                   # EncryptedScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ output shapes: #0, () are not the same as the subgraph's input: (10,)
-%3 = astype(int32)(%2)                             # EncryptedScalar<Integer<signed, 32 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ output shapes: #0, () are not the same as the subgraph's input: (10,)
-return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            """
+
+The following subgraph is not fusable:
+
+%0 = x                                # EncryptedTensor<int32, shape=(10,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ input node with shape (10,)
+%1 = [1.33 1.33 ... 1.33 1.33]        # ClearTensor<float64, shape=(10,)>
+%2 = dot(%0, %1)                      # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ output shapes: #0, () are not the same as the subgraph's input: (10,)
+%3 = astype(%2, dtype=int32)          # EncryptedScalar<int32>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ output shapes: #0, () are not the same as the subgraph's input: (10,)
+return %3
+
+            """.strip(),  # noqa: E501 # pylint: disable=line-too-long
             id="no_fuse_dot",
         ),
         pytest.param(
             ravel_cases,
             False,
             {"x": EncryptedTensor(Integer(32, True), (10, 20))},
-            """The following subgraph is not fusable:
-%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(10, 20)>
-%1 = astype(float64)(%0)                           # EncryptedTensor<Float<64 bits>, shape=(10, 20)>
-%2 = np.ravel(%1)                                  # EncryptedTensor<Float<64 bits>, shape=(200,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
-%3 = astype(int32)(%2)                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(200,)>
-return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            """
+
+The following subgraph is not fusable:
+
+%0 = x                                # EncryptedTensor<int32, shape=(10, 20)>
+%1 = astype(%0, dtype=float64)        # EncryptedTensor<float64, shape=(10, 20)>
+%2 = ravel(%1)                        # EncryptedTensor<float64, shape=(200,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
+%3 = astype(%2, dtype=int32)          # EncryptedTensor<int32, shape=(200,)>
+return %3
+
+            """.strip(),  # noqa: E501 # pylint: disable=line-too-long
             id="no_fuse_explicitely_ravel",
         ),
         pytest.param(
             transpose_cases,
             False,
             {"x": EncryptedTensor(Integer(32, True), (10, 20))},
-            """The following subgraph is not fusable:
-%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(10, 20)>
-%1 = astype(float64)(%0)                           # EncryptedTensor<Float<64 bits>, shape=(10, 20)>
-%2 = np.transpose(%1)                              # EncryptedTensor<Float<64 bits>, shape=(20, 10)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
-%3 = astype(int32)(%2)                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(20, 10)>
-return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            """
+
+The following subgraph is not fusable:
+
+%0 = x                                # EncryptedTensor<int32, shape=(10, 20)>
+%1 = astype(%0, dtype=float64)        # EncryptedTensor<float64, shape=(10, 20)>
+%2 = transpose(%1)                    # EncryptedTensor<float64, shape=(20, 10)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
+%3 = astype(%2, dtype=int32)          # EncryptedTensor<int32, shape=(20, 10)>
+return %3
+
+            """.strip(),  # noqa: E501 # pylint: disable=line-too-long
             id="no_fuse_explicitely_transpose",
         ),
         pytest.param(
             lambda x: reshape_cases(x, (20, 10)),
             False,
             {"x": EncryptedTensor(Integer(32, True), (10, 20))},
-            """The following subgraph is not fusable:
-%0 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(10, 20)>
-%1 = astype(float64)(%0)                           # EncryptedTensor<Float<64 bits>, shape=(10, 20)>
-%2 = np.reshape(%1)                                # EncryptedTensor<Float<64 bits>, shape=(20, 10)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
-%3 = astype(int32)(%2)                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(20, 10)>
-return(%3)""",  # noqa: E501 # pylint: disable=line-too-long
+            """
+
+The following subgraph is not fusable:
+
+%0 = x                                     # EncryptedTensor<int32, shape=(10, 20)>
+%1 = astype(%0, dtype=float64)             # EncryptedTensor<float64, shape=(10, 20)>
+%2 = reshape(%1, newshape=(20, 10))        # EncryptedTensor<float64, shape=(20, 10)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this node is explicitely marked by the package as non-fusable
+%3 = astype(%2, dtype=int32)               # EncryptedTensor<int32, shape=(20, 10)>
+return %3
+
+            """.strip(),  # noqa: E501 # pylint: disable=line-too-long
             id="no_fuse_explicitely_reshape",
         ),
         pytest.param(
             no_fuse_big_constant_3_10_10,
             False,
             {"x": EncryptedTensor(Integer(32, True), (10, 10))},
-            """The following subgraph is not fusable:
-%0 = Constant([[[1. 1. 1 ... . 1. 1.]]])           # ClearTensor<Float<64 bits>, shape=(3, 10, 10)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this constant node has a bigger shape (3, 10, 10) than the subgraph's input: (10, 10)
-%1 = x                                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(10, 10)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ input node with shape (10, 10)
-%2 = astype(float64)(%1)                           # EncryptedTensor<Float<64 bits>, shape=(10, 10)>
-%3 = Add(%2, %0)                                   # EncryptedTensor<Float<64 bits>, shape=(3, 10, 10)>
-%4 = astype(int32)(%3)                             # EncryptedTensor<Integer<signed, 32 bits>, shape=(3, 10, 10)>
-return(%4)""",  # noqa: E501 # pylint: disable=line-too-long
+            """
+
+The following subgraph is not fusable:
+
+%0 = [[[1. 1. 1 ... . 1. 1.]]]        # ClearTensor<float64, shape=(3, 10, 10)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this constant node has a bigger shape (3, 10, 10) than the subgraph's input: (10, 10)
+%1 = x                                # EncryptedTensor<int32, shape=(10, 10)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ input node with shape (10, 10)
+%2 = astype(%1, dtype=float64)        # EncryptedTensor<float64, shape=(10, 10)>
+%3 = add(%2, %0)                      # EncryptedTensor<float64, shape=(3, 10, 10)>
+%4 = astype(%3, dtype=int32)          # EncryptedTensor<int32, shape=(3, 10, 10)>
+return %4
+
+            """.strip(),  # noqa: E501 # pylint: disable=line-too-long
             id="no_fuse_big_constant_3_10_10",
         ),
         pytest.param(
@@ -322,7 +352,7 @@ def test_fuse_float_operations(
     else:
         assert fused_num_nodes == orig_num_nodes
         captured = capfd.readouterr()
-        assert warning_message in remove_color_codes(captured.err)
+        assert warning_message in (output := remove_color_codes(captured.err)), output
 
     for input_ in [0, 2, 42, 44]:
         inputs = ()

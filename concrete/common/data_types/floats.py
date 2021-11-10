@@ -21,6 +21,9 @@ class Float(base.BaseDataType):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<{self.bit_width} bits>"
 
+    def __str__(self) -> str:
+        return f"float{self.bit_width}"
+
     def __eq__(self, other: object) -> bool:
         return isinstance(other, self.__class__) and self.bit_width == other.bit_width
 

@@ -16,6 +16,7 @@ from ..data_types.dtypes_helpers import (
 from ..data_types.integers import Integer
 from ..debugging.custom_assert import assert_true
 from ..helpers import indexing_helpers
+from ..helpers.formatting_helpers import format_constant
 from ..helpers.python_helpers import catch, update_and_return_dict
 from ..values import (
     BaseValue,
@@ -64,6 +65,27 @@ class IntermediateNode(ABC):
 
         self.outputs = [mix_values_func(self.inputs[0], self.inputs[1])]
 
+    def text_for_formatting(self, predecessors: List[str], _maximum_constant_length: int) -> str:
+        """Get the formatted node (used in formatting opgraph).
+
+        Args:
+            predecessors (List[str]): predecessor names to this node
+            _maximum_constant_length (int): desired maximum constant length
+
+        Returns:
+            str: the formatted node
+        """
+
+        return f"{self.__class__.__name__.lower()}({', '.join(predecessors)})"
+
+    @abstractmethod
+    def text_for_drawing(self) -> str:
+        """Get the label of the node (used in drawing opgraph).
+
+        Returns:
+            str: the label of the node
+        """
+
     @abstractmethod
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         """Simulate what the represented computation would output for the given inputs.
@@ -93,15 +115,6 @@ class IntermediateNode(ABC):
         """
         return cls.n_in() > 1
 
-    @abstractmethod
-    def label(self) -> str:
-        """Get the label of the node.
-
-        Returns:
-            str: the label of the node
-
-        """
-
 
 class Add(IntermediateNode):
     """Addition between two values."""
@@ -110,11 +123,11 @@ class Add(IntermediateNode):
 
     __init__ = IntermediateNode._init_binary
 
+    def text_for_drawing(self) -> str:
+        return "+"
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] + inputs[1]
-
-    def label(self) -> str:
-        return "+"
 
 
 class Sub(IntermediateNode):
@@ -124,11 +137,11 @@ class Sub(IntermediateNode):
 
     __init__ = IntermediateNode._init_binary
 
+    def text_for_drawing(self) -> str:
+        return "-"
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] - inputs[1]
-
-    def label(self) -> str:
-        return "-"
 
 
 class Mul(IntermediateNode):
@@ -138,11 +151,11 @@ class Mul(IntermediateNode):
 
     __init__ = IntermediateNode._init_binary
 
+    def text_for_drawing(self) -> str:
+        return "*"
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] * inputs[1]
-
-    def label(self) -> str:
-        return "*"
 
 
 class Input(IntermediateNode):
@@ -164,11 +177,15 @@ class Input(IntermediateNode):
         self.program_input_idx = program_input_idx
         self.outputs = [deepcopy(self.inputs[0])]
 
+    def text_for_formatting(self, predecessors: List[str], _maximum_constant_length: int) -> str:
+        assert_true(len(predecessors) == 0)
+        return self.input_name
+
+    def text_for_drawing(self) -> str:
+        return self.input_name
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0]
-
-    def label(self) -> str:
-        return self.input_name
 
 
 class Constant(IntermediateNode):
@@ -191,6 +208,13 @@ class Constant(IntermediateNode):
         self._constant_data = constant_data
         self.outputs = [base_value_class(is_encrypted=False)]
 
+    def text_for_formatting(self, predecessors: List[str], maximum_constant_length: int) -> str:
+        assert_true(len(predecessors) == 0)
+        return format_constant(self.constant_data, maximum_constant_length)
+
+    def text_for_drawing(self) -> str:
+        return format_constant(self.constant_data)
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return self.constant_data
 
@@ -202,9 +226,6 @@ class Constant(IntermediateNode):
             Any: The constant data that was stored.
         """
         return self._constant_data
-
-    def label(self) -> str:
-        return str(self.constant_data)
 
 
 class IndexConstant(IntermediateNode):
@@ -242,19 +263,17 @@ class IndexConstant(IntermediateNode):
             else ClearTensor(output_dtype, output_shape)
         ]
 
-    def evaluate(self, inputs: Dict[int, Any]) -> Any:
-        return inputs[0][self.index]
-
-    def label(self) -> str:
-        """Label of the node to show during drawings.
-
-        It can be used for some other places after `"value"` below is replaced by `""`.
-        This note will no longer be necessary after #707 is addressed.
-
-        """
+    def text_for_formatting(self, predecessors: List[str], _maximum_constant_length: int) -> str:
+        assert_true(len(predecessors) == 1)
         elements = [indexing_helpers.format_indexing_element(element) for element in self.index]
         index = ", ".join(elements)
-        return f"value[{index}]"
+        return f"{predecessors[0]}[{index}]"
+
+    def text_for_drawing(self) -> str:
+        return self.text_for_formatting(["value"], 0)  # 0 is unused
+
+    def evaluate(self, inputs: Dict[int, Any]) -> Any:
+        return inputs[0][self.index]
 
 
 def flood_replace_none_values(table: list):
@@ -335,14 +354,25 @@ class GenericFunction(IntermediateNode):
 
         self.op_name = op_name if op_name is not None else self.__class__.__name__
 
+    def text_for_formatting(self, predecessors: List[str], maximum_constant_length: int) -> str:
+        all_args = deepcopy(predecessors)
+
+        all_args.extend(format_constant(value, maximum_constant_length) for value in self.op_args)
+        all_args.extend(
+            f"{name}={format_constant(value, maximum_constant_length)}"
+            for name, value in self.op_kwargs.items()
+        )
+
+        return f"{self.op_name}({', '.join(all_args)})"
+
+    def text_for_drawing(self) -> str:
+        return self.op_name
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         # This is the continuation of the mypy bug workaround
         assert self.arbitrary_func is not None
         ordered_inputs = [inputs[idx] for idx in range(len(inputs))]
         return self.arbitrary_func(*ordered_inputs, *self.op_args, **self.op_kwargs)
-
-    def label(self) -> str:
-        return self.op_name
 
     def get_table(self, ordered_preds: List[IntermediateNode]) -> List[Any]:
         """Get the table for the current input value of this GenericFunction.
@@ -466,13 +496,13 @@ class Dot(IntermediateNode):
         self.outputs = [output_scalar_value(output_dtype)]
         self.evaluation_function = delegate_evaluation_function
 
+    def text_for_drawing(self) -> str:
+        return "dot"
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         # This is the continuation of the mypy bug workaround
         assert self.evaluation_function is not None
         return self.evaluation_function(inputs[0], inputs[1])
-
-    def label(self) -> str:
-        return "dot"
 
 
 class MatMul(IntermediateNode):
@@ -513,8 +543,8 @@ class MatMul(IntermediateNode):
 
         self.outputs = [output_value]
 
+    def text_for_drawing(self) -> str:
+        return "matmul"
+
     def evaluate(self, inputs: Dict[int, Any]) -> Any:
         return inputs[0] @ inputs[1]
-
-    def label(self) -> str:
-        return "@"

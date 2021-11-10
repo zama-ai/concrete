@@ -17,7 +17,7 @@ def test_circuit_str(default_compilation_configuration):
     inputset = [(i,) for i in range(2 ** 3)]
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
-    assert str(circuit) == format_operation_graph(circuit.opgraph, show_data_types=True)
+    assert str(circuit) == format_operation_graph(circuit.opgraph)
 
 
 def test_circuit_draw(default_compilation_configuration):

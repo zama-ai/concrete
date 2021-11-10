@@ -96,9 +96,7 @@ def check_node_compatibility_with_mlir(
                 # e.g., `np.absolute is not supported for the time being`
                 return f"{node.op_name} is not supported for the time being"
         else:
-            return (
-                f"{node.op_name} of kind {node.op_kind.value} is not supported for the time being"
-            )
+            return f"{node.op_name} is not supported for the time being"
 
     elif isinstance(node, intermediate.Dot):  # constraints for dot product
         assert_true(len(inputs) == 2)
@@ -206,10 +204,8 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
         raise RuntimeError(
             f"max_bit_width of some nodes is too high for the current version of "
             f"the compiler (maximum must be {ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB}) "
-            f"which is not compatible with:\n"
-            + format_operation_graph(
-                op_graph, show_data_types=True, highlighted_nodes=offending_nodes
-            )
+            f"which is not compatible with:\n\n"
+            + format_operation_graph(op_graph, highlighted_nodes=offending_nodes)
         )
 
     _set_all_bit_width(op_graph, max_bit_width)

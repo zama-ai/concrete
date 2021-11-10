@@ -328,11 +328,11 @@ def test_eval_op_graph_bounds_on_non_conformant_inputset_default(capsys):
     captured = capsys.readouterr()
     assert (
         captured.err == "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
-        "(expected EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `x` "
-        "but got EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "(expected EncryptedTensor<uint2, shape=(3,)> for parameter `x` "
+        "but got EncryptedTensor<uint2, shape=(4,)> which is not compatible)\n"
         "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
-        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
-        "but got ClearTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "(expected ClearTensor<uint2, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<uint2, shape=(4,)> which is not compatible)\n"
     )
 
 
@@ -365,14 +365,14 @@ def test_eval_op_graph_bounds_on_non_conformant_inputset_check_all(capsys):
     captured = capsys.readouterr()
     assert (
         captured.err == "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
-        "(expected EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `x` "
-        "but got EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "(expected EncryptedTensor<uint2, shape=(3,)> for parameter `x` "
+        "but got EncryptedTensor<uint2, shape=(4,)> which is not compatible)\n"
         "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
-        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
-        "but got ClearTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "(expected ClearTensor<uint2, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<uint2, shape=(4,)> which is not compatible)\n"
         "Warning: Input #1 (0-indexed) is not coherent with the hinted parameters "
-        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
-        "but got ClearTensor<Integer<unsigned, 3 bits>, shape=(3,)> which is not compatible)\n"
+        "(expected ClearTensor<uint2, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<uint3, shape=(3,)> which is not compatible)\n"
     )
 
 
@@ -436,14 +436,14 @@ def test_eval_op_graph_bounds_on_non_conformant_numpy_inputset_check_all(capsys)
     captured = capsys.readouterr()
     assert (
         captured.err == "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
-        "(expected EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `x` "
-        "but got EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "(expected EncryptedTensor<uint2, shape=(3,)> for parameter `x` "
+        "but got EncryptedTensor<uint2, shape=(4,)> which is not compatible)\n"
         "Warning: Input #0 (0-indexed) is not coherent with the hinted parameters "
-        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
-        "but got ClearTensor<Integer<unsigned, 2 bits>, shape=(4,)> which is not compatible)\n"
+        "(expected ClearTensor<uint2, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<uint2, shape=(4,)> which is not compatible)\n"
         "Warning: Input #1 (0-indexed) is not coherent with the hinted parameters "
-        "(expected ClearTensor<Integer<unsigned, 2 bits>, shape=(3,)> for parameter `y` "
-        "but got ClearTensor<Integer<unsigned, 3 bits>, shape=(3,)> which is not compatible)\n"
+        "(expected ClearTensor<uint2, shape=(3,)> for parameter `y` "
+        "but got ClearTensor<uint3, shape=(3,)> which is not compatible)\n"
     )
 
 

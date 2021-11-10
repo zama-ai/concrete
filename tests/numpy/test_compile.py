@@ -495,7 +495,7 @@ def test_compile_function_multiple_outputs(
     # when we have the converter, we can check the MLIR
     draw_graph(op_graph, show=False)
 
-    str_of_the_graph = format_operation_graph(op_graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(op_graph)
     print(f"\n{str_of_the_graph}\n")
 
 
@@ -960,7 +960,7 @@ def test_compile_function_with_direct_tlu(default_compilation_configuration):
         default_compilation_configuration,
     )
 
-    str_of_the_graph = format_operation_graph(op_graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(op_graph)
     print(f"\n{str_of_the_graph}\n")
 
 
@@ -991,14 +991,16 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             [(i,) for i in range(8)],
             (
                 """
+
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = Constant(1)                                   # ClearScalar<Integer<unsigned, 1 bits>>
-%1 = x                                             # EncryptedScalar<Integer<unsigned, 3 bits>>
-%2 = Sub(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer outputs are supported
-return(%2)
-""".lstrip()  # noqa: E501
+%0 = 1                  # ClearScalar<uint1>
+%1 = x                  # EncryptedScalar<uint3>
+%2 = sub(%0, %1)        # EncryptedScalar<int4>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer outputs are supported
+return %2
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1021,16 +1023,18 @@ return(%2)
             ],
             (
                 """
+
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = x                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
-%1 = y                                             # EncryptedTensor<Integer<signed, 2 bits>, shape=(1,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
-%2 = Dot(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer dot product is supported
-return(%2)
-""".lstrip()  # noqa: E501
+%0 = x                  # EncryptedTensor<int2, shape=(1,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+%1 = y                  # EncryptedTensor<int2, shape=(1,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+%2 = dot(%0, %1)        # EncryptedScalar<int4>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer dot product is supported
+return %2
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1039,14 +1043,16 @@ return(%2)
             [(numpy.random.randint(-4, 2 ** 2, size=(2, 2)),) for i in range(10)],
             (
                 """
+
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = x                                             # EncryptedTensor<Integer<signed, 3 bits>, shape=(2, 2)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
-%1 = IndexConstant(%0[0])                          # EncryptedTensor<Integer<signed, 3 bits>, shape=(2,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ indexing is not supported for the time being
-return(%1)
-""".lstrip()  # noqa: E501
+%0 = x            # EncryptedTensor<int3, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+%1 = %0[0]        # EncryptedTensor<int3, shape=(2,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ indexing is not supported for the time being
+return %1
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1055,28 +1061,30 @@ return(%1)
             [(numpy.array(i), numpy.array(i)) for i in range(10)],
             (
                 """
+
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = Constant(1.5)                                 # ClearScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
-%1 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>
-%2 = Constant(2.8)                                 # ClearScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
-%3 = y                                             # EncryptedScalar<Integer<unsigned, 4 bits>>
-%4 = Constant(9.3)                                 # ClearScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
-%5 = Add(%1, %2)                                   # EncryptedScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer addition is supported
-%6 = Add(%3, %4)                                   # EncryptedScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer addition is supported
-%7 = Sub(%5, %6)                                   # EncryptedScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer subtraction is supported
-%8 = Mul(%7, %0)                                   # EncryptedScalar<Float<64 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer multiplication is supported
-%9 = astype(int32)(%8)                             # EncryptedScalar<Integer<signed, 5 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ astype(int32) is not supported without fusing
-return(%9)
-""".lstrip()  # noqa: E501
+%0 = 1.5                            # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
+%1 = x                              # EncryptedScalar<uint4>
+%2 = 2.8                            # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
+%3 = y                              # EncryptedScalar<uint4>
+%4 = 9.3                            # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
+%5 = add(%1, %2)                    # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer addition is supported
+%6 = add(%3, %4)                    # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer addition is supported
+%7 = sub(%5, %6)                    # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer subtraction is supported
+%8 = mul(%7, %0)                    # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer multiplication is supported
+%9 = astype(%8, dtype=int32)        # EncryptedScalar<int5>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ astype is not supported without fusing
+return %9
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1084,13 +1092,17 @@ return(%9)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
-                "%1 = Constant([[1 1 1] [1 1 1]])                   # ClearTensor<Integer<unsigned, 1 bits>, shape=(2, 3)>\n"  # noqa: E501
-                "%2 = MatMul(%0, %1)                                # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(3, 3)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being\n"  # noqa: E501
-                "return(%2)\n"
+                """
+
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                        # EncryptedTensor<uint3, shape=(3, 2)>
+%1 = [[1 1 1] [1 1 1]]        # ClearTensor<uint1, shape=(2, 3)>
+%2 = matmul(%0, %1)           # EncryptedTensor<uint4, shape=(3, 3)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being
+return %2
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1098,13 +1110,15 @@ return(%9)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
-                "%1 = Constant([[1 1 1] [1 1 1]])                   # ClearTensor<Integer<unsigned, 1 bits>, shape=(2, 3)>\n"  # noqa: E501
-                "%2 = MatMul(%0, %1)                                # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(3, 3)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being\n"  # noqa: E501
-                "return(%2)\n"
+                """
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                        # EncryptedTensor<uint3, shape=(3, 2)>
+%1 = [[1 1 1] [1 1 1]]        # ClearTensor<uint1, shape=(2, 3)>
+%2 = matmul(%0, %1)           # EncryptedTensor<uint4, shape=(3, 3)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being
+return %2
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1112,13 +1126,17 @@ return(%9)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
-                "function you are trying to compile isn't supported for MLIR lowering\n"
-                "\n"
-                "%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>\n"  # noqa: E501
-                "%1 = Constant([[1 1 1] [1 1 1]])                   # ClearTensor<Integer<unsigned, 1 bits>, shape=(2, 3)>\n"  # noqa: E501
-                "%2 = MatMul(%0, %1)                                # EncryptedTensor<Integer<unsigned, 4 bits>, shape=(3, 3)>\n"  # noqa: E501
-                "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being\n"  # noqa: E501
-                "return(%2)\n"
+                """
+
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                        # EncryptedTensor<uint3, shape=(3, 2)>
+%1 = [[1 1 1] [1 1 1]]        # ClearTensor<uint1, shape=(2, 3)>
+%2 = matmul(%0, %1)           # EncryptedTensor<uint4, shape=(3, 3)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being
+return %2
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1127,13 +1145,15 @@ return(%9)
             [(numpy.random.randint(0, 2 ** 2, size=(3, 2)),) for _ in range(32)],
             (
                 """
+
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = x                                             # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3, 2)>
-%1 = MultiTLU(%0)                                  # EncryptedTensor<Integer<unsigned, 2 bits>, shape=(3, 2)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ direct multi table lookup is not supported for the time being
-return(%1)
-""".lstrip()  # noqa: E501
+%0 = x                                                                         # EncryptedTensor<uint2, shape=(3, 2)>
+%1 = MultiTLU(%0, input_shape=(3, 2), tables=[[[1, 2, 1 ... 1, 2, 0]]])        # EncryptedTensor<uint2, shape=(3, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ direct multi table lookup is not supported for the time being
+return %1
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1141,13 +1161,16 @@ return(%1)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
-                """function you are trying to compile isn't supported for MLIR lowering
+                """
 
-%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>
-%1 = np.transpose(%0)                              # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 3)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.transpose of kind Memory is not supported for the time being
-return(%1)
-"""  # noqa: E501
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                    # EncryptedTensor<uint3, shape=(3, 2)>
+%1 = transpose(%0)        # EncryptedTensor<uint3, shape=(2, 3)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ transpose is not supported for the time being
+return %1
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1155,13 +1178,16 @@ return(%1)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
-                """function you are trying to compile isn't supported for MLIR lowering
+                """
 
-%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 2)>
-%1 = np.ravel(%0)                                  # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(6,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.ravel of kind Memory is not supported for the time being
-return(%1)
-"""  # noqa: E501
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                # EncryptedTensor<uint3, shape=(3, 2)>
+%1 = ravel(%0)        # EncryptedTensor<uint3, shape=(6,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ravel is not supported for the time being
+return %1
+
+                """.strip()  # noqa: E501
             ),
         ),
         pytest.param(
@@ -1169,13 +1195,16 @@ return(%1)
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 4))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 4)),) for i in range(10)],
             (
-                """function you are trying to compile isn't supported for MLIR lowering
+                """
 
-%0 = x                                             # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(3, 4)>
-%1 = np.reshape(%0)                                # EncryptedTensor<Integer<unsigned, 3 bits>, shape=(2, 6)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.reshape of kind Memory is not supported for the time being
-return(%1)
-"""  # noqa: E501
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                                   # EncryptedTensor<uint3, shape=(3, 4)>
+%1 = reshape(%0, newshape=(2, 6))        # EncryptedTensor<uint3, shape=(2, 6)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ reshape is not supported for the time being
+return %1
+
+                """.strip()  # noqa: E501
             ),
         ),
     ],
@@ -1217,19 +1246,21 @@ def test_fail_with_intermediate_signed_values(default_compilation_configuration)
             )
         except RuntimeError as error:
             match = """
+
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = y                                             # EncryptedScalar<Integer<unsigned, 2 bits>>
-%1 = Constant(10)                                  # ClearScalar<Integer<unsigned, 4 bits>>
-%2 = x                                             # EncryptedScalar<Integer<unsigned, 2 bits>>
-%3 = np.negative(%2)                               # EncryptedScalar<Integer<signed, 3 bits>>
-%4 = Mul(%3, %1)                                   # EncryptedScalar<Integer<signed, 6 bits>>
-%5 = np.absolute(%4)                               # EncryptedScalar<Integer<unsigned, 5 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ np.absolute is not supported for the time being
-%6 = astype(int32)(%5)                             # EncryptedScalar<Integer<unsigned, 5 bits>>
-%7 = Add(%6, %0)                                   # EncryptedScalar<Integer<unsigned, 6 bits>>
-return(%7)
-""".lstrip()  # noqa: E501 # pylint: disable=line-too-long
+%0 = y                              # EncryptedScalar<uint2>
+%1 = 10                             # ClearScalar<uint4>
+%2 = x                              # EncryptedScalar<uint2>
+%3 = negative(%2)                   # EncryptedScalar<int3>
+%4 = mul(%3, %1)                    # EncryptedScalar<int6>
+%5 = absolute(%4)                   # EncryptedScalar<uint5>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ absolute is not supported for the time being
+%6 = astype(%5, dtype=int32)        # EncryptedScalar<uint5>
+%7 = add(%6, %0)                    # EncryptedScalar<uint6>
+return %7
+
+            """.strip()  # noqa: E501 # pylint: disable=line-too-long
             assert str(error) == match
             raise
 
@@ -1270,13 +1301,14 @@ def test_small_inputset_treat_warnings_as_errors():
             (4,),
             # Remark that, when you do the dot of tensors of 4 values between 0 and 3,
             # you can get a maximal value of 4*3*3 = 36, ie something on 6 bits
-            "%0 = x                                             "
-            "# EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)>"
-            "\n%1 = y                                             "
-            "# EncryptedTensor<Integer<unsigned, 2 bits>, shape=(4,)>"
-            "\n%2 = Dot(%0, %1)                                   "
-            "# EncryptedScalar<Integer<unsigned, 6 bits>>"
-            "\nreturn(%2)\n",
+            """
+
+%0 = x                  # EncryptedTensor<uint2, shape=(4,)>
+%1 = y                  # EncryptedTensor<uint2, shape=(4,)>
+%2 = dot(%0, %1)        # EncryptedScalar<uint6>
+return %2
+
+            """.strip(),
         ),
     ],
 )
@@ -1303,7 +1335,7 @@ def test_compile_function_with_dot(
         data_gen(max_for_ij, repeat),
         default_compilation_configuration,
     )
-    str_of_the_graph = format_operation_graph(op_graph, show_data_types=True)
+    str_of_the_graph = format_operation_graph(op_graph)
     assert str_of_the_graph == ref_graph_str, (
         f"\n==================\nGot \n{str_of_the_graph}"
         f"==================\nExpected \n{ref_graph_str}"
@@ -1373,13 +1405,16 @@ def test_compile_too_high_bitwidth(default_compilation_configuration):
     assert (
         str(excinfo.value)
         == """
+
 max_bit_width of some nodes is too high for the current version of the compiler (maximum must be 7) which is not compatible with:
-%0 = x                                             # EncryptedScalar<Integer<unsigned, 7 bits>>
-%1 = y                                             # EncryptedScalar<Integer<unsigned, 5 bits>>
-%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<unsigned, 8 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 8 bits is not supported for the time being
-return(%2)
-""".lstrip()  # noqa: E501 # pylint: disable=line-too-long
+
+%0 = x                  # EncryptedScalar<uint7>
+%1 = y                  # EncryptedScalar<uint5>
+%2 = add(%0, %1)        # EncryptedScalar<uint8>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 8 bits is not supported for the time being
+return %2
+
+        """.strip()  # noqa: E501 # pylint: disable=line-too-long
     )
 
     # Just ok
@@ -1418,14 +1453,16 @@ def test_failure_for_signed_output(default_compilation_configuration):
     assert (
         str(excinfo.value)
         == """
+
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = x                                             # EncryptedScalar<Integer<unsigned, 4 bits>>
-%1 = Constant(-3)                                  # ClearScalar<Integer<signed, 3 bits>>
-%2 = Add(%0, %1)                                   # EncryptedScalar<Integer<signed, 4 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer outputs are supported
-return(%2)
-""".lstrip()  # noqa: E501 # pylint: disable=line-too-long
+%0 = x                  # EncryptedScalar<uint4>
+%1 = -3                 # ClearScalar<int3>
+%2 = add(%0, %1)        # EncryptedScalar<int4>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer outputs are supported
+return %2
+
+""".strip()  # noqa: E501 # pylint: disable=line-too-long
     )
 
 

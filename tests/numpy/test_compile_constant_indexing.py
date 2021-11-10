@@ -368,8 +368,7 @@ def test_constant_indexing(
             EncryptedScalar(UnsignedInteger(1)),
             lambda x: x[0],
             TypeError,
-            "Only tensors can be indexed "
-            "but you tried to index EncryptedScalar<Integer<unsigned, 1 bits>>",
+            "Only tensors can be indexed but you tried to index EncryptedScalar<uint1>",
         ),
         pytest.param(
             EncryptedTensor(UnsignedInteger(1), shape=(3,)),

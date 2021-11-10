@@ -133,10 +133,9 @@ def convert_float_subgraph_to_fused_node(
 
         printable_graph = format_operation_graph(
             float_subgraph_as_op_graph,
-            show_data_types=True,
             highlighted_nodes=node_with_issues_for_fusing,
         )
-        message = f"The following subgraph is not fusable:\n{printable_graph}"
+        message = f"The following subgraph is not fusable:\n\n{printable_graph}"
         logger.warning(message)
         return None
 

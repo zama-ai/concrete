@@ -262,9 +262,7 @@ def prepare_op_graph_for_mlir(op_graph):
     if offending_nodes is not None:
         raise RuntimeError(
             "function you are trying to compile isn't supported for MLIR lowering\n\n"
-            + format_operation_graph(
-                op_graph, show_data_types=True, highlighted_nodes=offending_nodes
-            )
+            + format_operation_graph(op_graph, highlighted_nodes=offending_nodes)
         )
 
     # Update bit_width for MLIR

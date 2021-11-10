@@ -104,7 +104,7 @@ class NPTracer(BaseTracer):
             output_value=generic_function_output_value,
             op_kind="TLU",
             op_kwargs={"dtype": normalized_numpy_dtype.type},
-            op_name=f"astype({normalized_numpy_dtype})",
+            op_name="astype",
         )
         output_tracer = self.__class__([self], traced_computation=traced_computation, output_idx=0)
         return output_tracer
@@ -320,7 +320,7 @@ class NPTracer(BaseTracer):
             output_value=generic_function_output_value,
             op_kind="Memory",
             op_kwargs=deepcopy(kwargs),
-            op_name="np.transpose",
+            op_name="transpose",
             op_attributes={"fusable": transpose_is_fusable},
         )
         output_tracer = self.__class__(
@@ -367,7 +367,7 @@ class NPTracer(BaseTracer):
             output_value=generic_function_output_value,
             op_kind="Memory",
             op_kwargs=deepcopy(kwargs),
-            op_name="np.ravel",
+            op_name="ravel",
             op_attributes={"fusable": ravel_is_fusable},
         )
         output_tracer = self.__class__(
@@ -405,12 +405,9 @@ class NPTracer(BaseTracer):
         assert_true(isinstance(first_arg_output, TensorValue))
         first_arg_output = cast(TensorValue, first_arg_output)
 
-        newshape = deepcopy(arg1)
-
-        if isinstance(newshape, int):
-            # Make numpy.reshape(x, (170)) and numpy.reshape(x, 170) work, while classical form is
-            # numpy.reshape(x, (170,))
-            newshape = (newshape,)
+        # Make numpy.reshape(x, (170)) and numpy.reshape(x, 170) work,
+        # while classical form is numpy.reshape(x, (170,))
+        newshape = deepcopy(arg1) if not isinstance(arg1, int) else (arg1,)
 
         # Check shape compatibility
         assert_true(
@@ -435,7 +432,7 @@ class NPTracer(BaseTracer):
             output_value=generic_function_output_value,
             op_kind="Memory",
             op_kwargs={"newshape": newshape},
-            op_name="np.reshape",
+            op_name="reshape",
             op_attributes={"fusable": reshape_is_fusable},
         )
         output_tracer = self.__class__(
@@ -575,7 +572,7 @@ def _get_unary_fun(function: numpy.ufunc):
     # dynamically
     # pylint: disable=protected-access
     return lambda *input_tracers, **kwargs: NPTracer._unary_operator(
-        function, f"np.{function.__name__}", *input_tracers, **kwargs
+        function, f"{function.__name__}", *input_tracers, **kwargs
     )
     # pylint: enable=protected-access
 
@@ -587,7 +584,7 @@ def _get_binary_fun(function: numpy.ufunc):
     # dynamically
     # pylint: disable=protected-access
     return lambda *input_tracers, **kwargs: NPTracer._binary_operator(
-        function, f"np.{function.__name__}", *input_tracers, **kwargs
+        function, f"{function.__name__}", *input_tracers, **kwargs
     )
     # pylint: enable=protected-access
 

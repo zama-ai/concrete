@@ -85,7 +85,7 @@ class CompilationArtifacts:
         """
 
         drawing = draw_graph(operation_graph)
-        textual_representation = format_operation_graph(operation_graph, show_data_types=True)
+        textual_representation = format_operation_graph(operation_graph)
 
         self.drawings_of_operation_graphs[name] = drawing
         self.textual_representations_of_operation_graphs[name] = textual_representation

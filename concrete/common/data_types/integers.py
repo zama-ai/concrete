@@ -23,6 +23,9 @@ class Integer(base.BaseDataType):
         signed_str = "signed" if self.is_signed else "unsigned"
         return f"{self.__class__.__name__}<{signed_str}, {self.bit_width} bits>"
 
+    def __str__(self) -> str:
+        return f"{('int' if self.is_signed else 'uint')}{self.bit_width}"
+
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, self.__class__)

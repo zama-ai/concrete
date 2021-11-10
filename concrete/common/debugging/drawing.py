@@ -84,7 +84,7 @@ def draw_graph(
 
     attributes = {
         node: {
-            "label": node.label(),
+            "label": node.text_for_drawing(),
             "color": get_color(node, output_nodes),
             "penwidth": 2,  # double thickness for circles
             "peripheries": 2 if node in output_nodes else 1,  # double circle for output nodes
