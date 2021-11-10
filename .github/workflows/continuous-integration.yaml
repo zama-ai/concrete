@@ -93,10 +93,11 @@ jobs:
           echo "::set-output name=image::${PREFLIGHT_IMAGE}"
           echo "PREFLIGHT_IMAGE=${PREFLIGHT_IMAGE}" >> "$GITHUB_ENV"
           echo "LABEL_SHA1=${LABEL_SHA1}" >> "$GITHUB_ENV"
-      - name: Set up Docker Buildx
-        if: ${{ fromJSON(env.BUILD_DOCKER) }}
-        id: buildx
-        uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
+      # Disabled buildx for now as we are seeing a lot of fails on layer pushes
+      # - name: Set up Docker Buildx
+      #   if: ${{ fromJSON(env.BUILD_DOCKER) }}
+      #   id: buildx
+      #   uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
       - name: Login to GitHub Container Registry
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -109,7 +110,7 @@ jobs:
         uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
         with:
           context: .
-          builder: ${{ steps.buildx.outputs.name }}
+          # builder: ${{ steps.buildx.outputs.name }}
           file: docker/Dockerfile.concretefhe-env
           no-cache: true
           push: true
@@ -548,9 +549,10 @@ jobs:
           fi
 
           echo "RELEASE_IMG_TAGS_TO_PUSH=${RELEASE_IMG_TAGS_TO_PUSH}" >> "$GITHUB_ENV"
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
+      # Disabled buildx for now as we are seeing a lot of fails on layer pushes
+      # - name: Set up Docker Buildx
+      #   id: buildx
+      #   uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
       - name: Login to GitHub Container Registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
@@ -562,7 +564,7 @@ jobs:
         uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
         with:
           context: .
-          builder: ${{ steps.buildx.outputs.name }}
+          # builder: ${{ steps.buildx.outputs.name }}
           file: docker/Dockerfile.release
           load: true
           push: false
