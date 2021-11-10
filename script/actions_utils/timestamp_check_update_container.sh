@@ -86,7 +86,7 @@ CURRENT_BASE_IMG_DATE=$(date -d "${CURRENT_BASE_IMG_TIMESTAMP}" +%s)
 echo "Base epoch: ${LATEST_BASE_IMG_TIMESTAMP}"
 echo "Env epoch:  ${CURRENT_BASE_IMG_DATE}"
 
-if [[ "${LATEST_BASE_IMG_TIMESTAMP}" -ge "${CURRENT_BASE_IMG_DATE}" ]]; then
+if [[ "${LATEST_BASE_IMG_TIMESTAMP}" -gt "${CURRENT_BASE_IMG_DATE}" ]]; then
     echo "Env image out of date, sending rebuild request."
     NEW_BASE_IMG_TAG=$(echo "${LATEST_BASE_IMG_JSON}" | \
     jq -rc '.metadata.container.tags - ["latest"] | .[0]')
