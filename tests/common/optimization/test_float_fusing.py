@@ -585,8 +585,10 @@ def subtest_fuse_float_binary_operations_correctness(fun, tensor_shape):
                     tensor_shape
                 )
                 if tensor_shape != ()
-                else 1
+                else numpy.int64(1)
             )
+            # Make sure the tensor diversifier is a numpy variable, otherwise some cases may fail
+            # as python int and float don't have the astype method
             input_ = input_ * tensor_diversifier
 
             num_params = len(params_names)

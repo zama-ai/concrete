@@ -159,6 +159,7 @@ def complicated_topology(x):
 def mix_x_and_y_and_call_f(func, x, y):
     """Create an upper function to test `func`"""
     z = numpy.abs(10 * func(x))
+    z = z / 2
     z = z.astype(numpy.int32) + y
     return z
 
@@ -200,6 +201,8 @@ def mix_x_and_y_and_call_f_which_has_large_outputs(func, x, y):
 def mix_x_and_y_and_call_f_avoid_0_input(func, x, y):
     """Create an upper function to test `func`, which makes that inputs are not 0"""
     a = numpy.abs(7 * numpy.sin(x)) + 1
+    b = 100 / a
+    a = a + b
     z = numpy.abs(5 * func(a))
     z = z.astype(numpy.int32) + y
     return z

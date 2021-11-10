@@ -1,5 +1,6 @@
 """Test file for numpy tracing"""
 
+import inspect
 from copy import deepcopy
 
 import networkx as nx
@@ -608,26 +609,64 @@ def test_nptracer_get_tracing_func_for_np_functions_not_implemented():
 
 
 @pytest.mark.parametrize(
-    "tracer",
+    "operation,exception_type,match",
     [
-        tracing.NPTracer([], ir.Input(ClearScalar(Integer(32, True)), "x", 0), 0),
+        pytest.param(
+            lambda x: x + "fail",
+            TypeError,
+            "unsupported operand type(s) for +: 'NPTracer' and 'str'",
+        ),
+        pytest.param(
+            lambda x: "fail" + x,
+            TypeError,
+            'can only concatenate str (not "NPTracer") to str',
+        ),
+        pytest.param(
+            lambda x: x - "fail",
+            TypeError,
+            "unsupported operand type(s) for -: 'NPTracer' and 'str'",
+        ),
+        pytest.param(
+            lambda x: "fail" - x,
+            TypeError,
+            "unsupported operand type(s) for -: 'str' and 'NPTracer'",
+        ),
+        pytest.param(
+            lambda x: x * "fail",
+            TypeError,
+            "can't multiply sequence by non-int of type 'NPTracer'",
+        ),
+        pytest.param(
+            lambda x: "fail" * x,
+            TypeError,
+            "can't multiply sequence by non-int of type 'NPTracer'",
+        ),
+        pytest.param(
+            lambda x: x / "fail",
+            TypeError,
+            "unsupported operand type(s) for /: 'NPTracer' and 'str'",
+        ),
+        pytest.param(
+            lambda x: "fail" / x,
+            TypeError,
+            "unsupported operand type(s) for /: 'str' and 'NPTracer'",
+        ),
+        pytest.param(
+            lambda x, y: x / y, NotImplementedError, "Can't manage binary operator truediv"
+        ),
     ],
 )
-@pytest.mark.parametrize(
-    "operation",
-    [
-        lambda x: x + "fail",
-        lambda x: "fail" + x,
-        lambda x: x - "fail",
-        lambda x: "fail" - x,
-        lambda x: x * "fail",
-        lambda x: "fail" * x,
-    ],
-)
-def test_nptracer_unsupported_operands(operation, tracer):
+def test_nptracer_unsupported_operands(operation, exception_type, match):
     """Test cases where NPTracer cannot be used with other operands."""
-    with pytest.raises(TypeError):
-        tracer = operation(tracer)
+    tracers = [
+        tracing.NPTracer([], ir.Input(ClearScalar(Integer(32, True)), param_name, idx), 0)
+        for idx, param_name in enumerate(inspect.signature(operation).parameters.keys())
+    ]
+
+    with pytest.raises(exception_type) as exc_info:
+        _ = operation(*tracers)
+
+    assert match in str(exc_info)
 
 
 @pytest.mark.parametrize(

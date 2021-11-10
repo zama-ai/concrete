@@ -3,10 +3,13 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, List, Tuple, Type, Union
 
+from ..data_types import Float
 from ..debugging.custom_assert import assert_true
 from ..representation.intermediate import (
     IR_MIX_VALUES_FUNC_ARG_NAME,
     Add,
+    Constant,
+    GenericFunction,
     IndexConstant,
     IntermediateNode,
     Mul,
@@ -169,3 +172,45 @@ class BaseTracer(ABC):
     def __getitem__(self, item):
         traced_computation = IndexConstant(self.output, item)
         return self.__class__([self], traced_computation, 0)
+
+    def _truediv(
+        self, lhs: Union["BaseTracer", Any], rhs: Union["BaseTracer", Any]
+    ) -> "BaseTracer":
+        if isinstance(lhs, BaseTracer):
+            if not self._supports_other_operand(rhs):
+                return NotImplemented
+        elif isinstance(rhs, BaseTracer):
+            if not self._supports_other_operand(lhs):
+                return NotImplemented
+
+        sanitized_inputs = [self._sanitize(inp) for inp in [lhs, rhs]]
+
+        # One of the inputs has to be constant
+        if not (
+            isinstance(sanitized_inputs[0].traced_computation, Constant)
+            or isinstance(sanitized_inputs[1].traced_computation, Constant)
+        ):
+            raise NotImplementedError("Can't manage binary operator truediv")
+
+        sanitized_input_values = [san_input.output for san_input in sanitized_inputs]
+        output_value = self._get_mix_values_func()(*sanitized_input_values)
+        # The true division in python is always float64
+        output_value.dtype = Float(64)
+
+        traced_computation = GenericFunction(
+            inputs=sanitized_input_values,
+            arbitrary_func=lambda x, y: x / y,
+            output_value=output_value,
+            op_kind="TLU",
+            op_name="truediv",
+        )
+
+        result_tracer = self.__class__(sanitized_inputs, traced_computation, 0)
+
+        return result_tracer
+
+    def __truediv__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
+        return self._truediv(self, other)
+
+    def __rtruediv__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
+        return self._truediv(other, self)
