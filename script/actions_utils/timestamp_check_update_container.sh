@@ -57,7 +57,8 @@ ENV_JSON=$(curl \
 -H "Authorization: token ${TOKEN}" \
 "${ENV_IMG_ENDPOINT_URL}")
 
-LATEST_ENV_IMG_JSON=$(echo "${ENV_JSON}" | jq -rc 'sort_by(.updated_at)[-1]')
+LATEST_ENV_IMG_JSON=$(echo "${ENV_JSON}" | \
+jq -rc '.[] | select(.metadata.container.tags[] | contains("latest"))')
 
 ENV_IMG_TAG=$(echo "${LATEST_ENV_IMG_JSON}" | \
 jq -rc '.metadata.container.tags - ["latest"] | .[0]')
