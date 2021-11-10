@@ -652,7 +652,20 @@ def test_nptracer_get_tracing_func_for_np_functions_not_implemented():
             "unsupported operand type(s) for /: 'str' and 'NPTracer'",
         ),
         pytest.param(
+            lambda x: x // "fail",
+            TypeError,
+            "unsupported operand type(s) for //: 'NPTracer' and 'str'",
+        ),
+        pytest.param(
+            lambda x: "fail" // x,
+            TypeError,
+            "unsupported operand type(s) for //: 'str' and 'NPTracer'",
+        ),
+        pytest.param(
             lambda x, y: x / y, NotImplementedError, "Can't manage binary operator truediv"
+        ),
+        pytest.param(
+            lambda x, y: x // y, NotImplementedError, "Can't manage binary operator floordiv"
         ),
     ],
 )

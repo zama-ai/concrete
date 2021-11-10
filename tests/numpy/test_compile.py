@@ -174,6 +174,7 @@ def mix_x_and_y_and_call_f_with_float_inputs(func, x, y):
 def mix_x_and_y_and_call_f_with_integer_inputs(func, x, y):
     """Create an upper function to test `func`, with inputs which are forced to be integers but
     in a way which is fusable into a TLU"""
+    x = x // 2
     a = x + 0.1
     a = numpy.rint(a).astype(numpy.int32)
     z = numpy.abs(10 * func(a))
@@ -201,8 +202,9 @@ def mix_x_and_y_and_call_f_which_has_large_outputs(func, x, y):
 def mix_x_and_y_and_call_f_avoid_0_input(func, x, y):
     """Create an upper function to test `func`, which makes that inputs are not 0"""
     a = numpy.abs(7 * numpy.sin(x)) + 1
+    c = 100 // a
     b = 100 / a
-    a = a + b
+    a = a + b + c
     z = numpy.abs(5 * func(a))
     z = z.astype(numpy.int32) + y
     return z
