@@ -31,6 +31,11 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: -v ${{ github.workspace }}/compiler:/compiler
           run: |
+            echo "Debug: ccache statistics (prior to the build):"
+            ccache -s
             cd /compiler
             pip install pytest
-            make BUILD_DIR=/build test
+            rm -rf /build
+            make CCACHE=ON BUILD_DIR=/build test
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
