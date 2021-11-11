@@ -3,7 +3,7 @@ name: Concrete-lib Compatibility
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 00 * * 1-5' # Everyday @ 00:00 from Monday to Friday
+    - cron: '0 00 * * 1' # Every Monday @ 00:00 UTC
 
 jobs:
   build_publish:
