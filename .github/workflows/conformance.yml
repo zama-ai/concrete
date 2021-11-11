@@ -36,6 +36,7 @@ jobs:
             cd /compiler
             pip install pytest
             rm -rf /build
+            export PYTHONPATH=""
             make CCACHE=ON BUILD_DIR=/build test
             echo "Debug: ccache statistics (after the build):"
             ccache -s
