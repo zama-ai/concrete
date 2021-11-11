@@ -100,23 +100,6 @@ def value_is_unsigned_integer(value_to_check: BaseValue) -> bool:
     )
 
 
-def value_is_encrypted_unsigned_integer(value_to_check: BaseValue) -> bool:
-    """Check that a value is encrypted and is of type unsigned Integer.
-
-    Args:
-        value_to_check (BaseValue): The value to check
-
-    Returns:
-        bool: True if the passed value_to_check is encrypted and is of type unsigned Integer
-    """
-
-    return (
-        value_to_check.is_encrypted
-        and isinstance(value_to_check.dtype, INTEGER_TYPES)
-        and not cast(Integer, value_to_check.dtype).is_signed
-    )
-
-
 def value_is_encrypted_tensor_integer(value_to_check: BaseValue) -> bool:
     """Check that a value is an encrypted TensorValue of type Integer.
 
@@ -127,22 +110,6 @@ def value_is_encrypted_tensor_integer(value_to_check: BaseValue) -> bool:
         bool: True if the passed value_to_check is an encrypted TensorValue of type Integer
     """
     return value_is_tensor_integer(value_to_check) and value_to_check.is_encrypted
-
-
-def value_is_encrypted_tensor_unsigned_integer(value_to_check: BaseValue) -> bool:
-    """Check that a value is an encrypted TensorValue of type unsigned Integer.
-
-    Args:
-        value_to_check (BaseValue): The value to check
-
-    Returns:
-        bool: True if the passed value_to_check is an encrypted TensorValue of type Integer and
-            unsigned
-    """
-    return (
-        value_is_encrypted_tensor_integer(value_to_check)
-        and not cast(Integer, value_to_check.dtype).is_signed
-    )
 
 
 def value_is_clear_tensor_integer(value_to_check: BaseValue) -> bool:

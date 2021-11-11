@@ -14,7 +14,6 @@ from ..common.data_types import Integer
 from ..common.debugging import format_operation_graph
 from ..common.debugging.custom_assert import assert_true
 from ..common.fhe_circuit import FHECircuit
-from ..common.mlir import V0_OPSET_CONVERSION_FUNCTIONS
 from ..common.mlir.utils import (
     check_graph_values_compatibility_with_mlir,
     extend_direct_lookup_tables,
@@ -312,7 +311,7 @@ def _compile_numpy_function_internal(
     prepare_op_graph_for_mlir(op_graph)
 
     # Convert graph to an MLIR representation
-    converter = NPMLIRConverter(V0_OPSET_CONVERSION_FUNCTIONS)
+    converter = NPMLIRConverter()
     mlir_result = converter.convert(op_graph)
 
     # Show MLIR representation if requested

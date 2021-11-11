@@ -475,19 +475,20 @@ class Dot(IntermediateNode):
 
         assert_true(
             all(
-                isinstance(input_value, TensorValue) and input_value.ndim == 1
+                isinstance(input_value, TensorValue) and input_value.ndim <= 1
                 for input_value in self.inputs
             ),
-            f"Dot only supports two vectors ({TensorValue.__name__} with ndim == 1)",
+            f"Dot only supports two scalars or vectors ({TensorValue.__name__} with ndim up to 1)",
         )
 
         lhs = cast(TensorValue, self.inputs[0])
         rhs = cast(TensorValue, self.inputs[1])
 
-        assert_true(
-            lhs.shape[0] == rhs.shape[0],
-            f"Dot between vectors of shapes {lhs.shape} and {rhs.shape} is not supported",
-        )
+        if lhs.ndim == 1 and rhs.ndim == 1:
+            assert_true(
+                lhs.shape[0] == rhs.shape[0],
+                f"Dot between vectors of shapes {lhs.shape} and {rhs.shape} is not supported",
+            )
 
         output_scalar_value = (
             EncryptedScalar if (lhs.is_encrypted or rhs.is_encrypted) else ClearScalar

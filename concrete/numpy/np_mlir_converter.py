@@ -8,7 +8,7 @@ from typing import Any, DefaultDict, Dict, List, Tuple
 import numpy
 
 from ..common.debugging import assert_true
-from ..common.mlir.mlir_converter import MLIRConverter
+from ..common.mlir.graph_converter import OPGraphConverter
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import GenericFunction, IntermediateNode
 
@@ -67,27 +67,18 @@ def generate_deduplicated_tables(
     )
 
 
-class NPMLIRConverter(MLIRConverter):
+class NPMLIRConverter(OPGraphConverter):
     """Numpy-specific MLIR converter."""
 
     @staticmethod
-    def _generate_additional_info_dict(op_graph: OPGraph) -> Dict[str, Any]:
-        """Generate the additional_conversion_info dict for the MLIR converter.
-
-        Args:
-            op_graph (OPGraph): the OPGraph for which we need the conversion infos.
-
-        Returns:
-            Dict[str, Any]: The dict with the additional conversion infos.
-        """
-
+    def _generate_additional_info_dict(opgraph: OPGraph) -> Dict[str, Any]:
         additional_conversion_info = {}
 
         # Disable numpy warnings during conversion to avoid issues during TLU generation
         with numpy.errstate(all="ignore"):
             additional_conversion_info["tables"] = {
-                node: generate_deduplicated_tables(node, op_graph.get_ordered_preds(node))
-                for node in op_graph.graph.nodes()
+                node: generate_deduplicated_tables(node, opgraph.get_ordered_preds(node))
+                for node in opgraph.graph.nodes()
                 if isinstance(node, GenericFunction)
             }
 
