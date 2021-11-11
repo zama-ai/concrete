@@ -128,7 +128,7 @@ getBroadcastedAffineMap(const mlir::RankedTensorType &resultType,
   mlir::SmallVector<mlir::AffineExpr, 4> affineExprs;
   auto resultShape = resultType.getShape();
   auto operandShape = operandType.getShape();
-  affineExprs.reserve(resultShape.size());
+  affineExprs.reserve(operandShape.size());
   size_t deltaNumDim = resultShape.size() - operandShape.size();
   for (size_t i = 0; i < operandShape.size(); i++) {
     if (operandShape[i] == 1 && resultShape[i + deltaNumDim] != 1) {
