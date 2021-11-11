@@ -11,6 +11,7 @@ add_mlir_library(ZamalangSupport
   KeySet.cpp
   logging.cpp
   Jit.cpp
+  LLVMEmitFile.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/zamalang/Support

@@ -26,6 +26,7 @@
 #include "zamalang/Support/Error.h"
 #include "zamalang/Support/JitCompilerEngine.h"
 #include "zamalang/Support/KeySet.h"
+#include "zamalang/Support/LLVMEmitFile.h"
 #include "zamalang/Support/Pipeline.h"
 #include "zamalang/Support/logging.h"
 
@@ -38,10 +39,12 @@ enum Action {
   DUMP_LLVM_DIALECT,
   DUMP_LLVM_IR,
   DUMP_OPTIMIZED_LLVM_IR,
-  JIT_INVOKE
+  JIT_INVOKE,
+  COMPILE,
 };
 
 namespace cmdline {
+const std::string STDOUT = "-";
 class OptionalSizeTParser : public llvm::cl::parser<llvm::Optional<size_t>> {
 public:
   OptionalSizeTParser(llvm::cl::Option &option)
@@ -70,7 +73,7 @@ llvm::cl::list<std::string> inputs(llvm::cl::Positional,
 llvm::cl::opt<std::string> output("o",
                                   llvm::cl::desc("Specify output filename"),
                                   llvm::cl::value_desc("filename"),
-                                  llvm::cl::init("-"));
+                                  llvm::cl::init(STDOUT));
 
 llvm::cl::opt<bool> verbose("verbose", llvm::cl::desc("verbose logs"),
                             llvm::cl::init<bool>(false));
@@ -103,7 +106,9 @@ static llvm::cl::opt<enum Action> action(
                                 "Lower to LLVM-IR, optimize and dump result")),
     llvm::cl::values(clEnumValN(Action::JIT_INVOKE, "jit-invoke",
                                 "Lower and JIT-compile input module and invoke "
-                                "function specified with --jit-funcname")));
+                                "function specified with --jit-funcname")),
+    llvm::cl::values(clEnumValN(Action::COMPILE, "compile",
+                                "Lower to LLVM-IR, compile to a file")));
 
 llvm::cl::opt<bool> verifyDiagnostics(
     "verify-diagnostics",
@@ -211,13 +216,14 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &os,
 // requested transformations succeeded.
 //
 // Compilation output is written to the stream specified by `os`.
-mlir::LogicalResult
-processInputBuffer(std::unique_ptr<llvm::MemoryBuffer> buffer,
-                   enum Action action, const std::string &jitFuncName,
-                   llvm::ArrayRef<uint64_t> jitArgs,
-                   llvm::Optional<size_t> overrideMaxEintPrecision,
-                   llvm::Optional<size_t> overrideMaxMANP,
-                   bool verifyDiagnostics, llvm::raw_ostream &os) {
+mlir::LogicalResult processInputBuffer(
+    std::unique_ptr<llvm::MemoryBuffer> buffer, std::string sourceFileName,
+    enum Action action, const std::string &jitFuncName,
+    llvm::ArrayRef<uint64_t> jitArgs,
+    llvm::Optional<size_t> overrideMaxEintPrecision,
+    llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
+    llvm::raw_ostream &os,
+    std::shared_ptr<mlir::zamalang::CompilerEngine::Library> outputLib) {
   std::shared_ptr<mlir::zamalang::CompilationContext> ccx =
       mlir::zamalang::CompilationContext::createShared();
 
@@ -287,19 +293,26 @@ processInputBuffer(std::unique_ptr<llvm::MemoryBuffer> buffer,
     case Action::DUMP_OPTIMIZED_LLVM_IR:
       target = mlir::zamalang::CompilerEngine::Target::OPTIMIZED_LLVM_IR;
       break;
+    case Action::COMPILE:
+      target = mlir::zamalang::CompilerEngine::Target::LIBRARY;
+      break;
     case JIT_INVOKE:
       // Case just here to satisfy the compiler; already handled above
       break;
     }
-
-    llvm::Expected<mlir::zamalang::CompilerEngine::CompilationResult> retOrErr =
-        ce.compile(std::move(buffer), target);
+    auto retOrErr = ce.compile(std::move(buffer), target, outputLib);
 
     if (!retOrErr) {
       mlir::zamalang::log_error()
           << llvm::toString(std::move(retOrErr.takeError())) << "\n";
 
       return mlir::failure();
+    }
+
+    if (retOrErr->llvmModule) {
+      // At least usefull for intermediate binary object files naming
+      retOrErr->llvmModule->setSourceFileName(sourceFileName);
+      retOrErr->llvmModule->setModuleIdentifier(sourceFileName);
     }
 
     if (verifyDiagnostics) {
@@ -321,10 +334,35 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
 
   mlir::zamalang::setupLogging(cmdline::verbose);
 
-  // String for error messages from library functions
+  // String for error messages
   std::string errorMessage;
 
-  auto output = mlir::openOutputFile(cmdline::output, &errorMessage);
+  if (cmdline::action == Action::COMPILE) {
+    if (cmdline::output == cmdline::STDOUT) {
+      // can't use stdin to generate a lib.
+      errorMessage += "Please provide a file destination '-o' option.\n";
+    }
+    // SplitInputFile would need to have separate object files
+    // destinations to be able to work.
+    if (cmdline::splitInputFile) {
+      errorMessage +=
+          "'--action=compile' and '--split-input-file' are incompatible\n";
+    }
+    if (errorMessage != "") {
+      llvm::errs() << errorMessage << "\n";
+      return mlir::failure();
+    }
+  }
+
+  // In case of compilation to library, the real output is the library.
+  std::string outputPath =
+      (cmdline::action == Action::COMPILE) ? cmdline::STDOUT : cmdline::output;
+
+  std::unique_ptr<llvm::ToolOutputFile> output =
+      mlir::openOutputFile(outputPath, &errorMessage);
+
+  using Library = mlir::zamalang::CompilerEngine::Library;
+  auto outputLib = std::make_shared<Library>(cmdline::output);
 
   if (!output) {
     llvm::errs() << errorMessage << "\n";
@@ -344,24 +382,36 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
     // individual chunks separated by `// -----` markers. Each chunk
     // is then processed individually as if it were part of a separate
     // source file.
-    if (cmdline::splitInputFile) {
-      if (mlir::failed(mlir::splitAndProcessBuffer(
-              std::move(file),
-              [&](std::unique_ptr<llvm::MemoryBuffer> inputBuffer,
-                  llvm::raw_ostream &os) {
-                return processInputBuffer(
-                    std::move(inputBuffer), cmdline::action,
-                    cmdline::jitFuncName, cmdline::jitArgs,
-                    cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
-                    cmdline::verifyDiagnostics, os);
-              },
-              output->os())))
-        return mlir::failure();
-    } else {
+    auto process = [&](std::unique_ptr<llvm::MemoryBuffer> inputBuffer,
+                       llvm::raw_ostream &os) {
       return processInputBuffer(
-          std::move(file), cmdline::action, cmdline::jitFuncName,
-          cmdline::jitArgs, cmdline::assumeMaxEintPrecision,
-          cmdline::assumeMaxMANP, cmdline::verifyDiagnostics, output->os());
+          std::move(inputBuffer), fileName, cmdline::action,
+          cmdline::jitFuncName, cmdline::jitArgs,
+          cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
+          cmdline::verifyDiagnostics, os, outputLib);
+    };
+    auto &os = output->os();
+    auto res = mlir::failure();
+    if (cmdline::splitInputFile) {
+      res = mlir::splitAndProcessBuffer(std::move(file), process, os);
+    } else {
+      res = process(std::move(file), os);
+    }
+    if (res.failed()) {
+      return mlir::failure();
+    } else {
+      output->keep();
+    }
+  }
+
+  if (cmdline::action == Action::COMPILE) {
+    auto libPath = outputLib->emitShared();
+    if (!libPath) {
+      return mlir::failure();
+    }
+    libPath = outputLib->emitStatic();
+    if (!libPath) {
+      return mlir::failure();
     }
   }
 

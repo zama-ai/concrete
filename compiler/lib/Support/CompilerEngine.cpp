@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include <llvm/Support/Error.h>
 #include <llvm/Support/SMLoc.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
@@ -14,6 +16,7 @@
 #include <zamalang/Support/CompilerEngine.h>
 #include <zamalang/Support/Error.h>
 #include <zamalang/Support/Jit.h>
+#include <zamalang/Support/LLVMEmitFile.h>
 #include <zamalang/Support/Pipeline.h>
 
 namespace mlir {
@@ -144,12 +147,13 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   return llvm::Error::success();
 }
 
+using OptionalLib = llvm::Optional<std::shared_ptr<CompilerEngine::Library>>;
 // Compile the sources managed by the source manager `sm` to the
 // target dialect `target`. If successful, the result can be retrieved
 // using `getModule()` and `getLLVMModule()`, respectively depending
 // on the target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
-CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
+CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   std::string diagnosticsMsg;
   llvm::raw_string_ostream diagnosticsOS(diagnosticsMsg);
   auto errorDiag = [&](std::string prefixMsg)
@@ -270,16 +274,29 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   if (target == Target::OPTIMIZED_LLVM_IR)
     return res;
 
+  if (target == Target::LIBRARY) {
+    if (!lib) {
+      return StreamStringError(
+          "Internal Error: Please provide a library parameter");
+    }
+    auto objPath = lib.getValue()->addCompilation(res);
+    if (!objPath) {
+      return StreamStringError(llvm::toString(objPath.takeError()));
+    }
+    return res;
+  }
+
   return res;
-} // namespace zamalang
+}
 
 // Compile the source `s` to the target dialect `target`. If successful, the
 // result can be retrieved using `getModule()` and `getLLVMModule()`,
 // respectively depending on the target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
-CompilerEngine::compile(llvm::StringRef s, Target target) {
+CompilerEngine::compile(llvm::StringRef s, Target target, OptionalLib lib) {
   std::unique_ptr<llvm::MemoryBuffer> mb = llvm::MemoryBuffer::getMemBuffer(s);
-  llvm::Expected<CompilationResult> res = this->compile(std::move(mb), target);
+  llvm::Expected<CompilationResult> res =
+      this->compile(std::move(mb), target, lib);
 
   return std::move(res);
 }
@@ -290,14 +307,124 @@ CompilerEngine::compile(llvm::StringRef s, Target target) {
 // target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
-                        Target target) {
+                        Target target, OptionalLib lib) {
   llvm::SourceMgr sm;
 
   sm.AddNewSourceBuffer(std::move(buffer), llvm::SMLoc());
 
-  llvm::Expected<CompilationResult> res = this->compile(sm, target);
+  llvm::Expected<CompilationResult> res = this->compile(sm, target, lib);
 
   return std::move(res);
+}
+
+template <class T>
+llvm::Expected<CompilerEngine::Library>
+CompilerEngine::compile(std::vector<T> inputs, std::string libraryPath) {
+  using Library = mlir::zamalang::CompilerEngine::Library;
+  auto outputLib = std::make_shared<Library>(libraryPath);
+  auto target = CompilerEngine::Target::LIBRARY;
+
+  for (auto input : inputs) {
+    auto compilation = compile(input, target, outputLib);
+    if (!compilation) {
+      return StreamStringError("Can't compile: ")
+             << llvm::toString(compilation.takeError());
+    }
+  }
+
+  auto libPath = outputLib->emitShared();
+  if (!libPath) {
+    return StreamStringError("Can't link: ")
+           << llvm::toString(libPath.takeError());
+  }
+  return *outputLib.get();
+}
+
+// explicit instantiation for a vector of string (for linking with lib/CAPI)
+template llvm::Expected<CompilerEngine::Library>
+CompilerEngine::compile(std::vector<std::string> inputs,
+                        std::string libraryPath);
+
+const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
+const std::string CompilerEngine::Library::LINKER = "ld";
+const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";
+const std::string CompilerEngine::Library::AR = "ar";
+const std::string CompilerEngine::Library::AR_STATIC_OPT = " rcs ";
+const std::string CompilerEngine::Library::DOT_STATIC_LIB_EXT = ".a";
+const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".so";
+
+void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
+  objectsPath.push_back(path);
+}
+
+llvm::Expected<std::string>
+CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
+  llvm::Module *module = compilation.llvmModule.get();
+  auto sourceName = module->getSourceFileName();
+  if (sourceName == "" || sourceName == "LLVMDialectModule") {
+    sourceName = this->libraryPath + ".module-" +
+                 std::to_string(objectsPath.size()) + ".mlir";
+  }
+  auto objectPath = sourceName + OBJECT_EXT;
+  auto error = mlir::zamalang::emitObject(*module, objectPath);
+
+  if (!error) {
+    addExtraObjectFilePath(objectPath);
+    return objectPath;
+  }
+
+  return error;
+}
+
+bool stringEndsWith(std::string path, std::string requiredExt) {
+  return path.substr(path.size() - requiredExt.size()) == requiredExt;
+}
+
+std::string removeDotExt(std::string path, std::string dotExt) {
+  return (stringEndsWith(path, dotExt))
+             ? path.substr(0, path.size() - dotExt.size())
+             : path;
+}
+
+std::string ensureLibDotExt(std::string path, std::string dotExt) {
+  path = removeDotExt(path, CompilerEngine::Library::DOT_STATIC_LIB_EXT);
+  path = removeDotExt(path, CompilerEngine::Library::DOT_SHARED_LIB_EXT);
+  return path + dotExt;
+}
+
+llvm::Expected<std::string> CompilerEngine::Library::emit(std::string dotExt,
+                                                          std::string linker) {
+  auto pathDotExt = ensureLibDotExt(libraryPath, dotExt);
+  auto error = mlir::zamalang::emitLibrary(objectsPath, pathDotExt, linker);
+  if (error) {
+    return std::move(error);
+  } else {
+    return pathDotExt;
+  }
+}
+
+llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
+  auto path = emit(DOT_SHARED_LIB_EXT, LINKER + LINKER_SHARED_OPT);
+  if (path) {
+    sharedLibraryPath = path.get();
+  }
+  return path;
+}
+
+llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
+  auto path = emit(DOT_STATIC_LIB_EXT, AR + AR_STATIC_OPT);
+  if (path) {
+    staticLibraryPath = path.get();
+  }
+  return path;
+}
+
+CompilerEngine::Library::~Library() {
+  if (cleanUp) {
+    for (auto path : objectsPath) {
+      remove(path.c_str());
+    }
+  }
 }
 
 } // namespace zamalang

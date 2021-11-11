@@ -145,3 +145,20 @@ lambdaArgument lambdaArgumentFromScalar(uint64_t scalar) {
       std::make_shared<mlir::zamalang::IntLambdaArgument<uint64_t>>(scalar)};
   return scalar_arg;
 }
+
+template <class T>
+std::runtime_error library_error(std::string prefix, llvm::Expected<T> &error) {
+  return std::runtime_error(prefix + llvm::toString(error.takeError()));
+}
+
+std::string library(std::string libraryPath,
+                    std::vector<std::string> mlir_modules) {
+  using namespace mlir::zamalang;
+
+  JitCompilerEngine ce{CompilationContext::createShared()};
+  auto lib = ce.compile<std::string>(mlir_modules, libraryPath);
+  if (!lib) {
+    throw std::runtime_error("Can't link: " + llvm::toString(lib.takeError()));
+  }
+  return lib->sharedLibraryPath;
+}

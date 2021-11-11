@@ -1,6 +1,8 @@
+import os
+
 import pytest
 import numpy as np
-from zamalang import CompilerEngine
+from zamalang import CompilerEngine, library
 
 
 @pytest.mark.parametrize(
@@ -176,3 +178,55 @@ def test_compile_invalid(mlir_input):
     engine = CompilerEngine()
     with pytest.raises(RuntimeError, match=r"Compilation failed:"):
         engine.compile_fhe(mlir_input)
+
+
+MODULE_1 = """
+func @test1()
+{
+    return
+}
+"""
+MODULE_2 = """
+func @test2()
+{
+    return
+}
+"""
+LIB_PATH = './test_library_generation.so'
+
+@pytest.mark.parametrize(
+    'mlir_modules',
+    [
+        pytest.param(MODULE_1, id='1 module'),
+        pytest.param([MODULE_1, MODULE_2], id='2 modules'),
+        pytest.param(iter([MODULE_1, MODULE_2]), id='iterable'),
+    ],
+)
+def test_library_generation(mlir_modules):
+    library_path = library(LIB_PATH, mlir_modules)
+    assert os.path.exists(library_path)
+
+
+@pytest.mark.parametrize(
+    'mlir_modules',
+    [
+        pytest.param(bytes(MODULE_1, encoding='utf-8'), id='bytes vs str'),
+        pytest.param(None, id='not iterable'),
+        pytest.param([None], id='not str'),
+    ],
+)
+def test_library_generation_type_error(mlir_modules):
+    with pytest.raises(TypeError):
+        library(LIB_PATH, mlir_modules)
+
+
+def test_library_call():
+    module = """
+        func @test(%a: i8) -> i8
+        {
+            return %a : i8
+        }
+    """
+    from ctypes import CDLL
+    lib = CDLL(library(LIB_PATH, module))
+    assert lib.test(13) == 13

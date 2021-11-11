@@ -24,6 +24,11 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
   m.def("round_trip",
         [](std::string mlir_input) { return roundTrip(mlir_input.c_str()); });
 
+  m.def("library",
+        [](std::string library_path, std::vector<std::string> mlir_modules) {
+          return library(library_path, mlir_modules);
+        });
+
   pybind11::class_<JitCompilerEngine>(m, "JitCompilerEngine")
       .def(pybind11::init())
       .def_static("build_lambda", [](std::string mlir_input,
@@ -63,7 +68,7 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
                         std::vector<lambdaArgument> args) {
         // wrap and call CAPI
         lambda c_lambda{&py_lambda};
-        exectuionArguments a{args.data(), args.size()};
+        executionArguments a{args.data(), args.size()};
         return invokeLambda(c_lambda, a);
       });
 }

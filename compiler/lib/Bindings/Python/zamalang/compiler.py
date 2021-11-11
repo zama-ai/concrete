@@ -1,9 +1,12 @@
 """Compiler submodule"""
+from collections.abc import Iterable
 import os
 from typing import List, Union
+
 from mlir._mlir_libs._zamalang._compiler import JitCompilerEngine as _JitCompilerEngine
 from mlir._mlir_libs._zamalang._compiler import LambdaArgument as _LambdaArgument
 from mlir._mlir_libs._zamalang._compiler import round_trip as _round_trip
+from mlir._mlir_libs._zamalang._compiler import library as _library
 import numpy as np
 
 
@@ -46,6 +49,38 @@ def round_trip(mlir_str: str) -> str:
     if not isinstance(mlir_str, str):
         raise TypeError("input must be an `str`")
     return _round_trip(mlir_str)
+
+_MLIR_MODULES_TYPE = 'mlir_modules must be an `iterable` of `str` or a `str'
+
+def library(library_path: str, mlir_modules: Union['Iterable[str]', str]) -> str:
+    """Compile the MLIR inputs to a library.
+
+    Args:
+        library_path (str): destination path of the library
+        mlir_modules (list[str]|str): code of MLIR modules
+
+    Raises:
+        TypeError: if arguments have incorrect types.
+
+    Returns:
+        str: parsed MLIR input.
+    """
+    if not isinstance(library_path, str):
+        raise TypeError('library_path must be a `str`')
+    if isinstance(mlir_modules, str):
+        mlir_modules = [mlir_modules]
+    elif isinstance(mlir_modules, list):
+        pass
+    elif isinstance(mlir_modules, Iterable):
+        mlir_modules = list(mlir_modules)
+    else:
+        mlir_modules = [None]
+        raise TypeError(_MLIR_MODULES_TYPE)
+
+    if not all(isinstance(m, str) for m in mlir_modules):
+        raise TypeError(_MLIR_MODULES_TYPE)
+
+    return _library(library_path, mlir_modules)
 
 
 def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument":

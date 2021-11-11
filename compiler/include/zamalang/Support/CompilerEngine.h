@@ -50,6 +50,36 @@ public:
     std::shared_ptr<CompilationContext> compilationContext;
   };
 
+  class Library {
+    std::string libraryPath;
+    std::vector<std::string> objectsPath;
+    bool cleanUp;
+
+  public:
+    /** Create a library instance on which you can add compilation results.
+     * Then you can emit a library file with the given path.
+     * cleanUp at false keeps intermediate .obj files for later use. */
+    Library(std::string libraryPath, bool cleanUp = true)
+        : libraryPath(libraryPath), cleanUp(cleanUp) {}
+    /** Add a compilation result to the library */
+    llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
+    /** Emit a shared library with the previously added compilation result */
+    llvm::Expected<std::string> emitShared();
+    /** Emit a shared library with the previously added compilation result */
+    llvm::Expected<std::string> emitStatic();
+    /** After a shared library has been emitted, its path is here */
+    std::string sharedLibraryPath;
+    /** After a static library has been emitted, its path is here */
+    std::string staticLibraryPath;
+
+    // For advanced use
+    const static std::string OBJECT_EXT, LINKER, LINKER_SHARED_OPT, AR,
+        AR_STATIC_OPT, DOT_STATIC_LIB_EXT, DOT_SHARED_LIB_EXT;
+    void addExtraObjectFilePath(std::string objectFilePath);
+    llvm::Expected<std::string> emit(std::string dotExt, std::string linker);
+    ~Library();
+  };
+
   // Specification of the exit stage of the compilation pipeline
   enum class Target {
     // Only read sources and produce corresponding MLIR module
@@ -82,7 +112,11 @@ public:
 
     // Same as `LLVM_IR`, but invokes the LLVM optimization pipeline
     // to produce optimized LLVM IR
-    OPTIMIZED_LLVM_IR
+    OPTIMIZED_LLVM_IR,
+
+    // Same as `OPTIMIZED_LLVM_IR`, but compiles and add an object file to a
+    // futur library
+    LIBRARY
   };
 
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
@@ -92,12 +126,21 @@ public:
         enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
-  llvm::Expected<CompilationResult> compile(llvm::StringRef s, Target target);
+  llvm::Expected<CompilationResult>
+  compile(llvm::StringRef s, Target target,
+          llvm::Optional<std::shared_ptr<Library>> lib = {});
 
   llvm::Expected<CompilationResult>
-  compile(std::unique_ptr<llvm::MemoryBuffer> buffer, Target target);
+  compile(std::unique_ptr<llvm::MemoryBuffer> buffer, Target target,
+          llvm::Optional<std::shared_ptr<Library>> lib = {});
 
-  llvm::Expected<CompilationResult> compile(llvm::SourceMgr &sm, Target target);
+  llvm::Expected<CompilationResult>
+  compile(llvm::SourceMgr &sm, Target target,
+          llvm::Optional<std::shared_ptr<Library>> lib = {});
+
+  template <class T>
+  llvm::Expected<CompilerEngine::Library> compile(std::vector<T> inputs,
+                                                  std::string libraryPath);
 
   void setFHEConstraints(const mlir::zamalang::V0FHEConstraint &c);
   void setMaxEintPrecision(size_t v);

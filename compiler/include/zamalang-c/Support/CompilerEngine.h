@@ -28,7 +28,7 @@ struct executionArguments {
   lambdaArgument *data;
   size_t size;
 };
-typedef struct executionArguments exectuionArguments;
+typedef struct executionArguments executionArguments;
 
 // Build lambda from a textual representation of an MLIR module
 // The lambda will have `funcName` as entrypoint, and use runtimeLibPath (if not
@@ -62,6 +62,10 @@ lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg);
 MLIR_CAPI_EXPORTED bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg);
 // Get scalar value from lambdaArgument
 MLIR_CAPI_EXPORTED uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg);
+
+// Compile the textual representation of MLIR modules to a library.
+MLIR_CAPI_EXPORTED std::string library(std::string libraryPath,
+                                       std::vector<std::string> modules);
 
 #ifdef __cplusplus
 }
