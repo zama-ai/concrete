@@ -90,6 +90,9 @@ def check_node_compatibility_with_mlir(
                 if node.op_name == "TLU":  # pragma: no cover
                     return "only unsigned integer lookup tables are supported"
 
+                if node.op_name.startswith("astype"):
+                    return f"{node.op_name} is not supported without fusing"
+
                 # e.g., `np.absolute is not supported for the time being`
                 return f"{node.op_name} is not supported for the time being"
         else:

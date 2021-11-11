@@ -1074,7 +1074,7 @@ function you are trying to compile isn't supported for MLIR lowering
 %8 = Mul(%7, %0)                                   # EncryptedScalar<Float<64 bits>>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer multiplication is supported
 %9 = astype(int32)(%8)                             # EncryptedScalar<Integer<signed, 5 bits>>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ astype(int32) is not supported for the time being
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ astype(int32) is not supported without fusing
 return(%9)
 """.lstrip()  # noqa: E501
             ),
