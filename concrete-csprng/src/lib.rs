@@ -1,3 +1,4 @@
+#![cfg_attr(all(target_arch = "aarch64", target_os = "macos"), feature(stdsimd))]
 //! Cryptographically secure pseudo random number generator, that uses AES in CTR mode.
 //!
 //! Welcome to the `concrete-csprng` documentation.
@@ -10,8 +11,8 @@
 use rayon::prelude::*;
 use std::fmt::{Debug, Display, Formatter, Result};
 
-mod aesni;
 mod counter;
+mod hardware;
 mod software;
 use crate::counter::{AesKey, BytesPerChild, ChildCount, HardAesCtrGenerator, SoftAesCtrGenerator};
 pub use software::set_soft_rdseed_secret;
@@ -51,17 +52,7 @@ impl RandomGenerator {
 
     /// Tries to build a new hardware random generator, optionally seeding it with a given value.
     pub fn new_hardware(seed: Option<u128>) -> Option<RandomGenerator> {
-        if !is_x86_feature_detected!("aes")
-            || !is_x86_feature_detected!("rdseed")
-            || !is_x86_feature_detected!("sse2")
-        {
-            return None;
-        }
-        Some(RandomGenerator::Hardware(HardAesCtrGenerator::new(
-            seed.map(AesKey),
-            None,
-            None,
-        )))
+        HardAesCtrGenerator::try_new(seed.map(AesKey), None, None).map(RandomGenerator::Hardware)
     }
 
     /// Yields the next byte from the generator.

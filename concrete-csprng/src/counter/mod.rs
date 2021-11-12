@@ -1,4 +1,4 @@
-use crate::{aesni, software};
+use crate::{hardware, software};
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 use std::cmp::Ordering;
@@ -20,6 +20,9 @@ mod test_aes;
 pub trait AesBatchedGenerator: Clone {
     /// Instantiate a new generator from a secret key.
     fn new(key: Option<AesKey>) -> Self;
+    /// Tries to instantiate a new generator from a secret key
+    /// Should return `None` on failure (eg: Unsupported hardware detected at runtime)
+    fn try_new(key: Option<AesKey>) -> Option<Self>;
     /// Generates the batch corresponding to the given counter.
     fn generate_batch(&mut self, ctr: AesCtr) -> [u8; 128];
 }
@@ -217,7 +220,7 @@ impl Default for State {
 pub type SoftAesCtrGenerator = AesCtrGenerator<software::Generator>;
 
 /// A generator that uses the hardware implementation.
-pub type HardAesCtrGenerator = AesCtrGenerator<aesni::Generator>;
+pub type HardAesCtrGenerator = AesCtrGenerator<hardware::Generator>;
 
 /// A csprng which operates in batch mode.
 #[derive(Clone)]
@@ -237,18 +240,26 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         state: Option<State>,
         bound: Option<State>,
     ) -> AesCtrGenerator<G> {
-        let mut generator = G::new(key);
+        Self::try_new(key, state, bound).unwrap()
+    }
+
+    pub fn try_new(
+        key: Option<AesKey>,
+        state: Option<State>,
+        bound: Option<State>,
+    ) -> Option<AesCtrGenerator<G>> {
+        let mut generator = G::try_new(key)?;
         let state = state.unwrap_or_default();
         if let Some(ref actual_bound) = bound {
             debug_assert!(state <= *actual_bound);
         }
         let batch = generator.generate_batch(state.aes_ctr);
-        AesCtrGenerator {
+        Some(AesCtrGenerator {
             generator,
             state,
             bound,
             batch,
-        }
+        })
     }
 
     /// Returns the state of the current generator.

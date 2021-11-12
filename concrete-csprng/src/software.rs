@@ -73,6 +73,10 @@ impl AesBatchedGenerator for Generator {
         Generator { aes }
     }
 
+    fn try_new(key: Option<AesKey>) -> Option<Self> {
+        Some(Self::new(key))
+    }
+
     fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) -> [u8; 128] {
         aes_encrypt_many(
             aes_ctr,

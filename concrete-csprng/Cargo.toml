@@ -15,6 +15,9 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 aes-soft = "0.6.4"
 rayon = {version="1.5.0", optional= true}
 
+[target.aarch64-apple-darwin.dependencies]
+libc = "0.2.107"
+
 [dev-dependencies]
 rand = "0.8.3"
 criterion = "0.3"
