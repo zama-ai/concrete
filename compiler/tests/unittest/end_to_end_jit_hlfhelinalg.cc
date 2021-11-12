@@ -1133,8 +1133,7 @@ TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
     %0 = "HLFHELinalg.matmul_eint_int"(%a, %b) : (tensor<3x2x!HLFHE.eint<6>>, tensor<2x3xi7>) -> tensor<3x3x!HLFHE.eint<6>>
     return %0 : tensor<3x3x!HLFHE.eint<6>>
   }
-)XXX",
-                                                                "main", true);
+)XXX");
   const uint8_t A[3][2]{
       {1, 2},
       {3, 4},
