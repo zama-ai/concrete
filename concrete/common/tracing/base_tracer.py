@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, Union, cast
 
 from ..data_types import Float
 from ..data_types.base import BaseDataType
@@ -17,7 +17,7 @@ from ..representation.intermediate import (
     Mul,
     Sub,
 )
-from ..values import BaseValue
+from ..values import BaseValue, TensorValue
 
 
 class BaseTracer(ABC):
@@ -130,6 +130,17 @@ class BaseTracer(ABC):
     def __neg__(self) -> "BaseTracer":
         return 0 - self
 
+    def __pos__(self) -> "BaseTracer":
+        # Remark that we don't want to return 'self' since we want the result to be a copy, ie not
+        # a reference to the same object
+        return 0 + self
+
+    def __lshift__(self, shift) -> "BaseTracer":
+        return 2 ** shift * self
+
+    def __rshift__(self, shift) -> "BaseTracer":
+        return self // 2 ** shift
+
     def __sub__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented
@@ -170,6 +181,45 @@ class BaseTracer(ABC):
     # the order, we need to do as in __rmul__, ie mostly a copy of __mul__ +
     # some changes
     __rmul__ = __mul__
+
+    def unary_ndarray_op(self, op_lambda, op_string: str):
+        """Trace an operator which maintains the shape, which will thus be replaced by a TLU.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        first_arg_output = self.output
+        assert_true(isinstance(first_arg_output, TensorValue))
+        first_arg_output = cast(TensorValue, first_arg_output)
+
+        out_dtype = first_arg_output.dtype
+        out_shape = first_arg_output.shape
+
+        generic_function_output_value = TensorValue(
+            out_dtype,
+            first_arg_output.is_encrypted,
+            out_shape,
+        )
+
+        traced_computation = GenericFunction(
+            inputs=[deepcopy(first_arg_output)],
+            arbitrary_func=op_lambda,
+            output_value=generic_function_output_value,
+            op_kind="TLU",
+            op_name=f"{op_string}",
+        )
+        output_tracer = self.__class__(
+            [self],
+            traced_computation=traced_computation,
+            output_idx=0,
+        )
+        return output_tracer
+
+    def __abs__(self):
+        return self.unary_ndarray_op(lambda x: x.__abs__(), "__abs__")
+
+    def __invert__(self):
+        return self.unary_ndarray_op(lambda x: x.__invert__(), "__invert__")
 
     def __getitem__(self, item):
         traced_computation = IndexConstant(self.output, item)

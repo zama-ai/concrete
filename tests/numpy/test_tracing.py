@@ -1,5 +1,7 @@
 """Test file for numpy tracing"""
 
+# pylint: disable=too-many-lines
+
 import inspect
 from copy import deepcopy
 
@@ -691,7 +693,11 @@ def subtest_tracing_calls(
         node_results = op_graph.evaluate({0: input_})
         evaluated_output = node_results[output_node]
         assert isinstance(evaluated_output, type(expected_output)), type(evaluated_output)
-        assert numpy.array_equal(expected_output, evaluated_output)
+        if not numpy.array_equal(expected_output, evaluated_output):
+            print("Wrong result")
+            print(f"Expected: {expected_output}")
+            print(f"Got     : {evaluated_output}")
+            raise AssertionError
 
 
 @pytest.mark.parametrize(
@@ -831,6 +837,76 @@ def test_tracing_numpy_calls(
             ],
             marks=pytest.mark.xfail(strict=True, raises=AssertionError),
         ),
+        pytest.param(
+            lambda x: x.flatten(),
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: abs(x),
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: +x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: -x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    (numpy.arange(15).reshape(3, 5)) * (-1),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: ~x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5).__invert__(),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: x << 3,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15),
+                    numpy.arange(15) * 8,
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: x >> 1,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15),
+                    numpy.arange(15) // 2,
+                )
+            ],
+        ),
     ],
 )
 def test_tracing_ndarray_calls(
@@ -858,3 +934,6 @@ def test_errors_with_generic_function(lambda_f, params):
         tracing.trace_numpy_function(lambda_f, params)
 
     assert "shapes are not compatible (old shape (7, 5), new shape (5, 3))" in str(excinfo.value)
+
+
+# pylint: enable=too-many-lines

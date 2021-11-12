@@ -427,7 +427,7 @@ class NPTracer(BaseTracer):
         )
 
         traced_computation = GenericFunction(
-            inputs=[first_arg_output],
+            inputs=[deepcopy(first_arg_output)],
             arbitrary_func=numpy.reshape,
             output_value=generic_function_output_value,
             op_kind="Memory",
@@ -437,6 +437,45 @@ class NPTracer(BaseTracer):
         )
         output_tracer = self.__class__(
             [arg0],
+            traced_computation=traced_computation,
+            output_idx=0,
+        )
+        return output_tracer
+
+    def flatten(self, *args: "NPTracer", **kwargs) -> "NPTracer":
+        """Trace x.flatten.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        assert_true((num_args := len(args)) == 0, f"flatten expect 0 input got {num_args}")
+
+        first_arg_output = self.output
+        assert_true(isinstance(first_arg_output, TensorValue))
+        first_arg_output = cast(TensorValue, first_arg_output)
+
+        flatten_is_fusable = first_arg_output.ndim == 1
+
+        out_dtype = first_arg_output.dtype
+        out_shape = (1,) if first_arg_output.is_scalar else (numpy.product(first_arg_output.shape),)
+
+        generic_function_output_value = TensorValue(
+            out_dtype,
+            first_arg_output.is_encrypted,
+            out_shape,
+        )
+
+        traced_computation = GenericFunction(
+            inputs=[deepcopy(first_arg_output)],
+            arbitrary_func=lambda x: x.flatten(),
+            output_value=generic_function_output_value,
+            op_kind="Memory",
+            op_kwargs=deepcopy(kwargs),
+            op_name="flatten",
+            op_attributes={"fusable": flatten_is_fusable},
+        )
+        output_tracer = self.__class__(
+            [self],
             traced_computation=traced_computation,
             output_idx=0,
         )
