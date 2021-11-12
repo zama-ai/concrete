@@ -12,9 +12,46 @@ use crate::specification::engines::{
 };
 use crate::specification::entities::{LweSecretKeyEntity, PlaintextVectorEntity};
 
+/// # Description:
+/// Implementation of [`LweCiphertextVectorEncryptionEngine`] for [`CoreEngine`] that operates on
+/// 32 bits integers.
 impl LweCiphertextVectorEncryptionEngine<LweSecretKey32, PlaintextVector32, LweCiphertextVector32>
     for CoreEngine
 {
+    /// # Example:
+    /// ```
+    /// use concrete_commons::dispersion::Variance;
+    /// use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
+    /// use concrete_core::prelude::*;
+    /// # use std::error::Error;
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
+    /// let lwe_dimension = LweDimension(6);
+    /// // Here a hard-set encoding is applied (shift by 20 bits)
+    /// let input = vec![3_u32 << 20; 3];
+    /// let noise = Variance(2_f64.powf(-25.));
+    ///
+    /// let mut engine = CoreEngine::new()?;
+    /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
+    /// let plaintext_vector: PlaintextVector32 = engine.create_plaintext_vector(&input)?;
+    ///
+    /// let mut ciphertext_vector: LweCiphertextVector32 =
+    ///     engine.encrypt_lwe_ciphertext_vector(&key, &plaintext_vector, noise)?;
+    /// #
+    /// assert_eq!(ciphertext_vector.lwe_dimension(), lwe_dimension);
+    /// assert_eq!(
+    /// #    ciphertext_vector.lwe_ciphertext_count(),
+    /// #    LweCiphertextCount(3)
+    /// # );
+    ///
+    /// engine.destroy(key)?;
+    /// engine.destroy(plaintext_vector)?;
+    /// engine.destroy(ciphertext_vector)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     fn encrypt_lwe_ciphertext_vector(
         &mut self,
         key: &LweSecretKey32,
@@ -41,9 +78,46 @@ impl LweCiphertextVectorEncryptionEngine<LweSecretKey32, PlaintextVector32, LweC
     }
 }
 
+/// # Description:
+/// Implementation of [`LweCiphertextVectorEncryptionEngine`] for [`CoreEngine`] that operates on
+/// 64 bits integers.
 impl LweCiphertextVectorEncryptionEngine<LweSecretKey64, PlaintextVector64, LweCiphertextVector64>
     for CoreEngine
 {
+    /// # Example:
+    /// ```
+    /// use concrete_commons::dispersion::Variance;
+    /// use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
+    /// use concrete_core::prelude::*;
+    /// # use std::error::Error;
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
+    /// let lwe_dimension = LweDimension(6);
+    /// // Here a hard-set encoding is applied (shift by 50 bits)
+    /// let input = vec![3_u64 << 50; 3];
+    /// let noise = Variance(2_f64.powf(-25.));
+    ///
+    /// let mut engine = CoreEngine::new()?;
+    /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
+    /// let plaintext_vector: PlaintextVector64 = engine.create_plaintext_vector(&input)?;
+    ///
+    /// let mut ciphertext_vector: LweCiphertextVector64 =
+    ///     engine.encrypt_lwe_ciphertext_vector(&key, &plaintext_vector, noise)?;
+    /// #
+    /// assert_eq!(ciphertext_vector.lwe_dimension(), lwe_dimension);
+    /// assert_eq!(
+    /// #     ciphertext_vector.lwe_ciphertext_count(),
+    /// #     LweCiphertextCount(3)
+    /// # );
+    ///
+    /// engine.destroy(key)?;
+    /// engine.destroy(plaintext_vector)?;
+    /// engine.destroy(ciphertext_vector)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     fn encrypt_lwe_ciphertext_vector(
         &mut self,
         key: &LweSecretKey64,
