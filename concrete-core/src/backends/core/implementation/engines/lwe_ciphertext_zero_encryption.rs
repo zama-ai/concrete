@@ -11,7 +11,35 @@ use crate::specification::engines::{
 };
 use crate::specification::entities::LweSecretKeyEntity;
 
+/// # Description:
+/// Implementation of [`LweCiphertextZeroEncryptionEngine`] for [`CoreEngine`] that
+/// operates on 32 bits integers.
 impl LweCiphertextZeroEncryptionEngine<LweSecretKey32, LweCiphertext32> for CoreEngine {
+    /// # Example:
+    /// ```
+    /// use concrete_commons::dispersion::Variance;
+    /// use concrete_commons::parameters::LweDimension;
+    /// use concrete_core::prelude::*;
+    /// # use std::error::Error;
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
+    /// let lwe_dimension = LweDimension(2);
+    /// let noise = Variance(2_f64.powf(-25.));
+    ///
+    /// let mut engine = CoreEngine::new()?;
+    /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
+    ///
+    /// let ciphertext = engine.zero_encrypt_lwe_ciphertext(&key, noise)?;
+    /// #
+    /// assert_eq!(ciphertext.lwe_dimension(), lwe_dimension);
+    ///
+    /// engine.destroy(key)?;
+    /// engine.destroy(ciphertext)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     fn zero_encrypt_lwe_ciphertext(
         &mut self,
         key: &LweSecretKey32,
@@ -36,7 +64,35 @@ impl LweCiphertextZeroEncryptionEngine<LweSecretKey32, LweCiphertext32> for Core
     }
 }
 
+/// # Description:
+/// Implementation of [`LweCiphertextZeroEncryptionEngine`] for [`CoreEngine`] that
+/// operates on 64 bits integers.
 impl LweCiphertextZeroEncryptionEngine<LweSecretKey64, LweCiphertext64> for CoreEngine {
+    /// # Example:
+    /// ```
+    /// use concrete_commons::dispersion::Variance;
+    /// use concrete_commons::parameters::LweDimension;
+    /// use concrete_core::prelude::*;
+    /// # use std::error::Error;
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
+    /// let lwe_dimension = LweDimension(2);
+    /// let noise = Variance(2_f64.powf(-25.));
+    ///
+    /// let mut engine = CoreEngine::new()?;
+    /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
+    ///
+    /// let ciphertext = engine.zero_encrypt_lwe_ciphertext(&key, noise)?;
+    /// #
+    /// assert_eq!(ciphertext.lwe_dimension(), lwe_dimension);
+    ///
+    /// engine.destroy(key)?;
+    /// engine.destroy(ciphertext)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     fn zero_encrypt_lwe_ciphertext(
         &mut self,
         key: &LweSecretKey64,

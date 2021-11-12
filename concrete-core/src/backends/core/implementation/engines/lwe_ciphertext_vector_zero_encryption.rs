@@ -12,7 +12,38 @@ use crate::specification::engines::{
 };
 use crate::specification::entities::LweSecretKeyEntity;
 
+/// # Description:
+/// Implementation of [`LweCiphertextVectorZeroEncryptionEngine`] for [`CoreEngine`] that
+/// operates on 32 bits integers.
 impl LweCiphertextVectorZeroEncryptionEngine<LweSecretKey32, LweCiphertextVector32> for CoreEngine {
+    /// # Example:
+    /// ```
+    /// use concrete_commons::dispersion::Variance;
+    /// use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
+    /// use concrete_core::prelude::*;
+    /// # use std::error::Error;
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
+    /// let lwe_dimension = LweDimension(2);
+    /// let ciphertext_count = LweCiphertextCount(3);
+    /// let noise = Variance(2_f64.powf(-25.));
+    ///
+    /// let mut engine = CoreEngine::new()?;
+    /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
+    ///
+    /// let ciphertext_vector =
+    ///     engine.zero_encrypt_lwe_ciphertext_vector(&key, noise, ciphertext_count)?;
+    /// #
+    /// assert_eq!(ciphertext_vector.lwe_dimension(), lwe_dimension);
+    /// assert_eq!(ciphertext_vector.lwe_ciphertext_count(), ciphertext_count);
+    ///
+    /// engine.destroy(key)?;
+    /// engine.destroy(ciphertext_vector)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     fn zero_encrypt_lwe_ciphertext_vector(
         &mut self,
         key: &LweSecretKey32,
@@ -48,7 +79,38 @@ impl LweCiphertextVectorZeroEncryptionEngine<LweSecretKey32, LweCiphertextVector
     }
 }
 
+/// # Description:
+/// Implementation of [`LweCiphertextVectorZeroEncryptionEngine`] for [`CoreEngine`] that
+/// operates on 64 bits integers.
 impl LweCiphertextVectorZeroEncryptionEngine<LweSecretKey64, LweCiphertextVector64> for CoreEngine {
+    /// # Example:
+    /// ```
+    /// use concrete_commons::dispersion::Variance;
+    /// use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
+    /// use concrete_core::prelude::*;
+    /// # use std::error::Error;
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
+    /// let lwe_dimension = LweDimension(2);
+    /// let ciphertext_count = LweCiphertextCount(3);
+    /// let noise = Variance(2_f64.powf(-25.));
+    ///
+    /// let mut engine = CoreEngine::new()?;
+    /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
+    ///
+    /// let ciphertext_vector =
+    ///     engine.zero_encrypt_lwe_ciphertext_vector(&key, noise, ciphertext_count)?;
+    /// #
+    /// assert_eq!(ciphertext_vector.lwe_dimension(), lwe_dimension);
+    /// assert_eq!(ciphertext_vector.lwe_ciphertext_count(), ciphertext_count);
+    ///
+    /// engine.destroy(key)?;
+    /// engine.destroy(ciphertext_vector)?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     fn zero_encrypt_lwe_ciphertext_vector(
         &mut self,
         key: &LweSecretKey64,
