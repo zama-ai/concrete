@@ -12,7 +12,7 @@ lazy_static! {
 }
 
 pub fn doc() -> Result<(), Error> {
-    cmd!(<ENV_DOC_KATEX> "cargo doc --no-deps")
+    cmd!(<ENV_DOC_KATEX> "cargo +nightly doc --features=doc --no-deps")
 }
 
 pub fn clippy() -> Result<(), Error> {
