@@ -58,7 +58,9 @@ pylint_benchmarks:
 .PHONY: pylint_benchmarks
 
 pylint_script:
-	find ./script/ -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
+	@# disable linting python files under `progress_tracker_utils/test_scripts` folder
+	@# because they are intentionally ill-formed so that progress tracker can be tested
+	find ./script/ -type f -name "*.py" -not -path "./script/progress_tracker_utils/test_scripts/*" | xargs poetry run pylint --rcfile=pylintrc
 .PHONY: pylint_script
 
 flake8:
@@ -92,6 +94,11 @@ pytest:
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/
 .PHONY: pytest
+
+pytest_progress_tracker:
+	poetry run python script/progress_tracker_utils/extract_machine_info.py
+	poetry run pytest -svv script/progress_tracker_utils/test_progress_tracker.py
+.PHONY: pytest_progress_tracker
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 mypy:

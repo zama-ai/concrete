@@ -39,7 +39,7 @@ def register_alert(script, index, line, metrics, alerts):
     # Parse the alert and append it to list of alerts
     supported_operators = ["==", "!=", "<=", ">=", "<", ">"]
     for operator in supported_operators:
-        alert_details = alert_line.split(operator)
+        alert_details = alert_line.split(f" {operator} ")
 
         # An alert should be of form `{metric} {operator} {constant}`
         if len(alert_details) == 2:
@@ -59,7 +59,7 @@ def register_alert(script, index, line, metrics, alerts):
             except ValueError as error:
                 raise SyntaxError(
                     f"An alert is not using a constant floating point for comparison "
-                    f"(at line {index + 1} of {script})",
+                    f"(it uses `{value_str}` at line {index + 1} of {script})",
                 ) from error
 
             break

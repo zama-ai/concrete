@@ -285,6 +285,10 @@ jobs:
         if: ${{ github.event_name == 'schedule' && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest_nb
+      - name: PyTest Progress Tracker
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          make pytest_progress_tracker
       - name: Test coverage
         id: coverage
         if: ${{ always() && steps.pytest.outcome != 'skipped' && !cancelled() }}
