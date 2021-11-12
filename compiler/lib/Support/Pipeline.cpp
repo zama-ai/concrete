@@ -1,6 +1,7 @@
 #include <llvm/Support/TargetSelect.h>
 
 #include <llvm/Support/Error.h>
+#include <mlir/Conversion/SCFToStandard/SCFToStandard.h>
 #include <mlir/Dialect/Linalg/Passes.h>
 #include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/Dialect/Tensor/Transforms/Passes.h>
@@ -164,6 +165,7 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass(),
                            enablePass);
+  addPotentiallyNestedPass(pm, mlir::createLowerToCFGPass(), enablePass);
 
   // Convert to MLIR LLVM Dialect
   addPotentiallyNestedPass(
