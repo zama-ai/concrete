@@ -31,9 +31,11 @@ struct executionArguments {
 typedef struct executionArguments exectuionArguments;
 
 // Build lambda from a textual representation of an MLIR module
-// The lambda will have `funcName` as entrypoint
+// The lambda will have `funcName` as entrypoint, and use runtimeLibPath (if not
+// null) as a shared library during compilation
 MLIR_CAPI_EXPORTED mlir::zamalang::JitCompilerEngine::Lambda
-buildLambda(const char *module, const char *funcName);
+buildLambda(const char *module, const char *funcName,
+            const char *runtimeLibPath);
 
 // Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);

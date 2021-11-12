@@ -1,9 +1,34 @@
 """Compiler submodule"""
+import os
 from typing import List, Union
 from mlir._mlir_libs._zamalang._compiler import JitCompilerEngine as _JitCompilerEngine
 from mlir._mlir_libs._zamalang._compiler import LambdaArgument as _LambdaArgument
 from mlir._mlir_libs._zamalang._compiler import round_trip as _round_trip
 import numpy as np
+
+
+def _lookup_runtime_lib() -> str:
+    """Try to find the absolute path to the runtime library.
+
+    Returns:
+        str: absolute path to the runtime library, or empty str if unsuccessful.
+    """
+    # Go up to site-packages level
+    cwd = os.path.abspath(__file__)
+    cwd = os.path.abspath(os.path.join(cwd, os.pardir))
+    cwd = os.path.abspath(os.path.join(cwd, os.pardir))
+    package_name = "concretefhe_compiler"
+    libs_path = os.path.join(cwd, f"{package_name}.libs")
+    # Can be because it's not a properly installed package
+    if not os.path.exists(libs_path):
+        return ""
+    runtime_library_paths = [
+        filename
+        for filename in os.listdir(libs_path)
+        if filename.startswith("libZamalangRuntime")
+    ]
+    assert len(runtime_library_paths) == 1, "should be one and only one runtime library"
+    return os.path.join(libs_path, runtime_library_paths[0])
 
 
 def round_trip(mlir_str: str) -> str:
@@ -39,7 +64,9 @@ def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument
         raise TypeError("value of execution argument must be either int or numpy.array")
     if isinstance(value, int):
         if not (0 <= value < (2 ** 64 - 1)):
-            raise TypeError("single integer must be in the range [0, 2**64 - 1] (uint64)")
+            raise TypeError(
+                "single integer must be in the range [0, 2**64 - 1] (uint64)"
+            )
         return _LambdaArgument.from_scalar(value)
     else:
         assert isinstance(value, np.ndarray)
@@ -55,19 +82,30 @@ class CompilerEngine:
         if mlir_str is not None:
             self.compile_fhe(mlir_str)
 
-    def compile_fhe(self, mlir_str: str, func_name: str = "main"):
+    def compile_fhe(
+        self, mlir_str: str, func_name: str = "main", runtime_lib_path: str = None
+    ):
         """Compile the MLIR input.
 
         Args:
             mlir_str (str): MLIR to compile.
-            func_name (str): name of the function to set as entrypoint.
+            func_name (str): name of the function to set as entrypoint (default: main).
+            runtime_lib_path (str): path to the runtime lib (default: None).
 
         Raises:
             TypeError: if the argument is not an str.
         """
         if not isinstance(mlir_str, str):
             raise TypeError("input must be an `str`")
-        self._lambda = self._engine.build_lambda(mlir_str, func_name)
+        if runtime_lib_path is None:
+            # Set to empty string if not found
+            runtime_lib_path = _lookup_runtime_lib()
+        else:
+            if not isinstance(runtime_lib_path, str):
+                raise TypeError(
+                    "runtime_lib_path must be an str representing the path to the runtime lib"
+                )
+        self._lambda = self._engine.build_lambda(mlir_str, func_name, runtime_lib_path)
 
     def run(self, *args: List[Union[int, np.ndarray]]) -> Union[int, np.ndarray]:
         """Run the compiled code.

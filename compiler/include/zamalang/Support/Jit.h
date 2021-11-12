@@ -101,9 +101,11 @@ public:
       : type(type), name(name){};
 
   /// create a JITLambda that point to the function name of the given module.
+  /// Use runtimeLibPath as a shared library if specified.
   static llvm::Expected<std::unique_ptr<JITLambda>>
   create(llvm::StringRef name, mlir::ModuleOp &module,
-         llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline);
+         llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline,
+         llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
   /// invokeRaw execute the jit lambda with a list of Argument, the last one is
   /// used to store the result of the computation.

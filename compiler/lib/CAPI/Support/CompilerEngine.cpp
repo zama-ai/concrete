@@ -5,11 +5,16 @@
 
 using mlir::zamalang::JitCompilerEngine;
 
-mlir::zamalang::JitCompilerEngine::Lambda buildLambda(const char *module,
-                                                      const char *funcName) {
+mlir::zamalang::JitCompilerEngine::Lambda
+buildLambda(const char *module, const char *funcName,
+            const char *runtimeLibPath) {
+  // Set the runtime library path if not nullptr
+  llvm::Optional<llvm::StringRef> runtimeLibPathOptional = {};
+  if (runtimeLibPath != nullptr)
+    runtimeLibPathOptional = runtimeLibPath;
   mlir::zamalang::JitCompilerEngine engine;
   llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
-      engine.buildLambda(module, funcName);
+      engine.buildLambda(module, funcName, runtimeLibPathOptional);
   if (!lambdaOrErr) {
     std::string backingString;
     llvm::raw_string_ostream os(backingString);

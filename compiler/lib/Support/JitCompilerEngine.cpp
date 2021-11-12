@@ -36,13 +36,14 @@ JitCompilerEngine::findLLVMFuncOp(mlir::ModuleOp module, llvm::StringRef name) {
 // `funcName` from the sources in `buffer`.
 llvm::Expected<JitCompilerEngine::Lambda>
 JitCompilerEngine::buildLambda(std::unique_ptr<llvm::MemoryBuffer> buffer,
-                               llvm::StringRef funcName) {
+                               llvm::StringRef funcName,
+                               llvm::Optional<llvm::StringRef> runtimeLibPath) {
   llvm::SourceMgr sm;
 
   sm.AddNewSourceBuffer(std::move(buffer), llvm::SMLoc());
 
   llvm::Expected<JitCompilerEngine::Lambda> res =
-      this->buildLambda(sm, funcName);
+      this->buildLambda(sm, funcName, runtimeLibPath);
 
   return std::move(res);
 }
@@ -50,10 +51,11 @@ JitCompilerEngine::buildLambda(std::unique_ptr<llvm::MemoryBuffer> buffer,
 // Build a lambda from the function with the name given in `funcName`
 // from the source string `s`.
 llvm::Expected<JitCompilerEngine::Lambda>
-JitCompilerEngine::buildLambda(llvm::StringRef s, llvm::StringRef funcName) {
+JitCompilerEngine::buildLambda(llvm::StringRef s, llvm::StringRef funcName,
+                               llvm::Optional<llvm::StringRef> runtimeLibPath) {
   std::unique_ptr<llvm::MemoryBuffer> mb = llvm::MemoryBuffer::getMemBuffer(s);
   llvm::Expected<JitCompilerEngine::Lambda> res =
-      this->buildLambda(std::move(mb), funcName);
+      this->buildLambda(std::move(mb), funcName, runtimeLibPath);
 
   return std::move(res);
 }
@@ -61,7 +63,8 @@ JitCompilerEngine::buildLambda(llvm::StringRef s, llvm::StringRef funcName) {
 // Build a lambda from the function with the name given in
 // `funcName` from the sources managed by the source manager `sm`.
 llvm::Expected<JitCompilerEngine::Lambda>
-JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName) {
+JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
+                               llvm::Optional<llvm::StringRef> runtimeLibPath) {
   MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
 
   this->setGenerateClientParameters(true);
@@ -92,7 +95,8 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName) {
       mlir::makeOptimizingTransformer(3, 0, nullptr);
 
   llvm::Expected<std::unique_ptr<JITLambda>> lambdaOrErr =
-      mlir::zamalang::JITLambda::create(funcName, module, optPipeline);
+      mlir::zamalang::JITLambda::create(funcName, module, optPipeline,
+                                        runtimeLibPath);
 
   // Generate the KeySet for encrypting lambda arguments, decrypting lambda
   // results

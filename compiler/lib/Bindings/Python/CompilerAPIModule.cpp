@@ -26,10 +26,14 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
 
   pybind11::class_<JitCompilerEngine>(m, "JitCompilerEngine")
       .def(pybind11::init())
-      .def_static("build_lambda",
-                  [](std::string mlir_input, std::string func_name) {
-                    return buildLambda(mlir_input.c_str(), func_name.c_str());
-                  });
+      .def_static("build_lambda", [](std::string mlir_input,
+                                     std::string func_name,
+                                     std::string runtime_lib_path) {
+        if (runtime_lib_path.empty())
+          return buildLambda(mlir_input.c_str(), func_name.c_str(), nullptr);
+        return buildLambda(mlir_input.c_str(), func_name.c_str(),
+                           runtime_lib_path.c_str());
+      });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
       .def_static("from_tensor", lambdaArgumentFromTensor)

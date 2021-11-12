@@ -359,14 +359,20 @@ public:
                         CompilationContext::createShared(),
                     unsigned int optimizationLevel = 3);
 
-  llvm::Expected<Lambda> buildLambda(llvm::StringRef src,
-                                     llvm::StringRef funcName = "main");
+  /// Build a Lambda from a source MLIR, with `funcName` as entrypoint.
+  /// Use runtimeLibPath as a shared library if specified.
+  llvm::Expected<Lambda>
+  buildLambda(llvm::StringRef src, llvm::StringRef funcName = "main",
+              llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
-  llvm::Expected<Lambda> buildLambda(std::unique_ptr<llvm::MemoryBuffer> buffer,
-                                     llvm::StringRef funcName = "main");
+  llvm::Expected<Lambda>
+  buildLambda(std::unique_ptr<llvm::MemoryBuffer> buffer,
+              llvm::StringRef funcName = "main",
+              llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
-  llvm::Expected<Lambda> buildLambda(llvm::SourceMgr &sm,
-                                     llvm::StringRef funcName = "main");
+  llvm::Expected<Lambda>
+  buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName = "main",
+              llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
 protected:
   llvm::Expected<mlir::LLVM::LLVMFuncOp> findLLVMFuncOp(mlir::ModuleOp module,
