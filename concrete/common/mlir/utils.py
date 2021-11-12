@@ -115,8 +115,14 @@ def check_node_compatibility_with_mlir(
 
     if is_output:
         for out in outputs:
-            if not value_is_unsigned_integer(out):
-                return "only unsigned integer outputs are supported"
+            # For signed values and waiting for a real fix (#845): what is returned by the compiler
+            # is not the (possibly negative) result r, but the always-positive (r mod 2**t), where t
+            # is the bitwidth of r
+
+            # We currently can't fail on the following assert, but let it for possible changes in
+            # the future
+            if not value_is_integer(out):
+                return "only integer outputs are supported"  # pragma: no cover
     else:
         for out in outputs:
             # We currently can't fail on the following assert, but let it for possible changes in
