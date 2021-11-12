@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
       - name: Compile doc
         run: cargo xtask check_doc
       - name: Install mdbook
