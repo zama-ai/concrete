@@ -9,6 +9,11 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      rebuild-env-docker:
+        description: "String to indicate whether the docker should be rebuilt, true or false"
+        required: true
+        default: "false"
 
   # Allows external webhook trigger
   repository_dispatch:
@@ -22,7 +27,7 @@ on:
     - cron: '0 22 * * 0'
 
 env:
-  FORCE_REBUILD_DOCKER: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'repository_dispatch' && github.event.action == 'rebuild-env-docker') }}
+  FORCE_REBUILD_DOCKER: ${{ (github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.rebuild-env-docker)) || (github.event_name == 'repository_dispatch' && github.event.action == 'rebuild-env-docker') }}
   ENV_DOCKERFILE: docker/Dockerfile.concretefhe-env
   PREFLIGHT_IMAGE_BASE: ghcr.io/zama-ai/concretefhe-env:preflight
   LATEST_IMAGE: ghcr.io/zama-ai/concretefhe-env:latest
@@ -40,6 +45,7 @@ jobs:
     runs-on: ubuntu-20.04
     outputs:
       image: ${{ steps.set_image.outputs.image || env.LATEST_IMAGE }}
+      compiler-tag: ${{ steps.set_image.outputs.compiler-tag }}
       needs-push: ${{ env.BUILD_DOCKER }}
       force-rebuild-docker: ${{ env.FORCE_REBUILD_DOCKER }}
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
@@ -83,9 +89,13 @@ jobs:
             echo "Docker image up to date."
             echo "BUILD_DOCKER=false" >> "$GITHUB_ENV"
           fi
-      - name: Set prefligh Docker image
+      # https://github.com/zama-ai/concretefhe-internal/issues/809
+      # Remove gh_dl_release call once package is on PyPi
+      - name: Set prefligh Docker image download compiler
         id: set_image
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
+        env:
+          WHEEL: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
         run: |
           PREFLIGHT_IMAGE_TAG=$(echo ${{ github.ref }} | sed -e 's/\//-/g')
           PREFLIGHT_IMAGE="${PREFLIGHT_IMAGE_BASE}-${PREFLIGHT_IMAGE_TAG}"
@@ -93,6 +103,17 @@ jobs:
           echo "::set-output name=image::${PREFLIGHT_IMAGE}"
           echo "PREFLIGHT_IMAGE=${PREFLIGHT_IMAGE}" >> "$GITHUB_ENV"
           echo "LABEL_SHA1=${LABEL_SHA1}" >> "$GITHUB_ENV"
+
+          mkdir -p pkg
+          ./script/actions_utils/gh_dl_release.sh \
+          --token ${{ secrets.BOT_TOKEN }} \
+          --org-repo zama-ai/homomorphizer \
+          --file "${WHEEL}" \
+          --dest-file "pkg/${WHEEL}" \
+          --compiler-tag-output-file compiler-output-tag.txt
+
+          COMPILER_TAG=$(cat compiler-output-tag.txt)
+          echo "::set-output name=compiler-tag::${COMPILER_TAG}"
       # Disabled buildx for now as we are seeing a lot of fails on layer pushes
       # - name: Set up Docker Buildx
       #   if: ${{ fromJSON(env.BUILD_DOCKER) }}
@@ -423,6 +444,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       PREFLIGHT_IMAGE: ${{ needs.build-preflight-docker.outputs.image }}
+      COMPILER_TAG: ${{ needs.build-preflight-docker.outputs.compiler-tag }}
 
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
@@ -435,12 +457,12 @@ jobs:
       - name: Pull preflight image
         run: |
           docker pull "${PREFLIGHT_IMAGE}"
-      - name: Retag to latest and zamalang_sha1-concretefhe_sha1 and push
+      # https://github.com/zama-ai/concretefhe-internal/issues/809
+      # update once release workflow is ok on the compiler side
+      - name: Retag to latest and concretefhe_compiler_version-concretefhe_sha1 and push
         run: |
           SHA1=$(git rev-parse HEAD)
-          ZAMALANG_SHA1=$(docker inspect "${PREFLIGHT_IMAGE}" | \
-          jq -rc '.[0].Config.Labels["commit-sha"]')
-          TAGGED_IMAGE="${BASE_IMAGE}:${ZAMALANG_SHA1}-${SHA1}"
+          TAGGED_IMAGE="${BASE_IMAGE}:${COMPILER_TAG}-${SHA1}"
           docker tag "${PREFLIGHT_IMAGE}" "${LATEST_IMAGE}"
           docker tag "${PREFLIGHT_IMAGE}" "${TAGGED_IMAGE}"
           docker push "${LATEST_IMAGE}"

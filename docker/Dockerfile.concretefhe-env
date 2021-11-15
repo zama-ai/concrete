@@ -1,18 +1,43 @@
-FROM ghcr.io/zama-ai/zamalang-compiler:3bf493e83cd9d5be127adce4a4bde9dd4be229f1
+FROM ubuntu:20.04
+
+# Remove once compiler is on PyPi https://github.com/zama-ai/concretefhe-internal/issues/809
+ARG WHEEL
+ENV TZ=Europe/Paris
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
+    build-essential \
     curl \
+    python3-pip \
     python3.8 \
+    python3.8-dev \
     python3.8-tk \
     python3.8-venv \
     python-is-python3 \
     git \
     graphviz* \
+    make \
     pandoc \
     shellcheck && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry
 
-ENV LD_PRELOAD=${RT_LIB}:${LD_PRELOAD}
+# Remove once compiler is on PyPi https://github.com/zama-ai/concretefhe-internal/issues/809
+WORKDIR /pkg
+COPY pkg/${WHEEL} .
+
+ENV SRC_DIR_NAME=src
+
+RUN echo "source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc && \
+    echo "if [[ \"\$?\" != \"0\" ]]; then" >> /root/.bashrc && \
+    echo "    python3 -m venv /${SRC_DIR_NAME}/.docker_venv" >> /root/.bashrc && \
+    echo "    source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc && \
+    echo "    cd /${SRC_DIR_NAME}/ && make setup_env" >> /root/.bashrc && \
+    echo "fi" >> /root/.bashrc && \
+    echo "export MPLBACKEND=TkAgg" >> /root/.bashrc
+
+WORKDIR /${SRC_DIR_NAME}
+
+CMD ["/bin/bash"]
