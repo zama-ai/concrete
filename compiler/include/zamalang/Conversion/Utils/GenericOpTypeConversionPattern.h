@@ -19,7 +19,7 @@ struct GenericTypeConverterPattern : public mlir::OpRewritePattern<Op> {
     rewriter.startRootUpdate(op);
     // Rewrite arguments
     {
-      for (auto i = 0; i < op->getNumOperands(); i++) {
+      for (unsigned i = 0; i < op->getNumOperands(); i++) {
         auto operand = op->getOperand(i);
         mlir::Type type = converter.convertType(operand.getType());
         if (type != mlir::Type()) {
@@ -29,7 +29,7 @@ struct GenericTypeConverterPattern : public mlir::OpRewritePattern<Op> {
     }
     // Rewrite results
     {
-      for (auto i = 0; i < op->getNumResults(); i++) {
+      for (unsigned i = 0; i < op->getNumResults(); i++) {
         auto result = op->getResult(i);
         mlir::Type type = converter.convertType(result.getType());
         if (type != mlir::Type()) {
