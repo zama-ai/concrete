@@ -5,8 +5,6 @@
 
 #include "end_to_end_jit_test.h"
 
-const mlir::zamalang::V0FHEConstraint defaultV0Constraints{10, 7};
-
 TEST(CompileAndRunHLFHE, add_eint) {
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%arg0: !HLFHE.eint<7>, %arg1: !HLFHE.eint<7>) -> !HLFHE.eint<7> {

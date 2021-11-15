@@ -5,8 +5,7 @@
 
 #include "zamalang/Support/CompilerEngine.h"
 #include "zamalang/Support/JitCompilerEngine.h"
-
-extern const mlir::zamalang::V0FHEConstraint defaultV0Constraints;
+#include "globals.h"
 
 #define ASSERT_LLVM_ERROR(err)                                                 \
   if (err) {                                                                   \
