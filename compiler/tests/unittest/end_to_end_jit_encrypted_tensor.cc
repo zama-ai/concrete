@@ -65,9 +65,8 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) ->
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice) {
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
-  %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] :
-  tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>> return %r :
-  tensor<1x5x!HLFHE.eint<6>>
+  %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>>
+  return %r : tensor<1x5x!HLFHE.eint<6>>
 }
 )XXX");
 
@@ -93,9 +92,8 @@ TEST(End2EndJit_EncryptedTensor_2D, extract_slice_stride) {
   mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
-  %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] :
-  tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>> return %r :
-  tensor<1x5x!HLFHE.eint<6>>
+  %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>>
+  return %r : tensor<1x5x!HLFHE.eint<6>>
 }
 )XXX");
 
@@ -122,9 +120,8 @@ TEST(End2EndJit_EncryptedTensor_2D, insert_slice) {
 
 func @main(%t0: tensor<2x10x!HLFHE.eint<6>>, %t1: tensor<2x2x!HLFHE.eint<6>>)
 -> tensor<2x10x!HLFHE.eint<6>> {
-  %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] :
-  tensor<2x2x!HLFHE.eint<6>> into tensor<2x10x!HLFHE.eint<6>> return %r :
-  tensor<2x10x!HLFHE.eint<6>>
+  %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!HLFHE.eint<6>> into tensor<2x10x!HLFHE.eint<6>>
+  return %r : tensor<2x10x!HLFHE.eint<6>>
 }
 )XXX");
 
