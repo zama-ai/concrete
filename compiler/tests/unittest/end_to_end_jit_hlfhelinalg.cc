@@ -1273,3 +1273,105 @@ TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
     }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// linalg.tensor_collapse_shape ///////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_Linalg, tensor_collapse_shape) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%a: tensor<2x2x4x!HLFHE.eint<6>>) -> tensor<2x8x!HLFHE.eint<6>> {
+  %0 = linalg.tensor_collapse_shape %a [[0],[1,2]]  : tensor<2x2x4x!HLFHE.eint<6>> into tensor<2x8x!HLFHE.eint<6>>
+  return %0 : tensor<2x8x!HLFHE.eint<6>>
+}
+)XXX");
+  static uint8_t A[2][2][4]{
+      {{1, 2, 3, 4}, {5, 6, 7, 8}},
+      {{10, 11, 12, 13}, {14, 15, 16, 17}},
+  };
+  static uint8_t expected[2][8]{
+      {1, 2, 3, 4, 5, 6, 7, 8},
+      {10, 11, 12, 13, 14, 15, 16, 17},
+  };
+
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      aArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)A, 2 * 2 * 4), {2, 2, 4});
+
+  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+          {&aArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+      &resp = (*res)
+                  ->cast<mlir::zamalang::TensorLambdaArgument<
+                      mlir::zamalang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(resp.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(resp.getDimensions().at(0), 2);
+  ASSERT_EQ(resp.getDimensions().at(1), 8);
+  ASSERT_EXPECTED_VALUE(resp.getNumElements(), 2 * 8);
+
+  for (size_t i = 0; i < 2; i++) {
+    for (size_t j = 0; j < 8; j++) {
+      EXPECT_EQ(resp.getValue()[i * 8 + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// linalg.tensor_expand_shape ///////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_Linalg, tensor_expand_shape) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%a: tensor<2x8x!HLFHE.eint<6>>) -> tensor<2x2x4x!HLFHE.eint<6>> {
+  %0 = linalg.tensor_expand_shape %a [[0],[1,2]]  : tensor<2x8x!HLFHE.eint<6>> into tensor<2x2x4x!HLFHE.eint<6>>
+  return %0 : tensor<2x2x4x!HLFHE.eint<6>>
+}
+)XXX");
+
+  static uint8_t A[2][8]{
+      {1, 2, 3, 4, 5, 6, 7, 8},
+      {10, 11, 12, 13, 14, 15, 16, 17},
+  };
+  static uint8_t expected[2][2][4]{
+      {{1, 2, 3, 4}, {5, 6, 7, 8}},
+      {{10, 11, 12, 13}, {14, 15, 16, 17}},
+  };
+
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      aArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)A, 2 * 8), {2, 8});
+
+  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+          {&aArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+      &resp = (*res)
+                  ->cast<mlir::zamalang::TensorLambdaArgument<
+                      mlir::zamalang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(resp.getDimensions().at(0), 2);
+  ASSERT_EQ(resp.getDimensions().at(1), 2);
+  ASSERT_EQ(resp.getDimensions().at(2), 4);
+  ASSERT_EXPECTED_VALUE(resp.getNumElements(), 2 * 2 * 4);
+
+  for (size_t i = 0; i < 2; i++) {
+    for (size_t j = 0; j < 2; j++) {
+      for (size_t k = 0; k < 4; k++) {
+        EXPECT_EQ(resp.getValue()[i * 8 + j * 4 + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}

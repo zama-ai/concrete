@@ -120,3 +120,41 @@ func @tensor_insert_slice_2(%a: !HLFHE.eint<5>) -> tensor<4x!HLFHE.eint<5>>
 
   return %t0 : tensor<4x!HLFHE.eint<5>>
 }
+
+// -----
+
+func @tensor_collapse_shape_1(%a: tensor<2x2x4x!HLFHE.eint<6>>) -> tensor<2x8x!HLFHE.eint<6>> {
+  // CHECK: linalg.tensor_collapse_shape %[[A:.*]] [[X:.*]] {MANP = 1 : ui{{[0-9]+}}}
+  %0 = linalg.tensor_collapse_shape %a [[0],[1,2]]  : tensor<2x2x4x!HLFHE.eint<6>> into tensor<2x8x!HLFHE.eint<6>>
+  return %0 : tensor<2x8x!HLFHE.eint<6>>
+}
+
+// -----
+
+func @tensor_collapse_shape_2(%a: tensor<2x2x4x!HLFHE.eint<2>>, %b: tensor<2x2x4xi3>) -> tensor<2x8x!HLFHE.eint<2>>
+{
+  // CHECK: "HLFHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 9 : ui{{[0-9]+}}}
+  %0 = "HLFHELinalg.add_eint_int"(%a, %b) : (tensor<2x2x4x!HLFHE.eint<2>>, tensor<2x2x4xi3>) -> tensor<2x2x4x!HLFHE.eint<2>>
+  // CHECK-NEXT: linalg.tensor_collapse_shape %[[A:.*]] [[X:.*]] {MANP = 9 : ui{{[0-9]+}}}
+  %1 = linalg.tensor_collapse_shape %0 [[0],[1,2]]  : tensor<2x2x4x!HLFHE.eint<2>> into tensor<2x8x!HLFHE.eint<2>>
+  return %1 : tensor<2x8x!HLFHE.eint<2>>
+}
+
+// -----
+
+func @tensor_expand_shape_1(%a: tensor<2x8x!HLFHE.eint<6>>) -> tensor<2x2x4x!HLFHE.eint<6>> {
+  // CHECK: linalg.tensor_expand_shape %[[A:.*]] [[X:.*]] {MANP = 1 : ui{{[0-9]+}}}
+  %0 = linalg.tensor_expand_shape %a [[0],[1,2]]  : tensor<2x8x!HLFHE.eint<6>> into tensor<2x2x4x!HLFHE.eint<6>>
+  return %0 : tensor<2x2x4x!HLFHE.eint<6>>
+}
+
+// -----
+
+func @tensor_expand_shape_2(%a: tensor<2x8x!HLFHE.eint<2>>, %b: tensor<2x8xi3>) -> tensor<2x2x4x!HLFHE.eint<2>>
+{
+  // CHECK: "HLFHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 9 : ui{{[0-9]+}}}
+  %0 = "HLFHELinalg.add_eint_int"(%a, %b) : (tensor<2x8x!HLFHE.eint<2>>, tensor<2x8xi3>) -> tensor<2x8x!HLFHE.eint<2>>
+  // CHECK-NEXT: linalg.tensor_expand_shape %[[A:.*]] [[X:.*]] {MANP = 9 : ui{{[0-9]+}}}
+  %1 = linalg.tensor_expand_shape %0 [[0],[1,2]]  : tensor<2x8x!HLFHE.eint<2>> into tensor<2x2x4x!HLFHE.eint<2>>
+  return %1 : tensor<2x2x4x!HLFHE.eint<2>>
+}

@@ -12,6 +12,7 @@
 #include <llvm/ADT/SmallString.h>
 #include <mlir/Analysis/DataFlowAnalysis.h>
 #include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
+#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/IR/Attributes.h>
@@ -737,6 +738,30 @@ static llvm::APInt getSqMANP(
                    operandMANPs[1]->getValue().getMANP().getValue());
 }
 
+static llvm::APInt getSqMANP(
+    mlir::linalg::TensorCollapseShapeOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() >= 1 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  return operandMANPs[0]->getValue().getMANP().getValue();
+}
+
+static llvm::APInt getSqMANP(
+    mlir::linalg::TensorExpandShapeOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() >= 1 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  return operandMANPs[0]->getValue().getMANP().getValue();
+}
+
 struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
   using ForwardDataFlowAnalysis<MANPLatticeValue>::ForwardDataFlowAnalysis;
   MANPAnalysis(mlir::MLIRContext *ctx, bool debug)
@@ -849,6 +874,32 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getElementType()
               .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
         norm2SqEquiv = getSqMANP(fromOp, operands);
+      } else {
+        isDummy = true;
+      }
+    }
+    // TensorCollapseShapeOp
+    else if (auto reshapeOp =
+                 llvm::dyn_cast<mlir::linalg::TensorCollapseShapeOp>(op)) {
+      if (reshapeOp.result()
+              .getType()
+              .cast<mlir::TensorType>()
+              .getElementType()
+              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+        norm2SqEquiv = getSqMANP(reshapeOp, operands);
+      } else {
+        isDummy = true;
+      }
+    }
+    // TensorExpandShapeOp
+    else if (auto reshapeOp =
+                 llvm::dyn_cast<mlir::linalg::TensorExpandShapeOp>(op)) {
+      if (reshapeOp.result()
+              .getType()
+              .cast<mlir::TensorType>()
+              .getElementType()
+              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+        norm2SqEquiv = getSqMANP(reshapeOp, operands);
       } else {
         isDummy = true;
       }
