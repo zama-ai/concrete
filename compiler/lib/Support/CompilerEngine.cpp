@@ -176,7 +176,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     if (smHandler.verify().failed())
       return StreamStringError("Verification of diagnostics failed");
     else
-      return res;
+      return std::move(res);
   }
 
   if (!mlirModuleRef) {
@@ -187,13 +187,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   mlir::ModuleOp module = res.mlirModuleRef->get();
 
   if (target == Target::ROUND_TRIP)
-    return res;
+    return std::move(res);
 
   // HLFHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);
   if (target == Target::HLFHE)
-    return res;
+    return std::move(res);
 
   // HLFHE -> MidLFHE
   if (mlir::zamalang::pipeline::lowerHLFHEToMidLFHE(mlirContext, module,
@@ -202,7 +202,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Lowering from HLFHE to MidLFHE failed");
   }
   if (target == Target::MIDLFHE)
-    return res;
+    return std::move(res);
 
   // MidLFHE -> LowLFHE
   if (mlir::zamalang::pipeline::lowerMidLFHEToLowLFHE(
@@ -211,7 +211,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Lowering from MidLFHE to LowLFHE failed");
   }
   if (target == Target::LOWLFHE)
-    return res;
+    return std::move(res);
 
   // LowLFHE -> Canonical dialects
   if (mlir::zamalang::pipeline::lowerLowLFHEToStd(mlirContext, module,
@@ -220,7 +220,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Lowering from LowLFHE to canonical MLIR dialects failed");
   }
   if (target == Target::STD)
-    return res;
+    return std::move(res);
 
   // Generate client parameters if requested
   if (this->generateClientParameters) {
@@ -252,7 +252,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   if (target == Target::LLVM)
-    return res;
+    return std::move(res);
 
   // Lowering to actual LLVM IR (i.e., not the LLVM dialect)
   llvm::LLVMContext &llvmContext = *this->compilationContext->getLLVMContext();
@@ -264,7 +264,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return StreamStringError("Failed to convert from LLVM dialect to LLVM IR");
 
   if (target == Target::LLVM_IR)
-    return res;
+    return std::move(res);
 
   if (mlir::zamalang::pipeline::optimizeLLVMModule(llvmContext, *res.llvmModule)
           .failed()) {
@@ -272,7 +272,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   if (target == Target::OPTIMIZED_LLVM_IR)
-    return res;
+    return std::move(res);
 
   if (target == Target::LIBRARY) {
     if (!lib) {
@@ -283,10 +283,10 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     if (!objPath) {
       return StreamStringError(llvm::toString(objPath.takeError()));
     }
-    return res;
+    return std::move(res);
   }
 
-  return res;
+  return std::move(res);
 }
 
 // Compile the source `s` to the target dialect `target`. If successful, the
