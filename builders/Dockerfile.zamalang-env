@@ -26,6 +26,6 @@ RUN make BUILD_DIR=/build CCACHE=ON zamacompiler python-bindings && \
     mv /zamalang_core /build/tools/zamalang/python_packages/ && \
     mv /bin/zamacompiler /build/bin && \
     mv /lib/libZamalangRuntime.so /build/lib
-ENV PYTHONPATH "$PYTHONPATH:/zamalang_core"
+ENV PYTHONPATH "$PYTHONPATH:/build/tools/zamalang/python_packages/zamalang_core"
 ENV PATH "$PATH:/build/bin"
 ENV RT_LIB "/build/lib/libZamalangRuntime.so"
