@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+jobs:
+  BuildAndPushArtifactsLinux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Login to Github Container Registry
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      - name: Build
+        run: |
+          cd compiler
+          make package_py38
+          make package_py39
+          make package_py310
+          make release_tarballs
+
+      - name: Upload Python3.8 Package
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
+          tag: v0.1.0-alpha
+          file: wheels/concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
+          asset_name: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
+          overwrite: true
+
+      - name: Upload Python3.9 Package
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
+          tag: v0.1.0-alpha
+          file: wheels/concretefhe_compiler-0.1.0-cp39-cp39-manylinux_2_24_x86_64.whl
+          asset_name: concretefhe_compiler-0.1.0-cp39-cp39-manylinux_2_24_x86_64.whl
+          overwrite: true
+
+      - name: Upload Python3.10 Package
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
+          tag: v0.1.0-alpha
+          file: wheels/concretefhe_compiler-0.1.0-cp310-cp310-manylinux_2_24_x86_64.whl
+          asset_name: concretefhe_compiler-0.1.0-cp310-cp310-manylinux_2_24_x86_64.whl
+          overwrite: true
+
+      - name: Upload Zamacompiler Tarball
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
+          tag: v0.1.0-alpha
+          file: tarballs/zamacompiler.tar.gz
+          asset_name: zamacompiler.tar.gz
+          overwrite: true
+
+  # TODO(MacOS)
+  # - clone concrete and build concrete-ffi
+  # - or download concrete-ffi lib for mac from an available source
+
+  # BuildAndPushArtifactsMacOS:
+  #   runs-on: macos-10.15
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         submodules: recursive
+
+  #     - uses: actions/checkout@v1
+  #       with:
+  #         repository: zama-ai/concrete
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Build
+  #       run: |
+  #         cd compiler
+  #         brew install ninja
+  #         pip3 install numpy pybind11==2.6.2 PyYAML
+  #         make zamacompiler python-bindings
+  #         pip3 wheel -w ${{ github.workspace }}/wheels .
+
+  #     - name: Upload Python3.9 Package
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  #       with:
+  #         upload_url: https://uploads.github.com/repos/zama-ai/homomorphizer/releases/53389478/assets
+  #         asset_path: ${{ github.workspace }}/wheels/concretefhe_compiler-0.1.0-cp39-cp39-macos_10_15_x86_64.whl
+  #         asset_name: concretefhe_compiler-0.1.0-cp39-cp39-macos_10_15_x86_64.whl
+  #         asset_content_type: application/zip
+
