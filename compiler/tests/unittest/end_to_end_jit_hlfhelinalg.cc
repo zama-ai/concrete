@@ -34,7 +34,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term) {
   ASSERT_EQ(res->size(), (size_t)4);
 
   for (size_t i = 0; i < 4; i++) {
-    EXPECT_EQ((*res)[i], a0[i] + a1[i]);
+    EXPECT_EQ((*res)[i], (uint64_t)a0[i] + a1[i]);
   }
 }
 
@@ -74,7 +74,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
   ASSERT_EXPECTED_VALUE(resp.getNumElements(), 4);
 
   for (size_t i = 0; i < 4; i++) {
-    ASSERT_EQ(resp.getValue()[i], a0[i] + a1[i]);
+    ASSERT_EQ(resp.getValue()[i], (uint64_t)a0[i] + a1[i]);
   }
 }
 
@@ -120,7 +120,7 @@ TEST(End2EndJit_HLFHELinalg,
   ASSERT_EXPECTED_VALUE(resp.getNumElements(), 4 * 3 * 2);
 
   for (size_t i = 0; i < 4 * 3 * 2; i++) {
-    ASSERT_EQ(resp.getValue()[i], a0[i] + a1[i]);
+    ASSERT_EQ(resp.getValue()[i], (uint64_t)a0[i] + a1[i]);
   }
 }
 
@@ -160,12 +160,13 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_broadcast) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4 * 4 * 4);
+  ASSERT_EQ(res->size(), (size_t)4 * 4 * 4);
 
   for (size_t i = 0; i < 4; i++) {
     for (size_t j = 0; j < 4; j++) {
       for (size_t k = 0; k < 4; k++) {
-        EXPECT_EQ((*res)[i * 16 + j * 4 + k], a0[i][0][k] + a1[0][j][k])
+        EXPECT_EQ((*res)[i * 16 + j * 4 + k],
+                  (uint64_t)a0[i][0][k] + a1[0][j][k])
             << "result differ at pos " << i << "," << j << "," << k;
       }
     }
@@ -210,11 +211,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_column) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] + a1[i][0]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] + a1[i][0]);
     }
   }
 }
@@ -254,11 +255,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] + a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] + a1[0][j]);
     }
   }
 }
@@ -292,11 +293,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line_missing_dim) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] + a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] + a1[0][j]);
     }
   }
 }
@@ -330,10 +331,10 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4);
+  ASSERT_EQ(res->size(), (uint64_t)4);
 
   for (size_t i = 0; i < 4; i++) {
-    EXPECT_EQ((*res)[i], a0[i] + a1[i])
+    EXPECT_EQ((*res)[i], (uint64_t)a0[i] + a1[i])
         << "result differ at pos " << i << ", expect " << a0[i] + a1[i]
         << " got " << (*res)[i];
   }
@@ -377,12 +378,13 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term_broadcast) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4 * 4 * 4);
+  ASSERT_EQ(res->size(), (uint64_t)4 * 4 * 4);
 
   for (size_t i = 0; i < 4; i++) {
     for (size_t j = 0; j < 4; j++) {
       for (size_t k = 0; k < 4; k++) {
-        EXPECT_EQ((*res)[i * 16 + j * 4 + k], a0[i][0][k] + a1[0][j][k])
+        EXPECT_EQ((*res)[i * 16 + j * 4 + k],
+                  (uint64_t)a0[i][0][k] + a1[0][j][k])
             << "result differ at pos " << i << "," << j << "," << k;
       }
     }
@@ -428,11 +430,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_column) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] + a1[i][0]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] + a1[i][0]);
     }
   }
 }
@@ -475,11 +477,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] + a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] + a1[0][j]);
     }
   }
 }
@@ -514,11 +516,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line_missing_dim) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] + a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] + a1[0][j]);
     }
   }
 }
@@ -555,12 +557,12 @@ TEST(End2EndJit_HLFHELinalg, add_eint_tensor_dim_equals_1) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 1 * 2);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 1 * 2);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 1; j++) {
       for (size_t k = 0; k < 2; k++) {
-        EXPECT_EQ((*res)[i * 2 + j + k], a0[i][j][k] + a1[i][j][k]);
+        EXPECT_EQ((*res)[i * 2 + j + k], (uint64_t)a0[i][j][k] + a1[i][j][k]);
       }
     }
   }
@@ -594,10 +596,10 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4);
+  ASSERT_EQ(res->size(), (uint64_t)4);
 
   for (size_t i = 0; i < 4; i++) {
-    EXPECT_EQ((*res)[i], a0[i] - a1[i]);
+    EXPECT_EQ((*res)[i], (uint64_t)a0[i] - a1[i]);
   }
 }
 
@@ -636,13 +638,13 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term_broadcast) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4 * 4 * 4);
+  ASSERT_EQ(res->size(), (uint64_t)4 * 4 * 4);
 
   for (size_t i = 0; i < 4; i++) {
     for (size_t j = 0; j < 4; j++) {
       for (size_t k = 0; k < 4; k++) {
         uint8_t expected = a0[i][0][k] - a1[0][j][k];
-        EXPECT_EQ((*res)[i * 16 + j * 4 + k], expected);
+        EXPECT_EQ((*res)[i * 16 + j * 4 + k], (uint64_t)expected);
       }
     }
   }
@@ -688,11 +690,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_column) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] - a1[i][0]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[i][0]);
     }
   }
 }
@@ -735,11 +737,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] - a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[0][j]);
     }
   }
 }
@@ -774,11 +776,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line_missing_dim) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] - a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[0][j]);
     }
   }
 }
@@ -811,10 +813,10 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4);
+  ASSERT_EQ(res->size(), (uint64_t)4);
 
   for (size_t i = 0; i < 4; i++) {
-    EXPECT_EQ((*res)[i], a0[i] * a1[i]);
+    EXPECT_EQ((*res)[i], (uint64_t)a0[i] * a1[i]);
   }
 }
 
@@ -854,13 +856,13 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term_broadcast) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 4 * 4 * 4);
+  ASSERT_EQ(res->size(), (uint64_t)4 * 4 * 4);
 
   for (size_t i = 0; i < 4; i++) {
     for (size_t j = 0; j < 4; j++) {
       for (size_t k = 0; k < 4; k++) {
         uint8_t expected = a0[i][0][k] * a1[0][j][k];
-        EXPECT_EQ((*res)[i * 16 + j * 4 + k], expected);
+        EXPECT_EQ((*res)[i * 16 + j * 4 + k], (uint64_t)expected);
       }
     }
   }
@@ -904,11 +906,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_column) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] * a1[i][0]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] * a1[i][0]);
     }
   }
 }
@@ -949,11 +951,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] * a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] * a1[0][j]);
     }
   }
 }
@@ -988,11 +990,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line_missing_dim) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
-      EXPECT_EQ((*res)[i * 3 + j], a0[i][j] * a1[0][j]);
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] * a1[0][j]);
     }
   }
 }
@@ -1035,7 +1037,7 @@ TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
@@ -1201,14 +1203,14 @@ TEST(End2EndJit_HLFHELinalg, neg_eint) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      tArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)t, 3 * 3), {3, 3});
+      tArg(llvm::ArrayRef<uint8_t>((const uint8_t *)t, 3 * 3), {3, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&tArg});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
@@ -1254,17 +1256,17 @@ TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      aArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)A, 3 * 2), {3, 2});
+      aArg(llvm::ArrayRef<uint8_t>((const uint8_t *)A, 3 * 2), {3, 2});
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint8_t>>
-      bArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)B, 2 * 3), {2, 3});
+      bArg(llvm::ArrayRef<uint8_t>((const uint8_t *)B, 2 * 3), {2, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&aArg, &bArg});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
