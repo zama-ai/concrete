@@ -1,9 +1,6 @@
 """Test file for numpy tracing"""
 
-# pylint: disable=too-many-lines
-
 import inspect
-from copy import deepcopy
 
 import networkx as nx
 import numpy
@@ -390,144 +387,6 @@ def test_tracing_astype_single_element_array_corner_case():
 
     eval_result = op_graph(a)
     assert numpy.array_equal(numpy.array([1], dtype=numpy.int32), eval_result)
-
-
-@pytest.mark.parametrize(
-    "inputs",
-    [
-        pytest.param(
-            {"x": EncryptedScalar(Integer(32, is_signed=True))},
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "function_to_trace",
-    # We really need a lambda (because numpy functions are not playing
-    # nice with inspect.signature), but pylint is not happy
-    # with it
-    [lambda x: numpy.invert(x), lambda x: numpy.bitwise_not(x)],
-)
-def test_trace_numpy_fails_for_invert(inputs, function_to_trace):
-    """Check we catch calls to numpy.invert and tell user to change their code"""
-
-    with pytest.raises(RuntimeError) as excinfo:
-        tracing.trace_numpy_function(function_to_trace, inputs)
-
-    assert (
-        "NPTracer does not manage the following func: invert. Please replace by calls to "
-        "bitwise_xor with appropriate mask" in str(excinfo.value)
-    )
-
-
-@pytest.mark.parametrize(
-    "inputs,expected_output_node",
-    [
-        pytest.param(
-            {"x": EncryptedScalar(Integer(7, is_signed=False))},
-            ir.GenericFunction,
-        ),
-        pytest.param(
-            {"x": EncryptedScalar(Integer(32, is_signed=True))},
-            ir.GenericFunction,
-        ),
-        pytest.param(
-            {"x": EncryptedScalar(Integer(64, is_signed=True))},
-            ir.GenericFunction,
-        ),
-        pytest.param(
-            {"x": EncryptedScalar(Integer(128, is_signed=True))},
-            ir.GenericFunction,
-            marks=pytest.mark.xfail(strict=True, raises=NotImplementedError),
-        ),
-        pytest.param(
-            {"x": EncryptedScalar(Float(64))},
-            ir.GenericFunction,
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "function_to_trace_def",
-    [f for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1],
-)
-def test_trace_numpy_supported_unary_ufuncs(inputs, expected_output_node, function_to_trace_def):
-    """Function to trace supported numpy ufuncs"""
-
-    # We really need a lambda (because numpy functions are not playing
-    # nice with inspect.signature), but pylint and flake8 are not happy
-    # with it
-    # pylint: disable=cell-var-from-loop
-    function_to_trace = lambda x: function_to_trace_def(x)  # noqa: E731
-    # pylint: enable=cell-var-from-loop
-
-    op_graph = tracing.trace_numpy_function(function_to_trace, inputs)
-
-    assert len(op_graph.output_nodes) == 1
-    assert isinstance(op_graph.output_nodes[0], expected_output_node)
-    assert len(op_graph.output_nodes[0].outputs) == 1
-
-    if function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64:
-        assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Float(64))
-    elif function_to_trace_def in LIST_OF_UFUNC_WHOSE_OUTPUT_IS_BOOL:
-
-        # Boolean function
-        assert op_graph.output_nodes[0].outputs[0] == EncryptedScalar(Integer(8, is_signed=False))
-    else:
-
-        # Function keeping more or less input type
-        input_node_type = inputs["x"]
-
-        expected_output_node_type = deepcopy(input_node_type)
-
-        expected_output_node_type.dtype.bit_width = max(
-            expected_output_node_type.dtype.bit_width, 32
-        )
-
-        assert op_graph.output_nodes[0].outputs[0] == expected_output_node_type
-
-
-def test_trace_numpy_ufuncs_not_supported():
-    """Testing a failure case of trace_numpy_function"""
-    inputs = {"x": EncryptedScalar(Integer(128, is_signed=True))}
-
-    # We really need a lambda (because numpy functions are not playing
-    # nice with inspect.signature), but pylint and flake8 are not happy
-    # with it
-    function_to_trace = lambda x: numpy.add.reduce(x)  # noqa: E731
-
-    with pytest.raises(NotImplementedError) as excinfo:
-        tracing.trace_numpy_function(function_to_trace, inputs)
-
-    assert "Only __call__ method is supported currently" in str(excinfo.value)
-
-
-def test_trace_numpy_ufuncs_no_kwargs_no_extra_args():
-    """Test a case where kwargs are not allowed and too many inputs are passed"""
-    inputs = {
-        "x": EncryptedScalar(Integer(32, is_signed=True)),
-        "y": EncryptedScalar(Integer(32, is_signed=True)),
-        "z": EncryptedScalar(Integer(32, is_signed=True)),
-    }
-
-    # We really need a lambda (because numpy functions are not playing
-    # nice with inspect.signature), but pylint and flake8 are not happy
-    # with it
-    function_to_trace = lambda x, y, z: numpy.add(x, y, z)  # noqa: E731
-
-    with pytest.raises(AssertionError) as excinfo:
-        tracing.trace_numpy_function(function_to_trace, inputs)
-
-    # numpy only passes ufunc.nin tracers so the extra arguments are passed as kwargs
-    assert "**kwargs are currently not supported for numpy ufuncs, ufunc: add" in str(excinfo.value)
-
-    # We really need a lambda (because numpy functions are not playing
-    # nice with inspect.signature), but pylint and flake8 are not happy
-    # with it
-    function_to_trace = lambda x, y, z: numpy.add(x, y, out=z)  # noqa: E731
-
-    with pytest.raises(AssertionError) as excinfo:
-        tracing.trace_numpy_function(function_to_trace, inputs)
-
-    assert "**kwargs are currently not supported for numpy ufuncs, ufunc: add" in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -934,6 +793,3 @@ def test_errors_with_generic_function(lambda_f, params):
         tracing.trace_numpy_function(lambda_f, params)
 
     assert "shapes are not compatible (old shape (7, 5), new shape (5, 3))" in str(excinfo.value)
-
-
-# pylint: enable=too-many-lines
