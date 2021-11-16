@@ -65,6 +65,20 @@ from concrete.numpy import compile_numpy_function
             "EncryptedTensor<uint7, shape=(2,)> "
             "cannot be converted to MLIR yet",
         ),
+        pytest.param(
+            lambda x: numpy.ones(shape=(2, 3), dtype=numpy.uint32) @ x,
+            {"x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2))},
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)]
+            + [(numpy.array([[7, 7], [7, 7], [7, 7]]),)],
+            NotImplementedError,
+            "Matrix multiplication "
+            "between "
+            "ClearTensor<uint6, shape=(2, 3)> "
+            "and "
+            "EncryptedTensor<uint5, shape=(3, 2)> "
+            "cannot be converted to MLIR yet "
+            "(notice the encrypted value is in the right hand side which is not supported)",
+        ),
     ],
 )
 def test_fail_node_conversion(

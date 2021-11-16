@@ -493,10 +493,6 @@ class NPTracer(BaseTracer):
         """Trace numpy.matmul."""
         return self.__array_ufunc__(numpy.matmul, "__call__", self, other)
 
-    def matmul(self, other):
-        """Trace x.matmul."""
-        return self.__array_ufunc__(numpy.matmul, "__call__", self, other)
-
     # Supported functions are either univariate or bivariate for which one of the two
     # sources is a constant
     #

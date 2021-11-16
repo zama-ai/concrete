@@ -994,6 +994,71 @@ def test_compile_and_run_constant_dot_correctness(
 
 
 @pytest.mark.parametrize(
+    "lhs_shape,rhs_shape,input_range",
+    [
+        pytest.param(
+            (3, 2),
+            (2, 3),
+            (0, 4),
+        ),
+        pytest.param(
+            (1, 2),
+            (2, 1),
+            (0, 4),
+        ),
+        pytest.param(
+            (3, 3),
+            (3, 3),
+            (0, 4),
+        ),
+        pytest.param(
+            (2, 1),
+            (1, 2),
+            (0, 8),
+        ),
+    ],
+)
+def test_compile_and_run_matmul_correctness(
+    lhs_shape, rhs_shape, input_range, default_compilation_configuration
+):
+    """Test correctness of results when running a compiled function"""
+
+    low, high = input_range
+
+    inputset = [
+        (numpy.zeros(lhs_shape, dtype=numpy.uint32),),
+        (numpy.ones(lhs_shape, dtype=numpy.uint32) * high,),
+    ]
+    for _ in range(8):
+        inputset.append((numpy.random.randint(low, high + 1, size=lhs_shape),))
+
+    constant = numpy.random.randint(low, high + 1, size=rhs_shape)
+
+    def using_operator(x):
+        return x @ constant
+
+    def using_function(x):
+        return numpy.matmul(x, constant)
+
+    operator_circuit = compile_numpy_function(
+        using_operator,
+        {"x": EncryptedTensor(UnsignedInteger(3), lhs_shape)},
+        inputset,
+        default_compilation_configuration,
+    )
+    function_circuit = compile_numpy_function(
+        using_function,
+        {"x": EncryptedTensor(UnsignedInteger(3), lhs_shape)},
+        inputset,
+        default_compilation_configuration,
+    )
+
+    args = (numpy.random.randint(low, high + 1, size=lhs_shape, dtype=numpy.uint8),)
+    assert numpy.array_equal(operator_circuit.run(*args), using_operator(*args))
+    assert numpy.array_equal(function_circuit.run(*args), using_function(*args))
+
+
+@pytest.mark.parametrize(
     "function,input_bits,list_of_arg_names",
     [
         pytest.param(identity_lut_generator(1), (1,), ["x"], id="identity function (1-bit)"),
@@ -1202,52 +1267,18 @@ return %9
             ),
         ),
         pytest.param(
-            lambda x: x @ numpy.ones(shape=(2, 3), dtype=numpy.uint32),
-            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
+            lambda x: x @ -numpy.ones(shape=(2, 3), dtype=numpy.int32),
+            {"x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2))},
             [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
             (
                 """
 
 function you are trying to compile isn't supported for MLIR lowering
 
-%0 = x                        # EncryptedTensor<uint3, shape=(3, 2)>
-%1 = [[1 1 1] [1 1 1]]        # ClearTensor<uint1, shape=(2, 3)>
-%2 = matmul(%0, %1)           # EncryptedTensor<uint4, shape=(3, 3)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being
-return %2
-
-                """.strip()  # noqa: E501
-            ),
-        ),
-        pytest.param(
-            lambda x: numpy.matmul(x, numpy.ones(shape=(2, 3), dtype=numpy.uint32)),
-            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
-            (
-                """
-function you are trying to compile isn't supported for MLIR lowering
-
-%0 = x                        # EncryptedTensor<uint3, shape=(3, 2)>
-%1 = [[1 1 1] [1 1 1]]        # ClearTensor<uint1, shape=(2, 3)>
-%2 = matmul(%0, %1)           # EncryptedTensor<uint4, shape=(3, 3)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being
-return %2
-                """.strip()  # noqa: E501
-            ),
-        ),
-        pytest.param(
-            lambda x: x.matmul(numpy.ones(shape=(2, 3), dtype=numpy.uint32)),
-            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
-            (
-                """
-
-function you are trying to compile isn't supported for MLIR lowering
-
-%0 = x                        # EncryptedTensor<uint3, shape=(3, 2)>
-%1 = [[1 1 1] [1 1 1]]        # ClearTensor<uint1, shape=(2, 3)>
-%2 = matmul(%0, %1)           # EncryptedTensor<uint4, shape=(3, 3)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ matrix multiplication is not supported for the time being
+%0 = x                              # EncryptedTensor<uint3, shape=(3, 2)>
+%1 = [[-1 -1 -1] [-1 -1 -1]]        # ClearTensor<int2, shape=(2, 3)>
+%2 = matmul(%0, %1)                 # EncryptedTensor<int5, shape=(3, 3)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer matrix multiplication is supported
 return %2
 
                 """.strip()  # noqa: E501

@@ -113,7 +113,9 @@ def check_node_compatibility_with_mlir(
         return "indexing is not supported for the time being"
 
     elif isinstance(node, intermediate.MatMul):  # constraints for matrix multiplication
-        return "matrix multiplication is not supported for the time being"
+        assert_true(len(inputs) == 2)
+        if not value_is_unsigned_integer(inputs[0]) or not value_is_unsigned_integer(inputs[1]):
+            return "only unsigned integer matrix multiplication is supported"
 
     else:  # pragma: no cover
         assert_not_reached("Non IntermediateNode object in the OPGraph")

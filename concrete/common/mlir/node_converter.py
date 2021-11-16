@@ -28,6 +28,7 @@ from ..representation.intermediate import (
     Dot,
     GenericFunction,
     IntermediateNode,
+    MatMul,
     Mul,
     Sub,
 )
@@ -86,27 +87,31 @@ class IntermediateNodeConverter:
         """
 
         if isinstance(self.node, Add):
-            return self.convert_add()
+            result = self.convert_add()
 
-        if isinstance(self.node, Constant):
-            return self.convert_constant()
+        elif isinstance(self.node, Constant):
+            result = self.convert_constant()
 
-        if isinstance(self.node, Dot):
-            return self.convert_dot()
+        elif isinstance(self.node, Dot):
+            result = self.convert_dot()
 
-        if isinstance(self.node, GenericFunction):
-            return self.convert_generic_function(additional_conversion_info)
+        elif isinstance(self.node, GenericFunction):
+            result = self.convert_generic_function(additional_conversion_info)
 
-        if isinstance(self.node, Mul):
-            return self.convert_mul()
+        elif isinstance(self.node, MatMul):
+            result = self.convert_matmul()
 
-        if isinstance(self.node, Sub):
-            return self.convert_sub()
+        elif isinstance(self.node, Mul):
+            result = self.convert_mul()
 
-        # this statement is not covered as unsupported opeations fail on check mlir compatibility
-        raise NotImplementedError(
-            f"{type(self.node)} nodes cannot be converted to MLIR yet"
-        )  # pragma: no cover
+        elif isinstance(self.node, Sub):
+            result = self.convert_sub()
+
+        else:  # pragma: no cover
+            # this branch is not covered as unsupported opeations fail on check mlir compatibility
+            raise NotImplementedError(f"{type(self.node)} nodes cannot be converted to MLIR yet")
+
+        return result
 
     def convert_add(self) -> OpResult:
         """Convert an Add node to its corresponding MLIR representation.
@@ -277,6 +282,37 @@ class IntermediateNodeConverter:
                 result = hlfhelinalg.ApplyMultiLookupTableEintOp(resulting_type, pred, lut).result
         else:
             result = hlfhe.ApplyLookupTableEintOp(resulting_type, pred, lut).result
+
+        return result
+
+    def convert_matmul(self) -> OpResult:
+        """Convert a MatMul node to its corresponding MLIR representation.
+
+        Returns:
+            str: textual MLIR representation corresponding to self.node
+        """
+
+        assert_true(len(self.node.inputs) == 2)
+        assert_true(len(self.node.outputs) == 1)
+
+        if self.all_of_the_inputs_are_encrypted or self.node.inputs[0].is_clear:
+            lhs = self.node.inputs[0]
+            rhs = self.node.inputs[1]
+
+            additional_error_info = (
+                " (notice the encrypted value is in the right hand side which is not supported)"
+                if self.node.inputs[0].is_clear
+                else ""
+            )
+            raise NotImplementedError(
+                f"Matrix multiplication between {lhs} and {rhs} cannot be converted to MLIR yet"
+                f"{additional_error_info}",
+            )
+
+        resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+        preds = self.preds
+
+        result = hlfhelinalg.MatMulEintIntOp(resulting_type, *preds).result
 
         return result
 
