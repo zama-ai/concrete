@@ -66,7 +66,7 @@ class IntermediateNode(ABC):
         self.outputs = [mix_values_func(self.inputs[0], self.inputs[1])]
 
     def text_for_formatting(self, predecessors: List[str], _maximum_constant_length: int) -> str:
-        """Get the formatted node (used in formatting opgraph).
+        """Get the formatted node (used in formatting operation graphs).
 
         Args:
             predecessors (List[str]): predecessor names to this node
@@ -80,7 +80,7 @@ class IntermediateNode(ABC):
 
     @abstractmethod
     def text_for_drawing(self) -> str:
-        """Get the label of the node (used in drawing opgraph).
+        """Get the label of the node (used in drawing operation graphs).
 
         Returns:
             str: the label of the node

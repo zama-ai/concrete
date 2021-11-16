@@ -23,17 +23,17 @@ from .node_converter import IntermediateNodeConverter
 class OPGraphConverter(ABC):
     """Converter of OPGraph to MLIR."""
 
-    def convert(self, opgraph: OPGraph) -> str:
+    def convert(self, op_graph: OPGraph) -> str:
         """Convert an operation graph to its corresponding MLIR representation.
 
         Args:
-            opgraph (OPGraph): the operation graph to be converted
+            op_graph (OPGraph): the operation graph to be converted
 
         Returns:
-            str: textual MLIR representation corresponding to opgraph
+            str: textual MLIR representation corresponding to given operation graph
         """
 
-        additional_conversion_info = self._generate_additional_info_dict(opgraph)
+        additional_conversion_info = self._generate_additional_info_dict(op_graph)
 
         with Context() as ctx, Location.unknown():
             zamalang.register_dialects(ctx)
@@ -42,25 +42,25 @@ class OPGraphConverter(ABC):
             with InsertionPoint(module.body):
                 parameters = [
                     value_to_mlir_type(ctx, input_node.outputs[0])
-                    for input_node in opgraph.get_ordered_inputs()
+                    for input_node in op_graph.get_ordered_inputs()
                 ]
 
                 @builtin.FuncOp.from_py_func(*parameters)
                 def main(*arg):
                     ir_to_mlir = {}
-                    for arg_num, node in opgraph.input_nodes.items():
+                    for arg_num, node in op_graph.input_nodes.items():
                         ir_to_mlir[node] = arg[arg_num]
 
-                    for node in nx.topological_sort(opgraph.graph):
+                    for node in nx.topological_sort(op_graph.graph):
                         if isinstance(node, Input):
                             continue
 
-                        preds = [ir_to_mlir[pred] for pred in opgraph.get_ordered_preds(node)]
-                        node_converter = IntermediateNodeConverter(ctx, opgraph, node, preds)
+                        preds = [ir_to_mlir[pred] for pred in op_graph.get_ordered_preds(node)]
+                        node_converter = IntermediateNodeConverter(ctx, op_graph, node, preds)
                         ir_to_mlir[node] = node_converter.convert(additional_conversion_info)
 
                     results = (
-                        ir_to_mlir[output_node] for output_node in opgraph.get_ordered_outputs()
+                        ir_to_mlir[output_node] for output_node in op_graph.get_ordered_outputs()
                     )
                     return results
 
@@ -68,11 +68,11 @@ class OPGraphConverter(ABC):
 
     @staticmethod
     @abstractmethod
-    def _generate_additional_info_dict(opgraph: OPGraph) -> Dict[str, Any]:
+    def _generate_additional_info_dict(op_graph: OPGraph) -> Dict[str, Any]:
         """Generate additional conversion info dict for the MLIR converter.
 
         Args:
-            opgraph (OPGraph): the operation graph from which the additional info will be generated
+            op_graph (OPGraph): the operation graph from which the additional info will be generated
 
         Returns:
             Dict[str, Any]: dict of additional conversion info

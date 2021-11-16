@@ -347,15 +347,15 @@ def test_constant_indexing(
         for _ in range(10)
     ]
 
-    opgraph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph(
         function_with_indexing,
         {"x": input_value},
         inputset,
         default_compilation_configuration,
     )
 
-    assert len(opgraph.output_nodes) == 1
-    output_node = opgraph.output_nodes[0]
+    assert len(op_graph.output_nodes) == 1
+    output_node = op_graph.output_nodes[0]
 
     assert len(output_node.outputs) == 1
     assert output_value == output_node.outputs[0]
@@ -525,15 +525,15 @@ def test_constant_indexing_with_numpy_integers(
         for _ in range(10)
     ]
 
-    opgraph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph(
         function_with_indexing,
         {"x": input_value},
         inputset,
         default_compilation_configuration,
     )
 
-    assert len(opgraph.output_nodes) == 1
-    output_node = opgraph.output_nodes[0]
+    assert len(op_graph.output_nodes) == 1
+    output_node = op_graph.output_nodes[0]
 
     assert len(output_node.outputs) == 1
     assert output_value == output_node.outputs[0]

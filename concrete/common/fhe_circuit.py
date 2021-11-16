@@ -13,15 +13,15 @@ from .operator_graph import OPGraph
 class FHECircuit:
     """Class which is the result of compilation."""
 
-    opgraph: OPGraph
+    op_graph: OPGraph
     engine: CompilerEngine
 
-    def __init__(self, opgraph: OPGraph, engine: CompilerEngine):
-        self.opgraph = opgraph
+    def __init__(self, op_graph: OPGraph, engine: CompilerEngine):
+        self.op_graph = op_graph
         self.engine = engine
 
     def __str__(self):
-        return format_operation_graph(self.opgraph)
+        return format_operation_graph(self.op_graph)
 
     def draw(
         self,
@@ -42,7 +42,7 @@ class FHECircuit:
 
         """
 
-        return draw_graph(self.opgraph, show, vertical, save_to)
+        return draw_graph(self.op_graph, show, vertical, save_to)
 
     def run(self, *args: List[Union[int, numpy.ndarray]]) -> Union[int, numpy.ndarray]:
         """Encrypt, evaluate, and decrypt the inputs on the circuit.

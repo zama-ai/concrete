@@ -41,7 +41,7 @@ class IntermediateNodeConverter:
     """Converter of IntermediateNode to MLIR."""
 
     ctx: Context
-    opgraph: OPGraph
+    op_graph: OPGraph
     node: IntermediateNode
     preds: List[OpResult]
 
@@ -50,10 +50,10 @@ class IntermediateNodeConverter:
     one_of_the_inputs_is_a_tensor: bool
 
     def __init__(
-        self, ctx: Context, opgraph: OPGraph, node: IntermediateNode, preds: List[OpResult]
+        self, ctx: Context, op_graph: OPGraph, node: IntermediateNode, preds: List[OpResult]
     ):
         self.ctx = ctx
-        self.opgraph = opgraph
+        self.op_graph = op_graph
         self.node = node
         self.preds = preds
 
@@ -219,7 +219,7 @@ class IntermediateNodeConverter:
 
         variable_input_indices = [
             idx
-            for idx, inp in enumerate(self.opgraph.get_ordered_preds(self.node))
+            for idx, inp in enumerate(self.op_graph.get_ordered_preds(self.node))
             if not isinstance(inp, Constant)
         ]
         if len(variable_input_indices) != 1:  # pragma: no cover

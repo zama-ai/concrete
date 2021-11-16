@@ -52,7 +52,7 @@ del _missing_nodes_in_mapping
 
 
 def draw_graph(
-    opgraph: OPGraph,
+    op_graph: OPGraph,
     show: bool = False,
     vertical: bool = True,
     save_to: Optional[Path] = None,
@@ -60,7 +60,7 @@ def draw_graph(
     """Draws operation graphs and optionally saves/shows the drawing.
 
     Args:
-        opgraph (OPGraph): the graph to be drawn and optionally saved/shown
+        op_graph (OPGraph): the operation graph to be drawn and optionally saved/shown
         show (bool): if set to True, the drawing will be shown using matplotlib
         vertical (bool): if set to True, the orientation will be vertical
         save_to (Optional[Path]): if specified, the drawn graph will be saved to this path; else
@@ -79,8 +79,8 @@ def draw_graph(
             value_to_return = IR_NODE_COLOR_MAPPING.get(node.op_name, value_to_return)
         return value_to_return
 
-    graph = opgraph.graph
-    output_nodes = set(opgraph.output_nodes.values())
+    graph = op_graph.graph
+    output_nodes = set(op_graph.output_nodes.values())
 
     attributes = {
         node: {

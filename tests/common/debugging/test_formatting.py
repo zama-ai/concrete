@@ -12,14 +12,14 @@ def test_format_operation_graph_with_multiple_edges(default_compilation_configur
     def function(x):
         return x + x
 
-    opgraph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph(
         function,
         {"x": EncryptedScalar(Integer(4, True))},
         [(i,) for i in range(0, 10)],
         default_compilation_configuration,
     )
 
-    formatted_graph = format_operation_graph(opgraph)
+    formatted_graph = format_operation_graph(op_graph)
     assert (
         formatted_graph
         == """
@@ -38,15 +38,15 @@ def test_format_operation_graph_with_offending_nodes(default_compilation_configu
     def function(x):
         return x + 42
 
-    opgraph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph(
         function,
         {"x": EncryptedScalar(Integer(7, True))},
         [(i,) for i in range(-5, 5)],
         default_compilation_configuration,
     )
 
-    highlighted_nodes = {opgraph.input_nodes[0]: ["foo"]}
-    formatted_graph = format_operation_graph(opgraph, highlighted_nodes=highlighted_nodes).strip()
+    highlighted_nodes = {op_graph.input_nodes[0]: ["foo"]}
+    formatted_graph = format_operation_graph(op_graph, highlighted_nodes=highlighted_nodes).strip()
     assert (
         formatted_graph
         == """
@@ -60,8 +60,8 @@ return %2
 """.strip()
     )
 
-    highlighted_nodes = {opgraph.input_nodes[0]: ["foo"], opgraph.output_nodes[0]: ["bar", "baz"]}
-    formatted_graph = format_operation_graph(opgraph, highlighted_nodes=highlighted_nodes).strip()
+    highlighted_nodes = {op_graph.input_nodes[0]: ["foo"], op_graph.output_nodes[0]: ["bar", "baz"]}
+    formatted_graph = format_operation_graph(op_graph, highlighted_nodes=highlighted_nodes).strip()
     assert (
         formatted_graph
         == """

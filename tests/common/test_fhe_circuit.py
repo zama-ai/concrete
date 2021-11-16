@@ -17,7 +17,7 @@ def test_circuit_str(default_compilation_configuration):
     inputset = [(i,) for i in range(2 ** 3)]
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
-    assert str(circuit) == format_operation_graph(circuit.opgraph)
+    assert str(circuit) == format_operation_graph(circuit.op_graph)
 
 
 def test_circuit_draw(default_compilation_configuration):
@@ -31,8 +31,8 @@ def test_circuit_draw(default_compilation_configuration):
     inputset = [(i,) for i in range(2 ** 3)]
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
-    assert filecmp.cmp(circuit.draw(), draw_graph(circuit.opgraph))
-    assert filecmp.cmp(circuit.draw(vertical=False), draw_graph(circuit.opgraph, vertical=False))
+    assert filecmp.cmp(circuit.draw(), draw_graph(circuit.op_graph))
+    assert filecmp.cmp(circuit.draw(vertical=False), draw_graph(circuit.op_graph, vertical=False))
 
 
 def test_circuit_run(default_compilation_configuration):

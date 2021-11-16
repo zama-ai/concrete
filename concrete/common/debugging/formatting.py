@@ -10,14 +10,14 @@ from ..representation.intermediate import IntermediateNode
 
 
 def format_operation_graph(
-    opgraph: OPGraph,
+    op_graph: OPGraph,
     maximum_constant_length: int = 25,
     highlighted_nodes: Optional[Dict[IntermediateNode, List[str]]] = None,
 ) -> str:
     """Format an operation graph.
 
     Args:
-        opgraph (OPGraph):
+        op_graph (OPGraph):
             the operation graph to format
 
         maximum_constant_length (int):
@@ -29,7 +29,7 @@ def format_operation_graph(
     Returns:
         str: formatted operation graph
     """
-    assert_true(isinstance(opgraph, OPGraph))
+    assert_true(isinstance(op_graph, OPGraph))
 
     # (node, output_index) -> identifier
     # e.g., id_map[(node1, 0)] = 2 and id_map[(node1, 1)] = 3
@@ -49,7 +49,7 @@ def format_operation_graph(
     # after their type information is added and we only have line numbers, not nodes
     highlighted_lines: Dict[int, List[str]] = {}
 
-    for node in nx.topological_sort(opgraph.graph):
+    for node in nx.topological_sort(op_graph.graph):
         # assign a unique id to outputs of node
         assert_true(len(node.outputs) > 0)
         for i in range(len(node.outputs)):
@@ -61,7 +61,7 @@ def format_operation_graph(
 
         # extract predecessors and their ids
         predecessors = []
-        for predecessor, output_idx in opgraph.get_ordered_inputs_of(node):
+        for predecessor, output_idx in op_graph.get_ordered_inputs_of(node):
             predecessors.append(f"%{id_map[(predecessor, output_idx)]}")
 
         # start the build the line for the node
@@ -116,7 +116,7 @@ def format_operation_graph(
     # (if there is a single return, it's in the form `return %id`
     # (otherwise, it's in the form `return (%id1, %id2, ..., %idN)`
     returns: List[str] = []
-    for node in opgraph.output_nodes.values():
+    for node in op_graph.output_nodes.values():
         outputs = ", ".join(f"%{id_map[(node, i)]}" for i in range(len(node.outputs)))
         returns.append(outputs if len(node.outputs) == 1 else f"({outputs})")
     lines.append("return " + returns[0] if len(returns) == 1 else f"({', '.join(returns)})")

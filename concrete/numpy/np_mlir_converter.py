@@ -71,14 +71,14 @@ class NPMLIRConverter(OPGraphConverter):
     """Numpy-specific MLIR converter."""
 
     @staticmethod
-    def _generate_additional_info_dict(opgraph: OPGraph) -> Dict[str, Any]:
+    def _generate_additional_info_dict(op_graph: OPGraph) -> Dict[str, Any]:
         additional_conversion_info = {}
 
         # Disable numpy warnings during conversion to avoid issues during TLU generation
         with numpy.errstate(all="ignore"):
             additional_conversion_info["tables"] = {
-                node: generate_deduplicated_tables(node, opgraph.get_ordered_preds(node))
-                for node in opgraph.graph.nodes()
+                node: generate_deduplicated_tables(node, op_graph.get_ordered_preds(node))
+                for node in op_graph.graph.nodes()
                 if isinstance(node, GenericFunction)
             }
 
