@@ -120,6 +120,6 @@ wget --auth-no-challenge --header='Accept:application/octet-stream' \
 err_code=$?
 
 echo "Done."
-echo "CONCRETEFHE_COMPILER_TAG=${release_tag}" >> "${COMPILER_TAG_OUTPUT_FILE}"
+echo "${release_tag}" >> "${COMPILER_TAG_OUTPUT_FILE}"
 
 exit "${err_code}"
