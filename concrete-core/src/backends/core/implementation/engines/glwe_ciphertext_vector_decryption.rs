@@ -76,7 +76,7 @@ impl
     ) -> PlaintextVector32 {
         let mut plaintext_list = ImplPlaintextList::allocate(
             0u32,
-            PlaintextCount(key.polynomial_size().0 * key.glwe_dimension().0),
+            PlaintextCount(key.polynomial_size().0 * input.glwe_ciphertext_count().0),
         );
         key.0.decrypt_glwe_list(&mut plaintext_list, &input.0);
         PlaintextVector32(plaintext_list)
@@ -148,7 +148,7 @@ impl
     ) -> PlaintextVector64 {
         let mut plaintext_list = ImplPlaintextList::allocate(
             0u64,
-            PlaintextCount(key.polynomial_size().0 * key.glwe_dimension().0),
+            PlaintextCount(key.polynomial_size().0 * input.glwe_ciphertext_count().0),
         );
         key.0.decrypt_glwe_list(&mut plaintext_list, &input.0);
         PlaintextVector64(plaintext_list)
