@@ -39,7 +39,6 @@ class NumpyModule:
     def convert_to_numpy(self):
         """Transform all parameters from torch tensor to numpy arrays."""
         self.numpy_module_dict = {}
-        self.numpy_module_quant_dict = {}
 
         for name, weights in self.torch_model.state_dict().items():
             params = weights.detach().numpy()
