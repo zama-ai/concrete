@@ -71,6 +71,13 @@ def check_node_compatibility_with_mlir(
             return "only integer constants are supported"  # pragma: no cover
 
     elif isinstance(node, intermediate.GenericFunction):  # constraints for univariate functions
+        for inp in inputs:
+            if not value_is_integer(inp):
+                return (
+                    f"{node.op_name} with floating-point inputs "
+                    f"is required to be fused to be supported"
+                )
+
         if node.op_kind == "TLU":
             assert_true(
                 len(
@@ -89,9 +96,6 @@ def check_node_compatibility_with_mlir(
                 # this branch is not reachable because compilation fails during inputset evaluation
                 if node.op_name == "TLU":  # pragma: no cover
                     return "only unsigned integer lookup tables are supported"
-
-                if node.op_name.startswith("astype"):
-                    return f"{node.op_name} is not supported without fusing"
 
                 # e.g., `np.absolute is not supported for the time being`
                 return f"{node.op_name} is not supported for the time being"

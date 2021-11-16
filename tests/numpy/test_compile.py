@@ -1101,7 +1101,7 @@ function you are trying to compile isn't supported for MLIR lowering
 %8 = mul(%7, %0)                    # EncryptedScalar<float64>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer multiplication is supported
 %9 = astype(%8, dtype=int32)        # EncryptedScalar<int5>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ astype is not supported without fusing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ astype with floating-point inputs is required to be fused to be supported
 return %9
 
                 """.strip()  # noqa: E501
