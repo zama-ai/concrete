@@ -402,8 +402,47 @@ def MatMulEintIntOp : HLFHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let verifier = [{
-        return ::mlir::zamalang::HLFHELinalg::verifyMatmul(*this);
+        return ::mlir::zamalang::HLFHELinalg::verifyMatmul<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(*this);
     }];
 }
+
+def MatMulIntEintOp : HLFHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
+    let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of clear integers and a matrix of encrypted integers.";
+
+    let description = [{
+        Performs a matrix multiplication of a matrix of clear integers and a matrix of encrypted integers.
+        The width of the clear integers must be less than or equals to the witdh of encrypted integers.
+
+        ```mlir
+        "HLFHELinalg.matmul_int_eint(%a, %b) : (tensor<MxNxip'>, tensor<NxPxHLFHE.eint<p>>) -> tensor<MxPx!HLFHE.eint<p>>"
+        ```
+
+        Examples:
+        ```mlir
+        // Returns the matrix multiplication of a 3x2 matrix of clear integers and a 2x3 matrix of encrypted integers.
+        //         [ 1, 2, 3]
+        //         [ 2, 3, 4]
+        //       *
+        // [1,2]   [ 5, 8,11]
+        // [3,4] = [11,18,25]
+        // [5,6]   [17,28,39]
+        //
+        "HLFHELinalg.matmul_int_eint"(%a, %b) : (tensor<3x2xi7>, tensor<2x3x!HLFHE.eint<6>>) -> tensor<3x3x!HLFHE.eint<6>>
+
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHELinalg::verifyMatmul<mlir::zamalang::HLFHELinalg::MatMulIntEintOp>(*this);
+    }];
+}
+
 
 #endif

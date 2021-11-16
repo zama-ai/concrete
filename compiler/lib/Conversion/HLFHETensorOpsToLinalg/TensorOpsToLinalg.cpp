@@ -598,11 +598,12 @@ struct HLFHELinalgNegEintToLinalgGeneric
   };
 };
 
-// This rewrite pattern transforms any instance of
-// operators `HLFHELinalg.matmul_eint_int` to an instance of `linalg.generic`
-// with an appropriate region using `HLFHE.mul_eint_int` and `HLFHE.add_eint`
-// operation, an appropriate specification for the iteration dimensions and
-// appropriate operations managing the accumulator of `linalg.generic`.
+// This template rewrite pattern transforms any instance of
+// operators `HLFHELinalgMatmulOp` to an instance of `linalg.generic`
+// with an appropriate region using a builder that create the multiplication
+// operators and `HLFHE.add_eint` operation, an appropriate specification for
+// the iteration dimensions and appropriate operations managing the accumulator
+// of `linalg.generic`.
 //
 // Example:
 //
@@ -633,27 +634,33 @@ struct HLFHELinalgNegEintToLinalgGeneric
 //   outs(%C : tensor<MxNx!HLFHE.eint<p>>)
 //   {
 //      ^bb0(%a: !HLFHE.eint<p>, %b: ip', %c: !HLFHE.eint<p>) :
-//        %d = "HLFHE.mul_eint_int"(%a, %b) :
-//              (!HLFHE.eint<p>, ip') -> !HLFHE.eint<p>
+//        %d = createMulOp(%a, %b): !HLFHE.eint<p>
 //        %e = "HLFHE.add_eint"(%c, %d):
 //              (!HLFHE.eint<p>, !HLFHE.eint<p>) -> !HLFHE.eint<p>
 //        linalg.yield %e : !HLFHE.eint<p>
 //   }
 //
-struct HLFHELinalgMatmulEintIntToLinalgGeneric
-    : public mlir::OpRewritePattern<
-          mlir::zamalang::HLFHELinalg::MatMulEintIntOp> {
-  HLFHELinalgMatmulEintIntToLinalgGeneric(::mlir::MLIRContext *context,
-                                          mlir::PatternBenefit benefit = 1)
-      : ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(
-            context, benefit) {}
+template <typename HLFHELinalgMatmulOp>
+struct HLFHELinalgMatmulToLinalgGeneric
+    : public mlir::OpRewritePattern<HLFHELinalgMatmulOp> {
+  HLFHELinalgMatmulToLinalgGeneric(
+      mlir::MLIRContext *context,
+      std::function<mlir::zamalang::HLFHE::MulEintIntOp(
+          mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value,
+          mlir::Value)>
+          createMulOp,
+      mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<HLFHELinalgMatmulOp>(context, benefit),
+        createMulOp(createMulOp) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::HLFHELinalg::MatMulEintIntOp matmulOp,
+  matchAndRewrite(HLFHELinalgMatmulOp matmulOp,
                   ::mlir::PatternRewriter &rewriter) const override {
+    mlir::Location matmulLoc = matmulOp.getLoc();
     mlir::RankedTensorType resultTy =
         ((mlir::Type)matmulOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
+    mlir::Type resultElementTy = resultTy.getElementType();
     // Create tensor.generate for initial value
     auto generateBody = [&](mlir::OpBuilder &nestedBuilder,
                             mlir::Location nestedLoc,
@@ -661,17 +668,13 @@ struct HLFHELinalgMatmulEintIntToLinalgGeneric
       // %z = "HLFHE.zero" : () -> !HLFHE.eint<2>
       mlir::zamalang::HLFHE::ZeroEintOp zeroOp =
           nestedBuilder.create<mlir::zamalang::HLFHE::ZeroEintOp>(
-              matmulOp.getLoc(), resultTy.getElementType());
+              matmulLoc, resultElementTy);
       // linalg.yield %z : !HLFHE.eint<p>
-      nestedBuilder.create<mlir::tensor::YieldOp>(matmulOp.getLoc(),
+      nestedBuilder.create<mlir::tensor::YieldOp>(matmulLoc,
                                                   zeroOp.getResult());
     };
     mlir::tensor::GenerateOp init = rewriter.create<mlir::tensor::GenerateOp>(
-        matmulOp.getLoc(), (mlir::Type)resultTy, mlir::ValueRange{},
-        generateBody);
-    //  linalg.init_tensor for initial value
-    // mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
-    //    matmulOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+        matmulLoc, (mlir::Type)resultTy, mlir::ValueRange{}, generateBody);
     // Create the affine #maps_0
     llvm::SmallVector<mlir::AffineMap> maps{
         // (m, n, p) -> (m, p),
@@ -698,17 +701,15 @@ struct HLFHELinalgMatmulEintIntToLinalgGeneric
                            mlir::ValueRange blockArgs) {
       // "HLFHE.mul_eint_int"(%a, %b) : (!HLFHE.eint<p>, ip') -> !HLFHE.eint<p>
       mlir::zamalang::HLFHE::MulEintIntOp mulEintIntOp =
-          nestedBuilder.create<mlir::zamalang::HLFHE::MulEintIntOp>(
-              matmulOp.getLoc(), resultTy.getElementType(), blockArgs[0],
-              blockArgs[1]);
+          createMulOp(nestedBuilder, matmulLoc, resultElementTy, blockArgs[0],
+                      blockArgs[1]);
       // "HLFHE.add_eint"(%c, %d): (!HLFHE.eint<p>, !HLFHE.eint<p>) ->
       // !HLFHE.eint<p>
       mlir::zamalang::HLFHE::AddEintOp addEintOp =
           nestedBuilder.create<mlir::zamalang::HLFHE::AddEintOp>(
-              matmulOp.getLoc(), resultTy.getElementType(), blockArgs[2],
-              mulEintIntOp);
+              matmulLoc, resultElementTy, blockArgs[2], mulEintIntOp);
       // linalg.yield %e : !HLFHE.eint<p>
-      nestedBuilder.create<mlir::linalg::YieldOp>(matmulOp.getLoc(),
+      nestedBuilder.create<mlir::linalg::YieldOp>(matmulLoc,
                                                   addEintOp.getResult());
     };
 
@@ -720,14 +721,19 @@ struct HLFHELinalgMatmulEintIntToLinalgGeneric
     llvm::StringRef call{""};
 
     mlir::linalg::GenericOp genericOp =
-        rewriter.create<mlir::linalg::GenericOp>(matmulOp.getLoc(), resTypes,
-                                                 ins, outs, maps, iteratorTypes,
-                                                 doc, call, bodyBuilder);
+        rewriter.create<mlir::linalg::GenericOp>(matmulLoc, resTypes, ins, outs,
+                                                 maps, iteratorTypes, doc, call,
+                                                 bodyBuilder);
 
     rewriter.replaceOp(matmulOp, {genericOp.getResult(0)});
 
     return ::mlir::success();
   };
+
+private:
+  std::function<mlir::zamalang::HLFHE::MulEintIntOp(
+      mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value, mlir::Value)>
+      createMulOp;
 };
 
 namespace {
@@ -771,7 +777,20 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
       &getContext());
   patterns.insert<HLFHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<HLFHELinalgNegEintToLinalgGeneric>(&getContext());
-  patterns.insert<HLFHELinalgMatmulEintIntToLinalgGeneric>(&getContext());
+  patterns.insert<HLFHELinalgMatmulToLinalgGeneric<
+      mlir::zamalang::HLFHELinalg::MatMulEintIntOp>>(
+      &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
+                        mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
+        return builder.create<mlir::zamalang::HLFHE::MulEintIntOp>(loc, type,
+                                                                   arg0, arg1);
+      });
+  patterns.insert<HLFHELinalgMatmulToLinalgGeneric<
+      mlir::zamalang::HLFHELinalg::MatMulIntEintOp>>(
+      &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
+                        mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
+        return builder.create<mlir::zamalang::HLFHE::MulEintIntOp>(loc, type,
+                                                                   arg1, arg0);
+      });
   patterns.insert<HLFHELinalgApplyMultiLookupTableToLinalgGeneric>(
       &getContext());
 

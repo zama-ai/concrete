@@ -1132,8 +1132,7 @@ TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table_with_boradcast) {
 
   mlir::zamalang::TensorLambdaArgument<
       mlir::zamalang::IntLambdaArgument<uint64_t>>
-      lutsArg(llvm::MutableArrayRef<uint64_t>((uint64_t *)luts, 3 * 4),
-              {3, 4});
+      lutsArg(llvm::MutableArrayRef<uint64_t>((uint64_t *)luts, 3 * 4), {3, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&tArg, &lutsArg});
@@ -1236,6 +1235,62 @@ TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
   // [5,6]   [17,28,39]
   func @main(%a: tensor<3x2x!HLFHE.eint<6>>, %b: tensor<2x3xi7>) -> tensor<3x3x!HLFHE.eint<6>> {
     %0 = "HLFHELinalg.matmul_eint_int"(%a, %b) : (tensor<3x2x!HLFHE.eint<6>>, tensor<2x3xi7>) -> tensor<3x3x!HLFHE.eint<6>>
+    return %0 : tensor<3x3x!HLFHE.eint<6>>
+  }
+)XXX");
+  const uint8_t A[3][2]{
+      {1, 2},
+      {3, 4},
+      {5, 6},
+  };
+  const uint8_t B[2][3]{
+      {1, 2, 3},
+      {2, 3, 4},
+  };
+  const uint8_t expected[3][3]{
+      {5, 8, 11},
+      {11, 18, 25},
+      {17, 28, 39},
+  };
+
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      aArg(llvm::ArrayRef<uint8_t>((const uint8_t *)A, 3 * 2), {3, 2});
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      bArg(llvm::ArrayRef<uint8_t>((const uint8_t *)B, 2 * 3), {2, 3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&aArg, &bArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// HLFHELinalg matmul_eint_int ////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_HLFHELinalg, matmul_int_eint) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
+  //         [ 1, 2, 3]
+  //         [ 2, 3, 4]
+  //       *
+  // [1,2]   [ 5, 8,11]
+  // [3,4] = [11,18,25]
+  // [5,6]   [17,28,39]
+  func @main(%a: tensor<3x2xi7>, %b: tensor<2x3x!HLFHE.eint<6>>) -> tensor<3x3x!HLFHE.eint<6>> {
+    %0 = "HLFHELinalg.matmul_int_eint"(%a, %b) : (tensor<3x2xi7>, tensor<2x3x!HLFHE.eint<6>>) -> tensor<3x3x!HLFHE.eint<6>>
     return %0 : tensor<3x3x!HLFHE.eint<6>>
   }
 )XXX");

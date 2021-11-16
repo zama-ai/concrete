@@ -194,4 +194,38 @@ func @matmul_eint_int(%arg0: tensor<3x4x!HLFHE.eint<2>>, %arg1: tensor<4x2xi3>) 
   return %1 : tensor<4x2x!HLFHE.eint<2>>
 }
 
+// -----
 
+/////////////////////////////////////////////////
+// HLFHELinalg.matmul_int_eint
+/////////////////////////////////////////////////
+
+func @matmul_int_eint(%arg0: tensor<2x3x4xi3>, %arg1: tensor<4x2x!HLFHE.eint<2>>) -> tensor<3x2x!HLFHE.eint<2>> {
+  // expected-error @+1 {{'HLFHELinalg.matmul_int_eint' op should have 2D tensors as operands}}
+  %1 = "HLFHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<2x3x4xi3>, tensor<4x2x!HLFHE.eint<2>>) -> tensor<3x2x!HLFHE.eint<2>>
+  return %1 : tensor<3x2x!HLFHE.eint<2>>
+}
+
+// -----
+
+func @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<2x4x2x!HLFHE.eint<2>>) -> tensor<3x2x!HLFHE.eint<2>> {
+  // expected-error @+1 {{'HLFHELinalg.matmul_int_eint' op should have 2D tensors as operands}}
+  %1 = "HLFHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x4xi3>, tensor<2x4x2x!HLFHE.eint<2>>) -> tensor<3x2x!HLFHE.eint<2>>
+  return %1 : tensor<3x2x!HLFHE.eint<2>>
+}
+
+// -----
+
+func @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<5x2x!HLFHE.eint<2>>) -> tensor<3x2x!HLFHE.eint<2>> {
+  // expected-error @+1 {{'HLFHELinalg.matmul_int_eint' op should have the dimension #0 of operand #1equals to the dimension #1 of operand #0, expect 4 got 5}}
+  %1 = "HLFHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x4xi3>, tensor<5x2x!HLFHE.eint<2>>) -> tensor<3x2x!HLFHE.eint<2>>
+  return %1 : tensor<3x2x!HLFHE.eint<2>>
+}
+
+// -----
+
+func @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<4x2x!HLFHE.eint<2>>) -> tensor<4x2x!HLFHE.eint<2>> {
+  // expected-error @+1 {{'HLFHELinalg.matmul_int_eint' op should have the result shape compatible with operands shape, expect 3x2 as the shape of the result}}
+  %1 = "HLFHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x4xi3>, tensor<4x2x!HLFHE.eint<2>>) -> tensor<4x2x!HLFHE.eint<2>>
+  return %1 : tensor<4x2x!HLFHE.eint<2>>
+}

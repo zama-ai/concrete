@@ -687,6 +687,71 @@ static llvm::APInt getSqMANP(
 }
 
 static llvm::APInt getSqMANP(
+    mlir::zamalang::HLFHELinalg::MatMulIntEintOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  mlir::RankedTensorType rhsTy =
+      op.rhs().getType().cast<mlir::RankedTensorType>();
+  mlir::RankedTensorType lhsTy =
+      op.lhs().getType().cast<mlir::RankedTensorType>();
+
+  mlir::Type iTy = lhsTy.getElementType();
+
+  assert(iTy.isSignlessInteger() &&
+         "Only multiplications with signless integers are currently allowed");
+
+  assert(
+      operandMANPs.size() == 2 &&
+      operandMANPs[1]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  llvm::APInt rhsNorm = operandMANPs[1]->getValue().getMANP().getValue();
+  // Initial value of the accumulator
+  llvm::APInt accNorm = llvm::APInt{1, 1, false};
+
+  mlir::arith::ConstantOp cstOp =
+      llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
+          op->getOpOperand(0).get().getDefiningOp());
+  mlir::DenseIntElementsAttr denseVals =
+      cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
+            : nullptr;
+
+  if (denseVals) {
+    // For a constant operand use actual constant to calculate 2-norm
+    // tensor<MxN> = tensor<MxP> * tensor<PxN> compute the max 2-norm of the
+    // result
+    int64_t M = lhsTy.getShape()[0];
+    int64_t N = rhsTy.getShape()[1];
+    int64_t P = rhsTy.getShape()[0];
+    for (int64_t m = 0; m < M; m++) {
+      for (int64_t n = 0; n < N; n++) {
+        llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
+        for (int64_t p = 0; p < P; p++) {
+          llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(m * P + p);
+          llvm::APInt lhsNorm = APIntWidthExtendUSq(cst);
+          llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
+          tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
+        }
+        accNorm = APIntUMax(accNorm, tmpNorm);
+      }
+    }
+  } else {
+    // For a dynamic operand conservatively assume that the value is
+    // the maximum for the integer width
+    llvm::APInt lhsNorm = conservativeIntNorm2Sq(iTy);
+    // For tensor<MxN> = tensor<MxP> * tensor<PxN> they are P HLFHE.mul_eint_int
+    // and HLFHE.add_eint operations for each elements of the result
+    int64_t P = rhsTy.getShape()[0];
+    for (int64_t i = 0; i < P; i++) {
+      llvm::APInt mulNorm = APIntWidthExtendUMul(rhsNorm, lhsNorm);
+      accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
+    }
+  }
+
+  return accNorm;
+}
+
+static llvm::APInt getSqMANP(
     mlir::tensor::ExtractOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
@@ -823,6 +888,10 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(matmulEintIntOp, operands);
+    } else if (auto matmulIntEintOp =
+                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MatMulIntEintOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(matmulIntEintOp, operands);
     } else if (llvm::isa<
                    mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp,
                    mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp>(

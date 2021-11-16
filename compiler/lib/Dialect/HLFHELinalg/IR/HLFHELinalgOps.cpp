@@ -309,14 +309,15 @@ verifyApplyMultiLookupTable(ApplyMultiLookupTableEintOp &op) {
   return ::mlir::success();
 }
 
-/// Verify the matmul shapes, the type of tensor elements are checked by
-/// TensorBinaryEintInt
-mlir::LogicalResult verifyMatmul(MatMulEintIntOp &op) {
-  auto lhsTy = op.lhs().getType().cast<mlir::RankedTensorType>();
+/// Verify the matmul shapes, the type of tensor elements should be checked by
+/// something else
+template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
+  auto lhsTy = ((mlir::Type)op.lhs().getType()).cast<mlir::RankedTensorType>();
 
-  auto rhsTy = op.rhs().getType().cast<mlir::RankedTensorType>();
+  auto rhsTy = ((mlir::Type)op.rhs().getType()).cast<mlir::RankedTensorType>();
 
-  auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
+  auto resultTy =
+      ((mlir::Type)op.getResult().getType()).cast<mlir::RankedTensorType>();
 
   if (lhsTy.getShape().size() != 2 || rhsTy.getShape().size() != 2) {
     op.emitOpError() << "should have 2D tensors as operands";
@@ -333,9 +334,8 @@ mlir::LogicalResult verifyMatmul(MatMulEintIntOp &op) {
                                               rhsTy.getDimSize(1)};
   if (!resultTy.hasStaticShape(expectedShape)) {
     op.emitOpError() << "should have the result shape compatible with operands "
-                        "shape, expect "
-                     << expectedShape[0] << "x" << expectedShape[1]
-                     << " as the shape of the result";
+                     << "shape, expect " << expectedShape[0] << "x"
+                     << expectedShape[1] << " as the shape of the result";
     return mlir::failure();
   }
   return mlir::success();
