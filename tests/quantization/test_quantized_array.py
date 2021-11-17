@@ -18,16 +18,17 @@ N_BITS_ATOL_TUPLE_LIST = [
     "n_bits, atol",
     [pytest.param(n_bits, atol) for n_bits, atol in N_BITS_ATOL_TUPLE_LIST],
 )
+@pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
 @pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
-def test_quant_dequant_update(values, n_bits, atol):
+def test_quant_dequant_update(values, n_bits, atol, is_signed):
     """Test the quant and dequant function."""
 
-    quant_array = QuantizedArray(n_bits, values)
+    quant_array = QuantizedArray(n_bits, values, is_signed)
     qvalues = quant_array.quant()
 
     # Quantized values must be contained between 0 and 2**n_bits
-    assert numpy.max(qvalues) <= 2 ** n_bits - 1
-    assert numpy.min(qvalues) >= 0
+    assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.offset
+    assert numpy.min(qvalues) >= -quant_array.offset
 
     # Dequantized values must be close to original values
     dequant_values = quant_array.dequant()

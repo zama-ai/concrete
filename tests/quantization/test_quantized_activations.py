@@ -22,9 +22,10 @@ N_BITS_ATOL_TUPLE_LIST = [
     "quant_activation, values",
     [pytest.param(QuantizedSigmoid, numpy.random.uniform(size=(10, 40, 20)))],
 )
-def test_activations(quant_activation, values, n_bits, atol):
+@pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
+def test_activations(quant_activation, values, n_bits, atol, is_signed):
     """Test activation functions."""
-    q_inputs = QuantizedArray(n_bits, values)
+    q_inputs = QuantizedArray(n_bits, values, is_signed)
     quant_sigmoid = quant_activation(n_bits)
     quant_sigmoid.calibrate(values)
     expected_output = quant_sigmoid.q_out.values

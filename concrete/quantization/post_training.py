@@ -20,14 +20,17 @@ class PostTrainingAffineQuantization:
     n_bits: int
     quant_params: dict
     numpy_model: NumpyModule
+    is_signed: bool
 
-    def __init__(self, n_bits: int, numpy_model: NumpyModule):
+    def __init__(self, n_bits: int, numpy_model: NumpyModule, is_signed: bool = False):
         """Create the quantized version of numpy module.
 
         Args:
             n_bits (int):                   Number of bits to quantize the model. Currently this
                                             n_bits will be used for all activation/inputs/weights
             numpy_model (NumpyModule):      Model in numpy.
+            is_signed:                      Whether the weights of the layers can be signed.
+                                            Currently, only the weights can be signed.
 
         Returns:
             QuantizedModule: A quantized version of the numpy model.
@@ -36,6 +39,7 @@ class PostTrainingAffineQuantization:
         self.n_bits = n_bits
         self.quant_params = {}
         self.numpy_model = numpy_model
+        self.is_signed = is_signed
 
     def quantize_module(self, calibration_data: numpy.ndarray) -> QuantizedModule:
         """Quantize numpy module.
@@ -61,7 +65,7 @@ class PostTrainingAffineQuantization:
         """Transform all floating points parameters to integers."""
 
         for name, params in self.numpy_model.numpy_module_dict.items():
-            self.quant_params[name] = QuantizedArray(self.n_bits, params)
+            self.quant_params[name] = QuantizedArray(self.n_bits, params, self.is_signed)
 
     def _calibrate_layers_activation(self, name, q_function, calibration_data):
         # Calibrate the output of the layer

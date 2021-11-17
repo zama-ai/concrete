@@ -15,13 +15,15 @@ N_BITS_LIST = [20, 16, 8, 4]
 @pytest.mark.parametrize(
     "n_examples, n_features, n_neurons",
     [
+        pytest.param(2, 3, 4),
         pytest.param(20, 500, 30),
         pytest.param(200, 300, 50),
         pytest.param(10000, 100, 1),
         pytest.param(10, 20, 1),
     ],
 )
-def test_quantized_linear(n_examples, n_features, n_neurons, n_bits):
+@pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
+def test_quantized_linear(n_examples, n_features, n_neurons, n_bits, is_signed):
     """Test the quantization linear layer of numpy.array.
 
     With n_bits>>0 we expect the results of the quantized linear
@@ -32,16 +34,17 @@ def test_quantized_linear(n_examples, n_features, n_neurons, n_bits):
 
     # shape of weights: (n_neurons, n_features)
     weights = numpy.random.uniform(size=(n_features, n_neurons))
-    q_weights = QuantizedArray(n_bits, weights)
+    q_weights = QuantizedArray(n_bits, weights, is_signed)
 
     bias = numpy.random.uniform(size=(1, n_neurons))
-    q_bias = QuantizedArray(n_bits, bias)
+    q_bias = QuantizedArray(n_bits, bias, is_signed)
 
     # Define our QuantizedLinear layer
     q_linear = QuantizedLinear(n_bits, q_weights, q_bias)
 
     # Calibrate the Quantized layer
     q_linear.calibrate(inputs)
+
     expected_outputs = q_linear.q_out.values
     actual_output = q_linear(q_inputs).dequant()
 
