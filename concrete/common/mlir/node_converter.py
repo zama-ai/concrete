@@ -4,7 +4,7 @@
 
 # pylint: disable=no-name-in-module
 
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Tuple, cast
 
 import numpy
 from mlir.dialects import arith
@@ -231,6 +231,7 @@ class IntermediateNodeConverter:
         variable_input_index = variable_input_indices[0]
 
         assert_true(len(self.node.outputs) == 1)
+        output = self.node.outputs[0]
 
         value = self.node.inputs[variable_input_index]
         assert_true(value.is_encrypted)
@@ -241,25 +242,39 @@ class IntermediateNodeConverter:
             raise NotImplementedError(f"Table lookup on {value} cannot be converted to MLIR yet")
 
         tables = additional_conversion_info["tables"][self.node]
+        assert_true(len(tables) > 0)
 
-        # TODO: #559 adapt the code to support multi TLUs
-        # This cannot be reached today as compilation fails
-        # if the intermediate values are not all scalars
-        if len(tables) > 1:  # pragma: no cover
-            raise NotImplementedError("Multi table lookups cannot be converted to MLIR yet")
+        if len(tables) == 1:
+            table = tables[0][0]
 
-        table = tables[0][0]
+            lut_shape: Tuple[int, ...] = (len(table),)
+            lut_values = numpy.array(table, dtype=numpy.uint64)
+        else:
+            assert_true(isinstance(output, TensorValue))
+            assert isinstance(output, TensorValue)
 
-        lut_size = len(table)
-        lut_type = RankedTensorType.get([lut_size], IntegerType.get_signless(64, context=self.ctx))
-        lut_attr = DenseElementsAttr.get(numpy.array(table, dtype=numpy.uint64), context=self.ctx)
+            individual_table_size = len(tables[0][0])
+            lut_shape = (*output.shape, individual_table_size)
+
+            lut_values = numpy.zeros(lut_shape, dtype=numpy.uint64)
+            for table, indices in tables:
+                assert_true(len(table) == individual_table_size)
+                for index in indices:
+                    index = (*index, slice(None, None, 1))
+                    lut_values[index] = table
+
+        lut_type = RankedTensorType.get(lut_shape, IntegerType.get_signless(64, context=self.ctx))
+        lut_attr = DenseElementsAttr.get(lut_values, context=self.ctx)
         lut = arith.ConstantOp(lut_type, lut_attr).result
 
-        resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+        resulting_type = value_to_mlir_type(self.ctx, output)
         pred = self.preds[variable_input_index]
 
         if self.one_of_the_inputs_is_a_tensor:
-            result = hlfhelinalg.ApplyLookupTableEintOp(resulting_type, pred, lut).result
+            if len(tables) == 1:
+                result = hlfhelinalg.ApplyLookupTableEintOp(resulting_type, pred, lut).result
+            else:
+                result = hlfhelinalg.ApplyMultiLookupTableEintOp(resulting_type, pred, lut).result
         else:
             result = hlfhe.ApplyLookupTableEintOp(resulting_type, pred, lut).result
 
