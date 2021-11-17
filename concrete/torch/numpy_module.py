@@ -12,10 +12,10 @@ class NumpyModule:
         """Initialize our numpy module.
 
         Current constraint:    All objects used in the forward have to be defined in the
-                                __init__() of torch.nn.Module and follow the exact same order.
-                                (i.e. each linear layer must have one variable defined in the
-                                right order). This constraint will disappear when
-                                TorchScript is in place. (issue #818)
+                               __init__() of torch.nn.Module and follow the exact same order.
+                               (i.e. each linear layer must have one variable defined in the
+                               right order). This constraint will disappear when
+                               TorchScript is in place. (issue #818)
 
         Args:
             torch_model (nn.Module): A fully trained, torch model alond with its parameters.
@@ -43,7 +43,7 @@ class NumpyModule:
 
         for name, weights in self.torch_model.state_dict().items():
             params = weights.detach().numpy()
-            self.numpy_module_dict[name] = params
+            self.numpy_module_dict[name] = params.T if "weight" in name else params
 
     def __call__(self, x: numpy.ndarray):
         """Return the function to be compiled by concretefhe.numpy."""
@@ -64,7 +64,7 @@ class NumpyModule:
             if isinstance(layer, nn.Linear):
                 # Apply a matmul product and add the bias.
                 x = (
-                    x @ self.numpy_module_dict[f"{name}.weight"].T
+                    x @ self.numpy_module_dict[f"{name}.weight"]
                     + self.numpy_module_dict[f"{name}.bias"]
                 )
             elif isinstance(layer, nn.Sigmoid):

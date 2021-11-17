@@ -30,11 +30,11 @@ def test_quantized_linear(n_examples, n_features, n_neurons, n_bits):
     inputs = numpy.random.uniform(size=(n_examples, n_features))
     q_inputs = QuantizedArray(n_bits, inputs)
 
-    # shape of weights: (n_examples, n_features, n_neurons)
-    weights = numpy.random.uniform(size=(n_neurons, n_features))
+    # shape of weights: (n_neurons, n_features)
+    weights = numpy.random.uniform(size=(n_features, n_neurons))
     q_weights = QuantizedArray(n_bits, weights)
 
-    bias = numpy.random.uniform(size=(n_neurons))
+    bias = numpy.random.uniform(size=(1, n_neurons))
     q_bias = QuantizedArray(n_bits, bias)
 
     # Define our QuantizedLinear layer

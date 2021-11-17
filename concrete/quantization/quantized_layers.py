@@ -29,7 +29,7 @@ class QuantizedLinear:
         self.n_bits = n_bits
 
         if self.q_bias is None:
-            self.q_bias = QuantizedArray(n_bits, numpy.zeros(self.q_weights.values.shape[:-1]))
+            self.q_bias = QuantizedArray(n_bits, numpy.zeros(self.q_weights.values.shape[-1]))
         self.q_out = None
 
     def calibrate(self, x: numpy.ndarray):
@@ -39,7 +39,7 @@ class QuantizedLinear:
             x (numpy.ndarray): Inputs.
         """
         assert self.q_bias is not None
-        self.q_out = QuantizedArray(self.n_bits, x @ self.q_weights.values.T + self.q_bias.values)
+        self.q_out = QuantizedArray(self.n_bits, (x @ self.q_weights.values) + self.q_bias.values)
 
     def __call__(self, q_input: QuantizedArray) -> QuantizedArray:
         """Process the forward pass of the quantized linear layer.
@@ -68,13 +68,11 @@ class QuantizedLinear:
         p = self.q_weights.qvalues.shape[0]
 
         # Core matmul operation in full intergers with a shape change (INTEGERS)
-        matmul = q_input.qvalues @ self.q_weights.qvalues.T
+        matmul = q_input.qvalues @ self.q_weights.qvalues
 
         # Sum operation in full integers resulting in large integers (INTEGERS)
         sum_input = self.q_weights.zero_point * numpy.sum(q_input.qvalues, axis=1, keepdims=True)
-        sum_weights = q_input.zero_point * numpy.sum(
-            self.q_weights.qvalues.T, axis=0, keepdims=True
-        )
+        sum_weights = q_input.zero_point * numpy.sum(self.q_weights.qvalues, axis=0, keepdims=True)
 
         # Quantization scales and zero points (FLOATS involved)
         # This is going to be compiled with a PBS (along with the following activation function)
