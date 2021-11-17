@@ -701,8 +701,8 @@ def test_tracing_numpy_calls(
             [
                 (
                     EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
-                    numpy.arange(15),
-                    numpy.arange(15) * 8,
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) * 8,
                 )
             ],
         ),
@@ -711,8 +711,28 @@ def test_tracing_numpy_calls(
             [
                 (
                     EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
-                    numpy.arange(15),
-                    numpy.arange(15) // 2,
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) // 2,
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: 2 << x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5) % 8,
+                    2 << (numpy.arange(15).reshape(3, 5) % 8),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: 256 >> x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5) % 8,
+                    256 >> (numpy.arange(15).reshape(3, 5) % 8),
                 )
             ],
         ),
