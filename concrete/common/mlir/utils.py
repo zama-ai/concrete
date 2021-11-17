@@ -105,8 +105,8 @@ def check_node_compatibility_with_mlir(
 
     elif isinstance(node, intermediate.Dot):  # constraints for dot product
         assert_true(len(inputs) == 2)
-        if not value_is_unsigned_integer(inputs[0]) or not value_is_unsigned_integer(inputs[1]):
-            return "only unsigned integer dot product is supported"
+        if not value_is_integer(inputs[0]) or not value_is_integer(inputs[1]):
+            return "only integer dot product is supported"
 
     elif isinstance(node, intermediate.IndexConstant):  # constraints for constant indexing
         assert_true(len(outputs) == 1)
