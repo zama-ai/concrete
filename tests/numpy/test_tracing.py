@@ -776,17 +776,16 @@ def test_tracing_numpy_calls(
                 )
             ],
         ),
-        # FIXME: coming soon, #936
-        # pytest.param(
-        #     lambda x: x == 11,
-        #     [
-        #         (
-        #             EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
-        #             numpy.arange(15).reshape(3, 5),
-        #             numpy.arange(15).reshape(3, 5) == 11,
-        #         )
-        #     ],
-        # ),
+        pytest.param(
+            lambda x: x == 11,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) == 11,
+                )
+            ],
+        ),
         pytest.param(
             lambda x: x != 12,
             [
@@ -839,17 +838,16 @@ def test_tracing_numpy_calls(
                 )
             ],
         ),
-        # FIXME: coming soon, #936
-        # pytest.param(
-        #     lambda x: 11 == x,
-        #     [
-        #         (
-        #             EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
-        #             numpy.arange(15).reshape(3, 5),
-        #             11 == numpy.arange(15).reshape(3, 5),
-        #         )
-        #     ],
-        # ),
+        pytest.param(
+            lambda x: 11 == x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    11 == numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
         pytest.param(
             lambda x: 12 != x,
             [

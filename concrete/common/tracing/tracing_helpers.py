@@ -1,7 +1,8 @@
 """Helper functions for tracing."""
 import collections
+from contextlib import contextmanager
 from inspect import signature
-from typing import Callable, Dict, Iterable, OrderedDict, Set, Type
+from typing import Callable, Dict, Iterable, List, OrderedDict, Set, Type
 
 import networkx as nx
 from networkx.algorithms.dag import is_directed_acyclic_graph
@@ -141,3 +142,21 @@ def create_graph_from_output_tracers(
     assert_true(len(unique_edges) == number_of_edges)
 
     return graph
+
+
+@contextmanager
+def tracing_context(tracer_classes: List[Type[BaseTracer]]):
+    """Set tracer classes in tracing mode.
+
+    Args:
+        tracer_classes (List[Type[BaseTracer]]): The list of tracers for which we should enable
+            tracing.
+    """
+
+    try:
+        for tracer_class in tracer_classes:
+            tracer_class.set_is_tracing(True)
+        yield
+    finally:
+        for tracer_class in tracer_classes:
+            tracer_class.set_is_tracing(False)

@@ -23,6 +23,10 @@ from ..values import BaseValue, TensorValue
 class BaseTracer(ABC):
     """Base class for implementing tracers."""
 
+    # this variable changes the behavior of __eq__ so that it can be traced but still allows to hash
+    # BaseTracers when not tracing.
+    _is_tracing: bool = False
+
     inputs: List["BaseTracer"]
     traced_computation: IntermediateNode
     output_idx: int
@@ -62,6 +66,15 @@ class BaseTracer(ABC):
         Returns:
             BaseTracer: The BaseTracer for that constant.
         """
+
+    @classmethod
+    def set_is_tracing(cls, is_tracing: bool) -> None:
+        """Set whether we are in a tracing context to change __eq__ behavior.
+
+        Args:
+            is_tracing (bool): boolean to use to set whether we are tracing
+        """
+        cls._is_tracing = is_tracing
 
     @classmethod
     def _get_mix_values_func(cls):
@@ -193,6 +206,9 @@ class BaseTracer(ABC):
 
         return result_tracer
 
+    def __hash__(self) -> int:
+        return id(self)
+
     def __add__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented
@@ -266,6 +282,18 @@ class BaseTracer(ABC):
         # x <= cst
         return self._helper_for_binary_functions_with_one_cst_input(
             self, other, lambda x, y: x <= y, "le"
+        )
+
+    def __eq__(self, other: Union["BaseTracer", Any]):
+        # x == cst
+        # Return the tracer if we are tracing, else return the result of the default __eq__ function
+        # allows to have hash capabilities outside of tracing
+        return (
+            self._helper_for_binary_functions_with_one_cst_input(
+                self, other, lambda x, y: x == y, "eq"
+            )
+            if self._is_tracing
+            else self is other
         )
 
     def __ne__(self, other: Union["BaseTracer", Any]):

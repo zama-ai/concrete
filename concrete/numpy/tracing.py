@@ -11,6 +11,7 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import Constant, Dot, GenericFunction, MatMul
 from ..common.tracing import BaseTracer, make_input_tracers, prepare_function_parameters
+from ..common.tracing.tracing_helpers import tracing_context
 from ..common.values import BaseValue, TensorValue
 from .np_dtypes_helpers import (
     SUPPORTED_NUMPY_DTYPES_CLASS_TYPES,
@@ -697,7 +698,9 @@ def trace_numpy_function(
 
     # We could easily create a graph of NPTracer, but we may end up with dead nodes starting from
     # the inputs that's why we create the graph starting from the outputs
-    output_tracers = function_to_trace(**input_tracers)
+    with tracing_context([NPTracer]):
+        output_tracers = function_to_trace(**input_tracers)
+
     if isinstance(output_tracers, NPTracer):
         output_tracers = (output_tracers,)
 
