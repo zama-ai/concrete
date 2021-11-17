@@ -56,25 +56,3 @@ def non_fusable(x, y):
 ```
 
 From `add_int` you will find two `Add` nodes going from int to float (`x_1` and `y_1`) which we cannot represent with a single input table look-up.
-
-## Possible improvements
-
-This technique is not perfect because you could try to go further back in the graph to find a single variable input.
-
-Firstly, it does not cover optimizing the graph, so you can end up with multiple operations, like additions with constants, or two look-up tables in a row, that can trivially be fused but that are not fused, as the optimization work is left to the compiler backend with MLIR and LLVM tooling. This first limitation does not impact the kind of programs that are compilable.
-
-Secondly, the current approach fails to handle some programs that in practice could be compiled. The following example could be covered by pushing the search to find a single integer input:
-
-<!--python-test:skip-->
-```python
-def theoretically_fusable(x):
-    x_1 = x + 1.5
-    x_2 = x + 3.4
-    add = x_1 + x_2
-    add_int = add.astype(numpy.int32)
-    return add_int
-```
-
-Here the whole function is a single int giving a single int (i.e. representable by a table look-up), but the current implementation of fusing is going to find `x_1` and `x_2` as the starting nodes of the float subgraph and say it cannot fuse it. Room for improvement. It is probably a graph coloring problem where we would have to list for all graph's inputs which nodes depend on them.
-
-At some point having a proper optimization system with patterns and rules to rewrite them could become more interesting than having this ad-hoc system.

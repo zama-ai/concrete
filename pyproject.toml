@@ -53,7 +53,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "error"
+    "error",
+    "ignore:pandas not found, skipping conversion test.:ImportWarning",
+    "ignore:scipy not found, skipping conversion test.:ImportWarning",
 ]
 
 [tool.semantic_release]
