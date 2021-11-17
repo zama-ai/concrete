@@ -736,6 +736,131 @@ def test_tracing_numpy_calls(
                 )
             ],
         ),
+        pytest.param(
+            lambda x: x > 4,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) > 4,
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: x < 5,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) < 5,
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: x <= 7,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) <= 7,
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: x >= 9,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) >= 9,
+                )
+            ],
+        ),
+        # FIXME: coming soon, #936
+        # pytest.param(
+        #     lambda x: x == 11,
+        #     [
+        #         (
+        #             EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+        #             numpy.arange(15).reshape(3, 5),
+        #             numpy.arange(15).reshape(3, 5) == 11,
+        #         )
+        #     ],
+        # ),
+        pytest.param(
+            lambda x: x != 12,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.arange(15).reshape(3, 5) != 12,
+                )
+            ],
+        ),
+        # Remove misplaced-comparison-constant because precisely, we want to be sure it works fine
+        # pylint: disable=misplaced-comparison-constant
+        pytest.param(
+            lambda x: 4 > x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    4 > numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: 5 < x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    5 < numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: 7 <= x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    7 <= numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
+        pytest.param(
+            lambda x: 9 >= x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    9 >= numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
+        # FIXME: coming soon, #936
+        # pytest.param(
+        #     lambda x: 11 == x,
+        #     [
+        #         (
+        #             EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+        #             numpy.arange(15).reshape(3, 5),
+        #             11 == numpy.arange(15).reshape(3, 5),
+        #         )
+        #     ],
+        # ),
+        pytest.param(
+            lambda x: 12 != x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=True), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    12 != numpy.arange(15).reshape(3, 5),
+                )
+            ],
+        ),
+        # pylint: enable=misplaced-comparison-constant
     ],
 )
 def test_tracing_ndarray_calls(

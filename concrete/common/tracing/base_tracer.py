@@ -244,6 +244,36 @@ class BaseTracer(ABC):
         # cst >> x
         return self._rshift(other, self)
 
+    def __gt__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
+        # x > cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x > y, "gt"
+        )
+
+    def __ge__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
+        # x >= cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x >= y, "ge"
+        )
+
+    def __lt__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
+        # x < cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x < y, "lt"
+        )
+
+    def __le__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
+        # x <= cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x <= y, "le"
+        )
+
+    def __ne__(self, other: Union["BaseTracer", Any]):
+        # x != cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x != y, "ne"
+        )
+
     def __sub__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented
