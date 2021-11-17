@@ -16,56 +16,6 @@ from concrete.numpy import tracing
 
 OPERATIONS_TO_TEST = [ir.Add, ir.Sub, ir.Mul]
 
-# Functions from tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC, whose output
-# is a float64, whatever the input type
-LIST_OF_UFUNC_WHOSE_OUTPUT_IS_FLOAT64 = set(
-    [
-        numpy.arccos,
-        numpy.arccosh,
-        numpy.arcsin,
-        numpy.arcsinh,
-        numpy.arctan,
-        numpy.arctanh,
-        numpy.cbrt,
-        numpy.ceil,
-        numpy.cos,
-        numpy.cosh,
-        numpy.deg2rad,
-        numpy.degrees,
-        numpy.exp,
-        numpy.exp2,
-        numpy.expm1,
-        numpy.fabs,
-        numpy.floor,
-        numpy.log,
-        numpy.log10,
-        numpy.log1p,
-        numpy.log2,
-        numpy.rad2deg,
-        numpy.radians,
-        numpy.rint,
-        numpy.sin,
-        numpy.sinh,
-        numpy.spacing,
-        numpy.sqrt,
-        numpy.tan,
-        numpy.tanh,
-        numpy.trunc,
-    ]
-)
-
-# Functions from tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC, whose output
-# is a boolean, whatever the input type
-LIST_OF_UFUNC_WHOSE_OUTPUT_IS_BOOL = set(
-    [
-        numpy.isfinite,
-        numpy.isinf,
-        numpy.isnan,
-        numpy.signbit,
-        numpy.logical_not,
-    ]
-)
-
 
 @pytest.mark.parametrize(
     "operation",
