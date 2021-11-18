@@ -14,7 +14,7 @@ def name_to_id(name):
     """Convert a human readable name to a url friendly id (e.g., `x + y` to `x-plus-y`)"""
 
     name = name.replace("-", "minus")
-    name = name.replace("**", "-to-the-power-of-")
+    name = name.replace(" ** ", "-to-the-power-of-")
     name = name.replace("+", "plus")
     name = name.replace("*", "times")
     name = name.replace("/", "over")
@@ -24,6 +24,8 @@ def name_to_id(name):
     name = name.replace(" ", "-")
     name = name.replace("(", "")
     name = name.replace(")", "")
+    name = name.replace("[", "")
+    name = name.replace("]", "")
     name = name.replace(",", "")
     name = name.replace(".", "-")
 

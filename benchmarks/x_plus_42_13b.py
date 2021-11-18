@@ -2,6 +2,7 @@
 
 import random
 
+import numpy as np
 from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
@@ -39,7 +40,7 @@ def main():
         result_i = engine.run(*input_i)
         # bench: Measure: End
 
-        if result_i == label_i:
+        if np.array_equal(result_i, label_i):
             correct += 1
 
     # bench: Measure: Accuracy (%) = (correct / len(inputs)) * 100

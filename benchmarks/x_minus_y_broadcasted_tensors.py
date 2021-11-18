@@ -30,8 +30,8 @@ def main():
     inputs = []
     labels = []
     for _ in range(4):
-        sample_x = np.random.randint(4, 2 ** 3, size=(3,))
-        sample_y = np.random.randint(0, 5, size=(2, 3))
+        sample_x = np.random.randint(4, 2 ** 3, size=(3,), dtype=np.uint8)
+        sample_y = np.random.randint(0, 5, size=(2, 3), dtype=np.uint8)
 
         inputs.append([sample_x, sample_y])
         labels.append(function_to_compile(*inputs[-1]))
@@ -42,7 +42,7 @@ def main():
         result_i = engine.run(*input_i)
         # bench: Measure: End
 
-        if result_i == label_i:
+        if np.array_equal(result_i, label_i):
             correct += 1
 
     # bench: Measure: Accuracy (%) = (correct / len(inputs)) * 100
