@@ -8,5 +8,6 @@ mlir_tablegen(HLFHEOpsDialect.cpp.inc -gen-dialect-defs -dialect=HLFHE)
 add_public_tablegen_target(MLIRHLFHEOpsIncGen)
 add_dependencies(mlir-headers MLIRHLFHEOpsIncGen)
 
-add_mlir_doc(HLFHEDialect -gen-dialect-doc HLFHEDialect zamalang/)
-add_mlir_doc(HLFHEOps -gen-op-doc HLFHEOps zamalang/)
+add_zamalang_doc(HLFHEDialect HLFHEDialect zamalang/ -gen-dialect-doc)
+add_zamalang_doc(HLFHEOps HLFHEOps zamalang/ -gen-op-doc)
+add_zamalang_doc(HLFHETypes HLFHETypes zamalang/ -gen-typedef-doc)

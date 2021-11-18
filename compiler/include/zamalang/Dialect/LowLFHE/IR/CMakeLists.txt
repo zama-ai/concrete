@@ -7,3 +7,7 @@ mlir_tablegen(LowLFHEOpsDialect.h.inc -gen-dialect-decls -dialect=LowLFHE)
 mlir_tablegen(LowLFHEOpsDialect.cpp.inc -gen-dialect-defs -dialect=LowLFHE)
 add_public_tablegen_target(MLIRLowLFHEOpsIncGen)
 add_dependencies(mlir-headers MLIRLowLFHEOpsIncGen)
+
+add_zamalang_doc(LowLFHEDialect LowLFHEDialect zamalang/ -gen-dialect-doc)
+add_zamalang_doc(LowLFHEOps LowLFHEOps zamalang/ -gen-op-doc)
+add_zamalang_doc(LowLFHETypes LowLFHETypes zamalang/ -gen-typedef-doc)

@@ -39,6 +39,11 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+# Custom doc generation function
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+include(AddZamalangDoc)
+set(ZAMALANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 #-------------------------------------------------------------------------------
 # Concrete FFI Configuration
 #-------------------------------------------------------------------------------

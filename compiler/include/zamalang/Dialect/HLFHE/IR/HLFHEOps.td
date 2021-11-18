@@ -20,11 +20,16 @@ class HLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
 
 // Generates an encrypted zero constant
 def ZeroEintOp : HLFHE_Op<"zero", [NoSideEffect]> {
+    let summary = "Return an encryption of 0";
+
     let arguments = (ins);
     let results = (outs EncryptedIntegerType:$out);
 }
 
 def AddEintIntOp : HLFHE_Op<"add_eint_int"> {
+
+    let summary = "Adds an encrypted integer and a clear integer";
+
     let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
     let results = (outs EncryptedIntegerType);
 
@@ -40,6 +45,9 @@ def AddEintIntOp : HLFHE_Op<"add_eint_int"> {
 }
 
 def AddEintOp : HLFHE_Op<"add_eint"> {
+
+    let summary = "Adds two encrypted integers";
+
     let arguments = (ins EncryptedIntegerType:$a, EncryptedIntegerType:$b);
     let results = (outs EncryptedIntegerType);
 
@@ -55,6 +63,9 @@ def AddEintOp : HLFHE_Op<"add_eint"> {
 }
 
 def SubIntEintOp : HLFHE_Op<"sub_int_eint"> {
+
+    let summary = "Substract a clear integer and an encrypted integer";
+
     let arguments = (ins AnyInteger:$a, EncryptedIntegerType:$b);
     let results = (outs EncryptedIntegerType);
 
@@ -70,6 +81,9 @@ def SubIntEintOp : HLFHE_Op<"sub_int_eint"> {
 }
 
 def NegEintOp : HLFHE_Op<"neg_eint"> {
+
+    let summary = "Negates an encrypted integer";
+
     let arguments = (ins EncryptedIntegerType:$a);
     let results = (outs EncryptedIntegerType);
 
@@ -85,6 +99,9 @@ def NegEintOp : HLFHE_Op<"neg_eint"> {
 }
 
 def MulEintIntOp : HLFHE_Op<"mul_eint_int"> {
+
+    let summary = "Mulitplies an encrypted integer and a clear integer";
+
     let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
     let results = (outs EncryptedIntegerType);
 
@@ -100,6 +117,9 @@ def MulEintIntOp : HLFHE_Op<"mul_eint_int"> {
 }
 
 def ApplyLookupTableEintOp : HLFHE_Op<"apply_lookup_table"> {
+
+    let summary = "Applies a clear lookup table to an encrypted integer";
+
     let arguments = (ins EncryptedIntegerType:$ct,
         TensorOf<[AnyInteger]>:$l_cst);
     let results = (outs EncryptedIntegerType);
@@ -108,4 +128,5 @@ def ApplyLookupTableEintOp : HLFHE_Op<"apply_lookup_table"> {
         return ::mlir::zamalang::HLFHE::verifyApplyLookupTable(*this);
     }];
 }
+
 #endif

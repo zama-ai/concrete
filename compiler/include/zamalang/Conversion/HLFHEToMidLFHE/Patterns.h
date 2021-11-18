@@ -13,6 +13,7 @@ namespace zamalang {
 using HLFHE::EncryptedIntegerType;
 using MidLFHE::GLWECipherTextType;
 
+/// Converts HLFHE::EncryptedInteger into MidLFHE::GlweCiphetext
 GLWECipherTextType
 convertTypeEncryptedIntegerToGLWE(mlir::MLIRContext *context,
                                   EncryptedIntegerType &eint) {

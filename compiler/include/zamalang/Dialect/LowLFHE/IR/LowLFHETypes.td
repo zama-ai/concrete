@@ -10,7 +10,7 @@ class LowLFHE_Type<string name, list<Trait> traits = []> : TypeDef<LowLFHE_Diale
 def GlweCiphertextType : LowLFHE_Type<"GlweCiphertext"> {
     let mnemonic = "glwe_ciphertext";
 
-    let summary = "GLWE ciphertext";
+    let summary = "A GLWE ciphertext (encryption of a polynomial of fixed-precision integers)";
 
     let description = [{
        GLWE ciphertext.
@@ -28,7 +28,7 @@ def GlweCiphertextType : LowLFHE_Type<"GlweCiphertext"> {
 def LweCiphertextType : LowLFHE_Type<"LweCiphertext", [MemRefElementTypeInterface]> {
     let mnemonic = "lwe_ciphertext";
 
-    let summary = "LWE ciphertext";
+    let summary = "A LWE ciphertext (encryption of a fixed-precision integer)";
 
     let description = [{
        Learning With Error ciphertext.
@@ -73,7 +73,7 @@ def LweCiphertextType : LowLFHE_Type<"LweCiphertext", [MemRefElementTypeInterfac
 def CleartextType : LowLFHE_Type<"Cleartext"> {
     let mnemonic = "cleartext";
 
-    let summary = "Cleartext";
+    let summary = "A cleartext (a fixed-precision integer) ready to be multiplied to a LWE ciphertext";
 
     let description = [{
        Cleartext.
@@ -107,7 +107,7 @@ def CleartextType : LowLFHE_Type<"Cleartext"> {
 def PlaintextType : LowLFHE_Type<"Plaintext"> {
     let mnemonic = "plaintext";
 
-    let summary = "Plaintext";
+    let summary = "A Plaintext (a fixed-precision integer) ready to be added to a LWE ciphertext";
 
     let description = [{
        Plaintext.
@@ -141,7 +141,7 @@ def PlaintextType : LowLFHE_Type<"Plaintext"> {
 def PlaintextListType : LowLFHE_Type<"PlaintextList"> {
     let mnemonic = "plaintext_list";
 
-    let summary = "Plaintext list";
+    let summary = "List of plaintexts";
 
     let description = [{
        Plaintext list.
@@ -159,7 +159,7 @@ def PlaintextListType : LowLFHE_Type<"PlaintextList"> {
 def ForeignPlaintextListType : LowLFHE_Type<"ForeignPlaintextList"> {
     let mnemonic = "foreign_plaintext_list";
 
-    let summary = "Foreign plaintext list";
+    let summary = "A foreign (reference to a independently allocated memory space) plaintext list";
 
     let description = [{
        Foreign plaintext list.
@@ -177,7 +177,7 @@ def ForeignPlaintextListType : LowLFHE_Type<"ForeignPlaintextList"> {
 def LweKeySwitchKeyType : LowLFHE_Type<"LweKeySwitchKey"> {
     let mnemonic = "lwe_key_switch_key";
 
-    let summary = "LWE keyswitching key";
+    let summary = "A LWE keyswitching key";
 
     let description = [{
        Learning With Error keyswitching key.
@@ -195,7 +195,7 @@ def LweKeySwitchKeyType : LowLFHE_Type<"LweKeySwitchKey"> {
 def LweBootstrapKeyType : LowLFHE_Type<"LweBootstrapKey"> {
     let mnemonic = "lwe_bootstrap_key";
 
-    let summary = "LWE bootstrapping key";
+    let summary = "A LWE bootstrapping key";
 
     let description = [{
        Learning With Error bootstrapping key.
@@ -213,7 +213,7 @@ def LweBootstrapKeyType : LowLFHE_Type<"LweBootstrapKey"> {
 def Context : LowLFHE_Type<"Context"> {
     let mnemonic = "context";
 
-    let summary = "Runtime context";
+    let summary = "A runtime context";
 
     let description = [{
        An abstract runtime context to pass contextual value, like public keys, ...

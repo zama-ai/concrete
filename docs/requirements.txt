@@ -1,0 +1,5 @@
+sphinx==4.1.2
+sphinx-copybutton==0.4.0
+pydata-sphinx-theme==0.7.1
+myst-parser==0.15.2
+breathe==4.31.0

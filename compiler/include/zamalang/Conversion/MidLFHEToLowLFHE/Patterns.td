@@ -1,6 +1,7 @@
 #ifndef ZAMALANG_CONVERSION_MIDLFHETOLOWLFHE_PATTERNS
 #define ZAMALANG_CONVERSION_MIDLFHETOLOWLFHE_PATTERNS
 
+include "mlir/Pass/PassBase.td"
 include "mlir/Dialect/StandardOps/IR/Ops.td"
 include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.td"
 include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.td"

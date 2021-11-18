@@ -41,3 +41,10 @@
 
 # Python cache
 __pycache__/
+
+# Sphinx
+_build/
+.venv
+
+# macOS
+.DS_Store

@@ -19,11 +19,15 @@ class MidLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<MidLFHE_Dialect, mnemonic, traits>;
 
 def ZeroGLWEOp : MidLFHE_Op<"zero"> {
+    let summary = "Returns a trivial encyption of 0";
+
     let arguments = (ins);
     let results = (outs GLWECipherTextType:$out);
 }
 
 def AddGLWEIntOp : MidLFHE_Op<"add_glwe_int"> {
+    let summary = "Returns the sum of a clear integer and a lwe ciphertext";    
+
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
     let results = (outs GLWECipherTextType);
 
@@ -33,6 +37,8 @@ def AddGLWEIntOp : MidLFHE_Op<"add_glwe_int"> {
 }
 
 def AddGLWEOp : MidLFHE_Op<"add_glwe"> {
+    let summary = "Returns the sum of 2 lwe ciphertexts";
+
     let arguments = (ins GLWECipherTextType:$a, GLWECipherTextType:$b);
     let results = (outs GLWECipherTextType);
 
@@ -42,6 +48,8 @@ def AddGLWEOp : MidLFHE_Op<"add_glwe"> {
 }
 
 def SubIntGLWEOp : MidLFHE_Op<"sub_int_glwe"> {
+    let summary = "Substracts an integer and a GLWE ciphertext";
+
     let arguments = (ins AnyInteger:$a, GLWECipherTextType:$b);
     let results = (outs GLWECipherTextType);
 
@@ -51,6 +59,8 @@ def SubIntGLWEOp : MidLFHE_Op<"sub_int_glwe"> {
 }
 
 def NegGLWEOp : MidLFHE_Op<"neg_glwe"> {
+    let summary = "Negates a glwe ciphertext";
+
     let arguments = (ins GLWECipherTextType:$a);
     let results = (outs GLWECipherTextType);
 
@@ -61,6 +71,8 @@ def NegGLWEOp : MidLFHE_Op<"neg_glwe"> {
 
 
 def MulGLWEIntOp : MidLFHE_Op<"mul_glwe_int"> {
+    let summary = "Returns the product of a clear integer and a lwe ciphertext";
+
     let arguments = (ins GLWECipherTextType:$a, AnyInteger:$b);
     let results = (outs GLWECipherTextType);
 
@@ -72,6 +84,9 @@ def MulGLWEIntOp : MidLFHE_Op<"mul_glwe_int"> {
 
 
 def ApplyLookupTable : MidLFHE_Op<"apply_lookup_table"> {
+    let summary = "Applies a lookup table to a GLWE ciphertext";
+
+    
     let arguments = (ins GLWECipherTextType:$ct,
         TensorOf<[AnyInteger]>:$l_cst,
         I32Attr:$glweDimension, I32Attr:$polynomialSize,

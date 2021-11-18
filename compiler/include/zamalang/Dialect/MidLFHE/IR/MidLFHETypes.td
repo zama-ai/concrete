@@ -11,7 +11,7 @@ class MidLFHE_Type<string name, list<Trait> traits = []> : TypeDef<MidLFHE_Diale
 def GLWECipherTextType : MidLFHE_Type<"GLWECipherText", [MemRefElementTypeInterface]> {
     let mnemonic = "glwe";
 
-    let summary = "An GLWE cipher text";
+    let summary = "A GLWE ciphertext";
 
     let description = [{
         An GLWE cipher text

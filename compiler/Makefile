@@ -35,6 +35,9 @@ $(BUILD_DIR)/configured.stamp:
 
 build-initialized: $(BUILD_DIR)/configured.stamp
 
+doc: build-initialized
+	cmake --build $(BUILD_DIR) --target mlir-doc
+
 zamacompiler: build-initialized
 	cmake --build $(BUILD_DIR) --target zamacompiler
 

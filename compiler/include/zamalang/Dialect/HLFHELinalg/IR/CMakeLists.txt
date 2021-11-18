@@ -7,3 +7,7 @@ mlir_tablegen(HLFHELinalgOpsDialect.h.inc -gen-dialect-decls -dialect=HLFHELinal
 mlir_tablegen(HLFHELinalgOpsDialect.cpp.inc -gen-dialect-defs -dialect=HLFHELinalg)
 add_public_tablegen_target(MLIRHLFHELinalgOpsIncGen)
 add_dependencies(mlir-headers MLIRHLFHELinalgOpsIncGen)
+
+add_zamalang_doc(HLFHELinalgDialect HLFHELinalgDialect zamalang/ -gen-dialect-doc)
+add_zamalang_doc(HLFHELinalgOps HLFHELinalgOps zamalang/ -gen-op-doc)
+add_zamalang_doc(HLFHELinalgTypes HLFHELinalgTypes zamalang/ -gen-typedef-doc)
