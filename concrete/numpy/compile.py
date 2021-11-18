@@ -22,7 +22,7 @@ from ..common.mlir.utils import (
 )
 from ..common.operator_graph import OPGraph
 from ..common.optimization.topological import fuse_float_operations
-from ..common.representation.intermediate import Add, Constant, GenericFunction
+from ..common.representation.intermediate import Add, Constant, GenericFunction, IntermediateNode
 from ..common.values import BaseValue, ClearScalar
 from ..numpy.tracing import trace_numpy_function
 from .np_dtypes_helpers import (
@@ -58,6 +58,102 @@ def numpy_min_func(lhs: Any, rhs: Any) -> Any:
         Any: minimum scalar value between lhs and rhs.
     """
     return numpy.minimum(lhs, rhs).min()
+
+
+def sanitize_compilation_configuration_and_artifacts(
+    compilation_configuration: Optional[CompilationConfiguration] = None,
+    compilation_artifacts: Optional[CompilationArtifacts] = None,
+) -> Tuple[CompilationConfiguration, CompilationArtifacts]:
+    """Return the proper compilation configuration and artifacts.
+
+    Default values are returned if None is passed for each argument.
+
+    Args:
+        compilation_configuration (Optional[CompilationConfiguration], optional): the compilation
+            configuration to sanitize. Defaults to None.
+        compilation_artifacts (Optional[CompilationArtifacts], optional): the compilation artifacts
+            to sanitize. Defaults to None.
+
+    Returns:
+        Tuple[CompilationConfiguration, CompilationArtifacts]: the tuple of sanitized configuration
+            and artifacts.
+    """
+    # Create default configuration if custom configuration is not specified
+    compilation_configuration = (
+        CompilationConfiguration()
+        if compilation_configuration is None
+        else compilation_configuration
+    )
+
+    # Create temporary artifacts if custom artifacts is not specified (in case of exceptions)
+    if compilation_artifacts is None:
+        compilation_artifacts = CompilationArtifacts()
+
+    return compilation_configuration, compilation_artifacts
+
+
+def get_inputset_to_use(
+    function_parameters: Dict[str, BaseValue],
+    inputset: Union[Iterable[Tuple[Any, ...]], str],
+    compilation_configuration: CompilationConfiguration,
+) -> Iterable[Tuple[Any, ...]]:
+    """Get the proper inputset to use for compilation.
+
+    Args:
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
+        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph is
+            evaluated. It needs to be an iterable on tuples which are of the same length than the
+            number of parameters in the function, and in the same order than these same parameters
+        compilation_configuration (CompilationConfiguration): Configuration object to use during
+            compilation
+
+    Returns:
+        Iterable[Tuple[Any, ...]]: the inputset to use.
+    """
+    # Generate random inputset if it is requested and available
+    if isinstance(inputset, str):
+        _check_special_inputset_availability(inputset, compilation_configuration)
+        return _generate_random_inputset(function_parameters, compilation_configuration)
+    return inputset
+
+
+def run_compilation_function_with_error_management(
+    compilation_function: Callable,
+    compilation_configuration: CompilationConfiguration,
+    compilation_artifacts: CompilationArtifacts,
+) -> Any:
+    """Call compilation_function() and manage exceptions that may occur.
+
+    Args:
+        compilation_function (Callable): the compilation function to call.
+        compilation_configuration (CompilationConfiguration): the current compilation configuration.
+        compilation_artifacts (CompilationArtifacts): the current compilation artifacts.
+
+    Returns:
+        Any: returns the result of the call to compilation_function
+    """
+
+    # Try to compile the function and save partial artifacts on failure
+    try:
+        # Use context manager to restore numpy error handling
+        with numpy.errstate(**numpy.geterr()):
+            return compilation_function()
+    except Exception:  # pragma: no cover
+        # This branch is reserved for unexpected issues and hence it shouldn't be tested.
+        # If it could be tested, we would have fixed the underlying issue.
+
+        # We need to export all the information we have about the compilation
+        # If the user wants them to be exported
+
+        if compilation_configuration.dump_artifacts_on_unexpected_failures:
+            compilation_artifacts.export()
+
+            traceback_path = compilation_artifacts.output_directory.joinpath("traceback.txt")
+            with open(traceback_path, "w", encoding="utf-8") as f:
+                f.write(traceback.format_exc())
+
+        raise
 
 
 def _compile_numpy_function_into_op_graph_internal(
@@ -122,13 +218,60 @@ def _compile_numpy_function_into_op_graph_internal(
     return op_graph
 
 
+def compile_numpy_function_into_op_graph(
+    function_to_compile: Callable,
+    function_parameters: Dict[str, BaseValue],
+    compilation_configuration: Optional[CompilationConfiguration] = None,
+    compilation_artifacts: Optional[CompilationArtifacts] = None,
+) -> OPGraph:
+    """Compile a function into an OPGraph.
+
+    Args:
+        function_to_compile (Callable): The function to compile
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
+        compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
+            during compilation
+        compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
+            during compilation
+
+    Returns:
+        OPGraph: compiled function into a graph
+    """
+
+    (
+        compilation_configuration,
+        compilation_artifacts,
+    ) = sanitize_compilation_configuration_and_artifacts(
+        compilation_configuration, compilation_artifacts
+    )
+
+    def compilation_function():
+        return _compile_numpy_function_into_op_graph_internal(
+            function_to_compile,
+            function_parameters,
+            compilation_configuration,
+            compilation_artifacts,
+        )
+
+    result = run_compilation_function_with_error_management(
+        compilation_function, compilation_configuration, compilation_artifacts
+    )
+
+    # for mypy
+    assert isinstance(result, OPGraph)
+    return result
+
+
 def _measure_op_graph_bounds_and_update_internal(
     op_graph: OPGraph,
     function_parameters: Dict[str, BaseValue],
     inputset: Iterable[Tuple[Any, ...]],
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
-) -> None:
+    prev_node_bounds_and_samples: Optional[Dict[IntermediateNode, Dict[str, Any]]] = None,
+    warn_on_inputset_length: bool = True,
+) -> Dict[IntermediateNode, Dict[str, Any]]:
     """Measure the intermediate values and update the OPGraph accordingly for the given inputset.
 
     Args:
@@ -142,11 +285,21 @@ def _measure_op_graph_bounds_and_update_internal(
             during compilation
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill
             during compilation
+        prev_node_bounds_and_samples (Optional[Dict[IntermediateNode, Dict[str, Any]]], optional):
+            Bounds and samples from a previous run. Defaults to None.
+        warn_on_inputset_length (bool, optional): Set to True to get a warning if inputset is not
+            long enough. Defaults to True.
 
     Raises:
         ValueError: Raises an error if the inputset is too small and the compilation configuration
             treats warnings as error.
+
+    Returns:
+        Dict[IntermediateNode, Dict[str, Any]]: a dict containing the bounds for each node from
+            op_graph, stored with the node as key and a dict with keys "min", "max" and "sample" as
+            value.
     """
+
     # Find bounds with the inputset
     inputset_size, node_bounds_and_samples = eval_op_graph_bounds_on_inputset(
         op_graph,
@@ -155,35 +308,37 @@ def _measure_op_graph_bounds_and_update_internal(
         min_func=numpy_min_func,
         max_func=numpy_max_func,
         get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+        prev_node_bounds_and_samples=prev_node_bounds_and_samples,
     )
 
-    # Check inputset size
-    inputset_size_upper_limit = 1
+    if warn_on_inputset_length:
+        # Check inputset size
+        inputset_size_upper_limit = 1
 
-    # this loop will determine the number of possible inputs of the function
-    # if a function have a single 3-bit input, for example, `inputset_size_upper_limit` will be 8
-    for parameter_value in function_parameters.values():
-        if isinstance(parameter_value.dtype, Integer):
-            # multiple parameter bit-widths are multiplied as they can be combined into an input
-            inputset_size_upper_limit *= 2 ** parameter_value.dtype.bit_width
+        # this loop will determine the number of possible inputs of the function
+        # if a function have a single 3-bit input, for example, inputset_size_upper_limit will be 8
+        for parameter_value in function_parameters.values():
+            if isinstance(parameter_value.dtype, Integer):
+                # multiple parameter bit-widths are multiplied as they can be combined into an input
+                inputset_size_upper_limit *= 2 ** parameter_value.dtype.bit_width
 
-            # if the upper limit of the inputset size goes above 10,
-            # break the loop as we will require at least 10 inputs in this case
-            if inputset_size_upper_limit > 10:
-                break
+                # if the upper limit of the inputset size goes above 10,
+                # break the loop as we will require at least 10 inputs in this case
+                if inputset_size_upper_limit > 10:
+                    break
 
-    minimum_required_inputset_size = min(inputset_size_upper_limit, 10)
-    if inputset_size < minimum_required_inputset_size:
-        message = (
-            f"Provided inputset contains too few inputs "
-            f"(it should have had at least {minimum_required_inputset_size} "
-            f"but it only had {inputset_size})\n"
-        )
+        minimum_required_inputset_size = min(inputset_size_upper_limit, 10)
+        if inputset_size < minimum_required_inputset_size:
+            message = (
+                f"Provided inputset contains too few inputs "
+                f"(it should have had at least {minimum_required_inputset_size} "
+                f"but it only had {inputset_size})\n"
+            )
 
-        if compilation_configuration.treat_warnings_as_errors:
-            raise ValueError(message)
+            if compilation_configuration.treat_warnings_as_errors:
+                raise ValueError(message)
 
-        sys.stderr.write(f"Warning: {message}")
+            sys.stderr.write(f"Warning: {message}")
 
     # Add the bounds as an artifact
     compilation_artifacts.add_final_operation_graph_bounds(node_bounds_and_samples)
@@ -194,6 +349,74 @@ def _measure_op_graph_bounds_and_update_internal(
         get_base_data_type_for_numpy_or_python_constant_data,
         get_constructor_for_numpy_or_python_constant_data,
     )
+
+    return node_bounds_and_samples
+
+
+def measure_op_graph_bounds_and_update(
+    op_graph: OPGraph,
+    function_parameters: Dict[str, BaseValue],
+    inputset: Union[Iterable[Tuple[Any, ...]], str],
+    compilation_configuration: Optional[CompilationConfiguration] = None,
+    compilation_artifacts: Optional[CompilationArtifacts] = None,
+    prev_node_bounds_and_samples: Optional[Dict[IntermediateNode, Dict[str, Any]]] = None,
+    warn_on_inputset_length: bool = True,
+) -> Dict[IntermediateNode, Dict[str, Any]]:
+    """Measure the intermediate values and update the OPGraph accordingly for the given inputset.
+
+    Args:
+        op_graph (OPGraph): the OPGraph for which to measure bounds and update node values.
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
+        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph is
+            evaluated. It needs to be an iterable on tuples which are of the same length than the
+            number of parameters in the function, and in the same order than these same parameters
+        compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
+            during compilation
+        compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
+            during compilation
+        prev_node_bounds_and_samples (Optional[Dict[IntermediateNode, Dict[str, Any]]], optional):
+            Bounds and samples from a previous run. Defaults to None.
+        warn_on_inputset_length (bool, optional): Set to True to get a warning if inputset is not
+            long enough. Defaults to True.
+
+    Raises:
+        ValueError: Raises an error if the inputset is too small and the compilation configuration
+            treats warnings as error.
+
+    Returns:
+        Dict[IntermediateNode, Dict[str, Any]]: a dict containing the bounds for each node from
+            op_graph, stored with the node as key and a dict with keys "min", "max" and "sample" as
+            value.
+    """
+
+    (
+        compilation_configuration,
+        compilation_artifacts,
+    ) = sanitize_compilation_configuration_and_artifacts(
+        compilation_configuration, compilation_artifacts
+    )
+
+    inputset = get_inputset_to_use(function_parameters, inputset, compilation_configuration)
+
+    def compilation_function():
+        return _measure_op_graph_bounds_and_update_internal(
+            op_graph,
+            function_parameters,
+            inputset,
+            compilation_configuration,
+            compilation_artifacts,
+            prev_node_bounds_and_samples,
+            warn_on_inputset_length,
+        )
+
+    result = run_compilation_function_with_error_management(
+        compilation_function, compilation_configuration, compilation_artifacts
+    )
+
+    # for mypy
+    assert isinstance(result, dict)
+    return result
 
 
 def _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
@@ -269,48 +492,31 @@ def compile_numpy_function_into_op_graph_and_measure_bounds(
         OPGraph: compiled function into a graph
     """
 
-    # Create default configuration if custom configuration is not specified
-    compilation_configuration = (
-        CompilationConfiguration()
-        if compilation_configuration is None
-        else compilation_configuration
+    (
+        compilation_configuration,
+        compilation_artifacts,
+    ) = sanitize_compilation_configuration_and_artifacts(
+        compilation_configuration, compilation_artifacts
     )
 
-    # Create temporary artifacts if custom artifacts is not specified (in case of exceptions)
-    if compilation_artifacts is None:
-        compilation_artifacts = CompilationArtifacts()
+    inputset = get_inputset_to_use(function_parameters, inputset, compilation_configuration)
 
-    # Generate random inputset if it is requested and available
-    if isinstance(inputset, str):
-        _check_special_inputset_availability(inputset, compilation_configuration)
-        inputset = _generate_random_inputset(function_parameters, compilation_configuration)
+    def compilation_function():
+        return _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
+            function_to_compile,
+            function_parameters,
+            inputset,
+            compilation_configuration,
+            compilation_artifacts,
+        )
 
-    # Try to compile the function and save partial artifacts on failure
-    try:
-        # Use context manager to restore numpy error handling
-        with numpy.errstate(**numpy.geterr()):
-            return _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
-                function_to_compile,
-                function_parameters,
-                inputset,
-                compilation_configuration,
-                compilation_artifacts,
-            )
-    except Exception:  # pragma: no cover
-        # This branch is reserved for unexpected issues and hence it shouldn't be tested.
-        # If it could be tested, we would have fixed the underlying issue.
+    result = run_compilation_function_with_error_management(
+        compilation_function, compilation_configuration, compilation_artifacts
+    )
 
-        # We need to export all the information we have about the compilation
-        # If the user wants them to be exported
-
-        if compilation_configuration.dump_artifacts_on_unexpected_failures:
-            compilation_artifacts.export()
-
-            traceback_path = compilation_artifacts.output_directory.joinpath("traceback.txt")
-            with open(traceback_path, "w", encoding="utf-8") as f:
-                f.write(traceback.format_exc())
-
-        raise
+    # for mypy
+    assert isinstance(result, OPGraph)
+    return result
 
 
 # HACK
@@ -492,46 +698,29 @@ def compile_numpy_function(
         CompilerEngine: engine to run and debug the compiled graph
     """
 
-    # Create default configuration if custom configuration is not specified
-    compilation_configuration = (
-        CompilationConfiguration()
-        if compilation_configuration is None
-        else compilation_configuration
+    (
+        compilation_configuration,
+        compilation_artifacts,
+    ) = sanitize_compilation_configuration_and_artifacts(
+        compilation_configuration, compilation_artifacts
     )
 
-    # Create temporary artifacts if custom artifacts is not specified (in case of exceptions)
-    if compilation_artifacts is None:
-        compilation_artifacts = CompilationArtifacts()
+    inputset = get_inputset_to_use(function_parameters, inputset, compilation_configuration)
 
-    # Generate random inputset if it is requested and available
-    if isinstance(inputset, str):
-        _check_special_inputset_availability(inputset, compilation_configuration)
-        inputset = _generate_random_inputset(function_parameters, compilation_configuration)
+    def compilation_function():
+        return _compile_numpy_function_internal(
+            function_to_compile,
+            function_parameters,
+            inputset,
+            compilation_configuration,
+            compilation_artifacts,
+            show_mlir,
+        )
 
-    # Try to compile the function and save partial artifacts on failure
-    try:
-        # Use context manager to restore numpy error handling
-        with numpy.errstate(**numpy.geterr()):
-            return _compile_numpy_function_internal(
-                function_to_compile,
-                function_parameters,
-                inputset,
-                compilation_configuration,
-                compilation_artifacts,
-                show_mlir,
-            )
-    except Exception:  # pragma: no cover
-        # This branch is reserved for unexpected issues and hence it shouldn't be tested.
-        # If it could be tested, we would have fixed the underlying issue.
+    result = run_compilation_function_with_error_management(
+        compilation_function, compilation_configuration, compilation_artifacts
+    )
 
-        # We need to export all the information we have about the compilation
-        # If the user wants them to be exported
-
-        if compilation_configuration.dump_artifacts_on_unexpected_failures:
-            compilation_artifacts.export()
-
-            traceback_path = compilation_artifacts.output_directory.joinpath("traceback.txt")
-            with open(traceback_path, "w", encoding="utf-8") as f:
-                f.write(traceback.format_exc())
-
-        raise
+    # for mypy
+    assert isinstance(result, FHECircuit)
+    return result

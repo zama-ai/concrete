@@ -26,3 +26,6 @@ class CompilationConfiguration:
         self.treat_warnings_as_errors = treat_warnings_as_errors
         self.enable_unsafe_features = enable_unsafe_features
         self.random_inputset_samples = random_inputset_samples
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, CompilationConfiguration) and self.__dict__ == other.__dict__

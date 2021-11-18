@@ -1,7 +1,8 @@
 """Code to evaluate the IR graph on inputsets."""
 
 import sys
-from typing import Any, Callable, Dict, Iterable, Tuple, Union
+from functools import partial
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
 
 from ..compilation import CompilationConfiguration
 from ..data_types.dtypes_helpers import (
@@ -110,6 +111,7 @@ def eval_op_graph_bounds_on_inputset(
     get_base_value_for_constant_data_func: Callable[
         [Any], Any
     ] = get_base_value_for_python_constant_data,
+    prev_node_bounds_and_samples: Optional[Dict[IntermediateNode, Dict[str, Any]]] = None,
 ) -> Tuple[int, Dict[IntermediateNode, Dict[str, Any]]]:
     """Evaluate the bounds with a inputset.
 
@@ -132,6 +134,8 @@ def eval_op_graph_bounds_on_inputset(
             tensors). Defaults to max.
         get_base_value_for_constant_data_func (Callable[[Any], Any], optional): custom function
             to compute the base value of a python object.
+        prev_node_bounds_and_samples (Optional[Dict[IntermediateNode, Dict[str, Any]]], optional):
+            Bounds and samples from a previous run. Defaults to None.
 
     Returns:
         Tuple[int, Dict[IntermediateNode, Dict[str, Any]]]: number of inputs in the inputset and
@@ -187,13 +191,38 @@ def eval_op_graph_bounds_on_inputset(
 
     first_output = op_graph.evaluate(current_input_data)
 
+    prev_node_bounds_and_samples = (
+        {} if prev_node_bounds_and_samples is None else prev_node_bounds_and_samples
+    )
+
+    def get_previous_value_for_key_or_default_for_dict(
+        dict_: Dict[IntermediateNode, Dict[str, Any]],
+        node: IntermediateNode,
+        key: str,
+        default: Any,
+    ) -> Any:
+        return_value = default
+
+        previous_value_dict = dict_.get(node, None)
+
+        if previous_value_dict is not None:
+            return_value = previous_value_dict.get(key, default)
+
+        return return_value
+
+    get_previous_value_for_key_or_default = partial(
+        get_previous_value_for_key_or_default_for_dict, prev_node_bounds_and_samples
+    )
+
     # We evaluate the min and max func to be able to resolve the tensors min and max rather than
     # having the tensor itself as the stored min and max values.
+    # As we don't know the integrity of prev_node_bounds_and_samples we make sure we can
+    # populate the new node_bounds_and_samples
     node_bounds_and_samples = {
         node: {
-            "min": min_func(value, value),
-            "max": max_func(value, value),
-            "sample": value,
+            "min": min_func(value, get_previous_value_for_key_or_default(node, "min", value)),
+            "max": max_func(value, get_previous_value_for_key_or_default(node, "max", value)),
+            "sample": get_previous_value_for_key_or_default(node, "sample", value),
         }
         for node, value in first_output.items()
     }
