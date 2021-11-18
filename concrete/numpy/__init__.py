@@ -6,5 +6,5 @@ from ..common.debugging import draw_graph, format_operation_graph
 from ..common.extensions.multi_table import MultiLookupTable
 from ..common.extensions.table import LookupTable
 from ..common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor, TensorValue
-from .compile import compile_numpy_function, compile_numpy_function_into_op_graph
+from .compile import compile_numpy_function, compile_numpy_function_into_op_graph_and_measure_bounds
 from .tracing import trace_numpy_function

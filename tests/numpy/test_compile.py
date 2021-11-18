@@ -14,7 +14,10 @@ from concrete.common.extensions.multi_table import MultiLookupTable
 from concrete.common.extensions.table import LookupTable
 from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
 from concrete.numpy import tracing
-from concrete.numpy.compile import compile_numpy_function, compile_numpy_function_into_op_graph
+from concrete.numpy.compile import (
+    compile_numpy_function,
+    compile_numpy_function_into_op_graph_and_measure_bounds,
+)
 
 # pylint: disable=too-many-lines
 
@@ -624,7 +627,7 @@ def test_compile_function_multiple_outputs(
         arg_name: EncryptedScalar(Integer(64, True)) for arg_name in list_of_arg_names
     }
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         function_parameters,
         data_gen_local(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
@@ -1328,7 +1331,7 @@ def test_compile_function_with_direct_tlu(default_compilation_configuration):
     def function(x):
         return x + table[x]
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         {"x": EncryptedScalar(Integer(2, is_signed=False))},
         [(0,), (1,), (2,), (3,)],
@@ -1348,7 +1351,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
         return table[x]
 
     with pytest.raises(ValueError):
-        compile_numpy_function_into_op_graph(
+        compile_numpy_function_into_op_graph_and_measure_bounds(
             function,
             {"x": EncryptedScalar(Integer(3, is_signed=False))},
             [(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)],
@@ -1570,7 +1573,7 @@ return %7
 
 def test_small_inputset_no_fail():
     """Test function compile_numpy_function_into_op_graph with an unacceptably small inputset"""
-    compile_numpy_function_into_op_graph(
+    compile_numpy_function_into_op_graph_and_measure_bounds(
         lambda x: x + 42,
         {"x": EncryptedScalar(Integer(5, is_signed=False))},
         [(0,), (3,)],
@@ -1581,7 +1584,7 @@ def test_small_inputset_no_fail():
 def test_small_inputset_treat_warnings_as_errors():
     """Test function compile_numpy_function_into_op_graph with an unacceptably small inputset"""
     with pytest.raises(ValueError, match=".* inputset contains too few inputs .*"):
-        compile_numpy_function_into_op_graph(
+        compile_numpy_function_into_op_graph_and_measure_bounds(
             lambda x: x + 42,
             {"x": EncryptedScalar(Integer(5, is_signed=False))},
             [(0,), (3,)],
@@ -1632,7 +1635,7 @@ def test_compile_function_with_dot(
     assert len(shape) == 1
     repeat = shape[0]
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         params,
         data_gen_local(max_for_ij, repeat),
@@ -1729,7 +1732,7 @@ def test_compile_with_random_inputset(default_compilation_configuration):
     configuration_to_use = deepcopy(default_compilation_configuration)
     configuration_to_use.enable_unsafe_features = True
 
-    compile_numpy_function_into_op_graph(
+    compile_numpy_function_into_op_graph_and_measure_bounds(
         lambda x: x + 1,
         {"x": EncryptedScalar(UnsignedInteger(6))},
         inputset="random",
@@ -1748,7 +1751,7 @@ def test_fail_compile_with_random_inputset(default_compilation_configuration):
 
     with pytest.raises(ValueError):
         try:
-            compile_numpy_function_into_op_graph(
+            compile_numpy_function_into_op_graph_and_measure_bounds(
                 lambda x: x + 1,
                 {"x": EncryptedScalar(UnsignedInteger(3))},
                 inputset="unsupported",

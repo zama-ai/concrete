@@ -8,7 +8,7 @@ import pytest
 from concrete.common.compilation import CompilationConfiguration
 from concrete.common.data_types.integers import Integer
 from concrete.common.values import EncryptedScalar
-from concrete.numpy.compile import compile_numpy_function_into_op_graph
+from concrete.numpy.compile import compile_numpy_function_into_op_graph_and_measure_bounds
 
 
 def no_fuse(x):
@@ -43,7 +43,7 @@ def test_enable_topological_optimizations(
 ):
     """Test function for enable_topological_optimizations flag of compilation configuration"""
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function_to_trace,
         {
             param: EncryptedScalar(Integer(32, is_signed=False))
@@ -52,7 +52,7 @@ def test_enable_topological_optimizations(
         [(numpy.array(i),) for i in range(10)],
         default_compilation_configuration,
     )
-    op_graph_not_optimized = compile_numpy_function_into_op_graph(
+    op_graph_not_optimized = compile_numpy_function_into_op_graph_and_measure_bounds(
         function_to_trace,
         {
             param: EncryptedScalar(Integer(32, is_signed=False))

@@ -3,7 +3,7 @@
 from concrete.common.data_types.integers import Integer
 from concrete.common.debugging import format_operation_graph
 from concrete.common.values import EncryptedScalar
-from concrete.numpy.compile import compile_numpy_function_into_op_graph
+from concrete.numpy.compile import compile_numpy_function_into_op_graph_and_measure_bounds
 
 
 def test_format_operation_graph_with_multiple_edges(default_compilation_configuration):
@@ -12,7 +12,7 @@ def test_format_operation_graph_with_multiple_edges(default_compilation_configur
     def function(x):
         return x + x
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         {"x": EncryptedScalar(Integer(4, True))},
         [(i,) for i in range(0, 10)],
@@ -38,7 +38,7 @@ def test_format_operation_graph_with_offending_nodes(default_compilation_configu
     def function(x):
         return x + 42
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         {"x": EncryptedScalar(Integer(7, True))},
         [(i,) for i in range(-5, 5)],

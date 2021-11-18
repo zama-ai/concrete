@@ -5,7 +5,7 @@ import pytest
 
 from concrete.common.data_types import UnsignedInteger
 from concrete.common.values import EncryptedScalar, EncryptedTensor
-from concrete.numpy import compile_numpy_function_into_op_graph
+from concrete.numpy import compile_numpy_function_into_op_graph_and_measure_bounds
 
 
 @pytest.mark.parametrize(
@@ -347,7 +347,7 @@ def test_constant_indexing(
         for _ in range(10)
     ]
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function_with_indexing,
         {"x": input_value},
         inputset,
@@ -470,7 +470,7 @@ def test_invalid_constant_indexing(
                 )
                 for _ in range(10)
             ]
-            compile_numpy_function_into_op_graph(
+            compile_numpy_function_into_op_graph_and_measure_bounds(
                 function_with_indexing,
                 {"x": input_value},
                 inputset,
@@ -525,7 +525,7 @@ def test_constant_indexing_with_numpy_integers(
         for _ in range(10)
     ]
 
-    op_graph = compile_numpy_function_into_op_graph(
+    op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function_with_indexing,
         {"x": input_value},
         inputset,
@@ -586,7 +586,7 @@ def test_invalid_constant_indexing_with_numpy_values(
                 )
                 for _ in range(10)
             ]
-            compile_numpy_function_into_op_graph(
+            compile_numpy_function_into_op_graph_and_measure_bounds(
                 function_with_indexing,
                 {"x": input_value},
                 inputset,

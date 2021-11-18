@@ -61,28 +61,26 @@ def numpy_min_func(lhs: Any, rhs: Any) -> Any:
 def _compile_numpy_function_into_op_graph_internal(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterable[Tuple[Any, ...]],
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
 ) -> OPGraph:
-    """Compile a function into an OPGraph.
+    """Compile a function into an OPGraph without evaluating the intermediate nodes bounds.
 
     Args:
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterable on tuples which are of the same length than the number of
-            parameters in the function, and in the same order than these same parameters
-        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
-            during compilation
         compilation_configuration (CompilationConfiguration): Configuration object to use
+            during compilation
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
             during compilation
 
     Returns:
-        OPGraph: compiled function into a graph
+        OPGraph: compiled function into a graph, node values are not representative of the values
+            that can be observed during execution.
+            Use _compile_numpy_function_into_op_graph_and_measure_bounds_internal if you need bounds
+            estimation.
     """
-
     # Check function parameters
     wrong_inputs = {
         inp: function_parameters[inp]
@@ -119,6 +117,34 @@ def _compile_numpy_function_into_op_graph_internal(
         if not check_op_graph_is_integer_program(op_graph):
             fuse_float_operations(op_graph, compilation_artifacts)
 
+    return op_graph
+
+
+def _measure_op_graph_bounds_and_update_internal(
+    op_graph: OPGraph,
+    function_parameters: Dict[str, BaseValue],
+    inputset: Iterable[Tuple[Any, ...]],
+    compilation_configuration: CompilationConfiguration,
+    compilation_artifacts: CompilationArtifacts,
+) -> None:
+    """Measure the intermediate values and update the OPGraph accordingly for the given inputset.
+
+    Args:
+        op_graph (OPGraph): the OPGraph for which to measure bounds and update node values.
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
+        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
+            needs to be an iterable on tuples which are of the same length than the number of
+            parameters in the function, and in the same order than these same parameters
+        compilation_configuration (CompilationConfiguration): Configuration object to use
+            during compilation
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+            during compilation
+
+    Raises:
+        ValueError: Raises an error if the inputset is too small and the compilation configuration
+            treats warnings as error.
+    """
     # Find bounds with the inputset
     inputset_size, node_bounds_and_samples = eval_op_graph_bounds_on_inputset(
         op_graph,
@@ -167,13 +193,54 @@ def _compile_numpy_function_into_op_graph_internal(
         get_constructor_for_numpy_or_python_constant_data,
     )
 
-    # Add the initial graph as an artifact
+
+def _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
+    function_to_compile: Callable,
+    function_parameters: Dict[str, BaseValue],
+    inputset: Iterable[Tuple[Any, ...]],
+    compilation_configuration: CompilationConfiguration,
+    compilation_artifacts: CompilationArtifacts,
+) -> OPGraph:
+    """Compile a function into an OPGraph and evaluate the intermediate nodes bounds.
+
+    Args:
+        function_to_compile (Callable): The function to compile
+        function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
+            function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
+        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
+            needs to be an iterable on tuples which are of the same length than the number of
+            parameters in the function, and in the same order than these same parameters
+        compilation_configuration (CompilationConfiguration): Configuration object to use
+            during compilation
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+            during compilation
+
+    Returns:
+        OPGraph: compiled function into a graph with estimated bounds in node values.
+    """
+
+    op_graph = _compile_numpy_function_into_op_graph_internal(
+        function_to_compile,
+        function_parameters,
+        compilation_configuration,
+        compilation_artifacts,
+    )
+
+    _measure_op_graph_bounds_and_update_internal(
+        op_graph,
+        function_parameters,
+        inputset,
+        compilation_configuration,
+        compilation_artifacts,
+    )
+
+    # Add the final graph as an artifact
     compilation_artifacts.add_operation_graph("final", op_graph)
 
     return op_graph
 
 
-def compile_numpy_function_into_op_graph(
+def compile_numpy_function_into_op_graph_and_measure_bounds(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
     inputset: Union[Iterable[Tuple[Any, ...]], str],
@@ -220,7 +287,7 @@ def compile_numpy_function_into_op_graph(
     try:
         # Use context manager to restore numpy error handling
         with numpy.errstate(**numpy.geterr()):
-            return _compile_numpy_function_into_op_graph_internal(
+            return _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
                 function_to_compile,
                 function_parameters,
                 inputset,
@@ -300,7 +367,7 @@ def _compile_numpy_function_internal(
     """
 
     # Compile into an OPGraph
-    op_graph = _compile_numpy_function_into_op_graph_internal(
+    op_graph = _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
         function_to_compile,
         function_parameters,
         inputset,
