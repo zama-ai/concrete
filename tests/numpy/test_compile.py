@@ -251,7 +251,7 @@ def mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y):
     return z
 
 
-def check_is_good_execution(compiler_engine, function, args):
+def check_is_good_execution(compiler_engine, function, args, verbose=True):
     """Run several times the check compiler_engine.run(*args) == function(*args). If always wrong,
     return an error. One can set the expected probability of success of one execution and the
     number of tests, to finetune the probability of bad luck, ie that we run several times the
@@ -263,7 +263,8 @@ def check_is_good_execution(compiler_engine, function, args):
     for i in range(1, nb_tries + 1):
         if numpy.array_equal(compiler_engine.run(*args), function(*args)):
             # Good computation after i tries
-            print(f"Good computation after {i} tries")
+            if verbose:
+                print(f"Good computation after {i} tries")
             return
 
     # Bad computation after nb_tries
@@ -680,6 +681,53 @@ def test_compile_and_run_correctness(
 
     args = [random.randint(low, high) for (low, high) in input_ranges]
     assert compiler_engine.run(*args) == function(*args)
+
+
+@pytest.mark.parametrize(
+    "function,input_ranges,list_of_arg_names",
+    [
+        pytest.param(lambda x: x ** 2, ((0, 10),), ["x"]),
+        pytest.param(lambda x: 2 ** (x % 5), ((0, 20),), ["x"]),
+        # FIXME: Fails, #949 pytest.param(lambda x: abs(~x), ((0, 13),), ["x"]),
+        pytest.param(lambda x: x << 1, ((0, 13),), ["x"]),
+        # FIXME: Fails, #949 pytest.param(lambda x: 2 << (x % 6), ((0, 13),), ["x"]),
+        pytest.param(lambda x: x >> 2, ((30, 100),), ["x"]),
+        pytest.param(lambda x: 115 >> (x % 3), ((0, 17),), ["x"]),
+        pytest.param(lambda x: x % 7, ((0, 100),), ["x"]),
+        pytest.param(lambda x: x > 7, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x < 11, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x >= 8, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x <= 10, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x == 15, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x & 14, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x | 18, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x ^ 23, ((0, 20),), ["x"]),
+        pytest.param(lambda x: x % 3, ((0, 20),), ["x"]),
+        pytest.param(lambda x: 17 & x, ((0, 20),), ["x"]),
+        pytest.param(lambda x: 19 | x, ((0, 20),), ["x"]),
+        pytest.param(lambda x: 45 ^ x, ((0, 20),), ["x"]),
+        pytest.param(lambda x: 19 % (x + 1), ((0, 20),), ["x"]),
+    ],
+)
+def test_compile_and_run_correctness__for_prog_with_tlu(
+    function, input_ranges, list_of_arg_names, default_compilation_configuration
+):
+    """Test correctness of results when running a compiled function which uses a TLU"""
+
+    function_parameters = {
+        arg_name: EncryptedScalar(Integer(64, False)) for arg_name in list_of_arg_names
+    }
+
+    compiler_engine = compile_numpy_function(
+        function,
+        function_parameters,
+        data_gen(tuple(range(x[0], x[1] + 1) for x in input_ranges)),
+        default_compilation_configuration,
+    )
+
+    for _ in range(16):
+        args = [random.randint(low, high) for (low, high) in input_ranges]
+        check_is_good_execution(compiler_engine, function, args, verbose=False)
 
 
 @pytest.mark.parametrize(
