@@ -50,6 +50,9 @@ jobs:
       force-rebuild-docker: ${{ env.FORCE_REBUILD_DOCKER }}
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
+    env:
+      WHEEL: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
+
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
         with:
@@ -75,12 +78,12 @@ jobs:
           echo "Changed files:"
           echo "${ALL_CHANGED_FILES}"
 
-          echo "::set-output name=all::${ALL_CHANGED_FILES//$'\n'/ }"
+          echo "::set-output name=all::${ALL_CHANGED_FILES}"
 
       - name: Should rebuild docker check
         run: |
           set +e
-          echo "${{ steps.files.outputs.all }}" | grep "${ENV_DOCKERFILE}"
+          echo "${{ steps.files.outputs.all }}" | grep "${ENV_DOCKERFILE}$"
           DOCKERFILE_CHANGED=$?
           if [[ "${DOCKERFILE_CHANGED}" == "0" || "${FORCE_REBUILD_DOCKER}" == "true" ]]; then
             echo "Should rebuild docker image!"
@@ -94,8 +97,6 @@ jobs:
       - name: Set prefligh Docker image download compiler
         id: set_image
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
-        env:
-          WHEEL: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
         run: |
           PREFLIGHT_IMAGE_TAG=$(echo ${{ github.ref }} | sed -e 's/\//-/g')
           PREFLIGHT_IMAGE="${PREFLIGHT_IMAGE_BASE}-${PREFLIGHT_IMAGE_TAG}"
@@ -132,6 +133,8 @@ jobs:
         with:
           context: .
           # builder: ${{ steps.buildx.outputs.name }}
+          build-args: |
+            WHEEL=${{ env.WHEEL }}
           file: docker/Dockerfile.concretefhe-env
           no-cache: true
           push: true
