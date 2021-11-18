@@ -26,12 +26,18 @@ add_executable(
   globals.cc
   )
 
+add_executable(
+  end_to_end_jit_lambda
+  end_to_end_jit_lambda.cc
+  globals.cc
+)
+
 set_source_files_properties(
   end_to_end_jit_test.cc
   end_to_end_jit_clear_tensor.cc
   end_to_end_jit_encrypted_tensor.cc
   end_to_end_jit_hlfhelinalg.cc
-  globals.cc
+  end_to_end_jit_lambda.cc
 
   PROPERTIES COMPILE_FLAGS "-fno-rtti"
 )
@@ -60,9 +66,16 @@ target_link_libraries(
   ZamalangSupport
 )
 
+target_link_libraries(
+  end_to_end_jit_lambda
+  gtest_main
+  ZamalangSupport
+)
+
 include(GoogleTest)
 gtest_discover_tests(end_to_end_jit_test)
 gtest_discover_tests(end_to_end_jit_clear_tensor)
 gtest_discover_tests(end_to_end_jit_encrypted_tensor)
 gtest_discover_tests(end_to_end_jit_hlfhelinalg)
+gtest_discover_tests(end_to_end_jit_lambda)
 

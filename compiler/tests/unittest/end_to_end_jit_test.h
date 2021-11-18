@@ -21,7 +21,7 @@
 template <typename T>
 static bool assert_expected_success(llvm::Expected<T> &val) {
   if (!((bool)val)) {
-    llvm::errs() << llvm::toString(std::move(val.takeError()));
+    llvm::errs() << llvm::toString(std::move(val.takeError())) << "\n";
     return false;
   }
 
@@ -35,12 +35,27 @@ static bool assert_expected_success(llvm::Expected<T> &&val) {
   return assert_expected_success(val);
 }
 
+// Checks that the value `val` is not in an error state. Returns
+// `true` if the test passes, otherwise `false`.
+template <typename T>
+static bool assert_expected_failure(llvm::Expected<T> &&val) {
+  return !assert_expected_success(val);
+}
+
 // Checks that the value `val` of type `llvm::Expected<T>` is not in
 // an error state.
 #define ASSERT_EXPECTED_SUCCESS(val)                                           \
   do {                                                                         \
     if (!assert_expected_success(val))                                         \
       GTEST_FATAL_FAILURE_("Expected<T> contained in error state");            \
+  } while (0)
+
+// Checks that the value `val` of type `llvm::Expected<T>` is in
+// an error state.
+#define ASSERT_EXPECTED_FAILURE(val)                                           \
+  do {                                                                         \
+    if (assert_expected_success(val))                                          \
+      GTEST_FATAL_FAILURE_("Expected<T> contained not in error state");        \
   } while (0)
 
 // Checks that the value `val` is not in an error state and is equal

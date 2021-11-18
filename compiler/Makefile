@@ -61,6 +61,9 @@ build-end-to-end-jit-encrypted-tensor: build-initialized
 build-end-to-end-jit-hlfhelinalg: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_hlfhelinalg
 
+build-end-to-end-jit-lamnda: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_lambda
+
 build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-hlfhelinalg
 
 test-end-to-end-jit-test: build-end-to-end-jit-test
@@ -74,6 +77,11 @@ test-end-to-end-jit-encrypted-tensor: build-end-to-end-jit-encrypted-tensor
 
 test-end-to-end-jit-hlfhelinalg: build-end-to-end-jit-hlfhelinalg
 	$(BUILD_DIR)/bin/end_to_end_jit_hlfhelinalg
+
+test-end-to-end-jit-lambda: build-initialized build-end-to-end-jit-lamnda
+	$(BUILD_DIR)/bin/end_to_end_jit_lambda
+
+
 
 test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-hlfhelinalg
 
