@@ -302,6 +302,66 @@ class BaseTracer(ABC):
             self, other, lambda x, y: x != y, "ne"
         )
 
+    def __pow__(self, other: Union["BaseTracer", Any]):
+        # x ** cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x ** y, "pow"
+        )
+
+    def __rpow__(self, other: Union["BaseTracer", Any]):
+        # cst ** x
+        return self._helper_for_binary_functions_with_one_cst_input(
+            other, self, lambda x, y: x ** y, "pow"
+        )
+
+    def __mod__(self, other: Union["BaseTracer", Any]):
+        # x % cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x % y, "mod"
+        )
+
+    def __rmod__(self, other: Union["BaseTracer", Any]):
+        # cst % x
+        return self._helper_for_binary_functions_with_one_cst_input(
+            other, self, lambda x, y: x % y, "mod"
+        )
+
+    def __and__(self, other: Union["BaseTracer", Any]):
+        # x & cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x & y, "and"
+        )
+
+    def __rand__(self, other: Union["BaseTracer", Any]):
+        # cst & x
+        return self._helper_for_binary_functions_with_one_cst_input(
+            other, self, lambda x, y: x & y, "and"
+        )
+
+    def __or__(self, other: Union["BaseTracer", Any]):
+        # x | cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x | y, "or"
+        )
+
+    def __ror__(self, other: Union["BaseTracer", Any]):
+        # cst | x
+        return self._helper_for_binary_functions_with_one_cst_input(
+            other, self, lambda x, y: x | y, "or"
+        )
+
+    def __xor__(self, other: Union["BaseTracer", Any]):
+        # x ^ cst
+        return self._helper_for_binary_functions_with_one_cst_input(
+            self, other, lambda x, y: x ^ y, "xor"
+        )
+
+    def __rxor__(self, other: Union["BaseTracer", Any]):
+        # cst ^ x
+        return self._helper_for_binary_functions_with_one_cst_input(
+            other, self, lambda x, y: x ^ y, "xor"
+        )
+
     def __sub__(self, other: Union["BaseTracer", Any]) -> "BaseTracer":
         if not self._supports_other_operand(other):
             return NotImplemented

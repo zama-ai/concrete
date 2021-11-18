@@ -859,6 +859,106 @@ def test_tracing_numpy_calls(
             ],
         ),
         # pylint: enable=misplaced-comparison-constant
+        (
+            lambda x: x & 11,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i & 11 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: 13 & x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i & 13 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: x | 6,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i | 6 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: 30 | x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i | 30 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: x ^ 91,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i ^ 91 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: 115 ^ x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i ^ 115 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: x % 11,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i % 11 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: 150 % (x + 1),
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([150 % (i + 1) for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: x ** 2,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5),
+                    numpy.array([i ** 2 for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
+        (
+            lambda x: 2 ** x,
+            [
+                (
+                    EncryptedTensor(Integer(32, is_signed=False), shape=(3, 5)),
+                    numpy.arange(15).reshape(3, 5) % 7,
+                    numpy.array([2 ** (i % 7) for i in range(15)]).reshape(3, 5),
+                ),
+            ],
+        ),
     ],
 )
 def test_tracing_ndarray_calls(
