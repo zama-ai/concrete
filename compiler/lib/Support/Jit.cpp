@@ -55,16 +55,15 @@ JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
 }
 
 llvm::Error JITLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
-  // size_t nbReturn = 0;
-  // TODO - This check break with memref as we have 5 returns args.
-  // if (!this->type.getReturnType().isa<mlir::LLVM::LLVMVoidType>()) {
-  // nbReturn = 1;
-  // }
-  // if (this->type.getNumParams() != args.size() - nbReturn) {
-  //   return llvm::make_error<llvm::StringError>(
-  //       "invokeRaw: wrong number of argument",
-  //       llvm::inconvertibleErrorCode());
-  // }
+  size_t nbReturn = 0;
+  if (!this->type.getReturnType().isa<mlir::LLVM::LLVMVoidType>()) {
+  nbReturn = 1;
+  }
+  if (this->type.getNumParams() != args.size() - nbReturn) {
+    return llvm::make_error<llvm::StringError>(
+        "invokeRaw: wrong number of argument",
+        llvm::inconvertibleErrorCode());
+  }
   if (llvm::find(args, nullptr) != args.end()) {
     return llvm::make_error<llvm::StringError>(
         "invoke: some arguments are null", llvm::inconvertibleErrorCode());
