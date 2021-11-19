@@ -151,12 +151,21 @@ JITLambda::Argument::create(KeySet &keySet) {
   return std::move(args);
 }
 
+llvm::Error JITLambda::Argument::acceptNthArg(size_t pos) {
+  size_t arity = inputGates.size();
+  if (pos >= arity) {
+    auto msg = "Call a function of arity " + llvm::Twine(arity) +
+               " with at least " + llvm::Twine(pos + 1) + " arguments";
+    return llvm::make_error<llvm::StringError>(msg,
+                                               llvm::inconvertibleErrorCode());
+  }
+  return llvm::Error::success();
+}
+
 llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
-  if (pos >= inputGates.size()) {
-    return llvm::make_error<llvm::StringError>(
-        llvm::Twine("argument index out of bound: pos=")
-            .concat(llvm::Twine(pos)),
-        llvm::inconvertibleErrorCode());
+  auto error = acceptNthArg(pos);
+  if (error) {
+    return error;
   }
   auto gate = inputGates[pos];
   auto info = std::get<0>(gate);
@@ -192,6 +201,10 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
 llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
                                         const void *data,
                                         llvm::ArrayRef<int64_t> shape) {
+  auto error = acceptNthArg(pos);
+  if (error) {
+    return error;
+  }
   auto gate = inputGates[pos];
   auto info = std::get<0>(gate);
   auto offset = std::get<1>(gate);

@@ -74,7 +74,7 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar) {
   ASSERT_EXPECTED_SUCCESS(lambda(1_u64, arg, ARRAY_SIZE(arg)));
 }
 
-TEST(Lambda_check_param, DISABLED_scalar_tensor_to_scalar_superfluous_param) {
+TEST(Lambda_check_param, scalar_tensor_to_scalar_superfluous_param) {
   Lambda lambda = checkedJit(R"XXX(
     func @main(
       %arg0: !HLFHE.eint<1>, %arg1: tensor<2x!HLFHE.eint<1>>) -> !HLFHE.eint<1>
