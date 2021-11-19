@@ -47,7 +47,7 @@ static bool assert_expected_failure(llvm::Expected<T> &&val) {
 #define ASSERT_EXPECTED_SUCCESS(val)                                           \
   do {                                                                         \
     if (!assert_expected_success(val))                                         \
-      GTEST_FATAL_FAILURE_("Expected<T> contained in error state");            \
+      GTEST_FATAL_FAILURE_("Expected<T> in error state");                      \
   } while (0)
 
 // Checks that the value `val` of type `llvm::Expected<T>` is in
@@ -55,7 +55,7 @@ static bool assert_expected_failure(llvm::Expected<T> &&val) {
 #define ASSERT_EXPECTED_FAILURE(val)                                           \
   do {                                                                         \
     if (assert_expected_success(val))                                          \
-      GTEST_FATAL_FAILURE_("Expected<T> contained not in error state");        \
+      GTEST_FATAL_FAILURE_("Expected<T> not in error state");                  \
   } while (0)
 
 // Checks that the value `val` is not in an error state and is equal

@@ -77,7 +77,7 @@ public:
 
   private:
     // Verify if lambda can accept a n-th argument.
-    llvm::Error acceptNthArg(size_t n);
+    llvm::Error emitErrorIfTooManyArgs(size_t n);
     llvm::Error setArg(size_t pos, size_t width, const void *data,
                        llvm::ArrayRef<int64_t> shape);
 
