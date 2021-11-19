@@ -117,6 +117,10 @@ func @chain_add_eint_int_neg_eint(%e: tensor<8x!HLFHE.eint<2>>) -> tensor<8x!HLF
 
 // -----
 
+/////////////////////////////////////////////////
+// HLFHELinalg.apply_multi_lookup_table
+/////////////////////////////////////////////////
+
 func @apply_lookup_table(%t: tensor<3x3x!HLFHE.eint<2>>) -> tensor<3x3x!HLFHE.eint<3>> {
   %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
   // CHECK: %[[RES:.*]] = "HLFHELinalg.apply_lookup_table"(%[[T:.*]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<3x3x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!HLFHE.eint<3>>
@@ -130,16 +134,13 @@ func @apply_lookup_table_after_op(%t: tensor<8x!HLFHE.eint<2>>, %i: tensor<8xi3>
   %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
   // CHECK: %[[V0:.*]] = "HLFHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 8 : ui{{[0-9]+}}} : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
   %0 = "HLFHELinalg.mul_eint_int"(%t, %i) : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
-  // CHECK-NEXT: %[[RES:.*]] = "HLFHELinalg.apply_lookup_table"(%[[V0:.*]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<8x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<8x!HLFHE.eint<3>>
+  // CHECK-NEXT: %[[RES:.*]] = "HLFHELinalg.apply_lookup_table"(%[[V0]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<8x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<8x!HLFHE.eint<3>>
   %res = "HLFHELinalg.apply_lookup_table"(%0, %lut) : (tensor<8x!HLFHE.eint<2>>, tensor<4xi64>) -> tensor<8x!HLFHE.eint<3>>
   return %res : tensor<8x!HLFHE.eint<3>>
 }
 
 // -----
 
-/////////////////////////////////////////////////
-// HLFHELinalg.apply_multi_lookup_table
-/////////////////////////////////////////////////
 
 func @apply_multi_lookup_table(%t: tensor<3x3x!HLFHE.eint<2>>, %luts: tensor<3x3x4xi64>) -> tensor<3x3x!HLFHE.eint<3>> {
   // CHECK: %[[RES:.*]] = "HLFHELinalg.apply_multi_lookup_table"(%[[T:.*]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<3x3x!HLFHE.eint<2>>, tensor<3x3x4xi64>) -> tensor<3x3x!HLFHE.eint<3>>
@@ -152,7 +153,7 @@ func @apply_multi_lookup_table(%t: tensor<3x3x!HLFHE.eint<2>>, %luts: tensor<3x3
 func @apply_multi_lookup_table_after_op(%t: tensor<8x!HLFHE.eint<2>>, %i: tensor<8xi3>, %luts: tensor<8x4xi64>) -> tensor<8x!HLFHE.eint<3>> {
   // CHECK: %[[V0:.*]] = "HLFHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 8 : ui{{[0-9]+}}} : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
   %0 = "HLFHELinalg.mul_eint_int"(%t, %i) : (tensor<8x!HLFHE.eint<2>>, tensor<8xi3>) -> tensor<8x!HLFHE.eint<2>>
-  // CHECK-NEXT: %[[RES:.*]] = "HLFHELinalg.apply_multi_lookup_table"(%[[V0:.*]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<8x!HLFHE.eint<2>>, tensor<8x4xi64>) -> tensor<8x!HLFHE.eint<3>>
+  // CHECK-NEXT: %[[RES:.*]] = "HLFHELinalg.apply_multi_lookup_table"(%[[V0]], %[[LUT:.*]]) {MANP = 1 : ui1} : (tensor<8x!HLFHE.eint<2>>, tensor<8x4xi64>) -> tensor<8x!HLFHE.eint<3>>
   %res = "HLFHELinalg.apply_multi_lookup_table"(%0, %luts) : (tensor<8x!HLFHE.eint<2>>, tensor<8x4xi64>) -> tensor<8x!HLFHE.eint<3>>
   return %res : tensor<8x!HLFHE.eint<3>>
 }
