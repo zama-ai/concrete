@@ -44,7 +44,7 @@ jobs:
           host: ${{ steps.public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
-          command_timeout: 60m
+          command_timeout: 90m
           script: |
             cd ~/concretefhe-internal
             git pull
