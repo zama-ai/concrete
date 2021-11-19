@@ -17,6 +17,7 @@ studied cryptographic hardness assumptions believed to be secure even against qu
 
 - [documentation](https://docs.zama.ai/concrete/lib)
 - [whitepaper](http://whitepaper.zama.ai)
+- [community website](https://community.zama.ai)
 
 ## Concrete crates
 
@@ -113,7 +114,7 @@ One thing to note when using concrete on WSL is that to improve compile times,
 the concrete repository should be located in the WSL's own space (that is, not somewhere under `/mnt/c`).
 For example in your WSL's user home directory.
 
-# Credits
+## Credits
 
 This library uses several dependencies and we would like to thank the contributors of those
 libraries.
@@ -121,7 +122,7 @@ libraries.
 We thank [Daniel May](https://gitlab.com/danieljrmay) for supporting this project and donating the
 `concrete` crate.
 
-# License
+## License
 
-This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, 
-please contact us at `hello@zama.ai`. 
+This software is distributed under the BSD-3-Clause-Clear license. If you have any questions,
+please contact us at `hello@zama.ai`.
