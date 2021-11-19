@@ -1831,12 +1831,11 @@ def test_wrong_inputs(default_compilation_configuration):
     [
         pytest.param(lambda x: (x + (-27)) + 32, ((0, 10),), ["x"]),
         pytest.param(lambda x: ((-3) * x) + (100 - (x + 1)), ((0, 10),), ["x"]),
-        # FIXME: doesn't work for now, #885
-        # pytest.param(
-        #     lambda x: (50 * (numpy.cos(x + 33.0))).astype(numpy.uint32),
-        #     ((0, 31),),
-        #     ["x"],
-        # ),
+        pytest.param(
+            lambda x: (20 + 10 * numpy.tanh(50 * (numpy.cos(x + 33.0)))).astype(numpy.uint32),
+            ((0, 31),),
+            ["x"],
+        ),
         pytest.param(
             lambda x: (20 * (numpy.cos(x + 33.0)) + 30).astype(numpy.uint32),
             ((0, 31),),
