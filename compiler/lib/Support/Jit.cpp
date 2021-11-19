@@ -54,11 +54,23 @@ JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
   return std::move(lambda);
 }
 
+llvm::Error hasSomeNull(llvm::MutableArrayRef<void *> args) {
+  auto pos = 0;
+  for (auto arg : args) {
+    if (arg == nullptr) {
+      auto msg =
+          "invoke: argument at pos " + llvm::Twine(pos) + " is null or missing";
+      return llvm::make_error<llvm::StringError>(
+          msg, llvm::inconvertibleErrorCode());
+    }
+    pos++;
+  }
+  return llvm::Error::success();
+}
+
 llvm::Error JITLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
-  if (!args.empty() && llvm::find(args, nullptr) != args.end()) {
-    return llvm::make_error<llvm::StringError>(
-        "invoke: some arguments are null or missing",
-        llvm::inconvertibleErrorCode());
+  if (auto hasSomeNullError = hasSomeNull(args)) {
+    return hasSomeNullError;
   }
   return this->engine->invokePacked(this->name, args);
 }
