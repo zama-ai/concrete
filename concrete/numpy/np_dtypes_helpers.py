@@ -22,8 +22,12 @@ from ..common.tracing import BaseTracer
 from ..common.values import BaseValue, TensorValue
 
 NUMPY_TO_COMMON_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
+    numpy.dtype(numpy.int8): Integer(8, is_signed=True),
+    numpy.dtype(numpy.int16): Integer(16, is_signed=True),
     numpy.dtype(numpy.int32): Integer(32, is_signed=True),
     numpy.dtype(numpy.int64): Integer(64, is_signed=True),
+    numpy.dtype(numpy.uint8): Integer(8, is_signed=False),
+    numpy.dtype(numpy.uint16): Integer(16, is_signed=False),
     numpy.dtype(numpy.uint32): Integer(32, is_signed=False),
     numpy.dtype(numpy.uint64): Integer(64, is_signed=False),
     numpy.dtype(numpy.float32): Float(32),

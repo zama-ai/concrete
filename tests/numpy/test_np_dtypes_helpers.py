@@ -16,10 +16,18 @@ from concrete.numpy.np_dtypes_helpers import (
 @pytest.mark.parametrize(
     "numpy_dtype,expected_common_type",
     [
+        pytest.param(numpy.int8, Integer(8, is_signed=True)),
+        pytest.param("int8", Integer(8, is_signed=True)),
+        pytest.param(numpy.int16, Integer(16, is_signed=True)),
+        pytest.param("int16", Integer(16, is_signed=True)),
         pytest.param(numpy.int32, Integer(32, is_signed=True)),
         pytest.param("int32", Integer(32, is_signed=True)),
         pytest.param(numpy.int64, Integer(64, is_signed=True)),
         pytest.param("int64", Integer(64, is_signed=True)),
+        pytest.param(numpy.uint8, Integer(8, is_signed=False)),
+        pytest.param("uint8", Integer(8, is_signed=False)),
+        pytest.param(numpy.uint16, Integer(16, is_signed=False)),
+        pytest.param("uint16", Integer(16, is_signed=False)),
         pytest.param(numpy.uint32, Integer(32, is_signed=False)),
         pytest.param("uint32", Integer(32, is_signed=False)),
         pytest.param(numpy.uint64, Integer(64, is_signed=False)),
