@@ -70,6 +70,7 @@ jobs:
         with:
           token: ${{ secrets.BOT_TOKEN }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: rebase
       - name: Send Slack Notification
         if: ${{ always() && failure() }}
         continue-on-error: true
