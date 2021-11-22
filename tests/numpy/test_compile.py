@@ -736,11 +736,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
 @pytest.mark.parametrize(
     "function,parameters,inputset,test_input,expected_output",
     [
-        # TODO: find a way to support this case
-        # https://github.com/zama-ai/concretefhe-internal/issues/837
-        #
-        # the problem is that compiler doesn't support combining scalars and tensors
-        # but they do support broadcasting, so scalars should be converted to (1,) shaped tensors
         pytest.param(
             lambda x: x + 1,
             {
@@ -759,7 +754,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 [7, 2],
                 [3, 6],
             ],
-            marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             lambda x: x + numpy.array([[1, 0], [2, 0], [3, 1]], dtype=numpy.uint32),
@@ -780,11 +774,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 [5, 6],
             ],
         ),
-        # TODO: find a way to support this case
-        # https://github.com/zama-ai/concretefhe-internal/issues/837
-        #
-        # the problem is that compiler doesn't support combining scalars and tensors
-        # but they do support broadcasting, so scalars should be converted to (1,) shaped tensors
         pytest.param(
             lambda x, y: x + y,
             {
@@ -811,7 +800,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 [8, 3],
                 [4, 7],
             ],
-            marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             lambda x, y: x + y,
@@ -844,11 +832,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 [5, 9],
             ],
         ),
-        # TODO: find a way to support this case
-        # https://github.com/zama-ai/concretefhe-internal/issues/837
-        #
-        # the problem is that compiler doesn't support combining scalars and tensors
-        # but they do support broadcasting, so scalars should be converted to (1,) shaped tensors
         pytest.param(
             lambda x: 100 - x,
             {
@@ -867,7 +850,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 [94, 99],
                 [98, 95],
             ],
-            marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             lambda x: numpy.array([[10, 15], [20, 15], [10, 30]], dtype=numpy.uint32) - x,
@@ -888,11 +870,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 [8, 25],
             ],
         ),
-        # TODO: find a way to support this case
-        # https://github.com/zama-ai/concretefhe-internal/issues/837
-        #
-        # the problem is that compiler doesn't support combining scalars and tensors
-        # but they do support broadcasting, so scalars should be converted to (1,) shaped tensors
         pytest.param(
             lambda x: x * 2,
             {
@@ -911,7 +888,6 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 [12, 2],
                 [4, 10],
             ],
-            marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             lambda x: x * numpy.array([[1, 2], [2, 1], [3, 1]], dtype=numpy.uint32),
@@ -994,7 +970,10 @@ def test_compile_and_run_tensor_correctness(
         default_compilation_configuration,
     )
 
-    numpy_test_input = (numpy.array(item, dtype=numpy.uint8) for item in test_input)
+    numpy_test_input = (
+        item if isinstance(item, int) else numpy.array(item, dtype=numpy.uint8)
+        for item in test_input
+    )
     assert numpy.array_equal(
         circuit.run(*numpy_test_input),
         numpy.array(expected_output, dtype=numpy.uint8),

@@ -50,8 +50,19 @@ class IntermediateNodeConverter:
     all_of_the_inputs_are_tensors: bool
     one_of_the_inputs_is_a_tensor: bool
 
+    nodes_to_mlir_names: Dict[IntermediateNode, str]
+    mlir_names_to_mlir_types: Dict[str, str]
+    scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]]
+
     def __init__(
-        self, ctx: Context, op_graph: OPGraph, node: IntermediateNode, preds: List[OpResult]
+        self,
+        ctx: Context,
+        op_graph: OPGraph,
+        node: IntermediateNode,
+        preds: List[OpResult],
+        nodes_to_mlir_names: Dict[OpResult, str],
+        mlir_names_to_mlir_types: Dict[str, str],
+        scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]],
     ):
         self.ctx = ctx
         self.op_graph = op_graph
@@ -74,6 +85,10 @@ class IntermediateNodeConverter:
             else:  # pragma: no cover
                 # this branch is not covered as there are only TensorValues for now
                 self.all_of_the_inputs_are_tensors = False
+
+        self.nodes_to_mlir_names = nodes_to_mlir_names
+        self.mlir_names_to_mlir_types = mlir_names_to_mlir_types
+        self.scalar_to_1d_tensor_conversion_hacks = scalar_to_1d_tensor_conversion_hacks
 
     def convert(self, additional_conversion_info: Dict[str, Any]) -> OpResult:
         """Convert an intermediate node to its corresponding MLIR representation.
@@ -110,6 +125,20 @@ class IntermediateNodeConverter:
         else:  # pragma: no cover
             # this branch is not covered as unsupported opeations fail on check mlir compatibility
             raise NotImplementedError(f"{type(self.node)} nodes cannot be converted to MLIR yet")
+
+        mlir_name = str(result).replace("Value(", "").split("=", maxsplit=1)[0].strip()
+
+        self.nodes_to_mlir_names[self.node] = mlir_name
+        self.mlir_names_to_mlir_types[mlir_name] = str(result.type)
+
+        if isinstance(self.node, (Add, Mul, Sub, Dot)):
+            if self.one_of_the_inputs_is_a_tensor and not self.all_of_the_inputs_are_tensors:
+                to_be_converted = []
+                for (pred, output) in self.op_graph.get_ordered_inputs_of(self.node):
+                    inp = pred.outputs[output]
+                    if isinstance(inp, TensorValue) and inp.is_scalar:
+                        to_be_converted.append(self.nodes_to_mlir_names[pred])
+                self.scalar_to_1d_tensor_conversion_hacks[mlir_name] = to_be_converted
 
         return result
 
