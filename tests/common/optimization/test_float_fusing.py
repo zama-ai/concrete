@@ -687,7 +687,10 @@ def subtest_fuse_float_binary_operations_dont_support_two_variables(fun, tensor_
 
     params_names = signature(function_to_trace).parameters.keys()
 
-    with pytest.raises(NotImplementedError, match=r"Can't manage binary operator"):
+    with pytest.raises(
+        AssertionError,
+        match=r"Can only have 1 non constant predecessor in _np_operator, got 2 for operator",
+    ):
         trace_numpy_function(
             function_to_trace,
             {
