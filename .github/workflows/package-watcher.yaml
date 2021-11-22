@@ -57,6 +57,7 @@ jobs:
           title: "Docker env compiler update to ${{ env.LATEST_COMPILER_PACKAGE_TIMESTAMP }}"
           body: "Automatic PR for docker env compiler update"
           labels: dependencies
+          delete-branch: true
       - name: Self approve PR to attempt auto merge
         if: ${{ fromJSON(env.SHOULD_RUN) && steps.cpr.outputs.pull-request-number != null }}
         uses: hmarr/auto-approve-action@6a9ec7556f0a7fa5b49527a1eea4878b8a22d2e0
