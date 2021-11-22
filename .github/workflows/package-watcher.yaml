@@ -58,14 +58,14 @@ jobs:
           body: "Automatic PR for docker env compiler update"
           labels: dependencies
       - name: Self approve PR to attempt auto merge
-        if: ${{ fromJSON(env.SHOULD_RUN) && env.LATEST_COMPILER_PACKAGE_TIMESTAMP != '' }}
+        if: ${{ fromJSON(env.SHOULD_RUN) && steps.cpr.outputs.pull-request-number != null }}
         uses: hmarr/auto-approve-action@6a9ec7556f0a7fa5b49527a1eea4878b8a22d2e0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: rebase
       - name: Enable auto-merge for PR
-        if: ${{ fromJSON(env.SHOULD_RUN) && env.LATEST_COMPILER_PACKAGE_TIMESTAMP != '' }}
+        if: ${{ fromJSON(env.SHOULD_RUN) && steps.cpr.outputs.pull-request-number != null }}
         uses: peter-evans/enable-pull-request-automerge@d2ede5636b3febc92809259995e643565e675aab
         with:
           token: ${{ secrets.BOT_TOKEN }}
