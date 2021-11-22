@@ -42,7 +42,7 @@ impl Fft {
     /// ```
     pub fn new(size: PolynomialSize) -> Fft {
         debug_assert!(
-            [256, 512, 1024, 2048, 4096].contains(&size.0),
+            [128, 256, 512, 1024, 2048, 4096, 8192, 16384].contains(&size.0),
             "The size chosen is not valid ({}). Should be 256, 512, 1024, 2048 or 4096",
             size.0
         );
