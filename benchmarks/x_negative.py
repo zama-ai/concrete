@@ -8,7 +8,8 @@ import concrete.numpy as hnp
 
 def main():
     def function_to_compile(x):
-        return np.negative(x)
+        # Such that the result is positive
+        return 10 * np.ones(shape=(10, 6), dtype=np.uint8) + np.negative(x)
 
     x = hnp.EncryptedTensor(hnp.UnsignedInteger(3), shape=(10, 6))
 
