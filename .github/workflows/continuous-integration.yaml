@@ -78,12 +78,14 @@ jobs:
           echo "Changed files:"
           echo "${ALL_CHANGED_FILES}"
 
-          echo "::set-output name=all::${ALL_CHANGED_FILES}"
+          echo "::set-output name=all::${ALL_CHANGED_FILES//$'\n'/ }"
 
       - name: Should rebuild docker check
         run: |
           set +e
-          echo "${{ steps.files.outputs.all }}" | grep "${ENV_DOCKERFILE}$"
+          ALL_CHANGED_FILES="${{ steps.files.outputs.all }}"
+          ALL_CHANGED_FILES="${ALL_CHANGED_FILES// /$'\n'}"
+          echo "${ALL_CHANGED_FILES}" | grep "${ENV_DOCKERFILE}$"
           DOCKERFILE_CHANGED=$?
           if [[ "${DOCKERFILE_CHANGED}" == "0" || "${FORCE_REBUILD_DOCKER}" == "true" ]]; then
             echo "Should rebuild docker image!"

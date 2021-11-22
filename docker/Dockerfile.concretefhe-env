@@ -1,5 +1,8 @@
 FROM ubuntu:20.04
 
+# Do not change the line below it will be updated automatically when the docker is regenerated
+# compiler timestamp: unknown
+
 # Remove once compiler is on PyPi https://github.com/zama-ai/concretefhe-internal/issues/809
 ARG WHEEL
 ENV TZ=Europe/Paris

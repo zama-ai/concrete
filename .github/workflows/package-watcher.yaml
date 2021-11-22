@@ -1,0 +1,83 @@
+name: Package Version Checker
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # At minute 0 for each hour from 8:00 to 22:00 inclusive from Monday to Friday inclusive
+    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+    - cron: '0 6-20 * * 1-5'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  check_and_notify_build:
+    name: Check timestamps and open PR
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Should run
+        run: |
+          SHOULD_RUN=${{ secrets.PACKAGE_WATCHER_ENABLED }}
+          if [[ "${SHOULD_RUN}" == "PACKAGE_WATCHER_PREFIX_ENABLED" ]]; then
+            SHOULD_RUN="true"
+            echo "Running package watcher"
+          else
+            SHOULD_RUN="false"
+            echo "Won't run package watcher"
+          fi
+          echo "SHOULD_RUN=${SHOULD_RUN}" >> "$GITHUB_ENV"
+      - name: Checkout Code
+        if: ${{ fromJSON(env.SHOULD_RUN) }}
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+      - name: Compare image timestamps and notify
+        if: ${{ fromJSON(env.SHOULD_RUN) }}
+        env:
+          WHEEL: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
+        run: |
+          ./script/actions_utils/timestamp_check_compiler_package_update_container.sh \
+          --compiler-release-endpoint-url \
+          https://api.github.com/repos/zama-ai/homomorphizer/releases \
+          --env_img_url \
+          https://api.github.com/orgs/zama-ai/packages/container/concretefhe-env/versions \
+          --file "${WHEEL}" \
+          --token ${{ secrets.BOT_TOKEN }} \
+          --github-env "$GITHUB_ENV"
+      - name: Open PR
+        if: ${{ fromJSON(env.SHOULD_RUN) && env.LATEST_COMPILER_PACKAGE_TIMESTAMP != '' }}
+        uses: peter-evans/create-pull-request@67df31e08a133c6a77008b89689677067fef169e
+        id: cpr
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          commit-message: "chore(deps): bump compiler to ${{ env.LATEST_COMPILER_PACKAGE_TIMESTAMP }}"
+          branch: chore/update-docker-env-compiler
+          base: main
+          title: "Docker env compiler update to ${{ env.LATEST_COMPILER_PACKAGE_TIMESTAMP }}"
+          body: "Automatic PR for docker env compiler update"
+          labels: dependencies
+      - name: Self approve PR to attempt auto merge
+        if: ${{ fromJSON(env.SHOULD_RUN) && env.LATEST_COMPILER_PACKAGE_TIMESTAMP != '' }}
+        uses: hmarr/auto-approve-action@5d04a5ca6da9aeb8ca9f31a5239b96fc3e003029
+        with:
+          github-token: ${{ secrets.BOT_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+      - name: Enable auto-merge for PR
+        if: ${{ fromJSON(env.SHOULD_RUN) && env.LATEST_COMPILER_PACKAGE_TIMESTAMP != '' }}
+        uses: peter-evans/enable-pull-request-automerge@d2ede5636b3febc92809259995e643565e675aab
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+      - name: Send Slack Notification
+        if: ${{ always() && failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Package watcher finished with status ${{ job.status }} \
+            (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
