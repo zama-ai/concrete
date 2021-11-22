@@ -40,7 +40,7 @@ fn test_single_forward_backward() {
     }
     let mut generator = RandomGenerator::new(None);
     for _ in 0..100 {
-        for size in &[256, 512, 1024, 2048] {
+        for size in &[128, 256, 512, 1024, 2048, 4096, 8192, 16384] {
             let fft = Fft::new(PolynomialSize(*size));
             let mut poly = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
             generator.fill_tensor_with_random_gaussian(&mut poly, 0., 1.);
@@ -93,7 +93,7 @@ fn test_two_forward_backward() {
     }
     let mut generator = RandomGenerator::new(None);
     for _ in 0..100 {
-        for size in &[256, 512, 1024, 2048] {
+        for size in &[128, 256, 512, 1024, 2048, 4096, 8192, 16384] {
             let fft = Fft::new(PolynomialSize(*size));
             let mut poly1 = Polynomial::allocate(f64::ZERO, PolynomialSize(*size));
             generator.fill_tensor_with_random_gaussian(&mut poly1, 0., 1.);
