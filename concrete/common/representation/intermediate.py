@@ -18,14 +18,7 @@ from ..debugging.custom_assert import assert_true
 from ..helpers import indexing_helpers
 from ..helpers.formatting_helpers import format_constant
 from ..helpers.python_helpers import catch, update_and_return_dict
-from ..values import (
-    BaseValue,
-    ClearScalar,
-    ClearTensor,
-    EncryptedScalar,
-    EncryptedTensor,
-    TensorValue,
-)
+from ..values import BaseValue, ClearTensor, EncryptedTensor, TensorValue
 
 IR_MIX_VALUES_FUNC_ARG_NAME = "mix_values_func"
 
@@ -490,11 +483,20 @@ class Dot(IntermediateNode):
                 f"Dot between vectors of shapes {lhs.shape} and {rhs.shape} is not supported",
             )
 
-        output_scalar_value = (
-            EncryptedScalar if (lhs.is_encrypted or rhs.is_encrypted) else ClearScalar
-        )
+        output_shape: Tuple[int, ...]
+        if (lhs.ndim == 1 and rhs.ndim == 1) or (lhs.ndim == 0 and rhs.ndim == 0):
+            # numpy.dot(x, y) where x and y are both vectors or both scalars
+            output_shape = ()
+        elif lhs.ndim == 1:
+            # numpy.dot(x, y) where x is a vector and y is a scalar
+            output_shape = lhs.shape
+        else:
+            # numpy.dot(x, y) where x is a scalar and y is a vector
+            output_shape = rhs.shape
 
-        self.outputs = [output_scalar_value(output_dtype)]
+        output_value = EncryptedTensor if (lhs.is_encrypted or rhs.is_encrypted) else ClearTensor
+
+        self.outputs = [output_value(output_dtype, output_shape)]
         self.evaluation_function = delegate_evaluation_function
 
     def text_for_drawing(self) -> str:
