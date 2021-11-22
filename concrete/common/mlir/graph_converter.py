@@ -35,6 +35,12 @@ class OPGraphConverter(ABC):
 
         additional_conversion_info = self._generate_additional_info_dict(op_graph)
 
+        # There are no tensor +*- scalar operations in the compiler
+        # But such operations are used commonly so we need to support them
+        # So, we implemented some workarounds (pull request #970)
+        # Once we have native support, this workaround shall be removed (issue #837)
+        # (most changes in #970 shall be reverted)
+
         # { node1: "%arg0", node2: "%0", node3: "%1" }
         nodes_to_mlir_names: Dict[IntermediateNode, str] = {}
 
