@@ -2,7 +2,6 @@
 import itertools
 import random
 from copy import deepcopy
-from functools import partial
 
 import numpy
 import pytest
@@ -176,80 +175,72 @@ def complicated_topology(x):
     )
 
 
-# TODO: https://github.com/zama-ai/concretefhe-internal/issues/908
-# sotc means Scalar Or Tensor Constructor, this is a workaround for tests as the compiler does not
-# support computation between scalars and tensors
-def scalar_or_tensor_constructor(scalar_value, return_scalar):
-    """Constructor for scalars if return_scalar is true"""
-    if return_scalar:
-        return scalar_value
-    return numpy.array([scalar_value])
-
-
-def mix_x_and_y_and_call_f(func, sotc, x, y):
+def mix_x_and_y_and_call_f(func, x, y):
     """Create an upper function to test `func`"""
-    z = numpy.abs(sotc(10) * func(x))
-    z = z / sotc(2)
+    z = numpy.abs(10 * func(x))
+    z = z / 2
     z = z.astype(numpy.int32) + y
     return z
 
 
-def mix_x_and_y_and_call_f_with_float_inputs(func, sotc, x, y):
+def mix_x_and_y_and_call_f_with_float_inputs(func, x, y):
     """Create an upper function to test `func`, with inputs which are forced to be floats"""
-    z = numpy.abs(sotc(10) * func(x + sotc(0.1)))
+    z = numpy.abs(10 * func(x + 0.1))
     z = z.astype(numpy.int32) + y
     return z
 
 
-def mix_x_and_y_and_call_f_with_integer_inputs(func, sotc, x, y):
+def mix_x_and_y_and_call_f_with_integer_inputs(func, x, y):
     """Create an upper function to test `func`, with inputs which are forced to be integers but
     in a way which is fusable into a TLU"""
-    x = x // sotc(2)
-    a = x + sotc(0.1)
+    x = x // 2
+    a = x + 0.1
     a = numpy.rint(a).astype(numpy.int32)
-    z = numpy.abs(sotc(10) * func(a))
+    z = numpy.abs(10 * func(a))
     z = z.astype(numpy.int32) + y
     return z
 
 
-def mix_x_and_y_and_call_f_which_expects_small_inputs(func, sotc, x, y):
+def mix_x_and_y_and_call_f_which_expects_small_inputs(func, x, y):
     """Create an upper function to test `func`, which expects small values to not use too much
     precision"""
-    a = numpy.abs(sotc(0.77) * numpy.sin(x))
-    z = numpy.abs(sotc(3) * func(a))
+    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/993
+    # Understand why it's failing with 0.77 for numpy.arctanh
+    a = numpy.abs(0.5 * numpy.sin(x))
+    z = numpy.abs(3 * func(a))
     z = z.astype(numpy.int32) + y
     return z
 
 
-def mix_x_and_y_and_call_f_which_has_large_outputs(func, sotc, x, y):
+def mix_x_and_y_and_call_f_which_has_large_outputs(func, x, y):
     """Create an upper function to test `func`, which outputs large values"""
-    a = numpy.abs(sotc(2) * numpy.sin(x))
-    z = numpy.abs(func(a) * sotc(0.131))
+    a = numpy.abs(2 * numpy.sin(x))
+    z = numpy.abs(func(a) * 0.131)
     z = z.astype(numpy.int32) + y
     return z
 
 
-def mix_x_and_y_and_call_f_avoid_0_input(func, sotc, x, y):
+def mix_x_and_y_and_call_f_avoid_0_input(func, x, y):
     """Create an upper function to test `func`, which makes that inputs are not 0"""
-    a = numpy.abs(sotc(7) * numpy.sin(x)) + sotc(1)
-    c = sotc(100) // a
-    b = sotc(100) / a
+    a = numpy.abs(7 * numpy.sin(x)) + 1
+    c = 100 // a
+    b = 100 / a
     a = a + b + c
-    z = numpy.abs(sotc(5) * func(a))
+    z = numpy.abs(5 * func(a))
     z = z.astype(numpy.int32) + y
     return z
 
 
-def mix_x_and_y_and_call_binary_f_one(func, sotc, c, x, y):
+def mix_x_and_y_and_call_binary_f_one(func, c, x, y):
     """Create an upper function to test `func`"""
-    z = numpy.abs(func(x, c) + sotc(1))
+    z = numpy.abs(func(x, c) + 1)
     z = z.astype(numpy.uint32) + y
     return z
 
 
-def mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y):
+def mix_x_and_y_and_call_binary_f_two(func, c, x, y):
     """Create an upper function to test `func`"""
-    z = numpy.abs(func(c, x) + sotc(1))
+    z = numpy.abs(func(c, x) + 1)
     z = z.astype(numpy.uint32) + y
     return z
 
@@ -264,7 +255,10 @@ def check_is_good_execution(compiler_engine, function, args, verbose=True):
     expected_bad_luck = (1 - expected_probability_of_success) ** nb_tries
 
     for i in range(1, nb_tries + 1):
-        if numpy.array_equal(compiler_engine.run(*args), function(*args)):
+        if numpy.array_equal(
+            last_engine_result := compiler_engine.run(*args),
+            last_function_result := function(*args),
+        ):
             # Good computation after i tries
             if verbose:
                 print(f"Good computation after {i} tries")
@@ -273,7 +267,8 @@ def check_is_good_execution(compiler_engine, function, args, verbose=True):
     # Bad computation after nb_tries
     raise AssertionError(
         f"bad computation after {nb_tries} tries, which was supposed to happen with a "
-        f"probability of {expected_bad_luck}"
+        f"probability of {expected_bad_luck}.\nLast engine result: {last_engine_result} "
+        f"last function result: {last_function_result}"
     )
 
 
@@ -366,7 +361,6 @@ def subtest_compile_and_run_binary_ufunc_correctness(
 def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tensor_shape):
     """Test biary functions which are in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC."""
 
-    sotc = partial(scalar_or_tensor_constructor, return_scalar=tensor_shape == ())
     run_multi_tlu_test = False
     if tensor_shape != ():
         run_multi_tlu_test = True
@@ -377,16 +371,16 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         # Need small constants to keep results really small
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_one(func, sotc, c, x, y),
-            sotc(3),
+            mix_x_and_y_and_call_binary_f_one,
+            3,
             ((0, 4), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
         )
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
-            sotc(2),
+            mix_x_and_y_and_call_binary_f_two,
+            2,
             ((0, 4), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -394,7 +388,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         if run_multi_tlu_test:
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_one(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_one,
                 tensor_for_multi_tlu_small_values,
                 ((0, 4), (0, 5)),
                 tensor_shape,
@@ -402,7 +396,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
             )
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_two,
                 tensor_for_multi_tlu_small_values,
                 ((0, 4), (0, 5)),
                 tensor_shape,
@@ -411,8 +405,8 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
     elif ufunc in [numpy.floor_divide, numpy.fmod, numpy.remainder, numpy.true_divide]:
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
-            sotc(31),
+            mix_x_and_y_and_call_binary_f_two,
+            31,
             ((1, 5), (1, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -420,7 +414,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         if run_multi_tlu_test:
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_two,
                 tensor_for_multi_tlu,
                 ((1, 5), (1, 5)),
                 tensor_shape,
@@ -430,16 +424,16 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         # Need small constants to keep results sufficiently small
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_one(func, sotc, c, x, y),
-            sotc(3),
+            mix_x_and_y_and_call_binary_f_one,
+            3,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
         )
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
-            sotc(2),
+            mix_x_and_y_and_call_binary_f_two,
+            2,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -447,7 +441,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         if run_multi_tlu_test:
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_one(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_one,
                 tensor_for_multi_tlu
                 if ufunc != numpy.left_shift
                 else tensor_for_multi_tlu_small_values,
@@ -457,7 +451,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
             )
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_two,
                 tensor_for_multi_tlu
                 if ufunc != numpy.left_shift
                 else tensor_for_multi_tlu_small_values,
@@ -469,8 +463,8 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         # Need small constants to keep results sufficiently small
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
-            sotc(2),
+            mix_x_and_y_and_call_binary_f_two,
+            2,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -478,7 +472,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         if run_multi_tlu_test:
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_two,
                 tensor_for_multi_tlu // 2,
                 ((0, 5), (0, 5)),
                 tensor_shape,
@@ -488,16 +482,16 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         # General case
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_one(func, sotc, c, x, y),
-            sotc(41),
+            mix_x_and_y_and_call_binary_f_one,
+            41,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
         )
         subtest_compile_and_run_binary_ufunc_correctness(
             ufunc,
-            lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
-            sotc(42),
+            mix_x_and_y_and_call_binary_f_two,
+            42,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -505,7 +499,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
         if run_multi_tlu_test:
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_one(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_one,
                 tensor_for_multi_tlu,
                 ((0, 5), (0, 5)),
                 tensor_shape,
@@ -513,7 +507,7 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
             )
             subtest_compile_and_run_binary_ufunc_correctness(
                 ufunc,
-                lambda func, c, x, y: mix_x_and_y_and_call_binary_f_two(func, sotc, c, x, y),
+                mix_x_and_y_and_call_binary_f_two,
                 tensor_for_multi_tlu,
                 ((0, 5), (0, 5)),
                 tensor_shape,
@@ -530,8 +524,6 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
 def test_unary_ufunc_operations(ufunc, default_compilation_configuration, tensor_shape):
     """Test unary functions which are in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC."""
 
-    sotc = partial(scalar_or_tensor_constructor, return_scalar=tensor_shape == ())
-
     if ufunc in [
         numpy.degrees,
         numpy.rad2deg,
@@ -539,7 +531,7 @@ def test_unary_ufunc_operations(ufunc, default_compilation_configuration, tensor
         # Need to reduce the output value, to avoid to need too much precision
         subtest_compile_and_run_unary_ufunc_correctness(
             ufunc,
-            lambda func, x, y: mix_x_and_y_and_call_f_which_has_large_outputs(func, sotc, x, y),
+            mix_x_and_y_and_call_f_which_has_large_outputs,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -550,7 +542,7 @@ def test_unary_ufunc_operations(ufunc, default_compilation_configuration, tensor
         # Need to turn the input into a float
         subtest_compile_and_run_unary_ufunc_correctness(
             ufunc,
-            lambda func, x, y: mix_x_and_y_and_call_f_with_float_inputs(func, sotc, x, y),
+            mix_x_and_y_and_call_f_with_float_inputs,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -565,7 +557,7 @@ def test_unary_ufunc_operations(ufunc, default_compilation_configuration, tensor
         # No 0 in the domain of definition
         subtest_compile_and_run_unary_ufunc_correctness(
             ufunc,
-            lambda func, x, y: mix_x_and_y_and_call_f_avoid_0_input(func, sotc, x, y),
+            mix_x_and_y_and_call_f_avoid_0_input,
             ((1, 5), (1, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -584,7 +576,7 @@ def test_unary_ufunc_operations(ufunc, default_compilation_configuration, tensor
         # Need a small range of inputs, to avoid to need too much precision
         subtest_compile_and_run_unary_ufunc_correctness(
             ufunc,
-            lambda func, x, y: mix_x_and_y_and_call_f_which_expects_small_inputs(func, sotc, x, y),
+            mix_x_and_y_and_call_f_which_expects_small_inputs,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,
@@ -593,7 +585,7 @@ def test_unary_ufunc_operations(ufunc, default_compilation_configuration, tensor
         # Regular case for univariate functions
         subtest_compile_and_run_unary_ufunc_correctness(
             ufunc,
-            lambda func, x, y: mix_x_and_y_and_call_f(func, sotc, x, y),
+            mix_x_and_y_and_call_f,
             ((0, 5), (0, 5)),
             tensor_shape,
             default_compilation_configuration,

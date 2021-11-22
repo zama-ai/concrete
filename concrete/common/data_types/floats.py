@@ -15,7 +15,7 @@ class Float(base.BaseDataType):
 
     def __init__(self, bit_width: int) -> None:
         super().__init__()
-        assert_true(bit_width in (32, 64), "Only 32 and 64 bits floats are supported")
+        assert_true(bit_width in (16, 32, 64), "Only 16, 32 and 64 bits floats are supported")
         self.bit_width = bit_width
 
     def __repr__(self) -> str:
@@ -28,5 +28,6 @@ class Float(base.BaseDataType):
         return isinstance(other, self.__class__) and self.bit_width == other.bit_width
 
 
+Float16 = partial(Float, 16)
 Float32 = partial(Float, 32)
 Float64 = partial(Float, 64)

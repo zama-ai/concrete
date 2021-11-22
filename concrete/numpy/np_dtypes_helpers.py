@@ -30,6 +30,7 @@ NUMPY_TO_COMMON_DTYPE_MAPPING: Dict[numpy.dtype, BaseDataType] = {
     numpy.dtype(numpy.uint16): Integer(16, is_signed=False),
     numpy.dtype(numpy.uint32): Integer(32, is_signed=False),
     numpy.dtype(numpy.uint64): Integer(64, is_signed=False),
+    numpy.dtype(numpy.float16): Float(16),
     numpy.dtype(numpy.float32): Float(32),
     numpy.dtype(numpy.float64): Float(64),
     numpy.dtype(bool): Integer(8, is_signed=False),
@@ -84,18 +85,20 @@ def convert_base_data_type_to_numpy_dtype(common_dtype: BaseDataType) -> numpy.d
 
     if isinstance(common_dtype, Float):
         assert_true(
-            common_dtype.bit_width
+            (bit_width := common_dtype.bit_width)
             in (
+                16,
                 32,
                 64,
             ),
-            "Only converting Float(32) or Float(64) is supported",
+            "Only converting Float(16), Float(32) or Float(64) is supported",
         )
-        type_to_return = (
-            numpy.dtype(numpy.float64)
-            if common_dtype.bit_width == 64
-            else numpy.dtype(numpy.float32)
-        )
+        if bit_width == 64:
+            type_to_return = numpy.dtype(numpy.float64)
+        elif bit_width == 32:
+            type_to_return = numpy.dtype(numpy.float32)
+        else:
+            type_to_return = numpy.dtype(numpy.float16)
     elif isinstance(common_dtype, Integer):
         signed = common_dtype.is_signed
         if common_dtype.bit_width <= 32:
