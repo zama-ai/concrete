@@ -473,3 +473,34 @@ def test_eval_op_graph_bounds_on_non_conformant_inputset_treating_warnings_as_er
             max_func=numpy_max_func,
             get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
         )
+
+
+def test_inpuset_eval_1_input(default_compilation_configuration):
+    """Test case for a function with a single parameter and passing the inputset without tuples."""
+
+    def f(x):
+        return x + 42
+
+    x = EncryptedScalar(UnsignedInteger(4))
+
+    inputset = range(10)
+
+    op_graph = trace_numpy_function(f, {"x": x})
+
+    eval_op_graph_bounds_on_inputset(
+        op_graph,
+        inputset,
+        compilation_configuration=default_compilation_configuration,
+        min_func=numpy_min_func,
+        max_func=numpy_max_func,
+        get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+    )
+
+    input_node = op_graph.input_nodes[0]
+
+    assert input_node.inputs[0] == input_node.outputs[0]
+    assert input_node.inputs[0] == EncryptedScalar(UnsignedInteger(4))
+
+    output_node = op_graph.output_nodes[0]
+
+    assert output_node.outputs[0] == EncryptedScalar(UnsignedInteger(6))
