@@ -104,7 +104,7 @@ class MultiLookupTable:
             )
 
             traced_computation = GenericFunction(
-                inputs=[deepcopy(key.output)],
+                inputs=[key.output],
                 arbitrary_func=MultiLookupTable._checked_indexing,
                 output_value=generic_function_output_value,
                 op_kind="TLU",

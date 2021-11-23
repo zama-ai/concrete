@@ -192,7 +192,7 @@ def convert_float_subgraph_to_fused_node(
 
     # Create fused_node
     fused_node = GenericFunction(
-        inputs=[deepcopy(new_subgraph_variable_input.inputs[0])],
+        inputs=[new_subgraph_variable_input.inputs[0]],
         arbitrary_func=lambda x, float_op_subgraph, terminal_node: float_op_subgraph.evaluate(
             {0: x}
         )[terminal_node],

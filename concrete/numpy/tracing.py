@@ -100,7 +100,7 @@ class NPTracer(BaseTracer):
         generic_function_output_value = deepcopy(self.output)
         generic_function_output_value.dtype = output_dtype
         traced_computation = GenericFunction(
-            inputs=[deepcopy(self.output)],
+            inputs=[self.output],
             arbitrary_func=lambda x, dtype: x.astype(dtype),
             output_value=generic_function_output_value,
             op_kind="TLU",
@@ -177,7 +177,7 @@ class NPTracer(BaseTracer):
         )
 
         traced_computation = GenericFunction(
-            inputs=[deepcopy(input_tracers[0].output)],
+            inputs=[input_tracers[0].output],
             arbitrary_func=unary_operator,
             output_value=generic_function_output_value,
             op_kind="TLU",
@@ -232,7 +232,7 @@ class NPTracer(BaseTracer):
         op_kwargs = deepcopy(kwargs)
 
         traced_computation = GenericFunction(
-            inputs=[deepcopy(input_tracer.output) for input_tracer in input_tracers],
+            inputs=[input_tracer.output for input_tracer in input_tracers],
             arbitrary_func=binary_operator,
             output_value=generic_function_output_value,
             op_kind="TLU",
@@ -316,7 +316,7 @@ class NPTracer(BaseTracer):
         )
 
         traced_computation = GenericFunction(
-            inputs=[deepcopy(first_arg_output)],
+            inputs=[first_arg_output],
             arbitrary_func=numpy.transpose,
             output_value=generic_function_output_value,
             op_kind="Memory",
@@ -363,7 +363,7 @@ class NPTracer(BaseTracer):
         )
 
         traced_computation = GenericFunction(
-            inputs=[deepcopy(first_arg_output)],
+            inputs=[first_arg_output],
             arbitrary_func=numpy.ravel,
             output_value=generic_function_output_value,
             op_kind="Memory",
@@ -428,7 +428,7 @@ class NPTracer(BaseTracer):
         )
 
         traced_computation = GenericFunction(
-            inputs=[deepcopy(first_arg_output)],
+            inputs=[first_arg_output],
             arbitrary_func=numpy.reshape,
             output_value=generic_function_output_value,
             op_kind="Memory",
@@ -467,7 +467,7 @@ class NPTracer(BaseTracer):
         )
 
         traced_computation = GenericFunction(
-            inputs=[deepcopy(first_arg_output)],
+            inputs=[first_arg_output],
             arbitrary_func=lambda x: x.flatten(),
             output_value=generic_function_output_value,
             op_kind="Memory",

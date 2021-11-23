@@ -333,7 +333,7 @@ class GenericFunction(IntermediateNode):
         op_kwargs: Optional[Dict[str, Any]] = None,
         op_attributes: Optional[Dict[str, Any]] = None,
     ) -> None:
-        super().__init__(inputs)
+        super().__init__([deepcopy(i) for i in inputs])
         self._n_in = len(self.inputs)
         self.arbitrary_func = arbitrary_func
         self.op_kind = GenericFunctionKind(op_kind)

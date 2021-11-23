@@ -42,7 +42,7 @@ class LookupTable:
             generic_function_output_value.dtype = self.output_dtype
 
             traced_computation = GenericFunction(
-                inputs=[deepcopy(key.output)],
+                inputs=[key.output],
                 arbitrary_func=LookupTable._checked_indexing,
                 output_value=generic_function_output_value,
                 op_kind="TLU",

@@ -143,7 +143,7 @@ class BaseTracer(ABC):
         )
 
         traced_computation = GenericFunction(
-            inputs=[deepcopy(first_arg_output)],
+            inputs=[first_arg_output],
             arbitrary_func=op_lambda,
             output_value=generic_function_output_value,
             op_kind="TLU",
