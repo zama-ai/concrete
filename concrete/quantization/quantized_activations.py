@@ -39,7 +39,9 @@ class QuantizedActivation(ABC):
         Returns:
             numpy.ndarray: Return dequantized input in a numpy array
         """
-        return (q_input.qvalues - q_input.zero_point) * q_input.scale
+
+        # TODO remove this + (-x) when issue #721 is fixed
+        return (q_input.qvalues + (-q_input.zero_point)) * q_input.scale
 
     def quant_output(self, qoutput_activation: numpy.ndarray) -> QuantizedArray:
         """Quantize the output of the activation function.
@@ -53,9 +55,7 @@ class QuantizedActivation(ABC):
         assert self.q_out is not None
 
         qoutput_activation = qoutput_activation / self.q_out.scale + self.q_out.zero_point
-        qoutput_activation = (
-            (qoutput_activation).round().clip(0, 2 ** self.q_out.n_bits - 1).astype(int)
-        )
+        qoutput_activation = (qoutput_activation).clip(0, 2 ** self.q_out.n_bits - 1).astype(int)
 
         # TODO find a better way to do the following (see issue #832)
         q_out = copy.copy(self.q_out)

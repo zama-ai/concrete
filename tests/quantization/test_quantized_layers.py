@@ -16,7 +16,7 @@ N_BITS_LIST = [20, 16, 8]
 @pytest.mark.parametrize(
     "n_examples, n_features, n_neurons",
     [
-        pytest.param(2, 3, 4),
+        pytest.param(50, 3, 4),
         pytest.param(20, 500, 30),
         pytest.param(200, 300, 50),
         pytest.param(10000, 100, 1),
@@ -33,7 +33,7 @@ def test_quantized_linear(n_examples, n_features, n_neurons, n_bits, is_signed):
     inputs = numpy.random.uniform(size=(n_examples, n_features))
     q_inputs = QuantizedArray(n_bits, inputs)
 
-    # shape of weights: (n_neurons, n_features)
+    # shape of weights: (n_features, n_neurons)
     weights = numpy.random.uniform(size=(n_features, n_neurons))
     q_weights = QuantizedArray(n_bits, weights, is_signed)
 
@@ -49,7 +49,7 @@ def test_quantized_linear(n_examples, n_features, n_neurons, n_bits, is_signed):
     expected_outputs = q_linear.q_out.values
     actual_output = q_linear(q_inputs).dequant()
 
-    assert numpy.isclose(expected_outputs, actual_output, rtol=10 ** -1).all()
+    assert numpy.isclose(expected_outputs, actual_output, atol=10 ** -0).all()
 
     # Same test without bias
     q_linear = QuantizedLinear(n_bits, q_weights)
@@ -59,4 +59,4 @@ def test_quantized_linear(n_examples, n_features, n_neurons, n_bits, is_signed):
     expected_outputs = q_linear.q_out.values
     actual_output = q_linear(q_inputs).dequant()
 
-    assert numpy.isclose(expected_outputs, actual_output, rtol=10 ** -1).all()
+    assert numpy.isclose(expected_outputs, actual_output, atol=10 ** -0).all()

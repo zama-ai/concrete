@@ -101,9 +101,7 @@ def test_quantized_linear(model, input_shape, n_bits, atol, seed_torch):
     quantized_model = post_training_quant.quantize_module(numpy_input)
     # Quantize input
     q_input = QuantizedArray(n_bits, numpy_input)
-    # Get quantized prediction
-    q_prediction = quantized_model(q_input)
-    # Dequantize to get back to real values
-    dequant_prediction = q_prediction.dequant()
+    # Forward and Dequantize to get back to real values
+    dequant_prediction = quantized_model.forward_and_dequant(q_input)
 
     assert numpy.isclose(numpy_prediction, dequant_prediction, atol=atol).all()

@@ -21,8 +21,8 @@ class QuantizedLinear:
 
         Args:
             n_bits (int): Maximum number of bits for the ouput.
-            q_weights (QuantizedArray): Quantized weights (n_examples, n_neurons, n_features).
-            q_bias (QuantizedArray, optional): Quantized bias (n_neurons). Defaults to None.
+            q_weights (QuantizedArray): Quantized weights (n_features, n_neurons).
+            q_bias (QuantizedArray, optional): Quantized bias (1, n_neurons). Defaults to None.
         """
         self.q_weights = q_weights
         self.q_bias = q_bias
@@ -71,7 +71,17 @@ class QuantizedLinear:
         matmul = q_input.qvalues @ self.q_weights.qvalues
 
         # Sum operation in full integers resulting in large integers (INTEGERS)
-        sum_input = self.q_weights.zero_point * numpy.sum(q_input.qvalues, axis=1, keepdims=True)
+        # [WORKAROUND #995] numpy.sum can't be currently done in our framework
+        # sum_input = self.q_weights.zero_point * numpy.sum(q_input.qvalues, axis=1, keepdims=True)
+        # Hack because we can't do numpy.sum(axis...,keepdims...)
+        const_ones = numpy.ones(shape=(q_input.n_features, 1), dtype=int)
+        sum_input = self.q_weights.zero_point * (q_input.qvalues @ const_ones)
+
+        # Last part that has to be done in FHE the rest must go in a PBS.
+        # Forced fusing using .astype(numpy.float32)
+        numpy_q_out = (matmul + (numpy.negative(sum_input))).astype(numpy.float32)
+
+        # sum_weights is a constant
         sum_weights = q_input.zero_point * numpy.sum(self.q_weights.qvalues, axis=0, keepdims=True)
 
         # Quantization scales and zero points (FLOATS involved)
@@ -82,11 +92,11 @@ class QuantizedLinear:
         )
         final_term = p * q_input.zero_point * self.q_weights.zero_point
 
-        numpy_q_out = matmul - sum_input - sum_weights + final_term
+        numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
         numpy_q_out = m_matmul * numpy_q_out
         numpy_q_out = self.q_out.zero_point + bias_part + numpy_q_out
 
-        numpy_q_out = numpy_q_out.round().clip(0, 2 ** self.q_out.n_bits - 1).astype(int)
+        numpy_q_out = numpy_q_out.clip(0, 2 ** self.q_out.n_bits - 1).astype(int)
 
         # TODO find a more intuitive way to do the following (see issue #832)
         # We should be able to reuse q_out quantization parameters

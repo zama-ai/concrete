@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy
 
-STABILITY_CONST = 10 ** -12
+STABILITY_CONST = 10 ** -6
 
 
 class QuantizedArray:
@@ -28,6 +28,7 @@ class QuantizedArray:
         self.n_bits = n_bits
         self.is_signed = is_signed
         self.scale, self.zero_point, self.qvalues = self.compute_quantization_parameters()
+        self.n_features = 1 if len(values.shape) <= 1 else values.shape[1]
 
     def __call__(self) -> Optional[numpy.ndarray]:
         return self.qvalues
@@ -35,17 +36,23 @@ class QuantizedArray:
     def compute_quantization_parameters(self):
         """Compute the quantization parameters."""
         # Small constant needed for stability
-        rmax = numpy.max(self.values) + STABILITY_CONST
+        rmax = numpy.max(self.values)
         rmin = numpy.min(self.values)
-        scale = (
-            (rmax - rmin) / ((2 ** self.n_bits - 1 - self.offset) - (-self.offset))
-            if rmax != rmin
-            else 1.0
-        )
 
-        zero_point = numpy.round(
-            (rmax * (-self.offset) - (rmin * (2 ** self.n_bits - 1 - self.offset))) / (rmax - rmin)
-        )
+        if rmax - rmin < STABILITY_CONST:
+            scale = 1
+            zero_point = rmin
+        else:
+            scale = (
+                (rmax - rmin) / ((2 ** self.n_bits - 1 - self.offset) - (-self.offset))
+                if rmax != rmin
+                else 1.0
+            )
+
+            zero_point = numpy.round(
+                (rmax * (-self.offset) - (rmin * (2 ** self.n_bits - 1 - self.offset)))
+                / (rmax - rmin)
+            ).astype(int)
 
         # Compute quantized values and store
         qvalues = self.values / scale + zero_point
