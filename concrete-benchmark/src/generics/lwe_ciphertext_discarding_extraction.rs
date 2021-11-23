@@ -3,7 +3,7 @@ use crate::synthesizer::{
 };
 use crate::utils::benchmark_name;
 use concrete_commons::dispersion::Variance;
-use concrete_commons::parameters::{GlweDimension, LweDimension, MonomialDegree, PolynomialSize};
+use concrete_commons::parameters::{GlweDimension, LweDimension, MonomialIndex, PolynomialSize};
 use concrete_core::specification::engines::LweCiphertextDiscardingExtractionEngine;
 use criterion::{black_box, BenchmarkId, Criterion};
 
@@ -41,7 +41,7 @@ where
                         .discard_extract_lwe_ciphertext(
                             black_box(&mut lwe_ciphertext),
                             black_box(&glwe_ciphertext),
-                            black_box(MonomialDegree(0)),
+                            black_box(MonomialIndex(0)),
                         )
                         .unwrap();
                 });
