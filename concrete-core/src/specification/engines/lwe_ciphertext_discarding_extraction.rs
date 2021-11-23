@@ -1,13 +1,13 @@
 use super::engine_error;
 use crate::specification::engines::AbstractEngine;
 use crate::specification::entities::{GlweCiphertextEntity, LweCiphertextEntity};
-use concrete_commons::parameters::MonomialDegree;
+use concrete_commons::parameters::MonomialIndex;
 
 engine_error! {
     LweCiphertextDiscardingExtractionError for LweCiphertextDiscardingExtractionEngine @
     SizeMismatch => "The sizes of the output LWE (LWE dimension) and the input GLWE (GLWE \
                      dimension * poly size) must be compatible.",
-    MonomialDegreeTooLarge => "The monomial degree must be lower than the GLWE polynomial size."
+    MonomialIndexTooLarge => "The monomial index must be smaller than the GLWE polynomial size."
 }
 
 /// A trait for engines extracting (discarding) LWE ciphertext from GLWE ciphertexts.
@@ -31,7 +31,7 @@ where
         &mut self,
         output: &mut LweCiphertext,
         input: &GlweCiphertext,
-        nth: MonomialDegree,
+        nth: MonomialIndex,
     ) -> Result<(), LweCiphertextDiscardingExtractionError<Self::EngineError>>;
 
     /// Unsafely extracts an LWE ciphertext from a GLWE ciphertext.
@@ -44,6 +44,6 @@ where
         &mut self,
         output: &mut LweCiphertext,
         input: &GlweCiphertext,
-        nth: MonomialDegree,
+        nth: MonomialIndex,
     );
 }

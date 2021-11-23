@@ -1,4 +1,4 @@
-#![allow(dead_code)] // For the time being
+#![allow(dead_code, deprecated)] // For the time being
 
 #[allow(unused_macros)]
 macro_rules! assert_delta {
