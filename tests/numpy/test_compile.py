@@ -937,6 +937,44 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             ([2, 7, 1],),
             [4, 14, 2],
         ),
+        pytest.param(
+            lambda x: numpy.clip(x, 1, 5),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
+            },
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            (
+                [
+                    [0, 7],
+                    [6, 1],
+                    [2, 5],
+                ],
+            ),
+            [
+                [1, 5],
+                [5, 1],
+                [2, 5],
+            ],
+        ),
+        pytest.param(
+            lambda x: x.clip(1, 5),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
+            },
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            (
+                [
+                    [0, 7],
+                    [6, 1],
+                    [2, 5],
+                ],
+            ),
+            [
+                [1, 5],
+                [5, 1],
+                [2, 5],
+            ],
+        ),
     ],
 )
 def test_compile_and_run_tensor_correctness(

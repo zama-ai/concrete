@@ -239,6 +239,23 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
+    def clip(self, *args: Union["NPTracer", Any], **kwargs) -> "NPTracer":
+        """Trace x.clip.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        sanitized_args = [cast(NPTracer, self._sanitize(arg)) for arg in args]
+        return self.numpy_clip(self, *sanitized_args, **kwargs)
+
+    def numpy_clip(self, *args: "NPTracer", **kwargs) -> "NPTracer":
+        """Trace numpy.clip.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+        return self._np_operator(numpy.clip, "clip", 3, *args, **kwargs)
+
     def dot(self, *args: "NPTracer", **kwargs) -> "NPTracer":
         """Trace x.dot.
 
@@ -565,6 +582,7 @@ class NPTracer(BaseTracer):
         numpy.transpose: numpy_transpose,
         numpy.reshape: numpy_reshape,
         numpy.ravel: numpy_ravel,
+        numpy.clip: numpy_clip,
     }
 
 
