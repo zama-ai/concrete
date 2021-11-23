@@ -444,5 +444,21 @@ def MatMulIntEintOp : HLFHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
     }];
 }
 
+def ZeroOp : HLFHELinalg_Op<"zero", []> {
+    let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
+
+    let description = [{
+        Creates a new tensor with the shape specified in the result type and initializes its elements with an encrypted zero.
+
+        Example:
+        ```mlir
+        %tensor = "HLFHELinalg.zero"() : () -> tensor<5x!HLFHE.eint<4>>
+        ```
+    }];
+
+    let arguments = (ins);
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$aggregate);
+}
 
 #endif
