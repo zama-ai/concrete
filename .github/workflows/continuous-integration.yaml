@@ -649,27 +649,36 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Update versions.html for docs
+      - name: Update versions.json for docs
         if: ${{ success() && !cancelled() }}
         env:
           RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
         run: |
-          DOWNLOADED_VERSIONS_HTML_FILE=$(mktemp --suffix=.html)
-          OUTPUT_VERSIONS_HTML_FILE=$(mktemp --suffix=.html)
+          DOWNLOADED_VERSIONS_JSON_FILE=$(mktemp --suffix=.json)
+          OUTPUT_VERSIONS_JSON_FILE=$(mktemp --suffix=.json)
+          OPTS=""
+          if [[ $IS_LATEST = "true" ]]; then
+              OPTS="${OPTS} --latest "
+          fi
+          if [[ $IS_PRERELEASE = "true" ]]; then
+              OPTS="${OPTS} --prerelease "
+          fi
 
           aws s3api get-object \
           --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
-          --key concretefhe/versions.html "${DOWNLOADED_VERSIONS_HTML_FILE}"
+          --key concretefhe/versions.json "${DOWNLOADED_VERSIONS_JSON_FILE}"
 
-          poetry run python ./script/actions_utils/generate_versions_html.py \
-          --add-versions "${PROJECT_VERSION}" \
-          --versions-html-file "${DOWNLOADED_VERSIONS_HTML_FILE}" \
-          --output-html "${OUTPUT_VERSIONS_HTML_FILE}"
+          poetry run python ./script/actions_utils/generate_versions_json.py \
+          --add-version "${PROJECT_VERSION}" \
+          --versions-json-file "${DOWNLOADED_VERSIONS_JSON_FILE}" \
+          --output-json "${OUTPUT_VERSIONS_JSON_FILE}" \
+          $OPTS
 
-          echo "OUTPUT_VERSIONS_HTML_FILE=${OUTPUT_VERSIONS_HTML_FILE}" >> "$GITHUB_ENV"
+
+          echo "OUTPUT_VERSIONS_JSON_FILE=${OUTPUT_VERSIONS_JSON_FILE}" >> "$GITHUB_ENV"
 
           # Copy to docs to keep a version in docs artifacts
-          cp "${OUTPUT_VERSIONS_HTML_FILE}" "${RAW_DOCS_DIR}"/versions.html
+          cp "${OUTPUT_VERSIONS_JSON_FILE}" "${RAW_DOCS_DIR}"/versions.json
       - name: Create ready to upload/packaged artifacts and release body
         if: ${{ success() && !cancelled() }}
         env:
@@ -679,8 +688,8 @@ jobs:
           pushd "${RAW_DOCS_DIR}"
           zip -r "${ARTIFACTS_PACKAGED_DIR}/html-docs.zip" ./*
           tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
-          # Remove the versions.html to avoid pushing it to S3 but have it in release artifacts
-          rm versions.html
+          # Remove the versions.json to avoid pushing it to S3 but have it in release artifacts
+          rm versions.json
           popd
           cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
           ls -a "${ARTIFACTS_PACKAGED_DIR}"

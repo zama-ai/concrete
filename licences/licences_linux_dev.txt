@@ -9,7 +9,7 @@
  QtPy                           1.11.2      MIT License                                                                                      
  SecretStorage                  3.3.1       BSD License                                                                                      
  Send2Trash                     1.8.0       BSD License                                                                                      
- Sphinx                         4.2.0       BSD License                                                                                      
+ Sphinx                         4.3.0       BSD License                                                                                      
  alabaster                      0.7.12      BSD License                                                                                      
  argon2-cffi                    21.1.0      MIT License                                                                                      
  astroid                        2.8.3       GNU Lesser General Public License v2 (LGPLv2)                                                    
@@ -131,7 +131,7 @@
  snowballstemmer                2.1.0       BSD License                                                                                      
  soupsieve                      2.2.1       MIT License                                                                                      
  sphinx-copybutton              0.4.0       MIT License                                                                                      
- sphinx-rtd-theme               1.0.0       MIT License                                                                                      
+ sphinx-zama-theme              2.0.5       BSD License                                                                                      
  sphinxcontrib-applehelp        1.0.2       BSD License                                                                                      
  sphinxcontrib-devhelp          1.0.2       BSD License                                                                                      
  sphinxcontrib-htmlhelp         2.0.0       BSD License                                                                                      
