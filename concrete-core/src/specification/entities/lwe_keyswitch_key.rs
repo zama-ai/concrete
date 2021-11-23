@@ -9,6 +9,8 @@ use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount
 /// + The [`InputKeyFlavor`](`LweKeyswitchKeyEntity::InputKeyFlavor`) type conveys the flavor of the
 /// input secret key. + The [`OutputKeyFlavor`](`LweKeyswitchKeyEntity::OutputKeyFlavor`) type
 /// conveys the flavor of the output secret key.
+///
+/// # Formal Definition
 pub trait LweKeyswitchKeyEntity: AbstractEntity<Kind = LweKeyswitchKeyKind> {
     /// The flavor of key the input ciphertext is encrypted with.
     type InputKeyFlavor: KeyFlavorMarker;

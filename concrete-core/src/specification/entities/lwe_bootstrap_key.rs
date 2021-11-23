@@ -12,6 +12,8 @@ use concrete_commons::parameters::{
 /// secret key encrypted inside the bootstrap key.
 /// + The [`OutputKeyFlavor`](`LweBootstrapKeyEntity::OutputKeyFlavor`) type conveys the flavor of
 /// the secret key used to encrypt the bootstrap key.
+///
+/// # Formal Definition
 pub trait LweBootstrapKeyEntity: AbstractEntity<Kind = LweBootstrapKeyKind> {
     /// The flavor of key the input ciphertext is encrypted with.
     type InputKeyFlavor: KeyFlavorMarker;

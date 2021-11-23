@@ -9,6 +9,8 @@ use concrete_commons::parameters::{
 /// A GSW ciphertext vector is associated with a
 /// [`KeyFlavor`](`GswCiphertextVectorEntity::KeyFlavor`) type, which conveys the flavor of secret
 /// key it was encrypted with.
+///
+/// # Formal Definition
 pub trait GswCiphertextVectorEntity: AbstractEntity<Kind = GswCiphertextVectorKind> {
     /// The flavor of key the ciphertext was encrypted with.
     type KeyFlavor: KeyFlavorMarker;
