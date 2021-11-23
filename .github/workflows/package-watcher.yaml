@@ -64,7 +64,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-          merge-method: rebase
       - name: Enable auto-merge for PR
         if: ${{ fromJSON(env.SHOULD_RUN) && steps.cpr.outputs.pull-request-number != null }}
         uses: peter-evans/enable-pull-request-automerge@d2ede5636b3febc92809259995e643565e675aab
