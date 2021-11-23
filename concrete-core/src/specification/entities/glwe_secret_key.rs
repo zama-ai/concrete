@@ -6,6 +6,8 @@ use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 ///
 /// A GLWE secret key is associated with a
 /// [`KeyFlavor`](`GlweSecretKeyEntity::KeyFlavor`) type, which conveys its flavor.
+///
+/// # Formal Definition
 pub trait GlweSecretKeyEntity: AbstractEntity<Kind = GlweSecretKeyKind> {
     /// The flavor of this key.
     type KeyFlavor: KeyFlavorMarker;

@@ -7,6 +7,8 @@ use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount
 /// A GSW ciphertext is associated with a
 /// [`KeyFlavor`](`GswCiphertextEntity::KeyFlavor`) type, which conveys the flavor of secret
 /// key it was encrypted with.
+///
+/// # Formal Definition
 pub trait GswCiphertextEntity: AbstractEntity<Kind = GswCiphertextKind> {
     /// The flavor of key the ciphertext was encrypted with.
     type KeyFlavor: KeyFlavorMarker;

@@ -7,6 +7,8 @@ use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
 /// An LWE ciphertext vector is associated with a
 /// [`KeyFlavor`](`LweCiphertextVectorEntity::KeyFlavor`) type, which conveys the flavor of secret
 /// key it was encrypted with.
+///
+/// # Formal Definition
 pub trait LweCiphertextVectorEntity: AbstractEntity<Kind = LweCiphertextVectorKind> {
     /// The flavor of key the ciphertext was encrypted with.
     type KeyFlavor: KeyFlavorMarker;

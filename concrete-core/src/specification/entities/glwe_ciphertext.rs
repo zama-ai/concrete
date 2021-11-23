@@ -7,6 +7,8 @@ use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 /// A GLWE ciphertext is associated with a
 /// [`KeyFlavor`](`GlweCiphertextEntity::KeyFlavor`) type, which conveys the flavor of secret
 /// key it was encrypted with.
+///
+/// # Formal Definition
 pub trait GlweCiphertextEntity: AbstractEntity<Kind = GlweCiphertextKind> {
     /// The flavor of key the ciphertext was encrypted with.
     type KeyFlavor: KeyFlavorMarker;
