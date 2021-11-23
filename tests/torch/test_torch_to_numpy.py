@@ -66,9 +66,11 @@ class FC(nn.Module):
         pytest.param(FC, (100, 32 * 32 * 3)),
     ],
 )
-def test_torch_to_numpy(model, input_shape):
+def test_torch_to_numpy(model, input_shape, seed_torch):
     """Test the different model architecture from torch numpy."""
 
+    # Seed torch
+    seed_torch()
     # Define the torch model
     torch_fc_model = model()
     # Create random input
@@ -104,9 +106,10 @@ def test_torch_to_numpy(model, input_shape):
     "model, incompatible_layer",
     [pytest.param(CNN, "Conv2d")],
 )
-def test_raises(model, incompatible_layer):
+def test_raises(model, incompatible_layer, seed_torch):
     """Function to test incompatible layers."""
 
+    seed_torch()
     torch_incompatible_model = model()
     expected_errmsg = (
         f"The following module is currently not implemented: {incompatible_layer}. "

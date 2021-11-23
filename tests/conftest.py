@@ -1,6 +1,7 @@
 """PyTest configuration file"""
 import json
 import operator
+import random
 import re
 from pathlib import Path
 from typing import Callable, Dict, Type
@@ -8,6 +9,7 @@ from typing import Callable, Dict, Type
 import networkx as nx
 import networkx.algorithms.isomorphism as iso
 import pytest
+import torch
 
 from concrete.common.compilation import CompilationConfiguration
 from concrete.common.representation.intermediate import (
@@ -276,3 +278,18 @@ REMOVE_COLOR_CODES_RE = re.compile(r"\x1b[^m]*m")
 def remove_color_codes():
     """Return the re object to remove color codes"""
     return lambda x: REMOVE_COLOR_CODES_RE.sub("", x)
+
+
+def function_to_seed_torch():
+    """Function to seed torch"""
+
+    # Seed torch with something which is seed by pytest-randomly
+    torch.manual_seed(random.randint(0, 2 ** 64 - 1))
+    torch.use_deterministic_algorithms(True)
+
+
+@pytest.fixture
+def seed_torch():
+    """Fixture to seed torch"""
+
+    return function_to_seed_torch

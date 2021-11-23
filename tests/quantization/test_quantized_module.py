@@ -80,12 +80,14 @@ N_BITS_ATOL_TUPLE_LIST = [
         pytest.param(FC, (100, 32 * 32 * 3)),
     ],
 )
-def test_quantized_linear(model, input_shape, n_bits, atol):
+def test_quantized_linear(model, input_shape, n_bits, atol, seed_torch):
     """Test the quantized module with a post-training static quantization.
 
     With n_bits>>0 we expect the results of the quantized module
     to be the same as the standard module.
     """
+    # Seed torch
+    seed_torch()
     # Define the torch model
     torch_fc_model = model()
     # Create random input
