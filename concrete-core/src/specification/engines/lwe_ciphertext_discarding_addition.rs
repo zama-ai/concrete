@@ -19,7 +19,7 @@ pub trait LweCiphertextDiscardingAdditionEngine<InputCiphertext, OutputCiphertex
     AbstractEngine
 where
     InputCiphertext: LweCiphertextEntity,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
     /// Adds two LWE ciphertexts.
     fn discard_add_lwe_ciphertext(

@@ -16,7 +16,8 @@ where
         OutputCiphertext,
     >,
     InputCiphertext: SynthesizableLweCiphertextEntity,
-    OutputCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
     Cleartext: SynthesizableCleartextEntity,
 {
     let mut group = c.benchmark_group(

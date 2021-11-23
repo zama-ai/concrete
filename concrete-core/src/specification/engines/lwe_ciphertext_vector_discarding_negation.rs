@@ -20,7 +20,7 @@ pub trait LweCiphertextVectorDiscardingNegationEngine<InputCiphertextVector, Out
     AbstractEngine
 where
     InputCiphertextVector: LweCiphertextVectorEntity,
-    OutputCiphertextVector: LweCiphertextVectorEntity<KeyFlavor = InputCiphertextVector::KeyFlavor>,
+    OutputCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
 {
     /// Negates an LWE ciphertext vector.
     fn discard_neg_lwe_ciphertext_vector(

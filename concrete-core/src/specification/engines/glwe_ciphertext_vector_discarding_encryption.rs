@@ -30,7 +30,7 @@ pub trait GlweCiphertextVectorDiscardingEncryptionEngine<
 >: AbstractEngine where
     SecretKey: GlweSecretKeyEntity,
     PlaintextVector: PlaintextVectorEntity,
-    CiphertextVector: GlweCiphertextVectorEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    CiphertextVector: GlweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts a GLWE ciphertext vector .
     fn discard_encrypt_glwe_ciphertext_vector(

@@ -22,7 +22,7 @@ pub trait LweCiphertextCleartextDiscardingMultiplicationEngine<
 >: AbstractEngine where
     Cleartext: CleartextEntity,
     InputCiphertext: LweCiphertextEntity,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
     /// Multiply an LWE ciphertext with a cleartext.
     fn discard_mul_lwe_ciphertext_cleartext(

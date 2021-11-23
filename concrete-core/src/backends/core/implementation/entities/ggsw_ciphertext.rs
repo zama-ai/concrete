@@ -1,5 +1,5 @@
 use crate::backends::core::private::crypto::ggsw::GgswCiphertext as ImplGgswCiphertext;
-use crate::specification::entities::markers::{BinaryKeyFlavor, GgswCiphertextKind};
+use crate::specification::entities::markers::{BinaryKeyDistribution, GgswCiphertextKind};
 use crate::specification::entities::{AbstractEntity, GgswCiphertextEntity};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
@@ -12,7 +12,7 @@ impl AbstractEntity for GgswCiphertext32 {
     type Kind = GgswCiphertextKind;
 }
 impl GgswCiphertextEntity for GgswCiphertext32 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.glwe_size().to_glwe_dimension()
@@ -38,7 +38,7 @@ impl AbstractEntity for GgswCiphertext64 {
     type Kind = GgswCiphertextKind;
 }
 impl GgswCiphertextEntity for GgswCiphertext64 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.glwe_size().to_glwe_dimension()

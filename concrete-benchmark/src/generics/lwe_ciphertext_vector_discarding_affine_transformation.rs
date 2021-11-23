@@ -20,7 +20,7 @@ pub fn bench<Engine, CiphertextVector, CleartextVector, Plaintext, OutputCiphert
     >,
     OutputCiphertext: SynthesizableLweCiphertextEntity,
     CiphertextVector:
-        SynthesizableLweCiphertextVectorEntity<KeyFlavor = OutputCiphertext::KeyFlavor>,
+        SynthesizableLweCiphertextVectorEntity<KeyDistribution = OutputCiphertext::KeyDistribution>,
     CleartextVector: SynthesizableCleartextVectorEntity,
     Plaintext: SynthesizablePlaintextEntity,
 {

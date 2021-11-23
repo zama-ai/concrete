@@ -13,7 +13,8 @@ pub fn bench<Engine, SecretKey, CiphertextVector, PlaintextVector>(c: &mut Crite
 where
     Engine: LweCiphertextVectorDecryptionEngine<SecretKey, CiphertextVector, PlaintextVector>,
     SecretKey: SynthesizableLweSecretKeyEntity,
-    CiphertextVector: SynthesizableLweCiphertextVectorEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    CiphertextVector:
+        SynthesizableLweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
     PlaintextVector: SynthesizablePlaintextVectorEntity,
 {
     let mut group = c.benchmark_group(benchmark_name!(impl LweCiphertextVectorDecryptionEngine<

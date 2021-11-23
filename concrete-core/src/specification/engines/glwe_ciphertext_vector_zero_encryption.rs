@@ -21,7 +21,7 @@ pub trait GlweCiphertextVectorZeroEncryptionEngine<SecretKey, CiphertextVector>:
     AbstractEngine
 where
     SecretKey: GlweSecretKeyEntity,
-    CiphertextVector: GlweCiphertextVectorEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    CiphertextVector: GlweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts zero in a GLWE ciphertext vector.
     fn zero_encrypt_glwe_ciphertext_vector(

@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{GswCiphertextVectorKind, KeyFlavorMarker};
+use crate::specification::entities::markers::{GswCiphertextVectorKind, KeyDistributionMarker};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GswCiphertextCount, LweDimension,
@@ -7,13 +7,13 @@ use concrete_commons::parameters::{
 /// A trait implemented by types embodying a GSW ciphertext vector.
 ///
 /// A GSW ciphertext vector is associated with a
-/// [`KeyFlavor`](`GswCiphertextVectorEntity::KeyFlavor`) type, which conveys the flavor of secret
-/// key it was encrypted with.
+/// [`KeyDistribution`](`GswCiphertextVectorEntity::KeyDistribution`) type, which conveys the distribution of
+/// the secret key it was encrypted with.
 ///
 /// # Formal Definition
 pub trait GswCiphertextVectorEntity: AbstractEntity<Kind = GswCiphertextVectorKind> {
-    /// The flavor of key the ciphertext was encrypted with.
-    type KeyFlavor: KeyFlavorMarker;
+    /// The distribution of the key the ciphertext was encrypted with.
+    type KeyDistribution: KeyDistributionMarker;
 
     /// Returns the LWE dimension of the ciphertexts.
     fn lwe_dimension(&self) -> LweDimension;

@@ -19,7 +19,8 @@ where
         PlaintextVector,
     >,
     SecretKey: SynthesizableGlweSecretKeyEntity,
-    CiphertextVector: SynthesizableGlweCiphertextVectorEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    CiphertextVector:
+        SynthesizableGlweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
     PlaintextVector: SynthesizablePlaintextVectorEntity,
 {
     let mut group = c.benchmark_group(

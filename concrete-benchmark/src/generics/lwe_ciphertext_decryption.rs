@@ -14,7 +14,7 @@ where
     Engine: LweCiphertextDecryptionEngine<SecretKey, Ciphertext, Plaintext>,
     SecretKey: SynthesizableLweSecretKeyEntity,
     Plaintext: SynthesizablePlaintextEntity,
-    Ciphertext: SynthesizableLweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: SynthesizableLweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     let mut group = c.benchmark_group(
         benchmark_name!(impl LweCiphertextDecryptionEngine<SecretKey, Ciphertext, Plaintext> for Engine),

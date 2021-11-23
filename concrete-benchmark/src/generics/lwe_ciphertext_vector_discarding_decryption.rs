@@ -14,7 +14,8 @@ where
     Engine:
         LweCiphertextVectorDiscardingDecryptionEngine<SecretKey, CiphertextVector, PlaintextVector>,
     SecretKey: SynthesizableLweSecretKeyEntity,
-    CiphertextVector: SynthesizableLweCiphertextVectorEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    CiphertextVector:
+        SynthesizableLweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
     PlaintextVector: SynthesizablePlaintextVectorEntity,
 {
     let mut group = c.benchmark_group(

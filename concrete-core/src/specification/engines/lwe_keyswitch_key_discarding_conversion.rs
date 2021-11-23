@@ -23,8 +23,8 @@ pub trait LweKeyswitchKeyDiscardingConversionEngine<Input, Output>: AbstractEngi
 where
     Input: LweKeyswitchKeyEntity,
     Output: LweKeyswitchKeyEntity<
-        InputKeyFlavor = Input::InputKeyFlavor,
-        OutputKeyFlavor = Input::OutputKeyFlavor,
+        InputKeyDistribution = Input::InputKeyDistribution,
+        OutputKeyDistribution = Input::OutputKeyDistribution,
     >,
 {
     /// Converts a LWE keyswitch key .

@@ -20,7 +20,7 @@ pub trait LweCiphertextEncryptionEngine<SecretKey, Plaintext, Ciphertext>: Abstr
 where
     SecretKey: LweSecretKeyEntity,
     Plaintext: PlaintextEntity,
-    Ciphertext: LweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: LweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts an LWE ciphertext.
     fn encrypt_lwe_ciphertext(

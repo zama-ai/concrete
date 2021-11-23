@@ -64,37 +64,37 @@ entity_kind_marker! {
             => "An empty type representing the encoder vector kind in the type system"
 }
 
-/// A trait implemented by marker types encoding a _flavor_ of secret key in the type system.
+/// A trait implemented by marker types encoding a _distribution_ of secret key in the type system.
 ///
-/// By _flavor_ here, we mean the different types of secret key that can exist such as binary,
+/// By _distribution_ here, we mean the different types of secret key that can exist such as binary,
 /// ternary, uniform or gaussian key.
 ///
 /// # Note
 ///
-/// [`KeyFlavorMarker`] types are only defined in the specification part of the library, and
+/// [`KeyDistributionMarker`] types are only defined in the specification part of the library, and
 /// can not be defined by a backend.
-pub trait KeyFlavorMarker: seal::KeyFlavorMarkerSealed {}
-macro_rules! key_flavor_marker {
+pub trait KeyDistributionMarker: seal::KeyDistributionMarkerSealed {}
+macro_rules! key_distribution_marker {
         (@ $name: ident => $doc: literal)=>{
             #[doc=$doc]
             #[derive(Debug, Clone, Copy)]
             pub struct $name{}
-            impl seal::KeyFlavorMarkerSealed for $name{}
-            impl KeyFlavorMarker for $name{}
+            impl seal::KeyDistributionMarkerSealed for $name{}
+            impl KeyDistributionMarker for $name{}
         };
         ($($name: ident => $doc: literal),+) =>{
             $(
-                key_flavor_marker!(@ $name => $doc);
+                key_distribution_marker!(@ $name => $doc);
             )+
         }
     }
-key_flavor_marker! {
-    BinaryKeyFlavor => "An empty type encoding the binary key flavor in the type system.",
-    TernaryKeyFlavor => "An empty type encoding the ternary key flavor in the type system.",
-    GaussianKeyFlavor => "An empty type encoding the gaussian key flavor in the type system."
+key_distribution_marker! {
+    BinaryKeyDistribution => "An empty type encoding the binary key distribution in the type system.",
+    TernaryKeyDistribution => "An empty type encoding the ternary key distribution in the type system.",
+    GaussianKeyDistribution => "An empty type encoding the gaussian key distribution in the type system."
 }
 
 pub(crate) mod seal {
     pub trait EntityKindMarkerSealed {}
-    pub trait KeyFlavorMarkerSealed {}
+    pub trait KeyDistributionMarkerSealed {}
 }

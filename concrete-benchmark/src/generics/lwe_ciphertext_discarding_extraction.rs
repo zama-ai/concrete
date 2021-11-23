@@ -12,7 +12,8 @@ pub fn bench<Engine, GlweCiphertext, LweCiphertext>(c: &mut Criterion)
 where
     Engine: LweCiphertextDiscardingExtractionEngine<GlweCiphertext, LweCiphertext>,
     GlweCiphertext: SynthesizableGlweCiphertextEntity,
-    LweCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = GlweCiphertext::KeyFlavor>,
+    LweCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = GlweCiphertext::KeyDistribution>,
 {
     let mut group = c.benchmark_group(
         benchmark_name!(impl LweCiphertextDiscardingExtractionEngine<

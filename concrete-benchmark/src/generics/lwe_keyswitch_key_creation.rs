@@ -14,8 +14,8 @@ where
     InputSecretKey: SynthesizableLweSecretKeyEntity,
     OutputSecretKey: SynthesizableLweSecretKeyEntity,
     KeyswitchKey: SynthesizableLweKeyswitchKeyEntity<
-        InputKeyFlavor = InputSecretKey::KeyFlavor,
-        OutputKeyFlavor = OutputSecretKey::KeyFlavor,
+        InputKeyDistribution = InputSecretKey::KeyDistribution,
+        OutputKeyDistribution = OutputSecretKey::KeyDistribution,
     >,
 {
     let mut group = c.benchmark_group(benchmark_name!(impl LweKeyswitchKeyCreationEngine<

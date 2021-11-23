@@ -24,8 +24,8 @@ pub trait LweBootstrapKeyDiscardingConversionEngine<Input, Output>: AbstractEngi
 where
     Input: LweBootstrapKeyEntity,
     Output: LweBootstrapKeyEntity<
-        InputKeyFlavor = Input::InputKeyFlavor,
-        OutputKeyFlavor = Input::OutputKeyFlavor,
+        InputKeyDistribution = Input::InputKeyDistribution,
+        OutputKeyDistribution = Input::OutputKeyDistribution,
     >,
 {
     /// Converts a LWE bootstrap key .

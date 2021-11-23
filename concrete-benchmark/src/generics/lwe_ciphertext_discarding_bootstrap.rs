@@ -21,9 +21,12 @@ pub fn bench<Engine, BootstrapKey, Accumulator, InputCiphertext, OutputCiphertex
         OutputCiphertext,
     >,
     BootstrapKey: SynthesizableLweBootstrapKeyEntity,
-    Accumulator: SynthesizableGlweCiphertextEntity<KeyFlavor = BootstrapKey::OutputKeyFlavor>,
-    InputCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = BootstrapKey::InputKeyFlavor>,
-    OutputCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = BootstrapKey::OutputKeyFlavor>,
+    Accumulator:
+        SynthesizableGlweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+    InputCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
+    OutputCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
 {
     let mut group = c.benchmark_group(benchmark_name!(impl LweCiphertextDiscardingBootstrapEngine<
             BootstrapKey, 

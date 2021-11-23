@@ -13,7 +13,7 @@ pub fn bench<Engine, SecretKey, Ciphertext, Plaintext>(c: &mut Criterion)
 where
     Engine: LweCiphertextDiscardingDecryptionEngine<SecretKey, Ciphertext, Plaintext>,
     SecretKey: SynthesizableLweSecretKeyEntity,
-    Ciphertext: SynthesizableLweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: SynthesizableLweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
     Plaintext: SynthesizablePlaintextEntity,
 {
     let mut group = c.benchmark_group(

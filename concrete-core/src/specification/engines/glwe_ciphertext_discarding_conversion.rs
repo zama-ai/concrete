@@ -20,7 +20,7 @@ engine_error! {
 pub trait GlweCiphertextDiscardingConversionEngine<Input, Output>: AbstractEngine
 where
     Input: GlweCiphertextEntity,
-    Output: GlweCiphertextEntity<KeyFlavor = Input::KeyFlavor>,
+    Output: GlweCiphertextEntity<KeyDistribution = Input::KeyDistribution>,
 {
     /// Converts a GLWE ciphertext .
     fn discard_convert_glwe_ciphertext(

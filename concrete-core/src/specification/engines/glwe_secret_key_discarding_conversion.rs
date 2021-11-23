@@ -20,7 +20,7 @@ engine_error! {
 pub trait GlweSecretKeyDiscardingConversionEngine<Input, Output>: AbstractEngine
 where
     Input: GlweSecretKeyEntity,
-    Output: GlweSecretKeyEntity<KeyFlavor = Input::KeyFlavor>,
+    Output: GlweSecretKeyEntity<KeyDistribution = Input::KeyDistribution>,
 {
     /// Converts a GLWE secret key .
     fn discard_convert_glwe_secret_key(

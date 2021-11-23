@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{KeyFlavorMarker, LweBootstrapKeyKind};
+use crate::specification::entities::markers::{KeyDistributionMarker, LweBootstrapKeyKind};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
@@ -6,20 +6,20 @@ use concrete_commons::parameters::{
 
 /// A trait implemented by types embodying an LWE bootstrap key.
 ///
-/// An LWE bootstrap key is associated with two [`KeyFlavorMarker`] types:
+/// An LWE bootstrap key is associated with two [`KeyDistributionMarker`] types:
 ///
-/// + The [`InputKeyFlavor`](`LweBootstrapKeyEntity::InputKeyFlavor`) type conveys the flavor of the
-/// secret key encrypted inside the bootstrap key.
-/// + The [`OutputKeyFlavor`](`LweBootstrapKeyEntity::OutputKeyFlavor`) type conveys the flavor of
-/// the secret key used to encrypt the bootstrap key.
+/// + The [`InputKeyDistribution`](`LweBootstrapKeyEntity::InputKeyDistribution`) type conveys the
+/// distribution of the secret key encrypted inside the bootstrap key.
+/// + The [`OutputKeyDistribution`](`LweBootstrapKeyEntity::OutputKeyDistribution`) type conveys the
+/// distribution of the secret key used to encrypt the bootstrap key.
 ///
 /// # Formal Definition
 pub trait LweBootstrapKeyEntity: AbstractEntity<Kind = LweBootstrapKeyKind> {
-    /// The flavor of key the input ciphertext is encrypted with.
-    type InputKeyFlavor: KeyFlavorMarker;
+    /// The distribution of key the input ciphertext is encrypted with.
+    type InputKeyDistribution: KeyDistributionMarker;
 
-    /// The flavor of the key the output ciphertext is encrypted with.
-    type OutputKeyFlavor: KeyFlavorMarker;
+    /// The distribution of the key the output ciphertext is encrypted with.
+    type OutputKeyDistribution: KeyDistributionMarker;
 
     /// Returns the GLWE dimension of the key.
     fn glwe_dimension(&self) -> GlweDimension;

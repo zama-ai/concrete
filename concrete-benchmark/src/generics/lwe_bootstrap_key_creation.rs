@@ -15,8 +15,10 @@ pub fn bench<Engine, LweSecretKey, GlweSecretKey, BootstrapKey>(c: &mut Criterio
 where
     Engine: LweBootstrapKeyCreationEngine<LweSecretKey, GlweSecretKey, BootstrapKey>,
     BootstrapKey: SynthesizableLweBootstrapKeyEntity,
-    LweSecretKey: SynthesizableLweSecretKeyEntity<KeyFlavor = BootstrapKey::InputKeyFlavor>,
-    GlweSecretKey: SynthesizableGlweSecretKeyEntity<KeyFlavor = BootstrapKey::OutputKeyFlavor>,
+    LweSecretKey:
+        SynthesizableLweSecretKeyEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
+    GlweSecretKey:
+        SynthesizableGlweSecretKeyEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
 {
     let mut group = c.benchmark_group(benchmark_name!(impl LweBootstrapKeyCreationEngine<
             LweSecretKey, 
