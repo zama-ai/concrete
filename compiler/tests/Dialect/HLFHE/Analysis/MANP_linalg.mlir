@@ -323,3 +323,13 @@ func @matmul_int_eint_cst_p_2_n_1(%arg0: tensor<2x3x!HLFHE.eint<2>>) -> tensor<2
   %1 = "HLFHELinalg.matmul_int_eint"(%0, %arg0): (tensor<2x2xi3>, tensor<2x3x!HLFHE.eint<2>>) -> tensor<2x3x!HLFHE.eint<2>>
   return %1 : tensor<2x3x!HLFHE.eint<2>>
 }
+
+// -----
+
+func @zero() -> tensor<8x!HLFHE.eint<2>>
+{
+  // CHECK: %[[ret:.*]] = "HLFHELinalg.zero"() {MANP = 1 : ui{{[0-9]+}}} : () -> tensor<8x!HLFHE.eint<2>>
+  %0 = "HLFHELinalg.zero"() : () -> tensor<8x!HLFHE.eint<2>>
+
+  return %0 : tensor<8x!HLFHE.eint<2>>
+}

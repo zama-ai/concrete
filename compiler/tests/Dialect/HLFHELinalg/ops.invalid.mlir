@@ -229,3 +229,23 @@ func @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<4x2x!HLFHE.eint<2>>) 
   %1 = "HLFHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x4xi3>, tensor<4x2x!HLFHE.eint<2>>) -> tensor<4x2x!HLFHE.eint<2>>
   return %1 : tensor<4x2x!HLFHE.eint<2>>
 }
+
+// -----
+
+/////////////////////////////////////////////////
+// HLFHELinalg.zero
+/////////////////////////////////////////////////
+
+func @zero_1D_scalar() -> tensor<4x!HLFHE.eint<2>> {
+  // expected-error @+1 {{'HLFHELinalg.zero' op}}
+  %0 = "HLFHELinalg.zero"() : () -> !HLFHE.eint<2>
+  return %0 : !HLFHE.eint<2>
+}
+
+// -----
+
+func @zero_plaintext() -> tensor<4x9xi32> {
+  // expected-error @+1 {{'HLFHELinalg.zero' op}}
+  %0 = "HLFHELinalg.zero"() : () -> tensor<4x9xi32>
+  return %0 : tensor<4x9xi32>
+}
