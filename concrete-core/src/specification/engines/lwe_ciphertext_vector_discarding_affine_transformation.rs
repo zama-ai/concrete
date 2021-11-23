@@ -26,7 +26,7 @@ pub trait LweCiphertextVectorDiscardingAffineTransformationEngine<
     OutputCiphertext,
 >: AbstractEngine where
     OutputCiphertext: LweCiphertextEntity,
-    CiphertextVector: LweCiphertextVectorEntity<KeyFlavor = OutputCiphertext::KeyFlavor>,
+    CiphertextVector: LweCiphertextVectorEntity<KeyDistribution = OutputCiphertext::KeyDistribution>,
     CleartextVector: CleartextVectorEntity,
     Plaintext: PlaintextEntity,
 {

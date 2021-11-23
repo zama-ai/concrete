@@ -21,7 +21,7 @@ pub trait LweCiphertextVectorLoadingEngine<CiphertextVector, SubCiphertextVector
     AbstractEngine
 where
     CiphertextVector: LweCiphertextVectorEntity,
-    SubCiphertextVector: LweCiphertextVectorEntity<KeyFlavor = CiphertextVector::KeyFlavor>,
+    SubCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = CiphertextVector::KeyDistribution>,
 {
     /// Loads a subpart of an LWE ciphertext vector.
     fn load_lwe_ciphertext_vector(

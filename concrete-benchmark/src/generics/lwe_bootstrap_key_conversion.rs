@@ -13,8 +13,8 @@ where
     Engine: LweBootstrapKeyConversionEngine<InputBootstrapKey, OutputBootstrapKey>,
     InputBootstrapKey: SynthesizableLweBootstrapKeyEntity,
     OutputBootstrapKey: SynthesizableLweBootstrapKeyEntity<
-        InputKeyFlavor = InputBootstrapKey::InputKeyFlavor,
-        OutputKeyFlavor = InputBootstrapKey::OutputKeyFlavor,
+        InputKeyDistribution = InputBootstrapKey::InputKeyDistribution,
+        OutputKeyDistribution = InputBootstrapKey::OutputKeyDistribution,
     >,
 {
     let mut group = c.benchmark_group(benchmark_name!(impl LweBootstrapKeyConversionEngine<

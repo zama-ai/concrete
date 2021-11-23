@@ -3,7 +3,7 @@ use crate::backends::core::private::crypto::bootstrap::{
     StandardBootstrapKey as ImplStandardBootstrapKey,
 };
 use crate::backends::core::private::math::fft::Complex64;
-use crate::specification::entities::markers::{BinaryKeyFlavor, LweBootstrapKeyKind};
+use crate::specification::entities::markers::{BinaryKeyDistribution, LweBootstrapKeyKind};
 use crate::specification::entities::{AbstractEntity, LweBootstrapKeyEntity};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
@@ -17,8 +17,8 @@ impl AbstractEntity for LweBootstrapKey32 {
     type Kind = LweBootstrapKeyKind;
 }
 impl LweBootstrapKeyEntity for LweBootstrapKey32 {
-    type InputKeyFlavor = BinaryKeyFlavor;
-    type OutputKeyFlavor = BinaryKeyFlavor;
+    type InputKeyDistribution = BinaryKeyDistribution;
+    type OutputKeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.glwe_size().to_glwe_dimension()
@@ -48,8 +48,8 @@ impl AbstractEntity for LweBootstrapKey64 {
     type Kind = LweBootstrapKeyKind;
 }
 impl LweBootstrapKeyEntity for LweBootstrapKey64 {
-    type InputKeyFlavor = BinaryKeyFlavor;
-    type OutputKeyFlavor = BinaryKeyFlavor;
+    type InputKeyDistribution = BinaryKeyDistribution;
+    type OutputKeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.glwe_size().to_glwe_dimension()
@@ -79,8 +79,8 @@ impl AbstractEntity for FourierLweBootstrapKey32 {
     type Kind = LweBootstrapKeyKind;
 }
 impl LweBootstrapKeyEntity for FourierLweBootstrapKey32 {
-    type InputKeyFlavor = BinaryKeyFlavor;
-    type OutputKeyFlavor = BinaryKeyFlavor;
+    type InputKeyDistribution = BinaryKeyDistribution;
+    type OutputKeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.glwe_size().to_glwe_dimension()
@@ -110,8 +110,8 @@ impl AbstractEntity for FourierLweBootstrapKey64 {
     type Kind = LweBootstrapKeyKind;
 }
 impl LweBootstrapKeyEntity for FourierLweBootstrapKey64 {
-    type InputKeyFlavor = BinaryKeyFlavor;
-    type OutputKeyFlavor = BinaryKeyFlavor;
+    type InputKeyDistribution = BinaryKeyDistribution;
+    type OutputKeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.glwe_size().to_glwe_dimension()

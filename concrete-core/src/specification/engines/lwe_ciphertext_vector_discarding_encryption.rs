@@ -27,7 +27,7 @@ pub trait LweCiphertextVectorDiscardingEncryptionEngine<
 >: AbstractEngine where
     SecretKey: LweSecretKeyEntity,
     PlaintextVector: PlaintextVectorEntity,
-    CiphertextVector: LweCiphertextVectorEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    CiphertextVector: LweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts an LWE ciphertext vector.
     fn discard_encrypt_lwe_ciphertext_vector(

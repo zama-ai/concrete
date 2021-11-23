@@ -26,7 +26,7 @@ pub trait GlweCiphertextDiscardingEncryptionEngine<SecretKey, PlaintextVector, C
 where
     SecretKey: GlweSecretKeyEntity,
     PlaintextVector: PlaintextVectorEntity,
-    Ciphertext: GlweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: GlweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts a GLWE ciphertext .
     fn discard_encrypt_glwe_ciphertext(

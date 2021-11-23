@@ -22,7 +22,7 @@ pub trait LweCiphertextDiscardingEncryptionEngine<SecretKey, Plaintext, Cipherte
 where
     SecretKey: LweSecretKeyEntity,
     Plaintext: PlaintextEntity,
-    Ciphertext: LweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: LweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts an LWE ciphertext.
     fn discard_encrypt_lwe_ciphertext(

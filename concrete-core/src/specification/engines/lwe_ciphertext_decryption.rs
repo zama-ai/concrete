@@ -18,7 +18,7 @@ engine_error! {
 pub trait LweCiphertextDecryptionEngine<SecretKey, Ciphertext, Plaintext>: AbstractEngine
 where
     SecretKey: LweSecretKeyEntity,
-    Ciphertext: LweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: LweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
     Plaintext: PlaintextEntity,
 {
     /// Decrypts an LWE ciphertext.

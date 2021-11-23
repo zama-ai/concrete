@@ -1,16 +1,16 @@
-use crate::specification::entities::markers::{KeyFlavorMarker, LweSecretKeyKind};
+use crate::specification::entities::markers::{KeyDistributionMarker, LweSecretKeyKind};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::LweDimension;
 
 /// A trait implemented by types embodying an LWE secret key.
 ///
 /// An LWE secret key is associated with a
-/// [`KeyFlavor`](`LweSecretKeyEntity::KeyFlavor`) type, which conveys its flavor.
+/// [`KeyDistribution`](`LweSecretKeyEntity::KeyDistribution`) type, which conveys its distribution.
 ///
 /// # Formal Definition
 pub trait LweSecretKeyEntity: AbstractEntity<Kind = LweSecretKeyKind> {
-    /// The flavor of this key.
-    type KeyFlavor: KeyFlavorMarker;
+    /// The distribution of this key.
+    type KeyDistribution: KeyDistributionMarker;
 
     /// Returns the LWE dimension of the key.
     fn lwe_dimension(&self) -> LweDimension;

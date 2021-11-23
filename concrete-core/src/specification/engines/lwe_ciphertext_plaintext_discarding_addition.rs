@@ -22,7 +22,7 @@ pub trait LweCiphertextPlaintextDiscardingAdditionEngine<
 >: AbstractEngine where
     Plaintext: PlaintextEntity,
     InputCiphertext: LweCiphertextEntity,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
     /// Adds a plaintext to an LWE ciphertext.
     fn discard_add_lwe_ciphertext_plaintext(

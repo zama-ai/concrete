@@ -24,7 +24,7 @@ pub trait GlweCiphertextEncryptionEngine<SecretKey, PlaintextVector, Ciphertext>
 where
     SecretKey: GlweSecretKeyEntity,
     PlaintextVector: PlaintextVectorEntity,
-    Ciphertext: GlweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: GlweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts a plaintext vector into a GLWE ciphertext.
     fn encrypt_glwe_ciphertext(

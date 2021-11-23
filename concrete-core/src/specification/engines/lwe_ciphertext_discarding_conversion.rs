@@ -19,7 +19,7 @@ engine_error! {
 pub trait LweCiphertextDiscardingConversionEngine<Input, Output>: AbstractEngine
 where
     Input: LweCiphertextEntity,
-    Output: LweCiphertextEntity<KeyFlavor = Input::KeyFlavor>,
+    Output: LweCiphertextEntity<KeyDistribution = Input::KeyDistribution>,
 {
     /// Converts a LWE ciphertext .
     fn discard_convert_lwe_ciphertext(

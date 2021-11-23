@@ -30,9 +30,9 @@ pub trait LweCiphertextDiscardingBootstrapEngine<
     OutputCiphertext,
 >: AbstractEngine where
     BootstrapKey: LweBootstrapKeyEntity,
-    Accumulator: GlweCiphertextEntity<KeyFlavor = BootstrapKey::OutputKeyFlavor>,
-    InputCiphertext: LweCiphertextEntity<KeyFlavor = BootstrapKey::InputKeyFlavor>,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = BootstrapKey::OutputKeyFlavor>,
+    Accumulator: GlweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+    InputCiphertext: LweCiphertextEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
 {
     /// Bootstrap an LWE ciphertext .
     fn discard_bootstrap_lwe_ciphertext(

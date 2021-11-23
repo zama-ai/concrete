@@ -21,7 +21,7 @@ pub trait LweCiphertextVectorDiscardingAdditionEngine<InputCiphertextVector, Out
     AbstractEngine
 where
     InputCiphertextVector: LweCiphertextVectorEntity,
-    OutputCiphertextVector: LweCiphertextVectorEntity<KeyFlavor = InputCiphertextVector::KeyFlavor>,
+    OutputCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
 {
     /// Adds two LWE ciphertext vectors.
     fn discard_add_lwe_ciphertext_vector(

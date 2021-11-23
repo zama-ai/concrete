@@ -19,7 +19,7 @@ pub trait LweCiphertextFusingAdditionEngine<InputCiphertext, OutputCiphertext>:
     AbstractEngine
 where
     InputCiphertext: LweCiphertextEntity,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
     /// Adds an LWE ciphertext to an other.
     fn fuse_add_lwe_ciphertext(

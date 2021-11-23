@@ -19,7 +19,7 @@ engine_error! {
 pub trait LweCiphertextLoadingEngine<CiphertextVector, Ciphertext>: AbstractEngine
 where
     Ciphertext: LweCiphertextEntity,
-    CiphertextVector: LweCiphertextVectorEntity<KeyFlavor = Ciphertext::KeyFlavor>,
+    CiphertextVector: LweCiphertextVectorEntity<KeyDistribution = Ciphertext::KeyDistribution>,
 {
     /// Loads an LWE ciphertext from an LWE ciphertext vector.
     fn load_lwe_ciphertext(

@@ -24,7 +24,7 @@ pub trait LweCiphertextDiscardingExtractionEngine<GlweCiphertext, LweCiphertext>
     AbstractEngine
 where
     GlweCiphertext: GlweCiphertextEntity,
-    LweCiphertext: LweCiphertextEntity<KeyFlavor = GlweCiphertext::KeyFlavor>,
+    LweCiphertext: LweCiphertextEntity<KeyDistribution = GlweCiphertext::KeyDistribution>,
 {
     /// Extracts an LWE ciphertext from a GLWE ciphertext.
     fn discard_extract_lwe_ciphertext(

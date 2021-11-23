@@ -10,7 +10,8 @@ pub fn bench<Engine, InputCiphertext, OutputCiphertext>(c: &mut Criterion)
 where
     Engine: LweCiphertextDiscardingAdditionEngine<InputCiphertext, OutputCiphertext>,
     InputCiphertext: SynthesizableLweCiphertextEntity,
-    OutputCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
     let mut group = c.benchmark_group(benchmark_name!(impl LweCiphertextDiscardingAdditionEngine<
             InputCiphertext, 

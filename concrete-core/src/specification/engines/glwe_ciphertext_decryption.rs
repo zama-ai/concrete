@@ -22,7 +22,7 @@ pub trait GlweCiphertextDecryptionEngine<SecretKey, Ciphertext, PlaintextVector>
     AbstractEngine
 where
     SecretKey: GlweSecretKeyEntity,
-    Ciphertext: GlweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: GlweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
     PlaintextVector: PlaintextVectorEntity,
 {
     /// Decrypts a GLWE ciphertext into a plaintext vector.

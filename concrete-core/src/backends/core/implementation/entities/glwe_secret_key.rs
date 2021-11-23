@@ -1,5 +1,5 @@
 use crate::backends::core::private::crypto::secret::GlweSecretKey as ImpGlweSecretKey;
-use crate::specification::entities::markers::{BinaryKeyFlavor, GlweSecretKeyKind};
+use crate::specification::entities::markers::{BinaryKeyDistribution, GlweSecretKeyKind};
 use crate::specification::entities::{AbstractEntity, GlweSecretKeyEntity};
 use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_commons::parameters::{GlweDimension, PolynomialSize};
@@ -11,7 +11,7 @@ impl AbstractEntity for GlweSecretKey32 {
     type Kind = GlweSecretKeyKind;
 }
 impl GlweSecretKeyEntity for GlweSecretKey32 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.key_size()
@@ -29,7 +29,7 @@ impl AbstractEntity for GlweSecretKey64 {
     type Kind = GlweSecretKeyKind;
 }
 impl GlweSecretKeyEntity for GlweSecretKey64 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.key_size()
