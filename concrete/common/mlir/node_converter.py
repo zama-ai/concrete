@@ -270,7 +270,7 @@ class IntermediateNodeConverter:
         value = self.node.inputs[variable_input_index]
         assert_true(value.is_encrypted)
 
-        if not isinstance(value.dtype, Integer) or value.dtype.is_signed:  # pragma: no cover
+        if not isinstance(value.dtype, Integer):  # pragma: no cover
             # this branch is not covered as it's impossible to get into due to how compilation works
             # however, it doesn't hurt to keep it as an extra measure
             raise NotImplementedError(f"Table lookup on {value} cannot be converted to MLIR yet")

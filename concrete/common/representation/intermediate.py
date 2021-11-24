@@ -370,8 +370,8 @@ class GenericFunction(IntermediateNode):
     def get_table(self, ordered_preds: List[IntermediateNode]) -> List[Any]:
         """Get the table for the current input value of this GenericFunction.
 
-        This function only works if the GenericFunction variable input value is an unsigned Integer.
-        It only works if there is a single variable input node among ordered_preds.
+        This function only works if the GenericFunction variable input value is an Integer.
+        This function only works if there is a single variable input node among ordered_preds.
 
         Args:
             ordered_preds (List[IntermediateNode]): List of predecessors of the node. This list must
@@ -393,16 +393,12 @@ class GenericFunction(IntermediateNode):
 
         variable_input_idx = variable_input_indices[0]
         variable_input_dtype = self.inputs[variable_input_idx].dtype
-        # Check the input is an unsigned integer to be able to build a table
+        # Check the input is an integer to be able to build a table
         assert_true(
             isinstance(variable_input_dtype, Integer),
             f"{self.get_table.__name__} only works for an unsigned Integer input",
         )
         variable_input_dtype = cast(Integer, variable_input_dtype)
-        assert_true(
-            not variable_input_dtype.is_signed,
-            f"{self.get_table.__name__} only works for an unsigned Integer input",
-        )
 
         input_value_constructor = self.inputs[0].underlying_constructor
         if input_value_constructor is None:

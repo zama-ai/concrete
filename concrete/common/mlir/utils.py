@@ -89,17 +89,6 @@ def check_node_compatibility_with_mlir(
                 )
                 == 1
             )
-
-            if not value_is_unsigned_integer(inputs[0]):
-                # this branch is not reachable because compilation fails during inputset evaluation
-                if node.op_name == "TLU":  # pragma: no cover
-                    return "only unsigned integer lookup tables are supported"
-
-                if node.op_name == "MultiTLU":  # pragma: no cover
-                    return "only unsigned integer multi lookup tables are supported"
-
-                # e.g., `np.absolute is not supported for the time being`
-                return f"{node.op_name} is not supported for the time being"
         else:
             return f"{node.op_name} is not supported for the time being"
 

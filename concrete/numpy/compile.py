@@ -2,7 +2,8 @@
 
 import sys
 import traceback
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
+from copy import deepcopy
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union, cast
 
 import numpy
 from zamalang import CompilerEngine
@@ -21,7 +22,8 @@ from ..common.mlir.utils import (
 )
 from ..common.operator_graph import OPGraph
 from ..common.optimization.topological import fuse_float_operations
-from ..common.values import BaseValue
+from ..common.representation.intermediate import Add, Constant, GenericFunction
+from ..common.values import BaseValue, ClearScalar
 from ..numpy.tracing import trace_numpy_function
 from .np_dtypes_helpers import (
     get_base_data_type_for_numpy_or_python_constant_data,
@@ -311,7 +313,66 @@ def compile_numpy_function_into_op_graph_and_measure_bounds(
         raise
 
 
-def prepare_op_graph_for_mlir(op_graph):
+# HACK
+# TODO: remove this ugly hack when https://github.com/zama-ai/concretefhe-internal/issues/1001 is
+# done
+# TODO: https://github.com/zama-ai/concretefhe-internal/issues/1015
+def hack_offset_negative_inputs_to_lookup_tables(op_graph: OPGraph) -> None:
+    """Hack the op_graph to add offsets to signed inputs to TLUs.
+
+    Args:
+        op_graph (OPGraph): the OPGraph to hack.
+    """
+    # Ugly hack to add an offset before entering a TLU if its variable input node has a signed
+    # output.
+    # This is ugly as this makes hardcoded assumptions about the way bit widths are handled in MLIR.
+    # This does not update the TLU input values to allow for proper table generation.
+    # Thankfully we are not supposed to touch the op_graph beyond that point
+    for node in list((nx_graph := op_graph.graph).nodes):
+        if isinstance(node, GenericFunction):
+            ordered_preds_and_inputs = op_graph.get_ordered_preds_and_inputs_of(node)
+            variable_input_indices = [
+                idx
+                for idx, (pred, _) in enumerate(ordered_preds_and_inputs)
+                if not isinstance(pred, Constant)
+            ]
+            assert_true(len(variable_input_indices) == 1)
+            variable_input_idx = variable_input_indices[0]
+            variable_input_node = ordered_preds_and_inputs[variable_input_idx][0]
+            variable_input_value = variable_input_node.outputs[0]
+            variable_input_dtype = variable_input_value.dtype
+            assert_true(isinstance(variable_input_dtype, Integer))
+            variable_input_dtype = cast(Integer, variable_input_dtype)
+            if not variable_input_dtype.is_signed:
+                continue
+
+            # input_bit_width + 1 to be MLIR compliant
+            input_bit_width = variable_input_dtype.bit_width
+            mlir_compliant_int_type = Integer(input_bit_width + 1, True)
+
+            # Manually fix the output values to be MLIR compliant
+            # offset_constant is set to abs(min_value) for the variable input so that the values
+            # [- 2 ** (n - 1); 2 ** (n - 1) - 1] is mapped to [0; 2 ** n - 1], changing the signed
+            # TLU to an actual unsigned TLU. The get_table function creates the table from the min
+            # value to the max value. As we keep the input value as a signed value, it will be from
+            # - 2 ** (n - 1) to 2 ** (n - 1) - 1. Then, the get_table function stores corresponding
+            # values in increasing indexes from 0 to 2 ** n - 1. As our signed values have been
+            # shifted by 2 ** (n - 1), the table will be usable as-is, without needing any change in
+            # the lambda function of the GenericFunction.
+            offset_constant = Constant(abs(variable_input_dtype.min_value()))
+            offset_constant.outputs[0].dtype = deepcopy(mlir_compliant_int_type)
+            add_offset = Add(
+                [deepcopy(variable_input_value), ClearScalar(deepcopy(mlir_compliant_int_type))]
+            )
+            add_offset.outputs[0] = deepcopy(variable_input_value)
+
+            nx_graph.remove_edge(variable_input_node, node)
+            nx_graph.add_edge(variable_input_node, add_offset, input_idx=0, output_idx=0)
+            nx_graph.add_edge(offset_constant, add_offset, input_idx=1, output_idx=0)
+            nx_graph.add_edge(add_offset, node, input_idx=variable_input_idx, output_idx=0)
+
+
+def prepare_op_graph_for_mlir(op_graph: OPGraph):
     """Prepare OPGraph for MLIR lowering.
 
     This includes checking compatibility, changing bit-widths, and modifying lookup tables.
@@ -336,6 +397,12 @@ def prepare_op_graph_for_mlir(op_graph):
 
     # TODO: workaround extend LUT #359
     extend_direct_lookup_tables(op_graph)
+
+    # HACK
+    # TODO: remove this ugly hack when https://github.com/zama-ai/concretefhe-internal/issues/1001
+    # is done
+    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/1015
+    hack_offset_negative_inputs_to_lookup_tables(op_graph)
 
 
 def _compile_numpy_function_internal(

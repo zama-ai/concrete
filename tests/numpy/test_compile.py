@@ -267,8 +267,8 @@ def check_is_good_execution(compiler_engine, function, args, verbose=True):
     # Bad computation after nb_tries
     raise AssertionError(
         f"bad computation after {nb_tries} tries, which was supposed to happen with a "
-        f"probability of {expected_bad_luck}.\nLast engine result: {last_engine_result} "
-        f"last function result: {last_function_result}"
+        f"probability of {expected_bad_luck}.\nLast engine result:\n{last_engine_result}\n"
+        f"Last function result:\n{last_function_result}"
     )
 
 
@@ -725,7 +725,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
 
 
 @pytest.mark.parametrize(
-    "function,parameters,inputset,test_input,expected_output",
+    "function,parameters,inputset,test_input,use_check_good_exec",
     [
         pytest.param(
             lambda x: x + 1,
@@ -740,11 +740,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [1, 8],
-                [7, 2],
-                [3, 6],
-            ],
+            False,
         ),
         pytest.param(
             lambda x: x + numpy.array([[1, 0], [2, 0], [3, 1]], dtype=numpy.uint32),
@@ -759,11 +755,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [1, 7],
-                [8, 1],
-                [5, 6],
-            ],
+            False,
         ),
         pytest.param(
             lambda x, y: x + y,
@@ -786,11 +778,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                 ],
                 2,
             ),
-            [
-                [2, 9],
-                [8, 3],
-                [4, 7],
-            ],
+            False,
         ),
         pytest.param(
             lambda x, y: x + y,
@@ -817,11 +805,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [3, 4],
                 ],
             ),
-            [
-                [1, 13],
-                [8, 6],
-                [5, 9],
-            ],
+            False,
         ),
         pytest.param(
             lambda x: 100 - x,
@@ -836,11 +820,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [100, 93],
-                [94, 99],
-                [98, 95],
-            ],
+            False,
         ),
         pytest.param(
             lambda x: numpy.array([[10, 15], [20, 15], [10, 30]], dtype=numpy.uint32) - x,
@@ -855,11 +835,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [10, 8],
-                [14, 14],
-                [8, 25],
-            ],
+            False,
         ),
         pytest.param(
             lambda x: x * 2,
@@ -874,11 +850,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [0, 14],
-                [12, 2],
-                [4, 10],
-            ],
+            False,
         ),
         pytest.param(
             lambda x: x * numpy.array([[1, 2], [2, 1], [3, 1]], dtype=numpy.uint32),
@@ -893,11 +865,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [4, 14],
-                [12, 1],
-                [6, 5],
-            ],
+            False,
         ),
         pytest.param(
             lambda x: LookupTable([2, 1, 3, 0])[x],
@@ -912,11 +880,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [3, 0],
                 ],
             ),
-            [
-                [2, 1],
-                [3, 1],
-                [0, 2],
-            ],
+            True,
         ),
         pytest.param(
             lambda x: numpy.dot(x, 2),
@@ -925,7 +889,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             },
             [(numpy.random.randint(0, 2 ** 3, size=(3,)),) for _ in range(10)],
             ([2, 7, 1],),
-            [4, 14, 2],
+            False,
         ),
         pytest.param(
             lambda x: numpy.dot(2, x),
@@ -934,7 +898,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             },
             [(numpy.random.randint(0, 2 ** 3, size=(3,)),) for _ in range(10)],
             ([2, 7, 1],),
-            [4, 14, 2],
+            False,
         ),
         pytest.param(
             lambda x: numpy.clip(x, 1, 5),
@@ -949,11 +913,22 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [1, 5],
-                [5, 1],
-                [2, 5],
-            ],
+            True,
+        ),
+        pytest.param(
+            lambda x: numpy.clip(x + (-4), -3, 5) + 3,
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
+            },
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            (
+                [
+                    [0, 7],
+                    [6, 1],
+                    [2, 5],
+                ],
+            ),
+            True,
         ),
         pytest.param(
             lambda x: x.clip(1, 5),
@@ -968,16 +943,32 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
                     [2, 5],
                 ],
             ),
-            [
-                [1, 5],
-                [5, 1],
-                [2, 5],
-            ],
+            True,
+        ),
+        pytest.param(
+            lambda x: (x + (-4)).clip(-3, 5) + 3,
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
+            },
+            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            (
+                [
+                    [0, 7],
+                    [6, 1],
+                    [2, 5],
+                ],
+            ),
+            True,
         ),
     ],
 )
 def test_compile_and_run_tensor_correctness(
-    function, parameters, inputset, test_input, expected_output, default_compilation_configuration
+    function,
+    parameters,
+    inputset,
+    test_input,
+    use_check_good_exec,
+    default_compilation_configuration,
 ):
     """Test correctness of results when running a compiled function with tensor operators"""
     circuit = compile_numpy_function(
@@ -987,14 +978,18 @@ def test_compile_and_run_tensor_correctness(
         default_compilation_configuration,
     )
 
-    numpy_test_input = (
+    numpy_test_input = tuple(
         item if isinstance(item, int) else numpy.array(item, dtype=numpy.uint8)
         for item in test_input
     )
-    assert numpy.array_equal(
-        circuit.run(*numpy_test_input),
-        numpy.array(expected_output, dtype=numpy.uint8),
-    )
+
+    if use_check_good_exec:
+        check_is_good_execution(circuit, function, numpy_test_input)
+    else:
+        assert numpy.array_equal(
+            circuit.run(*numpy_test_input),
+            numpy.array(function(*numpy_test_input), dtype=numpy.uint8),
+        )
 
 
 @pytest.mark.parametrize(
@@ -1542,47 +1537,6 @@ def test_fail_compile(function, parameters, inputset, match, default_compilation
         )
 
     assert str(excinfo.value) == match, str(excinfo.value)
-
-
-def test_fail_with_intermediate_signed_values(default_compilation_configuration):
-    """Test function with failing compilation due to intermediate signed integers."""
-
-    def function(x, y):
-        z = numpy.abs(10 * numpy.negative(x))
-        z = z.astype(numpy.int32) + y
-        return z
-
-    with pytest.raises(RuntimeError):
-        try:
-            compile_numpy_function(
-                function,
-                {
-                    "x": EncryptedScalar(Integer(2, is_signed=False)),
-                    "y": EncryptedScalar(Integer(2, is_signed=False)),
-                },
-                [(i, j) for i in range(2 ** 2) for j in range(2 ** 2)],
-                default_compilation_configuration,
-                show_mlir=True,
-            )
-        except RuntimeError as error:
-            match = """
-
-function you are trying to compile isn't supported for MLIR lowering
-
-%0 = y                              # EncryptedScalar<uint2>
-%1 = 10                             # ClearScalar<uint4>
-%2 = x                              # EncryptedScalar<uint2>
-%3 = negative(%2)                   # EncryptedScalar<int3>
-%4 = mul(%3, %1)                    # EncryptedScalar<int6>
-%5 = absolute(%4)                   # EncryptedScalar<uint5>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ absolute is not supported for the time being
-%6 = astype(%5, dtype=int32)        # EncryptedScalar<uint5>
-%7 = add(%6, %0)                    # EncryptedScalar<uint6>
-return %7
-
-            """.strip()  # noqa: E501 # pylint: disable=line-too-long
-            assert str(error) == match
-            raise
 
 
 def test_small_inputset_no_fail():
