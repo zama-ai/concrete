@@ -282,7 +282,12 @@ class IntermediateNodeConverter:
             table = tables[0][0]
 
             lut_shape: Tuple[int, ...] = (len(table),)
-            lut_values = numpy.array(table, dtype=numpy.uint64)
+
+            # The reduction on 63b is to avoid problems like doing a TLU of
+            # the form T[j] = 2<<j, for j which is supposed to be 7b as per
+            # constraint of the compiler, while in practice, it is a small
+            # value. Reducing on 64b was not ok for some reason
+            lut_values = numpy.array(table % (2 << 63), dtype=numpy.uint64)
         else:
             assert_true(isinstance(output, TensorValue))
             assert isinstance(output, TensorValue)

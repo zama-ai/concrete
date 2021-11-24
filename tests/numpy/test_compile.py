@@ -683,9 +683,8 @@ def test_compile_and_run_correctness(
     [
         pytest.param(lambda x: x ** 2, ((0, 10),), ["x"]),
         pytest.param(lambda x: 2 ** (x % 5), ((0, 20),), ["x"]),
-        # FIXME: Fails, #949 pytest.param(lambda x: abs(~x), ((0, 13),), ["x"]),
         pytest.param(lambda x: x << 1, ((0, 13),), ["x"]),
-        # FIXME: Fails, #949 pytest.param(lambda x: 2 << (x % 6), ((0, 13),), ["x"]),
+        pytest.param(lambda x: 2 << (x % 6), ((0, 13),), ["x"]),
         pytest.param(lambda x: x >> 2, ((30, 100),), ["x"]),
         pytest.param(lambda x: 115 >> (x % 3), ((0, 17),), ["x"]),
         pytest.param(lambda x: x % 7, ((0, 100),), ["x"]),
