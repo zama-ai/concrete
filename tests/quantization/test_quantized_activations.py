@@ -2,7 +2,7 @@
 import numpy
 import pytest
 
-from concrete.quantization import QuantizedArray, QuantizedSigmoid
+from concrete.quantization import QuantizedArray, QuantizedReLU6, QuantizedSigmoid
 
 N_BITS_ATOL_TUPLE_LIST = [
     (32, 10 ** -2),
@@ -19,12 +19,24 @@ N_BITS_ATOL_TUPLE_LIST = [
     [pytest.param(n_bits, atol) for n_bits, atol in N_BITS_ATOL_TUPLE_LIST],
 )
 @pytest.mark.parametrize(
-    "quant_activation, values",
-    [pytest.param(QuantizedSigmoid, numpy.random.uniform(size=(10, 40, 20)))],
+    "input_range",
+    [pytest.param((-1, 1)), pytest.param((-2, 2)), pytest.param((-10, 10)), pytest.param((0, 20))],
+)
+@pytest.mark.parametrize(
+    "input_shape",
+    [pytest.param((10, 40, 20)), pytest.param((100, 400))],
+)
+@pytest.mark.parametrize(
+    "quant_activation",
+    [
+        pytest.param(QuantizedSigmoid),
+        pytest.param(QuantizedReLU6),
+    ],
 )
 @pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
-def test_activations(quant_activation, values, n_bits, atol, is_signed):
+def test_activations(quant_activation, input_shape, input_range, n_bits, atol, is_signed):
     """Test activation functions."""
+    values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
     q_inputs = QuantizedArray(n_bits, values, is_signed)
     quant_sigmoid = quant_activation(n_bits)
     quant_sigmoid.calibrate(values)
@@ -40,4 +52,4 @@ def test_activations(quant_activation, values, n_bits, atol, is_signed):
     dequant_values = q_output.dequant()
 
     # Check that all values are close
-    assert numpy.isclose(dequant_values, expected_output, atol=atol).all()
+    assert numpy.isclose(dequant_values.ravel(), expected_output.ravel(), atol=atol).all()
