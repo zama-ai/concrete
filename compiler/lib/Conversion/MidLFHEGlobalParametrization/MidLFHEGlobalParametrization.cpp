@@ -33,7 +33,8 @@ public:
         [](GLWECipherTextType type, mlir::zamalang::V0FHEContext &fheContext) {
           auto glweSize = fheContext.parameter.getNBigGlweSize();
           auto p = fheContext.constraint.p;
-          if (type.getDimension() == (signed)glweSize && type.getP() == (signed)p) {
+          if (type.getDimension() == (signed)glweSize &&
+              type.getP() == (signed)p) {
             return type;
           }
           return GLWECipherTextType::get(
