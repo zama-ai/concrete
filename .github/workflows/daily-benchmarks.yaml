@@ -19,29 +19,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-3 # Europe (Paris)
 
-      - name: Start EC2 Instance
-        run: |
-          aws ec2 start-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }}
+      - name: Write SSH Key To A File
+        run: echo "$SSH_KEY" > ~/ssh-key && chmod 400 ~/ssh-key
+        env:
+          SSH_KEY: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
 
-      - name: Wait For The Instance To Get An IP Address
+      - name: Start AMD EC2 Instance
+        run: |
+          aws ec2 start-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID }}
+
+      - name: Wait For The AMD EC2 Instance To Get An IP Address
         run: |
           # shellcheck disable=SC2016,2026
-          timeout 180 bash -c 'until [[ $(aws ec2 describe-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text) != "" ]]; do sleep 0.1; done'
+          timeout 180 bash -c 'until [[ $(aws ec2 describe-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text) != "" ]]; do sleep 0.1; done'
 
-      - name: Get Public IP Address of EC2 Instance
-        id: public-ip
-        run: echo "::set-output name=value::$(aws ec2 describe-instances --region eu-west-3 --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)"
+      - name: Get Public IP Address of AMD EC2 Instance
+        id: amd-public-ip
+        run: echo "::set-output name=value::$(aws ec2 describe-instances --region eu-west-3 --instance-ids ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)"
 
-      - name: Hide Public IP Address From GitHub Logs
-        run: echo "::add-mask::${{ steps.public-ip.outputs.value }}"
+      - name: Hide Public IP Address of AMD EC2 Instance From GitHub Logs
+        run: echo "::add-mask::${{ steps.amd-public-ip.outputs.value }}"
 
-      - name: Wait For The Instance To Accept SSH Connections
-        run: timeout 180 bash -c 'until nc -z ${{ steps.public-ip.outputs.value }} 22; do sleep 0.1; done'
+      - name: Wait For The AMD EC2 Instance To Accept SSH Connections
+        run: timeout 180 bash -c 'until nc -z ${{ steps.amd-public-ip.outputs.value }} 22; do sleep 0.1; done'
 
-      - name: Connect To EC2 Instance, Perform Benchmarks, Publish Results
+      - name: Connect To AMD EC2 Instance, Perform Benchmarks, Publish Results
         uses: appleboy/ssh-action@1d1b21ca96111b1eb4c03c21c14ebb971d2200f6
         with:
-          host: ${{ steps.public-ip.outputs.value }}
+          host: ${{ steps.amd-public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
           command_timeout: 90m
@@ -51,24 +56,83 @@ jobs:
             make docker_publish_measurements
             docker system prune -f
 
-      - name: Write SSH Key To A File
-        run: echo "$SSH_KEY" > ~/ssh-key && chmod 400 ~/ssh-key
-        env:
-          SSH_KEY: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
+      - name: Copy AMD EC2 Instance Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concretefhe-internal/logs/latest.log ~/latest.log
 
-      - name: Copy Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.public-ip.outputs.value }}:~/concretefhe-internal/logs/latest.log ~/latest.log
+      - name: Copy AMD EC2 Instance Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concretefhe-internal/.benchmarks/findings.json ~/findings.json
 
-      - name: Stop EC2 Instance
+      - name: Stop AMD EC2 Instance
         if: ${{ always() }}
         run: |
-          aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INSTANCE_ID }}
+          aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID }}
 
-      - name: Upload Logs
+      - name: Upload Logs of AMD EC2 Instance
         uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
         with:
-          name: logs
+          name: amd-logs
           path: ~/latest.log
+
+      - name: Upload Findings of AMD EC2 Instance
+        uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+        with:
+          name: amd-findings
+          path: ~/findings.json
+
+      - name: Start Intel EC2 Instance
+        run: |
+          aws ec2 start-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }}
+
+      - name: Wait For The Intel EC2 Instance To Get An IP Address
+        run: |
+          # shellcheck disable=SC2016,2026
+          timeout 180 bash -c 'until [[ $(aws ec2 describe-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text) != "" ]]; do sleep 0.1; done'
+
+      - name: Get Public IP Address of Intel EC2 Instance
+        id: intel-public-ip
+        run: echo "::set-output name=value::$(aws ec2 describe-instances --region eu-west-3 --instance-ids ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)"
+
+      - name: Hide Public IP Address of Intel EC2 Instance From GitHub Logs
+        run: echo "::add-mask::${{ steps.intel-public-ip.outputs.value }}"
+
+      - name: Wait For The Intel EC2 Instance To Accept SSH Connections
+        run: timeout 180 bash -c 'until nc -z ${{ steps.intel-public-ip.outputs.value }} 22; do sleep 0.1; done'
+
+      - name: Connect To Intel EC2 Instance, Perform Benchmarks, Publish Results
+        uses: appleboy/ssh-action@1d1b21ca96111b1eb4c03c21c14ebb971d2200f6
+        with:
+          host: ${{ steps.intel-public-ip.outputs.value }}
+          username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
+          key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
+          command_timeout: 90m
+          script: |
+            cd ~/concretefhe-internal
+            git pull
+            make docker_publish_measurements
+            docker system prune -f
+
+      - name: Copy Intel EC2 Instance Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concretefhe-internal/logs/latest.log ~/latest.log
+
+      - name: Copy Intel EC2 Instance Findings
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concretefhe-internal/.benchmarks/findings.json ~/findings.json
+
+      - name: Stop Intel EC2 Instance
+        if: ${{ always() }}
+        run: |
+          aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }}
+
+      - name: Upload Logs of Intel EC2 Instance
+        uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+        with:
+          name: intel-logs
+          path: ~/latest.log
+
+      - name: Upload Findings of Intel EC2 Instance
+        uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+        with:
+          name: intel-findings
+          path: ~/findings.json
 
       - name: Send Slack Notification
         if: ${{ always() }}
