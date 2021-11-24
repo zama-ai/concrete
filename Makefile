@@ -79,7 +79,7 @@ flake8:
 python_linting: pylint flake8
 .PHONY: python_linting
 
-conformance: finalize_nb python_format supported_functions
+conformance: finalize_nb python_format supported_functions licences
 .PHONY: conformance
 
 pcc:
@@ -88,7 +88,7 @@ pcc:
 .PHONY: pcc
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_supported_functions check_benchmarks
+PCC_DEPS += check_version_coherence check_supported_functions check_benchmarks check_licences
 pcc_internal: $(PCC_DEPS)
 .PHONY: pcc_internal
 
@@ -312,3 +312,12 @@ supported_functions:
 check_supported_functions:
 	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/tutorial/WORKING_WITH_FLOATING_POINTS.md --check
 .PHONY: check_supported_functions
+
+licences:
+	@./script/make_utils/licences.sh
+.PHONY: licences
+
+check_licences:
+	@./script/make_utils/licences.sh --check
+.PHONY: check_licences
+
