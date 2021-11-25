@@ -432,24 +432,20 @@ class IntermediateNodeConverter:
         assert_true(len(self.node.inputs) == 2)
         assert_true(len(self.node.outputs) == 1)
 
-        if self.all_of_the_inputs_are_encrypted or self.node.inputs[0].is_clear:
+        if self.all_of_the_inputs_are_encrypted:
             lhs = self.node.inputs[0]
             rhs = self.node.inputs[1]
-
-            additional_error_info = (
-                " (notice the encrypted value is in the right hand side which is not supported)"
-                if self.node.inputs[0].is_clear
-                else ""
-            )
             raise NotImplementedError(
-                f"Matrix multiplication between {lhs} and {rhs} cannot be converted to MLIR yet"
-                f"{additional_error_info}",
+                f"Matrix multiplication between {lhs} and {rhs} cannot be converted to MLIR yet",
             )
 
         resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
         preds = self.preds
 
-        result = hlfhelinalg.MatMulEintIntOp(resulting_type, *preds).result
+        if self.node.inputs[0].is_clear:
+            result = hlfhelinalg.MatMulIntEintOp(resulting_type, *preds).result
+        else:
+            result = hlfhelinalg.MatMulEintIntOp(resulting_type, *preds).result
 
         return result
 
