@@ -35,6 +35,11 @@ def NegateLweCiphertextOp : LowLFHE_Op<"negate_lwe_ciphertext"> {
     let results = (outs LweCiphertextType:$result);
 }
 
+def GlweFromTable : LowLFHE_Op<"glwe_from_table"> {
+    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$k, I32Attr:$p);
+    let results = (outs GlweCiphertextType:$result);
+}
+
 def BootstrapLweOp : LowLFHE_Op<"bootstrap_lwe"> {
     let arguments = (ins 
         // LweBootstrapKeyType:$bootstrap_key,
@@ -46,48 +51,6 @@ def BootstrapLweOp : LowLFHE_Op<"bootstrap_lwe"> {
         I32Attr:$baseLog
     );
     let results = (outs LweCiphertextType:$result);
-}
-
-def DecryptGlweOp : LowLFHE_Op<"decrypt_glwe"> {
-    let arguments = (ins GlweSecretKeyType:$secret_key, GlweCiphertextType:$ciphertext);
-    let results = (outs PlaintextListType:$result);
-}
-
-def DecryptLweOp : LowLFHE_Op<"decrypt_lwe"> {
-    let arguments = (ins LweSecretKeyType:$secret_key, LweCiphertextType:$ciphertext);
-    let results = (outs PlaintextType:$result);
-}
-
-def EncryptGlweOp : LowLFHE_Op<"encrypt_glwe"> {
-    let arguments = (ins
-        GlweSecretKeyType:$secret_key,
-        PlaintextListType:$plaintext,
-        EncryptionRandomGeneratorType:$generator,
-        VarianceType:$variance
-    );
-    let results = (outs GlweCiphertextType:$result);
-}
-
-def EncryptLweOp : LowLFHE_Op<"encrypt_lwe"> {
-    let arguments = (ins
-        LweSecretKeyType:$secret_key,
-        PlaintextType:$plaintext,
-        EncryptionRandomGeneratorType:$generator,
-        VarianceType:$variance
-    );
-    let results = (outs LweCiphertextType:$result);
-}
-
-def GetPlaintextListElementOp : LowLFHE_Op<"get_plaintext_list_element">{
-    let arguments = (ins PlaintextListType:$plaintext, Index:$i);
-
-    let results = (outs AnySignlessInteger:$result);
-}
-
-def SetPlaintextListElementOp : LowLFHE_Op<"set_plaintext_list_element">{
-    let arguments = (ins PlaintextListType:$plaintext, Index:$i, AnySignlessInteger:$val);
-
-    let results = (outs );
 }
 
 def KeySwitchLweOp : LowLFHE_Op<"keyswitch_lwe"> {
@@ -102,49 +65,6 @@ def KeySwitchLweOp : LowLFHE_Op<"keyswitch_lwe"> {
     let results = (outs LweCiphertextType:$result);
 }
 
-
-def FillGlweSecretKeyOp : LowLFHE_Op<"fill_glwe_secret_key"> {
-    let arguments = (ins GlweSecretKeyType:$secret_key, SecretRandomGeneratorType:$generator);
-    let results = (outs );
-}
-
-def FillLweSecretKeyOp : LowLFHE_Op<"fill_lwe_secret_key"> {
-    let arguments = (ins LweSecretKeyType:$secret_key, SecretRandomGeneratorType:$generator);
-    let results = (outs );
-}
-
-def FillLweBootstrapKeyOp : LowLFHE_Op<"fill_lwe_bootstrap_key"> {
-    let arguments = (ins
-        LweBootstrapKeyType:$bootstrap_key,
-        LweSecretKeyType:$lwe_secret_key,
-        GlweSecretKeyType:$glwe_secret_key,
-        EncryptionRandomGeneratorType:$generator,
-        VarianceType:$noise
-    );
-    let results = (outs );
-}
-
-def FillLweKeyswitchKeyOp : LowLFHE_Op<"fill_lwe_keyswitch_key"> {
-    let arguments = (ins
-        LweKeySwitchKeyType:$keyswitch_key,
-        LweSecretKeyType:$input_key,
-        LweSecretKeyType:$output_key,
-        EncryptionRandomGeneratorType:$generator,
-        VarianceType:$noise
-    );
-    let results = (outs );
-}
-
-def FillPlaintextListWithExpansionOp : LowLFHE_Op<"fill_plaintext_list_with_expansion"> {
-    let arguments = (ins PlaintextListType:$output, ForeignPlaintextListType:$input);
-    let results = (outs );
-}
-
-def EncodeCleartextOp : LowLFHE_Op<"encode_cleartext"> {
-    let arguments = (ins CleartextType:$cleartext);
-    let results = (outs PlaintextType:$plaintext);
-}
-
 def EncodeIntOp : LowLFHE_Op<"encode_int"> {
     let arguments = (ins AnyInteger:$i);
     let results = (outs PlaintextType:$plaintext);
@@ -153,17 +73,6 @@ def EncodeIntOp : LowLFHE_Op<"encode_int"> {
 def IntToCleartextOp : LowLFHE_Op<"int_to_cleartext"> {
     let arguments = (ins AnyInteger:$i);
     let results = (outs CleartextType:$cleartext);
-}
-
-def ConstCleartextOp : LowLFHE_Op<"const_cleartext", [ConstantLike]> {
-    // TODO: maybe restrict to specific attr?
-    let arguments = (ins AnyAttr:$value);
-    let results = (outs CleartextType:$cleartext);
-}
-
-def GlweFromTable : LowLFHE_Op<"glwe_from_table"> {
-    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$k, I32Attr:$p);
-    let results = (outs GlweCiphertextType:$result);
 }
 
 #endif
