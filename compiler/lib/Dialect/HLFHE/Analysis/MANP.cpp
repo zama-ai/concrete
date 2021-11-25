@@ -212,7 +212,8 @@ static std::string APIntToStringValUnsigned(const llvm::APInt &i) {
 // Calculates the square of the 2-norm of a tensor initialized with a
 // dense matrix of constant, signless integers. Aborts if the value
 // type or initialization of of `cstOp` is incorrect.
-static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp) {
+static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp,
+                                         llvm::APInt eNorm) {
   mlir::DenseIntElementsAttr denseVals =
       cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value");
 
@@ -230,8 +231,9 @@ static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp) {
   llvm::APInt accu{1, 0, false};
 
   for (llvm::APInt val : denseVals.getValues<llvm::APInt>()) {
-    llvm::APInt valSq = APIntWidthExtendUSq(val);
-    accu = APIntWidthExtendUAdd(accu, valSq);
+    llvm::APInt valSqNorm = APIntWidthExtendUSq(val);
+    llvm::APInt mulSqNorm = APIntWidthExtendUMul(valSqNorm, eNorm);
+    accu = APIntWidthExtendUAdd(accu, mulSqNorm);
   }
 
   return accu;
@@ -241,7 +243,8 @@ static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp) {
 // integers by conservatively assuming that the dynamic values are the
 // maximum for the integer width. Aborts if the tensor type `tTy` is
 // incorrect.
-static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy) {
+static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy,
+                                         llvm::APInt eNorm) {
   assert(tTy && tTy.getElementType().isSignlessInteger() &&
          tTy.hasStaticShape() && tTy.getRank() == 1 &&
          "Plaintext operand must be a statically shaped 1D tensor of integers");
@@ -254,6 +257,7 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy) {
 
   llvm::APInt maxVal = APInt::getMaxValue(elWidth);
   llvm::APInt maxValSq = APIntWidthExtendUSq(maxVal);
+  llvm::APInt maxMulSqNorm = APIntWidthExtendUMul(maxValSq, eNorm);
 
   // Calculate number of bits for APInt to store number of elements
   uint64_t nElts = (uint64_t)tTy.getNumElements();
@@ -262,7 +266,7 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy) {
 
   llvm::APInt nEltsAP{nEltsBits, nElts, false};
 
-  return APIntWidthExtendUMul(maxValSq, nEltsAP);
+  return APIntWidthExtendUMul(maxMulSqNorm, nEltsAP);
 }
 
 // Calculates the squared Minimal Arithmetic Noise Padding of an
@@ -270,9 +274,12 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy) {
 static llvm::APInt getSqMANP(
     mlir::zamalang::HLFHELinalg::Dot op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
-  assert(op->getOpOperand(0).get().isa<mlir::BlockArgument>() &&
-         "Only dot operations with tensors that are function arguments are "
-         "currently supported");
+  assert(operandMANPs.size() == 2 &&
+         operandMANPs[0]->getValue().getMANP().hasValue() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+
+  llvm::APInt eNorm = operandMANPs[0]->getValue().getMANP().getValue();
 
   mlir::arith::ConstantOp cstOp =
       llvm::dyn_cast_or_null<mlir::arith::ConstantOp>(
@@ -281,7 +288,7 @@ static llvm::APInt getSqMANP(
   if (cstOp) {
     // Dot product between a vector of encrypted integers and a vector
     // of plaintext constants -> return 2-norm of constant vector
-    return denseCstTensorNorm2Sq(cstOp);
+    return denseCstTensorNorm2Sq(cstOp, eNorm);
   } else {
     // Dot product between a vector of encrypted integers and a vector
     // of dynamic plaintext values -> conservatively assume that all
@@ -292,7 +299,7 @@ static llvm::APInt getSqMANP(
                                .getType()
                                .dyn_cast_or_null<mlir::TensorType>();
 
-    return denseDynTensorNorm2Sq(tTy);
+    return denseDynTensorNorm2Sq(tTy, eNorm);
   }
 }
 

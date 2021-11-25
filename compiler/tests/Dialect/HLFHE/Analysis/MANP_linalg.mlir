@@ -161,6 +161,63 @@ func @apply_multi_lookup_table_after_op(%t: tensor<8x!HLFHE.eint<2>>, %i: tensor
 // -----
 
 /////////////////////////////////////////////////
+// HLFHELinalg.dot_eint_int
+/////////////////////////////////////////////////
+
+func @single_cst_dot(%t: tensor<4x!HLFHE.eint<2>>) -> !HLFHE.eint<2>
+{
+  %cst = arith.constant dense<[1, 2, 3, 4]> : tensor<4xi3>
+  // sqrt(1^2*1 + 2^2*1 + 3^2*1 + 4^2*1) = 5.477225575
+  // CHECK: %[[V0:.*]] = "HLFHELinalg.dot_eint_int"(%[[T:.*]], %[[CST:.*]]) {MANP = 6 : ui{{[[0-9]+}}} : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
+  %0 = "HLFHELinalg.dot_eint_int"(%t, %cst) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
+  return %0 : !HLFHE.eint<2>
+}
+
+// -----
+
+func @single_dyn_dot(%t: tensor<4x!HLFHE.eint<2>>, %dyn: tensor<4xi3>) -> !HLFHE.eint<2>
+{
+  // sqrt(1*(2^3-1)^2*4) = 14
+  // CHECK: %[[V0:.*]] = "HLFHELinalg.dot_eint_int"([[T:.*]], %[[DYN:.*]]) {MANP = 14 : ui{{[[0-9]+}}} : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
+  %0 = "HLFHELinalg.dot_eint_int"(%t, %dyn) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
+
+  return %0 : !HLFHE.eint<2>
+}
+
+// -----
+
+func @single_cst_dot_after_op(%t: tensor<4x!HLFHE.eint<2>>, %i: tensor<4xi3>) -> !HLFHE.eint<2>
+{
+  // sqrt((2^3)^2*1) = sqrt(64) = 8
+  // CHECK: %[[V0:.*]] = "HLFHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 8 : ui{{[0-9]+}}}
+  %0 = "HLFHELinalg.mul_eint_int"(%t, %i) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> tensor<4x!HLFHE.eint<2>>
+
+  %cst = arith.constant dense<[1, 2, 3, 4]> : tensor<4xi3>
+  // sqrt(1^2*64 + 2^2*64 + 3^2*64 + 4^2*64) = sqrt(1920) = 43.8178046
+  // CHECK: %[[V1:.*]] = "HLFHELinalg.dot_eint_int"(%[[V0]], %[[CST:.*]]) {MANP = 44 : ui{{[[0-9]+}}}
+  %1 = "HLFHELinalg.dot_eint_int"(%0, %cst) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
+
+  return %1 : !HLFHE.eint<2>
+}
+
+// -----
+
+func @single_dyn_dot_after_op(%t: tensor<4x!HLFHE.eint<2>>, %i: tensor<4xi3>) -> !HLFHE.eint<2>
+{
+  // sqrt((2^3)^2*1) = sqrt(64) = 8
+  // CHECK: %[[V0:.*]] = "HLFHELinalg.mul_eint_int"([[T:.*]], %[[I:.*]]) {MANP = 8 : ui{{[0-9]+}}}
+  %0 = "HLFHELinalg.mul_eint_int"(%t, %i) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> tensor<4x!HLFHE.eint<2>>
+
+  // sqrt(4*(2^3-1)^2*64) = sqrt(12544) = 112
+  // CHECK: %[[V1:.*]] = "HLFHELinalg.dot_eint_int"(%[[V0]], %[[I]]) {MANP = 112 : ui{{[[0-9]+}}}
+  %1 = "HLFHELinalg.dot_eint_int"(%0, %i) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
+
+  return %1 : !HLFHE.eint<2>
+}
+
+// -----
+
+/////////////////////////////////////////////////
 // HLFHELinalg.matmul_ent_int
 /////////////////////////////////////////////////
 

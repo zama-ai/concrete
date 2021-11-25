@@ -10,28 +10,6 @@ func @single_zero() -> !HLFHE.eint<2>
 
 // -----
 
-func @single_cst_dot(%t: tensor<4x!HLFHE.eint<2>>) -> !HLFHE.eint<2>
-{
-  %cst = arith.constant dense<[1, 2, 3, 4]> : tensor<4xi3>
-
-  // CHECK: %[[ret:.*]] = "HLFHELinalg.dot_eint_int"(%[[op0:.*]], %[[op1:.*]]) {MANP = 6 : ui{{[[0-9]+}}} : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
-  %0 = "HLFHELinalg.dot_eint_int"(%t, %cst) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
-
-  return %0 : !HLFHE.eint<2>
-}
-
-// -----
-
-func @single_dyn_dot(%t: tensor<4x!HLFHE.eint<2>>, %dyn: tensor<4xi3>) -> !HLFHE.eint<2>
-{
-  // CHECK: %[[ret:.*]] = "HLFHELinalg.dot_eint_int"([[op0:.*]], %[[op1:.*]]) {MANP = 14 : ui{{[[0-9]+}}} : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
-  %0 = "HLFHELinalg.dot_eint_int"(%t, %dyn) : (tensor<4x!HLFHE.eint<2>>, tensor<4xi3>) -> !HLFHE.eint<2>
-
-  return %0 : !HLFHE.eint<2>
-}
-
-// -----
-
 func @single_cst_add_eint_int(%e: !HLFHE.eint<2>) -> !HLFHE.eint<2>
 {
   %cst = arith.constant 3 : i3
