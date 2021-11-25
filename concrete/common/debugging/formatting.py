@@ -61,7 +61,7 @@ def format_operation_graph(
 
         # extract predecessors and their ids
         predecessors = []
-        for predecessor, output_idx in op_graph.get_ordered_inputs_of(node):
+        for predecessor, output_idx in op_graph.get_ordered_preds_and_inputs_of(node):
             predecessors.append(f"%{id_map[(predecessor, output_idx)]}")
 
         # start the build the line for the node

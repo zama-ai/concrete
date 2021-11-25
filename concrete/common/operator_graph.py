@@ -131,14 +131,16 @@ class OPGraph:
             idx_to_pred.update((data["input_idx"], pred) for data in edge_data.values())
         return [idx_to_pred[i] for i in range(len(idx_to_pred))]
 
-    def get_ordered_inputs_of(self, node: IntermediateNode) -> List[Tuple[IntermediateNode, int]]:
-        """Get node inputs ordered by their indices.
+    def get_ordered_preds_and_inputs_of(
+        self, node: IntermediateNode
+    ) -> List[Tuple[IntermediateNode, int]]:
+        """Get node preds and inputs ordered by their indices.
 
         Args:
             node (IntermediateNode): the node for which we want the ordered inputs
 
         Returns:
-            List[Tuple[IntermediateNode, int]]: the ordered list of inputs
+            List[Tuple[IntermediateNode, int]]: the ordered list of preds and inputs
         """
 
         idx_to_inp: Dict[int, Tuple[IntermediateNode, int]] = {}

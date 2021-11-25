@@ -134,7 +134,7 @@ class IntermediateNodeConverter:
         if isinstance(self.node, (Add, Mul, Sub, Dot)):
             if self.one_of_the_inputs_is_a_tensor and not self.all_of_the_inputs_are_tensors:
                 to_be_converted = []
-                for (pred, output) in self.op_graph.get_ordered_inputs_of(self.node):
+                for (pred, output) in self.op_graph.get_ordered_preds_and_inputs_of(self.node):
                     inp = pred.outputs[output]
                     if isinstance(inp, TensorValue) and inp.is_scalar:
                         to_be_converted.append(self.nodes_to_mlir_names[pred])
