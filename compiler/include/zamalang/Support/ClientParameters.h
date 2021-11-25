@@ -24,6 +24,8 @@ typedef uint64_t GlweDimension;
 typedef std::string LweSecretKeyID;
 struct LweSecretKeyParam {
   LweSize size;
+
+  void hash(size_t &seed);
 };
 
 typedef std::string BootstrapKeyID;
@@ -34,6 +36,8 @@ struct BootstrapKeyParam {
   DecompositionBaseLog baseLog;
   GlweDimension glweDimension;
   Variance variance;
+
+  void hash(size_t &seed);
 };
 
 typedef std::string KeyswitchKeyID;
@@ -43,6 +47,8 @@ struct KeyswitchKeyParam {
   DecompositionLevelCount level;
   DecompositionBaseLog baseLog;
   Variance variance;
+
+  void hash(size_t &seed);
 };
 
 struct Encoding {
@@ -75,11 +81,13 @@ struct ClientParameters {
   std::map<KeyswitchKeyID, KeyswitchKeyParam> keyswitchKeys;
   std::vector<CircuitGate> inputs;
   std::vector<CircuitGate> outputs;
+  size_t hash();
 };
 
 llvm::Expected<ClientParameters>
 createClientParametersForV0(V0FHEContext context, llvm::StringRef name,
                             mlir::ModuleOp module);
+
 } // namespace zamalang
 } // namespace mlir
 

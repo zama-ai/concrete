@@ -1,9 +1,11 @@
 import os
+import tempfile
 
 import pytest
 import numpy as np
 from zamalang import CompilerEngine, library
 
+KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
 
 @pytest.mark.parametrize(
     "mlir_input, args, expected_result",
@@ -104,7 +106,7 @@ from zamalang import CompilerEngine, library
 )
 def test_compile_and_run(mlir_input, args, expected_result):
     engine = CompilerEngine()
-    engine.compile_fhe(mlir_input)
+    engine.compile_fhe(mlir_input, unsecure_key_set_cache_path = KEY_SET_CACHE_PATH)
     if isinstance(expected_result, int):
         assert engine.run(*args) == expected_result
     else:
@@ -129,7 +131,7 @@ def test_compile_and_run(mlir_input, args, expected_result):
 )
 def test_compile_and_run_invalid_arg_number(mlir_input, args):
     engine = CompilerEngine()
-    engine.compile_fhe(mlir_input)
+    engine.compile_fhe(mlir_input, unsecure_key_set_cache_path = KEY_SET_CACHE_PATH)
     with pytest.raises(ValueError, match=r"wrong number of arguments"):
         engine.run(*args)
 
@@ -154,7 +156,7 @@ def test_compile_and_run_invalid_arg_number(mlir_input, args):
 )
 def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
     engine = CompilerEngine()
-    engine.compile_fhe(mlir_input)
+    engine.compile_fhe(mlir_input, unsecure_key_set_cache_path = KEY_SET_CACHE_PATH)
     assert abs(engine.run(*args) - expected_result) / tab_size < 0.1
 
 
@@ -177,7 +179,7 @@ def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
 def test_compile_invalid(mlir_input):
     engine = CompilerEngine()
     with pytest.raises(RuntimeError, match=r"Compilation failed:"):
-        engine.compile_fhe(mlir_input)
+        engine.compile_fhe(mlir_input, unsecure_key_set_cache_path = KEY_SET_CACHE_PATH)
 
 
 MODULE_1 = """

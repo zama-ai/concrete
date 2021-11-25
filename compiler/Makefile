@@ -43,7 +43,7 @@ test-check: zamacompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/
 
 test-python: python-bindings zamacompiler
-	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core LD_PRELOAD=$(BUILD_DIR)/lib/libZamalangRuntime.so pytest -vs tests/python
+	PATH=$(BUILD_DIR)/bin:${PATH} PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core LD_PRELOAD=$(BUILD_DIR)/lib/libZamalangRuntime.so pytest -vs tests/python
 
 test: test-check test-end-to-end-jit test-python
 

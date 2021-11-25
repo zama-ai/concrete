@@ -145,5 +145,44 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
   return c;
 }
 
+// https://stackoverflow.com/a/38140932
+static inline void hash(std::size_t &seed) {}
+template <typename T, typename... Rest>
+static inline void hash(std::size_t &seed, const T &v, Rest... rest) {
+  // See https://softwareengineering.stackexchange.com/a/402543
+  const auto GOLDEN_RATIO = 0x9e3779b97f4a7c15; // pseudo random bits
+  const std::hash<T> hasher;
+  seed ^= hasher(v) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+  hash(seed, rest...);
+}
+
+void LweSecretKeyParam::hash(size_t &seed) { mlir::zamalang::hash(seed, size); }
+
+void BootstrapKeyParam::hash(size_t &seed) {
+  mlir::zamalang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
+                       baseLog, glweDimension, variance);
+}
+
+void KeyswitchKeyParam::hash(size_t &seed) {
+  mlir::zamalang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
+                       baseLog, variance);
+}
+
+std::size_t ClientParameters::hash() {
+  std::size_t currentHash = 1;
+  for (auto secretKeyParam : secretKeys) {
+    mlir::zamalang::hash(currentHash, secretKeyParam.first);
+    secretKeyParam.second.hash(currentHash);
+  }
+  for (auto bootstrapKeyParam : bootstrapKeys) {
+    mlir::zamalang::hash(currentHash, bootstrapKeyParam.first);
+    bootstrapKeyParam.second.hash(currentHash);
+  }
+  for (auto keyswitchParam : keyswitchKeys) {
+    mlir::zamalang::hash(currentHash, keyswitchParam.first);
+    keyswitchParam.second.hash(currentHash);
+  }
+  return currentHash;
+}
 } // namespace zamalang
 } // namespace mlir

@@ -5,6 +5,9 @@
 
 #include "zamalang/Support/CompilerEngine.h"
 #include "zamalang/Support/JitCompilerEngine.h"
+#include "zamalang/Support/KeySetCache.h"
+#include "llvm/Support/Path.h"
+
 #include "globals.h"
 
 #define ASSERT_LLVM_ERROR(err)                                                 \
@@ -80,18 +83,32 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
 // and reult in abnormal termination.
 template <typename F>
 mlir::zamalang::JitCompilerEngine::Lambda
-internalCheckedJit(F checkfunc, llvm::StringRef src,
+internalCheckedJit(F checkFunc, llvm::StringRef src,
                    llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false) {
+
+  llvm::SmallString<0> cachePath;
+
+  llvm::sys::path::system_temp_directory(true, cachePath);
+
+  llvm::sys::path::append(cachePath, "KeySetCache");
+
+  auto cachePathStr = std::string(cachePath);
+  auto optCache = llvm::Optional<mlir::zamalang::KeySetCache>(
+      mlir::zamalang::KeySetCache(cachePathStr));
+
   mlir::zamalang::JitCompilerEngine engine;
 
   if (useDefaultFHEConstraints)
     engine.setFHEConstraints(defaultV0Constraints);
 
   llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
-      engine.buildLambda(src, func);
+      engine.buildLambda(src, func, optCache);
 
-  checkfunc(lambdaOrErr);
+  if (!lambdaOrErr) {
+    std::cout << llvm::toString(lambdaOrErr.takeError()) << std::endl;
+  }
+  checkFunc(lambdaOrErr);
 
   return std::move(*lambdaOrErr);
 }

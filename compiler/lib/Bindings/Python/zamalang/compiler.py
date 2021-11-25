@@ -118,7 +118,8 @@ class CompilerEngine:
             self.compile_fhe(mlir_str)
 
     def compile_fhe(
-        self, mlir_str: str, func_name: str = "main", runtime_lib_path: str = None
+        self, mlir_str: str, func_name: str = "main", runtime_lib_path: str = None,
+        unsecure_key_set_cache_path: str = None,
     ):
         """Compile the MLIR input.
 
@@ -126,6 +127,7 @@ class CompilerEngine:
             mlir_str (str): MLIR to compile.
             func_name (str): name of the function to set as entrypoint (default: main).
             runtime_lib_path (str): path to the runtime lib (default: None).
+            unsecure_key_set_cache_path (str): path to the activate keyset caching (default: None).
 
         Raises:
             TypeError: if the argument is not an str.
@@ -140,7 +142,14 @@ class CompilerEngine:
                 raise TypeError(
                     "runtime_lib_path must be an str representing the path to the runtime lib"
                 )
-        self._lambda = self._engine.build_lambda(mlir_str, func_name, runtime_lib_path)
+        unsecure_key_set_cache_path = unsecure_key_set_cache_path or ""
+        if not isinstance(unsecure_key_set_cache_path, str):
+            raise TypeError(
+                "unsecure_key_set_cache_path must be a str"
+            )
+        self._lambda = self._engine.build_lambda(
+            mlir_str, func_name, runtime_lib_path,
+            unsecure_key_set_cache_path)
 
     def run(self, *args: List[Union[int, np.ndarray]]) -> Union[int, np.ndarray]:
         """Run the compiled code.

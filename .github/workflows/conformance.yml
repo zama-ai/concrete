@@ -22,6 +22,15 @@ jobs:
         with:
           submodules: recursive
 
+      - name: "KeySetCache"
+        uses: actions/cache@v2
+        with:
+          path: ${{ github.workspace }}/KeySetCache
+          # actions/cache does not permit to update a cache entry
+          key: ${{ runner.os }}-KeySetCache-2021-12-02
+          restore-keys: |
+            ${{ runner.os }}-KeySetCache-
+
       - name: Build and test compiler
         uses: addnab/docker-run-action@v3
         with:
@@ -29,7 +38,7 @@ jobs:
           image: ghcr.io/zama-ai/zamalang-compiler:latest
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
           shell: bash
           run: |
             set -e
@@ -42,3 +51,4 @@ jobs:
             make CCACHE=ON BUILD_DIR=/build test
             echo "Debug: ccache statistics (after the build):"
             ccache -s
+            chmod -R ugo+rwx /tmp/KeySetCache

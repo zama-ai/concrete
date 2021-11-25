@@ -1,6 +1,7 @@
 #ifndef ZAMALANG_SUPPORT_JIT_COMPILER_ENGINE_H
 #define ZAMALANG_SUPPORT_JIT_COMPILER_ENGINE_H
 
+#include "zamalang/Support/KeySetCache.h"
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <zamalang/Support/CompilerEngine.h>
 #include <zamalang/Support/Error.h>
@@ -363,15 +364,18 @@ public:
   /// Use runtimeLibPath as a shared library if specified.
   llvm::Expected<Lambda>
   buildLambda(llvm::StringRef src, llvm::StringRef funcName = "main",
+              llvm::Optional<KeySetCache> cachePath = {},
               llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
   llvm::Expected<Lambda>
   buildLambda(std::unique_ptr<llvm::MemoryBuffer> buffer,
               llvm::StringRef funcName = "main",
+              llvm::Optional<KeySetCache> cachePath = {},
               llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
   llvm::Expected<Lambda>
   buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName = "main",
+              llvm::Optional<KeySetCache> cachePath = {},
               llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
 protected:

@@ -10,6 +10,7 @@ extern "C" {
 }
 
 #include "zamalang/Support/ClientParameters.h"
+#include "zamalang/Support/KeySetCache.h"
 
 namespace mlir {
 namespace zamalang {
@@ -17,6 +18,15 @@ namespace zamalang {
 class KeySet {
 public:
   ~KeySet();
+
+  static std::unique_ptr<KeySet> uninitialized();
+
+  llvm::Error generateKeysFromParams(ClientParameters &params,
+                                     uint64_t seed_msb, uint64_t seed_lsb);
+
+  llvm::Error setupEncryptionMaterial(ClientParameters &params,
+                                      uint64_t seed_msb, uint64_t seed_lsb);
+
   // allocate a KeySet according the ClientParameters.
   static llvm::Expected<std::unique_ptr<KeySet>>
   generate(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb);
@@ -46,6 +56,18 @@ public:
     context.bsk = std::get<1>(this->bootstrapKeys["bsk_v0"]);
   }
 
+  const std::map<LweSecretKeyID,
+                 std::pair<LweSecretKeyParam, LweSecretKey_u64 *>> &
+  getSecretKeys();
+
+  const std::map<LweSecretKeyID,
+                 std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>> &
+  getBootstrapKeys();
+
+  const std::map<LweSecretKeyID,
+                 std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>> &
+  getKeyswitchKeys();
+
 protected:
   llvm::Error generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,
                                 SecretRandomGenerator *generator);
@@ -53,6 +75,8 @@ protected:
                                    EncryptionRandomGenerator *generator);
   llvm::Error generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param,
                                    EncryptionRandomGenerator *generator);
+
+  friend class KeySetCache;
 
 private:
   EncryptionRandomGenerator *encryptionRandomGenerator;
@@ -66,6 +90,16 @@ private:
       inputs;
   std::vector<std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *>>
       outputs;
+
+  void setKeys(
+      std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
+          secretKeys,
+      std::map<LweSecretKeyID,
+               std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>>
+          bootstrapKeys,
+      std::map<LweSecretKeyID,
+               std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>>
+          keyswitchKeys);
 };
 
 } // namespace zamalang

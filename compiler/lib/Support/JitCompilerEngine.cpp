@@ -37,25 +37,22 @@ JitCompilerEngine::findLLVMFuncOp(mlir::ModuleOp module, llvm::StringRef name) {
 llvm::Expected<JitCompilerEngine::Lambda>
 JitCompilerEngine::buildLambda(std::unique_ptr<llvm::MemoryBuffer> buffer,
                                llvm::StringRef funcName,
+                               llvm::Optional<KeySetCache> cache,
                                llvm::Optional<llvm::StringRef> runtimeLibPath) {
   llvm::SourceMgr sm;
-
   sm.AddNewSourceBuffer(std::move(buffer), llvm::SMLoc());
-
-  llvm::Expected<JitCompilerEngine::Lambda> res =
-      this->buildLambda(sm, funcName, runtimeLibPath);
-
-  return std::move(res);
+  return this->buildLambda(sm, funcName, cache, runtimeLibPath);
 }
 
 // Build a lambda from the function with the name given in `funcName`
 // from the source string `s`.
 llvm::Expected<JitCompilerEngine::Lambda>
 JitCompilerEngine::buildLambda(llvm::StringRef s, llvm::StringRef funcName,
+                               llvm::Optional<KeySetCache> cache,
                                llvm::Optional<llvm::StringRef> runtimeLibPath) {
   std::unique_ptr<llvm::MemoryBuffer> mb = llvm::MemoryBuffer::getMemBuffer(s);
   llvm::Expected<JitCompilerEngine::Lambda> res =
-      this->buildLambda(std::move(mb), funcName, runtimeLibPath);
+      this->buildLambda(std::move(mb), funcName, cache, runtimeLibPath);
 
   return std::move(res);
 }
@@ -64,6 +61,7 @@ JitCompilerEngine::buildLambda(llvm::StringRef s, llvm::StringRef funcName,
 // `funcName` from the sources managed by the source manager `sm`.
 llvm::Expected<JitCompilerEngine::Lambda>
 JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
+                               llvm::Optional<KeySetCache> cache,
                                llvm::Optional<llvm::StringRef> runtimeLibPath) {
   MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
 
@@ -77,14 +75,17 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
   if (!compResOrErr)
     return std::move(compResOrErr.takeError());
 
-  mlir::ModuleOp module = compResOrErr->mlirModuleRef->get();
+  auto compRes = std::move(compResOrErr.get());
+
+  mlir::ModuleOp module = compRes.mlirModuleRef->get();
 
   // Locate function to JIT-compile
   llvm::Expected<mlir::LLVM::LLVMFuncOp> funcOrError =
-      this->findLLVMFuncOp(compResOrErr->mlirModuleRef->get(), funcName);
+      this->findLLVMFuncOp(compRes.mlirModuleRef->get(), funcName);
 
   if (!funcOrError)
-    return std::move(funcOrError.takeError());
+    return StreamStringError() << "Cannot find function \"" << funcName
+                               << "\": " << std::move(funcOrError.takeError());
 
   // Prepare LLVM infrastructure for JIT compilation
   llvm::InitializeNativeTarget();
@@ -98,24 +99,32 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
       mlir::zamalang::JITLambda::create(funcName, module, optPipeline,
                                         runtimeLibPath);
 
+  if (!lambdaOrErr) {
+    return StreamStringError()
+           << "Cannot create lambda: " << lambdaOrErr.takeError();
+  }
+
+  auto lambda = std::move(lambdaOrErr.get());
+
   // Generate the KeySet for encrypting lambda arguments, decrypting lambda
   // results
-  if (!compResOrErr->clientParameters.hasValue()) {
+  if (!compRes.clientParameters.hasValue()) {
     return StreamStringError("Cannot generate the keySet since client "
                              "parameters has not been computed");
   }
 
   llvm::Expected<std::unique_ptr<mlir::zamalang::KeySet>> keySetOrErr =
-      mlir::zamalang::KeySet::generate(*compResOrErr->clientParameters, 0, 0);
+      (cache.hasValue())
+          ? cache->tryLoadOrGenerateSave(*compRes.clientParameters, 0, 0)
+          : KeySet::generate(*compRes.clientParameters, 0, 0);
 
-  if (auto err = keySetOrErr.takeError())
-    return std::move(err);
+  if (!keySetOrErr) {
+    return keySetOrErr.takeError();
+  }
 
-  if (!lambdaOrErr)
-    return std::move(lambdaOrErr.takeError());
+  auto keySet = std::move(keySetOrErr.get());
 
-  return Lambda{this->compilationContext, std::move(lambdaOrErr.get()),
-                std::move(*keySetOrErr)};
+  return Lambda{this->compilationContext, std::move(lambda), std::move(keySet)};
 }
 
 } // namespace zamalang

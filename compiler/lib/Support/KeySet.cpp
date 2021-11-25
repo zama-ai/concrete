@@ -1,4 +1,5 @@
 #include "zamalang/Support/KeySet.h"
+#include "zamalang/Support/Error.h"
 
 #define CAPI_ERR_TO_LLVM_ERROR(s, msg)                                         \
   {                                                                            \
@@ -30,7 +31,79 @@ KeySet::~KeySet() {
 llvm::Expected<std::unique_ptr<KeySet>>
 KeySet::generate(ClientParameters &params, uint64_t seed_msb,
                  uint64_t seed_lsb) {
-  auto keySet = std::make_unique<KeySet>();
+
+  auto a = uninitialized();
+
+  auto fillError = a->generateKeysFromParams(params, seed_msb, seed_lsb);
+
+  if (fillError) {
+    return StreamStringError()
+           << "Cannot fill keys from params: " << std::move(fillError);
+  }
+
+  fillError = a->setupEncryptionMaterial(params, seed_msb, seed_lsb);
+
+  if (fillError) {
+    return StreamStringError()
+           << "Cannot setup encryption material: " << std::move(fillError);
+  }
+
+  return a;
+}
+
+std::unique_ptr<KeySet> KeySet::uninitialized() {
+  return std::make_unique<KeySet>();
+}
+
+llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
+                                            uint64_t seed_msb,
+                                            uint64_t seed_lsb) {
+  // Set inputs and outputs LWE secret keys
+  {
+    for (auto param : params.inputs) {
+      std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *> input = {
+          param, nullptr, nullptr};
+      if (param.encryption.hasValue()) {
+        auto inputSk = this->secretKeys.find(param.encryption->secretKeyID);
+        if (inputSk == this->secretKeys.end()) {
+          return llvm::make_error<llvm::StringError>(
+              "input encryption secret key (" + param.encryption->secretKeyID +
+                  ") does not exist ",
+              llvm::inconvertibleErrorCode());
+        }
+        std::get<1>(input) = &inputSk->second.first;
+        std::get<2>(input) = inputSk->second.second;
+      }
+      this->inputs.push_back(input);
+    }
+    for (auto param : params.outputs) {
+      std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *> output =
+          {param, nullptr, nullptr};
+      if (param.encryption.hasValue()) {
+        auto outputSk = this->secretKeys.find(param.encryption->secretKeyID);
+        if (outputSk == this->secretKeys.end()) {
+          return llvm::make_error<llvm::StringError>(
+              "cannot find output key to generate bootstrap key",
+              llvm::inconvertibleErrorCode());
+        }
+        std::get<1>(output) = &outputSk->second.first;
+        std::get<2>(output) = outputSk->second.second;
+      }
+      this->outputs.push_back(output);
+    }
+  }
+  int err;
+  CAPI_ERR_TO_LLVM_ERROR(
+      this->encryptionRandomGenerator =
+          allocate_encryption_generator(&err, seed_msb, seed_lsb),
+      "cannot allocate encryption generator");
+
+  return llvm::Error::success();
+}
+
+llvm::Error KeySet::generateKeysFromParams(ClientParameters &params,
+                                           uint64_t seed_msb,
+                                           uint64_t seed_lsb) {
 
   {
     // Generate LWE secret keys
@@ -39,8 +112,8 @@ KeySet::generate(ClientParameters &params, uint64_t seed_msb,
         generator = allocate_secret_generator(&err, seed_msb, seed_lsb),
         "cannot allocate random generator");
     for (auto secretKeyParam : params.secretKeys) {
-      auto e = keySet->generateSecretKey(secretKeyParam.first,
-                                         secretKeyParam.second, generator);
+      auto e = this->generateSecretKey(secretKeyParam.first,
+                                       secretKeyParam.second, generator);
       if (e) {
         return std::move(e);
       }
@@ -50,62 +123,43 @@ KeySet::generate(ClientParameters &params, uint64_t seed_msb,
   }
   // Allocate the encryption random generator
   CAPI_ERR_TO_LLVM_ERROR(
-      keySet->encryptionRandomGenerator =
+      this->encryptionRandomGenerator =
           allocate_encryption_generator(&err, seed_msb, seed_lsb),
       "cannot allocate encryption generator");
   // Generate bootstrap and keyswitch keys
   {
     for (auto bootstrapKeyParam : params.bootstrapKeys) {
-      auto e = keySet->generateBootstrapKey(bootstrapKeyParam.first,
-                                            bootstrapKeyParam.second,
-                                            keySet->encryptionRandomGenerator);
+      auto e = this->generateBootstrapKey(bootstrapKeyParam.first,
+                                          bootstrapKeyParam.second,
+                                          this->encryptionRandomGenerator);
       if (e) {
         return std::move(e);
       }
     }
     for (auto keyswitchParam : params.keyswitchKeys) {
-      auto e = keySet->generateKeyswitchKey(keyswitchParam.first,
-                                            keyswitchParam.second,
-                                            keySet->encryptionRandomGenerator);
+      auto e = this->generateKeyswitchKey(keyswitchParam.first,
+                                          keyswitchParam.second,
+                                          this->encryptionRandomGenerator);
       if (e) {
         return std::move(e);
       }
     }
   }
-  // Set inputs and outputs LWE secret keys
-  {
-    for (auto param : params.inputs) {
-      std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *> input = {
-          param, nullptr, nullptr};
-      if (param.encryption.hasValue()) {
-        auto inputSk = keySet->secretKeys.find(param.encryption->secretKeyID);
-        if (inputSk == keySet->secretKeys.end()) {
-          return llvm::make_error<llvm::StringError>(
-              "cannot find input key to generate bootstrap key",
-              llvm::inconvertibleErrorCode());
-        }
-        std::get<1>(input) = &inputSk->second.first;
-        std::get<2>(input) = inputSk->second.second;
-      }
-      keySet->inputs.push_back(input);
-    }
-    for (auto param : params.outputs) {
-      std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *> output =
-          {param, nullptr, nullptr};
-      if (param.encryption.hasValue()) {
-        auto outputSk = keySet->secretKeys.find(param.encryption->secretKeyID);
-        if (outputSk == keySet->secretKeys.end()) {
-          return llvm::make_error<llvm::StringError>(
-              "cannot find output key to generate bootstrap key",
-              llvm::inconvertibleErrorCode());
-        }
-        std::get<1>(output) = &outputSk->second.first;
-        std::get<2>(output) = outputSk->second.second;
-      }
-      keySet->outputs.push_back(output);
-    }
-  }
-  return std::move(keySet);
+  return llvm::Error::success();
+}
+
+void KeySet::setKeys(
+    std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
+        secretKeys,
+    std::map<LweSecretKeyID,
+             std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>>
+        bootstrapKeys,
+    std::map<LweSecretKeyID,
+             std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>>
+        keyswitchKeys) {
+  this->secretKeys = secretKeys;
+  this->bootstrapKeys = bootstrapKeys;
+  this->keyswitchKeys = keyswitchKeys;
 }
 
 llvm::Error KeySet::generateSecretKey(LweSecretKeyID id,
@@ -120,6 +174,7 @@ llvm::Error KeySet::generateSecretKey(LweSecretKeyID id,
                          "cannot fill secret key with random generator");
 
   secretKeys[id] = {param, sk};
+
   return llvm::Error::success();
 }
 
@@ -136,7 +191,7 @@ llvm::Error KeySet::generateBootstrapKey(BootstrapKeyID id,
   auto outputSk = secretKeys.find(param.outputSecretKeyID);
   if (outputSk == secretKeys.end()) {
     return llvm::make_error<llvm::StringError>(
-        "cannot find input key to generate bootstrap key",
+        "cannot find output key to generate bootstrap key",
         llvm::inconvertibleErrorCode());
   }
   // Allocate the bootstrap key
@@ -289,6 +344,23 @@ llvm::Error KeySet::decrypt_lwe(size_t argPos, LweCiphertext_u64 *ciphertext,
   size_t carry = output % 2;
   output = ((output >> 1) + carry) % (1 << (precision + 1));
   return llvm::Error::success();
+}
+
+const std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
+    &KeySet::getSecretKeys() {
+  return secretKeys;
+}
+
+const std::map<LweSecretKeyID,
+               std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>> &
+KeySet::getBootstrapKeys() {
+  return bootstrapKeys;
+}
+
+const std::map<LweSecretKeyID,
+               std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>> &
+KeySet::getKeyswitchKeys() {
+  return keyswitchKeys;
 }
 
 } // namespace zamalang

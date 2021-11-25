@@ -1,20 +1,31 @@
+#include "llvm/ADT/SmallString.h"
+
 #include "zamalang-c/Support/CompilerEngine.h"
 #include "zamalang/Support/CompilerEngine.h"
 #include "zamalang/Support/Jit.h"
 #include "zamalang/Support/JitCompilerEngine.h"
+#include "zamalang/Support/KeySetCache.h"
 
 using mlir::zamalang::JitCompilerEngine;
 
 mlir::zamalang::JitCompilerEngine::Lambda
 buildLambda(const char *module, const char *funcName,
-            const char *runtimeLibPath) {
+            const char *runtimeLibPath, const char *keySetCachePath) {
   // Set the runtime library path if not nullptr
   llvm::Optional<llvm::StringRef> runtimeLibPathOptional = {};
   if (runtimeLibPath != nullptr)
     runtimeLibPathOptional = runtimeLibPath;
   mlir::zamalang::JitCompilerEngine engine;
+
+  using KeySetCache = mlir::zamalang::KeySetCache;
+  using optKeySetCache = llvm::Optional<mlir::zamalang::KeySetCache>;
+  auto cacheOpt = optKeySetCache();
+  if (keySetCachePath != nullptr) {
+    cacheOpt = KeySetCache(std::string(keySetCachePath));
+  }
+
   llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
-      engine.buildLambda(module, funcName, runtimeLibPathOptional);
+      engine.buildLambda(module, funcName, cacheOpt, runtimeLibPathOptional);
   if (!lambdaOrErr) {
     std::string backingString;
     llvm::raw_string_ostream os(backingString);
