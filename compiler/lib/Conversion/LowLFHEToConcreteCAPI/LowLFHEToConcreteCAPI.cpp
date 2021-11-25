@@ -342,7 +342,6 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
   mlir::LogicalResult
   matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
     LowLFHEToConcreteCAPITypeConverter typeConverter;
-    auto errType = mlir::IndexType::get(rewriter.getContext());
 
     mlir::Type resultType = op->getResultTypes().front();
     auto lweResultType =
@@ -384,9 +383,8 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
       rewriter.create<mlir::CallOp>(op.getLoc(), funcName, mlir::TypeRange{},
                                     newOperands);
       // cast result value to the appropriate type
-      auto alloc =
-          rewriter.replaceOpWithNewOp<mlir::UnrealizedConversionCastOp>(
-              op, op.getType(), allocGeneric.getResult(0));
+      rewriter.replaceOpWithNewOp<mlir::UnrealizedConversionCastOp>(
+          op, op.getType(), allocGeneric.getResult(0));
     }
     return mlir::success();
   };
@@ -462,7 +460,7 @@ struct LowLFHEIntToCleartextOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::zamalang::LowLFHE::IntToCleartextOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    mlir::Value castedInt = rewriter.replaceOpWithNewOp<mlir::arith::ExtUIOp>(
+    rewriter.replaceOpWithNewOp<mlir::arith::ExtUIOp>(
         op, rewriter.getIntegerType(64), op->getOperands().front());
     return mlir::success();
   };
