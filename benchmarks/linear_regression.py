@@ -225,7 +225,7 @@ def main():
     # bench: Measure: Non Homomorphic Loss = non_homomorphic_loss
     # bench: Measure: Homomorphic Loss = homomorphic_loss
     # bench: Measure: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
-    # bench: Alert: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) > 2
+    # bench: Alert: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) > 7.5
 
 
 if __name__ == "__main__":

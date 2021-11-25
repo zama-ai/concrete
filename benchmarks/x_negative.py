@@ -42,7 +42,7 @@ def main():
             correct += 1
 
     # bench: Measure: Accuracy (%) = (correct / len(inputs)) * 100
-    # bench: Alert: Accuracy (%) != 100
+    # bench: Alert: Accuracy (%) < 95
 
 
 if __name__ == "__main__":
