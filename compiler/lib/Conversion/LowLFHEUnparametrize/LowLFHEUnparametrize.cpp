@@ -2,7 +2,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "zamalang/Conversion/Passes.h"
-#include "zamalang/Conversion/Utils/LinalgGenericTypeConverterPattern.h"
+#include "zamalang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "zamalang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
@@ -88,8 +88,8 @@ void LowLFHEUnparametrizePass::runOnOperation() {
                 converter.isLegal(op.getResultTypes()) &&
                 converter.isLegal(op->getRegion(0).front().getArgumentTypes()));
       });
-  patterns.add<
-      LinalgGenericTypeConverterPattern<LowLFHEUnparametrizeTypeConverter>>(
+  patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
+                                            LowLFHEUnparametrizeTypeConverter>>(
       &getContext(), converter);
 
   // Conversion of function signature and arguments

@@ -5,7 +5,7 @@
 
 #include "zamalang/Conversion/MidLFHEToLowLFHE/Patterns.h"
 #include "zamalang/Conversion/Passes.h"
-#include "zamalang/Conversion/Utils/LinalgGenericTypeConverterPattern.h"
+#include "zamalang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "zamalang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
@@ -75,9 +75,9 @@ void MidLFHEToLowLFHEPass::runOnOperation() {
   mlir::OwningRewritePatternList patterns(&getContext());
 
   populateWithGeneratedMidLFHEToLowLFHE(patterns);
-  patterns
-      .add<LinalgGenericTypeConverterPattern<MidLFHEToLowLFHETypeConverter>>(
-          &getContext(), converter);
+  patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
+                                            MidLFHEToLowLFHETypeConverter>>(
+      &getContext(), converter);
   mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                           converter);
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);

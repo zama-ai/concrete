@@ -2,7 +2,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "zamalang/Conversion/Passes.h"
-#include "zamalang/Conversion/Utils/LinalgGenericTypeConverterPattern.h"
+#include "zamalang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "zamalang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.h"
@@ -285,8 +285,9 @@ void MidLFHEGlobalParametrizationPass::runOnOperation() {
     // Add all patterns to convert MidLFHE types
     populateWithMidLFHEOpTypeConversionPatterns(patterns, target, converter,
                                                 fheContext.parameter);
-    patterns.add<LinalgGenericTypeConverterPattern<
-        MidLFHEGlobalParametrizationTypeConverter>>(&getContext(), converter);
+    patterns.add<RegionOpTypeConverterPattern<
+        mlir::linalg::GenericOp, MidLFHEGlobalParametrizationTypeConverter>>(
+        &getContext(), converter);
     mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                             converter);
 
