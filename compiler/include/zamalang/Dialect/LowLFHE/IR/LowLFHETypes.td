@@ -210,7 +210,23 @@ def LweBootstrapKeyType : LowLFHE_Type<"LweBootstrapKey"> {
     }];
 }
 
+def Context : LowLFHE_Type<"Context"> {
+    let mnemonic = "context";
 
+    let summary = "Runtime context";
+
+    let description = [{
+       An abstract runtime context to pass contextual value, like public keys, ...
+    }];
+
+    let printer = [{
+        $_printer << "context";
+    }];
+
+    let parser = [{
+        return get($_ctxt);
+    }];
+}
 
 
 

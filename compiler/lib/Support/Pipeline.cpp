@@ -140,7 +140,8 @@ lowerLowLFHEToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                   std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("LowLFHEToStd", pm, context);
-  pm.addPass(mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass());
+  addPotentiallyNestedPass(
+      pm, mlir::zamalang::createConvertLowLFHEToConcreteCAPIPass(), enablePass);
   return pm.run(module.getOperation());
 }
 

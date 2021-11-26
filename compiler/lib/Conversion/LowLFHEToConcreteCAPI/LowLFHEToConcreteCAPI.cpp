@@ -133,6 +133,9 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   auto genericCleartextType = getGenericCleartextType(rewriter.getContext());
   auto genericBSKType = getGenericLweBootstrapKeyType(rewriter.getContext());
   auto genericKSKType = getGenericLweKeySwitchKeyType(rewriter.getContext());
+  auto contextType =
+      mlir::zamalang::LowLFHE::ContextType::get(rewriter.getContext());
+
   auto errType = mlir::IndexType::get(rewriter.getContext());
 
   // Insert forward declaration of allocate lwe ciphertext
@@ -211,10 +214,9 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   }
   // Insert forward declaration of the getBsk function
   {
-    auto funcType =
-        mlir::FunctionType::get(rewriter.getContext(), {}, {genericBSKType});
-    if (insertForwardDeclaration(op, rewriter, "getGlobalBootstrapKey",
-                                 funcType)
+    auto funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                            {contextType}, {genericBSKType});
+    if (insertForwardDeclaration(op, rewriter, "get_bootstrap_key", funcType)
             .failed()) {
       return mlir::failure();
     }
@@ -237,10 +239,9 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   }
   // Insert forward declaration of the getKsk function
   {
-    auto funcType =
-        mlir::FunctionType::get(rewriter.getContext(), {}, {genericKSKType});
-    if (insertForwardDeclaration(op, rewriter, "getGlobalKeyswitchKey",
-                                 funcType)
+    auto funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                            {contextType}, {genericKSKType});
+    if (insertForwardDeclaration(op, rewriter, "get_keyswitch_key", funcType)
             .failed()) {
       return mlir::failure();
     }
@@ -563,6 +564,25 @@ struct GlweFromTableOpPattern
   };
 };
 
+mlir::Value getContextArgument(mlir::Operation *op) {
+  mlir::Block *block = op->getBlock();
+  while (block != nullptr) {
+    if (llvm::isa<mlir::FuncOp>(block->getParentOp())) {
+
+      mlir::Value context = block->getArguments().back();
+
+      assert(context.getType().isa<mlir::zamalang::LowLFHE::ContextType>() &&
+             "the LowLFHE.context should be the last argument of the enclosing "
+             "function of the op");
+
+      return context;
+    }
+    block = block->getParentOp()->getBlock();
+  }
+  assert("can't find a function that enclose the op");
+  return nullptr;
+}
+
 // Rewrite a BootstrapLweOp with a series of ops:
 // - allocate the result LWE ciphertext
 // - get the global bootstrapping key
@@ -592,10 +612,10 @@ struct LowLFHEBootstrapLweOpPattern
         op.getLoc(), "allocate_lwe_ciphertext_u64",
         getGenericLweCiphertextType(rewriter.getContext()), allocLweCtOperands);
     // get bsk
-    mlir::SmallVector<mlir::Value> getBskOperands{};
     auto getBskOp = rewriter.create<mlir::CallOp>(
-        op.getLoc(), "getGlobalBootstrapKey",
-        getGenericLweBootstrapKeyType(rewriter.getContext()), getBskOperands);
+        op.getLoc(), "get_bootstrap_key",
+        getGenericLweBootstrapKeyType(rewriter.getContext()),
+        mlir::SmallVector<mlir::Value>{getContextArgument(op)});
     // bootstrap
     // cast input ciphertext to a generic type
     mlir::Value lweToBootstrap =
@@ -651,10 +671,10 @@ struct LowLFHEKeySwitchLweOpPattern
         op.getLoc(), "allocate_lwe_ciphertext_u64",
         getGenericLweCiphertextType(rewriter.getContext()), allocLweCtOperands);
     // get ksk
-    mlir::SmallVector<mlir::Value> getkskOperands{};
     auto getKskOp = rewriter.create<mlir::CallOp>(
-        op.getLoc(), "getGlobalKeyswitchKey",
-        getGenericLweKeySwitchKeyType(rewriter.getContext()), getkskOperands);
+        op.getLoc(), "get_keyswitch_key",
+        getGenericLweKeySwitchKeyType(rewriter.getContext()),
+        mlir::SmallVector<mlir::Value>{getContextArgument(op)});
     // keyswitch
     // cast input ciphertext to a generic type
     mlir::Value lweToKeyswitch =
@@ -703,6 +723,73 @@ void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
   patterns.add<LowLFHEBootstrapLweOpPattern>(patterns.getContext());
 }
 
+struct AddRuntimeContextToFuncOpPattern
+    : public mlir::OpRewritePattern<mlir::FuncOp> {
+  AddRuntimeContextToFuncOpPattern(mlir::MLIRContext *context,
+                                   mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::FuncOp>(context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::FuncOp oldFuncOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::OpBuilder::InsertionGuard guard(rewriter);
+    mlir::FunctionType oldFuncType = oldFuncOp.getType();
+
+    // Add a LowLFHE.context to the function signature
+    mlir::SmallVector<mlir::Type> newInputs(oldFuncType.getInputs().begin(),
+                                            oldFuncType.getInputs().end());
+    newInputs.push_back(
+        rewriter.getType<mlir::zamalang::LowLFHE::ContextType>());
+    mlir::FunctionType newFuncTy = rewriter.getType<mlir::FunctionType>(
+        newInputs, oldFuncType.getResults());
+    // Create the new func
+    mlir::FuncOp newFuncOp = rewriter.create<mlir::FuncOp>(
+        oldFuncOp.getLoc(), oldFuncOp.getName(), newFuncTy);
+
+    // Create the arguments of the new func
+    mlir::Region &newFuncBody = newFuncOp.body();
+    mlir::Block *newFuncEntryBlock = new mlir::Block();
+    newFuncEntryBlock->addArguments(newFuncTy.getInputs());
+    newFuncBody.push_back(newFuncEntryBlock);
+
+    // Clone the old body to the new one
+    mlir::BlockAndValueMapping map;
+    for (auto arg : llvm::enumerate(oldFuncOp.getArguments())) {
+      map.map(arg.value(), newFuncEntryBlock->getArgument(arg.index()));
+    }
+    for (auto &op : oldFuncOp.body().front()) {
+      newFuncEntryBlock->push_back(op.clone(map));
+    }
+    rewriter.eraseOp(oldFuncOp);
+    return mlir::success();
+  }
+
+  // Legal function are one that are private or has a LowLFHE.context as last
+  // arguments.
+  static bool isLegal(mlir::FuncOp funcOp) {
+    if (!funcOp.isPublic()) {
+      return true;
+    }
+    // TODO : Don't need to add a runtime context for function that doesn't
+    // manipulates lowlfhe types.
+    //
+    // if (!llvm::any_of(funcOp.getType().getInputs(), [](mlir::Type t) {
+    //       if (auto tensorTy = t.dyn_cast_or_null<mlir::TensorType>()) {
+    //         t = tensorTy.getElementType();
+    //       }
+    //       return llvm::isa<mlir::zamalang::LowLFHE::LowLFHEDialect>(
+    //           t.getDialect());
+    //     })) {
+    //   return true;
+    // }
+    return funcOp.getType().getNumInputs() >= 1 &&
+           funcOp.getType()
+               .getInputs()
+               .back()
+               .isa<mlir::zamalang::LowLFHE::ContextType>();
+  }
+};
+
 namespace {
 struct LowLFHEToConcreteCAPIPass
     : public LowLFHEToConcreteCAPIBase<LowLFHEToConcreteCAPIPass> {
@@ -711,27 +798,49 @@ struct LowLFHEToConcreteCAPIPass
 } // namespace
 
 void LowLFHEToConcreteCAPIPass::runOnOperation() {
-  // Setup the conversion target.
-  mlir::ConversionTarget target(getContext());
-  target.addIllegalDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
-  target.addLegalDialect<mlir::BuiltinDialect, mlir::StandardOpsDialect,
-                         mlir::memref::MemRefDialect,
-                         mlir::arith::ArithmeticDialect>();
-
-  // Setup rewrite patterns
-  mlir::RewritePatternSet patterns(&getContext());
-  populateLowLFHEToConcreteCAPICall(patterns);
-
-  // Insert forward declarations
   mlir::ModuleOp op = getOperation();
+
+  // First of all add the LowLFHE.context to the block arguments of function
+  // that manipulates ciphertexts.
+  {
+    mlir::ConversionTarget target(getContext());
+    mlir::RewritePatternSet patterns(&getContext());
+
+    target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
+      return AddRuntimeContextToFuncOpPattern::isLegal(funcOp);
+    });
+
+    patterns.add<AddRuntimeContextToFuncOpPattern>(patterns.getContext());
+
+    // Apply the conversion
+    if (mlir::applyPartialConversion(op, target, std::move(patterns))
+            .failed()) {
+      this->signalPassFailure();
+      return;
+    }
+  }
+
+  // Insert forward declaration
   mlir::IRRewriter rewriter(&getContext());
   if (insertForwardDeclarations(op, rewriter).failed()) {
     this->signalPassFailure();
   }
+  // Rewrite LowLFHE ops to CallOp to the Concrete C API
+  {
+    mlir::ConversionTarget target(getContext());
+    mlir::RewritePatternSet patterns(&getContext());
 
-  // Apply the conversion
-  if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {
-    this->signalPassFailure();
+    target.addIllegalDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
+    target.addLegalDialect<mlir::BuiltinDialect, mlir::StandardOpsDialect,
+                           mlir::memref::MemRefDialect,
+                           mlir::arith::ArithmeticDialect>();
+
+    populateLowLFHEToConcreteCAPICall(patterns);
+
+    if (mlir::applyPartialConversion(op, target, std::move(patterns))
+            .failed()) {
+      this->signalPassFailure();
+    }
   }
 }
 

@@ -70,6 +70,7 @@ MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
       type.isa<mlir::zamalang::LowLFHE::GlweCiphertextType>() ||
       type.isa<mlir::zamalang::LowLFHE::LweKeySwitchKeyType>() ||
       type.isa<mlir::zamalang::LowLFHE::LweBootstrapKeyType>() ||
+      type.isa<mlir::zamalang::LowLFHE::ContextType>() ||
       type.isa<mlir::zamalang::LowLFHE::ForeignPlaintextListType>() ||
       type.isa<mlir::zamalang::LowLFHE::PlaintextListType>()) {
     return mlir::LLVM::LLVMPointerType::get(

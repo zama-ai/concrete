@@ -78,8 +78,8 @@ llvm::Error JITLambda::invoke(Argument &args) {
 
 JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
   // Setting the inputs
+  auto numInputs = 0;
   {
-    auto numInputs = 0;
     for (size_t i = 0; i < keySet.numInputs(); i++) {
       auto offset = numInputs;
       auto gate = keySet.inputGate(i);
@@ -95,6 +95,8 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
       // dimension of the tensor.
       numInputs = numInputs + 2 * keySet.inputGate(i).shape.dimensions.size();
     }
+    // Reserve for the context argument
+    numInputs = numInputs + 1;
     inputs = std::vector<const void *>(numInputs);
   }
 
@@ -128,8 +130,10 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
     rawArg[i] = &outputs[i - inputs.size()];
   }
 
-  // Setup runtime context with appropriate keys
-  keySet.initGlobalRuntimeContext();
+  // Set the context argument
+  keySet.setRuntimeContext(context);
+  inputs[numInputs - 1] = &context;
+  rawArg[numInputs - 1] = &inputs[numInputs - 1];
 }
 
 JITLambda::Argument::~Argument() {

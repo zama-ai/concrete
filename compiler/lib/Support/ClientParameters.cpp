@@ -125,8 +125,11 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
 
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();
-  for (auto inType : funcType.getInputs()) {
-    auto gate = gateFromMLIRType("big", precision, encryptionVariance, inType);
+  bool hasContext =
+      funcType.getInputs().back().isa<mlir::zamalang::LowLFHE::ContextType>();
+  for (auto inType = funcType.getInputs().begin();
+       inType < funcType.getInputs().end() - hasContext; inType++) {
+    auto gate = gateFromMLIRType("big", precision, encryptionVariance, *inType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }

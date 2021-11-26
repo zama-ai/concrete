@@ -8,23 +8,8 @@ typedef struct RuntimeContext {
   struct LweBootstrapKey_u64 *bsk;
 } RuntimeContext;
 
-extern RuntimeContext *globalRuntimeContext;
+LweKeyswitchKey_u64 *get_keyswitch_key(RuntimeContext *context);
 
-RuntimeContext *createRuntimeContext(LweKeyswitchKey_u64 *ksk,
-                                     LweBootstrapKey_u64 *bsk);
-
-void setGlobalRuntimeContext(RuntimeContext *context);
-
-RuntimeContext *getGlobalRuntimeContext();
-
-LweKeyswitchKey_u64 *getGlobalKeyswitchKey();
-
-LweBootstrapKey_u64 *getGlobalBootstrapKey();
-
-LweKeyswitchKey_u64 *getKeyswitckKeyFromContext(RuntimeContext *context);
-
-LweBootstrapKey_u64 *getBootstrapKeyFromContext(RuntimeContext *context);
-
-bool checkError(int *err);
+LweBootstrapKey_u64 *get_bootstrap_key(RuntimeContext *context);
 
 #endif

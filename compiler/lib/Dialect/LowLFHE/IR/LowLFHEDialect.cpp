@@ -25,24 +25,9 @@ void LowLFHEDialect::initialize() {
   mlir::Type type;
 
   std::string types_str[] = {
-      "enc_rand_gen",
-      "secret_rand_gen",
-      "plaintext",
-      "plaintext_list",
-      "foreign_plaintext_list",
-      "lwe_ciphertext",
-      "lwe_key_switch_key",
-      "lwe_bootstrap_key",
-      "lwe_secret_key",
-      "lwe_size",
-      "glwe_ciphertext",
-      "glwe_secret_key",
-      "glwe_size",
-      "polynomial_size",
-      "decomp_level_count",
-      "decomp_base_log",
-      "variance",
-      "cleartext",
+      "plaintext",       "plaintext_list",     "foreign_plaintext_list",
+      "lwe_ciphertext",  "lwe_key_switch_key", "lwe_bootstrap_key",
+      "glwe_ciphertext", "cleartext",          "context",
   };
 
   for (const std::string &type_str : types_str) {
@@ -53,8 +38,7 @@ void LowLFHEDialect::initialize() {
   }
 
   parser.emitError(parser.getCurrentLocation(), "Unknown LowLFHE type");
-  // call default parser
-  parser.parseType(type);
+
   return type;
 }
 

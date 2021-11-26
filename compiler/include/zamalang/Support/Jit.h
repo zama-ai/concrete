@@ -96,6 +96,7 @@ public:
     std::vector<LweCiphertext_u64 **> ciphertextBuffers;
 
     KeySet &keySet;
+    RuntimeContext context;
   };
   JITLambda(mlir::LLVM::LLVMFunctionType type, llvm::StringRef name)
       : type(type), name(name){};
