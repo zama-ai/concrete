@@ -322,6 +322,11 @@ class GenericFunction(IntermediateNode):
     # system
     DEFAULT_OP_ATTRIBUTES: Dict[str, Any] = {"fusable": True}
 
+    KWARGS_IGNORED_IN_FORMATTING: Set[str] = {
+        "float_op_subgraph",
+        "terminal_node",
+    }
+
     def __init__(
         self,
         inputs: Iterable[BaseValue],
@@ -354,6 +359,7 @@ class GenericFunction(IntermediateNode):
         all_args.extend(
             f"{name}={format_constant(value, maximum_constant_length)}"
             for name, value in self.op_kwargs.items()
+            if name not in GenericFunction.KWARGS_IGNORED_IN_FORMATTING
         )
 
         return f"{self.op_name}({', '.join(all_args)})"

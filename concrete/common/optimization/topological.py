@@ -202,7 +202,7 @@ def convert_float_subgraph_to_fused_node(
             "float_op_subgraph": float_op_subgraph,
             "terminal_node": terminal_node,
         },
-        op_name="Subgraph",
+        op_name="subgraph",
     )
 
     return (

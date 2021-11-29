@@ -1,9 +1,14 @@
 """Test file for formatting"""
 
-from concrete.common.data_types.integers import Integer
+import numpy
+
+from concrete.common.data_types.integers import Integer, UnsignedInteger
 from concrete.common.debugging import format_operation_graph
 from concrete.common.values import EncryptedScalar
-from concrete.numpy.compile import compile_numpy_function_into_op_graph_and_measure_bounds
+from concrete.numpy.compile import (
+    compile_numpy_function,
+    compile_numpy_function_into_op_graph_and_measure_bounds,
+)
 
 
 def test_format_operation_graph_with_multiple_edges(default_compilation_configuration):
@@ -76,3 +81,45 @@ return %2
 
 """.strip()
     )
+
+
+def test_format_operation_graph_with_fusing(default_compilation_configuration):
+    """Test format_operation_graph with fusing"""
+
+    def function(x):
+        return (10 * (numpy.cos(x + 1) + 1)).astype(numpy.uint32)
+
+    circuit = compile_numpy_function(
+        function,
+        {
+            "x": EncryptedScalar(UnsignedInteger(3)),
+        },
+        [(i,) for i in range(2 ** 3)],
+        default_compilation_configuration,
+    )
+
+    assert (
+        str(circuit)
+        == """
+
+%0 = x                   # EncryptedScalar<uint5>
+%1 = 1                   # ClearScalar<uint6>
+%2 = add(%0, %1)         # EncryptedScalar<uint5>
+%3 = subgraph(%2)        # EncryptedScalar<uint5>
+return %3
+
+Subgraphs:
+
+    %3 = subgraph(%2):
+
+        %0 = 10                              # ClearScalar<uint4>
+        %1 = 1                               # ClearScalar<uint1>
+        %2 = float_subgraph_input            # EncryptedScalar<uint3>
+        %3 = cos(%2)                         # EncryptedScalar<float64>
+        %4 = add(%3, %1)                     # EncryptedScalar<float64>
+        %5 = mul(%4, %0)                     # EncryptedScalar<float64>
+        %6 = astype(%5, dtype=uint32)        # EncryptedScalar<uint5>
+        return %6
+
+""".strip()
+    ), str(circuit)

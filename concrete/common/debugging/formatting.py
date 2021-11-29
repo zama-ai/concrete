@@ -6,7 +6,7 @@ import networkx as nx
 
 from ..debugging.custom_assert import assert_true
 from ..operator_graph import OPGraph
-from ..representation.intermediate import IntermediateNode
+from ..representation.intermediate import GenericFunction, IntermediateNode
 
 
 def format_operation_graph(
@@ -29,6 +29,12 @@ def format_operation_graph(
     Returns:
         str: formatted operation graph
     """
+
+    # This function is well documented and split into very readable sections
+    # Thus, splitting it to multiple functions doesn't increase readability
+
+    # pylint: disable=too-many-locals,too-many-branches
+
     assert_true(isinstance(op_graph, OPGraph))
 
     # (node, output_index) -> identifier
@@ -49,6 +55,10 @@ def format_operation_graph(
     # after their type information is added and we only have line numbers, not nodes
     highlighted_lines: Dict[int, List[str]] = {}
 
+    # subgraphs to format after the main graph is formatted
+    subgraphs: Dict[str, OPGraph] = {}
+
+    # format nodes
     for node in nx.topological_sort(op_graph.graph):
         # assign a unique id to outputs of node
         assert_true(len(node.outputs) > 0)
@@ -77,6 +87,10 @@ def format_operation_graph(
 
         # append line to list of lines
         lines.append(line)
+
+        # if exists, save the subgraph
+        if isinstance(node, GenericFunction) and "float_op_subgraph" in node.op_kwargs:
+            subgraphs[line] = node.op_kwargs["float_op_subgraph"]
 
         # remember type information of the node
         types = ", ".join(str(output) for output in node.outputs)
@@ -121,4 +135,17 @@ def format_operation_graph(
         returns.append(outputs if len(node.outputs) == 1 else f"({outputs})")
     lines.append("return " + returns[0] if len(returns) == 1 else f"({', '.join(returns)})")
 
-    return "\n".join(lines)
+    # format subgraphs after the actual graph
+    result = "\n".join(lines)
+    if len(subgraphs) > 0:
+        result += "\n\n"
+        result += "Subgraphs:"
+        for line, subgraph in subgraphs.items():
+            subgraph_lines = format_operation_graph(subgraph, maximum_constant_length).split("\n")
+            result += "\n\n"
+            result += f"    {line}:\n\n"
+            result += "\n".join(f"        {line}" for line in subgraph_lines)
+
+    # pylint: enable=too-many-locals,too-many-branches
+
+    return result
