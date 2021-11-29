@@ -152,6 +152,10 @@ llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   std::string diagnosticsMsg;
   llvm::raw_string_ostream diagnosticsOS(diagnosticsMsg);
+  auto errorDiag = [&](std::string prefixMsg)
+      -> llvm::Expected<CompilerEngine::CompilationResult> {
+    return StreamStringError(prefixMsg + "\n" + diagnosticsOS.str());
+  };
 
   CompilationResult res(this->compilationContext);
 
@@ -172,9 +176,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   }
 
   if (!mlirModuleRef) {
-    diagnosticsOS.flush();
-    return StreamStringError("Could not parse source")
-           << (diagnosticsMsg.empty() ? "" : ": ") << diagnosticsMsg;
+    return errorDiag("Could not parse source");
   }
 
   res.mlirModuleRef = std::move(mlirModuleRef);
@@ -193,7 +195,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   if (mlir::zamalang::pipeline::lowerHLFHEToMidLFHE(mlirContext, module,
                                                     enablePass)
           .failed()) {
-    return StreamStringError("Lowering from HLFHE to MidLFHE failed");
+    return errorDiag("Lowering from HLFHE to MidLFHE failed");
   }
   if (target == Target::MIDLFHE)
     return res;
@@ -202,7 +204,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   if (mlir::zamalang::pipeline::lowerMidLFHEToLowLFHE(
           mlirContext, module, res.fheContext, this->enablePass)
           .failed()) {
-    return StreamStringError("Lowering from MidLFHE to LowLFHE failed");
+    return errorDiag("Lowering from MidLFHE to LowLFHE failed");
   }
   if (target == Target::LOWLFHE)
     return res;
@@ -211,8 +213,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   if (mlir::zamalang::pipeline::lowerLowLFHEToStd(mlirContext, module,
                                                   enablePass)
           .failed()) {
-    return StreamStringError(
-        "Lowering from LowLFHE to canonical MLIR dialects failed");
+    return errorDiag("Lowering from LowLFHE to canonical MLIR dialects failed");
   }
   if (target == Target::STD)
     return res;
@@ -243,7 +244,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
   if (mlir::zamalang::pipeline::lowerStdToLLVMDialect(mlirContext, module,
                                                       enablePass)
           .failed()) {
-    return StreamStringError("Failed to lower to LLVM dialect");
+    return errorDiag("Failed to lower to LLVM dialect");
   }
 
   if (target == Target::LLVM)
@@ -263,7 +264,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target) {
 
   if (mlir::zamalang::pipeline::optimizeLLVMModule(llvmContext, *res.llvmModule)
           .failed()) {
-    return StreamStringError("Failed to optimize LLVM IR");
+    return errorDiag("Failed to optimize LLVM IR");
   }
 
   if (target == Target::OPTIMIZED_LLVM_IR)
