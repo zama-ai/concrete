@@ -148,7 +148,7 @@ const V0Parameter *getV0Parameter(V0FHEConstraint constraint) {
   }
   // - 1 is an offset as p is in [1, ...] and not [0, ...]
   auto param = &parameters[constraint.norm2][constraint.p - 1];
-  if (param->k == 0) {
+  if (param->glweDimension == 0) {
     return nullptr;
   }
   return param;

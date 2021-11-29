@@ -310,9 +310,9 @@ struct HLFHELinalgOpToLinalgGeneric
 //         %arg4: i64, %arg5: !HLFHE.eint<2>):
 //             %lut = tensor.from_elements %arg1, %arg2, %arg3, %arg4 :
 //             tensor<4xi64> %0 = "MidLFHE.apply_lookup_table"(%arg0, %lut)
-//             {baseLogBS = -1 : i32, baseLogKS = -1 : i32, k = -1 : i32,
-//             levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS = -1 : i32,
-//             polynomialSize = -1 : i32} : (!MidLFHE.glwe<{_,_,_}{2}>,
+//             {baseLogBS = -1 : i32, baseLogKS = -1 : i32, glweDimension = -1 :
+//             i32, levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS = -1 :
+//             i32, polynomialSize = -1 : i32} : (!MidLFHE.glwe<{_,_,_}{2}>,
 //             tensor<4xi64>) -> !MidLFHE.glwe<{_,_,_}{2}>
 //         linalg.yield %0 : !HLFHE.eint<2>
 //     }

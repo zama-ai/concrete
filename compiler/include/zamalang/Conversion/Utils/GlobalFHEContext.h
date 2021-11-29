@@ -11,8 +11,8 @@ struct V0FHEConstraint {
 };
 
 struct V0Parameter {
-  size_t k;
-  size_t polynomialSize;
+  size_t glweDimension;
+  size_t logPolynomialSize;
   size_t nSmall;
   size_t brLevel;
   size_t brLogBase;
@@ -21,13 +21,17 @@ struct V0Parameter {
 
   V0Parameter() = delete;
 
-  V0Parameter(size_t k, size_t polynomialSize, size_t nSmall, size_t brLevel,
-              size_t brLogBase, size_t ksLevel, size_t ksLogBase)
-      : k(k), polynomialSize(polynomialSize), nSmall(nSmall), brLevel(brLevel),
-        brLogBase(brLogBase), ksLevel(ksLevel), ksLogBase(ksLogBase) {}
+  V0Parameter(size_t glweDimension, size_t logPolynomialSize, size_t nSmall,
+              size_t brLevel, size_t brLogBase, size_t ksLevel,
+              size_t ksLogBase)
+      : glweDimension(glweDimension), logPolynomialSize(logPolynomialSize),
+        nSmall(nSmall), brLevel(brLevel), brLogBase(brLogBase),
+        ksLevel(ksLevel), ksLogBase(ksLogBase) {}
 
   // TODO remove the shift when we have true polynomial size
-  size_t getNBigGlweSize() { return k * (1 << polynomialSize); }
+  size_t getNBigGlweDimension() {
+    return glweDimension * (1 << logPolynomialSize);
+  }
 };
 
 struct V0FHEContext {

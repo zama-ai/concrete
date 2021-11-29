@@ -77,13 +77,13 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
                             mlir::ModuleOp module) {
   auto v0Param = fheContext.parameter;
   Variance encryptionVariance =
-      v0Curve->getVariance(1, 1 << v0Param.polynomialSize, 64);
+      v0Curve->getVariance(1, 1 << v0Param.logPolynomialSize, 64);
   Variance keyswitchVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
   ClientParameters c = {};
   c.secretKeys = {
       {"small", {/*.size = */ v0Param.nSmall}},
-      {"big", {/*.size = */ v0Param.getNBigGlweSize()}},
+      {"big", {/*.size = */ v0Param.getNBigGlweDimension()}},
   };
   c.bootstrapKeys = {
       {
@@ -93,7 +93,7 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
               /*.outputSecretKeyID = */ "big",
               /*.level = */ v0Param.brLevel,
               /*.baseLog = */ v0Param.brLogBase,
-              /*.k = */ v0Param.k,
+              /*.glweDimension = */ v0Param.glweDimension,
               /*.variance = */ encryptionVariance,
           },
       },

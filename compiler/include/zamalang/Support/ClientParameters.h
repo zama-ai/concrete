@@ -19,7 +19,7 @@ typedef size_t Precision;
 typedef double Variance;
 
 typedef uint64_t LweSize;
-typedef uint64_t GLWESize;
+typedef uint64_t GlweDimension;
 
 typedef std::string LweSecretKeyID;
 struct LweSecretKeyParam {
@@ -32,7 +32,7 @@ struct BootstrapKeyParam {
   LweSecretKeyID outputSecretKeyID;
   DecompositionLevelCount level;
   DecompositionBaseLog baseLog;
-  GLWESize k;
+  GlweDimension glweDimension;
   Variance variance;
 };
 

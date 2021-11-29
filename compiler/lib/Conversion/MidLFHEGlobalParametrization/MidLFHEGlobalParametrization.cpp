@@ -22,8 +22,8 @@ struct MidLFHEGlobalParametrizationPass
 using mlir::zamalang::MidLFHE::GLWECipherTextType;
 
 /// MidLFHEGlobalParametrizationTypeConverter is a TypeConverter that transform
-/// `MidLFHE.gwle<{_,_,_}{p}>` to
-/// `MidLFHE.gwle<{glweSize,polynomialSize,bits}{p'}>`
+/// `MidLFHE.glwe<{_,_,_}{p}>` to
+/// `MidLFHE.glwe<{glweDimension,polynomialSize,bits}{p'}>`
 class MidLFHEGlobalParametrizationTypeConverter : public mlir::TypeConverter {
 
 public:
@@ -31,14 +31,14 @@ public:
       mlir::zamalang::V0FHEContext &fheContext) {
     auto convertGLWECiphertextType =
         [](GLWECipherTextType type, mlir::zamalang::V0FHEContext &fheContext) {
-          auto glweSize = fheContext.parameter.getNBigGlweSize();
+          auto glweDimension = fheContext.parameter.getNBigGlweDimension();
           auto p = fheContext.constraint.p;
-          if (type.getDimension() == (signed)glweSize &&
+          if (type.getDimension() == (signed)glweDimension &&
               type.getP() == (signed)p) {
             return type;
           }
           return GLWECipherTextType::get(
-              type.getContext(), glweSize,
+              type.getContext(), glweDimension,
               1 /*for the v0, is always lwe ciphertext*/,
               64 /*for the v0 we handle only q=64*/, p);
         };
@@ -101,12 +101,13 @@ struct MidLFHEApplyLookupTableParametrizationPattern
     }
 
     mlir::SmallVector<mlir::NamedAttribute, 6> newAttributes{
-        mlir::NamedAttribute(rewriter.getIdentifier("k"),
-                             rewriter.getI32IntegerAttr(v0Parameter.k)),
+        mlir::NamedAttribute(
+            rewriter.getIdentifier("glweDimension"),
+            rewriter.getI32IntegerAttr(v0Parameter.glweDimension)),
         mlir::NamedAttribute(
             rewriter.getIdentifier("polynomialSize"),
             // TODO remove the shift when we have true polynomial size
-            rewriter.getI32IntegerAttr(1 << v0Parameter.polynomialSize)),
+            rewriter.getI32IntegerAttr(1 << v0Parameter.logPolynomialSize)),
         mlir::NamedAttribute(rewriter.getIdentifier("levelKS"),
                              rewriter.getI32IntegerAttr(v0Parameter.ksLevel)),
         mlir::NamedAttribute(rewriter.getIdentifier("baseLogKS"),
@@ -212,9 +213,9 @@ void populateWithMidLFHEApplyLookupTableParametrizationPattern(
       patterns.getContext(), typeConverter, v0Parameter);
   target.addDynamicallyLegalOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
       [&](mlir::zamalang::MidLFHE::ApplyLookupTable op) {
-        if (op.k() != v0Parameter.k ||
+        if (op.glweDimension() != v0Parameter.glweDimension ||
             // TODO remove the shift when we have true polynomial size
-            op.polynomialSize() != (1 << v0Parameter.polynomialSize) ||
+            op.polynomialSize() != (1 << v0Parameter.logPolynomialSize) ||
             op.levelKS() != v0Parameter.ksLevel ||
             op.baseLogKS() != v0Parameter.ksLogBase ||
             op.levelBS() != v0Parameter.brLevel ||

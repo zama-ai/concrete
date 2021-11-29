@@ -9,7 +9,7 @@
 // CHECK-LABEL: func @keyswitch_lwe(%arg0: !LowLFHE.lwe_ciphertext<1024,4>, %arg1: !LowLFHE.context) -> !LowLFHE.lwe_ciphertext<1024,4>
 func @keyswitch_lwe(%arg0: !LowLFHE.lwe_ciphertext<1024,4>) -> !LowLFHE.lwe_ciphertext<1024,4> {
   // CHECK-NEXT: %[[ERR:.*]] = arith.constant 0 : index
-  // CHECK-NEXT: %[[C0:.*]] = arith.constant 1 : index
+  // CHECK-NEXT: %[[C0:.*]] = arith.constant 1025 : index
   // CHECK-NEXT: %[[V1:.*]] = call @allocate_lwe_ciphertext_u64(%[[ERR]], %[[C0]]) : (index, index) -> !LowLFHE.lwe_ciphertext<_,_>
   // CHECK-NEXT: %[[V2:.*]] = call @get_keyswitch_key(%arg1) : (!LowLFHE.context) -> !LowLFHE.lwe_key_switch_key
   // CHECK-NEXT: %[[V3:.*]] = builtin.unrealized_conversion_cast %arg0 : !LowLFHE.lwe_ciphertext<1024,4> to !LowLFHE.lwe_ciphertext<_,_>

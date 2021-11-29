@@ -23,7 +23,7 @@ using mlir::zamalang::LowLFHE::LweCiphertextType;
 using mlir::zamalang::MidLFHE::GLWECipherTextType;
 
 /// MidLFHEToLowLFHETypeConverter is a TypeConverter that transform
-/// `MidLFHE.gwle<{_,_,_}{p}>` to LowLFHE.lwe_ciphertext
+/// `MidLFHE.glwe<{_,_,_}{p}>` to LowLFHE.lwe_ciphertext
 class MidLFHEToLowLFHETypeConverter : public mlir::TypeConverter {
 
 public:

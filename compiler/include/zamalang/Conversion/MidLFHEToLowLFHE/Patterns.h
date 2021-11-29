@@ -187,7 +187,7 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
 // from:
 // ```
 // "%result = MidLFHE.apply_lookup_table"(% arg0, % tlu){
-//   k = 1 : i32,
+//   glweDimension = 1 : i32,
 //   polynomialSize = 2048 : i32,
 //   levelKS = 3 : i32,
 //   baseLogKS = 2 : i32,
@@ -201,30 +201,31 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
 // ```
 // % accumulator =
 //     "LowLFHE.glwe_from_table"(
-//         % [[TABLE]]){k = 1 : i32, p = 4 : i32, polynomialSize = 2048 : i32}
+//         % [[TABLE]]){glweDimension = 1 : i32, p = 4 : i32, polynomialSize =
+//         2048 : i32}
 //     : (tensor<16xi4>)
 //           ->!LowLFHE.glwe_ciphertext
 // % keyswitched = "LowLFHE.keyswitch_lwe"(% arg0){
 //   baseLog = 2 : i32,
-//   inputLweSize = 1 : i32,
-//   level = 3 : i32,
-//   outputLweSize = 600 : i32
+//   level = 3 : i32
 // } : (!LowLFHE.lwe_ciphertext<2048, 4>)
 //         ->!LowLFHE.lwe_ciphertext<600, 4>
 // % result = "LowLFHE.bootstrap_lwe"(% keyswitched, % accumulator){
 //   baseLog = 4 : i32,
-//   k = 1 : i32,
+//   glweDimension = 1 : i32,
 //   level = 5 : i32,
 //   polynomialSize = 2048 : i32
 // } : (!LowLFHE.lwe_ciphertext<600, 4>, !LowLFHE.glwe_ciphertext)
 //         ->!LowLFHE.lwe_ciphertext<2048, 4>
 // ```
 mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
-                      mlir::Value ct, mlir::Value table, mlir::IntegerAttr k,
+                      mlir::Value ct, mlir::Value table,
+                      mlir::IntegerAttr glweDimension,
                       mlir::IntegerAttr polynomialSize,
                       mlir::IntegerAttr levelKS, mlir::IntegerAttr baseLogKS,
                       mlir::IntegerAttr levelBS, mlir::IntegerAttr baseLogBS,
-                      mlir::IntegerAttr outputSizeKS, mlir::OpResult result) {
+                      mlir::IntegerAttr outputDimensionKS,
+                      mlir::OpResult result) {
   // convert result type
   LweCiphertextType lwe_type =
       convertTypeToLWE(rewriter.getContext(), result.getType());
@@ -234,17 +235,12 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
       rewriter
           .create<mlir::zamalang::LowLFHE::GlweFromTable>(
               loc, LowLFHE::GlweCiphertextType::get(rewriter.getContext()),
-              table, polynomialSize, k, precision)
+              table, polynomialSize, glweDimension, precision)
           .result();
 
   // keyswitch
   mlir::SmallVector<mlir::Value> ksArgs{ct};
   mlir::SmallVector<mlir::NamedAttribute> ksAttrs{
-      mlir::NamedAttribute(
-          mlir::Identifier::get("inputLweSize", rewriter.getContext()), k),
-      mlir::NamedAttribute(
-          mlir::Identifier::get("outputLweSize", rewriter.getContext()),
-          outputSizeKS),
       mlir::NamedAttribute(
           mlir::Identifier::get("level", rewriter.getContext()), levelKS),
       mlir::NamedAttribute(
@@ -252,7 +248,7 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
   };
   // convert result type
   LweCiphertextType ksOutType = LweCiphertextType::get(
-      rewriter.getContext(), outputSizeKS.getInt(), precision.getInt());
+      rewriter.getContext(), outputDimensionKS.getInt(), precision.getInt());
   convertTypeToLWE(rewriter.getContext(), result.getType());
   mlir::Value keyswitched =
       rewriter
@@ -263,8 +259,9 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
   // bootstrap operation
   mlir::SmallVector<mlir::Value> bsArgs{keyswitched, accumulator};
   mlir::SmallVector<mlir::NamedAttribute> bsAttrs{
-      mlir::NamedAttribute(mlir::Identifier::get("k", rewriter.getContext()),
-                           k),
+      mlir::NamedAttribute(
+          mlir::Identifier::get("glweDimension", rewriter.getContext()),
+          glweDimension),
       mlir::NamedAttribute(
           mlir::Identifier::get("polynomialSize", rewriter.getContext()),
           polynomialSize),

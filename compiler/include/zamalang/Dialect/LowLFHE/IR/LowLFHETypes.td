@@ -36,16 +36,16 @@ def LweCiphertextType : LowLFHE_Type<"LweCiphertext", [MemRefElementTypeInterfac
 
 
     let parameters = (ins
-        // The size of the lwe ciphertext
-        "signed":$size,
+        // The dimension of the lwe ciphertext
+        "signed":$dimension,
         // Precision of the lwe ciphertext
         "signed":$p
     );
 
     let printer = [{
         $_printer << "lwe_ciphertext<";
-        if (getImpl()->size == -1) $_printer << "_";
-        else $_printer << getImpl()->size;
+        if (getImpl()->dimension == -1) $_printer << "_";
+        else $_printer << getImpl()->dimension;
         $_printer << ",";
         if (getImpl()->p == -1) $_printer << "_";
         else $_printer << getImpl()->p;
@@ -55,8 +55,8 @@ def LweCiphertextType : LowLFHE_Type<"LweCiphertext", [MemRefElementTypeInterfac
     let parser = [{
         if ($_parser.parseLess())
             return Type();
-        int size = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(size))
+        int dimension = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(dimension))
             return Type();
         if ($_parser.parseComma())
             return Type();
@@ -66,7 +66,7 @@ def LweCiphertextType : LowLFHE_Type<"LweCiphertext", [MemRefElementTypeInterfac
         if ($_parser.parseGreater())
             return Type();
         Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
-        return getChecked(loc, loc.getContext(), size, p);
+        return getChecked(loc, loc.getContext(), dimension, p);
     }];
 }
 

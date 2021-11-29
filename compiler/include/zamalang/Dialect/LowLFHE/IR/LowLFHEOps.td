@@ -36,7 +36,7 @@ def NegateLweCiphertextOp : LowLFHE_Op<"negate_lwe_ciphertext"> {
 }
 
 def GlweFromTable : LowLFHE_Op<"glwe_from_table"> {
-    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$k, I32Attr:$p);
+    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$glweDimension, I32Attr:$p);
     let results = (outs GlweCiphertextType:$result);
 }
 
@@ -45,7 +45,7 @@ def BootstrapLweOp : LowLFHE_Op<"bootstrap_lwe"> {
         // LweBootstrapKeyType:$bootstrap_key,
         LweCiphertextType:$input_ciphertext,
         GlweCiphertextType:$accumulator,
-        I32Attr:$k,
+        I32Attr:$glweDimension,
         I32Attr:$polynomialSize,
         I32Attr:$level,
         I32Attr:$baseLog
@@ -57,8 +57,6 @@ def KeySwitchLweOp : LowLFHE_Op<"keyswitch_lwe"> {
     let arguments = (ins
         // LweKeySwitchKeyType:$keyswitch_key,
         LweCiphertextType:$ciphertext,
-        I32Attr:$inputLweSize,
-        I32Attr:$outputLweSize,
         I32Attr:$level,
         I32Attr:$baseLog
     );

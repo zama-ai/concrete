@@ -352,9 +352,12 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
       // Create the err value
       auto errOp = rewriter.create<mlir::arith::ConstantOp>(
           op.getLoc(), rewriter.getIndexAttr(0));
+      // Get the size from the dimension
+      int64_t lweDimension = lweResultType.getDimension();
+      int64_t lweSize = lweDimension + 1;
+      mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(), rewriter.getIndexAttr(lweSize));
       // Add the call to the allocation
-      auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
       mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
       auto allocGeneric = rewriter.create<mlir::CallOp>(
           op.getLoc(), allocName,
@@ -412,9 +415,12 @@ struct LowLFHEZeroOpPattern
     // Create the err value
     auto errOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(0));
+    // Get the size from the dimension
+    int64_t lweDimension = lweResultType.getDimension();
+    int64_t lweSize = lweDimension + 1;
+    mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(lweSize));
     // Allocate a fresh new ciphertext
-    auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(lweResultType.getSize()));
     mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
     auto allocGeneric = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",
@@ -508,9 +514,13 @@ struct GlweFromTableOpPattern
 
     auto errOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(0));
+    // Get the size from the dimension
+    int64_t glweDimension =
+        op->getAttr("glweDimension").cast<mlir::IntegerAttr>().getInt();
+    int64_t glweSize = glweDimension + 1;
+    mlir::Value glweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getI32IntegerAttr(glweSize));
     // allocate two glwe to build accumulator
-    auto glweSizeOp =
-        rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op->getAttr("k"));
     auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), op->getAttr("polynomialSize"));
     mlir::SmallVector<mlir::Value> allocGlweOperands{errOp, glweSizeOp,
@@ -599,14 +609,17 @@ struct LowLFHEBootstrapLweOpPattern
   matchAndRewrite(mlir::zamalang::LowLFHE::BootstrapLweOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto resultType = op->getResultTypes().front();
-    auto bstOutputSize =
-        resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>().getSize();
     auto errOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(0));
+    // Get the size from the dimension
+    int64_t outputLweDimension =
+        resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>()
+            .getDimension();
+    int64_t outputLweSize = outputLweDimension + 1;
+    mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(outputLweSize));
     // allocate the result lwe ciphertext, should be of a generic type, to cast
     // before return
-    auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(bstOutputSize));
     mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
     auto allocateGenericLweCtOp = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",
@@ -660,12 +673,17 @@ struct LowLFHEKeySwitchLweOpPattern
                   mlir::PatternRewriter &rewriter) const override {
     auto errOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(0));
+    // Get the size from the dimension
+    int64_t lweDimension =
+        op.getResult()
+            .getType()
+            .cast<mlir::zamalang::LowLFHE::LweCiphertextType>()
+            .getDimension();
+    int64_t lweSize = lweDimension + 1;
+    mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(lweSize));
     // allocate the result lwe ciphertext, should be of a generic type, to cast
     // before return
-    auto lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(),
-        rewriter.getIndexAttr(
-            op->getAttr("outputLweSize").cast<mlir::IntegerAttr>().getInt()));
     mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
     auto allocateGenericLweCtOp = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",

@@ -22,7 +22,7 @@ using mlir::zamalang::HLFHE::EncryptedIntegerType;
 using mlir::zamalang::MidLFHE::GLWECipherTextType;
 
 /// HLFHEToMidLFHETypeConverter is a TypeConverter that transform
-/// `HLFHE.eint<p>` to `MidLFHE.gwle<{_,_,_}{p}>`
+/// `HLFHE.eint<p>` to `MidLFHE.glwe<{_,_,_}{p}>`
 class HLFHEToMidLFHETypeConverter : public mlir::TypeConverter {
 
 public:

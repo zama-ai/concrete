@@ -26,8 +26,9 @@ struct V0Curves {
       : securityLevel(securityLevel), linearTerm1(linearTerm1),
         linearTerm2(linearTerm2), nAlpha(nAlpha), keyFormat(keyFormat) {}
 
-  double getVariance(int k, int polynomialSize, int logQ) {
-    auto a = std::pow(2, (linearTerm1 * k * polynomialSize + linearTerm2) * 2);
+  double getVariance(int glweDimension, int polynomialSize, int logQ) {
+    auto a = std::pow(
+        2, (linearTerm1 * glweDimension * polynomialSize + linearTerm2) * 2);
     auto b = std::pow(2, -2 * (logQ - 2));
     return a > b ? a : b;
   }

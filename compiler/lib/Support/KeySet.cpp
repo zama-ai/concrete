@@ -112,10 +112,13 @@ llvm::Error KeySet::generateSecretKey(LweSecretKeyID id,
                                       LweSecretKeyParam param,
                                       SecretRandomGenerator *generator) {
   LweSecretKey_u64 *sk;
-  CAPI_ERR_TO_LLVM_ERROR(sk = allocate_lwe_secret_key_u64(&err, {param.size}),
-                         "cannot allocate secret key");
+  CAPI_ERR_TO_LLVM_ERROR(
+      sk = allocate_lwe_secret_key_u64(&err, {param.size + 1}),
+      "cannot allocate secret key");
+
   CAPI_ERR_TO_LLVM_ERROR(fill_lwe_secret_key_u64(&err, sk, generator),
-                         "cannot fill secret key with random generator")
+                         "cannot fill secret key with random generator");
+
   secretKeys[id] = {param, sk};
   return llvm::Error::success();
 }
@@ -138,20 +141,34 @@ llvm::Error KeySet::generateBootstrapKey(BootstrapKeyID id,
   }
   // Allocate the bootstrap key
   LweBootstrapKey_u64 *bsk;
+
+  uint64_t total_dimension = outputSk->second.first.size;
+
+  assert(total_dimension % param.glweDimension == 0);
+
+  uint64_t polynomialSize = total_dimension / param.glweDimension;
+
   CAPI_ERR_TO_LLVM_ERROR(
       bsk = allocate_lwe_bootstrap_key_u64(
-          &err, {param.level}, {param.baseLog}, {param.k},
-          {inputSk->second.first.size},
-          {outputSk->second.first.size /*TODO: size / k ?*/}),
+          &err, {param.level}, {param.baseLog}, {param.glweDimension + 1},
+          {inputSk->second.first.size + 1}, {polynomialSize}),
       "cannot allocate bootstrap key");
+
   // Store the bootstrap key
   bootstrapKeys[id] = {param, bsk};
+
   // Convert the output lwe key to glwe key
   GlweSecretKey_u64 *glwe_sk;
+
   CAPI_ERR_TO_LLVM_ERROR(
-      glwe_sk = allocate_glwe_secret_key_u64(&err, {param.k},
-                                             {outputSk->second.first.size}),
+      glwe_sk = allocate_glwe_secret_key_u64(&err, {param.glweDimension + 1},
+                                             {polynomialSize}),
       "cannot allocate glwe key for initiliazation of bootstrap key");
+
+  CAPI_ERR_TO_LLVM_ERROR(fill_glwe_secret_key_with_lwe_secret_key_u64(
+                             &err, glwe_sk, outputSk->second.second),
+                         "cannot fill glwe key with big key");
+
   // Initialize the bootstrap key
   CAPI_ERR_TO_LLVM_ERROR(
       fill_lwe_bootstrap_key_u64(&err, bsk, inputSk->second.second, glwe_sk,
@@ -183,8 +200,8 @@ llvm::Error KeySet::generateKeyswitchKey(KeyswitchKeyID id,
   LweKeyswitchKey_u64 *ksk;
   CAPI_ERR_TO_LLVM_ERROR(
       ksk = allocate_lwe_keyswitch_key_u64(&err, {param.level}, {param.baseLog},
-                                           {inputSk->second.first.size},
-                                           {outputSk->second.first.size}),
+                                           {inputSk->second.first.size + 1},
+                                           {outputSk->second.first.size + 1}),
       "cannot allocate keyswitch key");
   // Store the keyswitch key
   keyswitchKeys[id] = {param, ksk};
@@ -206,7 +223,7 @@ llvm::Error KeySet::allocate_lwe(size_t argPos,
   }
   auto inputSk = inputs[argPos];
   CAPI_ERR_TO_LLVM_ERROR(*ciphertext = allocate_lwe_ciphertext_u64(
-                             &err, {std::get<1>(inputSk)->size}),
+                             &err, {std::get<1>(inputSk)->size + 1}),
                          "cannot allocate ciphertext");
   return llvm::Error::success();
 }

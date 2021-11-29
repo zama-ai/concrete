@@ -70,7 +70,8 @@ createApplyLookupTableGLWEOpFromHLFHE(mlir::PatternRewriter &rewriter,
   auto context = rewriter.getContext();
   auto unset = mlir::IntegerAttr::get(IntegerType::get(context, 32), -1);
   mlir::SmallVector<mlir::NamedAttribute, 6> attrs{
-      mlir::NamedAttribute(mlir::Identifier::get("k", context), unset),
+      mlir::NamedAttribute(mlir::Identifier::get("glweDimension", context),
+                           unset),
       mlir::NamedAttribute(mlir::Identifier::get("polynomialSize", context),
                            unset),
       mlir::NamedAttribute(mlir::Identifier::get("levelKS", context), unset),

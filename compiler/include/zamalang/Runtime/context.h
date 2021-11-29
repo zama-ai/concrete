@@ -4,8 +4,8 @@
 #include "concrete-ffi.h"
 
 typedef struct RuntimeContext {
-  struct LweKeyswitchKey_u64 *ksk;
-  struct LweBootstrapKey_u64 *bsk;
+  LweKeyswitchKey_u64 *ksk;
+  LweBootstrapKey_u64 *bsk;
 } RuntimeContext;
 
 LweKeyswitchKey_u64 *get_keyswitch_key(RuntimeContext *context);
