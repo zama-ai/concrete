@@ -99,7 +99,6 @@ def check_node_compatibility_with_mlir(
 
     elif isinstance(node, intermediate.IndexConstant):  # constraints for constant indexing
         assert_true(len(outputs) == 1)
-        return "indexing is not supported for the time being"
 
     elif isinstance(node, intermediate.MatMul):  # constraints for matrix multiplication
         assert_true(len(inputs) == 2)

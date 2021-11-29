@@ -7,11 +7,13 @@
 from typing import Any, Dict, List, Tuple, cast
 
 import numpy
-from mlir.dialects import arith
+from mlir.dialects import arith, tensor
 from mlir.ir import (
+    ArrayAttr,
     Attribute,
     Context,
     DenseElementsAttr,
+    IndexType,
     IntegerAttr,
     IntegerType,
     OpResult,
@@ -21,12 +23,14 @@ from zamalang.dialects import hlfhe, hlfhelinalg
 
 from ..data_types import Integer
 from ..debugging import assert_true
+from ..helpers.indexing_helpers import determine_new_dimension_size
 from ..operator_graph import OPGraph
 from ..representation.intermediate import (
     Add,
     Constant,
     Dot,
     GenericFunction,
+    IndexConstant,
     IntermediateNode,
     MatMul,
     Mul,
@@ -101,6 +105,8 @@ class IntermediateNodeConverter:
             str: textual MLIR representation corresponding to self.node
         """
 
+        # pylint: disable=too-many-branches
+
         if isinstance(self.node, Add):
             result = self.convert_add()
 
@@ -112,6 +118,9 @@ class IntermediateNodeConverter:
 
         elif isinstance(self.node, GenericFunction):
             result = self.convert_generic_function(additional_conversion_info)
+
+        elif isinstance(self.node, IndexConstant):
+            result = self.convert_index_constant()
 
         elif isinstance(self.node, MatMul):
             result = self.convert_matmul()
@@ -125,6 +134,8 @@ class IntermediateNodeConverter:
         else:  # pragma: no cover
             # this branch is not covered as unsupported opeations fail on check mlir compatibility
             raise NotImplementedError(f"{type(self.node)} nodes cannot be converted to MLIR yet")
+
+        # pylint: enable=too-many-branches
 
         mlir_name = str(result).replace("Value(", "").split("=", maxsplit=1)[0].strip()
 
@@ -318,6 +329,98 @@ class IntermediateNodeConverter:
             result = hlfhe.ApplyLookupTableEintOp(resulting_type, pred, lut).result
 
         return result
+
+    def convert_index_constant(self) -> OpResult:
+        """Convert a IndexConstant node to its corresponding MLIR representation.
+
+        Returns:
+            str: textual MLIR representation corresponding to self.node
+        """
+
+        assert_true(len(self.node.inputs) == 1)
+        assert_true(len(self.node.outputs) == 1)
+
+        tensor_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+        pred = self.preds[0]
+
+        input_value = cast(TensorValue, self.node.inputs[0])
+        input_shape = input_value.shape
+
+        index = cast(IndexConstant, self.node).index
+        index_str = self.node.text_for_formatting([""], 0)
+
+        index_type = IndexType.parse("index")
+
+        if len(index) == len(input_shape) and all(isinstance(i, int) for i in index):
+            indices = []
+            for value, dimension_size in zip(index, input_shape):
+                assert isinstance(value, int)  # mypy
+                attr = IntegerAttr.get(index_type, value if value >= 0 else value + dimension_size)
+                indices.append(arith.ConstantOp(index_type, attr).result)
+            return tensor.ExtractOp(tensor_type, pred, indices).result
+
+        offsets = []
+        sizes = []
+        strides = []
+
+        can_be_converted = True
+        for dimension, (indexing_element, dimension_size) in enumerate(zip(index, input_shape)):
+
+            if isinstance(indexing_element, int):
+                size = 1
+                stride = 1
+                offset = (
+                    indexing_element if indexing_element >= 0 else indexing_element + dimension_size
+                )
+
+            elif isinstance(indexing_element, slice):
+                size = determine_new_dimension_size(
+                    indexing_element,
+                    dimension_size,
+                    dimension,
+                    input_shape,
+                    index_str,
+                )
+                if size == 1:
+                    can_be_converted = False
+                    break
+
+                stride = indexing_element.step if isinstance(indexing_element.step, int) else 1
+                offset = (
+                    (
+                        indexing_element.start
+                        if indexing_element.start >= 0
+                        else indexing_element.start + dimension_size
+                    )
+                    if isinstance(indexing_element.start, int)
+                    else (0 if stride > 0 else dimension_size - 1)
+                )
+
+            else:  # pragma: no cover
+                # this branch is impossible to reach with all the previous checks
+                # but let's keep it as an extra measure
+                can_be_converted = False
+                break
+
+            offsets.append(offset)
+            sizes.append(size)
+            strides.append(stride)
+
+        if not can_be_converted:
+            raise NotImplementedError(
+                f"Indexing of {input_value} with {index_str} cannot be converted to MLIR yet",
+            )
+
+        return tensor.ExtractSliceOp(
+            tensor_type,
+            pred,
+            [],
+            [],
+            [],
+            ArrayAttr.get([IntegerAttr.get(index_type, value) for value in offsets]),
+            ArrayAttr.get([IntegerAttr.get(index_type, value) for value in sizes]),
+            ArrayAttr.get([IntegerAttr.get(index_type, value) for value in strides]),
+        ).result
 
     def convert_matmul(self) -> OpResult:
         """Convert a MatMul node to its corresponding MLIR representation.

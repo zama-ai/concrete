@@ -7,7 +7,7 @@ import numpy
 import pytest
 
 from concrete.common.compilation import CompilationConfiguration
-from concrete.common.data_types.integers import Integer, UnsignedInteger
+from concrete.common.data_types.integers import Integer, SignedInteger, UnsignedInteger
 from concrete.common.debugging import draw_graph, format_operation_graph
 from concrete.common.extensions.multi_table import MultiLookupTable
 from concrete.common.extensions.table import LookupTable
@@ -1404,24 +1404,6 @@ return %2
             ),
         ),
         pytest.param(
-            lambda x: x[0],
-            {"x": EncryptedTensor(Integer(3, is_signed=True), shape=(2, 2))},
-            [(numpy.random.randint(-4, 2 ** 2, size=(2, 2)),) for i in range(10)],
-            (
-                """
-
-function you are trying to compile isn't supported for MLIR lowering
-
-%0 = x            # EncryptedTensor<int3, shape=(2, 2)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
-%1 = %0[0]        # EncryptedTensor<int3, shape=(2,)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ indexing is not supported for the time being
-return %1
-
-                """.strip()  # noqa: E501
-            ),
-        ),
-        pytest.param(
             no_fuse_unhandled,
             {"x": EncryptedScalar(Integer(2, False)), "y": EncryptedScalar(Integer(2, False))},
             [(numpy.array(i), numpy.array(i)) for i in range(10)],
@@ -1534,6 +1516,52 @@ def test_fail_compile(function, parameters, inputset, match, default_compilation
             parameters,
             inputset,
             default_compilation_configuration,
+        )
+
+    assert str(excinfo.value) == match, str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "function,parameters,inputset,match",
+    [
+        pytest.param(
+            lambda x: (x * 1.5)[0, 1],
+            {"x": EncryptedTensor(SignedInteger(3), shape=(2, 2))},
+            [(numpy.random.randint(-4, 3, size=(2, 2)),) for i in range(10)],
+            (
+                """
+
+function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x                  # EncryptedTensor<int3, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+%1 = 1.5                # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
+%2 = mul(%0, %1)        # EncryptedTensor<float64, shape=(2, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer multiplication is supported
+%3 = %2[0, 1]           # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer outputs are supported
+return %3
+
+                """.strip()  # noqa: E501
+            ),
+        ),
+    ],
+)
+def test_fail_compile_while_fusing_is_disabled(
+    function, parameters, inputset, match, default_compilation_configuration
+):
+    """Test compile_numpy_function without fusing and with failing inputs"""
+
+    configuration_to_use = deepcopy(default_compilation_configuration)
+    configuration_to_use.enable_topological_optimizations = False
+
+    with pytest.raises(RuntimeError) as excinfo:
+        compile_numpy_function(
+            function,
+            parameters,
+            inputset,
+            configuration_to_use,
         )
 
     assert str(excinfo.value) == match, str(excinfo.value)
