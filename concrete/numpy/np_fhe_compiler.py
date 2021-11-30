@@ -6,10 +6,15 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Integer
+from ..common.fhe_circuit import FHECircuit
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import IntermediateNode
 from ..common.values import BaseValue
-from .compile import compile_numpy_function_into_op_graph, measure_op_graph_bounds_and_update
+from .compile import (
+    compile_numpy_function_into_op_graph,
+    compile_op_graph_to_fhe_circuit,
+    measure_op_graph_bounds_and_update,
+)
 from .np_dtypes_helpers import get_base_value_for_numpy_or_python_constant_data
 
 
@@ -197,3 +202,32 @@ class NPFHECompiler:
                 if isinstance(dtype := (input_.dtype), Integer):
                     dtype.bit_width = 128
                     dtype.is_signed = True
+
+    def get_compiled_fhe_circuit(self, show_mlir: bool = False) -> FHECircuit:
+        """Return a compiled FHECircuit if the instance was evaluated on an inputset.
+
+        Args:
+            show_mlir (bool, optional): if set, the MLIR produced by the converter and which is
+                going to be sent to the compiler backend is shown on the screen, e.g., for debugging
+                or demo. Defaults to False.
+
+        Raises:
+            RuntimeError: raised if no inputset was passed to the instance.
+
+        Returns:
+            FHECircuit: the compiled FHECircuit
+        """
+        self._eval_on_current_inputset()
+
+        if self._op_graph is None:
+            raise RuntimeError(
+                "Requested FHECircuit but no OPGraph was compiled. "
+                f"Did you forget to evaluate {self.__class__.__name__} over an inputset?"
+            )
+
+        return compile_op_graph_to_fhe_circuit(
+            self._op_graph,
+            show_mlir,
+            self.compilation_configuration,
+            self.compilation_artifacts,
+        )

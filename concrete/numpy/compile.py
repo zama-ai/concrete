@@ -611,6 +611,79 @@ def prepare_op_graph_for_mlir(op_graph: OPGraph):
     hack_offset_negative_inputs_to_lookup_tables(op_graph)
 
 
+def _compile_op_graph_to_fhe_circuit_internal(
+    op_graph: OPGraph, show_mlir: bool, compilation_artifacts: CompilationArtifacts
+) -> FHECircuit:
+    """Compile the OPGraph to an FHECircuit.
+
+    Args:
+        op_graph (OPGraph): the OPGraph to compile.
+        show_mlir (bool): determine whether we print the mlir string.
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+            during compilation
+
+    Returns:
+        FHECircuit: the compiled FHECircuit
+    """
+    prepare_op_graph_for_mlir(op_graph)
+
+    # Convert graph to an MLIR representation
+    converter = NPMLIRConverter()
+    mlir_result = converter.convert(op_graph)
+
+    # Show MLIR representation if requested
+    if show_mlir:
+        print(f"MLIR which is going to be compiled: \n{mlir_result}")
+
+    # Add MLIR representation as an artifact
+    compilation_artifacts.add_final_operation_graph_mlir(mlir_result)
+
+    # Compile the MLIR representation
+    engine = CompilerEngine()
+    engine.compile_fhe(mlir_result)
+
+    return FHECircuit(op_graph, engine)
+
+
+def compile_op_graph_to_fhe_circuit(
+    op_graph: OPGraph,
+    show_mlir: bool,
+    compilation_configuration: Optional[CompilationConfiguration] = None,
+    compilation_artifacts: Optional[CompilationArtifacts] = None,
+) -> FHECircuit:
+    """Compile the OPGraph to an FHECircuit.
+
+    Args:
+        op_graph (OPGraph): the OPGraph to compile.
+        show_mlir (bool): determine whether we print the mlir string.
+        compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
+            during compilation
+        compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
+            during compilation
+
+    Returns:
+        FHECircuit: the compiled circuit and the compiled FHECircuit
+    """
+
+    (
+        compilation_configuration,
+        compilation_artifacts,
+    ) = sanitize_compilation_configuration_and_artifacts(
+        compilation_configuration, compilation_artifacts
+    )
+
+    def compilation_function():
+        return _compile_op_graph_to_fhe_circuit_internal(op_graph, show_mlir, compilation_artifacts)
+
+    result = run_compilation_function_with_error_management(
+        compilation_function, compilation_configuration, compilation_artifacts
+    )
+
+    # for mypy
+    assert isinstance(result, FHECircuit)
+    return result
+
+
 def _compile_numpy_function_internal(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
@@ -648,24 +721,11 @@ def _compile_numpy_function_internal(
         compilation_artifacts,
     )
 
-    prepare_op_graph_for_mlir(op_graph)
+    fhe_circuit = _compile_op_graph_to_fhe_circuit_internal(
+        op_graph, show_mlir, compilation_artifacts
+    )
 
-    # Convert graph to an MLIR representation
-    converter = NPMLIRConverter()
-    mlir_result = converter.convert(op_graph)
-
-    # Show MLIR representation if requested
-    if show_mlir:
-        print(f"MLIR which is going to be compiled: \n{mlir_result}")
-
-    # Add MLIR representation as an artifact
-    compilation_artifacts.add_final_operation_graph_mlir(mlir_result)
-
-    # Compile the MLIR representation
-    engine = CompilerEngine()
-    engine.compile_fhe(mlir_result)
-
-    return FHECircuit(op_graph, engine)
+    return fhe_circuit
 
 
 def compile_numpy_function(

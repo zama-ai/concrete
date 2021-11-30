@@ -22,17 +22,20 @@ def complicated_topology(x, y):
 
 
 @pytest.mark.parametrize("input_shape", [(), (3, 1, 2)])
-def test_np_fhe_compiler(input_shape, default_compilation_configuration):
+def test_np_fhe_compiler_op_graph(input_shape, default_compilation_configuration):
     """Test NPFHECompiler in two subtests."""
-    subtest_np_fhe_compiler_1_input(input_shape, default_compilation_configuration)
-    subtest_np_fhe_compiler_2_inputs(input_shape, default_compilation_configuration)
+    subtest_np_fhe_compiler_1_input_op_graph(input_shape, default_compilation_configuration)
+    subtest_np_fhe_compiler_2_inputs_op_graph(input_shape, default_compilation_configuration)
 
 
-def subtest_np_fhe_compiler_1_input(input_shape, default_compilation_configuration):
+def subtest_np_fhe_compiler_1_input_op_graph(input_shape, default_compilation_configuration):
     """test for NPFHECompiler on one input function"""
 
+    def function_to_compile(x):
+        return complicated_topology(x, 0)
+
     compiler = NPFHECompiler(
-        lambda x: complicated_topology(x, 0),
+        function_to_compile,
         {"x": "encrypted"},
         default_compilation_configuration,
     )
@@ -45,7 +48,7 @@ def subtest_np_fhe_compiler_1_input(input_shape, default_compilation_configurati
 
     for i in numpy.arange(5):
         i = numpy.ones(input_shape, dtype=numpy.int64) * i
-        assert numpy.array_equal(compiler(i), complicated_topology(i, 0))
+        assert numpy.array_equal(compiler(i), function_to_compile(i))
 
     # For coverage, check that we flush the inputset when we query the OPGraph
     current_op_graph = compiler.op_graph
@@ -57,7 +60,7 @@ def subtest_np_fhe_compiler_1_input(input_shape, default_compilation_configurati
     # Continue a bit more
     for i in numpy.arange(5, 10):
         i = numpy.ones(input_shape, dtype=numpy.int64) * i
-        assert numpy.array_equal(compiler(i), complicated_topology(i, 0))
+        assert numpy.array_equal(compiler(i), function_to_compile(i))
 
     if input_shape == ():
         assert (
@@ -103,7 +106,7 @@ def subtest_np_fhe_compiler_1_input(input_shape, default_compilation_configurati
         ), got
 
 
-def subtest_np_fhe_compiler_2_inputs(input_shape, default_compilation_configuration):
+def subtest_np_fhe_compiler_2_inputs_op_graph(input_shape, default_compilation_configuration):
     """test for NPFHECompiler on two inputs function"""
 
     compiler = NPFHECompiler(
@@ -199,17 +202,51 @@ def test_np_fhe_compiler_auto_flush(
     default_compilation_configuration,
 ):
     """Test the auto flush of NPFHECompiler once the inputset is 128 elements."""
+
+    def function_to_compile(x):
+        return x // 2
+
     compiler = NPFHECompiler(
-        lambda x: x // 2,
+        function_to_compile,
         {"x": "encrypted"},
         default_compilation_configuration,
     )
 
     for i in numpy.arange(inputset_len):
-        assert numpy.array_equal(compiler(i), i // 2)
+        assert numpy.array_equal(compiler(i), function_to_compile(i))
 
     # Check the inputset was properly flushed
     assert (
         len(compiler._current_inputset)  # pylint: disable=protected-access
         == expected_remaining_inputset_len
     )
+
+
+def test_np_fhe_compiler_full_compilation(default_compilation_configuration):
+    """Test the case where we generate an FHE circuit."""
+
+    def function_to_compile(x):
+        return x + 42
+
+    compiler = NPFHECompiler(
+        function_to_compile,
+        {"x": "encrypted"},
+        default_compilation_configuration,
+    )
+
+    # For coverage
+    with pytest.raises(RuntimeError) as excinfo:
+        compiler.get_compiled_fhe_circuit()
+
+    assert str(excinfo.value) == (
+        "Requested FHECircuit but no OPGraph was compiled. "
+        "Did you forget to evaluate NPFHECompiler over an inputset?"
+    )
+
+    for i in numpy.arange(64):
+        assert numpy.array_equal(compiler(i), function_to_compile(i))
+
+    fhe_circuit = compiler.get_compiled_fhe_circuit()
+
+    for i in range(64):
+        assert fhe_circuit.run(i) == function_to_compile(i)
