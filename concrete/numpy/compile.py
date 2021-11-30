@@ -17,7 +17,6 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.fhe_circuit import FHECircuit
 from ..common.mlir.utils import (
     check_graph_values_compatibility_with_mlir,
-    extend_direct_lookup_tables,
     update_bit_width_for_mlir,
 )
 from ..common.operator_graph import OPGraph
@@ -600,9 +599,6 @@ def prepare_op_graph_for_mlir(op_graph: OPGraph):
 
     # Update bit_width for MLIR
     update_bit_width_for_mlir(op_graph)
-
-    # TODO: workaround extend LUT #359
-    extend_direct_lookup_tables(op_graph)
 
     # HACK
     # TODO: remove this ugly hack when https://github.com/zama-ai/concretefhe-internal/issues/1001

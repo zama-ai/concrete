@@ -62,7 +62,7 @@ class LookupTable:
 
     @staticmethod
     def _check_index_out_of_range(x, table):
-        if x < 0 or x >= len(table):
+        if not -len(table) <= x < len(table):
             raise ValueError(
                 f"Lookup table with {len(table)} entries cannot be indexed with {x} "
                 f"(you should check your inputset)",

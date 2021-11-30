@@ -1,9 +1,8 @@
 """Utilities for MLIR conversion."""
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional
 
 import networkx as nx
 
-from ..data_types import Integer
 from ..data_types.dtypes_helpers import (
     value_is_clear_scalar_integer,
     value_is_clear_tensor_integer,
@@ -16,7 +15,7 @@ from ..debugging import format_operation_graph
 from ..debugging.custom_assert import assert_not_reached, assert_true
 from ..operator_graph import OPGraph
 from ..representation import intermediate
-from ..representation.intermediate import GenericFunction, IntermediateNode
+from ..representation.intermediate import IntermediateNode
 
 # TODO: should come from compiler, through an API, #402
 ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
@@ -210,24 +209,3 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
         )
 
     _set_all_bit_width(op_graph, max_bit_width)
-
-
-def extend_direct_lookup_tables(op_graph: OPGraph):
-    """Extend direct lookup tables to the maximum length the input bit width can support.
-
-    Args:
-        op_graph: graph to update lookup tables for
-    """
-    for node in op_graph.graph.nodes:
-        if isinstance(node, GenericFunction) and node.op_name == "TLU":
-            table = node.op_kwargs["table"]
-            bit_width = cast(Integer, node.inputs[0].dtype).bit_width
-            expected_length = 2 ** bit_width
-
-            # TODO: remove no cover once the table length workaround is removed
-            # (https://github.com/zama-ai/concretefhe-internal/issues/359)
-            if len(table) > expected_length:  # pragma: no cover
-                node.op_kwargs["table"] = table[:expected_length]
-            else:
-                repeat = expected_length // len(table)
-                node.op_kwargs["table"] = (table * repeat)[:expected_length]
