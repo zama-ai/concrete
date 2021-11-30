@@ -245,6 +245,30 @@ def mix_x_and_y_and_call_binary_f_two(func, c, x, y):
     return z
 
 
+def negative_binary_f_one(func, c, x, y):
+    """Test negative values as input to func as first argument."""
+    x = x + (-4)
+    z = func(x, c)
+    z = numpy.clip(z, 0, 63).astype(numpy.int32) + y
+    return z
+
+
+def negative_binary_f_two(func, c, x, y):
+    """Test negative values as input to func as second argument."""
+    x = x + (-4)
+    z = func(c, x)
+    z = numpy.clip(z, 0, 63).astype(numpy.int32) + y
+    return z
+
+
+def negative_unary_f(func, x, y):
+    """Test negative values as input to func."""
+    x = x + (-4)
+    z = func(x)
+    z = numpy.clip(z, 0, 63).astype(numpy.int32) + y
+    return z
+
+
 def check_is_good_execution(compiler_engine, function, args, verbose=True):
     """Run several times the check compiler_engine.run(*args) == function(*args). If always wrong,
     return an error. One can set the expected probability of success of one execution and the
@@ -514,6 +538,32 @@ def test_binary_ufunc_operations(ufunc, default_compilation_configuration, tenso
                 default_compilation_configuration,
             )
 
+    # Negative inputs tests on compatible functions
+    if ufunc not in [
+        numpy.floor_divide,
+        numpy.fmod,
+        numpy.remainder,
+        numpy.true_divide,
+        numpy.power,
+        numpy.float_power,
+    ]:
+        subtest_compile_and_run_binary_ufunc_correctness(
+            ufunc,
+            negative_binary_f_one,
+            2,
+            ((0, 7), (0, 3)),
+            tensor_shape,
+            default_compilation_configuration,
+        )
+        subtest_compile_and_run_binary_ufunc_correctness(
+            ufunc,
+            negative_binary_f_two,
+            2,
+            ((0, 7), (0, 3)),
+            tensor_shape,
+            default_compilation_configuration,
+        )
+
 
 @pytest.mark.parametrize(
     "ufunc", [f for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1]
@@ -587,6 +637,27 @@ def test_unary_ufunc_operations(ufunc, default_compilation_configuration, tensor
             ufunc,
             mix_x_and_y_and_call_f,
             ((0, 5), (0, 5)),
+            tensor_shape,
+            default_compilation_configuration,
+        )
+
+    # Negative inputs tests on compatible functions
+    if ufunc not in [
+        numpy.arccosh,
+        numpy.arccos,
+        numpy.arcsin,
+        numpy.arctanh,
+        numpy.sqrt,
+        numpy.log,
+        numpy.log1p,
+        numpy.log2,
+        numpy.log10,
+        numpy.reciprocal,
+    ]:
+        subtest_compile_and_run_unary_ufunc_correctness(
+            ufunc,
+            negative_unary_f,
+            ((0, 7), (0, 3)),
             tensor_shape,
             default_compilation_configuration,
         )
