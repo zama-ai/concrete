@@ -25,7 +25,7 @@
  click                          8.0.3      BSD License                                                                                      
  click-log                      0.3.2      MIT License                                                                                      
  colorama                       0.4.4      BSD License                                                                                      
- coverage                       6.1.2      Apache Software License                                                                          
+ coverage                       6.2        Apache Software License                                                                          
  cycler                         0.10.0     BSD                                                                                              
  debugpy                        1.5.1      Eclipse Public License 2.0 (EPL-2.0); MIT License                                                
  decorator                      5.1.0      BSD License                                                                                      
