@@ -2,10 +2,10 @@ FROM ghcr.io/zama-ai/concretefhe-env
 
 ENV SRC_DIR_NAME=src
 
-RUN echo "source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc && \
+RUN echo "source /root/dev_venv/bin/activate" >> /root/.bashrc && \
     echo "if [[ \"\$?\" != \"0\" ]]; then" >> /root/.bashrc && \
-    echo "    python3 -m venv /${SRC_DIR_NAME}/.docker_venv" >> /root/.bashrc && \
-    echo "    source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc && \
+    echo "    python3 -m venv /root/dev_venv" >> /root/.bashrc && \
+    echo "    source /root/dev_venv/bin/activate" >> /root/.bashrc && \
     echo "    cd /${SRC_DIR_NAME}/ && make setup_env" >> /root/.bashrc && \
     echo "fi" >> /root/.bashrc && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc

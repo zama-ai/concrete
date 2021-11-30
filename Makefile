@@ -2,6 +2,8 @@ SHELL:=/bin/bash
 
 DEV_DOCKER_IMG:=concretefhe-dev
 DEV_DOCKERFILE:=docker/Dockerfile.concretefhe-dev
+DEV_CONTAINER_VENV_VOLUME:=concretefhe-internal-venv
+DEV_CONTAINER_CACHE_VOLUME:=concretefhe-internal-cache
 SRC_DIR:=concrete
 NOTEBOOKS_DIR:=docs/user/advanced_examples
 
@@ -161,6 +163,8 @@ docker_start:
 	-p 8888:8888 \
 	--env DISPLAY=host.docker.internal:0 \
 	--volume /"$$(pwd)":/src \
+	--volume $(DEV_CONTAINER_VENV_VOLUME):/root/dev_venv \
+	--volume $(DEV_CONTAINER_CACHE_VOLUME):/root/.cache \
 	$(DEV_DOCKER_IMG)
 .PHONY: docker_start
 
@@ -169,6 +173,14 @@ docker_build_and_start: docker_build docker_start
 
 docker_bas: docker_build_and_start
 .PHONY: docker_bas
+
+docker_clean_volumes:
+	docker volume rm -f $(DEV_CONTAINER_VENV_VOLUME)
+	docker volume rm -f $(DEV_CONTAINER_CACHE_VOLUME)
+.PHONY: docker_clean_volumes
+
+docker_cv: docker_clean_volumes
+.PHONY: docker_cv
 
 docker_publish_measurements: docker_build
 	mkdir -p .benchmarks
