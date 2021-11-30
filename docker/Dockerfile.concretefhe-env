@@ -30,17 +30,3 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
 # Remove once compiler is on PyPi https://github.com/zama-ai/concretefhe-internal/issues/809
 WORKDIR /pkg
 COPY pkg/${WHEEL} .
-
-ENV SRC_DIR_NAME=src
-
-RUN echo "source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc && \
-    echo "if [[ \"\$?\" != \"0\" ]]; then" >> /root/.bashrc && \
-    echo "    python3 -m venv /${SRC_DIR_NAME}/.docker_venv" >> /root/.bashrc && \
-    echo "    source /${SRC_DIR_NAME}/.docker_venv/bin/activate" >> /root/.bashrc && \
-    echo "    cd /${SRC_DIR_NAME}/ && make setup_env" >> /root/.bashrc && \
-    echo "fi" >> /root/.bashrc && \
-    echo "export MPLBACKEND=TkAgg" >> /root/.bashrc
-
-WORKDIR /${SRC_DIR_NAME}
-
-CMD ["/bin/bash"]

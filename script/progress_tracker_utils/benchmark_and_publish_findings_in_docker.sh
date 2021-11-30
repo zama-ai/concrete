@@ -6,10 +6,10 @@
 set +e
 
 # shellcheck disable=SC1091
-if ! source /src/.docker_venv/bin/activate; then
-    python3 -m venv /src/.docker_venv
+if ! source /root/dev_venv/bin/activate; then
+    python3 -m venv /root/dev_venv
     # shellcheck disable=SC1091
-    source /src/.docker_venv/bin/activate
+    source /root/dev_venv/bin/activate
     cd /src/ && make setup_env
 fi
 
