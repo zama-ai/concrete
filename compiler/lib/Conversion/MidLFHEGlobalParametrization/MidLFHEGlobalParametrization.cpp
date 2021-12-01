@@ -288,6 +288,9 @@ void MidLFHEGlobalParametrizationPass::runOnOperation() {
     patterns.add<RegionOpTypeConverterPattern<
         mlir::linalg::GenericOp, MidLFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
+    patterns.add<RegionOpTypeConverterPattern<
+        mlir::tensor::GenerateOp, MidLFHEGlobalParametrizationTypeConverter>>(
+        &getContext(), converter);
     mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                             converter);
 

@@ -82,13 +82,18 @@ void LowLFHEUnparametrizePass::runOnOperation() {
   LowLFHEUnparametrizeTypeConverter converter;
 
   // Conversion of linalg.generic operation
-  target.addDynamicallyLegalOp<mlir::linalg::GenericOp>(
-      [&](mlir::linalg::GenericOp op) {
-        return (converter.isLegal(op.getOperandTypes()) &&
-                converter.isLegal(op.getResultTypes()) &&
+  target
+      .addDynamicallyLegalOp<mlir::linalg::GenericOp, mlir::tensor::GenerateOp>(
+          [&](mlir::Operation *op) {
+            return (
+                converter.isLegal(op->getOperandTypes()) &&
+                converter.isLegal(op->getResultTypes()) &&
                 converter.isLegal(op->getRegion(0).front().getArgumentTypes()));
-      });
+          });
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
+                                            LowLFHEUnparametrizeTypeConverter>>(
+      &getContext(), converter);
+  patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
                                             LowLFHEUnparametrizeTypeConverter>>(
       &getContext(), converter);
 

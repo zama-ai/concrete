@@ -59,12 +59,14 @@ void HLFHEToMidLFHEPass::runOnOperation() {
   target.addIllegalDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
 
   // Make sure that no ops `linalg.generic` that have illegal types
-  target.addDynamicallyLegalOp<mlir::linalg::GenericOp>(
-      [&](mlir::linalg::GenericOp op) {
-        return (converter.isLegal(op.getOperandTypes()) &&
-                converter.isLegal(op.getResultTypes()) &&
+  target
+      .addDynamicallyLegalOp<mlir::linalg::GenericOp, mlir::tensor::GenerateOp>(
+          [&](mlir::Operation *op) {
+            return (
+                converter.isLegal(op->getOperandTypes()) &&
+                converter.isLegal(op->getResultTypes()) &&
                 converter.isLegal(op->getRegion(0).front().getArgumentTypes()));
-      });
+          });
 
   // Make sure that func has legal signature
   target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
@@ -77,6 +79,9 @@ void HLFHEToMidLFHEPass::runOnOperation() {
 
   populateWithGeneratedHLFHEToMidLFHE(patterns);
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
+                                            HLFHEToMidLFHETypeConverter>>(
+      &getContext(), converter);
+  patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
                                             HLFHEToMidLFHETypeConverter>>(
       &getContext(), converter);
   mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
