@@ -320,7 +320,7 @@ mlir::LogicalResult processInputBuffer(
     } else if (action == Action::DUMP_LLVM_IR ||
                action == Action::DUMP_OPTIMIZED_LLVM_IR) {
       retOrErr->llvmModule->print(os, nullptr);
-    } else {
+    } else if (action != Action::COMPILE) {
       retOrErr->mlirModuleRef->get().print(os);
     }
   }
