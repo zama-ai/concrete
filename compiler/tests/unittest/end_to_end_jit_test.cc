@@ -181,7 +181,7 @@ func @main(%t: tensor<10xi64>, %i: index) -> i64{
   return %c : i64
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
 
   static uint64_t t_arg[] = {0xFFFFFFFFFFFFFFFF,
                              0,
@@ -205,7 +205,7 @@ func @main(%t: tensor<10xi32>, %i: index) -> i32{
   return %c : i32
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
   static uint32_t t_arg[] = {0xFFFFFFFF, 0,      8978,  2587490, 90,
                              197864,     698735, 72132, 87474,   42};
 
@@ -222,7 +222,7 @@ func @main(%t: tensor<10xi32>, %i: index) -> i32{
   return %c : i32
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
   static std::vector<uint32_t> t_arg{0xFFFFFFFF, 0,      8978,  2587490, 90,
                                      197864,     698735, 72132, 87474,   42};
 
@@ -243,7 +243,7 @@ func @main(%t: tensor<10xi16>, %i: index) -> i16{
   return %c : i16
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
 
   uint16_t t_arg[] = {0xFFFF, 0,     59589, 47826, 16227,
                       63269,  36435, 52380, 7401,  13313};
@@ -259,7 +259,7 @@ func @main(%t: tensor<10xi8>, %i: index) -> i8{
   return %c : i8
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
 
   static uint8_t t_arg[] = {0xFF, 0, 120, 225, 14, 177, 131, 84, 174, 93};
 
@@ -274,7 +274,7 @@ func @main(%t: tensor<10xi5>, %i: index) -> i5{
   return %c : i5
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
 
   static uint8_t t_arg[] = {32, 0, 10, 25, 14, 25, 18, 28, 14, 7};
 
@@ -289,7 +289,7 @@ func @main(%t: tensor<10xi1>, %i: index) -> i1{
   return %c : i1
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
 
   static uint8_t t_arg[] = {0, 0, 1, 0, 1, 1, 0, 1, 1, 0};
 
@@ -440,7 +440,7 @@ func @main(%arg0: tensor<2x!HLFHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
   return %ret : !HLFHE.eint<7>
 }
 )XXX",
-                                                                "main", "true");
+                                                                "main", true);
 
   static uint8_t arg0[] = {2, 8};
   static uint8_t arg1[] = {6, 8};
