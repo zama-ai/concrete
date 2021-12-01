@@ -25,9 +25,11 @@
     --icons: #747474;
     --icons-hover: #000000;
 
+    --primary-color: #ffd208;
     --primary-color-darker: #cba706;
-    --links: #cba706;
-
+    --links: black;
+    --button-accept-color: #ffd208;
+    --button-decline-color: grey;
     --inline-code-color: #301900;
 
     --theme-popup-bg: #fafafa;

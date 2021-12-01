@@ -1,9 +1,9 @@
 # Introduction
 
-Welcome to the `concrete-boolean` guide !
+Welcome to the `concrete-boolean` guide!
 
 This library makes it possible to execute **boolean gates over encrypted bits**.
-It allows to execute a boolean circuit on an **untrusted server** because both circuit inputs and
+It allows one to execute a boolean circuit on an **untrusted server** because both circuit inputs and
 outputs are kept **private**.
 Data are indeed encrypted on the client side, before being sent to the server.
 On the server side every computation is performed on ciphertexts.
@@ -40,4 +40,4 @@ let output = client_key.decrypt(&ct_6);
 assert_eq!(output, true);
 ```
 
-As simple as that ! If you are hooked, jump to the next section !
+As simple as that! If you are hooked, jump to the next section!

@@ -57,7 +57,7 @@ use concrete_commons::dispersion::*;
 
 // You can create your own set of parameters, at your own risks
 let parameters = unsafe{
-    BooleanParameters::new_unsecure(
+    BooleanParameters::new_insecure(
         LweDimension(586),
         GlweDimension(2),
         PolynomialSize(512),
@@ -74,4 +74,3 @@ let parameters = unsafe{
 let client_key = ClientKey::new(&parameters);
 let server_key = ServerKey::new(&client_key);
 ```
-

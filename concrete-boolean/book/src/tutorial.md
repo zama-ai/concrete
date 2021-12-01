@@ -80,11 +80,11 @@ let key: ServerKey = bincode::deserialize(&encoded[..])
 
 ## Encrypting Inputs
 
-Once the server key is available on the **server side**, it is possible to perform some 
+Once the server key is available on the **server side**, it is possible to perform some
 homomorphic computations.
-The client simply needs to encrypt some data and to send it to the server.
+The client simply needs to encrypt some data and send it to the server.
 Again, the `Ciphertext` type implements the `Serialize` and
-the `Deserialize` traits, so that any serializer and communication tool suiting your use case 
+the `Deserialize` traits, so that any serializer and communication tool suiting your use case
 can be
 used:
 
@@ -112,7 +112,7 @@ let encoded_2: Vec<u8> = bincode::serialize(&ct_2).unwrap();
 
 ## Executing a Boolean Circuit
 
-Once the encrypted inputs are on the **server side**, we can use the `server_key` to 
+Once the encrypted inputs are on the **server side**, the `server_key` can be used to
 homomorphically execute the desired boolean circuit:
 ```rust
 # extern crate concrete_boolean;
@@ -152,7 +152,7 @@ let encoded_output:Vec<u8> = bincode::serialize(&ct_6)
 
 ## Decrypting the output
 
-Once the encrypted output is on the client side, we can use the `client_key` to
+Once the encrypted output is on the client side, the `client_key` can be used to
 decrypt it:
 
 ```rust

@@ -1,6 +1,6 @@
 [package]
 name = "concrete-core"
-version = "0.1.11"
+version = "1.0.0-alpha"
 edition = "2018"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "BSD-3-Clause-Clear"
@@ -35,12 +35,12 @@ crate-type = ["cdylib", "rlib"]
 bench = false
 
 [features]
+default = ["backend_core"]
+doc = []
+backend_core = []
 slow-csprng = ["concrete-csprng/slow"]
 multithread = ["rayon", "concrete-csprng/multithread"]
 
-[[bench]]
-name = "bench"
-harness = false
-
 [package.metadata.docs.rs]
+features = ["doc"]
 rustdoc-args = ["--html-in-header", "katex-header.html"]
