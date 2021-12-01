@@ -31,11 +31,14 @@ class FC(nn.Module):
 
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC)],
+    [pytest.param(FC, marks=pytest.mark.xfail())],  # [TEMPORARY] xfail #1042
 )
 @pytest.mark.parametrize(
     "input_output_feature",
-    [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
+    [
+        pytest.param(input_output_feature, marks=pytest.mark.xfail())  # [TEMPORARY] xfail #1042
+        for input_output_feature in INPUT_OUTPUT_FEATURE
+    ],
 )
 def test_quantized_module_compilation(
     input_output_feature, model, seed_torch, default_compilation_configuration
@@ -55,6 +58,7 @@ def test_quantized_module_compilation(
     torch_fc_model = model(input_output_feature)
     # Create random input
     numpy_input = numpy.random.uniform(-1, 1, size=input_shape)
+
     # Create corresponding numpy model
     numpy_fc_model = NumpyModule(torch_fc_model)
     # Quantize with post-training static method
