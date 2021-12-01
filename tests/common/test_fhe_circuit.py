@@ -14,7 +14,7 @@ def test_circuit_str(default_compilation_configuration):
 
     x = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
 
-    inputset = [(i,) for i in range(2 ** 3)]
+    inputset = range(2 ** 3)
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
     assert str(circuit) == format_operation_graph(circuit.op_graph)
@@ -28,7 +28,7 @@ def test_circuit_draw(default_compilation_configuration):
 
     x = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
 
-    inputset = [(i,) for i in range(2 ** 3)]
+    inputset = range(2 ** 3)
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
     assert filecmp.cmp(circuit.draw(), draw_graph(circuit.op_graph))
@@ -43,8 +43,8 @@ def test_circuit_run(default_compilation_configuration):
 
     x = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
 
-    inputset = [(i,) for i in range(2 ** 3)]
+    inputset = range(2 ** 3)
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
     for x in inputset:
-        assert circuit.run(*x) == circuit.engine.run(*x)
+        assert circuit.run(x) == circuit.engine.run(x)

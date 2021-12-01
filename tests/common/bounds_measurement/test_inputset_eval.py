@@ -504,3 +504,30 @@ def test_inpuset_eval_1_input(default_compilation_configuration):
     output_node = op_graph.output_nodes[0]
 
     assert output_node.outputs[0] == EncryptedScalar(UnsignedInteger(6))
+
+
+# TODO: https://github.com/zama-ai/concretefhe-internal/issues/772
+# Remove once this issue is done
+def test_inpuset_eval_1_input_refuse_tuple(default_compilation_configuration):
+    """Test case for a function with a single parameter and passing the inputset with tuples."""
+
+    def f(x):
+        return x + 42
+
+    x = EncryptedScalar(UnsignedInteger(4))
+
+    inputset = [(i,) for i in range(10)]
+
+    op_graph = trace_numpy_function(f, {"x": x})
+
+    with pytest.raises(AssertionError) as excinfo:
+        eval_op_graph_bounds_on_inputset(
+            op_graph,
+            inputset,
+            compilation_configuration=default_compilation_configuration,
+            min_func=numpy_min_func,
+            max_func=numpy_max_func,
+            get_base_value_for_constant_data_func=get_base_value_for_numpy_or_python_constant_data,
+        )
+
+    assert str(excinfo.value) == "Tuples are unsupported for single input inputset evaluation"

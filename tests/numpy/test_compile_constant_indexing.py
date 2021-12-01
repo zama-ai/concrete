@@ -340,12 +340,10 @@ def test_constant_indexing(
     """Test compile_numpy_function_into_op_graph with constant indexing"""
 
     inputset = [
-        (
-            np.random.randint(
-                input_value.dtype.min_value(),
-                input_value.dtype.max_value() + 1,
-                size=input_value.shape,
-            ),
+        np.random.randint(
+            input_value.dtype.min_value(),
+            input_value.dtype.max_value() + 1,
+            size=input_value.shape,
         )
         for _ in range(10)
     ]
@@ -518,12 +516,10 @@ def test_constant_indexing_with_numpy_integers(
     """Test compile_numpy_function_into_op_graph with constant indexing with numpy integers"""
 
     inputset = [
-        (
-            np.random.randint(
-                input_value.dtype.min_value(),
-                input_value.dtype.max_value() + 1,
-                size=input_value.shape,
-            ),
+        np.random.randint(
+            input_value.dtype.min_value(),
+            input_value.dtype.max_value() + 1,
+            size=input_value.shape,
         )
         for _ in range(10)
     ]
@@ -608,7 +604,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(3,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(3,)) for _ in range(10)],
             ([4, 2, 6],),
             4,
         ),
@@ -617,7 +613,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(3,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(3,)) for _ in range(10)],
             ([4, 2, 6],),
             6,
         ),
@@ -626,7 +622,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(4,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(4,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(4,)) for _ in range(10)],
             ([4, 2, 6, 1],),
             [4, 2, 6],
         ),
@@ -635,7 +631,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(4,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(4,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(4,)) for _ in range(10)],
             ([4, 2, 6, 1],),
             [6, 1],
         ),
@@ -644,7 +640,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(4,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(4,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(4,)) for _ in range(10)],
             ([4, 2, 6, 1],),
             [2, 6],
         ),
@@ -653,7 +649,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(4,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(4,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(4,)) for _ in range(10)],
             ([4, 2, 6, 1],),
             [4, 6],
         ),
@@ -662,7 +658,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(4,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(4,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(4,)) for _ in range(10)],
             ([4, 2, 6, 1],),
             [1, 6, 2, 4],
         ),
@@ -671,7 +667,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(6), shape=(3, 2)),
             },
-            [(np.random.randint(0, 2 ** 6, size=(3, 2)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 6, size=(3, 2)) for _ in range(10)],
             ([[11, 12], [21, 22], [31, 32]],),
             21,
         ),
@@ -680,7 +676,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(6), shape=(3, 2)),
             },
-            [(np.random.randint(0, 2 ** 6, size=(3, 2)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 6, size=(3, 2)) for _ in range(10)],
             ([[11, 12], [21, 22], [31, 32]],),
             [[11, 12], [21, 22], [31, 32]],
         ),
@@ -689,7 +685,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(6), shape=(3, 2)),
             },
-            [(np.random.randint(0, 2 ** 6, size=(3, 2)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 6, size=(3, 2)) for _ in range(10)],
             ([[11, 12], [21, 22], [31, 32]],),
             [11, 12],
             marks=pytest.mark.xfail(strict=True),
@@ -699,7 +695,7 @@ def test_invalid_constant_indexing_with_numpy_values(
             {
                 "x": EncryptedTensor(UnsignedInteger(6), shape=(3, 2)),
             },
-            [(np.random.randint(0, 2 ** 6, size=(3, 2)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 6, size=(3, 2)) for _ in range(10)],
             ([[11, 12], [21, 22], [31, 32]],),
             [11, 21, 31],
             marks=pytest.mark.xfail(strict=True),
@@ -752,7 +748,7 @@ Expected Output
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3,)),
             },
-            [(np.random.randint(0, 2 ** 3, size=(3,)),) for _ in range(10)],
+            [np.random.randint(0, 2 ** 3, size=(3,)) for _ in range(10)],
             (
                 "Indexing of EncryptedTensor<uint3, shape=(3,)> with [0:1] "
                 "cannot be converted to MLIR yet"

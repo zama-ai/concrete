@@ -45,7 +45,7 @@ def test_generate_deduplicated_tables(
     op_graph = hnp.compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         {"x": hnp.EncryptedTensor(hnp.Integer(7, False), RESNET_BIGGEST_SHAPE)},
-        ((i * numpy.ones(RESNET_BIGGEST_SHAPE, dtype=numpy.int32),) for i in range(128)),
+        (i * numpy.ones(RESNET_BIGGEST_SHAPE, dtype=numpy.int32) for i in range(128)),
         default_compilation_configuration,
     )
 
@@ -72,7 +72,7 @@ def test_deduplicated_tables_correctness(default_compilation_configuration):
     op_graph = hnp.compile_numpy_function_into_op_graph_and_measure_bounds(
         lambda x: multi_tlu_func(x, numpy.arange(4, dtype=numpy.float64).reshape(tensor_shape)),
         {"x": hnp.EncryptedTensor(hnp.Integer(2, False), tensor_shape)},
-        ((i * numpy.ones(tensor_shape, dtype=numpy.int32),) for i in range(4)),
+        (i * numpy.ones(tensor_shape, dtype=numpy.int32) for i in range(4)),
         default_compilation_configuration,
     )
 

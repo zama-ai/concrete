@@ -1,7 +1,7 @@
 """Helpers for numpy inputset related functionality."""
 
 import random
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple, Union
 
 import numpy
 
@@ -72,7 +72,7 @@ def _generate_random_float_tensor(dtype: Float, shape: Tuple[int, ...]) -> numpy
 def _generate_random_inputset(
     function_parameters: Dict[str, BaseValue],
     compilation_configuration: CompilationConfiguration,
-) -> Iterable[Tuple[Any, ...]]:
+) -> Union[Iterable[Any], Iterable[Tuple[Any, ...]]]:
     """Generate a random inputset from function parameters.
 
     Using this function is not a good practice since the randomly generated inputset
@@ -89,7 +89,7 @@ def _generate_random_inputset(
         ValueError: if the provided function arguments cannot be used for random inputset generation
 
     Returns:
-        None
+        Union[Iterable[Any], Iterable[Tuple[Any, ...]]]: the inputset
     """
 
     inputset = []
@@ -116,7 +116,7 @@ def _generate_random_inputset(
                     f"Random inputset cannot be generated "
                     f"for parameters of type {parameter.dtype}"
                 )
-        inputset.append(tuple(sample))
+        inputset.append(tuple(sample) if len(sample) > 1 else sample[0])
     return inputset
 
 

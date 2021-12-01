@@ -93,22 +93,23 @@ def sanitize_compilation_configuration_and_artifacts(
 
 def get_inputset_to_use(
     function_parameters: Dict[str, BaseValue],
-    inputset: Union[Iterable[Tuple[Any, ...]], str],
+    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]], str],
     compilation_configuration: CompilationConfiguration,
-) -> Iterable[Tuple[Any, ...]]:
+) -> Union[Iterable[Any], Iterable[Tuple[Any, ...]]]:
     """Get the proper inputset to use for compilation.
 
     Args:
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph is
-            evaluated. It needs to be an iterable on tuples which are of the same length than the
-            number of parameters in the function, and in the same order than these same parameters
+        inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]], str]): The inputset over which
+            op_graph is evaluated. It needs to be an iterable on tuples which are of the same length
+            than the number of parameters in the function, and in the same order than these same
+            parameters
         compilation_configuration (CompilationConfiguration): Configuration object to use during
             compilation
 
     Returns:
-        Iterable[Tuple[Any, ...]]: the inputset to use.
+        Union[Iterable[Any], Iterable[Tuple[Any, ...]]]: the inputset to use.
     """
     # Generate random inputset if it is requested and available
     if isinstance(inputset, str):
@@ -265,7 +266,7 @@ def compile_numpy_function_into_op_graph(
 def _measure_op_graph_bounds_and_update_internal(
     op_graph: OPGraph,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterable[Tuple[Any, ...]],
+    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]],
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
     prev_node_bounds_and_samples: Optional[Dict[IntermediateNode, Dict[str, Any]]] = None,
@@ -277,9 +278,9 @@ def _measure_op_graph_bounds_and_update_internal(
         op_graph (OPGraph): the OPGraph for which to measure bounds and update node values.
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterable on tuples which are of the same length than the number of
-            parameters in the function, and in the same order than these same parameters
+        inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]]]): The inputset over which op_graph
+            is evaluated. It needs to be an iterable on tuples which are of the same length than the
+            number of parameters in the function, and in the same order than these same parameters
         compilation_configuration (CompilationConfiguration): Configuration object to use
             during compilation
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill
@@ -355,7 +356,7 @@ def _measure_op_graph_bounds_and_update_internal(
 def measure_op_graph_bounds_and_update(
     op_graph: OPGraph,
     function_parameters: Dict[str, BaseValue],
-    inputset: Union[Iterable[Tuple[Any, ...]], str],
+    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]], str],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     prev_node_bounds_and_samples: Optional[Dict[IntermediateNode, Dict[str, Any]]] = None,
@@ -367,9 +368,10 @@ def measure_op_graph_bounds_and_update(
         op_graph (OPGraph): the OPGraph for which to measure bounds and update node values.
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph is
-            evaluated. It needs to be an iterable on tuples which are of the same length than the
-            number of parameters in the function, and in the same order than these same parameters
+        inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]], str]): The inputset over which
+            op_graph is evaluated. It needs to be an iterable on tuples which are of the same length
+            than the number of parameters in the function, and in the same order than these same
+            parameters
         compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
             during compilation
         compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill
@@ -421,7 +423,7 @@ def measure_op_graph_bounds_and_update(
 def _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterable[Tuple[Any, ...]],
+    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]],
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
 ) -> OPGraph:
@@ -431,9 +433,9 @@ def _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterable on tuples which are of the same length than the number of
-            parameters in the function, and in the same order than these same parameters
+        inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]]]): The inputset over which op_graph
+            is evaluated. It needs to be an iterable on tuples which are of the same length than the
+            number of parameters in the function, and in the same order than these same parameters
         compilation_configuration (CompilationConfiguration): Configuration object to use
             during compilation
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill
@@ -467,7 +469,7 @@ def _compile_numpy_function_into_op_graph_and_measure_bounds_internal(
 def compile_numpy_function_into_op_graph_and_measure_bounds(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Union[Iterable[Tuple[Any, ...]], str],
+    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]], str],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
 ) -> OPGraph:
@@ -477,9 +479,9 @@ def compile_numpy_function_into_op_graph_and_measure_bounds(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph
-            is evaluated. It needs to be an iterable on tuples which are of the same length than
-            the number of parameters in the function, and in the same order than these same
+        inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]], str]): The inputset over which
+            op_graph is evaluated. It needs to be an iterable on tuples which are of the same length
+            than the number of parameters in the function, and in the same order than these same
             parameters. Alternatively, it can be "random" but that's an unstable feature and should
             not be used in production.
         compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use
@@ -683,7 +685,7 @@ def compile_op_graph_to_fhe_circuit(
 def _compile_numpy_function_internal(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Iterable[Tuple[Any, ...]],
+    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]],
     compilation_configuration: CompilationConfiguration,
     compilation_artifacts: CompilationArtifacts,
     show_mlir: bool,
@@ -694,9 +696,9 @@ def _compile_numpy_function_internal(
         function_to_compile (Callable): The function you want to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Iterable[Tuple[Any, ...]]): The inputset over which op_graph is evaluated. It
-            needs to be an iterable on tuples which are of the same length than the number of
-            parameters in the function, and in the same order than these same parameters
+        inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]]]): The inputset over which op_graph
+            is evaluated. It needs to be an iterable on tuples which are of the same length than the
+            number of parameters in the function, and in the same order than these same parameters
         compilation_configuration (CompilationConfiguration): Configuration object to use
             during compilation
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill
@@ -727,7 +729,7 @@ def _compile_numpy_function_internal(
 def compile_numpy_function(
     function_to_compile: Callable,
     function_parameters: Dict[str, BaseValue],
-    inputset: Union[Iterable[Tuple[Any, ...]], str],
+    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]], str],
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
@@ -738,9 +740,9 @@ def compile_numpy_function(
         function_to_compile (Callable): The function to compile
         function_parameters (Dict[str, BaseValue]): A dictionary indicating what each input of the
             function is e.g. an EncryptedScalar holding a 7bits unsigned Integer
-        inputset (Union[Iterable[Tuple[Any, ...]], str]): The inputset over which op_graph
-            is evaluated. It needs to be an iterable on tuples which are of the same length than
-            the number of parameters in the function, and in the same order than these same
+        inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]], str]): The inputset over which
+            op_graph is evaluated. It needs to be an iterable on tuples which are of the same length
+            than the number of parameters in the function, and in the same order than these same
             parameters. Alternatively, it can be "random" but that's an unstable feature and should
             not be used in production.
         compilation_configuration (Optional[CompilationConfiguration]): Configuration object to use

@@ -117,10 +117,7 @@ class QuantizedModule:
                     UnsignedInteger(self.q_input.n_bits), shape=(1, *self.q_input.qvalues.shape[1:])
                 )
             },
-            [
-                (numpy.expand_dims(arr, 0),)
-                for arr in self.q_input.qvalues  # Super weird formatting
-            ],
+            [numpy.expand_dims(arr, 0) for arr in self.q_input.qvalues],  # Super weird formatting
             compilation_configuration=compilation_configuration,
             compilation_artifacts=compilation_artifacts,
         )

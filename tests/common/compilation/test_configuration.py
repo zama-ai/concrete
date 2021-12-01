@@ -49,7 +49,7 @@ def test_enable_topological_optimizations(
             param: EncryptedScalar(Integer(32, is_signed=False))
             for param in signature(function_to_trace).parameters.keys()
         },
-        [(numpy.array(i),) for i in range(10)],
+        [numpy.array(i) for i in range(10)],
         default_compilation_configuration,
     )
     op_graph_not_optimized = compile_numpy_function_into_op_graph_and_measure_bounds(
@@ -58,7 +58,7 @@ def test_enable_topological_optimizations(
             param: EncryptedScalar(Integer(32, is_signed=False))
             for param in signature(function_to_trace).parameters.keys()
         },
-        [(numpy.array(i),) for i in range(10)],
+        [numpy.array(i) for i in range(10)],
         CompilationConfiguration(
             dump_artifacts_on_unexpected_failures=False,
             enable_topological_optimizations=False,

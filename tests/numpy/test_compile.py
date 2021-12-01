@@ -24,7 +24,7 @@ from concrete.numpy.compile import (
 def data_gen(args):
     """Helper to create an inputset"""
     for prod in itertools.product(*args):
-        yield prod
+        yield prod if len(prod) > 1 else prod[0]
 
 
 def numpy_array_data_gen(args, tensor_shapes):
@@ -720,7 +720,7 @@ def test_compile_function_multiple_outputs(
 
     def data_gen_local(args):
         for prod in itertools.product(*args):
-            yield tuple(numpy.array(val) for val in prod)
+            yield tuple(numpy.array(val) for val in prod) if len(prod) > 1 else numpy.array(prod[0])
 
     function_parameters = {
         arg_name: EncryptedScalar(Integer(64, True)) for arg_name in list_of_arg_names
@@ -839,7 +839,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -854,7 +854,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -919,7 +919,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -934,7 +934,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -949,7 +949,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -964,7 +964,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [4, 7],
@@ -979,7 +979,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(2), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 2, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 2, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 1],
@@ -994,7 +994,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3,)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3,)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3,)) for _ in range(10)],
             ([2, 7, 1],),
             False,
         ),
@@ -1003,7 +1003,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3,)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3,)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3,)) for _ in range(10)],
             ([2, 7, 1],),
             False,
         ),
@@ -1012,7 +1012,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -1027,7 +1027,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -1042,7 +1042,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -1057,7 +1057,7 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
             },
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for _ in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for _ in range(10)],
             (
                 [
                     [0, 7],
@@ -1195,27 +1195,27 @@ def test_compile_and_run_dot_correctness_with_signed_cst(
     for i in range(2):
 
         inputset = [
-            (numpy.zeros(shape, dtype=numpy.uint32),),
-            (numpy.ones(shape, dtype=numpy.uint32) * low_x,),
-            (numpy.ones(shape, dtype=numpy.uint32) * high_x,),
+            numpy.zeros(shape, dtype=numpy.uint32),
+            numpy.ones(shape, dtype=numpy.uint32) * low_x,
+            numpy.ones(shape, dtype=numpy.uint32) * high_x,
         ]
 
         for _ in range(128):
-            inputset.append((numpy.random.randint(low_x, high_x + 1),))
+            inputset.append(numpy.random.randint(low_x, high_x + 1))
 
         if i == 0:
 
             def function(x):
                 return numpy.dot(x, constant1)
 
-            inputset.extend([(worst_x_1_1,), (worst_x_1_2,)])
+            inputset.extend([worst_x_1_1, worst_x_1_2])
 
         else:
 
             def function(x):
                 return numpy.dot(constant2, x)
 
-            inputset.extend([(worst_x_2_1,), (worst_x_2_2,)])
+            inputset.extend([worst_x_2_1, worst_x_2_2])
 
         compiler_engine = compile_numpy_function(
             function, function_parameters, inputset, default_compilation_configuration
@@ -1258,11 +1258,11 @@ def test_compile_and_run_constant_dot_correctness(
     shape = (size,)
 
     inputset = [
-        (numpy.zeros(shape, dtype=numpy.uint32),),
-        (numpy.ones(shape, dtype=numpy.uint32) * high,),
+        numpy.zeros(shape, dtype=numpy.uint32),
+        numpy.ones(shape, dtype=numpy.uint32) * high,
     ]
     for _ in range(8):
-        inputset.append((numpy.random.randint(low, high + 1),))
+        inputset.append(numpy.random.randint(low, high + 1))
 
     constant = numpy.random.randint(low, high + 1, size=shape)
 
@@ -1323,11 +1323,11 @@ def test_compile_and_run_matmul_correctness(
     low, high = input_range
 
     inputset = [
-        (numpy.zeros(lhs_shape, dtype=numpy.uint32),),
-        (numpy.ones(lhs_shape, dtype=numpy.uint32) * high,),
+        numpy.zeros(lhs_shape, dtype=numpy.uint32),
+        numpy.ones(lhs_shape, dtype=numpy.uint32) * high,
     ]
     for _ in range(8):
-        inputset.append((numpy.random.randint(low, high + 1, size=lhs_shape),))
+        inputset.append(numpy.random.randint(low, high + 1, size=lhs_shape))
 
     constant = numpy.random.randint(low, high + 1, size=rhs_shape)
 
@@ -1468,7 +1468,7 @@ def test_compile_and_run_multi_lut_correctness(default_compilation_configuration
         {
             "x": EncryptedTensor(UnsignedInteger(2), shape=(3, 2)),
         },
-        [(numpy.random.randint(0, 2 ** 2, size=(3, 2)),) for _ in range(10)],
+        [numpy.random.randint(0, 2 ** 2, size=(3, 2)) for _ in range(10)],
         default_compilation_configuration,
     )
 
@@ -1489,7 +1489,7 @@ def test_compile_function_with_direct_tlu(default_compilation_configuration):
     op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         {"x": EncryptedScalar(Integer(2, is_signed=False))},
-        [(0,), (1,), (2,), (3,)],
+        range(4),
         default_compilation_configuration,
     )
 
@@ -1509,7 +1509,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
         compile_numpy_function_into_op_graph_and_measure_bounds(
             function,
             {"x": EncryptedScalar(Integer(3, is_signed=False))},
-            [(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,)],
+            range(8),
             default_compilation_configuration,
         )
 
@@ -1523,18 +1523,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
             {
                 "x": EncryptedTensor(Integer(2, is_signed=False), shape=(1,)),
             },
-            [
-                (numpy.array([1]),),
-                (numpy.array([1]),),
-                (numpy.array([0]),),
-                (numpy.array([0]),),
-                (numpy.array([1]),),
-                (numpy.array([1]),),
-                (numpy.array([0]),),
-                (numpy.array([0]),),
-                (numpy.array([2]),),
-                (numpy.array([2]),),
-            ],
+            [numpy.array([i]) for i in [1, 1, 0, 0, 1, 1, 0, 0, 2, 2]],
             (
                 """
 
@@ -1584,7 +1573,7 @@ return %9
         pytest.param(
             lambda x: x @ -numpy.ones(shape=(2, 3), dtype=numpy.int32),
             {"x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2))},
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
             (
                 """
 
@@ -1602,7 +1591,7 @@ return %2
         pytest.param(
             lambda x: numpy.transpose(x),
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
             (
                 """
 
@@ -1619,7 +1608,7 @@ return %1
         pytest.param(
             lambda x: numpy.ravel(x),
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
             (
                 """
 
@@ -1636,7 +1625,7 @@ return %1
         pytest.param(
             lambda x: numpy.reshape(x, (2, 6)),
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 4))},
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 4)),) for i in range(10)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 4)) for i in range(10)],
             (
                 """
 
@@ -1673,7 +1662,7 @@ def test_fail_compile(function, parameters, inputset, match, default_compilation
         pytest.param(
             lambda x: (x * 1.5)[0, 1],
             {"x": EncryptedTensor(SignedInteger(3), shape=(2, 2))},
-            [(numpy.random.randint(-4, 3, size=(2, 2)),) for i in range(10)],
+            [numpy.random.randint(-4, 3, size=(2, 2)) for i in range(10)],
             (
                 """
 
@@ -1718,7 +1707,7 @@ def test_small_inputset_no_fail():
     compile_numpy_function_into_op_graph_and_measure_bounds(
         lambda x: x + 42,
         {"x": EncryptedScalar(Integer(5, is_signed=False))},
-        [(0,), (3,)],
+        [0, 3],
         CompilationConfiguration(dump_artifacts_on_unexpected_failures=False),
     )
 
@@ -1729,7 +1718,7 @@ def test_small_inputset_treat_warnings_as_errors():
         compile_numpy_function_into_op_graph_and_measure_bounds(
             lambda x: x + 42,
             {"x": EncryptedScalar(Integer(5, is_signed=False))},
-            [(0,), (3,)],
+            [0, 3],
             CompilationConfiguration(
                 dump_artifacts_on_unexpected_failures=False,
                 treat_warnings_as_errors=True,

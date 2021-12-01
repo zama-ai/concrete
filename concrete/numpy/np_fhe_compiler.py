@@ -107,7 +107,7 @@ class NPFHECompiler:
         Returns:
             Any: the result of the OPGraph evaluation.
         """
-        self._current_inputset.append(deepcopy(args))
+        self._current_inputset.append(deepcopy(args) if len(args) > 1 else deepcopy(args[0]))
 
         inferred_args = {
             param_name: get_base_value_for_numpy_or_python_constant_data(val)(
@@ -127,12 +127,12 @@ class NPFHECompiler:
         assert self._op_graph is not None
         return self._op_graph(*args)
 
-    def eval_on_inputset(self, inputset: Iterable[Union[Any, Tuple]]) -> None:
+    def eval_on_inputset(self, inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]]) -> None:
         """Evaluate the underlying function on an inputset in one go, populates OPGraph and bounds.
 
         Args:
-            inputset (Iterable[Union[Any, Tuple]]): The inputset on which the function should be
-                evaluated.
+            inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]]]): The inputset on which the
+                function should be evaluated.
         """
         inputset_as_list = list(inputset)
         if len(inputset_as_list) == 0:
@@ -143,7 +143,10 @@ class NPFHECompiler:
                 is_encrypted=is_encrypted
             )
             for (param_name, is_encrypted), val in zip(
-                self._function_parameters_encrypted_status.items(), self._current_inputset[0]
+                self._function_parameters_encrypted_status.items(),
+                inputset_as_list[0]
+                if len(self._function_parameters_encrypted_status) > 1
+                else (inputset_as_list[0],),
             )
         }
 

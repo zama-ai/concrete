@@ -68,8 +68,8 @@ from concrete.numpy import compile_numpy_function
         pytest.param(
             lambda x: numpy.ones(shape=(2, 3), dtype=numpy.uint32) @ x,
             {"x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2))},
-            [(numpy.random.randint(0, 2 ** 3, size=(3, 2)),) for i in range(10)]
-            + [(numpy.array([[7, 7], [7, 7], [7, 7]]),)],
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)]
+            + [numpy.array([[7, 7], [7, 7], [7, 7]])],
             NotImplementedError,
             "Matrix multiplication "
             "between "

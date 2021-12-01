@@ -18,7 +18,7 @@ def test_draw_graph_with_saving(default_compilation_configuration):
     op_graph = compile_numpy_function_into_op_graph_and_measure_bounds(
         function,
         {"x": EncryptedScalar(Integer(7, True))},
-        [(i,) for i in range(-5, 5)],
+        range(-5, 5),
         default_compilation_configuration,
     )
 

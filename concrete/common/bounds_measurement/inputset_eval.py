@@ -161,7 +161,13 @@ def eval_op_graph_bounds_on_inputset(
     def generate_input_values_dict(input_data) -> Dict[int, Any]:
         if num_input_nodes > 1:
             return dict(enumerate(input_data))
-        return dict(enumerate(input_data)) if isinstance(input_data, tuple) else {0: input_data}
+        # TODO: https://github.com/zama-ai/concretefhe-internal/issues/772
+        # update this to support tuple in case of 1-input functions accepting tuples
+        assert_true(
+            not isinstance(input_data, tuple),
+            "Tuples are unsupported for single input inputset evaluation",
+        )
+        return {0: input_data}
 
     # TODO: do we want to check coherence between the input data type and the corresponding Input ir
     # node expected data type ? Not considering bit_width as they may not make sense at this stage
