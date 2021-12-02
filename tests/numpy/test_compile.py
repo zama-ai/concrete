@@ -1008,6 +1008,15 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             False,
         ),
         pytest.param(
+            lambda x: x + x.shape[0],
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(3,)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(3,)) for _ in range(10)],
+            ([2, 1, 3],),
+            False,
+        ),
+        pytest.param(
             lambda x: numpy.clip(x, 1, 5),
             {
                 "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),

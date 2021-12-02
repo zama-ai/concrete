@@ -44,6 +44,25 @@ class BaseTracer(ABC):
         self.output_idx = output_idx
         self.output = traced_computation.outputs[output_idx]
 
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        """Get the shape of the output of the tracer.
+
+        Returns:
+            Tuple[int, ...]: the shape of the output
+        """
+
+        if isinstance(self.output, TensorValue):
+            return self.output.shape
+
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object "
+            f"with '{self.output}' output "
+            f"has no attribute 'shape'"
+        )  # pragma: no cover
+
+        # this error cannot be covered because we only have TensorValue for now
+
     @abstractmethod
     def _supports_other_operand(self, other: Any) -> bool:
         """Check if the current class supports tracing with the other operand.
