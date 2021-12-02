@@ -98,7 +98,7 @@ artifacts = hnp.CompilationArtifacts(pathlib.Path("/tmp/custom/export/path"))
 hnp.compile_numpy_function(
     lambda x: 100 - (3 * (x + 2)),
     {"x": hnp.EncryptedScalar(hnp.UnsignedInteger(3))},
-    inputset=[(i,) for i in range(2 ** 3)],
+    inputset=range(2 ** 3),
     compilation_artifacts=artifacts,
 )
 artifacts.export()

@@ -34,7 +34,7 @@ We also need an inputset. It is to determine the bit-widths of the intermediate 
 
 <!--python-test:cont-->
 ```python
-inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]
+inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
 ```
 
 Finally, we can compile our function to its homomorphic equivalent.
