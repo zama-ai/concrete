@@ -268,12 +268,12 @@ set_version:
 		echo "VERSION env variable is empty. Please set to desired version.";	\
 		exit 1;																	\
 	fi && \
-	STASH_COUNT="$(git stash list | wc -l)" && \
+	STASH_COUNT="$$(git stash list | wc -l)" && \
 	git stash && \
 	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}" && \
 	git add -u && \
 	git commit -m "chore: bump version to $${VERSION}" && \
-	NEW_STASH_COUNT="$(git stash list | wc -l)" && \
+	NEW_STASH_COUNT="$$(git stash list | wc -l)" && \
 	if [[ "$$NEW_STASH_COUNT" != "$$STASH_COUNT" ]]; then \
 		git stash pop; \
 	fi
@@ -330,6 +330,14 @@ licences:
 .PHONY: licences
 
 check_licences:
-	@./script/make_utils/licences.sh --check
+	@TMP_OUT="$$(mktemp)" && \
+	if ! ./script/make_utils/licences.sh --check > "$${TMP_OUT}"; then \
+		cat "$${TMP_OUT}"; \
+		rm -f "$${TMP_OUT}"; \
+		echo "Error while checking licences, see log above."; \
+		echo "Consider re-running 'make licences'"; \
+	else \
+		echo "Licences check OK"; \
+	fi
 .PHONY: check_licences
 
