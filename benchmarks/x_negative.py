@@ -13,7 +13,7 @@ def main():
 
     x = hnp.EncryptedTensor(hnp.UnsignedInteger(3), shape=(10, 6))
 
-    inputset = [(np.random.randint(0, 2 ** 3, size=(10, 6)),) for _ in range(128)]
+    inputset = [np.random.randint(0, 2 ** 3, size=(10, 6)) for _ in range(128)]
 
     inputs = []
     labels = []

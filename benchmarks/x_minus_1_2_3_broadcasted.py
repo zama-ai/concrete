@@ -12,9 +12,7 @@ def main():
 
     x = hnp.EncryptedTensor(hnp.UnsignedInteger(3), shape=(2, 3))
 
-    inputset = [
-        (np.random.randint(0, 2 ** 2, size=(2, 3)) + np.array([1, 2, 3]),) for _ in range(32)
-    ]
+    inputset = [np.random.randint(0, 2 ** 2, size=(2, 3)) + np.array([1, 2, 3]) for _ in range(32)]
 
     # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(

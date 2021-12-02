@@ -14,7 +14,7 @@ def main():
 
     x = hnp.EncryptedTensor(hnp.UnsignedInteger(2), shape=(2, 3))
 
-    inputset = [(np.random.randint(0, 2 ** 2, size=(2, 3)),) for _ in range(128)]
+    inputset = [np.random.randint(0, 2 ** 2, size=(2, 3)) for _ in range(128)]
 
     inputs = []
     labels = []

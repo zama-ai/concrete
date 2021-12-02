@@ -240,9 +240,7 @@ def main():
     def function_to_compile(x_0, x_1):
         return table[((x_0 + zp_x) * w_0) + ((x_1 + zp_x) * w_1)]
 
-    inputset = []
-    for x_i in x_q:
-        inputset.append((int(x_i[0]), int(x_i[1])))
+    inputset = [(int(x_i[0]), int(x_i[1])) for x_i in x_q]
 
     # bench: Measure: Compilation Time (ms)
     engine = hnp.compile_numpy_function(
