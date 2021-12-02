@@ -1,6 +1,10 @@
 
 # Contributing
 
+```{warning}
+FIXME(alex): to see if something here needs some update
+```
+
 ```{important}
 There are two ways to contribute to **concretefhe**:
 - you can open issues to report bugs, typos and suggest ideas
@@ -51,6 +55,10 @@ The last requirement is to make sure you get a hundred percent code coverage. Yo
 make coverage
 ```
 
+```{warning}
+FIXME(arthur): is this still valid? (that `make pytest` will not return an error)
+```
+
 Remark that only calling `make pytest` will give you information about the coverage, at the end of the execution, but the test will not return a failure if the coverage is not a hundred percent, as opposed to a call to `make coverage`.
 
 Note that this will compare the coverage with `origin/main`. If you want to set a custom base branch, you can specify `BB` environment variable like so `BB=$YOUR_BASE_BRANCH make coverage`.
@@ -73,7 +81,7 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 ```
 
-To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
+To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Remark that commit messages are checked in the comformance step, and rejected if they don't follow the rules.
 
 ## Before creating pull request
 

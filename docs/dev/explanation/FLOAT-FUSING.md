@@ -1,3 +1,7 @@
+```{warning}
+FIXME(Arthur): explain recent updates on the fusing
+```
+
 # Fusing Floating Point Operations
 
 ## Why is it needed?

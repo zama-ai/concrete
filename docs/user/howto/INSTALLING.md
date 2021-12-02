@@ -3,7 +3,11 @@
 ## Docker image
 
 ```{note}
-Currently the project is only available as a docker image. To get the image you need to login to ghcr.io with docker.
+The easiest way to install the framework is as a docker image. To get the image you need to login to ghcr.io with docker.
+```
+
+```{warning}
+FIXME(Arthur): to check this is still valid
 ```
 
 ```shell
@@ -37,3 +41,11 @@ Alternatively you can just open a shell in the docker:
 ```shell
 docker run --rm -it ghcr.io/zama-ai/concretefhe:v0.1.0 /bin/bash
 ```
+
+## python package
+
+```{warning}
+FIXME(Arthur): explain how to install from pypi, when it is ready
+```
+
+

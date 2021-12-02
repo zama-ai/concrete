@@ -1,3 +1,7 @@
+```{warning}
+FIXME(Benoit): to check this is still valid
+```
+
 # Terminology and Structure
 
 ## Terminology

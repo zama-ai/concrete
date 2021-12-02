@@ -1,3 +1,7 @@
+```{warning}
+FIXME(all): should we update to the new API or have it for both?
+```
+
 # Printing and Drawing
 
 Sometimes, it can be useful to print or draw fhe circuits, we provide methods to just do that. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile your function into an fhe circuit.

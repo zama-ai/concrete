@@ -1,3 +1,9 @@
+
+```{warning}
+FIXME(umut): update with the new API
+```
+
+
 # Compilation Pipeline In Depth
 
 ## What is **concretefhe**?
@@ -53,6 +59,10 @@ How this is done will be explained in detail in its own chapter.
 Once the MLIR is prepared, the rest of the stack, which you can learn more about [here](http://fixme.com/), takes over and completes the compilation process.
 
 Here is the visual representation of the pipeline:
+
+```{warning}
+FIXME(arthur): check the graph, update with what is missing, notably: torch to numpy, quantization. Maybe an independant graph for quantization may be clearer.
+```
 
 ![Frontend Flow](../../_static/compilation-pipeline/frontend_flow.svg)
 

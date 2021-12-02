@@ -1,3 +1,7 @@
+```{warning}
+FIXME(arthur): to update with the new workflow
+```
+
 # Creating A Release On GitHub
 
 ## Release Candidate cycle

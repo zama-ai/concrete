@@ -19,3 +19,4 @@ Developer Guide
    explanation/TERMINOLOGY_AND_STRUCTURE.md
    explanation/FLOAT-FUSING.md
    explanation/MLIR.md
+   explanation/QUANTIZATION.md

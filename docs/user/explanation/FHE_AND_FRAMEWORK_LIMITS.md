@@ -20,11 +20,11 @@ For most FHE scheme but TFHE, the application of a non-linear function is compli
 
 Since this is an early version of the product, not everything is done, to say the least. What we wanted to tackle first was the cryptographic complexities. This is why we concentrated on the cryptographic part, and let some engineering problems for later.
 
-### Limited to scalars
-
-Today, the **Concrete Framework** is mostly limited to scalars. Notably, in our numpy frontend, we can not use [tensors](https://numpy.org/doc/stable/user/theory.broadcasting.html?highlight=vector). As explained in [this section](FUTURE_FEATURES.md), this limit will be removed in the next version.
-
 ### Currently executing locally
+
+```{warning}
+FIXME(Benoit): we'll see later if this is still a valid limit
+```
 
 As of today, the execution of the FHE program is done locally. Notably, in the current version, there is no client (on which we encrypt the private data, or decrypt the returned result) or server (on which the computation is done completely over encrypted data), but a single host. As explained in [this section](FUTURE_FEATURES.md), this limit will be removed in the next version, such that the **Concrete Framework** can be used in production.
 

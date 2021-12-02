@@ -1,3 +1,7 @@
+```{warning}
+FIXME(Umut): check it is still valid. I guess yes, but some files may have gone or renamed.
+```
+
 # Compilation Artifacts
 
 In this tutorial, we are going to go over the artifact system, which is designed to inspect/debug the compilation process easily. 

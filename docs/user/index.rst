@@ -8,22 +8,26 @@ Getting Started
    README.md
    howto/INSTALLING.md
    benchmarks.md
+   howto/COMPILING_AND_EXECUTING.md
 
 .. toctree::
    :maxdepth: 1
    :caption: Tutorial
 
+   tutorial/COMPILING_TORCH_MODEL.md
    tutorial/ARITHMETIC_OPERATIONS.md
    tutorial/TABLE_LOOKUP.md
    tutorial/WORKING_WITH_FLOATING_POINTS.md
+   tutorial/INDEXING.md
+   tutorial/MACHINE_LEARNING_TOOLS.md
    tutorial/COMPILATION_ARTIFACTS.md
 
 .. toctree::
    :maxdepth: 1
    :caption: How to
 
-   howto/COMPILING_AND_EXECUTING.md
    howto/PRINTING_AND_DRAWING.md
+   howto/USE_QUANTIZATION.md
    howto/REDUCE_NEEDED_PRECISION.md
    howto/DEBUG_SUPPORT_SUBMIT_ISSUES.md
    howto/FAQ.md
@@ -34,6 +38,7 @@ Getting Started
 
    advanced_examples/QuantizedLinearRegression.ipynb
    advanced_examples/QuantizedLogisticRegression.ipynb
+   advanced_examples/QuantizedGeneralizedLinearModel.ipynb
 
 .. toctree::
    :maxdepth: 1

@@ -17,11 +17,16 @@ FHE is also a killer feature regarding data breaches: as anything done on the se
 In the first version of Concrete, there is a single frontend, called homomorphic numpy (or hnp), which is the equivalent of numpy. With our toolchain, a data scientist can convert a numpy program into an FHE program, without any a-priori knowledge on cryptography.
 ```
 
+```{note}
+On top of the numpy frontend, we are adding an alpha-version of a torch compiler, which basically transforms a subset of torch modules into numpy, and then use numpy frontend and the compiler. This is an early version of a more stable torch compiler which will be released later in the year.
+```
+
 ## Organization of the documentation
 
 Basically, we have divided our documentation into several parts:
 - one about basic elements, notably description of the installation, that you are currently reading
 - one dedicated to _users_ of **Concrete**, with tutorials, how-to's and deeper explanations
+- one detailing the API's of the different functions of the frontend, directly done by parsing its source code
 - and finally, one dedicated to _developers_ of **Concrete**, who could be internal or external contributors to the framework
 
 ## A work in progress
@@ -33,8 +38,13 @@ Concrete is a work in progress, and is currently limited to a certain number of 
 The main _current_ limits are:
 - **Concrete** is only supporting unsigned integers
 - **Concrete** needs the integer to be less than 7 bits (included)
-- **Concrete** is mostly restricted to scalars (by opposition to tensors). The only exception is the `dot` operator, which can dot a tensor of encrypted values with a tensor of constant values
 
-The first two limits can be taken care of with the use of quantization, as explained a bit further in [this](explanation/QUANTIZATION.md) and [this](howto/REDUCE_NEEDED_PRECISION.md) parts of the documentation.
+These limits can be taken care of with the use of quantization, as explained a bit further in [this](explanation/QUANTIZATION.md) and [this](howto/REDUCE_NEEDED_PRECISION.md) parts of the documentation.
 
-The scalar limitation is mainly an engineering issue, and will be fixed in the next release. Today, one needs to split all the tensors into small scalars, which is inconvenient and will be no more needed very soon.
+```{warning}
+FIXME(Jordan): speak about our quantization framework
+```
+
+```{warning}
+FIXME(Jordan/Andrei): add an .md about the repository of FHE-friendly models, and ideally .ipynb's
+```

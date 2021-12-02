@@ -1,3 +1,10 @@
+```{warning}
+FIXME(Umut): update a bit, with the new API
+FIXME(Umut/Arthur): update a bit to explain things with the tensors and new operations. At the same time, I think we can exhaustively give examples of every supported functions, since we start to have a lot, so maybe, we would just explain a bit?
+FIXME(all): actually, I am not even sure we should keep this .md, it can't be exhaustive enough, and looks pretty trivial. What do you think
+
+```
+
 # Arithmetic Operations
 
 In this tutorial, we are going to go over all arithmetic operations available in **Concrete**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.

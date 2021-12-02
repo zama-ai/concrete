@@ -1,3 +1,7 @@
+```{warning}
+FIXME(all): I've moved this section (from how-to) to the basic section, because it must be read before the tutorials
+```
+
 # Compiling and Executing
 
 ## Importing necessary components
@@ -19,6 +23,12 @@ def f(x, y):
 ```
 
 ## Compiling the function
+
+```{warning}
+FIXME(arthur): move to the new API
+FIXME(all): do you think guys we should just explain the new API or should we explain the two API's? I would say: just the new one, and maybe the old one in the dev section (but not ever sure).
+
+```
 
 To compile the function, you need to provide what are the inputs that it's expecting. In the example function above, `x` and `y` could be scalars or tensors (though, for now, only dot between tensors are supported), they can be encrypted or clear, they can be signed or unsigned, they can have different bit-widths. So, we need to know what they are beforehand. We can do that like so:
 
@@ -68,8 +78,14 @@ Be careful about the inputs, though.
 If you were to run with values outside the range of the inputset, the result might not be correct.
 ```
 
+```{warning}
+FIXME(benoit): explain the API to encrypt, run_inference, decrypt, keygen etc when they are available
+
+```
+
 ## Further reading
 
 - [Arithmetic Operations Tutorial](../tutorial/ARITHMETIC_OPERATIONS.md)
 - [Working With Floating Points Tutorial](../tutorial/WORKING_WITH_FLOATING_POINTS.md)
 - [Table Lookup Tutorial](../tutorial/TABLE_LOOKUP.md)
+- [Compiling a torch model](../tutorial/COMPILING_TORCH_MODEL.md)

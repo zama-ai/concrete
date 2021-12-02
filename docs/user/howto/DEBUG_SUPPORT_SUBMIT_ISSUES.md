@@ -1,6 +1,6 @@
 # Debugging / Support / Submitting Issues
 
-First, let's not forget that this version of **Concrete** is a beta product, meaning that it is not completely polished, contains several bugs (would they be known or unknown at this time). Also, let's not forget that FHE is a highly hot topic, and notably, that it cannot be considered as a solved problem.
+First, let's not forget that this version of **Concrete** is a first version of the product, meaning that it is not completely finished, contains several bugs (would they be known or unknown at this time), and will improve over time with the feedback from early users. Also, let's not forget that FHE is a highly hot topic, and notably, that it cannot be considered as a solved problem.
 
 Anyway, let's list some ways to debug your problems here. If nothing seems conclusive, you can still report the issue, as explained in a later section of this page.
 
@@ -31,16 +31,22 @@ Once you're sure it is a bug, it would be nice to try to:
 
 ## Asking the community
 
+```{warning}
+FIXME(Alex): add the different links for the community
+```
+
 We have created a Slack channel (TODO: LINK TO BE ADDED), such that you can directly ask the developers and community about your issue.
 
 Hopefully, it is just a misunderstanding or a small mistake on your side, that one can help you fix easily. And, the good point with your feedback is that, once we have heard the problem or misunderstanding, we can make the documentation even clearer (such as, completing the FAQ).
 
 ## Having a look to the compilation artifacts
 
-When things are more complicated, or if you want to have a look by yourself, you may want to have a look to the compilation reports, which are called artifacts. This is as simple as described in [TODO: add the link to the tutorial about having artifacts].
+When things are more complicated, or if you want to have a look by yourself, you may want to have a look to the compilation reports, which are called artifacts. This is as simple as described in [here](../tutorial/COMPILATION_ARTIFACTS.md)
 
 This function will create a directory, containing notably:
-[TODO: Umut to fix / complete the following information]
+```{warning}
+FIXME(Umut): check it is still accurate
+```
 - bounds.txt: a file describing the expected ranges of data in the different steps of the computation
 - cryptographic_parameters.txt: a file describing the different keys
 - ir_nodes.txt: a file describing the different nodes in the intermediate representation (IR)
@@ -50,7 +56,10 @@ This function will create a directory, containing notably:
 Attaching the artifact with your issue or Slack message may help people to have a look at the core of the problem.
 The more precise your bug, the more likely we can reproduce and fix
 
-[TODO: Umut, is it still needed or do we already have some of those information in artifacts?]
+```{warning}
+FIXME(Umut): is it still needed or do we already have some of those information in artifacts?
+```
+
 In order to simplify our work and let us reproduce your bug easily, any information is useful. Notably, in addition to the python script, some information like:
 - the OS version
 - the python version
@@ -61,5 +70,9 @@ In order to simplify our work and let us reproduce your bug easily, any informat
 may be useful to us. Don't remember, **Concrete** is a project where we are open to contribution, more information at Contributing (TODO: add a link).
 
 ## Submitting an issue
+
+```{warning}
+FIXME(Alex): add the link
+```
 
 In case you have a bug, which is reproducible, that you have reduced to a small piece of code,  we have our issue tracker (TODO: LINK TO BE ADDED). Remember that a well-described short issue is an issue which is more likely to be studied and fixed. The more issues we receive, the better the product will be.

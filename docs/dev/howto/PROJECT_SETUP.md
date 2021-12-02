@@ -1,3 +1,6 @@
+```{warning}
+FIXME(Arthur): to check what needs to be updated here
+```
 
 # Project Setup
 

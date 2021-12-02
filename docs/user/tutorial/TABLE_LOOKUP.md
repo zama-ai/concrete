@@ -1,3 +1,8 @@
+```{warning}
+FIXME(Umut): update a bit, with the new API
+FIXME(Umut): add the multiTLU case
+```
+
 # Table Lookup
 
 In this tutorial, we are going to go over the ways to perform table lookups in **Concrete**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.

@@ -5,21 +5,12 @@ is currently in a preliminary version, and quite constrained in term of function
 news is that we are going to release new versions regularly, where a lot of functionalities will be added progressively.
 
 In this page, we briefly list what the plans for next versions of the **Concrete Framework** are:
-- **management of tensors**: today, we are mostly limited to scalars, but in the next version, the functions we compile
-will possibly contain tensors, which is one of the basic features of `numpy`
 - **better performance**: further versions will contain improved versions of the **Concrete Library**, with faster
 execution; also, the **Concrete Compiler** will be improved, to have faster local execution (with multi-threading
 for example) and faster production execution (with distribution over a set of machines or use of hardware accelerations)
-- **more user-friendly API's**: we would like to make our API easier for a user. Notably, we would like to allow direct
-compilations of classic Machine Learning framework models (e.g., tensorflow or pytorch)
-- **more complete benchmarks**: we will have an extended benchmark, containing lots of functions that one day one would
-want to compile; then, we will measure the framework progress by tracking the number of successfully compiled functions
-over time. Also, this public benchmark will be a way for other competing frameworks or technologies to compare fairly
-with us, in terms of functionality or performance
-- **easier installation**: we plan to have pip installation of our framework very soon
-- **Machine Learning helpers**: our midterm direction is to provide our users a set of tools to help her turn her use case
-in an homomorphic equivalent. This set of tools will help her reduce the needed variable precision and/or optimize the
-operations required to make the fastest possible compiled model.
+- **more support for torch, and support for other ML frameworks**: we will continue to extend our support for torch models, and have conversions from Keras, tensorflow
+- **more complete benchmarks**: we will have an extended benchmark, containing lots of functions that one day one would want to compile; then, we will measure the framework progress by tracking the number of successfully compiled functions over time. Also, this public benchmark will be a way for other competing frameworks or technologies to compare fairly with us, in terms of functionality or performance
+- **Machine Learning helpers**: our midterm direction is to provide our users a set of tools to help her turn her use case in an homomorphic equivalent. This set of tools will help her reduce the needed variable precision and/or optimize the operations required to make the fastest possible compiled model.
 
 Also, if you are especially looking for some new feature, you can drop a message to <hello@zama.ai>.
 

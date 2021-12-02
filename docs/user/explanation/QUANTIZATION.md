@@ -1,3 +1,7 @@
+```{warning}
+FIXME(Jordan/Andrei): see if this is still appropriate, update etc; make link with USE_QUANTIZATION.md
+```
+
 # Quantization
 
 ```{note}

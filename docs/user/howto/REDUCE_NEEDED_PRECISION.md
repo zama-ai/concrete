@@ -1,3 +1,7 @@
+```{warning}
+FIXME(Umut): put somewhere an example of an error dump if the user asks for too much precision and explain
+```
+
 # Having a Function Which Requires Less Precision
 
 ## Why can some computation work with less precision?
@@ -23,3 +27,7 @@ If for some reason you have a tolerance on the result's precision, then you can 
 This is illustrated in both advanced examples [Quantized Linear Regression](../advanced_examples/QuantizedLinearRegression.ipynb) and [Quantized Logistic Regression](../advanced_examples/QuantizedLogisticRegression.ipynb).
 
 The end result has a granularity/imprecision linked to the data types used and for the Quantized Logistic Regression to the lattice used to evaluate the logistic model.
+
+```{warning}
+FIXME(jordan/andrei): update with your insights / knowledge on ML
+```

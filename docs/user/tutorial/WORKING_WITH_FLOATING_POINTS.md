@@ -1,3 +1,7 @@
+```{warning}
+FIXME(Arthur): update a bit, with the new API
+```
+
 # Working With Floating Points
 
 ## An example
@@ -109,6 +113,10 @@ List of supported binary functions if one of the two operators is a constant sca
 - right_shift
 - true_divide
 <!--- gen_supported_ufuncs.py: inject supported operations [END] -->
+
+```{warning}
+FIXME(Benoit): see what kind of other supported operations we could list here
+```
 
 ## Limitations
 
