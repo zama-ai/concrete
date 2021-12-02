@@ -3,7 +3,6 @@ use crate::backends::core::implementation::entities::{
     FourierLweBootstrapKey32, FourierLweBootstrapKey64, GlweCiphertext32, GlweCiphertext64,
     LweCiphertext32, LweCiphertext64,
 };
-use crate::backends::core::private::crypto::bootstrap::Bootstrap;
 use crate::specification::engines::{
     LweCiphertextDiscardingBootstrapEngine, LweCiphertextDiscardingBootstrapError,
 };
@@ -105,7 +104,8 @@ impl
         acc: &GlweCiphertext32,
         bsk: &FourierLweBootstrapKey32,
     ) {
-        bsk.0.bootstrap(&mut output.0, &input.0, &acc.0);
+        let buffers = self.get_fourier_bootstrap_u32_buffer(bsk);
+        bsk.0.bootstrap(&mut output.0, &input.0, &acc.0, buffers);
     }
 }
 
@@ -203,6 +203,8 @@ impl
         acc: &GlweCiphertext64,
         bsk: &FourierLweBootstrapKey64,
     ) {
-        bsk.0.bootstrap(&mut output.0, &input.0, &acc.0);
+        let buffers = self.get_fourier_bootstrap_u64_buffer(bsk);
+
+        bsk.0.bootstrap(&mut output.0, &input.0, &acc.0, buffers);
     }
 }
