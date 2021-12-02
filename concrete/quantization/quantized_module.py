@@ -4,12 +4,10 @@ from typing import Optional, Union
 
 import numpy
 
-from concrete.common.compilation.artifacts import CompilationArtifacts
-from concrete.common.compilation.configuration import CompilationConfiguration
-from concrete.common.fhe_circuit import FHECircuit
-
-from ..numpy import EncryptedTensor, UnsignedInteger
-from ..numpy.compile import compile_numpy_function
+from ..common.compilation.artifacts import CompilationArtifacts
+from ..common.compilation.configuration import CompilationConfiguration
+from ..common.fhe_circuit import FHECircuit
+from ..numpy.np_fhe_compiler import NPFHECompiler
 from .quantized_array import QuantizedArray
 
 
@@ -95,6 +93,7 @@ class QuantizedModule:
         q_input: QuantizedArray,
         compilation_configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
+        show_mlir: bool = False,
     ) -> FHECircuit:
         """Compile the forward function of the module.
 
@@ -105,20 +104,25 @@ class QuantizedModule:
                                                                             compilation
             compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill during
                                                                     compilation
+            show_mlir (bool, optional): if set, the MLIR produced by the converter and which is
+                going to be sent to the compiler backend is shown on the screen, e.g., for debugging
+                or demo. Defaults to False.
+
         Returns:
-            bool: Success flag from the compilation.
+            FHECircuit: the compiled FHECircuit.
         """
 
         self.q_input = copy.deepcopy(q_input)
-        self.forward_fhe = compile_numpy_function(
+        compiler = NPFHECompiler(
             self.forward,
             {
-                "q_x": EncryptedTensor(
-                    UnsignedInteger(self.q_input.n_bits), shape=(1, *self.q_input.qvalues.shape[1:])
-                )
+                "q_x": "encrypted",
             },
-            [numpy.expand_dims(arr, 0) for arr in self.q_input.qvalues],  # Super weird formatting
-            compilation_configuration=compilation_configuration,
-            compilation_artifacts=compilation_artifacts,
+            compilation_configuration,
+            compilation_artifacts,
         )
+        compiler.eval_on_inputset((numpy.expand_dims(arr, 0) for arr in self.q_input.qvalues))
+
+        self.forward_fhe = compiler.get_compiled_fhe_circuit(show_mlir)
+
         return self.forward_fhe

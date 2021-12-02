@@ -3,8 +3,7 @@
 import numpy
 from torch import nn
 
-from concrete.torch import NumpyModule
-
+from ..torch import NumpyModule
 from .quantized_activations import QuantizedSigmoid
 from .quantized_array import QuantizedArray
 from .quantized_layers import QuantizedLinear

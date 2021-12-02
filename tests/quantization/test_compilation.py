@@ -85,7 +85,7 @@ def test_quantized_module_compilation(
         homomorphic_predictions = homomorphic_predictions.reshape(dequant_predictions.shape)
 
         # Make sure homomorphic_predictions are the same as dequant_predictions
-        if numpy.isclose(homomorphic_predictions.ravel(), dequant_predictions.ravel()).all():
+        if numpy.isclose(homomorphic_predictions, dequant_predictions).all():
             return
 
         # Bad computation after nb_tries
