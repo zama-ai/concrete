@@ -89,7 +89,8 @@ def check_node_compatibility_with_mlir(
                 == 1
             )
         else:
-            return f"{node.op_name} is not supported for the time being"
+            if node.op_name not in ["flatten", "reshape"]:
+                return f"{node.op_name} is not supported for the time being"
 
     elif isinstance(node, intermediate.Dot):  # constraints for dot product
         assert_true(len(inputs) == 2)

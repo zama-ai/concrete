@@ -178,7 +178,7 @@ def test_nptracer_unsupported_operands(operation, exception_type, match):
 )
 def test_errors_with_generic_function(lambda_f, params):
     "Test some errors with generic function"
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         tracing.trace_numpy_function(lambda_f, params)
 
     assert "shapes are not compatible (old shape (7, 5), new shape (5, 3))" in str(excinfo.value)

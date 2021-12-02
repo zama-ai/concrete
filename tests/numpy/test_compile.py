@@ -1680,23 +1680,6 @@ return %1
                 """.strip()  # noqa: E501
             ),
         ),
-        pytest.param(
-            lambda x: numpy.reshape(x, (2, 6)),
-            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 4))},
-            [numpy.random.randint(0, 2 ** 3, size=(3, 4)) for i in range(10)],
-            (
-                """
-
-function you are trying to compile isn't supported for MLIR lowering
-
-%0 = x                                   # EncryptedTensor<uint3, shape=(3, 4)>
-%1 = reshape(%0, newshape=(2, 6))        # EncryptedTensor<uint3, shape=(2, 6)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ reshape is not supported for the time being
-return %1
-
-                """.strip()  # noqa: E501
-            ),
-        ),
     ],
 )
 # pylint: enable=line-too-long

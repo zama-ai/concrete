@@ -362,13 +362,13 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
-    def reshape(self, arg1: Tuple[Any, ...], **kwargs) -> "NPTracer":
+    def reshape(self, newshape: Tuple[Any, ...], **kwargs) -> "NPTracer":
         """Trace x.reshape.
 
         Returns:
             NPTracer: The output NPTracer containing the traced function
         """
-        return self.numpy_reshape(self, arg1, **kwargs)
+        return self.numpy_reshape(self, newshape, **kwargs)
 
     def numpy_reshape(self, arg0: "NPTracer", arg1: Tuple[Any, ...], **kwargs) -> "NPTracer":
         """Trace numpy.reshape.
@@ -390,15 +390,13 @@ class NPTracer(BaseTracer):
         assert_true(isinstance(first_arg_output, TensorValue))
         first_arg_output = cast(TensorValue, first_arg_output)
 
-        # Make numpy.reshape(x, (170)) and numpy.reshape(x, 170) work,
-        # while classical form is numpy.reshape(x, (170,))
-        newshape = deepcopy(arg1) if not isinstance(arg1, int) else (arg1,)
-
-        # Check shape compatibility
-        assert_true(
-            numpy.product(newshape) == first_arg_output.size,
-            f"shapes are not compatible (old shape {first_arg_output.shape}, new shape {newshape})",
-        )
+        try:
+            # calculate a newshape using numpy to handle edge cases such as `-1`s within new shape
+            newshape = numpy.zeros(first_arg_output.shape).reshape(arg1).shape
+        except Exception as error:
+            raise ValueError(
+                f"shapes are not compatible (old shape {first_arg_output.shape}, new shape {arg1})"
+            ) from error
 
         reshape_is_fusable = newshape == first_arg_output.shape
 

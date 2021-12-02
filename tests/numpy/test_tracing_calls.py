@@ -294,7 +294,7 @@ def test_tracing_numpy_calls(
                     None,
                 )
             ],
-            marks=pytest.mark.xfail(strict=True, raises=AssertionError),
+            marks=pytest.mark.xfail(strict=True, raises=ValueError),
         ),
     ],
 )

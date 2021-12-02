@@ -7,7 +7,7 @@
 from typing import Any, Dict, List, Tuple, cast
 
 import numpy
-from mlir.dialects import arith, tensor
+from mlir.dialects import arith, linalg, tensor
 from mlir.ir import (
     ArrayAttr,
     Attribute,
@@ -117,7 +117,11 @@ class IntermediateNodeConverter:
             result = self.convert_dot()
 
         elif isinstance(self.node, GenericFunction):
-            result = self.convert_generic_function(additional_conversion_info)
+            if self.node.op_name in ["flatten", "reshape"]:
+                # notice flatten() == reshape(-1) and convert_reshape can handle that
+                result = self.convert_reshape()
+            else:
+                result = self.convert_generic_function(additional_conversion_info)
 
         elif isinstance(self.node, IndexConstant):
             result = self.convert_index_constant()
@@ -480,6 +484,129 @@ class IntermediateNodeConverter:
             result = hlfhe.MulEintIntOp(resulting_type, *preds).result
 
         return result
+
+    def convert_reshape(self) -> OpResult:
+        """Convert a "reshape" node to its corresponding MLIR representation.
+
+        Returns:
+            str: textual MLIR representation corresponding to self.node
+        """
+
+        assert_true(len(self.node.inputs) == 1)
+        assert_true(len(self.node.outputs) == 1)
+
+        assert_true(isinstance(self.node.inputs[0], TensorValue))
+        input_shape = cast(TensorValue, self.node.inputs[0]).shape
+
+        assert_true(isinstance(self.node.outputs[0], TensorValue))
+        output_shape = cast(TensorValue, self.node.outputs[0]).shape
+
+        pred = self.preds[0]
+        if input_shape == output_shape:
+            return pred
+
+        # we can either collapse or expand, which changes the number of dimensions
+        # this is a limitation of the current compiler and it will be improved in the future (#1060)
+        can_be_converted_directly = len(input_shape) != len(output_shape)
+
+        reassociation: List[List[int]] = []
+        if can_be_converted_directly:
+            if len(output_shape) == 1:
+                # output is 1 dimensional so collapse every dimension into the same dimension
+                reassociation.append(list(range(len(input_shape))))
+            else:
+                # input is m dimensional
+                # output is n dimensional
+                # and m is different than n
+
+                # we don't want to duplicate code so we forget about input and output
+                # and we focus on smaller shape and bigger shape
+
+                smaller_shape, bigger_shape = (
+                    (output_shape, input_shape)
+                    if len(output_shape) < len(input_shape)
+                    else (input_shape, output_shape)
+                )
+                s_index, b_index = 0, 0
+
+                # now we will figure out how to group the bigger shape to get the smaller shape
+                # think of the algorithm below as
+                #     keep merging the dimensions of the bigger shape
+                #     until we have a match on the smaller shape
+                #     then try to match the next dimension of the smaller shape
+                #     if all dimensions of the smaller shape is matched
+                #     we can convert it
+
+                group = []
+                size = 1
+                while s_index < len(smaller_shape) and b_index < len(bigger_shape):
+                    # dimension `b_index` of `bigger_shape` belongs to current group
+                    group.append(b_index)
+
+                    # and current group has `size * bigger_shape[b_index]` elements now
+                    size *= bigger_shape[b_index]
+
+                    # if current group size matches the dimension `s_index` of `smaller_shape`
+                    if size == smaller_shape[s_index]:
+                        # we finalize this group and reset everything
+                        size = 1
+                        reassociation.append(group)
+                        group = []
+
+                        # now try to match the next dimension of `smaller_shape`
+                        s_index += 1
+
+                    # now process the next dimension of `bigger_shape`
+                    b_index += 1
+
+                # handle the case where bigger shape has proceeding 1s
+                # e.g., (5,) -> (5, 1)
+                while b_index < len(bigger_shape) and bigger_shape[b_index] == 1:
+                    reassociation[-1].append(b_index)
+                    b_index += 1
+
+                # if not all dimensions of both shapes are processed exactly
+                if s_index != len(smaller_shape) or b_index != len(bigger_shape):
+                    # we cannot convert
+                    can_be_converted_directly = False
+
+        index_type = IndexType.parse("index")
+        resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+
+        if can_be_converted_directly:
+            reassociation_attr = ArrayAttr.get(
+                [
+                    ArrayAttr.get([IntegerAttr.get(index_type, dimension) for dimension in group])
+                    for group in reassociation
+                ]
+            )
+            if len(output_shape) < len(input_shape):
+                return linalg.TensorCollapseShapeOp(resulting_type, pred, reassociation_attr).result
+            return linalg.TensorExpandShapeOp(resulting_type, pred, reassociation_attr).result
+
+        flattened_type = value_to_mlir_type(
+            self.ctx,
+            TensorValue(
+                self.node.inputs[0].dtype,
+                self.node.inputs[0].is_encrypted,
+                (numpy.prod(input_shape),),
+            ),
+        )
+        flattened_result = linalg.TensorCollapseShapeOp(
+            flattened_type,
+            pred,
+            ArrayAttr.get(
+                [ArrayAttr.get([IntegerAttr.get(index_type, i) for i in range(len(input_shape))])]
+            ),
+        ).result
+
+        return linalg.TensorExpandShapeOp(
+            resulting_type,
+            flattened_result,
+            ArrayAttr.get(
+                [ArrayAttr.get([IntegerAttr.get(index_type, i) for i in range(len(output_shape))])]
+            ),
+        ).result
 
     def convert_sub(self) -> OpResult:
         """Convert a Sub node to its corresponding MLIR representation.

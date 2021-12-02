@@ -644,7 +644,7 @@ def test_tracing_numpy_calls(
                     None,
                 )
             ],
-            marks=pytest.mark.xfail(strict=True, raises=AssertionError),
+            marks=pytest.mark.xfail(strict=True, raises=ValueError),
         ),
         pytest.param(
             lambda x: x.flatten(),
@@ -985,7 +985,7 @@ def test_tracing_ndarray_calls(
 )
 def test_errors_with_generic_function(lambda_f, params):
     "Test some errors with generic function"
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         tracing.trace_numpy_function(lambda_f, params)
 
     assert "shapes are not compatible (old shape (7, 5), new shape (5, 3))" in str(excinfo.value)
