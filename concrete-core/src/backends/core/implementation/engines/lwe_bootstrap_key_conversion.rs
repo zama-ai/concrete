@@ -61,7 +61,7 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey32, FourierLweBootstrapKey32
         &mut self,
         input: &LweBootstrapKey32,
     ) -> FourierLweBootstrapKey32 {
-        let mut output = ImplFourierBootstrapKey::allocate(
+        let output = ImplFourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             input.glwe_dimension().to_glwe_size(),
             input.polynomial_size(),
@@ -69,8 +69,10 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey32, FourierLweBootstrapKey32
             input.decomposition_base_log(),
             input.input_lwe_dimension(),
         );
-        output.fill_with_forward_fourier(&input.0);
-        FourierLweBootstrapKey32(output)
+        let mut output_bsk = FourierLweBootstrapKey32(output);
+        let buffers = self.get_fourier_bootstrap_u32_buffer(&output_bsk);
+        output_bsk.0.fill_with_forward_fourier(&input.0, buffers);
+        output_bsk
     }
 }
 
@@ -126,7 +128,7 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey64, FourierLweBootstrapKey64
         &mut self,
         input: &LweBootstrapKey64,
     ) -> FourierLweBootstrapKey64 {
-        let mut output = ImplFourierBootstrapKey::allocate(
+        let output = ImplFourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             input.glwe_dimension().to_glwe_size(),
             input.polynomial_size(),
@@ -134,8 +136,10 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey64, FourierLweBootstrapKey64
             input.decomposition_base_log(),
             input.input_lwe_dimension(),
         );
-        output.fill_with_forward_fourier(&input.0);
-        FourierLweBootstrapKey64(output)
+        let mut output_bsk = FourierLweBootstrapKey64(output);
+        let buffers = self.get_fourier_bootstrap_u64_buffer(&output_bsk);
+        output_bsk.0.fill_with_forward_fourier(&input.0, buffers);
+        output_bsk
     }
 }
 

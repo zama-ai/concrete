@@ -1,18 +1,14 @@
-use std::cell::RefCell;
 use std::fmt::Debug;
 
 use concrete_fftw::array::AlignedVec;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
-use super::surrogate::SurrogateBsk;
 use crate::backends::core::private::crypto::bootstrap::standard::StandardBootstrapKey;
-use crate::backends::core::private::crypto::bootstrap::surrogate::BskKind;
-use crate::backends::core::private::crypto::bootstrap::Bootstrap;
 use crate::backends::core::private::crypto::ggsw::GgswCiphertext;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::math::decomposition::SignedDecomposer;
-use crate::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
+use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
 use crate::backends::core::private::math::polynomial::{Polynomial, PolynomialList};
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
@@ -24,15 +20,15 @@ use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, MonomialDegree,
     PolynomialSize,
 };
-use std::marker::PhantomData;
 
+mod buffers;
 #[cfg(test)]
 mod tests;
 
-const VERSION_STRING: &str = "v0";
+pub use buffers::{FftBuffers, FourierBskBuffers};
 
 /// A bootstrapping key in the fourier domain.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FourierBootstrapKey<Cont, Scalar>
 where
     Scalar: UnsignedTorus,
@@ -46,17 +42,7 @@ where
     // The decomposition parameters
     decomp_level: DecompositionLevelCount,
     decomp_base_log: DecompositionBaseLog,
-    // The fft plan is stored here. This way, we don't pay the price of allocating it every
-    // time we need to bootstrap with the same key.
-    fft: Fft,
-    // The buffers used to perform the fft are also stored in the bootstrap key. Again, the same
-    // logic apply, and we don't have to allocate them multiple times.
-    fft_first_buffer: RefCell<FourierPolynomial<AlignedVec<Complex64>>>,
-    fft_second_buffer: RefCell<FourierPolynomial<AlignedVec<Complex64>>>,
-    fft_output_buffer: RefCell<Tensor<AlignedVec<Complex64>>>,
-    // Those buffers are also used to store the lut and the rounded input during the bootstrap.
-    lut_buffer: RefCell<GlweCiphertext<Vec<Scalar>>>,
-    rounded_buffer: RefCell<GlweCiphertext<Vec<Scalar>>>,
+    _scalar: std::marker::PhantomData<Scalar>,
 }
 
 impl<Scalar> FourierBootstrapKey<AlignedVec<Complex64>, Scalar>
@@ -99,33 +85,13 @@ where
             key_size.0 * decomp_level.0 * glwe_size.0 * glwe_size.0 * poly_size.0,
         ));
         tensor.as_mut_tensor().fill_with_element(value);
-        let fft = Fft::new(poly_size);
-        let fft_first_buffer = RefCell::new(FourierPolynomial::allocate(
-            Complex64::new(0., 0.),
-            poly_size,
-        ));
-        let fft_second_buffer = RefCell::new(FourierPolynomial::allocate(
-            Complex64::new(0., 0.),
-            poly_size,
-        ));
-        let fft_output_buffer = RefCell::new(Tensor::from_container(AlignedVec::new(
-            poly_size.0 * glwe_size.0,
-        )));
-        let lut_buffer = RefCell::new(GlweCiphertext::allocate(Scalar::ZERO, poly_size, glwe_size));
-        let rounded_buffer =
-            RefCell::new(GlweCiphertext::allocate(Scalar::ZERO, poly_size, glwe_size));
         FourierBootstrapKey {
             tensor,
             poly_size,
             glwe_size,
             decomp_level,
             decomp_base_log,
-            fft,
-            fft_first_buffer,
-            fft_second_buffer,
-            fft_output_buffer,
-            lut_buffer,
-            rounded_buffer,
+            _scalar: Default::default(),
         }
     }
 }
@@ -174,33 +140,13 @@ where
             glwe_size.0 * glwe_size.0,
             poly_size.0
         );
-        let fft = Fft::new(poly_size);
-        let fft_first_buffer = RefCell::new(FourierPolynomial::allocate(
-            Complex64::new(0., 0.),
-            poly_size,
-        ));
-        let fft_second_buffer = RefCell::new(FourierPolynomial::allocate(
-            Complex64::new(0., 0.),
-            poly_size,
-        ));
-        let fft_output_buffer = RefCell::new(Tensor::from_container(AlignedVec::new(
-            poly_size.0 * glwe_size.0,
-        )));
-        let lut_buffer = RefCell::new(GlweCiphertext::allocate(Scalar::ZERO, poly_size, glwe_size));
-        let rounded_buffer =
-            RefCell::new(GlweCiphertext::allocate(Scalar::ZERO, poly_size, glwe_size));
         FourierBootstrapKey {
             tensor,
             poly_size,
             glwe_size,
             decomp_level,
             decomp_base_log,
-            fft,
-            fft_first_buffer,
-            fft_second_buffer,
-            fft_output_buffer,
-            lut_buffer,
-            rounded_buffer,
+            _scalar: Default::default(),
         }
     }
 
@@ -214,7 +160,7 @@ where
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::bootstrap::{
-    ///     FourierBootstrapKey, StandardBootstrapKey,
+    ///     FourierBootstrapKey, FourierBskBuffers, StandardBootstrapKey,
     /// };
     /// use concrete_core::backends::core::private::math::fft::Complex64;
     /// let bsk = StandardBootstrapKey::allocate(
@@ -233,18 +179,21 @@ where
     ///     DecompositionBaseLog(5),
     ///     LweDimension(4),
     /// );
-    /// frr_bsk.fill_with_forward_fourier(&bsk);
+    /// let mut buffers = FourierBskBuffers::new(frr_bsk.polynomial_size(), frr_bsk.glwe_size());
+    /// frr_bsk.fill_with_forward_fourier(&bsk, &mut buffers);
     /// ```
     pub fn fill_with_forward_fourier<InputCont>(
         &mut self,
         coef_bsk: &StandardBootstrapKey<InputCont>,
+        buffers: &mut FourierBskBuffers<Scalar>,
     ) where
         Cont: AsMutSlice<Element = Complex64>,
         StandardBootstrapKey<InputCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
         // We retrieve a buffer for the fft.
-        let fft_buffer = &mut *self.fft_first_buffer.borrow_mut();
+        let fft_buffer = &mut buffers.fft_buffers.first_buffer;
+        let fft = &mut buffers.fft_buffers.fft;
 
         // We move every polynomials to the fourier domain.
         let iterator = self
@@ -253,27 +202,10 @@ where
             .map(|t| FourierPolynomial::from_container(t.into_container()))
             .zip(coef_bsk.poly_iter());
         for (mut fourier_poly, coef_poly) in iterator {
-            self.fft.forward_as_torus(fft_buffer, &coef_poly);
+            fft.forward_as_torus(fft_buffer, &coef_poly);
             fourier_poly
                 .as_mut_tensor()
-                .fill_with_one(fft_buffer.as_tensor(), |a| *a);
-        }
-    }
-
-    // Returns a surrogate bsk from the current one.
-    fn as_surrogate(&self) -> SurrogateBsk<&[Complex64], Scalar>
-    where
-        Self: AsRefTensor<Element = Complex64>,
-    {
-        SurrogateBsk {
-            kind: BskKind::Fourier,
-            version: String::from(VERSION_STRING),
-            tensor: self.as_tensor().get_sub(..),
-            poly_size: self.poly_size,
-            glwe_size: self.glwe_size,
-            decomp_level: self.decomp_level,
-            decomp_base_log: self.decomp_base_log,
-            ciphertext_scalar: PhantomData,
+                .fill_with_one((fft_buffer).as_tensor(), |a| *a);
         }
     }
 
@@ -530,6 +462,8 @@ where
         output: &mut GlweCiphertext<C1>,
         ggsw: &GgswCiphertext<C2>,
         glwe: &GlweCiphertext<C3>,
+        fft_buffers: &mut FftBuffers,
+        rounded_buffer: &mut GlweCiphertext<Vec<Scalar>>,
     ) where
         GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
         GgswCiphertext<C2>: AsRefTensor<Element = Complex64>,
@@ -551,15 +485,14 @@ where
             output.size()
         );
 
-        // We mutably borrow the fft buffers. Note that this incurs a (small) cost, which is why
-        // we only perform it once and keep the value around. We reset the output buffer.
-        let first_fft_buffer = &mut *self.fft_first_buffer.borrow_mut();
-        let second_fft_buffer = &mut *self.fft_second_buffer.borrow_mut();
-        let output_fft_buffer = &mut *self.fft_output_buffer.borrow_mut();
+        // "alias" buffers to save some typing
+        let fft = &mut fft_buffers.fft;
+        let first_fft_buffer = &mut fft_buffers.first_buffer;
+        let second_fft_buffer = &mut fft_buffers.second_buffer;
+        let output_fft_buffer = &mut fft_buffers.output_buffer;
         output_fft_buffer.fill_with_element(Complex64::new(0., 0.));
 
-        // We also mutably borrow a standard domain buffer to store the rounded input.
-        let rounded_input_glwe = &mut *self.rounded_buffer.borrow_mut();
+        let rounded_input_glwe = rounded_buffer;
 
         // We round the input mask and body
         let decomposer = SignedDecomposer::new(self.decomp_base_log, self.decomp_level);
@@ -607,7 +540,7 @@ where
                         let zip_args!(first_ggsw_row, first_glwe_poly) = first;
                         let zip_args!(second_ggsw_row, second_glwe_poly) = second;
                         // We perform the forward fft transform for the glwe polynomials
-                        self.fft.forward_two_as_integer(
+                        fft.forward_two_as_integer(
                             first_fft_buffer,
                             second_fft_buffer,
                             &first_glwe_poly,
@@ -645,8 +578,7 @@ where
                         // We unpack the iterator values
                         let (first_ggsw_row, first_glwe_poly) = first;
                         // We perform the forward fft transform for the glwe polynomial
-                        self.fft
-                            .forward_as_integer(first_fft_buffer, &first_glwe_poly);
+                        fft.forward_as_integer(first_fft_buffer, &first_glwe_poly);
                         // Now we loop through the polynomials of the output, and add the
                         // corresponding product of polynomials.
                         let iterator = zip!(
@@ -691,7 +623,7 @@ where
                     let zip_args!(mut first_output, mut first_fourier) = first;
                     let zip_args!(mut second_output, mut second_fourier) = second;
                     // We perform the backward transform
-                    self.fft.add_backward_two_as_torus(
+                    fft.add_backward_two_as_torus(
                         &mut first_output,
                         &mut second_output,
                         &mut first_fourier,
@@ -702,8 +634,7 @@ where
                     // We unpack the iterates
                     let (mut first_output, mut first_fourier) = first;
                     // We perform the backward transform
-                    self.fft
-                        .add_backward_as_torus(&mut first_output, &mut first_fourier);
+                    fft.add_backward_as_torus(&mut first_output, &mut first_fourier);
                 }
                 _ => break,
             }
@@ -716,6 +647,8 @@ where
         ct0: &mut GlweCiphertext<C0>,
         ct1: &mut GlweCiphertext<C1>,
         ggsw: &GgswCiphertext<C2>,
+        fft_buffers: &mut FftBuffers,
+        rounded_buffer: &mut GlweCiphertext<Vec<Scalar>>,
     ) where
         GlweCiphertext<C0>: AsMutTensor<Element = Scalar>,
         GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
@@ -724,12 +657,11 @@ where
     {
         ct1.as_mut_tensor()
             .update_with_wrapping_sub(ct0.as_tensor());
-        self.external_product(ct0, ggsw, ct1);
+        self.external_product(ct0, ggsw, ct1, fft_buffers, rounded_buffer);
     }
 
-    fn blind_rotate<C1, C2>(&self, lut: &mut GlweCiphertext<C1>, lwe: &LweCiphertext<C2>)
+    fn blind_rotate<C2>(&self, buffers: &mut FourierBskBuffers<Scalar>, lwe: &LweCiphertext<C2>)
     where
-        GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
         LweCiphertext<C2>: AsRefTensor<Element = Scalar>,
         GlweCiphertext<Vec<Scalar>>: AsMutTensor<Element = Scalar>,
         Self: AsRefTensor<Element = Complex64>,
@@ -737,6 +669,7 @@ where
     {
         // We unpack the lwe ciphertext.
         let (lwe_body, lwe_mask) = lwe.get_body_and_mask();
+        let lut = &mut buffers.lut_buffer;
 
         // We define a closure which performs the modulus switching.
         let lut_coef_count: f64 = lut.polynomial_size().0.cast_into();
@@ -772,7 +705,13 @@ where
                         *lwe_mask_element,
                     )));
                 // We perform the cmux.
-                self.cmux(ct_0, &mut ct_1, &bootstrap_key_ggsw);
+                self.cmux(
+                    ct_0,
+                    &mut ct_1,
+                    &bootstrap_key_ggsw,
+                    &mut buffers.fft_buffers,
+                    &mut buffers.rounded_buffer,
+                );
             }
         }
     }
@@ -814,75 +753,125 @@ fn constant_sample_extract<LweCont, RlweCont, Scalar>(
     body_lwe.0 = *body_glwe.as_tensor().get_element(0);
 }
 
-impl<Cont, Scalar> Bootstrap for FourierBootstrapKey<Cont, Scalar>
+impl<Cont, Scalar> FourierBootstrapKey<Cont, Scalar>
 where
     GlweCiphertext<Vec<Scalar>>: AsRefTensor<Element = Scalar>,
     Self: AsRefTensor<Element = Complex64>,
     Scalar: UnsignedTorus,
 {
-    type CiphertextScalar = Scalar;
-    fn bootstrap<C1, C2, C3>(
+    /// Performs a bootstrap of an lwe ciphertext, with a given accumulator.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::numeric::CastInto;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
+    ///     PolynomialSize,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::bootstrap::{
+    ///     FourierBootstrapKey, FourierBskBuffers, StandardBootstrapKey,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
+    /// use concrete_core::backends::core::private::crypto::glwe::GlweCiphertext;
+    /// use concrete_core::backends::core::private::crypto::lwe::LweCiphertext;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
+    /// use concrete_core::backends::core::private::math::fft::Complex64;
+    /// use concrete_core::backends::core::private::math::tensor::AsMutTensor;
+    ///
+    /// // define settings
+    /// let polynomial_size = PolynomialSize(1024);
+    /// let rlwe_dimension = GlweDimension(1);
+    /// let lwe_dimension = LweDimension(630);
+    ///
+    /// let level = DecompositionLevelCount(3);
+    /// let base_log = DecompositionBaseLog(7);
+    /// let std = LogStandardDev::from_log_standard_dev(-29.);
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    ///
+    /// let mut rlwe_sk =
+    ///     GlweSecretKey::generate_binary(rlwe_dimension, polynomial_size, &mut secret_generator);
+    /// let mut lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
+    ///
+    /// // allocation and generation of the key in coef domain:
+    /// let mut coef_bsk = StandardBootstrapKey::allocate(
+    ///     0 as u32,
+    ///     rlwe_dimension.to_glwe_size(),
+    ///     polynomial_size,
+    ///     level,
+    ///     base_log,
+    ///     lwe_dimension,
+    /// );
+    /// coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut encryption_generator);
+    ///
+    /// // allocation for the bootstrapping key
+    /// let mut fourier_bsk = FourierBootstrapKey::allocate(
+    ///     Complex64::new(0., 0.),
+    ///     rlwe_dimension.to_glwe_size(),
+    ///     polynomial_size,
+    ///     level,
+    ///     base_log,
+    ///     lwe_dimension,
+    /// );
+    ///
+    /// let mut buffers =
+    ///     FourierBskBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
+    /// fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
+    ///
+    /// let message = Plaintext(2u32.pow(30));
+    ///
+    /// let mut lwe_in = LweCiphertext::allocate(0u32, lwe_dimension.to_lwe_size());
+    /// let mut lwe_out =
+    ///     LweCiphertext::allocate(0u32, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
+    /// lwe_sk.encrypt_lwe(&mut lwe_in, &message, std, &mut encryption_generator);
+    ///
+    /// // accumulator is a trivial encryption of [0, 1/2N, 2/2N, ...]
+    /// let mut accumulator =
+    ///     GlweCiphertext::allocate(0u32, polynomial_size, rlwe_dimension.to_glwe_size());
+    /// accumulator
+    ///     .get_mut_body()
+    ///     .as_mut_tensor()
+    ///     .iter_mut()
+    ///     .enumerate()
+    ///     .for_each(|(i, a)| {
+    ///         *a = (i as f64 * 2_f64.powi(32_i32 - 10 - 1)).cast_into();
+    ///     });
+    ///
+    /// // bootstrap
+    /// fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator, &mut buffers);
+    /// ```
+    pub fn bootstrap<C1, C2, C3>(
         &self,
         lwe_out: &mut LweCiphertext<C1>,
         lwe_in: &LweCiphertext<C2>,
         accumulator: &GlweCiphertext<C3>,
+        buffers: &mut FourierBskBuffers<Scalar>,
     ) where
         LweCiphertext<C1>: AsMutTensor<Element = Scalar>,
         LweCiphertext<C2>: AsRefTensor<Element = Scalar>,
         GlweCiphertext<C3>: AsRefTensor<Element = Scalar>,
     {
         // We retrieve the accumulator buffer, and fill it with the input accumulator values.
-        let mut local_accumulator = self.lut_buffer.borrow_mut();
-        local_accumulator
-            .as_mut_tensor()
-            .as_mut_slice()
-            .copy_from_slice(accumulator.as_tensor().as_slice());
+        {
+            let local_accumulator = &mut buffers.lut_buffer;
+            local_accumulator
+                .as_mut_tensor()
+                .as_mut_slice()
+                .copy_from_slice(accumulator.as_tensor().as_slice());
+        }
+
         // We perform the blind rotate
-        self.blind_rotate(&mut *local_accumulator, lwe_in);
+        self.blind_rotate(buffers, lwe_in);
+
         // We perform the extraction of the first sample.
+        let local_accumulator = &mut buffers.lut_buffer;
         constant_sample_extract(lwe_out, &*local_accumulator);
-    }
-}
-
-impl<Scalar> Serialize for FourierBootstrapKey<AlignedVec<Complex64>, Scalar>
-where
-    Scalar: UnsignedTorus,
-{
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let surrogate = self.as_surrogate();
-        Serialize::serialize(&surrogate, serializer)
-    }
-}
-
-impl<'de, Scalar> Deserialize<'de> for FourierBootstrapKey<AlignedVec<Complex64>, Scalar>
-where
-    Scalar: UnsignedTorus,
-{
-    fn deserialize<D>(
-        deserializer: D,
-    ) -> Result<FourierBootstrapKey<AlignedVec<Complex64>, Scalar>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let surrogate = <SurrogateBsk<AlignedVec<Complex64>, Scalar> as Deserialize>::deserialize(
-            deserializer,
-        )?;
-        Ok(surrogate.into_fourier_bsk())
-    }
-}
-
-impl<Cont, Scalar> PartialEq for FourierBootstrapKey<Cont, Scalar>
-where
-    Cont: PartialEq + AsRefSlice<Element = Complex64>,
-    Scalar: UnsignedTorus,
-{
-    fn eq(&self, other: &Self) -> bool {
-        let sur_self = self.as_surrogate();
-        let sur_other = other.as_surrogate();
-        sur_self.eq(&sur_other)
     }
 }
 
