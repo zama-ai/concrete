@@ -8,6 +8,7 @@ from concrete.torch import NumpyModule
 
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
+# Currently, with 7 bits maximum, we can use 15 weights max in the theoretical case.
 INPUT_OUTPUT_FEATURE = [1, 2, 3]
 
 
@@ -31,14 +32,11 @@ class FC(nn.Module):
 
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC, marks=pytest.mark.xfail())],  # [TEMPORARY] xfail #1042
+    [pytest.param(FC)],
 )
 @pytest.mark.parametrize(
     "input_output_feature",
-    [
-        pytest.param(input_output_feature, marks=pytest.mark.xfail())  # [TEMPORARY] xfail #1042
-        for input_output_feature in INPUT_OUTPUT_FEATURE
-    ],
+    [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
 def test_quantized_module_compilation(
     input_output_feature, model, seed_torch, default_compilation_configuration
@@ -50,14 +48,14 @@ def test_quantized_module_compilation(
     n_bits = 2
 
     # Define an input shape (n_examples, n_features)
-    input_shape = (10, input_output_feature)
+    input_shape = (50, input_output_feature)
 
     # Build a random Quantized Fully Connected Neural Network
 
     # Define the torch model
     torch_fc_model = model(input_output_feature)
     # Create random input
-    numpy_input = numpy.random.uniform(-1, 1, size=input_shape)
+    numpy_input = numpy.random.uniform(-100, 100, size=input_shape)
 
     # Create corresponding numpy model
     numpy_fc_model = NumpyModule(torch_fc_model)
@@ -72,17 +70,23 @@ def test_quantized_module_compilation(
     quantized_model.compile(q_input, default_compilation_configuration)
     dequant_predictions = quantized_model.forward_and_dequant(q_input)
 
+    nb_tries = 5
     # Compare predictions between FHE and QuantizedModule
-    homomorphic_predictions = []
-    for x_q in q_input.qvalues:
-        homomorphic_predictions.append(
-            quantized_model.forward_fhe.run(numpy.array([x_q]).astype(numpy.uint8))
+    for _ in range(nb_tries):
+        homomorphic_predictions = []
+        for x_q in q_input.qvalues:
+            homomorphic_predictions.append(
+                quantized_model.forward_fhe.run(numpy.array([x_q]).astype(numpy.uint8))
+            )
+        homomorphic_predictions = quantized_model.dequantize_output(
+            numpy.array(homomorphic_predictions, dtype=numpy.float32)
         )
-    homomorphic_predictions = quantized_model.dequantize_output(
-        numpy.array(homomorphic_predictions, dtype=numpy.float32)
-    )
 
-    homomorphic_predictions.reshape(dequant_predictions.shape)
+        homomorphic_predictions = homomorphic_predictions.reshape(dequant_predictions.shape)
 
-    # Make sure homomorphic_predictions are the same as dequant_predictions
-    assert numpy.isclose(homomorphic_predictions.ravel(), dequant_predictions.ravel()).all()
+        # Make sure homomorphic_predictions are the same as dequant_predictions
+        if numpy.isclose(homomorphic_predictions.ravel(), dequant_predictions.ravel()).all():
+            return
+
+        # Bad computation after nb_tries
+        raise AssertionError(f"bad computation after {nb_tries} tries")

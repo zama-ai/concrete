@@ -41,13 +41,14 @@ class QuantizedArray:
 
         if rmax - rmin < STABILITY_CONST:
             scale = 1
-            zero_point = rmin
+
+            # Ideally we should get rid of round here but it is risky
+            # regarding the FHE compilation.
+            # Indeed, the zero_point value for the weights has to be an integer
+            # for the compilation to work.
+            zero_point = numpy.round(-rmin)
         else:
-            scale = (
-                (rmax - rmin) / ((2 ** self.n_bits - 1 - self.offset) - (-self.offset))
-                if rmax != rmin
-                else 1.0
-            )
+            scale = (rmax - rmin) / (2 ** self.n_bits - 1) if rmax != rmin else 1.0
 
             zero_point = numpy.round(
                 (rmax * (-self.offset) - (rmin * (2 ** self.n_bits - 1 - self.offset)))
