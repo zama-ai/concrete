@@ -1,7 +1,12 @@
 BUILD_DIR=./build
 Python3_EXECUTABLE=
 BINDINGS_PYTHON_ENABLED=ON
-CCACHE=OFF
+
+ifeq ($(shell which ccache),)
+	CCACHE=OFF
+else
+	CCACHE=ON
+endif
 
 ifeq ($(CCACHE),ON)
         CMAKE_CCACHE_OPTIONS=-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
