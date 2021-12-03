@@ -39,7 +39,11 @@ class FC(nn.Module):
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
 def test_quantized_module_compilation(
-    input_output_feature, model, seed_torch, default_compilation_configuration
+    input_output_feature,
+    model,
+    seed_torch,
+    default_compilation_configuration,
+    check_is_good_execution,
 ):
     """Test a neural network compilation for FHE inference."""
     # Seed torch
@@ -68,25 +72,16 @@ def test_quantized_module_compilation(
 
     # Compile
     quantized_model.compile(q_input, default_compilation_configuration)
-    dequant_predictions = quantized_model.forward_and_dequant(q_input)
 
-    nb_tries = 5
-    # Compare predictions between FHE and QuantizedModule
-    for _ in range(nb_tries):
-        homomorphic_predictions = []
-        for x_q in q_input.qvalues:
-            homomorphic_predictions.append(
-                quantized_model.forward_fhe.run(numpy.array([x_q]).astype(numpy.uint8))
-            )
-        homomorphic_predictions = quantized_model.dequantize_output(
-            numpy.array(homomorphic_predictions, dtype=numpy.float32)
+    for x_q in q_input.qvalues:
+        x_q = numpy.expand_dims(x_q, 0)
+        check_is_good_execution(
+            fhe_circuit=quantized_model.forward_fhe,
+            function=quantized_model.forward,
+            args=[x_q.astype(numpy.uint8)],
+            postprocess_output_func=lambda x: quantized_model.dequantize_output(
+                x.astype(numpy.float32)
+            ),
+            check_function=lambda lhs, rhs: numpy.isclose(lhs, rhs).all(),
+            verbose=False,
         )
-
-        homomorphic_predictions = homomorphic_predictions.reshape(dequant_predictions.shape)
-
-        # Make sure homomorphic_predictions are the same as dequant_predictions
-        if numpy.isclose(homomorphic_predictions, dequant_predictions).all():
-            return
-
-        # Bad computation after nb_tries
-        raise AssertionError(f"bad computation after {nb_tries} tries")

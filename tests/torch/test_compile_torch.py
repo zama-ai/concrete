@@ -31,13 +31,19 @@ class FC(nn.Module):
 
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC, marks=pytest.mark.xfail)],
+    [pytest.param(FC)],
 )
 @pytest.mark.parametrize(
     "input_output_feature",
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
-def test_compile_torch(input_output_feature, model, seed_torch, default_compilation_configuration):
+def test_compile_torch(
+    input_output_feature,
+    model,
+    seed_torch,
+    default_compilation_configuration,
+    check_is_good_execution,
+):
     """Test the different model architecture from torch numpy."""
 
     # Seed torch
@@ -46,12 +52,14 @@ def test_compile_torch(input_output_feature, model, seed_torch, default_compilat
     n_bits = 2
 
     # Define an input shape (n_examples, n_features)
-    n_examples = 10
+    n_examples = 50
 
     # Define the torch model
     torch_fc_model = model(input_output_feature)
     # Create random input
-    inputset = [numpy.random.uniform(-1, 1, size=input_output_feature) for _ in range(n_examples)]
+    inputset = [
+        numpy.random.uniform(-100, 100, size=input_output_feature) for _ in range(n_examples)
+    ]
 
     # Compile
     quantized_numpy_module = compile_torch_model(
@@ -61,19 +69,19 @@ def test_compile_torch(input_output_feature, model, seed_torch, default_compilat
         n_bits=n_bits,
     )
 
+    # Quantize inputs all at once to have meaningful scale and zero point
+    q_input = QuantizedArray(n_bits, numpy.array(inputset))
+
     # Compare predictions between FHE and QuantizedModule
-    clear_predictions = []
-    homomorphic_predictions = []
-    for numpy_input in inputset:
-        q_input = QuantizedArray(n_bits, numpy_input)
-        x_q = q_input.qvalues
-        clear_predictions.append(quantized_numpy_module.forward(x_q))
-        homomorphic_predictions.append(
-            quantized_numpy_module.forward_fhe.run(numpy.array([x_q]).astype(numpy.uint8))
+    for x_q in q_input.qvalues:
+        x_q = numpy.expand_dims(x_q, 0)
+        check_is_good_execution(
+            fhe_circuit=quantized_numpy_module.forward_fhe,
+            function=quantized_numpy_module.forward,
+            args=[x_q.astype(numpy.uint8)],
+            postprocess_output_func=lambda x: quantized_numpy_module.dequantize_output(
+                x.astype(numpy.float32)
+            ),
+            check_function=lambda lhs, rhs: numpy.isclose(lhs, rhs).all(),
+            verbose=False,
         )
-
-    clear_predictions = numpy.array(clear_predictions)
-    homomorphic_predictions = numpy.array(homomorphic_predictions)
-
-    # Make sure homomorphic_predictions are the same as dequant_predictions
-    assert numpy.array_equal(homomorphic_predictions, clear_predictions)

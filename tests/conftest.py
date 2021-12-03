@@ -4,14 +4,16 @@ import operator
 import random
 import re
 from pathlib import Path
-from typing import Callable, Dict, Type
+from typing import Any, Callable, Dict, Iterable, Type
 
 import networkx as nx
 import networkx.algorithms.isomorphism as iso
+import numpy
 import pytest
 import torch
 
 from concrete.common.compilation import CompilationConfiguration
+from concrete.common.fhe_circuit import FHECircuit
 from concrete.common.representation.intermediate import (
     ALL_IR_NODES,
     Add,
@@ -293,3 +295,43 @@ def seed_torch():
     """Fixture to seed torch"""
 
     return function_to_seed_torch
+
+
+def check_is_good_execution_impl(
+    fhe_circuit: FHECircuit,
+    function: Callable,
+    args: Iterable[Any],
+    preprocess_input_func: Callable[[Any], Any] = lambda x: x,
+    postprocess_output_func: Callable[[Any], Any] = lambda x: x,
+    check_function: Callable[[Any, Any], bool] = numpy.array_equal,
+    verbose: bool = True,
+):
+    """Run several times the check compiler_engine.run(*args) == function(*args). If always wrong,
+    return an error. One can set the expected probability of success of one execution and the
+    number of tests, to finetune the probability of bad luck, ie that we run several times the
+    check and always have a wrong result."""
+    nb_tries = 5
+
+    for i in range(1, nb_tries + 1):
+        preprocessed_args = tuple(preprocess_input_func(val) for val in args)
+        if check_function(
+            last_engine_result := postprocess_output_func(fhe_circuit.run(*preprocessed_args)),
+            last_function_result := postprocess_output_func(function(*preprocessed_args)),
+        ):
+            # Good computation after i tries
+            if verbose:
+                print(f"Good computation after {i} tries")
+            return
+
+    # Bad computation after nb_tries
+    raise AssertionError(
+        f"bad computation after {nb_tries} tries.\nLast engine result:\n{last_engine_result}\n"
+        f"Last function result:\n{last_function_result}"
+    )
+
+
+@pytest.fixture
+def check_is_good_execution():
+    """Fixture to seed torch"""
+
+    return check_is_good_execution_impl
