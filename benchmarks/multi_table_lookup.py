@@ -30,7 +30,7 @@ def main():
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x},
-        [(np.random.randint(0, 2 ** input_bits, size=(3, 2)),) for _ in range(32)],
+        [np.random.randint(0, 2 ** input_bits, size=(3, 2)) for _ in range(32)],
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # bench: Measure: End

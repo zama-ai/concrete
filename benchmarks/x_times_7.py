@@ -18,7 +18,7 @@ def main():
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x},
-        [(i,) for i in range(2 ** 4)],
+        range(2 ** 4),
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # bench: Measure: End

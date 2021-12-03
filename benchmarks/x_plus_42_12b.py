@@ -21,7 +21,7 @@ def main():
     engine = hnp.compile_numpy_function(
         function_to_compile,
         {"x": x},
-        [(random.randint(0, 2 ** max_precision - 1 - 42),) for _ in range(128)],
+        [random.randint(0, 2 ** max_precision - 1 - 42) for _ in range(128)],
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
     # bench: Measure: End
