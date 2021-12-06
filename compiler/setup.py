@@ -44,6 +44,7 @@ setuptools.setup(
         where="build/tools/zamalang/python_packages/zamalang_core",
         include=["mlir", "mlir.*"],
     ),
+    install_requires=["numpy"],
     package_dir={"": "build/tools/zamalang/python_packages/zamalang_core"},
     include_package_data=True,
     package_data={"": ["*.so"]},
