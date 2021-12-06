@@ -220,10 +220,11 @@ def test_evaluate(
     node: ir.IntermediateNode,
     input_data,
     expected_result: int,
+    check_array_equality,
 ):
     """Test evaluate methods on IntermediateNodes"""
     if isinstance(expected_result, numpy.ndarray):
-        assert numpy.array_equal(node.evaluate(input_data), expected_result)
+        check_array_equality(node.evaluate(input_data), expected_result)
     else:
         assert node.evaluate(input_data) == expected_result
 

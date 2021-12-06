@@ -20,7 +20,7 @@ N_BITS_ATOL_TUPLE_LIST = [
 )
 @pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
 @pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
-def test_quant_dequant_update(values, n_bits, atol, is_signed):
+def test_quant_dequant_update(values, n_bits, atol, is_signed, check_array_equality):
     """Test the quant and dequant function."""
 
     quant_array = QuantizedArray(n_bits, values, is_signed)
@@ -51,4 +51,4 @@ def test_quant_dequant_update(values, n_bits, atol, is_signed):
     assert not numpy.array_equal(new_values, new_values_updated)
 
     # Check that the __call__ returns also the qvalues.
-    assert numpy.array_equal(quant_array(), new_qvalues)
+    check_array_equality(quant_array(), new_qvalues)

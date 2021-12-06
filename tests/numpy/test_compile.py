@@ -1096,6 +1096,7 @@ def test_compile_and_run_tensor_correctness(
     use_check_good_exec,
     default_compilation_configuration,
     check_is_good_execution,
+    check_array_equality,
 ):
     """Test correctness of results when running a compiled function with tensor operators"""
     circuit = compile_numpy_function(
@@ -1113,7 +1114,7 @@ def test_compile_and_run_tensor_correctness(
     if use_check_good_exec:
         check_is_good_execution(circuit, function, numpy_test_input)
     else:
-        assert numpy.array_equal(
+        check_array_equality(
             circuit.run(*numpy_test_input),
             numpy.array(function(*numpy_test_input), dtype=numpy.uint8),
         )
@@ -1336,7 +1337,7 @@ def test_compile_and_run_constant_dot_correctness(
     ],
 )
 def test_compile_and_run_matmul_correctness(
-    lhs_shape, rhs_shape, input_range, default_compilation_configuration
+    lhs_shape, rhs_shape, input_range, default_compilation_configuration, check_array_equality
 ):
     """Test correctness of results when running a compiled function"""
 
@@ -1371,8 +1372,8 @@ def test_compile_and_run_matmul_correctness(
     )
 
     args = (numpy.random.randint(low, high + 1, size=lhs_shape, dtype=numpy.uint8),)
-    assert numpy.array_equal(operator_circuit.run(*args), using_operator(*args))
-    assert numpy.array_equal(function_circuit.run(*args), using_function(*args))
+    check_array_equality(operator_circuit.run(*args), using_operator(*args))
+    check_array_equality(function_circuit.run(*args), using_function(*args))
 
 
 @pytest.mark.parametrize(

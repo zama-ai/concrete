@@ -22,13 +22,21 @@ def complicated_topology(x, y):
 
 
 @pytest.mark.parametrize("input_shape", [(), (3, 1, 2)])
-def test_np_fhe_compiler_op_graph(input_shape, default_compilation_configuration):
+def test_np_fhe_compiler_op_graph(
+    input_shape, default_compilation_configuration, check_array_equality
+):
     """Test NPFHECompiler in two subtests."""
-    subtest_np_fhe_compiler_1_input_op_graph(input_shape, default_compilation_configuration)
-    subtest_np_fhe_compiler_2_inputs_op_graph(input_shape, default_compilation_configuration)
+    subtest_np_fhe_compiler_1_input_op_graph(
+        input_shape, default_compilation_configuration, check_array_equality
+    )
+    subtest_np_fhe_compiler_2_inputs_op_graph(
+        input_shape, default_compilation_configuration, check_array_equality
+    )
 
 
-def subtest_np_fhe_compiler_1_input_op_graph(input_shape, default_compilation_configuration):
+def subtest_np_fhe_compiler_1_input_op_graph(
+    input_shape, default_compilation_configuration, check_array_equality
+):
     """test for NPFHECompiler on one input function"""
 
     def function_to_compile(x):
@@ -48,7 +56,7 @@ def subtest_np_fhe_compiler_1_input_op_graph(input_shape, default_compilation_co
 
     for i in numpy.arange(5):
         i = numpy.ones(input_shape, dtype=numpy.int64) * i
-        assert numpy.array_equal(compiler(i), function_to_compile(i))
+        check_array_equality(compiler(i), function_to_compile(i))
 
     # For coverage, check that we flush the inputset when we query the OPGraph
     current_op_graph = compiler.op_graph
@@ -60,7 +68,7 @@ def subtest_np_fhe_compiler_1_input_op_graph(input_shape, default_compilation_co
     # Continue a bit more
     for i in numpy.arange(5, 10):
         i = numpy.ones(input_shape, dtype=numpy.int64) * i
-        assert numpy.array_equal(compiler(i), function_to_compile(i))
+        check_array_equality(compiler(i), function_to_compile(i))
 
     if input_shape == ():
         assert (
@@ -106,7 +114,9 @@ def subtest_np_fhe_compiler_1_input_op_graph(input_shape, default_compilation_co
         ), got
 
 
-def subtest_np_fhe_compiler_2_inputs_op_graph(input_shape, default_compilation_configuration):
+def subtest_np_fhe_compiler_2_inputs_op_graph(
+    input_shape, default_compilation_configuration, check_array_equality
+):
     """test for NPFHECompiler on two inputs function"""
 
     compiler = NPFHECompiler(
@@ -124,7 +134,7 @@ def subtest_np_fhe_compiler_2_inputs_op_graph(input_shape, default_compilation_c
     for i, j in zip(numpy.arange(5), numpy.arange(5, 10)):
         i = numpy.ones(input_shape, dtype=numpy.int64) * i
         j = numpy.ones(input_shape, dtype=numpy.int64) * j
-        assert numpy.array_equal(compiler(i, j), complicated_topology(i, j))
+        check_array_equality(compiler(i, j), complicated_topology(i, j))
 
     # For coverage, check that we flush the inputset when we query the OPGraph
     current_op_graph = compiler.op_graph
@@ -137,7 +147,7 @@ def subtest_np_fhe_compiler_2_inputs_op_graph(input_shape, default_compilation_c
     for i, j in zip(numpy.arange(5, 10), numpy.arange(5)):
         i = numpy.ones(input_shape, dtype=numpy.int64) * i
         j = numpy.ones(input_shape, dtype=numpy.int64) * j
-        assert numpy.array_equal(compiler(i, j), complicated_topology(i, j))
+        check_array_equality(compiler(i, j), complicated_topology(i, j))
 
     if input_shape == ():
         assert (
@@ -200,6 +210,7 @@ def test_np_fhe_compiler_auto_flush(
     inputset_len,
     expected_remaining_inputset_len,
     default_compilation_configuration,
+    check_array_equality,
 ):
     """Test the auto flush of NPFHECompiler once the inputset is 128 elements."""
 
@@ -213,7 +224,7 @@ def test_np_fhe_compiler_auto_flush(
     )
 
     for i in numpy.arange(inputset_len):
-        assert numpy.array_equal(compiler(i), function_to_compile(i))
+        check_array_equality(compiler(i), function_to_compile(i))
 
     # Check the inputset was properly flushed
     assert (
@@ -222,7 +233,7 @@ def test_np_fhe_compiler_auto_flush(
     )
 
 
-def test_np_fhe_compiler_full_compilation(default_compilation_configuration):
+def test_np_fhe_compiler_full_compilation(default_compilation_configuration, check_array_equality):
     """Test the case where we generate an FHE circuit."""
 
     def function_to_compile(x):
@@ -244,7 +255,7 @@ def test_np_fhe_compiler_full_compilation(default_compilation_configuration):
     )
 
     for i in numpy.arange(64):
-        assert numpy.array_equal(compiler(i), function_to_compile(i))
+        check_array_equality(compiler(i), function_to_compile(i))
 
     fhe_circuit = compiler.get_compiled_fhe_circuit()
 

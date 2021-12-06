@@ -335,3 +335,30 @@ def check_is_good_execution():
     """Fixture to seed torch"""
 
     return check_is_good_execution_impl
+
+
+def check_array_equality_impl(actual: Any, expected: Any, verbose: bool = True):
+    """Assert that `actual` is equal to `expected`."""
+
+    assert numpy.array_equal(actual, expected), (
+        ""
+        if not verbose
+        else f"""
+
+Expected Output
+===============
+{expected}
+
+Actual Output
+=============
+{actual}
+
+        """
+    )
+
+
+@pytest.fixture
+def check_array_equality():
+    """Fixture to check array equality"""
+
+    return check_array_equality_impl

@@ -327,7 +327,7 @@ def test_tracing_astype(
         assert expected_output == evaluated_output
 
 
-def test_tracing_astype_single_element_array_corner_case():
+def test_tracing_astype_single_element_array_corner_case(check_array_equality):
     """Test corner case where an array could be transformed to its scalar element"""
     a = numpy.array([1], dtype=numpy.float64)
 
@@ -336,7 +336,7 @@ def test_tracing_astype_single_element_array_corner_case():
     )
 
     eval_result = op_graph(a)
-    assert numpy.array_equal(numpy.array([1], dtype=numpy.int32), eval_result)
+    check_array_equality(eval_result, numpy.array([1], dtype=numpy.int32))
 
 
 @pytest.mark.parametrize(
@@ -492,6 +492,7 @@ def test_nptracer_unsupported_operands(operation, exception_type, match):
 def subtest_tracing_calls(
     function_to_trace,
     input_value_input_and_expected_output_tuples,
+    check_array_equality,
 ):
     """Test memory function managed by GenericFunction node of the form numpy.something"""
     for input_value, input_, expected_output in input_value_input_and_expected_output_tuples:
@@ -502,11 +503,7 @@ def subtest_tracing_calls(
         node_results = op_graph.evaluate({0: input_})
         evaluated_output = node_results[output_node]
         assert isinstance(evaluated_output, type(expected_output)), type(evaluated_output)
-        if not numpy.array_equal(expected_output, evaluated_output):
-            print("Wrong result")
-            print(f"Expected: {expected_output}")
-            print(f"Got     : {evaluated_output}")
-            raise AssertionError
+        check_array_equality(evaluated_output, expected_output)
 
 
 @pytest.mark.parametrize(
@@ -582,9 +579,12 @@ def subtest_tracing_calls(
 def test_tracing_numpy_calls(
     function_to_trace,
     input_value_input_and_expected_output_tuples,
+    check_array_equality,
 ):
     """Test memory function managed by GenericFunction node of the form numpy.something"""
-    subtest_tracing_calls(function_to_trace, input_value_input_and_expected_output_tuples)
+    subtest_tracing_calls(
+        function_to_trace, input_value_input_and_expected_output_tuples, check_array_equality
+    )
 
 
 @pytest.mark.parametrize(
@@ -964,9 +964,12 @@ def test_tracing_numpy_calls(
 def test_tracing_ndarray_calls(
     function_to_trace,
     input_value_input_and_expected_output_tuples,
+    check_array_equality,
 ):
     """Test memory function managed by GenericFunction node of the form ndarray.something"""
-    subtest_tracing_calls(function_to_trace, input_value_input_and_expected_output_tuples)
+    subtest_tracing_calls(
+        function_to_trace, input_value_input_and_expected_output_tuples, check_array_equality
+    )
 
 
 @pytest.mark.parametrize(

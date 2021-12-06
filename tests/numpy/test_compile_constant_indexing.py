@@ -709,6 +709,7 @@ def test_constant_indexing_run_correctness(
     test_input,
     expected_output,
     default_compilation_configuration,
+    check_array_equality,
 ):
     """Test correctness of results when running a compiled function with tensor operators"""
     circuit = compile_numpy_function(
@@ -725,19 +726,7 @@ def test_constant_indexing_run_correctness(
     output = circuit.run(*numpy_test_input)
     expected = np.array(expected_output, dtype=np.uint8)
 
-    assert np.array_equal(
-        output, expected
-    ), f"""
-
-Actual Output
-=============
-{output}
-
-Expected Output
-===============
-{expected}
-
-        """
+    check_array_equality(output, expected)
 
 
 @pytest.mark.parametrize(

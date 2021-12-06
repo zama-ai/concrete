@@ -378,6 +378,7 @@ def test_fuse_float_operations(
     warning_message,
     capfd,
     remove_color_codes,
+    check_array_equality,
 ):
     """Test function for fuse_float_operations"""
 
@@ -405,7 +406,7 @@ def test_fuse_float_operations(
                 input_ = numpy.full(param_input_value.shape, input_, dtype=numpy.int32)
             inputs += (input_,)
 
-        assert numpy.array_equal(function_to_trace(*inputs), op_graph(*inputs))
+        check_array_equality(function_to_trace(*inputs), op_graph(*inputs))
 
 
 def subtest_tensor_no_fuse(fun, tensor_shape):
