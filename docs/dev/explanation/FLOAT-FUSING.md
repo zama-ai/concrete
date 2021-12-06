@@ -1,7 +1,3 @@
-```{warning}
-FIXME(Arthur): explain recent updates on the fusing
-```
-
 # Fusing Floating Point Operations
 
 ## Why is it needed?
@@ -43,7 +39,7 @@ The simplified graph of operations with the float subgraph condensed in an `Gene
 
 The first step consists in detecting where we go from floating point computation back to integers. This allows to identify the potential terminal node of the float subgraph we are going to fuse.
 
-From the terminal node, we go back up through the nodes until we find nodes that go from integers to floats. If we can guarantee the identified float subgraph has a single variable integer input then we can replace it by an equivalent GenericFunction node.
+From the terminal node, we go back up through the nodes until we find nodes that go from integers to floats. If we find a single node then we have a fusable subgraph we can replace it by an equivalent GenericFunction node. If we find more than one such node we try to find a single common ancestor that would go from integers to floats. We repeat the process as long as there are potential ancestors nodes, stopping if we find a suitable float subgraph with a single integer input and a single integer output.
 
 An example of a non fusable computation with that technique is:
 
@@ -59,4 +55,4 @@ def non_fusable(x, y):
     return add_int
 ```
 
-From `add_int` you will find two `Add` nodes going from int to float (`x_1` and `y_1`) which we cannot represent with a single input table look-up.
+From `add_int` you will find two `Add` nodes going from int to float (`x_1` and `y_1`) which we cannot represent with a single input table look-up. Kolmogorov–Arnold representation theorem states that every multivariate continuous function can be represented as a superposition of continuous functions of one variable ([from Wikipedia](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Arnold_representation_theorem)), so the above case could be handled in future versions of **Concrete**.
