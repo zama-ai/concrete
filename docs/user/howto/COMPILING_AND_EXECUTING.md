@@ -1,7 +1,3 @@
-```{warning}
-FIXME(all): I've moved this section (from how-to) to the basic section, because it must be read before the tutorials
-```
-
 # Compiling and Executing
 
 ## Importing necessary components
@@ -24,21 +20,15 @@ def f(x, y):
 
 ## Compiling the function
 
-```{warning}
-FIXME(arthur): move to the new API
-FIXME(all): do you think guys we should just explain the new API or should we explain the two API's? I would say: just the new one, and maybe the old one in the dev section (but not ever sure).
-
-```
-
 To compile the function, you need to provide what are the inputs that it's expecting. In the example function above, `x` and `y` could be scalars or tensors (though, for now, only dot between tensors are supported), they can be encrypted or clear, they can be signed or unsigned, they can have different bit-widths. So, we need to know what they are beforehand. We can do that like so:
 
 <!--python-test:cont-->
 ```python
-x = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
-y = hnp.EncryptedScalar(hnp.UnsignedInteger(3))
+x = "encrypted"
+y = "encrypted"
 ```
 
-In this configuration, both `x` and `y` are 3-bit unsigned integers, so they have the range of `[0, 2**3 - 1]`
+In this configuration, both `x` and `y` will be encrypted values.
 
 We also need an inputset. It is to determine the bit-widths of the intermediate results. It should be an iterable yielding tuples in the same order as the inputs of the function to compile. There should be at least 10 inputs in the input set to avoid warnings (except for functions with less than 10 possible inputs). The warning is there because the bigger the input set, the better the bounds will be.
 
@@ -51,11 +41,37 @@ Finally, we can compile our function to its homomorphic equivalent.
 
 <!--python-test:cont-->
 ```python
-circuit = hnp.compile_numpy_function(
+compiler = hnp.NPFHECompiler(
     f, {"x": x, "y": y},
-    inputset=inputset,
 )
+
+# You can either evaluate in one go:
+compiler.eval_on_inputset(inputset)
+
+# Or progressively:
+for input_values in inputset:
+    compiler(*input_values)
+
+# You can print the traced graph
+print(str(compiler))
+
+# Outputs
+
+# %0 = x                  # EncryptedScalar<uint3>
+# %1 = y                  # EncryptedScalar<uint3>
+# %2 = add(%0, %1)        # EncryptedScalar<uint4>
+# return %2
+
+# Or draw it
+compiler.draw_graph(show=True)
+
+circuit = compiler.get_compiled_fhe_circuit()
+
 ```
+
+Here is the graph from the previous code block drawn with `draw_graph`:
+
+![Drawn graph of previous code block](../../_static/howto/compiling_and_executing_example_graph.png)
 
 ## Performing homomorphic evaluation
 
