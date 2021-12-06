@@ -2,10 +2,14 @@
 
 from copy import deepcopy
 from enum import Enum, unique
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+
+from loguru import logger
 
 from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..common.data_types import Integer
+from ..common.debugging import draw_graph, format_operation_graph
 from ..common.fhe_circuit import FHECircuit
 from ..common.operator_graph import OPGraph
 from ..common.representation.intermediate import IntermediateNode
@@ -126,6 +130,45 @@ class NPFHECompiler:
         # For mypy
         assert self._op_graph is not None
         return self._op_graph(*args)
+
+    def __str__(self) -> str:
+        self._eval_on_current_inputset()
+        if self._op_graph is None:
+            warning_msg = (
+                f"__str__ failed: OPGraph is None, {self.__class__.__name__} "
+                "needs evaluation on an inputset"
+            )
+            logger.warning(warning_msg)
+            return warning_msg
+        return format_operation_graph(self._op_graph)
+
+    def draw_graph(
+        self,
+        show: bool = False,
+        vertical: bool = True,
+        save_to: Optional[Path] = None,
+    ) -> Optional[str]:
+        """Draws operation graphs and optionally saves/shows the drawing.
+
+        Args:
+            op_graph (OPGraph): the operation graph to be drawn and optionally saved/shown
+            show (bool): if set to True, the drawing will be shown using matplotlib
+            vertical (bool): if set to True, the orientation will be vertical
+            save_to (Optional[Path]): if specified, the drawn graph will be saved to this path; else
+                it is saved in a temporary file
+
+        Returns:
+            Optional[str]: if OPGraph was not None returns the path as a string of the file where
+                the drawn graph is saved
+        """
+        self._eval_on_current_inputset()
+        if self._op_graph is None:
+            logger.warning(
+                f"{self.draw_graph.__name__} failed: OPGraph is None, {self.__class__.__name__} "
+                "needs evaluation on an inputset"
+            )
+            return None
+        return draw_graph(self._op_graph, show, vertical, save_to)
 
     def eval_on_inputset(self, inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]]) -> None:
         """Evaluate the underlying function on an inputset in one go, populates OPGraph and bounds.

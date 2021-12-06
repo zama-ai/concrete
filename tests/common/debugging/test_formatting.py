@@ -5,6 +5,7 @@ import numpy
 from concrete.common.data_types.integers import Integer, UnsignedInteger
 from concrete.common.debugging import format_operation_graph
 from concrete.common.values import EncryptedScalar
+from concrete.numpy import NPFHECompiler
 from concrete.numpy.compile import (
     compile_numpy_function,
     compile_numpy_function_into_op_graph_and_measure_bounds,
@@ -98,9 +99,8 @@ def test_format_operation_graph_with_fusing(default_compilation_configuration):
         default_compilation_configuration,
     )
 
-    assert (
-        str(circuit)
-        == """
+    assert (got := str(circuit)) == (
+        """
 
 %0 = x                   # EncryptedScalar<uint5>
 %1 = 1                   # ClearScalar<uint6>
@@ -122,4 +122,39 @@ Subgraphs:
         return %6
 
 """.strip()
-    ), str(circuit)
+    ), got
+
+    compiler = NPFHECompiler(function, {"x": "encrypted"}, default_compilation_configuration)
+
+    assert (
+        got := str(compiler)
+    ) == "__str__ failed: OPGraph is None, NPFHECompiler needs evaluation on an inputset", got
+
+    compiler.eval_on_inputset(range(2 ** 3))
+
+    # String is different here as the type that is first propagated to trace the opgraph is not the
+    # same
+
+    assert (got := str(compiler)) == (
+        """
+
+%0 = x                   # EncryptedScalar<uint3>
+%1 = 1                   # ClearScalar<uint1>
+%2 = add(%0, %1)         # EncryptedScalar<uint4>
+%3 = subgraph(%2)        # EncryptedScalar<uint5>
+return %3
+
+Subgraphs:
+
+    %3 = subgraph(%2):
+
+        %0 = 10                              # ClearScalar<uint4>
+        %1 = 1                               # ClearScalar<uint1>
+        %2 = float_subgraph_input            # EncryptedScalar<uint1>
+        %3 = cos(%2)                         # EncryptedScalar<float64>
+        %4 = add(%3, %1)                     # EncryptedScalar<float64>
+        %5 = mul(%4, %0)                     # EncryptedScalar<float64>
+        %6 = astype(%5, dtype=uint32)        # EncryptedScalar<uint5>
+        return %6
+""".strip()
+    ), got
