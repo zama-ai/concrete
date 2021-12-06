@@ -59,7 +59,7 @@ class QuantizedArray:
         qvalues = self.values / scale + zero_point
 
         qvalues = (
-            qvalues.round()
+            numpy.rint(qvalues)
             .clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
             .astype(int)  # Careful this can be very large with high number of bits
         )
@@ -100,8 +100,7 @@ class QuantizedArray:
         """
 
         self.qvalues = (
-            (self.values / self.scale + self.zero_point)
-            .round()
+            numpy.rint(self.values / self.scale + self.zero_point)
             .clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
             .astype(int)
         )

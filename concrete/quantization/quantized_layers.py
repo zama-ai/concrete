@@ -96,7 +96,7 @@ class QuantizedLinear:
         numpy_q_out = m_matmul * numpy_q_out
         numpy_q_out = self.q_out.zero_point + bias_part + numpy_q_out
 
-        numpy_q_out = numpy_q_out.clip(0, 2 ** self.q_out.n_bits - 1).astype(int)
+        numpy_q_out = numpy.rint(numpy_q_out).clip(0, 2 ** self.q_out.n_bits - 1).astype(int)
 
         # TODO find a more intuitive way to do the following (see issue #832)
         # We should be able to reuse q_out quantization parameters
