@@ -31,7 +31,7 @@ The float subgraph that was detected:
 
 ![](../../_static/float_fusing_example/subgraph.png)
 
-The simplified graph of operations with the float subgraph condensed in an `GenericFunction` node:
+The simplified graph of operations with the float subgraph condensed in a `GenericFunction` node:
 
 ![](../../_static/float_fusing_example/after.png)
 
@@ -39,7 +39,35 @@ The simplified graph of operations with the float subgraph condensed in an `Gene
 
 The first step consists in detecting where we go from floating point computation back to integers. This allows to identify the potential terminal node of the float subgraph we are going to fuse.
 
-From the terminal node, we go back up through the nodes until we find nodes that go from integers to floats. If we find a single node then we have a fusable subgraph we can replace it by an equivalent GenericFunction node. If we find more than one such node we try to find a single common ancestor that would go from integers to floats. We repeat the process as long as there are potential ancestors nodes, stopping if we find a suitable float subgraph with a single integer input and a single integer output.
+From the terminal node, we go back up through the nodes until we find nodes that go from integers to floats. If we find a single node then we have a fusable subgraph that we replace by an equivalent GenericFunction node and stop the search for fusable subgraphs for the terminal node being considered. If we find more than one such node we try to find a single common ancestor that would go from integers to floats. We repeat the process as long as there are potential ancestors nodes, stopping if we find a suitable float subgraph with a single integer input and a single integer output.
+
+Here is an example benefiting from the expanded search:
+
+<!--python-test:skip-->
+```python
+def fusable_with_bigger_search(x, y):
+    """fusable with bigger search"""
+    x = x + 1
+    x_1 = x.astype(numpy.int32)
+    x_1 = x_1 + 1.5
+    x_2 = x.astype(numpy.int32)
+    x_2 = x_2 + 3.4
+    add = x_1 + x_2
+    add_int = add.astype(numpy.int32)
+    return add_int + y
+```
+
+The `fusable_with_bigger_search` graph of operations:
+
+![](../../_static/float_fusing_example/before_bigger_search.png)
+
+The float subgraph that was detected:
+
+![](../../_static/float_fusing_example/subgraph_bigger_search.png)
+
+The simplified graph of operations with the float subgraph condensed in a `GenericFunction` node:
+
+![](../../_static/float_fusing_example/after_bigger_search.png)
 
 An example of a non fusable computation with that technique is:
 
