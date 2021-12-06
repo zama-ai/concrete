@@ -1,10 +1,3 @@
-```{warning}
-FIXME(arthur): to update if needed
-```
-```{warning}
-FIXME(arthur): to add a new .md about pypy if needed
-```
-
 # Docker
 
 ## Setting up docker and X forwarding
@@ -54,6 +47,8 @@ Once you do that you can get inside the docker environment using the following c
 
 ```shell
 make docker_build_and_start
+# or equivalently but shorter
+make docker_bas
 ```
 
 After you finish your work, you can leave the docker by using the `exit` command or by pressing `CTRL + D`.
