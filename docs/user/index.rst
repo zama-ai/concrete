@@ -18,6 +18,7 @@ Getting Started
    tutorial/ARITHMETIC_OPERATIONS.md
    tutorial/TABLE_LOOKUP.md
    tutorial/WORKING_WITH_FLOATING_POINTS.md
+   tutorial/NUMPY_SUPPORT.md
    tutorial/INDEXING.md
    tutorial/MACHINE_LEARNING_TOOLS.md
    tutorial/COMPILATION_ARTIFACTS.md

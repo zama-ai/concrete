@@ -45,6 +45,9 @@ def main(file_to_update):
             newlines.extend(f"- {f}\n" for f in supported_unary_ufunc)
 
             newlines.append("\n")
+            newlines.append("## Binary operations\n")
+            newlines.append("\n")
+
             newlines.append(
                 "List of supported binary functions if one of the "
                 "two operators is a constant scalar:\n"
