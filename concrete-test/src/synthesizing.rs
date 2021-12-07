@@ -1,7 +1,7 @@
 //! A module to synthesize actual entities from prototypical entities.
 //!
-//! This module allows to convert back and forth, prototypical entities to the actual entity types
-//! used for tests.
+//! This module allows to convert back and forth between prototypical entities to the actual entity
+//! types used for tests.
 use crate::prototyping::prototyper::Prototyper;
 use crate::prototyping::prototypes::*;
 use crate::prototyping::*;

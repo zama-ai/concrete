@@ -1,10 +1,10 @@
 //! A module manipulating objects in the prototype space.
 //!
-//! Generating the entities used as inputs to engine methods, usually requires several steps to
+//! Generating the entities used as inputs to engine methods usually requires several steps to
 //! ensure the compatibility on inputs (same secret keys for instance). Maintaining a separate
-//! function to generate every combinations of entity types implemented by `concrete_core` backends
+//! function to generate every combination of entity types implemented by `concrete_core` backends
 //! is not possible. For this reason, all those manipulations are performed on _prototypical_
-//! entities, before being transformed to actual entities buy the [`crate::synthesizing`] module.
+//! entities, before being transformed to actual entities by the [`crate::synthesizing`] module.
 //!
 //! In particular, this module allows to address the following steps of a test:
 //!
