@@ -1,0 +1,15 @@
+[package]
+name = "concrete-test"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+concrete-core = { path="../concrete-core" }
+concrete-commons = { path="../concrete-commons" }
+concrete-npe = {path="../concrete-npe"}
+kolmogorov_smirnov = "1.1.0"
+lazy_static = "1.4.0"
+
+[features]
+default = ["backend_core"]
+backend_core = []
