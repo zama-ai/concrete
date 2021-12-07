@@ -368,12 +368,12 @@ CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
   auto objectPath = sourceName + OBJECT_EXT;
   auto error = mlir::zamalang::emitObject(*module, objectPath);
 
-  if (!error) {
-    addExtraObjectFilePath(objectPath);
-    return objectPath;
+  if (error) {
+    return std::move(error);
   }
 
-  return error;
+  addExtraObjectFilePath(objectPath);
+  return objectPath;
 }
 
 bool stringEndsWith(std::string path, std::string requiredExt) {
