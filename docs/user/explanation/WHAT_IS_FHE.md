@@ -9,8 +9,4 @@ You can learn more about FHE using the following links:
 - [quick overview](https://6min.zama.ai/)
 - [monthly technical FHE.org meetup](https://www.meetup.com/fhe-org/)
 - [videos and resources](http://fhe.org/)
-
-```{warning}
-FIXME(Alex/Jeremy): should we link to Zama blogposts or not?
-FIXME(Benoit): if yes, I'll do it
-```
+- [Homomorphic Encryption 101](https://medium.com/zama-ai/homomorphic-encryption-101-c1524fb76013)
