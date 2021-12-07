@@ -1,30 +1,29 @@
-```{warning}
-FIXME(Arthur): update a bit, with the new API
-```
-
 # Working With Floating Points
 
 ## An example
 
-<!--python-test:skip-->
 ```python
+import numpy as np
+import concrete.numpy as hnp
+
+# Function using floating points values converted back to integers at the end
 def f(x):
-    np.fabs(100 * (2 * np.sin(x) * np.cos(x))).astype(np.uint32) # astype is to go back to integer world
-```
+    return np.fabs(50 * (2 * np.sin(x) * np.cos(x))).astype(np.uint32)
+    # astype is to go back to the integer world
 
-where
+# Compiling with x encrypted
+compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
+compiler.eval_on_inputset(range(64))
 
-- `x = EncryptedScalar(UnsignedInteger(bits))`
+circuit = compiler.get_compiled_fhe_circuit()
 
-results in
+assert circuit.run(3) == f(3)
+assert circuit.run(0) == f(0)
+assert circuit.run(1) == f(1)
+assert circuit.run(10) == f(10)
+assert circuit.run(60) == f(60)
 
-<!--python-test:skip-->
-```python
-circuit.run(3) == 27
-circuit.run(0) == 0
-circuit.run(1) == 90
-circuit.run(10) == 91
-circuit.run(60) == 58
+print("All good!")
 ```
 
 ## Supported operations
