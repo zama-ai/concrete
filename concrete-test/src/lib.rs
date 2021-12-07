@@ -5,7 +5,7 @@
 //! formulas implemented in `concrete_npe`)
 //!
 //! The generic nature of the test functions implemented here, makes it possible to test every
-//! operators of the `concrete-core` library, using the same functions. Then, testing a new backend
+//! operator of the `concrete-core` library, using the same functions. Then, testing a new backend
 //! mainly consists in appropriately instantiating the tests.
 //!
 //! # Test architecture
@@ -45,8 +45,8 @@
 //! <------------ Retrieve the prototypical output entities from the actual output entities
 //! ```
 //!
-//! The [`generics`] module contains function which articulate all the aforementioned steps plus:
-//! ```ascii
+//! The [`generics`] module contains the actual test functions which use all the aforementioned
+//! steps plus: ```ascii
 //! ---------------------> Call the tested engine on the actual input entities
 //! ```
 
@@ -76,7 +76,7 @@ pub const SAMPLE_SIZE: SampleSize = SampleSize(1000);
 ///
 /// + Convert back and forth between raw integer types and prototypical plaintexts.
 /// + Manipulate prototypical entities, to generate compatible prototypical inputs for tests.
-/// + Convert back and forth between prototypical entities and actual entity type used for the
+/// + Convert back and forth between prototypical entities and actual entity types used for the
 /// tests.
 pub struct Maker {
     #[cfg(feature = "backend_core")]
