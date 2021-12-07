@@ -8,7 +8,8 @@ members = [
     "concrete-commons",
     "concrete-tasks",
     "concrete-boolean",
-    "concrete-benchmark"
+    "concrete-benchmark",
+    "concrete-test"
 ]
 
 [patch.crates-io]
