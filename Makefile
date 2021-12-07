@@ -333,11 +333,12 @@ licences:
 .PHONY: check_licences # Check if the licenses of dependencies have changed
 check_licences:
 	@TMP_OUT="$$(mktemp)" && \
-	if ! ./script/make_utils/licences.sh --check > "$${TMP_OUT}"; then \
+	if ! poetry run env bash ./script/make_utils/licences.sh --check > "$${TMP_OUT}"; then \
 		cat "$${TMP_OUT}"; \
 		rm -f "$${TMP_OUT}"; \
 		echo "Error while checking licences, see log above."; \
 		echo "Consider re-running 'make licences'"; \
+		exit 1; \
 	else \
 		echo "Licences check OK"; \
 	fi
