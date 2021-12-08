@@ -145,15 +145,6 @@ mypy_script:
 mypy_ci:
 	$(MAKE) --keep-going mypy mypy_test mypy_benchmark mypy_script
 
-.PHONY: pytest_and_coverage #  Launch pytest and its coverage check
-pytest_and_coverage: pytest coverage
-
-.PHONY: coverage # Check the coverage of code (within pytest)
-coverage:
-	@if [[ "$$BB" == "" ]]; then BB=origin/main; fi && \
-	poetry run diff-cover coverage.xml --fail-under 100 \
-	--html-report coverage.html --compare-branch $$BB
-
 .PHONY: docker_build # Build dev docker
 docker_build:
 	docker build --pull -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
@@ -211,9 +202,6 @@ clean_docs:
 open_docs:
 	@# This is macOS only. On other systems, one would use `start` or `xdg-open`
 	open docs/_build/html/index.html
-
-.PHONY: build_and_open_docs # Build HTML docs and open it in a browser (macOS only)
-build_and_open_docs: clean_docs docs open_docs
 
 .PHONY: pydocstyle # Launch syntax checker on source code documentation
 pydocstyle:
