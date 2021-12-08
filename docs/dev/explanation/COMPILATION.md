@@ -28,7 +28,7 @@ circuit = compiler.get_compiled_fhe_circuit()
 circuit.run(1, 0)
 ```
 
-## Overview
+## Overview of the numpy compilation process
 
 The compilation journey begins with tracing to get an easy to understand and manipulate representation of the function.
 We call this representation `Operation Graph` which is basically a Directed Acyclic Graph (DAG) containing nodes representing the computations done in the function.
@@ -51,11 +51,23 @@ Once the MLIR is prepared, the rest of the stack, which you can learn more about
 
 Here is the visual representation of the pipeline:
 
-```{warning}
-FIXME(arthur): check the graph, update with what is missing, notably: torch to numpy, quantization. Maybe an independant graph for quantization may be clearer.
-```
-
 ![Frontend Flow](../../_static/compilation-pipeline/frontend_flow.svg)
+
+## Overview of the torch compilation process
+
+Compiling a torch Module is pretty straightforward.
+
+The torch Module is first converted to a NumPy equivalent we call `NumpyModule` if all the layers in the torch Module are supported.
+
+Then the module is quantized post training to be compatible with our compiler which only works on integers. The post training quantization uses the provided dataset for calibration.
+
+The dataset is then quantized to be usable for compilation with the QuantizedModule.
+
+The QuantizedModule is compiled yielding an executable FHECircuit.
+
+Here is the visual representation of the different steps:
+
+![Torch compilation flow](../../_static/compilation-pipeline/torch_to_numpy_flow.svg)
 
 ## Tracing
 
