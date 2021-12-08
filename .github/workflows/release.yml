@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - master
-
-  workflow_dispatch:
+    tags:
+      - "v*"
 
 jobs:
-  BuildAndPushArtifactsLinux:
+  BuildAndReleaseWithArtifactsLinux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -26,41 +26,18 @@ jobs:
           make package_py310
           make release_tarballs
 
-      - name: Upload Python3.8 Package
-        uses: svenstaro/upload-release-action@v2
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
-          tag: v0.1.0-alpha
-          file: wheels/concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
-          asset_name: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
-          overwrite: true
-
-      - name: Upload Python3.9 Package
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
-          tag: v0.1.0-alpha
-          file: wheels/concretefhe_compiler-0.1.0-cp39-cp39-manylinux_2_24_x86_64.whl
-          asset_name: concretefhe_compiler-0.1.0-cp39-cp39-manylinux_2_24_x86_64.whl
-          overwrite: true
-
-      - name: Upload Python3.10 Package
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
-          tag: v0.1.0-alpha
-          file: wheels/concretefhe_compiler-0.1.0-cp310-cp310-manylinux_2_24_x86_64.whl
-          asset_name: concretefhe_compiler-0.1.0-cp310-cp310-manylinux_2_24_x86_64.whl
-          overwrite: true
-
-      - name: Upload Zamacompiler Tarball
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GH_TOKEN_RELEASE }}
-          tag: v0.1.0-alpha
-          file: tarballs/zamacompiler.tar.gz
-          asset_name: zamacompiler.tar.gz
-          overwrite: true
+          token: ${{ secrets.GH_TOKEN_RELEASE }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            wheels/concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
+            wheels/concretefhe_compiler-0.1.0-cp39-cp39-manylinux_2_24_x86_64.whl
+            wheels/concretefhe_compiler-0.1.0-cp310-cp310-manylinux_2_24_x86_64.whl
+            tarballs/zamacompiler.tar.gz
 
   # TODO(MacOS)
   # - clone concrete and build concrete-ffi
