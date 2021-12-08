@@ -33,8 +33,8 @@ class CompilationArtifacts:
     bounds_of_the_final_operation_graph: Optional[Dict[IntermediateNode, Dict[str, Any]]]
     mlir_of_the_final_operation_graph: Optional[str]
 
-    def __init__(self, output_directory: Path = DEFAULT_OUTPUT_DIRECTORY):
-        self.output_directory = output_directory
+    def __init__(self, output_directory: Union[Path, str] = DEFAULT_OUTPUT_DIRECTORY):
+        self.output_directory = Path(output_directory)
 
         self.source_code_of_the_function_to_compile = None
         self.parameters_of_the_function_to_compile = {}
