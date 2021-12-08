@@ -43,31 +43,34 @@ Hopefully, it is just a misunderstanding or a small mistake on your side, that o
 
 When things are more complicated, or if you want to have a look by yourself, you may want to have a look to the compilation reports, which are called artifacts. This is as simple as described in [here](../tutorial/COMPILATION_ARTIFACTS.md)
 
-This function will create a directory, containing notably:
-```{warning}
-FIXME(Umut): check it is still accurate
-```
-- bounds.txt: a file describing the expected ranges of data in the different steps of the computation
-- cryptographic_parameters.txt: a file describing the different keys
-- ir_nodes.txt: a file describing the different nodes in the intermediate representation (IR)
-- optimizations_applied.txt: a file describing the different optimizations which were applied
-- target_nodes.txt: a file describing the different nodes in the VM graph
+The artifact system will create a directory, containing:
+- **environment.txt:** information about your system
+- **requirements.txt:** information about your python dependencies
+- **function.txt:** source code of the function you are compiling
+- **parameters.txt:** parameters you specified for compilation
+- **1.initial.graph.txt:** textual representation of the initial computation graph right after tracing
+- **1.initial.graph.png:** visual representation of the initial computation graph right after tracing
+- ...
+- **X.description.graph.txt:** textual representation of the Xth computation graph after topological transforms
+- **X.description.graph.png:** visual representation of the Xth computation graph after topological transforms
+- ...
+- **N.final.graph.txt:** textual representation of the final computation graph right before MLIR conversion
+- **N.final.graph.png:** visual representation of the final computation graph right before MLIR conversion
+- **bounds.txt:** ranges of data in the different steps of the computation for the final graph that is being compiled
+- **mlir.txt**: resulting MLIR code that is sent to the compiler (if compilation succeeded)
+- **traceback.txt**: information about the error you encountered (if compilation failed)
+
 
 Attaching the artifact with your issue or Slack message may help people to have a look at the core of the problem.
 The more precise your bug, the more likely we can reproduce and fix
 
-```{warning}
-FIXME(Umut): is it still needed or do we already have some of those information in artifacts?
-```
-
-In order to simplify our work and let us reproduce your bug easily, any information is useful. Notably, in addition to the python script, some information like:
-- the OS version
-- the python version
-- the python packages you use
-- the reproducibility rate you see on your side
+To simplify our work and let us reproduce your bug easily, we need all the information we can get. So, in addition to your python script, the following information would be very useful.
+- compilation artifacts
+- reproducibility rate you see on your side
 - any insight you might have on the bug
 - any workaround you have been able to find
-may be useful to us. Don't remember, **Concrete** is a project where we are open to contribution, more information at Contributing (TODO: add a link).
+
+Remember, **Concrete Framework** is a project where we are open to contributions, more information at [Contributing](../../dev/howto/CONTRIBUTING.md).
 
 ## Submitting an issue
 

@@ -1,5 +1,6 @@
 ```{warning}
 FIXME(all): should we update to the new API or have it for both?
+FIXME(all): we should add an example drawing and printing with fusing (so subgraphs)
 ```
 
 # Printing and Drawing

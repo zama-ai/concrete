@@ -1,7 +1,3 @@
-```{warning}
-FIXME(Umut): check it is still valid. I guess yes, but some files may have gone or renamed.
-```
-
 # Compilation Artifacts
 
 In this tutorial, we are going to go over the artifact system, which is designed to inspect/debug the compilation process easily. 
@@ -16,7 +12,7 @@ def f(x):
     return np.sin(x)
 ```
 
-This function fails (for now) to compile because `Concrete` doesn't support floating point outputs. When you try to compile it (you might want to check [this](../howto/COMPILING_AND_EXECUTING.md) to see how you can do that), an exception will be raised and the artifacts will be exported automatically.
+This function fails to compile because **Concrete Framework** doesn't support floating point outputs. When you try to compile it (you might want to check [this](../howto/COMPILING_AND_EXECUTING.md) to see how you can do that), an exception will be raised and the artifacts will be exported automatically.
 
 ### environment.txt
 
@@ -60,19 +56,35 @@ x :: EncryptedScalar<Integer<unsigned, 3 bits>>
 
 ### 1.initial.graph.txt
 
-This file contains information about the initial computation graph of the function you are trying to compile.
+This file contains textual representation of the initial computation graph right after tracing.
 
 ```
-%0 = x                                   # EncryptedScalar<Integer<unsigned, 3 bits>>
-%1 = np.sin(0)                           # EncryptedScalar<Float<64 bits>>
-return(%1)
+%0 = x              # EncryptedScalar<uint3>
+%1 = sin(%0)        # EncryptedScalar<float64>
+return %1
 ```
 
 ### 1.initial.graph.png
 
-This file contains the visualization of the initial computation graph of the function you are trying to compile.
+This file contains the visual representation of the initial computation graph right after tracing.
 
 ![](../../_static/tutorials/artifacts/auto/1.initial.graph.png)
+
+### 2.final.graph.txt
+
+This file contains textual representation of the final computation graph right before MLIR conversion.
+
+```
+%0 = x              # EncryptedScalar<uint3>
+%1 = sin(%0)        # EncryptedScalar<float64>
+return %1
+```
+
+### 2.final.graph.png
+
+This file contains the visual representation of the final computation graph right before MLIR conversion.
+
+![](../../_static/tutorials/artifacts/auto/2.final.graph.png)
 
 ### traceback.txt
 
@@ -80,14 +92,22 @@ This file contains information about the error you got.
 
 ```
 Traceback (most recent call last):
-  File "/src/concrete/numpy/compile.py", line 301, in compile_numpy_function
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 141, in run_compilation_function_with_error_management
+    return compilation_function()
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 769, in compilation_function
     return _compile_numpy_function_internal(
-  File "/src/concrete/numpy/compile.py", line 234, in _compile_numpy_function_internal
-    op_graph = _compile_numpy_function_into_op_graph_internal(
-  File "/src/concrete/numpy/compile.py", line 103, in _compile_numpy_function_into_op_graph_internal
-    raise ValueError(
-ValueError: <lambda> cannot be compiled as it has nodes with either float inputs or outputs.
-Offending nodes : <concrete.common.representation.intermediate.GenericFunction object at 0x7f6689fd37f0>
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 722, in _compile_numpy_function_internal
+    fhe_circuit = _compile_op_graph_to_fhe_circuit_internal(
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 626, in _compile_op_graph_to_fhe_circuit_internal
+    prepare_op_graph_for_mlir(op_graph)
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 597, in prepare_op_graph_for_mlir
+    raise RuntimeError(
+RuntimeError: function you are trying to compile isn't supported for MLIR lowering
+
+%0 = x              # EncryptedScalar<uint3>
+%1 = sin(%0)        # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer outputs are supported
+return %1
 ```
 
 ## Manual export
@@ -96,74 +116,114 @@ Manual exports are mostly used for visualization. Nonetheless, they can be very 
 
 ```python
 import concrete.numpy as hnp
+import numpy as np
 import pathlib
 
+def f(x):
+    return 127 - (50 * (np.sin(x) + 1)).astype(np.uint32)
+
 artifacts = hnp.CompilationArtifacts(pathlib.Path("/tmp/custom/export/path"))
-hnp.compile_numpy_function(
-    lambda x: 100 - (3 * (x + 2)),
-    {"x": hnp.EncryptedScalar(hnp.UnsignedInteger(3))},
-    inputset=range(2 ** 3),
-    compilation_artifacts=artifacts,
-)
+
+compiler = hnp.NPFHECompiler(f, {"x": "encrypted"}, compilation_artifacts=artifacts)
+compiler.eval_on_inputset(range(2 ** 3))
+
 artifacts.export()
 ```
 
-Since this example compiles, we can see some new artifacts. 
-
 ### 1.initial.graph.txt
 
-This file contains information about the initial computation graph of the function you are trying to compile.
+This file contains textual representation of the initial computation graph right after tracing.
 
 ```
-%0 = Constant(100)                       # ClearScalar<Integer<unsigned, 7 bits>>
-%1 = Constant(3)                         # ClearScalar<Integer<unsigned, 2 bits>>
-%2 = x                                   # EncryptedScalar<Integer<unsigned, 3 bits>>
-%3 = Constant(2)                         # ClearScalar<Integer<unsigned, 2 bits>>
-%4 = Add(2, 3)                           # EncryptedScalar<Integer<unsigned, 3 bits>>
-%5 = Mul(4, 1)                           # EncryptedScalar<Integer<unsigned, 3 bits>>
-%6 = Sub(0, 5)                           # EncryptedScalar<Integer<unsigned, 7 bits>>
-return(%6)
+%0 = 127                             # ClearScalar<uint7>
+%1 = 50                              # ClearScalar<uint6>
+%2 = 1                               # ClearScalar<uint1>
+%3 = x                               # EncryptedScalar<uint3>
+%4 = sin(%3)                         # EncryptedScalar<float64>
+%5 = add(%4, %2)                     # EncryptedScalar<float64>
+%6 = mul(%5, %1)                     # EncryptedScalar<float64>
+%7 = astype(%6, dtype=uint32)        # EncryptedScalar<uint32>
+%8 = sub(%0, %7)                     # EncryptedScalar<uint32>
+return %8
 ```
 
 ### 1.initial.graph.png
 
-This file contains the visualization of the initial computation graph of the function you are trying to compile.
+This file contains the visual representation of the initial computation graph right after tracing.
 
 ![](../../_static/tutorials/artifacts/manual/1.initial.graph.png)
 
-### 2.final.graph.txt
+### 2.after-float-fuse-0.graph.txt
 
-This file contains information about the final computation graph of the function you are trying to compile.
+This file contains textual representation of the intermediate computation graph after fusing.
 
 ```
-%0 = Constant(100)                       # ClearScalar<Integer<unsigned, 7 bits>>
-%1 = Constant(3)                         # ClearScalar<Integer<unsigned, 2 bits>>
-%2 = x                                   # EncryptedScalar<Integer<unsigned, 3 bits>>
-%3 = Constant(2)                         # ClearScalar<Integer<unsigned, 2 bits>>
-%4 = Add(2, 3)                           # EncryptedScalar<Integer<unsigned, 4 bits>>
-%5 = Mul(4, 1)                           # EncryptedScalar<Integer<unsigned, 5 bits>>
-%6 = Sub(0, 5)                           # EncryptedScalar<Integer<unsigned, 7 bits>>
-return(%6)
+%0 = 127                 # ClearScalar<uint7>
+%1 = x                   # EncryptedScalar<uint3>
+%2 = subgraph(%1)        # EncryptedScalar<uint32>
+%3 = sub(%0, %2)         # EncryptedScalar<uint32>
+return %3
+
+Subgraphs:
+
+    %2 = subgraph(%1):
+
+        %0 = 50                              # ClearScalar<uint6>
+        %1 = 1                               # ClearScalar<uint1>
+        %2 = float_subgraph_input            # EncryptedScalar<uint3>
+        %3 = sin(%2)                         # EncryptedScalar<float64>
+        %4 = add(%3, %1)                     # EncryptedScalar<float64>
+        %5 = mul(%4, %0)                     # EncryptedScalar<float64>
+        %6 = astype(%5, dtype=uint32)        # EncryptedScalar<uint32>
+        return %6
 ```
 
-### 2.final.graph.png
+### 2.after-float-fuse-0.graph.png
 
-This file contains the visualization of the final computation graph of the function you are trying to compile.
+This file contains the visual representation of the intermediate computation graph after fusing.
 
-![](../../_static/tutorials/artifacts/manual/2.final.graph.png)
+![](../../_static/tutorials/artifacts/manual/2.after-float-fuse-0.graph.png)
+
+### 3.final.graph.txt
+
+This file contains textual representation of the final computation graph right before MLIR conversion.
+
+```
+%0 = 127                 # ClearScalar<uint7>
+%1 = x                   # EncryptedScalar<uint3>
+%2 = subgraph(%1)        # EncryptedScalar<uint7>
+%3 = sub(%0, %2)         # EncryptedScalar<uint7>
+return %3
+
+Subgraphs:
+
+    %2 = subgraph(%1):
+
+        %0 = 50                              # ClearScalar<uint6>
+        %1 = 1                               # ClearScalar<uint1>
+        %2 = float_subgraph_input            # EncryptedScalar<uint3>
+        %3 = sin(%2)                         # EncryptedScalar<float64>
+        %4 = add(%3, %1)                     # EncryptedScalar<float64>
+        %5 = mul(%4, %0)                     # EncryptedScalar<float64>
+        %6 = astype(%5, dtype=uint32)        # EncryptedScalar<uint7>
+        return %6
+```
+
+### 3.final.graph.png
+
+This file contains the visual representation of the final computation graph right before MLIR conversion.
+
+![](../../_static/tutorials/artifacts/manual/3.final.graph.png)
 
 ### bounds.txt
 
 This file contains information about the bounds of the final computation graph of the function you are trying to compile using the input set you provide.
 
 ```
-%0 :: [100, 100]
-%1 :: [3, 3]
-%2 :: [0, 7]
-%3 :: [2, 2]
-%4 :: [2, 9]
-%5 :: [6, 27]
-%6 :: [73, 94]
+%0 :: [127, 127]
+%1 :: [0, 7]
+%2 :: [2, 95]
+%3 :: [32, 125]
 ```
 
 You can learn what bounds are [here](../../dev/explanation/TERMINOLOGY_AND_STRUCTURE.md).
@@ -175,15 +235,14 @@ This file contains information about the MLIR of the function you are trying to 
 ```
 module  {
   func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
-    %c100_i8 = constant 100 : i8
-    %c3_i8 = constant 3 : i8
-    %c2_i8 = constant 2 : i8
-    %0 = "HLFHE.add_eint_int"(%arg0, %c2_i8) : (!HLFHE.eint<7>, i8) -> !HLFHE.eint<7>
-    %1 = "HLFHE.mul_eint_int"(%0, %c3_i8) : (!HLFHE.eint<7>, i8) -> !HLFHE.eint<7>
-    %2 = "HLFHE.sub_int_eint"(%c100_i8, %1) : (i8, !HLFHE.eint<7>) -> !HLFHE.eint<7>
-    return %2 : !HLFHE.eint<7>
+    %c127_i8 = arith.constant 127 : i8
+    %cst = arith.constant dense<"..."> : tensor<128xi64>
+    %0 = "HLFHE.apply_lookup_table"(%arg0, %cst) : (!HLFHE.eint<7>, tensor<128xi64>) -> !HLFHE.eint<7>
+    %1 = "HLFHE.sub_int_eint"(%c127_i8, %0) : (i8, !HLFHE.eint<7>) -> !HLFHE.eint<7>
+    return %1 : !HLFHE.eint<7>
   }
 }
+
 ```
 
 You can learn more about MLIR [here](../../dev/explanation/MLIR.md).

@@ -1,20 +1,15 @@
-```{warning}
-FIXME(Umut): update a bit, with the new API
-FIXME(Umut): add the multiTLU case
-```
-
 # Table Lookup
 
-In this tutorial, we are going to go over the ways to perform table lookups in **Concrete**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
+In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Framework**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
 
 ## Direct table lookup
 
-**Concrete** provides a special class to allow direct table lookups. Here is how to import and use it:
+**Concrete Framework** provides a special class to allow direct table lookups. Here is how to use it:
 
 ```python
-from concrete.common.extensions.table import LookupTable
+import concrete.numpy as hnp
 
-table = LookupTable([2, 1, 3, 0])
+table = hnp.LookupTable([2, 1, 3, 0])
 
 def f(x):
     return table[x]
@@ -22,7 +17,7 @@ def f(x):
 
 where
 
-- `x = EncryptedScalar(UnsignedInteger(2))`
+- `x = "encrypted"` scalar
 
 results in
 
@@ -34,9 +29,56 @@ circuit.run(2) == 3
 circuit.run(3) == 0
 ```
 
+Moreover, direct lookup tables can be used with tensors where the same table lookup is applied to each value in the tensor, so
+
+- `x = "encrypted"` tensor of shape `(2, 3)`
+
+results in
+
+<!--python-test:skip-->
+```python
+input = np.array([[0, 1, 3], [2, 3, 1]], dtype=np.uint8)
+circuit.run(input) == [[2, 1, 0], [3, 0, 1]]
+```
+
+## Direct Multi Table Lookup
+
+Sometimes you may want to apply a different lookup table to each value in a tensor. That's where direct multi lookup table becomes handy. Here is how to use it:
+
+<!--python-test:skip-->
+```python
+import concrete.numpy as hnp
+
+squared = hnp.LookupTable([i ** 2 for i in range(4)])
+cubed = hnp.LookupTable([i ** 3 for i in range(4)])
+
+table = hnp.MultiLookupTable([
+    [squared, cubed],
+    [squared, cubed],
+    [squared, cubed],
+])
+
+def f(x):
+    return table[x]
+```
+
+where
+
+- `x = "encrypted"` tensor of shape `(3, 2)`
+
+results in
+
+<!--python-test:skip-->
+```python
+input = np.array([[2, 3], [1, 2], [3, 0]], dtype=np.uint8)
+circuit.run(input) == [[4, 27], [1, 8], [9, 0]]
+```
+
+Basically, we applied `squared` table to the first column and `cubed` to the second one.
+
 ## Fused table lookup
 
-Direct tables are tedious to prepare by hand. When possible, **Concrete** fuses the floating point operations into a single table lookup automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](./WORKING_WITH_FLOATING_POINTS.md).
+Direct tables are tedious to prepare by hand. When possible, **Concrete Framework** fuses the floating point operations into table lookups automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](./WORKING_WITH_FLOATING_POINTS.md).
 
 Here is an example function that results in fused table lookup:
 
@@ -48,7 +90,7 @@ def f(x):
 
 where
 
-- `x = EncryptedScalar(UnsignedInteger(3))`
+- `x = "encrypted"` scalar
 
 results in
 
@@ -76,7 +118,7 @@ Internally, it uses the following lookup table
 
 <!--python-test:skip-->
 ```python
-table = LookupTable([50, 92, 95, 57, 12, 2, 36, 82])
+table = hnp.LookupTable([50, 92, 95, 57, 12, 2, 36, 82])
 ```
 
 which is calculated by:

@@ -1,9 +1,3 @@
-
-```{warning}
-FIXME(umut): update with the new API
-```
-
-
 # Compilation Pipeline In Depth
 
 ## What is **concretefhe**?
@@ -23,15 +17,12 @@ import concrete.numpy as hnp
 def f(x, y):
     return (2 * x) + y
 
-# Define the inputs of homomorphized function
-x = hnp.EncryptedScalar(hnp.UnsignedInteger(2))
-y = hnp.EncryptedScalar(hnp.UnsignedInteger(1))
+# Create a NumPy FHE Compiler
+compiler = hnp.NPFHECompiler(f, {"x": "encrypted", "y": "encrypted"})
 
-# Compile the function to its homomorphic equivalent
-circuit = hnp.compile_numpy_function(
-    f, {"x": x, "y": y},
-    [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)],
-)
+# Compile an FHE Circuit using an inputset
+compiler.eval_on_inputset([(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)])
+circuit = compiler.get_compiled_fhe_circuit()
 
 # Make homomorphic inference
 circuit.run(1, 0)
@@ -223,7 +214,7 @@ def f(x):
 ### Parameters
 
 ```
-x = EncryptedScalar(UnsignedInteger(2))
+x = "encrypted"
 ```
 
 #### Corresponding operation graph
@@ -272,8 +263,8 @@ def f(x, y):
 ### Parameters
 
 ```
-x = EncryptedScalar(UnsignedInteger(3))
-y = EncryptedScalar(UnsignedInteger(1))
+x = "encrypted"
+y = "encrypted"
 ```
 
 #### Corresponding operation graph

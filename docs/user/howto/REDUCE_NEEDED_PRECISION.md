@@ -1,8 +1,54 @@
-```{warning}
-FIXME(Umut): put somewhere an example of an error dump if the user asks for too much precision and explain
+# Having a Function Which Requires Less Precision
+
+With our current technology, we cannot represent integers with more than 7 bits.
+We are actively working on supporting larger integers, so it should get better in the future.
+
+## What happens when you have larger values?
+
+You get a compilation error. Here is an example:
+
+<!--python-test:skip-->
+```python
+import concrete.numpy as hnp
+
+def f(x):
+    return 42 * x
+
+compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
+compiler.eval_on_inputset(range(2 ** 3))
+compiler.get_compiled_fhe_circuit()
 ```
 
-# Having a Function Which Requires Less Precision
+results in
+
+```
+Traceback (most recent call last):
+  File "/home/default/Documents/Projects/Zama/hdk/dist/demo.py", line 9, in <module>
+    circuit = compiler.get_compiled_fhe_circuit()
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/np_fhe_compiler.py", line 274, in get_compiled_fhe_circuit
+    return compile_op_graph_to_fhe_circuit(
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 676, in compile_op_graph_to_fhe_circuit
+    result = run_compilation_function_with_error_management(
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 141, in run_compilation_function_with_error_management
+    return compilation_function()
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 674, in compilation_function
+    return _compile_op_graph_to_fhe_circuit_internal(op_graph, show_mlir, compilation_artifacts)
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 626, in _compile_op_graph_to_fhe_circuit_internal
+    prepare_op_graph_for_mlir(op_graph)
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/numpy/compile.py", line 603, in prepare_op_graph_for_mlir
+    update_bit_width_for_mlir(op_graph)
+  File "/home/default/Documents/Projects/Zama/hdk/concrete/common/mlir/utils.py", line 204, in update_bit_width_for_mlir
+    raise RuntimeError(
+RuntimeError: max_bit_width of some nodes is too high for the current version of the compiler (maximum must be 7) which is not compatible with:
+
+%0 = x                  # EncryptedScalar<uint3>
+%1 = 42                 # ClearScalar<uint6>
+%2 = mul(%0, %1)        # EncryptedScalar<uint9>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 9 bits is not supported for the time being
+return %2
+```
+
+when you try to run.
 
 ## Why can some computation work with less precision?
 

@@ -15,7 +15,6 @@ Getting Started
    :caption: Tutorial
 
    tutorial/COMPILING_TORCH_MODEL.md
-   tutorial/ARITHMETIC_OPERATIONS.md
    tutorial/TABLE_LOOKUP.md
    tutorial/WORKING_WITH_FLOATING_POINTS.md
    tutorial/NUMPY_SUPPORT.md

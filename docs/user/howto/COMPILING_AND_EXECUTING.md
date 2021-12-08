@@ -85,7 +85,6 @@ FIXME(benoit): explain the API to encrypt, run_inference, decrypt, keygen etc wh
 
 ## Further reading
 
-- [Arithmetic Operations Tutorial](../tutorial/ARITHMETIC_OPERATIONS.md)
 - [Working With Floating Points Tutorial](../tutorial/WORKING_WITH_FLOATING_POINTS.md)
 - [Table Lookup Tutorial](../tutorial/TABLE_LOOKUP.md)
 - [Compiling a torch model](../tutorial/COMPILING_TORCH_MODEL.md)
