@@ -48,7 +48,7 @@ KeySet::generate(ClientParameters &params, uint64_t seed_msb,
            << "Cannot setup encryption material: " << std::move(fillError);
   }
 
-  return a;
+  return std::move(a);
 }
 
 std::unique_ptr<KeySet> KeySet::uninitialized() {

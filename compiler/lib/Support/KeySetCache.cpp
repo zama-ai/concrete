@@ -108,7 +108,7 @@ KeySetCache::tryLoadKeys(ClientParameters &params, uint64_t seed_msb,
     return StreamStringError() << "Cannot setup encryption material: " << err;
   }
 
-  return key_set;
+  return std::move(key_set);
 }
 
 llvm::Error saveKeys(KeySet &key_set, llvm::SmallString<0> &folderPath) {
