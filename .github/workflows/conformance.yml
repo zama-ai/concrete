@@ -15,14 +15,19 @@ jobs:
           submodules: true
       - name: Format with clang-format
         run: .github/workflows/scripts/format_cpp.sh
+
   BuildAndTest:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc6, latest]
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
 
       - name: "KeySetCache"
+        if: ${{ matrix.compiler == 'gcc6' }}
         uses: actions/cache@v2
         with:
           path: ${{ github.workspace }}/KeySetCache
@@ -32,10 +37,11 @@ jobs:
             ${{ runner.os }}-KeySetCache-
 
       - name: Build and test compiler
+        if: ${{ matrix.compiler == 'gcc6' }}
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
-          image: ghcr.io/zama-ai/zamalang-compiler:latest
+          image: ghcr.io/zama-ai/concretefhe-compiler:gcc6
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
@@ -45,13 +51,35 @@ jobs:
             echo "Debug: ccache statistics (prior to the build):"
             ccache -s
             cd /compiler
-            pip install pytest
+            /opt/python/cp38-cp38/bin/pip install pytest
             rm -rf /build
-            export PYTHONPATH=""
-            make CCACHE=ON BUILD_DIR=/build test
+            sed "s/pytest/\/opt\/python\/cp38-cp38\/bin\/python -m pytest/g" -i Makefile
+            make CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache
+      
+      - name: Build compiler
+        if: ${{ matrix.compiler == 'latest' }}
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ghcr.io/zama-ai/zamalang-compiler:latest
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: -v ${{ github.workspace }}/compiler:/compiler
+          shell: bash
+          run: |
+            set -e
+            echo "Debug: ccache statistics (prior to the build):"
+            ccache -s
+            cd /compiler
+            rm -rf /build
+            export PYTHONPATH=""
+            make CCACHE=ON BUILD_DIR=/build zamacompiler python-bindings
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
   BuildAndTestDF:
     runs-on: ubuntu-latest
     steps:

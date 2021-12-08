@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/zama-ai/zamalang-compiler
+      IMAGE_GCC6: ghcr.io/zama-ai/concretefhe-compiler
       
     steps:
       - uses: actions/checkout@v2
@@ -33,6 +34,15 @@ jobs:
           docker image tag $IMAGE $IMAGE:${{ github.sha }}
           docker image push $IMAGE:latest
           docker image push $IMAGE:${{ github.sha }}
+
+      - name: build gcc6 image
+        run: docker image build --no-cache --label "commit-sha=${{ github.sha }}" -t $IMAGE_GCC6:gcc6 -f builders/Dockerfile.zamalang-env-gcc6 .
+
+      - name: tag and publish gcc6 image
+        run: |
+          docker image tag $IMAGE_GCC6:gcc6 $IMAGE_GCC6:gcc6-${{ github.sha }}
+          docker image push $IMAGE_GCC6:gcc6
+          docker image push $IMAGE_GCC6:gcc6-${{ github.sha }}
 
       - name: tag and publish release image
         if: github.event_name == 'release'
