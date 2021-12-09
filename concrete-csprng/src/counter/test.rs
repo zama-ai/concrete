@@ -408,8 +408,7 @@ fn test_randomized_fork_generation() {
         let children_output: Vec<u8> = forking_generator
             .try_fork(n_child, bytes_child)
             .unwrap()
-            .map(|mut child| (0..bytes_child.0).map(move |_| child.generate_next()))
-            .flatten()
+            .flat_map(|mut child| (0..bytes_child.0).map(move |_| child.generate_next()))
             .collect();
         assert_eq!(initial_output, children_output);
         assert_eq!(forking_generator.generate_next(), generator.generate_next());
