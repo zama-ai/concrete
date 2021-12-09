@@ -11,8 +11,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` cleartext vector with the
-/// conversion of the `input` cleartext vector to a type with a different representation (for
+/// This [discarding](super#operation-semantics) operation fills the `output` cleartext vector with
+/// the conversion of the `input` cleartext vector to a type with a different representation (for
 /// instance from cpu to gpu memory).
 ///
 /// # Formal Definition
@@ -32,8 +32,8 @@ where
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`CleartextVectorDiscardingConversionError`]. For safety concerns _specific_ to an engine,
-    /// refer to the implementer safety section.
+    /// of [`CleartextVectorDiscardingConversionError`]. For safety concerns _specific_ to an
+    /// engine, refer to the implementer safety section.
     unsafe fn discard_convert_cleartext_vector_unchecked(
         &mut self,
         output: &mut Output,

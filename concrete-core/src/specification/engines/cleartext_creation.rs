@@ -12,7 +12,8 @@ engine_error! {
 ///
 /// This [pure](super#operation-semantics) operation generates a cleartext from the `value`
 /// arbitrary value. By arbitrary here, we mean that `Value` can be any type that suits the backend
-/// implementor (an integer, a struct wrapping integers, a struct wrapping foreign data or any other thing).
+/// implementor (an integer, a struct wrapping integers, a struct wrapping foreign data or any other
+/// thing).
 ///
 /// # Formal Definition
 pub trait CleartextCreationEngine<Value, Cleartext>: AbstractEngine

@@ -5,8 +5,8 @@ use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount
 /// A trait implemented by types embodying a GSW ciphertext.
 ///
 /// A GSW ciphertext is associated with a
-/// [`KeyDistribution`](`GswCiphertextEntity::KeyDistribution`) type, which conveys the distribution of the
-/// secret key it was encrypted with.
+/// [`KeyDistribution`](`GswCiphertextEntity::KeyDistribution`) type, which conveys the distribution
+/// of the secret key it was encrypted with.
 ///
 /// # Formal Definition
 pub trait GswCiphertextEntity: AbstractEntity<Kind = GswCiphertextKind> {

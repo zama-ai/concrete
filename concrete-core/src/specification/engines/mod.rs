@@ -27,8 +27,8 @@
 //!
 //! + Multiple __general__ error variants which can be potentially produced by any backend
 //! (see the
-//! [`InputLweDimensionMismatch`](`LweCiphertextDiscardingKeyswitchError::InputLweDimensionMismatch`)
-//! variant for an example)
+//! [`InputLweDimensionMismatch`](`LweCiphertextDiscardingKeyswitchError::
+//! InputLweDimensionMismatch`) variant for an example)
 //! + One __specific__ variant which encapsulate the generic argument error `E`
 //! (see the [`Engine`](`LweCiphertextDiscardingKeyswitchError::Engine`) variant for an example)
 //!
@@ -36,8 +36,8 @@
 //! [`EngineError`](`AbstractEngine::EngineError`) from the [`AbstractEngine`] super-trait, by the
 //! signature of the operation entry point
 //! (see
-//! [`discard_keyswitch_lwe_ciphertext`](`LweCiphertextDiscardingKeyswitchEngine::discard_keyswitch_lwe_ciphertext`)
-//! for instance).
+//! [`discard_keyswitch_lwe_ciphertext`](`LweCiphertextDiscardingKeyswitchEngine::
+//! discard_keyswitch_lwe_ciphertext`) for instance).
 //!
 //! This design makes it possible for each operation, to match the error exhaustively against both
 //! general error variants, and backend-related error variants.

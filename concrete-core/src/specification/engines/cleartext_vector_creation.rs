@@ -12,9 +12,9 @@ engine_error! {
 /// # Semantics
 ///
 /// This [pure](super#operation-semantics) operation generates a cleartext vector from the `value`
-/// slice of arbitrary values. By arbitrary here, we mean that `Value` can be any type that suits the
-/// backend implementor (an integer, a struct wrapping integers, a struct wrapping foreign data or any other
-/// thing).
+/// slice of arbitrary values. By arbitrary here, we mean that `Value` can be any type that suits
+/// the backend implementor (an integer, a struct wrapping integers, a struct wrapping foreign data
+/// or any other thing).
 ///
 /// # Formal Definition
 pub trait CleartextVectorCreationEngine<Value, CleartextVector>: AbstractEngine

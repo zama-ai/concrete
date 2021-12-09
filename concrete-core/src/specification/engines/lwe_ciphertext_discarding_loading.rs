@@ -13,8 +13,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `ciphertext` LWE ciphertext with
-/// the `i`th LWE ciphertext of the `vector` LWE ciphertext vector.
+/// This [discarding](super#operation-semantics) operation fills the `ciphertext` LWE ciphertext
+/// with the `i`th LWE ciphertext of the `vector` LWE ciphertext vector.
 ///
 /// # Formal Definition
 pub trait LweCiphertextDiscardingLoadingEngine<CiphertextVector, Ciphertext>:

@@ -18,9 +18,9 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// bootstrap of the `input` LWE ciphertext, using the `acc` accumulator as lookup-table, and the
-/// `bsk` bootstrap key.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the bootstrap of the `input` LWE ciphertext, using the `acc` accumulator as lookup-table, and
+/// the `bsk` bootstrap key.
 ///
 /// # Formal Definition
 pub trait LweCiphertextDiscardingBootstrapEngine<

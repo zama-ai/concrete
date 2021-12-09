@@ -5,8 +5,8 @@ use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
 /// A trait implemented by types embodying an LWE ciphertext vector.
 ///
 /// An LWE ciphertext vector is associated with a
-/// [`KeyDistribution`](`LweCiphertextVectorEntity::KeyDistribution`) type, which conveys the distribution of
-/// the secret key it was encrypted with.
+/// [`KeyDistribution`](`LweCiphertextVectorEntity::KeyDistribution`) type, which conveys the
+/// distribution of the secret key it was encrypted with.
 ///
 /// # Formal Definition
 pub trait LweCiphertextVectorEntity: AbstractEntity<Kind = LweCiphertextVectorKind> {

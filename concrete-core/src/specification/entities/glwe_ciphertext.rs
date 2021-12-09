@@ -5,8 +5,8 @@ use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 /// A trait implemented by types embodying a GLWE ciphertext.
 ///
 /// A GLWE ciphertext is associated with a
-/// [`KeyDistribution`](`GlweCiphertextEntity::KeyDistribution`) type, which conveys the distribution of the
-/// secret key it was encrypted with.
+/// [`KeyDistribution`](`GlweCiphertextEntity::KeyDistribution`) type, which conveys the
+/// distribution of the secret key it was encrypted with.
 ///
 /// # Formal Definition
 ///

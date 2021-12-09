@@ -7,8 +7,8 @@ use concrete_commons::parameters::{
 /// A trait implemented by types embodying a GGSW ciphertext.
 ///
 /// A GGSW ciphertext is associated with a
-/// [`KeyDistribution`](`GgswCiphertextEntity::KeyDistribution`) type, which conveys the distribution of the
-/// secret key it was encrypted with.
+/// [`KeyDistribution`](`GgswCiphertextEntity::KeyDistribution`) type, which conveys the
+/// distribution of the secret key it was encrypted with.
 ///
 /// # Formal Definition
 pub trait GgswCiphertextEntity: AbstractEntity<Kind = GgswCiphertextKind> {
