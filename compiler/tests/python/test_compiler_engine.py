@@ -23,6 +23,28 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
+            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
+                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
+                return %1: !HLFHE.eint<7>
+            }
+            """,
+            (np.array(4, dtype=np.uint8), np.array(5, dtype=np.uint8)),
+            9,
+            id="add_eint_int_with_ndarray_as_scalar",
+        ),
+        pytest.param(
+            """
+            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
+                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
+                return %1: !HLFHE.eint<7>
+            }
+            """,
+            (np.uint8(3), np.uint8(5)),
+            8,
+            id="add_eint_int_with_np_uint8_as_scalar",
+        ),
+        pytest.param(
+            """
             func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
             {
                 %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :

@@ -95,9 +95,9 @@ def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument
     Returns:
         _LambdaArgument: lambda argument holding the appropriate value
     """
-    if not isinstance(value, (int, np.ndarray)):
-        raise TypeError("value of execution argument must be either int or numpy.array")
-    if isinstance(value, int):
+    if not isinstance(value, (int, np.ndarray, np.uint8)):
+        raise TypeError("value of execution argument must be either int, numpy.array or numpy.uint8")
+    if isinstance(value, (int, np.uint8)):
         if not (0 <= value < (2 ** 64 - 1)):
             raise TypeError(
                 "single integer must be in the range [0, 2**64 - 1] (uint64)"
@@ -105,6 +105,8 @@ def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument
         return _LambdaArgument.from_scalar(value)
     else:
         assert isinstance(value, np.ndarray)
+        if value.shape == ():
+            return _LambdaArgument.from_scalar(value)
         if value.dtype != np.uint8:
             raise TypeError("numpy.array must be of dtype uint8")
         return _LambdaArgument.from_tensor(value.flatten().tolist(), value.shape)
