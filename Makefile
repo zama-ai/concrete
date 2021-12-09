@@ -85,7 +85,7 @@ flake8:
 python_linting: pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format supported_functions licences
+conformance: finalize_nb python_format supported_functions licenses
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
@@ -93,7 +93,7 @@ pcc:
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_supported_functions check_benchmarks check_licences
+PCC_DEPS += check_version_coherence check_supported_functions check_benchmarks check_licenses
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -317,23 +317,23 @@ supported_functions:
 check_supported_functions:
 	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/howto/NUMPY_SUPPORT.md --check
 
-.PHONY: licences # Generate the list of licenses of dependencies
-licences:
-	@./script/make_utils/licences.sh
+.PHONY: licenses # Generate the list of licenses of dependencies
+licenses:
+	@./script/make_utils/licenses.sh
 
-.PHONY: check_licences # Check if the licenses of dependencies have changed
-check_licences:
+.PHONY: check_licenses # Check if the licenses of dependencies have changed
+check_licenses:
 	@TMP_OUT="$$(mktemp)" && \
-	if ! poetry run env bash ./script/make_utils/licences.sh --check > "$${TMP_OUT}"; then \
+	if ! poetry run env bash ./script/make_utils/licenses.sh --check > "$${TMP_OUT}"; then \
 		cat "$${TMP_OUT}"; \
 		rm -f "$${TMP_OUT}"; \
-		echo "Error while checking licences, see log above."; \
-		echo "Consider re-running 'make licences'"; \
+		echo "Error while checking licenses, see log above."; \
+		echo "Consider re-running 'make licenses'"; \
 		exit 1; \
 	else \
-		echo "Licences check OK"; \
+		echo "Licenses check OK"; \
 	fi
-.PHONY: check_licences
+.PHONY: check_licenses
 
 .PHONY: help # Generate list of targets with descriptions
 help:
