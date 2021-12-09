@@ -91,7 +91,7 @@ List of supported binary functions if one of the two operators is a constant sca
 
 ## Indexing
 
-Indexing is described in [this section](../tutorial/INDEXING.md).
+Indexing is described in [this section](../tutorial/indexing.md).
 
 
 ## Other machine-learning-related operators
@@ -119,7 +119,7 @@ The framework also gives support for:
 - true div, i.e., `x / y`: if one of `x` or `y` is a constant
 - floor div, i.e., `x // y`: if one of `x` or `y` is a constant
 
-There is support for astype as well, e.g. `x.astype(numpy.int32)`. This allows to control which data type to use for computations. In the context of FHE going back to integers may allow to fuse floating point operations together, see [this tutorial](../tutorial/WORKING_WITH_FLOATING_POINTS.md) to see how to work with floating point values.
+There is support for astype as well, e.g. `x.astype(numpy.int32)`. This allows to control which data type to use for computations. In the context of FHE going back to integers may allow to fuse floating point operations together, see [this tutorial](../tutorial/working_with_floating_points.md) to see how to work with floating point values.
 
 ```{warning}
 FIXME(Umut): speak about `shape`

@@ -63,7 +63,7 @@ The input contains 28x28x8 = 6272 bits of information. In practice you could als
 This shows how adapting your data can allow you to use models that may require smaller data types (i.e. use less precision) to perform their computations.
 
 ```{note}
-Binarizing here is akin to quantization which is introduced [here](../explanation/QUANTIZATION.md). You can also find further resources on the linked page.
+Binarizing here is akin to quantization which is introduced [here](../explanation/quantization.md). You can also find further resources on the linked page.
 ```
 
 ### There is a tolerance on the result

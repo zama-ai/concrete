@@ -1,6 +1,6 @@
 # Future Features
 
-As explained in [this section](FHE_AND_FRAMEWORK_LIMITS.md#concrete-framework-limits), the **Concrete Framework**
+As explained in [this section](fhe_and_framework_limits.md#concrete-framework-limits), the **Concrete Framework**
 is currently in a preliminary version, and quite constrained in term of functionalities. However, the good
 news is that we are going to release new versions regularly, where a lot of functionalities will be added progressively.
 

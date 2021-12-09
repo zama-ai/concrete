@@ -125,7 +125,7 @@ Let's take a closer look at the transforms we perform today.
 ### Fusing floating point operations
 
 We decided to allocate a whole new chapter to explain float fusing.
-You can find it [here](./FLOAT-FUSING.md).
+You can find it [here](./float-fusing.md).
 
 ## Bounds measurement
 
@@ -212,7 +212,7 @@ Assigned Data Types:
 
 ## MLIR conversion
 
-The actual compilation will be done by the **Concrete** compiler, which is expecting an MLIR input. The MLIR conversion goes from an operation graph to its MLIR equivalent. You can read more about it [here](./MLIR.md)
+The actual compilation will be done by the **Concrete** compiler, which is expecting an MLIR input. The MLIR conversion goes from an operation graph to its MLIR equivalent. You can read more about it [here](./mlir.md)
 
 ## Example walkthrough #1
 

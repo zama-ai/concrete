@@ -4,9 +4,9 @@ How To
 .. toctree::
    :maxdepth: 1
 
-   NUMPY_SUPPORT.md
-   PRINTING_AND_DRAWING.md
-   USE_QUANTIZATION.md
-   REDUCE_NEEDED_PRECISION.md
-   DEBUG_SUPPORT_SUBMIT_ISSUES.md
-   FAQ.md
+   numpy_support.md
+   printing_and_drawing.md
+   use_quantization.md
+   reduce_needed_precision.md
+   debug_support_submit_issues.md
+   faq.md

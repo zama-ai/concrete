@@ -37,7 +37,7 @@ Hopefully, it is just a misunderstanding or a small mistake on your side, that o
 
 ## Having a look to the compilation artifacts
 
-When things are more complicated, or if you want to have a look by yourself, you may want to have a look to the compilation reports, which are called artifacts. This is as simple as described in [here](../tutorial/COMPILATION_ARTIFACTS.md)
+When things are more complicated, or if you want to have a look by yourself, you may want to have a look to the compilation reports, which are called artifacts. This is as simple as described in [here](../tutorial/compilation_artifacts.md)
 
 The artifact system will create a directory, containing:
 - **environment.txt:** information about your system
@@ -66,7 +66,7 @@ To simplify our work and let us reproduce your bug easily, we need all the infor
 - any insight you might have on the bug
 - any workaround you have been able to find
 
-Remember, **Concrete Framework** is a project where we are open to contributions, more information at [Contributing](../../dev/howto/CONTRIBUTING.md).
+Remember, **Concrete Framework** is a project where we are open to contributions, more information at [Contributing](../../dev/howto/contributing.md).
 
 ## Submitting an issue
 

@@ -33,14 +33,14 @@ Basically, we have divided our documentation into several parts:
 ## A work in progress
 
 ```{note}
-Concrete is a work in progress, and is currently limited to a certain number of operators and features. In the future, there will be improvements as described in this [section](../explanation/FUTURE_FEATURES.md).
+Concrete is a work in progress, and is currently limited to a certain number of operators and features. In the future, there will be improvements as described in this [section](../explanation/future_features.md).
 ```
 
 The main _current_ limits are:
 - **Concrete** is only supporting unsigned integers
 - **Concrete** needs the integer to be less than 7 bits (included)
 
-These limits can be taken care of with the use of quantization, as explained a bit further in [this](../explanation/QUANTIZATION.md) and [this](../howto/REDUCE_NEEDED_PRECISION.md) parts of the documentation.
+These limits can be taken care of with the use of quantization, as explained a bit further in [this](../explanation/quantization.md) and [this](../howto/reduce_needed_precision.md) parts of the documentation.
 
 ```{warning}
 FIXME(Jordan): speak about our quantization framework

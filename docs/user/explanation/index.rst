@@ -4,7 +4,7 @@ Explanations
 .. toctree::
    :maxdepth: 1
 
-   WHAT_IS_FHE.md
-   FHE_AND_FRAMEWORK_LIMITS.md
-   QUANTIZATION.md
-   FUTURE_FEATURES.md
+   what_is_fhe.md
+   fhe_and_framework_limits.md
+   quantization.md
+   future_features.md

@@ -1,6 +1,6 @@
 # Table Lookup
 
-In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Framework**. Please read [Compiling and Executing](../basics/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
+In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Framework**. Please read [Compiling and Executing](../basics/compiling_and_executing.md) before reading further to see how you can compile the functions below.
 
 ## Direct table lookup
 
@@ -78,7 +78,7 @@ Basically, we applied `squared` table to the first column and `cubed` to the sec
 
 ## Fused table lookup
 
-Direct tables are tedious to prepare by hand. When possible, **Concrete Framework** fuses the floating point operations into table lookups automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](./WORKING_WITH_FLOATING_POINTS.md).
+Direct tables are tedious to prepare by hand. When possible, **Concrete Framework** fuses the floating point operations into table lookups automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](./working_with_floating_points.md).
 
 Here is an example function that results in fused table lookup:
 

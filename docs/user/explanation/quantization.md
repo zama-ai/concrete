@@ -1,5 +1,5 @@
 ```{warning}
-FIXME(Jordan/Andrei): see if this is still appropriate, update etc; make link with USE_QUANTIZATION.md
+FIXME(Jordan/Andrei): see if this is still appropriate, update etc; make link with use_quantization.md
 ```
 
 # Quantization
@@ -12,7 +12,7 @@ from [Wikipedia](https://en.wikipedia.org/wiki/Quantization):
 
 ## Why is it needed?
 
-Modern computing has long been using data types that use 32 or 64 bits (be that integers or floating point numbers), or even bigger data types. However due to the costly nature of FHE computations (see [the limits of FHE](FHE_AND_FRAMEWORK_LIMITS.md)), using such types with FHE is impractical (or plain impossible) to have computations executing in a reasonable amount of time.
+Modern computing has long been using data types that use 32 or 64 bits (be that integers or floating point numbers), or even bigger data types. However due to the costly nature of FHE computations (see [the limits of FHE](fhe_and_framework_limits.md)), using such types with FHE is impractical (or plain impossible) to have computations executing in a reasonable amount of time.
 
 ## The gist of quantization
 

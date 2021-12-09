@@ -4,8 +4,8 @@ Explanations
 .. toctree::
    :maxdepth: 1
 
-   COMPILATION.md
-   TERMINOLOGY_AND_STRUCTURE.md
-   FLOAT-FUSING.md
-   MLIR.md
-   QUANTIZATION.md
+   compilation.md
+   terminology_and_structure.md
+   float-fusing.md
+   mlir.md
+   quantization.md

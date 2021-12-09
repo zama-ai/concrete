@@ -5,7 +5,7 @@ FIXME(all): we should add an example drawing and printing with fusing (so subgra
 
 # Printing and Drawing
 
-Sometimes, it can be useful to print or draw fhe circuits, we provide methods to just do that. Please read [Compiling and Executing](../basics/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile your function into an fhe circuit.
+Sometimes, it can be useful to print or draw fhe circuits, we provide methods to just do that. Please read [Compiling and Executing](../basics/compiling_and_executing.md) before reading further to see how you can compile your function into an fhe circuit.
 
 ## Printing
 

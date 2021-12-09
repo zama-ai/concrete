@@ -12,7 +12,7 @@ def f(x):
     return np.sin(x)
 ```
 
-This function fails to compile because **Concrete Framework** doesn't support floating point outputs. When you try to compile it (you might want to check [this](../basics/COMPILING_AND_EXECUTING.md) to see how you can do that), an exception will be raised and the artifacts will be exported automatically.
+This function fails to compile because **Concrete Framework** doesn't support floating point outputs. When you try to compile it (you might want to check [this](../basics/compiling_and_executing.md) to see how you can do that), an exception will be raised and the artifacts will be exported automatically.
 
 ### environment.txt
 
@@ -226,7 +226,7 @@ This file contains information about the bounds of the final computation graph o
 %3 :: [32, 125]
 ```
 
-You can learn what bounds are [here](../../dev/explanation/TERMINOLOGY_AND_STRUCTURE.md).
+You can learn what bounds are [here](../../dev/explanation/terminology_and_structure.md).
 
 ### mlir.txt
 
@@ -245,4 +245,4 @@ module  {
 
 ```
 
-You can learn more about MLIR [here](../../dev/explanation/MLIR.md).
+You can learn more about MLIR [here](../../dev/explanation/mlir.md).

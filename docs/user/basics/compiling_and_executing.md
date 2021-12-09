@@ -10,7 +10,7 @@ import concrete.numpy as hnp
 
 ## Defining a function to compile
 
-You need to have a python function that follows the [limits](../explanation/FHE_AND_FRAMEWORK_LIMITS.md) of the **Concrete Framework**. Here is a simple example:
+You need to have a python function that follows the [limits](../explanation/fhe_and_framework_limits.md) of the **Concrete Framework**. Here is a simple example:
 
 <!--python-test:cont-->
 ```python
@@ -101,6 +101,6 @@ FIXME(benoit): explain the API to encrypt, run_inference, decrypt, keygen etc wh
 
 ## Further reading
 
-- [Working With Floating Points Tutorial](../tutorial/WORKING_WITH_FLOATING_POINTS.md)
-- [Table Lookup Tutorial](../tutorial/TABLE_LOOKUP.md)
-- [Compiling a torch model](../tutorial/COMPILING_TORCH_MODEL.md)
+- [Working With Floating Points Tutorial](../tutorial/working_with_floating_points.md)
+- [Table Lookup Tutorial](../tutorial/table_lookup.md)
+- [Compiling a torch model](../tutorial/compiling_torch_model.md)

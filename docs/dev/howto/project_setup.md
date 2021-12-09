@@ -5,7 +5,7 @@ FIXME(Arthur): to check what needs to be updated here
 # Project Setup
 
 ```{note}  
-You will need Zama's specific environment with zamalang module to have the project fully functional. It is currently only delivered via the docker image (see the [docker](./DOCKER.md) guide).
+You will need Zama's specific environment with zamalang module to have the project fully functional. It is currently only delivered via the docker image (see the [docker](./docker.md) guide).
 ```
 
 ## Installing Python v3.8
