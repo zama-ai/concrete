@@ -17,7 +17,6 @@ Getting Started
    tutorial/COMPILING_TORCH_MODEL.md
    tutorial/TABLE_LOOKUP.md
    tutorial/WORKING_WITH_FLOATING_POINTS.md
-   tutorial/NUMPY_SUPPORT.md
    tutorial/INDEXING.md
    tutorial/MACHINE_LEARNING_TOOLS.md
    tutorial/COMPILATION_ARTIFACTS.md
@@ -26,6 +25,7 @@ Getting Started
    :maxdepth: 1
    :caption: How to
 
+   howto/NUMPY_SUPPORT.md
    howto/PRINTING_AND_DRAWING.md
    howto/USE_QUANTIZATION.md
    howto/REDUCE_NEEDED_PRECISION.md

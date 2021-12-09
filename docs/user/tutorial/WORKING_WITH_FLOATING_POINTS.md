@@ -26,7 +26,7 @@ assert circuit.run(60) == f(60)
 print("All good!")
 ```
 
-One can look to [numpy supported functions](NUMPY_SUPPORT.md) for information about possible float operations.
+One can look to [numpy supported functions](../howto/NUMPY_SUPPORT.md) for information about possible float operations.
 
 
 ## Limitations

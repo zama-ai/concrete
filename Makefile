@@ -311,11 +311,11 @@ todo:
 
 .PHONY: supported_functions # Update docs with supported functions
 supported_functions:
-	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/tutorial/NUMPY_SUPPORT.md
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/howto/NUMPY_SUPPORT.md
 
 .PHONY: check_supported_functions # Check supported functions (for the doc)
 check_supported_functions:
-	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/tutorial/NUMPY_SUPPORT.md --check
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/howto/NUMPY_SUPPORT.md --check
 
 .PHONY: licences # Generate the list of licenses of dependencies
 licences:
