@@ -1,10 +1,6 @@
 
 # Contributing
 
-```{warning}
-FIXME(alex): to see if something here needs some update
-```
-
 ```{important}
 There are two ways to contribute to **concretefhe**:
 - you can open issues to report bugs, typos and suggest ideas

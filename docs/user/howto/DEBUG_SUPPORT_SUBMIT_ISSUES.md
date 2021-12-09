@@ -31,11 +31,7 @@ Once you're sure it is a bug, it would be nice to try to:
 
 ## Asking the community
 
-```{warning}
-FIXME(Alex): add the different links for the community
-```
-
-We have created a Slack channel (TODO: LINK TO BE ADDED), such that you can directly ask the developers and community about your issue.
+You can directly ask the developers and community about your issue on our Discourse server (link on the right of the top menu).
 
 Hopefully, it is just a misunderstanding or a small mistake on your side, that one can help you fix easily. And, the good point with your feedback is that, once we have heard the problem or misunderstanding, we can make the documentation even clearer (such as, completing the FAQ).
 
@@ -74,8 +70,4 @@ Remember, **Concrete Framework** is a project where we are open to contributions
 
 ## Submitting an issue
 
-```{warning}
-FIXME(Alex): add the link
-```
-
-In case you have a bug, which is reproducible, that you have reduced to a small piece of code,  we have our issue tracker (TODO: LINK TO BE ADDED). Remember that a well-described short issue is an issue which is more likely to be studied and fixed. The more issues we receive, the better the product will be.
+In case you have a bug, which is reproducible, that you have reduced to a small piece of code,  we have our issue tracker (link on the right of the top menu). Remember that a well-described short issue is an issue which is more likely to be studied and fixed. The more issues we receive, the better the product will be.
