@@ -31,7 +31,7 @@ where
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`CleartextDiscardingConversionError`]. For safety concerns _specific_ to an engine, refer
-    /// to the implementer safety section.
+    /// of [`CleartextDiscardingConversionError`]. For safety concerns _specific_ to an engine,
+    /// refer to the implementer safety section.
     unsafe fn discard_convert_cleartext_unchecked(&mut self, output: &mut Output, input: &Input);
 }

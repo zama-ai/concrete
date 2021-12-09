@@ -5,4 +5,3 @@ use crate::specification::entities::AbstractEntity;
 ///
 /// # Formal Definition
 pub trait EncoderEntity: AbstractEntity<Kind = EncoderKind> {}
-

@@ -11,10 +11,10 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` arbitrary value slice with the
-/// element-wise retrieval of the `input` plaintext vector values. By arbitrary here, we mean that `Value` can
-/// be any type that suits the backend implementor (an integer, a struct wrapping integers, a struct wrapping
-/// foreign data or any other
+/// This [discarding](super#operation-semantics) operation fills the `output` arbitrary value slice
+/// with the element-wise retrieval of the `input` plaintext vector values. By arbitrary here, we
+/// mean that `Value` can be any type that suits the backend implementor (an integer, a struct
+/// wrapping integers, a struct wrapping foreign data or any other
 /// thing).
 ///
 /// # Formal Definition

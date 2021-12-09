@@ -5,7 +5,8 @@ use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 /// A trait implemented by types embodying a GLWE secret key.
 ///
 /// A GLWE secret key is associated with a
-/// [`KeyDistribution`](`GlweSecretKeyEntity::KeyDistribution`) type, which conveys its distribution.
+/// [`KeyDistribution`](`GlweSecretKeyEntity::KeyDistribution`) type, which conveys its
+/// distribution.
 ///
 /// # Formal Definition
 pub trait GlweSecretKeyEntity: AbstractEntity<Kind = GlweSecretKeyKind> {

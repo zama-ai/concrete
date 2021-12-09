@@ -11,8 +11,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// addition of the `input_1` LWE ciphertext with the `input_2` plaintext.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the addition of the `input_1` LWE ciphertext with the `input_2` plaintext.
 ///
 /// # Formal Definition
 pub trait LweCiphertextPlaintextDiscardingAdditionEngine<

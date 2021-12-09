@@ -31,9 +31,12 @@ pub trait LweCiphertextVectorDiscardingBootstrapEngine<
     OutputCiphertextVector,
 >: AbstractEngine where
     BootstrapKey: LweBootstrapKeyEntity,
-    AccumulatorVector: GlweCiphertextVectorEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
-    InputCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
-    OutputCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+    AccumulatorVector:
+        GlweCiphertextVectorEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+    InputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
+    OutputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
 {
     /// Bootstraps an LWE ciphertext vector.
     fn discard_bootstrap_lwe_ciphertext_vector(

@@ -38,8 +38,8 @@ where
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`LweKeyswitchKeyDiscardingConversionError`]. For safety concerns _specific_ to an engine,
-    /// refer to the implementer safety section.
+    /// of [`LweKeyswitchKeyDiscardingConversionError`]. For safety concerns _specific_ to an
+    /// engine, refer to the implementer safety section.
     unsafe fn discard_convert_lwe_keyswitch_key_unchecked(
         &mut self,
         output: &mut Output,

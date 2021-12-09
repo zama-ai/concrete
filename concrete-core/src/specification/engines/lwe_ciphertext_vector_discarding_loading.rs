@@ -25,7 +25,8 @@ pub trait LweCiphertextVectorDiscardingLoadingEngine<InputCiphertextVector, Outp
     AbstractEngine
 where
     InputCiphertextVector: LweCiphertextVectorEntity,
-    OutputCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
+    OutputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
 {
     /// Loads a subpart of an LWE ciphertext vector into another LWE ciphertext vector.
     fn discard_load_lwe_ciphertext_vector(

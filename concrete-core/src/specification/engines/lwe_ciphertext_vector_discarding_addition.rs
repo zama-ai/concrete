@@ -21,7 +21,8 @@ pub trait LweCiphertextVectorDiscardingAdditionEngine<InputCiphertextVector, Out
     AbstractEngine
 where
     InputCiphertextVector: LweCiphertextVectorEntity,
-    OutputCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
+    OutputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
 {
     /// Adds two LWE ciphertext vectors.
     fn discard_add_lwe_ciphertext_vector(
@@ -35,8 +36,8 @@ where
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`LweCiphertextVectorDiscardingAdditionError`]. For safety concerns _specific_ to an engine,
-    /// refer to the implementer safety section.
+    /// of [`LweCiphertextVectorDiscardingAdditionError`]. For safety concerns _specific_ to an
+    /// engine, refer to the implementer safety section.
     unsafe fn discard_add_lwe_ciphertext_vector_unchecked(
         &mut self,
         output: &mut OutputCiphertextVector,

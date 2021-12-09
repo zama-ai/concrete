@@ -11,8 +11,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// negation of the `input` LWE ciphertext.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the negation of the `input` LWE ciphertext.
 ///
 /// # Formal Definition
 pub trait LweCiphertextDiscardingNegationEngine<InputCiphertext, OutputCiphertext>:

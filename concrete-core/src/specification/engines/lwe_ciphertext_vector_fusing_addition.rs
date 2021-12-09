@@ -20,7 +20,8 @@ pub trait LweCiphertextVectorFusingAdditionEngine<InputCiphertextVector, OutputC
     AbstractEngine
 where
     InputCiphertextVector: LweCiphertextVectorEntity,
-    OutputCiphertextVector: LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
+    OutputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
 {
     /// Add two LWE ciphertext vectors.
     fn fuse_add_lwe_ciphertext_vector(

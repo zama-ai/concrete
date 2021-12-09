@@ -8,8 +8,8 @@ use concrete_commons::parameters::{
 /// A trait implemented by types embodying a GGSW ciphertext vector.
 ///
 /// A GGSW ciphertext vector is associated with a
-/// [`KeyDistribution`](`GgswCiphertextVectorEntity::KeyDistribution`) type, which conveys the distribution of
-/// the secret key it was encrypted with.
+/// [`KeyDistribution`](`GgswCiphertextVectorEntity::KeyDistribution`) type, which conveys the
+/// distribution of the secret key it was encrypted with.
 ///
 /// # Formal Definition
 pub trait GgswCiphertextVectorEntity: AbstractEntity<Kind = GgswCiphertextVectorKind> {

@@ -15,8 +15,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// keyswitch of the `input` LWE ciphertext, using the `ksk` LWE keyswitch key.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the keyswitch of the `input` LWE ciphertext, using the `ksk` LWE keyswitch key.
 ///
 /// # Formal Definition
 pub trait LweCiphertextDiscardingKeyswitchEngine<KeyswitchKey, InputCiphertext, OutputCiphertext>:

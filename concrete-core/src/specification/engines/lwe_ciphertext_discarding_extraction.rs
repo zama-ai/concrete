@@ -14,8 +14,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// extraction of the `nth` coefficient of the `input` GLWE ciphertext.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the extraction of the `nth` coefficient of the `input` GLWE ciphertext.
 ///
 /// # Formal definition
 ///
