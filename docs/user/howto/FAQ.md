@@ -2,7 +2,7 @@
 
 ## What is **Concrete**?
 
-See [here](../README.md)
+See [here](../basics/INTRO.md)
 
 ## Is it an open source project?
 

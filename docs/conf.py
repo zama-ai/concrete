@@ -78,7 +78,7 @@ html_theme_options = {
         "icon": "fab fa-discourse",
     }],
     "navigation_depth": 2,
-    "collapse_navigation": False,
+    "collapse_navigation": True,
     "google_analytics_id": "G-XRM93J9QBW",
 }
 html_context = {

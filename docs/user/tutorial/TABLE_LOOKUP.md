@@ -1,6 +1,6 @@
 # Table Lookup
 
-In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Framework**. Please read [Compiling and Executing](../howto/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
+In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Framework**. Please read [Compiling and Executing](../basics/COMPILING_AND_EXECUTING.md) before reading further to see how you can compile the functions below.
 
 ## Direct table lookup
 
