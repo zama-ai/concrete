@@ -79,8 +79,7 @@ html_theme_options = {
     }],
     "navigation_depth": 2,
     "collapse_navigation": False,
-    # Known issue between nbsphinx and GDPR banner (yett lib)
-    # "google_analytics_id": "G-XRM93J9QBW",
+    "google_analytics_id": "G-XRM93J9QBW",
 }
 html_context = {
     "show_version": True,
