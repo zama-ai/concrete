@@ -164,13 +164,37 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
+  start-runner:
+    name: Start EC2 runner
+    runs-on: ubuntu-20.04
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: machulav/ec2-github-runner@502fc5cc476bcf6771c5ab7863d706715d124202
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+
   build:
-    needs: [build-preflight-docker]
+    needs: [build-preflight-docker, start-runner]
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
 
-    runs-on: ubuntu-20.04
+    runs-on: ${{ needs.start-runner.outputs.label }}
     container:
       image: ${{ needs.build-preflight-docker.outputs.image }}
       credentials:
@@ -180,10 +204,13 @@ jobs:
       run:
         shell: '/usr/bin/bash -e {0}'
     strategy:
+      fail-fast: false
       matrix:
         # YAML footgun : https://twitter.com/webology/status/1445394072492023811?s=20
         # Versions need to be quoted or risk being interpreted as floating point numbers
         python-version: ["3.8"]
+        include:
+          - os: ubuntu-20.04
 
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
@@ -352,6 +379,26 @@ jobs:
           SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  stop-runner:
+    name: Stop EC2 runner
+    needs: [build, start-runner]
+    runs-on: ubuntu-20.04
+    if: ${{ always() }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@502fc5cc476bcf6771c5ab7863d706715d124202
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
+          mode: stop
 
   publish-docs:
     needs: [build]
@@ -668,6 +715,7 @@ jobs:
           --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
           --key concretefhe/versions.json "${DOWNLOADED_VERSIONS_JSON_FILE}"
 
+          # shellcheck disable=SC2086
           poetry run python ./script/actions_utils/generate_versions_json.py \
           --add-version "${PROJECT_VERSION}" \
           --versions-json-file "${DOWNLOADED_VERSIONS_JSON_FILE}" \
@@ -782,7 +830,9 @@ jobs:
     needs:
       [
         build-preflight-docker,
+        start-runner,
         build,
+        stop-runner,
         publish-docs,
         push-docker-image,
         package-release,
@@ -814,7 +864,9 @@ jobs:
           SLACK_MESSAGE: "Full run finished with status ${{ env.JOB_STATUS || 'failure' }} \
             (${{ env.ACTION_RUN_URL }})\n\
             - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
+            - start-runner: ${{ needs.start-runner.result }}\n\n\
             - build: ${{ needs.build.outputs.report || 'Did not run.' }}\n\n\
+            - stop-runner: ${{ needs.stop-runner.result }}\n\n\
             - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
             - push-docker-image: ${{ needs.push-docker-image.outputs.report || 'Did not run.' }}\n\n\
             - package-release: ${{ needs.package-release.outputs.report || 'Did not run.' }}"
