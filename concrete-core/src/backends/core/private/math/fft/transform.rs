@@ -635,9 +635,8 @@ fn replicate_coefficients(fft_a: &mut [Complex64], fft_b: &mut [Complex64], big_
     fft_b[0] = fft_a[1];
     fft_b[1] = fft_a[0];
 
-    let mut tmp: Complex64;
     let s = Complex64::new(0., -0.5);
-    tmp = fft_a[0];
+    let mut tmp = fft_a[0];
     fft_a[0] = (fft_a[0] + fft_b[0].conj()) * 0.5;
     fft_b[0] = (tmp - fft_b[0].conj()) * s;
     tmp = fft_a[1];
