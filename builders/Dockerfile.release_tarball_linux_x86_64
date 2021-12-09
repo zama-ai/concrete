@@ -8,16 +8,13 @@ COPY /llvm-project /llvm-project
 COPY --from=ghcr.io/zama-ai/concrete-api-env:latest /target/release /concrete/target/release
 ENV CONCRETE_PROJECT=/concrete
 # Setup and build compiler
+COPY .github/workflows/assets/Installation.md /
 COPY /compiler /compiler
 WORKDIR /compiler
 RUN make BINDINGS_PYTHON_ENABLED=OFF zamacompiler
 # Build tarball
 RUN mkdir -p /tarballs/zamacompiler/lib /tarballs/zamacompiler/bin && \
     cp /compiler/build/bin/zamacompiler /tarballs/zamacompiler/bin && \
-    cp /compiler/build/lib/libZamalangRuntime.so /tarballs/zamacompiler/lib
-RUN echo "# Installation\n"\
-    "You can install the compiler by either:\n"\
-    "1. Extracting the tarball as is somewhere of your choosing, and add /path/to/tarball/zamacompiler/bin to your \$PATH\n"\
-    "2. Extracting the tarball and putting the bin/zamacompiler into a path already in your \$PATH, and lib/libZamalangRuntime.so into one of your lib folders (e.g /usr/lib)"\
-    >> /tarballs/zamacompiler/Installation.md
+    cp /compiler/build/lib/libZamalangRuntime.so /tarballs/zamacompiler/lib && \
+    cp /Installation.md /tarballs/zamacompiler/
 RUN cd /tarballs && tar -czvf zamacompiler.tar.gz zamacompiler

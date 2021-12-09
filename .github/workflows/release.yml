@@ -5,11 +5,29 @@ on:
     branches:
       - master
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
-  BuildAndReleaseWithArtifactsLinux:
+  CreateRelease:
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+    steps:
+      - name: Release
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GH_TOKEN_RELEASE }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+
+  BuildAndPushPythonPackagesLinux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [38, 39, 310]
+    needs: CreateRelease
     steps:
       - uses: actions/checkout@v2
         with:
@@ -19,57 +37,123 @@ jobs:
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build
+        id: build-wheel-linux
         run: |
           cd compiler
-          make package_py38
-          make package_py39
-          make package_py310
-          make release_tarballs
+          make package_py${{ matrix.python }}
+          echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *manylinux*.whl | rev |cut -d "/" -f 1 |rev `"
 
-      - name: Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload Python Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
         with:
-          token: ${{ secrets.GH_TOKEN_RELEASE }}
-          draft: true
-          prerelease: true
-          generate_release_notes: true
-          files: |
-            wheels/concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
-            wheels/concretefhe_compiler-0.1.0-cp39-cp39-manylinux_2_24_x86_64.whl
-            wheels/concretefhe_compiler-0.1.0-cp310-cp310-manylinux_2_24_x86_64.whl
-            tarballs/zamacompiler.tar.gz
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/wheels/${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
+          asset_content_type: application/zip
 
-  # TODO(MacOS)
-  # - clone concrete and build concrete-ffi
-  # - or download concrete-ffi lib for mac from an available source
+  BuildAndPushTarballLinux:
+    runs-on: ubuntu-latest
+    needs: CreateRelease
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
-  # BuildAndPushArtifactsMacOS:
-  #   runs-on: macos-10.15
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: recursive
+      - name: Login to Github Container Registry
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
-  #     - uses: actions/checkout@v1
-  #       with:
-  #         repository: zama-ai/concrete
-  #         token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        id: build-tarball
+        run: |
+          cd compiler
+          make release_tarballs
+          sudo cp ${{ github.workspace }}/tarballs/zamacompiler.tar.gz ${{ github.workspace }}/tarballs/zamacompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz
+          echo "::set-output name=ASSET_NAME::zamacompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz"
 
-  #     - name: Build
-  #       run: |
-  #         cd compiler
-  #         brew install ninja
-  #         pip3 install numpy pybind11==2.6.2 PyYAML
-  #         make zamacompiler python-bindings
-  #         pip3 wheel -w ${{ github.workspace }}/wheels .
+      - name: Upload Tarball
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/tarballs/${{ steps.build-tarball.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-tarball.outputs.ASSET_NAME }}
+          asset_content_type: application/tar+gzip
 
-  #     - name: Upload Python3.9 Package
-  #       uses: actions/upload-release-asset@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-  #       with:
-  #         upload_url: https://uploads.github.com/repos/zama-ai/homomorphizer/releases/53389478/assets
-  #         asset_path: ${{ github.workspace }}/wheels/concretefhe_compiler-0.1.0-cp39-cp39-macos_10_15_x86_64.whl
-  #         asset_name: concretefhe_compiler-0.1.0-cp39-cp39-macos_10_15_x86_64.whl
-  #         asset_content_type: application/zip
+  BuildAndPushPackagesMacOS:
+    needs: CreateRelease
+    runs-on: macos-10.15
+    strategy:
+      matrix:
+        python: ['3.8', '3.9', '3.10']
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
+      - uses: actions/checkout@v2
+        with:
+          repository: zama-ai/concrete
+          ref: feature/core_c_api
+          path: concrete
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install Deps
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          brew install ninja
+          pip install numpy pybind11==2.6.2 wheel
+          cd ${{ github.workspace }}/concrete/concrete-ffi
+          RUSTFLAGS="-C target-cpu=native" cargo build --release
+
+      - name: Build
+        id: build-wheel-macos
+        run: |
+          cd compiler
+          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          make Python3_EXECUTABLE=`which python` python-bindings
+          pip wheel --no-deps -w ${{ github.workspace }}/wheels .
+          echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
+
+      - name: Upload Python Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/wheels/${{ steps.build-wheel-macos.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-wheel-macos.outputs.ASSET_NAME }}
+          asset_content_type: application/zip
+
+      - name: Build tarball
+        if: matrix.python == '3.8'
+        id: build-mac-tarball
+        run: |
+          cd compiler
+          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          make zamacompiler
+          mkdir -p tarballs/zamacompiler/lib tarballs/zamacompiler/bin
+          cp build/bin/zamacompiler tarballs/zamacompiler/bin
+          cp build/lib/libZamalangRuntime.dylib tarballs/zamacompiler/lib
+          cp ../.github/workflows/assets/Installation.md tarballs/zamacompiler/
+          cd tarballs && tar -czvf zamacompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz zamacompiler
+          echo "::set-output name=ASSET_NAME::zamacompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz"
+
+      - name: Upload Tarball
+        if: matrix.python == '3.8'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/compiler/tarballs/${{ steps.build-mac-tarball.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-mac-tarball.outputs.ASSET_NAME }}
+          asset_content_type: application/tar+gzip
+# TODO: version python
