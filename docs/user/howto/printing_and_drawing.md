@@ -3,7 +3,7 @@ FIXME(all): should we update to the new API or have it for both?
 FIXME(all): we should add an example drawing and printing with fusing (so subgraphs)
 ```
 
-# Printing and Drawing
+# Printing and Drawing a FHE circuit
 
 Sometimes, it can be useful to print or draw fhe circuits, we provide methods to just do that. Please read [Compiling and Executing](../basics/compiling_and_executing.md) before reading further to see how you can compile your function into an fhe circuit.
 
