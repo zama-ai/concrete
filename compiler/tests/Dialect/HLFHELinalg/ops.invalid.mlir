@@ -160,6 +160,47 @@ func @apply_multi_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %arg1: tenso
 
 // -----
 
+
+/////////////////////////////////////////////////
+// HLFHELinalg.apply_mapped_lookup_table
+/////////////////////////////////////////////////
+func @apply_mapped_lookup_table_bad_lut_size_127_vs_128(
+  %input: tensor<2x3x4x!HLFHE.eint<7>>,
+  %luts: tensor<127xi64>,
+  %map: tensor<2x3x4xindex>
+) -> tensor<2x3x4x!HLFHE.eint<7>> {
+  // expected-error @+1 {{'HLFHELinalg.apply_mapped_lookup_table' op : `luts` (operand #2) inner dimension should have size 128(=2^7) to match `ct` (operand #1) elements bitwidth (7)}}
+  %1 = "HLFHELinalg.apply_mapped_lookup_table"(%input, %luts, %map): (tensor<2x3x4x!HLFHE.eint<7>>, tensor<127xi64>, tensor<2x3x4xindex>) -> tensor<2x3x4x!HLFHE.eint<7>>
+  return %1: tensor<2x3x4x!HLFHE.eint<7>>
+}
+
+// -----
+
+func @apply_mapped_lookup_table_bad_map_size(
+  %input: tensor<2x3x4x!HLFHE.eint<7>>,
+  %luts: tensor<128xi64>,
+  %map: tensor<2x3xindex>
+) -> tensor<2x3x4x!HLFHE.eint<7>> {
+  // expected-error @+1 {{'HLFHELinalg.apply_mapped_lookup_table' op : 't' (operand #1) rank (=3) differs from 'lut_map.getName()' (operand #3) rank (=2)}}
+  %1 = "HLFHELinalg.apply_mapped_lookup_table"(%input, %luts, %map): (tensor<2x3x4x!HLFHE.eint<7>>, tensor<128xi64>, tensor<2x3xindex>) -> tensor<2x3x4x!HLFHE.eint<7>>
+  return %1: tensor<2x3x4x!HLFHE.eint<7>>
+}
+
+// -----
+
+func @apply_mapped_lookup_table_bad_map_elmt_type(
+  %input: tensor<2x3x4x!HLFHE.eint<7>>,
+  %luts: tensor<128xi64>,
+  %map: tensor<2x3xindex>
+) -> tensor<2x3x4x!HLFHE.eint<7>> {
+  // expected-error @+1 {{'HLFHELinalg.apply_mapped_lookup_table' op : 't' (operand #1) rank (=3) differs from 'lut_map.getName()' (operand #3) rank (=2)}}
+  %1 = "HLFHELinalg.apply_mapped_lookup_table"(%input, %luts, %map): (tensor<2x3x4x!HLFHE.eint<7>>, tensor<128xi64>, tensor<2x3xindex>) -> tensor<2x3x4x!HLFHE.eint<7>>
+  return %1: tensor<2x3x4x!HLFHE.eint<7>>
+}
+
+
+// -----
+
 /////////////////////////////////////////////////
 // HLFHELinalg.matmul_eint_int
 /////////////////////////////////////////////////

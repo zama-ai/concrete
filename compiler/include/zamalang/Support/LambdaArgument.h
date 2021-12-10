@@ -136,6 +136,15 @@ public:
       llvm::ArrayRef<typename ScalarArgumentT::value_type> value)
       : TensorLambdaArgument(value, {(int64_t)value.size()}) {}
 
+  template <std::size_t size1, std::size_t size2>
+  TensorLambdaArgument(
+      typename ScalarArgumentT::value_type (&a)[size1][size2]) {
+    dimensions = {size1, size2};
+    auto value = llvm::MutableArrayRef<typename ScalarArgumentT::value_type>(
+        (typename ScalarArgumentT::value_type *)a, size1 * size2);
+    std::copy(value.begin(), value.end(), std::back_inserter(this->value));
+  }
+
   const std::vector<int64_t> &getDimensions() const { return this->dimensions; }
 
   // Returns the total number of elements in the tensor. If the number

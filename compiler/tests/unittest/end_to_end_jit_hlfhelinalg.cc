@@ -1,5 +1,9 @@
 #include "end_to_end_jit_test.h"
 
+namespace Z = mlir::zamalang;
+template <class Elmt>
+using tensorArgTy = Z::TensorLambdaArgument<Z::IntLambdaArgument<Elmt>>;
+
 #define GET_3D(tensor, i, j, k, di, dj, dk) (tensor)[i * dj * dk + j * dk + k]
 #define GET_2D(tensor, i, j, di, dj) (tensor)[i * dj + j]
 
@@ -1136,6 +1140,110 @@ TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table_with_boradcast) {
 
   llvm::Expected<std::vector<uint64_t>> res =
       lambda.operator()<std::vector<uint64_t>>({&tArg, &lutsArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), 3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// HLFHELinalg apply_mapped_lookup_table /////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_HLFHELinalg, apply_mapped_lookup_table_sequential) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+    // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
+    func @main(%t: tensor<3x3x!HLFHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!HLFHE.eint<2>> {
+      %1 = "HLFHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
+        (tensor<3x3x!HLFHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!HLFHE.eint<2>>
+      return %1: tensor<3x3x!HLFHE.eint<2>>
+    }
+)XXX");
+  uint8_t t[3][3]{
+      {0, 1, 2},
+      {3, 0, 1},
+      {2, 3, 0},
+  };
+  uint64_t luts[9][4]{
+      {3, 0, 0, 0}, {0, 3, 0, 0}, {0, 0, 3, 0},
+      {0, 0, 0, 3}, {3, 0, 0, 0}, {0, 3, 0, 0},
+      {0, 0, 3, 0}, {0, 0, 0, 3}, {3, 0, 0, 0},
+  };
+  uint64_t map[3][3]{
+      {0, 1, 2},
+      {3, 4, 5},
+      {6, 7, 8},
+  };
+  uint8_t expected[3][3]{
+      {3, 3, 3},
+      {3, 3, 3},
+      {3, 3, 3},
+  };
+
+  tensorArgTy<uint8_t> tArg(t);
+  tensorArgTy<uint64_t> lutsArg(luts), mapArg(map);
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>(
+        {&tArg, &lutsArg, &mapArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), 3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_HLFHELinalg, apply_mapped_lookup_table_same_lut) {
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+    // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
+    func @main(%t: tensor<3x3x!HLFHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!HLFHE.eint<2>> {
+      %1 = "HLFHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
+        (tensor<3x3x!HLFHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!HLFHE.eint<2>>
+      return %1: tensor<3x3x!HLFHE.eint<2>>
+    }
+)XXX");
+  uint8_t t[3][3]{
+      {0, 1, 2},
+      {3, 0, 1},
+      {2, 3, 0},
+  };
+  uint64_t luts[9][4]{
+      {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
+      {0, 0, 0, 0}, {1, 2, 3, 1}, {0, 0, 0, 0},
+      {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
+  };
+  uint64_t map[3][3]{
+      {4, 4, 4},
+      {4, 4, 4},
+      {4, 4, 4},
+  };
+  uint8_t expected[3][3]{
+      {1, 2, 3},
+      {1, 1, 2},
+      {3, 1, 1},
+  };
+
+  tensorArgTy<uint8_t> tArg(t);
+  tensorArgTy<uint64_t> lutsArg(luts), mapArg(map);
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>(
+        {&tArg, &lutsArg, &mapArg});
 
   ASSERT_EXPECTED_SUCCESS(res);
 

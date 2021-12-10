@@ -19,6 +19,22 @@ bool verifyEncryptedIntegerAndIntegerInputsConsistency(OpState &op,
                                                        EncryptedIntegerType &a,
                                                        IntegerType &b);
 
+/** Shared error message for all ApplyLookupTable variant Op (several Dialect)
+ * E.g. HLFHE.apply_lookup_table(input, lut)
+ * Message when the lut tensor has an invalid size,
+ * i.e. it cannot accomodate the input elements bitwidth
+ */
+template <class Op>
+void emitErrorBadLutSize(Op &op, std::string lutName, std::string inputName,
+                         int expectedSize, int bitWidth) {
+  auto s = op.emitOpError();
+  s << ": `" << lutName << "` (operand #2)"
+    << " inner dimension should have size " << expectedSize << "(=2^"
+    << bitWidth << ") to match "
+    << "`" << inputName << "` (operand #1)"
+    << " elements bitwidth (" << bitWidth << ")";
+}
+
 } // namespace HLFHE
 } // namespace zamalang
 } // namespace mlir

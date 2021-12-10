@@ -276,6 +276,172 @@ struct HLFHELinalgOpToLinalgGeneric
   };
 };
 
+template <class T> inline mlir::RankedTensorType getRankedTensorType(T v) {
+  return ((mlir::Type)v.getType()).cast<mlir::RankedTensorType>();
+}
+
+llvm::SmallVector<llvm::StringRef> parallelIteratorType(int n) {
+  return llvm::SmallVector<llvm::StringRef>(n, "parallel");
+}
+
+// This class rewrite pattern transforms any instance of
+// operators `HLFHELinalg.ApplyMappedLookupTableEintOp` that implements the
+// broadasting rules to an instance of `linalg.generic` with an appropriate
+// region using `HLFHE.ApplyLookupTableEintOp` operation, an appropriate
+// specification for the iteration dimensions and appropriate operations
+// managing the accumulator of `linalg.generic`.
+//
+// The current implementation does not rely on 'tensor.extract_slice'
+// because of a bug in lowering this operation.
+//
+// Example:
+// %res = "HLFHELinalg.apply_mapped_lookup_table"(%t, %luts, %map)
+// : (tensor<2x3x!HLFHE.eint<2>>, tensor<5x4xi64>, tensor<2x3xindex>)
+// -> tensor<2x3x!HLFHE.eint<2>>
+//
+// becomes:
+//
+// #map = affine_map<(d0, d1) -> (d0, d1)>
+// %init = linalg.init_tensor [2, 3] : tensor<2x3x!MidLFHE.glwe<{_,_,_}{2}>>
+// %output = linalg.generic {indexing_maps = [#map, #map, #map], iterator_types
+// = ["parallel", "parallel"]} ins(%arg0, %arg2 :
+// tensor<2x3x!MidLFHE.glwe<{_,_,_}{2}>>, tensor<2x3xindex>) outs(%0 :
+// tensor<2x3x!MidLFHE.glwe<{_,_,_}{2}>>) {
+//          ^bb0(%arg3: !MidLFHE.glwe<{_,_,_}{2}>, %lut_idx: index, %arg5:
+//          !MidLFHE.glwe<{_,_,_}{2}>):  // no predecessors
+//          // SHOULD BE
+//          %lut = tensor.extract_slice %arg1[%[[LUTIDX]], 0] [1,4] [1, 1]
+//                 : tensor<5x4xi64> to tensor<4xi64>
+//          // BUT IS
+//          %i0 = arith.constant 0 : index
+//          ...
+//          %i3 = arith.constant 3 : index
+//          %e0 = tensor.extract %arg5[%lut_idx, %i0] : tensor<5x4xi64>
+//          ...
+//          %e3 = tensor.extract %arg5[%lut_idx, %i3] : tensor<5x4xi64>
+//          %lut = tensor.from_elements %e0, ..., %e3 : tensor<4xi64>
+//          %res  = "MidLFHE.apply_lookup_table"(%arg3, %[[LUT]])
+//                    {baseLogBS = -1 : i32, baseLogKS = -1 : i32, k = -1 : i32,
+//                      levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS =
+//                      -1 : i32, polynomialSize = -1 : i32}
+//                 : (!MidLFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
+//          !MidLFHE.glwe<{_,_,_}{2}> linalg.yield %res :
+//          !MidLFHE.glwe<{_,_,_}{2}>
+// } -> tensor<2x3x!MidLFHE.glwe<{_,_,_}{2}>>
+
+namespace HLFHELinalg = mlir::zamalang::HLFHELinalg;
+
+struct HLFHELinalgApplyMappedLookupTableToLinalgGeneric
+    : public mlir::OpRewritePattern<HLFHELinalg::ApplyMappedLookupTableEintOp> {
+  HLFHELinalgApplyMappedLookupTableToLinalgGeneric(
+      ::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<HLFHELinalg::ApplyMappedLookupTableEintOp>(
+            context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(HLFHELinalg::ApplyMappedLookupTableEintOp mappedLookup,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    namespace arith = mlir::arith;
+    namespace linalg = mlir::linalg;
+    namespace tensor = mlir::tensor;
+    namespace HLFHE = mlir::zamalang::HLFHE;
+    using Values = llvm::SmallVector<mlir::Value>;
+    using Types = llvm::SmallVector<mlir::Type>;
+    using AffineMaps = llvm::SmallVector<mlir::AffineMap>;
+    using sliceArg = llvm::SmallVector<mlir::OpFoldResult>;
+
+    auto input = mappedLookup.t();
+    auto luts = mappedLookup.luts();
+    auto map = mappedLookup.map();
+
+    auto loc = mappedLookup.getLoc();
+    auto tensorTy = getRankedTensorType(input);
+    auto lutsTy = getRankedTensorType(luts);
+    auto resultTy = getRankedTensorType(mappedLookup->getResult(0));
+    auto elementTy = resultTy.getElementType();
+    auto lutElmtTy = lutsTy.getElementType();
+    auto lutsShape = lutsTy.getShape();
+    auto lutSize = lutsShape[lutsShape.size() - 1];
+    auto resultShape = resultTy.getShape();
+
+    auto integer = [&](auto v) -> mlir::Attribute {
+      return rewriter.getI64IntegerAttr(v);
+    };
+
+    auto _0_ = integer(0);
+    auto _1_ = integer(1);
+    auto lutSizeValue = integer(lutSize);
+
+    // Create the body of the `linalg.generic` op
+    // %arg0 is an element of t (encrypted int)
+    // %arg1 is an element of map (i64)
+    // %arg2 is the output element
+    auto lambdaBlock = [&](mlir::OpBuilder &nestedBuilder,
+                           mlir::Location nestedLoc,
+                           mlir::ValueRange blockArgs) {
+      auto tElmt = blockArgs[0];
+      auto lutIdx = blockArgs[1];
+      auto indexTy = rewriter.getIndexType();
+
+      // %lut = extract_slice %luts[%lutIdx, 0][1, lutSize][1, 1]  :
+      // tensor<NxKxi64> to tensor<Kxi64>
+      mlir::Value lut;
+      const bool WORKAROUND_EXTRACT_SLICE = true;
+      if (!WORKAROUND_EXTRACT_SLICE) {
+        sliceArg offsets{lutIdx, _0_};
+        sliceArg sizes{_1_, lutSizeValue};
+        sliceArg strides{_1_, _1_};
+        auto lutTy = mlir::RankedTensorType::get(
+            {static_cast<int64_t>(lutSize)}, lutElmtTy);
+        lut = nestedBuilder.create<tensor::ExtractSliceOp>(
+            loc, lutTy, luts, offsets, sizes, strides);
+      } else {
+        // WORKAROUND BEGIN
+        // A bug in linalg-bufferize prevents rank reduction in extract_slice
+        // Reshaping does not work either or is too complicated so let's rebuild
+        // the tensor from scratch
+        llvm::SmallVector<mlir::Value> consts;
+        llvm::SmallVector<mlir::Value> extracts;
+        for (int i = 0; i < lutSize; i++) {
+          consts.push_back(
+              // %5 = arith.constant(<i> : index) : index
+              nestedBuilder.create<mlir::arith::ConstantOp>(
+                  loc, indexTy, rewriter.getIndexAttr(i)));
+        }
+        for (int i = 0; i < lutSize; i++) {
+          extracts.push_back(
+              // %8 = tensor.extract %luts[<lutIdx>, <i>] : ...
+              nestedBuilder.create<tensor::ExtractOp>(
+                  loc, luts, mlir::ValueRange({lutIdx, consts[i]})));
+        }
+        // %12 = tensor.from_elements %8, ... : ...
+        lut = nestedBuilder.create<tensor::FromElementsOp>(loc, extracts);
+      } // WORKAROUND END
+      // %res1 = apply_lookup_table %arg0 %lut
+      auto lookup = nestedBuilder.create<HLFHE::ApplyLookupTableEintOp>(
+          loc, elementTy, tElmt, lut);
+      // linalg.yield %res1 : !HLFHE.eint<2>
+      nestedBuilder.create<linalg::YieldOp>(loc, lookup.getResult());
+    };
+
+    auto output =
+        rewriter.create<linalg::InitTensorOp>(loc, resultShape, elementTy);
+
+    // Create the `linalg.g eneric` op
+    Types resTys{resultTy};
+    Values ins{input, map};
+    Values outs{output};
+    auto indexOfInput = getBroadcastedAffineMap(resultTy, tensorTy, rewriter);
+    AffineMaps affineMaps{indexOfInput, indexOfInput, indexOfInput};
+    auto iteratorTypes = parallelIteratorType(resultShape.size());
+    auto genericOp = rewriter.create<linalg::GenericOp>(
+        loc, resTys, ins, outs, affineMaps, iteratorTypes, lambdaBlock);
+    rewriter.replaceOp(mappedLookup, {genericOp.getResult(0)});
+
+    return ::mlir::success();
+  };
+};
+
 // This class rewrite pattern transforms any instance of
 // operators `HLFHELinalg.ApplyMultiLookupTableEintOp` that implements the
 // broadasting rules to an instance of `linalg.generic` with an appropriate
@@ -846,6 +1012,8 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
                                                                    arg1, arg0);
       });
   patterns.insert<HLFHELinalgApplyMultiLookupTableToLinalgGeneric>(
+      &getContext());
+  patterns.insert<HLFHELinalgApplyMappedLookupTableToLinalgGeneric>(
       &getContext());
   patterns.insert<HLFHELinalgZeroToLinalgGenerate>(&getContext());
 

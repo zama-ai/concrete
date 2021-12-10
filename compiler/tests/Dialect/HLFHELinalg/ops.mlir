@@ -289,6 +289,22 @@ func @apply_multi_lookup_table_broadcast(%arg0: tensor<2x3x4x!HLFHE.eint<2>>, %a
 }
 
 /////////////////////////////////////////////////
+// HLFHELinalg.apply_mapped_lookup_table
+/////////////////////////////////////////////////
+
+// CHECK-LABEL: func @apply_mapped_lookup_table(%arg0: tensor<2x3x4x!HLFHE.eint<7>>, %arg1: tensor<10x128xi64>, %arg2: tensor<2x3x4xindex>) -> tensor<2x3x4x!HLFHE.eint<7>> {
+func @apply_mapped_lookup_table(
+  %input: tensor<2x3x4x!HLFHE.eint<7>>,
+  %luts: tensor<10x128xi64>,
+  %map: tensor<2x3x4xindex>
+) -> tensor<2x3x4x!HLFHE.eint<7>> {
+  // CHECK-NEXT: %0 = "HLFHELinalg.apply_mapped_lookup_table"(%arg0, %arg1, %arg2) : (tensor<2x3x4x!HLFHE.eint<7>>, tensor<10x128xi64>, tensor<2x3x4xindex>) -> tensor<2x3x4x!HLFHE.eint<7>>
+  // CHECK-NEXT: return %0 : tensor<2x3x4x!HLFHE.eint<7>>
+  %0 = "HLFHELinalg.apply_mapped_lookup_table"(%input, %luts, %map): (tensor<2x3x4x!HLFHE.eint<7>>, tensor<10x128xi64>, tensor<2x3x4xindex>) -> (tensor<2x3x4x!HLFHE.eint<7>>)
+  return %0: tensor<2x3x4x!HLFHE.eint<7>>
+}
+
+/////////////////////////////////////////////////
 // HLFHELinalg.dot_eint_int
 /////////////////////////////////////////////////
 

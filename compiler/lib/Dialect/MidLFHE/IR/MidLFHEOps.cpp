@@ -1,5 +1,6 @@
 #include "mlir/IR/Region.h"
 
+#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 
@@ -146,11 +147,10 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
   // Check the shape of l_cst argument
   auto width = ct.getP();
   auto lCstShape = l_cst.getShape();
-  mlir::SmallVector<int64_t, 1> expectedShape{1 << width};
+  auto expectedSize = 1 << width;
+  mlir::SmallVector<int64_t, 1> expectedShape{expectedSize};
   if (!l_cst.hasStaticShape(expectedShape)) {
-    op.emitOpError() << "should have as `l_cst` argument a shape of one "
-                        "dimension equals to 2^p, where p is the width of the "
-                        "`ct` argument.";
+    HLFHE::emitErrorBadLutSize(op, "l_cst", "ct", expectedSize, width);
     return mlir::failure();
   }
   if (!l_cst.getElementType().isInteger(64)) {

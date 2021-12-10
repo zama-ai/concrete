@@ -281,6 +281,85 @@ verifyApplyMultiLookupTable(ApplyMultiLookupTableEintOp &op) {
   return mlir::success();
 }
 
+mlir::RankedTensorType getTensorType(::mlir::Value value) {
+  return value.getType().cast<mlir::RankedTensorType>();
+}
+
+template <class T> T getElmentType(::mlir::Value value) {
+  auto tTy = getTensorType(value);
+  return tTy.getElementType().cast<T>();
+}
+
+mlir::IntegerType getClearElmentType(::mlir::Value value) {
+  return getElmentType<mlir::IntegerType>(value);
+}
+
+HLFHE::EncryptedIntegerType getEncryptedElmentType(::mlir::Value value) {
+  using namespace mlir::zamalang::HLFHE;
+  return getElmentType<HLFHE::EncryptedIntegerType>(value);
+}
+
+mlir::LogicalResult verifyMapHasRightShape(ApplyMappedLookupTableEintOp &op,
+                                           ::mlir::Value &lut_input,
+                                           ::mlir::Value &lut_map) {
+  auto input_shape = getTensorType(lut_input).getShape();
+  auto map_shape = getTensorType(lut_map).getShape();
+  if (input_shape.equals(map_shape)) {
+    return mlir::success();
+  }
+  std::string error;
+  int input_rank = input_shape.size();
+  int map_rank = map_shape.size();
+  std::string input_name = "'t' (operand #1)";
+  std::string map_name = "'lut_map.getName()' (operand #3)";
+  if (input_rank == map_rank) {
+    error = ": " + input_name + " dimensions differs from " + map_name;
+  } else {
+    error = ": " + input_name + " rank (=" + std::to_string(input_rank) +
+            ") differs from " + map_name +
+            " rank (=" + std::to_string(map_rank) + ")";
+  }
+  op.emitOpError() << error;
+  return mlir::failure();
+}
+
+mlir::LogicalResult verifyLutsSize(ApplyMappedLookupTableEintOp &op,
+                                   ::mlir::Value &encryptedIndex,
+                                   ::mlir::Value &luts) {
+  auto index_width = getEncryptedElmentType(encryptedIndex).getWidth();
+  auto actual_lut_size = getTensorType(luts).getShape().back();
+  auto expected_lut_size = 1 << index_width;
+  if (actual_lut_size == expected_lut_size) {
+    return mlir::success();
+  }
+  HLFHE::emitErrorBadLutSize(op, "luts", "ct", expected_lut_size, index_width);
+  return mlir::failure();
+}
+
+mlir::LogicalResult
+verifyApplyMappedLookupTable(ApplyMappedLookupTableEintOp &op) {
+  auto t = op.t();
+  auto luts = op.luts();
+  auto map = op.map();
+  auto result = op.getResult();
+
+  auto t_shape = getTensorType(t).getShape();
+  if (!getTensorType(result).hasStaticShape(t_shape)) {
+    op.emitOpError()
+        << ": `t` (operand #1) and `map` (operand #2) must have the same shape";
+    return mlir::failure();
+  }
+
+  if (!getTensorType(map).getElementType().isIndex()) {
+    op.emitOpError()
+        << ": `map` (operand #3) should contains elements of type `index`";
+    return mlir::failure();
+  }
+
+  return mlir::success(verifyMapHasRightShape(op, t, map).succeeded() &&
+                       verifyLutsSize(op, t, luts).succeeded());
+}
+
 ::mlir::LogicalResult verifyDotEintInt(Dot &op) {
   if (::mlir::failed(mlir::verifyCompatibleShape(op.lhs().getType(),
                                                  op.rhs().getType()))) {

@@ -342,6 +342,62 @@ def ApplyMultiLookupTableEintOp : HLFHELinalg_Op<"apply_multi_lookup_table", []>
     }];
 }
 
+def ApplyMappedLookupTableEintOp : HLFHELinalg_Op<"apply_mapped_lookup_table", []> {
+    let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element, specified by a map.";
+
+    let description = [{
+        Performs for each encrypted indice a lookup on a table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
+        is performed following the broadcasting rules. The precise lookup is specified by a map.
+
+        ```mlir
+        // The result of this operation, is a tensor that contains the result of the lookup on different tables.
+        // i.e. %res[i, ..., k] = %luts[ %map[i, ..., k] ][ %t[i, ..., k] ]
+        %res = HLFHELinalg.apply_mapped_lookup_table(%t, %luts, %map): tensor<DNx...xD1x!HLFHE.eint<$p>>, tensor<DM x ^$p>, tensor<DNx...xD1xindex> -> tensor<DNx...xD1x!HLFHE.eint<$p>>
+        ```
+
+        Examples:
+        ```mlir
+
+        // Returns the lookup of 3x2 matrix of encrypted indices of width 2 on a vector of 2 tables of size 4=2^2 of clear integers.
+        //
+        // [0,1]                                 [0, 1] = [1,2]
+        // [3,0] lut [[1,3,5,7], [0,2,4,6]] with [0, 1] = [7,0]
+        // [2,3]                                 [0, 1] = [5,6]
+        "HLFHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) : (tensor<3x2x!HLFHE.eint<2>>, tensor<2x4xi64>, tensor<3x2xindex>) -> tensor<3x2x!HLFHE.eint<3>>
+        ```
+
+        Others examples:
+        // [0,1]                                 [1, 0] = [3,2]
+        // [3,0] lut [[1,3,5,7], [0,2,4,6]] with [0, 1] = [7,0]
+        // [2,3]                                 [1, 0] = [4,7]
+
+        // [0,1]                                 [0, 0] = [1,3]
+        // [3,0] lut [[1,3,5,7], [0,2,4,6]] with [1, 1] = [6,0]
+        // [2,3]                                 [1, 0] = [4,7]
+
+        // [0,1]                                 [0]    = [1,3]
+        // [3,0] lut [[1,3,5,7], [0,2,4,6]] with [1]    = [6,0]
+        // [2,3]                                 [0]    = [5,7]
+
+        // [0,1]                                        = [1,2]
+        // [3,0] lut [[1,3,5,7], [0,2,4,6]] with [0, 1] = [7,0]
+        // [2,3]                                        = [5,6]
+
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$luts,
+        Type<And<[TensorOf<[Index]>.predicate, HasStaticShapePred]>>:$map
+    );
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let verifier = [{
+        return ::mlir::zamalang::HLFHELinalg::verifyApplyMappedLookupTable(*this);
+    }];
+}
+
 // Dot product
 def Dot : HLFHELinalg_Op<"dot_eint_int"> {
     let summary = "Returns the encrypted dot product between a vector of encrypted integers and a vector of clean integers.";
