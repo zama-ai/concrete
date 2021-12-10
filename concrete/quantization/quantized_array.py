@@ -40,13 +40,28 @@ class QuantizedArray:
         rmin = numpy.min(self.values)
 
         if rmax - rmin < STABILITY_CONST:
-            scale = 1
+            # In this case there is  a single unique value to quantize
+            # This value could be multiplied with inputs at some point in the model
+            # Since zero points need to be integers, if this value is a small float (ex: 0.01)
+            # it will be quantized to 0 with a 0 zero-point, thus becoming useless in multiplication
 
-            # Ideally we should get rid of round here but it is risky
-            # regarding the FHE compilation.
-            # Indeed, the zero_point value for the weights has to be an integer
-            # for the compilation to work.
-            zero_point = numpy.round(-rmin)
+            if numpy.abs(rmax) < STABILITY_CONST:
+                # If the value is a 0 we cannot do it since the scale would become 0 as well
+                # resulting in division by 0
+                scale = 1
+                # Ideally we should get rid of round here but it is risky
+                # regarding the FHE compilation.
+                # Indeed, the zero_point value for the weights has to be an integer
+                # for the compilation to work.
+                zero_point = numpy.round(-rmin)
+            else:
+                # If the value is not a 0 we can tweak the scale factor so that
+                # the value quantizes to 2^b - 1, the highest possible quantized value
+
+                # TODO: should we quantize it to the value of 1 what ever the number of bits
+                # in order to save some precision bits ?
+                scale = rmax / (2 ** self.n_bits - 1)
+                zero_point = 0
         else:
             scale = (rmax - rmin) / (2 ** self.n_bits - 1) if rmax != rmin else 1.0
 
