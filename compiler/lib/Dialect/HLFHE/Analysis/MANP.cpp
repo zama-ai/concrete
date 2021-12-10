@@ -1109,6 +1109,7 @@ protected:
         if (!MANP) {
           op->emitError("Maximum Arithmetic Noise Padding value not set");
           this->signalPassFailure();
+          return;
         }
 
         if (APIntWidthExtendULT(this->maxMANP, MANP.getValue())) {
