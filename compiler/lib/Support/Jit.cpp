@@ -311,12 +311,19 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
     rawArg[offset] = &inputs[offset];
     offset++;
   }
-  // strides is an array of size equals to numDim
-  for (size_t i = 0; i < shape.size(); i++) {
-    inputs[offset] = (void *)0;
-    rawArg[offset] = &inputs[offset];
-    offset++;
+
+  // Set the stride for each dimension, equal to the product of the
+  // following dimensions.
+  int64_t stride = 1;
+
+  for (ssize_t i = shape.size() - 1; i >= 0; i--) {
+    inputs[offset + i] = (void *)stride;
+    rawArg[offset + i] = &inputs[offset + i];
+    stride *= shape[i];
   }
+
+  offset += shape.size();
+
   return llvm::Error::success();
 }
 
