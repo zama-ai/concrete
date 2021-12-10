@@ -47,9 +47,15 @@ MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 MLIR_CAPI_EXPORTED lambdaArgument invokeLambda(lambda l,
                                                executionArguments args);
 
-// Create a lambdaArgument from a tensor
-MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensor(
+// Create a lambdaArgument from a tensor of different data types
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU8(
     std::vector<uint8_t> data, std::vector<int64_t> dimensions);
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU16(
+    std::vector<uint16_t> data, std::vector<int64_t> dimensions);
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU32(
+    std::vector<uint32_t> data, std::vector<int64_t> dimensions);
+MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU64(
+    std::vector<uint64_t> data, std::vector<int64_t> dimensions);
 // Create a lambdaArgument from a scalar
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromScalar(uint64_t scalar);
 // Check if a lambdaArgument holds a tensor

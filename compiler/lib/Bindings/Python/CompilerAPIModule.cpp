@@ -45,7 +45,22 @@ void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
                   });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
-      .def_static("from_tensor", lambdaArgumentFromTensor)
+      .def_static("from_tensor",
+                  [](std::vector<uint8_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorU8(tensor, dims);
+                  })
+      .def_static("from_tensor",
+                  [](std::vector<uint16_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorU16(tensor, dims);
+                  })
+      .def_static("from_tensor",
+                  [](std::vector<uint32_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorU32(tensor, dims);
+                  })
+      .def_static("from_tensor",
+                  [](std::vector<uint64_t> tensor, std::vector<int64_t> dims) {
+                    return lambdaArgumentFromTensorU64(tensor, dims);
+                  })
       .def_static("from_scalar", lambdaArgumentFromScalar)
       .def("is_tensor",
            [](lambdaArgument &lambda_arg) {

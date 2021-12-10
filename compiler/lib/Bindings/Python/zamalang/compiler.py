@@ -10,6 +10,11 @@ from mlir._mlir_libs._zamalang._compiler import library as _library
 import numpy as np
 
 
+ACCEPTED_NUMPY_UINTS = (np.uint8, np.uint16, np.uint32, np.uint64)
+ACCEPTED_INTS = (int,) + ACCEPTED_NUMPY_UINTS
+ACCEPTED_TYPES = (np.ndarray,) + ACCEPTED_INTS
+
+
 def _lookup_runtime_lib() -> str:
     """Try to find the absolute path to the runtime library.
 
@@ -95,10 +100,10 @@ def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument
     Returns:
         _LambdaArgument: lambda argument holding the appropriate value
     """
-    if not isinstance(value, (int, np.ndarray, np.uint8)):
-        raise TypeError("value of execution argument must be either int, numpy.array or numpy.uint8")
-    if isinstance(value, (int, np.uint8)):
-        if not (0 <= value < (2 ** 64 - 1)):
+    if not isinstance(value, ACCEPTED_TYPES):
+        raise TypeError("value of execution argument must be either int, numpy.array or numpy.uint{8,16,32,64}")
+    if isinstance(value, ACCEPTED_INTS):
+        if isinstance(value, int) and not (0 <= value < np.iinfo(np.uint64).max):
             raise TypeError(
                 "single integer must be in the range [0, 2**64 - 1] (uint64)"
             )
@@ -107,8 +112,8 @@ def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument
         assert isinstance(value, np.ndarray)
         if value.shape == ():
             return _LambdaArgument.from_scalar(value)
-        if value.dtype != np.uint8:
-            raise TypeError("numpy.array must be of dtype uint8")
+        if value.dtype not in ACCEPTED_NUMPY_UINTS:
+            raise TypeError("numpy.array must be of dtype uint{8,16,32,64}")
         return _LambdaArgument.from_tensor(value.flatten().tolist(), value.shape)
 
 

@@ -45,6 +45,39 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
+            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
+                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
+                return %1: !HLFHE.eint<7>
+            }
+            """,
+            (np.uint16(3), np.uint16(5)),
+            8,
+            id="add_eint_int_with_np_uint16_as_scalar",
+        ),
+        pytest.param(
+            """
+            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
+                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
+                return %1: !HLFHE.eint<7>
+            }
+            """,
+            (np.uint32(3), np.uint32(5)),
+            8,
+            id="add_eint_int_with_np_uint32_as_scalar",
+        ),
+        pytest.param(
+            """
+            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
+                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
+                return %1: !HLFHE.eint<7>
+            }
+            """,
+            (np.uint64(3), np.uint64(5)),
+            8,
+            id="add_eint_int_with_np_uint64_as_scalar",
+        ),
+        pytest.param(
+            """
             func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
             {
                 %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
@@ -57,7 +90,55 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
                 np.array([4, 3, 2, 1], dtype=np.uint8),
             ),
             20,
-            id="dot_eint_int",
+            id="dot_eint_int_uint8",
+        ),
+        pytest.param(
+            """
+            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            {
+                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
+                return %ret : !HLFHE.eint<7>
+            }
+            """,
+            (
+                np.array([1, 2, 3, 4], dtype=np.uint16),
+                np.array([4, 3, 2, 1], dtype=np.uint16),
+            ),
+            20,
+            id="dot_eint_int_uint16",
+        ),
+        pytest.param(
+            """
+            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            {
+                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
+                return %ret : !HLFHE.eint<7>
+            }
+            """,
+            (
+                np.array([1, 2, 3, 4], dtype=np.uint32),
+                np.array([4, 3, 2, 1], dtype=np.uint32),
+            ),
+            20,
+            id="dot_eint_int_uint32",
+        ),
+        pytest.param(
+            """
+            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            {
+                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
+                return %ret : !HLFHE.eint<7>
+            }
+            """,
+            (
+                np.array([1, 2, 3, 4], dtype=np.uint64),
+                np.array([4, 3, 2, 1], dtype=np.uint64),
+            ),
+            20,
+            id="dot_eint_int_uint64",
         ),
         pytest.param(
             """

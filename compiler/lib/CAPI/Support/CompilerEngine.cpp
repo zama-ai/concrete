@@ -143,11 +143,35 @@ uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
   return arg->getValue();
 }
 
-lambdaArgument lambdaArgumentFromTensor(std::vector<uint8_t> data,
-                                        std::vector<int64_t> dimensions) {
+lambdaArgument lambdaArgumentFromTensorU8(std::vector<uint8_t> data,
+                                          std::vector<int64_t> dimensions) {
   lambdaArgument tensor_arg{
       std::make_shared<mlir::zamalang::TensorLambdaArgument<
           mlir::zamalang::IntLambdaArgument<uint8_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorU16(std::vector<uint16_t> data,
+                                           std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::zamalang::TensorLambdaArgument<
+          mlir::zamalang::IntLambdaArgument<uint16_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorU32(std::vector<uint32_t> data,
+                                           std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::zamalang::TensorLambdaArgument<
+          mlir::zamalang::IntLambdaArgument<uint32_t>>>(data, dimensions)};
+  return tensor_arg;
+}
+
+lambdaArgument lambdaArgumentFromTensorU64(std::vector<uint64_t> data,
+                                           std::vector<int64_t> dimensions) {
+  lambdaArgument tensor_arg{
+      std::make_shared<mlir::zamalang::TensorLambdaArgument<
+          mlir::zamalang::IntLambdaArgument<uint64_t>>>(data, dimensions)};
   return tensor_arg;
 }
 
