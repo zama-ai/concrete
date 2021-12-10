@@ -31,7 +31,7 @@ $$ S =  \frac{\beta - \alpha}{2^n - 1} $$
 
 The other important parameter from this quantization schema is the `zero point` $ Z $ value. This essentially brings the 0 floating point value to a specific integer. Doing this allows us to have an asymetric quantization where the resulting integer is in the unsigned integer realm, $ \mathbb{N} $. 
 
-$$ Z = \mathsc{round} \left(- \frac{\alpha}{S} \right) $$
+$$ Z = \mathtt{round} \left(- \frac{\alpha}{S} \right) $$
 
 There is more mathematics involved in how computations change when replacing floating point values by integers for a fully connected or a convolution layer. The IntelLabs distiller quantization documentation goes into a [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) about the maths to quantize values and how to keep computations consistent.
 
