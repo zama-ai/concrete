@@ -8,7 +8,10 @@ CHECK=0
 DIFF_TOOL="diff --ignore-all-space --ignore-tab-expansion --ignore-space-change --ignore-all-space --ignore-blank-lines --strip-trailing-cr"
 TMP_VENV_PATH="/tmp/tmp_venv"
 DO_USER_LICENSES=1
-DO_DEV_LICENSES=1
+
+# Dev licences are not done, but could be re-enabled
+DO_DEV_LICENSES=0
+
 OUTPUT_DIRECTORY="${LICENSE_DIRECTORY}"
 
 while [ -n "$1" ]
