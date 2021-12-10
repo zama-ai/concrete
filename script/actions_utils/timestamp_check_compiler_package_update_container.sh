@@ -66,6 +66,11 @@ ASSET_JSON=$(echo "${RELEASE_JSON}" | jq ".assets | map(select(.name | contains(
 echo "Asset json:"
 echo "${ASSET_JSON}"
 
+if [[ "${ASSET_JSON}" == "null" ]]; then
+    echo "No asset found matching ${FILE}"
+    exit 0
+fi
+
 LATEST_ENV_IMG_TIMESTAMP=$(echo "${LATEST_ENV_IMG_JSON}" | jq -r '.updated_at')
 LATEST_COMPILER_PACKAGE_TIMESTAMP=$(echo "${ASSET_JSON}" | jq -r '.updated_at')
 

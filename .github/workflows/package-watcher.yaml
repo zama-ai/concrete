@@ -35,14 +35,14 @@ jobs:
       - name: Compare image timestamps and notify
         if: ${{ fromJSON(env.SHOULD_RUN) }}
         env:
-          WHEEL: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
+          WHEEL_SPEC: cp38-cp38-manylinux_2_24_x86_64
         run: |
           ./script/actions_utils/timestamp_check_compiler_package_update_container.sh \
           --compiler-release-endpoint-url \
           https://api.github.com/repos/zama-ai/homomorphizer/releases \
           --env_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/concretefhe-env/versions \
-          --file "${WHEEL}" \
+          --file "${WHEEL_SPEC}" \
           --token ${{ secrets.BOT_TOKEN }} \
           --github-env "$GITHUB_ENV"
       - name: Open PR
