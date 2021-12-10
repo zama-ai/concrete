@@ -23,8 +23,8 @@ setup_env:
 			poetry run python -m pip install --force-reinstall numpy==1.21.4;	\
 		fi;																		\
 	fi
-	# we need to pin a specific version of numpy to avoid having license conflicts
-	# see https://github.com/zama-ai/concretefhe-internal/runs/4455022611?check_suite_focus=true for details
+	@# we need to pin a specific version of numpy to avoid having license conflicts
+	@# see https://github.com/zama-ai/concretefhe-internal/runs/4455022611?check_suite_focus=true for details
 
 .PHONY: sync_env # Synchronise the environment
 sync_env:
@@ -147,11 +147,13 @@ mypy_ci:
 
 .PHONY: docker_build # Build dev docker
 docker_build:
-	docker build --pull -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
+	docker build --build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g) --pull \
+	-t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 
 .PHONY: docker_rebuild # Rebuild docker
-docker_rebuild:
-	docker build --pull --no-cache -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
+docker_rebuild: docker_clean_volumes
+	docker build --build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g) --pull \
+	--no-cache -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 
 .PHONY: docker_start # Launch docker
 docker_start:
@@ -160,8 +162,8 @@ docker_start:
 	-p 8888:8888 \
 	--env DISPLAY=host.docker.internal:0 \
 	--volume /"$$(pwd)":/src \
-	--volume $(DEV_CONTAINER_VENV_VOLUME):/root/dev_venv \
-	--volume $(DEV_CONTAINER_CACHE_VOLUME):/root/.cache \
+	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
+	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
 	$(DEV_DOCKER_IMG)
 
 .PHONY: docker_build_and_start # Docker build and start

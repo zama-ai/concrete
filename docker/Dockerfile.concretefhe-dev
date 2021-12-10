@@ -1,15 +1,43 @@
 FROM ghcr.io/zama-ai/concretefhe-env
 
-ENV SRC_DIR_NAME=src
+ENV SRC_DIR=/src
 
-RUN echo "source /root/dev_venv/bin/activate" >> /root/.bashrc && \
-    echo "if [[ \"\$?\" != \"0\" ]]; then" >> /root/.bashrc && \
-    echo "    python3 -m venv /root/dev_venv" >> /root/.bashrc && \
-    echo "    source /root/dev_venv/bin/activate" >> /root/.bashrc && \
-    echo "    cd /${SRC_DIR_NAME}/ && make setup_env" >> /root/.bashrc && \
-    echo "fi" >> /root/.bashrc && \
-    echo "export MPLBACKEND=TkAgg" >> /root/.bashrc
+# Default to Ubuntu default uid for first user
+ARG BUILD_GID=1000
+ARG BUILD_UID=1000
 
-WORKDIR /${SRC_DIR_NAME}
+# Get sudo for our future user
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y sudo && \
+    rm -rf /var/lib/apt/lists/*
+
+# From https://dev.to/emmanuelnk/using-sudo-without-password-prompt-as-non-root-docker-user-52bg
+# Create dev_user and add it to relevant groups
+# Create /src and make the dev user own it
+# Ensure sudo group users are not asked for a password when using
+# sudo command by ammending sudoers file
+RUN groupadd -g "${BUILD_GID}" dev_user && \
+    adduser --disabled-password \
+    --uid "${BUILD_UID}" --gid "${BUILD_GID}" --shell /bin/bash --gecos "" dev_user && \
+    usermod -aG sudo dev_user && \
+    mkdir -p "${SRC_DIR}" && \
+    chown dev_user "${SRC_DIR}" && \
+    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Now switch to the newly created user
+USER dev_user
+
+RUN echo "source ~/dev_venv/bin/activate" >> ~/.bashrc && \
+    echo "if [[ \"\$?\" != \"0\" ]]; then" >> ~/.bashrc && \
+    echo "    python3 -m venv ~/dev_venv" >> ~/.bashrc && \
+    echo "    source ~/dev_venv/bin/activate" >> ~/.bashrc && \
+    echo "    cd ${SRC_DIR}/ && make setup_env" >> ~/.bashrc && \
+    echo "fi" >> ~/.bashrc && \
+    echo "export MPLBACKEND=TkAgg" >> ~/.bashrc && \
+    touch ~/.sudo_as_admin_successful && \
+    mkdir -p ~/dev_venv && \
+    mkdir -p ~/.cache
+
+WORKDIR ${SRC_DIR}
 
 CMD ["/bin/bash"]
