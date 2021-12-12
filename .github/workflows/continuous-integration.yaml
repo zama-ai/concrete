@@ -429,7 +429,7 @@ jobs:
       - name: Download Documentation
         if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
         id: download
-        uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+        uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
         with:
           name: html-docs
       - name: Configure AWS credentials
@@ -667,14 +667,14 @@ jobs:
       - name: Download Documentation
         if: ${{ success() && !cancelled() }}
         id: download-docs
-        uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+        uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
         with:
           name: html-docs
           path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog
-        uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+        uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
