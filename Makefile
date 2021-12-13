@@ -194,7 +194,10 @@ docker_publish_measurements: docker_build
 	@# Poetry is not installed on the benchmark servers
 	@# Thus, we ran `extract_machine_info.py` script using native python
 	python script/progress_tracker_utils/extract_machine_info.py
-	docker run --rm --volume /"$$(pwd)":/src $(DEV_DOCKER_IMG) \
+	docker run --rm --volume /"$$(pwd)":/src \
+	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
+	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
+	$(DEV_DOCKER_IMG) \
 	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
 
 .PHONY: docs # Build docs

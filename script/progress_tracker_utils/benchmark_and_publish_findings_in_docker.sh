@@ -3,13 +3,15 @@
 # Run benchmarks while logging the intermediate results
 # Publish findings in the progress tracker
 
-set +e
+set -e
 
-# shellcheck disable=SC1091
-if ! source /root/dev_venv/bin/activate; then
-    python3 -m venv /root/dev_venv
-    # shellcheck disable=SC1091
-    source /root/dev_venv/bin/activate
+DEV_VENV_PATH="/home/dev_user/dev_venv"
+
+# shellcheck disable=SC1090,SC1091
+if ! source "${DEV_VENV_PATH}/bin/activate"; then
+    python3 -m venv "${DEV_VENV_PATH}"
+    # shellcheck disable=SC1090,SC1091
+    source "${DEV_VENV_PATH}/bin/activate"
     cd /src/ && make setup_env
 fi
 
