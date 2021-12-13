@@ -49,7 +49,7 @@ jobs:
           host: ${{ steps.amd-public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
-          command_timeout: 90m
+          command_timeout: 240m
           script: |
             cd ~/concretefhe-internal
             git pull
@@ -104,7 +104,7 @@ jobs:
           host: ${{ steps.intel-public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
-          command_timeout: 90m
+          command_timeout: 240m
           script: |
             cd ~/concretefhe-internal
             git pull
