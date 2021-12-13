@@ -21,8 +21,8 @@ def f(x, y):
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted", "y": "encrypted"})
 
 # Compile an FHE Circuit using an inputset
-compiler.eval_on_inputset([(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)])
-circuit = compiler.get_compiled_fhe_circuit()
+inputset = [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)]
+circuit = compiler.compile_on_inputset(inputset)
 
 # Make homomorphic inference
 circuit.run(1, 0)

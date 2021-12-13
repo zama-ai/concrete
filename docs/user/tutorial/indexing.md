@@ -18,8 +18,7 @@ def f(x):
 inputset = [np.random.randint(0, 2 ** 3, size=(3,), dtype=np.uint8) for _ in range(10)]
 
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-compiler.eval_on_inputset(inputset)
-circuit = compiler.get_compiled_fhe_circuit()
+circuit = compiler.compile_on_inputset(inputset)
 
 test_input = np.array([4, 2, 6], dtype=np.uint8)
 expected_output = 2
@@ -39,8 +38,7 @@ def f(x):
 inputset = [np.random.randint(0, 2 ** 3, size=(3,), dtype=np.uint8) for _ in range(10)]
 
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-compiler.eval_on_inputset(inputset)
-circuit = compiler.get_compiled_fhe_circuit()
+circuit = compiler.compile_on_inputset(inputset)
 
 test_input = np.array([4, 2, 6], dtype=np.uint8)
 expected_output = 6
@@ -60,8 +58,7 @@ def f(x):
 inputset = [np.random.randint(0, 2 ** 3, size=(3, 2), dtype=np.uint8) for _ in range(10)]
 
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-compiler.eval_on_inputset(inputset)
-circuit = compiler.get_compiled_fhe_circuit()
+circuit = compiler.compile_on_inputset(inputset)
 
 test_input = np.array([[4, 2], [1, 5], [7, 6]], dtype=np.uint8)
 expected_output = 6
@@ -81,8 +78,7 @@ def f(x):
 inputset = [np.random.randint(0, 2 ** 3, size=(5,), dtype=np.uint8) for _ in range(10)]
 
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-compiler.eval_on_inputset(inputset)
-circuit = compiler.get_compiled_fhe_circuit()
+circuit = compiler.compile_on_inputset(inputset)
 
 test_input = np.array([4, 2, 6, 1, 7], dtype=np.uint8)
 expected_output = np.array([2, 6, 1], dtype=np.uint8)

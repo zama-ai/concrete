@@ -13,9 +13,7 @@ def f(x):
 
 # Compiling with x encrypted
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-compiler.eval_on_inputset(range(64))
-
-circuit = compiler.get_compiled_fhe_circuit()
+circuit = compiler.compile_on_inputset(range(64))
 
 assert circuit.run(3) == f(3)
 assert circuit.run(0) == f(0)

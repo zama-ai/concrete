@@ -125,7 +125,7 @@ def f(x):
 artifacts = hnp.CompilationArtifacts(pathlib.Path("/tmp/custom/export/path"))
 
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"}, compilation_artifacts=artifacts)
-compiler.eval_on_inputset(range(2 ** 3))
+compiler.compile_on_inputset(range(2 ** 3))
 
 artifacts.export()
 ```

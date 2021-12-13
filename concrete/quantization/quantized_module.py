@@ -121,8 +121,8 @@ class QuantizedModule:
             compilation_configuration,
             compilation_artifacts,
         )
-        compiler.eval_on_inputset((numpy.expand_dims(arr, 0) for arr in self.q_input.qvalues))
-
-        self.forward_fhe = compiler.get_compiled_fhe_circuit(show_mlir)
+        self.forward_fhe = compiler.compile_on_inputset(
+            (numpy.expand_dims(arr, 0) for arr in self.q_input.qvalues), show_mlir
+        )
 
         return self.forward_fhe

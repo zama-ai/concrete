@@ -15,8 +15,7 @@ def f(x):
     return 42 * x
 
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-compiler.eval_on_inputset(range(2 ** 3))
-compiler.get_compiled_fhe_circuit()
+circuit = compiler.compile_on_inputset(range(2 ** 3))
 ```
 
 results in

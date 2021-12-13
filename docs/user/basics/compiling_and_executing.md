@@ -44,6 +44,9 @@ Finally, we can compile our function to its homomorphic equivalent.
 compiler = hnp.NPFHECompiler(
     f, {"x": x, "y": y},
 )
+circuit = compiler.compile_on_inputset(inputset)
+
+# If you want, you can separate tracing and compilation steps like so:
 
 # You can either evaluate in one go:
 compiler.eval_on_inputset(inputset)

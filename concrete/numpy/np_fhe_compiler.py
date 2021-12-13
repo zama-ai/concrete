@@ -249,6 +249,26 @@ class NPFHECompiler:
                     dtype.bit_width = 128
                     dtype.is_signed = True
 
+    def compile_on_inputset(
+        self,
+        inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]],
+        show_mlir: bool = False,
+    ) -> FHECircuit:
+        """Compile the function on an inputset and get resulting FHECircuit.
+
+        Args:
+            inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]]]):
+                The inputset on which the function is evaluated.
+            show_mlir (bool, optional, defaults to False):
+                The flag to enable printing the MLIR that is being compiled for debugging purposes.
+
+        Returns:
+            FHECircuit: the compiled FHECircuit
+        """
+
+        self.eval_on_inputset(inputset)
+        return self.get_compiled_fhe_circuit(show_mlir)
+
     def get_compiled_fhe_circuit(self, show_mlir: bool = False) -> FHECircuit:
         """Return a compiled FHECircuit if the instance was evaluated on an inputset.
 
