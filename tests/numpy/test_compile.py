@@ -12,6 +12,7 @@ from concrete.common.debugging import draw_graph, format_operation_graph
 from concrete.common.extensions.multi_table import MultiLookupTable
 from concrete.common.extensions.table import LookupTable
 from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
+from concrete.numpy import compile as compile_
 from concrete.numpy import tracing
 from concrete.numpy.compile import (
     FHECircuit,
@@ -2148,3 +2149,30 @@ def test_compile_and_run_correctness_with_negative_results(
 
     args = [random.randint(low, high) for (low, high) in input_ranges]
     assert check_equality_modulo(compiler_engine.run(*args), function(*args), modulus)
+
+
+def test_compile_improper_use_of_insecure_key_cache(default_keyring_path):
+    """Test the case where the key cache is used with wrong compilation configuration"""
+
+    def f(x):
+        return x + 42
+
+    if compile_._COMPILE_FHE_INSECURE_KEY_CACHE_DIR is None:  # pylint: disable=protected-access
+        compile_._COMPILE_FHE_INSECURE_KEY_CACHE_DIR = str(  # pylint: disable=protected-access
+            default_keyring_path
+        )
+
+    compilation_configuration = CompilationConfiguration()
+    compilation_configuration.use_insecure_key_cache = False
+
+    with pytest.raises(
+        RuntimeError,
+        match="Unable to use insecure key cache .* "
+        "as use_insecure_key_cache is not set to True in compilation_configuration",
+    ):
+        _ = compile_numpy_function(
+            f,
+            {"x": EncryptedScalar(Integer(64, False))},
+            range(10),
+            compilation_configuration,
+        )

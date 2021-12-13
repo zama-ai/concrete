@@ -47,7 +47,7 @@ Concrete Framework allows you to convert Numpy operations to their FHE counterpa
 
 First we define a model:
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 from torch import nn
 import torch
@@ -70,7 +70,7 @@ torch_model = LogisticRegression()
 ```
 
 We then convert this model to numpy only operations:
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 from concrete.torch import NumpyModule
 numpy_model = NumpyModule(torch_model)
@@ -80,7 +80,7 @@ The `NumpyModule` allows us to runs inference as for a `nn.Module`. Here, the pr
 
 We can then quantize the numpy module with `PostTrainingAffineQuantization` as follows:
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 from concrete.quantization import PostTrainingAffineQuantization
 numpy_input = numpy.random.uniform(-1, 1, size=(10,14)) # some input with 14 features to calibrate the quantization
@@ -93,7 +93,7 @@ Here, the quantized model takes a quantized array and runs inference in the quan
 
 We can then easily verify that all models give similar predictions. Obviously, the `n_bits` chosen may adversely affect the prediction of the `quantized_numpy_module`. You can try increasing this parameter to see the effect on your model but keep in mind that the compilation will require all the values of your network to be less than 7 bits of precision.
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 torch_model(torch.from_numpy(numpy_input).float())
 # tensor([[-0.0690],

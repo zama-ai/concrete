@@ -21,7 +21,7 @@ where
 
 results in
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 circuit.run(0) == 2
 circuit.run(1) == 1
@@ -35,7 +35,7 @@ Moreover, direct lookup tables can be used with tensors where the same table loo
 
 results in
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 input = np.array([[0, 1, 3], [2, 3, 1]], dtype=np.uint8)
 circuit.run(input) == [[2, 1, 0], [3, 0, 1]]
@@ -45,7 +45,7 @@ circuit.run(input) == [[2, 1, 0], [3, 0, 1]]
 
 Sometimes you may want to apply a different lookup table to each value in a tensor. That's where direct multi lookup table becomes handy. Here is how to use it:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 import concrete.numpy as hnp
 
@@ -68,7 +68,7 @@ where
 
 results in
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 input = np.array([[2, 3], [1, 2], [3, 0]], dtype=np.uint8)
 circuit.run(input) == [[4, 27], [1, 8], [9, 0]]
@@ -82,7 +82,7 @@ Direct tables are tedious to prepare by hand. When possible, **Concrete Framewor
 
 Here is an example function that results in fused table lookup:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 def f(x):
     return 127 - (50 * (np.sin(x) + 1)).astype(np.uint32) # astype is to go back to integer world
@@ -94,7 +94,7 @@ where
 
 results in
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 circuit.run(0) == 77
 circuit.run(1) == 35
@@ -116,14 +116,14 @@ and after floating point operations are fused, we get the following operation gr
 
 Internally, it uses the following lookup table
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 table = hnp.LookupTable([50, 92, 95, 57, 12, 2, 36, 82])
 ```
 
 which is calculated by:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 [(50 * (np.sin(x) + 1)).astype(np.uint32) for x in range(2 ** 3)]
 ```

@@ -33,7 +33,7 @@ Note that the architecture of the neural network passed to be compiled must resp
 
 Once your model is trained you can simply call the `compile_torch_model` function to execute the compilation.
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 from concrete.torch.compile import compile_torch_model
 import numpy
@@ -49,7 +49,7 @@ You can then call `quantized_numpy_module.forward_fhe.run()` to have the FHE inf
 
 Now your model is ready to infer in FHE settings !
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 enc_x = numpy.array([numpy.random.randn(14)]).astype(numpy.uint8) # An example that is going to be encrypted, and used for homomorphic inference.
 fhe_prediction = quantized_numpy_module.forward_fhe.run(enc_x)
@@ -57,7 +57,7 @@ fhe_prediction = quantized_numpy_module.forward_fhe.run(enc_x)
 
 `fhe_prediction` contains the clear quantized output. The user can now dequantize the output to get the actual floating point prediction as follows:
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 clear_output = quantized_numpy_module.dequantize_output(
     numpy.array(fhe_prediction, dtype=numpy.float32)

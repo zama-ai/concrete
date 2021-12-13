@@ -6,7 +6,7 @@ The current compiler stack only supports integers with 7 bits or less. But it's 
 
 We added fusing floating point operations to make tracing numpy functions somewhat user friendly to allow in-line quantization in the numpy code e.g.:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 import numpy
 
@@ -43,7 +43,7 @@ From the terminal node, we go back up through the nodes until we find nodes that
 
 Here is an example benefiting from the expanded search:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 def fusable_with_bigger_search(x, y):
     """fusable with bigger search"""
@@ -71,7 +71,7 @@ The simplified graph of operations with the float subgraph condensed in a `Gener
 
 An example of a non fusable computation with that technique is:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 import numpy
 

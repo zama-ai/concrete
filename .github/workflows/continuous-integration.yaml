@@ -50,9 +50,6 @@ jobs:
       force-rebuild-docker: ${{ env.FORCE_REBUILD_DOCKER }}
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
-    env:
-      WHEEL: concretefhe_compiler-0.1.0-cp38-cp38-manylinux_2_24_x86_64.whl
-
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
         with:
@@ -99,6 +96,8 @@ jobs:
       - name: Set prefligh Docker image download compiler
         id: set_image
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
+        env:
+          WHEEL_SPEC: cp38-cp38-manylinux_2_24_x86_64
         run: |
           PREFLIGHT_IMAGE_TAG=$(echo ${{ github.ref }} | sed -e 's/\//-/g')
           PREFLIGHT_IMAGE="${PREFLIGHT_IMAGE_BASE}-${PREFLIGHT_IMAGE_TAG}"
@@ -111,17 +110,13 @@ jobs:
           ./script/actions_utils/gh_dl_release.sh \
           --token ${{ secrets.BOT_TOKEN }} \
           --org-repo zama-ai/homomorphizer \
-          --file "${WHEEL}" \
-          --dest-file "pkg/${WHEEL}" \
+          --file "${WHEEL_SPEC}" \
+          --dest-dir "pkg" \
+          --github-env "${GITHUB_ENV}" \
           --compiler-tag-output-file compiler-output-tag.txt
 
           COMPILER_TAG=$(cat compiler-output-tag.txt)
           echo "::set-output name=compiler-tag::${COMPILER_TAG}"
-      # Disabled buildx for now as we are seeing a lot of fails on layer pushes
-      # - name: Set up Docker Buildx
-      #   if: ${{ fromJSON(env.BUILD_DOCKER) }}
-      #   id: buildx
-      #   uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
       - name: Login to GitHub Container Registry
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -223,21 +218,6 @@ jobs:
         uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
         with:
           python-version: ${{ matrix.python-version }}
-      # - name: Cache Installation Files
-      #   uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
-      #   with:
-      #     # Paths are Unix specific for now
-      #     path: |
-      #       ~/.cache/pip
-      #       ~/.cache/pypoetry
-      #     # Ignore line break in the evaluated double quoted string
-      #     key: "${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-\
-      #       ${{ hashFiles('poetry.lock') }}"
-      #     restore-keys: |
-      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-${{ matrix.python-version }}-
-      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
-      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
-      #       ${{ secrets.CACHE_VERSION }}-
       - name: Install dependencies
         id: install-deps
         run: |
@@ -312,12 +292,17 @@ jobs:
             echo "Conformance failed, check logs"
             exit 1
           fi
+      - name: Tar docs artifacts
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          cd docs/_build/html
+          tar -cvf docs.tar *
       - name: Archive docs artifacts
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: html-docs
-          path: docs/_build/html
+          path: docs/_build/html/docs.tar
       - name: Upload changelog artifacts
         if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
@@ -329,10 +314,10 @@ jobs:
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest
-      - name: Test CodeBlocks
+      - name: PyTest CodeBlocks
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
-          make test_codeblocks
+          make pytest_codeblocks
       - name: PyTest Notebooks
         if: ${{ github.event_name == 'schedule' && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
@@ -346,12 +331,6 @@ jobs:
         if: ${{ always() && steps.pytest.outcome != 'skipped' && !cancelled() }}
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
-      - name: Archive test coverage
-        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
-        if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
-        with:
-          name: coverage
-          path: coverage.html
       - name: Comment with coverage
         uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
@@ -477,6 +456,12 @@ jobs:
         uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
         with:
           name: html-docs
+      - name: Untar docs artifacts
+        id: untar
+        if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
+        run: |
+          tar -xvf docs.tar
+          rm docs.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
         with:
@@ -486,7 +471,7 @@ jobs:
 
       - name: Publish Documentation to S3
         id: publish
-        if: ${{ steps.download.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.untar.outcome == 'success' && !cancelled() }}
         env:
           AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
           SOURCE_DIR: '.'
@@ -606,22 +591,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-      # To be removed once poetry 1.2 is released to manage dependencies with groups
-      # - name: Cache Installation Files
-      #   uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
-      #   with:
-      #     # Paths are Unix specific for now
-      #     path: |
-      #       ~/.cache/pip
-      #       ~/.cache/pypoetry
-      #     # Use python 3.8 as it is the version available in ubuntu 20.04 and we develop with it
-      #     key: "$${{ secrets.CACHE_VERSION }}-{{ runner.os }}-build-3.8-\
-      #       ${{ hashFiles('poetry.lock') }}"
-      #     restore-keys: |
-      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-3.8-
-      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-build-
-      #       ${{ secrets.CACHE_VERSION }}-${{ runner.os }}-
-      #       ${{ secrets.CACHE_VERSION }}-
       # See #570 To be updated to only install required dependencies group with poetry 1.2 and
       # remove graphviz installs which are only required for the actual package and not dev tools
       - name: Install dependencies
@@ -716,6 +685,12 @@ jobs:
         with:
           name: html-docs
           path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
+      - name: Untar docs artifacts
+        if: ${{ success() && !cancelled() }}
+        run: |
+          cd ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
+          tar -xvf docs.tar
+          rm docs.tar
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog

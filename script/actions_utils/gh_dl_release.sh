@@ -29,9 +29,10 @@ TOKEN=
 ORG_REPO=
 # the name of your release asset file, e.g. build.tar.gz
 FILE=
-DEST_FILE=
+DEST_DIR=
 VERSION="latest"
 COMPILER_TAG_OUTPUT_FILE=debug.txt
+GITHUB_ENV_FILE=debug.txt
 
 while [ -n "$1" ]
 do
@@ -51,10 +52,15 @@ do
           VERSION="$1"
           ;;
 
-        "--dest-file" )
+        "--dest-dir" )
           shift
-          DEST_FILE="$1"
+          DEST_DIR="$1"
           ;;
+
+        "--github-env")
+            shift
+            GITHUB_ENV_FILE="$1"
+            ;;
 
         "--file" )
           shift
@@ -76,12 +82,11 @@ done
 
 alias errcho='>&2 echo'
 
-DEST_DIR=$(dirname "${DEST_FILE}")
 mkdir -p "${DEST_DIR}"
 
 if [[ "${VERSION}" == "latest" ]]; then
-  # Github should return the latest release first.
-  jq_parser=".[0]"
+  # Select first non draft version
+  jq_parser='. | map(select(.draft == false))[0]'
 else
   jq_parser=". | map(select(.tag_name == \"${VERSION}\"))[0]"
 fi;
@@ -97,6 +102,11 @@ asset_json=$(echo "${release_json}" | jq ".assets | map(select(.name | contains(
 
 echo "Asset json:"
 echo "${asset_json}"
+
+asset_filename=$(echo "${asset_json}" | jq -rc '.name')
+echo "Asset filename:"
+echo "${asset_filename}"
+echo "WHEEL=${asset_filename}" >> "${GITHUB_ENV_FILE}"
 
 release_tag=$(echo "${release_json}" | jq -rc '.tag_name')
 asset_id=$(echo "${asset_json}" | jq -rc '.id')
@@ -115,7 +125,7 @@ echo "Downloading..."
 
 wget --auth-no-challenge --header='Accept:application/octet-stream' \
   "https://${TOKEN}:@api.github.com/repos/${ORG_REPO}/releases/assets/${asset_id}" \
-  -O "${DEST_FILE}"
+  -O "${DEST_DIR}/${asset_filename}"
 
 err_code=$?
 

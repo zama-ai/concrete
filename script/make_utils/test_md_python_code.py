@@ -10,7 +10,7 @@ from typing import Dict, List
 PYTHON_BLOCK_HINTS = ["py", "python", "python3"]
 BLOCK_STARTS = tuple(f"```{hint}" for hint in PYTHON_BLOCK_HINTS)
 BLOCK_END = "```"
-DIRECTIVE_COMMENT_PATTERN = "<!--python-test:(.*)-->"
+DIRECTIVE_COMMENT_PATTERN = "<!--pytest-codeblocks:(.*)-->"
 SKIP_DIRECTIVE = "skip"
 CONT_DIRECTIVE = "cont"
 

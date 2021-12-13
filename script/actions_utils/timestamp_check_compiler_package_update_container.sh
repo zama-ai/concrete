@@ -56,7 +56,7 @@ jq -rc '.[] | select(.metadata.container.tags[] | contains("latest"))')
 
 RELEASE_JSON=$(curl -H "Authorization: token ${TOKEN}" \
 -H "Accept: application/vnd.github.v3.raw" \
-"${COMPILER_RELEASE_ENDPOINT_URL}" | jq '.[0]')
+"${COMPILER_RELEASE_ENDPOINT_URL}" | jq '. | map(select(.draft == false))[0]')
 
 echo "Release json:"
 echo "${RELEASE_JSON}"

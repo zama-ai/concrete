@@ -12,7 +12,7 @@ import concrete.numpy as hnp
 
 You need to have a python function that follows the [limits](../explanation/fhe_and_framework_limits.md) of the **Concrete Framework**. Here is a simple example:
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 def f(x, y):
     return x + y
@@ -22,7 +22,7 @@ def f(x, y):
 
 To compile the function, you need to identify the inputs that it is expecting. In the example function above, `x` and `y` could be scalars or tensors (though, for now, only dot between tensors are supported), they can be encrypted or clear, they can be signed or unsigned, they can have different bit-widths. So, we need to know what they are beforehand. We can do that like so:
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 x = "encrypted"
 y = "encrypted"
@@ -32,14 +32,14 @@ In this configuration, both `x` and `y` will be encrypted values.
 
 We also need an inputset. It is to determine the bit-widths of the intermediate results. It should be an iterable yielding tuples in the same order as the inputs of the function to compile. There should be at least 10 inputs in the input set to avoid warnings (except for functions with less than 10 possible inputs). The warning is there because the bigger the input set, the better the bounds will be.
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
 ```
 
 Finally, we can compile our function to its homomorphic equivalent.
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 compiler = hnp.NPFHECompiler(
     f, {"x": x, "y": y},
@@ -80,7 +80,7 @@ Here is the graph from the previous code block drawn with `draw_graph`:
 
 You can use `.run(...)` method of `FHECircuit` returned by `hnp.compile_numpy_function(...)` to perform fully homomorphic evaluation. Here are some examples:
 
-<!--python-test:cont-->
+<!--pytest-codeblocks:cont-->
 ```python
 circuit.run(3, 4)
 # 7

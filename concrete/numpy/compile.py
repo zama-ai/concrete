@@ -32,6 +32,8 @@ from .np_dtypes_helpers import (
 from .np_inputset_helpers import _check_special_inputset_availability, _generate_random_inputset
 from .np_mlir_converter import NPMLIRConverter
 
+_COMPILE_FHE_INSECURE_KEY_CACHE_DIR: Optional[str] = None
+
 
 def numpy_max_func(lhs: Any, rhs: Any) -> Any:
     """Compute the maximum value between two values which can be numpy classes (e.g. ndarray).
@@ -610,13 +612,18 @@ def prepare_op_graph_for_mlir(op_graph: OPGraph):
 
 
 def _compile_op_graph_to_fhe_circuit_internal(
-    op_graph: OPGraph, show_mlir: bool, compilation_artifacts: CompilationArtifacts
+    op_graph: OPGraph,
+    show_mlir: bool,
+    compilation_configuration: CompilationConfiguration,
+    compilation_artifacts: CompilationArtifacts,
 ) -> FHECircuit:
     """Compile the OPGraph to an FHECircuit.
 
     Args:
         op_graph (OPGraph): the OPGraph to compile.
         show_mlir (bool): determine whether we print the mlir string.
+        compilation_configuration (CompilationConfiguration): Configuration object to use
+            during compilation
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill
             during compilation
 
@@ -636,9 +643,18 @@ def _compile_op_graph_to_fhe_circuit_internal(
     # Add MLIR representation as an artifact
     compilation_artifacts.add_final_operation_graph_mlir(mlir_result)
 
+    if (
+        _COMPILE_FHE_INSECURE_KEY_CACHE_DIR is not None
+        and not compilation_configuration.use_insecure_key_cache
+    ):
+        raise RuntimeError(
+            f"Unable to use insecure key cache {_COMPILE_FHE_INSECURE_KEY_CACHE_DIR} "
+            f"as use_insecure_key_cache is not set to True in compilation_configuration"
+        )
+
     # Compile the MLIR representation
     engine = CompilerEngine()
-    engine.compile_fhe(mlir_result)
+    engine.compile_fhe(mlir_result, unsecure_key_set_cache_path=_COMPILE_FHE_INSECURE_KEY_CACHE_DIR)
 
     return FHECircuit(op_graph, engine)
 
@@ -671,7 +687,9 @@ def compile_op_graph_to_fhe_circuit(
     )
 
     def compilation_function():
-        return _compile_op_graph_to_fhe_circuit_internal(op_graph, show_mlir, compilation_artifacts)
+        return _compile_op_graph_to_fhe_circuit_internal(
+            op_graph, show_mlir, compilation_configuration, compilation_artifacts
+        )
 
     result = run_compilation_function_with_error_management(
         compilation_function, compilation_configuration, compilation_artifacts
@@ -720,7 +738,7 @@ def _compile_numpy_function_internal(
     )
 
     fhe_circuit = _compile_op_graph_to_fhe_circuit_internal(
-        op_graph, show_mlir, compilation_artifacts
+        op_graph, show_mlir, compilation_configuration, compilation_artifacts
     )
 
     return fhe_circuit

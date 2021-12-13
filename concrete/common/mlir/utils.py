@@ -1,5 +1,5 @@
 """Utilities for MLIR conversion."""
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import networkx as nx
 
@@ -170,14 +170,23 @@ def _set_all_bit_width(op_graph: OPGraph, p: int):
                 value.dtype.bit_width = p
 
 
-def update_bit_width_for_mlir(op_graph: OPGraph):
-    """Prepare bit_width of all nodes to be the same, set to the maximum value in the graph.
+def get_op_graph_max_bit_width_and_nodes_over_bit_width_limit(
+    op_graph: OPGraph,
+) -> Tuple[int, Dict[IntermediateNode, List[str]]]:
+    """Get the maximum bit width of integer nodes in the given OPGraph.
+
+    Also returns a dictionary with nodes having an unsupported bit width.
 
     Args:
         op_graph: graph to update bit_width for
+
+    Returns:
+        Tuple[int, Dict[IntermediateNode, List[str]]]: a tuple containing the maximum bit width of
+            integer values in the OPGraph as well as a dictionary with nodes and the list of issues
+            that the nodes have, in this case having an unsupported bit width.
     """
     max_bit_width = 0
-    offending_nodes = {}
+    offending_nodes: Dict[IntermediateNode, List[str]] = {}
     for node in op_graph.graph.nodes:
         for value_out in node.outputs:
             if value_is_clear_scalar_integer(value_out) or value_is_clear_tensor_integer(value_out):
@@ -198,6 +207,19 @@ def update_bit_width_for_mlir(op_graph: OPGraph):
                 offending_nodes[node] = [
                     f"{current_node_out_bit_width} bits is not supported for the time being"
                 ]
+
+    return max_bit_width, offending_nodes
+
+
+def update_bit_width_for_mlir(op_graph: OPGraph):
+    """Prepare bit_width of all nodes to be the same, set to the maximum value in the graph.
+
+    Args:
+        op_graph: graph to update bit_width for
+    """
+    max_bit_width, offending_nodes = get_op_graph_max_bit_width_and_nodes_over_bit_width_limit(
+        op_graph
+    )
 
     if len(offending_nodes) != 0:
         raise RuntimeError(

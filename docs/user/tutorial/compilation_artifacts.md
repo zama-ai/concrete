@@ -6,7 +6,7 @@ In this tutorial, we are going to go over the artifact system, which is designed
 
 In case of compilation failures, artifacts are exported automatically to `.artifacts` directory under the working directory. Let's intentionally create a compilation failure and show what kinds of things are exported.
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 def f(x):
     return np.sin(x)

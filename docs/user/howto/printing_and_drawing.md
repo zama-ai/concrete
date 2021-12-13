@@ -11,7 +11,7 @@ Sometimes, it can be useful to print or draw fhe circuits, we provide methods to
 
 To print your circuit, you can do the following:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 print(circuit)
 ```
@@ -34,7 +34,7 @@ You may need to force reinstallation
 
 To draw your circuit, you can do the following:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 drawing = circuit.draw()
 ```
@@ -43,7 +43,7 @@ This method will draw the circuit on a temporary PNG file and return the path to
 
 To show the drawing, you can use the following code in a jupyter notebook.
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 from PIL import Image
 drawing = Image.open(circuit.draw())
@@ -53,14 +53,14 @@ drawing.close()
 
 Additionally, you can use the `show` option of the `draw` method to show the drawing with matplotlib. Beware that this will clear the matplotlib plots you have.
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 circuit.draw(show=True)
 ```
 
 Lastly, you can save the drawing to a specific path like this:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 destination = "/tmp/path/of/your/choice.png"
 drawing = circuit.draw(save_to=destination)

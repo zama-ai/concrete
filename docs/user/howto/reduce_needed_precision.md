@@ -7,7 +7,7 @@ We are actively working on supporting larger integers, so it should get better i
 
 You get a compilation error. Here is an example:
 
-<!--python-test:skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 import concrete.numpy as hnp
 
