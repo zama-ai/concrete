@@ -536,7 +536,7 @@ def hack_offset_negative_inputs_to_lookup_tables(op_graph: OPGraph) -> None:
     # This does not update the TLU input values to allow for proper table generation.
     # Thankfully we are not supposed to touch the op_graph beyond that point
     for node in list((nx_graph := op_graph.graph).nodes):
-        if isinstance(node, GenericFunction):
+        if isinstance(node, GenericFunction) and node.op_kind == "TLU":
             ordered_preds_and_inputs = op_graph.get_ordered_preds_and_inputs_of(node)
             variable_input_indices = [
                 idx

@@ -1338,6 +1338,21 @@ def test_compile_and_run_constant_dot_correctness(
             (1, 2),
             (0, 8),
         ),
+        pytest.param(
+            (2,),
+            (2,),
+            (0, 8),
+        ),
+        pytest.param(
+            (5, 5),
+            (5,),
+            (0, 4),
+        ),
+        pytest.param(
+            (5,),
+            (5, 5),
+            (0, 4),
+        ),
     ],
 )
 def test_compile_and_run_matmul_correctness(

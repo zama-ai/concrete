@@ -79,7 +79,7 @@ class NPMLIRConverter(OPGraphConverter):
             additional_conversion_info["tables"] = {
                 node: generate_deduplicated_tables(node, op_graph.get_ordered_preds(node))
                 for node in op_graph.graph.nodes()
-                if isinstance(node, GenericFunction)
+                if isinstance(node, GenericFunction) and node.op_kind == "TLU"
             }
 
         return additional_conversion_info
