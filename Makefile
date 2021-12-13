@@ -151,7 +151,7 @@ docker_build:
 	if [[ $$(uname) == "Linux" ]]; then \
 		BUILD_ARGS="--build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g)"; \
 	fi; \
-	docker build $${BUILD_ARGS:+BUILD_ARGS} \
+	docker build $${BUILD_ARGS:+$$BUILD_ARGS} \
 	--pull -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 
 .PHONY: docker_rebuild # Rebuild docker
@@ -160,7 +160,7 @@ docker_rebuild: docker_clean_volumes
 	if [[ $$(uname) == "Linux" ]]; then \
 		BUILD_ARGS="--build-arg BUILD_UID=$$(id -u) --build-arg BUILD_GID=$$(id -g)"; \
 	fi; \
-	docker build $${BUILD_ARGS:+BUILD_ARGS} \
+	docker build $${BUILD_ARGS:+$$BUILD_ARGS} \
 	--pull --no-cache -t $(DEV_DOCKER_IMG) -f $(DEV_DOCKERFILE) .
 
 .PHONY: docker_start # Launch docker
