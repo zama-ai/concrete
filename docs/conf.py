@@ -38,6 +38,7 @@ extensions = [
     "sphinx_copybutton",
     "nbsphinx",
     "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
 ]
 
 myst_enable_extensions = [
