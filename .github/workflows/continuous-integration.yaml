@@ -165,6 +165,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   start-runner:
+    needs: [build-preflight-docker]
     name: Start EC2 runner
     runs-on: ubuntu-20.04
     outputs:
