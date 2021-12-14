@@ -89,7 +89,7 @@ conformance: finalize_nb python_format supported_functions licenses
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
-	@$(MAKE) --keep-going --jobs $(./script/make_utils/ncpus.sh) --output-sync=recurse \
+	@$(MAKE) --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
