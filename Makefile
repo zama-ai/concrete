@@ -105,7 +105,7 @@ pcc_internal: $(PCC_DEPS)
 pytest:
 	poetry run pytest -svv \
 	--global-coverage-infos-json=global-coverage-infos.json \
-	-n auto \
+	-n $$(./script/make_utils/ncpus.sh) \
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/
