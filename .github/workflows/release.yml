@@ -113,6 +113,9 @@ jobs:
           cd ${{ github.workspace }}/concrete/concrete-ffi
           RUSTFLAGS="-C target-cpu=native" cargo build --release
 
+      - name: Update Python Version
+        run: cd compiler && make update_python_version
+
       - name: Build
         id: build-wheel-macos
         run: |
@@ -156,4 +159,3 @@ jobs:
           asset_path: ${{ github.workspace }}/compiler/tarballs/${{ steps.build-mac-tarball.outputs.ASSET_NAME }}
           asset_name: ${{ steps.build-mac-tarball.outputs.ASSET_NAME }}
           asset_content_type: application/tar+gzip
-# TODO: version python

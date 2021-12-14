@@ -111,18 +111,21 @@ define build_image_and_copy_wheels
 	docker container run --rm -v ${PWD}/../wheels:/wheels_volume concretefhe-compiler-manylinux:$(1) cp -r /wheels/. /wheels_volume/.
 endef
 
-package_py38:
+package_py38: update_python_version
 	$(call build_image_and_copy_wheels,cp38-cp38)
 
-package_py39:
+package_py39: update_python_version
 	$(call build_image_and_copy_wheels,cp39-cp39)
 
-package_py310:
+package_py310: update_python_version
 	$(call build_image_and_copy_wheels,cp310-cp310)
 
 release_tarballs:
 	docker image build -t concretefhe-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
 	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concretefhe-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
+
+update_python_version:
+	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/zamalang/version.py
 
 .PHONY: build-initialized \
 	build-end-to-end-jit \
@@ -142,4 +145,5 @@ release_tarballs:
 	package_py38 \
 	package_py39 \
 	package_py310 \
-	release_tarballs
+	release_tarballs \
+	update_python_version

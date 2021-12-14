@@ -1,6 +1,7 @@
 import os
 import subprocess
 import setuptools
+import re
 
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext
@@ -8,6 +9,13 @@ from setuptools.command.build_ext import build_ext
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+
+def find_version():
+    return re.match(
+        r"__version__ = \"(?P<version>.+)\"",
+        read("lib/Bindings/Python/zamalang/version.py"),
+    ).group("version")
 
 
 class MakeExtension(Extension):
@@ -39,7 +47,7 @@ class MakeBuild(build_ext):
 
 setuptools.setup(
     name="concretefhe-compiler",
-    version="0.1.0",
+    version=find_version(),
     author="Zama Team",
     author_email="hello@zama.ai",
     description="Concrete Compiler",
