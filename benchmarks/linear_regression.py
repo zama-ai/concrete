@@ -4,226 +4,176 @@
 # flake8: noqa: E501
 # pylint: disable=C0301
 
-import numpy as np
-from common import BENCHMARK_CONFIGURATION
+from copy import deepcopy
+from typing import Any, Dict
 
-import concrete.numpy as hnp
+import numpy as np
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm
+
+from concrete.quantization import QuantizedArray, QuantizedLinear, QuantizedModule
+
+
+class QuantizedLinearRegression(QuantizedModule):
+    """
+    Quantized Generalized Linear Model
+    Building on top of QuantizedModule, implement a quantized linear transformation (w.x + b)
+    """
+
+    @staticmethod
+    def from_sklearn(sklearn_model, calibration_data):
+        """Create a Quantized Linear Regression initialized from a sklearn trained model"""
+        weights = np.expand_dims(sklearn_model.coef_, 1)
+        bias = sklearn_model.intercept_
+        # Quantize with 6 bits for input data, 1 for weights, 1 for the bias and 6 for the output
+        return QuantizedLinearRegression(6, 1, 1, 6, weights, bias, calibration_data)
+
+    def __init__(self, q_bits, w_bits, b_bits, out_bits, weights, bias, calibration_data) -> None:
+        """
+        Create the linear regression with different quantization bit precisions:
+
+        Quantization Parameters - Number of bits:
+                    q_bits (int): bits for input data, insuring that the number of bits of
+                                the w . x + b operation does not exceed 7 for the calibration data
+                    w_bits (int): bits for weights: in the case of a univariate regression this
+                                can be 1
+                    b_bits (int): bits for bias (this is a single value so a single bit is enough)
+                    out_bits (int): bits for the result of the linear transformation (w.x + b).
+                                  In our case since the result of the linear transformation is
+                                  directly decrypted we can use the maximum of 7 bits
+
+        Other parameters:
+                    weights: a numpy nd-array of weights (Nxd) where d is the data dimensionality
+                    bias: a numpy scalar
+                    calibration_data: a numpy nd-array of data (Nxd)
+        """
+        self.n_bits = out_bits
+
+        # We need to calibrate to a sufficiently low number of bits
+        # so that the output of the Linear layer (w . x + b)
+        # does not exceed 7 bits
+        self.q_calibration_data = QuantizedArray(q_bits, calibration_data)
+
+        # Quantize the weights and create the quantized linear layer
+        q_weights = QuantizedArray(w_bits, weights)
+        q_bias = QuantizedArray(b_bits, bias)
+        q_layer = QuantizedLinear(out_bits, q_weights, q_bias)
+
+        # Store quantized layers
+        quant_layers_dict: Dict[str, Any] = {}
+
+        # Calibrate the linear layer and obtain calibration_data for the next layers
+        calibration_data = self._calibrate_and_store_layers_activation(
+            "linear", q_layer, calibration_data, quant_layers_dict
+        )
+
+        # Finally construct our Module using the quantized layers
+        super().__init__(quant_layers_dict)
+
+    def _calibrate_and_store_layers_activation(
+        self, name, q_function, calibration_data, quant_layers_dict
+    ):
+        """
+        This function calibrates a layer of a quantized module (e.g. linear, inverse-link,
+        activation, etc) by looking at the input data, then computes the output of the quantized
+        version of the layer to be used as input to the following layers
+        """
+
+        # Calibrate the output of the layer
+        q_function.calibrate(calibration_data)
+        # Store the learned quantized layer
+        quant_layers_dict[name] = q_function
+        # Create new calibration data (output of the previous layer)
+        q_calibration_data = QuantizedArray(self.n_bits, calibration_data)
+        # Dequantize to have the value in clear and ready for next calibration
+        return q_function(q_calibration_data).dequant()
+
+    def quantize_input(self, x):
+        """Quantize an input set with the quantization parameters determined from calibration"""
+        q_input_arr = deepcopy(self.q_calibration_data)
+        q_input_arr.update_values(x)
+        return q_input_arr
 
 
 def main():
-    x = np.array(
-        [[69], [130], [110], [100], [145], [160], [185], [200], [80], [50]], dtype=np.float32
-    )
-    y = np.array([181, 325, 295, 268, 400, 420, 500, 520, 220, 120], dtype=np.float32)
+    """
+    Our linear regression benchmark. Use some synthetic data to train a regression model,
+    then fit a model with sklearn. We quantize the sklearn model and compile it to FHE.
+    We compute the training loss for the quantized and FHE models and compare them. We also
+    predict on a test set and compare FHE results to predictions from the quantized model
+    """
 
-    class Model:
-        w = None
-        b = None
-
-        def fit(self, x, y):
-            a = np.ones((x.shape[0], x.shape[1] + 1), dtype=np.float32)
-            a[:, 1:] = x
-
-            regularization_contribution = np.identity(x.shape[1] + 1, dtype=np.float32)
-            regularization_contribution[0][0] = 0
-
-            parameters = np.linalg.pinv(a.T @ a + regularization_contribution) @ a.T @ y
-
-            self.b = parameters[0]
-            self.w = parameters[1:].reshape(-1, 1)
-
-            return self
-
-        def evaluate(self, x):
-            return x @ self.w + self.b
-
-    model = Model().fit(x, y)
-
-    class QuantizationParameters:
-        def __init__(self, q, zp, n):
-            self.q = q
-            self.zp = zp
-            self.n = n
-
-    class QuantizedArray:
-        def __init__(self, values, parameters):
-            self.values = np.array(values)
-            self.parameters = parameters
-
-        @staticmethod
-        def of(x, n):
-            if not isinstance(x, np.ndarray):
-                x = np.array(x)
-
-            min_x = x.min()
-            max_x = x.max()
-
-            if min_x == max_x:
-
-                if min_x == 0.0:
-                    q_x = 1
-                    zp_x = 0
-                    x_q = np.zeros(x.shape, dtype=np.uint)
-
-                elif min_x < 0.0:
-                    q_x = abs(1 / min_x)
-                    zp_x = -1
-                    x_q = np.zeros(x.shape, dtype=np.uint)
-
-                else:
-                    q_x = 1 / min_x
-                    zp_x = 0
-                    x_q = np.ones(x.shape, dtype=np.uint)
-
-            else:
-                q_x = (2 ** n - 1) / (max_x - min_x)
-                zp_x = int(round(min_x * q_x))
-                x_q = ((q_x * x) - zp_x).round().astype(np.uint)
-
-            return QuantizedArray(x_q, QuantizationParameters(q_x, zp_x, n))
-
-        def dequantize(self):
-            return (self.values.astype(np.float32) + float(self.parameters.zp)) / self.parameters.q
-
-        def affine(self, w, b, min_y, max_y, n_y):
-            x_q = self.values
-            w_q = w.values
-            b_q = b.values
-
-            q_x = self.parameters.q
-            q_w = w.parameters.q
-            q_b = b.parameters.q
-
-            zp_x = self.parameters.zp
-            zp_w = w.parameters.zp
-            zp_b = b.parameters.zp
-
-            q_y = (2 ** n_y - 1) / (max_y - min_y)
-            zp_y = int(round(min_y * q_y))
-
-            y_q = (q_y / (q_x * q_w)) * (
-                (x_q + zp_x) @ (w_q + zp_w) + (q_x * q_w / q_b) * (b_q + zp_b)
-            )
-            y_q -= min_y * q_y
-            y_q = y_q.round().clip(0, 2 ** n_y - 1).astype(np.uint)
-
-            return QuantizedArray(y_q, QuantizationParameters(q_y, zp_y, n_y))
-
-    class QuantizedFunction:
-        def __init__(self, table):
-            self.table = table
-
-        @staticmethod
-        def of(f, input_bits, output_bits):
-            domain = np.array(range(2 ** input_bits), dtype=np.uint)
-            table = f(domain).round().clip(0, 2 ** output_bits - 1).astype(np.uint)
-            return QuantizedFunction(table)
-
-    parameter_bits = 1
-
-    w_q = QuantizedArray.of(model.w, parameter_bits)
-    b_q = QuantizedArray.of(model.b, parameter_bits)
-
-    input_bits = 6
-
-    x_q = QuantizedArray.of(x, input_bits)
-
-    output_bits = 7
-
-    min_y = y.min()
-    max_y = y.max()
-
-    n_y = output_bits
-    q_y = (2 ** n_y - 1) / (max_y - min_y)
-    zp_y = int(round(min_y * q_y))
-    y_parameters = QuantizationParameters(q_y, zp_y, n_y)
-
-    q_x = x_q.parameters.q
-    q_w = w_q.parameters.q
-    q_b = b_q.parameters.q
-
-    zp_x = x_q.parameters.zp
-    zp_w = w_q.parameters.zp
-    zp_b = b_q.parameters.zp
-
-    x_q = x_q.values
-    w_q = w_q.values
-    b_q = b_q.values
-
-    c1 = q_y / (q_x * q_w)
-    c2 = w_q + zp_w
-    c3 = (q_x * q_w / q_b) * (b_q + zp_b)
-    c4 = min_y * q_y
-
-    f_q = QuantizedFunction.of(
-        lambda intermediate: (c1 * (intermediate + c3)) - c4,
-        input_bits + parameter_bits,
-        output_bits,
+    X, y, _ = make_regression(
+        n_samples=200, n_features=1, n_targets=1, bias=5.0, noise=30.0, random_state=42, coef=True
     )
 
-    table = hnp.LookupTable([int(entry) for entry in f_q.table])
+    # Split it into train/test and sort the sets for nicer visualization
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
-    w_0 = int(c2.flatten()[0])
+    sidx = np.argsort(np.squeeze(x_train))
+    x_train = x_train[sidx, :]
+    y_train = y_train[sidx]
 
-    def function_to_compile(x_0):
-        return table[(x_0 + zp_x) * w_0]
+    sidx = np.argsort(np.squeeze(x_test))
+    x_test = x_test[sidx, :]
+    y_test = y_test[sidx]
 
-    inputset = [int(x_i[0]) for x_i in x_q]
+    # Train a linear regression with sklearn and predict on the test data
+    linreg = LinearRegression()
+    linreg.fit(x_train, y_train)
 
+    # Calibrate the model for quantization using both training and test data
+    calib_data = X  # np.vstack((x_train, x_test))
+    q_linreg = QuantizedLinearRegression.from_sklearn(linreg, calib_data)
+
+    # Compile the quantized model to FHE
     # bench: Measure: Compilation Time (ms)
-    engine = hnp.compile_numpy_function(
-        function_to_compile,
-        {"x_0": hnp.EncryptedScalar(hnp.UnsignedInteger(input_bits))},
-        inputset,
-        compilation_configuration=BENCHMARK_CONFIGURATION,
-    )
+    engine = q_linreg.compile(q_linreg.quantize_input(calib_data))
     # bench: Measure: End
 
-    non_homomorphic_loss = 0
-    homomorphic_loss = 0
+    # Measure test error using the clear-sklearn, the clear-quantized and the FHE quantized model
+    # as R^2 coefficient for the test data
 
-    for i, (x_i, y_i) in enumerate(zip(x_q, y)):
-        x_i = [int(value) for value in x_i]
+    # First, predict using the sklearn classifier
+    y_pred = linreg.predict(x_test)
 
-        non_homomorphic_prediction = (
-            QuantizedArray(x_i, QuantizationParameters(q_x, zp_x, input_bits))
-            .affine(
-                QuantizedArray.of(model.w, parameter_bits),
-                QuantizedArray.of(model.b, parameter_bits),
-                min_y,
-                max_y,
-                output_bits,
-            )
-            .dequantize()[0]
-        )
+    # Now that the model is quantized, predict on the test set
+    x_test_q = q_linreg.quantize_input(x_test)
+    q_y_pred = q_linreg.forward_and_dequant(x_test_q)
+
+    # Now predict using the FHE quantized model on the testing set
+    y_test_pred_fhe = np.zeros_like(x_test)
+
+    for i, x_i in enumerate(tqdm(x_test_q.qvalues)):
+        q_sample = np.expand_dims(x_i, 1).transpose([1, 0]).astype(np.uint8)
         # bench: Measure: Evaluation Time (ms)
-        homomorphic_prediction = QuantizedArray(engine.run(*x_i), y_parameters).dequantize()
+        q_pred_fhe = engine.run(q_sample)
         # bench: Measure: End
+        y_test_pred_fhe[i] = q_linreg.dequantize_output(q_pred_fhe)
 
-        non_homomorphic_loss += (non_homomorphic_prediction - y_i) ** 2
-        homomorphic_loss += (homomorphic_prediction - y_i) ** 2
+    # Measure the error for the three versions of the classifier
+    sklearn_r2 = r2_score(y_pred, y_test)
+    non_homomorphic_test_error = r2_score(q_y_pred, y_test)
+    homomorphic_test_error = r2_score(y_test_pred_fhe, y_test)
 
-        print()
+    # Measure the error of the FHE quantized model w.r.t the clear quantized model
+    difference = (
+        abs(homomorphic_test_error - non_homomorphic_test_error) * 100 / non_homomorphic_test_error
+    )
 
-        print(f"input = {x[i][0]}")
-        print(f"output = {y_i:.4f}")
-
-        print(f"non homomorphic prediction = {non_homomorphic_prediction:.4f}")
-        print(f"homomorphic prediction = {homomorphic_prediction:.4f}")
-
-    non_homomorphic_loss /= len(y)
-    homomorphic_loss /= len(y)
-    difference = abs(homomorphic_loss - non_homomorphic_loss) * 100 / non_homomorphic_loss
-
-    print()
-    print(f"Non Homomorphic Loss: {non_homomorphic_loss:.4f}")
-    print(f"Homomorphic Loss: {homomorphic_loss:.4f}")
+    print(f"Sklearn R^2: {sklearn_r2:.4f}")
+    print(f"Non Homomorphic R^2: {non_homomorphic_test_error:.4f}")
+    print(f"Homomorphic R^2: {homomorphic_test_error:.4f}")
     print(f"Relative Difference Percentage: {difference:.2f}%")
 
     # bench: Measure: Non Homomorphic Loss = non_homomorphic_loss
     # bench: Measure: Homomorphic Loss = homomorphic_loss
-    # bench: Measure: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
-    # bench: Alert: Relative Loss Difference Between Homomorphic and Non Homomorphic Implementation (%) > 7.5
+    # bench: Measure: Relative Loss Difference (%) = difference
+    # bench: Measure: Homomorphic Test Error = homomorphic_test_error
+    # bench: Alert: Relative Loss Difference (%) > 7.5
 
 
 if __name__ == "__main__":
