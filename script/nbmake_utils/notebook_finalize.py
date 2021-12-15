@@ -15,9 +15,13 @@ def main():
     args = parser.parse_args()
 
     base = Path(args.base)
-    notebooks = base.glob("*.ipynb")
+    notebooks = base.glob("**/*.ipynb")
 
     for notebook in notebooks:
+        path = str(notebook)
+        if "_build" in path or ".ipynb_checkpoints" in path:
+            continue
+
         with open(notebook, "r", encoding="utf-8") as f:
             content = json.load(f)
 

@@ -5,7 +5,6 @@ DEV_DOCKERFILE:=docker/Dockerfile.concretefhe-dev
 DEV_CONTAINER_VENV_VOLUME:=concretefhe-internal-venv
 DEV_CONTAINER_CACHE_VOLUME:=concretefhe-internal-cache
 SRC_DIR:=concrete
-NOTEBOOKS_DIR:=docs/user/advanced_examples
 
 .PHONY: setup_env # Set up the environment
 setup_env:
@@ -43,7 +42,7 @@ check_python_format:
 
 .PHONY: check_finalize_nb # Sanitize notebooks
 check_finalize_nb:
-	poetry run python ./script/nbmake_utils/notebook_finalize.py $(NOTEBOOKS_DIR) --check
+	poetry run python ./script/nbmake_utils/notebook_finalize.py docs --check
 
 .PHONY: check_benchmarks # Run benchmark checks (to validate they work fine)
 check_benchmarks:
@@ -223,13 +222,13 @@ pydocstyle:
 
 .PHONY: finalize_nb # Sanitize notebooks
 finalize_nb:
-	poetry run python ./script/nbmake_utils/notebook_finalize.py $(NOTEBOOKS_DIR)
+	poetry run python ./script/nbmake_utils/notebook_finalize.py docs
 
 # A warning in a package unrelated to the project made pytest fail with notebooks
 # Run notebook tests without warnings as sources are already tested with warnings treated as errors
 .PHONY: pytest_nb # Launch notebook tests
 pytest_nb:
-	poetry run pytest -Wignore --nbmake $(NOTEBOOKS_DIR)/*.ipynb
+	find docs -name "*.ipynb" | grep -v _build | grep -v .ipynb_checkpoints | xargs poetry run pytest -Wignore --nbmake
 
 .PHONY: benchmark # Launch benchmark
 benchmark:
