@@ -1,9 +1,13 @@
 #include "zamalang/Support/KeySetCache.h"
 #include "zamalang/Support/Error.h"
+#include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
+
 #include <fstream>
+#include <functional>
 #include <string>
+
 extern "C" {
 #include "concrete-ffi.h"
 }
@@ -150,9 +154,11 @@ llvm::Error saveKeys(KeySet &key_set, llvm::SmallString<0> &folderPath) {
 
   err = llvm::sys::fs::rename(folderIncompletePath, folderPath);
   if (err) {
+    llvm::sys::fs::remove_directories(folderIncompletePath);
+  }
+  if (!llvm::sys::fs::exists(folderPath)) {
     return StreamStringError()
-           << "Cannot rename directory \"" << folderIncompletePath << "\" \""
-           << folderPath << "\": " << err.message();
+           << "Cannot save directory \"" << folderPath << "\"";
   }
 
   return llvm::Error::success();
@@ -172,21 +178,49 @@ KeySetCache::tryLoadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
 
   if (llvm::sys::fs::exists(folderPath)) {
     return tryLoadKeys(params, seed_msb, seed_lsb, folderPath);
-  } else {
-    auto key_set = KeySet::generate(params, seed_msb, seed_lsb);
-
-    if (!key_set) {
-      return StreamStringError()
-             << "Cannot generate key set: " << key_set.takeError();
-    }
-
-    auto savedErr = saveKeys(*(key_set.get()), folderPath);
-    if (savedErr) {
-      return StreamStringError() << "Cannot save key set: " << savedErr;
-    }
-
-    return key_set;
   }
+
+  // Creating a lock for concurrent generation
+  llvm::SmallString<0> lockPath(folderPath);
+  lockPath.append("lock");
+  int FD_lock;
+  llvm::sys::fs::create_directories(llvm::sys::path::parent_path(lockPath));
+  // Open or create the lock file
+  auto err = llvm::sys::fs::openFile(
+      lockPath, FD_lock, llvm::sys::fs::CreationDisposition::CD_OpenAlways,
+      llvm::sys::fs::FileAccess::FA_Write, llvm::sys::fs::OpenFlags::OF_None);
+
+  if (err) {
+    // parent does not exists OR right issue (creation or write)
+    return StreamStringError()
+           << "Cannot access \"" << lockPath << "\": " << err.message();
+  }
+
+  // The first to lock will generate while the others waits
+  llvm::sys::fs::lockFile(FD_lock);
+  auto cleanUnlock = llvm::make_scope_exit([&]() {
+    llvm::sys::fs::unlockFile(FD_lock);
+    llvm::sys::fs::remove(lockPath);
+  });
+
+  if (llvm::sys::fs::exists(folderPath)) {
+    // Others returns here
+    return tryLoadKeys(params, seed_msb, seed_lsb, folderPath);
+  }
+
+  auto key_set = KeySet::generate(params, seed_msb, seed_lsb);
+
+  if (!key_set) {
+    return StreamStringError()
+           << "Cannot generate key set: " << key_set.takeError();
+  }
+
+  auto savedErr = saveKeys(*(key_set.get()), folderPath);
+  if (savedErr) {
+    return StreamStringError() << "Cannot save key set: " << savedErr;
+  }
+
+  return key_set;
 }
 
 } // namespace zamalang
