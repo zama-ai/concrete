@@ -169,10 +169,10 @@ def main():
     print(f"Homomorphic R^2: {homomorphic_test_error:.4f}")
     print(f"Relative Difference Percentage: {difference:.2f}%")
 
-    # bench: Measure: Non Homomorphic Loss = non_homomorphic_loss
-    # bench: Measure: Homomorphic Loss = homomorphic_loss
+    # bench: Measure: Sklearn R^2 = sklearn_r2
+    # bench: Measure: Non Homomorphic R^2 = non_homomorphic_test_error
+    # bench: Measure: Homomorphic R^2 = homomorphic_test_error
     # bench: Measure: Relative Loss Difference (%) = difference
-    # bench: Measure: Homomorphic Test Error = homomorphic_test_error
     # bench: Alert: Relative Loss Difference (%) > 7.5
 
 

@@ -210,6 +210,7 @@ def main():
     print(f"Homomorphic Accuracy: {homomorphic_accuracy:.4f}")
     print(f"Difference Percentage: {difference:.2f}%")
 
+    # bench: Measure: Sklearn accuracy = sklearn_acc
     # bench: Measure: Non Homomorphic Accuracy = non_homomorphic_accuracy
     # bench: Measure: Homomorphic Accuracy = homomorphic_accuracy
     # bench: Measure: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
