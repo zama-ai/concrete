@@ -1470,3 +1470,78 @@ func @main() -> tensor<2x2x4x!HLFHE.eint<6>> {
     }
   }
 }
+
+class TiledMatMulParametric
+    : public ::testing::TestWithParam<std::vector<int64_t>> {};
+
+TEST_P(TiledMatMulParametric, tiled_matmul_eint_int) {
+  std::vector<int64_t> tiling = GetParam();
+  std::ostringstream mlirProgram;
+
+  mlirProgram
+      << "func @main(%a: tensor<8x4x!HLFHE.eint<6>>, %b: tensor<4x2xi7>) ->\n"
+      << "  tensor<8x2x!HLFHE.eint<6>> {\n"
+      << "    %0 = \"HLFHELinalg.matmul_eint_int\"(%a, %b) { \"tile-sizes\" = "
+      << "[" << tiling[0] << ", " << tiling[1] << ", " << tiling[2] << "]"
+      << "} :\n"
+      << "           (tensor<8x4x!HLFHE.eint<6>>, tensor<4x2xi7>) ->\n"
+      << "           tensor<8x2x!HLFHE.eint<6>>\n"
+      << "    return %0 : tensor<8x2x!HLFHE.eint<6>>\n"
+      << "  }";
+
+  mlir::zamalang::JitCompilerEngine::Lambda lambda =
+      checkedJit(mlirProgram.str());
+
+  const size_t rowsA = 8;
+  const size_t colsA = 4;
+  const uint8_t A[rowsA][colsA] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 0, 1, 2},
+                                   {3, 4, 5, 6}, {7, 8, 9, 0}, {1, 2, 3, 4},
+                                   {5, 6, 7, 8}, {9, 0, 1, 2}};
+
+  const size_t rowsB = 4;
+  const size_t colsB = 2;
+  const uint8_t B[rowsB][colsB]{{1, 2}, {3, 4}, {3, 1}, {0, 2}};
+
+  const size_t rowsC = rowsA;
+  const size_t colsC = colsB;
+  const uint8_t expected[rowsC][colsC]{
+      {16, 21}, {44, 57}, {12, 23}, {30, 39},
+      {58, 55}, {16, 21}, {44, 57}, {12, 23},
+  };
+
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      aArg(llvm::ArrayRef<uint8_t>((const uint8_t *)A, rowsA * colsA),
+           {rowsA, colsA});
+  mlir::zamalang::TensorLambdaArgument<
+      mlir::zamalang::IntLambdaArgument<uint8_t>>
+      bArg(llvm::ArrayRef<uint8_t>((const uint8_t *)B, rowsB * colsB),
+           {rowsB, colsB});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&aArg, &bArg});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)(rowsC * colsC));
+
+  for (size_t i = 0; i < rowsC; i++) {
+    for (size_t j = 0; j < colsC; j++) {
+      EXPECT_EQ((*res)[i * colsC + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(TiledMatMul, TiledMatMulParametric,
+                         ::testing::Values(
+					   // Element-sized tiles
+					   std::vector<int64_t>{1, 1, 1},
+
+					   // Mixed tiles
+					   std::vector<int64_t>{2, 2, 2},
+					   std::vector<int64_t>{4, 4, 2},
+					   std::vector<int64_t>{2, 4, 2},
+
+					   // Single, big tile
+					   std::vector<int64_t>{8, 4, 2}));
