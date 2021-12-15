@@ -44,8 +44,24 @@ docker run --rm -it ghcr.io/zama-ai/concretefhe:v0.1.0 /bin/bash
 
 ## python package
 
-```{warning}
-FIXME(Arthur): explain how to install from pypi, when it is ready
+To install **Concrete** from PyPi run the following:
+
+```shell
+pip install concretefhe
 ```
 
+```{note}
+Note that concretefhe has `pygraphviz` as an optional dependency to draw graphs.
+```
 
+```{WARNING}
+`pygraphviz` requires `graphviz` packages being installed on your OS, see <a href="https://pygraphviz.github.io/documentation/stable/install.html">https://pygraphviz.github.io/documentation/stable/install.html</a>
+```
+
+You can install the extra python dependencies for drawing with:
+
+```shell
+pip install concretefhe[full]
+# you may need to force reinstallation
+pip install --force-reinstall concretefhe[full]
+```

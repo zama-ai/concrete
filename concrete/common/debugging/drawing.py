@@ -59,6 +59,10 @@ def draw_graph(
 ) -> str:
     """Draws operation graphs and optionally saves/shows the drawing.
 
+    Note that this function requires the python `pygraphviz` package which itself requires the
+    installation of `graphviz` packages, see
+    https://pygraphviz.github.io/documentation/stable/install.html
+
     Args:
         op_graph (OPGraph): the operation graph to be drawn and optionally saved/shown
         show (bool): if set to True, the drawing will be shown using matplotlib
@@ -98,7 +102,16 @@ def draw_graph(
         idx = graph.edges[edge]["input_idx"]
         graph.edges[edge]["label"] = f" {idx} "  # spaces are there intentionally for a better look
 
-    agraph = nx.nx_agraph.to_agraph(graph)
+    try:
+        agraph = nx.nx_agraph.to_agraph(graph)
+    except ImportError as e:  # pragma: no cover
+        if "pygraphviz" in str(e):
+            err_msg = (
+                f"{draw_graph.__name__} requires pygraphviz, install your OS graphviz distribution "
+                "https://pygraphviz.github.io/documentation/stable/install.html "
+                f"and reinstall with extras: `pip install --force-reinstall concretefhe[full]`"
+            )
+            raise ImportError(err_msg) from e
     agraph.graph_attr["rankdir"] = "TB" if vertical else "LR"
     agraph.layout("dot")
 

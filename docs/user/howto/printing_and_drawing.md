@@ -18,6 +18,20 @@ print(circuit)
 
 ## Drawing
 
+```{WARNING}
+The draw function requires the installation of the package's extra dependencies.
+
+The drawing package required is `pygraphviz` which needs `graphviz` packages installed on your OS, see <a href="https://pygraphviz.github.io/documentation/stable/install.html">https://pygraphviz.github.io/documentation/stable/install.html</a>
+
+To install the required drawing packages once you have `graphviz` installed run:
+
+`pip install concretefhe[full]`
+
+You may need to force reinstallation
+
+`pip install --force-reinstall concretefhe[full]`
+```
+
 To draw your circuit, you can do the following:
 
 <!--python-test:skip-->

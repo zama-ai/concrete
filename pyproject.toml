@@ -12,10 +12,14 @@ python = ">=3.8,<3.11"
 networkx = "^2.6.3"
 matplotlib = "^3.4.3"
 numpy = "^1.21.2"
-pygraphviz = "^1.7"
+pygraphviz = { version = "^1.7", optional = true }
 Pillow = "^8.3.2"
 loguru = "^0.5.3"
 torch = "^1.10.0"
+
+[tool.poetry.extras]
+full = ["pygraphviz"]
+extras = ["pygraphviz"]
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.3"

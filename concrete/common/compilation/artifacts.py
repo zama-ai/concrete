@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
 import networkx as nx
+from loguru import logger
 from PIL import Image
 
 from ..debugging import assert_true, draw_graph, format_operation_graph
@@ -56,9 +57,15 @@ class CompilationArtifacts:
             None
         """
 
-        self.source_code_of_the_function_to_compile = (
-            function if isinstance(function, str) else inspect.getsource(function)
-        )
+        try:
+            self.source_code_of_the_function_to_compile = (
+                function if isinstance(function, str) else inspect.getsource(function)
+            )
+        # When using the python console we cannot use getsource, so catch that and emit an error
+        except OSError:  # pragma: no cover
+            function_str = function if isinstance(function, str) else function.__name__
+            logger.error(f"Could not get source for function: {function_str}")
+            self.source_code_of_the_function_to_compile = "unavailable"
 
     def add_parameter_of_function_to_compile(self, name: str, value: Union[BaseValue, str]):
         """Add a parameter of the function to compile to the artifacts.
@@ -84,10 +91,17 @@ class CompilationArtifacts:
             None
         """
 
-        drawing = draw_graph(operation_graph)
+        try:
+            drawing = draw_graph(operation_graph)
+            self.drawings_of_operation_graphs[name] = drawing
+        # Do not crash on imports ourselves for drawings if the package is not installed
+        except ImportError as e:  # pragma: no cover
+            if "pygraphviz" in str(e):
+                pass
+            else:
+                raise e
         textual_representation = format_operation_graph(operation_graph)
 
-        self.drawings_of_operation_graphs[name] = drawing
         self.textual_representations_of_operation_graphs[name] = textual_representation
 
         self.final_operation_graph = operation_graph

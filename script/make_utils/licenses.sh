@@ -60,7 +60,7 @@ then
 
     python -m pip install -U pip wheel
     python -m pip install -U --force-reinstall setuptools
-    poetry install --no-dev
+    poetry install --no-dev --extras full
     python -m pip install pip-licenses
     pip-licenses | grep -v "pkg\-resources\|concretefhe" | tee "${NEW_LICENSES_FILENAME}"
 
