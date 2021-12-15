@@ -5,6 +5,7 @@
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/Linalg/IR/LinalgOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/SCF/SCF.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser.h>
@@ -53,6 +54,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
     this->mlirContext->getOrLoadDialect<mlir::memref::MemRefDialect>();
     this->mlirContext->getOrLoadDialect<mlir::linalg::LinalgDialect>();
     this->mlirContext->getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+    this->mlirContext->getOrLoadDialect<mlir::scf::SCFDialect>();
   }
 
   return this->mlirContext;
@@ -92,6 +94,10 @@ void CompilerEngine::setMaxMANP(size_t v) { this->overrideMaxMANP = v; }
 
 void CompilerEngine::setClientParametersFuncName(const llvm::StringRef &name) {
   this->clientParametersFuncName = name.str();
+}
+
+void CompilerEngine::setHLFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes) {
+  this->hlfhelinalgTileSizes = sizes.vec();
 }
 
 void CompilerEngine::setEnablePass(
@@ -192,6 +198,21 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   // HLFHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);
+
+  // HLFHELinalg tiling
+  if (this->hlfhelinalgTileSizes) {
+    if (mlir::zamalang::pipeline::markHLFHELinalgForTiling(
+            mlirContext, module, *this->hlfhelinalgTileSizes, enablePass)
+            .failed())
+      return errorDiag("Marking of HLFHELinalg operations for tiling failed");
+  }
+
+  if (mlir::zamalang::pipeline::tileMarkedHLFHELinalg(mlirContext, module,
+                                                      enablePass)
+          .failed()) {
+    return errorDiag("Tiling of HLFHELinalg operations failed");
+  }
+
   if (target == Target::HLFHE)
     return std::move(res);
 

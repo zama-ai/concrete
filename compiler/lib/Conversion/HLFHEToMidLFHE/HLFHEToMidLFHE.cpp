@@ -84,6 +84,10 @@ void HLFHEToMidLFHEPass::runOnOperation() {
   patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
                                             HLFHEToMidLFHETypeConverter>>(
       &getContext(), converter);
+  patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
+                                            HLFHEToMidLFHETypeConverter>>(
+      &getContext(), converter);
+
   mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                           converter);
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);

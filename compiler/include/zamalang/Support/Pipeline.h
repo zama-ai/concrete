@@ -17,6 +17,15 @@ getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+tileMarkedHLFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+markHLFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                         llvm::ArrayRef<int64_t> tileSizes,
+                         std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerHLFHEToMidLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 

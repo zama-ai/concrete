@@ -148,12 +148,15 @@ public:
   void setVerifyDiagnostics(bool v);
   void setGenerateClientParameters(bool v);
   void setClientParametersFuncName(const llvm::StringRef &name);
+  void setHLFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes);
   void setEnablePass(std::function<bool(mlir::Pass *)> enablePass);
 
 protected:
   llvm::Optional<size_t> overrideMaxEintPrecision;
   llvm::Optional<size_t> overrideMaxMANP;
   llvm::Optional<std::string> clientParametersFuncName;
+  llvm::Optional<std::vector<int64_t>> hlfhelinalgTileSizes;
+
   bool verifyDiagnostics;
   bool generateClientParameters;
   std::function<bool(mlir::Pass *)> enablePass;

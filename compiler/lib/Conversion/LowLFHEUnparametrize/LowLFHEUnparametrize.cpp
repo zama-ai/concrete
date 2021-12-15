@@ -98,6 +98,9 @@ void LowLFHEUnparametrizePass::runOnOperation() {
   patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
                                             LowLFHEUnparametrizeTypeConverter>>(
       &getContext(), converter);
+  patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
+                                            LowLFHEUnparametrizeTypeConverter>>(
+      &getContext(), converter);
 
   // Conversion of function signature and arguments
   target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {

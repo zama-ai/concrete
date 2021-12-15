@@ -3,6 +3,7 @@
 #include <llvm/Support/Error.h>
 #include <mlir/Conversion/SCFToStandard/SCFToStandard.h>
 #include <mlir/Dialect/Linalg/Passes.h>
+#include <mlir/Dialect/SCF/Passes.h>
 #include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/Dialect/Tensor/Transforms/Passes.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -13,6 +14,7 @@
 
 #include <zamalang/Conversion/Passes.h>
 #include <zamalang/Dialect/HLFHE/Analysis/MANP.h>
+#include <zamalang/Dialect/HLFHELinalg/Transforms/Tiling.h>
 #include <zamalang/Support/Pipeline.h>
 #include <zamalang/Support/logging.h>
 #include <zamalang/Support/math.h>
@@ -101,6 +103,29 @@ getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
+tileMarkedHLFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                      std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("TileMarkedHLFHELinalg", pm, context);
+  addPotentiallyNestedPass(pm, mlir::zamalang::createHLFHELinalgTilingPass(),
+                           enablePass);
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+markHLFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                         llvm::ArrayRef<int64_t> tileSizes,
+                         std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("MarkHLFHELinalgForTiling", pm, context);
+  addPotentiallyNestedPass(pm, createHLFHELinalgTilingMarkerPass(tileSizes),
+                           enablePass);
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
 lowerHLFHEToMidLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
@@ -163,6 +188,7 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(pm, mlir::createLinalgBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
                            enablePass);
+  addPotentiallyNestedPass(pm, mlir::createSCFBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass(),
                            enablePass);

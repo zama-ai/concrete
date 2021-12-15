@@ -22,6 +22,7 @@ add_mlir_library(ZamalangSupport
 
   LINK_LIBS PUBLIC
   HLFHELinalgDialect
+  HLFHELinalgDialectTransforms
   HLFHETensorOpsToLinalg
   HLFHEToMidLFHE
   LowLFHEUnparametrize
