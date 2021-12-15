@@ -142,6 +142,11 @@ llvm::cl::opt<llvm::Optional<size_t>, false, OptionalSizeTParser> assumeMaxMANP(
     llvm::cl::desc(
         "Assume a maximum for the Minimum Arithmetic Noise Padding"));
 
+llvm::cl::list<int64_t> hlfhelinalgTileSizes(
+    "hlfhelinalg-tile-sizes",
+    llvm::cl::desc(
+        "Force tiling of HLFHELinalg operation with the given tile sizes"),
+    llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 } // namespace cmdline
 
 llvm::Expected<mlir::zamalang::V0FHEContext> buildFHEContext(
@@ -222,6 +227,7 @@ mlir::LogicalResult processInputBuffer(
     llvm::ArrayRef<uint64_t> jitArgs,
     llvm::Optional<size_t> overrideMaxEintPrecision,
     llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
+    llvm::Optional<llvm::ArrayRef<int64_t>> hlfhelinalgTileSizes,
     llvm::raw_ostream &os,
     std::shared_ptr<mlir::zamalang::CompilerEngine::Library> outputLib) {
   std::shared_ptr<mlir::zamalang::CompilationContext> ccx =
@@ -243,6 +249,9 @@ mlir::LogicalResult processInputBuffer(
 
   if (overrideMaxMANP.hasValue())
     ce.setMaxMANP(overrideMaxMANP.getValue());
+
+  if (hlfhelinalgTileSizes.hasValue())
+    ce.setHLFHELinalgTileSizes(*hlfhelinalgTileSizes);
 
   if (action == Action::JIT_INVOKE) {
     llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
@@ -354,6 +363,12 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
     }
   }
 
+  // Convert tile sizes to `Optional`
+  llvm::Optional<llvm::ArrayRef<int64_t>> hlfhelinalgTileSizes;
+
+  if (!cmdline::hlfhelinalgTileSizes.empty())
+    hlfhelinalgTileSizes.emplace(cmdline::hlfhelinalgTileSizes);
+
   // In case of compilation to library, the real output is the library.
   std::string outputPath =
       (cmdline::action == Action::COMPILE) ? cmdline::STDOUT : cmdline::output;
@@ -388,7 +403,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
           std::move(inputBuffer), fileName, cmdline::action,
           cmdline::jitFuncName, cmdline::jitArgs,
           cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
-          cmdline::verifyDiagnostics, os, outputLib);
+          cmdline::verifyDiagnostics, hlfhelinalgTileSizes, os, outputLib);
     };
     auto &os = output->os();
     auto res = mlir::failure();
