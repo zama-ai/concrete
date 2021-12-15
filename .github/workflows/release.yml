@@ -109,7 +109,7 @@ jobs:
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           brew install ninja
-          pip install numpy pybind11==2.6.2 wheel
+          pip install numpy pybind11==2.6.2 wheel delocate
           cd ${{ github.workspace }}/concrete/concrete-ffi
           RUSTFLAGS="-C target-cpu=native" cargo build --release
 
@@ -123,6 +123,7 @@ jobs:
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           make Python3_EXECUTABLE=`which python` python-bindings
           pip wheel --no-deps -w ${{ github.workspace }}/wheels .
+          delocate-wheel -v `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
           echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
 
       - name: Upload Python Package

@@ -67,7 +67,7 @@ setuptools.setup(
     install_requires=["numpy", "PyYAML"],
     package_dir={"": build_dir() + "tools/zamalang/python_packages/zamalang_core"},
     include_package_data=True,
-    package_data={"": ["*.so"]},
+    package_data={"": ["*.so", "*.dylib"]},
     classifiers=[
         "Programming Language :: C++",
         "Programming Language :: Python :: 3",
