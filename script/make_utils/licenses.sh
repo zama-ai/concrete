@@ -55,7 +55,7 @@ then
     python3 -m venv $TMP_VENV_PATH/tmp_venv
 
     # SC1090: Can't follow non-constant source. Use a directive to specify location.
-    # shellcheck disable=SC1090
+    # shellcheck disable=SC1090,SC1091
     source $TMP_VENV_PATH/tmp_venv/bin/activate
 
     python -m pip install -U pip wheel
@@ -63,6 +63,15 @@ then
     poetry install --no-dev
     python -m pip install pip-licenses
     pip-licenses | grep -v "pkg\-resources\|concretefhe" | tee "${NEW_LICENSES_FILENAME}"
+
+    # Remove trailing whitespaces
+    if [ "$UNAME" == "Darwin" ]
+    then
+        sed -i "" 's/[t ]*$//g' "${NEW_LICENSES_FILENAME}"
+    else
+        sed -i 's/[t ]*$//g' "${NEW_LICENSES_FILENAME}"
+    fi
+
     deactivate
 
     if [ $CHECK -eq 1 ]
@@ -86,11 +95,20 @@ then
     python3 -m venv $TMP_VENV_PATH/tmp_venv
 
     # SC1090: Can't follow non-constant source. Use a directive to specify location.
-    # shellcheck disable=SC1090
+    # shellcheck disable=SC1090,SC1091
     source $TMP_VENV_PATH/tmp_venv/bin/activate
 
     make setup_env
     pip-licenses | grep -v "pkg\-resources\|concretefhe" | tee "${NEW_LICENSES_FILENAME}"
+
+    # Remove trailing whitespaces
+    if [ "$UNAME" == "Darwin" ]
+    then
+        sed -i "" 's/[t ]*$//g' "${NEW_LICENSES_FILENAME}"
+    else
+        sed -i 's/[t ]*$//g' "${NEW_LICENSES_FILENAME}"
+    fi
+
     deactivate
 
     if [ $CHECK -eq 1 ]

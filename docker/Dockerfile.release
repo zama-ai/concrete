@@ -20,7 +20,6 @@ RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
 COPY --from=builder /build/dist/*.whl .
 COPY docker/release_resources/release_requirements.txt .
-COPY torch_requirements.txt .
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
@@ -32,8 +31,6 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
     python3 -m pip install --no-cache-dir ./*.whl && \
-    python3 -m pip install --no-cache-dir -r torch_requirements.txt \
-    -f https://download.pytorch.org/whl/torch_stable.html && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
 
 ENV LD_PRELOAD=${RT_LIB}:${LD_PRELOAD}

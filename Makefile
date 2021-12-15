@@ -11,8 +11,6 @@ setup_env:
 	poetry run python -m pip install -U pip wheel
 	poetry run python -m pip install -U --force-reinstall setuptools
 	poetry install
-	poetry run python -m pip install -r torch_requirements.txt \
-		-f https://download.pytorch.org/whl/torch_stable.html
 	@# This is required to be friendly in the docker and on bare systems until the package is on pip
 	@# https://github.com/zama-ai/concretefhe-internal/issues/809
 	if [[ -d /pkg ]]; then														\

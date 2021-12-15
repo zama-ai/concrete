@@ -15,6 +15,7 @@ numpy = "^1.21.2"
 pygraphviz = "^1.7"
 Pillow = "^8.3.2"
 loguru = "^0.5.3"
+torch = "^1.10.0"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.3"
