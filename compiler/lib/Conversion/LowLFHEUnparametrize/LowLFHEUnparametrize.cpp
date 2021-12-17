@@ -7,6 +7,7 @@
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "zamalang/Support/Constants.h"
 
 /// LowLFHEUnparametrizeTypeConverter is a type converter that unparametrize
 /// LowLFHE types
@@ -46,8 +47,9 @@ public:
 /// t1 are a LowLFHE type.
 struct LowLFHEUnrealizedCastReplacementPattern
     : public mlir::OpRewritePattern<mlir::UnrealizedConversionCastOp> {
-  LowLFHEUnrealizedCastReplacementPattern(mlir::MLIRContext *context,
-                                          mlir::PatternBenefit benefit = 1)
+  LowLFHEUnrealizedCastReplacementPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::UnrealizedConversionCastOp>(context,
                                                                  benefit) {}
 

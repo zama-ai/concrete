@@ -15,12 +15,13 @@
 #include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
 #include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h"
 #include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
+#include "zamalang/Support/Constants.h"
 
 struct DotToLinalgGeneric
     : public ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::Dot> {
   DotToLinalgGeneric(::mlir::MLIRContext *context)
-      : ::mlir::OpRewritePattern<::mlir::zamalang::HLFHELinalg::Dot>(context,
-                                                                     1) {}
+      : ::mlir::OpRewritePattern<::mlir::zamalang::HLFHELinalg::Dot>(
+            context, mlir::zamalang::DEFAULT_PATTERN_BENEFIT) {}
 
   // This rewrite pattern transforms any instance of
   // `HLFHELinalg.dot_eint_int` to an instance of `linalg.generic` with an
@@ -216,8 +217,9 @@ getBroadcastedAffineMapMultiLUT(const mlir::RankedTensorType &resultType,
 template <typename HLFHELinalgOp, typename HLFHEOp>
 struct HLFHELinalgOpToLinalgGeneric
     : public mlir::OpRewritePattern<HLFHELinalgOp> {
-  HLFHELinalgOpToLinalgGeneric(::mlir::MLIRContext *context,
-                               mlir::PatternBenefit benefit = 1)
+  HLFHELinalgOpToLinalgGeneric(
+      ::mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<HLFHELinalgOp>(context, benefit) {}
 
   ::mlir::LogicalResult
@@ -322,7 +324,8 @@ struct HLFHELinalgApplyMultiLookupTableToLinalgGeneric
     : public mlir::OpRewritePattern<
           mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp> {
   HLFHELinalgApplyMultiLookupTableToLinalgGeneric(
-      ::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+      ::mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<
             mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp>(context,
                                                                       benefit) {
@@ -441,8 +444,9 @@ struct HLFHELinalgApplyMultiLookupTableToLinalgGeneric
 struct HLFHELinalgApplyLookupTableToLinalgGeneric
     : public mlir::OpRewritePattern<
           mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp> {
-  HLFHELinalgApplyLookupTableToLinalgGeneric(::mlir::MLIRContext *context,
-                                             mlir::PatternBenefit benefit = 1)
+  HLFHELinalgApplyLookupTableToLinalgGeneric(
+      ::mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<
             mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp>(context,
                                                                  benefit) {}
@@ -538,8 +542,9 @@ struct HLFHELinalgApplyLookupTableToLinalgGeneric
 //
 struct HLFHELinalgNegEintToLinalgGeneric
     : public mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::NegEintOp> {
-  HLFHELinalgNegEintToLinalgGeneric(::mlir::MLIRContext *context,
-                                    mlir::PatternBenefit benefit = 1)
+  HLFHELinalgNegEintToLinalgGeneric(
+      ::mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::NegEintOp>(
             context, benefit) {}
 
@@ -649,7 +654,7 @@ struct HLFHELinalgMatmulToLinalgGeneric
           mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value,
           mlir::Value)>
           createMulOp,
-      mlir::PatternBenefit benefit = 1)
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<HLFHELinalgMatmulOp>(context, benefit),
         createMulOp(createMulOp) {}
 
@@ -754,8 +759,9 @@ private:
 //
 struct HLFHELinalgZeroToLinalgGenerate
     : public mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::ZeroOp> {
-  HLFHELinalgZeroToLinalgGenerate(::mlir::MLIRContext *context,
-                                  mlir::PatternBenefit benefit = 1)
+  HLFHELinalgZeroToLinalgGenerate(
+      ::mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::ZeroOp>(context,
                                                                       benefit) {
   }

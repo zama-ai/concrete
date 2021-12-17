@@ -10,6 +10,7 @@
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "zamalang/Support/Constants.h"
 
 class LowLFHEToConcreteCAPITypeConverter : public mlir::TypeConverter {
 
@@ -333,10 +334,10 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
 /// ```
 template <typename Op>
 struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
-  LowLFHEOpToConcreteCAPICallPattern(mlir::MLIRContext *context,
-                                     mlir::StringRef funcName,
-                                     mlir::StringRef allocName,
-                                     mlir::PatternBenefit benefit = 1)
+  LowLFHEOpToConcreteCAPICallPattern(
+      mlir::MLIRContext *context, mlir::StringRef funcName,
+      mlir::StringRef allocName,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<Op>(context, benefit), funcName(funcName),
         allocName(allocName) {}
 
@@ -400,8 +401,9 @@ private:
 
 struct LowLFHEZeroOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::ZeroLWEOp> {
-  LowLFHEZeroOpPattern(mlir::MLIRContext *context,
-                       mlir::PatternBenefit benefit = 1)
+  LowLFHEZeroOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::ZeroLWEOp>(context,
                                                                    benefit) {}
 
@@ -435,8 +437,9 @@ struct LowLFHEZeroOpPattern
 
 struct LowLFHEEncodeIntOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::EncodeIntOp> {
-  LowLFHEEncodeIntOpPattern(mlir::MLIRContext *context,
-                            mlir::PatternBenefit benefit = 1)
+  LowLFHEEncodeIntOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::EncodeIntOp>(context,
                                                                      benefit) {}
 
@@ -459,8 +462,9 @@ struct LowLFHEEncodeIntOpPattern
 
 struct LowLFHEIntToCleartextOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::IntToCleartextOp> {
-  LowLFHEIntToCleartextOpPattern(mlir::MLIRContext *context,
-                                 mlir::PatternBenefit benefit = 1)
+  LowLFHEIntToCleartextOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::IntToCleartextOp>(
             context, benefit) {}
 
@@ -483,8 +487,9 @@ struct LowLFHEIntToCleartextOpPattern
 // allocated GLWE
 struct GlweFromTableOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::GlweFromTable> {
-  GlweFromTableOpPattern(mlir::MLIRContext *context,
-                         mlir::PatternBenefit benefit = 1)
+  GlweFromTableOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::GlweFromTable>(
             context, benefit) {}
 
@@ -600,8 +605,9 @@ mlir::Value getContextArgument(mlir::Operation *op) {
 // ciphertext
 struct LowLFHEBootstrapLweOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::BootstrapLweOp> {
-  LowLFHEBootstrapLweOpPattern(mlir::MLIRContext *context,
-                               mlir::PatternBenefit benefit = 1)
+  LowLFHEBootstrapLweOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::BootstrapLweOp>(
             context, benefit) {}
 
@@ -663,8 +669,9 @@ struct LowLFHEBootstrapLweOpPattern
 // - use the key to keyswitch the input ciphertext
 struct LowLFHEKeySwitchLweOpPattern
     : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::KeySwitchLweOp> {
-  LowLFHEKeySwitchLweOpPattern(mlir::MLIRContext *context,
-                               mlir::PatternBenefit benefit = 1)
+  LowLFHEKeySwitchLweOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::KeySwitchLweOp>(
             context, benefit) {}
 
@@ -743,8 +750,9 @@ void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
 
 struct AddRuntimeContextToFuncOpPattern
     : public mlir::OpRewritePattern<mlir::FuncOp> {
-  AddRuntimeContextToFuncOpPattern(mlir::MLIRContext *context,
-                                   mlir::PatternBenefit benefit = 1)
+  AddRuntimeContextToFuncOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::FuncOp>(context, benefit) {}
 
   mlir::LogicalResult

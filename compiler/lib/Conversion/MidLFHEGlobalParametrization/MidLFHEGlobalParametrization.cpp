@@ -7,6 +7,7 @@
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "zamalang/Support/Constants.h"
 
 namespace {
 struct MidLFHEGlobalParametrizationPass
@@ -60,9 +61,9 @@ public:
 
 template <typename Op>
 struct MidLFHEOpTypeConversionPattern : public mlir::OpRewritePattern<Op> {
-  MidLFHEOpTypeConversionPattern(mlir::MLIRContext *context,
-                                 mlir::TypeConverter &typeConverter,
-                                 mlir::PatternBenefit benefit = 1)
+  MidLFHEOpTypeConversionPattern(
+      mlir::MLIRContext *context, mlir::TypeConverter &typeConverter,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<Op>(context, benefit),
         typeConverter(typeConverter) {}
 
@@ -86,7 +87,7 @@ struct MidLFHEApplyLookupTableParametrizationPattern
   MidLFHEApplyLookupTableParametrizationPattern(
       mlir::MLIRContext *context, mlir::TypeConverter &typeConverter,
       mlir::zamalang::V0Parameter &v0Parameter,
-      mlir::PatternBenefit benefit = 1)
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::MidLFHE::ApplyLookupTable>(
             context, benefit),
         typeConverter(typeConverter), v0Parameter(v0Parameter) {}
@@ -133,8 +134,9 @@ private:
 
 struct MidLFHEApplyLookupTablePaddingPattern
     : public mlir::OpRewritePattern<mlir::zamalang::MidLFHE::ApplyLookupTable> {
-  MidLFHEApplyLookupTablePaddingPattern(mlir::MLIRContext *context,
-                                        mlir::PatternBenefit benefit = 1)
+  MidLFHEApplyLookupTablePaddingPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::zamalang::MidLFHE::ApplyLookupTable>(
             context, benefit),
         typeConverter(typeConverter), v0Parameter(v0Parameter) {}
