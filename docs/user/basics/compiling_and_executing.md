@@ -1,4 +1,4 @@
-# Compiling and Executing
+# Compiling and Executing a Numpy Function
 
 ## Importing necessary components
 

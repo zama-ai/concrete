@@ -8,4 +8,3 @@ Explanations
    terminology_and_structure.md
    float-fusing.md
    mlir.md
-   quantization.md
