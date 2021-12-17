@@ -137,7 +137,7 @@ The current implementation of the framework parses the layers in the order of th
 Do not reuse a layer or an activation multiple times in the forward (i.e. self.sigmoid for each layer activation) and always place them at the correct position (the order of appearance in the forward function) in the init function.
 ```
 
-It is now possible to compile the `quantized_numpy_module`. Details on how to compile the model are available in the [torch compilation documentation].
+It is now possible to compile the `quantized_numpy_module`. Details on how to compile the model are available in the [torch compilation documentation](compiling_torch_model.md).
 ## Building your own QuantizedModule
 
 Concrete Framework also offers the possibility to build your own models and use them in the FHE settings. The `QuantizedModule` is a very simple abstraction that allows to create any model using the available operators:

@@ -43,5 +43,5 @@ The main _current_ limits are:
 To overcome the above limitations, Concrete has a [popular quantization](../explanation/quantization.md) method built in the framework that allows to map floating point values to integers. We can [use this approach](../howto/use_quantization.md) to run models in FHE. Lastly, we give hints to the user on how to [reduce the precision](../howto/reduce_needed_precision.md) of a model to make it work in Concrete.
 
 ```{warning}
-FIXME(Jordan/Andrei): add an .md about the repository of FHE-friendly models, and ideally .ipynb's
+FIXME(Jordan/Andrei): add an .md about the repository of FHE-friendly models (#1212)
 ```
