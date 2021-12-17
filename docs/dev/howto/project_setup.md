@@ -8,13 +8,13 @@ The project targets Python 3.8 through 3.10 inclusive.
 
 ## Installing Python
 
-**concretefhe** is a `Python` library. So `Python` should be installed to develop **concretefhe**. `v3.8`, `v3.9` and `v3.10` are the only supported versions.
+**concretefhe** is a `Python` library, so `Python` should be installed to develop **concretefhe**. `v3.8`, `v3.9` and `v3.10` are the only supported versions.
 
 You can follow [this](https://realpython.com/installing-python/) guide to install it (alternatively you can google `how to install python 3.8 (or 3.9, 3.10)`).
 
 ## Installing Poetry
 
-`Poetry` is our package manager. It simplifies dependency and environment management by a lot.
+`Poetry` is our package manager. It drastically simplifies dependency and environment management.
 
 You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
@@ -35,12 +35,12 @@ brew install make
 which gmake
 ```
 
-It is possible to install `gmake` as `make`, check this [StackOverflow post](https://stackoverflow.com/questions/38901894/how-can-i-install-a-newer-version-of-make-on-mac-os) for more infos.
+It is possible to install `gmake` as `make`, check this [StackOverflow post](https://stackoverflow.com/questions/38901894/how-can-i-install-a-newer-version-of-make-on-mac-os) for more info.
 
 On Windows check [this GitHub gist](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
 ```{hint}
-In the next sections, be sure to use the proper `make` tool for your system, `make`, `gmake` or other.
+In the following sections, be sure to use the proper `make` tool for your system: `make`, `gmake`, or other.
 ```
 
 ## Cloning repository
@@ -86,7 +86,7 @@ The venv persists thanks to volumes. We also create a volume for ~/.cache to spe
 docker volume ls
 ```
 
-You can still run all `make` commands inside the docker (to update the venv for example). Be mindful of the current venv being used (the name in parentheses at the beginning of your command prompt).
+You can still run all `make` commands inside the docker (to update the venv, for example). Be mindful of the current venv being used (the name in parentheses at the beginning of your command prompt).
 
 ```shell
 # Here we have dev_venv sourced
@@ -95,7 +95,7 @@ You can still run all `make` commands inside the docker (to update the venv for 
 
 ## Leaving the environment
 
-After your work is done you can simply run the following command to leave the environment.
+After your work is done, you can simply run the following command to leave the environment.
 
 ```shell
 deactivate
@@ -103,7 +103,7 @@ deactivate
 
 ## Syncing environment with the latest changes
 
-From time to time, new dependencies will be added to project or the old ones will be removed. The command below will make sure the project have proper environment. So run it regularly!
+From time to time, new dependencies will be added to project or the old ones will be removed. The command below will make sure the project has the proper environment. So run it regularly!
 
 ```shell
 make sync_env
@@ -113,7 +113,7 @@ make sync_env
 
 ### In your OS
 
-If you are having issues consider starting using the dev docker exclusively (unless you are working on OS specific bug fixes or features).
+If you are having issues, consider using the dev docker exclusively (unless you are working on OS specific bug fixes or features).
 
 Here are the steps you can take on your OS to try and fix issues:
 
@@ -131,7 +131,7 @@ rm -rf .venv
 make setup_env
 ```
 
-At this point you should consider using docker as nobody will have the exact same setup as you, unless you need to develop on your OS directly, in which case you can ask for help but may not get a solution right away.
+At this point you should consider using docker as nobody will have the exact same setup as you, unless you need to develop on your OS directly, in which case you can ask us for help but may not get a solution right away.
 
 ### In docker
 
@@ -160,4 +160,4 @@ make docker_rebuild
 make docker_start
 ```
 
-If the problem persists at this point, you should consider asking for help.
+If the problem persists at this point, you should consider asking for help. We're here and ready to assist!

@@ -20,7 +20,7 @@ def f(x, y):
 
 ## Compiling the function
 
-To compile the function, you need to provide what are the inputs that it's expecting. In the example function above, `x` and `y` could be scalars or tensors (though, for now, only dot between tensors are supported), they can be encrypted or clear, they can be signed or unsigned, they can have different bit-widths. So, we need to know what they are beforehand. We can do that like so:
+To compile the function, you need to identify the inputs that it is expecting. In the example function above, `x` and `y` could be scalars or tensors (though, for now, only dot between tensors are supported), they can be encrypted or clear, they can be signed or unsigned, they can have different bit-widths. So, we need to know what they are beforehand. We can do that like so:
 
 <!--python-test:cont-->
 ```python
@@ -55,7 +55,7 @@ compiler.eval_on_inputset(inputset)
 for input_values in inputset:
     compiler(*input_values)
 
-# You can print the traced graph
+# You can print the traced graph:
 print(str(compiler))
 
 # Outputs

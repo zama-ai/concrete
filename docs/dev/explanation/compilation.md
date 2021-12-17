@@ -5,7 +5,7 @@
 **concretefhe** is the python API of the **Concrete** framework for developing homomorphic applications.
 One of its essential functionalities is to transform Python functions to their `MLIR` equivalent.
 Unfortunately, not all python functions can be converted due to the limits of current product (we are in the alpha stage), or sometimes due to inherent restrictions of FHE itself.
-However, one can already build interesting and impressing use cases, and more will be available in further versions of the framework.
+However, you can already build interesting and impressing use cases, and more will be available in further versions of the framework.
 
 ## How can I use it?
 
@@ -59,7 +59,7 @@ Compiling a torch Module is pretty straightforward.
 
 The torch Module is first converted to a NumPy equivalent we call `NumpyModule` if all the layers in the torch Module are supported.
 
-Then the module is quantized post training to be compatible with our compiler which only works on integers. The post training quantization uses the provided dataset for calibration.
+Then the module is quantized post-training to be compatible with our compiler which only works on integers. The post training quantization uses the provided dataset for calibration.
 
 The dataset is then quantized to be usable for compilation with the QuantizedModule.
 
@@ -108,8 +108,8 @@ resulting_tracer = f(x, y)
 `Tracer(computation=Add(self.computation, (2 * y).computation))` which is equal to:
 `Tracer(computation=Add(Input("x"), Multiply(Constant(2), Input("y")))`
 
-In the end we will have output `Tracer`s that can be used to create the operation graph.
-The implementation is a bit more complex than that but the idea is the same.
+In the end, we will have output `Tracer`s that can be used to create the operation graph.
+The implementation is a bit more complex than this, but the idea is the same.
 
 Tracing is also responsible for indicating whether the values in the node would be encrypted or not, and the rule for that is if a node has an encrypted predecessor, it is encrypted as well.
 
@@ -117,14 +117,14 @@ Tracing is also responsible for indicating whether the values in the node would 
 
 The goal of topological transforms is to make more functions compilable.
 
-With the current version of **Concrete** floating point inputs and floating point outputs are not supported.
+With the current version of **Concrete**,floating point inputs and floating point outputs are not supported.
 However, if the floating points operations are intermediate operations, they can sometimes be fused into a single table lookup from integer to integer thanks to some specific transforms.
 
-Let's take a closer look at the transforms we perform today.
+Let's take a closer look at the transforms we can currently perform.
 
 ### Fusing floating point operations
 
-We decided to allocate a whole new chapter to explain float fusing.
+We have allocated a whole new chapter to explain float fusing.
 You can find it [here](./float-fusing.md).
 
 ## Bounds measurement
@@ -138,7 +138,7 @@ If there were negative values in the range, we could have used `intX` instead of
 Bounds measurement is necessary because FHE supports limited precision, and we don't want unexpected behaviour during evaluation of the compiled functions.
 
 There are several ways to perform bounds measurement.
-Let's take a closer look at the options we provide today.
+Let's take a closer look at the options we provide.
 
 ### Inputset evaluation
 

@@ -2,7 +2,7 @@
 
 ## Python package
 
-To install **Concrete** from PyPi run the following:
+To install **Concrete** from PyPi, run the following:
 
 ```shell
 pip install concretefhe
@@ -53,7 +53,7 @@ docker run --rm -it -p 8888:8888 -v /host/path:/data zamafhe/concretefhe:v0.2.0
 
 This will launch a **Concrete** enabled jupyter server in the docker, that you can access from your browser.
 
-Alternatively you can just open a shell in the docker with or without volumes:
+Alternatively, you can just open a shell in the docker with or without volumes:
 
 ```shell
 docker run --rm -it zamafhe/concretefhe:v0.2.0 /bin/bash
