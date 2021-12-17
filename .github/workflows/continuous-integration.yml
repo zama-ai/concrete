@@ -1,0 +1,380 @@
+name: Continuous Integration Pipeline
+
+on:
+  push:
+    branches: [master, test-ci]
+    tags:
+      - 'v*'
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
+env:
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/zamalang-compiler
+  DOCKER_IMAGE_TEST_GCC6: ghcr.io/zama-ai/concretefhe-compiler
+  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/zamalang-df-compiler
+
+jobs:
+  ########################
+  # Tests and formatiing #
+  ########################
+
+  Formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Format with clang-format
+        run: .github/workflows/scripts/format_cpp.sh
+
+  BuildAndTest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc6, latest]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: "KeySetCache"
+        if: ${{ matrix.compiler == 'gcc6' }}
+        uses: actions/cache@v2
+        with:
+          path: ${{ github.workspace }}/KeySetCache
+          # actions/cache does not permit to update a cache entry
+          key: ${{ runner.os }}-KeySetCache-2021-12-02
+          restore-keys: |
+            ${{ runner.os }}-KeySetCache-
+
+      - name: Build and test compiler
+        if: ${{ matrix.compiler == 'gcc6' }}
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST_GCC6 }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+          shell: bash
+          run: |
+            set -e
+            echo "Debug: ccache statistics (prior to the build):"
+            ccache -s
+            cd /compiler
+            /opt/python/cp38-cp38/bin/pip install pytest
+            rm -rf /build
+            sed "s/pytest/\/opt\/python\/cp38-cp38\/bin\/python -m pytest/g" -i Makefile
+            make CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+            chmod -R ugo+rwx /tmp/KeySetCache
+
+      - name: Build compiler
+        if: ${{ matrix.compiler == 'latest' }}
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: -v ${{ github.workspace }}/compiler:/compiler
+          shell: bash
+          run: |
+            set -e
+            echo "Debug: ccache statistics (prior to the build):"
+            ccache -s
+            cd /compiler
+            rm -rf /build
+            export PYTHONPATH=""
+            make CCACHE=ON BUILD_DIR=/build zamacompiler python-bindings
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
+  BuildAndTestDF:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build and test compiler (dataflow)
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST_DF }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: -v ${{ github.workspace }}/compiler:/compiler
+          shell: bash
+          run: |
+            set -e
+            echo "Debug: ccache statistics (prior to the build):"
+            ccache -s
+            cd /compiler
+            pip install pytest
+            rm -rf /build
+            export PYTHONPATH=""
+            make PARALLEL_EXECUTION_ENABLED=ON CCACHE=ON BUILD_DIR=/build test test-dataflow
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+            chmod -R ugo+rwx /tmp/KeySetCache
+
+  BlockMerge:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Check Commit to Squash
+        run: |
+          set -e
+          git log origin/${{ github.base_ref }}..origin/${{ github.head_ref }} --format=%s | ( ! grep -e "^f [0-9a-f]\+" -q )
+
+  ##################################
+  # Releasing and Testing Packages #
+  ##################################
+
+  CreateRelease:
+    runs-on: ubuntu-latest
+    needs: BuildAndTest
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+      release_id: ${{ steps.release.outputs.id }}
+    steps:
+      - name: Release
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GH_TOKEN_RELEASE }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+
+  BuildAndPushPythonPackagesLinux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [38, 39, 310]
+    outputs:
+      python-package-name-linux-py38: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY38 }}
+      python-package-name-linux-py39: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY39 }}
+      python-package-name-linux-py310: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY310 }}
+    needs: CreateRelease
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Login to Github Container Registry
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      - name: Build
+        id: build-wheel-linux
+        run: |
+          cd compiler
+          make package_py${{ matrix.python }}
+          echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *manylinux*.whl | rev |cut -d "/" -f 1 |rev `"
+          # used later for python package test
+          echo "::set-output name=ASSET_NAME_PY${{ matrix.python }}::`find ${{ github.workspace }}/wheels/ -name *manylinux*.whl | rev |cut -d "/" -f 1 |rev `"
+
+      - name: Upload Python Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/wheels/${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
+          asset_content_type: application/zip
+
+  BuildAndPushTarballLinux:
+    runs-on: ubuntu-latest
+    needs: CreateRelease
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Login to Github Container Registry
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      - name: Build
+        id: build-tarball
+        run: |
+          cd compiler
+          make release_tarballs
+          sudo cp ${{ github.workspace }}/tarballs/zamacompiler.tar.gz ${{ github.workspace }}/tarballs/zamacompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz
+          echo "::set-output name=ASSET_NAME::zamacompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz"
+
+      - name: Upload Tarball
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/tarballs/${{ steps.build-tarball.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-tarball.outputs.ASSET_NAME }}
+          asset_content_type: application/tar+gzip
+
+  BuildAndPushPackagesMacOS:
+    needs: CreateRelease
+    runs-on: macos-10.15
+    strategy:
+      matrix:
+        python: ['3.8', '3.9', '3.10']
+    outputs:
+      python-package-name-macos-py38: ${{ steps.build-wheel-macos.outputs.ASSET_NAME_PY38 }}
+      python-package-name-macos-py39: ${{ steps.build-wheel-macos.outputs.ASSET_NAME_PY39 }}
+      python-package-name-macos-py310: ${{ steps.build-wheel-macos.outputs.ASSET_NAME_PY310 }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - uses: actions/checkout@v2
+        with:
+          repository: zama-ai/concrete
+          ref: feature/core_c_api
+          path: concrete
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install Deps
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          brew install ninja
+          pip install numpy pybind11==2.6.2 wheel delocate
+          cd ${{ github.workspace }}/concrete/concrete-ffi
+          RUSTFLAGS="-C target-cpu=native" cargo build --release
+
+      - name: Update Python Version
+        run: cd compiler && make update_python_version
+
+      - name: Build
+        id: build-wheel-macos
+        run: |
+          cd compiler
+          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          make Python3_EXECUTABLE=`which python` python-bindings
+          pip wheel --no-deps -w ${{ github.workspace }}/wheels .
+          delocate-wheel -v `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
+          echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
+          # used later for python package test
+          echo "::set-output name=ASSET_NAME_PY`echo ${{ matrix.python }} |tr -d '.'`::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
+
+      - name: Upload Python Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/wheels/${{ steps.build-wheel-macos.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-wheel-macos.outputs.ASSET_NAME }}
+          asset_content_type: application/zip
+
+      - name: Build tarball
+        if: matrix.python == '3.8'
+        id: build-mac-tarball
+        run: |
+          cd compiler
+          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          make zamacompiler
+          mkdir -p tarballs/zamacompiler/lib tarballs/zamacompiler/bin
+          cp build/bin/zamacompiler tarballs/zamacompiler/bin
+          cp build/lib/libZamalangRuntime.dylib tarballs/zamacompiler/lib
+          cp ../.github/workflows/assets/Installation.md tarballs/zamacompiler/
+          cd tarballs && tar -czvf zamacompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz zamacompiler
+          echo "::set-output name=ASSET_NAME::zamacompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz"
+
+      - name: Upload Tarball
+        if: matrix.python == '3.8'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/compiler/tarballs/${{ steps.build-mac-tarball.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-mac-tarball.outputs.ASSET_NAME }}
+          asset_content_type: application/tar+gzip
+
+
+  #################
+  # Docker Images #
+  #################
+
+  BuildAndPushDockerImages:
+    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') }}
+    needs: [BuildAndTest]
+    name: Build & Publish Docker Images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: test-env
+            image: ghcr.io/zama-ai/zamalang-compiler
+            dockerfile: builders/Dockerfile.zamalang-env
+          - name: test-env-gcc6
+            image: ghcr.io/zama-ai/concretefhe-compiler
+            dockerfile: builders/Dockerfile.zamalang-env-gcc6
+          - name: test-df
+            image: ghcr.io/zama-ai/zamalang-df-compiler
+            dockerfile: builders/Dockerfile.zamalang-df-env
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Login to Registry
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      # label was initially a need from the frontend CI
+      - name: Build Image
+        run: docker image build --no-cache --label "commit-sha=${{ github.sha }}" -t ${{ matrix.image }} -f ${{ matrix.dockerfile }} .
+
+      - name: Tag and Publish Image
+        run: |
+          docker image tag ${{ matrix.image }} ${{ matrix.image }}:${{ github.sha }}
+          docker image push ${{ matrix.image }}:latest
+          docker image push ${{ matrix.image }}:${{ github.sha }}
+
+      - name: Tag and Publish Release Image
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          docker image tag ${{ matrix.image }} ${{ matrix.image }}:${{ github.ref_name }}
+          docker image push ${{ matrix.image }}:${{ github.ref_name }}
+
+  BuildAndPublishHPXDockerImage:
+    needs: [BuildAndTest]
+    name: Build & Publish HPX Docker Image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/zama-ai/hpx
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v2.0.0
+
+      - name: Login
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env')
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      - name: Build Tag and Publish
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env')
+        run: |
+          docker build -t $IMAGE -f builders/Dockerfile.hpx-env .
+          docker push $IMAGE:latest
