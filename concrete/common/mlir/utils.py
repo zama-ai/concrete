@@ -102,8 +102,6 @@ def check_node_compatibility_with_mlir(
 
     elif isinstance(node, intermediate.MatMul):  # constraints for matrix multiplication
         assert_true(len(inputs) == 2)
-        if not value_is_unsigned_integer(inputs[0]) or not value_is_unsigned_integer(inputs[1]):
-            return "only unsigned integer matrix multiplication is supported"
 
     else:  # pragma: no cover
         assert_not_reached("Non IntermediateNode object in the OPGraph")
