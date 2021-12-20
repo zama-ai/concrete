@@ -8,3 +8,4 @@ Advanced examples
    QuantizedLinearRegression.ipynb
    QuantizedLogisticRegression.ipynb
    QuantizedGeneralizedLinearModel.ipynb
+   FHEDecisionTreeClassifier.ipynb
