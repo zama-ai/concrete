@@ -70,6 +70,7 @@ def get_code_blocks_for_file(md_file: Path) -> Dict[int, List[str]]:
                         "closed (missing ``` ?)"
                     )
                 current_python_code.append(line)
+            python_block_continues = False
         else:
             match = re.match(DIRECTIVE_COMMENT_PATTERN, line)
             if match is not None:

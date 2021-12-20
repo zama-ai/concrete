@@ -80,6 +80,7 @@ The `NumpyModule` allows us to runs inference as for a `nn.Module`. Here, the pr
 
 We can then quantize the numpy module with `PostTrainingAffineQuantization` as follows:
 
+<!--python-test:cont-->
 ```python
 from concrete.quantization import PostTrainingAffineQuantization
 numpy_input = numpy.random.uniform(-1, 1, size=(10,14)) # some input with 14 features to calibrate the quantization
