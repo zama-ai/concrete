@@ -605,7 +605,7 @@ where
     let res_1 =
         l * (k + 1.) * big_n * var_ggsw.get_modular_variance::<T>() * (square(b) + 2.) / 12.;
     let res_2 = var_glwe.get_modular_variance::<T>() / 2.;
-    let res_3 = (square(T::BITS) as f64 - b2l) / (24. * b2l)
+    let res_3 = (square(f64::powi(2., T::BITS as i32)) as f64 - b2l) / (24. * b2l)
         * (1.
             + k * big_n
                 * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
