@@ -219,8 +219,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-        with:
-          fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
         with:
@@ -400,6 +398,52 @@ jobs:
           label: ${{ needs.start-runner.outputs.label }}
           ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
           mode: stop
+
+  weekly-pip-audit:
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+      - name: Set up Python 3.8
+        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        with:
+          python-version: '3.8'
+      - name: Set up env
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          sudo apt update && sudo apt install graphviz* -y
+          make setup_env
+      - name: Run pip-audit
+        shell: bash
+        run: |
+          VULN_OUT="$(mktemp --suffix=.json)"
+          REPORT_OUT="$(mktemp --suffix=.txt)"
+          echo "REPORT_OUT=${REPORT_OUT}" >> "$GITHUB_ENV"
+          poetry run pip-audit -f json > "${VULN_OUT}"
+          cat "${VULN_OUT}"
+          poetry run python ./script/actions_utils/parse_pip_audit_vulns.py \
+          --vulns-json "${VULN_OUT}" \
+          --vulns-report "${REPORT_OUT}"
+      # We load the report in a new step if we exited with an error code above to let the workflow fail
+      - name: Load report in env
+        if: ${{ always() }}
+        run: |
+          cat "${REPORT_OUT}"
+          REPORT="$(cat "${REPORT_OUT}")"
+          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+      - name: Slack Notification
+        if: ${{ always() && !success() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "${{ env.REPORT || 'Error during pip-audit' }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   publish-docs:
     needs: [build]

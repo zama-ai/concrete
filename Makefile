@@ -348,3 +348,7 @@ check_licenses:
 .PHONY: help # Generate list of targets with descriptions
 help:
 	@grep '^.PHONY: .* #' Makefile | sed 's/\.PHONY: \(.*\) # \(.*\)/\1\t\2/' | expand -t30 | sort
+
+.PHONY: pip_audit # Run pip-audit and check if there are known vulnerabilities in our dependencies
+pip_audit:
+	poetry run pip-audit
