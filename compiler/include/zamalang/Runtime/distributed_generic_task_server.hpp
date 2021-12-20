@@ -25,6 +25,7 @@
 #include "zamalang/Runtime/key_manager.hpp"
 
 extern WorkFunctionRegistry *node_level_work_function_registry;
+extern std::list<void *> new_allocated;
 
 using namespace hpx::naming;
 using namespace hpx::components;
@@ -95,6 +96,7 @@ struct OpaqueOutputData {
       for (size_t i = 0; i < p; ++i)
         ar &output[i];
       outputs.push_back((void *)output);
+      new_allocated.push_back((void *)output);
     }
     alloc_p = true;
   }
@@ -148,6 +150,7 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
                             "Error: number of task parameters not supported.");
       }
       outputs = {output};
+      new_allocated.push_back(output);
       break;
     }
     case 2: {
@@ -173,6 +176,8 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
                             "Error: number of task parameters not supported.");
       }
       outputs = {output1, output2};
+      new_allocated.push_back(output1);
+      new_allocated.push_back(output2);
       break;
     }
     case 3: {
@@ -199,6 +204,9 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
                             "Error: number of task parameters not supported.");
       }
       outputs = {output1, output2, output3};
+      new_allocated.push_back(output1);
+      new_allocated.push_back(output2);
+      new_allocated.push_back(output3);
       break;
     }
     default:

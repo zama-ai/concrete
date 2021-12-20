@@ -19,12 +19,18 @@ std::vector<GenericComputeClient> gcc;
 void *dl_handle;
 PbsKeyManager *node_level_key_manager;
 WorkFunctionRegistry *node_level_work_function_registry;
+std::list<void *> new_allocated;
+std::list<void *> fut_allocated;
+std::list<void *> m_allocated;
 
 using namespace hpx;
 
 void *_dfr_make_ready_future(void *in) {
-  return static_cast<void *>(
+  void *future = static_cast<void *>(
       new hpx::shared_future<void *>(hpx::make_ready_future(in)));
+  m_allocated.push_back(in);
+  fut_allocated.push_back(future);
+  return future;
 }
 
 void *_dfr_await_future(void *in) {
@@ -32,7 +38,8 @@ void *_dfr_await_future(void *in) {
 }
 
 void _dfr_deallocate_future_data(void *in) {
-  delete (static_cast<hpx::shared_future<void *> *>(in)->get());
+  delete[] static_cast<char *>(
+      static_cast<hpx::shared_future<void *> *>(in)->get());
 }
 
 void _dfr_deallocate_future(void *in) {
@@ -140,6 +147,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
           return oodf_in.get().outputs[0];
         },
         oodf));
+    fut_allocated.push_back(*((void **)outputs[0]));
     break;
 
   case 2: {
@@ -156,6 +164,8 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
         (void *)new hpx::shared_future<void *>(std::move(hpx::get<0>(tf)));
     *((void **)outputs[1]) =
         (void *)new hpx::shared_future<void *>(std::move(hpx::get<1>(tf)));
+    fut_allocated.push_back(*((void **)outputs[0]));
+    fut_allocated.push_back(*((void **)outputs[1]));
     break;
   }
 
@@ -175,6 +185,9 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
         (void *)new hpx::shared_future<void *>(std::move(hpx::get<1>(tf)));
     *((void **)outputs[2]) =
         (void *)new hpx::shared_future<void *>(std::move(hpx::get<2>(tf)));
+    fut_allocated.push_back(*((void **)outputs[0]));
+    fut_allocated.push_back(*((void **)outputs[1]));
+    fut_allocated.push_back(*((void **)outputs[2]));
     break;
   }
   default:
@@ -230,8 +243,31 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
 // main's constructor/destructor are not functional, but that should
 // replace the current, inefficient calls to _dfr_start/stop generated
 // in each compiled function.
-void _dfr_start() { _dfr_start_impl(0, nullptr); }
-void _dfr_stop() { _dfr_stop_impl(); }
+void _dfr_start() {
+  static int first_p = 0;
+  if (!first_p) {
+    _dfr_start_impl(0, nullptr);
+    first_p = 1;
+  } else {
+    hpx::resume();
+  }
+}
+void _dfr_stop() {
+  hpx::suspend();
+
+  while (!new_allocated.empty()) {
+    delete[] static_cast<char *>(new_allocated.front());
+    new_allocated.pop_front();
+  }
+  while (!fut_allocated.empty()) {
+    delete static_cast<hpx::shared_future<void *> *>(fut_allocated.front());
+    fut_allocated.pop_front();
+  }
+  while (!m_allocated.empty()) {
+    free(m_allocated.front());
+    m_allocated.pop_front();
+  }
+}
 
 /*  Debug interface.  */
 size_t _dfr_debug_get_node_id() { return hpx::get_locality_id(); }
