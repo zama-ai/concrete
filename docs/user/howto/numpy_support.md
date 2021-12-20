@@ -89,10 +89,25 @@ List of supported binary functions if one of the two operators is a constant sca
 - true_divide
 <!--- gen_supported_ufuncs.py: inject supported operations [END] -->
 
+# Shapes
+
+Our encrypted tensors have shapes just like numpy arrays.
+We determine the shapes of the inputs from the inputset, and we infer the shapes of the intermediate values from the function that is being compiled.
+
+You can access the shape of a tensor by accessing the `shape` property, just like in numpy.
+Here is an example:
+```python
+def function_to_compile(x):
+    return x.reshape((x.shape[0], -1))
+```
+
+One important aspect of our library is that, scalars are tensors of shape `()`.
+This is transparent to you, as a user, but it's something to keep in mind, especialy if you are accessing the `shape` property in the functions that you are compiling.
+This schema is used by numpy and pytorch as well.
+
 ## Indexing
 
 Indexing is described in [this section](../tutorial/indexing.md).
-
 
 ## Other machine-learning-related operators
 
@@ -120,14 +135,3 @@ The framework also gives support for:
 - floor div, i.e., `x // y`: if one of `x` or `y` is a constant
 
 There is support for astype as well, e.g. `x.astype(numpy.int32)`. This allows to control which data type to use for computations. In the context of FHE going back to integers may allow to fuse floating point operations together, see [this tutorial](../tutorial/working_with_floating_points.md) to see how to work with floating point values.
-
-```{warning}
-FIXME(Umut): speak about `shape`
-```
-
-
-
-
-
-
-
