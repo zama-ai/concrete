@@ -68,13 +68,13 @@ jobs:
           aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID }}
 
       - name: Upload Logs of AMD EC2 Instance
-        uses: actions/upload-artifact@da838ae9595ac94171fa2d4de5a2f117b3e7ac32
+        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: amd-logs
           path: ~/latest.log
 
       - name: Upload Findings of AMD EC2 Instance
-        uses: actions/upload-artifact@da838ae9595ac94171fa2d4de5a2f117b3e7ac32
+        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: amd-findings
           path: ~/findings.json
@@ -123,13 +123,13 @@ jobs:
           aws ec2 stop-instances --instance-ids ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }}
 
       - name: Upload Logs of Intel EC2 Instance
-        uses: actions/upload-artifact@da838ae9595ac94171fa2d4de5a2f117b3e7ac32
+        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: intel-logs
           path: ~/latest.log
 
       - name: Upload Findings of Intel EC2 Instance
-        uses: actions/upload-artifact@da838ae9595ac94171fa2d4de5a2f117b3e7ac32
+        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: intel-findings
           path: ~/findings.json
