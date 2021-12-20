@@ -385,7 +385,7 @@ jobs:
     name: Stop EC2 runner
     needs: [build, start-runner]
     runs-on: ubuntu-20.04
-    if: ${{ always() }}
+    if: ${{ always() && (needs.start-runner.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
