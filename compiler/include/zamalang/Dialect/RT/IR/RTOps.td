@@ -3,6 +3,8 @@
 
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/IR/SymbolInterfaces.td"
+include "mlir/Interfaces/DataLayoutInterfaces.td"
 
 include "zamalang/Dialect/RT/IR/RTDialect.td"
 include "zamalang/Dialect/RT/IR/RTTypes.td"
@@ -16,9 +18,24 @@ def DataflowTaskOp : RT_Op<"dataflow_task", [SingleBlockImplicitTerminator<"Data
 
     let regions = (region AnyRegion:$body);
 
+    let builders = [
+      OpBuilder<(ins
+        CArg<"TypeRange", "{}">: $resultTypes,
+        CArg<"ValueRange", "{}">: $operands,
+        CArg<"ArrayRef<NamedAttribute>", "{}">: $attrs)>
+    ];
+    let skipDefaultBuilders = 1;
+
     let summary = "Dataflow task operation";
     let description = [{
-`RT.dataflow_task` allows to specify a task that will be concurrently executed when their operands are ready.
+
+`RT.dataflow_task` allows to specify a task that will be concurrently
+executed when their operands are ready.  Operands are either the
+results of computation in other `RT.dataflow_task` (dataflow
+dependences) or obtained from the execution context (immediate
+operands).  Operands are synchronized using futures and, in the case
+of immediate operands, copied when the task is created.  Caution is
+required when the operand is a pointer as no deep copy will occur.
 
 Example:
 
@@ -43,6 +60,7 @@ func @test(%0 : i64): (i64, i64) {
     }) : (i64, i64) -> (i64, i64)
     return %3, %4 : (i64, i64)
 }
+```
     }];
 }
 
@@ -52,7 +70,7 @@ def DataflowYieldOp : RT_Op<"dataflow_yield", [ReturnLike, Terminator]> {
     let summary = "Dataflow yield operation";
     let description = [{
 `RT.dataflow_yield` is a special terminator operation for blocks inside the region
-in `RT.dataflow_task`. It allows to specify the returns values of a `RT.dataflow_task`.
+in `RT.dataflow_task`. It allows to specify the return values of a `RT.dataflow_task`.
 
 Example:
 
@@ -62,6 +80,66 @@ Example:
 "RT.dataflow_yield" %0, %1 : i64, i64
 ```
   }];
+}
+
+def MakeReadyFutureOp : RT_Op<"make_ready_future"> {
+    let arguments = (ins AnyType: $input);
+    let results = (outs RT_Future: $output);
+    let summary = "Build a ready future.";
+    let description = [{
+Data passed to dataflow tasks must be encapsulated in futures,
+including immediate operands.  These must be converted into futures
+using `RT.make_ready_future`.
+}];
+}
+
+def AwaitFutureOp : RT_Op<"await_future"> {
+    let arguments = (ins RT_Future: $input);
+    let results = (outs AnyType: $output);
+    let summary = "Wait for a future and access its data.";
+    let description = [{
+The results of a dataflow task are always futures which could be
+further used as inputs to subsequent tasks.  When the result of a task
+is needed in the outer execution context, the result future needs to
+be synchronized and its data accessed using `RT.await_future`.
+}];
+}
+
+def CreateAsyncTaskOp : RT_Op<"create_async_task"> {
+    let arguments = (ins SymbolRefAttr:$workfn,
+    		    	 Variadic<AnyType>:$list);
+    let results = (outs );
+    let summary = "Create a dataflow task.";
+}
+
+def DeallocateFutureOp : RT_Op<"deallocate_future"> {
+    let arguments = (ins RT_Future: $input);
+    let results = (outs );
+}
+
+def DeallocateFutureDataOp : RT_Op<"deallocate_future_data"> {
+    let arguments = (ins RT_Future: $input);
+    let results = (outs );
+}
+
+def BuildReturnPtrPlaceholderOp : RT_Op<"build_return_ptr_placeholder"> {
+    let arguments = (ins );
+    let results = (outs RT_Pointer: $output);
+}
+
+def DerefReturnPtrPlaceholderOp : RT_Op<"deref_return_ptr_placeholder"> {
+    let arguments = (ins RT_Pointer: $input);
+    let results = (outs RT_Future: $output);
+}
+
+def DerefWorkFunctionArgumentPtrPlaceholderOp : RT_Op<"deref_work_function_argument_ptr_placeholder"> {
+    let arguments = (ins RT_Pointer: $input);
+    let results = (outs AnyType: $output);
+}
+
+def WorkFunctionReturnOp : RT_Op<"work_function_return"> {
+    let arguments = (ins AnyType:$in, AnyType:$out);
+    let results = (outs );
 }
 
 #endif

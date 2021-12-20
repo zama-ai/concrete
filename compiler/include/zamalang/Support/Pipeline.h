@@ -12,6 +12,9 @@ namespace mlir {
 namespace zamalang {
 namespace pipeline {
 
+mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                            std::function<bool(mlir::Pass *)> enablePass);
+
 llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
 getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            std::function<bool(mlir::Pass *)> enablePass);

@@ -46,7 +46,40 @@ def RT_Future : RT_Type<"Future"> {
       return Type();
     return get($_ctxt, elementType);
   }];
-  //let genVerifyDecl = 1;
+}
+
+def RT_Pointer : RT_Type<"Pointer"> {
+  let mnemonic = "rtptr";
+
+  let summary = "Pointer to a parameterized element type";
+
+  let description = [{
+  }];
+
+  let parameters = (ins "Type":$elementType);
+
+  let builders = [
+    TypeBuilderWithInferredContext<(ins "Type":$elementType), [{
+      return $_get(elementType.getContext(), elementType);
+    }]>
+  ];
+
+  let printer = [{
+    $_printer << "rtptr<";
+    $_printer.printType(getElementType());
+    $_printer << ">";
+  }];
+
+  let parser = [{
+    if ($_parser.parseLess())
+      return Type();
+    Type elementType;
+    if ($_parser.parseType(elementType))
+      return Type();
+    if ($_parser.parseGreater())
+      return Type();
+    return get($_ctxt, elementType);
+  }];
 }
 
 #endif

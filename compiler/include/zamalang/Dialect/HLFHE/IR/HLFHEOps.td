@@ -19,7 +19,7 @@ class HLFHE_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<HLFHE_Dialect, mnemonic, traits>;
 
 // Generates an encrypted zero constant
-def ZeroEintOp : HLFHE_Op<"zero"> {
+def ZeroEintOp : HLFHE_Op<"zero", [NoSideEffect]> {
     let arguments = (ins);
     let results = (outs EncryptedIntegerType:$out);
 }

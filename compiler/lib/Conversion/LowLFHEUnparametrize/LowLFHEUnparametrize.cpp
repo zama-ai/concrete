@@ -7,6 +7,7 @@
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "zamalang/Dialect/RT/IR/RTOps.h"
 #include "zamalang/Support/Constants.h"
 
 /// LowLFHEUnparametrizeTypeConverter is a type converter that unparametrize
@@ -122,6 +123,12 @@ void LowLFHEUnparametrizePass::runOnOperation() {
   patterns.add<mlir::zamalang::GenericTypeConverterPattern<mlir::CallOp>>(
       patterns.getContext(), converter);
   mlir::zamalang::addDynamicallyLegalTypeOp<mlir::CallOp>(target, converter);
+
+  // Conversion of RT Dialect Ops
+  patterns.add<mlir::zamalang::GenericTypeConverterPattern<
+      mlir::zamalang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
+  mlir::zamalang::addDynamicallyLegalTypeOp<mlir::zamalang::RT::DataflowTaskOp>(
+      target, converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {

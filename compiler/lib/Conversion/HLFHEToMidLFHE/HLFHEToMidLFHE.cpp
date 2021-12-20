@@ -11,6 +11,7 @@
 #include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "zamalang/Dialect/RT/IR/RTOps.h"
 
 namespace {
 struct HLFHEToMidLFHEPass : public HLFHEToMidLFHEBase<HLFHEToMidLFHEPass> {
@@ -91,6 +92,12 @@ void HLFHEToMidLFHEPass::runOnOperation() {
   mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                           converter);
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);
+
+  // Conversion of RT Dialect Ops
+  patterns.add<mlir::zamalang::GenericTypeConverterPattern<
+      mlir::zamalang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
+  mlir::zamalang::addDynamicallyLegalTypeOp<mlir::zamalang::RT::DataflowTaskOp>(
+      target, converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {

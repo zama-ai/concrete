@@ -7,6 +7,7 @@
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.h"
 #include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "zamalang/Dialect/RT/IR/RTOps.h"
 #include "zamalang/Support/Constants.h"
 
 namespace {
@@ -299,6 +300,12 @@ void MidLFHEGlobalParametrizationPass::runOnOperation() {
         &getContext(), converter);
     mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                             converter);
+
+    // Conversion of RT Dialect Ops
+    patterns.add<mlir::zamalang::GenericTypeConverterPattern<
+        mlir::zamalang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
+    mlir::zamalang::addDynamicallyLegalTypeOp<
+        mlir::zamalang::RT::DataflowTaskOp>(target, converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

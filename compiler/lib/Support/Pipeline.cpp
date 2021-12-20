@@ -15,6 +15,7 @@
 #include <zamalang/Conversion/Passes.h>
 #include <zamalang/Dialect/HLFHE/Analysis/MANP.h>
 #include <zamalang/Dialect/HLFHELinalg/Transforms/Tiling.h>
+#include <zamalang/Dialect/RT/Analysis/Autopar.h>
 #include <zamalang/Support/Pipeline.h>
 #include <zamalang/Support/logging.h>
 #include <zamalang/Support/math.h>
@@ -100,6 +101,17 @@ getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
   }
 
   return ret;
+}
+
+mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                            std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("AutoPar", pm, context);
+
+  addPotentiallyNestedPass(
+      pm, mlir::zamalang::createBuildDataflowTaskGraphPass(), enablePass);
+
+  return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
@@ -190,7 +202,17 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            enablePass);
   addPotentiallyNestedPass(pm, mlir::createSCFBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::zamalang::createBufferizeDataflowTaskOpsPass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass(),
+                           enablePass);
+
+  // Lower Dataflow tasks to DRF
+  addPotentiallyNestedPass(pm, mlir::zamalang::createFixupDataflowTaskOpsPass(),
+                           enablePass);
+  addPotentiallyNestedPass(pm, mlir::zamalang::createLowerDataflowTasksPass(),
+                           enablePass);
+  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
                            enablePass);
   addPotentiallyNestedPass(pm, mlir::createLowerToCFGPass(), enablePass);
 

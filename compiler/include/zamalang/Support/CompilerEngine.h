@@ -122,7 +122,7 @@ public:
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(),
         clientParametersFuncName(), verifyDiagnostics(false),
-        generateClientParameters(false),
+        autoParallelize(false), generateClientParameters(false),
         enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
@@ -146,6 +146,7 @@ public:
   void setMaxEintPrecision(size_t v);
   void setMaxMANP(size_t v);
   void setVerifyDiagnostics(bool v);
+  void setAutoParallelize(bool v);
   void setGenerateClientParameters(bool v);
   void setClientParametersFuncName(const llvm::StringRef &name);
   void setHLFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes);
@@ -158,6 +159,7 @@ protected:
   llvm::Optional<std::vector<int64_t>> hlfhelinalgTileSizes;
 
   bool verifyDiagnostics;
+  bool autoParallelize;
   bool generateClientParameters;
   std::function<bool(mlir::Pass *)> enablePass;
 

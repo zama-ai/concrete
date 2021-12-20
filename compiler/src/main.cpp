@@ -123,6 +123,11 @@ llvm::cl::opt<bool> splitInputFile(
                    "chunk independently"),
     llvm::cl::init(false));
 
+llvm::cl::opt<bool> autoParallelize(
+    "parallelize",
+    llvm::cl::desc("Generate (and execute if JIT) parallel code"),
+    llvm::cl::init(false));
+
 llvm::cl::opt<std::string> jitFuncName(
     "jit-funcname",
     llvm::cl::desc("Name of the function to execute, default 'main'"),
@@ -229,7 +234,7 @@ mlir::LogicalResult processInputBuffer(
     llvm::Optional<size_t> overrideMaxEintPrecision,
     llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
     llvm::Optional<llvm::ArrayRef<int64_t>> hlfhelinalgTileSizes,
-    llvm::raw_ostream &os,
+    bool autoParallelize, llvm::raw_ostream &os,
     std::shared_ptr<mlir::zamalang::CompilerEngine::Library> outputLib) {
   std::shared_ptr<mlir::zamalang::CompilationContext> ccx =
       mlir::zamalang::CompilationContext::createShared();
@@ -237,6 +242,7 @@ mlir::LogicalResult processInputBuffer(
   mlir::zamalang::JitCompilerEngine ce{ccx};
 
   ce.setVerifyDiagnostics(verifyDiagnostics);
+  ce.setAutoParallelize(autoParallelize);
   if (cmdline::passes.size() != 0) {
     ce.setEnablePass([](mlir::Pass *pass) {
       return std::any_of(
@@ -404,7 +410,8 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
           std::move(inputBuffer), fileName, cmdline::action,
           cmdline::jitFuncName, cmdline::jitArgs,
           cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
-          cmdline::verifyDiagnostics, hlfhelinalgTileSizes, os, outputLib);
+          cmdline::verifyDiagnostics, hlfhelinalgTileSizes,
+          cmdline::autoParallelize, os, outputLib);
     };
     auto &os = output->os();
     auto res = mlir::failure();

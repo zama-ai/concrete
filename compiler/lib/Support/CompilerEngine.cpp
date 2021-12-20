@@ -84,6 +84,8 @@ void CompilerEngine::setVerifyDiagnostics(bool v) {
   this->verifyDiagnostics = v;
 }
 
+void CompilerEngine::setAutoParallelize(bool v) { this->autoParallelize = v; }
+
 void CompilerEngine::setGenerateClientParameters(bool v) {
   this->generateClientParameters = v;
 }
@@ -213,6 +215,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
                                                       enablePass)
           .failed()) {
     return errorDiag("Tiling of HLFHELinalg operations failed");
+  }
+
+  // Auto parallelization
+  if (this->autoParallelize &&
+      mlir::zamalang::pipeline::autopar(mlirContext, module, enablePass)
+          .failed()) {
+    return StreamStringError("Auto parallelization failed");
   }
 
   if (target == Target::HLFHE)

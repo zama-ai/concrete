@@ -19,6 +19,8 @@
 
 #include "zamalang/Conversion/Passes.h"
 #include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "zamalang/Dialect/RT/Analysis/Autopar.h"
+#include "zamalang/Dialect/RT/IR/RTTypes.h"
 
 namespace {
 struct MLIRLowerableDialectsToLLVMPass
@@ -52,6 +54,7 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   // Setup the set of the patterns rewriter. At this point we want to
   // convert the `scf` operations to `std` and `std` operations to `llvm`.
   mlir::RewritePatternSet patterns(&getContext());
+  mlir::zamalang::populateRTToLLVMConversionPatterns(typeConverter, patterns);
   mlir::populateStdToLLVMConversionPatterns(typeConverter, patterns);
   mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
                                                           patterns);
@@ -72,9 +75,27 @@ MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
       type.isa<mlir::zamalang::LowLFHE::LweBootstrapKeyType>() ||
       type.isa<mlir::zamalang::LowLFHE::ContextType>() ||
       type.isa<mlir::zamalang::LowLFHE::ForeignPlaintextListType>() ||
-      type.isa<mlir::zamalang::LowLFHE::PlaintextListType>()) {
+      type.isa<mlir::zamalang::LowLFHE::PlaintextListType>() ||
+      type.isa<mlir::zamalang::RT::FutureType>()) {
     return mlir::LLVM::LLVMPointerType::get(
         mlir::IntegerType::get(type.getContext(), 64));
+  }
+  if (type.isa<mlir::zamalang::RT::PointerType>()) {
+    mlir::LowerToLLVMOptions options(type.getContext());
+    mlir::LLVMTypeConverter typeConverter(type.getContext(), options);
+    typeConverter.addConversion(convertTypes);
+    typeConverter.addConversion(
+        [&](mlir::zamalang::LowLFHE::PlaintextType type) {
+          return mlir::IntegerType::get(type.getContext(), 64);
+        });
+    typeConverter.addConversion(
+        [&](mlir::zamalang::LowLFHE::CleartextType type) {
+          return mlir::IntegerType::get(type.getContext(), 64);
+        });
+    mlir::Type subtype =
+        type.dyn_cast<mlir::zamalang::RT::PointerType>().getElementType();
+    mlir::Type convertedSubtype = typeConverter.convertType(subtype);
+    return mlir::LLVM::LLVMPointerType::get(convertedSubtype);
   }
   return llvm::None;
 }
