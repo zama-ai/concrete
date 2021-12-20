@@ -50,7 +50,7 @@ test-python: python-bindings zamacompiler
 
 test: test-check test-end-to-end-jit test-python
 
-test-dataflow: test-end-to-end-jit-dfr
+test-dataflow: test-end-to-end-jit-dfr test-end-to-end-jit-auto-parallelization
 
 # Unittests
 
@@ -71,6 +71,9 @@ build-end-to-end-jit-lambda: build-initialized
 
 build-end-to-end-jit-dfr: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_dfr
+
+build-end-to-end-jit-auto-parallelization: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_auto_parallelization
 
 build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-hlfhelinalg
 
@@ -93,7 +96,11 @@ test-end-to-end-jit-lambda: build-initialized build-end-to-end-jit-lambda
 test-end-to-end-jit-dfr: build-end-to-end-jit-dfr
 	$(BUILD_DIR)/bin/end_to_end_jit_dfr
 
+test-end-to-end-jit-auto-parallelization: build-end-to-end-jit-auto-parallelization
+	$(BUILD_DIR)/bin/end_to_end_jit_auto_parallelization
+
 test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-hlfhelinalg
+
 
 # LLVM/MLIR dependencies
 

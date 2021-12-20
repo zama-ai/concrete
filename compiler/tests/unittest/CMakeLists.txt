@@ -2,6 +2,18 @@ enable_testing()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
+  add_compile_options(
+    -DZAMALANG_PARALLEL_TESTING_ENABLED
+    )
+  link_libraries(
+    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
+    -Wl,-rpath,${HPX_DIR}/../../
+    -Wl,--no-as-needed
+    DFRuntime
+  )
+endif()
+
 add_executable(
   end_to_end_jit_test
   end_to_end_jit_test.cc
@@ -84,8 +96,15 @@ if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
     end_to_end_jit_dfr
     end_to_end_jit_dfr.cc
   )
+  add_executable(
+    end_to_end_jit_auto_parallelization
+    end_to_end_jit_auto_parallelization.cc
+    globals.cc
+  )
+
   set_source_files_properties(
     end_to_end_jit_dfr.cc
+    end_to_end_jit_auto_parallelization.cc
     PROPERTIES COMPILE_FLAGS "-fno-rtti"
   )
   target_link_libraries(
@@ -97,5 +116,17 @@ if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
     -Wl,--no-as-needed
     DFRuntime
   )
+
+  target_link_libraries(
+    end_to_end_jit_auto_parallelization
+    gtest_main
+    ZamalangSupport
+    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
+    -Wl,-rpath,${HPX_DIR}/../../
+    -Wl,--no-as-needed
+    DFRuntime
+  )
+
   gtest_discover_tests(end_to_end_jit_dfr)
+  gtest_discover_tests(end_to_end_jit_auto_parallelization)
 endif()

@@ -100,7 +100,8 @@ template <typename F>
 mlir::zamalang::JitCompilerEngine::Lambda
 internalCheckedJit(F checkFunc, llvm::StringRef src,
                    llvm::StringRef func = "main",
-                   bool useDefaultFHEConstraints = false) {
+                   bool useDefaultFHEConstraints = false,
+		   bool autoParallelize = false) {
 
   llvm::SmallString<0> cachePath;
 
@@ -116,6 +117,11 @@ internalCheckedJit(F checkFunc, llvm::StringRef src,
 
   if (useDefaultFHEConstraints)
     engine.setFHEConstraints(defaultV0Constraints);
+#ifdef ZAMALANG_PARALLEL_TESTING_ENABLED
+  engine.setAutoParallelize(true);
+#else
+  engine.setAutoParallelize(autoParallelize);
+#endif
 
   llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
       engine.buildLambda(src, func, optCache);
