@@ -78,7 +78,7 @@ def compile_torch_model(
     )
 
     # Quantize with post-training static method, to have a model with integer weights
-    post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model)
+    post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
     quantized_module = post_training_quant.quantize_module(numpy_inputset_as_single_array)
 
     # Quantize input

@@ -80,7 +80,11 @@ N_BITS_ATOL_TUPLE_LIST = [
         pytest.param(FC, (100, 32 * 32 * 3)),
     ],
 )
-def test_quantized_linear(model, input_shape, n_bits, atol, seed_torch):
+@pytest.mark.parametrize(
+    "is_signed",
+    [pytest.param([False, True])],
+)
+def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torch):
     """Test the quantized module with a post-training static quantization.
 
     With n_bits>>0 we expect the results of the quantized module
@@ -97,7 +101,9 @@ def test_quantized_linear(model, input_shape, n_bits, atol, seed_torch):
     # Predict with real model
     numpy_prediction = numpy_fc_model(numpy_input)
     # Quantize with post-training static method
-    post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
+    post_training_quant = PostTrainingAffineQuantization(
+        n_bits, numpy_fc_model, is_signed=is_signed
+    )
     quantized_model = post_training_quant.quantize_module(numpy_input)
     # Quantize input
     q_input = QuantizedArray(n_bits, numpy_input)

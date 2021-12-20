@@ -41,6 +41,11 @@ class QuantizedArray:
 
         if rmax - rmin < STABILITY_CONST:
             # In this case there is  a single unique value to quantize
+
+            # is is_signed is True, we need to set the offset back to 0.
+            # Signed quantization does not make sense for a single value.
+            self.offset = 0
+
             # This value could be multiplied with inputs at some point in the model
             # Since zero points need to be integers, if this value is a small float (ex: 0.01)
             # it will be quantized to 0 with a 0 zero-point, thus becoming useless in multiplication

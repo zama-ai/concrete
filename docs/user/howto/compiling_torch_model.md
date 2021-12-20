@@ -9,7 +9,6 @@ A simple command can compile a torch model to its FHE counterpart. This process 
 ```python
 from torch import nn
 import torch
-torch.manual_seed(0)
 class LogisticRegression(nn.Module):
     """LogisticRegression with Torch"""
 
