@@ -1,7 +1,3 @@
-```{warning}
-FIXME(Andrei): see if this is still appropriate, update etc; make link with use_quantization.md
-```
-
 # Quantization
 
 ```{note}
@@ -43,6 +39,7 @@ Regarding quantization and FHE compilation, it is important to understand the di
 For the moment, only the second method is available in Concrete Framework, but we plan to have the first method available in a further release, since it should give more freedom and better results to the user.
 
 We detail the use of quantization within Concrete Framework in [here](../howto/use_quantization.md).
+
 ## Resources
 
 - IntelLabs distiller explanation of quantization: [Distiller documentation](https://intellabs.github.io/distiller/algo_quantization.html)
