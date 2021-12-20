@@ -34,3 +34,4 @@ def run(*cmd):
     if result.returncode != 0:
         print(result.stderr)
     assert result.returncode == 0, ' '.join(cmd)
+    return str(result.stdout, encoding='utf-8')

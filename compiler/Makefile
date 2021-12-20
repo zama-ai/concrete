@@ -3,6 +3,8 @@ Python3_EXECUTABLE=
 BINDINGS_PYTHON_ENABLED=ON
 PARALLEL_EXECUTION_ENABLED=OFF
 
+export PATH := $(BUILD_DIR)/bin:$(PATH)
+
 ifeq ($(shell which ccache),)
 	CCACHE=OFF
 else
@@ -49,7 +51,7 @@ test-check: zamacompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/
 
 test-python: python-bindings zamacompiler
-	PATH=$(BUILD_DIR)/bin:${PATH} PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core LD_PRELOAD=$(BUILD_DIR)/lib/libZamalangRuntime.so pytest -vs tests/python
+	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core LD_PRELOAD=$(BUILD_DIR)/lib/libZamalangRuntime.so pytest -vs tests/python
 
 test: test-check test-end-to-end-jit test-python
 
@@ -104,6 +106,21 @@ test-end-to-end-jit-auto-parallelization: build-end-to-end-jit-auto-parallelizat
 
 test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-hlfhelinalg
 
+show-stress-tests-summary:
+	@echo '------ Stress tests summary ------'
+	@echo
+	@echo 'Rates:'
+	@cd tests/stress_tests/trace && grep success_rate -R
+	@echo
+	@echo 'Parameters issues:'
+	@cd tests/stress_tests/trace && grep BAD -R || echo 'No issues'
+
+stress-tests: zamacompiler
+	pytest -vs tests/stress_tests
+
+# useful for faster cache generation, need pytest-parallel
+stress-tests-fast-cache: zamacompiler
+	pytest --workers auto -vs tests/stress_tests
 
 # LLVM/MLIR dependencies
 

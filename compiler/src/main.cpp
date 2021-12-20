@@ -138,6 +138,10 @@ llvm::cl::list<uint64_t>
             llvm::cl::desc("Value of arguments to pass to the main func"),
             llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore);
 
+llvm::cl::opt<std::string> jitKeySetCachePath(
+    "jit-keyset-cache-path",
+    llvm::cl::desc("Path to cache KeySet content (unsecure)"));
+
 llvm::cl::opt<llvm::Optional<size_t>, false, OptionalSizeTParser>
     assumeMaxEintPrecision(
         "assume-max-eint-precision",
@@ -234,7 +238,9 @@ mlir::LogicalResult processInputBuffer(
     llvm::Optional<size_t> overrideMaxEintPrecision,
     llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
     llvm::Optional<llvm::ArrayRef<int64_t>> hlfhelinalgTileSizes,
-    bool autoParallelize, llvm::raw_ostream &os,
+    bool autoParallelize,
+    llvm::Optional<mlir::zamalang::KeySetCache> keySetCache,
+    llvm::raw_ostream &os,
     std::shared_ptr<mlir::zamalang::CompilerEngine::Library> outputLib) {
   std::shared_ptr<mlir::zamalang::CompilationContext> ccx =
       mlir::zamalang::CompilationContext::createShared();
@@ -262,7 +268,7 @@ mlir::LogicalResult processInputBuffer(
 
   if (action == Action::JIT_INVOKE) {
     llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
-        ce.buildLambda(std::move(buffer), jitFuncName);
+        ce.buildLambda(std::move(buffer), jitFuncName, keySetCache);
 
     if (!lambdaOrErr) {
       mlir::zamalang::log_error()
@@ -376,6 +382,11 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   if (!cmdline::hlfhelinalgTileSizes.empty())
     hlfhelinalgTileSizes.emplace(cmdline::hlfhelinalgTileSizes);
 
+  llvm::Optional<mlir::zamalang::KeySetCache> jitKeySetCache;
+  if (!cmdline::jitKeySetCachePath.empty()) {
+    jitKeySetCache = mlir::zamalang::KeySetCache(cmdline::jitKeySetCachePath);
+  }
+
   // In case of compilation to library, the real output is the library.
   std::string outputPath =
       (cmdline::action == Action::COMPILE) ? cmdline::STDOUT : cmdline::output;
@@ -411,7 +422,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
           cmdline::jitFuncName, cmdline::jitArgs,
           cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
           cmdline::verifyDiagnostics, hlfhelinalgTileSizes,
-          cmdline::autoParallelize, os, outputLib);
+          cmdline::autoParallelize, jitKeySetCache, os, outputLib);
     };
     auto &os = output->os();
     auto res = mlir::failure();
