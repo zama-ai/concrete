@@ -661,11 +661,9 @@ def _on_numpy_matmul(lhs: NPTracer, rhs: NPTracer):
             rhs = rhs.reshape((rhs_output.shape[0], 1))
         elif lhs_output.ndim == 1:
             # lhs is a vector, reshape to be 2D and give proper result
-            output_shape = lhs_output.shape
             lhs = lhs.reshape((1, lhs_output.shape[0]))
         elif rhs_output.ndim == 1:
             # rhs is a vector, reshape to be 2D and give proper result
-            output_shape = rhs_output.shape
             rhs = rhs.reshape((rhs_output.shape[0], 1))
 
     traced_computation = MatMul(
