@@ -39,20 +39,28 @@ pub trait UnsignedInteger:
     /// The signed type of the same precision.
     type Signed: SignedInteger<Unsigned = Self> + CastFrom<Self>;
     /// Compute an addition, modulo the max of the type.
+    #[must_use]
     fn wrapping_add(self, other: Self) -> Self;
     /// Compute a subtraction, modulo the max of the type.
+    #[must_use]
     fn wrapping_sub(self, other: Self) -> Self;
     /// Compute a division, modulo the max of the type.
+    #[must_use]
     fn wrapping_div(self, other: Self) -> Self;
     /// Compute a multiplication, modulo the max of the type.
+    #[must_use]
     fn wrapping_mul(self, other: Self) -> Self;
     /// Compute a negation, modulo the max of the type.
+    #[must_use]
     fn wrapping_neg(self) -> Self;
     /// Compute an exponentiation, modulo the max of the type.
+    #[must_use]
     fn wrapping_pow(self, exp: u32) -> Self;
     /// Panic free shift-left operation.
+    #[must_use]
     fn wrapping_shl(self, rhs: u32) -> Self;
     /// Panic free shift-right operation.
+    #[must_use]
     fn wrapping_shr(self, rhs: u32) -> Self;
     /// Returns the casting of the current value to the signed type of the same size.
     fn into_signed(self) -> Self::Signed;

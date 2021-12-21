@@ -20,27 +20,35 @@ pub trait FloatingPoint:
     + SubAssign<Self>
 {
     /// Raises a float to an integer power.
+    #[must_use]
     fn powi(self, power: i32) -> Self;
 
     /// Rounds the float to the closest integer.
+    #[must_use]
     fn round(self) -> Self;
 
     /// Keeps the fractional part of the number.
+    #[must_use]
     fn fract(self) -> Self;
 
     /// Remainder of the euclidean division.
+    #[must_use]
     fn rem_euclid(self, rhs: Self) -> Self;
 
     /// Returns the square root of the input float.
+    #[must_use]
     fn sqrt(self) -> Self;
 
     /// Returns the natural logarithm of the input float.
+    #[must_use]
     fn ln(self) -> Self;
 
     /// Returns the absolute value of the input float.
+    #[must_use]
     fn abs(self) -> Self;
 
     /// Returns the floor value of the input float.
+    #[must_use]
     fn floor(self) -> Self;
 
     /// Returns a bit representation of the float, with the sign, exponent, and mantissa bits
