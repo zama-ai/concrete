@@ -75,7 +75,7 @@ html_theme_options = {
     "twitter_url": "https://twitter.com/zama_fhe",
     "icon_links": [{
         "name": "Discourse",
-        "url": "https://community.zama.ai/",
+        "url": "https://community.zama.ai/c/concrete-framework/7",
         "icon": "fab fa-discourse",
     }],
     "navigation_depth": 2,
