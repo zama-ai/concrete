@@ -77,7 +77,7 @@ def get_keyring_dir_from_session_or_default(
 
 @pytest.fixture
 def default_keyring_path():
-    """fixture to get test keyring dir"""
+    """Fixture to get test keyring dir."""
     return DEFAULT_KEYRING_PATH
 
 
@@ -85,12 +85,15 @@ def default_keyring_path():
 original_compilation_config_init = CompilationConfiguration.__init__
 
 
-def monkeypatched_compilation_configuration_init_for_codeblocks(self, *args, **kwargs):
+def monkeypatched_compilation_configuration_init_for_codeblocks(
+    self: CompilationConfiguration, *args, **kwargs
+):
     """Monkeypatched compilation configuration init for codeblocks tests."""
     original_compilation_config_init(self, *args, **kwargs)
     self.dump_artifacts_on_unexpected_failures = False
+    self.enable_unsafe_features = True  # This is for our tests only, never use that in prod
     self.treat_warnings_as_errors = True
-    self.use_insecure_key_cache = True
+    self.use_insecure_key_cache = True  # This is for our tests only, never use that in prod
 
 
 def pytest_sessionstart(session: pytest.Session):
@@ -349,6 +352,7 @@ def default_compilation_configuration():
     """Return the default test compilation configuration"""
     return CompilationConfiguration(
         dump_artifacts_on_unexpected_failures=False,
+        enable_unsafe_features=True,  # This is for our tests only, never use that in prod
         treat_warnings_as_errors=True,
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
     )
@@ -399,7 +403,8 @@ def check_is_good_execution_impl(
     # Enabled only when we have a circuit that's using the maximum possible bit width
     allow_relaxed_tests_passing = max_bit_width == ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
 
-    # Increased with compiler accuracy which dropped
+    # FIXME: https://github.com/zama-ai/concretefhe-internal/issues/1255
+    # Increased with compiler accuracy which dropped, make sure to remove once accuracy improves
     nb_tries = 10
 
     # Prepare the bool array to record if cells were properly computed

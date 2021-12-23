@@ -643,13 +643,14 @@ def _compile_op_graph_to_fhe_circuit_internal(
     # Add MLIR representation as an artifact
     compilation_artifacts.add_final_operation_graph_mlir(mlir_result)
 
-    if (
-        _COMPILE_FHE_INSECURE_KEY_CACHE_DIR is not None
-        and not compilation_configuration.use_insecure_key_cache
+    if _COMPILE_FHE_INSECURE_KEY_CACHE_DIR is not None and not (
+        compilation_configuration.use_insecure_key_cache
+        and compilation_configuration.enable_unsafe_features
     ):
         raise RuntimeError(
             f"Unable to use insecure key cache {_COMPILE_FHE_INSECURE_KEY_CACHE_DIR} "
-            f"as use_insecure_key_cache is not set to True in compilation_configuration"
+            "as use_insecure_key_cache or enable_unsafe_features are not set to True in"
+            "compilation_configuration"
         )
 
     # Compile the MLIR representation

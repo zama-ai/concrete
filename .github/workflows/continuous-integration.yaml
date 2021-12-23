@@ -292,6 +292,7 @@ jobs:
             echo "Conformance failed, check logs"
             exit 1
           fi
+      # Taring the docs allows for much faster upload speed (from ~3min worst case to ~2s best case)
       - name: Tar docs artifacts
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |

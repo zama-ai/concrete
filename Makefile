@@ -245,7 +245,8 @@ release_docker:
 upgrade_py_deps:
 	./script/make_utils/upgrade_deps.sh
 
-# Keeping this target as it proved useful before the package was stabilized
+# Keeping this target as it proved useful before we had a proper package, allowed to run code that
+# pytest-codeblocks was failing to execute if not installed as a pip package.
 # This is done by hand as pytest-codeblocks was failing with our native extensions.
 # See refused PR on the project here: https://github.com/nschloe/pytest-codeblocks/pull/58
 # Test code blocks using a custom python script in the documentation

@@ -1979,8 +1979,13 @@ def test_compile_with_random_inputset(default_compilation_configuration):
     )
 
 
-def test_fail_compile_with_random_inputset(default_compilation_configuration):
+def test_fail_compile_with_random_inputset():
     """Test function for failed compile with random input set"""
+
+    compilation_configuration = CompilationConfiguration(
+        dump_artifacts_on_unexpected_failures=False,
+        treat_warnings_as_errors=True,
+    )
 
     with pytest.raises(ValueError):
         try:
@@ -1988,7 +1993,7 @@ def test_fail_compile_with_random_inputset(default_compilation_configuration):
                 lambda x: x + 1,
                 {"x": EncryptedScalar(UnsignedInteger(3))},
                 inputset="unsupported",
-                compilation_configuration=default_compilation_configuration,
+                compilation_configuration=compilation_configuration,
             )
         except Exception as error:
             expected = (
@@ -2004,7 +2009,7 @@ def test_fail_compile_with_random_inputset(default_compilation_configuration):
                 lambda x: x + 1,
                 {"x": EncryptedScalar(UnsignedInteger(3))},
                 inputset="random",
-                compilation_configuration=default_compilation_configuration,
+                compilation_configuration=compilation_configuration,
             )
         except Exception as error:
             expected = (
@@ -2151,8 +2156,36 @@ def test_compile_and_run_correctness_with_negative_results(
     assert check_equality_modulo(compiler_engine.run(*args), function(*args), modulus)
 
 
-def test_compile_improper_use_of_insecure_key_cache(default_keyring_path):
-    """Test the case where the key cache is used with wrong compilation configuration"""
+@pytest.mark.parametrize(
+    "compilation_configuration",
+    [
+        CompilationConfiguration(
+            dump_artifacts_on_unexpected_failures=False,
+            enable_unsafe_features=False,
+            use_insecure_key_cache=False,
+        ),
+        CompilationConfiguration(
+            dump_artifacts_on_unexpected_failures=False,
+            enable_unsafe_features=True,
+            use_insecure_key_cache=False,
+        ),
+        CompilationConfiguration(
+            dump_artifacts_on_unexpected_failures=False,
+            enable_unsafe_features=False,
+            use_insecure_key_cache=True,
+        ),
+    ],
+)
+def test_compile_improper_use_of_insecure_key_cache(
+    default_keyring_path, compilation_configuration
+):
+    """Test the case where the key cache is used with wrong compilation configuration.
+
+    DO NOT USE INSECURE KEY CACHE FOR NORMAL PRODUCTION WORK
+
+    This is a test to check we properly fail for users trying to incorrectly use the insecure key
+    cache (to reuse keys across compilations). This allows to speed up tests A LOT but should not be
+    used in normal prod environment /!\\ DANGER /!\\."""
 
     def f(x):
         return x + 42
@@ -2162,13 +2195,11 @@ def test_compile_improper_use_of_insecure_key_cache(default_keyring_path):
             default_keyring_path
         )
 
-    compilation_configuration = CompilationConfiguration()
-    compilation_configuration.use_insecure_key_cache = False
-
     with pytest.raises(
         RuntimeError,
         match="Unable to use insecure key cache .* "
-        "as use_insecure_key_cache is not set to True in compilation_configuration",
+        "as use_insecure_key_cache or enable_unsafe_features are not set to True in"
+        "compilation_configuration",
     ):
         _ = compile_numpy_function(
             f,
