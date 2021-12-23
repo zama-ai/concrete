@@ -22,4 +22,7 @@ See this [section](../../dev/howto/contributing.md).
 
 See this [section](../explanation/future_features.md).
 
+## I don't find the answer to my question. What should I do?
+
+The best is to ask your question on Discourse, which you can access [here](https://community.zama.ai) or by clicking the Discourse logo in the top right corner of every page of this documentation.
 
