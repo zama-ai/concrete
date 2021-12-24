@@ -388,7 +388,7 @@ def check_is_good_execution_impl(
     args: Iterable[Any],
     preprocess_input_func: Callable[[Any], Any] = lambda x: x,
     postprocess_output_func: Callable[[Any], Any] = lambda x: x,
-    check_function: Callable[[Any, Any], bool] = numpy.array_equal,
+    check_function: Callable[[Any, Any], bool] = numpy.equal,
     verbose: bool = True,
 ):
     """Run several times the check compiler_engine.run(*args) == function(*args). If always wrong,
@@ -401,7 +401,8 @@ def check_is_good_execution_impl(
 
     # Allow tests to pass if cells of the output result are good at least once over the nb_tries
     # Enabled only when we have a circuit that's using the maximum possible bit width
-    allow_relaxed_tests_passing = max_bit_width == ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
+    # >= if there are 8 bits signed integers
+    allow_relaxed_tests_passing = max_bit_width >= ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
 
     # FIXME: https://github.com/zama-ai/concretefhe-internal/issues/1255
     # Increased with compiler accuracy which dropped, make sure to remove once accuracy improves
@@ -413,26 +414,30 @@ def check_is_good_execution_impl(
 
     for i in range(1, nb_tries + 1):
         preprocessed_args = tuple(preprocess_input_func(val) for val in args)
-        if check_function(
-            last_engine_result := postprocess_output_func(fhe_circuit.run(*preprocessed_args)),
-            last_function_result := postprocess_output_func(function(*preprocessed_args)),
-        ):
+        last_engine_result = postprocess_output_func(fhe_circuit.run(*preprocessed_args))
+        last_function_result = postprocess_output_func(function(*preprocessed_args))
+
+        ok_execution = check_function(last_engine_result, last_function_result)
+        if isinstance(ok_execution, numpy.ndarray):
+            # Record the cells that were well computed
+            cells_were_properly_computed = numpy.logical_or(
+                cells_were_properly_computed, ok_execution
+            )
+
+            # Get a boolean for the execution
+            ok_execution = ok_execution.all()
+
+        if ok_execution:
             # Good computation after i tries
             if verbose:
                 print(f"Good computation after {i} tries")
             return
-
-        # Computation was bad, record the cells that were well computed
-        cells_were_properly_computed = numpy.logical_or(
-            cells_were_properly_computed, last_engine_result == last_function_result
-        )
-
-    # Bad computation after nb_tries
-    if allow_relaxed_tests_passing:
-        if cells_were_properly_computed.all():
+        # FIXME: https://github.com/zama-ai/concretefhe-internal/issues/1264
+        # Remove the relaxed tests once accuracy is good again for 7 bits
+        if allow_relaxed_tests_passing and cells_were_properly_computed.all():
             print(
                 "Computation was never good for all output cells at the same time, "
-                "however each was evaluated properly at least once"
+                f"however each was evaluated properly at least once, stopped after {i} tries"
             )
             return
 

@@ -90,6 +90,6 @@ def test_compile_torch(
             postprocess_output_func=lambda x: quantized_numpy_module.dequantize_output(
                 x.astype(numpy.float32)
             ),
-            check_function=lambda lhs, rhs: numpy.isclose(lhs, rhs).all(),
+            check_function=numpy.isclose,
             verbose=False,
         )

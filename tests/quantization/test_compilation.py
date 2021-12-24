@@ -82,6 +82,6 @@ def test_quantized_module_compilation(
             postprocess_output_func=lambda x: quantized_model.dequantize_output(
                 x.astype(numpy.float32)
             ),
-            check_function=lambda lhs, rhs: numpy.isclose(lhs, rhs).all(),
+            check_function=numpy.isclose,
             verbose=False,
         )
