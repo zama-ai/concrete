@@ -12,13 +12,15 @@ if ! source "${DEV_VENV_PATH}/bin/activate"; then
     python3 -m venv "${DEV_VENV_PATH}"
     # shellcheck disable=SC1090,SC1091
     source "${DEV_VENV_PATH}/bin/activate"
-    cd /src/ && make setup_env
 fi
+
+cd /src/ && make sync_env
+
+mkdir -p logs
 
 initial_log=logs/$(date -u --iso-8601=seconds).log
 
-mkdir -p logs
-poetry run python script/progress_tracker_utils/measure.py benchmarks > "$initial_log"
+make benchmark > "$initial_log"
 
 final_log=logs/$(date -u --iso-8601=seconds).log
 
@@ -38,5 +40,5 @@ fi
 curl \
      -H 'Authorization: Bearer '"$PROGRESS_TRACKER_TOKEN"'' \
      -H 'Content-Type: application/json' \
-     -d @.benchmarks/findings.json \
+     -d @progress.json \
      -X POST "$PROGRESS_TRACKER_URL"/measurement

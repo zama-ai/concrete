@@ -1,13 +1,9 @@
-# bench: Full Target: Linear Regression
-
-# Disable line length warnings as we have a looooong metric...
-# flake8: noqa: E501
-# pylint: disable=C0301
-
 from copy import deepcopy
 from typing import Any, Dict
 
 import numpy as np
+import progress
+from common import BENCHMARK_CONFIGURATION
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
@@ -98,6 +94,7 @@ class QuantizedLinearRegression(QuantizedModule):
         return q_input_arr
 
 
+@progress.track([{"id": "linear-regression", "name": "Linear Regression", "parameters": {}}])
 def main():
     """
     Our linear regression benchmark. Use some synthetic data to train a regression model,
@@ -130,9 +127,10 @@ def main():
     q_linreg = QuantizedLinearRegression.from_sklearn(linreg, calib_data)
 
     # Compile the quantized model to FHE
-    # bench: Measure: Compilation Time (ms)
-    engine = q_linreg.compile(q_linreg.quantize_input(calib_data))
-    # bench: Measure: End
+    engine = q_linreg.compile(
+        q_linreg.quantize_input(calib_data),
+        compilation_configuration=BENCHMARK_CONFIGURATION,
+    )
 
     # Measure test error using the clear-sklearn, the clear-quantized and the FHE quantized model
     # as R^2 coefficient for the test data
@@ -149,9 +147,8 @@ def main():
 
     for i, x_i in enumerate(tqdm(x_test_q.qvalues)):
         q_sample = np.expand_dims(x_i, 1).transpose([1, 0]).astype(np.uint8)
-        # bench: Measure: Evaluation Time (ms)
-        q_pred_fhe = engine.run(q_sample)
-        # bench: Measure: End
+        with progress.measure(id="evaluation-time-ms", label="Evaluation Time (ms)"):
+            q_pred_fhe = engine.run(q_sample)
         y_test_pred_fhe[i] = q_linreg.dequantize_output(q_pred_fhe)
 
     # Measure the error for the three versions of the classifier
@@ -165,16 +162,30 @@ def main():
     )
 
     print(f"Sklearn R^2: {sklearn_r2:.4f}")
+    progress.measure(
+        id="sklearn-r2",
+        label="Sklearn R^2",
+        value=sklearn_r2,
+    )
+
     print(f"Non Homomorphic R^2: {non_homomorphic_test_error:.4f}")
+    progress.measure(
+        id="non-homomorphic-r2",
+        label="Non Homomorphic R^2",
+        value=non_homomorphic_test_error,
+    )
+
     print(f"Homomorphic R^2: {homomorphic_test_error:.4f}")
-    print(f"Relative Difference Percentage: {difference:.2f}%")
+    progress.measure(
+        id="homomorphic-r2",
+        label="Homomorphic R^2",
+        value=homomorphic_test_error,
+    )
 
-    # bench: Measure: Sklearn R^2 = sklearn_r2
-    # bench: Measure: Non Homomorphic R^2 = non_homomorphic_test_error
-    # bench: Measure: Homomorphic R^2 = homomorphic_test_error
-    # bench: Measure: Relative Loss Difference (%) = difference
-    # bench: Alert: Relative Loss Difference (%) > 7.5
-
-
-if __name__ == "__main__":
-    main()
+    print(f"Relative Loss Difference (%): {difference:.2f}%")
+    progress.measure(
+        id="relative-loss-difference-percent",
+        label="Relative Loss Difference (%)",
+        value=difference,
+        alert=(">", 7.5),
+    )

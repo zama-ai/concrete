@@ -1,9 +1,8 @@
-# bench: Full Target: Generalized Linear Model
-
 from copy import deepcopy
 from typing import Any, Dict
 
 import numpy as np
+import progress
 from common import BENCHMARK_CONFIGURATION
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
@@ -158,7 +157,8 @@ def score_concrete_glm_estimator(poisson_glm_pca, q_glm, df_test):
     return score_estimator(y_pred, df_test["Frequency"], df_test["Exposure"])
 
 
-def run_glm_benchmark():
+@progress.track([{"id": "glm", "name": "Generalized Linear Model", "parameters": {}}])
+def main():
     """
     This is our main benchmark function. It gets a dataset, trains a GLM model,
     then trains a GLM model on PCA reduced features, a QuantizedGLM model
@@ -239,21 +239,18 @@ def run_glm_benchmark():
     test_data = poisson_glm_pca["pca"].transform(poisson_glm_pca["preprocessor"].transform(df_test))
     q_test_data = q_glm.quantize_input(test_data)
 
-    # bench: Measure: Compilation Time (ms)
     engine = q_glm.compile(
         q_test_data,
         BENCHMARK_CONFIGURATION,
         show_mlir=False,
     )
-    # bench: Measure: End
 
     y_pred_fhe = np.zeros((test_data.shape[0],), np.float32)
     for i, test_sample in enumerate(tqdm(q_test_data.qvalues)):
-        # bench: Measure: Evaluation Time (ms)
-        q_sample = np.expand_dims(test_sample, 1).transpose([1, 0]).astype(np.uint8)
-        q_pred_fhe = engine.run(q_sample)
-        y_pred_fhe[i] = q_glm.dequantize_output(q_pred_fhe)
-        # bench: Measure: End
+        with progress.measure(id="evaluation-time-ms", label="Evaluation Time (ms)"):
+            q_sample = np.expand_dims(test_sample, 1).transpose([1, 0]).astype(np.uint8)
+            q_pred_fhe = engine.run(q_sample)
+            y_pred_fhe[i] = q_glm.dequantize_output(q_pred_fhe)
 
     dev_pca_quantized_fhe = score_estimator(y_pred_fhe, df_test["Frequency"], df_test["Exposure"])
 
@@ -263,14 +260,23 @@ def run_glm_benchmark():
         difference = 0
 
     print(f"Quantized deviance: {dev_pca_quantized}")
+    progress.measure(
+        id="non-homomorphic-loss",
+        label="Non Homomorphic Loss",
+        value=dev_pca_quantized,
+    )
+
     print(f"FHE Quantized deviance: {dev_pca_quantized_fhe}")
+    progress.measure(
+        id="homomorphic-loss",
+        label="Homomorphic Loss",
+        value=dev_pca_quantized_fhe,
+    )
+
     print(f"Percentage difference: {difference}%")
-
-    # bench: Measure: Non Homomorphic Loss = dev_pca_quantized
-    # bench: Measure: Homomorphic Loss = dev_pca_quantized_fhe
-    # bench: Measure: Relative Loss Difference (%) = difference
-    # bench: Alert: Relative Loss Difference (%) > 7.5
-
-
-if __name__ == "__main__":
-    run_glm_benchmark()
+    progress.measure(
+        id="relative-loss-difference-percent",
+        label="Relative Loss Difference (%)",
+        value=difference,
+        alert=(">", 7.5),
+    )

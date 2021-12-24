@@ -42,11 +42,6 @@ check_python_format:
 check_finalize_nb:
 	poetry run python ./script/nbmake_utils/notebook_finalize.py docs --check
 
-.PHONY: check_benchmarks # Run benchmark checks (to validate they work fine)
-check_benchmarks:
-	poetry run python script/progress_tracker_utils/extract_machine_info.py
-	poetry run python script/progress_tracker_utils/measure.py benchmarks --check
-
 .PHONY: pylint # Run pylint
 pylint:
 	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks pylint_script
@@ -69,9 +64,7 @@ pylint_benchmarks:
 
 .PHONY: pylint_script # Run pylint on scripts
 pylint_script:
-	@# disable linting python files under `progress_tracker_utils/test_scripts` folder
-	@# because they are intentionally ill-formed so that progress tracker can be tested
-	find ./script/ -type f -name "*.py" -not -path "./script/progress_tracker_utils/test_scripts/*" | xargs poetry run pylint --rcfile=pylintrc
+	find ./script/ -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
 
 .PHONY: flake8 # Run flake8
 flake8:
@@ -90,7 +83,7 @@ pcc:
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_supported_functions check_benchmarks check_licenses
+PCC_DEPS += check_version_coherence check_supported_functions check_licenses
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -106,11 +99,6 @@ pytest:
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/
-
-.PHONY: pytest_progress_tracker # Run pytest for progress tracker
-pytest_progress_tracker:
-	poetry run python script/progress_tracker_utils/extract_machine_info.py
-	poetry run pytest -svv script/progress_tracker_utils/test_progress_tracker.py
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
@@ -186,11 +174,7 @@ docker_clean_volumes:
 docker_cv: docker_clean_volumes
 
 .PHONY: docker_publish_measurements # Run benchmarks in docker and publish results
-docker_publish_measurements: docker_build
-	mkdir -p .benchmarks
-	@# Poetry is not installed on the benchmark servers
-	@# Thus, we ran `extract_machine_info.py` script using native python
-	python script/progress_tracker_utils/extract_machine_info.py
+docker_publish_measurements: docker_rebuild
 	docker run --rm --volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
@@ -230,8 +214,10 @@ pytest_nb:
 
 .PHONY: benchmark # Launch benchmark
 benchmark:
-	poetry run python script/progress_tracker_utils/extract_machine_info.py
-	poetry run python script/progress_tracker_utils/measure.py benchmarks
+	rm -rf progress.json && \
+	for script in benchmarks/*.py; do \
+	  poetry run python $$script; \
+	done
 
 .PHONY: jupyter # Launch jupyter notebook
 jupyter:

@@ -49,16 +49,16 @@ jobs:
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
           command_timeout: 240m
           script: |
-            cd ~/concretefhe-internal
+            cd ~/concrete-framework-internal
             git pull
             make docker_publish_measurements
             docker system prune -f
 
       - name: Copy AMD EC2 Instance Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concretefhe-internal/logs/latest.log ~/latest.log
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concrete-framework-internal/logs/latest.log ~/latest.log
 
       - name: Copy AMD EC2 Instance Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concretefhe-internal/.benchmarks/findings.json ~/findings.json
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concrete-framework-internal/.benchmarks/findings.json ~/findings.json
 
       - name: Stop AMD EC2 Instance
         if: ${{ always() }}
@@ -104,16 +104,16 @@ jobs:
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
           command_timeout: 240m
           script: |
-            cd ~/concretefhe-internal
+            cd ~/concrete-framework-internal
             git pull
             make docker_publish_measurements
             docker system prune -f
 
       - name: Copy Intel EC2 Instance Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concretefhe-internal/logs/latest.log ~/latest.log
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concrete-framework-internal/logs/latest.log ~/latest.log
 
       - name: Copy Intel EC2 Instance Findings
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concretefhe-internal/.benchmarks/findings.json ~/findings.json
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concrete-framework-internal/.benchmarks/findings.json ~/findings.json
 
       - name: Stop Intel EC2 Instance
         if: ${{ always() }}

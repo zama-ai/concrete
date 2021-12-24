@@ -1,6 +1,6 @@
 # Benchmarks
 
-To track our progress over time, we have created a [progress tracker](https://progress.zama.ai) that:
+To track our progress over time, we have created a [progress tracker](https://ml.progress.zama.ai) that:
 - lists targets that we want to compile
 - updates the status on the compilation of these functions
 - tracks compilation and evaluation times on different hardware

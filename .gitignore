@@ -134,7 +134,7 @@ dmypy.json
 .pyre/
 
 # Benchmark Artifacts
-.benchmarks
+progress.json
 
 # concrete compilation artifacts
 .artifacts

@@ -1,13 +1,9 @@
-# bench: Full Target: Logistic Regression
-
-# Disable line length warnings as we have a looooong metric...
-# flake8: noqa: E501
-# pylint: disable=C0301
-
 from copy import deepcopy
 from typing import Any, Dict
 
 import numpy as np
+import progress
+from common import BENCHMARK_CONFIGURATION
 from numpy.random import RandomState
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -120,6 +116,7 @@ class QuantizedLogisticRegression(QuantizedModule):
         return q_input_arr
 
 
+@progress.track([{"id": "logistic-regression", "name": "Logistic Regression", "parameters": {}}])
 def main():
     """Main benchmark function: generate some synthetic data for two class classification,
     split train-test, train a sklearn classifier, calibrate and quantize it on the whole dataset
@@ -152,11 +149,10 @@ def main():
     q_logreg = QuantizedLogisticRegression.from_sklearn(logreg, calib_data)
 
     # Now, we can compile our model to FHE, taking as possible input set all of our dataset
-    X_q = q_logreg.quantize_input(X)
-
-    # bench: Measure: Compilation Time (ms)
-    engine = q_logreg.compile(X_q)
-    # bench: Measure: End
+    engine = q_logreg.compile(
+        q_logreg.quantize_input(X),
+        compilation_configuration=BENCHMARK_CONFIGURATION,
+    )
 
     # Start classifier evaluation
 
@@ -182,9 +178,9 @@ def main():
 
         fhe_in_sample = np.expand_dims(x_i, 1).transpose([1, 0]).astype(np.uint8)
 
-        # bench: Measure: Evaluation Time (ms)
-        q_pred_fhe = engine.run(fhe_in_sample)
-        # bench: Measure: End
+        with progress.measure(id="evaluation-time-ms", label="Evaluation Time (ms)"):
+            q_pred_fhe = engine.run(fhe_in_sample)
+
         y_score_fhe = q_logreg.dequantize_output(q_pred_fhe)
         homomorphic_prediction = (y_score_fhe > 0.5).astype(np.int32)
 
@@ -204,18 +200,31 @@ def main():
     homomorphic_accuracy = (homomorphic_correct / len(y_test)) * 100
     difference = abs(homomorphic_accuracy - non_homomorphic_accuracy)
 
-    print()
-    print(f"Sklearn accuracy: {sklearn_acc:.4f}")
-    print(f"Non Homomorphic Accuracy: {non_homomorphic_accuracy:.4f}")
-    print(f"Homomorphic Accuracy: {homomorphic_accuracy:.4f}")
-    print(f"Difference Percentage: {difference:.2f}%")
+    print(f"Sklearn Accuracy (%): {sklearn_acc:.4f}")
+    progress.measure(
+        id="sklearn-accuracy-percent",
+        label="Sklearn Accuracy (%)",
+        value=sklearn_acc,
+    )
 
-    # bench: Measure: Sklearn accuracy = sklearn_acc
-    # bench: Measure: Non Homomorphic Accuracy = non_homomorphic_accuracy
-    # bench: Measure: Homomorphic Accuracy = homomorphic_accuracy
-    # bench: Measure: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) = difference
-    # bench: Alert: Accuracy Difference Between Homomorphic and Non Homomorphic Implementation (%) > 2
+    print(f"Non Homomorphic Accuracy (%): {non_homomorphic_accuracy:.4f}")
+    progress.measure(
+        id="non-homomorphic-accuracy-percent",
+        label="Non Homomorphic Accuracy (%)",
+        value=non_homomorphic_accuracy,
+    )
 
+    print(f"Homomorphic Accuracy (%): {homomorphic_accuracy:.4f}")
+    progress.measure(
+        id="homomorphic-accuracy-percent",
+        label="Homomorphic Accuracy (%)",
+        value=homomorphic_accuracy,
+    )
 
-if __name__ == "__main__":
-    main()
+    print(f"Relative Accuracy Difference (%): {difference:.2f}%")
+    progress.measure(
+        id="relative-accuracy-difference-percent",
+        label="Relative Accuracy Difference (%)",
+        value=difference,
+        alert=(">", 2.0),
+    )
