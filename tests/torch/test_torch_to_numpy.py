@@ -33,28 +33,28 @@ class CNN(nn.Module):
 class FC(nn.Module):
     """Torch model for the tests"""
 
-    def __init__(self):
+    def __init__(self, activation_function):
         super().__init__()
         self.fc1 = nn.Linear(in_features=32 * 32 * 3, out_features=128)
-        self.sigmoid1 = nn.Sigmoid()
+        self.act_1 = activation_function()
         self.fc2 = nn.Linear(in_features=128, out_features=64)
-        self.sigmoid2 = nn.Sigmoid()
+        self.act_2 = activation_function()
         self.fc3 = nn.Linear(in_features=64, out_features=64)
-        self.sigmoid3 = nn.Sigmoid()
+        self.act_3 = activation_function()
         self.fc4 = nn.Linear(in_features=64, out_features=64)
-        self.sigmoid4 = nn.Sigmoid()
+        self.act_4 = activation_function()
         self.fc5 = nn.Linear(in_features=64, out_features=10)
 
     def forward(self, x):
         """Forward pass."""
         out = self.fc1(x)
-        out = self.sigmoid1(out)
+        out = self.act_1(out)
         out = self.fc2(out)
-        out = self.sigmoid2(out)
+        out = self.act_2(out)
         out = self.fc3(out)
-        out = self.sigmoid3(out)
+        out = self.act_3(out)
         out = self.fc4(out)
-        out = self.sigmoid4(out)
+        out = self.act_4(out)
         out = self.fc5(out)
 
         return out
@@ -66,13 +66,20 @@ class FC(nn.Module):
         pytest.param(FC, (100, 32 * 32 * 3)),
     ],
 )
-def test_torch_to_numpy(model, input_shape, seed_torch):
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.Sigmoid, id="sigmoid"),
+        pytest.param(nn.ReLU6, id="relu"),
+    ],
+)
+def test_torch_to_numpy(model, input_shape, activation_function, seed_torch):
     """Test the different model architecture from torch numpy."""
 
     # Seed torch
     seed_torch()
     # Define the torch model
-    torch_fc_model = model()
+    torch_fc_model = model(activation_function)
     # Create random input
     torch_input_1 = torch.randn(input_shape)
     # Predict with torch model

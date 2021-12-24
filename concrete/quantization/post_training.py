@@ -4,7 +4,7 @@ import numpy
 from torch import nn
 
 from ..torch import NumpyModule
-from .quantized_activations import QuantizedSigmoid
+from .quantized_activations import QuantizedReLU6, QuantizedSigmoid
 from .quantized_array import QuantizedArray
 from .quantized_layers import QuantizedLinear
 from .quantized_module import QuantizedModule
@@ -13,7 +13,7 @@ from .quantized_module import QuantizedModule
 class PostTrainingAffineQuantization:
     """Post-training Affine Quantization."""
 
-    IMPLEMENTED_MODULES = {nn.Linear, nn.Sigmoid}
+    IMPLEMENTED_MODULES = {nn.Linear, nn.Sigmoid, nn.ReLU6}
 
     quant_layers_dict: dict
     n_bits: int
@@ -104,6 +104,10 @@ class PostTrainingAffineQuantization:
                 calibration_data = self._calibrate_layers_activation(
                     name, q_sigmoid, calibration_data
                 )
+            elif isinstance(layer, nn.ReLU6):
+                # Create a new quantized layer (based on type(layer))
+                q_relu = QuantizedReLU6(n_bits=self.n_bits)
+                calibration_data = self._calibrate_layers_activation(name, q_relu, calibration_data)
             else:  # pragma: no cover
                 # If we find a layer that has not been implemented we throw an error
                 hf_m_names = sorted(module.__name__ for module in self.IMPLEMENTED_MODULES)

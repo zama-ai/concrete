@@ -14,21 +14,28 @@ INPUT_OUTPUT_FEATURE = [1, 2, 3]
 class FC(nn.Module):
     """Torch model for the tests"""
 
-    def __init__(self, input_output):
+    def __init__(self, input_output, activation_function):
         super().__init__()
         self.fc1 = nn.Linear(in_features=input_output, out_features=input_output)
-        self.sigmoid1 = nn.Sigmoid()
+        self.act_f = activation_function()
         self.fc2 = nn.Linear(in_features=input_output, out_features=input_output)
 
     def forward(self, x):
         """Forward pass."""
         out = self.fc1(x)
-        out = self.sigmoid1(out)
+        out = self.act_f(out)
         out = self.fc2(out)
 
         return out
 
 
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.Sigmoid, id="sigmoid"),
+        pytest.param(nn.ReLU6, id="relu"),
+    ],
+)
 @pytest.mark.parametrize(
     "model",
     [pytest.param(FC)],
@@ -40,6 +47,7 @@ class FC(nn.Module):
 def test_compile_torch(
     input_output_feature,
     model,
+    activation_function,
     seed_torch,
     default_compilation_configuration,
     check_is_good_execution,
@@ -55,7 +63,7 @@ def test_compile_torch(
     n_examples = 50
 
     # Define the torch model
-    torch_fc_model = model(input_output_feature)
+    torch_fc_model = model(input_output_feature, activation_function)
     # Create random input
     inputset = [
         numpy.random.uniform(-100, 100, size=input_output_feature) for _ in range(n_examples)
