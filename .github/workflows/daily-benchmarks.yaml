@@ -1,8 +1,6 @@
 name: Daily Benchmarks
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 22 * * *' # Everyday @ 22:00
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
