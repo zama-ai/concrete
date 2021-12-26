@@ -119,7 +119,7 @@ jobs:
           echo "::set-output name=compiler-tag::${COMPILER_TAG}"
       - name: Login to GitHub Container Registry
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
         with:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
@@ -532,7 +532,7 @@ jobs:
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
         with:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
@@ -647,7 +647,7 @@ jobs:
       #   id: buildx
       #   uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
         with:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
