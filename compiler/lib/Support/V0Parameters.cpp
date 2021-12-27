@@ -1,3 +1,6 @@
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+
 /// DO NOT MANUALLY EDIT THIS FILE.
 /// This file was generated thanks the "parameters optimizer".
 /// We should include this in our build system, but for moment it is just a cc

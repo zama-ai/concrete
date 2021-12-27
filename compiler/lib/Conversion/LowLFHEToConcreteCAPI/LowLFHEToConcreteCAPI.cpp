@@ -1,3 +1,6 @@
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+
 #include "mlir//IR/BuiltinTypes.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"

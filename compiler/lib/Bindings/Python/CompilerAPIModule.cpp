@@ -1,3 +1,6 @@
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+
 #include "CompilerAPIModule.h"
 #include "zamalang-c/Support/CompilerEngine.h"
 #include "zamalang/Dialect/HLFHE/IR/HLFHEOpsDialect.h.inc"

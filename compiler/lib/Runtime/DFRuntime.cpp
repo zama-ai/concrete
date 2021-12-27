@@ -1,3 +1,6 @@
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+
 /**
    This file implements the dataflow runtime. It encapsulates all of
    the underlying communication, parallelism, etc. and only exposes a
