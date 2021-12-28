@@ -3,4 +3,3 @@
 
 """Concretelang python module"""
 from mlir._mlir_libs._concretelang import *
-from .compiler import CompilerEngine, library

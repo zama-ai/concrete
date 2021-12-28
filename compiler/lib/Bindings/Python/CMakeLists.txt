@@ -26,11 +26,11 @@ declare_mlir_python_extension(ConcretelangBindingsPythonExtension.Core
 declare_mlir_python_sources(ConcretelangBindingsPythonSources
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
   SOURCES
-    concretelang/__init__.py
-    concretelang/compiler.py
-    concretelang/version.py
-    concretelang/dialects/__init__.py
-    concretelang/dialects/_ods_common.py)
+    concrete/compiler.py
+    concrete/version.py
+    concrete/lang/__init__.py
+    concrete/lang/dialects/__init__.py
+    concrete/lang/dialects/_ods_common.py)
 
 ################################################################################
 # Declare dialect-specific bindings.
@@ -43,18 +43,18 @@ declare_mlir_dialect_python_bindings(
   ADD_TO_PARENT ConcretelangBindingsPythonSources.Dialects
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
   CONCRETELANGBindingsPythonHLFHEOps
-	TD_FILE concretelang/dialects/HLFHEOps.td
+	TD_FILE concrete/lang/dialects/HLFHEOps.td
   SOURCES
-    concretelang/dialects/hlfhe.py
+    concrete/lang/dialects/hlfhe.py
 	DIALECT_NAME HLFHE)
 
 declare_mlir_dialect_python_bindings(
   ADD_TO_PARENT ConcretelangBindingsPythonSources.Dialects
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
   CONCRETELANGBindingsPythonHLFHELinalgOps
-  TD_FILE concretelang/dialects/HLFHELinalgOps.td
+  TD_FILE concrete/lang/dialects/HLFHELinalgOps.td
   SOURCES
-    concretelang/dialects/hlfhelinalg.py
+    concrete/lang/dialects/hlfhelinalg.py
   DIALECT_NAME HLFHELinalg)
 
 

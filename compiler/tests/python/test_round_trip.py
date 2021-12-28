@@ -1,5 +1,5 @@
 import pytest
-from concretelang import compiler
+from concrete import compiler
 
 
 VALID_INPUTS = [

@@ -14,7 +14,7 @@ def read(fname):
 def find_version():
     return re.match(
         r"__version__ = \"(?P<version>.+)\"",
-        read("lib/Bindings/Python/concretelang/version.py"),
+        read("lib/Bindings/Python/concrete/version.py"),
     ).group("version")
 
 
@@ -56,9 +56,9 @@ setuptools.setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     url="https://github.com/zama-ai/homomorphizer",
-    packages=setuptools.find_packages(
+    packages=setuptools.find_namespace_packages(
         where=build_dir() + "tools/concretelang/python_packages/concretelang_core",
-        include=["concretelang", "concretelang.*"],
+        include=["concrete", "concrete.*"],
     )
     + setuptools.find_namespace_packages(
         where=build_dir() + "tools/concretelang/python_packages/concretelang_core",

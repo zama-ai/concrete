@@ -152,7 +152,7 @@ release_tarballs:
 	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concretefhe-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
 
 update_python_version:
-	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/concretelang/version.py
+	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/concrete/version.py
 
 .PHONY: build-initialized \
 	build-end-to-end-jit \
