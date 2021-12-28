@@ -18,21 +18,21 @@
 #include <sstream>
 
 #include "mlir/IR/BuiltinOps.h"
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Conversion/Utils/GlobalFHEContext.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
-#include "zamalang/Dialect/RT/IR/RTDialect.h"
-#include "zamalang/Support/Error.h"
-#include "zamalang/Support/JitCompilerEngine.h"
-#include "zamalang/Support/KeySet.h"
-#include "zamalang/Support/LLVMEmitFile.h"
-#include "zamalang/Support/Pipeline.h"
-#include "zamalang/Support/logging.h"
+#include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/GlobalFHEContext.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEDialect.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHETypes.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "concretelang/Dialect/RT/IR/RTDialect.h"
+#include "concretelang/Support/Error.h"
+#include "concretelang/Support/JitCompilerEngine.h"
+#include "concretelang/Support/KeySet.h"
+#include "concretelang/Support/LLVMEmitFile.h"
+#include "concretelang/Support/Pipeline.h"
+#include "concretelang/Support/logging.h"
 
 enum Action {
   ROUND_TRIP,
@@ -162,33 +162,33 @@ llvm::cl::list<int64_t> hlfhelinalgTileSizes(
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 } // namespace cmdline
 
-llvm::Expected<mlir::zamalang::V0FHEContext> buildFHEContext(
-    llvm::Optional<mlir::zamalang::V0FHEConstraint> autoFHEConstraints,
+llvm::Expected<mlir::concretelang::V0FHEContext> buildFHEContext(
+    llvm::Optional<mlir::concretelang::V0FHEConstraint> autoFHEConstraints,
     llvm::Optional<size_t> overrideMaxEintPrecision,
     llvm::Optional<size_t> overrideMaxMANP) {
   if (!autoFHEConstraints.hasValue() &&
       (!overrideMaxMANP.hasValue() || !overrideMaxEintPrecision.hasValue())) {
-    return mlir::zamalang::StreamStringError(
+    return mlir::concretelang::StreamStringError(
         "Maximum encrypted integer precision and maximum for the Minimal"
         "Arithmetic Noise Passing are required, but were neither specified"
         "explicitly nor determined automatically");
   }
 
-  mlir::zamalang::V0FHEConstraint fheConstraints{
+  mlir::concretelang::V0FHEConstraint fheConstraints{
       overrideMaxMANP.hasValue() ? overrideMaxMANP.getValue()
                                  : autoFHEConstraints.getValue().norm2,
       overrideMaxEintPrecision.hasValue() ? overrideMaxEintPrecision.getValue()
                                           : autoFHEConstraints.getValue().p};
 
-  const mlir::zamalang::V0Parameter *parameter = getV0Parameter(fheConstraints);
+  const mlir::concretelang::V0Parameter *parameter = getV0Parameter(fheConstraints);
 
   if (!parameter) {
-    return mlir::zamalang::StreamStringError()
+    return mlir::concretelang::StreamStringError()
            << "Could not determine V0 parameters for 2-norm of "
            << fheConstraints.norm2 << " and p of " << fheConstraints.p;
   }
 
-  return mlir::zamalang::V0FHEContext{fheConstraints, *parameter};
+  return mlir::concretelang::V0FHEContext{fheConstraints, *parameter};
 }
 
 namespace llvm {
@@ -242,13 +242,13 @@ mlir::LogicalResult processInputBuffer(
     llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
     llvm::Optional<llvm::ArrayRef<int64_t>> hlfhelinalgTileSizes,
     bool autoParallelize,
-    llvm::Optional<mlir::zamalang::KeySetCache> keySetCache,
+    llvm::Optional<mlir::concretelang::KeySetCache> keySetCache,
     llvm::raw_ostream &os,
-    std::shared_ptr<mlir::zamalang::CompilerEngine::Library> outputLib) {
-  std::shared_ptr<mlir::zamalang::CompilationContext> ccx =
-      mlir::zamalang::CompilationContext::createShared();
+    std::shared_ptr<mlir::concretelang::CompilerEngine::Library> outputLib) {
+  std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
+      mlir::concretelang::CompilationContext::createShared();
 
-  mlir::zamalang::JitCompilerEngine ce{ccx};
+  mlir::concretelang::JitCompilerEngine ce{ccx};
 
   ce.setVerifyDiagnostics(verifyDiagnostics);
   ce.setAutoParallelize(autoParallelize);
@@ -270,11 +270,11 @@ mlir::LogicalResult processInputBuffer(
     ce.setHLFHELinalgTileSizes(*hlfhelinalgTileSizes);
 
   if (action == Action::JIT_INVOKE) {
-    llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
+    llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> lambdaOrErr =
         ce.buildLambda(std::move(buffer), jitFuncName, keySetCache);
 
     if (!lambdaOrErr) {
-      mlir::zamalang::log_error()
+      mlir::concretelang::log_error()
           << "Failed to JIT-compile " << jitFuncName << ": "
           << llvm::toString(std::move(lambdaOrErr.takeError()));
       return mlir::failure();
@@ -283,7 +283,7 @@ mlir::LogicalResult processInputBuffer(
     llvm::Expected<uint64_t> resOrErr = (*lambdaOrErr)(jitArgs);
 
     if (!resOrErr) {
-      mlir::zamalang::log_error()
+      mlir::concretelang::log_error()
           << "Failed to JIT-invoke " << jitFuncName << " with arguments "
           << jitArgs << ": " << llvm::toString(std::move(resOrErr.takeError()));
       return mlir::failure();
@@ -291,35 +291,35 @@ mlir::LogicalResult processInputBuffer(
 
     os << *resOrErr << "\n";
   } else {
-    enum mlir::zamalang::CompilerEngine::Target target;
+    enum mlir::concretelang::CompilerEngine::Target target;
 
     switch (action) {
     case Action::ROUND_TRIP:
-      target = mlir::zamalang::CompilerEngine::Target::ROUND_TRIP;
+      target = mlir::concretelang::CompilerEngine::Target::ROUND_TRIP;
       break;
     case Action::DUMP_HLFHE:
-      target = mlir::zamalang::CompilerEngine::Target::HLFHE;
+      target = mlir::concretelang::CompilerEngine::Target::HLFHE;
       break;
     case Action::DUMP_MIDLFHE:
-      target = mlir::zamalang::CompilerEngine::Target::MIDLFHE;
+      target = mlir::concretelang::CompilerEngine::Target::MIDLFHE;
       break;
     case Action::DUMP_LOWLFHE:
-      target = mlir::zamalang::CompilerEngine::Target::LOWLFHE;
+      target = mlir::concretelang::CompilerEngine::Target::LOWLFHE;
       break;
     case Action::DUMP_STD:
-      target = mlir::zamalang::CompilerEngine::Target::STD;
+      target = mlir::concretelang::CompilerEngine::Target::STD;
       break;
     case Action::DUMP_LLVM_DIALECT:
-      target = mlir::zamalang::CompilerEngine::Target::LLVM;
+      target = mlir::concretelang::CompilerEngine::Target::LLVM;
       break;
     case Action::DUMP_LLVM_IR:
-      target = mlir::zamalang::CompilerEngine::Target::LLVM_IR;
+      target = mlir::concretelang::CompilerEngine::Target::LLVM_IR;
       break;
     case Action::DUMP_OPTIMIZED_LLVM_IR:
-      target = mlir::zamalang::CompilerEngine::Target::OPTIMIZED_LLVM_IR;
+      target = mlir::concretelang::CompilerEngine::Target::OPTIMIZED_LLVM_IR;
       break;
     case Action::COMPILE:
-      target = mlir::zamalang::CompilerEngine::Target::LIBRARY;
+      target = mlir::concretelang::CompilerEngine::Target::LIBRARY;
       break;
     case JIT_INVOKE:
       // Case just here to satisfy the compiler; already handled above
@@ -328,7 +328,7 @@ mlir::LogicalResult processInputBuffer(
     auto retOrErr = ce.compile(std::move(buffer), target, outputLib);
 
     if (!retOrErr) {
-      mlir::zamalang::log_error()
+      mlir::concretelang::log_error()
           << llvm::toString(std::move(retOrErr.takeError())) << "\n";
 
       return mlir::failure();
@@ -357,7 +357,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   // Parse command line arguments
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
-  mlir::zamalang::setupLogging(cmdline::verbose);
+  mlir::concretelang::setupLogging(cmdline::verbose);
 
   // String for error messages
   std::string errorMessage;
@@ -385,9 +385,9 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   if (!cmdline::hlfhelinalgTileSizes.empty())
     hlfhelinalgTileSizes.emplace(cmdline::hlfhelinalgTileSizes);
 
-  llvm::Optional<mlir::zamalang::KeySetCache> jitKeySetCache;
+  llvm::Optional<mlir::concretelang::KeySetCache> jitKeySetCache;
   if (!cmdline::jitKeySetCachePath.empty()) {
-    jitKeySetCache = mlir::zamalang::KeySetCache(cmdline::jitKeySetCachePath);
+    jitKeySetCache = mlir::concretelang::KeySetCache(cmdline::jitKeySetCachePath);
   }
 
   // In case of compilation to library, the real output is the library.
@@ -397,7 +397,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   std::unique_ptr<llvm::ToolOutputFile> output =
       mlir::openOutputFile(outputPath, &errorMessage);
 
-  using Library = mlir::zamalang::CompilerEngine::Library;
+  using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(cmdline::output);
 
   if (!output) {

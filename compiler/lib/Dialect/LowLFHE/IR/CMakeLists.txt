@@ -3,7 +3,7 @@ add_mlir_dialect_library(LowLFHEDialect
   LowLFHEOps.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/zamalang/Dialect/LowLFHE
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/LowLFHE
 
   DEPENDS
   MLIRLowLFHEOpsIncGen

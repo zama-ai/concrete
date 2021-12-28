@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(ParallelizeAndRunHLFHE, add_eint_tree) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%arg0: !HLFHE.eint<7>, %arg1: !HLFHE.eint<7>, %arg2: !HLFHE.eint<7>, %arg3: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
   %1 = "HLFHE.add_eint"(%arg0, %arg1): (!HLFHE.eint<7>, !HLFHE.eint<7>) -> (!HLFHE.eint<7>)
   %2 = "HLFHE.add_eint"(%arg0, %arg2): (!HLFHE.eint<7>, !HLFHE.eint<7>) -> (!HLFHE.eint<7>)

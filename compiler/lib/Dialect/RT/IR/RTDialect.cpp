@@ -14,26 +14,26 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/TypeUtilities.h"
 
-#include "zamalang/Dialect/RT/IR/RTDialect.h"
-#include "zamalang/Dialect/RT/IR/RTOps.h"
-#include "zamalang/Dialect/RT/IR/RTTypes.h"
+#include "concretelang/Dialect/RT/IR/RTDialect.h"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
+#include "concretelang/Dialect/RT/IR/RTTypes.h"
 
 #define GET_TYPEDEF_CLASSES
-#include "zamalang/Dialect/RT/IR/RTOpsTypes.cpp.inc"
+#include "concretelang/Dialect/RT/IR/RTOpsTypes.cpp.inc"
 
-#include "zamalang/Dialect/RT/IR/RTOpsDialect.cpp.inc"
+#include "concretelang/Dialect/RT/IR/RTOpsDialect.cpp.inc"
 
-using namespace mlir::zamalang::RT;
+using namespace mlir::concretelang::RT;
 
 void RTDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "zamalang/Dialect/RT/IR/RTOps.cpp.inc"
+#include "concretelang/Dialect/RT/IR/RTOps.cpp.inc"
       >();
 
   addTypes<
 #define GET_TYPEDEF_LIST
-#include "zamalang/Dialect/RT/IR/RTOpsTypes.cpp.inc"
+#include "concretelang/Dialect/RT/IR/RTOpsTypes.cpp.inc"
       >();
 }
 

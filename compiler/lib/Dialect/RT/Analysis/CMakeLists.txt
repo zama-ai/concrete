@@ -5,7 +5,7 @@ add_mlir_library(RTDialectAnalysis
   LowerRTToLLVMDFRCallsConversionPatterns.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/zamalang/Dialect/RT
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/RT
 
   DEPENDS
   RTDialect

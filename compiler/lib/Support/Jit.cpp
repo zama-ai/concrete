@@ -10,12 +10,12 @@
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
-#include <zamalang/Support/Error.h>
-#include <zamalang/Support/Jit.h>
-#include <zamalang/Support/logging.h>
+#include <concretelang/Support/Error.h>
+#include <concretelang/Support/Jit.h>
+#include <concretelang/Support/logging.h>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 llvm::Expected<std::unique_ptr<JITLambda>>
 JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
@@ -471,5 +471,5 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, void *res,
   return llvm::Error::success();
 }
 
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

@@ -14,7 +14,7 @@ def read(fname):
 def find_version():
     return re.match(
         r"__version__ = \"(?P<version>.+)\"",
-        read("lib/Bindings/Python/zamalang/version.py"),
+        read("lib/Bindings/Python/concretelang/version.py"),
     ).group("version")
 
 
@@ -57,15 +57,15 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/zama-ai/homomorphizer",
     packages=setuptools.find_packages(
-        where=build_dir() + "tools/zamalang/python_packages/zamalang_core",
-        include=["zamalang", "zamalang.*"],
+        where=build_dir() + "tools/concretelang/python_packages/concretelang_core",
+        include=["concretelang", "concretelang.*"],
     )
     + setuptools.find_namespace_packages(
-        where=build_dir() + "tools/zamalang/python_packages/zamalang_core",
+        where=build_dir() + "tools/concretelang/python_packages/concretelang_core",
         include=["mlir", "mlir.*"],
     ),
     install_requires=["numpy", "PyYAML"],
-    package_dir={"": build_dir() + "tools/zamalang/python_packages/zamalang_core"},
+    package_dir={"": build_dir() + "tools/concretelang/python_packages/concretelang_core"},
     include_package_data=True,
     package_data={"": ["*.so", "*.dylib"]},
     classifiers=[

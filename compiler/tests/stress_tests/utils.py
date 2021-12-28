@@ -1,6 +1,6 @@
 import subprocess
 
-ZAMACOMPILER = 'zamacompiler'
+CONCRETECOMPILER = 'concretecompiler'
 
 def ceil_log2(v, exact=False):
     import math

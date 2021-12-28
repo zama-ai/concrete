@@ -1,6 +1,6 @@
 set(LLVM_OPTIONAL_SOURCES HLFHE.cpp)
 
-add_mlir_public_c_api_library(ZAMALANGCAPIHLFHE
+add_mlir_public_c_api_library(CONCRETELANGCAPIHLFHE
 
   HLFHE.cpp
 

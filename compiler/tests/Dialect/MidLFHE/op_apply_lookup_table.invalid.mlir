@@ -1,4 +1,4 @@
-// RUN: zamacompiler --split-input-file --verify-diagnostics --action=roundtrip %s
+// RUN: concretecompiler --split-input-file --verify-diagnostics --action=roundtrip %s
 
 // Bad dimension of the lookup table
 func @apply_lookup_table(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>, %arg1: tensor<4xi2>) -> !MidLFHE.glwe<{512,10,64}{2}> {

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import re
 
-from stress_tests.utils import ZAMACOMPILER, log2, ceil_log2, run
+from stress_tests.utils import CONCRETECOMPILER, log2, ceil_log2, run
 
 
 DUMP_HLFHE = '--action=dump-hlfhe'
@@ -15,7 +15,7 @@ def read_max_mlir_attribute(name, content):
     )
 
 def log_manp_max(path):
-    hlfhe = run(ZAMACOMPILER, path, DUMP_HLFHE)
+    hlfhe = run(CONCRETECOMPILER, path, DUMP_HLFHE)
     return ceil_log2(read_max_mlir_attribute('MANP', hlfhe))
 
 @dataclass
@@ -24,7 +24,7 @@ class FHEParams:
     glwe_dim: int
 
 def v0_param(path):
-    lowlfhe = run(ZAMACOMPILER, path, DUMP_LOWLFHE)
+    lowlfhe = run(CONCRETECOMPILER, path, DUMP_LOWLFHE)
     return FHEParams(
         log_poly_size=log2(read_max_mlir_attribute('polynomialSize', lowlfhe)),
         glwe_dim=read_max_mlir_attribute('glweDimension', lowlfhe),

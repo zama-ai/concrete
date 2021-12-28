@@ -1,4 +1,4 @@
-// RUN: zamacompiler %s --action=dump-midlfhe 2>&1 | FileCheck %s
+// RUN: concretecompiler %s --action=dump-midlfhe 2>&1 | FileCheck %s
 
 //CHECK-LABEL: #map0 = affine_map<(d0, d1) -> (d0, d1)>
 //CHECK-NEXT: #map1 = affine_map<(d0, d1) -> (d0, d1, 0)>

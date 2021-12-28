@@ -1,3 +1,3 @@
-#include <zamalang/Conversion/Utils/GlobalFHEContext.h>
+#include <concretelang/Conversion/Utils/GlobalFHEContext.h>
 
-extern const mlir::zamalang::V0FHEConstraint defaultV0Constraints;
+extern const mlir::concretelang::V0FHEConstraint defaultV0Constraints;

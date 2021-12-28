@@ -1,26 +1,26 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
-#include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEDialect.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOps.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHETypes.h"
 
 #define GET_TYPEDEF_CLASSES
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOpsTypes.cpp.inc"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOpsTypes.cpp.inc"
 
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOpsDialect.cpp.inc"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOpsDialect.cpp.inc"
 
-using namespace mlir::zamalang::HLFHE;
+using namespace mlir::concretelang::HLFHE;
 
 void HLFHEDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.cpp.inc"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOps.cpp.inc"
       >();
 
   addTypes<
 #define GET_TYPEDEF_LIST
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOpsTypes.cpp.inc"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOpsTypes.cpp.inc"
       >();
 }
 

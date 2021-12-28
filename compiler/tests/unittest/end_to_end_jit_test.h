@@ -3,9 +3,9 @@
 
 #include <gtest/gtest.h>
 
-#include "zamalang/Support/CompilerEngine.h"
-#include "zamalang/Support/JitCompilerEngine.h"
-#include "zamalang/Support/KeySetCache.h"
+#include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/JitCompilerEngine.h"
+#include "concretelang/Support/KeySetCache.h"
 #include "llvm/Support/Path.h"
 
 #include "globals.h"
@@ -97,7 +97,7 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
 template <typename F>
-mlir::zamalang::JitCompilerEngine::Lambda
+mlir::concretelang::JitCompilerEngine::Lambda
 internalCheckedJit(F checkFunc, llvm::StringRef src,
                    llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false,
@@ -110,20 +110,20 @@ internalCheckedJit(F checkFunc, llvm::StringRef src,
   llvm::sys::path::append(cachePath, "KeySetCache");
 
   auto cachePathStr = std::string(cachePath);
-  auto optCache = llvm::Optional<mlir::zamalang::KeySetCache>(
-      mlir::zamalang::KeySetCache(cachePathStr));
+  auto optCache = llvm::Optional<mlir::concretelang::KeySetCache>(
+      mlir::concretelang::KeySetCache(cachePathStr));
 
-  mlir::zamalang::JitCompilerEngine engine;
+  mlir::concretelang::JitCompilerEngine engine;
 
   if (useDefaultFHEConstraints)
     engine.setFHEConstraints(defaultV0Constraints);
-#ifdef ZAMALANG_PARALLEL_TESTING_ENABLED
+#ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
   engine.setAutoParallelize(true);
 #else
   engine.setAutoParallelize(autoParallelize);
 #endif
 
-  llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
+  llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> lambdaOrErr =
       engine.buildLambda(src, func, optCache);
 
   if (!lambdaOrErr) {
@@ -149,7 +149,7 @@ static inline uint64_t operator"" _u64(unsigned long long int v) { return v; }
 // caller instead of `internalCheckedJit`.
 #define checkedJit(...)                                                        \
   internalCheckedJit(                                                          \
-      [](llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> &lambda) {  \
+      [](llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> &lambda) {  \
         ASSERT_EXPECTED_SUCCESS(lambda);                                       \
       },                                                                       \
       __VA_ARGS__)

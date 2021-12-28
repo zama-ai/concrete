@@ -27,7 +27,7 @@ Files are in json format but can easily be grepped (multi-lines).
 ```json
 {
   # Command line to relauch an experiment replication by end
-  "cmd": "zamacompiler /tmp/stresstests/basic_001_002_1.mlir --action=jit-invoke --jit-funcname=main --jit-args=1 --jit-args=1",
+  "cmd": "concretecompiler /tmp/stresstests/basic_001_002_1.mlir --action=jit-invoke --jit-funcname=main --jit-args=1 --jit-args=1",
   # General information about the experiment
   "conditions": {
     "bitwidth": 1, # precision in bits
@@ -36,7 +36,7 @@ Files are in json format but can easily be grepped (multi-lines).
       1,
       1
     ],
-    "log_manp_max": 3, # value comuted by zamacompiler
+    "log_manp_max": 3, # value comuted by concretecompiler
     "overflow": true,  # does the exact computation overflow the precision
     "details": [
       "OVERFLOW"

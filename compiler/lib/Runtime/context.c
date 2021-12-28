@@ -1,5 +1,5 @@
 #include "concrete-ffi.h"
-#include "zamalang/Runtime/context.h"
+#include "concretelang/Runtime/context.h"
 #include <stdio.h>
 
 LweKeyswitchKey_u64 *get_keyswitch_key(RuntimeContext *context) {

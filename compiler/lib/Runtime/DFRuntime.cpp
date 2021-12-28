@@ -14,9 +14,9 @@
 #include <hpx/hpx_start.hpp>
 #include <hpx/hpx_suspend.hpp>
 
-#include "zamalang/Runtime/DFRuntime.hpp"
-#include "zamalang/Runtime/distributed_generic_task_server.hpp"
-#include "zamalang/Runtime/runtime_api.h"
+#include "concretelang/Runtime/DFRuntime.hpp"
+#include "concretelang/Runtime/distributed_generic_task_server.hpp"
+#include "concretelang/Runtime/runtime_api.h"
 
 std::vector<GenericComputeClient> gcc;
 void *dl_handle;

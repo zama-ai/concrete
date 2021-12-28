@@ -1,4 +1,4 @@
-// RUN: zamacompiler --passes lowlfhe-to-concrete-c-api --action=dump-std %s 2>&1| FileCheck %s
+// RUN: concretecompiler --passes lowlfhe-to-concrete-c-api --action=dump-std %s 2>&1| FileCheck %s
 
 // CHECK-LABEL: module
 // CHECK: func private @keyswitch_lwe_u64(index, !LowLFHE.lwe_key_switch_key, !LowLFHE.lwe_ciphertext<_,_>, !LowLFHE.lwe_ciphertext<_,_>)

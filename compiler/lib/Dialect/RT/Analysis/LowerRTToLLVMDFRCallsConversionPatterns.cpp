@@ -4,17 +4,17 @@
 #include <iostream>
 
 #include <mlir/IR/BuiltinOps.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHEOps.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHETypes.h>
-#include <zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
-#include <zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h>
-#include <zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h>
-#include <zamalang/Dialect/RT/Analysis/Autopar.h>
-#include <zamalang/Dialect/RT/IR/RTDialect.h>
-#include <zamalang/Dialect/RT/IR/RTOps.h>
-#include <zamalang/Dialect/RT/IR/RTTypes.h>
-#include <zamalang/Support/math.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEOps.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHETypes.h>
+#include <concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
+#include <concretelang/Dialect/LowLFHE/IR/LowLFHEOps.h>
+#include <concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h>
+#include <concretelang/Dialect/RT/Analysis/Autopar.h>
+#include <concretelang/Dialect/RT/IR/RTDialect.h>
+#include <concretelang/Dialect/RT/IR/RTOps.h>
+#include <concretelang/Dialect/RT/IR/RTTypes.h>
+#include <concretelang/Support/math.h>
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/Compiler.h>
@@ -41,13 +41,13 @@
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Transforms/RegionUtils.h>
 #include <mlir/Transforms/Utils.h>
-#include <zamalang/Conversion/Utils/GenericOpTypeConversionPattern.h>
+#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 
 #define GEN_PASS_CLASSES
-#include <zamalang/Dialect/RT/Analysis/Autopar.h.inc>
+#include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 namespace {
 
@@ -293,10 +293,10 @@ struct WorkFunctionReturnOpInterfaceLowering
   }
 };
 } // end anonymous namespace
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir
 
-void mlir::zamalang::populateRTToLLVMConversionPatterns(
+void mlir::concretelang::populateRTToLLVMConversionPatterns(
     LLVMTypeConverter &converter, RewritePatternSet &patterns) {
   // clang-format off
   patterns.add<

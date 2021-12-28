@@ -16,8 +16,8 @@ COPY /compiler /compiler
 WORKDIR /compiler
 RUN make Python3_EXECUTABLE=/opt/python/${python_tag}/bin/python python-bindings
 # Fix MLIR package
-RUN touch build/tools/zamalang/python_packages/zamalang_core/mlir/__init__.py
-RUN touch build/tools/zamalang/python_packages/zamalang_core/mlir/dialects/__init__.py
+RUN touch build/tools/concretelang/python_packages/concretelang_core/mlir/__init__.py
+RUN touch build/tools/concretelang/python_packages/concretelang_core/mlir/dialects/__init__.py
 # Build wheel
 RUN /opt/python/${python_tag}/bin/pip wheel --no-deps -w /wheels .
 RUN auditwheel repair /wheels/*.whl --plat manylinux_2_24_x86_64 -w /wheels

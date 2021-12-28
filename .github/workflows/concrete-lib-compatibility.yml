@@ -19,7 +19,7 @@ jobs:
           --base_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/concrete-api-env/versions \
           --env_img_url \
-          https://api.github.com/orgs/zama-ai/packages/container/zamalang-compiler/versions \
+          https://api.github.com/orgs/zama-ai/packages/container/concretelang-compiler/versions \
           --token ${{ secrets.GH_TOKEN }}
       
       - name: Send Slack Notification 
@@ -47,7 +47,7 @@ jobs:
       - name: Test compiler with latest concrete-ffi
         uses: addnab/docker-run-action@v3
         with:
-          image: ghcr.io/zama-ai/zamalang-compiler
+          image: ghcr.io/zama-ai/concretelang-compiler
           options: -v ${{ github.workspace }}/concrete:/concrete
           run: |
             cd /compiler

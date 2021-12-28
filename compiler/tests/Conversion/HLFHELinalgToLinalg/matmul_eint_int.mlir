@@ -1,4 +1,4 @@
-// RUN: zamacompiler %s --action=dump-midlfhe --passes hlfhe-tensor-ops-to-linalg 2>&1 | FileCheck %s
+// RUN: concretecompiler %s --action=dump-midlfhe --passes hlfhe-tensor-ops-to-linalg 2>&1 | FileCheck %s
 
 // CHECK: #map0 = affine_map<(d0, d1, d2) -> (d0, d2)>
 // CHECK-NEXT: #map1 = affine_map<(d0, d1, d2) -> (d2, d1)>

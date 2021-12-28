@@ -1,19 +1,19 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
-#ifndef ZAMALANG_PYTHON_DIALECTMODULES_H
-#define ZAMALANG_PYTHON_DIALECTMODULES_H
+#ifndef CONCRETELANG_PYTHON_DIALECTMODULES_H
+#define CONCRETELANG_PYTHON_DIALECTMODULES_H
 
 #include <pybind11/pybind11.h>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 namespace python {
 
 void populateDialectHLFHESubmodule(pybind11::module &m);
 
 } // namespace python
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir
 
-#endif // ZAMALANG_PYTHON_DIALECTMODULES_H
+#endif // CONCRETELANG_PYTHON_DIALECTMODULES_H

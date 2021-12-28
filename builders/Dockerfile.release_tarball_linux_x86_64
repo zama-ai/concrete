@@ -11,10 +11,10 @@ ENV CONCRETE_PROJECT=/concrete
 COPY .github/workflows/assets/Installation.md /
 COPY /compiler /compiler
 WORKDIR /compiler
-RUN make BINDINGS_PYTHON_ENABLED=OFF zamacompiler
+RUN make BINDINGS_PYTHON_ENABLED=OFF concretecompiler
 # Build tarball
-RUN mkdir -p /tarballs/zamacompiler/lib /tarballs/zamacompiler/bin && \
-    cp /compiler/build/bin/zamacompiler /tarballs/zamacompiler/bin && \
-    cp /compiler/build/lib/libZamalangRuntime.so /tarballs/zamacompiler/lib && \
-    cp /Installation.md /tarballs/zamacompiler/
-RUN cd /tarballs && tar -czvf zamacompiler.tar.gz zamacompiler
+RUN mkdir -p /tarballs/concretecompiler/lib /tarballs/concretecompiler/bin && \
+    cp /compiler/build/bin/concretecompiler /tarballs/concretecompiler/bin && \
+    cp /compiler/build/lib/libConcretelangRuntime.so /tarballs/concretecompiler/lib && \
+    cp /Installation.md /tarballs/concretecompiler/
+RUN cd /tarballs && tar -czvf concretecompiler.tar.gz concretecompiler

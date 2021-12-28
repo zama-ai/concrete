@@ -8,14 +8,14 @@
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
-#include <zamalang/Dialect/HLFHE/IR/HLFHEOps.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHETypes.h>
-#include <zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
-#include <zamalang/Dialect/HLFHELinalg/Transforms/Tiling.h>
-#include <zamalang/Support/Constants.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEOps.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHETypes.h>
+#include <concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
+#include <concretelang/Dialect/HLFHELinalg/Transforms/Tiling.h>
+#include <concretelang/Support/Constants.h>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 namespace {
 
@@ -124,14 +124,14 @@ static const mlir::StringLiteral kTransformMarker =
 // Partial tiles are currently not supported, i.e., `N` must be a
 // multiple of `T`, `M` a multiple of `U` and `K` a multiple of `V`.
 class MatMulTilingPattern : public mlir::OpRewritePattern<
-                                mlir::zamalang::HLFHELinalg::MatMulEintIntOp> {
+                                mlir::concretelang::HLFHELinalg::MatMulEintIntOp> {
 public:
   MatMulTilingPattern(mlir::MLIRContext *context)
-      : mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(
-            context, ::mlir::zamalang::DEFAULT_PATTERN_BENEFIT) {}
+      : mlir::OpRewritePattern<mlir::concretelang::HLFHELinalg::MatMulEintIntOp>(
+            context, ::mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::HLFHELinalg::MatMulEintIntOp op,
+  matchAndRewrite(mlir::concretelang::HLFHELinalg::MatMulEintIntOp op,
                   mlir::PatternRewriter &rewriter) const override {
     // Avoid infinite recursion by marking each matmul operation and
     // bailing out  for the marker
@@ -186,8 +186,8 @@ public:
     mlir::Value B = op.getOperand(1);
 
     // Initialization of the output matrix with zeros
-    mlir::zamalang::HLFHELinalg::ZeroOp Cinit =
-        rewriter.create<mlir::zamalang::HLFHELinalg::ZeroOp>(
+    mlir::concretelang::HLFHELinalg::ZeroOp Cinit =
+        rewriter.create<mlir::concretelang::HLFHELinalg::ZeroOp>(
             origLoc, op.getResult().getType());
 
     mlir::TensorType ATTy = A.getType().cast<mlir::TensorType>();
@@ -259,8 +259,8 @@ public:
           {inductionVars[0], inductionVars[2]});
 
       // Multiplication of the tiles
-      mlir::zamalang::HLFHELinalg::MatMulEintIntOp tiledMul =
-          builder.create<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(
+      mlir::concretelang::HLFHELinalg::MatMulEintIntOp tiledMul =
+          builder.create<mlir::concretelang::HLFHELinalg::MatMulEintIntOp>(
               origLoc,
               mlir::RankedTensorType::get(llvm::SmallVector<int64_t, 2>{iT, iV},
                                           CTTy.getElementType()),
@@ -273,8 +273,8 @@ public:
 
       // Add result of the multiplication of the tiles to the
       // result tile from C
-      mlir::zamalang::HLFHELinalg::AddEintOp accuTile =
-          builder.create<mlir::zamalang::HLFHELinalg::AddEintOp>(origLoc, CTile,
+      mlir::concretelang::HLFHELinalg::AddEintOp accuTile =
+          builder.create<mlir::concretelang::HLFHELinalg::AddEintOp>(origLoc, CTile,
                                                                  tiledMul);
 
       // Write updated C tile back into C
@@ -323,7 +323,7 @@ public:
       this->signalPassFailure();
     }
 
-    op->walk([](mlir::zamalang::HLFHELinalg::MatMulEintIntOp matmulOp) {
+    op->walk([](mlir::concretelang::HLFHELinalg::MatMulEintIntOp matmulOp) {
       matmulOp.getOperation()->removeAttr(kTransformMarker);
     });
   }
@@ -343,7 +343,7 @@ public:
     mlir::ArrayAttr tileAttr =
         mlir::Builder(&this->getContext()).getI64ArrayAttr(tileSizes);
 
-    op->walk([&](mlir::zamalang::HLFHELinalg::MatMulEintIntOp matmulOp) {
+    op->walk([&](mlir::concretelang::HLFHELinalg::MatMulEintIntOp matmulOp) {
       matmulOp.getOperation()->setAttr("tile-sizes", tileAttr);
     });
   }
@@ -361,5 +361,5 @@ std::unique_ptr<mlir::OperationPass<>>
 createHLFHELinalgTilingMarkerPass(llvm::ArrayRef<int64_t> tileSizes) {
   return std::make_unique<HLFHELinalgTilingMarkerPass>(tileSizes);
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

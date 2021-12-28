@@ -1,0 +1,54 @@
+#ifndef CONCRETELANG_CONVERSION_PASSES
+#define CONCRETELANG_CONVERSION_PASSES
+
+include "mlir/Pass/PassBase.td"
+
+def HLFHETensorOpsToLinalg : FunctionPass<"hlfhe-tensor-ops-to-linalg"> {
+  let summary = "Lowers tensor operations of HLFHE dialect to linalg.generic";
+  let constructor = "mlir::concretelang::createConvertHLFHETensorOpsToLinalg()";
+  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+}
+
+def HLFHEToMidLFHE : Pass<"hlfhe-to-midlfhe", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the HLFHE dialect to MidLFHE";
+  let description = [{ Lowers operations from the HLFHE dialect to Std + Math }];
+  let constructor = "mlir::concretelang::createConvertHLFHEToMidLFHEPass()";
+  let options = [];
+  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+}
+
+def MidLFHEGlobalParametrization : Pass<"midlfhe-global-parametrization", "mlir::ModuleOp"> {
+  let summary = "Inject global fhe parameters to the MidLFHE dialect";
+  let constructor = "mlir::concretelang::createConvertMidLFHEToLowLFHEPass()";
+  let options = [];
+  let dependentDialects = ["mlir::concretelang::MidLFHE::MidLFHEDialect"];
+}
+
+def MidLFHEToLowLFHE : Pass<"midlfhe-to-lowlfhe", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the MidLFHE dialect to LowLFHE";
+  let description = [{ Lowers operations from the MidLFHE dialect to LowLFHE }];
+  let constructor = "mlir::concretelang::createConvertMidLFHEToLowLFHEPass()";
+  let options = [];
+  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+}
+
+def LowLFHEToConcreteCAPI : Pass<"lowlfhe-to-concrete-c-api", "mlir::ModuleOp"> {
+  let summary = "Lower operations from the LowLFHE dialect to std with function call to the Concrete C API";
+  let constructor = "mlir::concretelang::createConvertLowLFHEToConcreteCAPIPass()";
+  let dependentDialects = ["mlir::concretelang::LowLFHE::LowLFHEDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
+}
+
+def LowLFHEUnparametrize : Pass<"lowlfhe-unparametrize", "mlir::ModuleOp"> {
+  let summary = "Unparametrize LowLFHE types and remove unrealized_conversion_cast";
+  let constructor = "mlir::concretelang::createConvertLowLFHEToConcreteCAPIPass()";
+  let dependentDialects = ["mlir::concretelang::LowLFHE::LowLFHEDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
+}
+
+def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
+  let constructor = "mlir::concretelang::createConvertMLIRLowerableDialectsToLLVMPass()";
+  let dependentDialects = ["mlir::StandardOpsDialect", "mlir::arith::ArithmeticDialect", "mlir::scf::SCFDialect", "mlir::LLVM::LLVMDialect"];
+  let options = [];
+}
+
+#endif

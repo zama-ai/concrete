@@ -1,8 +1,8 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
-#include "zamalang/Support/KeySetCache.h"
-#include "zamalang/Support/Error.h"
+#include "concretelang/Support/KeySetCache.h"
+#include "concretelang/Support/Error.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -16,7 +16,7 @@ extern "C" {
 }
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 static std::string readFile(llvm::SmallString<0> &path) {
   std::ifstream in((std::string)path, std::ofstream::binary);
@@ -226,5 +226,5 @@ KeySetCache::tryLoadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
   return key_set;
 }
 
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

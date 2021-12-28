@@ -5,10 +5,10 @@
 
 #include "end_to_end_jit_test.h"
 
-const mlir::zamalang::V0FHEConstraint defaultV0Constraints{10, 7};
+const mlir::concretelang::V0FHEConstraint defaultV0Constraints{10, 7};
 
 TEST(CompileAndRunDFR, start_stop) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func private @_dfr_stop()
 func private @_dfr_start()
 func @main() -> i64{
@@ -22,7 +22,7 @@ func @main() -> i64{
 }
 
 TEST(CompileAndRunDFR, 0in1out_task) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @_dfr_stop()
@@ -57,7 +57,7 @@ TEST(CompileAndRunDFR, 0in1out_task) {
 }
 
 TEST(CompileAndRunDFR, 1in1out_task) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @malloc(i64) -> !llvm.ptr<i8>
@@ -102,7 +102,7 @@ TEST(CompileAndRunDFR, 1in1out_task) {
 }
 
 TEST(CompileAndRunDFR, 2in1out_task) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @malloc(i64) -> !llvm.ptr<i8>
@@ -158,7 +158,7 @@ TEST(CompileAndRunDFR, 2in1out_task) {
 
 
 TEST(CompileAndRunDFR, taskgraph) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @malloc(i64) -> !llvm.ptr<i8>

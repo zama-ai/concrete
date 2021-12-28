@@ -1,7 +1,7 @@
 import pytest
 from mlir.ir import Context, RankedTensorType, Location
-from zamalang import register_dialects
-from zamalang.dialects import hlfhe
+from concretelang import register_dialects
+from concretelang.dialects import hlfhe
 
 
 @pytest.mark.parametrize("width", list(range(1, 8)))

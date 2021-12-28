@@ -13,18 +13,18 @@
 #include "llvm/ADT/SmallVector.h"
 #include <iostream>
 
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHEDialect.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
-#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h"
-#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
-#include "zamalang/Support/Constants.h"
+#include "concretelang/Conversion/Passes.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEDialect.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOps.h"
+#include "concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h"
+#include "concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
+#include "concretelang/Support/Constants.h"
 
 struct DotToLinalgGeneric
-    : public ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::Dot> {
+    : public ::mlir::OpRewritePattern<mlir::concretelang::HLFHELinalg::Dot> {
   DotToLinalgGeneric(::mlir::MLIRContext *context)
-      : ::mlir::OpRewritePattern<::mlir::zamalang::HLFHELinalg::Dot>(
-            context, mlir::zamalang::DEFAULT_PATTERN_BENEFIT) {}
+      : ::mlir::OpRewritePattern<::mlir::concretelang::HLFHELinalg::Dot>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
 
   // This rewrite pattern transforms any instance of
   // `HLFHELinalg.dot_eint_int` to an instance of `linalg.generic` with an
@@ -63,10 +63,10 @@ struct DotToLinalgGeneric
   //   %o = tensor.extract %2[%c0] : tensor<1x!HLFHE.eint<0>>
   //
   ::mlir::LogicalResult
-  matchAndRewrite(::mlir::zamalang::HLFHELinalg::Dot dotOp,
+  matchAndRewrite(::mlir::concretelang::HLFHELinalg::Dot dotOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     // Zero value to initialize accumulator
-    mlir::Value zeroCst = rewriter.create<mlir::zamalang::HLFHE::ZeroEintOp>(
+    mlir::Value zeroCst = rewriter.create<mlir::concretelang::HLFHE::ZeroEintOp>(
         dotOp.getLoc(),
         dotOp.lhs().getType().cast<mlir::ShapedType>().getElementType());
 
@@ -95,11 +95,11 @@ struct DotToLinalgGeneric
     auto regBuilder = [&](mlir::OpBuilder &nestedBuilder,
                           mlir::Location nestedLoc,
                           mlir::ValueRange blockArgs) {
-      mlir::zamalang::HLFHE::MulEintIntOp mul =
-          nestedBuilder.create<mlir::zamalang::HLFHE::MulEintIntOp>(
+      mlir::concretelang::HLFHE::MulEintIntOp mul =
+          nestedBuilder.create<mlir::concretelang::HLFHE::MulEintIntOp>(
               dotOp.getLoc(), blockArgs[0], blockArgs[1]);
-      mlir::zamalang::HLFHE::AddEintOp add =
-          nestedBuilder.create<mlir::zamalang::HLFHE::AddEintOp>(
+      mlir::concretelang::HLFHE::AddEintOp add =
+          nestedBuilder.create<mlir::concretelang::HLFHE::AddEintOp>(
               dotOp.getLoc(), mul, blockArgs[2]);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(dotOp.getLoc(),
@@ -222,7 +222,7 @@ struct HLFHELinalgOpToLinalgGeneric
     : public mlir::OpRewritePattern<HLFHELinalgOp> {
   HLFHELinalgOpToLinalgGeneric(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<HLFHELinalgOp>(context, benefit) {}
 
   ::mlir::LogicalResult
@@ -332,7 +332,7 @@ llvm::SmallVector<llvm::StringRef> parallelIteratorType(int n) {
 //          !MidLFHE.glwe<{_,_,_}{2}>
 // } -> tensor<2x3x!MidLFHE.glwe<{_,_,_}{2}>>
 
-namespace HLFHELinalg = mlir::zamalang::HLFHELinalg;
+namespace HLFHELinalg = mlir::concretelang::HLFHELinalg;
 
 struct HLFHELinalgApplyMappedLookupTableToLinalgGeneric
     : public mlir::OpRewritePattern<HLFHELinalg::ApplyMappedLookupTableEintOp> {
@@ -347,7 +347,7 @@ struct HLFHELinalgApplyMappedLookupTableToLinalgGeneric
     namespace arith = mlir::arith;
     namespace linalg = mlir::linalg;
     namespace tensor = mlir::tensor;
-    namespace HLFHE = mlir::zamalang::HLFHE;
+    namespace HLFHE = mlir::concretelang::HLFHE;
     using Values = llvm::SmallVector<mlir::Value>;
     using Types = llvm::SmallVector<mlir::Type>;
     using AffineMaps = llvm::SmallVector<mlir::AffineMap>;
@@ -491,17 +491,17 @@ struct HLFHELinalgApplyMappedLookupTableToLinalgGeneric
 //
 struct HLFHELinalgApplyMultiLookupTableToLinalgGeneric
     : public mlir::OpRewritePattern<
-          mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp> {
+          mlir::concretelang::HLFHELinalg::ApplyMultiLookupTableEintOp> {
   HLFHELinalgApplyMultiLookupTableToLinalgGeneric(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<
-            mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp>(context,
+            mlir::concretelang::HLFHELinalg::ApplyMultiLookupTableEintOp>(context,
                                                                       benefit) {
   }
 
   ::mlir::LogicalResult matchAndRewrite(
-      mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp hlfheLinalgLutOp,
+      mlir::concretelang::HLFHELinalg::ApplyMultiLookupTableEintOp hlfheLinalgLutOp,
       ::mlir::PatternRewriter &rewriter) const override {
     mlir::RankedTensorType resultTy =
         ((mlir::Type)hlfheLinalgLutOp->getResult(0).getType())
@@ -542,8 +542,8 @@ struct HLFHELinalgApplyMultiLookupTableToLinalgGeneric
       mlir::tensor::FromElementsOp lut =
           nestedBuilder.create<mlir::tensor::FromElementsOp>(
               hlfheLinalgLutOp.getLoc(), blockArgs.slice(1, lut_size));
-      mlir::zamalang::HLFHE::ApplyLookupTableEintOp lutOp =
-          nestedBuilder.create<mlir::zamalang::HLFHE::ApplyLookupTableEintOp>(
+      mlir::concretelang::HLFHE::ApplyLookupTableEintOp lutOp =
+          nestedBuilder.create<mlir::concretelang::HLFHE::ApplyLookupTableEintOp>(
               hlfheLinalgLutOp.getLoc(), resultTy.getElementType(),
               blockArgs[0], lut.result());
 
@@ -612,16 +612,16 @@ struct HLFHELinalgApplyMultiLookupTableToLinalgGeneric
 //
 struct HLFHELinalgApplyLookupTableToLinalgGeneric
     : public mlir::OpRewritePattern<
-          mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp> {
+          mlir::concretelang::HLFHELinalg::ApplyLookupTableEintOp> {
   HLFHELinalgApplyLookupTableToLinalgGeneric(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<
-            mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp>(context,
+            mlir::concretelang::HLFHELinalg::ApplyLookupTableEintOp>(context,
                                                                  benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp lutOp,
+  matchAndRewrite(mlir::concretelang::HLFHELinalg::ApplyLookupTableEintOp lutOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     mlir::RankedTensorType resultTy =
         ((mlir::Type)lutOp->getResult(0).getType())
@@ -649,8 +649,8 @@ struct HLFHELinalgApplyLookupTableToLinalgGeneric
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
                            mlir::Location nestedLoc,
                            mlir::ValueRange blockArgs) {
-      mlir::zamalang::HLFHE::ApplyLookupTableEintOp hlfheOp =
-          nestedBuilder.create<mlir::zamalang::HLFHE::ApplyLookupTableEintOp>(
+      mlir::concretelang::HLFHE::ApplyLookupTableEintOp hlfheOp =
+          nestedBuilder.create<mlir::concretelang::HLFHE::ApplyLookupTableEintOp>(
               lutOp.getLoc(), resultTy.getElementType(), blockArgs[0],
               lutOp.lut());
 
@@ -710,15 +710,15 @@ struct HLFHELinalgApplyLookupTableToLinalgGeneric
 // }
 //
 struct HLFHELinalgNegEintToLinalgGeneric
-    : public mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::NegEintOp> {
+    : public mlir::OpRewritePattern<mlir::concretelang::HLFHELinalg::NegEintOp> {
   HLFHELinalgNegEintToLinalgGeneric(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::NegEintOp>(
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : ::mlir::OpRewritePattern<mlir::concretelang::HLFHELinalg::NegEintOp>(
             context, benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::HLFHELinalg::NegEintOp negEintOp,
+  matchAndRewrite(mlir::concretelang::HLFHELinalg::NegEintOp negEintOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     mlir::RankedTensorType resultTy =
         ((mlir::Type)negEintOp->getResult(0).getType())
@@ -746,8 +746,8 @@ struct HLFHELinalgNegEintToLinalgGeneric
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
                            mlir::Location nestedLoc,
                            mlir::ValueRange blockArgs) {
-      mlir::zamalang::HLFHE::NegEintOp hlfheOp =
-          nestedBuilder.create<mlir::zamalang::HLFHE::NegEintOp>(
+      mlir::concretelang::HLFHE::NegEintOp hlfheOp =
+          nestedBuilder.create<mlir::concretelang::HLFHE::NegEintOp>(
               negEintOp.getLoc(), resultTy.getElementType(), blockArgs[0]);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(negEintOp.getLoc(),
@@ -819,11 +819,11 @@ struct HLFHELinalgMatmulToLinalgGeneric
     : public mlir::OpRewritePattern<HLFHELinalgMatmulOp> {
   HLFHELinalgMatmulToLinalgGeneric(
       mlir::MLIRContext *context,
-      std::function<mlir::zamalang::HLFHE::MulEintIntOp(
+      std::function<mlir::concretelang::HLFHE::MulEintIntOp(
           mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value,
           mlir::Value)>
           createMulOp,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<HLFHELinalgMatmulOp>(context, benefit),
         createMulOp(createMulOp) {}
 
@@ -840,8 +840,8 @@ struct HLFHELinalgMatmulToLinalgGeneric
                             mlir::Location nestedLoc,
                             mlir::ValueRange blockArgs) {
       // %z = "HLFHE.zero" : () -> !HLFHE.eint<2>
-      mlir::zamalang::HLFHE::ZeroEintOp zeroOp =
-          nestedBuilder.create<mlir::zamalang::HLFHE::ZeroEintOp>(
+      mlir::concretelang::HLFHE::ZeroEintOp zeroOp =
+          nestedBuilder.create<mlir::concretelang::HLFHE::ZeroEintOp>(
               matmulLoc, resultElementTy);
       // linalg.yield %z : !HLFHE.eint<p>
       nestedBuilder.create<mlir::tensor::YieldOp>(matmulLoc,
@@ -874,13 +874,13 @@ struct HLFHELinalgMatmulToLinalgGeneric
                            mlir::Location nestedLoc,
                            mlir::ValueRange blockArgs) {
       // "HLFHE.mul_eint_int"(%a, %b) : (!HLFHE.eint<p>, ip') -> !HLFHE.eint<p>
-      mlir::zamalang::HLFHE::MulEintIntOp mulEintIntOp =
+      mlir::concretelang::HLFHE::MulEintIntOp mulEintIntOp =
           createMulOp(nestedBuilder, matmulLoc, resultElementTy, blockArgs[0],
                       blockArgs[1]);
       // "HLFHE.add_eint"(%c, %d): (!HLFHE.eint<p>, !HLFHE.eint<p>) ->
       // !HLFHE.eint<p>
-      mlir::zamalang::HLFHE::AddEintOp addEintOp =
-          nestedBuilder.create<mlir::zamalang::HLFHE::AddEintOp>(
+      mlir::concretelang::HLFHE::AddEintOp addEintOp =
+          nestedBuilder.create<mlir::concretelang::HLFHE::AddEintOp>(
               matmulLoc, resultElementTy, blockArgs[2], mulEintIntOp);
       // linalg.yield %e : !HLFHE.eint<p>
       nestedBuilder.create<mlir::linalg::YieldOp>(matmulLoc,
@@ -905,7 +905,7 @@ struct HLFHELinalgMatmulToLinalgGeneric
   };
 
 private:
-  std::function<mlir::zamalang::HLFHE::MulEintIntOp(
+  std::function<mlir::concretelang::HLFHE::MulEintIntOp(
       mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value, mlir::Value)>
       createMulOp;
 };
@@ -927,16 +927,16 @@ private:
 //   } : tensor<MxNx!HLFHE.eint<p>>
 //
 struct HLFHELinalgZeroToLinalgGenerate
-    : public mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::ZeroOp> {
+    : public mlir::OpRewritePattern<mlir::concretelang::HLFHELinalg::ZeroOp> {
   HLFHELinalgZeroToLinalgGenerate(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : ::mlir::OpRewritePattern<mlir::zamalang::HLFHELinalg::ZeroOp>(context,
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : ::mlir::OpRewritePattern<mlir::concretelang::HLFHELinalg::ZeroOp>(context,
                                                                       benefit) {
   }
 
   ::mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::HLFHELinalg::ZeroOp zeroOp,
+  matchAndRewrite(mlir::concretelang::HLFHELinalg::ZeroOp zeroOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     mlir::RankedTensorType resultTy =
         zeroOp->getResult(0).getType().cast<mlir::RankedTensorType>();
@@ -945,7 +945,7 @@ struct HLFHELinalgZeroToLinalgGenerate
                             mlir::Location nestedLoc,
                             mlir::ValueRange blockArgs) {
       mlir::Value zeroScalar =
-          nestedBuilder.create<mlir::zamalang::HLFHE::ZeroEintOp>(
+          nestedBuilder.create<mlir::concretelang::HLFHE::ZeroEintOp>(
               zeroOp.getLoc(), resultTy.getElementType());
       nestedBuilder.create<mlir::tensor::YieldOp>(zeroOp.getLoc(), zeroScalar);
     };
@@ -974,44 +974,44 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
   target.addLegalDialect<mlir::linalg::LinalgDialect>();
   target.addLegalDialect<mlir::StandardOpsDialect>();
   target.addLegalDialect<mlir::memref::MemRefDialect>();
-  target.addLegalDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
+  target.addLegalDialect<mlir::concretelang::HLFHE::HLFHEDialect>();
   target.addLegalDialect<mlir::tensor::TensorDialect>();
   target.addLegalDialect<mlir::arith::ArithmeticDialect>();
-  target.addIllegalOp<mlir::zamalang::HLFHELinalg::Dot>();
-  target.addIllegalDialect<mlir::zamalang::HLFHELinalg::HLFHELinalgDialect>();
+  target.addIllegalOp<mlir::concretelang::HLFHELinalg::Dot>();
+  target.addIllegalDialect<mlir::concretelang::HLFHELinalg::HLFHELinalgDialect>();
 
   mlir::OwningRewritePatternList patterns(&getContext());
   patterns.insert<DotToLinalgGeneric>(&getContext());
   patterns.insert<
-      HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::AddEintOp,
-                                   mlir::zamalang::HLFHE::AddEintOp>>(
+      HLFHELinalgOpToLinalgGeneric<mlir::concretelang::HLFHELinalg::AddEintOp,
+                                   mlir::concretelang::HLFHE::AddEintOp>>(
       &getContext());
   patterns.insert<
-      HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::AddEintIntOp,
-                                   mlir::zamalang::HLFHE::AddEintIntOp>>(
+      HLFHELinalgOpToLinalgGeneric<mlir::concretelang::HLFHELinalg::AddEintIntOp,
+                                   mlir::concretelang::HLFHE::AddEintIntOp>>(
       &getContext());
   patterns.insert<
-      HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::SubIntEintOp,
-                                   mlir::zamalang::HLFHE::SubIntEintOp>>(
+      HLFHELinalgOpToLinalgGeneric<mlir::concretelang::HLFHELinalg::SubIntEintOp,
+                                   mlir::concretelang::HLFHE::SubIntEintOp>>(
       &getContext());
   patterns.insert<
-      HLFHELinalgOpToLinalgGeneric<mlir::zamalang::HLFHELinalg::MulEintIntOp,
-                                   mlir::zamalang::HLFHE::MulEintIntOp>>(
+      HLFHELinalgOpToLinalgGeneric<mlir::concretelang::HLFHELinalg::MulEintIntOp,
+                                   mlir::concretelang::HLFHE::MulEintIntOp>>(
       &getContext());
   patterns.insert<HLFHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<HLFHELinalgNegEintToLinalgGeneric>(&getContext());
   patterns.insert<HLFHELinalgMatmulToLinalgGeneric<
-      mlir::zamalang::HLFHELinalg::MatMulEintIntOp>>(
+      mlir::concretelang::HLFHELinalg::MatMulEintIntOp>>(
       &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
                         mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
-        return builder.create<mlir::zamalang::HLFHE::MulEintIntOp>(loc, type,
+        return builder.create<mlir::concretelang::HLFHE::MulEintIntOp>(loc, type,
                                                                    arg0, arg1);
       });
   patterns.insert<HLFHELinalgMatmulToLinalgGeneric<
-      mlir::zamalang::HLFHELinalg::MatMulIntEintOp>>(
+      mlir::concretelang::HLFHELinalg::MatMulIntEintOp>>(
       &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
                         mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
-        return builder.create<mlir::zamalang::HLFHE::MulEintIntOp>(loc, type,
+        return builder.create<mlir::concretelang::HLFHE::MulEintIntOp>(loc, type,
                                                                    arg1, arg0);
       });
   patterns.insert<HLFHELinalgApplyMultiLookupTableToLinalgGeneric>(
@@ -1028,9 +1028,9 @@ void HLFHETensorOpsToLinalg::runOnFunction() {
 } // namespace
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 std::unique_ptr<mlir::FunctionPass> createConvertHLFHETensorOpsToLinalg() {
   return std::make_unique<HLFHETensorOpsToLinalg>();
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

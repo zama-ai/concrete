@@ -3,7 +3,7 @@ add_mlir_dialect_library(RTDialect
   RTOps.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/zamalang/Dialect/RT
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/RT
 
   DEPENDS
   MLIRRTOpsIncGen

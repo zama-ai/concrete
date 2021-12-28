@@ -3,7 +3,7 @@
 
 #include "DialectModules.h"
 
-#include "zamalang-c/Dialect/HLFHE.h"
+#include "concretelang-c/Dialect/HLFHE.h"
 
 #include "mlir-c/BuiltinAttributes.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
@@ -15,11 +15,11 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 
-using namespace mlir::zamalang;
+using namespace mlir::concretelang;
 using namespace mlir::python::adaptors;
 
 /// Populate the hlfhe python module.
-void mlir::zamalang::python::populateDialectHLFHESubmodule(
+void mlir::concretelang::python::populateDialectHLFHESubmodule(
     pybind11::module &m) {
   m.doc() = "HLFHE dialect Python native extension";
 

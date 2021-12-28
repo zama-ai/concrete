@@ -1,4 +1,4 @@
-// RUN: zamacompiler %s --action=dump-midlfhe --passes hlfhe-tensor-ops-to-linalg 2>&1 | FileCheck %s
+// RUN: concretecompiler %s --action=dump-midlfhe --passes hlfhe-tensor-ops-to-linalg 2>&1 | FileCheck %s
 
 // CHECK: func @zero(%arg0: !HLFHE.eint<2>) -> tensor<3x2x!HLFHE.eint<2>> {
 // CHECK-NEXT:   %[[v0:.*]] = tensor.generate   {

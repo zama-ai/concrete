@@ -3,7 +3,7 @@ add_mlir_dialect_library(HLFHEDialect
   HLFHEOps.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/zamalang/Dialect/HLFHE
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/HLFHE
 
   DEPENDS
   MLIRHLFHEOpsIncGen

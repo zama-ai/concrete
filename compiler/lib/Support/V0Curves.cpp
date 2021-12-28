@@ -3,10 +3,10 @@
 
 #include <cmath>
 
-#include "zamalang/Support/V0Curves.h"
+#include "concretelang/Support/V0Curves.h"
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 V0Curves curves[SECURITY_LEVEL_MAX][KEY_FORMAT_MAX] = {
     {V0Curves(SECURITY_LEVEL_80, -0.04047677865612648, 1.1433465085639063, 160,
@@ -24,5 +24,5 @@ V0Curves *getV0Curves(int securityLevel, int keyFormat) {
   }
   return &curves[securityLevel][keyFormat];
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

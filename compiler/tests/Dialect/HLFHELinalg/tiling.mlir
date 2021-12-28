@@ -1,4 +1,4 @@
-// RUN: zamacompiler --action=dump-hlfhe %s 2>&1 --split-input-file | FileCheck %s
+// RUN: concretecompiler --action=dump-hlfhe %s 2>&1 --split-input-file | FileCheck %s
 
 // CHECK:      func @tiled_2x2(%[[Varg0:.*]]: tensor<8x4x!HLFHE.eint<6>>, %[[Varg1:.*]]: tensor<4x2xi7>) -> tensor<8x2x!HLFHE.eint<6>> {
 // CHECK-NEXT:    %[[Vc2:.*]] = arith.constant 2 : index

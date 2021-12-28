@@ -6,10 +6,10 @@
 /// We should include this in our build system, but for moment it is just a cc
 /// from the optimizer output.
 
-#include "zamalang/Support/V0Parameters.h"
+#include "concretelang/Support/V0Parameters.h"
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 using namespace std;
 
 const int NORM2_MAX = 31;
@@ -157,5 +157,5 @@ const V0Parameter *getV0Parameter(V0FHEConstraint constraint) {
   return param;
 }
 
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

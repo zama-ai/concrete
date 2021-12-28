@@ -1,4 +1,4 @@
-// RUN: zamacompiler --action=roundtrip %s 2>&1| FileCheck %s
+// RUN: concretecompiler --action=roundtrip %s 2>&1| FileCheck %s
 
 
 // CHECK-LABEL: func @type_plaintext(%arg0: !LowLFHE.plaintext<7>) -> !LowLFHE.plaintext<7>

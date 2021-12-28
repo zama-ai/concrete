@@ -1,5 +1,5 @@
 import pytest
-from zamalang import compiler
+from concretelang import compiler
 
 
 VALID_INPUTS = [

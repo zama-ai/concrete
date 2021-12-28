@@ -2,9 +2,9 @@
 
 #include "end_to_end_jit_test.h"
 
-const mlir::zamalang::V0FHEConstraint defaultV0Constraints{10, 7};
+const mlir::concretelang::V0FHEConstraint defaultV0Constraints{10, 7};
 
-using Lambda = mlir::zamalang::JitCompilerEngine::Lambda;
+using Lambda = mlir::concretelang::JitCompilerEngine::Lambda;
 
 
 TEST(Lambda_check_param, int_to_void_missing_param) {

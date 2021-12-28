@@ -1,14 +1,14 @@
-add_library(ZamalangRuntime SHARED
+add_library(ConcretelangRuntime SHARED
     context.c
     wrappers.c
 )
 
-target_link_libraries(ZamalangRuntime Concrete pthread m dl)
+target_link_libraries(ConcretelangRuntime Concrete pthread m dl)
 
-install(TARGETS ZamalangRuntime EXPORT ZamalangRuntime)
-install(EXPORT ZamalangRuntime DESTINATION "./")
+install(TARGETS ConcretelangRuntime EXPORT ConcretelangRuntime)
+install(EXPORT ConcretelangRuntime DESTINATION "./")
 
-if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
+if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   add_library(DFRuntime SHARED DFRuntime.cpp)
   target_link_libraries(DFRuntime PUBLIC pthread m dl HPX::hpx HPX::iostreams_component -rdynamic)
 

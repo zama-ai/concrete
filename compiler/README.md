@@ -30,7 +30,7 @@ make build-initialized
 Build the compiler
 
 ```sh
-make zamacompiler
+make concretecompiler
 ```
 
 Test the compiler
@@ -44,5 +44,5 @@ make test
 Run the compiler
 
 ```sh
-./build/src/zamacompiler
+./build/src/concretecompiler
 ```

@@ -3,12 +3,12 @@
 
 #include "mlir/IR/Region.h"
 
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOps.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOps.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 namespace MidLFHE {
 
 void emitOpErrorForIncompatibleGLWEParameter(mlir::OpState &op,
@@ -164,8 +164,8 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
 }
 
 } // namespace MidLFHE
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir
 
 #define GET_OP_CLASSES
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.cpp.inc"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOps.cpp.inc"

@@ -3,10 +3,10 @@
 
 #include <iostream>
 
-#include <zamalang/Dialect/RT/Analysis/Autopar.h>
-#include <zamalang/Dialect/RT/IR/RTDialect.h>
-#include <zamalang/Dialect/RT/IR/RTOps.h>
-#include <zamalang/Dialect/RT/IR/RTTypes.h>
+#include <concretelang/Dialect/RT/Analysis/Autopar.h>
+#include <concretelang/Dialect/RT/IR/RTDialect.h>
+#include <concretelang/Dialect/RT/IR/RTOps.h>
+#include <concretelang/Dialect/RT/IR/RTTypes.h>
 
 #include <llvm/IR/Instructions.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
@@ -14,13 +14,13 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/Transforms/Bufferize.h>
 #include <mlir/Transforms/RegionUtils.h>
-#include <zamalang/Conversion/Utils/GenericOpTypeConversionPattern.h>
+#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 
 #define GEN_PASS_CLASSES
-#include <zamalang/Dialect/RT/Analysis/Autopar.h.inc>
+#include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 namespace {
 class BufferizeDataflowYieldOp
@@ -118,5 +118,5 @@ protected:
 std::unique_ptr<mlir::Pass> createBufferizeDataflowTaskOpsPass(bool debug) {
   return std::make_unique<BufferizeDataflowTaskOpsPass>(debug);
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

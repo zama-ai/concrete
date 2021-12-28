@@ -1,5 +1,5 @@
-import zamalang
-import zamalang.dialects.hlfhe as hlfhe
+import concretelang
+import concretelang.dialects.hlfhe as hlfhe
 import mlir.dialects.builtin as builtin
 import mlir.dialects.std as std
 from mlir.ir import *
@@ -7,8 +7,8 @@ from mlir.ir import *
 
 def main():
     with Context() as ctx, Location.unknown():
-        # register zamalang's dialects
-        zamalang.register_dialects(ctx)
+        # register concretelang's dialects
+        concretelang.register_dialects(ctx)
 
         module = Module.create()
         eint6 = hlfhe.EncryptedIntegerType.get(ctx, 6)
@@ -26,11 +26,11 @@ def main():
             return %1: !HLFHE.eint<2>
         }"""
         ## Working when HFLFHE and MLIR aren't linked
-        zamalang.compiler.round_trip("module{}")
-        zamalang.compiler.round_trip(str(module))
+        concretelang.compiler.round_trip("module{}")
+        concretelang.compiler.round_trip(str(module))
         ## END OF WORKING
         ## Doesn't work yet for both modules
-        engine = zamalang.CompilerEngine()
+        engine = concretelang.CompilerEngine()
         engine.compile_fhe(m)
         # engine.compile_fhe(str(module))
         print(engine.run(2))

@@ -2,10 +2,10 @@
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
 #include "CompilerAPIModule.h"
-#include "zamalang-c/Support/CompilerEngine.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOpsDialect.h.inc"
-#include "zamalang/Support/Jit.h"
-#include "zamalang/Support/JitCompilerEngine.h"
+#include "concretelang-c/Support/CompilerEngine.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOpsDialect.h.inc"
+#include "concretelang/Support/Jit.h"
+#include "concretelang/Support/JitCompilerEngine.h"
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -17,16 +17,16 @@
 #include <stdexcept>
 #include <string>
 
-using mlir::zamalang::JitCompilerEngine;
-using mlir::zamalang::LambdaArgument;
+using mlir::concretelang::JitCompilerEngine;
+using mlir::concretelang::LambdaArgument;
 
 const char *noEmptyStringPtr(std::string &s) {
   return (s.empty()) ? nullptr : s.c_str();
 }
 
 /// Populate the compiler API python module.
-void mlir::zamalang::python::populateCompilerAPISubmodule(pybind11::module &m) {
-  m.doc() = "Zamalang compiler python API";
+void mlir::concretelang::python::populateCompilerAPISubmodule(pybind11::module &m) {
+  m.doc() = "Concretelang compiler python API";
 
   m.def("round_trip",
         [](std::string mlir_input) { return roundTrip(mlir_input.c_str()); });

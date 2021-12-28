@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 import numpy as np
-from zamalang import CompilerEngine, library
+from concretelang import CompilerEngine, library
 
 KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
 

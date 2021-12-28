@@ -4,11 +4,11 @@
 #include "mlir/IR/Region.h"
 #include "mlir/IR/TypeUtilities.h"
 
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
-#include "zamalang/Dialect/HLFHE/IR/HLFHETypes.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOps.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHETypes.h"
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 namespace HLFHE {
 
 bool verifyEncryptedIntegerInputAndResultConsistency(
@@ -126,8 +126,8 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
 }
 
 } // namespace HLFHE
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir
 
 #define GET_OP_CLASSES
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.cpp.inc"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOps.cpp.inc"

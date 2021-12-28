@@ -4,27 +4,27 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Conversion/Utils/RegionOpTypeConverterPattern.h"
-#include "zamalang/Conversion/Utils/TensorOpTypeConversion.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
-#include "zamalang/Dialect/RT/IR/RTOps.h"
-#include "zamalang/Support/Constants.h"
+#include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
+#include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOps.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
+#include "concretelang/Support/Constants.h"
 
 namespace {
 struct MidLFHEGlobalParametrizationPass
     : public MidLFHEGlobalParametrizationBase<
           MidLFHEGlobalParametrizationPass> {
-  MidLFHEGlobalParametrizationPass(mlir::zamalang::V0FHEContext &fheContext)
+  MidLFHEGlobalParametrizationPass(mlir::concretelang::V0FHEContext &fheContext)
       : fheContext(fheContext){};
   void runOnOperation() final;
-  mlir::zamalang::V0FHEContext &fheContext;
+  mlir::concretelang::V0FHEContext &fheContext;
 };
 } // namespace
 
-using mlir::zamalang::MidLFHE::GLWECipherTextType;
+using mlir::concretelang::MidLFHE::GLWECipherTextType;
 
 /// MidLFHEGlobalParametrizationTypeConverter is a TypeConverter that transform
 /// `MidLFHE.glwe<{_,_,_}{p}>` to
@@ -33,9 +33,9 @@ class MidLFHEGlobalParametrizationTypeConverter : public mlir::TypeConverter {
 
 public:
   MidLFHEGlobalParametrizationTypeConverter(
-      mlir::zamalang::V0FHEContext &fheContext) {
+      mlir::concretelang::V0FHEContext &fheContext) {
     auto convertGLWECiphertextType =
-        [](GLWECipherTextType type, mlir::zamalang::V0FHEContext &fheContext) {
+        [](GLWECipherTextType type, mlir::concretelang::V0FHEContext &fheContext) {
           auto glweDimension = fheContext.parameter.getNBigGlweDimension();
           auto p = fheContext.constraint.p;
           if (type.getDimension() == (signed)glweDimension &&
@@ -67,7 +67,7 @@ template <typename Op>
 struct MidLFHEOpTypeConversionPattern : public mlir::OpRewritePattern<Op> {
   MidLFHEOpTypeConversionPattern(
       mlir::MLIRContext *context, mlir::TypeConverter &typeConverter,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<Op>(context, benefit),
         typeConverter(typeConverter) {}
 
@@ -87,17 +87,17 @@ private:
 };
 
 struct MidLFHEApplyLookupTableParametrizationPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::MidLFHE::ApplyLookupTable> {
+    : public mlir::OpRewritePattern<mlir::concretelang::MidLFHE::ApplyLookupTable> {
   MidLFHEApplyLookupTableParametrizationPattern(
       mlir::MLIRContext *context, mlir::TypeConverter &typeConverter,
-      mlir::zamalang::V0Parameter &v0Parameter,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::MidLFHE::ApplyLookupTable>(
+      mlir::concretelang::V0Parameter &v0Parameter,
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::MidLFHE::ApplyLookupTable>(
             context, benefit),
         typeConverter(typeConverter), v0Parameter(v0Parameter) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::MidLFHE::ApplyLookupTable op,
+  matchAndRewrite(mlir::concretelang::MidLFHE::ApplyLookupTable op,
                   mlir::PatternRewriter &rewriter) const override {
     mlir::SmallVector<mlir::Type, 1> newResultTypes;
     if (typeConverter.convertTypes(op->getResultTypes(), newResultTypes)
@@ -125,7 +125,7 @@ struct MidLFHEApplyLookupTableParametrizationPattern
                              rewriter.getI32IntegerAttr(v0Parameter.nSmall)),
     };
 
-    rewriter.replaceOpWithNewOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
+    rewriter.replaceOpWithNewOp<mlir::concretelang::MidLFHE::ApplyLookupTable>(
         op, newResultTypes, op->getOperands(), newAttributes);
 
     return mlir::success();
@@ -133,27 +133,27 @@ struct MidLFHEApplyLookupTableParametrizationPattern
 
 private:
   mlir::TypeConverter &typeConverter;
-  mlir::zamalang::V0Parameter &v0Parameter;
+  mlir::concretelang::V0Parameter &v0Parameter;
 };
 
 struct MidLFHEApplyLookupTablePaddingPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::MidLFHE::ApplyLookupTable> {
+    : public mlir::OpRewritePattern<mlir::concretelang::MidLFHE::ApplyLookupTable> {
   MidLFHEApplyLookupTablePaddingPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::MidLFHE::ApplyLookupTable>(
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::MidLFHE::ApplyLookupTable>(
             context, benefit),
         typeConverter(typeConverter), v0Parameter(v0Parameter) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::MidLFHE::ApplyLookupTable op,
+  matchAndRewrite(mlir::concretelang::MidLFHE::ApplyLookupTable op,
                   mlir::PatternRewriter &rewriter) const override {
     auto glweInType = op.getOperandTypes()[0]
-                          .cast<mlir::zamalang::MidLFHE::GLWECipherTextType>();
+                          .cast<mlir::concretelang::MidLFHE::GLWECipherTextType>();
     auto tabulatedLambdaType =
         op.l_cst().getType().cast<mlir::RankedTensorType>();
     auto glweOutType =
-        op.getType().cast<mlir::zamalang::MidLFHE::GLWECipherTextType>();
+        op.getType().cast<mlir::concretelang::MidLFHE::GLWECipherTextType>();
     auto expectedSize = 1 << glweInType.getP();
     if (tabulatedLambdaType.getShape()[0] < expectedSize) {
       auto constantOp = mlir::dyn_cast_or_null<mlir::arith::ConstantOp>(
@@ -188,7 +188,7 @@ struct MidLFHEApplyLookupTablePaddingPattern
       mlir::SmallVector<mlir::Type> newResultTypes{op.getType()};
       llvm::SmallVector<mlir::Value> newOperands{op.ct(), newConstantOp};
       llvm::ArrayRef<mlir::NamedAttribute> newAttrs = op->getAttrs();
-      rewriter.replaceOpWithNewOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
+      rewriter.replaceOpWithNewOp<mlir::concretelang::MidLFHE::ApplyLookupTable>(
           op, newResultTypes, newOperands, newAttrs);
       return mlir::success();
     }
@@ -198,7 +198,7 @@ struct MidLFHEApplyLookupTablePaddingPattern
 
 private:
   mlir::TypeConverter &typeConverter;
-  mlir::zamalang::V0Parameter &v0Parameter;
+  mlir::concretelang::V0Parameter &v0Parameter;
 };
 
 template <typename Op>
@@ -214,11 +214,11 @@ void populateWithMidLFHEOpTypeConversionPattern(
 void populateWithMidLFHEApplyLookupTableParametrizationPattern(
     mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target,
     mlir::TypeConverter &typeConverter,
-    mlir::zamalang::V0Parameter &v0Parameter) {
+    mlir::concretelang::V0Parameter &v0Parameter) {
   patterns.add<MidLFHEApplyLookupTableParametrizationPattern>(
       patterns.getContext(), typeConverter, v0Parameter);
-  target.addDynamicallyLegalOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
-      [&](mlir::zamalang::MidLFHE::ApplyLookupTable op) {
+  target.addDynamicallyLegalOp<mlir::concretelang::MidLFHE::ApplyLookupTable>(
+      [&](mlir::concretelang::MidLFHE::ApplyLookupTable op) {
         if (op.glweDimension() != v0Parameter.glweDimension ||
             // TODO remove the shift when we have true polynomial size
             op.polynomialSize() != (1 << v0Parameter.logPolynomialSize) ||
@@ -236,15 +236,15 @@ void populateWithMidLFHEApplyLookupTablePaddingPattern(
     mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target) {
   patterns.add<MidLFHEApplyLookupTablePaddingPattern>(patterns.getContext());
   target.addLegalOp<mlir::arith::ConstantOp>();
-  target.addDynamicallyLegalOp<mlir::zamalang::MidLFHE::ApplyLookupTable>(
-      [&](mlir::zamalang::MidLFHE::ApplyLookupTable op) {
+  target.addDynamicallyLegalOp<mlir::concretelang::MidLFHE::ApplyLookupTable>(
+      [&](mlir::concretelang::MidLFHE::ApplyLookupTable op) {
         auto glweInType =
             op.getOperandTypes()[0]
-                .cast<mlir::zamalang::MidLFHE::GLWECipherTextType>();
+                .cast<mlir::concretelang::MidLFHE::GLWECipherTextType>();
         auto tabulatedLambdaType =
             op.getOperandTypes()[1].cast<mlir::RankedTensorType>();
         auto glweOutType =
-            op.getType().cast<mlir::zamalang::MidLFHE::GLWECipherTextType>();
+            op.getType().cast<mlir::concretelang::MidLFHE::GLWECipherTextType>();
 
         return tabulatedLambdaType.getShape()[0] == 1 << glweInType.getP();
       });
@@ -255,19 +255,19 @@ void populateWithMidLFHEApplyLookupTablePaddingPattern(
 void populateWithMidLFHEOpTypeConversionPatterns(
     mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target,
     mlir::TypeConverter &typeConverter,
-    mlir::zamalang::V0Parameter &v0Parameter) {
+    mlir::concretelang::V0Parameter &v0Parameter) {
   populateWithMidLFHEOpTypeConversionPattern<
-      mlir::zamalang::MidLFHE::ZeroGLWEOp>(patterns, target, typeConverter);
+      mlir::concretelang::MidLFHE::ZeroGLWEOp>(patterns, target, typeConverter);
   populateWithMidLFHEOpTypeConversionPattern<
-      mlir::zamalang::MidLFHE::AddGLWEIntOp>(patterns, target, typeConverter);
+      mlir::concretelang::MidLFHE::AddGLWEIntOp>(patterns, target, typeConverter);
   populateWithMidLFHEOpTypeConversionPattern<
-      mlir::zamalang::MidLFHE::AddGLWEOp>(patterns, target, typeConverter);
+      mlir::concretelang::MidLFHE::AddGLWEOp>(patterns, target, typeConverter);
   populateWithMidLFHEOpTypeConversionPattern<
-      mlir::zamalang::MidLFHE::SubIntGLWEOp>(patterns, target, typeConverter);
+      mlir::concretelang::MidLFHE::SubIntGLWEOp>(patterns, target, typeConverter);
   populateWithMidLFHEOpTypeConversionPattern<
-      mlir::zamalang::MidLFHE::NegGLWEOp>(patterns, target, typeConverter);
+      mlir::concretelang::MidLFHE::NegGLWEOp>(patterns, target, typeConverter);
   populateWithMidLFHEOpTypeConversionPattern<
-      mlir::zamalang::MidLFHE::MulGLWEIntOp>(patterns, target, typeConverter);
+      mlir::concretelang::MidLFHE::MulGLWEIntOp>(patterns, target, typeConverter);
   populateWithMidLFHEApplyLookupTableParametrizationPattern(
       patterns, target, typeConverter, v0Parameter);
 }
@@ -301,14 +301,14 @@ void MidLFHEGlobalParametrizationPass::runOnOperation() {
     patterns.add<RegionOpTypeConverterPattern<
         mlir::scf::ForOp, MidLFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
-    mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
+    mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                             converter);
 
     // Conversion of RT Dialect Ops
-    patterns.add<mlir::zamalang::GenericTypeConverterPattern<
-        mlir::zamalang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
-    mlir::zamalang::addDynamicallyLegalTypeOp<
-        mlir::zamalang::RT::DataflowTaskOp>(target, converter);
+    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+        mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DataflowTaskOp>(target, converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))
@@ -333,11 +333,11 @@ void MidLFHEGlobalParametrizationPass::runOnOperation() {
 }
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
 createConvertMidLFHEGlobalParametrizationPass(
-    mlir::zamalang::V0FHEContext &fheContext) {
+    mlir::concretelang::V0FHEContext &fheContext) {
   return std::make_unique<MidLFHEGlobalParametrizationPass>(fheContext);
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

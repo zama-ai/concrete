@@ -3,31 +3,31 @@
 
 #include "llvm/ADT/SmallString.h"
 
-#include "zamalang-c/Support/CompilerEngine.h"
-#include "zamalang/Support/CompilerEngine.h"
-#include "zamalang/Support/Jit.h"
-#include "zamalang/Support/JitCompilerEngine.h"
-#include "zamalang/Support/KeySetCache.h"
+#include "concretelang-c/Support/CompilerEngine.h"
+#include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/Jit.h"
+#include "concretelang/Support/JitCompilerEngine.h"
+#include "concretelang/Support/KeySetCache.h"
 
-using mlir::zamalang::JitCompilerEngine;
+using mlir::concretelang::JitCompilerEngine;
 
-mlir::zamalang::JitCompilerEngine::Lambda
+mlir::concretelang::JitCompilerEngine::Lambda
 buildLambda(const char *module, const char *funcName,
             const char *runtimeLibPath, const char *keySetCachePath) {
   // Set the runtime library path if not nullptr
   llvm::Optional<llvm::StringRef> runtimeLibPathOptional = {};
   if (runtimeLibPath != nullptr)
     runtimeLibPathOptional = runtimeLibPath;
-  mlir::zamalang::JitCompilerEngine engine;
+  mlir::concretelang::JitCompilerEngine engine;
 
-  using KeySetCache = mlir::zamalang::KeySetCache;
-  using optKeySetCache = llvm::Optional<mlir::zamalang::KeySetCache>;
+  using KeySetCache = mlir::concretelang::KeySetCache;
+  using optKeySetCache = llvm::Optional<mlir::concretelang::KeySetCache>;
   auto cacheOpt = optKeySetCache();
   if (keySetCachePath != nullptr) {
     cacheOpt = KeySetCache(std::string(keySetCachePath));
   }
 
-  llvm::Expected<mlir::zamalang::JitCompilerEngine::Lambda> lambdaOrErr =
+  llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> lambdaOrErr =
       engine.buildLambda(module, funcName, cacheOpt, runtimeLibPathOptional);
   if (!lambdaOrErr) {
     std::string backingString;
@@ -40,23 +40,23 @@ buildLambda(const char *module, const char *funcName,
 }
 
 lambdaArgument invokeLambda(lambda l, executionArguments args) {
-  mlir::zamalang::JitCompilerEngine::Lambda *lambda_ptr =
-      (mlir::zamalang::JitCompilerEngine::Lambda *)l.ptr;
+  mlir::concretelang::JitCompilerEngine::Lambda *lambda_ptr =
+      (mlir::concretelang::JitCompilerEngine::Lambda *)l.ptr;
 
   if (args.size != lambda_ptr->getNumArguments()) {
     throw std::invalid_argument("wrong number of arguments");
   }
   // Set the integer/tensor arguments
-  std::vector<mlir::zamalang::LambdaArgument *> lambdaArgumentsRef;
+  std::vector<mlir::concretelang::LambdaArgument *> lambdaArgumentsRef;
   for (auto i = 0; i < args.size; i++) {
     lambdaArgumentsRef.push_back(args.data[i].ptr.get());
   }
   // Run lambda
-  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> resOrError =
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> resOrError =
       (*lambda_ptr)
           .
-          operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
-              llvm::ArrayRef<mlir::zamalang::LambdaArgument *>(
+          operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
+              llvm::ArrayRef<mlir::concretelang::LambdaArgument *>(
                   lambdaArgumentsRef));
 
   if (!resOrError) {
@@ -71,15 +71,15 @@ lambdaArgument invokeLambda(lambda l, executionArguments args) {
 }
 
 std::string roundTrip(const char *module) {
-  std::shared_ptr<mlir::zamalang::CompilationContext> ccx =
-      mlir::zamalang::CompilationContext::createShared();
-  mlir::zamalang::JitCompilerEngine ce{ccx};
+  std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
+      mlir::concretelang::CompilationContext::createShared();
+  mlir::concretelang::JitCompilerEngine ce{ccx};
 
   std::string backingString;
   llvm::raw_string_ostream os(backingString);
 
-  llvm::Expected<mlir::zamalang::CompilerEngine::CompilationResult> retOrErr =
-      ce.compile(module, mlir::zamalang::CompilerEngine::Target::ROUND_TRIP);
+  llvm::Expected<mlir::concretelang::CompilerEngine::CompilationResult> retOrErr =
+      ce.compile(module, mlir::concretelang::CompilerEngine::Target::ROUND_TRIP);
   if (!retOrErr) {
     os << "MLIR parsing failed: "
        << llvm::toString(std::move(retOrErr.takeError()));
@@ -91,15 +91,15 @@ std::string roundTrip(const char *module) {
 }
 
 bool lambdaArgumentIsTensor(lambdaArgument &lambda_arg) {
-  return lambda_arg.ptr->isa<mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>>();
+  return lambda_arg.ptr->isa<mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>>();
 }
 
 std::vector<uint64_t> lambdaArgumentGetTensorData(lambdaArgument &lambda_arg) {
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>> *arg =
-      lambda_arg.ptr->dyn_cast<mlir::zamalang::TensorLambdaArgument<
-          mlir::zamalang::IntLambdaArgument<uint64_t>>>();
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>> *arg =
+      lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<uint64_t>>>();
   if (arg == nullptr) {
     throw std::invalid_argument(
         "LambdaArgument isn't a tensor, should "
@@ -120,10 +120,10 @@ std::vector<uint64_t> lambdaArgumentGetTensorData(lambdaArgument &lambda_arg) {
 
 std::vector<int64_t>
 lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg) {
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>> *arg =
-      lambda_arg.ptr->dyn_cast<mlir::zamalang::TensorLambdaArgument<
-          mlir::zamalang::IntLambdaArgument<uint64_t>>>();
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>> *arg =
+      lambda_arg.ptr->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<uint64_t>>>();
   if (arg == nullptr) {
     throw std::invalid_argument(
         "LambdaArgument isn't a tensor, should "
@@ -133,12 +133,12 @@ lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg) {
 }
 
 bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg) {
-  return lambda_arg.ptr->isa<mlir::zamalang::IntLambdaArgument<uint64_t>>();
+  return lambda_arg.ptr->isa<mlir::concretelang::IntLambdaArgument<uint64_t>>();
 }
 
 uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
-  mlir::zamalang::IntLambdaArgument<uint64_t> *arg =
-      lambda_arg.ptr->dyn_cast<mlir::zamalang::IntLambdaArgument<uint64_t>>();
+  mlir::concretelang::IntLambdaArgument<uint64_t> *arg =
+      lambda_arg.ptr->dyn_cast<mlir::concretelang::IntLambdaArgument<uint64_t>>();
   if (arg == nullptr) {
     throw std::invalid_argument("LambdaArgument isn't a scalar, should "
                                 "be an IntLambdaArgument<uint64_t>");
@@ -149,38 +149,38 @@ uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
 lambdaArgument lambdaArgumentFromTensorU8(std::vector<uint8_t> data,
                                           std::vector<int64_t> dimensions) {
   lambdaArgument tensor_arg{
-      std::make_shared<mlir::zamalang::TensorLambdaArgument<
-          mlir::zamalang::IntLambdaArgument<uint8_t>>>(data, dimensions)};
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<uint8_t>>>(data, dimensions)};
   return tensor_arg;
 }
 
 lambdaArgument lambdaArgumentFromTensorU16(std::vector<uint16_t> data,
                                            std::vector<int64_t> dimensions) {
   lambdaArgument tensor_arg{
-      std::make_shared<mlir::zamalang::TensorLambdaArgument<
-          mlir::zamalang::IntLambdaArgument<uint16_t>>>(data, dimensions)};
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<uint16_t>>>(data, dimensions)};
   return tensor_arg;
 }
 
 lambdaArgument lambdaArgumentFromTensorU32(std::vector<uint32_t> data,
                                            std::vector<int64_t> dimensions) {
   lambdaArgument tensor_arg{
-      std::make_shared<mlir::zamalang::TensorLambdaArgument<
-          mlir::zamalang::IntLambdaArgument<uint32_t>>>(data, dimensions)};
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<uint32_t>>>(data, dimensions)};
   return tensor_arg;
 }
 
 lambdaArgument lambdaArgumentFromTensorU64(std::vector<uint64_t> data,
                                            std::vector<int64_t> dimensions) {
   lambdaArgument tensor_arg{
-      std::make_shared<mlir::zamalang::TensorLambdaArgument<
-          mlir::zamalang::IntLambdaArgument<uint64_t>>>(data, dimensions)};
+      std::make_shared<mlir::concretelang::TensorLambdaArgument<
+          mlir::concretelang::IntLambdaArgument<uint64_t>>>(data, dimensions)};
   return tensor_arg;
 }
 
 lambdaArgument lambdaArgumentFromScalar(uint64_t scalar) {
   lambdaArgument scalar_arg{
-      std::make_shared<mlir::zamalang::IntLambdaArgument<uint64_t>>(scalar)};
+      std::make_shared<mlir::concretelang::IntLambdaArgument<uint64_t>>(scalar)};
   return scalar_arg;
 }
 
@@ -191,7 +191,7 @@ std::runtime_error library_error(std::string prefix, llvm::Expected<T> &error) {
 
 std::string library(std::string libraryPath,
                     std::vector<std::string> mlir_modules) {
-  using namespace mlir::zamalang;
+  using namespace mlir::concretelang;
 
   JitCompilerEngine ce{CompilationContext::createShared()};
   auto lib = ce.compile<std::string>(mlir_modules, libraryPath);

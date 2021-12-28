@@ -8,7 +8,7 @@ from test_compiler_file_output.utils import assert_exists, content, remove, run
 TEST_PATH = os.path.dirname(__file__)
 
 CCOMPILER = 'cc'
-ZAMACOMPILER = 'zamacompiler'
+CONCRETECOMPILER = 'concretecompiler'
 
 SOURCE_1 = f'{TEST_PATH}/return_13.ir'
 SOURCE_2 = f'{TEST_PATH}/return_0.ir'
@@ -25,7 +25,7 @@ assert_exists(SOURCE_1, SOURCE_2, SOURCE_C_1, SOURCE_C_2)
 def test_roundtrip():
     remove(OUTPUT)
 
-    run(ZAMACOMPILER, SOURCE_1, '--action=roundtrip', '-o',  OUTPUT) 
+    run(CONCRETECOMPILER, SOURCE_1, '--action=roundtrip', '-o',  OUTPUT) 
 
     assert_exists(OUTPUT)
     assert content(SOURCE_1) == content(OUTPUT)
@@ -36,7 +36,7 @@ def test_roundtrip():
 def test_roundtrip_many():
     remove(OUTPUT)
 
-    run(ZAMACOMPILER, SOURCE_1, SOURCE_2, '--action=roundtrip', '-o',  OUTPUT)
+    run(CONCRETECOMPILER, SOURCE_1, SOURCE_2, '--action=roundtrip', '-o',  OUTPUT)
 
     assert_exists(OUTPUT)
     assert f"{content(SOURCE_1)}{content(SOURCE_2)}" == content(OUTPUT)
@@ -47,7 +47,7 @@ def test_roundtrip_many():
 def test_compile_library():
     remove(LIBS)
 
-    run(ZAMACOMPILER, SOURCE_1, '--action=compile', '-o',  LIB)
+    run(CONCRETECOMPILER, SOURCE_1, '--action=compile', '-o',  LIB)
 
     assert_exists(LIBS)
 
@@ -69,7 +69,7 @@ def test_compile_library():
 def test_compile_many_library():
     remove(LIBS)
 
-    run(ZAMACOMPILER, SOURCE_1, SOURCE_2, '--action=compile', '-o',  LIB)
+    run(CONCRETECOMPILER, SOURCE_1, SOURCE_2, '--action=compile', '-o',  LIB)
 
     assert_exists(LIBS)
 

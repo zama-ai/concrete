@@ -11,7 +11,7 @@ from stress_tests.experiment import (
     ExperimentConditions, Experiment, Encoder, Replication
 )
 from stress_tests import read_mlir
-from stress_tests.utils import ZAMACOMPILER, run
+from stress_tests.utils import CONCRETECOMPILER, run
 from stress_tests.v0_parameters import (
     LOG2_MANP_MAX, P_MAX,
     v0_parameter
@@ -141,7 +141,7 @@ def basic_setup(bitwidth, size, const, retry=10):
         if params.glwe_dim != expected_glwe_dim:
             msg(f'BAD_GLWEDIM ({params.glwe_dim} vs {expected_glwe_dim})', conditions_details)
 
-        cmd = (ZAMACOMPILER, path) + JIT_INVOKE_MAIN + jit_args(*args)
+        cmd = (CONCRETECOMPILER, path) + JIT_INVOKE_MAIN + jit_args(*args)
         compilers_calls = [executor.submit(run, *cmd) for _ in range(retry)]
 
         success = 0

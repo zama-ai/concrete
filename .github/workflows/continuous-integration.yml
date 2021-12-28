@@ -10,9 +10,9 @@ on:
 
 # DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
 env:
-  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/zamalang-compiler
-  DOCKER_IMAGE_TEST_GCC6: ghcr.io/zama-ai/concretefhe-compiler
-  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/zamalang-df-compiler
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concretefhe-compiler
+  DOCKER_IMAGE_TEST_GCC6: ghcr.io/zama-ai/concretefhe-compiler-gcc6
+  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/concretefhe-compiler-df
 
 jobs:
   ########################
@@ -88,7 +88,7 @@ jobs:
             cd /compiler
             rm -rf /build
             export PYTHONPATH=""
-            make CCACHE=ON BUILD_DIR=/build zamacompiler python-bindings
+            make CCACHE=ON BUILD_DIR=/build concretecompiler python-bindings
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -217,8 +217,8 @@ jobs:
         run: |
           cd compiler
           make release_tarballs
-          sudo cp ${{ github.workspace }}/tarballs/zamacompiler.tar.gz ${{ github.workspace }}/tarballs/zamacompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz
-          echo "::set-output name=ASSET_NAME::zamacompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz"
+          sudo cp ${{ github.workspace }}/tarballs/concretecompiler.tar.gz ${{ github.workspace }}/tarballs/concretecompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz
+          echo "::set-output name=ASSET_NAME::concretecompiler-`git describe --tags --abbrev=0`-x86_64-linux-gnu.tar.gz"
 
       - name: Upload Tarball
         uses: actions/upload-release-asset@v1
@@ -296,13 +296,13 @@ jobs:
         run: |
           cd compiler
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
-          make zamacompiler
-          mkdir -p tarballs/zamacompiler/lib tarballs/zamacompiler/bin
-          cp build/bin/zamacompiler tarballs/zamacompiler/bin
-          cp build/lib/libZamalangRuntime.dylib tarballs/zamacompiler/lib
-          cp ../.github/workflows/assets/Installation.md tarballs/zamacompiler/
-          cd tarballs && tar -czvf zamacompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz zamacompiler
-          echo "::set-output name=ASSET_NAME::zamacompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz"
+          make concretecompiler
+          mkdir -p tarballs/concretecompiler/lib tarballs/concretecompiler/bin
+          cp build/bin/concretecompiler tarballs/concretecompiler/bin
+          cp build/lib/libConcretelangRuntime.dylib tarballs/concretecompiler/lib
+          cp ../.github/workflows/assets/Installation.md tarballs/concretecompiler/
+          cd tarballs && tar -czvf concretecompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz concretecompiler
+          echo "::set-output name=ASSET_NAME::concretecompiler-`git describe --tags --abbrev=0`-x86_64-macos-catalina.tar.gz"
 
       - name: Upload Tarball
         if: matrix.python == '3.8'
@@ -410,14 +410,14 @@ jobs:
       matrix:
         include:
           - name: test-env
-            image: ghcr.io/zama-ai/zamalang-compiler
-            dockerfile: builders/Dockerfile.zamalang-env
-          - name: test-env-gcc6
             image: ghcr.io/zama-ai/concretefhe-compiler
-            dockerfile: builders/Dockerfile.zamalang-env-gcc6
+            dockerfile: builders/Dockerfile.concretefhe-compiler-env
+          - name: test-env-gcc6
+            image: ghcr.io/zama-ai/concretefhe-compiler-gcc6
+            dockerfile: builders/Dockerfile.concretefhe-compiler-gcc6-env
           - name: test-df
-            image: ghcr.io/zama-ai/zamalang-df-compiler
-            dockerfile: builders/Dockerfile.zamalang-df-env
+            image: ghcr.io/zama-ai/concretefhe-compiler-df
+            dockerfile: builders/Dockerfile.concretefhe-compiler-df-env
 
     steps:
       - uses: actions/checkout@v2

@@ -1,1 +1,1 @@
-add_subdirectory(zamalang)
+add_subdirectory(concretelang)

@@ -1,26 +1,26 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEOps.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
 
 #define GET_TYPEDEF_CLASSES
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEOpsTypes.cpp.inc"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEOpsTypes.cpp.inc"
 
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEOpsDialect.cpp.inc"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEOpsDialect.cpp.inc"
 
-using namespace mlir::zamalang::LowLFHE;
+using namespace mlir::concretelang::LowLFHE;
 
 void LowLFHEDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.cpp.inc"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEOps.cpp.inc"
       >();
 
   addTypes<
 #define GET_TYPEDEF_LIST
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEOpsTypes.cpp.inc"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEOpsTypes.cpp.inc"
       >();
 }
 

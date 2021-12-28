@@ -4,16 +4,16 @@
 #include <iostream>
 
 #include <mlir/IR/BuiltinOps.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHEOps.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHETypes.h>
-#include <zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
-#include <zamalang/Dialect/RT/Analysis/Autopar.h>
-#include <zamalang/Dialect/RT/IR/RTDialect.h>
-#include <zamalang/Dialect/RT/IR/RTOps.h>
-#include <zamalang/Dialect/RT/IR/RTTypes.h>
-#include <zamalang/Support/Constants.h>
-#include <zamalang/Support/math.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEOps.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHETypes.h>
+#include <concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
+#include <concretelang/Dialect/RT/Analysis/Autopar.h>
+#include <concretelang/Dialect/RT/IR/RTDialect.h>
+#include <concretelang/Dialect/RT/IR/RTOps.h>
+#include <concretelang/Dialect/RT/IR/RTTypes.h>
+#include <concretelang/Support/Constants.h>
+#include <concretelang/Support/math.h>
 
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
@@ -31,10 +31,10 @@
 #include <mlir/Transforms/Utils.h>
 
 #define GEN_PASS_CLASSES
-#include <zamalang/Dialect/RT/Analysis/Autopar.h.inc>
+#include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 namespace {
 
@@ -200,7 +200,7 @@ class FixDataflowTaskOpInputsPattern
 public:
   FixDataflowTaskOpInputsPattern(mlir::MLIRContext *context)
       : mlir::OpRewritePattern<RT::DataflowTaskOp>(
-            context, ::mlir::zamalang::DEFAULT_PATTERN_BENEFIT) {}
+            context, ::mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
 
   LogicalResult
   matchAndRewrite(RT::DataflowTaskOp op,
@@ -265,5 +265,5 @@ std::unique_ptr<mlir::Pass> createFixupDataflowTaskOpsPass(bool debug) {
   return std::make_unique<FixupDataflowTaskOpsPass>(debug);
 }
 
-} // end namespace zamalang
+} // end namespace concretelang
 } // end namespace mlir

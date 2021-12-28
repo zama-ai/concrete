@@ -6,15 +6,15 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "zamalang/Conversion/MidLFHEToLowLFHE/Patterns.h"
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Conversion/Utils/RegionOpTypeConverterPattern.h"
-#include "zamalang/Conversion/Utils/TensorOpTypeConversion.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
-#include "zamalang/Dialect/RT/IR/RTOps.h"
+#include "concretelang/Conversion/MidLFHEToLowLFHE/Patterns.h"
+#include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
+#include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
 
 namespace {
 struct MidLFHEToLowLFHEPass
@@ -23,8 +23,8 @@ struct MidLFHEToLowLFHEPass
 };
 } // namespace
 
-using mlir::zamalang::LowLFHE::LweCiphertextType;
-using mlir::zamalang::MidLFHE::GLWECipherTextType;
+using mlir::concretelang::LowLFHE::LweCiphertextType;
+using mlir::concretelang::MidLFHE::GLWECipherTextType;
 
 /// MidLFHEToLowLFHETypeConverter is a TypeConverter that transform
 /// `MidLFHE.glwe<{_,_,_}{p}>` to LowLFHE.lwe_ciphertext
@@ -34,7 +34,7 @@ public:
   MidLFHEToLowLFHETypeConverter() {
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](GLWECipherTextType type) {
-      return mlir::zamalang::convertTypeToLWE(type.getContext(), type);
+      return mlir::concretelang::convertTypeToLWE(type.getContext(), type);
     });
     addConversion([&](mlir::RankedTensorType type) {
       auto glwe = type.getElementType().dyn_cast_or_null<GLWECipherTextType>();
@@ -43,7 +43,7 @@ public:
       }
       mlir::Type r = mlir::RankedTensorType::get(
           type.getShape(),
-          mlir::zamalang::convertTypeToLWE(glwe.getContext(), glwe));
+          mlir::concretelang::convertTypeToLWE(glwe.getContext(), glwe));
       return r;
     });
   }
@@ -56,10 +56,10 @@ void MidLFHEToLowLFHEPass::runOnOperation() {
   MidLFHEToLowLFHETypeConverter converter;
 
   // Mark ops from the target dialect as legal operations
-  target.addLegalDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
+  target.addLegalDialect<mlir::concretelang::LowLFHE::LowLFHEDialect>();
 
   // Make sure that no ops from `MidLFHE` remain after the lowering
-  target.addIllegalDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
+  target.addIllegalDialect<mlir::concretelang::MidLFHE::MidLFHEDialect>();
 
   // Make sure that no ops `linalg.generic` that have illegal types
   target.addDynamicallyLegalOp<mlir::linalg::GenericOp,
@@ -89,14 +89,14 @@ void MidLFHEToLowLFHEPass::runOnOperation() {
   patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
                                             MidLFHEToLowLFHETypeConverter>>(
       &getContext(), converter);
-  mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
+  mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                           converter);
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);
 
   // Conversion of RT Dialect Ops
-  patterns.add<mlir::zamalang::GenericTypeConverterPattern<
-      mlir::zamalang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
-  mlir::zamalang::addDynamicallyLegalTypeOp<mlir::zamalang::RT::DataflowTaskOp>(
+  patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::concretelang::RT::DataflowTaskOp>(
       target, converter);
 
   // Apply conversion
@@ -106,9 +106,9 @@ void MidLFHEToLowLFHEPass::runOnOperation() {
 }
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>> createConvertMidLFHEToLowLFHEPass() {
   return std::make_unique<MidLFHEToLowLFHEPass>();
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

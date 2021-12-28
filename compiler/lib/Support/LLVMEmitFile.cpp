@@ -10,10 +10,10 @@
 
 #include <mlir/Support/FileUtilities.h>
 
-#include <zamalang/Support/Error.h>
+#include <concretelang/Support/Error.h>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 using std::string;
 using std::vector;
@@ -108,5 +108,5 @@ llvm::Error emitLibrary(vector<string> objectsPath, string libraryPath,
   return callCmd(cmd);
 }
 
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

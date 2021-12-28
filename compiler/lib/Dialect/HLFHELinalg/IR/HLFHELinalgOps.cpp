@@ -3,9 +3,9 @@
 
 #include "mlir/IR/TypeUtilities.h"
 
-#include "zamalang/Dialect/HLFHE/IR/HLFHEOps.h"
-#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
-#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgTypes.h"
+#include "concretelang/Dialect/HLFHE/IR/HLFHEOps.h"
+#include "concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h"
+#include "concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgTypes.h"
 
 namespace mlir {
 namespace OpTrait {
@@ -111,7 +111,7 @@ LogicalResult verifyTensorBinaryEintInt(mlir::Operation *op) {
   }
   auto el0Ty =
       op0Ty.getElementType()
-          .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::HLFHE::EncryptedIntegerType>();
   if (el0Ty == nullptr) {
     op->emitOpError() << "should have a !HLFHE.eint as the element type of the "
                          "tensor of operand #0";
@@ -151,7 +151,7 @@ LogicalResult verifyTensorBinaryIntEint(mlir::Operation *op) {
   }
   auto el1Ty =
       op1Ty.getElementType()
-          .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::HLFHE::EncryptedIntegerType>();
   if (el1Ty == nullptr) {
     op->emitOpError() << "should have a !HLFHE.eint as the element type of the "
                          "tensor of operand #1";
@@ -179,7 +179,7 @@ LogicalResult verifyTensorBinaryEint(mlir::Operation *op) {
   }
   auto el0Ty =
       op0Ty.getElementType()
-          .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::HLFHE::EncryptedIntegerType>();
   if (el0Ty == nullptr) {
     op->emitOpError() << "should have a !HLFHE.eint as the element type of the "
                          "tensor of operand #0";
@@ -187,7 +187,7 @@ LogicalResult verifyTensorBinaryEint(mlir::Operation *op) {
   }
   auto el1Ty =
       op1Ty.getElementType()
-          .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::HLFHE::EncryptedIntegerType>();
   if (el1Ty == nullptr) {
     op->emitOpError() << "should have a !HLFHE.eint as the element type of the "
                          "tensor of operand #1";
@@ -214,7 +214,7 @@ LogicalResult verifyTensorUnaryEint(mlir::Operation *op) {
   }
   auto el0Ty =
       op0Ty.getElementType()
-          .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+          .dyn_cast_or_null<mlir::concretelang::HLFHE::EncryptedIntegerType>();
   if (el0Ty == nullptr) {
     op->emitOpError() << "should have a !HLFHE.eint as the element type of the "
                          "tensor operand";
@@ -229,13 +229,13 @@ LogicalResult verifyTensorUnaryEint(mlir::Operation *op) {
 } // namespace mlir
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 namespace HLFHELinalg {
 
 mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
   auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
   auto tEltTy =
-      tTy.getElementType().cast<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+      tTy.getElementType().cast<mlir::concretelang::HLFHE::EncryptedIntegerType>();
   auto lutTy = op.lut().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
@@ -261,7 +261,7 @@ mlir::LogicalResult
 verifyApplyMultiLookupTable(ApplyMultiLookupTableEintOp &op) {
   auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
   auto tEltTy =
-      tTy.getElementType().cast<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+      tTy.getElementType().cast<mlir::concretelang::HLFHE::EncryptedIntegerType>();
   auto lutTy = op.luts().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
@@ -298,7 +298,7 @@ mlir::IntegerType getClearElmentType(::mlir::Value value) {
 }
 
 HLFHE::EncryptedIntegerType getEncryptedElmentType(::mlir::Value value) {
-  using namespace mlir::zamalang::HLFHE;
+  using namespace mlir::concretelang::HLFHE;
   return getElmentType<HLFHE::EncryptedIntegerType>(value);
 }
 
@@ -380,7 +380,7 @@ verifyApplyMappedLookupTable(ApplyMappedLookupTableEintOp &op) {
                         .cast<mlir::IntegerType>();
   auto resultType =
       op.getResult().getType().cast<HLFHE::EncryptedIntegerType>();
-  if (!mlir::zamalang::HLFHE::verifyEncryptedIntegerAndIntegerInputsConsistency(
+  if (!mlir::concretelang::HLFHE::verifyEncryptedIntegerAndIntegerInputsConsistency(
           op, lhsEltType, rhsEltType)) {
     return ::mlir::failure();
   }
@@ -423,8 +423,8 @@ template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
   return mlir::success();
 }
 } // namespace HLFHELinalg
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir
 
 #define GET_OP_CLASSES
-#include "zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.cpp.inc"
+#include "concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.cpp.inc"

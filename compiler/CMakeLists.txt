@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(zamacompiler LANGUAGES C CXX)
+project(concretecompiler LANGUAGES C CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
 # If we are trying to build the compiler with LLVM/MLIR as libraries
-if( NOT DEFINED LLVM_EXTERNAL_ZAMALANG_SOURCE_DIR )
+if( NOT DEFINED LLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR )
   message(FATAL_ERROR "Concrete compiler requires a unified build with LLVM/MLIR")
 endif()
 
@@ -41,8 +41,8 @@ add_definitions(${LLVM_DEFINITIONS})
 
 # Custom doc generation function
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
-include(AddZamalangDoc)
-set(ZAMALANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+include(AddConcretelangDoc)
+set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 #-------------------------------------------------------------------------------
 # Concrete FFI Configuration
@@ -55,10 +55,10 @@ set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEA
 # Python Configuration
 #-------------------------------------------------------------------------------
 
-option(ZAMALANG_BINDINGS_PYTHON_ENABLED "Enables ZamaLang Python bindings." ON)
+option(CONCRETELANG_BINDINGS_PYTHON_ENABLED "Enables ConcreteLang Python bindings." ON)
 
-if(ZAMALANG_BINDINGS_PYTHON_ENABLED)
-  message(STATUS "ZamaLang Python bindings are enabled.")
+if(CONCRETELANG_BINDINGS_PYTHON_ENABLED)
+  message(STATUS "ConcreteLang Python bindings are enabled.")
 
   include(MLIRDetectPythonEnv)
   # After CMake 3.18, we are able to limit the scope of the search to just
@@ -84,33 +84,33 @@ if(ZAMALANG_BINDINGS_PYTHON_ENABLED)
                  "suffix = '${PYTHON_MODULE_SUFFIX}', "
                  "extension = '${PYTHON_MODULE_EXTENSION}'")
 
-  set(ZAMALANG_PYTHON_PACKAGES_DIR ${CMAKE_CURRENT_BINARY_DIR}/python_packages)
+  set(CONCRETELANG_PYTHON_PACKAGES_DIR ${CMAKE_CURRENT_BINARY_DIR}/python_packages)
 else()
-  message(STATUS "ZamaLang Python bindings are disabled.")
+  message(STATUS "ConcreteLang Python bindings are disabled.")
 endif()
 
 #-------------------------------------------------------------------------------
 # DFR - parallel execution configuration
 #-------------------------------------------------------------------------------
 
-option(ZAMALANG_PARALLEL_EXECUTION_ENABLED "Enables parallel execution for ZamaLang." ON)
+option(CONCRETELANG_PARALLEL_EXECUTION_ENABLED "Enables parallel execution for ConcreteLang." ON)
 
-if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
-  message(STATUS "ZamaLang parallel execution enabled.")
+if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+  message(STATUS "ConcreteLang parallel execution enabled.")
 
   find_package(HPX REQUIRED CONFIG)
   include_directories(SYSTEM ${HPX_INCLUDE_DIRS})
   list(APPEND CMAKE_MODULE_PATH "${HPX_CMAKE_DIR}")
 
 else()
-  message(STATUS "ZamaLang parallel execution disabled.")
+  message(STATUS "ConcreteLang parallel execution disabled.")
 endif()
 
 #-------------------------------------------------------------------------------
 # Unit tests
 #-------------------------------------------------------------------------------
 
-option(ZAMALANG_UNIT_TESTS "Enables the build of unittests" ON)
+option(CONCRETELANG_UNIT_TESTS "Enables the build of unittests" ON)
 
 
 add_subdirectory(include)

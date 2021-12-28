@@ -9,21 +9,21 @@
 #include "mlir/IR/SymbolTable.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "zamalang/Support/Constants.h"
+#include "concretelang/Conversion/Passes.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEOps.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Support/Constants.h"
 
 class LowLFHEToConcreteCAPITypeConverter : public mlir::TypeConverter {
 
 public:
   LowLFHEToConcreteCAPITypeConverter() {
     addConversion([](mlir::Type type) { return type; });
-    addConversion([&](mlir::zamalang::LowLFHE::PlaintextType type) {
+    addConversion([&](mlir::concretelang::LowLFHE::PlaintextType type) {
       return mlir::IntegerType::get(type.getContext(), 64);
     });
-    addConversion([&](mlir::zamalang::LowLFHE::CleartextType type) {
+    addConversion([&](mlir::concretelang::LowLFHE::CleartextType type) {
       return mlir::IntegerType::get(type.getContext(), 64);
     });
   }
@@ -64,56 +64,56 @@ mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
 // allocate them. All the calls to the C API should be done using this generic
 // types, and casting should then be performed back to the appropriate type.
 
-inline mlir::zamalang::LowLFHE::LweCiphertextType
+inline mlir::concretelang::LowLFHE::LweCiphertextType
 getGenericLweCiphertextType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::LweCiphertextType::get(context, -1, -1);
+  return mlir::concretelang::LowLFHE::LweCiphertextType::get(context, -1, -1);
 }
 
-inline mlir::zamalang::LowLFHE::GlweCiphertextType
+inline mlir::concretelang::LowLFHE::GlweCiphertextType
 getGenericGlweCiphertextType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::GlweCiphertextType::get(context);
+  return mlir::concretelang::LowLFHE::GlweCiphertextType::get(context);
 }
 
-inline mlir::zamalang::LowLFHE::PlaintextType
+inline mlir::concretelang::LowLFHE::PlaintextType
 getGenericPlaintextType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::PlaintextType::get(context, -1);
+  return mlir::concretelang::LowLFHE::PlaintextType::get(context, -1);
 }
 
-inline mlir::zamalang::LowLFHE::PlaintextListType
+inline mlir::concretelang::LowLFHE::PlaintextListType
 getGenericPlaintextListType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::PlaintextListType::get(context);
+  return mlir::concretelang::LowLFHE::PlaintextListType::get(context);
 }
 
-inline mlir::zamalang::LowLFHE::ForeignPlaintextListType
+inline mlir::concretelang::LowLFHE::ForeignPlaintextListType
 getGenericForeignPlaintextListType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::ForeignPlaintextListType::get(context);
+  return mlir::concretelang::LowLFHE::ForeignPlaintextListType::get(context);
 }
 
-inline mlir::zamalang::LowLFHE::CleartextType
+inline mlir::concretelang::LowLFHE::CleartextType
 getGenericCleartextType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::CleartextType::get(context, -1);
+  return mlir::concretelang::LowLFHE::CleartextType::get(context, -1);
 }
 
-inline mlir::zamalang::LowLFHE::LweBootstrapKeyType
+inline mlir::concretelang::LowLFHE::LweBootstrapKeyType
 getGenericLweBootstrapKeyType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::LweBootstrapKeyType::get(context);
+  return mlir::concretelang::LowLFHE::LweBootstrapKeyType::get(context);
 }
 
-inline mlir::zamalang::LowLFHE::LweKeySwitchKeyType
+inline mlir::concretelang::LowLFHE::LweKeySwitchKeyType
 getGenericLweKeySwitchKeyType(mlir::MLIRContext *context) {
-  return mlir::zamalang::LowLFHE::LweKeySwitchKeyType::get(context);
+  return mlir::concretelang::LowLFHE::LweKeySwitchKeyType::get(context);
 }
 
 // Get the generic version of the type.
 // Useful when iterating over a set of types.
 mlir::Type getGenericType(mlir::Type baseType) {
-  if (baseType.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
+  if (baseType.isa<mlir::concretelang::LowLFHE::LweCiphertextType>()) {
     return getGenericLweCiphertextType(baseType.getContext());
   }
-  if (baseType.isa<mlir::zamalang::LowLFHE::PlaintextType>()) {
+  if (baseType.isa<mlir::concretelang::LowLFHE::PlaintextType>()) {
     return getGenericPlaintextType(baseType.getContext());
   }
-  if (baseType.isa<mlir::zamalang::LowLFHE::CleartextType>()) {
+  if (baseType.isa<mlir::concretelang::LowLFHE::CleartextType>()) {
     return getGenericCleartextType(baseType.getContext());
   }
   return baseType;
@@ -138,7 +138,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   auto genericBSKType = getGenericLweBootstrapKeyType(rewriter.getContext());
   auto genericKSKType = getGenericLweKeySwitchKeyType(rewriter.getContext());
   auto contextType =
-      mlir::zamalang::LowLFHE::ContextType::get(rewriter.getContext());
+      mlir::concretelang::LowLFHE::ContextType::get(rewriter.getContext());
 
   auto errType = mlir::IndexType::get(rewriter.getContext());
 
@@ -340,7 +340,7 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
   LowLFHEOpToConcreteCAPICallPattern(
       mlir::MLIRContext *context, mlir::StringRef funcName,
       mlir::StringRef allocName,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<Op>(context, benefit), funcName(funcName),
         allocName(allocName) {}
 
@@ -350,7 +350,7 @@ struct LowLFHEOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
 
     mlir::Type resultType = op->getResultTypes().front();
     auto lweResultType =
-        resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>();
+        resultType.cast<mlir::concretelang::LowLFHE::LweCiphertextType>();
     // Replace the operation with a call to the `funcName`
     {
       // Create the err value
@@ -403,20 +403,20 @@ private:
 };
 
 struct LowLFHEZeroOpPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::ZeroLWEOp> {
+    : public mlir::OpRewritePattern<mlir::concretelang::LowLFHE::ZeroLWEOp> {
   LowLFHEZeroOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::ZeroLWEOp>(context,
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::LowLFHE::ZeroLWEOp>(context,
                                                                    benefit) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::LowLFHE::ZeroLWEOp op,
+  matchAndRewrite(mlir::concretelang::LowLFHE::ZeroLWEOp op,
                   mlir::PatternRewriter &rewriter) const override {
 
     mlir::Type resultType = op->getResultTypes().front();
     auto lweResultType =
-        resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>();
+        resultType.cast<mlir::concretelang::LowLFHE::LweCiphertextType>();
     // Create the err value
     auto errOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(0));
@@ -439,15 +439,15 @@ struct LowLFHEZeroOpPattern
 };
 
 struct LowLFHEEncodeIntOpPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::EncodeIntOp> {
+    : public mlir::OpRewritePattern<mlir::concretelang::LowLFHE::EncodeIntOp> {
   LowLFHEEncodeIntOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::EncodeIntOp>(context,
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::LowLFHE::EncodeIntOp>(context,
                                                                      benefit) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::LowLFHE::EncodeIntOp op,
+  matchAndRewrite(mlir::concretelang::LowLFHE::EncodeIntOp op,
                   mlir::PatternRewriter &rewriter) const override {
     {
       mlir::Value castedInt = rewriter.create<mlir::arith::ExtUIOp>(
@@ -464,15 +464,15 @@ struct LowLFHEEncodeIntOpPattern
 };
 
 struct LowLFHEIntToCleartextOpPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::IntToCleartextOp> {
+    : public mlir::OpRewritePattern<mlir::concretelang::LowLFHE::IntToCleartextOp> {
   LowLFHEIntToCleartextOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::IntToCleartextOp>(
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::LowLFHE::IntToCleartextOp>(
             context, benefit) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::LowLFHE::IntToCleartextOp op,
+  matchAndRewrite(mlir::concretelang::LowLFHE::IntToCleartextOp op,
                   mlir::PatternRewriter &rewriter) const override {
     rewriter.replaceOpWithNewOp<mlir::arith::ExtUIOp>(
         op, rewriter.getIntegerType(64), op->getOperands().front());
@@ -489,15 +489,15 @@ struct LowLFHEIntToCleartextOpPattern
 // - construct the GLWE accumulator by adding the plaintext_list to a freshly
 // allocated GLWE
 struct GlweFromTableOpPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::GlweFromTable> {
+    : public mlir::OpRewritePattern<mlir::concretelang::LowLFHE::GlweFromTable> {
   GlweFromTableOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::GlweFromTable>(
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::LowLFHE::GlweFromTable>(
             context, benefit) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::LowLFHE::GlweFromTable op,
+  matchAndRewrite(mlir::concretelang::LowLFHE::GlweFromTable op,
                   mlir::PatternRewriter &rewriter) const override {
     LowLFHEToConcreteCAPITypeConverter typeConverter;
     auto errType = mlir::IndexType::get(rewriter.getContext());
@@ -589,7 +589,7 @@ mlir::Value getContextArgument(mlir::Operation *op) {
 
       mlir::Value context = block->getArguments().back();
 
-      assert(context.getType().isa<mlir::zamalang::LowLFHE::ContextType>() &&
+      assert(context.getType().isa<mlir::concretelang::LowLFHE::ContextType>() &&
              "the LowLFHE.context should be the last argument of the enclosing "
              "function of the op");
 
@@ -607,22 +607,22 @@ mlir::Value getContextArgument(mlir::Operation *op) {
 // - use the key and the input accumulator (GLWE) to bootstrap the input
 // ciphertext
 struct LowLFHEBootstrapLweOpPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::BootstrapLweOp> {
+    : public mlir::OpRewritePattern<mlir::concretelang::LowLFHE::BootstrapLweOp> {
   LowLFHEBootstrapLweOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::BootstrapLweOp>(
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::LowLFHE::BootstrapLweOp>(
             context, benefit) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::LowLFHE::BootstrapLweOp op,
+  matchAndRewrite(mlir::concretelang::LowLFHE::BootstrapLweOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto resultType = op->getResultTypes().front();
     auto errOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(0));
     // Get the size from the dimension
     int64_t outputLweDimension =
-        resultType.cast<mlir::zamalang::LowLFHE::LweCiphertextType>()
+        resultType.cast<mlir::concretelang::LowLFHE::LweCiphertextType>()
             .getDimension();
     int64_t outputLweSize = outputLweDimension + 1;
     mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
@@ -671,15 +671,15 @@ struct LowLFHEBootstrapLweOpPattern
 // - get the global keyswitch key
 // - use the key to keyswitch the input ciphertext
 struct LowLFHEKeySwitchLweOpPattern
-    : public mlir::OpRewritePattern<mlir::zamalang::LowLFHE::KeySwitchLweOp> {
+    : public mlir::OpRewritePattern<mlir::concretelang::LowLFHE::KeySwitchLweOp> {
   LowLFHEKeySwitchLweOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::zamalang::LowLFHE::KeySwitchLweOp>(
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::LowLFHE::KeySwitchLweOp>(
             context, benefit) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::zamalang::LowLFHE::KeySwitchLweOp op,
+  matchAndRewrite(mlir::concretelang::LowLFHE::KeySwitchLweOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto errOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getIndexAttr(0));
@@ -687,7 +687,7 @@ struct LowLFHEKeySwitchLweOpPattern
     int64_t lweDimension =
         op.getResult()
             .getType()
-            .cast<mlir::zamalang::LowLFHE::LweCiphertextType>()
+            .cast<mlir::concretelang::LowLFHE::LweCiphertextType>()
             .getDimension();
     int64_t lweSize = lweDimension + 1;
     mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
@@ -728,19 +728,19 @@ struct LowLFHEKeySwitchLweOpPattern
 /// operators to the corresponding function call to the `Concrete C API`.
 void populateLowLFHEToConcreteCAPICall(mlir::RewritePatternSet &patterns) {
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
-      mlir::zamalang::LowLFHE::AddLweCiphertextsOp>>(
+      mlir::concretelang::LowLFHE::AddLweCiphertextsOp>>(
       patterns.getContext(), "add_lwe_ciphertexts_u64",
       "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
-      mlir::zamalang::LowLFHE::AddPlaintextLweCiphertextOp>>(
+      mlir::concretelang::LowLFHE::AddPlaintextLweCiphertextOp>>(
       patterns.getContext(), "add_plaintext_lwe_ciphertext_u64",
       "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
-      mlir::zamalang::LowLFHE::MulCleartextLweCiphertextOp>>(
+      mlir::concretelang::LowLFHE::MulCleartextLweCiphertextOp>>(
       patterns.getContext(), "mul_cleartext_lwe_ciphertext_u64",
       "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEOpToConcreteCAPICallPattern<
-      mlir::zamalang::LowLFHE::NegateLweCiphertextOp>>(
+      mlir::concretelang::LowLFHE::NegateLweCiphertextOp>>(
       patterns.getContext(), "negate_lwe_ciphertext_u64",
       "allocate_lwe_ciphertext_u64");
   patterns.add<LowLFHEEncodeIntOpPattern>(patterns.getContext());
@@ -755,7 +755,7 @@ struct AddRuntimeContextToFuncOpPattern
     : public mlir::OpRewritePattern<mlir::FuncOp> {
   AddRuntimeContextToFuncOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::FuncOp>(context, benefit) {}
 
   mlir::LogicalResult
@@ -768,7 +768,7 @@ struct AddRuntimeContextToFuncOpPattern
     mlir::SmallVector<mlir::Type> newInputs(oldFuncType.getInputs().begin(),
                                             oldFuncType.getInputs().end());
     newInputs.push_back(
-        rewriter.getType<mlir::zamalang::LowLFHE::ContextType>());
+        rewriter.getType<mlir::concretelang::LowLFHE::ContextType>());
     mlir::FunctionType newFuncTy = rewriter.getType<mlir::FunctionType>(
         newInputs, oldFuncType.getResults());
     // Create the new func
@@ -806,7 +806,7 @@ struct AddRuntimeContextToFuncOpPattern
     //       if (auto tensorTy = t.dyn_cast_or_null<mlir::TensorType>()) {
     //         t = tensorTy.getElementType();
     //       }
-    //       return llvm::isa<mlir::zamalang::LowLFHE::LowLFHEDialect>(
+    //       return llvm::isa<mlir::concretelang::LowLFHE::LowLFHEDialect>(
     //           t.getDialect());
     //     })) {
     //   return true;
@@ -815,7 +815,7 @@ struct AddRuntimeContextToFuncOpPattern
            funcOp.getType()
                .getInputs()
                .back()
-               .isa<mlir::zamalang::LowLFHE::ContextType>();
+               .isa<mlir::concretelang::LowLFHE::ContextType>();
   }
 };
 
@@ -859,7 +859,7 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
 
-    target.addIllegalDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
+    target.addIllegalDialect<mlir::concretelang::LowLFHE::LowLFHEDialect>();
     target.addLegalDialect<mlir::BuiltinDialect, mlir::StandardOpsDialect,
                            mlir::memref::MemRefDialect,
                            mlir::arith::ArithmeticDialect>();
@@ -874,10 +874,10 @@ void LowLFHEToConcreteCAPIPass::runOnOperation() {
 }
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
 createConvertLowLFHEToConcreteCAPIPass() {
   return std::make_unique<LowLFHEToConcreteCAPIPass>();
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

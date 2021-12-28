@@ -2,11 +2,11 @@ add_mlir_library(HLFHELinalgDialectTransforms
   Tiling.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/zamalang/Dialect/HLFHELinalg
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/HLFHELinalg
 
   DEPENDS
   HLFHELinalgDialect
-  ZamalangHLFHELinalgTilingPassIncGen
+  ConcretelangHLFHELinalgTilingPassIncGen
   
   LINK_LIBS PUBLIC
   MLIRIR

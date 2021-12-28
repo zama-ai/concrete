@@ -1,4 +1,4 @@
-// RUN: zamacompiler --split-input-file --verify-diagnostics --action=roundtrip %s
+// RUN: concretecompiler --split-input-file --verify-diagnostics --action=roundtrip %s
 
 // GLWE p parameter result
 func @add_glwe(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>, %arg1: !MidLFHE.glwe<{1024,12,64}{7}>) -> !MidLFHE.glwe<{1024,12,64}{6}> {

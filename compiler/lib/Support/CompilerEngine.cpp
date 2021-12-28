@@ -13,19 +13,19 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser.h>
 
-#include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h>
-#include <zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
-#include <zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h>
-#include <zamalang/Dialect/RT/IR/RTDialect.h>
-#include <zamalang/Support/CompilerEngine.h>
-#include <zamalang/Support/Error.h>
-#include <zamalang/Support/Jit.h>
-#include <zamalang/Support/LLVMEmitFile.h>
-#include <zamalang/Support/Pipeline.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
+#include <concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h>
+#include <concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
+#include <concretelang/Dialect/MidLFHE/IR/MidLFHEDialect.h>
+#include <concretelang/Dialect/RT/IR/RTDialect.h>
+#include <concretelang/Support/CompilerEngine.h>
+#include <concretelang/Support/Error.h>
+#include <concretelang/Support/Jit.h>
+#include <concretelang/Support/LLVMEmitFile.h>
+#include <concretelang/Support/Pipeline.h>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 // Creates a new compilation context that can be shared across
 // compilation engines and results
@@ -47,14 +47,14 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
   if (this->mlirContext == nullptr) {
     this->mlirContext = new mlir::MLIRContext();
 
-    this->mlirContext->getOrLoadDialect<mlir::zamalang::RT::RTDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::zamalang::HLFHE::HLFHEDialect>();
+    this->mlirContext->getOrLoadDialect<mlir::concretelang::RT::RTDialect>();
+    this->mlirContext->getOrLoadDialect<mlir::concretelang::HLFHE::HLFHEDialect>();
     this->mlirContext
-        ->getOrLoadDialect<mlir::zamalang::MidLFHE::MidLFHEDialect>();
+        ->getOrLoadDialect<mlir::concretelang::MidLFHE::MidLFHEDialect>();
     this->mlirContext
-        ->getOrLoadDialect<mlir::zamalang::HLFHELinalg::HLFHELinalgDialect>();
+        ->getOrLoadDialect<mlir::concretelang::HLFHELinalg::HLFHELinalgDialect>();
     this->mlirContext
-        ->getOrLoadDialect<mlir::zamalang::LowLFHE::LowLFHEDialect>();
+        ->getOrLoadDialect<mlir::concretelang::LowLFHE::LowLFHEDialect>();
     this->mlirContext->getOrLoadDialect<mlir::StandardOpsDialect>();
     this->mlirContext->getOrLoadDialect<mlir::memref::MemRefDialect>();
     this->mlirContext->getOrLoadDialect<mlir::linalg::LinalgDialect>();
@@ -78,7 +78,7 @@ llvm::LLVMContext *CompilationContext::getLLVMContext() {
 // automatically detected configuration and prevents the autodetection
 // pass from running.
 void CompilerEngine::setFHEConstraints(
-    const mlir::zamalang::V0FHEConstraint &c) {
+    const mlir::concretelang::V0FHEConstraint &c) {
   this->overrideMaxEintPrecision = c.p;
   this->overrideMaxMANP = c.norm2;
 }
@@ -113,22 +113,22 @@ void CompilerEngine::setEnablePass(
 }
 
 // Returns the overwritten V0FHEConstraint or try to compute them from HLFHE
-llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
 CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
   mlir::ModuleOp module = res.mlirModuleRef->get();
-  llvm::Optional<mlir::zamalang::V0FHEConstraint> fheConstraints;
+  llvm::Optional<mlir::concretelang::V0FHEConstraint> fheConstraints;
   // If the values has been overwritten returns
   if (this->overrideMaxEintPrecision.hasValue() &&
       this->overrideMaxMANP.hasValue()) {
-    return mlir::zamalang::V0FHEConstraint{
+    return mlir::concretelang::V0FHEConstraint{
         this->overrideMaxMANP.getValue(),
         this->overrideMaxEintPrecision.getValue()};
   }
   // Else compute constraint from HLFHE
-  llvm::Expected<llvm::Optional<mlir::zamalang::V0FHEConstraint>>
+  llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
       fheConstraintsOrErr =
-          mlir::zamalang::pipeline::getFHEConstraintsFromHLFHE(
+          mlir::concretelang::pipeline::getFHEConstraintsFromHLFHE(
               mlirContext, module, enablePass);
 
   if (auto err = fheConstraintsOrErr.takeError())
@@ -145,7 +145,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   if (!fheConstraintOrErr.get().hasValue()) {
     return llvm::Error::success();
   }
-  const mlir::zamalang::V0Parameter *fheParams =
+  const mlir::concretelang::V0Parameter *fheParams =
       getV0Parameter(fheConstraintOrErr.get().getValue());
 
   if (!fheParams) {
@@ -154,7 +154,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
            << (*fheConstraintOrErr)->norm2 << " and p of "
            << (*fheConstraintOrErr)->p;
   }
-  res.fheContext.emplace(mlir::zamalang::V0FHEContext{
+  res.fheContext.emplace(mlir::concretelang::V0FHEContext{
       (*fheConstraintOrErr).getValue(), *fheParams});
 
   return llvm::Error::success();
@@ -208,13 +208,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // HLFHELinalg tiling
   if (this->hlfhelinalgTileSizes) {
-    if (mlir::zamalang::pipeline::markHLFHELinalgForTiling(
+    if (mlir::concretelang::pipeline::markHLFHELinalgForTiling(
             mlirContext, module, *this->hlfhelinalgTileSizes, enablePass)
             .failed())
       return errorDiag("Marking of HLFHELinalg operations for tiling failed");
   }
 
-  if (mlir::zamalang::pipeline::tileMarkedHLFHELinalg(mlirContext, module,
+  if (mlir::concretelang::pipeline::tileMarkedHLFHELinalg(mlirContext, module,
                                                       enablePass)
           .failed()) {
     return errorDiag("Tiling of HLFHELinalg operations failed");
@@ -222,7 +222,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Auto parallelization
   if (this->autoParallelize &&
-      mlir::zamalang::pipeline::autopar(mlirContext, module, enablePass)
+      mlir::concretelang::pipeline::autopar(mlirContext, module, enablePass)
           .failed()) {
     return StreamStringError("Auto parallelization failed");
   }
@@ -231,7 +231,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return std::move(res);
 
   // HLFHE -> MidLFHE
-  if (mlir::zamalang::pipeline::lowerHLFHEToMidLFHE(mlirContext, module,
+  if (mlir::concretelang::pipeline::lowerHLFHEToMidLFHE(mlirContext, module,
                                                     enablePass)
           .failed()) {
     return errorDiag("Lowering from HLFHE to MidLFHE failed");
@@ -240,7 +240,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return std::move(res);
 
   // MidLFHE -> LowLFHE
-  if (mlir::zamalang::pipeline::lowerMidLFHEToLowLFHE(
+  if (mlir::concretelang::pipeline::lowerMidLFHEToLowLFHE(
           mlirContext, module, res.fheContext, this->enablePass)
           .failed()) {
     return errorDiag("Lowering from MidLFHE to LowLFHE failed");
@@ -249,7 +249,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return std::move(res);
 
   // LowLFHE -> Canonical dialects
-  if (mlir::zamalang::pipeline::lowerLowLFHEToStd(mlirContext, module,
+  if (mlir::concretelang::pipeline::lowerLowLFHEToStd(mlirContext, module,
                                                   enablePass)
           .failed()) {
     return errorDiag("Lowering from LowLFHE to canonical MLIR dialects failed");
@@ -269,8 +269,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
           "Cannot generate client parameters, the fhe context is empty");
     }
 
-    llvm::Expected<mlir::zamalang::ClientParameters> clientParametersOrErr =
-        mlir::zamalang::createClientParametersForV0(
+    llvm::Expected<mlir::concretelang::ClientParameters> clientParametersOrErr =
+        mlir::concretelang::createClientParametersForV0(
             *res.fheContext, *this->clientParametersFuncName, module);
 
     if (llvm::Error err = clientParametersOrErr.takeError())
@@ -280,7 +280,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   // MLIR canonical dialects -> LLVM Dialect
-  if (mlir::zamalang::pipeline::lowerStdToLLVMDialect(mlirContext, module,
+  if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(mlirContext, module,
                                                       enablePass)
           .failed()) {
     return errorDiag("Failed to lower to LLVM dialect");
@@ -292,7 +292,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   // Lowering to actual LLVM IR (i.e., not the LLVM dialect)
   llvm::LLVMContext &llvmContext = *this->compilationContext->getLLVMContext();
 
-  res.llvmModule = mlir::zamalang::pipeline::lowerLLVMDialectToLLVMIR(
+  res.llvmModule = mlir::concretelang::pipeline::lowerLLVMDialectToLLVMIR(
       mlirContext, llvmContext, module);
 
   if (!res.llvmModule)
@@ -301,7 +301,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::LLVM_IR)
     return std::move(res);
 
-  if (mlir::zamalang::pipeline::optimizeLLVMModule(llvmContext, *res.llvmModule)
+  if (mlir::concretelang::pipeline::optimizeLLVMModule(llvmContext, *res.llvmModule)
           .failed()) {
     return errorDiag("Failed to optimize LLVM IR");
   }
@@ -355,7 +355,7 @@ CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
 template <class T>
 llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(std::vector<T> inputs, std::string libraryPath) {
-  using Library = mlir::zamalang::CompilerEngine::Library;
+  using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(libraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
 
@@ -401,7 +401,7 @@ CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
                  std::to_string(objectsPath.size()) + ".mlir";
   }
   auto objectPath = sourceName + OBJECT_EXT;
-  auto error = mlir::zamalang::emitObject(*module, objectPath);
+  auto error = mlir::concretelang::emitObject(*module, objectPath);
 
   if (error) {
     return std::move(error);
@@ -430,7 +430,7 @@ std::string ensureLibDotExt(std::string path, std::string dotExt) {
 llvm::Expected<std::string> CompilerEngine::Library::emit(std::string dotExt,
                                                           std::string linker) {
   auto pathDotExt = ensureLibDotExt(libraryPath, dotExt);
-  auto error = mlir::zamalang::emitLibrary(objectsPath, pathDotExt, linker);
+  auto error = mlir::concretelang::emitLibrary(objectsPath, pathDotExt, linker);
   if (error) {
     return std::move(error);
   } else {
@@ -462,5 +462,5 @@ CompilerEngine::Library::~Library() {
   }
 }
 
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

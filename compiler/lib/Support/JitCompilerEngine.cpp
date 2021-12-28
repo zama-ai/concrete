@@ -6,10 +6,10 @@
 #include <llvm/Support/TargetSelect.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
-#include <zamalang/Support/JitCompilerEngine.h>
+#include <concretelang/Support/JitCompilerEngine.h>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 JitCompilerEngine::JitCompilerEngine(
     std::shared_ptr<CompilationContext> compilationContext,
@@ -98,7 +98,7 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
   auto optPipeline = mlir::makeOptimizingTransformer(3, 0, nullptr);
 
   llvm::Expected<std::unique_ptr<JITLambda>> lambdaOrErr =
-      mlir::zamalang::JITLambda::create(funcName, module, optPipeline,
+      mlir::concretelang::JITLambda::create(funcName, module, optPipeline,
                                         runtimeLibPath);
 
   if (!lambdaOrErr) {
@@ -115,7 +115,7 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
                              "parameters has not been computed");
   }
 
-  llvm::Expected<std::unique_ptr<mlir::zamalang::KeySet>> keySetOrErr =
+  llvm::Expected<std::unique_ptr<mlir::concretelang::KeySet>> keySetOrErr =
       (cache.hasValue())
           ? cache->tryLoadOrGenerateSave(*compRes.clientParameters, 0, 0)
           : KeySet::generate(*compRes.clientParameters, 0, 0);
@@ -129,5 +129,5 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
   return Lambda{this->compilationContext, std::move(lambda), std::move(keySet)};
 }
 
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

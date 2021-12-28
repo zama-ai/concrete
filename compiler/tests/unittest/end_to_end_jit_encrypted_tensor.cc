@@ -17,15 +17,15 @@ const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
 #define TENSOR2D_GET(i, j) GET_2D(tensor2D, i, j)
 
 TEST(End2EndJit_EncryptedTensor_2D, identity) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<2x10x!HLFHE.eint<6>> {
   return %t : tensor<2x10x!HLFHE.eint<6>>
 }
 )XXX");
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg(tensor2D, shape2D);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -41,7 +41,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<2x10x!HLFHE.eint<6>> {
 }
 
 TEST(End2EndJit_EncryptedTensor_2D, extract) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) ->
 !HLFHE.eint<6> {
   %c = tensor.extract %t[%i, %j] : tensor<2x10x!HLFHE.eint<6>>
@@ -49,29 +49,29 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) ->
 }
 )XXX");
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg(tensor2D, shape2D);
 
   for (int64_t i = 0; i < dims[0]; i++) {
     for (int64_t j = 0; j < dims[1]; j++) {
-      mlir::zamalang::IntLambdaArgument<size_t> argi(i);
-      mlir::zamalang::IntLambdaArgument<size_t> argj(j);
+      mlir::concretelang::IntLambdaArgument<size_t> argi(i);
+      mlir::concretelang::IntLambdaArgument<size_t> argj(j);
       ASSERT_EXPECTED_VALUE(lambda({&arg, &argi, &argj}), TENSOR2D_GET(i, j));
     }
   }
 }
 
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
   %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>>
   return %r : tensor<1x5x!HLFHE.eint<6>>
 }
 )XXX");
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg(tensor2D, shape2D);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -89,7 +89,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 }
 
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice_parametric_2x2) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<8x4x!HLFHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!HLFHE.eint<6>> {
   %r = tensor.extract_slice %t[%y, %x][2, 2][1, 1] : tensor<8x4x!HLFHE.eint<6>> to tensor<2x2x!HLFHE.eint<6>>
   return %r : tensor<2x2x!HLFHE.eint<6>>
@@ -102,15 +102,15 @@ func @main(%t: tensor<8x4x!HLFHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!
                                  {3, 4, 5, 6}, {7, 8, 9, 0}, {1, 2, 3, 4},
                                  {5, 6, 7, 8}, {9, 0, 1, 2}};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       argT(llvm::ArrayRef<uint8_t>((const uint8_t *)A, rows * cols),
            {rows, cols});
 
   for (uint64_t y = 0; y <= rows - tileSize; y += tileSize) {
     for (uint64_t x = 0; x <= cols - tileSize; x += tileSize) {
-      mlir::zamalang::IntLambdaArgument<uint64_t> argY(y);
-      mlir::zamalang::IntLambdaArgument<uint64_t> argX(x);
+      mlir::concretelang::IntLambdaArgument<uint64_t> argY(y);
+      mlir::concretelang::IntLambdaArgument<uint64_t> argX(x);
 
       llvm::Expected<std::vector<uint64_t>> res =
           lambda.operator()<std::vector<uint64_t>>({&argT, &argY, &argX});
@@ -129,7 +129,7 @@ func @main(%t: tensor<8x4x!HLFHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!
 TEST(End2EndJit_EncryptedTensor_4D, extract_slice_parametric_2x2x2x2) {
   constexpr int64_t dimSizes[4] = {8, 4, 5, 3};
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<8x4x5x3x!HLFHE.eint<6>>, %d0: index, %d1: index, %d2: index, %d3: index) -> tensor<2x2x2x2x!HLFHE.eint<6>> {
   %r = tensor.extract_slice %t[%d0, %d1, %d2, %d3][2, 2, 2, 2][1, 1, 1, 1] : tensor<8x4x5x3x!HLFHE.eint<6>> to tensor<2x2x2x2x!HLFHE.eint<6>>
   return %r : tensor<2x2x2x2x!HLFHE.eint<6>>
@@ -152,8 +152,8 @@ func @main(%t: tensor<8x4x5x3x!HLFHE.eint<6>>, %d0: index, %d1: index, %d2: inde
   const size_t coords[ncoords][4] = {
       {0, 0, 0, 0}, {1, 1, 1, 1}, {6, 2, 0, 1}, {3, 1, 2, 0}, {3, 1, 2, 1}};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       argT(llvm::ArrayRef<uint8_t>((const uint8_t *)A,
                                    dimSizes[0] * dimSizes[1] * dimSizes[2] *
                                        dimSizes[3]),
@@ -165,10 +165,10 @@ func @main(%t: tensor<8x4x5x3x!HLFHE.eint<6>>, %d0: index, %d1: index, %d2: inde
     size_t d2 = coords[i][2];
     size_t d3 = coords[i][3];
 
-    mlir::zamalang::IntLambdaArgument<uint64_t> argD0(d0);
-    mlir::zamalang::IntLambdaArgument<uint64_t> argD1(d1);
-    mlir::zamalang::IntLambdaArgument<uint64_t> argD2(d2);
-    mlir::zamalang::IntLambdaArgument<uint64_t> argD3(d3);
+    mlir::concretelang::IntLambdaArgument<uint64_t> argD0(d0);
+    mlir::concretelang::IntLambdaArgument<uint64_t> argD1(d1);
+    mlir::concretelang::IntLambdaArgument<uint64_t> argD2(d2);
+    mlir::concretelang::IntLambdaArgument<uint64_t> argD3(d3);
 
     llvm::Expected<std::vector<uint64_t>> res =
         lambda.operator()<std::vector<uint64_t>>(
@@ -191,7 +191,7 @@ func @main(%t: tensor<8x4x5x3x!HLFHE.eint<6>>, %d0: index, %d1: index, %d2: inde
 }
 
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice_stride) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
   %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>>
@@ -199,8 +199,8 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 }
 )XXX");
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg(tensor2D, shape2D);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -218,7 +218,7 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 }
 
 TEST(End2EndJit_EncryptedTensor_2D, insert_slice) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%t0: tensor<2x10x!HLFHE.eint<6>>, %t1: tensor<2x2x!HLFHE.eint<6>>)
 -> tensor<2x10x!HLFHE.eint<6>> {
@@ -227,13 +227,13 @@ func @main(%t0: tensor<2x10x!HLFHE.eint<6>>, %t1: tensor<2x2x!HLFHE.eint<6>>)
 }
 )XXX");
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       t0(tensor2D, shape2D);
   int64_t t1Shape[] = {2, 2};
   uint8_t t1Buffer[]{6, 9, 4, 0};
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       t1(t1Buffer, t1Shape);
 
   llvm::Expected<std::vector<uint64_t>> res =

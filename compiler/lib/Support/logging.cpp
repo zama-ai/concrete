@@ -1,10 +1,10 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
-#include <zamalang/Support/logging.h>
+#include <concretelang/Support/logging.h>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 static bool verbose = false;
 static StreamWrap<llvm::raw_ostream> errWrap(&llvm::errs());
 static StreamWrap<llvm::raw_ostream> nullWrap(&llvm::nulls());
@@ -20,7 +20,7 @@ StreamWrap<llvm::raw_ostream> &log_verbose(void) {
 
 // Sets up logging. If `verbose` is false, messages passed to
 // `log_verbose` will be discarded.
-void setupLogging(bool verbose) { ::mlir::zamalang::verbose = verbose; }
+void setupLogging(bool verbose) { ::mlir::concretelang::verbose = verbose; }
 bool isVerbose() { return verbose; }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

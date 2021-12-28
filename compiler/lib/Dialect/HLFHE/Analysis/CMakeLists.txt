@@ -2,7 +2,7 @@ add_mlir_library(HLFHEDialectAnalysis
   MANP.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/zamalang/Dialect/HLFHE
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/HLFHE
 
   DEPENDS
   HLFHEDialect

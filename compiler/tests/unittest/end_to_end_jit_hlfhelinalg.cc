@@ -1,6 +1,6 @@
 #include "end_to_end_jit_test.h"
 
-namespace Z = mlir::zamalang;
+namespace Z = mlir::concretelang;
 template <class Elmt>
 using tensorArgTy = Z::TensorLambdaArgument<Z::IntLambdaArgument<Elmt>>;
 
@@ -13,7 +13,7 @@ using tensorArgTy = Z::TensorLambdaArgument<Z::IntLambdaArgument<Elmt>>;
 
 TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>> {
     %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>>
@@ -23,11 +23,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term) {
   std::vector<uint8_t> a0{31, 6, 12, 9};
   std::vector<uint8_t> a1{32, 9, 2, 3};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(a0);
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(a1);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -45,7 +45,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term) {
 // Same as add_eint_int_term_to_term test above, but returning a lambda argument
 TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>> {
     %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>>
@@ -55,23 +55,23 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
   std::vector<uint8_t> a0{31, 6, 12, 9};
   std::vector<uint8_t> a1{32, 9, 2, 3};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(a0);
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(a1);
 
-  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
           {&arg0, &arg1});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
       &resp = (*res)
-                  ->cast<mlir::zamalang::TensorLambdaArgument<
-                      mlir::zamalang::IntLambdaArgument<>>>();
+                  ->cast<mlir::concretelang::TensorLambdaArgument<
+                      mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)1);
   ASSERT_EQ(resp.getDimensions().at(0), 4);
@@ -87,7 +87,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
 TEST(End2EndJit_HLFHELinalg,
      add_eint_int_term_to_term_ret_lambda_argument_multi_dim) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x2x3x!HLFHE.eint<6>>, %a1: tensor<4x2x3xi7>) -> tensor<4x2x3x!HLFHE.eint<6>> {
     %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x2x3x!HLFHE.eint<6>>, tensor<4x2x3xi7>) -> tensor<4x2x3x!HLFHE.eint<6>>
@@ -99,23 +99,23 @@ TEST(End2EndJit_HLFHELinalg,
   std::vector<uint8_t> a1{32, 9, 2, 3, 6, 6, 2, 1, 1, 6, 9, 7,
                           3,  5, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(a0, {4, 2, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(a1, {4, 2, 3});
 
-  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
           {&arg0, &arg1});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
       &resp = (*res)
-                  ->cast<mlir::zamalang::TensorLambdaArgument<
-                      mlir::zamalang::IntLambdaArgument<>>>();
+                  ->cast<mlir::concretelang::TensorLambdaArgument<
+                      mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
   ASSERT_EQ(resp.getDimensions().at(0), 4);
@@ -130,7 +130,7 @@ TEST(End2EndJit_HLFHELinalg,
 
 TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_broadcast) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x1x4x!HLFHE.eint<5>>, %a1: tensor<1x4x4xi6>) -> tensor<4x4x4x!HLFHE.eint<5>> {
     %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x1x4x!HLFHE.eint<5>>, tensor<1x4x4xi6>) -> tensor<4x4x4x!HLFHE.eint<5>>
@@ -152,11 +152,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_broadcast) {
       },
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -179,7 +179,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_term_to_term_broadcast) {
 
 TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_column) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
   //
   // [1,2,3]   [1]   [2,3,4]
@@ -203,11 +203,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_column) {
       {3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 3 * 1), {3, 1});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -225,7 +225,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_column) {
 }
 
 TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
   //
   // [1,2,3]             [2,4,6]
@@ -247,11 +247,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -269,7 +269,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line) {
 }
 
 TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line_missing_dim) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
    // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
    func @main(%a0: tensor<3x3x!HLFHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!HLFHE.eint<4>> {
      %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!HLFHE.eint<4>>
@@ -285,11 +285,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line_missing_dim) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -312,7 +312,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_int_matrix_line_missing_dim) {
 
 TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4x!HLFHE.eint<6>>) -> tensor<4x!HLFHE.eint<6>> {
     %res = "HLFHELinalg.add_eint"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4x!HLFHE.eint<6>>) -> tensor<4x!HLFHE.eint<6>>
@@ -323,11 +323,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term) {
   std::vector<uint8_t> a0{31, 6, 12, 9};
   std::vector<uint8_t> a1{32, 9, 2, 3};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(a0);
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(a1);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -346,7 +346,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term) {
 
 TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term_broadcast) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x1x4x!HLFHE.eint<5>>, %a1:
   tensor<1x4x4x!HLFHE.eint<5>>) -> tensor<4x4x4x!HLFHE.eint<5>> {
@@ -370,11 +370,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term_broadcast) {
       },
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -397,7 +397,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_term_to_term_broadcast) {
 
 TEST(End2EndJit_HLFHELinalg, add_eint_matrix_column) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
   //
   // [1,2,3]   [1]   [2,3,4]
@@ -422,11 +422,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_column) {
       {3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3, 1});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -445,7 +445,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_column) {
 
 TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
   //
   // [1,2,3]             [2,4,6]
@@ -469,11 +469,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -492,7 +492,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line) {
 
 TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line_missing_dim) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
   func @main(%a0: tensor<3x3x!HLFHE.eint<4>>, %a1: tensor<3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>> {
     %res = "HLFHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
@@ -508,11 +508,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line_missing_dim) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -531,7 +531,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_matrix_line_missing_dim) {
 
 TEST(End2EndJit_HLFHELinalg, add_eint_tensor_dim_equals_1) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Broadcasting shouldn't happen when some dimensions are equals to 1
   func @main(%arg0: tensor<3x1x2x!HLFHE.eint<5>>, %arg1: tensor<3x1x2x!HLFHE.eint<5>>) -> tensor<3x1x2x!HLFHE.eint<5>> {
     %1 = "HLFHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x1x2x!HLFHE.eint<5>>, tensor<3x1x2x!HLFHE.eint<5>>) -> tensor<3x1x2x!HLFHE.eint<5>>
@@ -549,11 +549,11 @@ TEST(End2EndJit_HLFHELinalg, add_eint_tensor_dim_equals_1) {
       {{16, 18}},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 2), {3, 1, 2});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 3 * 2), {3, 1, 2});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -578,7 +578,7 @@ TEST(End2EndJit_HLFHELinalg, add_eint_tensor_dim_equals_1) {
 
 TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term substraction of `%a0` with `%a1`
   func @main(%a0: tensor<4xi5>, %a1: tensor<4x!HLFHE.eint<4>>) -> tensor<4x!HLFHE.eint<4>> {
     %res = "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi5>, tensor<4x!HLFHE.eint<4>>) -> tensor<4x!HLFHE.eint<4>>
@@ -588,11 +588,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term) {
   std::vector<uint8_t> a0{32, 9, 12, 9};
   std::vector<uint8_t> a1{31, 6, 2, 3};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(a0);
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(a1);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -609,7 +609,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term) {
 
 TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term_broadcast) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term substraction of `%a0` with `%a1`, where dimensions equals to one are stretched.
   func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!HLFHE.eint<7>>) -> tensor<4x4x4x!HLFHE.eint<7>> {
     %res = "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi8>, tensor<1x4x4x!HLFHE.eint<7>>) -> tensor<4x4x4x!HLFHE.eint<7>>
@@ -630,11 +630,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term_broadcast) {
           {13, 14, 15, 16},
       },
   };
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -656,7 +656,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_term_to_term_broadcast) {
 
 TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_column) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the substraction of a 3x3 matrix of integers and a 3x1 matrix (a column) of encrypted integers.
   //
   // [1,2,3]   [1]   [0,2,3]
@@ -682,11 +682,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_column) {
       {3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3, 1});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -705,7 +705,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_column) {
 
 TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the substraction of a 3x3 matrix of integers and a 1x3 matrix (a line) of encrypted integers.
   //
   // [1,2,3]             [0,0,0]
@@ -729,11 +729,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -752,7 +752,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line) {
 
 TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line_missing_dim) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
   func @main(%a0: tensor<3x3xi5>, %a1: tensor<3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>> {
     %res = "HLFHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>, tensor<3x!HLFHE.eint<4>>) -> tensor<3x3x!HLFHE.eint<4>>
@@ -768,11 +768,11 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line_missing_dim) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -795,7 +795,7 @@ TEST(End2EndJit_HLFHELinalg, sub_int_eint_matrix_line_missing_dim) {
 
 TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`
   func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>> {
     %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>>
@@ -805,11 +805,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term) {
   std::vector<uint8_t> a0{31, 6, 12, 9};
   std::vector<uint8_t> a1{2, 3, 2, 3};
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(a0);
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(a1);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -826,7 +826,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term) {
 
 TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term_broadcast) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equals to one are stretched.
   func @main(%a0: tensor<4x1x4x!HLFHE.eint<6>>, %a1: tensor<1x4x4xi7>) -> tensor<4x4x4x!HLFHE.eint<6>> {
     %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!HLFHE.eint<6>>, tensor<1x4x4xi7>) -> tensor<4x4x4x!HLFHE.eint<6>>
@@ -848,11 +848,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term_broadcast) {
       },
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -874,7 +874,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_term_to_term_broadcast) {
 
 TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_column) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the multiplication of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of integers.
   //
   // [1,2,3]   [1]   [1,2,3]
@@ -898,11 +898,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_column) {
       {3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3, 1});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -921,7 +921,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_column) {
 
 TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the multiplication of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of integers.
   //
   // [1,2,3]             [2,4,6]
@@ -943,11 +943,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -966,7 +966,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line) {
 
 TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line_missing_dim) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
   func @main(%a0: tensor<3x3x!HLFHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!HLFHE.eint<4>> {
     %res = "HLFHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!HLFHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!HLFHE.eint<4>>
@@ -982,11 +982,11 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line_missing_dim) {
       {1, 2, 3},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -1009,7 +1009,7 @@ TEST(End2EndJit_HLFHELinalg, mul_eint_int_matrix_line_missing_dim) {
 
 TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of with 2 on a table of size 4=2² of clear integers.
     //
     // [0,1,2]                 [1,3,5]
@@ -1032,8 +1032,8 @@ TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
       {5, 7, 1},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       tArg(llvm::ArrayRef<uint8_t>((const uint8_t *)t, 3 * 3), {3, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -1058,7 +1058,7 @@ TEST(End2EndJit_HLFHELinalg, apply_lookup_table) {
 
 TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a 3x3 matrix of tables of size 4=2² of clear integers.
     func @main(%arg0: tensor<3x3x!HLFHE.eint<2>>, %arg1: tensor<3x3x4xi64>) -> tensor<3x3x!HLFHE.eint<2>> {
       %1 = "HLFHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!HLFHE.eint<2>>, tensor<3x3x4xi64>) -> tensor<3x3x!HLFHE.eint<2>>
@@ -1081,12 +1081,12 @@ TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table) {
       {0, 3, 6},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       tArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)t, 3 * 3), {3, 3});
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       lutsArg(llvm::MutableArrayRef<uint64_t>((uint64_t *)luts, 3 * 3 * 4),
               {3, 3, 4});
 
@@ -1107,7 +1107,7 @@ TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table) {
 
 TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table_with_boradcast) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a vector of 3 tables of size 4=2² of clear integers.
     func @main(%arg0: tensor<3x3x!HLFHE.eint<2>>, %arg1: tensor<3x4xi64>) -> tensor<3x3x!HLFHE.eint<2>> {
       %1 = "HLFHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!HLFHE.eint<2>>, tensor<3x4xi64>) -> tensor<3x3x!HLFHE.eint<2>>
@@ -1130,12 +1130,12 @@ TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table_with_boradcast) {
       {5, 3, 2},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       tArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)t, 3 * 3), {3, 3});
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       lutsArg(llvm::MutableArrayRef<uint64_t>((uint64_t *)luts, 3 * 4), {3, 4});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -1159,7 +1159,7 @@ TEST(End2EndJit_HLFHELinalg, apply_multi_lookup_table_with_boradcast) {
 
 TEST(End2EndJit_HLFHELinalg, apply_mapped_lookup_table_sequential) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
     func @main(%t: tensor<3x3x!HLFHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!HLFHE.eint<2>> {
       %1 = "HLFHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
@@ -1209,7 +1209,7 @@ TEST(End2EndJit_HLFHELinalg, apply_mapped_lookup_table_sequential) {
 
 TEST(End2EndJit_HLFHELinalg, apply_mapped_lookup_table_same_lut) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
     func @main(%t: tensor<3x3x!HLFHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!HLFHE.eint<2>> {
       %1 = "HLFHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
@@ -1262,7 +1262,7 @@ TEST(End2EndJit_HLFHELinalg, apply_mapped_lookup_table_same_lut) {
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(CompileAndRunTensorEncrypted, dot_eint_int_7) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
                    %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
 {
@@ -1286,7 +1286,7 @@ func @main(%arg0: tensor<4x!HLFHE.eint<7>>,
 
 TEST(End2EndJit_HLFHELinalg, neg_eint) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
     // Returns the negation of a 3x3 matrix of encrypted integers of width 2.
     //
     //        ([0,1,2])   [0,7,6]
@@ -1308,8 +1308,8 @@ TEST(End2EndJit_HLFHELinalg, neg_eint) {
       {2, 1, 0},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       tArg(llvm::ArrayRef<uint8_t>((const uint8_t *)t, 3 * 3), {3, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -1333,7 +1333,7 @@ TEST(End2EndJit_HLFHELinalg, neg_eint) {
 
 TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
   //         [ 1, 2, 3]
   //         [ 2, 3, 4]
@@ -1361,11 +1361,11 @@ TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
       {17, 28, 39},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       aArg(llvm::ArrayRef<uint8_t>((const uint8_t *)A, 3 * 2), {3, 2});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       bArg(llvm::ArrayRef<uint8_t>((const uint8_t *)B, 2 * 3), {2, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -1389,7 +1389,7 @@ TEST(End2EndJit_HLFHELinalg, matmul_eint_int) {
 
 TEST(End2EndJit_HLFHELinalg, matmul_int_eint) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
   // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
   //         [ 1, 2, 3]
   //         [ 2, 3, 4]
@@ -1417,11 +1417,11 @@ TEST(End2EndJit_HLFHELinalg, matmul_int_eint) {
       {17, 28, 39},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       aArg(llvm::ArrayRef<uint8_t>((const uint8_t *)A, 3 * 2), {3, 2});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       bArg(llvm::ArrayRef<uint8_t>((const uint8_t *)B, 2 * 3), {2, 3});
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -1445,7 +1445,7 @@ TEST(End2EndJit_HLFHELinalg, matmul_int_eint) {
 
 TEST(End2EndJit_Linalg, tensor_collapse_shape) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%a: tensor<2x2x4x!HLFHE.eint<6>>) -> tensor<2x8x!HLFHE.eint<6>> {
   %0 = linalg.tensor_collapse_shape %a [[0],[1,2]]  : tensor<2x2x4x!HLFHE.eint<6>> into tensor<2x8x!HLFHE.eint<6>>
   return %0 : tensor<2x8x!HLFHE.eint<6>>
@@ -1460,20 +1460,20 @@ func @main(%a: tensor<2x2x4x!HLFHE.eint<6>>) -> tensor<2x8x!HLFHE.eint<6>> {
       {10, 11, 12, 13, 14, 15, 16, 17},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       aArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)A, 2 * 2 * 4), {2, 2, 4});
 
-  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
           {&aArg});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
       &resp = (*res)
-                  ->cast<mlir::zamalang::TensorLambdaArgument<
-                      mlir::zamalang::IntLambdaArgument<>>>();
+                  ->cast<mlir::concretelang::TensorLambdaArgument<
+                      mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)2);
   ASSERT_EQ(resp.getDimensions().at(0), 2);
@@ -1494,7 +1494,7 @@ func @main(%a: tensor<2x2x4x!HLFHE.eint<6>>) -> tensor<2x8x!HLFHE.eint<6>> {
 
 TEST(End2EndJit_Linalg, tensor_expand_shape) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%a: tensor<2x8x!HLFHE.eint<6>>) -> tensor<2x2x4x!HLFHE.eint<6>> {
   %0 = linalg.tensor_expand_shape %a [[0],[1,2]]  : tensor<2x8x!HLFHE.eint<6>> into tensor<2x2x4x!HLFHE.eint<6>>
   return %0 : tensor<2x2x4x!HLFHE.eint<6>>
@@ -1510,20 +1510,20 @@ func @main(%a: tensor<2x8x!HLFHE.eint<6>>) -> tensor<2x2x4x!HLFHE.eint<6>> {
       {{10, 11, 12, 13}, {14, 15, 16, 17}},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       aArg(llvm::MutableArrayRef<uint8_t>((uint8_t *)A, 2 * 8), {2, 8});
 
-  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>(
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
           {&aArg});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
       &resp = (*res)
-                  ->cast<mlir::zamalang::TensorLambdaArgument<
-                      mlir::zamalang::IntLambdaArgument<>>>();
+                  ->cast<mlir::concretelang::TensorLambdaArgument<
+                      mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
   ASSERT_EQ(resp.getDimensions().at(0), 2);
@@ -1546,22 +1546,22 @@ func @main(%a: tensor<2x8x!HLFHE.eint<6>>) -> tensor<2x2x4x!HLFHE.eint<6>> {
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_Linalg, zero) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main() -> tensor<2x2x4x!HLFHE.eint<6>> {
   %0 = "HLFHELinalg.zero"() : () -> tensor<2x2x4x!HLFHE.eint<6>>
   return %0 : tensor<2x2x4x!HLFHE.eint<6>>
 }
 )XXX");
 
-  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>();
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>();
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<>>
+  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
       &resp = (*res)
-                  ->cast<mlir::zamalang::TensorLambdaArgument<
-                      mlir::zamalang::IntLambdaArgument<>>>();
+                  ->cast<mlir::concretelang::TensorLambdaArgument<
+                      mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
   ASSERT_EQ(resp.getDimensions().at(0), 2);
@@ -1597,7 +1597,7 @@ TEST_P(TiledMatMulParametric, tiled_matmul_eint_int) {
       << "    return %0 : tensor<8x2x!HLFHE.eint<6>>\n"
       << "  }";
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda =
+  mlir::concretelang::JitCompilerEngine::Lambda lambda =
       checkedJit(mlirProgram.str());
 
   const size_t rowsA = 8;
@@ -1617,12 +1617,12 @@ TEST_P(TiledMatMulParametric, tiled_matmul_eint_int) {
       {58, 55}, {16, 21}, {44, 57}, {12, 23},
   };
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       aArg(llvm::ArrayRef<uint8_t>((const uint8_t *)A, rowsA * colsA),
            {rowsA, colsA});
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint8_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
       bArg(llvm::ArrayRef<uint8_t>((const uint8_t *)B, rowsB * colsB),
            {rowsB, colsB});
 

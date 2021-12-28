@@ -20,10 +20,10 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/Sequence.h"
 
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "zamalang/Dialect/RT/Analysis/Autopar.h"
-#include "zamalang/Dialect/RT/IR/RTTypes.h"
+#include "concretelang/Conversion/Passes.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Dialect/RT/Analysis/Autopar.h"
+#include "concretelang/Dialect/RT/IR/RTTypes.h"
 
 namespace {
 struct MLIRLowerableDialectsToLLVMPass
@@ -47,17 +47,17 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::LowerToLLVMOptions options(&getContext());
   mlir::LLVMTypeConverter typeConverter(&getContext(), options);
   typeConverter.addConversion(convertTypes);
-  typeConverter.addConversion([&](mlir::zamalang::LowLFHE::PlaintextType type) {
+  typeConverter.addConversion([&](mlir::concretelang::LowLFHE::PlaintextType type) {
     return mlir::IntegerType::get(type.getContext(), 64);
   });
-  typeConverter.addConversion([&](mlir::zamalang::LowLFHE::CleartextType type) {
+  typeConverter.addConversion([&](mlir::concretelang::LowLFHE::CleartextType type) {
     return mlir::IntegerType::get(type.getContext(), 64);
   });
 
   // Setup the set of the patterns rewriter. At this point we want to
   // convert the `scf` operations to `std` and `std` operations to `llvm`.
   mlir::RewritePatternSet patterns(&getContext());
-  mlir::zamalang::populateRTToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::concretelang::populateRTToLLVMConversionPatterns(typeConverter, patterns);
   mlir::populateStdToLLVMConversionPatterns(typeConverter, patterns);
   mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
                                                           patterns);
@@ -72,31 +72,31 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
 
 llvm::Optional<mlir::Type>
 MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
-  if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>() ||
-      type.isa<mlir::zamalang::LowLFHE::GlweCiphertextType>() ||
-      type.isa<mlir::zamalang::LowLFHE::LweKeySwitchKeyType>() ||
-      type.isa<mlir::zamalang::LowLFHE::LweBootstrapKeyType>() ||
-      type.isa<mlir::zamalang::LowLFHE::ContextType>() ||
-      type.isa<mlir::zamalang::LowLFHE::ForeignPlaintextListType>() ||
-      type.isa<mlir::zamalang::LowLFHE::PlaintextListType>() ||
-      type.isa<mlir::zamalang::RT::FutureType>()) {
+  if (type.isa<mlir::concretelang::LowLFHE::LweCiphertextType>() ||
+      type.isa<mlir::concretelang::LowLFHE::GlweCiphertextType>() ||
+      type.isa<mlir::concretelang::LowLFHE::LweKeySwitchKeyType>() ||
+      type.isa<mlir::concretelang::LowLFHE::LweBootstrapKeyType>() ||
+      type.isa<mlir::concretelang::LowLFHE::ContextType>() ||
+      type.isa<mlir::concretelang::LowLFHE::ForeignPlaintextListType>() ||
+      type.isa<mlir::concretelang::LowLFHE::PlaintextListType>() ||
+      type.isa<mlir::concretelang::RT::FutureType>()) {
     return mlir::LLVM::LLVMPointerType::get(
         mlir::IntegerType::get(type.getContext(), 64));
   }
-  if (type.isa<mlir::zamalang::RT::PointerType>()) {
+  if (type.isa<mlir::concretelang::RT::PointerType>()) {
     mlir::LowerToLLVMOptions options(type.getContext());
     mlir::LLVMTypeConverter typeConverter(type.getContext(), options);
     typeConverter.addConversion(convertTypes);
     typeConverter.addConversion(
-        [&](mlir::zamalang::LowLFHE::PlaintextType type) {
+        [&](mlir::concretelang::LowLFHE::PlaintextType type) {
           return mlir::IntegerType::get(type.getContext(), 64);
         });
     typeConverter.addConversion(
-        [&](mlir::zamalang::LowLFHE::CleartextType type) {
+        [&](mlir::concretelang::LowLFHE::CleartextType type) {
           return mlir::IntegerType::get(type.getContext(), 64);
         });
     mlir::Type subtype =
-        type.dyn_cast<mlir::zamalang::RT::PointerType>().getElementType();
+        type.dyn_cast<mlir::concretelang::RT::PointerType>().getElementType();
     mlir::Type convertedSubtype = typeConverter.convertType(subtype);
     return mlir::LLVM::LLVMPointerType::get(convertedSubtype);
   }
@@ -104,12 +104,12 @@ MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
 }
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 /// Create a pass for lowering operations the remaining mlir dialects
 /// operations, to the LLVM dialect for codegen.
 std::unique_ptr<OperationPass<ModuleOp>>
 createConvertMLIRLowerableDialectsToLLVMPass() {
   return std::make_unique<MLIRLowerableDialectsToLLVMPass>();
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

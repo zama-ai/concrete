@@ -2,12 +2,12 @@
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
 #include <mlir/IR/BuiltinOps.h>
-#include <zamalang/Dialect/HLFHE/Analysis/MANP.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHEOps.h>
-#include <zamalang/Dialect/HLFHE/IR/HLFHETypes.h>
-#include <zamalang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
-#include <zamalang/Support/math.h>
+#include <concretelang/Dialect/HLFHE/Analysis/MANP.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHEOps.h>
+#include <concretelang/Dialect/HLFHE/IR/HLFHETypes.h>
+#include <concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
+#include <concretelang/Support/math.h>
 
 #include <limits>
 #include <llvm/ADT/APInt.h>
@@ -24,10 +24,10 @@
 #include <mlir/Support/LogicalResult.h>
 
 #define GEN_PASS_CLASSES
-#include <zamalang/Dialect/HLFHE/Analysis/MANP.h.inc>
+#include <concretelang/Dialect/HLFHE/Analysis/MANP.h.inc>
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 namespace {
 
 // Returns `true` if the given value is a scalar or tensor argument of
@@ -43,12 +43,12 @@ static bool isEncryptedFunctionParameter(mlir::Value value) {
     return false;
   }
 
-  return (value.getType().isa<mlir::zamalang::HLFHE::EncryptedIntegerType>() ||
+  return (value.getType().isa<mlir::concretelang::HLFHE::EncryptedIntegerType>() ||
           (value.getType().isa<mlir::TensorType>() &&
            value.getType()
                .cast<mlir::TensorType>()
                .getElementType()
-               .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()));
+               .isa<mlir::concretelang::HLFHE::EncryptedIntegerType>()));
 }
 
 // Returns the bit width of `value` if `value` is an encrypted integer
@@ -57,13 +57,13 @@ static bool isEncryptedFunctionParameter(mlir::Value value) {
 static unsigned int getEintPrecision(mlir::Value value) {
   if (auto ty = value.getType()
                     .dyn_cast_or_null<
-                        mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+                        mlir::concretelang::HLFHE::EncryptedIntegerType>()) {
     return ty.getWidth();
   } else if (auto tensorTy =
                  value.getType().dyn_cast_or_null<mlir::TensorType>()) {
     if (auto ty = tensorTy.getElementType()
                       .dyn_cast_or_null<
-                          mlir::zamalang::HLFHE::EncryptedIntegerType>())
+                          mlir::concretelang::HLFHE::EncryptedIntegerType>())
       return ty.getWidth();
   }
 
@@ -275,7 +275,7 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy,
 // Calculates the squared Minimal Arithmetic Noise Padding of an
 // `HLFHELinalg.dot_eint_int` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::Dot op,
+    mlir::concretelang::HLFHELinalg::Dot op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
   assert(operandMANPs.size() == 2 &&
          operandMANPs[0]->getValue().getMANP().hasValue() &&
@@ -321,7 +321,7 @@ static llvm::APInt conservativeIntNorm2Sq(mlir::Type t) {
 // Calculates the squared Minimal Arithmetic Noise Padding of an
 // `HLFHE.add_eint_int` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHE::AddEintIntOp op,
+    mlir::concretelang::HLFHE::AddEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
   mlir::Type iTy = op->getOpOperand(1).get().getType();
 
@@ -356,7 +356,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHE.add_eint` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHE::AddEintOp op,
+    mlir::concretelang::HLFHE::AddEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
   assert(operandMANPs.size() == 2 &&
          operandMANPs[0]->getValue().getMANP().hasValue() &&
@@ -373,7 +373,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHE.sub_int_eint` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHE::SubIntEintOp op,
+    mlir::concretelang::HLFHE::SubIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
   mlir::Type iTy = op->getOpOperand(0).get().getType();
 
@@ -407,7 +407,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHE.neg_eint` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHE::NegEintOp op,
+    mlir::concretelang::HLFHE::NegEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   assert(
@@ -423,7 +423,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHE::MulEintIntOp op,
+    mlir::concretelang::HLFHE::MulEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
   mlir::Type iTy = op->getOpOperand(1).get().getType();
 
@@ -458,7 +458,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of an
 // `HLFHELinalg.add_eint_int` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::AddEintIntOp op,
+    mlir::concretelang::HLFHELinalg::AddEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   mlir::RankedTensorType op1Ty =
@@ -504,7 +504,7 @@ static llvm::APInt getSqMANP(
 }
 
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::AddEintOp op,
+    mlir::concretelang::HLFHELinalg::AddEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
   assert(operandMANPs.size() == 2 &&
          operandMANPs[0]->getValue().getMANP().hasValue() &&
@@ -521,7 +521,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHELinalg.sub_int_eint` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::SubIntEintOp op,
+    mlir::concretelang::HLFHELinalg::SubIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   mlir::RankedTensorType op0Ty =
@@ -568,7 +568,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHELinalg.neg_eint` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::NegEintOp op,
+    mlir::concretelang::HLFHELinalg::NegEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   assert(
@@ -584,7 +584,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::MulEintIntOp op,
+    mlir::concretelang::HLFHELinalg::MulEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   mlir::RankedTensorType op0Ty =
@@ -632,7 +632,7 @@ static llvm::APInt getSqMANP(
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `HLFHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::MatMulEintIntOp op,
+    mlir::concretelang::HLFHELinalg::MatMulEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   mlir::RankedTensorType rhsTy =
@@ -697,7 +697,7 @@ static llvm::APInt getSqMANP(
 }
 
 static llvm::APInt getSqMANP(
-    mlir::zamalang::HLFHELinalg::MatMulIntEintOp op,
+    mlir::concretelang::HLFHELinalg::MatMulIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   mlir::RankedTensorType rhsTy =
@@ -854,59 +854,59 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
 
     // HLFHE Operators
     if (auto addEintIntOp =
-            llvm::dyn_cast<mlir::zamalang::HLFHE::AddEintIntOp>(op)) {
+            llvm::dyn_cast<mlir::concretelang::HLFHE::AddEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(addEintIntOp, operands);
     } else if (auto addEintOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHE::AddEintOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::HLFHE::AddEintOp>(op)) {
       norm2SqEquiv = getSqMANP(addEintOp, operands);
     } else if (auto subIntEintOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHE::SubIntEintOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::HLFHE::SubIntEintOp>(op)) {
       norm2SqEquiv = getSqMANP(subIntEintOp, operands);
     } else if (auto negEintOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHE::NegEintOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::HLFHE::NegEintOp>(op)) {
       norm2SqEquiv = getSqMANP(negEintOp, operands);
     } else if (auto mulEintIntOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHE::MulEintIntOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::HLFHE::MulEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
-    } else if (llvm::isa<mlir::zamalang::HLFHE::ZeroEintOp>(op) ||
-               llvm::isa<mlir::zamalang::HLFHELinalg::ZeroOp>(op) ||
-               llvm::isa<mlir::zamalang::HLFHE::ApplyLookupTableEintOp>(op)) {
+    } else if (llvm::isa<mlir::concretelang::HLFHE::ZeroEintOp>(op) ||
+               llvm::isa<mlir::concretelang::HLFHELinalg::ZeroOp>(op) ||
+               llvm::isa<mlir::concretelang::HLFHE::ApplyLookupTableEintOp>(op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
     }
     // HLFHELinalg Operators
     else if (auto dotOp =
-                 llvm::dyn_cast<mlir::zamalang::HLFHELinalg::Dot>(op)) {
+                 llvm::dyn_cast<mlir::concretelang::HLFHELinalg::Dot>(op)) {
       norm2SqEquiv = getSqMANP(dotOp, operands);
     } else if (auto addEintIntOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::AddEintIntOp>(
+                   llvm::dyn_cast<mlir::concretelang::HLFHELinalg::AddEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(addEintIntOp, operands);
     } else if (auto addEintOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::AddEintOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::HLFHELinalg::AddEintOp>(op)) {
       norm2SqEquiv = getSqMANP(addEintOp, operands);
     } else if (auto subIntEintOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::SubIntEintOp>(
+                   llvm::dyn_cast<mlir::concretelang::HLFHELinalg::SubIntEintOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(subIntEintOp, operands);
     } else if (auto negEintOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::NegEintOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::HLFHELinalg::NegEintOp>(op)) {
       norm2SqEquiv = getSqMANP(negEintOp, operands);
     } else if (auto mulEintIntOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MulEintIntOp>(
+                   llvm::dyn_cast<mlir::concretelang::HLFHELinalg::MulEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
     } else if (auto matmulEintIntOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MatMulEintIntOp>(
+                   llvm::dyn_cast<mlir::concretelang::HLFHELinalg::MatMulEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(matmulEintIntOp, operands);
     } else if (auto matmulIntEintOp =
-                   llvm::dyn_cast<mlir::zamalang::HLFHELinalg::MatMulIntEintOp>(
+                   llvm::dyn_cast<mlir::concretelang::HLFHELinalg::MatMulIntEintOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(matmulIntEintOp, operands);
     } else if (llvm::isa<
-                   mlir::zamalang::HLFHELinalg::ApplyLookupTableEintOp,
-                   mlir::zamalang::HLFHELinalg::ApplyMultiLookupTableEintOp,
-                   mlir::zamalang::HLFHELinalg::ApplyMappedLookupTableEintOp>(
+                   mlir::concretelang::HLFHELinalg::ApplyLookupTableEintOp,
+                   mlir::concretelang::HLFHELinalg::ApplyMultiLookupTableEintOp,
+                   mlir::concretelang::HLFHELinalg::ApplyMappedLookupTableEintOp>(
                    op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
     }
@@ -915,7 +915,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     else if (auto extractOp = llvm::dyn_cast<mlir::tensor::ExtractOp>(op)) {
       if (extractOp.result()
               .getType()
-              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::HLFHE::EncryptedIntegerType>()) {
         norm2SqEquiv = getSqMANP(extractOp, operands);
       } else {
         isDummy = true;
@@ -928,7 +928,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::HLFHE::EncryptedIntegerType>()) {
         norm2SqEquiv = getSqMANP(extractSliceOp, operands);
       } else {
         isDummy = true;
@@ -941,7 +941,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::HLFHE::EncryptedIntegerType>()) {
         norm2SqEquiv = getSqMANP(insertSliceOp, operands);
       } else {
         isDummy = true;
@@ -953,7 +953,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::HLFHE::EncryptedIntegerType>()) {
         norm2SqEquiv = getSqMANP(fromOp, operands);
       } else {
         isDummy = true;
@@ -966,7 +966,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::HLFHE::EncryptedIntegerType>()) {
         norm2SqEquiv = getSqMANP(reshapeOp, operands);
       } else {
         isDummy = true;
@@ -979,7 +979,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
               .getType()
               .cast<mlir::TensorType>()
               .getElementType()
-              .isa<mlir::zamalang::HLFHE::EncryptedIntegerType>()) {
+              .isa<mlir::concretelang::HLFHE::EncryptedIntegerType>()) {
         norm2SqEquiv = getSqMANP(reshapeOp, operands);
       } else {
         isDummy = true;
@@ -988,7 +988,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
 
     else if (llvm::isa<mlir::arith::ConstantOp>(op)) {
       isDummy = true;
-    } else if (llvm::isa<mlir::zamalang::HLFHE::HLFHEDialect>(
+    } else if (llvm::isa<mlir::concretelang::HLFHE::HLFHEDialect>(
                    *op->getDialect())) {
       op->emitError("Unsupported operation");
       assert(false && "Unsupported operation");
@@ -1090,15 +1090,15 @@ protected:
 
     // Process all results using MANP attribute from MANP pas
     for (mlir::OpResult res : op->getResults()) {
-      mlir::zamalang::HLFHE::EncryptedIntegerType eTy =
+      mlir::concretelang::HLFHE::EncryptedIntegerType eTy =
           res.getType()
-              .dyn_cast_or_null<mlir::zamalang::HLFHE::EncryptedIntegerType>();
+              .dyn_cast_or_null<mlir::concretelang::HLFHE::EncryptedIntegerType>();
       if (eTy == nullptr) {
         auto tensorTy = res.getType().dyn_cast_or_null<mlir::TensorType>();
         if (tensorTy != nullptr) {
           eTy = tensorTy.getElementType()
                     .dyn_cast_or_null<
-                        mlir::zamalang::HLFHE::EncryptedIntegerType>();
+                        mlir::concretelang::HLFHE::EncryptedIntegerType>();
         }
       }
 
@@ -1138,5 +1138,5 @@ std::unique_ptr<mlir::Pass> createMaxMANPPass(
   return std::make_unique<MaxMANPPass>(updateMax);
 }
 
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

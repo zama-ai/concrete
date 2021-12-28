@@ -1,4 +1,4 @@
-// RUN: zamacompiler %s --action=roundtrip 2>&1| FileCheck %s
+// RUN: concretecompiler %s --action=roundtrip 2>&1| FileCheck %s
 
 // CHECK-LABEL: func @glwe_0(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>) -> !MidLFHE.glwe<{1024,12,64}{7}>
 func @glwe_0(%arg0: !MidLFHE.glwe<{1024,12,64}{7}>) -> !MidLFHE.glwe<{1024,12,64}{7}> {

@@ -1,7 +1,7 @@
 import lit.formats
 
 # Lit configuration
-config.name = "zamalang"
+config.name = "concretelang"
 config.test_format = lit.formats.ShTest("0")
 config.suffixes = {".mlir"}
 config.target_triple = ""

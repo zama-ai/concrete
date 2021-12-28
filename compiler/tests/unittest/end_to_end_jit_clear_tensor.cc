@@ -5,7 +5,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_ClearTensor_1D, identity) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(
       R"XXX(
 func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
   return %t : tensor<10xi64>
@@ -37,7 +37,7 @@ func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
 }
 
 TEST(End2EndJit_ClearTensor_1D, extract_64) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<10xi64>, %i: index) -> i64{
   %c = tensor.extract %t[%i] : tensor<10xi64>
   return %c : i64
@@ -62,7 +62,7 @@ func @main(%t: tensor<10xi64>, %i: index) -> i64{
 }
 
 TEST(End2EndJit_ClearTensor_1D, extract_32) {
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<10xi32>, %i: index) -> i32{
   %c = tensor.extract %t[%i] : tensor<10xi32>
   return %c : i32
@@ -80,7 +80,7 @@ func @main(%t: tensor<10xi32>, %i: index) -> i32{
 
 TEST(End2EndJit_ClearTensor_1D, extract_16) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<10xi16>, %i: index) -> i16{
   %c = tensor.extract %t[%i] : tensor<10xi16>
   return %c : i16
@@ -98,7 +98,7 @@ func @main(%t: tensor<10xi16>, %i: index) -> i16{
 
 TEST(End2EndJit_ClearTensor_1D, extract_8) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<10xi8>, %i: index) -> i8{
   %c = tensor.extract %t[%i] : tensor<10xi8>
   return %c : i8
@@ -115,7 +115,7 @@ func @main(%t: tensor<10xi8>, %i: index) -> i8{
 
 TEST(End2EndJit_ClearTensor_1D, extract_5) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<10xi5>, %i: index) -> i5{
   %c = tensor.extract %t[%i] : tensor<10xi5>
   return %c : i5
@@ -132,7 +132,7 @@ func @main(%t: tensor<10xi5>, %i: index) -> i5{
 
 TEST(End2EndJit_ClearTensor_1D, extract_1) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<10xi1>, %i: index) -> i1{
   %c = tensor.extract %t[%i] : tensor<10xi1>
   return %c : i1
@@ -185,15 +185,15 @@ const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
 
 TEST(End2EndJit_ClearTensor_2D, identity) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
   return %t : tensor<2x10xi64>
 }
 )XXX",
                                                                 "main", true);
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       arg(tensor2D, shape2D);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -210,7 +210,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
 
 TEST(End2EndJit_ClearTensor_2D, extract) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
   %c = tensor.extract %t[%i, %j] : tensor<2x10xi64>
   return %c : i64
@@ -218,14 +218,14 @@ func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
 )XXX",
                                                                 "main", true);
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       arg(tensor2D, shape2D);
 
   for (int64_t i = 0; i < dims[0]; i++) {
     for (int64_t j = 0; j < dims[1]; j++) {
-      mlir::zamalang::IntLambdaArgument<size_t> argi(i);
-      mlir::zamalang::IntLambdaArgument<size_t> argj(j);
+      mlir::concretelang::IntLambdaArgument<size_t> argi(i);
+      mlir::concretelang::IntLambdaArgument<size_t> argj(j);
       ASSERT_EXPECTED_VALUE(lambda({&arg, &argi, &argj}), TENSOR2D_GET(i, j));
     }
   }
@@ -233,7 +233,7 @@ func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
 
 TEST(End2EndJit_ClearTensor_2D, extract_slice) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10xi64> to
   tensor<1x5xi64> return %r : tensor<1x5xi64>
@@ -241,8 +241,8 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
 )XXX",
                                                                 "main", true);
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       arg(tensor2D, shape2D);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -261,7 +261,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
 
 TEST(End2EndJit_ClearTensor_2D, extract_slice_stride) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10xi64> to
   tensor<1x5xi64> return %r : tensor<1x5xi64>
@@ -269,8 +269,8 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
 )XXX",
                                                                 "main", true);
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       arg(tensor2D, shape2D);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -289,7 +289,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
 
 TEST(End2EndJit_ClearTensor_2D, insert_slice) {
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
   %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2xi64>
   into tensor<2x10xi64> return %r : tensor<2x10xi64>
@@ -297,13 +297,13 @@ func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
 )XXX",
                                                                 "main", true);
 
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       t0(tensor2D, shape2D);
   int64_t t1Shape[] = {2, 2};
   uint64_t t1Buffer[]{6, 9, 4, 0};
-  mlir::zamalang::TensorLambdaArgument<
-      mlir::zamalang::IntLambdaArgument<uint64_t>>
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint64_t>>
       t1(t1Buffer, t1Shape);
 
   llvm::Expected<std::vector<uint64_t>> res =
@@ -332,17 +332,17 @@ func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
 template <typename T>
 void checkResultTensor(
     bool &status,
-    llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> &res) {
+    llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> &res) {
   status = false;
 
   ASSERT_TRUE((*res)
-                  ->isa<mlir::zamalang::TensorLambdaArgument<
-                      mlir::zamalang::IntLambdaArgument<T>>>());
+                  ->isa<mlir::concretelang::TensorLambdaArgument<
+                      mlir::concretelang::IntLambdaArgument<T>>>());
 
-  mlir::zamalang::TensorLambdaArgument<mlir::zamalang::IntLambdaArgument<T>>
+  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<T>>
       &resp = (*res)
-                  ->cast<mlir::zamalang::TensorLambdaArgument<
-                      mlir::zamalang::IntLambdaArgument<T>>>();
+                  ->cast<mlir::concretelang::TensorLambdaArgument<
+                      mlir::concretelang::IntLambdaArgument<T>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
   ASSERT_EQ(resp.getDimensions().at(0), 5);
@@ -370,11 +370,11 @@ TEST_P(ReturnTensorWithPrecision, return_tensor) {
               << "   return %res : tensor<5x3x2xi" << precision << ">\n"
               << "}";
 
-  mlir::zamalang::JitCompilerEngine::Lambda lambda =
+  mlir::concretelang::JitCompilerEngine::Lambda lambda =
       checkedJit(mlirProgram.str(), "main", true);
 
-  llvm::Expected<std::unique_ptr<mlir::zamalang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::zamalang::LambdaArgument>>({});
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>({});
 
   ASSERT_EXPECTED_SUCCESS(res);
   bool status;

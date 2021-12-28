@@ -2,9 +2,9 @@ enable_testing()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
+if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   add_compile_options(
-    -DZAMALANG_PARALLEL_TESTING_ENABLED
+    -DCONCRETELANG_PARALLEL_TESTING_ENABLED
     )
   link_libraries(
     -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
@@ -57,31 +57,31 @@ set_source_files_properties(
 target_link_libraries(
   end_to_end_jit_test
   gtest_main
-  ZamalangSupport
+  ConcretelangSupport
 )
 
 target_link_libraries(
   end_to_end_jit_clear_tensor
   gtest_main
-  ZamalangSupport
+  ConcretelangSupport
 )
 
 target_link_libraries(
   end_to_end_jit_encrypted_tensor
   gtest_main
-  ZamalangSupport
+  ConcretelangSupport
 )
 
 target_link_libraries(
   end_to_end_jit_hlfhelinalg
   gtest_main
-  ZamalangSupport
+  ConcretelangSupport
 )
 
 target_link_libraries(
   end_to_end_jit_lambda
   gtest_main
-  ZamalangSupport
+  ConcretelangSupport
 )
 
 include(GoogleTest)
@@ -91,7 +91,7 @@ gtest_discover_tests(end_to_end_jit_encrypted_tensor)
 gtest_discover_tests(end_to_end_jit_hlfhelinalg)
 gtest_discover_tests(end_to_end_jit_lambda)
 
-if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
+if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   add_executable(
     end_to_end_jit_dfr
     end_to_end_jit_dfr.cc
@@ -110,7 +110,7 @@ if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
   target_link_libraries(
     end_to_end_jit_dfr
     gtest_main
-    ZamalangSupport
+    ConcretelangSupport
     -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
     -Wl,-rpath,${HPX_DIR}/../../
     -Wl,--no-as-needed
@@ -120,7 +120,7 @@ if(ZAMALANG_PARALLEL_EXECUTION_ENABLED)
   target_link_libraries(
     end_to_end_jit_auto_parallelization
     gtest_main
-    ZamalangSupport
+    ConcretelangSupport
     -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
     -Wl,-rpath,${HPX_DIR}/../../
     -Wl,--no-as-needed

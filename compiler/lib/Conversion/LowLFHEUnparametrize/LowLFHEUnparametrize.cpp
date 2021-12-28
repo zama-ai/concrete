@@ -4,14 +4,14 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "zamalang/Conversion/Passes.h"
-#include "zamalang/Conversion/Utils/RegionOpTypeConverterPattern.h"
-#include "zamalang/Conversion/Utils/TensorOpTypeConversion.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHEOps.h"
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "zamalang/Dialect/RT/IR/RTOps.h"
-#include "zamalang/Support/Constants.h"
+#include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
+#include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHEOps.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
+#include "concretelang/Support/Constants.h"
 
 /// LowLFHEUnparametrizeTypeConverter is a type converter that unparametrize
 /// LowLFHE types
@@ -19,14 +19,14 @@ class LowLFHEUnparametrizeTypeConverter : public mlir::TypeConverter {
 
 public:
   static mlir::Type unparematrizeLowLFHEType(mlir::Type type) {
-    if (type.isa<mlir::zamalang::LowLFHE::PlaintextType>()) {
+    if (type.isa<mlir::concretelang::LowLFHE::PlaintextType>()) {
       return mlir::IntegerType::get(type.getContext(), 64);
     }
-    if (type.isa<mlir::zamalang::LowLFHE::CleartextType>()) {
+    if (type.isa<mlir::concretelang::LowLFHE::CleartextType>()) {
       return mlir::IntegerType::get(type.getContext(), 64);
     }
-    if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
-      return mlir::zamalang::LowLFHE::LweCiphertextType::get(type.getContext(),
+    if (type.isa<mlir::concretelang::LowLFHE::LweCiphertextType>()) {
+      return mlir::concretelang::LowLFHE::LweCiphertextType::get(type.getContext(),
                                                              -1, -1);
     }
     auto tensorType = type.dyn_cast_or_null<mlir::RankedTensorType>();
@@ -53,16 +53,16 @@ struct LowLFHEUnrealizedCastReplacementPattern
     : public mlir::OpRewritePattern<mlir::UnrealizedConversionCastOp> {
   LowLFHEUnrealizedCastReplacementPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::zamalang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::UnrealizedConversionCastOp>(context,
                                                                  benefit) {}
 
   mlir::LogicalResult
   matchAndRewrite(mlir::UnrealizedConversionCastOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    if (mlir::isa<mlir::zamalang::LowLFHE::LowLFHEDialect>(
+    if (mlir::isa<mlir::concretelang::LowLFHE::LowLFHEDialect>(
             op.getOperandTypes()[0].getDialect()) ||
-        mlir::isa<mlir::zamalang::LowLFHE::LowLFHEDialect>(
+        mlir::isa<mlir::concretelang::LowLFHE::LowLFHEDialect>(
             op.getType(0).getDialect())) {
       rewriter.replaceOp(op, op.getOperands());
       return mlir::success();
@@ -114,23 +114,23 @@ void LowLFHEUnparametrizePass::runOnOperation() {
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);
 
   // Replacement of unrealized_conversion_cast
-  mlir::zamalang::addDynamicallyLegalTypeOp<mlir::UnrealizedConversionCastOp>(
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::UnrealizedConversionCastOp>(
       target, converter);
   patterns.add<LowLFHEUnrealizedCastReplacementPattern>(patterns.getContext());
 
   // Conversion of tensor operators
-  mlir::zamalang::populateWithTensorTypeConverterPatterns(patterns, target,
+  mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                           converter);
 
   // Conversion of CallOp
-  patterns.add<mlir::zamalang::GenericTypeConverterPattern<mlir::CallOp>>(
+  patterns.add<mlir::concretelang::GenericTypeConverterPattern<mlir::CallOp>>(
       patterns.getContext(), converter);
-  mlir::zamalang::addDynamicallyLegalTypeOp<mlir::CallOp>(target, converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::CallOp>(target, converter);
 
   // Conversion of RT Dialect Ops
-  patterns.add<mlir::zamalang::GenericTypeConverterPattern<
-      mlir::zamalang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
-  mlir::zamalang::addDynamicallyLegalTypeOp<mlir::zamalang::RT::DataflowTaskOp>(
+  patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::concretelang::RT::DataflowTaskOp>(
       target, converter);
 
   // Apply conversion
@@ -140,10 +140,10 @@ void LowLFHEUnparametrizePass::runOnOperation() {
 }
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
 createConvertLowLFHEUnparametrizePass() {
   return std::make_unique<LowLFHEUnparametrizePass>();
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir

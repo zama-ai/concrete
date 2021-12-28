@@ -1,4 +1,4 @@
-add_mlir_library(ZamalangSupport
+add_mlir_library(ConcretelangSupport
   Error.cpp
   Pipeline.cpp
   Jit.cpp
@@ -15,7 +15,7 @@ add_mlir_library(ZamalangSupport
   LLVMEmitFile.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/zamalang/Support
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Support
 
   DEPENDS
   MLIRConversionPassIncGen
@@ -33,5 +33,5 @@ add_mlir_library(ZamalangSupport
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
   
-  ZamalangRuntime
+  ConcretelangRuntime
 )

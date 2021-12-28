@@ -26,12 +26,12 @@ $(BUILD_DIR)/configured.stamp:
 	-DCMAKE_BUILD_TYPE=Release \
 	-DLLVM_ENABLE_ASSERTIONS=ON \
 	-DMLIR_ENABLE_BINDINGS_PYTHON=$(BINDINGS_PYTHON_ENABLED) \
-	-DZAMALANG_BINDINGS_PYTHON_ENABLED=$(BINDINGS_PYTHON_ENABLED) \
-	-DZAMALANG_PARALLEL_EXECUTION_ENABLED=$(PARALLEL_EXECUTION_ENABLED) \
+	-DCONCRETELANG_BINDINGS_PYTHON_ENABLED=$(BINDINGS_PYTHON_ENABLED) \
+	-DCONCRETELANG_PARALLEL_EXECUTION_ENABLED=$(PARALLEL_EXECUTION_ENABLED) \
 	-DCONCRETE_FFI_RELEASE=${CONCRETE_PROJECT}/target/release \
 	-DHPX_DIR=${HPX_INSTALL_DIR}/lib/cmake/HPX \
-	-DLLVM_EXTERNAL_PROJECTS=zamalang \
-	-DLLVM_EXTERNAL_ZAMALANG_SOURCE_DIR=. \
+	-DLLVM_EXTERNAL_PROJECTS=concretelang \
+	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE}
 	touch $@
 
@@ -40,18 +40,18 @@ build-initialized: $(BUILD_DIR)/configured.stamp
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
 
-zamacompiler: build-initialized
-	cmake --build $(BUILD_DIR) --target zamacompiler
+concretecompiler: build-initialized
+	cmake --build $(BUILD_DIR) --target concretecompiler
 
 python-bindings: build-initialized
-	cmake --build $(BUILD_DIR) --target ZamalangMLIRPythonModules
-	cmake --build $(BUILD_DIR) --target ZamalangPythonModules
+	cmake --build $(BUILD_DIR) --target ConcretelangMLIRPythonModules
+	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
 
-test-check: zamacompiler file-check not
+test-check: concretecompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/
 
-test-python: python-bindings zamacompiler
-	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/zamalang/python_packages/zamalang_core LD_PRELOAD=$(BUILD_DIR)/lib/libZamalangRuntime.so pytest -vs tests/python
+test-python: python-bindings concretecompiler
+	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs tests/python
 
 test: test-check test-end-to-end-jit test-python
 
@@ -115,11 +115,11 @@ show-stress-tests-summary:
 	@echo 'Parameters issues:'
 	@cd tests/stress_tests/trace && grep BAD -R || echo 'No issues'
 
-stress-tests: zamacompiler
+stress-tests: concretecompiler
 	pytest -vs tests/stress_tests
 
 # useful for faster cache generation, need pytest-parallel
-stress-tests-fast-cache: zamacompiler
+stress-tests-fast-cache: concretecompiler
 	pytest --workers auto -vs tests/stress_tests
 
 # LLVM/MLIR dependencies
@@ -152,11 +152,11 @@ release_tarballs:
 	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concretefhe-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
 
 update_python_version:
-	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/zamalang/version.py
+	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/concretelang/version.py
 
 .PHONY: build-initialized \
 	build-end-to-end-jit \
-	zamacompiler \
+	concretecompiler \
 	python-bindings \
 	test-check \
 	test-end-to-end-jit \

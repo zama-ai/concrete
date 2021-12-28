@@ -1,4 +1,4 @@
-// RUN: zamacompiler --action=roundtrip %s 2>&1| FileCheck %s
+// RUN: concretecompiler --action=roundtrip %s 2>&1| FileCheck %s
 
 /////////////////////////////////////////////////
 // HLFHELinalg.add_eint_int

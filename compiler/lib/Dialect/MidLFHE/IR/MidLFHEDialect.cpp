@@ -1,26 +1,26 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 // See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
 
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.h"
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOps.h"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHETypes.h"
 
 #define GET_TYPEDEF_CLASSES
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOpsTypes.cpp.inc"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOpsTypes.cpp.inc"
 
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOpsDialect.cpp.inc"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOpsDialect.cpp.inc"
 
-using namespace mlir::zamalang::MidLFHE;
+using namespace mlir::concretelang::MidLFHE;
 
 void MidLFHEDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOps.cpp.inc"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOps.cpp.inc"
       >();
 
   addTypes<
 #define GET_TYPEDEF_LIST
-#include "zamalang/Dialect/MidLFHE/IR/MidLFHEOpsTypes.cpp.inc"
+#include "concretelang/Dialect/MidLFHE/IR/MidLFHEOpsTypes.cpp.inc"
       >();
 }
 
@@ -33,8 +33,8 @@ void MidLFHEDialect::initialize() {
 
 void MidLFHEDialect::printType(::mlir::Type type,
                                ::mlir::DialectAsmPrinter &printer) const {
-  mlir::zamalang::MidLFHE::GLWECipherTextType glwe =
-      type.dyn_cast_or_null<mlir::zamalang::MidLFHE::GLWECipherTextType>();
+  mlir::concretelang::MidLFHE::GLWECipherTextType glwe =
+      type.dyn_cast_or_null<mlir::concretelang::MidLFHE::GLWECipherTextType>();
   if (glwe != nullptr) {
     glwe.print(printer);
     return;

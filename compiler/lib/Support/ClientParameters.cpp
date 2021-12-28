@@ -6,12 +6,12 @@
 
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
-#include "zamalang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "zamalang/Support/ClientParameters.h"
-#include "zamalang/Support/V0Curves.h"
+#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Support/ClientParameters.h"
+#include "concretelang/Support/V0Curves.h"
 
 namespace mlir {
-namespace zamalang {
+namespace concretelang {
 
 const auto securityLevel = SECURITY_LEVEL_128;
 const auto keyFormat = KEY_FORMAT_BINARY;
@@ -40,7 +40,7 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
         },
     };
   }
-  if (type.isa<mlir::zamalang::LowLFHE::LweCiphertextType>()) {
+  if (type.isa<mlir::concretelang::LowLFHE::LweCiphertextType>()) {
     // TODO - Get the width from the LWECiphertextType instead of global
     // precision (could be possible after merge lowlfhe-ciphertext-parameter)
     return CircuitGate{
@@ -129,7 +129,7 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();
   bool hasContext =
-      funcType.getInputs().back().isa<mlir::zamalang::LowLFHE::ContextType>();
+      funcType.getInputs().back().isa<mlir::concretelang::LowLFHE::ContextType>();
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {
     auto gate = gateFromMLIRType("big", precision, encryptionVariance, *inType);
@@ -159,33 +159,33 @@ static inline void hash(std::size_t &seed, const T &v, Rest... rest) {
   hash(seed, rest...);
 }
 
-void LweSecretKeyParam::hash(size_t &seed) { mlir::zamalang::hash(seed, size); }
+void LweSecretKeyParam::hash(size_t &seed) { mlir::concretelang::hash(seed, size); }
 
 void BootstrapKeyParam::hash(size_t &seed) {
-  mlir::zamalang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
+  mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
                        baseLog, glweDimension, variance);
 }
 
 void KeyswitchKeyParam::hash(size_t &seed) {
-  mlir::zamalang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
+  mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
                        baseLog, variance);
 }
 
 std::size_t ClientParameters::hash() {
   std::size_t currentHash = 1;
   for (auto secretKeyParam : secretKeys) {
-    mlir::zamalang::hash(currentHash, secretKeyParam.first);
+    mlir::concretelang::hash(currentHash, secretKeyParam.first);
     secretKeyParam.second.hash(currentHash);
   }
   for (auto bootstrapKeyParam : bootstrapKeys) {
-    mlir::zamalang::hash(currentHash, bootstrapKeyParam.first);
+    mlir::concretelang::hash(currentHash, bootstrapKeyParam.first);
     bootstrapKeyParam.second.hash(currentHash);
   }
   for (auto keyswitchParam : keyswitchKeys) {
-    mlir::zamalang::hash(currentHash, keyswitchParam.first);
+    mlir::concretelang::hash(currentHash, keyswitchParam.first);
     keyswitchParam.second.hash(currentHash);
   }
   return currentHash;
 }
-} // namespace zamalang
+} // namespace concretelang
 } // namespace mlir
