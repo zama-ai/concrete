@@ -9,7 +9,7 @@ using Lambda = mlir::concretelang::JitCompilerEngine::Lambda;
 
 TEST(Lambda_check_param, int_to_void_missing_param) {
   Lambda lambda = checkedJit(R"XXX(
-    func @main(%arg0: !HLFHE.eint<1>) {
+    func @main(%arg0: !FHE.eint<1>) {
       return
     }
     )XXX");
@@ -19,7 +19,7 @@ TEST(Lambda_check_param, int_to_void_missing_param) {
 TEST(Lambda_check_param, DISABLED_int_to_void_good) {
   // DISABLED Note: it segfaults
   Lambda lambda = checkedJit(R"XXX(
-    func @main(%arg0: !HLFHE.eint<1>) {
+    func @main(%arg0: !FHE.eint<1>) {
       return
     }
     )XXX");
@@ -28,7 +28,7 @@ TEST(Lambda_check_param, DISABLED_int_to_void_good) {
 
 TEST(Lambda_check_param, int_to_void_superfluous_param) {
   Lambda lambda = checkedJit(R"XXX(
-    func @main(%arg0: !HLFHE.eint<1>) {
+    func @main(%arg0: !FHE.eint<1>) {
       return
     }
     )XXX");
@@ -38,10 +38,10 @@ TEST(Lambda_check_param, int_to_void_superfluous_param) {
 TEST(Lambda_check_param, scalar_parameters_number) {
   Lambda lambda = checkedJit(R"XXX(
   func @main(
-    %arg0: !HLFHE.eint<1>, %arg1: !HLFHE.eint<1>,
-    %arg2: !HLFHE.eint<1>) -> !HLFHE.eint<1>
+    %arg0: !FHE.eint<1>, %arg1: !FHE.eint<1>,
+    %arg2: !FHE.eint<1>) -> !FHE.eint<1>
   {
-    return %arg0: !HLFHE.eint<1>
+    return %arg0: !FHE.eint<1>
   }
   )XXX");
   ASSERT_EXPECTED_FAILURE(lambda());
@@ -54,9 +54,9 @@ TEST(Lambda_check_param, scalar_parameters_number) {
 TEST(Lambda_check_param, scalar_tensor_to_scalar_missing_param) {
   Lambda lambda = checkedJit(R"XXX(
     func @main(
-      %arg0: !HLFHE.eint<1>, %arg1: tensor<2x!HLFHE.eint<1>>) -> !HLFHE.eint<1>
+      %arg0: !FHE.eint<1>, %arg1: tensor<2x!FHE.eint<1>>) -> !FHE.eint<1>
     {
-      return %arg0: !HLFHE.eint<1>
+      return %arg0: !FHE.eint<1>
     }
   )XXX");
   ASSERT_EXPECTED_FAILURE(lambda(1_u64));
@@ -65,9 +65,9 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar_missing_param) {
 TEST(Lambda_check_param, scalar_tensor_to_scalar) {
   Lambda lambda = checkedJit(R"XXX(
     func @main(
-      %arg0: !HLFHE.eint<1>, %arg1: tensor<2x!HLFHE.eint<1>>) -> !HLFHE.eint<1>
+      %arg0: !FHE.eint<1>, %arg1: tensor<2x!FHE.eint<1>>) -> !FHE.eint<1>
     {
-      return %arg0: !HLFHE.eint<1>
+      return %arg0: !FHE.eint<1>
     }
   )XXX");
   uint8_t arg[2] = {1 ,2};
@@ -77,9 +77,9 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar) {
 TEST(Lambda_check_param, scalar_tensor_to_scalar_superfluous_param) {
   Lambda lambda = checkedJit(R"XXX(
     func @main(
-      %arg0: !HLFHE.eint<1>, %arg1: tensor<2x!HLFHE.eint<1>>) -> !HLFHE.eint<1>
+      %arg0: !FHE.eint<1>, %arg1: tensor<2x!FHE.eint<1>>) -> !FHE.eint<1>
     {
-      return %arg0: !HLFHE.eint<1>
+      return %arg0: !FHE.eint<1>
     }
   )XXX");
   uint8_t arg[2] = {1 ,2};
@@ -89,9 +89,9 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar_superfluous_param) {
 TEST(Lambda_check_param, scalar_tensor_to_tensor_good_number_param) {
   Lambda lambda = checkedJit(R"XXX(
     func @main(
-      %arg0: !HLFHE.eint<1>, %arg1: tensor<2x!HLFHE.eint<1>>) -> tensor<2x!HLFHE.eint<1>>
+      %arg0: !FHE.eint<1>, %arg1: tensor<2x!FHE.eint<1>>) -> tensor<2x!FHE.eint<1>>
     {
-      return %arg1: tensor<2x!HLFHE.eint<1>>
+      return %arg1: tensor<2x!FHE.eint<1>>
     }
     )XXX");
   uint8_t arg[2] = {1 ,2};
@@ -103,9 +103,9 @@ TEST(Lambda_check_param, scalar_tensor_to_tensor_good_number_param) {
 TEST(Lambda_check_param, DISABLED_check_parameters_scalar_too_big) {
   // DISABLED Note: loss of precision without any warning or error.
   Lambda lambda = checkedJit(R"XXX(
-  func @main(%arg0: !HLFHE.eint<1>) -> !HLFHE.eint<1>
+  func @main(%arg0: !FHE.eint<1>) -> !FHE.eint<1>
   {
-    return %arg0: !HLFHE.eint<1>
+    return %arg0: !FHE.eint<1>
   }
   )XXX");
   uint16_t arg = 3;

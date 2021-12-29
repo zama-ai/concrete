@@ -4,12 +4,12 @@
 #include <iostream>
 
 #include <mlir/IR/BuiltinOps.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHEOps.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHETypes.h>
-#include <concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
-#include <concretelang/Dialect/LowLFHE/IR/LowLFHEOps.h>
-#include <concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h>
+#include <concretelang/Dialect/FHE/IR/FHEDialect.h>
+#include <concretelang/Dialect/FHE/IR/FHEOps.h>
+#include <concretelang/Dialect/FHE/IR/FHETypes.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteTypes.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/IR/RTOps.h>

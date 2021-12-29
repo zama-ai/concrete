@@ -8,10 +8,10 @@ def BuildDataflowTaskGraph : Pass<"BuildDataflowTaskGraph", "mlir::ModuleOp"> {
       "Identify profitable dataflow tasks and build DataflowTaskGraph.";
 
   let description = [{
-  This pass builds a dataflow graph out of a HLFHE program.
+  This pass builds a dataflow graph out of a FHE program.
 
   In its current incarnation, it considers some heavier weight
-  operations (e.g., HLFHELinalg Dot and Matmult or bootstraps) as
+  operations (e.g., FHELinalg Dot and Matmult or bootstraps) as
   candidates for being executed in a discrete task, and then
   sinks within the task the lighter weight operation that do not
   increase the graph cut (amount of dependences in or out).
@@ -23,21 +23,21 @@ def BuildDataflowTaskGraph : Pass<"BuildDataflowTaskGraph", "mlir::ModuleOp"> {
   Example:
 
 ```mlir
-  func @main(%arg0: tensor<3x4x!HLFHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>> {
-    %0 = "HLFHELinalg.matmul_eint_int"(%arg0, %arg1) : (tensor<3x4x!HLFHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>>
-    return %0 : tensor<3x2x!HLFHE.eint<2>>
+  func @main(%arg0: tensor<3x4x!FHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>> {
+    %0 = "FHELinalg.matmul_eint_int"(%arg0, %arg1) : (tensor<3x4x!FHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>>
+    return %0 : tensor<3x2x!FHE.eint<2>>
   }
 ```
 
   Will result in generating a dataflow task for the Matmul operation:
 
 ```mlir
-  func @main(%arg0: tensor<3x4x!HLFHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>> {
+  func @main(%arg0: tensor<3x4x!FHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>> {
     %0 = "RT.dataflow_task"(%arg0, %arg1) ( {
-      %1 = "HLFHELinalg.matmul_eint_int"(%arg0, %arg1) : (tensor<3x4x!HLFHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>>
-      "RT.dataflow_yield"(%1) : (tensor<3x2x!HLFHE.eint<2>>) -> ()
-    }) : (tensor<3x4x!HLFHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!HLFHE.eint<2>>
-    return %0 : tensor<3x2x!HLFHE.eint<2>>
+      %1 = "FHELinalg.matmul_eint_int"(%arg0, %arg1) : (tensor<3x4x!FHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>>
+      "RT.dataflow_yield"(%1) : (tensor<3x2x!FHE.eint<2>>) -> ()
+    }) : (tensor<3x4x!FHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>>
+    return %0 : tensor<3x2x!FHE.eint<2>>
   }
 ```
   }];

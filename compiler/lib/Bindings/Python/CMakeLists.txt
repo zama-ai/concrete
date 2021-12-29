@@ -11,11 +11,11 @@ declare_mlir_python_extension(ConcretelangBindingsPythonExtension.Core
   ADD_TO_PARENT ConcretelangBindingsPythonExtension
   SOURCES
     ConcretelangModule.cpp
-    HLFHEModule.cpp
+    FHEModule.cpp
     CompilerAPIModule.cpp
   EMBED_CAPI_LINK_LIBS
-    CONCRETELANGCAPIHLFHE
-    CONCRETELANGCAPIHLFHELINALG
+    CONCRETELANGCAPIFHE
+    CONCRETELANGCAPIFHELINALG
     CONCRETELANGCAPISupport
 )
 
@@ -42,20 +42,20 @@ declare_mlir_python_sources(ConcretelangBindingsPythonSources.Dialects
 declare_mlir_dialect_python_bindings(
   ADD_TO_PARENT ConcretelangBindingsPythonSources.Dialects
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-  CONCRETELANGBindingsPythonHLFHEOps
-	TD_FILE concrete/lang/dialects/HLFHEOps.td
+  CONCRETELANGBindingsPythonFHEOps
+	TD_FILE concrete/lang/dialects/FHEOps.td
   SOURCES
-    concrete/lang/dialects/hlfhe.py
-	DIALECT_NAME HLFHE)
+    concrete/lang/dialects/fhe.py
+	DIALECT_NAME FHE)
 
 declare_mlir_dialect_python_bindings(
   ADD_TO_PARENT ConcretelangBindingsPythonSources.Dialects
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-  CONCRETELANGBindingsPythonHLFHELinalgOps
-  TD_FILE concrete/lang/dialects/HLFHELinalgOps.td
+  CONCRETELANGBindingsPythonFHELinalgOps
+  TD_FILE concrete/lang/dialects/FHELinalgOps.td
   SOURCES
-    concrete/lang/dialects/hlfhelinalg.py
-  DIALECT_NAME HLFHELinalg)
+    concrete/lang/dialects/fhelinalg.py
+  DIALECT_NAME FHELinalg)
 
 
 ################################################################################

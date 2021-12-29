@@ -12,9 +12,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
     [
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
-                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (5, 7),
@@ -23,9 +23,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
-                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (np.array(4, dtype=np.uint8), np.array(5, dtype=np.uint8)),
@@ -34,9 +34,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
-                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (np.uint8(3), np.uint8(5)),
@@ -45,9 +45,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
-                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (np.uint16(3), np.uint16(5)),
@@ -56,9 +56,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
-                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (np.uint32(3), np.uint32(5)),
@@ -67,9 +67,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
-                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (np.uint64(3), np.uint64(5)),
@@ -78,11 +78,11 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            func @main(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
             {
-                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
-                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
-                return %ret : !HLFHE.eint<7>
+                %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>
+                return %ret : !FHE.eint<7>
             }
             """,
             (
@@ -94,11 +94,11 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            func @main(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
             {
-                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
-                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
-                return %ret : !HLFHE.eint<7>
+                %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>
+                return %ret : !FHE.eint<7>
             }
             """,
             (
@@ -110,11 +110,11 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            func @main(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
             {
-                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
-                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
-                return %ret : !HLFHE.eint<7>
+                %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>
+                return %ret : !FHE.eint<7>
             }
             """,
             (
@@ -126,11 +126,11 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            func @main(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
             {
-                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
-                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
-                return %ret : !HLFHE.eint<7>
+                %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>
+                return %ret : !FHE.eint<7>
             }
             """,
             (
@@ -142,9 +142,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%a0: tensor<4x!HLFHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>> {
-                %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!HLFHE.eint<6>>, tensor<4xi7>) -> tensor<4x!HLFHE.eint<6>>
-                return %res : tensor<4x!HLFHE.eint<6>>
+            func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+                %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
+                return %res : tensor<4x!FHE.eint<6>>
             }
             """,
             (
@@ -156,9 +156,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%a0: tensor<4x4x!HLFHE.eint<6>>, %a1: tensor<4x4xi7>) -> tensor<4x4x!HLFHE.eint<6>> {
-                %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x4x!HLFHE.eint<6>>, tensor<4x4xi7>) -> tensor<4x4x!HLFHE.eint<6>>
-                return %res : tensor<4x4x!HLFHE.eint<6>>
+            func @main(%a0: tensor<4x4x!FHE.eint<6>>, %a1: tensor<4x4xi7>) -> tensor<4x4x!FHE.eint<6>> {
+                %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x4x!FHE.eint<6>>, tensor<4x4xi7>) -> tensor<4x4x!FHE.eint<6>>
+                return %res : tensor<4x4x!FHE.eint<6>>
             }
             """,
             (
@@ -184,9 +184,9 @@ KEY_SET_CACHE_PATH =  os.path.join(tempfile.gettempdir(), 'KeySetCache')
         ),
         pytest.param(
             """
-            func @main(%a0: tensor<2x2x2x!HLFHE.eint<6>>, %a1: tensor<2x2x2xi7>) -> tensor<2x2x2x!HLFHE.eint<6>> {
-                %res = "HLFHELinalg.add_eint_int"(%a0, %a1) : (tensor<2x2x2x!HLFHE.eint<6>>, tensor<2x2x2xi7>) -> tensor<2x2x2x!HLFHE.eint<6>>
-                return %res : tensor<2x2x2x!HLFHE.eint<6>>
+            func @main(%a0: tensor<2x2x2x!FHE.eint<6>>, %a1: tensor<2x2x2xi7>) -> tensor<2x2x2x!FHE.eint<6>> {
+                %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<2x2x2x!FHE.eint<6>>, tensor<2x2x2xi7>) -> tensor<2x2x2x!FHE.eint<6>>
+                return %res : tensor<2x2x2x!FHE.eint<6>>
             }
             """,
             (
@@ -222,9 +222,9 @@ def test_compile_and_run(mlir_input, args, expected_result):
     [
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>, %arg1: i8) -> !HLFHE.eint<7> {
-                %1 = "HLFHE.add_eint_int"(%arg0, %arg1): (!HLFHE.eint<7>, i8) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (5, 7, 8),
@@ -244,10 +244,10 @@ def test_compile_and_run_invalid_arg_number(mlir_input, args):
     [
         pytest.param(
             """
-            func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
+            func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
                 %tlu = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
-                %1 = "HLFHE.apply_lookup_table"(%arg0, %tlu): (!HLFHE.eint<7>, tensor<128xi64>) -> (!HLFHE.eint<7>)
-                return %1: !HLFHE.eint<7>
+                %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<7>, tensor<128xi64>) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
             }
             """,
             (73,),
@@ -268,11 +268,11 @@ def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
     [
         pytest.param(
             """
-            func @test(%arg0: tensor<4x!HLFHE.eint<7>>, %arg1: tensor<4xi8>) -> !HLFHE.eint<7>
+            func @test(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
             {
-                %ret = "HLFHELinalg.dot_eint_int"(%arg0, %arg1) :
-                    (tensor<4x!HLFHE.eint<7>>, tensor<4xi8>) -> !HLFHE.eint<7>
-                return %ret : !HLFHE.eint<7>
+                %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+                    (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>
+                return %ret : !FHE.eint<7>
             }
             """,
             id="not @main",

@@ -10,7 +10,7 @@ namespace mlir {
 namespace concretelang {
 namespace python {
 
-void populateDialectHLFHESubmodule(pybind11::module &m);
+void populateDialectFHESubmodule(pybind11::module &m);
 
 } // namespace python
 } // namespace concretelang

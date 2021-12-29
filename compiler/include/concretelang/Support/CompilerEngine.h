@@ -89,22 +89,22 @@ public:
     ROUND_TRIP,
 
     // Read sources and exit before any lowering
-    HLFHE,
+    FHE,
 
-    // Read sources and lower all HLFHE operations to MidLFHE
+    // Read sources and lower all FHE operations to TFHE
     // operations
-    MIDLFHE,
+    TFHE,
 
-    // Read sources and lower all HLFHE and MidLFHE operations to LowLFHE
+    // Read sources and lower all FHE and TFHE operations to Concrete
     // operations
-    LOWLFHE,
+    CONCRETE,
 
-    // Read sources and lower all HLFHE, MidLFHE and LowLFHE
+    // Read sources and lower all FHE, TFHE and Concrete
     // operations to canonical MLIR dialects. Cryptographic operations
     // are lowered to invocations of the concrete library.
     STD,
 
-    // Read sources and lower all HLFHE, MidLFHE and LowLFHE
+    // Read sources and lower all FHE, TFHE and Concrete
     // operations to operations from the LLVM dialect. Cryptographic
     // operations are lowered to invocations of the concrete library.
     LLVM,
@@ -152,14 +152,14 @@ public:
   void setAutoParallelize(bool v);
   void setGenerateClientParameters(bool v);
   void setClientParametersFuncName(const llvm::StringRef &name);
-  void setHLFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes);
+  void setFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes);
   void setEnablePass(std::function<bool(mlir::Pass *)> enablePass);
 
 protected:
   llvm::Optional<size_t> overrideMaxEintPrecision;
   llvm::Optional<size_t> overrideMaxMANP;
   llvm::Optional<std::string> clientParametersFuncName;
-  llvm::Optional<std::vector<int64_t>> hlfhelinalgTileSizes;
+  llvm::Optional<std::vector<int64_t>> fhelinalgTileSizes;
 
   bool verifyDiagnostics;
   bool autoParallelize;

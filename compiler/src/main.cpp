@@ -20,12 +20,12 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
-#include "concretelang/Dialect/HLFHE/IR/HLFHEDialect.h"
-#include "concretelang/Dialect/HLFHE/IR/HLFHETypes.h"
-#include "concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h"
-#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
-#include "concretelang/Dialect/MidLFHE/IR/MidLFHEDialect.h"
-#include "concretelang/Dialect/MidLFHE/IR/MidLFHETypes.h"
+#include "concretelang/Dialect/FHE/IR/FHEDialect.h"
+#include "concretelang/Dialect/FHE/IR/FHETypes.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
+#include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
+#include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 #include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/JitCompilerEngine.h"
@@ -36,9 +36,9 @@
 
 enum Action {
   ROUND_TRIP,
-  DUMP_HLFHE,
-  DUMP_MIDLFHE,
-  DUMP_LOWLFHE,
+  DUMP_FHE,
+  DUMP_TFHE,
+  DUMP_CONCRETE,
   DUMP_STD,
   DUMP_LLVM_DIALECT,
   DUMP_LLVM_IR,
@@ -93,12 +93,12 @@ static llvm::cl::opt<enum Action> action(
     llvm::cl::values(
         clEnumValN(Action::ROUND_TRIP, "roundtrip",
                    "Parse input module and regenerate textual representation")),
-    llvm::cl::values(clEnumValN(Action::DUMP_HLFHE, "dump-hlfhe",
-                                "Dump HLFHE module")),
-    llvm::cl::values(clEnumValN(Action::DUMP_MIDLFHE, "dump-midlfhe",
-                                "Lower to MidLFHE and dump result")),
-    llvm::cl::values(clEnumValN(Action::DUMP_LOWLFHE, "dump-lowlfhe",
-                                "Lower to LowLFHE and dump result")),
+    llvm::cl::values(clEnumValN(Action::DUMP_FHE, "dump-fhe",
+                                "Dump FHE module")),
+    llvm::cl::values(clEnumValN(Action::DUMP_TFHE, "dump-tfhe",
+                                "Lower to TFHE and dump result")),
+    llvm::cl::values(clEnumValN(Action::DUMP_CONCRETE, "dump-concrete",
+                                "Lower to Concrete and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_STD, "dump-std",
                                 "Lower to std and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_LLVM_DIALECT, "dump-llvm-dialect",
@@ -155,10 +155,10 @@ llvm::cl::opt<llvm::Optional<size_t>, false, OptionalSizeTParser> assumeMaxMANP(
     llvm::cl::desc(
         "Assume a maximum for the Minimum Arithmetic Noise Padding"));
 
-llvm::cl::list<int64_t> hlfhelinalgTileSizes(
-    "hlfhelinalg-tile-sizes",
+llvm::cl::list<int64_t> fhelinalgTileSizes(
+    "fhelinalg-tile-sizes",
     llvm::cl::desc(
-        "Force tiling of HLFHELinalg operation with the given tile sizes"),
+        "Force tiling of FHELinalg operation with the given tile sizes"),
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 } // namespace cmdline
 
@@ -217,8 +217,8 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &os,
 // designates the function to JIT compile. This function is invoked
 // using the parameters given in `jitArgs`.
 //
-// The parameter `parametrizeMidLFHE` defines, whether the
-// parametrization pass for MidLFHE is executed. If the `action` does
+// The parameter `parametrizeTFHE` defines, whether the
+// parametrization pass for TFHE is executed. If the `action` does
 // not involve any MidlFHE manipulation, this parameter does not have
 // any effect.
 //
@@ -240,7 +240,7 @@ mlir::LogicalResult processInputBuffer(
     llvm::ArrayRef<uint64_t> jitArgs,
     llvm::Optional<size_t> overrideMaxEintPrecision,
     llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
-    llvm::Optional<llvm::ArrayRef<int64_t>> hlfhelinalgTileSizes,
+    llvm::Optional<llvm::ArrayRef<int64_t>> fhelinalgTileSizes,
     bool autoParallelize,
     llvm::Optional<mlir::concretelang::KeySetCache> keySetCache,
     llvm::raw_ostream &os,
@@ -266,8 +266,8 @@ mlir::LogicalResult processInputBuffer(
   if (overrideMaxMANP.hasValue())
     ce.setMaxMANP(overrideMaxMANP.getValue());
 
-  if (hlfhelinalgTileSizes.hasValue())
-    ce.setHLFHELinalgTileSizes(*hlfhelinalgTileSizes);
+  if (fhelinalgTileSizes.hasValue())
+    ce.setFHELinalgTileSizes(*fhelinalgTileSizes);
 
   if (action == Action::JIT_INVOKE) {
     llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> lambdaOrErr =
@@ -297,14 +297,14 @@ mlir::LogicalResult processInputBuffer(
     case Action::ROUND_TRIP:
       target = mlir::concretelang::CompilerEngine::Target::ROUND_TRIP;
       break;
-    case Action::DUMP_HLFHE:
-      target = mlir::concretelang::CompilerEngine::Target::HLFHE;
+    case Action::DUMP_FHE:
+      target = mlir::concretelang::CompilerEngine::Target::FHE;
       break;
-    case Action::DUMP_MIDLFHE:
-      target = mlir::concretelang::CompilerEngine::Target::MIDLFHE;
+    case Action::DUMP_TFHE:
+      target = mlir::concretelang::CompilerEngine::Target::TFHE;
       break;
-    case Action::DUMP_LOWLFHE:
-      target = mlir::concretelang::CompilerEngine::Target::LOWLFHE;
+    case Action::DUMP_CONCRETE:
+      target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
       break;
     case Action::DUMP_STD:
       target = mlir::concretelang::CompilerEngine::Target::STD;
@@ -380,10 +380,10 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   }
 
   // Convert tile sizes to `Optional`
-  llvm::Optional<llvm::ArrayRef<int64_t>> hlfhelinalgTileSizes;
+  llvm::Optional<llvm::ArrayRef<int64_t>> fhelinalgTileSizes;
 
-  if (!cmdline::hlfhelinalgTileSizes.empty())
-    hlfhelinalgTileSizes.emplace(cmdline::hlfhelinalgTileSizes);
+  if (!cmdline::fhelinalgTileSizes.empty())
+    fhelinalgTileSizes.emplace(cmdline::fhelinalgTileSizes);
 
   llvm::Optional<mlir::concretelang::KeySetCache> jitKeySetCache;
   if (!cmdline::jitKeySetCachePath.empty()) {
@@ -424,7 +424,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
           std::move(inputBuffer), fileName, cmdline::action,
           cmdline::jitFuncName, cmdline::jitArgs,
           cmdline::assumeMaxEintPrecision, cmdline::assumeMaxMANP,
-          cmdline::verifyDiagnostics, hlfhelinalgTileSizes,
+          cmdline::verifyDiagnostics, fhelinalgTileSizes,
           cmdline::autoParallelize, jitKeySetCache, os, outputLib);
     };
     auto &os = output->os();

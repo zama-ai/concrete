@@ -12,9 +12,9 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     ${conversion_libs}
 
     MLIRTransforms
-    LowLFHEDialect
-    MidLFHEDialect
-    HLFHEDialect
+    ConcreteDialect
+    TFHEDialect
+    FHEDialect
 
     MLIRIR
     MLIRLLVMIR
@@ -35,9 +35,9 @@ else()
     ${conversion_libs}
 
     MLIRTransforms
-    LowLFHEDialect
-    MidLFHEDialect
-    HLFHEDialect
+    ConcreteDialect
+    TFHEDialect
+    FHEDialect
 
     MLIRIR
     MLIRLLVMIR

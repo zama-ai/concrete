@@ -1,0 +1,10 @@
+set(LLVM_OPTIONAL_SOURCES FHE.cpp)
+
+add_mlir_public_c_api_library(CONCRETELANGCAPIFHE
+
+  FHE.cpp
+
+  LINK_LIBS PUBLIC
+  MLIRCAPIIR
+  FHEDialect
+  )

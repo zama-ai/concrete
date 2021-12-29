@@ -6,7 +6,7 @@
 
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
-#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Support/ClientParameters.h"
 #include "concretelang/Support/V0Curves.h"
 
@@ -40,9 +40,9 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
         },
     };
   }
-  if (type.isa<mlir::concretelang::LowLFHE::LweCiphertextType>()) {
+  if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>()) {
     // TODO - Get the width from the LWECiphertextType instead of global
-    // precision (could be possible after merge lowlfhe-ciphertext-parameter)
+    // precision (could be possible after merge concrete-ciphertext-parameter)
     return CircuitGate{
         .encryption = llvm::Optional<EncryptionGate>({
             .secretKeyID = secretKeyID,
@@ -129,7 +129,7 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();
   bool hasContext =
-      funcType.getInputs().back().isa<mlir::concretelang::LowLFHE::ContextType>();
+      funcType.getInputs().back().isa<mlir::concretelang::Concrete::ContextType>();
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {
     auto gate = gateFromMLIRType("big", precision, encryptionVariance, *inType);

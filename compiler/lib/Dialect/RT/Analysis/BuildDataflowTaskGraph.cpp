@@ -4,10 +4,10 @@
 #include <iostream>
 
 #include <mlir/IR/BuiltinOps.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHEOps.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHETypes.h>
-#include <concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgOps.h>
+#include <concretelang/Dialect/FHE/IR/FHEDialect.h>
+#include <concretelang/Dialect/FHE/IR/FHEOps.h>
+#include <concretelang/Dialect/FHE/IR/FHETypes.h>
+#include <concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/IR/RTOps.h>
@@ -40,19 +40,19 @@ namespace {
 
 // TODO: adjust these two functions based on cost model
 static bool isCandidateForTask(Operation *op) {
-  return isa<HLFHE::AddEintIntOp, HLFHE::AddEintOp, HLFHE::SubIntEintOp,
-             HLFHE::MulEintIntOp, HLFHE::ApplyLookupTableEintOp,
-             HLFHELinalg::MatMulIntEintOp, HLFHELinalg::MatMulEintIntOp,
-             HLFHELinalg::AddEintIntOp, HLFHELinalg::AddEintOp,
-             HLFHELinalg::SubIntEintOp, HLFHELinalg::NegEintOp,
-             HLFHELinalg::MulEintIntOp, HLFHELinalg::ApplyLookupTableEintOp,
-             HLFHELinalg::ApplyMultiLookupTableEintOp, HLFHELinalg::Dot>(op);
+  return isa<FHE::AddEintIntOp, FHE::AddEintOp, FHE::SubIntEintOp,
+             FHE::MulEintIntOp, FHE::ApplyLookupTableEintOp,
+             FHELinalg::MatMulIntEintOp, FHELinalg::MatMulEintIntOp,
+             FHELinalg::AddEintIntOp, FHELinalg::AddEintOp,
+             FHELinalg::SubIntEintOp, FHELinalg::NegEintOp,
+             FHELinalg::MulEintIntOp, FHELinalg::ApplyLookupTableEintOp,
+             FHELinalg::ApplyMultiLookupTableEintOp, FHELinalg::Dot>(op);
 }
 
 // Identify operations that are beneficial to sink into tasks.  These
 // operations must not have side-effects and not be `isCandidateForTask`
 static bool isSinkingBeneficiary(Operation *op) {
-  return isa<HLFHE::ZeroEintOp, arith::ConstantOp, memref::DimOp, SelectOp,
+  return isa<FHE::ZeroEintOp, arith::ConstantOp, memref::DimOp, SelectOp,
              mlir::arith::CmpIOp>(op);
 }
 
@@ -141,7 +141,7 @@ struct BuildDataflowTaskGraphPass
       // nothing was simplified.  Doing this here - rather than later
       // in the compilation pipeline - allows to take advantage of
       // higher level semantics which we can attach to operations
-      // (e.g., NoSideEffect on HLFHE::ZeroEintOp).
+      // (e.g., NoSideEffect on FHE::ZeroEintOp).
       IRRewriter rewriter(func->getContext());
       (void)mlir::simplifyRegions(rewriter, func->getRegions());
     });

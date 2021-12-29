@@ -21,7 +21,7 @@
 #include "llvm/ADT/Sequence.h"
 
 #include "concretelang/Conversion/Passes.h"
-#include "concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Dialect/RT/Analysis/Autopar.h"
 #include "concretelang/Dialect/RT/IR/RTTypes.h"
 
@@ -47,10 +47,10 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::LowerToLLVMOptions options(&getContext());
   mlir::LLVMTypeConverter typeConverter(&getContext(), options);
   typeConverter.addConversion(convertTypes);
-  typeConverter.addConversion([&](mlir::concretelang::LowLFHE::PlaintextType type) {
+  typeConverter.addConversion([&](mlir::concretelang::Concrete::PlaintextType type) {
     return mlir::IntegerType::get(type.getContext(), 64);
   });
-  typeConverter.addConversion([&](mlir::concretelang::LowLFHE::CleartextType type) {
+  typeConverter.addConversion([&](mlir::concretelang::Concrete::CleartextType type) {
     return mlir::IntegerType::get(type.getContext(), 64);
   });
 
@@ -72,13 +72,13 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
 
 llvm::Optional<mlir::Type>
 MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
-  if (type.isa<mlir::concretelang::LowLFHE::LweCiphertextType>() ||
-      type.isa<mlir::concretelang::LowLFHE::GlweCiphertextType>() ||
-      type.isa<mlir::concretelang::LowLFHE::LweKeySwitchKeyType>() ||
-      type.isa<mlir::concretelang::LowLFHE::LweBootstrapKeyType>() ||
-      type.isa<mlir::concretelang::LowLFHE::ContextType>() ||
-      type.isa<mlir::concretelang::LowLFHE::ForeignPlaintextListType>() ||
-      type.isa<mlir::concretelang::LowLFHE::PlaintextListType>() ||
+  if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
+      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
+      type.isa<mlir::concretelang::Concrete::LweKeySwitchKeyType>() ||
+      type.isa<mlir::concretelang::Concrete::LweBootstrapKeyType>() ||
+      type.isa<mlir::concretelang::Concrete::ContextType>() ||
+      type.isa<mlir::concretelang::Concrete::ForeignPlaintextListType>() ||
+      type.isa<mlir::concretelang::Concrete::PlaintextListType>() ||
       type.isa<mlir::concretelang::RT::FutureType>()) {
     return mlir::LLVM::LLVMPointerType::get(
         mlir::IntegerType::get(type.getContext(), 64));
@@ -88,11 +88,11 @@ MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
     mlir::LLVMTypeConverter typeConverter(type.getContext(), options);
     typeConverter.addConversion(convertTypes);
     typeConverter.addConversion(
-        [&](mlir::concretelang::LowLFHE::PlaintextType type) {
+        [&](mlir::concretelang::Concrete::PlaintextType type) {
           return mlir::IntegerType::get(type.getContext(), 64);
         });
     typeConverter.addConversion(
-        [&](mlir::concretelang::LowLFHE::CleartextType type) {
+        [&](mlir::concretelang::Concrete::CleartextType type) {
           return mlir::IntegerType::get(type.getContext(), 64);
         });
     mlir::Type subtype =

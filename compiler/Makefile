@@ -68,8 +68,8 @@ build-end-to-end-jit-clear-tensor: build-initialized
 build-end-to-end-jit-encrypted-tensor: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_encrypted_tensor
 
-build-end-to-end-jit-hlfhelinalg: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_hlfhelinalg
+build-end-to-end-jit-fhelinalg: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_fhelinalg
 
 build-end-to-end-jit-lambda: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_lambda
@@ -80,7 +80,7 @@ build-end-to-end-jit-dfr: build-initialized
 build-end-to-end-jit-auto-parallelization: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_auto_parallelization
 
-build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-hlfhelinalg
+build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg
 
 
 test-end-to-end-jit-test: build-end-to-end-jit-test
@@ -92,8 +92,8 @@ test-end-to-end-jit-clear-tensor: build-end-to-end-jit-clear-tensor
 test-end-to-end-jit-encrypted-tensor: build-end-to-end-jit-encrypted-tensor
 	$(BUILD_DIR)/bin/end_to_end_jit_encrypted_tensor
 
-test-end-to-end-jit-hlfhelinalg: build-end-to-end-jit-hlfhelinalg
-	$(BUILD_DIR)/bin/end_to_end_jit_hlfhelinalg
+test-end-to-end-jit-fhelinalg: build-end-to-end-jit-fhelinalg
+	$(BUILD_DIR)/bin/end_to_end_jit_fhelinalg
 
 test-end-to-end-jit-lambda: build-initialized build-end-to-end-jit-lambda
 	$(BUILD_DIR)/bin/end_to_end_jit_lambda
@@ -104,7 +104,7 @@ test-end-to-end-jit-dfr: build-end-to-end-jit-dfr
 test-end-to-end-jit-auto-parallelization: build-end-to-end-jit-auto-parallelization
 	$(BUILD_DIR)/bin/end_to_end_jit_auto_parallelization
 
-test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-hlfhelinalg
+test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-fhelinalg
 
 show-stress-tests-summary:
 	@echo '------ Stress tests summary ------'
@@ -163,7 +163,7 @@ update_python_version:
 	test-end-to-end-jit-test \
 	test-end-to-end-jit-clear-tensor \
 	test-end-to-end-jit-encrypted-tensor \
-	test-end-to-end-jit-hlfhelinalg \
+	test-end-to-end-jit-fhelinalg \
 	test-python \
 	test \
 	add-deps \

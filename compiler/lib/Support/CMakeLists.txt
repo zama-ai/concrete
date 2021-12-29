@@ -21,13 +21,13 @@ add_mlir_library(ConcretelangSupport
   MLIRConversionPassIncGen
 
   LINK_LIBS PUBLIC
-  HLFHELinalgDialect
-  HLFHELinalgDialectTransforms
-  HLFHETensorOpsToLinalg
-  HLFHEToMidLFHE
-  LowLFHEUnparametrize
+  FHELinalgDialect
+  FHELinalgDialectTransforms
+  FHETensorOpsToLinalg
+  FHEToTFHE
+  ConcreteUnparametrize
   MLIRLowerableDialectsToLLVM
-  HLFHEDialectAnalysis
+  FHEDialectAnalysis
   RTDialectAnalysis
 
   MLIRExecutionEngine

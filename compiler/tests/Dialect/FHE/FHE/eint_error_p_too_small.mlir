@@ -1,0 +1,6 @@
+// RUN: not concretecompiler --action=roundtrip %s  2>&1| FileCheck %s
+
+// CHECK-LABEL: eint support only precision in ]0;7]
+func @test(%arg0: !FHE.eint<0>) {
+  return
+}

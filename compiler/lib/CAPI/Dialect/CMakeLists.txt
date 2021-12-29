@@ -1,2 +1,2 @@
-add_subdirectory(HLFHE)
-add_subdirectory(HLFHELinalg)
+add_subdirectory(FHE)
+add_subdirectory(FHELinalg)

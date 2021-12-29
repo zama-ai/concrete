@@ -4,12 +4,12 @@
 #include <iostream>
 
 #include <mlir/IR/BuiltinOps.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHEOps.h>
-#include <concretelang/Dialect/HLFHE/IR/HLFHETypes.h>
-#include <concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
-#include <concretelang/Dialect/LowLFHE/IR/LowLFHEOps.h>
-#include <concretelang/Dialect/LowLFHE/IR/LowLFHETypes.h>
+#include <concretelang/Dialect/FHE/IR/FHEDialect.h>
+#include <concretelang/Dialect/FHE/IR/FHEOps.h>
+#include <concretelang/Dialect/FHE/IR/FHETypes.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteTypes.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/IR/RTOps.h>
@@ -162,13 +162,13 @@ static mlir::Value getSizeInBytes(Value val, Location loc, OpBuilder builder) {
 
   // FHE types are converted to pointers, so we take their size as 8
   // bytes until we can get the actual size of the actual types.
-  if (type.isa<mlir::concretelang::LowLFHE::ContextType>() ||
-      type.isa<mlir::concretelang::LowLFHE::LweCiphertextType>() ||
-      type.isa<mlir::concretelang::LowLFHE::GlweCiphertextType>() ||
-      type.isa<mlir::concretelang::LowLFHE::LweKeySwitchKeyType>() ||
-      type.isa<mlir::concretelang::LowLFHE::LweBootstrapKeyType>() ||
-      type.isa<mlir::concretelang::LowLFHE::ForeignPlaintextListType>() ||
-      type.isa<mlir::concretelang::LowLFHE::PlaintextListType>())
+  if (type.isa<mlir::concretelang::Concrete::ContextType>() ||
+      type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
+      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
+      type.isa<mlir::concretelang::Concrete::LweKeySwitchKeyType>() ||
+      type.isa<mlir::concretelang::Concrete::LweBootstrapKeyType>() ||
+      type.isa<mlir::concretelang::Concrete::ForeignPlaintextListType>() ||
+      type.isa<mlir::concretelang::Concrete::PlaintextListType>())
     return builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
 
   // For all other types, get type size.

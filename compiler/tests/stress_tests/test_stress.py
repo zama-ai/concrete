@@ -74,7 +74,7 @@ def basic_multisum_identity(bitwidth, size):
         return ', '.join(f'%{name}{i}{ty_annot}' for i in range(size))
     def tensor(size, ty):
         return f'tensor<{size}x{ty}>'
-    v_ty = f"!HLFHE.eint<{bitwidth}>"
+    v_ty = f"!FHE.eint<{bitwidth}>"
     tv_ty = tensor(size, v_ty)
     w_ty = f"i{bitwidth+1}"
     w_modulo = 2 ** bitwidth # to match v bitwidth
@@ -102,8 +102,8 @@ func @main({components('v', size, v_ty)}) -> {v_ty} {{
   )}
   %lut = tensor.from_elements {components('lut', lut_size)} : {tlut_ty}
 
-  %dot_product = "HLFHELinalg.dot_eint_int"(%v, %w) : ({tv_ty}, {tw_ty}) -> {v_ty}
-  %pbs_result = "HLFHE.apply_lookup_table"(%dot_product, %lut): ({v_ty}, {tlut_ty}) -> {v_ty}
+  %dot_product = "FHELinalg.dot_eint_int"(%v, %w) : ({tv_ty}, {tw_ty}) -> {v_ty}
+  %pbs_result = "FHE.apply_lookup_table"(%dot_product, %lut): ({v_ty}, {tlut_ty}) -> {v_ty}
   return %pbs_result: {v_ty}
 }}
 """

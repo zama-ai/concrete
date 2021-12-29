@@ -19,8 +19,8 @@ const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
 TEST(End2EndJit_EncryptedTensor_2D, identity) {
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
-func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<2x10x!HLFHE.eint<6>> {
-  return %t : tensor<2x10x!HLFHE.eint<6>>
+func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
+  return %t : tensor<2x10x!FHE.eint<6>>
 }
 )XXX");
 
@@ -42,10 +42,10 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<2x10x!HLFHE.eint<6>> {
 
 TEST(End2EndJit_EncryptedTensor_2D, extract) {
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
-func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) ->
-!HLFHE.eint<6> {
-  %c = tensor.extract %t[%i, %j] : tensor<2x10x!HLFHE.eint<6>>
-  return %c : !HLFHE.eint<6>
+func @main(%t: tensor<2x10x!FHE.eint<6>>, %i: index, %j: index) ->
+!FHE.eint<6> {
+  %c = tensor.extract %t[%i, %j] : tensor<2x10x!FHE.eint<6>>
+  return %c : !FHE.eint<6>
 }
 )XXX");
 
@@ -64,9 +64,9 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>, %i: index, %j: index) ->
 
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice) {
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
-func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
-  %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>>
-  return %r : tensor<1x5x!HLFHE.eint<6>>
+func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
+  %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
+  return %r : tensor<1x5x!FHE.eint<6>>
 }
 )XXX");
 
@@ -90,9 +90,9 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice_parametric_2x2) {
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
-func @main(%t: tensor<8x4x!HLFHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!HLFHE.eint<6>> {
-  %r = tensor.extract_slice %t[%y, %x][2, 2][1, 1] : tensor<8x4x!HLFHE.eint<6>> to tensor<2x2x!HLFHE.eint<6>>
-  return %r : tensor<2x2x!HLFHE.eint<6>>
+func @main(%t: tensor<8x4x!FHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!FHE.eint<6>> {
+  %r = tensor.extract_slice %t[%y, %x][2, 2][1, 1] : tensor<8x4x!FHE.eint<6>> to tensor<2x2x!FHE.eint<6>>
+  return %r : tensor<2x2x!FHE.eint<6>>
 }
 )XXX");
   const size_t rows = 8;
@@ -130,9 +130,9 @@ TEST(End2EndJit_EncryptedTensor_4D, extract_slice_parametric_2x2x2x2) {
   constexpr int64_t dimSizes[4] = {8, 4, 5, 3};
 
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
-func @main(%t: tensor<8x4x5x3x!HLFHE.eint<6>>, %d0: index, %d1: index, %d2: index, %d3: index) -> tensor<2x2x2x2x!HLFHE.eint<6>> {
-  %r = tensor.extract_slice %t[%d0, %d1, %d2, %d3][2, 2, 2, 2][1, 1, 1, 1] : tensor<8x4x5x3x!HLFHE.eint<6>> to tensor<2x2x2x2x!HLFHE.eint<6>>
-  return %r : tensor<2x2x2x2x!HLFHE.eint<6>>
+func @main(%t: tensor<8x4x5x3x!FHE.eint<6>>, %d0: index, %d1: index, %d2: index, %d3: index) -> tensor<2x2x2x2x!FHE.eint<6>> {
+  %r = tensor.extract_slice %t[%d0, %d1, %d2, %d3][2, 2, 2, 2][1, 1, 1, 1] : tensor<8x4x5x3x!FHE.eint<6>> to tensor<2x2x2x2x!FHE.eint<6>>
+  return %r : tensor<2x2x2x2x!FHE.eint<6>>
 }
 )XXX");
   uint8_t A[dimSizes[0]][dimSizes[1]][dimSizes[2]][dimSizes[3]];
@@ -193,9 +193,9 @@ func @main(%t: tensor<8x4x5x3x!HLFHE.eint<6>>, %d0: index, %d1: index, %d2: inde
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice_stride) {
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
-func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
-  %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!HLFHE.eint<6>> to tensor<1x5x!HLFHE.eint<6>>
-  return %r : tensor<1x5x!HLFHE.eint<6>>
+func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
+  %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
+  return %r : tensor<1x5x!FHE.eint<6>>
 }
 )XXX");
 
@@ -220,10 +220,10 @@ func @main(%t: tensor<2x10x!HLFHE.eint<6>>) -> tensor<1x5x!HLFHE.eint<6>> {
 TEST(End2EndJit_EncryptedTensor_2D, insert_slice) {
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
-func @main(%t0: tensor<2x10x!HLFHE.eint<6>>, %t1: tensor<2x2x!HLFHE.eint<6>>)
--> tensor<2x10x!HLFHE.eint<6>> {
-  %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!HLFHE.eint<6>> into tensor<2x10x!HLFHE.eint<6>>
-  return %r : tensor<2x10x!HLFHE.eint<6>>
+func @main(%t0: tensor<2x10x!FHE.eint<6>>, %t1: tensor<2x2x!FHE.eint<6>>)
+-> tensor<2x10x!FHE.eint<6>> {
+  %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!FHE.eint<6>> into tensor<2x10x!FHE.eint<6>>
+  return %r : tensor<2x10x!FHE.eint<6>>
 }
 )XXX");
 

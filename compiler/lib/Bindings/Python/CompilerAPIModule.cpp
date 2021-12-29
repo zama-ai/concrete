@@ -3,7 +3,7 @@
 
 #include "CompilerAPIModule.h"
 #include "concretelang-c/Support/CompilerEngine.h"
-#include "concretelang/Dialect/HLFHE/IR/HLFHEOpsDialect.h.inc"
+#include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/Jit.h"
 #include "concretelang/Support/JitCompilerEngine.h"
 #include <mlir/Dialect/MemRef/IR/MemRef.h>

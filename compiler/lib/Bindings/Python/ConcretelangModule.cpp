@@ -7,8 +7,8 @@
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/Registration.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
-#include "concretelang-c/Dialect/HLFHE.h"
-#include "concretelang-c/Dialect/HLFHELinalg.h"
+#include "concretelang-c/Dialect/FHE.h"
+#include "concretelang-c/Dialect/FHELinalg.h"
 
 #include "llvm-c/ErrorHandling.h"
 #include "llvm/Support/Signals.h"
@@ -29,17 +29,17 @@ PYBIND11_MODULE(_concretelang, m) {
         MlirContext context = mlirPythonCapsuleToContext(wrappedCapsule.ptr());
 
         // Collect Concretelang dialects to register.
-        MlirDialectHandle hlfhe = mlirGetDialectHandle__hlfhe__();
-        mlirDialectHandleRegisterDialect(hlfhe, context);
-        mlirDialectHandleLoadDialect(hlfhe, context);
-        MlirDialectHandle hlfhelinalg = mlirGetDialectHandle__hlfhelinalg__();
-        mlirDialectHandleRegisterDialect(hlfhelinalg, context);
-        mlirDialectHandleLoadDialect(hlfhelinalg, context);
+        MlirDialectHandle fhe = mlirGetDialectHandle__fhe__();
+        mlirDialectHandleRegisterDialect(fhe, context);
+        mlirDialectHandleLoadDialect(fhe, context);
+        MlirDialectHandle fhelinalg = mlirGetDialectHandle__fhelinalg__();
+        mlirDialectHandleRegisterDialect(fhelinalg, context);
+        mlirDialectHandleLoadDialect(fhelinalg, context);
       },
       "Register Concretelang dialects on a PyMlirContext.");
 
-  py::module hlfhe = m.def_submodule("_hlfhe", "HLFHE API");
-  mlir::concretelang::python::populateDialectHLFHESubmodule(hlfhe);
+  py::module fhe = m.def_submodule("_fhe", "FHE API");
+  mlir::concretelang::python::populateDialectFHESubmodule(fhe);
 
   py::module api = m.def_submodule("_compiler", "Compiler API");
   mlir::concretelang::python::populateCompilerAPISubmodule(api);

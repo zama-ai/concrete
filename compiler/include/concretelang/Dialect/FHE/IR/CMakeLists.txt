@@ -1,0 +1,13 @@
+set(LLVM_TARGET_DEFINITIONS FHEOps.td)
+mlir_tablegen(FHEOps.h.inc -gen-op-decls)
+mlir_tablegen(FHEOps.cpp.inc -gen-op-defs)
+mlir_tablegen(FHEOpsTypes.h.inc -gen-typedef-decls -typedefs-dialect=FHE)
+mlir_tablegen(FHEOpsTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=FHE)
+mlir_tablegen(FHEOpsDialect.h.inc -gen-dialect-decls -dialect=FHE)
+mlir_tablegen(FHEOpsDialect.cpp.inc -gen-dialect-defs -dialect=FHE)
+add_public_tablegen_target(MLIRFHEOpsIncGen)
+add_dependencies(mlir-headers MLIRFHEOpsIncGen)
+
+add_concretelang_doc(FHEDialect FHEDialect concretelang/ -gen-dialect-doc)
+add_concretelang_doc(FHEOps FHEOps concretelang/ -gen-op-doc)
+add_concretelang_doc(FHETypes FHETypes concretelang/ -gen-typedef-doc)

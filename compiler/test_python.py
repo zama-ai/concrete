@@ -1,5 +1,5 @@
 import concretelang
-import concretelang.dialects.hlfhe as hlfhe
+import concretelang.dialects.fhe as fhe
 import mlir.dialects.builtin as builtin
 import mlir.dialects.std as std
 from mlir.ir import *
@@ -11,7 +11,7 @@ def main():
         concretelang.register_dialects(ctx)
 
         module = Module.create()
-        eint6 = hlfhe.EncryptedIntegerType.get(ctx, 6)
+        eint6 = fhe.EncryptedIntegerType.get(ctx, 6)
         with InsertionPoint(module.body):
             func_types = [MemRefType.get((10, 10), eint6) for _ in range(2)]
             @builtin.FuncOp.from_py_func(*func_types)
@@ -20,10 +20,10 @@ def main():
 
         print(module)
         m = """
-        func @main(%arg0: !HLFHE.eint<2>) -> !HLFHE.eint<2> {
+        func @main(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
             %0 = constant 1 : i3
-            %1 = "HLFHE.add_eint_int"(%arg0, %0): (!HLFHE.eint<2>, i3) -> (!HLFHE.eint<2>)
-            return %1: !HLFHE.eint<2>
+            %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+            return %1: !FHE.eint<2>
         }"""
         ## Working when HFLFHE and MLIR aren't linked
         concretelang.compiler.round_trip("module{}")

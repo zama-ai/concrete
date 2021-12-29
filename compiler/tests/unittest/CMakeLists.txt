@@ -33,8 +33,8 @@ add_executable(
   )
 
 add_executable(
-  end_to_end_jit_hlfhelinalg
-  end_to_end_jit_hlfhelinalg.cc
+  end_to_end_jit_fhelinalg
+  end_to_end_jit_fhelinalg.cc
   globals.cc
   )
 
@@ -48,7 +48,7 @@ set_source_files_properties(
   end_to_end_jit_test.cc
   end_to_end_jit_clear_tensor.cc
   end_to_end_jit_encrypted_tensor.cc
-  end_to_end_jit_hlfhelinalg.cc
+  end_to_end_jit_fhelinalg.cc
   end_to_end_jit_lambda.cc
 
   PROPERTIES COMPILE_FLAGS "-fno-rtti"
@@ -73,7 +73,7 @@ target_link_libraries(
 )
 
 target_link_libraries(
-  end_to_end_jit_hlfhelinalg
+  end_to_end_jit_fhelinalg
   gtest_main
   ConcretelangSupport
 )
@@ -88,7 +88,7 @@ include(GoogleTest)
 gtest_discover_tests(end_to_end_jit_test)
 gtest_discover_tests(end_to_end_jit_clear_tensor)
 gtest_discover_tests(end_to_end_jit_encrypted_tensor)
-gtest_discover_tests(end_to_end_jit_hlfhelinalg)
+gtest_discover_tests(end_to_end_jit_fhelinalg)
 gtest_discover_tests(end_to_end_jit_lambda)
 
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)

@@ -16,8 +16,8 @@
 #include <mlir/Transforms/Passes.h>
 
 #include <concretelang/Conversion/Passes.h>
-#include <concretelang/Dialect/HLFHE/Analysis/MANP.h>
-#include <concretelang/Dialect/HLFHELinalg/Transforms/Tiling.h>
+#include <concretelang/Dialect/FHE/Analysis/MANP.h>
+#include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Support/Pipeline.h>
 #include <concretelang/Support/logging.h>
@@ -59,14 +59,14 @@ addPotentiallyNestedPass(mlir::PassManager &pm, std::unique_ptr<Pass> pass,
 }
 
 llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
-getFHEConstraintsFromHLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+getFHEConstraintsFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                            std::function<bool(mlir::Pass *)> enablePass) {
   llvm::Optional<size_t> oMax2norm;
   llvm::Optional<size_t> oMaxWidth;
 
   mlir::PassManager pm(&context);
 
-  pipelinePrinting("ComputeFHEConstraintOnHLFHE", pm, context);
+  pipelinePrinting("ComputeFHEConstraintOnFHE", pm, context);
   addPotentiallyNestedPass(pm, mlir::concretelang::createMANPPass(), enablePass);
   addPotentiallyNestedPass(
       pm,
@@ -118,70 +118,70 @@ mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-tileMarkedHLFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("TileMarkedHLFHELinalg", pm, context);
-  addPotentiallyNestedPass(pm, mlir::concretelang::createHLFHELinalgTilingPass(),
+  pipelinePrinting("TileMarkedFHELinalg", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createFHELinalgTilingPass(),
                            enablePass);
 
   return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
-markHLFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
+markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          llvm::ArrayRef<int64_t> tileSizes,
                          std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("MarkHLFHELinalgForTiling", pm, context);
-  addPotentiallyNestedPass(pm, createHLFHELinalgTilingMarkerPass(tileSizes),
+  pipelinePrinting("MarkFHELinalgForTiling", pm, context);
+  addPotentiallyNestedPass(pm, createFHELinalgTilingMarkerPass(tileSizes),
                            enablePass);
 
   return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
-lowerHLFHEToMidLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("HLFHEToMidLFHE", pm, context);
+  pipelinePrinting("FHEToTFHE", pm, context);
 
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertHLFHETensorOpsToLinalg(), enablePass);
+      pm, mlir::concretelang::createConvertFHETensorOpsToLinalg(), enablePass);
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertHLFHEToMidLFHEPass(), enablePass);
+      pm, mlir::concretelang::createConvertFHEToTFHEPass(), enablePass);
 
   return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
-lowerMidLFHEToLowLFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       llvm::Optional<V0FHEContext> &fheContext,
                       std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("MidLFHEToLowLFHE", pm, context);
+  pipelinePrinting("TFHEToConcrete", pm, context);
 
   if (fheContext.hasValue()) {
     addPotentiallyNestedPass(
         pm,
-        mlir::concretelang::createConvertMidLFHEGlobalParametrizationPass(
+        mlir::concretelang::createConvertTFHEGlobalParametrizationPass(
             fheContext.getValue()),
         enablePass);
   }
 
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertMidLFHEToLowLFHEPass(), enablePass);
+      pm, mlir::concretelang::createConvertTFHEToConcretePass(), enablePass);
 
   return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
-lowerLowLFHEToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
+lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                   std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("LowLFHEToStd", pm, context);
+  pipelinePrinting("ConcreteToStd", pm, context);
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertLowLFHEToConcreteCAPIPass(), enablePass);
+      pm, mlir::concretelang::createConvertConcreteToConcreteCAPIPass(), enablePass);
   return pm.run(module.getOperation());
 }
 
@@ -191,9 +191,9 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   mlir::PassManager pm(&context);
   pipelinePrinting("StdToLLVM", pm, context);
 
-  // Unparametrize LowLFHE
+  // Unparametrize Concrete
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertLowLFHEUnparametrizePass(), enablePass);
+      pm, mlir::concretelang::createConvertConcreteUnparametrizePass(), enablePass);
 
   // Bufferize
   addPotentiallyNestedPass(pm, mlir::createTensorConstantBufferizePass(),

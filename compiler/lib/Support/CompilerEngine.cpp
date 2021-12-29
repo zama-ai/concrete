@@ -13,10 +13,10 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser.h>
 
-#include <concretelang/Dialect/HLFHE/IR/HLFHEDialect.h>
-#include <concretelang/Dialect/HLFHELinalg/IR/HLFHELinalgDialect.h>
-#include <concretelang/Dialect/LowLFHE/IR/LowLFHEDialect.h>
-#include <concretelang/Dialect/MidLFHE/IR/MidLFHEDialect.h>
+#include <concretelang/Dialect/FHE/IR/FHEDialect.h>
+#include <concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
+#include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Error.h>
@@ -48,13 +48,13 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
     this->mlirContext = new mlir::MLIRContext();
 
     this->mlirContext->getOrLoadDialect<mlir::concretelang::RT::RTDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::concretelang::HLFHE::HLFHEDialect>();
+    this->mlirContext->getOrLoadDialect<mlir::concretelang::FHE::FHEDialect>();
     this->mlirContext
-        ->getOrLoadDialect<mlir::concretelang::MidLFHE::MidLFHEDialect>();
+        ->getOrLoadDialect<mlir::concretelang::TFHE::TFHEDialect>();
     this->mlirContext
-        ->getOrLoadDialect<mlir::concretelang::HLFHELinalg::HLFHELinalgDialect>();
+        ->getOrLoadDialect<mlir::concretelang::FHELinalg::FHELinalgDialect>();
     this->mlirContext
-        ->getOrLoadDialect<mlir::concretelang::LowLFHE::LowLFHEDialect>();
+        ->getOrLoadDialect<mlir::concretelang::Concrete::ConcreteDialect>();
     this->mlirContext->getOrLoadDialect<mlir::StandardOpsDialect>();
     this->mlirContext->getOrLoadDialect<mlir::memref::MemRefDialect>();
     this->mlirContext->getOrLoadDialect<mlir::linalg::LinalgDialect>();
@@ -103,8 +103,8 @@ void CompilerEngine::setClientParametersFuncName(const llvm::StringRef &name) {
   this->clientParametersFuncName = name.str();
 }
 
-void CompilerEngine::setHLFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes) {
-  this->hlfhelinalgTileSizes = sizes.vec();
+void CompilerEngine::setFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes) {
+  this->fhelinalgTileSizes = sizes.vec();
 }
 
 void CompilerEngine::setEnablePass(
@@ -112,7 +112,7 @@ void CompilerEngine::setEnablePass(
   this->enablePass = enablePass;
 }
 
-// Returns the overwritten V0FHEConstraint or try to compute them from HLFHE
+// Returns the overwritten V0FHEConstraint or try to compute them from FHE
 llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
 CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
@@ -125,10 +125,10 @@ CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
         this->overrideMaxMANP.getValue(),
         this->overrideMaxEintPrecision.getValue()};
   }
-  // Else compute constraint from HLFHE
+  // Else compute constraint from FHE
   llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
       fheConstraintsOrErr =
-          mlir::concretelang::pipeline::getFHEConstraintsFromHLFHE(
+          mlir::concretelang::pipeline::getFHEConstraintsFromFHE(
               mlirContext, module, enablePass);
 
   if (auto err = fheConstraintsOrErr.takeError())
@@ -202,22 +202,22 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::ROUND_TRIP)
     return std::move(res);
 
-  // HLFHE High level pass to determine FHE parameters
+  // FHE High level pass to determine FHE parameters
   if (auto err = this->determineFHEParameters(res))
     return std::move(err);
 
-  // HLFHELinalg tiling
-  if (this->hlfhelinalgTileSizes) {
-    if (mlir::concretelang::pipeline::markHLFHELinalgForTiling(
-            mlirContext, module, *this->hlfhelinalgTileSizes, enablePass)
+  // FHELinalg tiling
+  if (this->fhelinalgTileSizes) {
+    if (mlir::concretelang::pipeline::markFHELinalgForTiling(
+            mlirContext, module, *this->fhelinalgTileSizes, enablePass)
             .failed())
-      return errorDiag("Marking of HLFHELinalg operations for tiling failed");
+      return errorDiag("Marking of FHELinalg operations for tiling failed");
   }
 
-  if (mlir::concretelang::pipeline::tileMarkedHLFHELinalg(mlirContext, module,
+  if (mlir::concretelang::pipeline::tileMarkedFHELinalg(mlirContext, module,
                                                       enablePass)
           .failed()) {
-    return errorDiag("Tiling of HLFHELinalg operations failed");
+    return errorDiag("Tiling of FHELinalg operations failed");
   }
 
   // Auto parallelization
@@ -227,32 +227,32 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return StreamStringError("Auto parallelization failed");
   }
 
-  if (target == Target::HLFHE)
+  if (target == Target::FHE)
     return std::move(res);
 
-  // HLFHE -> MidLFHE
-  if (mlir::concretelang::pipeline::lowerHLFHEToMidLFHE(mlirContext, module,
+  // FHE -> TFHE
+  if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,
                                                     enablePass)
           .failed()) {
-    return errorDiag("Lowering from HLFHE to MidLFHE failed");
+    return errorDiag("Lowering from FHE to TFHE failed");
   }
-  if (target == Target::MIDLFHE)
+  if (target == Target::TFHE)
     return std::move(res);
 
-  // MidLFHE -> LowLFHE
-  if (mlir::concretelang::pipeline::lowerMidLFHEToLowLFHE(
+  // TFHE -> Concrete
+  if (mlir::concretelang::pipeline::lowerTFHEToConcrete(
           mlirContext, module, res.fheContext, this->enablePass)
           .failed()) {
-    return errorDiag("Lowering from MidLFHE to LowLFHE failed");
+    return errorDiag("Lowering from TFHE to Concrete failed");
   }
-  if (target == Target::LOWLFHE)
+  if (target == Target::CONCRETE)
     return std::move(res);
 
-  // LowLFHE -> Canonical dialects
-  if (mlir::concretelang::pipeline::lowerLowLFHEToStd(mlirContext, module,
+  // Concrete -> Canonical dialects
+  if (mlir::concretelang::pipeline::lowerConcreteToStd(mlirContext, module,
                                                   enablePass)
           .failed()) {
-    return errorDiag("Lowering from LowLFHE to canonical MLIR dialects failed");
+    return errorDiag("Lowering from Concrete to canonical MLIR dialects failed");
   }
   if (target == Target::STD)
     return std::move(res);
