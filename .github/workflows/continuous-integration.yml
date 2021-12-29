@@ -28,6 +28,13 @@ jobs:
       - name: Format with clang-format
         run: .github/workflows/scripts/format_cpp.sh
 
+  CheckLicense:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check if sources include the license header
+        run: .github/workflows/scripts/check_for_license.sh
+
   BuildAndTest:
     runs-on: ubuntu-latest
     strategy:
