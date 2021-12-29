@@ -6,10 +6,10 @@
 #include "llvm/ADT/SmallString.h"
 
 #include "concretelang-c/Support/CompilerEngine.h"
+#include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Jit.h"
 #include "concretelang/Support/JitCompilerEngine.h"
-#include "concretelang/Support/KeySetCache.h"
 
 using mlir::concretelang::JitCompilerEngine;
 

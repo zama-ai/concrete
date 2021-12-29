@@ -6,7 +6,7 @@
 #ifndef CONCRETELANG_SUPPORT_KEYSETCACHE_H_
 #define CONCRETELANG_SUPPORT_KEYSETCACHE_H_
 
-#include "concretelang/Support/KeySet.h"
+#include "concretelang/ClientLib/KeySet.h"
 
 namespace mlir {
 namespace concretelang {

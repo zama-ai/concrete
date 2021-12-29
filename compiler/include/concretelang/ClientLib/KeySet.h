@@ -6,7 +6,6 @@
 #ifndef CONCRETELANG_SUPPORT_KEYSET_H_
 #define CONCRETELANG_SUPPORT_KEYSET_H_
 
-#include "llvm/Support/Error.h"
 #include <memory>
 
 extern "C" {
@@ -14,8 +13,8 @@ extern "C" {
 #include "concretelang/Runtime/context.h"
 }
 
-#include "concretelang/Support/ClientParameters.h"
-#include "concretelang/Support/KeySetCache.h"
+#include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/ClientLib/KeySetCache.h"
 
 namespace mlir {
 namespace concretelang {
@@ -91,9 +90,9 @@ private:
       bootstrapKeys;
   std::map<LweSecretKeyID, std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>>
       keyswitchKeys;
-  std::vector<std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *>>
+  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *>>
       inputs;
-  std::vector<std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *>>
+  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *>>
       outputs;
 
   void setKeys(

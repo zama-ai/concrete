@@ -50,7 +50,10 @@ protected:
   llvm::raw_string_ostream os;
 };
 
-StreamStringError &operator<<(StreamStringError &se, llvm::Error &err);
+inline StreamStringError &operator<<(StreamStringError &se, llvm::Error &err) {
+  se << llvm::toString(std::move(err));
+  return se;
+}
 
 } // namespace concretelang
 } // namespace mlir

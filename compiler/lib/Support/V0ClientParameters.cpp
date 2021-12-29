@@ -8,8 +8,9 @@
 
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
+#include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
-#include "concretelang/Support/ClientParameters.h"
 #include "concretelang/Support/V0Curves.h"
 
 namespace mlir {
@@ -20,7 +21,7 @@ const auto keyFormat = KEY_FORMAT_BINARY;
 const auto v0Curve = getV0Curves(securityLevel, keyFormat);
 
 // For the v0 the secretKeyID and precision are the same for all gates.
-llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
+llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
                                              Precision precision,
                                              Variance variance,
                                              mlir::Type type) {
@@ -46,10 +47,13 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
     // TODO - Get the width from the LWECiphertextType instead of global
     // precision (could be possible after merge concrete-ciphertext-parameter)
     return CircuitGate{
-        .encryption = llvm::Optional<EncryptionGate>({
-            .secretKeyID = secretKeyID,
-            .variance = variance,
-            .encoding = {.precision = precision},
+        /* .encryption = */ llvm::Optional<EncryptionGate>({
+            /* .secretKeyID = */ secretKeyID,
+            /* .variance = */ variance,
+            /* .encoding = */
+            {
+                /* .precision = */ precision,
+            },
         }),
         /*.shape = */
         {
@@ -77,25 +81,33 @@ llvm::Expected<CircuitGate> gateFromMLIRType(std::string secretKeyID,
       "cannot convert MLIR type to shape", llvm::inconvertibleErrorCode());
 }
 
+ClientParameters emptyClientParametersForV0(llvm::StringRef functionName,
+                                            mlir::ModuleOp module) {
+  ClientParameters c;
+  c.functionName = (std::string)functionName;
+  return c;
+}
+
 llvm::Expected<ClientParameters>
-createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
+createClientParametersForV0(V0FHEContext fheContext,
+                            llvm::StringRef functionName,
                             mlir::ModuleOp module) {
   auto v0Param = fheContext.parameter;
   Variance encryptionVariance =
       v0Curve->getVariance(1, 1 << v0Param.logPolynomialSize, 64);
   Variance keyswitchVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
-  ClientParameters c = {};
+  ClientParameters c;
   c.secretKeys = {
-      {"small", {/*.size = */ v0Param.nSmall}},
-      {"big", {/*.size = */ v0Param.getNBigGlweDimension()}},
+      {SMALL_KEY, {/*.size = */ v0Param.nSmall}},
+      {BIG_KEY, {/*.size = */ v0Param.getNBigGlweDimension()}},
   };
   c.bootstrapKeys = {
       {
           "bsk_v0",
           {
-              /*.inputSecretKeyID = */ "small",
-              /*.outputSecretKeyID = */ "big",
+              /*.inputSecretKeyID = */ SMALL_KEY,
+              /*.outputSecretKeyID = */ BIG_KEY,
               /*.level = */ v0Param.brLevel,
               /*.baseLog = */ v0Param.brLogBase,
               /*.glweDimension = */ v0Param.glweDimension,
@@ -107,18 +119,19 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
       {
           "ksk_v0",
           {
-              /*.inputSecretKeyID = */ "big",
-              /*.outputSecretKeyID = */ "small",
+              /*.inputSecretKeyID = */ BIG_KEY,
+              /*.outputSecretKeyID = */ SMALL_KEY,
               /*.level = */ v0Param.ksLevel,
               /*.baseLog = */ v0Param.ksLogBase,
               /*.variance = */ keyswitchVariance,
           },
       },
   };
+  c.functionName = (std::string)functionName;
   // Find the input function
   auto rangeOps = module.getOps<mlir::FuncOp>();
   auto funcOp = llvm::find_if(
-      rangeOps, [&](mlir::FuncOp op) { return op.getName() == name; });
+      rangeOps, [&](mlir::FuncOp op) { return op.getName() == functionName; });
   if (funcOp == rangeOps.end()) {
     return llvm::make_error<llvm::StringError>(
         "cannot find the function for generate client parameters",
@@ -135,14 +148,16 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
                         .isa<mlir::concretelang::Concrete::ContextType>();
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {
-    auto gate = gateFromMLIRType("big", precision, encryptionVariance, *inType);
+    auto gate =
+        gateFromMLIRType(BIG_KEY, precision, encryptionVariance, *inType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
     c.inputs.push_back(gate.get());
   }
   for (auto outType : funcType.getResults()) {
-    auto gate = gateFromMLIRType("big", precision, encryptionVariance, outType);
+    auto gate =
+        gateFromMLIRType(BIG_KEY, precision, encryptionVariance, outType);
     if (auto err = gate.takeError()) {
       return std::move(err);
     }
@@ -151,46 +166,5 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
   return c;
 }
 
-// https://stackoverflow.com/a/38140932
-static inline void hash(std::size_t &seed) {}
-template <typename T, typename... Rest>
-static inline void hash(std::size_t &seed, const T &v, Rest... rest) {
-  // See https://softwareengineering.stackexchange.com/a/402543
-  const auto GOLDEN_RATIO = 0x9e3779b97f4a7c15; // pseudo random bits
-  const std::hash<T> hasher;
-  seed ^= hasher(v) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-  hash(seed, rest...);
-}
-
-void LweSecretKeyParam::hash(size_t &seed) {
-  mlir::concretelang::hash(seed, size);
-}
-
-void BootstrapKeyParam::hash(size_t &seed) {
-  mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
-                           baseLog, glweDimension, variance);
-}
-
-void KeyswitchKeyParam::hash(size_t &seed) {
-  mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
-                           baseLog, variance);
-}
-
-std::size_t ClientParameters::hash() {
-  std::size_t currentHash = 1;
-  for (auto secretKeyParam : secretKeys) {
-    mlir::concretelang::hash(currentHash, secretKeyParam.first);
-    secretKeyParam.second.hash(currentHash);
-  }
-  for (auto bootstrapKeyParam : bootstrapKeys) {
-    mlir::concretelang::hash(currentHash, bootstrapKeyParam.first);
-    bootstrapKeyParam.second.hash(currentHash);
-  }
-  for (auto keyswitchParam : keyswitchKeys) {
-    mlir::concretelang::hash(currentHash, keyswitchParam.first);
-    keyswitchParam.second.hash(currentHash);
-  }
-  return currentHash;
-}
 } // namespace concretelang
 } // namespace mlir

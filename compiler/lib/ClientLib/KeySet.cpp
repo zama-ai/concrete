@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
 // information.
 
-#include "concretelang/Support/KeySet.h"
+#include "concretelang/ClientLib/KeySet.h"
 #include "concretelang/Support/Error.h"
 
 #define CAPI_ERR_TO_LLVM_ERROR(s, msg)                                         \
@@ -37,23 +37,18 @@ llvm::Expected<std::unique_ptr<KeySet>>
 KeySet::generate(ClientParameters &params, uint64_t seed_msb,
                  uint64_t seed_lsb) {
 
-  auto a = uninitialized();
+  auto keySet = uninitialized();
 
-  auto fillError = a->generateKeysFromParams(params, seed_msb, seed_lsb);
-
-  if (fillError) {
-    return StreamStringError()
-           << "Cannot fill keys from params: " << std::move(fillError);
+  if (auto error = keySet->generateKeysFromParams(params, seed_msb, seed_lsb)) {
+    return std::move(error);
   }
 
-  fillError = a->setupEncryptionMaterial(params, seed_msb, seed_lsb);
-
-  if (fillError) {
-    return StreamStringError()
-           << "Cannot setup encryption material: " << std::move(fillError);
+  if (auto error =
+          keySet->setupEncryptionMaterial(params, seed_msb, seed_lsb)) {
+    return std::move(error);
   }
 
-  return std::move(a);
+  return std::move(keySet);
 }
 
 std::unique_ptr<KeySet> KeySet::uninitialized() {
@@ -66,8 +61,8 @@ llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
   // Set inputs and outputs LWE secret keys
   {
     for (auto param : params.inputs) {
-      std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *> input = {
-          param, nullptr, nullptr};
+      LweSecretKeyParam secretKeyParam = {0};
+      LweSecretKey_u64 *secretKey = nullptr;
       if (param.encryption.hasValue()) {
         auto inputSk = this->secretKeys.find(param.encryption->secretKeyID);
         if (inputSk == this->secretKeys.end()) {
@@ -76,14 +71,16 @@ llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
                   ") does not exist ",
               llvm::inconvertibleErrorCode());
         }
-        std::get<1>(input) = &inputSk->second.first;
-        std::get<2>(input) = inputSk->second.second;
+        secretKeyParam = inputSk->second.first;
+        secretKey = inputSk->second.second;
       }
+      std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *> input = {
+          param, secretKeyParam, secretKey};
       this->inputs.push_back(input);
     }
     for (auto param : params.outputs) {
-      std::tuple<CircuitGate, LweSecretKeyParam *, LweSecretKey_u64 *> output =
-          {param, nullptr, nullptr};
+      LweSecretKeyParam secretKeyParam = {0};
+      LweSecretKey_u64 *secretKey = nullptr;
       if (param.encryption.hasValue()) {
         auto outputSk = this->secretKeys.find(param.encryption->secretKeyID);
         if (outputSk == this->secretKeys.end()) {
@@ -91,9 +88,11 @@ llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
               "cannot find output key to generate bootstrap key",
               llvm::inconvertibleErrorCode());
         }
-        std::get<1>(output) = &outputSk->second.first;
-        std::get<2>(output) = outputSk->second.second;
+        secretKeyParam = outputSk->second.first;
+        secretKey = outputSk->second.second;
       }
+      std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *> output = {
+          param, secretKeyParam, secretKey};
       this->outputs.push_back(output);
     }
   }
@@ -283,7 +282,7 @@ llvm::Error KeySet::allocate_lwe(size_t argPos,
   }
   auto inputSk = inputs[argPos];
   CAPI_ERR_TO_LLVM_ERROR(*ciphertext = allocate_lwe_ciphertext_u64(
-                             &err, {std::get<1>(inputSk)->size + 1}),
+                             &err, {std::get<1>(inputSk).size + 1}),
                          "cannot allocate ciphertext");
   return llvm::Error::success();
 }

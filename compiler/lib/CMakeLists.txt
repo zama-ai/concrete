@@ -2,6 +2,7 @@ add_subdirectory(Dialect)
 add_subdirectory(Conversion)
 add_subdirectory(Support)
 add_subdirectory(Runtime)
+add_subdirectory(ClientLib)
 add_subdirectory(Bindings)
 
 # CAPI needed only for python bindings

@@ -7,7 +7,7 @@
 #define CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 
 #include <concretelang/Conversion/Utils/GlobalFHEContext.h>
-#include <concretelang/Support/ClientParameters.h>
+#include <concretelang/Support/V0ClientParameters.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/SourceMgr.h>
@@ -58,6 +58,7 @@ public:
   class Library {
     std::string libraryPath;
     std::vector<std::string> objectsPath;
+    std::vector<mlir::concretelang::ClientParameters> clientParametersList;
     bool cleanUp;
 
   public:
@@ -68,21 +69,38 @@ public:
         : libraryPath(libraryPath), cleanUp(cleanUp) {}
     /** Add a compilation result to the library */
     llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
-    /** Emit a shared library with the previously added compilation result */
-    llvm::Expected<std::string> emitShared();
-    /** Emit a shared library with the previously added compilation result */
-    llvm::Expected<std::string> emitStatic();
+    /** Emit the library artifacts with the previously added compilation result
+     */
+    llvm::Error emitArtifacts();
     /** After a shared library has been emitted, its path is here */
     std::string sharedLibraryPath;
     /** After a static library has been emitted, its path is here */
     std::string staticLibraryPath;
 
+    /** Returns the path of the shared library */
+    static std::string getSharedLibraryPath(std::string path);
+
+    /** Returns the path of the static library */
+    static std::string getStaticLibraryPath(std::string path);
+
+    /** Returns the path of the static library */
+    static std::string getClientParametersPath(std::string path);
+
     // For advanced use
-    const static std::string OBJECT_EXT, LINKER, LINKER_SHARED_OPT, AR,
-        AR_STATIC_OPT, DOT_STATIC_LIB_EXT, DOT_SHARED_LIB_EXT;
+    const static std::string OBJECT_EXT, CLIENT_PARAMETERS_EXT, LINKER,
+        LINKER_SHARED_OPT, AR, AR_STATIC_OPT, DOT_STATIC_LIB_EXT,
+        DOT_SHARED_LIB_EXT;
     void addExtraObjectFilePath(std::string objectFilePath);
     llvm::Expected<std::string> emit(std::string dotExt, std::string linker);
     ~Library();
+
+  private:
+    /** Emit a shared library with the previously added compilation result */
+    llvm::Expected<std::string> emitStatic();
+    /** Emit a shared library with the previously added compilation result */
+    llvm::Expected<std::string> emitShared();
+    /** Emit a shared library with the previously added compilation result */
+    llvm::Expected<std::string> emitClientParametersJSON();
   };
 
   // Specification of the exit stage of the compilation pipeline

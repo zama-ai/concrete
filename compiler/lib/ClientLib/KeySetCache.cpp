@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
 // information.
 
-#include "concretelang/Support/KeySetCache.h"
+#include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Support/Error.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/FileSystem.h"
@@ -11,6 +11,7 @@
 
 #include <fstream>
 #include <functional>
+#include <sstream>
 #include <string>
 
 extern "C" {

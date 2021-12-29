@@ -10,7 +10,7 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Support/LogicalResult.h>
 
-#include <concretelang/Support/KeySet.h>
+#include <concretelang/ClientLib/KeySet.h>
 
 namespace mlir {
 namespace concretelang {

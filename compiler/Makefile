@@ -53,11 +53,20 @@ test-check: concretecompiler file-check not
 test-python: python-bindings concretecompiler
 	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs tests/python
 
-test: test-check test-end-to-end-jit test-python
+test: test-check test-end-to-end-jit test-python support-unit-test
 
 test-dataflow: test-end-to-end-jit-dfr test-end-to-end-jit-auto-parallelization
 
-# Unittests
+# unit-test
+
+support-unit-test: build-support-unit-test
+	$(BUILD_DIR)/bin/support_unit_test
+
+build-support-unit-test: build-initialized
+	cmake --build $(BUILD_DIR) --target support_unit_test
+
+
+# test-end-to-end-jit
 
 build-end-to-end-jit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test

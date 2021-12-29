@@ -6,7 +6,7 @@
 #ifndef CONCRETELANG_SUPPORT_JIT_COMPILER_ENGINE_H
 #define CONCRETELANG_SUPPORT_JIT_COMPILER_ENGINE_H
 
-#include "concretelang/Support/KeySetCache.h"
+#include "concretelang/ClientLib/KeySetCache.h"
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Error.h>
 #include <concretelang/Support/Jit.h>

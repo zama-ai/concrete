@@ -1,5 +1,4 @@
 add_mlir_library(ConcretelangSupport
-  Error.cpp
   Pipeline.cpp
   Jit.cpp
   CompilerEngine.cpp
@@ -7,11 +6,9 @@ add_mlir_library(ConcretelangSupport
   LambdaArgument.cpp
   V0Parameters.cpp
   V0Curves.cpp
-  ClientParameters.cpp
-  KeySet.cpp
+  V0ClientParameters.cpp
   logging.cpp
   Jit.cpp
-  KeySetCache.cpp
   LLVMEmitFile.cpp
 
   ADDITIONAL_HEADER_DIRS
@@ -34,4 +31,5 @@ add_mlir_library(ConcretelangSupport
   ${LLVM_PTHREAD_LIB}
   
   ConcretelangRuntime
+  ConcretelangClientLib
 )
