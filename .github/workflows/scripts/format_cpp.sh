@@ -9,6 +9,6 @@ then
 fi
 
 # show changes if any
-git diff
+git --no-pager diff
 # fail if there is a diff, success otherwise
-! ( git diff |  grep -q ^ ) || exit 1
+git diff | ifne exit 1

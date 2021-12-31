@@ -26,7 +26,7 @@ jobs:
         with:
           submodules: true
       - name: Format with clang-format
-        run: .github/workflows/scripts/format_cpp.sh
+        run: sudo apt install moreutils && .github/workflows/scripts/format_cpp.sh
 
   CheckLicense:
     runs-on: ubuntu-latest
