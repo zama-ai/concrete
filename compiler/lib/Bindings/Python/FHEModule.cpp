@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "DialectModules.h"
 
@@ -23,8 +25,7 @@ void mlir::concretelang::python::populateDialectFHESubmodule(
     pybind11::module &m) {
   m.doc() = "FHE dialect Python native extension";
 
-  mlir_type_subclass(m, "EncryptedIntegerType",
-                     fheTypeIsAnEncryptedIntegerType)
+  mlir_type_subclass(m, "EncryptedIntegerType", fheTypeIsAnEncryptedIntegerType)
       .def_classmethod("get", [](pybind11::object cls, MlirContext ctx,
                                  unsigned width) {
         // We want the user to receive a python exception for not being able to

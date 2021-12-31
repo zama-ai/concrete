@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -26,8 +28,8 @@ public:
       return mlir::IntegerType::get(type.getContext(), 64);
     }
     if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>()) {
-      return mlir::concretelang::Concrete::LweCiphertextType::get(type.getContext(),
-                                                             -1, -1);
+      return mlir::concretelang::Concrete::LweCiphertextType::get(
+          type.getContext(), -1, -1);
     }
     auto tensorType = type.dyn_cast_or_null<mlir::RankedTensorType>();
     if (tensorType != nullptr) {
@@ -53,7 +55,8 @@ struct ConcreteUnrealizedCastReplacementPattern
     : public mlir::OpRewritePattern<mlir::UnrealizedConversionCastOp> {
   ConcreteUnrealizedCastReplacementPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::UnrealizedConversionCastOp>(context,
                                                                  benefit) {}
 
@@ -96,15 +99,15 @@ void ConcreteUnparametrizePass::runOnOperation() {
                 converter.isLegal(op->getResultTypes()) &&
                 converter.isLegal(op->getRegion(0).front().getArgumentTypes()));
           });
-  patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
-                                            ConcreteUnparametrizeTypeConverter>>(
+  patterns.add<RegionOpTypeConverterPattern<
+      mlir::linalg::GenericOp, ConcreteUnparametrizeTypeConverter>>(
       &getContext(), converter);
-  patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
-                                            ConcreteUnparametrizeTypeConverter>>(
+  patterns.add<RegionOpTypeConverterPattern<
+      mlir::tensor::GenerateOp, ConcreteUnparametrizeTypeConverter>>(
       &getContext(), converter);
-  patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
-                                            ConcreteUnparametrizeTypeConverter>>(
-      &getContext(), converter);
+  patterns.add<RegionOpTypeConverterPattern<
+      mlir::scf::ForOp, ConcreteUnparametrizeTypeConverter>>(&getContext(),
+                                                             converter);
 
   // Conversion of function signature and arguments
   target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
@@ -114,24 +117,26 @@ void ConcreteUnparametrizePass::runOnOperation() {
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);
 
   // Replacement of unrealized_conversion_cast
-  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::UnrealizedConversionCastOp>(
-      target, converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<
+      mlir::UnrealizedConversionCastOp>(target, converter);
   patterns.add<ConcreteUnrealizedCastReplacementPattern>(patterns.getContext());
 
   // Conversion of tensor operators
   mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
-                                                          converter);
+                                                              converter);
 
   // Conversion of CallOp
   patterns.add<mlir::concretelang::GenericTypeConverterPattern<mlir::CallOp>>(
       patterns.getContext(), converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::CallOp>(target, converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::CallOp>(target,
+                                                              converter);
 
   // Conversion of RT Dialect Ops
   patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::concretelang::RT::DataflowTaskOp>(
-      target, converter);
+      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
+                                               converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<
+      mlir::concretelang::RT::DataflowTaskOp>(target, converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {

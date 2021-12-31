@@ -1,13 +1,15 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
-#include <mlir/IR/BuiltinOps.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
 #include <concretelang/Dialect/FHE/IR/FHEOps.h>
 #include <concretelang/Dialect/FHE/IR/FHETypes.h>
 #include <concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h>
 #include <concretelang/Support/math.h>
+#include <mlir/IR/BuiltinOps.h>
 
 #include <limits>
 #include <llvm/ADT/APInt.h>
@@ -43,12 +45,13 @@ static bool isEncryptedFunctionParameter(mlir::Value value) {
     return false;
   }
 
-  return (value.getType().isa<mlir::concretelang::FHE::EncryptedIntegerType>() ||
-          (value.getType().isa<mlir::TensorType>() &&
-           value.getType()
-               .cast<mlir::TensorType>()
-               .getElementType()
-               .isa<mlir::concretelang::FHE::EncryptedIntegerType>()));
+  return (
+      value.getType().isa<mlir::concretelang::FHE::EncryptedIntegerType>() ||
+      (value.getType().isa<mlir::TensorType>() &&
+       value.getType()
+           .cast<mlir::TensorType>()
+           .getElementType()
+           .isa<mlir::concretelang::FHE::EncryptedIntegerType>()));
 }
 
 // Returns the bit width of `value` if `value` is an encrypted integer
@@ -882,26 +885,26 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                        op)) {
       norm2SqEquiv = getSqMANP(addEintIntOp, operands);
     } else if (auto addEintOp =
-                   llvm::dyn_cast<mlir::concretelang::FHELinalg::AddEintOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::AddEintOp>(
+                       op)) {
       norm2SqEquiv = getSqMANP(addEintOp, operands);
     } else if (auto subIntEintOp =
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::SubIntEintOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(subIntEintOp, operands);
     } else if (auto negEintOp =
-                   llvm::dyn_cast<mlir::concretelang::FHELinalg::NegEintOp>(op)) {
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::NegEintOp>(
+                       op)) {
       norm2SqEquiv = getSqMANP(negEintOp, operands);
     } else if (auto mulEintIntOp =
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::MulEintIntOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
-    } else if (auto matmulEintIntOp =
-                   llvm::dyn_cast<mlir::concretelang::FHELinalg::MatMulEintIntOp>(
-                       op)) {
+    } else if (auto matmulEintIntOp = llvm::dyn_cast<
+                   mlir::concretelang::FHELinalg::MatMulEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(matmulEintIntOp, operands);
-    } else if (auto matmulIntEintOp =
-                   llvm::dyn_cast<mlir::concretelang::FHELinalg::MatMulIntEintOp>(
-                       op)) {
+    } else if (auto matmulIntEintOp = llvm::dyn_cast<
+                   mlir::concretelang::FHELinalg::MatMulIntEintOp>(op)) {
       norm2SqEquiv = getSqMANP(matmulIntEintOp, operands);
     } else if (llvm::isa<
                    mlir::concretelang::FHELinalg::ApplyLookupTableEintOp,
@@ -1092,7 +1095,8 @@ protected:
     for (mlir::OpResult res : op->getResults()) {
       mlir::concretelang::FHE::EncryptedIntegerType eTy =
           res.getType()
-              .dyn_cast_or_null<mlir::concretelang::FHE::EncryptedIntegerType>();
+              .dyn_cast_or_null<
+                  mlir::concretelang::FHE::EncryptedIntegerType>();
       if (eTy == nullptr) {
         auto tensorTy = res.getType().dyn_cast_or_null<mlir::TensorType>();
         if (tensorTy != nullptr) {

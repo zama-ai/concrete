@@ -1,17 +1,19 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 #define CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 
+#include <concretelang/Conversion/Utils/GlobalFHEContext.h>
+#include <concretelang/Support/ClientParameters.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/SourceMgr.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Pass/Pass.h>
-#include <concretelang/Conversion/Utils/GlobalFHEContext.h>
-#include <concretelang/Support/ClientParameters.h>
 
 namespace mlir {
 namespace concretelang {

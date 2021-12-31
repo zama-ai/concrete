@@ -1,14 +1,16 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_CONVERSION_TFHETOCONCRETE_PATTERNS_H_
 #define CONCRETELANG_CONVERSION_TFHETOCONCRETE_PATTERNS_H_
 
+#include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
+#include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
-#include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
-#include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 
 namespace mlir {
 namespace concretelang {
@@ -82,8 +84,7 @@ CleartextType convertCleartextTypeFromType(mlir::MLIRContext *context,
 }
 
 mlir::Value createZeroLWEOpFromTFHE(mlir::PatternRewriter &rewriter,
-                                       mlir::Location loc,
-                                       mlir::OpResult result) {
+                                    mlir::Location loc, mlir::OpResult result) {
   mlir::SmallVector<mlir::Value> args{};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
   auto glwe = result.getType().cast<GLWECipherTextType>();
@@ -96,9 +97,8 @@ mlir::Value createZeroLWEOpFromTFHE(mlir::PatternRewriter &rewriter,
 
 template <class Operator>
 mlir::Value createConcreteOpFromTFHE(mlir::PatternRewriter &rewriter,
-                                       mlir::Location loc, mlir::Value arg0,
-                                       mlir::Value arg1,
-                                       mlir::OpResult result) {
+                                     mlir::Location loc, mlir::Value arg0,
+                                     mlir::Value arg1, mlir::OpResult result) {
   mlir::SmallVector<mlir::Value, 2> args{arg0, arg1};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
   auto glwe = result.getType().cast<GLWECipherTextType>();
@@ -114,17 +114,18 @@ mlir::Value createAddPlainLweCiphertextWithGlwe(
   PlaintextType encoded_type =
       convertPlaintextTypeFromType(rewriter.getContext(), encryptedType);
   // encode int into plaintext
-  mlir::Value encoded =
-      rewriter
-          .create<mlir::concretelang::Concrete::EncodeIntOp>(loc, encoded_type, arg1)
-          .plaintext();
+  mlir::Value encoded = rewriter
+                            .create<mlir::concretelang::Concrete::EncodeIntOp>(
+                                loc, encoded_type, arg1)
+                            .plaintext();
   // convert result type
   LweCiphertextType lwe_type =
       convertTypeToLWE(rewriter.getContext(), result.getType());
   // replace op using the encoded plaintext instead of int
   auto op =
-      rewriter.create<mlir::concretelang::Concrete::AddPlaintextLweCiphertextOp>(
-          loc, lwe_type, arg0, encoded);
+      rewriter
+          .create<mlir::concretelang::Concrete::AddPlaintextLweCiphertextOp>(
+              loc, lwe_type, arg0, encoded);
   return op.getODSResults(0).front();
 }
 
@@ -167,17 +168,19 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
   CleartextType encoded_type =
       convertCleartextTypeFromType(rewriter.getContext(), inType);
   // encode int into plaintext
-  mlir::Value encoded = rewriter
-                            .create<mlir::concretelang::Concrete::IntToCleartextOp>(
-                                loc, encoded_type, arg1)
-                            .cleartext();
+  mlir::Value encoded =
+      rewriter
+          .create<mlir::concretelang::Concrete::IntToCleartextOp>(
+              loc, encoded_type, arg1)
+          .cleartext();
   // convert result type
   auto resType = result.getType();
   LweCiphertextType lwe_type = convertTypeToLWE(rewriter.getContext(), resType);
   // replace op using the encoded plaintext instead of int
   auto op =
-      rewriter.create<mlir::concretelang::Concrete::MulCleartextLweCiphertextOp>(
-          loc, lwe_type, arg0, encoded);
+      rewriter
+          .create<mlir::concretelang::Concrete::MulCleartextLweCiphertextOp>(
+              loc, lwe_type, arg0, encoded);
   return op.getODSResults(0).front();
 }
 
@@ -256,7 +259,7 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
   mlir::Value keyswitched =
       rewriter
           .create<mlir::concretelang::Concrete::KeySwitchLweOp>(loc, ksOutType,
-                                                           ksArgs, ksAttrs)
+                                                                ksArgs, ksAttrs)
           .result();
 
   // bootstrap operation
@@ -276,7 +279,7 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
   mlir::Value bootstrapped =
       rewriter
           .create<mlir::concretelang::Concrete::BootstrapLweOp>(loc, lwe_type,
-                                                           bsArgs, bsAttrs)
+                                                                bsArgs, bsAttrs)
           .result();
 
   return bootstrapped;

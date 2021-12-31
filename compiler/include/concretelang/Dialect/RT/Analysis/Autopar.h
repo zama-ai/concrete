@@ -1,12 +1,14 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_DIALECT_RT_ANALYSIS_AUTOPAR_H
 #define CONCRETELANG_DIALECT_RT_ANALYSIS_AUTOPAR_H
 
+#include <concretelang/Dialect/RT/IR/RTOps.h>
 #include <functional>
 #include <mlir/Pass/Pass.h>
-#include <concretelang/Dialect/RT/IR/RTOps.h>
 
 namespace mlir {
 

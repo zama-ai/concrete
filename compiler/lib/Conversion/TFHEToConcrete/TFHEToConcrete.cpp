@@ -1,24 +1,25 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <iostream>
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "concretelang/Conversion/TFHEToConcrete/Patterns.h"
 #include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/TFHEToConcrete/Patterns.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
-#include "concretelang/Dialect/RT/IR/RTOps.h"
 
 namespace {
-struct TFHEToConcretePass
-    : public TFHEToConcreteBase<TFHEToConcretePass> {
+struct TFHEToConcretePass : public TFHEToConcreteBase<TFHEToConcretePass> {
   void runOnOperation() final;
 };
 } // namespace
@@ -90,14 +91,15 @@ void TFHEToConcretePass::runOnOperation() {
                                             TFHEToConcreteTypeConverter>>(
       &getContext(), converter);
   mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
-                                                          converter);
+                                                              converter);
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);
 
   // Conversion of RT Dialect Ops
   patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::concretelang::RT::DataflowTaskOp>(
-      target, converter);
+      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
+                                               converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<
+      mlir::concretelang::RT::DataflowTaskOp>(target, converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {

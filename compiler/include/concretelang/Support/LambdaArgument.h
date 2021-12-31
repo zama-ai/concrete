@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_SUPPORT_LAMBDA_ARGUMENT_H
 #define CONCRETELANG_SUPPORT_LAMBDA_ARGUMENT_H
@@ -7,10 +9,10 @@
 #include <cstdint>
 #include <limits>
 
+#include <concretelang/Support/Error.h>
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/ExtensibleRTTI.h>
-#include <concretelang/Support/Error.h>
 
 namespace mlir {
 namespace concretelang {

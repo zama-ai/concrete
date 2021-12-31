@@ -1,11 +1,14 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_CONVERSION_GENERICOPTYPECONVERSIONPATTERN_H_
 #define CONCRETELANG_CONVERSION_GENERICOPTYPECONVERSIONPATTERN_H_
 
 #include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/IR/PatternMatch.h"
+#include <mlir/Transforms/DialectConversion.h>
 
 namespace mlir {
 namespace concretelang {

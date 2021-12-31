@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "CompilerAPIModule.h"
 #include "concretelang-c/Support/CompilerEngine.h"
@@ -25,7 +27,8 @@ const char *noEmptyStringPtr(std::string &s) {
 }
 
 /// Populate the compiler API python module.
-void mlir::concretelang::python::populateCompilerAPISubmodule(pybind11::module &m) {
+void mlir::concretelang::python::populateCompilerAPISubmodule(
+    pybind11::module &m) {
   m.doc() = "Concretelang compiler python API";
 
   m.def("round_trip",

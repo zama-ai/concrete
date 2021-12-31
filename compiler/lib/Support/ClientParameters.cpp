@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/Support/Error.h>
@@ -128,8 +130,9 @@ createClientParametersForV0(V0FHEContext fheContext, llvm::StringRef name,
 
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();
-  bool hasContext =
-      funcType.getInputs().back().isa<mlir::concretelang::Concrete::ContextType>();
+  bool hasContext = funcType.getInputs()
+                        .back()
+                        .isa<mlir::concretelang::Concrete::ContextType>();
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {
     auto gate = gateFromMLIRType("big", precision, encryptionVariance, *inType);
@@ -159,16 +162,18 @@ static inline void hash(std::size_t &seed, const T &v, Rest... rest) {
   hash(seed, rest...);
 }
 
-void LweSecretKeyParam::hash(size_t &seed) { mlir::concretelang::hash(seed, size); }
+void LweSecretKeyParam::hash(size_t &seed) {
+  mlir::concretelang::hash(seed, size);
+}
 
 void BootstrapKeyParam::hash(size_t &seed) {
   mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
-                       baseLog, glweDimension, variance);
+                           baseLog, glweDimension, variance);
 }
 
 void KeyswitchKeyParam::hash(size_t &seed) {
   mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
-                       baseLog, variance);
+                           baseLog, variance);
 }
 
 std::size_t ClientParameters::hash() {

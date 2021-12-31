@@ -1,12 +1,14 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "llvm/Support/Error.h"
+#include <concretelang/Support/JitCompilerEngine.h>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/Support/TargetSelect.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
-#include <concretelang/Support/JitCompilerEngine.h>
 
 namespace mlir {
 namespace concretelang {
@@ -99,7 +101,7 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
 
   llvm::Expected<std::unique_ptr<JITLambda>> lambdaOrErr =
       mlir::concretelang::JITLambda::create(funcName, module, optPipeline,
-                                        runtimeLibPath);
+                                            runtimeLibPath);
 
   if (!lambdaOrErr) {
     return StreamStringError()

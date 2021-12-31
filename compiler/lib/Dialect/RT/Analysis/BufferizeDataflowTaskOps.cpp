@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <iostream>
 
@@ -8,13 +10,13 @@
 #include <concretelang/Dialect/RT/IR/RTOps.h>
 #include <concretelang/Dialect/RT/IR/RTTypes.h>
 
+#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 #include <llvm/IR/Instructions.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/Transforms/Bufferize.h>
 #include <mlir/Transforms/RegionUtils.h>
-#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 
 #define GEN_PASS_CLASSES
 #include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>

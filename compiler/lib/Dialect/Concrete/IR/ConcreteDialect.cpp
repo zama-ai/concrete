@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
@@ -24,7 +26,8 @@ void ConcreteDialect::initialize() {
       >();
 }
 
-::mlir::Type ConcreteDialect::parseType(::mlir::DialectAsmParser &parser) const {
+::mlir::Type
+ConcreteDialect::parseType(::mlir::DialectAsmParser &parser) const {
   mlir::Type type;
 
   std::string types_str[] = {
@@ -46,7 +49,7 @@ void ConcreteDialect::initialize() {
 }
 
 void ConcreteDialect::printType(::mlir::Type type,
-                               ::mlir::DialectAsmPrinter &printer) const {
+                                ::mlir::DialectAsmPrinter &printer) const {
   if (generatedTypePrinter(type, printer).failed())
     // Calling default printer if failed to print Concrete type
     printer.printType(type);

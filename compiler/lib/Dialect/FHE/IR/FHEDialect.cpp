@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
@@ -41,7 +43,7 @@ void FHEDialect::initialize() {
 }
 
 void FHEDialect::printType(::mlir::Type type,
-                             ::mlir::DialectAsmPrinter &printer) const {
+                           ::mlir::DialectAsmPrinter &printer) const {
   if (generatedTypePrinter(type, printer).failed())
     // Calling default printer if failed to print FHE type
     printer.printType(type);

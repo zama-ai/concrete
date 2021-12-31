@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -7,16 +9,15 @@
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
-#include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "concretelang/Support/Constants.h"
 
 namespace {
 struct TFHEGlobalParametrizationPass
-    : public TFHEGlobalParametrizationBase<
-          TFHEGlobalParametrizationPass> {
+    : public TFHEGlobalParametrizationBase<TFHEGlobalParametrizationPass> {
   TFHEGlobalParametrizationPass(mlir::concretelang::V0FHEContext &fheContext)
       : fheContext(fheContext){};
   void runOnOperation() final;
@@ -35,7 +36,8 @@ public:
   TFHEGlobalParametrizationTypeConverter(
       mlir::concretelang::V0FHEContext &fheContext) {
     auto convertGLWECiphertextType =
-        [](GLWECipherTextType type, mlir::concretelang::V0FHEContext &fheContext) {
+        [](GLWECipherTextType type,
+           mlir::concretelang::V0FHEContext &fheContext) {
           auto glweDimension = fheContext.parameter.getNBigGlweDimension();
           auto p = fheContext.constraint.p;
           if (type.getDimension() == (signed)glweDimension &&
@@ -65,9 +67,10 @@ public:
 
 template <typename Op>
 struct TFHEOpTypeConversionPattern : public mlir::OpRewritePattern<Op> {
-  TFHEOpTypeConversionPattern(
-      mlir::MLIRContext *context, mlir::TypeConverter &typeConverter,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+  TFHEOpTypeConversionPattern(mlir::MLIRContext *context,
+                              mlir::TypeConverter &typeConverter,
+                              mlir::PatternBenefit benefit =
+                                  mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<Op>(context, benefit),
         typeConverter(typeConverter) {}
 
@@ -87,11 +90,13 @@ private:
 };
 
 struct TFHEApplyLookupTableParametrizationPattern
-    : public mlir::OpRewritePattern<mlir::concretelang::TFHE::ApplyLookupTable> {
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::TFHE::ApplyLookupTable> {
   TFHEApplyLookupTableParametrizationPattern(
       mlir::MLIRContext *context, mlir::TypeConverter &typeConverter,
       mlir::concretelang::V0Parameter &v0Parameter,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::concretelang::TFHE::ApplyLookupTable>(
             context, benefit),
         typeConverter(typeConverter), v0Parameter(v0Parameter) {}
@@ -137,10 +142,12 @@ private:
 };
 
 struct TFHEApplyLookupTablePaddingPattern
-    : public mlir::OpRewritePattern<mlir::concretelang::TFHE::ApplyLookupTable> {
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::TFHE::ApplyLookupTable> {
   TFHEApplyLookupTablePaddingPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::concretelang::TFHE::ApplyLookupTable>(
             context, benefit),
         typeConverter(typeConverter), v0Parameter(v0Parameter) {}
@@ -206,7 +213,7 @@ void populateWithTFHEOpTypeConversionPattern(
     mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target,
     mlir::TypeConverter &typeConverter) {
   patterns.add<TFHEOpTypeConversionPattern<Op>>(patterns.getContext(),
-                                                   typeConverter);
+                                                typeConverter);
   target.addDynamicallyLegalOp<Op>(
       [&](Op op) { return typeConverter.isLegal(op->getResultTypes()); });
 }
@@ -256,16 +263,16 @@ void populateWithTFHEOpTypeConversionPatterns(
     mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target,
     mlir::TypeConverter &typeConverter,
     mlir::concretelang::V0Parameter &v0Parameter) {
-  populateWithTFHEOpTypeConversionPattern<
-      mlir::concretelang::TFHE::ZeroGLWEOp>(patterns, target, typeConverter);
+  populateWithTFHEOpTypeConversionPattern<mlir::concretelang::TFHE::ZeroGLWEOp>(
+      patterns, target, typeConverter);
   populateWithTFHEOpTypeConversionPattern<
       mlir::concretelang::TFHE::AddGLWEIntOp>(patterns, target, typeConverter);
-  populateWithTFHEOpTypeConversionPattern<
-      mlir::concretelang::TFHE::AddGLWEOp>(patterns, target, typeConverter);
+  populateWithTFHEOpTypeConversionPattern<mlir::concretelang::TFHE::AddGLWEOp>(
+      patterns, target, typeConverter);
   populateWithTFHEOpTypeConversionPattern<
       mlir::concretelang::TFHE::SubIntGLWEOp>(patterns, target, typeConverter);
-  populateWithTFHEOpTypeConversionPattern<
-      mlir::concretelang::TFHE::NegGLWEOp>(patterns, target, typeConverter);
+  populateWithTFHEOpTypeConversionPattern<mlir::concretelang::TFHE::NegGLWEOp>(
+      patterns, target, typeConverter);
   populateWithTFHEOpTypeConversionPattern<
       mlir::concretelang::TFHE::MulGLWEIntOp>(patterns, target, typeConverter);
   populateWithTFHEApplyLookupTableParametrizationPattern(
@@ -291,7 +298,7 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
 
     // Add all patterns to convert TFHE types
     populateWithTFHEOpTypeConversionPatterns(patterns, target, converter,
-                                                fheContext.parameter);
+                                             fheContext.parameter);
     patterns.add<RegionOpTypeConverterPattern<
         mlir::linalg::GenericOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
@@ -301,12 +308,13 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
     patterns.add<RegionOpTypeConverterPattern<
         mlir::scf::ForOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
-    mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
-                                                            converter);
+    mlir::concretelang::populateWithTensorTypeConverterPatterns(
+        patterns, target, converter);
 
     // Conversion of RT Dialect Ops
     patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-        mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
+        mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
+                                                 converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::concretelang::RT::DataflowTaskOp>(target, converter);
 

@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <iostream>
 
@@ -47,17 +49,20 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::LowerToLLVMOptions options(&getContext());
   mlir::LLVMTypeConverter typeConverter(&getContext(), options);
   typeConverter.addConversion(convertTypes);
-  typeConverter.addConversion([&](mlir::concretelang::Concrete::PlaintextType type) {
-    return mlir::IntegerType::get(type.getContext(), 64);
-  });
-  typeConverter.addConversion([&](mlir::concretelang::Concrete::CleartextType type) {
-    return mlir::IntegerType::get(type.getContext(), 64);
-  });
+  typeConverter.addConversion(
+      [&](mlir::concretelang::Concrete::PlaintextType type) {
+        return mlir::IntegerType::get(type.getContext(), 64);
+      });
+  typeConverter.addConversion(
+      [&](mlir::concretelang::Concrete::CleartextType type) {
+        return mlir::IntegerType::get(type.getContext(), 64);
+      });
 
   // Setup the set of the patterns rewriter. At this point we want to
   // convert the `scf` operations to `std` and `std` operations to `llvm`.
   mlir::RewritePatternSet patterns(&getContext());
-  mlir::concretelang::populateRTToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::concretelang::populateRTToLLVMConversionPatterns(typeConverter,
+                                                         patterns);
   mlir::populateStdToLLVMConversionPatterns(typeConverter, patterns);
   mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
                                                           patterns);

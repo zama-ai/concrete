@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <cstdint>
 #include <iostream>
@@ -17,22 +19,22 @@
 #include <mlir/Support/ToolUtilities.h>
 #include <sstream>
 
-#include "mlir/IR/BuiltinOps.h"
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
-#include "concretelang/Dialect/FHE/IR/FHEDialect.h"
-#include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
+#include "concretelang/Dialect/FHE/IR/FHEDialect.h"
+#include "concretelang/Dialect/FHE/IR/FHETypes.h"
+#include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
-#include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/JitCompilerEngine.h"
 #include "concretelang/Support/KeySet.h"
 #include "concretelang/Support/LLVMEmitFile.h"
 #include "concretelang/Support/Pipeline.h"
 #include "concretelang/Support/logging.h"
+#include "mlir/IR/BuiltinOps.h"
 
 enum Action {
   ROUND_TRIP,
@@ -180,7 +182,8 @@ llvm::Expected<mlir::concretelang::V0FHEContext> buildFHEContext(
       overrideMaxEintPrecision.hasValue() ? overrideMaxEintPrecision.getValue()
                                           : autoFHEConstraints.getValue().p};
 
-  const mlir::concretelang::V0Parameter *parameter = getV0Parameter(fheConstraints);
+  const mlir::concretelang::V0Parameter *parameter =
+      getV0Parameter(fheConstraints);
 
   if (!parameter) {
     return mlir::concretelang::StreamStringError()
@@ -387,7 +390,8 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
 
   llvm::Optional<mlir::concretelang::KeySetCache> jitKeySetCache;
   if (!cmdline::jitKeySetCachePath.empty()) {
-    jitKeySetCache = mlir::concretelang::KeySetCache(cmdline::jitKeySetCachePath);
+    jitKeySetCache =
+        mlir::concretelang::KeySetCache(cmdline::jitKeySetCachePath);
   }
 
   // In case of compilation to library, the real output is the library.

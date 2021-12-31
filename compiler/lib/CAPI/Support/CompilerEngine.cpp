@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "llvm/ADT/SmallString.h"
 
@@ -52,12 +54,13 @@ lambdaArgument invokeLambda(lambda l, executionArguments args) {
     lambdaArgumentsRef.push_back(args.data[i].ptr.get());
   }
   // Run lambda
-  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> resOrError =
-      (*lambda_ptr)
-          .
-          operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
-              llvm::ArrayRef<mlir::concretelang::LambdaArgument *>(
-                  lambdaArgumentsRef));
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>>
+      resOrError =
+          (*lambda_ptr)
+              .
+              operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
+                  llvm::ArrayRef<mlir::concretelang::LambdaArgument *>(
+                      lambdaArgumentsRef));
 
   if (!resOrError) {
     std::string backingString;
@@ -78,8 +81,9 @@ std::string roundTrip(const char *module) {
   std::string backingString;
   llvm::raw_string_ostream os(backingString);
 
-  llvm::Expected<mlir::concretelang::CompilerEngine::CompilationResult> retOrErr =
-      ce.compile(module, mlir::concretelang::CompilerEngine::Target::ROUND_TRIP);
+  llvm::Expected<mlir::concretelang::CompilerEngine::CompilationResult>
+      retOrErr = ce.compile(
+          module, mlir::concretelang::CompilerEngine::Target::ROUND_TRIP);
   if (!retOrErr) {
     os << "MLIR parsing failed: "
        << llvm::toString(std::move(retOrErr.takeError()));
@@ -138,7 +142,8 @@ bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg) {
 
 uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
   mlir::concretelang::IntLambdaArgument<uint64_t> *arg =
-      lambda_arg.ptr->dyn_cast<mlir::concretelang::IntLambdaArgument<uint64_t>>();
+      lambda_arg.ptr
+          ->dyn_cast<mlir::concretelang::IntLambdaArgument<uint64_t>>();
   if (arg == nullptr) {
     throw std::invalid_argument("LambdaArgument isn't a scalar, should "
                                 "be an IntLambdaArgument<uint64_t>");
@@ -180,7 +185,8 @@ lambdaArgument lambdaArgumentFromTensorU64(std::vector<uint64_t> data,
 
 lambdaArgument lambdaArgumentFromScalar(uint64_t scalar) {
   lambdaArgument scalar_arg{
-      std::make_shared<mlir::concretelang::IntLambdaArgument<uint64_t>>(scalar)};
+      std::make_shared<mlir::concretelang::IntLambdaArgument<uint64_t>>(
+          scalar)};
   return scalar_arg;
 }
 

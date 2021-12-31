@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <stdio.h>
 
@@ -13,11 +15,11 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser.h>
 
+#include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
 #include <concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h>
-#include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
-#include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
+#include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Error.h>
 #include <concretelang/Support/Jit.h>
@@ -215,7 +217,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   if (mlir::concretelang::pipeline::tileMarkedFHELinalg(mlirContext, module,
-                                                      enablePass)
+                                                        enablePass)
           .failed()) {
     return errorDiag("Tiling of FHELinalg operations failed");
   }
@@ -232,7 +234,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // FHE -> TFHE
   if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,
-                                                    enablePass)
+                                                   enablePass)
           .failed()) {
     return errorDiag("Lowering from FHE to TFHE failed");
   }
@@ -250,9 +252,10 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Concrete -> Canonical dialects
   if (mlir::concretelang::pipeline::lowerConcreteToStd(mlirContext, module,
-                                                  enablePass)
+                                                       enablePass)
           .failed()) {
-    return errorDiag("Lowering from Concrete to canonical MLIR dialects failed");
+    return errorDiag(
+        "Lowering from Concrete to canonical MLIR dialects failed");
   }
   if (target == Target::STD)
     return std::move(res);
@@ -281,7 +284,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // MLIR canonical dialects -> LLVM Dialect
   if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(mlirContext, module,
-                                                      enablePass)
+                                                          enablePass)
           .failed()) {
     return errorDiag("Failed to lower to LLVM dialect");
   }
@@ -301,7 +304,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::LLVM_IR)
     return std::move(res);
 
-  if (mlir::concretelang::pipeline::optimizeLLVMModule(llvmContext, *res.llvmModule)
+  if (mlir::concretelang::pipeline::optimizeLLVMModule(llvmContext,
+                                                       *res.llvmModule)
           .failed()) {
     return errorDiag("Failed to optimize LLVM IR");
   }

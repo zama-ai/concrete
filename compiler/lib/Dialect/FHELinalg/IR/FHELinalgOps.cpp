@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "mlir/IR/TypeUtilities.h"
 
@@ -234,8 +236,8 @@ namespace FHELinalg {
 
 mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
   auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
-  auto tEltTy =
-      tTy.getElementType().cast<mlir::concretelang::FHE::EncryptedIntegerType>();
+  auto tEltTy = tTy.getElementType()
+                    .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
   auto lutTy = op.lut().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
@@ -260,8 +262,8 @@ mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
 mlir::LogicalResult
 verifyApplyMultiLookupTable(ApplyMultiLookupTableEintOp &op) {
   auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
-  auto tEltTy =
-      tTy.getElementType().cast<mlir::concretelang::FHE::EncryptedIntegerType>();
+  auto tEltTy = tTy.getElementType()
+                    .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
   auto lutTy = op.luts().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
   auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
@@ -378,14 +380,14 @@ verifyApplyMappedLookupTable(ApplyMappedLookupTableEintOp &op) {
                         .cast<mlir::TensorType>()
                         .getElementType()
                         .cast<mlir::IntegerType>();
-  auto resultType =
-      op.getResult().getType().cast<FHE::EncryptedIntegerType>();
-  if (!mlir::concretelang::FHE::verifyEncryptedIntegerAndIntegerInputsConsistency(
-          op, lhsEltType, rhsEltType)) {
+  auto resultType = op.getResult().getType().cast<FHE::EncryptedIntegerType>();
+  if (!mlir::concretelang::FHE::
+          verifyEncryptedIntegerAndIntegerInputsConsistency(op, lhsEltType,
+                                                            rhsEltType)) {
     return ::mlir::failure();
   }
   if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(op, lhsEltType,
-                                                              resultType)) {
+                                                            resultType)) {
     return ::mlir::failure();
   }
   return ::mlir::success();

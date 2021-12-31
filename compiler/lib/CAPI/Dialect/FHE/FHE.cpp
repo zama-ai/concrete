@@ -1,13 +1,15 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "concretelang-c/Dialect/FHE.h"
-#include "mlir/CAPI/IR.h"
-#include "mlir/CAPI/Registration.h"
-#include "mlir/CAPI/Support.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
+#include "mlir/CAPI/IR.h"
+#include "mlir/CAPI/Registration.h"
+#include "mlir/CAPI/Support.h"
 
 using namespace mlir::concretelang::FHE;
 

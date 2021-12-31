@@ -1,21 +1,24 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <iostream>
 
-#include <mlir/IR/BuiltinOps.h>
-#include <concretelang/Dialect/FHE/IR/FHEDialect.h>
-#include <concretelang/Dialect/FHE/IR/FHEOps.h>
-#include <concretelang/Dialect/FHE/IR/FHETypes.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteTypes.h>
+#include <concretelang/Dialect/FHE/IR/FHEDialect.h>
+#include <concretelang/Dialect/FHE/IR/FHEOps.h>
+#include <concretelang/Dialect/FHE/IR/FHETypes.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/IR/RTOps.h>
 #include <concretelang/Dialect/RT/IR/RTTypes.h>
 #include <concretelang/Support/math.h>
+#include <mlir/IR/BuiltinOps.h>
 
+#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/Compiler.h>
 #include <mlir/Analysis/DataFlowAnalysis.h>
@@ -41,7 +44,6 @@
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Transforms/RegionUtils.h>
 #include <mlir/Transforms/Utils.h>
-#include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 
 #define GEN_PASS_CLASSES
 #include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>

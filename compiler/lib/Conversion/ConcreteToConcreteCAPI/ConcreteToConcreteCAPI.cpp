@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "mlir//IR/BuiltinTypes.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -340,7 +342,8 @@ struct ConcreteOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
   ConcreteOpToConcreteCAPICallPattern(
       mlir::MLIRContext *context, mlir::StringRef funcName,
       mlir::StringRef allocName,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<Op>(context, benefit), funcName(funcName),
         allocName(allocName) {}
 
@@ -404,11 +407,11 @@ private:
 
 struct ConcreteZeroOpPattern
     : public mlir::OpRewritePattern<mlir::concretelang::Concrete::ZeroLWEOp> {
-  ConcreteZeroOpPattern(
-      mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::concretelang::Concrete::ZeroLWEOp>(context,
-                                                                   benefit) {}
+  ConcreteZeroOpPattern(mlir::MLIRContext *context,
+                        mlir::PatternBenefit benefit =
+                            mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::Concrete::ZeroLWEOp>(
+            context, benefit) {}
 
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::Concrete::ZeroLWEOp op,
@@ -440,11 +443,11 @@ struct ConcreteZeroOpPattern
 
 struct ConcreteEncodeIntOpPattern
     : public mlir::OpRewritePattern<mlir::concretelang::Concrete::EncodeIntOp> {
-  ConcreteEncodeIntOpPattern(
-      mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::concretelang::Concrete::EncodeIntOp>(context,
-                                                                     benefit) {}
+  ConcreteEncodeIntOpPattern(mlir::MLIRContext *context,
+                             mlir::PatternBenefit benefit =
+                                 mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<mlir::concretelang::Concrete::EncodeIntOp>(
+            context, benefit) {}
 
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::Concrete::EncodeIntOp op,
@@ -464,10 +467,12 @@ struct ConcreteEncodeIntOpPattern
 };
 
 struct ConcreteIntToCleartextOpPattern
-    : public mlir::OpRewritePattern<mlir::concretelang::Concrete::IntToCleartextOp> {
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::Concrete::IntToCleartextOp> {
   ConcreteIntToCleartextOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::concretelang::Concrete::IntToCleartextOp>(
             context, benefit) {}
 
@@ -489,10 +494,11 @@ struct ConcreteIntToCleartextOpPattern
 // - construct the GLWE accumulator by adding the plaintext_list to a freshly
 // allocated GLWE
 struct GlweFromTableOpPattern
-    : public mlir::OpRewritePattern<mlir::concretelang::Concrete::GlweFromTable> {
-  GlweFromTableOpPattern(
-      mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::Concrete::GlweFromTable> {
+  GlweFromTableOpPattern(mlir::MLIRContext *context,
+                         mlir::PatternBenefit benefit =
+                             mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::concretelang::Concrete::GlweFromTable>(
             context, benefit) {}
 
@@ -589,9 +595,10 @@ mlir::Value getContextArgument(mlir::Operation *op) {
 
       mlir::Value context = block->getArguments().back();
 
-      assert(context.getType().isa<mlir::concretelang::Concrete::ContextType>() &&
-             "the Concrete.context should be the last argument of the enclosing "
-             "function of the op");
+      assert(
+          context.getType().isa<mlir::concretelang::Concrete::ContextType>() &&
+          "the Concrete.context should be the last argument of the enclosing "
+          "function of the op");
 
       return context;
     }
@@ -607,10 +614,11 @@ mlir::Value getContextArgument(mlir::Operation *op) {
 // - use the key and the input accumulator (GLWE) to bootstrap the input
 // ciphertext
 struct ConcreteBootstrapLweOpPattern
-    : public mlir::OpRewritePattern<mlir::concretelang::Concrete::BootstrapLweOp> {
-  ConcreteBootstrapLweOpPattern(
-      mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::Concrete::BootstrapLweOp> {
+  ConcreteBootstrapLweOpPattern(mlir::MLIRContext *context,
+                                mlir::PatternBenefit benefit =
+                                    mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::concretelang::Concrete::BootstrapLweOp>(
             context, benefit) {}
 
@@ -671,10 +679,11 @@ struct ConcreteBootstrapLweOpPattern
 // - get the global keyswitch key
 // - use the key to keyswitch the input ciphertext
 struct ConcreteKeySwitchLweOpPattern
-    : public mlir::OpRewritePattern<mlir::concretelang::Concrete::KeySwitchLweOp> {
-  ConcreteKeySwitchLweOpPattern(
-      mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::Concrete::KeySwitchLweOp> {
+  ConcreteKeySwitchLweOpPattern(mlir::MLIRContext *context,
+                                mlir::PatternBenefit benefit =
+                                    mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::concretelang::Concrete::KeySwitchLweOp>(
             context, benefit) {}
 
@@ -755,7 +764,8 @@ struct AddRuntimeContextToFuncOpPattern
     : public mlir::OpRewritePattern<mlir::FuncOp> {
   AddRuntimeContextToFuncOpPattern(
       mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::FuncOp>(context, benefit) {}
 
   mlir::LogicalResult

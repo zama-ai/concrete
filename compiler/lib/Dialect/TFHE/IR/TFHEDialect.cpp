@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
@@ -32,7 +34,7 @@ void TFHEDialect::initialize() {
 }
 
 void TFHEDialect::printType(::mlir::Type type,
-                               ::mlir::DialectAsmPrinter &printer) const {
+                            ::mlir::DialectAsmPrinter &printer) const {
   mlir::concretelang::TFHE::GLWECipherTextType glwe =
       type.dyn_cast_or_null<mlir::concretelang::TFHE::GLWECipherTextType>();
   if (glwe != nullptr) {

@@ -1,13 +1,15 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_DIALECT_FHELinalg_IR_FHELinalgOPS_H
 #define CONCRETELANG_DIALECT_FHELinalg_IR_FHELinalgOPS_H
 
-#include "mlir/IR/Dialect.h"
-#include "mlir/IR/OpDefinition.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgTypes.h"
+#include "mlir/IR/Dialect.h"
+#include "mlir/IR/OpDefinition.h"
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 

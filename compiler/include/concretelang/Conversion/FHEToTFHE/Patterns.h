@@ -1,14 +1,16 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_CONVERSION_FHETOTFHE_PATTERNS_H_
 #define CONCRETELANG_CONVERSION_FHETOTFHE_PATTERNS_H_
 
+#include "concretelang/Dialect/FHE/IR/FHEOps.h"
+#include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
-#include "concretelang/Dialect/FHE/IR/FHEOps.h"
-#include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
 
 namespace mlir {
 namespace concretelang {
@@ -24,8 +26,7 @@ convertTypeEncryptedIntegerToGLWE(mlir::MLIRContext *context,
 }
 
 mlir::Value createZeroGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
-                                      mlir::Location loc,
-                                      mlir::OpResult result) {
+                                    mlir::Location loc, mlir::OpResult result) {
   mlir::SmallVector<mlir::Value> args{};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
   auto eint =
@@ -39,8 +40,8 @@ mlir::Value createZeroGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
 
 template <class Operator>
 mlir::Value createGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
-                                  mlir::Location loc, mlir::Value arg0,
-                                  mlir::Value arg1, mlir::OpResult result) {
+                                mlir::Location loc, mlir::Value arg0,
+                                mlir::Value arg1, mlir::OpResult result) {
   mlir::SmallVector<mlir::Value, 2> args{arg0, arg1};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
   auto eint =
@@ -53,8 +54,8 @@ mlir::Value createGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
 
 template <class Operator>
 mlir::Value createGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
-                                  mlir::Location loc, mlir::Value arg0,
-                                  mlir::OpResult result) {
+                                mlir::Location loc, mlir::Value arg0,
+                                mlir::OpResult result) {
   mlir::SmallVector<mlir::Value, 1> args{arg0};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
   auto eint =
@@ -65,10 +66,11 @@ mlir::Value createGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
   return op.getODSResults(0).front();
 }
 
-mlir::Value
-createApplyLookupTableGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
-                                      mlir::Location loc, mlir::Value arg0,
-                                      mlir::Value arg1, mlir::OpResult result) {
+mlir::Value createApplyLookupTableGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
+                                                mlir::Location loc,
+                                                mlir::Value arg0,
+                                                mlir::Value arg1,
+                                                mlir::OpResult result) {
   mlir::SmallVector<mlir::Value, 2> args{arg0, arg1};
 
   auto context = rewriter.getContext();
@@ -90,7 +92,7 @@ createApplyLookupTableGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
   mlir::SmallVector<mlir::Type, 1> resTypes{
       convertTypeEncryptedIntegerToGLWE(rewriter.getContext(), eint)};
   auto op = rewriter.create<concretelang::TFHE::ApplyLookupTable>(loc, resTypes,
-                                                                 args, attrs);
+                                                                  args, attrs);
   return op.getODSResults(0).front();
 }
 

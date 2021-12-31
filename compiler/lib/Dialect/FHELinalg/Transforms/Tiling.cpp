@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
@@ -123,8 +125,9 @@ static const mlir::StringLiteral kTransformMarker =
 //
 // Partial tiles are currently not supported, i.e., `N` must be a
 // multiple of `T`, `M` a multiple of `U` and `K` a multiple of `V`.
-class MatMulTilingPattern : public mlir::OpRewritePattern<
-                                mlir::concretelang::FHELinalg::MatMulEintIntOp> {
+class MatMulTilingPattern
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::FHELinalg::MatMulEintIntOp> {
 public:
   MatMulTilingPattern(mlir::MLIRContext *context)
       : mlir::OpRewritePattern<mlir::concretelang::FHELinalg::MatMulEintIntOp>(
@@ -274,8 +277,8 @@ public:
       // Add result of the multiplication of the tiles to the
       // result tile from C
       mlir::concretelang::FHELinalg::AddEintOp accuTile =
-          builder.create<mlir::concretelang::FHELinalg::AddEintOp>(origLoc, CTile,
-                                                                 tiledMul);
+          builder.create<mlir::concretelang::FHELinalg::AddEintOp>(
+              origLoc, CTile, tiledMul);
 
       // Write updated C tile back into C
       mlir::tensor::InsertSliceOp Cupdated =
@@ -310,8 +313,7 @@ public:
 
 // Perfoms the actual tiling of `FHELinalg.matmul_eint_int`
 // operations that have been marked with a "tile-sizes" attribute.
-class FHELinalgTilingPass
-    : public FHELinalgTilingBase<FHELinalgTilingPass> {
+class FHELinalgTilingPass : public FHELinalgTilingBase<FHELinalgTilingPass> {
 public:
   void runOnOperation() override {
     mlir::Operation *op = getOperation();

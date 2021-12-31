@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -218,11 +220,10 @@ getBroadcastedAffineMapMultiLUT(const mlir::RankedTensorType &resultType,
 // }
 //
 template <typename FHELinalgOp, typename FHEOp>
-struct FHELinalgOpToLinalgGeneric
-    : public mlir::OpRewritePattern<FHELinalgOp> {
-  FHELinalgOpToLinalgGeneric(
-      ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
+  FHELinalgOpToLinalgGeneric(::mlir::MLIRContext *context,
+                             mlir::PatternBenefit benefit =
+                                 mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<FHELinalgOp>(context, benefit) {}
 
   ::mlir::LogicalResult
@@ -254,8 +255,8 @@ struct FHELinalgOpToLinalgGeneric
     auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
                            mlir::Location nestedLoc,
                            mlir::ValueRange blockArgs) {
-      FHEOp fheOp = nestedBuilder.create<FHEOp>(
-          linalgOp.getLoc(), blockArgs[0], blockArgs[1]);
+      FHEOp fheOp = nestedBuilder.create<FHEOp>(linalgOp.getLoc(), blockArgs[0],
+                                                blockArgs[1]);
 
       nestedBuilder.create<mlir::linalg::YieldOp>(linalgOp.getLoc(),
                                                   fheOp.getResult());
@@ -494,11 +495,11 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
           mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp> {
   FHELinalgApplyMultiLookupTableToLinalgGeneric(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<
-            mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp>(context,
-                                                                      benefit) {
-  }
+            mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp>(
+            context, benefit) {}
 
   ::mlir::LogicalResult matchAndRewrite(
       mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp fheLinalgLutOp,
@@ -506,9 +507,8 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
     mlir::RankedTensorType resultTy =
         ((mlir::Type)fheLinalgLutOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
-    mlir::RankedTensorType tensorTy =
-        ((mlir::Type)fheLinalgLutOp.t().getType())
-            .cast<mlir::RankedTensorType>();
+    mlir::RankedTensorType tensorTy = ((mlir::Type)fheLinalgLutOp.t().getType())
+                                          .cast<mlir::RankedTensorType>();
     mlir::RankedTensorType lutsTy =
         ((mlir::Type)fheLinalgLutOp.luts().getType())
             .cast<mlir::RankedTensorType>();
@@ -544,8 +544,8 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
               fheLinalgLutOp.getLoc(), blockArgs.slice(1, lut_size));
       mlir::concretelang::FHE::ApplyLookupTableEintOp lutOp =
           nestedBuilder.create<mlir::concretelang::FHE::ApplyLookupTableEintOp>(
-              fheLinalgLutOp.getLoc(), resultTy.getElementType(),
-              blockArgs[0], lut.result());
+              fheLinalgLutOp.getLoc(), resultTy.getElementType(), blockArgs[0],
+              lut.result());
 
       nestedBuilder.create<mlir::linalg::YieldOp>(fheLinalgLutOp.getLoc(),
                                                   lutOp.getResult());
@@ -615,10 +615,11 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
           mlir::concretelang::FHELinalg::ApplyLookupTableEintOp> {
   FHELinalgApplyLookupTableToLinalgGeneric(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<
             mlir::concretelang::FHELinalg::ApplyLookupTableEintOp>(context,
-                                                                 benefit) {}
+                                                                   benefit) {}
 
   ::mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHELinalg::ApplyLookupTableEintOp lutOp,
@@ -713,7 +714,8 @@ struct FHELinalgNegEintToLinalgGeneric
     : public mlir::OpRewritePattern<mlir::concretelang::FHELinalg::NegEintOp> {
   FHELinalgNegEintToLinalgGeneric(
       ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::NegEintOp>(
             context, benefit) {}
 
@@ -823,7 +825,8 @@ struct FHELinalgMatmulToLinalgGeneric
           mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value,
           mlir::Value)>
           createMulOp,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : ::mlir::OpRewritePattern<FHELinalgMatmulOp>(context, benefit),
         createMulOp(createMulOp) {}
 
@@ -928,12 +931,11 @@ private:
 //
 struct FHELinalgZeroToLinalgGenerate
     : public mlir::OpRewritePattern<mlir::concretelang::FHELinalg::ZeroOp> {
-  FHELinalgZeroToLinalgGenerate(
-      ::mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit = mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::ZeroOp>(context,
-                                                                      benefit) {
-  }
+  FHELinalgZeroToLinalgGenerate(::mlir::MLIRContext *context,
+                                mlir::PatternBenefit benefit =
+                                    mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::ZeroOp>(
+            context, benefit) {}
 
   ::mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::FHELinalg::ZeroOp zeroOp,
@@ -984,19 +986,19 @@ void FHETensorOpsToLinalg::runOnFunction() {
   patterns.insert<DotToLinalgGeneric>(&getContext());
   patterns.insert<
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::AddEintOp,
-                                   mlir::concretelang::FHE::AddEintOp>>(
+                                 mlir::concretelang::FHE::AddEintOp>>(
       &getContext());
   patterns.insert<
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::AddEintIntOp,
-                                   mlir::concretelang::FHE::AddEintIntOp>>(
+                                 mlir::concretelang::FHE::AddEintIntOp>>(
       &getContext());
   patterns.insert<
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::SubIntEintOp,
-                                   mlir::concretelang::FHE::SubIntEintOp>>(
+                                 mlir::concretelang::FHE::SubIntEintOp>>(
       &getContext());
   patterns.insert<
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::MulEintIntOp,
-                                   mlir::concretelang::FHE::MulEintIntOp>>(
+                                 mlir::concretelang::FHE::MulEintIntOp>>(
       &getContext());
   patterns.insert<FHELinalgApplyLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgNegEintToLinalgGeneric>(&getContext());
@@ -1004,18 +1006,17 @@ void FHETensorOpsToLinalg::runOnFunction() {
       mlir::concretelang::FHELinalg::MatMulEintIntOp>>(
       &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
                         mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
-        return builder.create<mlir::concretelang::FHE::MulEintIntOp>(loc, type,
-                                                                   arg0, arg1);
+        return builder.create<mlir::concretelang::FHE::MulEintIntOp>(
+            loc, type, arg0, arg1);
       });
   patterns.insert<FHELinalgMatmulToLinalgGeneric<
       mlir::concretelang::FHELinalg::MatMulIntEintOp>>(
       &getContext(), [](mlir::OpBuilder &builder, mlir::Location loc,
                         mlir::Type type, mlir::Value arg0, mlir::Value arg1) {
-        return builder.create<mlir::concretelang::FHE::MulEintIntOp>(loc, type,
-                                                                   arg1, arg0);
+        return builder.create<mlir::concretelang::FHE::MulEintIntOp>(
+            loc, type, arg1, arg0);
       });
-  patterns.insert<FHELinalgApplyMultiLookupTableToLinalgGeneric>(
-      &getContext());
+  patterns.insert<FHELinalgApplyMultiLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgApplyMappedLookupTableToLinalgGeneric>(
       &getContext());
   patterns.insert<FHELinalgZeroToLinalgGenerate>(&getContext());

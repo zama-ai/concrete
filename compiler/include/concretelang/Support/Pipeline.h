@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_SUPPORT_PIPELINE_H_
 #define CONCRETELANG_SUPPORT_PIPELINE_H_
@@ -20,29 +22,29 @@ mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
 getFHEConstraintsFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                           std::function<bool(mlir::Pass *)> enablePass);
-
-mlir::LogicalResult
-tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                      std::function<bool(mlir::Pass *)> enablePass);
-
-mlir::LogicalResult
-markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                         llvm::ArrayRef<int64_t> tileSizes,
                          std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                       llvm::ArrayRef<int64_t> tileSizes,
+                       std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                      llvm::Optional<V0FHEContext> &fheContext,
-                      std::function<bool(mlir::Pass *)> enablePass);
+                    llvm::Optional<V0FHEContext> &fheContext,
+                    std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                  std::function<bool(mlir::Pass *)> enablePass);
+                   std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,

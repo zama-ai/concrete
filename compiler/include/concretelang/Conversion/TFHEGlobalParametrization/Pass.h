@@ -1,6 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
-
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_CONVERSION_TFHEGLOBALPARAMETRIZATION_PASS_H_
 #define CONCRETELANG_CONVERSION_TFHEGLOBALPARAMETRIZATION_PASS_H_

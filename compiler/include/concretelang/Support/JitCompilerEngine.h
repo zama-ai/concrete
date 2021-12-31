@@ -1,15 +1,17 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_SUPPORT_JIT_COMPILER_ENGINE_H
 #define CONCRETELANG_SUPPORT_JIT_COMPILER_ENGINE_H
 
 #include "concretelang/Support/KeySetCache.h"
-#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Error.h>
 #include <concretelang/Support/Jit.h>
 #include <concretelang/Support/LambdaArgument.h>
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 namespace mlir {
 namespace concretelang {

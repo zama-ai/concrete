@@ -1,14 +1,16 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include "CompilerAPIModule.h"
 #include "DialectModules.h"
 
+#include "concretelang-c/Dialect/FHE.h"
+#include "concretelang-c/Dialect/FHELinalg.h"
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/Registration.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
-#include "concretelang-c/Dialect/FHE.h"
-#include "concretelang-c/Dialect/FHELinalg.h"
 
 #include "llvm-c/ErrorHandling.h"
 #include "llvm/Support/Signals.h"

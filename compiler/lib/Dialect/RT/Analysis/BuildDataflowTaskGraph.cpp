@@ -1,9 +1,10 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <iostream>
 
-#include <mlir/IR/BuiltinOps.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
 #include <concretelang/Dialect/FHE/IR/FHEOps.h>
 #include <concretelang/Dialect/FHE/IR/FHETypes.h>
@@ -14,6 +15,7 @@
 #include <concretelang/Dialect/RT/IR/RTTypes.h>
 #include <concretelang/Support/Constants.h>
 #include <concretelang/Support/math.h>
+#include <mlir/IR/BuiltinOps.h>
 
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>

@@ -1,14 +1,16 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #ifndef CONCRETELANG_C_SUPPORT_COMPILER_ENGINE_H
 #define CONCRETELANG_C_SUPPORT_COMPILER_ENGINE_H
 
-#include "mlir-c/IR.h"
-#include "mlir-c/Registration.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Jit.h"
 #include "concretelang/Support/JitCompilerEngine.h"
+#include "mlir-c/IR.h"
+#include "mlir-c/Registration.h"
 
 #ifdef __cplusplus
 extern "C" {

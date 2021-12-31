@@ -1,5 +1,7 @@
-// Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-// See https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license information.
+// Part of the Concrete Compiler Project, under the BSD3 License with Zama
+// Exceptions. See
+// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
+// information.
 
 #include <iostream>
 
@@ -12,9 +14,9 @@
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
-#include "concretelang/Dialect/RT/IR/RTOps.h"
 
 namespace {
 struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
@@ -43,8 +45,9 @@ public:
         return (mlir::Type)(type);
       }
       mlir::Type r = mlir::RankedTensorType::get(
-          type.getShape(), mlir::concretelang::convertTypeEncryptedIntegerToGLWE(
-                               eint.getContext(), eint));
+          type.getShape(),
+          mlir::concretelang::convertTypeEncryptedIntegerToGLWE(
+              eint.getContext(), eint));
       return r;
     });
   }
@@ -88,19 +91,20 @@ void FHEToTFHEPass::runOnOperation() {
   patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
                                             FHEToTFHETypeConverter>>(
       &getContext(), converter);
-  patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
-                                            FHEToTFHETypeConverter>>(
+  patterns.add<
+      RegionOpTypeConverterPattern<mlir::scf::ForOp, FHEToTFHETypeConverter>>(
       &getContext(), converter);
 
   mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
-                                                          converter);
+                                                              converter);
   mlir::populateFuncOpTypeConversionPattern(patterns, converter);
 
   // Conversion of RT Dialect Ops
   patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(), converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::concretelang::RT::DataflowTaskOp>(
-      target, converter);
+      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
+                                               converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<
+      mlir::concretelang::RT::DataflowTaskOp>(target, converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {
