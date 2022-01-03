@@ -97,10 +97,11 @@ Be careful about the inputs, though.
 If you were to run with values outside the range of the inputset, the result might not be correct.
 ```
 
-```{warning}
-FIXME(benoit): explain the API to encrypt, run_inference, decrypt, keygen etc when they are available
-
-```
+Today, we cannot simulate a client / server API in python, but it is for very soon. Then, we will have:
+    - a `keygen` API, which is used to generate both public and private keys
+    - an `encrypt` API, which happens on the user's device, and is using private keys
+    - a `run_inference` API, which happens on the untrusted server and only uses public material
+    - a `encrypt` API, which happens on the user's device to get final clear result, and is using private keys
 
 ## Further reading
 

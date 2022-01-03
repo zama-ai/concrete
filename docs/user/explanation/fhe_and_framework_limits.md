@@ -22,10 +22,6 @@ Since this is an early version of the product, not everything is done, to say th
 
 ### Currently executing locally
 
-```{warning}
-FIXME(Benoit): we'll see later if this is still a valid limit, #1111
-```
-
 As of today, the execution of the FHE program is done locally. Notably, in the current version, there is no client (on which we encrypt the private data, or decrypt the returned result) or server (on which the computation is done completely over encrypted data), but a single host. As explained in [this section](future_features.md), this limit will be removed in the next version, such that the **Concrete Framework** can be used in production.
 
 ### Currently slow

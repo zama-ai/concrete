@@ -47,7 +47,7 @@ There are several approaches to compute bounds, and they will be discussed in th
 The final step is to transform the operation graph to equivalent `MLIR` code.
 How this is done will be explained in detail in its own chapter.
 
-Once the MLIR is prepared, the rest of the stack, which you can learn more about [here](http://fixme.com/), takes over and completes the compilation process.
+Once the MLIR is prepared, the rest of the stack, which you can learn more about [here](http://docs.zama.ai/concrete/), takes over and completes the compilation process.
 
 Here is the visual representation of the pipeline:
 
