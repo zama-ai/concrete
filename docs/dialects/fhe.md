@@ -8,14 +8,14 @@ It allows to represent encrypted integers with a precision in bits.
 ## FHE Type
 
 Only the last type is used (others come directly from mlir).
-[Types](../links_to_compiler_build/md/HLFHETypes.md)
+[Types](../links_to_compiler_build/md/FHETypes.md)
 
 ## FHE Operations
 
-[Operations](../links_to_compiler_build/md/HLFHEOps.md)
+[Operations](../links_to_compiler_build/md/FHEOps.md)
 
 ## Linalg FHE Operations
 
-[Operations](../links_to_compiler_build/md/HLFHELinalgOps.md)
+[Operations](../links_to_compiler_build/md/FHELinalgOps.md)
 
 

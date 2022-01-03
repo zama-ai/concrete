@@ -1,50 +1,50 @@
 Conversion
 ==========
 
-HLFHETensorOpsToLinalg:
+FHETensorOpsToLinalg:
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doxygenfile:: zamalang/Conversion/HLFHETensorOpsToLinalg/Pass.h
+.. doxygenfile:: concretelang/Conversion/FHETensorOpsToLinalg/Pass.h
 
-HLFHEToMidLFHE:
+FHEToTFHE:
 ^^^^^^^^^^^^^^^
 
-.. doxygenfile:: zamalang/Conversion/HLFHEToMidLFHE/Patterns.h
+.. doxygenfile:: concretelang/Conversion/FHEToTFHE/Patterns.h
 
-.. doxygenfile:: zamalang/Conversion/HLFHEToMidLFHE/Pass.h
+.. doxygenfile:: concretelang/Conversion/FHEToTFHE/Pass.h
 
-MidLFHEGlobalParametrization:
+TFHEGlobalParametrization:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doxygenfile:: zamalang/Conversion/MidLFHEGlobalParametrization/Pass.h
+.. doxygenfile:: concretelang/Conversion/TFHEGlobalParametrization/Pass.h
 
 
-MidLFHEToLowLFHE:
+TFHEToConcreteFHE:
 ^^^^^^^^^^^^^^^^^
 
-.. doxygenfile:: zamalang/Conversion/MidLFHEToLowLFHE/Patterns.h
+.. doxygenfile:: concretelang/Conversion/TFHEToConcrete/Patterns.h
 
-.. doxygenfile:: zamalang/Conversion/MidLFHEToLowLFHE/Pass.h
+.. doxygenfile:: concretelang/Conversion/TFHEToConcrete/Pass.h
 
-LowLFHEToStd:
+ConcreteToStd:
 ^^^^^^^^^^^^^
 
-.. doxygenfile:: zamalang/Conversion/LowLFHEToConcreteCAPI/Pass.h
+.. doxygenfile:: concretelang/Conversion/ConcreteToConcreteCAPI/Pass.h
 
-.. doxygenfile:: zamalang/Conversion/LowLFHEUnparametrize/Pass.h
+.. doxygenfile:: concretelang/Conversion/ConcreteUnparametrize/Pass.h
 
-.. doxygenfile:: zamalang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h
+.. doxygenfile:: concretelang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h
 
 Utils:
 ^^^^^^
 
-.. doxygenfile:: zamalang/Conversion/Utils/TensorOpTypeConversion.h
+.. doxygenfile:: concretelang/Conversion/Utils/TensorOpTypeConversion.h
 
-.. doxygenfile:: zamalang/Conversion/Utils/LinalgGenericTypeConverterPattern.h
+.. doxygenfile:: concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h
 
-.. doxygenfile:: zamalang/Conversion/Utils/GenericOpTypeConversionPattern.h
+.. doxygenfile:: concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h
 
-.. doxygenfile:: zamalang/Conversion/Utils/GlobalFHEContext.h
+.. doxygenfile:: concretelang/Conversion/Utils/GlobalFHEContext.h
 
 
 

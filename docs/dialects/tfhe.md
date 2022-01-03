@@ -6,9 +6,9 @@ The TFHE dialect allows to represent integers wencrypted with [LWE](https://en.w
 ## TFHE Type
 
 Only the last types are used (others come directly from mlir).
-[Types](../links_to_compiler_build/md/MidLFHETypes.md)
+[Types](../links_to_compiler_build/md/TFHETypes.md)
 
 ## TFHE Operations
 
-[Operations](../links_to_compiler_build/md/MidLFHEOps.md)
+[Operations](../links_to_compiler_build/md/TFHEOps.md)
 

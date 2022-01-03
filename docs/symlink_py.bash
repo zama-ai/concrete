@@ -1,18 +1,19 @@
 #!/bin/bash
 
-mkdir -p links_to_compiler_build/py/zamalang_core
+mkdir -p links_to_compiler_build/py/concretelang_core
 
-cd links_to_compiler_build/py/zamalang_core
+cd links_to_compiler_build/py/concretelang_core
 
-ln -s ../../../../compiler/build/tools/zamalang/python_packages/zamalang_core/mlir
+ln -s ../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/mlir
 
-mkdir zamalang
-cd zamalang
+mkdir -p concretelang
 
-ln -s ../../../../../compiler/build/tools/zamalang/python_packages/zamalang_core/zamalang/dialects/_HLFHE_ops_gen.py hlfhe.py  -f
-ln -s ../../../../../compiler/build/tools/zamalang/python_packages/zamalang_core/zamalang/dialects/_HLFHELinalg_ops_gen.py hlfhelinalg.py  -f
-ln -s ../../../../../compiler/build/tools/zamalang/python_packages/zamalang_core/zamalang/dialects/_ods_common.py _ods_common.py  -f
+cd concretelang
 
-ln -s ../../../../../compiler/build/tools/zamalang/python_packages/zamalang_core/zamalang/compiler.py compiler.py  -f
+ln -s ../../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/concrete/lang/dialects/_FHE_ops_gen.py fhe.py  -f
+ln -s ../../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/concrete/lang/dialects/_FHELinalg_ops_gen.py fhelinalg.py  -f
+ln -s ../../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/concrete/lang/dialects/_ods_common.py _ods_common.py  -f
+
+ln -s ../../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/concrete/compiler.py compiler.py  -f
 
 touch __init__.py
