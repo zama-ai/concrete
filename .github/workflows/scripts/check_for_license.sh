@@ -16,7 +16,8 @@ do
 // information.") || print_and_exit $file
 done
 
-files=$(find ./compiler/{include,lib,src} -iregex '^.*\.\(py\)$')
+# Ignore python package namespace init file
+files=$(find ./compiler/{include,lib,src} -iregex '^.*\.\(py\)$' ! -path ./compiler/lib/Bindings/Python/concrete/__init__.py)
 
 for file in $files
 do

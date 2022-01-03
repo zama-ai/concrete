@@ -28,6 +28,7 @@ declare_mlir_python_sources(ConcretelangBindingsPythonSources
   SOURCES
     concrete/compiler.py
     concrete/version.py
+    concrete/__init__.py
     concrete/lang/__init__.py
     concrete/lang/dialects/__init__.py
     concrete/lang/dialects/_ods_common.py)
