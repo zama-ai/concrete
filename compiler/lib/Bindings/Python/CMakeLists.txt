@@ -27,7 +27,6 @@ declare_mlir_python_sources(ConcretelangBindingsPythonSources
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
   SOURCES
     concrete/compiler.py
-    concrete/version.py
     concrete/__init__.py
     concrete/lang/__init__.py
     concrete/lang/dialects/__init__.py

@@ -14,7 +14,7 @@ def read(fname):
 def find_version():
     return re.match(
         r"__version__ = \"(?P<version>.+)\"",
-        read("lib/Bindings/Python/concrete/version.py"),
+        read("lib/Bindings/Python/version.txt"),
     ).group("version")
 
 
