@@ -41,7 +41,7 @@ jobs:
           --compiler-release-endpoint-url \
           https://api.github.com/repos/zama-ai/homomorphizer/releases \
           --env_img_url \
-          https://api.github.com/orgs/zama-ai/packages/container/concretefhe-env/versions \
+          https://api.github.com/orgs/zama-ai/packages/container/concrete-framework-env/versions \
           --file "${WHEEL_SPEC}" \
           --token ${{ secrets.BOT_TOKEN }} \
           --github-env "$GITHUB_ENV"

@@ -21,7 +21,7 @@ project = 'Concrete Framework'
 copyright = '2021, Zama'
 author = 'Zama'
 description = 'Zama Concrete Framework'
-root_url = os.environ.get("DOC_ROOT_URL", "/concretefhe")
+root_url = os.environ.get("DOC_ROOT_URL", "/concrete-framework")
 root_url = root_url if root_url.endswith('/') else root_url + '/'
 
 # The full version, including alpha/beta/rc tags
@@ -71,7 +71,7 @@ html_theme = 'sphinx_zama_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 html_theme_options = {
-    "github_url": "https://github.com/zama-ai/concretefhe",
+    "github_url": "https://github.com/zama-ai/concrete-framework",
     "twitter_url": "https://twitter.com/zama_fhe",
     "icon_links": [{
         "name": "Discourse",

@@ -318,8 +318,8 @@ class GenericFunction(IntermediateNode):
     op_attributes: Dict[str, Any]
     _n_in: int
 
-    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/798 have a proper attribute
-    # system
+    # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/798 have a proper
+    # attribute system
     DEFAULT_OP_ATTRIBUTES: Dict[str, Any] = {"fusable": True}
 
     KWARGS_IGNORED_IN_FORMATTING: Set[str] = {

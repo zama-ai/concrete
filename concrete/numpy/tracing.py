@@ -650,7 +650,7 @@ def _on_numpy_matmul(lhs: NPTracer, rhs: NPTracer):
 
     output_shape = common_output_dtypes_and_shapes[0][1]
 
-    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/1174
+    # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/1174
     # remove all the reshape logic once matmul supports more combinations of arguments
     if isinstance(lhs_output := lhs.output, TensorValue) and isinstance(
         rhs_output := rhs.output, TensorValue

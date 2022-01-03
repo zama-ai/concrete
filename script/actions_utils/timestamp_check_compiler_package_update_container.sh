@@ -6,7 +6,7 @@ FILE=
 COMPILER_RELEASE_ENDPOINT_URL=
 ENV_IMG_ENDPOINT_URL=
 TOKEN=
-ENV_DOCKERFILE=./docker/Dockerfile.concretefhe-env
+ENV_DOCKERFILE=./docker/Dockerfile.concrete-framework-env
 GITHUB_ENV_FILE=debug.txt
 
 while [ -n "$1" ]

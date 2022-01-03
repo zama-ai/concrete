@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "concretefhe"
+name = "concrete-framework"
 version = "0.2.0-rc5"
 description = "Concrete Framework"
 authors = ["Zama <hello@zama.ai>"]
@@ -8,7 +8,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.8,<3.10"
 networkx = "^2.6.3"
 matplotlib = "^3.4.3"
 numpy = "^1.21.2"
@@ -32,7 +32,7 @@ pydocstyle = "^6.1.1"
 jupyter = "^1.0.0"
 flake8 = "^3.9.2"
 flake8-bugbear = "^21.9.2"
-nbsphinx = "^0.8.7"
+nbsphinx = "0.8.7"
 tqdm = "^4.62.3"
 psutil = "^5.8.0"
 py-cpuinfo = "^8.0.0"

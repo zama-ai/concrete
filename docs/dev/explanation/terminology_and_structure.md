@@ -19,7 +19,7 @@ In this section we will go over some terms that we use throughout the project.
 
 ## Module structure
 
-In this section, we will discuss the module structure of **concretefhe** briefly. You are encouraged to check individual `.py` files to learn more!
+In this section, we will discuss the module structure of **concrete-framework** briefly. You are encouraged to check individual `.py` files to learn more!
 
 - concrete
     - common: types and utilities that can be used by multiple frontends (e.g., numpy, torch)

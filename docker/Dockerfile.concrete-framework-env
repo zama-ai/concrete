@@ -3,7 +3,7 @@ FROM ubuntu:20.04
 # Do not change the line below it will be updated automatically when the docker is regenerated
 # compiler timestamp: 2021-12-22T10:49:30Z
 
-# Remove once compiler is on PyPi https://github.com/zama-ai/concretefhe-internal/issues/809
+# Remove once compiler is on PyPi https://github.com/zama-ai/concrete-framework-internal/issues/809
 ARG WHEEL
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -27,6 +27,6 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry
 
-# Remove once compiler is on PyPi https://github.com/zama-ai/concretefhe-internal/issues/809
+# Remove once compiler is on PyPi https://github.com/zama-ai/concrete-framework-internal/issues/809
 WORKDIR /pkg
 COPY pkg/${WHEEL} .

@@ -55,7 +55,7 @@ def pytest_addoption(parser):
     )
 
 
-DEFAULT_KEYRING_PATH = Path.home().resolve() / ".cache/concretefhe_pytest"
+DEFAULT_KEYRING_PATH = Path.home().resolve() / ".cache/concrete-framework_pytest"
 
 
 def get_keyring_dir_from_session_or_default(
@@ -404,7 +404,7 @@ def check_is_good_execution_impl(
     # >= if there are 8 bits signed integers
     allow_relaxed_tests_passing = max_bit_width >= ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
 
-    # FIXME: https://github.com/zama-ai/concretefhe-internal/issues/1255
+    # FIXME: https://github.com/zama-ai/concrete-framework-internal/issues/1255
     # Increased with compiler accuracy which dropped, make sure to remove once accuracy improves
     nb_tries = 10
 
@@ -432,7 +432,7 @@ def check_is_good_execution_impl(
             if verbose:
                 print(f"Good computation after {i} tries")
             return
-        # FIXME: https://github.com/zama-ai/concretefhe-internal/issues/1264
+        # FIXME: https://github.com/zama-ai/concrete-framework-internal/issues/1264
         # Remove the relaxed tests once accuracy is good again for 7 bits
         if allow_relaxed_tests_passing and cells_were_properly_computed.all():
             print(

@@ -161,7 +161,7 @@ def eval_op_graph_bounds_on_inputset(
     def generate_input_values_dict(input_data) -> Dict[int, Any]:
         if num_input_nodes > 1:
             return dict(enumerate(input_data))
-        # TODO: https://github.com/zama-ai/concretefhe-internal/issues/772
+        # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/772
         # update this to support tuple in case of 1-input functions accepting tuples
         assert_true(
             not isinstance(input_data, tuple),

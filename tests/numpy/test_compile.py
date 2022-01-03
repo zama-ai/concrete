@@ -242,7 +242,7 @@ def mix_x_and_y_and_call_f_with_integer_inputs(func, x, y):
 def mix_x_and_y_and_call_f_which_expects_small_inputs(func, x, y):
     """Create an upper function to test `func`, which expects small values to not use too much
     precision"""
-    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/993
+    # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/993
     # Understand why it's failing with 0.77 for numpy.arctanh
     a = numpy.abs(0.5 * numpy.sin(x))
     z = numpy.abs(3 * func(a))
@@ -336,7 +336,7 @@ def subtest_compile_and_run_unary_ufunc_correctness(
         default_compilation_configuration,
     )
 
-    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/910
+    # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/910
     args = [
         numpy.random.randint(low, high, size=tensor_shape, dtype=numpy.uint8)
         if tensor_shape != ()
@@ -377,7 +377,7 @@ def subtest_compile_and_run_binary_ufunc_correctness(
         default_compilation_configuration,
     )
 
-    # TODO: https://github.com/zama-ai/concretefhe-internal/issues/910
+    # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/910
     args = [
         numpy.random.randint(low, high, size=tensor_shape, dtype=numpy.uint8)
         if tensor_shape != ()

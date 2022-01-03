@@ -20,11 +20,11 @@ The drawing package required is `pygraphviz` which needs `graphviz` packages ins
 
 To install the required drawing packages once you have `graphviz` installed run:
 
-`pip install concretefhe[full]`
+`pip install concrete-framework[full]`
 
 You may need to force reinstallation
 
-`pip install --force-reinstall concretefhe[full]`
+`pip install --force-reinstall concrete-framework[full]`
 ```
 
 To draw your circuit, you can do the following:

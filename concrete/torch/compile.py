@@ -1,6 +1,6 @@
 """torch compilation function."""
 
-from typing import Iterable, Optional, Tuple, Union
+from typing import Iterable, Optional, Union
 
 import numpy
 import torch
@@ -9,8 +9,8 @@ from ..common.compilation import CompilationArtifacts, CompilationConfiguration
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray, QuantizedModule
 from . import NumpyModule
 
-TorchDataset = Union[Iterable[torch.Tensor], Iterable[Tuple[torch.Tensor, ...]]]
-NPDataset = Union[Iterable[numpy.ndarray], Iterable[Tuple[numpy.ndarray, ...]]]
+TorchDataset = Iterable[torch.Tensor]
+NPDataset = Iterable[numpy.ndarray]
 
 
 def convert_torch_tensor_or_numpy_array_to_numpy_array(
@@ -47,7 +47,7 @@ def compile_torch_model(
     Args:
         torch_model (torch.nn.Module): the model to quantize,
         torch_inputset (Union[TorchDataset, NPDataset]): the inputset, can contain either torch
-            tensors or numpy.ndarray or tuples of those for networks requiring multiple inputs
+            tensors or numpy.ndarray, only datasets with a single input are supported for now.
         function_parameters_encrypted_status (Dict[str, Union[str, EncryptedStatus]]): a dict with
             the name of the parameter and its encrypted status
         compilation_configuration (CompilationConfiguration): Configuration object to use
@@ -66,15 +66,11 @@ def compile_torch_model(
     numpy_model = NumpyModule(torch_model)
 
     # Torch input to numpy
-    numpy_inputset = (
-        tuple(convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in input_)
-        if isinstance(input_, tuple)
-        else convert_torch_tensor_or_numpy_array_to_numpy_array(input_)
-        for input_ in torch_inputset
-    )
-
     numpy_inputset_as_single_array = numpy.concatenate(
-        tuple(numpy.expand_dims(arr, 0) for arr in numpy_inputset)
+        tuple(
+            numpy.expand_dims(convert_torch_tensor_or_numpy_array_to_numpy_array(input_), 0)
+            for input_ in torch_inputset
+        )
     )
 
     # Quantize with post-training static method, to have a model with integer weights

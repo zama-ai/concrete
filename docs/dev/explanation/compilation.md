@@ -1,8 +1,8 @@
 # Compilation Pipeline In Depth
 
-## What is **concretefhe**?
+## What is **concrete-framework**?
 
-**concretefhe** is the python API of the **Concrete** framework for developing homomorphic applications.
+**concrete-framework** is the python API of the **Concrete** framework for developing homomorphic applications.
 One of its essential functionalities is to transform Python functions to their `MLIR` equivalent.
 Unfortunately, not all python functions can be converted due to the limits of current product (we are in the alpha stage), or sometimes due to inherent restrictions of FHE itself.
 However, you can already build interesting and impressing use cases, and more will be available in further versions of the framework.

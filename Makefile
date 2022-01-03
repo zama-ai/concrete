@@ -1,9 +1,9 @@
 SHELL:=/bin/bash
 
-DEV_DOCKER_IMG:=concretefhe-dev
-DEV_DOCKERFILE:=docker/Dockerfile.concretefhe-dev
-DEV_CONTAINER_VENV_VOLUME:=concretefhe-internal-venv
-DEV_CONTAINER_CACHE_VOLUME:=concretefhe-internal-cache
+DEV_DOCKER_IMG:=concrete-framework-dev
+DEV_DOCKERFILE:=docker/Dockerfile.concrete-framework-dev
+DEV_CONTAINER_VENV_VOLUME:=concrete-framework-internal-venv
+DEV_CONTAINER_CACHE_VOLUME:=concrete-framework-internal-cache
 SRC_DIR:=concrete
 
 .PHONY: setup_env # Set up the environment
@@ -12,16 +12,16 @@ setup_env:
 	poetry run python -m pip install -U --force-reinstall setuptools
 	poetry install --extras full
 	@# This is required to be friendly in the docker and on bare systems until the package is on pip
-	@# https://github.com/zama-ai/concretefhe-internal/issues/809
+	@# https://github.com/zama-ai/concrete-framework-internal/issues/809
 	if [[ -d /pkg ]]; then														\
 		NUM_PKG=$$(ls /pkg | wc -l);											\
 		if [[ "$${NUM_PKG}" != "0" ]]; then										\
 			poetry run python -m pip install --force-reinstall /pkg/*.whl;		\
-			poetry run python -m pip install --force-reinstall numpy==1.21.4;	\
+			poetry run python -m pip install --force-reinstall numpy==1.22.0;	\
 		fi;																		\
 	fi
 	@# we need to pin a specific version of numpy to avoid having license conflicts
-	@# see https://github.com/zama-ai/concretefhe-internal/runs/4455022611?check_suite_focus=true for details
+	@# see https://github.com/zama-ai/concrete-framework-internal/runs/4455022611?check_suite_focus=true for details
 
 .PHONY: sync_env # Synchronise the environment
 sync_env:

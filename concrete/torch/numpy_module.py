@@ -45,7 +45,7 @@ class NumpyModule:
             self.numpy_module_dict[name] = params.T if "weight" in name else params
 
     def __call__(self, x: numpy.ndarray):
-        """Return the function to be compiled by concretefhe.numpy."""
+        """Return the function to be compiled."""
         return self.forward(x)
 
     def forward(self, x: numpy.ndarray) -> numpy.ndarray:

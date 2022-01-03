@@ -62,7 +62,7 @@ then
     python -m pip install -U --force-reinstall setuptools
     poetry install --no-dev --extras full
     python -m pip install pip-licenses
-    pip-licenses | grep -v "pkg\-resources\|concretefhe" | tee "${NEW_LICENSES_FILENAME}"
+    pip-licenses | grep -v "pkg\-resources\|concrete-framework" | tee "${NEW_LICENSES_FILENAME}"
 
     # Remove trailing whitespaces
     if [ "$UNAME" == "Darwin" ]
@@ -99,7 +99,7 @@ then
     source $TMP_VENV_PATH/tmp_venv/bin/activate
 
     make setup_env
-    pip-licenses | grep -v "pkg\-resources\|concretefhe" | tee "${NEW_LICENSES_FILENAME}"
+    pip-licenses | grep -v "pkg\-resources\|concrete-framework" | tee "${NEW_LICENSES_FILENAME}"
 
     # Remove trailing whitespaces
     if [ "$UNAME" == "Darwin" ]

@@ -2,7 +2,7 @@
 # Contributing
 
 ```{important}
-There are two ways to contribute to **concretefhe**:
+There are two ways to contribute to **concrete-framework**:
 - you can open issues to report bugs, typos and suggest ideas
 - you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
 ```
@@ -28,7 +28,7 @@ git checkout -b fix/tracing_indexing_42
 
 ### Conformance
 
-Each commit to **concretefhe**  should be conformant to the standards decided by the team. Conformance can be checked using the following command.
+Each commit to **concrete-framework**  should be conformant to the standards decided by the team. Conformance can be checked using the following command.
 
 ```shell
 make pcc

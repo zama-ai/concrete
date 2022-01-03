@@ -506,7 +506,7 @@ def test_inpuset_eval_1_input(default_compilation_configuration):
     assert output_node.outputs[0] == EncryptedScalar(UnsignedInteger(6))
 
 
-# TODO: https://github.com/zama-ai/concretefhe-internal/issues/772
+# TODO: https://github.com/zama-ai/concrete-framework-internal/issues/772
 # Remove once this issue is done
 def test_inpuset_eval_1_input_refuse_tuple(default_compilation_configuration):
     """Test case for a function with a single parameter and passing the inputset with tuples."""

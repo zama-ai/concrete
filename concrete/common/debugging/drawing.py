@@ -109,7 +109,8 @@ def draw_graph(
             err_msg = (
                 f"{draw_graph.__name__} requires pygraphviz, install your OS graphviz distribution "
                 "https://pygraphviz.github.io/documentation/stable/install.html "
-                f"and reinstall with extras: `pip install --force-reinstall concretefhe[full]`"
+                "and reinstall with extras: `pip install --force-reinstall "
+                "concrete-framework[full]`"
             )
             raise ImportError(err_msg) from e
     agraph.graph_attr["rankdir"] = "TB" if vertical else "LR"
