@@ -28,7 +28,7 @@ def _lookup_runtime_lib() -> str:
     cwd = os.path.abspath(__file__)
     cwd = os.path.abspath(os.path.join(cwd, os.pardir))
     cwd = os.path.abspath(os.path.join(cwd, os.pardir))
-    package_name = "concretefhe_compiler"
+    package_name = "concrete_compiler"
     libs_path = os.path.join(cwd, f"{package_name}.libs")
     # Can be because it's not a properly installed package
     if not os.path.exists(libs_path):

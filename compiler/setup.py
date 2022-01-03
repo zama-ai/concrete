@@ -46,7 +46,7 @@ class MakeBuild(build_ext):
 
 
 setuptools.setup(
-    name="concretefhe-compiler",
+    name="concrete-compiler",
     version=find_version(),
     author="Zama Team",
     author_email="hello@zama.ai",
