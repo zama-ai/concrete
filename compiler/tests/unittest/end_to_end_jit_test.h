@@ -93,6 +93,17 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
     }                                                                          \
   } while (0)
 
+static inline llvm::Optional<mlir::concretelang::KeySetCache> getTestKeySetCache() {
+
+  llvm::SmallString<0> cachePath;
+  llvm::sys::path::system_temp_directory(true, cachePath);
+  llvm::sys::path::append(cachePath, "KeySetCache");
+
+  auto cachePathStr = std::string(cachePath);
+  return llvm::Optional<mlir::concretelang::KeySetCache>(
+      mlir::concretelang::KeySetCache(cachePathStr));
+}
+
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
@@ -102,16 +113,6 @@ internalCheckedJit(F checkFunc, llvm::StringRef src,
                    llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false,
 		   bool autoParallelize = false) {
-
-  llvm::SmallString<0> cachePath;
-
-  llvm::sys::path::system_temp_directory(true, cachePath);
-
-  llvm::sys::path::append(cachePath, "KeySetCache");
-
-  auto cachePathStr = std::string(cachePath);
-  auto optCache = llvm::Optional<mlir::concretelang::KeySetCache>(
-      mlir::concretelang::KeySetCache(cachePathStr));
 
   mlir::concretelang::JitCompilerEngine engine;
 
@@ -124,7 +125,7 @@ internalCheckedJit(F checkFunc, llvm::StringRef src,
 #endif
 
   llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> lambdaOrErr =
-      engine.buildLambda(src, func, optCache);
+      engine.buildLambda(src, func, getTestKeySetCache());
 
   if (!lambdaOrErr) {
     std::cout << llvm::toString(lambdaOrErr.takeError()) << std::endl;

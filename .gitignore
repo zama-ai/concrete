@@ -48,3 +48,6 @@ _build/
 
 # macOS
 .DS_Store
+
+
+compiler/tests/TestLib/out/

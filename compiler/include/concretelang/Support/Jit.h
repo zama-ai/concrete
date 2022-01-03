@@ -15,6 +15,8 @@
 namespace mlir {
 namespace concretelang {
 
+size_t bitWidthAsWord(size_t exactBitWidth);
+
 /// JITLambda is a tool to JIT compile an mlir module and to invoke a function
 /// of the module.
 class JITLambda {

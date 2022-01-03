@@ -22,6 +22,7 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     RTDialect
 
     ConcretelangSupport
+    ConcretelangTestLib
 
     -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
     -Wl,-rpath,${HPX_DIR}/../../
