@@ -1,4 +1,0 @@
-ClientParameters:
-===============
-
-.. doxygenfile:: ClientParameters.h

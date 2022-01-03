@@ -3,14 +3,14 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
+#include "boost/outcome.h"
+
 #include "concretelang/ClientLib/KeySetCache.h"
-#include "concretelang/Support/Error.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 
 #include <fstream>
-#include <functional>
 #include <sstream>
 #include <string>
 
@@ -18,8 +18,10 @@ extern "C" {
 #include "concrete-ffi.h"
 }
 
-namespace mlir {
 namespace concretelang {
+namespace clientlib {
+
+using StringError = concretelang::error::StringError;
 
 static std::string readFile(llvm::SmallString<0> &path) {
   std::ifstream in((std::string)path, std::ofstream::binary);
@@ -70,11 +72,11 @@ void saveKeyswitchKey(llvm::SmallString<0> &path, LweKeyswitchKey_u64 *key) {
   free(buffer.pointer);
 }
 
-llvm::Expected<std::unique_ptr<KeySet>>
-KeySetCache::tryLoadKeys(ClientParameters &params, uint64_t seed_msb,
-                         uint64_t seed_lsb, llvm::SmallString<0> &folderPath) {
+outcome::checked<std::unique_ptr<KeySet>, StringError>
+KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
+                      uint64_t seed_lsb, std::string folderPath) {
   // TODO: text dump of all parameter in /hash
-  auto key_set = KeySet::uninitialized();
+  auto key_set = std::make_unique<KeySet>();
 
   std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
       secretKeys;
@@ -87,7 +89,7 @@ KeySetCache::tryLoadKeys(ClientParameters &params, uint64_t seed_msb,
   for (auto secretKeyParam : params.secretKeys) {
     auto id = secretKeyParam.first;
     auto param = secretKeyParam.second;
-    llvm::SmallString<0> path = folderPath;
+    llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "secretKey_" + id);
     LweSecretKey_u64 *sk = loadSecretKey(path);
     secretKeys[id] = {param, sk};
@@ -96,7 +98,7 @@ KeySetCache::tryLoadKeys(ClientParameters &params, uint64_t seed_msb,
   for (auto bootstrapKeyParam : params.bootstrapKeys) {
     auto id = bootstrapKeyParam.first;
     auto param = bootstrapKeyParam.second;
-    llvm::SmallString<0> path = folderPath;
+    llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "pbsKey_" + id);
     LweBootstrapKey_u64 *bsk = loadBootstrapKey(path);
     bootstrapKeys[id] = {param, bsk};
@@ -105,7 +107,7 @@ KeySetCache::tryLoadKeys(ClientParameters &params, uint64_t seed_msb,
   for (auto keyswitchParam : params.keyswitchKeys) {
     auto id = keyswitchParam.first;
     auto param = keyswitchParam.second;
-    llvm::SmallString<0> path = folderPath;
+    llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "ksKey_" + id);
     LweKeyswitchKey_u64 *ksk = loadKeyswitchKey(path);
     keyswitchKeys[id] = {param, ksk};
@@ -113,24 +115,21 @@ KeySetCache::tryLoadKeys(ClientParameters &params, uint64_t seed_msb,
 
   key_set->setKeys(secretKeys, bootstrapKeys, keyswitchKeys);
 
-  auto err = key_set->setupEncryptionMaterial(params, seed_msb, seed_lsb);
-  if (err) {
-    return StreamStringError() << "Cannot setup encryption material: " << err;
-  }
+  OUTCOME_TRYV(key_set->setupEncryptionMaterial(params, seed_msb, seed_lsb));
 
   return std::move(key_set);
 }
 
-llvm::Error saveKeys(KeySet &key_set, llvm::SmallString<0> &folderPath) {
+outcome::checked<void, StringError> saveKeys(KeySet &key_set,
+                                             llvm::SmallString<0> &folderPath) {
   llvm::SmallString<0> folderIncompletePath = folderPath;
 
   folderIncompletePath.append(".incomplete");
 
   auto err = llvm::sys::fs::create_directories(folderIncompletePath);
   if (err) {
-    return StreamStringError()
-           << "Cannot create directory \"" << folderIncompletePath
-           << "\": " << err.message();
+    return StringError("Cannot create directory \"")
+           << std::string(folderIncompletePath) << "\": " << err.message();
   }
 
   // Save LWE secret keys
@@ -163,16 +162,16 @@ llvm::Error saveKeys(KeySet &key_set, llvm::SmallString<0> &folderPath) {
     llvm::sys::fs::remove_directories(folderIncompletePath);
   }
   if (!llvm::sys::fs::exists(folderPath)) {
-    return StreamStringError()
-           << "Cannot save directory \"" << folderPath << "\"";
+    return StringError("Cannot save directory \"")
+           << std::string(folderPath) << "\"";
   }
 
-  return llvm::Error::success();
+  return outcome::success();
 }
 
-llvm::Expected<std::unique_ptr<KeySet>>
-KeySetCache::tryLoadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
-                                   uint64_t seed_lsb) {
+outcome::checked<std::unique_ptr<KeySet>, StringError>
+KeySetCache::loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
+                                uint64_t seed_lsb) {
 
   llvm::SmallString<0> folderPath =
       llvm::SmallString<0>(this->backingDirectoryPath);
@@ -183,7 +182,7 @@ KeySetCache::tryLoadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
                                           std::to_string(seed_lsb));
 
   if (llvm::sys::fs::exists(folderPath)) {
-    return tryLoadKeys(params, seed_msb, seed_lsb, folderPath);
+    return loadKeys(params, seed_msb, seed_lsb, std::string(folderPath));
   }
 
   // Creating a lock for concurrent generation
@@ -198,8 +197,8 @@ KeySetCache::tryLoadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
 
   if (err) {
     // parent does not exists OR right issue (creation or write)
-    return StreamStringError()
-           << "Cannot access \"" << lockPath << "\": " << err.message();
+    return StringError("Cannot access \"")
+           << std::string(lockPath) << "\": " << err.message();
   }
 
   // The first to lock will generate while the others waits
@@ -211,23 +210,23 @@ KeySetCache::tryLoadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
 
   if (llvm::sys::fs::exists(folderPath)) {
     // Others returns here
-    return tryLoadKeys(params, seed_msb, seed_lsb, folderPath);
+    return loadKeys(params, seed_msb, seed_lsb, std::string(folderPath));
   }
 
-  auto key_set = KeySet::generate(params, seed_msb, seed_lsb);
+  OUTCOME_TRY(auto key_set, KeySet::generate(params, seed_msb, seed_lsb));
 
-  if (!key_set) {
-    return StreamStringError()
-           << "Cannot generate key set: " << key_set.takeError();
-  }
+  OUTCOME_TRYV(saveKeys(*key_set, folderPath));
 
-  auto savedErr = saveKeys(*(key_set.get()), folderPath);
-  if (savedErr) {
-    return StreamStringError() << "Cannot save key set: " << savedErr;
-  }
-
-  return key_set;
+  return std::move(key_set);
 }
 
+outcome::checked<std::unique_ptr<KeySet>, StringError>
+KeySetCache::generate(std::shared_ptr<KeySetCache> cache,
+                      ClientParameters &params, uint64_t seed_msb,
+                      uint64_t seed_lsb) {
+  return cache ? cache->loadOrGenerateSave(params, seed_msb, seed_lsb)
+               : KeySet::generate(params, seed_msb, seed_lsb);
+}
+
+} // namespace clientlib
 } // namespace concretelang
-} // namespace mlir

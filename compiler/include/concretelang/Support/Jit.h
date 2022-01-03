@@ -15,7 +15,8 @@
 namespace mlir {
 namespace concretelang {
 
-size_t bitWidthAsWord(size_t exactBitWidth);
+using ::concretelang::clientlib::CircuitGate;
+using ::concretelang::clientlib::KeySet;
 
 /// JITLambda is a tool to JIT compile an mlir module and to invoke a function
 /// of the module.

@@ -5,8 +5,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 const size_t numDim = 2;
-const int64_t dim0 = 2;
-const int64_t dim1 = 10;
+const size_t dim0 = 2;
+const size_t dim1 = 10;
 const int64_t dims[numDim]{dim0, dim1};
 static std::vector<uint8_t> tensor2D{
     63, 12, 7, 43, 52, 9, 26, 34, 22, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
@@ -138,10 +138,10 @@ func @main(%t: tensor<8x4x5x3x!FHE.eint<6>>, %d0: index, %d1: index, %d2: index,
   uint8_t A[dimSizes[0]][dimSizes[1]][dimSizes[2]][dimSizes[3]];
 
   // Fill with some reproducible pattern
-  for (int64_t d0 = 0; d0 < dimSizes[0]; d0++) {
-    for (int64_t d1 = 0; d1 < dimSizes[1]; d1++) {
-      for (int64_t d2 = 0; d2 < dimSizes[2]; d2++) {
-        for (int64_t d3 = 0; d3 < dimSizes[3]; d3++) {
+  for (size_t d0 = 0; d0 < dimSizes[0]; d0++) {
+    for (size_t d1 = 0; d1 < dimSizes[1]; d1++) {
+      for (size_t d2 = 0; d2 < dimSizes[2]; d2++) {
+        for (size_t d3 = 0; d3 < dimSizes[3]; d3++) {
           A[d0][d1][d2][d3] = d0 + d1 + d2 + d3;
         }
       }

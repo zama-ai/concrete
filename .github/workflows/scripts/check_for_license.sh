@@ -5,8 +5,9 @@ print_and_exit() {
     exit 1
 }
 
+EXCLUDE_DIRS="-path ./compiler/include/boost-single-header -prune -o"
 
-files=$(find ./compiler/{include,lib,src} -iregex '^.*\.\(cpp\|cc\|h\|hpp\)$')
+files=$(find ./compiler/{include,lib,src} $EXCLUDE_DIRS -iregex '^.*\.\(cpp\|cc\|h\|hpp\)$' -print)
 
 for file in $files
 do

@@ -153,8 +153,8 @@ func @main(%t: tensor<10xi1>, %i: index) -> i1{
 ///////////////////////////////////////////////////////////////////////////////
 
 const size_t numDim = 2;
-const int64_t dim0 = 2;
-const int64_t dim1 = 10;
+const size_t dim0 = 2;
+const size_t dim1 = 10;
 const int64_t dims[numDim]{dim0, dim1};
 static std::vector<uint64_t> tensor2D{
     0xFFFFFFFFFFFFFFFF,

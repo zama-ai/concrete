@@ -12,6 +12,7 @@
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
+#include "concretelang/Common/BitsSize.h"
 #include <concretelang/Support/Error.h>
 #include <concretelang/Support/Jit.h>
 #include <concretelang/Support/logging.h>
@@ -198,12 +199,14 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
   // Else if is encryted, allocate ciphertext and encrypt.
   uint64_t *ctArg;
   uint64_t ctSize;
-  if (auto err = this->keySet.allocate_lwe(pos, &ctArg, ctSize)) {
-    return std::move(err);
+  auto check = this->keySet.allocate_lwe(pos, &ctArg, ctSize);
+  if (!check) {
+    return StreamStringError(check.error().mesg);
   }
   allocatedCiphertexts.push_back(ctArg);
-  if (auto err = this->keySet.encrypt_lwe(pos, ctArg, arg)) {
-    return std::move(err);
+  check = this->keySet.encrypt_lwe(pos, ctArg, arg);
+  if (!check) {
+    return StreamStringError(check.error().mesg);
   }
   // memref calling convention
   // allocated
@@ -224,17 +227,6 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
   return llvm::Error::success();
 }
 
-size_t bitWidthAsWord(size_t exactBitWidth) {
-  size_t sortedWordBitWidths[] = {8, 16, 32, 64};
-  size_t previousWidth = 0;
-  for (auto currentWidth : sortedWordBitWidths) {
-    if (previousWidth < exactBitWidth && exactBitWidth <= currentWidth) {
-      return currentWidth;
-    }
-  }
-  return exactBitWidth;
-}
-
 llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
                                         const void *data,
                                         llvm::ArrayRef<int64_t> shape) {
@@ -253,7 +245,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
     return llvm::make_error<llvm::StringError>(msg,
                                                llvm::inconvertibleErrorCode());
   }
-  auto roundedSize = bitWidthAsWord(info.shape.width);
+  auto roundedSize = ::concretelang::common::bitWidthAsWord(info.shape.width);
   if (width != roundedSize) {
     auto msg = "Bad argument (pos=" + llvm::Twine(pos) + ") : expected " +
                llvm::Twine(roundedSize) + "bits" + " but received " +
@@ -315,9 +307,9 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
     for (size_t i = 0, offset = 0; i < info.shape.size;
          i++, offset += lweSize) {
 
-      if (auto err =
-              this->keySet.encrypt_lwe(pos, ctBuffer + offset, data8[i])) {
-        return std::move(err);
+      auto check = this->keySet.encrypt_lwe(pos, ctBuffer + offset, data8[i]);
+      if (!check) {
+        return StreamStringError(check.error().mesg);
       }
     }
     // Replace the data by the buffer to ciphertext
@@ -387,8 +379,9 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t &res) {
   }
   // Else if is encryted, decrypt
   uint64_t *ct = (uint64_t *)(outputs[offset + 1]);
-  if (auto err = this->keySet.decrypt_lwe(pos, ct, res)) {
-    return std::move(err);
+  auto check = this->keySet.decrypt_lwe(pos, ct, res);
+  if (!check) {
+    return StreamStringError(check.error().mesg);
   }
   return llvm::Error::success();
 }
@@ -504,8 +497,9 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, void *res,
 
     for (size_t i = 0, o = 0; i < numElements; i++, o += lweSize) {
       uint64_t *ct = ((uint64_t *)alignedBytes) + o;
-      if (auto err = this->keySet.decrypt_lwe(pos, ct, ((uint64_t *)res)[i])) {
-        return std::move(err);
+      auto check = this->keySet.decrypt_lwe(pos, ct, ((uint64_t *)res)[i]);
+      if (!check) {
+        return StreamStringError(check.error().mesg);
       }
     }
   }

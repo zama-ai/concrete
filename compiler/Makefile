@@ -5,6 +5,8 @@ PARALLEL_EXECUTION_ENABLED=OFF
 CC_COMPILER=
 CXX_COMPILER=
 
+EXTERNAL_HEADERS=include/boost-single-header/outcome.hpp
+
 export PATH := $(BUILD_DIR)/bin:$(PATH)
 
 ifeq ($(shell which ccache),)
@@ -51,7 +53,10 @@ $(BUILD_DIR)/configured.stamp:
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE}
 	touch $@
 
-build-initialized: $(BUILD_DIR)/configured.stamp
+include/boost-single-header/outcome.hpp:
+	wget https://github.com/ned14/outcome/raw/master/single-header/outcome.hpp -O $@
+
+build-initialized: $(EXTERNAL_HEADERS) $(BUILD_DIR)/configured.stamp
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
@@ -62,6 +67,12 @@ concretecompiler: build-initialized
 python-bindings: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangMLIRPythonModules
 	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
+
+clientlib: build-initialized
+	cmake --build $(BUILD_DIR) --target ConcretelangClientLib
+
+serverlib: build-initialized
+	cmake --build $(BUILD_DIR) --target ConcretelangServerLib
 
 test-check: concretecompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/
@@ -86,6 +97,12 @@ uninstall_runtime_lib:
 	-rm /usr/local/lib/libConcretelangRuntime*
 
 # unit-test
+
+clientlib-unit-test: build-clientlib-unit-test
+	$(BUILD_DIR)/bin/clientlib_unit_test
+
+build-clientlib-unit-test:
+	cmake --build $(BUILD_DIR) --target clientlib_unit_test
 
 testlib-unit-test: build-testlib-unit-test
 	$(BUILD_DIR)/bin/testlib_unit_test

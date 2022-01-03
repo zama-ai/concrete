@@ -16,6 +16,7 @@ set_source_files_properties(
 target_link_libraries(
   support_unit_test
   gtest_main
+  ConcretelangClientLib
   ConcretelangSupport
 )
 

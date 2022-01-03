@@ -6,8 +6,17 @@
 #include "concretelang/ClientLib/KeySet.h"
 #include "concretelang/Support/Error.h"
 
-namespace mlir {
+#define CAPI_ERR_TO_STRINGERROR(instr, msg)                                    \
+  {                                                                            \
+    int err;                                                                   \
+    instr;                                                                     \
+    if (err != 0) {                                                            \
+      return concretelang::error::StringError(msg);                            \
+    }                                                                          \
+  }
+
 namespace concretelang {
+namespace clientlib {
 
 KeySet::~KeySet() {
   for (auto it : secretKeys) {
@@ -22,31 +31,20 @@ KeySet::~KeySet() {
   free_encryption_generator(encryptionRandomGenerator);
 }
 
-llvm::Expected<std::unique_ptr<KeySet>>
+outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySet::generate(ClientParameters &params, uint64_t seed_msb,
                  uint64_t seed_lsb) {
+  auto keySet = std::make_unique<KeySet>();
 
-  auto keySet = uninitialized();
-
-  if (auto error = keySet->generateKeysFromParams(params, seed_msb, seed_lsb)) {
-    return std::move(error);
-  }
-
-  if (auto error =
-          keySet->setupEncryptionMaterial(params, seed_msb, seed_lsb)) {
-    return std::move(error);
-  }
+  OUTCOME_TRYV(keySet->generateKeysFromParams(params, seed_msb, seed_lsb));
+  OUTCOME_TRYV(keySet->setupEncryptionMaterial(params, seed_msb, seed_lsb));
 
   return std::move(keySet);
 }
 
-std::unique_ptr<KeySet> KeySet::uninitialized() {
-  return std::make_unique<KeySet>();
-}
-
-llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
-                                            uint64_t seed_msb,
-                                            uint64_t seed_lsb) {
+outcome::checked<void, StringError>
+KeySet::setupEncryptionMaterial(ClientParameters &params, uint64_t seed_msb,
+                                uint64_t seed_lsb) {
   // Set inputs and outputs LWE secret keys
   {
     for (auto param : params.inputs) {
@@ -55,10 +53,8 @@ llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
       if (param.encryption.hasValue()) {
         auto inputSk = this->secretKeys.find(param.encryption->secretKeyID);
         if (inputSk == this->secretKeys.end()) {
-          return llvm::make_error<llvm::StringError>(
-              "input encryption secret key (" + param.encryption->secretKeyID +
-                  ") does not exist ",
-              llvm::inconvertibleErrorCode());
+          return StringError("input encryption secret key (")
+                 << param.encryption->secretKeyID << ") does not exist ";
         }
         secretKeyParam = inputSk->second.first;
         secretKey = inputSk->second.second;
@@ -73,9 +69,8 @@ llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
       if (param.encryption.hasValue()) {
         auto outputSk = this->secretKeys.find(param.encryption->secretKeyID);
         if (outputSk == this->secretKeys.end()) {
-          return llvm::make_error<llvm::StringError>(
-              "cannot find output key to generate bootstrap key",
-              llvm::inconvertibleErrorCode());
+          return StringError(
+              "cannot find output key to generate bootstrap key");
         }
         secretKeyParam = outputSk->second.first;
         secretKey = outputSk->second.second;
@@ -89,50 +84,41 @@ llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
   this->encryptionRandomGenerator =
       allocate_encryption_generator(seed_msb, seed_lsb);
 
-  return llvm::Error::success();
+  return outcome::success();
 }
 
-llvm::Error KeySet::generateKeysFromParams(ClientParameters &params,
-                                           uint64_t seed_msb,
-                                           uint64_t seed_lsb) {
+outcome::checked<void, StringError>
+KeySet::generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
+                               uint64_t seed_lsb) {
+
   {
     // Generate LWE secret keys
     SecretRandomGenerator *generator;
 
     generator = allocate_secret_generator(seed_msb, seed_lsb);
     for (auto secretKeyParam : params.secretKeys) {
-      auto e = this->generateSecretKey(secretKeyParam.first,
-                                       secretKeyParam.second, generator);
-      if (e) {
-        return std::move(e);
-      }
+      OUTCOME_TRYV(this->generateSecretKey(secretKeyParam.first,
+                                           secretKeyParam.second, generator));
     }
     free_secret_generator(generator);
   }
   // Allocate the encryption random generator
-
   this->encryptionRandomGenerator =
       allocate_encryption_generator(seed_msb, seed_lsb);
   // Generate bootstrap and keyswitch keys
   {
     for (auto bootstrapKeyParam : params.bootstrapKeys) {
-      auto e = this->generateBootstrapKey(bootstrapKeyParam.first,
-                                          bootstrapKeyParam.second,
-                                          this->encryptionRandomGenerator);
-      if (e) {
-        return std::move(e);
-      }
+      OUTCOME_TRYV(this->generateBootstrapKey(bootstrapKeyParam.first,
+                                              bootstrapKeyParam.second,
+                                              this->encryptionRandomGenerator));
     }
     for (auto keyswitchParam : params.keyswitchKeys) {
-      auto e = this->generateKeyswitchKey(keyswitchParam.first,
-                                          keyswitchParam.second,
-                                          this->encryptionRandomGenerator);
-      if (e) {
-        return std::move(e);
-      }
+      OUTCOME_TRYV(this->generateKeyswitchKey(keyswitchParam.first,
+                                              keyswitchParam.second,
+                                              this->encryptionRandomGenerator));
     }
   }
-  return llvm::Error::success();
+  return outcome::success();
 }
 
 void KeySet::setKeys(
@@ -149,9 +135,9 @@ void KeySet::setKeys(
   this->keyswitchKeys = keyswitchKeys;
 }
 
-llvm::Error KeySet::generateSecretKey(LweSecretKeyID id,
-                                      LweSecretKeyParam param,
-                                      SecretRandomGenerator *generator) {
+outcome::checked<void, StringError>
+KeySet::generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,
+                          SecretRandomGenerator *generator) {
   LweSecretKey_u64 *sk;
   sk = allocate_lwe_secret_key_u64({param.size});
 
@@ -159,24 +145,20 @@ llvm::Error KeySet::generateSecretKey(LweSecretKeyID id,
 
   secretKeys[id] = {param, sk};
 
-  return llvm::Error::success();
+  return outcome::success();
 }
 
-llvm::Error KeySet::generateBootstrapKey(BootstrapKeyID id,
-                                         BootstrapKeyParam param,
-                                         EncryptionRandomGenerator *generator) {
+outcome::checked<void, StringError>
+KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param,
+                             EncryptionRandomGenerator *generator) {
   // Finding input and output secretKeys
   auto inputSk = secretKeys.find(param.inputSecretKeyID);
   if (inputSk == secretKeys.end()) {
-    return llvm::make_error<llvm::StringError>(
-        "cannot find input key to generate bootstrap key",
-        llvm::inconvertibleErrorCode());
+    return StringError("cannot find input key to generate bootstrap key");
   }
   auto outputSk = secretKeys.find(param.outputSecretKeyID);
   if (outputSk == secretKeys.end()) {
-    return llvm::make_error<llvm::StringError>(
-        "cannot find output key to generate bootstrap key",
-        llvm::inconvertibleErrorCode());
+    return StringError("cannot find output key to generate bootstrap key");
   }
   // Allocate the bootstrap key
   LweBootstrapKey_u64 *bsk;
@@ -207,24 +189,20 @@ llvm::Error KeySet::generateBootstrapKey(BootstrapKeyID id,
   fill_lwe_bootstrap_key_u64(bsk, inputSk->second.second, glwe_sk, generator,
                              {param.variance});
   free_glwe_secret_key_u64(glwe_sk);
-  return llvm::Error::success();
+  return outcome::success();
 }
 
-llvm::Error KeySet::generateKeyswitchKey(KeyswitchKeyID id,
-                                         KeyswitchKeyParam param,
-                                         EncryptionRandomGenerator *generator) {
+outcome::checked<void, StringError>
+KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param,
+                             EncryptionRandomGenerator *generator) {
   // Finding input and output secretKeys
   auto inputSk = secretKeys.find(param.inputSecretKeyID);
   if (inputSk == secretKeys.end()) {
-    return llvm::make_error<llvm::StringError>(
-        "cannot find input key to generate keyswitch key",
-        llvm::inconvertibleErrorCode());
+    return StringError("cannot find input key to generate keyswitch key");
   }
   auto outputSk = secretKeys.find(param.outputSecretKeyID);
   if (outputSk == secretKeys.end()) {
-    return llvm::make_error<llvm::StringError>(
-        "cannot find input key to generate keyswitch key",
-        llvm::inconvertibleErrorCode());
+    return StringError("cannot find output key to generate keyswitch key");
   }
   // Allocate the keyswitch key
   LweKeyswitchKey_u64 *ksk;
@@ -240,21 +218,19 @@ llvm::Error KeySet::generateKeyswitchKey(KeyswitchKeyID id,
   fill_lwe_keyswitch_key_u64(ksk, inputSk->second.second,
                              outputSk->second.second, generator,
                              {param.variance});
-  return llvm::Error::success();
+  return outcome::success();
 }
 
-llvm::Error KeySet::allocate_lwe(size_t argPos, uint64_t **ciphertext,
-                                 uint64_t &size) {
+outcome::checked<void, StringError>
+KeySet::allocate_lwe(size_t argPos, uint64_t **ciphertext, uint64_t &size) {
   if (argPos >= inputs.size()) {
-    return llvm::make_error<llvm::StringError>(
-        "allocate_lwe position of argument is too high",
-        llvm::inconvertibleErrorCode());
+    return StringError("allocate_lwe position of argument is too high");
   }
   auto inputSk = inputs[argPos];
 
   size = std::get<1>(inputSk).size + 1;
   *ciphertext = (uint64_t *)malloc(sizeof(uint64_t) * size);
-  return llvm::Error::success();
+  return outcome::success();
 }
 
 bool KeySet::isInputEncrypted(size_t argPos) {
@@ -267,18 +243,14 @@ bool KeySet::isOutputEncrypted(size_t argPos) {
          std::get<0>(outputs[argPos]).encryption.hasValue();
 }
 
-llvm::Error KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext,
-                                uint64_t input) {
+outcome::checked<void, StringError>
+KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
   if (argPos >= inputs.size()) {
-    return llvm::make_error<llvm::StringError>(
-        "encrypt_lwe position of argument is too high",
-        llvm::inconvertibleErrorCode());
+    return StringError("encrypt_lwe position of argument is too high");
   }
   auto inputSk = inputs[argPos];
   if (!std::get<0>(inputSk).encryption.hasValue()) {
-    return llvm::make_error<llvm::StringError>(
-        "encrypt_lwe the positional argument is not encrypted",
-        llvm::inconvertibleErrorCode());
+    return StringError("encrypt_lwe the positional argument is not encrypted");
   }
   // Encode - TODO we could check if the input value is in the right range
   uint64_t plaintext =
@@ -286,22 +258,18 @@ llvm::Error KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext,
   encrypt_lwe_u64(std::get<2>(inputSk), ciphertext, plaintext,
                   encryptionRandomGenerator,
                   {std::get<0>(inputSk).encryption->variance});
-  return llvm::Error::success();
+  return outcome::success();
 }
 
-llvm::Error KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext,
-                                uint64_t &output) {
+outcome::checked<void, StringError>
+KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
 
   if (argPos >= outputs.size()) {
-    return llvm::make_error<llvm::StringError>(
-        "decrypt_lwe: position of argument is too high",
-        llvm::inconvertibleErrorCode());
+    return StringError("decrypt_lwe: position of argument is too high");
   }
   auto outputSk = outputs[argPos];
   if (!std::get<0>(outputSk).encryption.hasValue()) {
-    return llvm::make_error<llvm::StringError>(
-        "decrypt_lwe: the positional argument is not encrypted",
-        llvm::inconvertibleErrorCode());
+    return StringError("decrypt_lwe: the positional argument is not encrypted");
   }
   uint64_t plaintext = decrypt_lwe_u64(std::get<2>(outputSk), ciphertext);
   // Decode
@@ -309,7 +277,7 @@ llvm::Error KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext,
   output = plaintext >> (64 - precision - 2);
   size_t carry = output % 2;
   output = ((output >> 1) + carry) % (1 << (precision + 1));
-  return llvm::Error::success();
+  return outcome::success();
 }
 
 const std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
@@ -329,5 +297,5 @@ KeySet::getKeyswitchKeys() {
   return keyswitchKeys;
 }
 
+} // namespace clientlib
 } // namespace concretelang
-} // namespace mlir

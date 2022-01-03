@@ -5,17 +5,26 @@
 
 #ifndef CONCRETELANG_CLIENTLIB_CLIENTPARAMETERS_H_
 #define CONCRETELANG_CLIENTLIB_CLIENTPARAMETERS_H_
+
 #include <map>
 #include <string>
 #include <vector>
 
+#include "boost/outcome.h"
+
+#include "concretelang/Common/Error.h"
+
 #include <llvm/Support/JSON.h>
 
-namespace mlir {
 namespace concretelang {
+namespace clientlib {
+
+using concretelang::error::StringError;
 
 const std::string SMALL_KEY = "small";
 const std::string BIG_KEY = "big";
+
+const std::string CLIENT_PARAMETERS_EXT = ".concrete.params.json";
 
 typedef size_t DecompositionLevelCount;
 typedef size_t DecompositionBaseLog;
@@ -31,6 +40,8 @@ struct LweSecretKeyParam {
   LweDimension size;
 
   void hash(size_t &seed);
+  inline uint64_t lweDimension() { return size; }
+  inline uint64_t lweSize() { return size + 1; }
 };
 static bool operator==(const LweSecretKeyParam &lhs,
                        const LweSecretKeyParam &rhs) {
@@ -121,8 +132,17 @@ struct ClientParameters {
   std::vector<CircuitGate> inputs;
   std::vector<CircuitGate> outputs;
   std::string functionName;
+
   size_t hash();
+
+  static outcome::checked<std::vector<ClientParameters>, StringError>
+  load(std::string path);
+
+  static std::string getClientParametersPath(std::string path);
+
+  LweSecretKeyParam lweSecretKeyParam(CircuitGate gate);
 };
+
 static inline bool operator==(const ClientParameters &lhs,
                               const ClientParameters &rhs) {
   return lhs.secretKeys == rhs.secretKeys &&
@@ -154,12 +174,13 @@ bool fromJSON(const llvm::json::Value, CircuitGate &, llvm::json::Path);
 
 llvm::json::Value toJSON(const ClientParameters &);
 bool fromJSON(const llvm::json::Value, ClientParameters &, llvm::json::Path);
+
 static inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
                                             ClientParameters cp) {
   return OS << llvm::formatv("{0:2}", toJSON(cp));
 }
 
+} // namespace clientlib
 } // namespace concretelang
-} // namespace mlir
 
 #endif

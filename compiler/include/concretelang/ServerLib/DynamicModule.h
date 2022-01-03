@@ -6,28 +6,37 @@
 #ifndef CONCRETELANG_TESTLIB_DYNAMIC_MODULE_H
 #define CONCRETELANG_TESTLIB_DYNAMIC_MODULE_H
 
-#include "concretelang/ClientLib/ClientParameters.h"
+#include "boost/outcome.h"
 
-namespace mlir {
+#include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/Common/Error.h"
+
 namespace concretelang {
+namespace serverlib {
+
+using concretelang::clientlib::ClientParameters;
+using concretelang::error::StringError;
 
 class DynamicModule {
 public:
   ~DynamicModule();
-  static llvm::Expected<std::shared_ptr<DynamicModule>>
+
+  static outcome::checked<std::shared_ptr<DynamicModule>, StringError>
   open(std::string libraryPath);
 
 private:
-  llvm::Error loadClientParametersJSON(std::string path);
-  llvm::Error loadSharedLibrary(std::string path);
+  outcome::checked<void, StringError>
+  loadClientParametersJSON(std::string path);
+
+  outcome::checked<void, StringError> loadSharedLibrary(std::string path);
 
 private:
   std::vector<ClientParameters> clientParametersList;
   void *libraryHandle;
 
-  friend class DynamicLambda;
+  friend class ServerLambda;
 };
 
+} // namespace serverlib
 } // namespace concretelang
-} // namespace mlir
 #endif

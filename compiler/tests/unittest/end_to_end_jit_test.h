@@ -93,6 +93,13 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
     }                                                                          \
   } while (0)
 
+#define ASSERT_EQ_OUTCOME(val, exp)                                            \
+  if(!val.has_value()) {                                                       \
+    std::string msg = "ERROR: <" + val.error().mesg + "> \n";                  \
+    GTEST_FATAL_FAILURE_(msg.c_str());                                         \
+  };                                                                           \
+  ASSERT_EQ(val.value(), exp);
+
 static inline llvm::Optional<mlir::concretelang::KeySetCache> getTestKeySetCache() {
 
   llvm::SmallString<0> cachePath;
@@ -102,6 +109,11 @@ static inline llvm::Optional<mlir::concretelang::KeySetCache> getTestKeySetCache
   auto cachePathStr = std::string(cachePath);
   return llvm::Optional<mlir::concretelang::KeySetCache>(
       mlir::concretelang::KeySetCache(cachePathStr));
+}
+
+static inline std::shared_ptr<mlir::concretelang::KeySetCache> getTestKeySetCachePtr() {
+  return std::make_shared<mlir::concretelang::KeySetCache>(
+    getTestKeySetCache().getValue());
 }
 
 // Jit-compiles the function specified by `func` from `src` and

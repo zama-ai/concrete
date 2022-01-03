@@ -16,6 +16,8 @@
 namespace mlir {
 namespace concretelang {
 
+using ::concretelang::clientlib::KeySetCache;
+
 namespace {
 // Generic function template as well as specializations of
 // `typedResult` must be declared at namespace scope due to return

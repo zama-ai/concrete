@@ -99,8 +99,10 @@ public:
     llvm::Expected<std::string> emitStatic();
     /** Emit a shared library with the previously added compilation result */
     llvm::Expected<std::string> emitShared();
-    /** Emit a shared library with the previously added compilation result */
+    /** Emit a json ClientParameters corresponding to library content */
     llvm::Expected<std::string> emitClientParametersJSON();
+    /// Emit a client header file for this corresponding to library content
+    llvm::Expected<std::string> emitCppHeader();
   };
 
   // Specification of the exit stage of the compilation pipeline

@@ -15,9 +15,12 @@ set_source_files_properties(
 
 target_link_libraries(
   testlib_unit_test
-  gtest_main
+  ConcretelangCommon
   ConcretelangRuntime
-  ConcretelangTestLib
+  ConcretelangSupport
+  ConcretelangClientLib
+  ConcretelangServerLib
+  gtest_main
 )
 
 include(GoogleTest)

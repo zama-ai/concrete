@@ -15,17 +15,20 @@ extern "C" {
 
 namespace mlir {
 namespace concretelang {
+
 typedef struct RuntimeContext {
   LweKeyswitchKey_u64 *ksk;
   std::map<std::string, LweBootstrapKey_u64 *> bsk;
 
+  static std::string BASE_CONTEXT_BSK;
   ~RuntimeContext() {
     for (const auto &key : bsk) {
-      if (key.first != "_concretelang_base_context_bsk")
+      if (key.first != BASE_CONTEXT_BSK)
         free_lwe_bootstrap_key_u64(key.second);
     }
   }
 } RuntimeContext;
+
 } // namespace concretelang
 } // namespace mlir
 

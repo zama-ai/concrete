@@ -16,6 +16,15 @@
 namespace mlir {
 namespace concretelang {
 
+using ::concretelang::clientlib::BIG_KEY;
+using ::concretelang::clientlib::CircuitGate;
+using ::concretelang::clientlib::ClientParameters;
+using ::concretelang::clientlib::EncryptionGate;
+using ::concretelang::clientlib::LweSecretKeyID;
+using ::concretelang::clientlib::Precision;
+using ::concretelang::clientlib::SMALL_KEY;
+using ::concretelang::clientlib::Variance;
+
 const auto securityLevel = SECURITY_LEVEL_128;
 const auto keyFormat = KEY_FORMAT_BINARY;
 const auto v0Curve = getV0Curves(securityLevel, keyFormat);
@@ -79,13 +88,6 @@ llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
   }
   return llvm::make_error<llvm::StringError>(
       "cannot convert MLIR type to shape", llvm::inconvertibleErrorCode());
-}
-
-ClientParameters emptyClientParametersForV0(llvm::StringRef functionName,
-                                            mlir::ModuleOp module) {
-  ClientParameters c;
-  c.functionName = (std::string)functionName;
-  return c;
 }
 
 llvm::Expected<ClientParameters>

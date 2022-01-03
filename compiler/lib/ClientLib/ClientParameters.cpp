@@ -3,51 +3,58 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
+#include <fstream>
+
+#include "boost/outcome.h"
+
 #include "concretelang/ClientLib/ClientParameters.h"
 
-namespace mlir {
 namespace concretelang {
+namespace clientlib {
+
+using StringError = concretelang::error::StringError;
 
 // https://stackoverflow.com/a/38140932
-static inline void hash(std::size_t &seed) {}
+static inline void hash_(std::size_t &seed) {}
 template <typename T, typename... Rest>
-static inline void hash(std::size_t &seed, const T &v, Rest... rest) {
+static inline void hash_(std::size_t &seed, const T &v, Rest... rest) {
   // See https://softwareengineering.stackexchange.com/a/402543
   const auto GOLDEN_RATIO = 0x9e3779b97f4a7c15; // pseudo random bits
   const std::hash<T> hasher;
   seed ^= hasher(v) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-  hash(seed, rest...);
+  hash_(seed, rest...);
 }
 
-void LweSecretKeyParam::hash(size_t &seed) {
-  mlir::concretelang::hash(seed, size);
-}
+void LweSecretKeyParam::hash(size_t &seed) { hash_(seed, size); }
 
 void BootstrapKeyParam::hash(size_t &seed) {
-  mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
-                           baseLog, glweDimension, variance);
+  hash_(seed, inputSecretKeyID, outputSecretKeyID, level, baseLog,
+        glweDimension, variance);
 }
 
 void KeyswitchKeyParam::hash(size_t &seed) {
-  mlir::concretelang::hash(seed, inputSecretKeyID, outputSecretKeyID, level,
-                           baseLog, variance);
+  hash_(seed, inputSecretKeyID, outputSecretKeyID, level, baseLog, variance);
 }
 
 std::size_t ClientParameters::hash() {
   std::size_t currentHash = 1;
   for (auto secretKeyParam : secretKeys) {
-    mlir::concretelang::hash(currentHash, secretKeyParam.first);
+    hash_(currentHash, secretKeyParam.first);
     secretKeyParam.second.hash(currentHash);
   }
   for (auto bootstrapKeyParam : bootstrapKeys) {
-    mlir::concretelang::hash(currentHash, bootstrapKeyParam.first);
+    hash_(currentHash, bootstrapKeyParam.first);
     bootstrapKeyParam.second.hash(currentHash);
   }
   for (auto keyswitchParam : keyswitchKeys) {
-    mlir::concretelang::hash(currentHash, keyswitchParam.first);
+    hash_(currentHash, keyswitchParam.first);
     keyswitchParam.second.hash(currentHash);
   }
   return currentHash;
+}
+
+LweSecretKeyParam ClientParameters::lweSecretKeyParam(CircuitGate gate) {
+  return secretKeys.find(gate.encryption->secretKeyID)->second;
 }
 
 llvm::json::Value toJSON(const LweSecretKeyParam &v) {
@@ -384,5 +391,27 @@ bool fromJSON(const llvm::json::Value j, ClientParameters &v,
   return true;
 }
 
+std::string ClientParameters::getClientParametersPath(std::string path) {
+  return path + CLIENT_PARAMETERS_EXT;
+}
+
+outcome::checked<std::vector<ClientParameters>, StringError>
+ClientParameters::load(std::string jsonPath) {
+  std::ifstream file(jsonPath);
+  std::string content((std::istreambuf_iterator<char>(file)),
+                      (std::istreambuf_iterator<char>()));
+  if (file.fail()) {
+    return StringError("Cannot read file: ") << jsonPath;
+  }
+  auto expectedClientParams =
+      llvm::json::parse<std::vector<ClientParameters>>(content);
+  if (auto err = expectedClientParams.takeError()) {
+    return StringError("Cannot open client parameters: ")
+           << llvm::toString(std::move(err)) << "\n"
+           << content << "\n";
+  }
+  return expectedClientParams.get();
+}
+
+} // namespace clientlib
 } // namespace concretelang
-} // namespace mlir

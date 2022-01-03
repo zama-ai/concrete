@@ -50,7 +50,7 @@ lambdaArgument invokeLambda(lambda l, executionArguments args) {
   }
   // Set the integer/tensor arguments
   std::vector<mlir::concretelang::LambdaArgument *> lambdaArgumentsRef;
-  for (auto i = 0; i < args.size; i++) {
+  for (auto i = 0u; i < args.size; i++) {
     lambdaArgumentsRef.push_back(args.data[i].ptr.get());
   }
   // Run lambda

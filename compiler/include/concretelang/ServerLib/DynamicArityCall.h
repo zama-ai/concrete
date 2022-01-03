@@ -3,20 +3,23 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
-#ifndef CONCRETELANG_TESTLIB_DYNAMIC_ARITY_CALL_H
-#define CONCRETELANG_TESTLIB_DYNAMIC_ARITY_CALL_H
+// generated: see genDynamicRandAndArityCall.py
+
+#ifndef CONCRETELANG_SERVERLIB_DYNAMIC_ARITY_CALL_H
+#define CONCRETELANG_SERVERLIB_DYNAMIC_ARITY_CALL_H
 
 #include <cassert>
 #include <vector>
 
-namespace mlir {
+#include "concretelang/ClientLib/Types.h"
+
 namespace concretelang {
+namespace serverlib {
 
 template <typename Res>
-Res call(Res (*func)(void *...), std::vector<void *> args) {
+Res multi_arity_call(Res (*func)(void *...), std::vector<void *> args) {
   switch (args.size()) {
-  // generated part: see genDynamicArityCall.py
-  // TODO C17++: https://en.cppreference.com/w/cpp/utility/apply
+    // TODO C17++: https://en.cppreference.com/w/cpp/utility/apply
   case 1:
     return func(args[0]);
   case 2:
@@ -1457,12 +1460,13 @@ Res call(Res (*func)(void *...), std::vector<void *> args) {
         args[111], args[112], args[113], args[114], args[115], args[116],
         args[117], args[118], args[119], args[120], args[121], args[122],
         args[123], args[124], args[125], args[126]);
+
   default:
     assert(false);
   }
 }
 
+} // namespace serverlib
 } // namespace concretelang
-} // namespace mlir
 
 #endif

@@ -116,16 +116,18 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
                              "parameters has not been computed");
   }
 
-  llvm::Expected<std::unique_ptr<mlir::concretelang::KeySet>> keySetOrErr =
-      (cache.hasValue())
-          ? cache->tryLoadOrGenerateSave(*compRes.clientParameters, 0, 0)
-          : KeySet::generate(*compRes.clientParameters, 0, 0);
+  std::shared_ptr<KeySetCache> cachePtr;
+  if (cache.hasValue()) {
+    cachePtr = std::make_shared<KeySetCache>(cache.getValue());
+  }
+  auto keySetOrErr =
+      KeySetCache::generate(cachePtr, *compRes.clientParameters, 0, 0);
 
   if (!keySetOrErr) {
-    return keySetOrErr.takeError();
+    return StreamStringError(keySetOrErr.error().mesg);
   }
 
-  auto keySet = std::move(keySetOrErr.get());
+  auto keySet = std::move(keySetOrErr.value());
 
   return Lambda{this->compilationContext, std::move(lambda), std::move(keySet)};
 }

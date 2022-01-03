@@ -5,10 +5,12 @@
 
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <stdio.h>
 #include <string>
 
 #include <llvm/Support/Error.h>
+#include <llvm/Support/Path.h>
 #include <llvm/Support/SMLoc.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/Linalg/IR/LinalgOps.h>
@@ -19,6 +21,7 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser.h>
 
+#include <concretelang/ClientLib/ClientParameters.h>
 #include <concretelang/Dialect/BConcrete/IR/BConcreteDialect.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
@@ -280,9 +283,10 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   auto funcName = this->clientParametersFuncName.getValueOr("main");
   if (this->generateClientParameters || target == Target::LIBRARY) {
     if (!res.fheContext.hasValue()) {
-      // Some tests can involves a usual function
-      res.clientParameters =
-          mlir::concretelang::emptyClientParametersForV0(funcName, module);
+      // Some tests involve call a to non encrypted functions
+      ClientParameters emptyParams;
+      emptyParams.functionName = funcName;
+      res.clientParameters = emptyParams;
     } else {
       auto clientParametersOrErr =
           mlir::concretelang::createClientParametersForV0(*res.fheContext,
@@ -425,7 +429,7 @@ std::string CompilerEngine::Library::getStaticLibraryPath(std::string path) {
 
 /** Returns the path of the static library */
 std::string CompilerEngine::Library::getClientParametersPath(std::string path) {
-  return path + CLIENT_PARAMETERS_EXT;
+  return ClientParameters::getClientParametersPath(path);
 }
 
 const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
@@ -464,6 +468,92 @@ CompilerEngine::Library::emitClientParametersJSON() {
   out.close();
 
   return clientParamsPath;
+}
+
+static std::string ccpResultType(size_t rank) {
+  if (rank == 0) {
+    return "scalar_out";
+  } else {
+    return "tensor" + std::to_string(rank) + "_out";
+  }
+}
+
+static std::string ccpArgType(size_t rank) {
+  if (rank == 0) {
+    return "scalar_in";
+  } else {
+    return "tensor" + std::to_string(rank) + "_in";
+  }
+}
+
+static std::string cppArgsType(std::vector<CircuitGate> inputs) {
+  std::string args;
+  for (auto input : inputs) {
+    if (!args.empty()) {
+      args += ", ";
+    }
+    args += ccpArgType(input.shape.dimensions.size());
+  }
+  return args;
+}
+
+llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
+  auto libraryName = llvm::sys::path::filename(libraryPath).str();
+  auto headerName = libraryName + "-client.h";
+  auto headerPath = std::regex_replace(
+      libraryPath, std::regex(libraryName + "$"), headerName);
+
+  std::error_code error;
+  llvm::raw_fd_ostream out(headerPath, error);
+  if (error) {
+    StreamStringError("Cannot emit header: ")
+        << headerPath << ", " << error.message() << "\n";
+  }
+
+  out << "#include \"boost/outcome.h\"\n";
+  out << "#include \"concretelang/ClientLib/ClientLambda.h\"\n";
+  out << "#include \"concretelang/ClientLib/KeySetCache.h\"\n";
+  out << "#include \"concretelang/ClientLib/Types.h\"\n";
+  out << "#include \"concretelang/Common/Error.h\"\n";
+  out << "\n";
+  out << "namespace " << libraryName << " {\n";
+  out << "namespace client {\n";
+
+  for (auto params : clientParametersList) {
+    std::string args;
+    std::string result;
+    if (params.outputs.size() > 0) {
+      args = cppArgsType(params.inputs);
+    } else {
+      args = "void";
+    }
+    if (params.outputs.size() > 0) {
+      size_t rank = params.outputs[0].shape.dimensions.size();
+      result = ccpResultType(rank);
+    } else {
+      result = "void";
+    }
+    out << "\n";
+    out << "namespace " << params.functionName << " {\n";
+    out << "  using namespace concretelang::clientlib;\n";
+    out << "  using concretelang::error::StringError;\n";
+    out << "  using " << params.functionName << "_t = TypedClientLambda<"
+        << result << ", " << args << ">;\n";
+    out << "  static const std::string name = \"" << params.functionName
+        << "\";\n";
+    out << "\n";
+    out << "  static outcome::checked<extract_t, StringError>\n";
+    out << "  load(std::string outputLib)\n";
+    out << "  { return extract_t::load(name, outputLib); }\n";
+    out << "} // namespace " << params.functionName << "\n";
+  }
+  out << "\n";
+  out << "} // namespace client\n";
+  out << "} // namespace " << libraryName << "\n";
+
+  out.close();
+
+  return headerPath;
 }
 
 llvm::Expected<std::string>
@@ -536,6 +626,9 @@ llvm::Error CompilerEngine::Library::emitArtifacts() {
     return err;
   }
   if (auto err = emitClientParametersJSON().takeError()) {
+    return err;
+  }
+  if (auto err = emitCppHeader().takeError()) {
     return err;
   }
   return llvm::Error::success();
