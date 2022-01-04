@@ -1,12 +1,11 @@
+if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+  add_compile_options(-DCONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+endif()
+
 add_library(ConcretelangRuntime SHARED
-    context.c
+    context.cpp
     wrappers.c
 )
-
-target_link_libraries(ConcretelangRuntime Concrete pthread m dl)
-
-install(TARGETS ConcretelangRuntime EXPORT ConcretelangRuntime)
-install(EXPORT ConcretelangRuntime DESTINATION "./")
 
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   add_library(DFRuntime SHARED DFRuntime.cpp)
@@ -14,4 +13,11 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
 
   install(TARGETS DFRuntime EXPORT DFRuntime)
   install(EXPORT DFRuntime DESTINATION "./")
+
+  target_link_libraries(ConcretelangRuntime Concrete pthread m dl HPX::hpx)
+else()
+  target_link_libraries(ConcretelangRuntime Concrete pthread m dl)
 endif()
+
+install(TARGETS ConcretelangRuntime EXPORT ConcretelangRuntime)
+install(EXPORT ConcretelangRuntime DESTINATION "./")

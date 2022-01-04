@@ -6,15 +6,21 @@
 #ifndef CONCRETELANG_RUNTIME_CONTEXT_H
 #define CONCRETELANG_RUNTIME_CONTEXT_H
 
+#include <map>
+#include <string>
+
+extern "C" {
 #include "concrete-ffi.h"
+}
 
 typedef struct RuntimeContext {
   LweKeyswitchKey_u64 *ksk;
-  LweBootstrapKey_u64 *bsk;
+  std::map<std::string, LweBootstrapKey_u64 *> bsk;
 } RuntimeContext;
 
+extern "C" {
 LweKeyswitchKey_u64 *get_keyswitch_key(RuntimeContext *context);
 
 LweBootstrapKey_u64 *get_bootstrap_key(RuntimeContext *context);
-
+}
 #endif

@@ -10,8 +10,8 @@
 
 extern "C" {
 #include "concrete-ffi.h"
-#include "concretelang/Runtime/context.h"
 }
+#include "concretelang/Runtime/context.h"
 
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/KeySetCache.h"
@@ -57,7 +57,8 @@ public:
 
   void setRuntimeContext(RuntimeContext &context) {
     context.ksk = std::get<1>(this->keyswitchKeys["ksk_v0"]);
-    context.bsk = std::get<1>(this->bootstrapKeys["bsk_v0"]);
+    context.bsk["_concretelang_base_context_bsk"] =
+        std::get<1>(this->bootstrapKeys["bsk_v0"]);
   }
 
   const std::map<LweSecretKeyID,
