@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union, cast
 
 import numpy
-from zamalang import CompilerEngine
+from concrete.compiler import CompilerEngine
 
 from ..common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_inputset
 from ..common.common_helpers import check_op_graph_is_integer_program

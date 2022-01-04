@@ -234,12 +234,12 @@ This file contains information about the MLIR of the function you are trying to 
 
 ```
 module  {
-  func @main(%arg0: !HLFHE.eint<7>) -> !HLFHE.eint<7> {
+  func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
     %c127_i8 = arith.constant 127 : i8
     %cst = arith.constant dense<"..."> : tensor<128xi64>
-    %0 = "HLFHE.apply_lookup_table"(%arg0, %cst) : (!HLFHE.eint<7>, tensor<128xi64>) -> !HLFHE.eint<7>
-    %1 = "HLFHE.sub_int_eint"(%c127_i8, %0) : (i8, !HLFHE.eint<7>) -> !HLFHE.eint<7>
-    return %1 : !HLFHE.eint<7>
+    %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<7>, tensor<128xi64>) -> !FHE.eint<7>
+    %1 = "FHE.sub_int_eint"(%c127_i8, %0) : (i8, !FHE.eint<7>) -> !FHE.eint<7>
+    return %1 : !FHE.eint<7>
   }
 }
 

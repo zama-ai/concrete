@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy
-from zamalang import CompilerEngine
+from concrete.compiler import CompilerEngine
 
 from .debugging import draw_graph, format_operation_graph
 from .operator_graph import OPGraph

@@ -3,9 +3,9 @@
 MLIR is the intermediate representation used by the **Concrete** compiler, so we need to convert the operation graph to MLIR, which will look something like the following, for a graph performing the dot between two input tensors.
 
 ```
-func @main(%arg0: tensor<4xi7>, %arg1: tensor<4x!HLFHE.eint<6>>) -> !HLFHE.eint<6> {
-    %0 = "HLFHE.dot_eint_int"(%arg1, %arg0) : (tensor<4x!HLFHE.eint<6>>, tensor<4xi7>) -> !HLFHE.eint<6>
-    return %0 : !HLFHE.eint<6>
+func @main(%arg0: tensor<4xi7>, %arg1: tensor<4x!FHE.eint<6>>) -> !FHE.eint<6> {
+    %0 = "FHE.dot_eint_int"(%arg1, %arg0) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> !FHE.eint<6>
+    return %0 : !FHE.eint<6>
 }
 ```
 
@@ -17,7 +17,7 @@ The conversion uses as input the operation graph to convert, as well as a dictio
 
 ## Define function signature
 
-The first step would be to define the function signature (excluding return value at this point). We will convert input node's types to MLIR (e.g. convert `EncryptedTensor(Integer(64, is_signed=False), shape=(4,))` to `tensor<4xi64>`) and map their values to the argument of the function. So if we had an operation graph with one `EncryptedScalar(Integer(7, is_signed=False))`, we will get an MLIR function like `func @main(%arg0 : !HLFHE.eint<7>) -> (<ret-type>)`. Note that the return type would be detected automatically later on when returning MLIR values.
+The first step would be to define the function signature (excluding return value at this point). We will convert input node's types to MLIR (e.g. convert `EncryptedTensor(Integer(64, is_signed=False), shape=(4,))` to `tensor<4xi64>`) and map their values to the argument of the function. So if we had an operation graph with one `EncryptedScalar(Integer(7, is_signed=False))`, we will get an MLIR function like `func @main(%arg0 : !FHE.eint<7>) -> (<ret-type>)`. Note that the return type would be detected automatically later on when returning MLIR values.
 
 ## Convert nodes in the OpGraph
 

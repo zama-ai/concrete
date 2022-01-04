@@ -252,12 +252,12 @@ Data Types:
 
 ```
 module  {
-  func @main(%arg0: !HLFHE.eint<4>) -> !HLFHE.eint<4> {
+  func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
     %c3_i5 = constant 3 : i5
     %c2_i5 = constant 2 : i5
-    %0 = "HLFHE.mul_eint_int"(%arg0, %c2_i5) : (!HLFHE.eint<4>, i5) -> !HLFHE.eint<4>
-    %1 = "HLFHE.add_eint_int"(%0, %c3_i5) : (!HLFHE.eint<4>, i5) -> !HLFHE.eint<4>
-    return %1 : !HLFHE.eint<4>
+    %0 = "FHE.mul_eint_int"(%arg0, %c2_i5) : (!FHE.eint<4>, i5) -> !FHE.eint<4>
+    %1 = "FHE.add_eint_int"(%0, %c3_i5) : (!FHE.eint<4>, i5) -> !FHE.eint<4>
+    return %1 : !FHE.eint<4>
   }
 }
 ```
@@ -349,13 +349,13 @@ Data Types:
 
 ```
 module  {
-  func @main(%arg0: !HLFHE.eint<6>, %arg1: !HLFHE.eint<6>) -> !HLFHE.eint<6> {
+  func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<6>) -> !FHE.eint<6> {
     %c42_i7 = constant 42 : i7
     %c2_i7 = constant 2 : i7
-    %0 = "HLFHE.sub_int_eint"(%c42_i7, %arg0) : (i7, !HLFHE.eint<6>) -> !HLFHE.eint<6>
-    %1 = "HLFHE.mul_eint_int"(%arg1, %c2_i7) : (!HLFHE.eint<6>, i7) -> !HLFHE.eint<6>
-    %2 = "HLFHE.add_eint"(%0, %1) : (!HLFHE.eint<6>, !HLFHE.eint<6>) -> !HLFHE.eint<6>
-    return %2 : !HLFHE.eint<6>
+    %0 = "FHE.sub_int_eint"(%c42_i7, %arg0) : (i7, !FHE.eint<6>) -> !FHE.eint<6>
+    %1 = "FHE.mul_eint_int"(%arg1, %c2_i7) : (!FHE.eint<6>, i7) -> !FHE.eint<6>
+    %2 = "FHE.add_eint"(%0, %1) : (!FHE.eint<6>, !FHE.eint<6>) -> !FHE.eint<6>
+    return %2 : !FHE.eint<6>
   }
 }
 ```

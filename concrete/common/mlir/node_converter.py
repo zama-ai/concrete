@@ -7,6 +7,7 @@
 from typing import Any, Dict, List, Tuple, cast
 
 import numpy
+from concrete.lang.dialects import fhe, fhelinalg
 from mlir.dialects import arith, linalg, tensor
 from mlir.ir import (
     ArrayAttr,
@@ -19,7 +20,6 @@ from mlir.ir import (
     OpResult,
     RankedTensorType,
 )
-from zamalang.dialects import hlfhe, hlfhelinalg
 
 from ..data_types import Integer
 from ..debugging import assert_true
@@ -172,9 +172,9 @@ class IntermediateNodeConverter:
 
         if self.all_of_the_inputs_are_encrypted:
             if self.one_of_the_inputs_is_a_tensor:
-                result = hlfhelinalg.AddEintOp(resulting_type, *preds).result
+                result = fhelinalg.AddEintOp(resulting_type, *preds).result
             else:
-                result = hlfhe.AddEintOp(resulting_type, *preds).result
+                result = fhe.AddEintOp(resulting_type, *preds).result
         else:
             if self.node.inputs[0].is_clear:  # pragma: no cover
                 # this branch is not covered as it's impossible to get into due to how tracing works
@@ -182,9 +182,9 @@ class IntermediateNodeConverter:
                 preds = preds[::-1]
 
             if self.one_of_the_inputs_is_a_tensor:
-                result = hlfhelinalg.AddEintIntOp(resulting_type, *preds).result
+                result = fhelinalg.AddEintIntOp(resulting_type, *preds).result
             else:
-                result = hlfhe.AddEintIntOp(resulting_type, *preds).result
+                result = fhe.AddEintIntOp(resulting_type, *preds).result
 
         return result
 
@@ -247,15 +247,15 @@ class IntermediateNodeConverter:
 
         if self.all_of_the_inputs_are_tensors:
             # numpy.dot(x, y) where x and y are both vectors = regular dot product
-            result = hlfhelinalg.Dot(resulting_type, *preds).result
+            result = fhelinalg.Dot(resulting_type, *preds).result
 
         elif not self.one_of_the_inputs_is_a_tensor:
             # numpy.dot(x, y) where x and y are both scalars = x * y
-            result = hlfhe.MulEintIntOp(resulting_type, *preds).result
+            result = fhe.MulEintIntOp(resulting_type, *preds).result
 
         else:
             # numpy.dot(x, y) where one of x or y is a scalar and the other one is a vector = x * y
-            result = hlfhelinalg.MulEintIntOp(resulting_type, *preds).result
+            result = fhelinalg.MulEintIntOp(resulting_type, *preds).result
 
         return result
 
@@ -326,11 +326,11 @@ class IntermediateNodeConverter:
 
         if self.one_of_the_inputs_is_a_tensor:
             if len(tables) == 1:
-                result = hlfhelinalg.ApplyLookupTableEintOp(resulting_type, pred, lut).result
+                result = fhelinalg.ApplyLookupTableEintOp(resulting_type, pred, lut).result
             else:
-                result = hlfhelinalg.ApplyMultiLookupTableEintOp(resulting_type, pred, lut).result
+                result = fhelinalg.ApplyMultiLookupTableEintOp(resulting_type, pred, lut).result
         else:
-            result = hlfhe.ApplyLookupTableEintOp(resulting_type, pred, lut).result
+            result = fhe.ApplyLookupTableEintOp(resulting_type, pred, lut).result
 
         return result
 
@@ -447,9 +447,9 @@ class IntermediateNodeConverter:
         preds = self.preds
 
         if self.node.inputs[0].is_clear:
-            result = hlfhelinalg.MatMulIntEintOp(resulting_type, *preds).result
+            result = fhelinalg.MatMulIntEintOp(resulting_type, *preds).result
         else:
-            result = hlfhelinalg.MatMulEintIntOp(resulting_type, *preds).result
+            result = fhelinalg.MatMulEintIntOp(resulting_type, *preds).result
 
         return result
 
@@ -479,9 +479,9 @@ class IntermediateNodeConverter:
             preds = preds[::-1]
 
         if self.one_of_the_inputs_is_a_tensor:
-            result = hlfhelinalg.MulEintIntOp(resulting_type, *preds).result
+            result = fhelinalg.MulEintIntOp(resulting_type, *preds).result
         else:
-            result = hlfhe.MulEintIntOp(resulting_type, *preds).result
+            result = fhe.MulEintIntOp(resulting_type, *preds).result
 
         return result
 
@@ -629,8 +629,8 @@ class IntermediateNodeConverter:
         preds = self.preds
 
         if self.one_of_the_inputs_is_a_tensor:
-            result = hlfhelinalg.SubIntEintOp(resulting_type, *preds).result
+            result = fhelinalg.SubIntEintOp(resulting_type, *preds).result
         else:
-            result = hlfhe.SubIntEintOp(resulting_type, *preds).result
+            result = fhe.SubIntEintOp(resulting_type, *preds).result
 
         return result

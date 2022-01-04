@@ -7,8 +7,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
+import concrete.lang as concretelang
 import networkx as nx
-import zamalang
 from mlir.dialects import builtin
 from mlir.ir import Context, InsertionPoint, Location, Module
 
@@ -44,14 +44,14 @@ class OPGraphConverter(ABC):
         # { node1: "%arg0", node2: "%0", node3: "%1" }
         nodes_to_mlir_names: Dict[IntermediateNode, str] = {}
 
-        # { "%arg0": "i5", "%0": "tensor<2x3x!HLFHE.eint<4>>" }
+        # { "%arg0": "i5", "%0": "tensor<2x3x!FHE.eint<4>>" }
         mlir_names_to_mlir_types: Dict[str, str] = {}
 
         # { "%0": ["%c1_i5"] } == for %0 we need to convert %c1_i5 to 1d tensor
         scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]] = {}
 
         with Context() as ctx, Location.unknown():
-            zamalang.register_dialects(ctx)
+            concretelang.register_dialects(ctx)
 
             module = Module.create()
             with InsertionPoint(module.body):

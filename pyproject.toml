@@ -16,6 +16,7 @@ pygraphviz = { version = "^1.7", optional = true }
 Pillow = "^8.3.2"
 loguru = "^0.5.3"
 torch = "^1.10.0"
+setuptools = "*"
 
 [tool.poetry.extras]
 full = ["pygraphviz"]
@@ -67,5 +68,5 @@ filterwarnings = [
 
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
-version_variable = "concrete/version.py:__version__,docs/conf.py:release"
+version_variable = "docs/conf.py:release"
 upload_to_pypi = "False"

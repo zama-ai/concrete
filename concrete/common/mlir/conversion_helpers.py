@@ -6,8 +6,8 @@
 
 from typing import Optional
 
+from concrete.lang.dialects.fhe import EncryptedIntegerType
 from mlir.ir import Context, IntegerType, RankedTensorType, Type
-from zamalang.dialects.hlfhe import EncryptedIntegerType
 
 from ..data_types import Integer
 from ..values import BaseValue, TensorValue
