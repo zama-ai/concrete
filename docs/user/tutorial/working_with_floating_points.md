@@ -15,11 +15,11 @@ def f(x):
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
 circuit = compiler.compile_on_inputset(range(64))
 
-assert circuit.run(3) == f(3)
-assert circuit.run(0) == f(0)
-assert circuit.run(1) == f(1)
-assert circuit.run(10) == f(10)
-assert circuit.run(60) == f(60)
+print(circuit.run(3) == f(3))
+print(circuit.run(0) == f(0))
+print(circuit.run(1) == f(1))
+print(circuit.run(10) == f(10))
+print(circuit.run(60) == f(60))
 
 print("All good!")
 ```

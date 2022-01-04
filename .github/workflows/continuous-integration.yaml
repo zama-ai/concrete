@@ -34,6 +34,8 @@ env:
   BASE_IMAGE: ghcr.io/zama-ai/concrete-numpy-env
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
+  IS_WEEKLY: ${{ github.event_name == 'schedule' }}
+  IS_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   build-preflight-docker:
@@ -54,6 +56,7 @@ jobs:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
         with:
           fetch-depth: 0
+
       - name: Get changed files
         if: ${{ (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')) || github.event_name == 'pull_request' }}
         id: files
@@ -91,6 +94,7 @@ jobs:
             echo "Docker image up to date."
             echo "BUILD_DOCKER=false" >> "$GITHUB_ENV"
           fi
+
       # https://github.com/zama-ai/concrete-numpy-internal/issues/809
       # Remove gh_dl_release call once package is on PyPi
       - name: Set prefligh Docker image download compiler
@@ -117,6 +121,7 @@ jobs:
 
           COMPILER_TAG=$(cat compiler-output-tag.txt)
           echo "::set-output name=compiler-tag::${COMPILER_TAG}"
+
       - name: Login to GitHub Container Registry
         if: ${{ fromJSON(env.BUILD_DOCKER) }}
         uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
@@ -124,6 +129,7 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
           password: ${{ secrets.BOT_TOKEN }}
+
       - name: Build concrete-numpy-env Image
         if: ${{ success() && !cancelled() && fromJSON(env.BUILD_DOCKER) }}
         uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
@@ -138,6 +144,7 @@ jobs:
           tags: "${{ env.PREFLIGHT_IMAGE }}"
           labels: |
             concrete_numpy_sha=${{ env.LABEL_SHA1 }}
+
       - name: Set notification report
         id: report
         if: ${{ always() }}
@@ -147,6 +154,7 @@ jobs:
           echo "${REPORT}"
           echo "::set-output name=report::${REPORT}"
           echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+
       - name: Slack Notification
         if: ${{ always() && !success() }}
         continue-on-error: true
@@ -159,22 +167,87 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-  start-runner:
+  matrix-preparation:
     needs: [build-preflight-docker]
+    runs-on: ubuntu-20.04
+    outputs:
+      linux-matrix: ${{ steps.set-matrix.outputs.linux-matrix }}
+      macos-matrix: ${{ steps.set-matrix.outputs.macos-matrix }}
+      needs-38-linux-runner: ${{ steps.set-matrix.outputs.needs-38-linux-runner }}
+      needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          BUILD_TYPE=
+          if [[ "${IS_PR}" == "true" ]]; then
+            BUILD_TYPE="pr"
+          elif [[ "${IS_WEEKLY}" == "true" ]]; then
+            BUILD_TYPE="weekly"
+          elif [[ "${IS_RELEASE}" == "true" ]]; then
+            BUILD_TYPE="release"
+          else
+            echo "Unknown BUILD_TYPE! Aborting"
+            exit 1
+          fi
+          MATRIX_JSON=$(mktemp --suffix=.json)
+          echo "Prepared build matrix:"
+          python3 ./script/actions_utils/generate_test_matrix.py \
+            --output-json "${MATRIX_JSON}" \
+            --build-type "${BUILD_TYPE}"
+          LINUX_MATRIX=$(jq -rc '. | map(select(.os_kind=="linux"))' "${MATRIX_JSON}")
+          MACOS_MATRIX=$(jq -rc '. | map(select(.os_kind=="macos"))' "${MATRIX_JSON}")
+
+          echo "Linux Matrix:"
+          echo "${LINUX_MATRIX}" | jq '.'
+
+          echo "macOS Matrix:"
+          echo "${MACOS_MATRIX}" | jq '.'
+
+          echo "::set-output name=linux-matrix::${LINUX_MATRIX}"
+          echo "::set-output name=macos-matrix::${MACOS_MATRIX}"
+
+          NEEDS_LINUX_38_RUNNER=$(echo "${LINUX_MATRIX}" | \
+            jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.8")) | length > 0')
+          NEEDS_LINUX_39_RUNNER=$(echo "${LINUX_MATRIX}" | \
+            jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.9")) | length > 0')
+
+          echo "Needs Linux 3.8 runner:"
+          echo "${NEEDS_LINUX_38_RUNNER}"
+
+          echo "Needs Linux 3.9 runner:"
+          echo "${NEEDS_LINUX_39_RUNNER}"
+
+          echo "::set-output name=needs-38-linux-runner::${NEEDS_LINUX_38_RUNNER}"
+          echo "::set-output name=needs-39-linux-runner::${NEEDS_LINUX_39_RUNNER}"
+
+  start-runner-linux:
+    needs: [matrix-preparation]
     name: Start EC2 runner
     runs-on: ubuntu-20.04
     outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
+      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
+      label-39: ${{ steps.start-ec2-runner-39.outputs.label }}
+      ec2-instance-id-39: ${{ steps.start-ec2-runner-39.outputs.ec2-instance-id || '' }}
+      matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Start EC2 runner
-        id: start-ec2-runner
+
+      - name: Start EC2 runner python 38
+        id: start-ec2-runner-38
+        if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-38-linux-runner) }}
         uses: machulav/ec2-github-runner@502fc5cc476bcf6771c5ab7863d706715d124202
         with:
           mode: start
@@ -184,13 +257,40 @@ jobs:
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
 
-  build:
-    needs: [build-preflight-docker, start-runner]
+      - name: Start EC2 runner python 39
+        id: start-ec2-runner-39
+        if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-39-linux-runner) }}
+        uses: machulav/ec2-github-runner@502fc5cc476bcf6771c5ab7863d706715d124202
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+
+      - name: Update Linux runs_on Matrix
+        id: update-linux-matrix
+        env:
+          MATRIX: ${{ needs.matrix-preparation.outputs.linux-matrix }}
+        run: |
+          MATRIX=$(echo "${MATRIX}" | jq -rc \
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.8") |= . + {"runs_on": "${{ steps.start-ec2-runner-38.outputs.label }}"}) )')
+          MATRIX=$(echo "${MATRIX}" | jq -rc \
+          '(. | map(select(.os_kind=="linux" and .python_version=="3.9") |= . + {"runs_on": "${{ steps.start-ec2-runner-39.outputs.label }}"}) )')
+
+          echo "Updated matrix:"
+          echo "${MATRIX}"
+
+          echo "::set-output name=linux-matrix::${MATRIX}"
+
+  build-linux:
+    needs: [build-preflight-docker, start-runner-linux]
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
 
-    runs-on: ${{ needs.start-runner.outputs.label }}
+    runs-on: ${{ matrix.runs_on }}
     container:
       image: ${{ needs.build-preflight-docker.outputs.image }}
       credentials:
@@ -201,12 +301,7 @@ jobs:
         shell: '/usr/bin/bash -e {0}'
     strategy:
       fail-fast: false
-      matrix:
-        # YAML footgun : https://twitter.com/webology/status/1445394072492023811?s=20
-        # Versions need to be quoted or risk being interpreted as floating point numbers
-        python-version: ["3.8"]
-        include:
-          - os: ubuntu-20.04
+      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.start-runner-linux.outputs.matrix)) }}
 
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
@@ -214,16 +309,19 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-      - name: Set up Python ${{ matrix.python-version }}
+
+      - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python_version }}
+
       - name: Install dependencies
         id: install-deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
+
       - name: Check commits first line format
         id: ccfl
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
@@ -237,6 +335,7 @@ jobs:
           excludeTitle: 'true' # optional: this excludes the title of a pull request
           checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
           accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
       - name: Check commits line length
         id: ccll
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
@@ -249,6 +348,7 @@ jobs:
           excludeTitle: 'true' # optional: this excludes the title of a pull request
           checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
           accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+
       - name: Commit conformance
         id: commit-conformance
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
@@ -260,20 +360,23 @@ jobs:
             echo "Issues with commits. First line ok: ${CCFL_OK}. Line length ok: ${CCLL_OK}."
             exit 1
           fi
+
       - name: Source code Conformance
         id: cs
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         # pcc launches an internal target with proper flags
         run: |
           make pcc
+
       - name: Build docs
         id: cbd
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         run: |
           make docs
+
       - name: Generate release changelog
         id: changelog
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && steps.install-deps.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_RELEASE) && steps.install-deps.outcome == 'success' && !cancelled() }}
         run: |
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
           CHANGELOG_FILE="CHANGELOG_${GIT_TAG}.md"
@@ -282,6 +385,7 @@ jobs:
           --to-ref "${GIT_TAG}" \
           --to-ref-must-have-tag \
           --ancestor-must-have-tag > "${CHANGELOG_FILE}"
+
       - name: Conformance status
         id: conformance
         if: ${{ always() && !cancelled() }}
@@ -292,42 +396,50 @@ jobs:
             echo "Conformance failed, check logs"
             exit 1
           fi
+
       # Taring the docs allows for much faster upload speed (from ~3min worst case to ~2s best case)
       - name: Tar docs artifacts
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           cd docs/_build/html
           tar -cvf docs.tar *
+
       - name: Archive docs artifacts
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: html-docs
           path: docs/_build/html/docs.tar
+
       - name: Upload changelog artifacts
         if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: changelog
           path: ${{ steps.changelog.outputs.changelog-file }}
+
       - name: PyTest Source Code
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest
+
       - name: PyTest CodeBlocks
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest_codeblocks
+
       - name: PyTest Notebooks
-        if: ${{ github.event_name == 'schedule' && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest_nb
+
       - name: Test coverage
         id: coverage
         if: ${{ always() && steps.pytest.outcome != 'skipped' && !cancelled() }}
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
+
       - name: Comment with coverage
         uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
@@ -335,6 +447,25 @@ jobs:
         with:
           path: diff-coverage.txt
           recreate: true
+
+  # This is to manage build matrices and have a single status point for PRs
+  # This can be updated to take macOS into account but is impractical for private repos because of
+  # long builds and therefore expensive macOS testing
+  linux-build-status:
+    name: Linux build status
+    needs: [build-linux]
+    runs-on: ubuntu-20.04
+    if: ${{ always() }}
+    outputs:
+      report: ${{ steps.report.outputs.report || 'Did not run.' }}
+    steps:
+      - name: Fail on unsuccessful Linux build
+        shell: bash
+        run: |
+          if [[ ${{ needs.build-linux.result }} != "success" ]]; then
+            exit 1
+          fi
+
       - name: Set notification report
         id: report
         if: ${{ always() }}
@@ -343,6 +474,7 @@ jobs:
           echo "${REPORT}"
           echo "::set-output name=report::${REPORT}"
           echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+
       - name: Slack Notification
         if: ${{ always() && !success() }}
         continue-on-error: true
@@ -355,11 +487,11 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-  stop-runner:
+  stop-runner-linux:
     name: Stop EC2 runner
-    needs: [build, start-runner]
+    needs: [build-linux, start-runner-linux]
     runs-on: ubuntu-20.04
-    if: ${{ always() && (needs.start-runner.result != 'skipped') }}
+    if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
@@ -367,12 +499,23 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Stop EC2 runner
+
+      - name: Stop EC2 runner python 38
         uses: machulav/ec2-github-runner@502fc5cc476bcf6771c5ab7863d706715d124202
+        if: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner.outputs.label }}
-          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
+          label: ${{ needs.start-runner-linux.outputs.label-38 }}
+          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+          mode: stop
+
+      - name: Stop EC2 runner python 39
+        uses: machulav/ec2-github-runner@502fc5cc476bcf6771c5ab7863d706715d124202
+        if: ${{ needs.start-runner-linux.outputs.ec2-instance-id-39 }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner-linux.outputs.label-39 }}
+          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-39 }}
           mode: stop
 
   weekly-pip-audit:
@@ -381,16 +524,19 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
       - name: Set up Python 3.8
         uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
         with:
           python-version: '3.8'
+
       - name: Set up env
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
           sudo apt update && sudo apt install graphviz* -y
           make setup_env
+
       - name: Run pip-audit
         shell: bash
         run: |
@@ -402,6 +548,7 @@ jobs:
           poetry run python ./script/actions_utils/parse_pip_audit_vulns.py \
           --vulns-json "${VULN_OUT}" \
           --vulns-report "${REPORT_OUT}"
+
       # We load the report in a new step if we exited with an error code above to let the workflow fail
       - name: Load report in env
         if: ${{ always() }}
@@ -409,6 +556,7 @@ jobs:
           cat "${REPORT_OUT}"
           REPORT="$(cat "${REPORT_OUT}")"
           echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+
       - name: Slack Notification
         if: ${{ always() && !success() }}
         continue-on-error: true
@@ -422,7 +570,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   publish-docs:
-    needs: [build]
+    needs: [build-linux]
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
@@ -447,18 +595,21 @@ jobs:
           else
             echo "::set-output name=has-preprod::false"
           fi
+
       - name: Download Documentation
         if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
         id: download
         uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
         with:
           name: html-docs
+
       - name: Untar docs artifacts
         id: untar
         if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
         run: |
           tar -xvf docs.tar
           rm docs.tar
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
         with:
@@ -509,7 +660,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   push-docker-image:
-    needs: [build-preflight-docker, build]
+    needs: [build-preflight-docker, build-linux]
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && fromJSON(needs.build-preflight-docker.outputs.needs-push)) || fromJSON(needs.build-preflight-docker.outputs.force-rebuild-docker) }}
 
     concurrency:
@@ -527,15 +678,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
         with:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
           password: ${{ secrets.BOT_TOKEN }}
+
       - name: Pull preflight image
         run: |
           docker pull "${PREFLIGHT_IMAGE}"
+
       # https://github.com/zama-ai/concrete-numpy-internal/issues/809
       # update once release workflow is ok on the compiler side
       - name: Retag to latest and concrete_compiler_version-concrete_numpy_sha1 and push
@@ -570,7 +724,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   package-release:
-    needs: [build]
+    needs: [build-linux]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
 
     concurrency:
@@ -588,6 +742,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
       # See #570 To be updated to only install required dependencies group with poetry 1.2 and
       # remove graphviz installs which are only required for the actual package and not dev tools
       - name: Install dependencies
@@ -596,6 +751,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
+
       - name: Set tag in env
         # 'poetry version' cannot be piped properly so do it in 2 steps
         # the project version does not have the leading v to be semver compatible
@@ -638,6 +794,7 @@ jobs:
           fi
 
           echo "RELEASE_IMG_TAGS_TO_PUSH=${RELEASE_IMG_TAGS_TO_PUSH}" >> "$GITHUB_ENV"
+
       # Disabled buildx for now as we are seeing a lot of fails on layer pushes
       # - name: Set up Docker Buildx
       #   id: buildx
@@ -648,6 +805,7 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
           password: ${{ secrets.BOT_TOKEN }}
+
       - name: Build concrete-numpy Image
         if: ${{ success() && !cancelled() }}
         uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
@@ -659,12 +817,14 @@ jobs:
           push: false
           tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
           no-cache: true
+
       - name: Release image sanity check
         if: ${{ success() && !cancelled() }}
         run: |
           echo "Running sanity check for ${RELEASE_IMG_GIT_TAG}"
           docker run --rm -v "$(pwd)"/docker/release_resources:/data \
           "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
+
       - name: Create directory for artifacts
         if: ${{ success() && !cancelled() }}
         run: |
@@ -675,6 +835,7 @@ jobs:
           ARTIFACTS_PACKAGED_DIR=/tmp/release_artifacts/packaged
           mkdir -p "${ARTIFACTS_PACKAGED_DIR}"
           echo "ARTIFACTS_PACKAGED_DIR=${ARTIFACTS_PACKAGED_DIR}" >> "$GITHUB_ENV"
+
       - name: Download Documentation
         if: ${{ success() && !cancelled() }}
         id: download-docs
@@ -682,12 +843,14 @@ jobs:
         with:
           name: html-docs
           path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
+
       - name: Untar docs artifacts
         if: ${{ success() && !cancelled() }}
         run: |
           cd ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
           tar -xvf docs.tar
           rm docs.tar
+
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog
@@ -695,6 +858,7 @@ jobs:
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
+
       - name: Prepare docs push
         id: docs-push-infos
         run: |
@@ -707,12 +871,14 @@ jobs:
             echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}"
             echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}"
           fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ea7b857d8a33dc2fb4ef5a724500044281b49a5e
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Update versions.json for docs
         if: ${{ success() && !cancelled() }}
         env:
@@ -744,6 +910,7 @@ jobs:
 
           # Copy to docs to keep a version in docs artifacts
           cp "${OUTPUT_VERSIONS_JSON_FILE}" "${RAW_DOCS_DIR}"/versions.json
+
       - name: Create ready to upload/packaged artifacts and release body
         if: ${{ success() && !cancelled() }}
         env:
@@ -769,10 +936,12 @@ jobs:
             echo "";
           } >> "${RELEASE_BODY_FILE}"
           cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
+
       - name: Push release docker image
         if: ${{ success() && !cancelled() }}
         run: |
           docker image push --all-tags "${RELEASE_IMAGE_BASE}"
+
       - name: Push release documentation
         if: ${{ success() && !cancelled() }}
         env:
@@ -790,6 +959,7 @@ jobs:
           DEST_DIR: 'concrete-numpy/stable'
         run: |
           aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
+
       - name: Invalidate CloudFront Cache for stable
         if: ${{ success() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
         env:
@@ -799,6 +969,7 @@ jobs:
           aws cloudfront create-invalidation \
           --distribution-id "${DISTRIBUTION_ID}" \
           --paths "${SOURCE_PATH}"
+
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
@@ -811,6 +982,7 @@ jobs:
           tag_name: ${{ env.GIT_TAG }}
           fail_on_unmatched_files: true
           token: ${{ secrets.BOT_TOKEN }}
+
       # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/809
       # Remove versions.html
       - name: Push updated versions.html
@@ -823,6 +995,7 @@ jobs:
           aws cloudfront create-invalidation \
           --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
           --paths /concrete-numpy/versions.html
+
       - name: Set notification report
         id: report
         if: ${{ always() }}
@@ -832,6 +1005,7 @@ jobs:
           echo "${REPORT}"
           echo "::set-output name=report::${REPORT}"
           echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+
       - name: Slack Notification
         if: ${{ always() && !success() }}
         continue-on-error: true
@@ -849,9 +1023,11 @@ jobs:
     needs:
       [
         build-preflight-docker,
-        start-runner,
-        build,
-        stop-runner,
+        matrix-preparation,
+        start-runner-linux,
+        build-linux,
+        linux-build-status,
+        stop-runner-linux,
         publish-docs,
         push-docker-image,
         package-release,
@@ -861,6 +1037,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
       - name: Prepare whole job status
         if: ${{ always() }}
         continue-on-error: true
@@ -883,9 +1060,10 @@ jobs:
           SLACK_MESSAGE: "Full run finished with status ${{ env.JOB_STATUS || 'failure' }} \
             (${{ env.ACTION_RUN_URL }})\n\
             - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
-            - start-runner: ${{ needs.start-runner.result }}\n\n\
-            - build: ${{ needs.build.outputs.report || 'Did not run.' }}\n\n\
-            - stop-runner: ${{ needs.stop-runner.result }}\n\n\
+            - matrix-preparation: ${{ needs.matrix-preparation.result }}\n\n
+            - start-runner-linux: ${{ needs.start-runner-linux.result }}\n\n\
+            - build-linux: ${{ needs.linux-build-status.outputs.report || 'Did not run.' }}\n\n\
+            - stop-runner-linux: ${{ needs.stop-runner-linux.result }}\n\n\
             - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
             - push-docker-image: ${{ needs.push-docker-image.outputs.report || 'Did not run.' }}\n\n\
             - package-release: ${{ needs.package-release.outputs.report || 'Did not run.' }}"
