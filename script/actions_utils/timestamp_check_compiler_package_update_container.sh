@@ -54,9 +54,14 @@ ENV_JSON=$(curl \
 LATEST_ENV_IMG_JSON=$(echo "${ENV_JSON}" | \
 jq -rc '.[] | select(.metadata.container.tags[] | contains("latest"))')
 
-RELEASE_JSON=$(curl -H "Authorization: token ${TOKEN}" \
+RELEASE_JSON_PACK=$(curl -H "Authorization: token ${TOKEN}" \
 -H "Accept: application/vnd.github.v3.raw" \
-"${COMPILER_RELEASE_ENDPOINT_URL}" | jq '. | map(select(.draft == false))[0]')
+"${COMPILER_RELEASE_ENDPOINT_URL}")
+
+echo "Release json pack:"
+echo "${RELEASE_JSON_PACK}"
+
+RELEASE_JSON=$(echo "${RELEASE_JSON_PACK}" | jq '. | map(select(.draft == false))[0]')
 
 echo "Release json:"
 echo "${RELEASE_JSON}"

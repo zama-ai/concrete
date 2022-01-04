@@ -109,7 +109,7 @@ jobs:
           mkdir -p pkg
           ./script/actions_utils/gh_dl_release.sh \
           --token ${{ secrets.BOT_TOKEN }} \
-          --org-repo zama-ai/homomorphizer \
+          --org-repo ${{ secrets.COMPILER_REPO }} \
           --file "${WHEEL_SPEC}" \
           --dest-dir "pkg" \
           --github-env "${GITHUB_ENV}" \
