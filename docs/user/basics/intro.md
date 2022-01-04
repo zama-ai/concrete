@@ -39,5 +39,6 @@ Concrete is a work in progress, and is currently limited to a certain number of 
 The main _current_ limits are:
 - **Concrete** only supports unsigned integers
 - **Concrete** needs the integer to be less than 7 bits (included)
+- **Concrete** computations are exact (except a very small probability) for computations on 6 bits or less, and exact at a probability close to 90% for 7 bits computations
 
 To overcome the above limitations, Concrete has a [popular quantization](../explanation/quantization.md) method built in the framework that allows map floating point values to integers. We can [use this approach](../howto/use_quantization.md) to run models in FHE. Lastly, we give hints to the user on how to [reduce the precision](../howto/reduce_needed_precision.md) of a model to make it work in Concrete.

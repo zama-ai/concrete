@@ -28,4 +28,7 @@ As of today, the execution of the FHE program is done locally. Notably, in the c
 
 As we explained, we wanted to focus first on cryptographic challenges. Performance has been postponed, and will be tackled in the next release.
 
+### Currently restricted to 7 bits computations
+
+For the moment, we can only perform computations with 7 bits or less. Furthermore, the exactness of computations is only ensured for 6 bits or less; for 7 bits, the computations are exact with a probability close to 90%. Of course, we are working on increasing this limit, and making the probability of a wrong computation as close to 0% as possible. Don't hesitate to look at our [quantization](quantization.md) section to know how to use smaller integers.
 
