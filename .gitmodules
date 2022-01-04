@@ -1,3 +1,6 @@
 [submodule "lwe-estimator"]
 	path = estimator
 	url = git@github.com:zama-ai/lwe-estimator.git
+[submodule "lattice-estimator"]
+	path = lattice-estimator
+	url = https://github.com/malb/lattice-estimator
