@@ -99,6 +99,36 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
+  BuildAndTestMacOS:
+    runs-on: macos-10.15
+    # TODO: enable on all PRs when we have ccache enabled (#362)
+    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - uses: actions/checkout@v2
+        with:
+          repository: zama-ai/concrete
+          ref: feature/core_c_api
+          path: concrete
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Install Deps
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          brew install ninja
+          pip3 install numpy pybind11==2.6.2 wheel delocate
+          cd ${{ github.workspace }}/concrete/concrete-ffi
+          RUSTFLAGS="-C target-cpu=native" cargo build --release
+
+      - name: Build
+        run: |
+          cd compiler
+          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          make CC_COMPILER=/usr/local/bin/gcc-9 CXX_COMPILER=/usr/local/bin/g++-9 test
+
   BuildAndTestDF:
     runs-on: ubuntu-latest
     steps:
@@ -280,7 +310,7 @@ jobs:
         run: |
           cd compiler
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
-          make Python3_EXECUTABLE=`which python` python-bindings
+          make CC_COMPILER=/usr/local/bin/gcc-9 CXX_COMPILER=/usr/local/bin/g++-9 Python3_EXECUTABLE=`which python` python-bindings
           pip wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
           echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
