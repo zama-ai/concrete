@@ -146,10 +146,6 @@ JITLambda::Argument::~Argument() {
   for (auto buffer : ciphertextBuffers) {
     free(buffer);
   }
-  for (const auto &key : context.bsk) {
-    if (key.first != "_concretelang_base_context_bsk")
-      free_lwe_bootstrap_key_u64(&err, key.second);
-  }
 }
 
 llvm::Expected<std::unique_ptr<JITLambda::Argument>>
