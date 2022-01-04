@@ -14,7 +14,13 @@ def EncryptedIntegerType : FHE_Type<"EncryptedInteger",
   let summary = "An encrypted integer";
 
   let description = [{
-    An encrypted integer with clear precision of width.
+    An encrypted integer with `width` bits to performs FHE Operations.
+
+    Examples:
+    ```mlir
+    !FHE.eint<7>
+    !FHE.eint<6>
+    ```
   }];
 
   let parameters = (ins "unsigned":$width);

@@ -107,20 +107,20 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
 }
 
 ::mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
-  auto ct = op.ct().getType().cast<EncryptedIntegerType>();
-  auto l_cst = op.l_cst().getType().cast<TensorType>();
+  auto ct = op.a().getType().cast<EncryptedIntegerType>();
+  auto lut = op.lut().getType().cast<TensorType>();
   auto result = op.getResult().getType().cast<EncryptedIntegerType>();
 
-  // Check the shape of l_cst argument
+  // Check the shape of lut argument
   auto width = ct.getWidth();
   auto expectedSize = 1 << width;
-  auto lCstShape = l_cst.getShape();
+  auto lCstShape = lut.getShape();
   mlir::SmallVector<int64_t, 1> expectedShape{expectedSize};
-  if (!l_cst.hasStaticShape(expectedShape)) {
-    emitErrorBadLutSize(op, "l_cst", "ct", expectedSize, width);
+  if (!lut.hasStaticShape(expectedShape)) {
+    emitErrorBadLutSize(op, "lut", "ct", expectedSize, width);
     return mlir::failure();
   }
-  if (!l_cst.getElementType().isInteger(64)) {
+  if (!lut.getElementType().isInteger(64)) {
     op.emitOpError() << "should have the i64 constant";
     return mlir::failure();
   }
