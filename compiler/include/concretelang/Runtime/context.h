@@ -22,17 +22,19 @@ typedef struct RuntimeContext {
   ~RuntimeContext() {
     int err;
     for (const auto &key : bsk) {
-    if (key.first != "_concretelang_base_context_bsk")
-      free_lwe_bootstrap_key_u64(&err, key.second);
+      if (key.first != "_concretelang_base_context_bsk")
+        free_lwe_bootstrap_key_u64(&err, key.second);
     }
   }
 } RuntimeContext;
-}
-}
+} // namespace concretelang
+} // namespace mlir
 
 extern "C" {
-LweKeyswitchKey_u64 *get_keyswitch_key(mlir::concretelang::RuntimeContext *context);
+LweKeyswitchKey_u64 *
+get_keyswitch_key(mlir::concretelang::RuntimeContext *context);
 
-LweBootstrapKey_u64 *get_bootstrap_key(mlir::concretelang::RuntimeContext *context);
+LweBootstrapKey_u64 *
+get_bootstrap_key(mlir::concretelang::RuntimeContext *context);
 }
 #endif

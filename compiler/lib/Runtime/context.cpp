@@ -11,11 +11,13 @@
 #include <hpx/include/runtime.hpp>
 #endif
 
-LweKeyswitchKey_u64 *get_keyswitch_key(mlir::concretelang::RuntimeContext *context) {
+LweKeyswitchKey_u64 *
+get_keyswitch_key(mlir::concretelang::RuntimeContext *context) {
   return context->ksk;
 }
 
-LweBootstrapKey_u64 *get_bootstrap_key(mlir::concretelang::RuntimeContext *context) {
+LweBootstrapKey_u64 *
+get_bootstrap_key(mlir::concretelang::RuntimeContext *context) {
   int err;
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   std::string threadName = hpx::get_thread_name();
