@@ -5,6 +5,13 @@
 
 set -e
 
+# shellcheck disable=SC1091
+if [ -f .env ]
+then
+    # shellcheck disable=SC1091
+    set -a; source .env; set +a
+fi
+
 DEV_VENV_PATH="/home/dev_user/dev_venv"
 
 # shellcheck disable=SC1090,SC1091
@@ -18,27 +25,40 @@ cd /src/ && make sync_env
 
 mkdir -p logs
 
-initial_log=logs/$(date -u --iso-8601=seconds).log
+initial_concrete_log=logs/$(date -u --iso-8601=seconds).concrete.log
+make -s concrete_benchmark 2>&1 | tee -a "$initial_concrete_log"
 
-make benchmark > "$initial_log"
+final_concrete_log=logs/$(date -u --iso-8601=seconds).concrete.log
+cat -s "$initial_concrete_log" | sed '1d; $d' > "$final_concrete_log"
 
-final_log=logs/$(date -u --iso-8601=seconds).log
+# sed above removes the first and the last lines of the log
+# which are empty to provide a nice console output
+# but empty lines are useless for logs so we get rid of them
 
-cat -s "$initial_log" | sed '1d; $d' > "$final_log"
-rm "$initial_log"
-
-cp "$final_log" logs/latest.log
-
-if [ -f .env ]
-then
-  # Set the last two environment variables in `.env` for the curl command below
-  # (https://gist.github.com/mihow/9c7f559807069a03e302605691f85572)
-  # shellcheck disable=SC2002,SC2046
-  export $(cat .env | tail -n 2 | sed 's/#.*//g' | xargs  -d '\n')
-fi
+rm "$initial_concrete_log"
+cp "$final_concrete_log" logs/latest.concrete.log
 
 curl \
-     -H 'Authorization: Bearer '"$PROGRESS_TRACKER_TOKEN"'' \
+     -H 'Authorization: Bearer '"$CONCRETE_PROGRESS_TRACKER_TOKEN"'' \
      -H 'Content-Type: application/json' \
      -d @progress.json \
-     -X POST "$PROGRESS_TRACKER_URL"/measurement
+     -X POST "$CONCRETE_PROGRESS_TRACKER_URL"/measurement
+
+initial_ml_log=logs/$(date -u --iso-8601=seconds).ml.log
+make -s ml_benchmark 2>&1 | tee -a "$initial_ml_log"
+
+final_ml_log=logs/$(date -u --iso-8601=seconds).ml.log
+cat -s "$initial_ml_log" | sed '1d; $d' > "$final_ml_log"
+
+# sed above removes the first and the last lines of the log
+# which are empty to provide a nice console output
+# but empty lines are useless for logs so we get rid of them
+
+rm "$initial_ml_log"
+cp "$final_ml_log" logs/latest.ml.log
+
+curl \
+     -H 'Authorization: Bearer '"$ML_PROGRESS_TRACKER_TOKEN"'' \
+     -H 'Content-Type: application/json' \
+     -d @progress.json \
+     -X POST "$ML_PROGRESS_TRACKER_URL"/measurement

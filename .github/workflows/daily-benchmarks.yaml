@@ -47,18 +47,18 @@ jobs:
           host: ${{ steps.amd-public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
-          command_timeout: 240m
+          command_timeout: 720m
           script: |
-            cd ~/concrete-framework-internal
+            cd ~/project
             git pull
             make docker_publish_measurements
             docker system prune -f
 
-      - name: Copy AMD EC2 Instance Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concrete-framework-internal/logs/latest.log ~/latest.log
+      - name: Copy AMD EC2 Instance Concrete Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/project/logs/latest.concrete.log ~/latest.concrete.log
 
-      - name: Copy AMD EC2 Instance Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/concrete-framework-internal/.benchmarks/findings.json ~/findings.json
+      - name: Copy AMD EC2 Instance ML Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.amd-public-ip.outputs.value }}:~/project/logs/latest.ml.log ~/latest.ml.log
 
       - name: Stop AMD EC2 Instance
         if: ${{ always() }}
@@ -68,14 +68,8 @@ jobs:
       - name: Upload Logs of AMD EC2 Instance
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
-          name: amd-logs
-          path: ~/latest.log
-
-      - name: Upload Findings of AMD EC2 Instance
-        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
-        with:
-          name: amd-findings
-          path: ~/findings.json
+          name: amd
+          path: ~/latest.*.log
 
       - name: Start Intel EC2 Instance
         run: |
@@ -102,18 +96,18 @@ jobs:
           host: ${{ steps.intel-public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
-          command_timeout: 240m
+          command_timeout: 720m
           script: |
-            cd ~/concrete-framework-internal
+            cd ~/project
             git pull
             make docker_publish_measurements
             docker system prune -f
 
-      - name: Copy Intel EC2 Instance Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concrete-framework-internal/logs/latest.log ~/latest.log
+      - name: Copy Intel EC2 Instance Concrete Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/project/logs/latest.concrete.log ~/latest.concrete.log
 
-      - name: Copy Intel EC2 Instance Findings
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/concrete-framework-internal/.benchmarks/findings.json ~/findings.json
+      - name: Copy Intel EC2 Instance ML Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.intel-public-ip.outputs.value }}:~/project/logs/latest.ml.log ~/latest.ml.log
 
       - name: Stop Intel EC2 Instance
         if: ${{ always() }}
@@ -123,14 +117,8 @@ jobs:
       - name: Upload Logs of Intel EC2 Instance
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
-          name: intel-logs
-          path: ~/latest.log
-
-      - name: Upload Findings of Intel EC2 Instance
-        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
-        with:
-          name: intel-findings
-          path: ~/findings.json
+          name: intel
+          path: ~/latest.*.log
 
       - name: Send Slack Notification
         if: ${{ always() }}
