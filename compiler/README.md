@@ -37,7 +37,7 @@ Test the compiler
 
 ```sh
 #TODO: let cmake set this PATH
-export LD_LIBRARY_PATH="path_to_homomorphizer/compiler/build/lib/Runtime/"
+export LD_LIBRARY_PATH="path_to_concrete-compiler/compiler/build/lib/Runtime/"
 make test
 ```
 

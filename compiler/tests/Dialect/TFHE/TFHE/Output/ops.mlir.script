@@ -1,1 +1,1 @@
-set -o pipefail;{ : 'RUN: at line 1';   zamacompiler /home/yundsi/code/homomorphizer/compiler/tests/Dialect/MidLFHE/ops.mlir  2>&1| FileCheck /home/yundsi/code/homomorphizer/compiler/tests/Dialect/MidLFHE/ops.mlir; }
+set -o pipefail;{ : 'RUN: at line 1';   zamacompiler /home/yundsi/code/concrete-compiler-internal/compiler/tests/Dialect/MidLFHE/ops.mlir  2>&1| FileCheck /home/yundsi/code/concrete-compiler-internal/compiler/tests/Dialect/MidLFHE/ops.mlir; }

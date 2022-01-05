@@ -1,7 +1,7 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/homomorphizer/blob/master/LICENSE.txt for license
-// information.
+// https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
+// for license information.
 
 #ifndef CONCRETELANG_TESTLIB_DYNAMIC_LAMBDA_H
 #define CONCRETELANG_TESTLIB_DYNAMIC_LAMBDA_H
@@ -21,8 +21,8 @@ template <typename Result>
 llvm::Expected<Result> invoke(DynamicLambda &lambda, const Arguments &args) {
   // compile time error if used
   using COMPATIBLE_RESULT_TYPE = void;
-  return (Result)(
-      COMPATIBLE_RESULT_TYPE)0; // invoke does not accept this kind of Result
+  return (Result)(COMPATIBLE_RESULT_TYPE)0; // invoke does not accept this kind
+                                            // of Result
 }
 
 template <>
