@@ -2,7 +2,7 @@
 
 ## What is **concrete-numpy**?
 
-**concrete-numpy** is the python API of the **Concrete** framework for developing homomorphic applications.
+**concrete-numpy** is a convenient python package, made on top of **Concrete compiler** and **Concrete library**, for developing homomorphic applications.
 One of its essential functionalities is to transform Python functions to their `MLIR` equivalent.
 Unfortunately, not all python functions can be converted due to the limits of current product (we are in the alpha stage), or sometimes due to inherent restrictions of FHE itself.
 However, you can already build interesting and impressing use cases, and more will be available in further versions of the framework.
@@ -47,7 +47,7 @@ There are several approaches to compute bounds, and they will be discussed in th
 The final step is to transform the operation graph to equivalent `MLIR` code.
 How this is done will be explained in detail in its own chapter.
 
-Once the MLIR is prepared, the rest of the stack, which you can learn more about [here](http://docs.zama.ai/concrete/), takes over and completes the compilation process.
+Once the MLIR is prepared, the rest of the stack, which you can learn more about [here](http://docs.zama.ai/), takes over and completes the compilation process.
 
 Here is the visual representation of the pipeline:
 
@@ -117,7 +117,7 @@ Tracing is also responsible for indicating whether the values in the node would 
 
 The goal of topological transforms is to make more functions compilable.
 
-With the current version of **Concrete**,floating point inputs and floating point outputs are not supported.
+With the current version of **Concrete Numpy**, floating point inputs and floating point outputs are not supported.
 However, if the floating points operations are intermediate operations, they can sometimes be fused into a single table lookup from integer to integer thanks to some specific transforms.
 
 Let's take a closer look at the transforms we can currently perform.

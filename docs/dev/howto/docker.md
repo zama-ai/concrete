@@ -33,7 +33,7 @@ Install Xming and use Xlaunch:
 
 ## Logging in and building the image
 
-Docker image of **Concrete** is based on another docker image provided by the compiler team. Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
+Docker image of **Concrete-Numpy** is based on another docker image provided by the compiler team. Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
 
 Upon joining to the team, you need to log in using the following command:
 

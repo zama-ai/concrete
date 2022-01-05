@@ -2,7 +2,7 @@
 # Contributing
 
 ```{important}
-There are two ways to contribute to **concrete-numpy**:
+There are two ways to contribute to **concrete-numpy** or to **Concrete** tools in general:
 - you can open issues to report bugs, typos and suggest ideas
 - you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
 ```

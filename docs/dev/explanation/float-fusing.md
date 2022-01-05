@@ -35,7 +35,7 @@ The simplified graph of operations with the float subgraph condensed in a `Gener
 
 ![](../../_static/float_fusing_example/after.png)
 
-## How is it done in **Concrete**?
+## How is it done in **Concrete Numpy**?
 
 The first step consists in detecting where we go from floating point computation back to integers. This allows to identify the potential terminal node of the float subgraph we are going to fuse.
 
@@ -83,4 +83,4 @@ def non_fusable(x, y):
     return add_int
 ```
 
-From `add_int` you will find two `Add` nodes going from int to float (`x_1` and `y_1`) which we cannot represent with a single input table look-up. Kolmogorov–Arnold representation theorem states that every multivariate continuous function can be represented as a superposition of continuous functions of one variable ([from Wikipedia](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Arnold_representation_theorem)), so the above case could be handled in future versions of **Concrete**.
+From `add_int` you will find two `Add` nodes going from int to float (`x_1` and `y_1`) which we cannot represent with a single input table look-up. Kolmogorov–Arnold representation theorem states that every multivariate continuous function can be represented as a superposition of continuous functions of one variable ([from Wikipedia](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Arnold_representation_theorem)), so the above case could be handled in future versions of **Concrete** tools.

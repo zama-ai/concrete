@@ -77,9 +77,9 @@ The end result has a granularity/imprecision linked to the data types used and f
 
 Recent quantization literature often takes a few shortcuts to reach performance similar to those achieved by floating point models. A common one is that the input is left in floating point. This is also true for the first and last layers which have more impact on the resulting model accuracy than hidden layers. 
 
-But, in Concrete Numpy the inputs, weights and the accumulator must remain on a maximum of 7 bits.
+But, in **Concrete Numpy**, the inputs, weights and the accumulator must remain on a maximum of 7 bits.
 
-Thus, in Concrete Numpy we also quantize the input data and network output activations in the same way as the rest of the network: everything is quantized to a specific number of bits. It turns out, that the number of bits used for the input or the output of any activation function is crucial to comply with the constraint on accumulator width.
+Thus, in **Concrete Numpy**, we also quantize the input data and network output activations in the same way as the rest of the network: everything is quantized to a specific number of bits. It turns out, that the number of bits used for the input or the output of any activation function is crucial to comply with the constraint on accumulator width.
 
 The core operation in neural networks is essentially matrix multiplications (matmul). This operation must be done such that the maximum value of its result requires at most 7 bits of precision.
 
@@ -91,6 +91,6 @@ where $ n_{\mathsf{max}} = 7 $ is the maximum precision allowed. For example, if
 
 Above $ \Omega $ dimensions in the input and weights, the risk of overflow increases quickly. It may happen that for some distributions of weights and values the computation does not overflow, but the risk increases rapidly with the number of dimensions.
 
-Currently, Concrete Numpy pre-computes the number of bits needed for the computation depending on the input set calibration data and does not allow the overflow[^1] to happen.
+Currently, **Concrete Numpy** pre-computes the number of bits needed for the computation depending on the input set calibration data and does not allow the overflow[^1] to happen.
 
 [^1]: [Integer overflow](https://en.wikipedia.org/wiki/Integer_overflow) 

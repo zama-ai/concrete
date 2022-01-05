@@ -18,7 +18,7 @@ The basic idea of quantization is to take a range of values represented by a _la
 
 Let's first define some notations. Let $ [\alpha, \beta ] $ be the range of our value to quantize where $ \alpha $ is the minimum and $ \beta $ is the maximum.
 
-To quantize a range with floating point values (in $ \mathbb{R} $) to unsigned integer values (in $ \mathbb{N} $), we first need to choose the data type that is going to be used. **ConcreteLib**, the library used in the **Concrete Numpy**, is currently limited to 7 bits unsigned integers, so we'll use that for the example. Knowing that, for a value in the range $ [\alpha, \beta ] $, we can compute the `scale` $ S $ of the quantization:
+To quantize a range with floating point values (in $ \mathbb{R} $) to unsigned integer values (in $ \mathbb{N} $), we first need to choose the data type that is going to be used. **Concrete Library**, the library used in the **Concrete Numpy**, is currently limited to 7 bits unsigned integers, so we'll use that for the example. Knowing that, for a value in the range $ [\alpha, \beta ] $, we can compute the `scale` $ S $ of the quantization:
 
 $$ S =  \frac{\beta - \alpha}{2^n - 1} $$
 
@@ -36,9 +36,9 @@ Regarding quantization and FHE compilation, it is important to understand the di
 1. the quantization is done before the compilation; notably, the quantization is completely controlled by the user, and can be done by any means, including by using third party frameworks
 2. the quantization is done during the compilation (inside our framework), with much less control by the user.
 
-For the moment, only the second method is available in Concrete Numpy, but we plan to have the first method available in a further release, since it should give more freedom and better results to the user.
+For the moment, only the second method is available in **Concrete Numpy**, but we plan to have the first method available in a further release, since it should give more freedom and better results to the user.
 
-We detail the use of quantization within Concrete Numpy in [here](../howto/use_quantization.md).
+We detail the use of quantization within **Concrete Numpy** in [here](../howto/use_quantization.md).
 
 ## Resources
 

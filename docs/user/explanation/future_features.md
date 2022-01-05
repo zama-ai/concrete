@@ -1,10 +1,10 @@
 # Future Features
 
-As explained in [this section](fhe_and_framework_limits.md#limits-of-this-project), the **Concrete Numpy**
+As explained in [this section](fhe_and_framework_limits.md#limits-of-this-project), the **Concrete Numpy** package
 is currently in a preliminary version, and quite constrained in term of functionalities. However, the good
 news is that we are going to release new versions regularly, where a lot of functionalities will be added progressively.
 
-In this page, we briefly list what the plans for next versions of the **Concrete Numpy** are:
+In this page, we briefly list what the plans for next versions of **Concrete Numpy** are:
 - **better performance**: further versions will contain improved versions of the **Concrete Library**, with faster
 execution; also, the **Concrete Compiler** will be improved, to have faster local execution (with multi-threading
 for example) and faster production execution (with distribution over a set of machines or use of hardware accelerations)

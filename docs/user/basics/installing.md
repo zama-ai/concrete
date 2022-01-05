@@ -2,7 +2,7 @@
 
 ## Python package
 
-To install **Concrete** from PyPi, run the following:
+To install **Concrete Numpy** from PyPi, run the following:
 
 ```shell
 pip install concrete-numpy
@@ -51,7 +51,7 @@ docker run --rm -it -p 8888:8888 zamafhe/concrete-numpy:v0.2.0
 docker run --rm -it -p 8888:8888 -v /host/path:/data zamafhe/concrete-numpy:v0.2.0
 ```
 
-This will launch a **Concrete** enabled jupyter server in the docker, that you can access from your browser.
+This will launch a **Concrete Numpy** enabled jupyter server in the docker, that you can access from your browser.
 
 Alternatively, you can just open a shell in the docker with or without volumes:
 

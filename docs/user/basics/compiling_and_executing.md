@@ -10,7 +10,7 @@ import concrete.numpy as hnp
 
 ## Defining a function to compile
 
-You need to have a python function that follows the [limits](../explanation/fhe_and_framework_limits.md) of the **Concrete Numpy**. Here is a simple example:
+You need to have a python function that follows the [limits](../explanation/fhe_and_framework_limits.md) of **Concrete Numpy**. Here is a simple example:
 
 <!--pytest-codeblocks:cont-->
 ```python
