@@ -17,7 +17,7 @@ import concrete.numpy as hnp
 def f(x, y):
     return (2 * x) + y
 
-# Create a NumPy FHE Compiler
+# Create a Numpy FHE Compiler
 compiler = hnp.NPFHECompiler(f, {"x": "encrypted", "y": "encrypted"})
 
 # Compile an FHE Circuit using an inputset
@@ -57,7 +57,7 @@ Here is the visual representation of the pipeline:
 
 Compiling a torch Module is pretty straightforward.
 
-The torch Module is first converted to a NumPy equivalent we call `NumpyModule` if all the layers in the torch Module are supported.
+The torch Module is first converted to a Numpy equivalent we call `NumpyModule` if all the layers in the torch Module are supported.
 
 Then the module is quantized post-training to be compatible with our compiler which only works on integers. The post training quantization uses the provided dataset for calibration.
 
