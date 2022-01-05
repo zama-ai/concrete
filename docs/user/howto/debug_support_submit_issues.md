@@ -66,7 +66,7 @@ To simplify our work and let us reproduce your bug easily, we need all the infor
 - any insight you might have on the bug
 - any workaround you have been able to find
 
-Remember, **Concrete Framework** is a project where we are open to contributions, more information at [Contributing](../../dev/howto/contributing.md).
+Remember, **Concrete Numpy** is a project where we are open to contributions, more information at [Contributing](../../dev/howto/contributing.md).
 
 ## Submitting an issue
 

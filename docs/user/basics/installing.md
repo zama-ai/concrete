@@ -5,11 +5,11 @@
 To install **Concrete** from PyPi, run the following:
 
 ```shell
-pip install concrete-framework
+pip install concrete-numpy
 ```
 
 ```{note}
-Note that **concrete-framework** has `pygraphviz` as an optional dependency to draw graphs.
+Note that **concrete-numpy** has `pygraphviz` as an optional dependency to draw graphs.
 ```
 
 ```{WARNING}
@@ -24,19 +24,19 @@ Do check <a href="https://pygraphviz.github.io/documentation/stable/install.html
 You can install the extra python dependencies for drawing with:
 
 ```shell
-pip install concrete-framework[full]
+pip install concrete-numpy[full]
 # you may need to force reinstallation
-pip install --force-reinstall concrete-framework[full]
+pip install --force-reinstall concrete-numpy[full]
 ```
 
 ## Docker image
 
-You can also get the **concrete-framework** docker image by either pulling the latest docker image or a specific version:
+You can also get the **concrete-numpy** docker image by either pulling the latest docker image or a specific version:
 
 ```shell
-docker pull zamafhe/concrete-framework:latest
+docker pull zamafhe/concrete-numpy:latest
 # or
-docker pull zamafhe/concrete-framework:v0.2.0
+docker pull zamafhe/concrete-numpy:v0.2.0
 ```
 
 The image can be used with docker volumes, [see the docker documentation here](https://docs.docker.com/storage/volumes/).
@@ -45,10 +45,10 @@ You can then use this image with the following command:
 
 ```shell
 # Without local volume:
-docker run --rm -it -p 8888:8888 zamafhe/concrete-framework:v0.2.0
+docker run --rm -it -p 8888:8888 zamafhe/concrete-numpy:v0.2.0
 
 # With local volume to save notebooks on host:
-docker run --rm -it -p 8888:8888 -v /host/path:/data zamafhe/concrete-framework:v0.2.0
+docker run --rm -it -p 8888:8888 -v /host/path:/data zamafhe/concrete-numpy:v0.2.0
 ```
 
 This will launch a **Concrete** enabled jupyter server in the docker, that you can access from your browser.
@@ -56,5 +56,5 @@ This will launch a **Concrete** enabled jupyter server in the docker, that you c
 Alternatively, you can just open a shell in the docker with or without volumes:
 
 ```shell
-docker run --rm -it zamafhe/concrete-framework:v0.2.0 /bin/bash
+docker run --rm -it zamafhe/concrete-numpy:v0.2.0 /bin/bash
 ```

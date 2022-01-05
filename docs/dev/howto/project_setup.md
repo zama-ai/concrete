@@ -1,14 +1,14 @@
 # Project Setup
 
 ```{note}  
-It is strongly recommended to use the development docker (see the [docker](./docker.md) guide). However you can setup the project on bare macOS and Linux provided you install the required dependencies (check Dockerfile.concrete-framework-env for the required binary packages like make).
+It is strongly recommended to use the development docker (see the [docker](./docker.md) guide). However you can setup the project on bare macOS and Linux provided you install the required dependencies (check Dockerfile.env for the required binary packages like make).
 
 The project targets Python 3.8 through 3.9 inclusive.
 ```
 
 ## Installing Python
 
-**concrete-framework** is a `Python` library, so `Python` should be installed to develop **concrete-framework**. `v3.8` and `v3.9` are the only supported versions.
+**concrete-numpy** is a `Python` library, so `Python` should be installed to develop **concrete-numpy**. `v3.8` and `v3.9` are the only supported versions.
 
 You can follow [this](https://realpython.com/installing-python/) guide to install it (alternatively you can google `how to install python 3.8 (or 3.9)`).
 
@@ -45,10 +45,10 @@ In the following sections, be sure to use the proper `make` tool for your system
 
 ## Cloning repository
 
-Now, it's time to get the source code of **concrete-framework**. You can use the following command to do that.
+Now, it's time to get the source code of **concrete-numpy**. You can use the following command to do that.
 
 ```shell
-git clone https://github.com/zama-ai/concrete-framework-internal.git
+git clone https://github.com/zama-ai/concrete-numpy-internal.git
 ```
 
 ## Setting up environment on your host OS
@@ -56,7 +56,7 @@ git clone https://github.com/zama-ai/concrete-framework-internal.git
 We are going to make use of virtual environments. This helps to keep the project isolated from other `Python` projects in the system. The following commands will create a new virtual environment under the project directory and install dependencies to it.
 
 ```shell
-cd concrete-framework-internal
+cd concrete-numpy-internal
 make setup_env
 ```
 

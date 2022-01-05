@@ -1,6 +1,6 @@
 # Numpy Support
 
-In this section, we list the operations which are supported currently in the **Concrete Framework**. Please have a look to numpy [documentation](https://numpy.org/doc/stable/user/index.html) to know what these operations are about.
+In this section, we list the operations which are supported currently in the **Concrete Numpy**. Please have a look to numpy [documentation](https://numpy.org/doc/stable/user/index.html) to know what these operations are about.
 
 ## Unary operations
 

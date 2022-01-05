@@ -1,4 +1,4 @@
-Concrete Framework's documentation
+Concrete Numpy's documentation
 ==================================
 
 

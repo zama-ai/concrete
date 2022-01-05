@@ -477,7 +477,7 @@ def subgraph_nodes_and_values_allow_fusing(
     # There *may* be a way to manage the other case by simulating the broadcast of the smaller input
     # array and then concatenating/stacking the results. This is not currently doable as we don't
     # have a concatenate operator on the compiler side.
-    # TODO: #587 https://github.com/zama-ai/concrete-framework-internal/issues/587
+    # TODO: #587 https://github.com/zama-ai/concrete-numpy-internal/issues/587
 
     variable_input_node_output = cast(TensorValue, variable_input_node.outputs[0])
     variable_input_node_output_size, variable_input_node_output_shape = (

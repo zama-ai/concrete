@@ -1,10 +1,10 @@
-# Using Quantization in Concrete Framework
+# Using Quantization in Concrete Numpy
 
 In this section we detail some usage of [quantization](../explanation/quantization.md) as implemented in Concrete.
 
 ## Quantization Basics
 
-Concrete Framework implements some basic concepts of quantization. The very basic purpose of it is to convert floating point values to integers. We can apply such conversion using `QuantizedArray` available in `concrete.quantization`. 
+Concrete Numpy implements some basic concepts of quantization. The very basic purpose of it is to convert floating point values to integers. We can apply such conversion using `QuantizedArray` available in `concrete.quantization`. 
 
 `QuantizedArray` takes 2 arguments:
 - `n_bits` that defines the precision of the quantization. Currently, `n_bits` is limited to 7, due to some ConcreteLib limits.
@@ -38,12 +38,12 @@ Neural networks are implemented with a diverse set of operations, such as convol
 
 Re-scaling raw input values to the quantized domain implies that we need to make use of floating point operations. In the FHE setting where we only work with integers, this could be a problem, but luckily, the FHE implementation behind the Concrete framework provides a workaround. We essentially make use of a [table lookup](../tutorial/table_lookup.md) which is later translated into a [PBS](https://whitepaper.zama.ai). 
 
-Of course, having a PBS for every quantized addition isn't recommended for computational cost reasons. Also, Concrete Framework allows PBS only for univariate operations (i.e. matrix multiplication can't be done in a PBS). Therefore, our quantized modules split the computation of floating point values and unsigned integers as it is currently done in `concrete.quantization.QuantizedLinear`.
+Of course, having a PBS for every quantized addition isn't recommended for computational cost reasons. Also, Concrete Numpy allows PBS only for univariate operations (i.e. matrix multiplication can't be done in a PBS). Therefore, our quantized modules split the computation of floating point values and unsigned integers as it is currently done in `concrete.quantization.QuantizedLinear`.
 
 
-The above operations are all implemented in Concrete Framework and transparent to the user via our Quantized Modules.
+The above operations are all implemented in Concrete Numpy and transparent to the user via our Quantized Modules.
 
-Concrete Framework allows you to convert Numpy operations to their FHE counterparts. This essentially opens the door to any python computing framework such as [PyTorch](https://pytorch.org/). Concrete Framework implements a Torch to Numpy converter that makes it easy for the user to use a torch model.
+Concrete Numpy allows you to convert Numpy operations to their FHE counterparts. This essentially opens the door to any python computing framework such as [PyTorch](https://pytorch.org/). Concrete Numpy implements a Torch to Numpy converter that makes it easy for the user to use a torch model.
 
 First we define a model:
 
@@ -141,7 +141,7 @@ Do not reuse a layer or an activation multiple times in the forward (i.e. self.s
 It is now possible to compile the `quantized_numpy_module`. Details on how to compile the model are available in the [torch compilation documentation](compiling_torch_model.md).
 ## Building your own QuantizedModule
 
-Concrete Framework also offers the possibility to build your own models and use them in the FHE settings. The `QuantizedModule` is a very simple abstraction that allows to create any model using the available operators:
+Concrete Numpy also offers the possibility to build your own models and use them in the FHE settings. The `QuantizedModule` is a very simple abstraction that allows to create any model using the available operators:
 
 - QuantizedSigmoid, the quantized version of `nn.Sigmoid`
 - QuantizedLinear, the quantized version of `nn.Linear`

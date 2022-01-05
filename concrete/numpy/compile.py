@@ -524,8 +524,8 @@ def compile_numpy_function_into_op_graph_and_measure_bounds(
 
 # HACK
 # TODO: remove this ugly hack when
-# https://github.com/zama-ai/concrete-framework-internal/issues/1001 is done
-# TODO: https://github.com/zama-ai/concrete-framework-internal/issues/1015
+# https://github.com/zama-ai/concrete-numpy-internal/issues/1001 is done
+# TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/1015
 def hack_offset_negative_inputs_to_lookup_tables(op_graph: OPGraph) -> None:
     """Hack the op_graph to add offsets to signed inputs to TLUs.
 
@@ -606,8 +606,8 @@ def prepare_op_graph_for_mlir(op_graph: OPGraph):
 
     # HACK
     # TODO: remove this ugly hack when
-    # https://github.com/zama-ai/concrete-framework-internal/issues/1001 is done
-    # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/1015
+    # https://github.com/zama-ai/concrete-numpy-internal/issues/1001 is done
+    # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/1015
     hack_offset_negative_inputs_to_lookup_tables(op_graph)
 
 

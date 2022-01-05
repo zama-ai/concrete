@@ -1,4 +1,4 @@
-name: concrete-framework CI Pipeline
+name: concrete-numpy CI Pipeline
 on:
   pull_request:
   push:
@@ -28,10 +28,10 @@ on:
 
 env:
   FORCE_REBUILD_DOCKER: ${{ (github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.rebuild-env-docker)) || (github.event_name == 'repository_dispatch' && github.event.action == 'rebuild-env-docker') }}
-  ENV_DOCKERFILE: docker/Dockerfile.concrete-framework-env
-  PREFLIGHT_IMAGE_BASE: ghcr.io/zama-ai/concrete-framework-env:preflight
-  LATEST_IMAGE: ghcr.io/zama-ai/concrete-framework-env:latest
-  BASE_IMAGE: ghcr.io/zama-ai/concrete-framework-env
+  ENV_DOCKERFILE: docker/Dockerfile.env
+  PREFLIGHT_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy-env:preflight
+  LATEST_IMAGE: ghcr.io/zama-ai/concrete-numpy-env:latest
+  BASE_IMAGE: ghcr.io/zama-ai/concrete-numpy-env
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
 
@@ -41,7 +41,7 @@ jobs:
       group: ${{ github.ref }}
       cancel-in-progress: true
 
-    name: Build & Push the concrete-framework-env preflight Docker Image
+    name: Build & Push the concrete-numpy-env preflight Docker Image
     runs-on: ubuntu-20.04
     outputs:
       image: ${{ steps.set_image.outputs.image || env.LATEST_IMAGE }}
@@ -91,7 +91,7 @@ jobs:
             echo "Docker image up to date."
             echo "BUILD_DOCKER=false" >> "$GITHUB_ENV"
           fi
-      # https://github.com/zama-ai/concrete-framework-internal/issues/809
+      # https://github.com/zama-ai/concrete-numpy-internal/issues/809
       # Remove gh_dl_release call once package is on PyPi
       - name: Set prefligh Docker image download compiler
         id: set_image
@@ -124,7 +124,7 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
           password: ${{ secrets.BOT_TOKEN }}
-      - name: Build concrete-framework-env Image
+      - name: Build concrete-numpy-env Image
         if: ${{ success() && !cancelled() && fromJSON(env.BUILD_DOCKER) }}
         uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
         with:
@@ -132,12 +132,12 @@ jobs:
           # builder: ${{ steps.buildx.outputs.name }}
           build-args: |
             WHEEL=${{ env.WHEEL }}
-          file: docker/Dockerfile.concrete-framework-env
+          file: docker/Dockerfile.env
           no-cache: true
           push: true
           tags: "${{ env.PREFLIGHT_IMAGE }}"
           labels: |
-            concrete_framework_sha=${{ env.LABEL_SHA1 }}
+            concrete_numpy_sha=${{ env.LABEL_SHA1 }}
       - name: Set notification report
         id: report
         if: ${{ always() }}
@@ -443,7 +443,7 @@ jobs:
             echo "::set-output name=has-preprod::true"
             echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
             echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
-            echo "::set-output name=dest-dir::concrete-framework/${REF_NAME}"
+            echo "::set-output name=dest-dir::concrete-numpy/${REF_NAME}"
           else
             echo "::set-output name=has-preprod::false"
           fi
@@ -536,9 +536,9 @@ jobs:
       - name: Pull preflight image
         run: |
           docker pull "${PREFLIGHT_IMAGE}"
-      # https://github.com/zama-ai/concrete-framework-internal/issues/809
+      # https://github.com/zama-ai/concrete-numpy-internal/issues/809
       # update once release workflow is ok on the compiler side
-      - name: Retag to latest and concrete_compiler_version-concrete_framework_sha1 and push
+      - name: Retag to latest and concrete_compiler_version-concrete_numpy_sha1 and push
         run: |
           SHA1=$(git rev-parse HEAD)
           TAGGED_IMAGE="${BASE_IMAGE}:${COMPILER_TAG}-${SHA1}"
@@ -584,7 +584,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     env:
-      RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-framework
+      RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy
 
     steps:
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
@@ -618,7 +618,7 @@ jobs:
           EXISTING_TAGS=$(curl \
           -X GET \
           -H "Authorization: Bearer $(echo ${{ secrets.BOT_TOKEN }} | base64)" \
-          https://ghcr.io/v2/zama-ai/concrete-framework/tags/list | jq -rc '.tags | join(" ")')
+          https://ghcr.io/v2/zama-ai/concrete-numpy/tags/list | jq -rc '.tags | join(" ")')
 
           # We want the space separated list of versions to be expanded
           # shellcheck disable=SC2086
@@ -648,7 +648,7 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
           password: ${{ secrets.BOT_TOKEN }}
-      - name: Build concrete-framework Image
+      - name: Build concrete-numpy Image
         if: ${{ success() && !cancelled() }}
         uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
         with:
@@ -730,7 +730,7 @@ jobs:
 
           aws s3api get-object \
           --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
-          --key concrete-framework/versions.json "${DOWNLOADED_VERSIONS_JSON_FILE}"
+          --key concrete-numpy/versions.json "${DOWNLOADED_VERSIONS_JSON_FILE}"
 
           # shellcheck disable=SC2086
           poetry run python ./script/actions_utils/generate_versions_json.py \
@@ -765,7 +765,7 @@ jobs:
           cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
           {
             echo "Docker Image: ${RELEASE_IMG_GIT_TAG}";
-            echo "Documentation: https://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-framework/${PROJECT_VERSION}";
+            echo "Documentation: https://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/${PROJECT_VERSION}";
             echo "";
           } >> "${RELEASE_BODY_FILE}"
           cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
@@ -778,7 +778,7 @@ jobs:
         env:
           AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
           SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
-          DEST_DIR: 'concrete-framework/${{ env.PROJECT_VERSION }}'
+          DEST_DIR: 'concrete-numpy/${{ env.PROJECT_VERSION }}'
         run: |
           aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
 
@@ -787,13 +787,13 @@ jobs:
         env:
           AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
           SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
-          DEST_DIR: 'concrete-framework/stable'
+          DEST_DIR: 'concrete-numpy/stable'
         run: |
           aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
       - name: Invalidate CloudFront Cache for stable
         if: ${{ success() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
         env:
-          SOURCE_PATH: "/concrete-framework/stable/*"
+          SOURCE_PATH: "/concrete-numpy/stable/*"
           DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
         run: |
           aws cloudfront create-invalidation \
@@ -811,18 +811,18 @@ jobs:
           tag_name: ${{ env.GIT_TAG }}
           fail_on_unmatched_files: true
           token: ${{ secrets.BOT_TOKEN }}
-      # TODO: https://github.com/zama-ai/concrete-framework-internal/issues/809
+      # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/809
       # Remove versions.html
       - name: Push updated versions.html
         if: ${{ success() }}
         run: |
           aws s3 cp "${OUTPUT_VERSIONS_HTML_FILE}" \
-          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-framework/versions.html \
+          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/versions.html \
           --acl public-read
 
           aws cloudfront create-invalidation \
           --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
-          --paths /concrete-framework/versions.html
+          --paths /concrete-numpy/versions.html
       - name: Set notification report
         id: report
         if: ${{ always() }}

@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "concrete-framework"
+name = "concrete-numpy"
 version = "0.2.0-rc5"
-description = "Concrete Framework"
+description = "Concrete Numpy"
 authors = ["Zama <hello@zama.ai>"]
 packages = [
     { include = "concrete" },

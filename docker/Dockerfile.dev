@@ -1,4 +1,4 @@
-FROM ghcr.io/zama-ai/concrete-framework-env
+FROM ghcr.io/zama-ai/concrete-numpy-env
 
 ENV SRC_DIR=/src
 
