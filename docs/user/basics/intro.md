@@ -9,6 +9,8 @@ FHE is a powerful cryptographic tool, which allows servers to perform computatio
 
 FHE is also a killer feature regarding data breaches: as anything done on the server is done over encrypted data, even if the server is compromised, there is in the end no leak of useful data.
 
+With Concrete Numpy, data scientists can implement machine learning models using a [subset of numpy](../howto/numpy_support.md) that compile to FHE. They will be able to train models with popular machine learning libraries and then convert the prediction functions of these models, that they write in numpy, to FHE.
+
 **Concrete** is made of several parts:
 - a library, called concrete-lib, which contains the core cryptographic APIs for computing with FHE;
 - a compiler, called concrete-compiler, which allows you to turn an MLIR program into an FHE program, on the top of concrete-lib;
@@ -38,7 +40,7 @@ Concrete is a work in progress, and is currently limited to a certain number of 
 
 The main _current_ limits are:
 - **Concrete** only supports unsigned integers
-- **Concrete** needs the integer to be less than 7 bits (included)
+- **Concrete** needs integers to fit in a maximum of 7 bits
 - **Concrete** computations are exact (except a very small probability) for computations on 6 bits or less, and exact at a probability close to 90% for 7 bits computations
 
 To overcome the above limitations, Concrete has a [popular quantization](../explanation/quantization.md) method built in the framework that allows map floating point values to integers. We can [use this approach](../howto/use_quantization.md) to run models in FHE. Lastly, we give hints to the user on how to [reduce the precision](../howto/reduce_needed_precision.md) of a model to make it work in Concrete.
