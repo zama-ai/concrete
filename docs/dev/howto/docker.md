@@ -43,7 +43,7 @@ docker login ghcr.io
 
 This command will ask for a username and a password. For username, just enter your GitHub username. For password, you should create a personal access token from [here](https://github.com/settings/tokens) selecting `read:packages` permission. Just paste the generated access token as your password, and you are good to go.
 
-Once you do that you can get inside the docker environment using the following command:
+Once you do that, you can get inside the docker environment using the following command:
 
 ```shell
 make docker_build_and_start
