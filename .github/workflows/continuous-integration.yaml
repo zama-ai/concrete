@@ -456,8 +456,6 @@ jobs:
     needs: [build-linux]
     runs-on: ubuntu-20.04
     if: ${{ always() }}
-    outputs:
-      report: ${{ steps.report.outputs.report || 'Did not run.' }}
     steps:
       - name: Fail on unsuccessful Linux build
         shell: bash
@@ -465,15 +463,6 @@ jobs:
           if [[ ${{ needs.build-linux.result }} != "success" ]]; then
             exit 1
           fi
-
-      - name: Set notification report
-        id: report
-        if: ${{ always() }}
-        run: |
-          REPORT="Build finished with status ${{ job.status }}."
-          echo "${REPORT}"
-          echo "::set-output name=report::${REPORT}"
-          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
 
       - name: Slack Notification
         if: ${{ always() && !success() }}
@@ -483,7 +472,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "Build finished with status ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
@@ -1026,7 +1015,6 @@ jobs:
         matrix-preparation,
         start-runner-linux,
         build-linux,
-        linux-build-status,
         stop-runner-linux,
         publish-docs,
         push-docker-image,
@@ -1062,7 +1050,7 @@ jobs:
             - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
             - matrix-preparation: ${{ needs.matrix-preparation.result }}\n\n
             - start-runner-linux: ${{ needs.start-runner-linux.result }}\n\n\
-            - build-linux: ${{ needs.linux-build-status.outputs.report || 'Did not run.' }}\n\n\
+            - build-linux: ${{ needs.build-linux.outputs.result || 'Did not run.' }}\n\n\
             - stop-runner-linux: ${{ needs.stop-runner-linux.result }}\n\n\
             - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
             - push-docker-image: ${{ needs.push-docker-image.outputs.report || 'Did not run.' }}\n\n\
