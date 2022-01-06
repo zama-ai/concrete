@@ -37,7 +37,7 @@ The simplified graph of operations with the float subgraph condensed in a `Gener
 
 ## How is it done in **Concrete Numpy**?
 
-The first step consists in detecting where we go from floating point computation back to integers. This allows to identify the potential terminal node of the float subgraph we are going to fuse.
+The first step consists in detecting where we go from floating point computation back to integers. This allows the identification of the potential terminal node of the float subgraph we are going to fuse.
 
 From the terminal node, we go back up through the nodes until we find nodes that go from integers to floats. If we find a single node then we have a fusable subgraph that we replace by an equivalent GenericFunction node and stop the search for fusable subgraphs for the terminal node being considered. If we find more than one such node we try to find a single common ancestor that would go from integers to floats. We repeat the process as long as there are potential ancestors nodes, stopping if we find a suitable float subgraph with a single integer input and a single integer output.
 
