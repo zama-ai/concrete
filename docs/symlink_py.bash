@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/bash 
 
 mkdir -p links_to_compiler_build/py/concretelang_core
 
 cd links_to_compiler_build/py/concretelang_core
 
-ln -s ../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/mlir
+ln -s ../../../../compiler/build/tools/concretelang/python_packages/concretelang_core/mlir -f
 
 mkdir -p concretelang
 

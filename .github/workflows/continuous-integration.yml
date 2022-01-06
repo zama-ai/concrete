@@ -57,13 +57,14 @@ jobs:
 
       - name: Build and test compiler
         if: ${{ matrix.compiler == 'gcc6' }}
+        id: build-compiler
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST_GCC6 }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
           shell: bash
           run: |
             set -e
@@ -71,7 +72,6 @@ jobs:
             ccache -s
             cd /compiler
             /opt/python/cp38-cp38/bin/pip install pytest
-            rm -rf /build
             sed "s/pytest/\/opt\/python\/cp38-cp38\/bin\/python -m pytest/g" -i Makefile
             make CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test
             echo "Debug: ccache statistics (after the build):"
@@ -98,6 +98,33 @@ jobs:
             make CCACHE=ON BUILD_DIR=/build concretecompiler python-bindings
             echo "Debug: ccache statistics (after the build):"
             ccache -s
+
+      - name: Build the documentation
+        id: build-doc
+        if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST_GCC6 }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/docs:/docs -v ${{ github.workspace }}/build:/compiler/build
+          shell: bash
+          run: |
+            set -e
+            cd /docs
+            export PATH=/opt/python/cp38-cp38/bin:$PATH
+            pip install -r requirements.txt
+            pip install -r ../llvm-project/mlir/python/requirements.txt
+            DEBIAN_FRONTEND="noninteractive" apt-get install -y doxygen
+            make CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python doc
+
+      - name: Archive docs artifacts
+        if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+        with:
+          name: html-docs
+          path: docs/_build/html
 
   BuildAndTestMacOS:
     runs-on: macos-10.15
@@ -183,6 +210,44 @@ jobs:
   ##################################
   # Releasing and Testing Packages #
   ##################################
+
+  PublishDoc:
+    needs: [BuildAndTest]
+
+    runs-on: ubuntu-20.04
+    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') }}
+
+    steps:
+      - name: Set env
+        id: vars
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Download Documentation
+        id: download
+        uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+        with:
+          name: html-docs
+      - name: Publish Documentation to S3
+        id: publish
+        if: ${{ steps.download.outcome == 'success' && !cancelled() }}
+        uses: jakejarvis/s3-sync-action@be0c4ab89158cac4278689ebedd8407dd5f35a83
+        with:
+          args: --acl public-read
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_PREPROD_REPO_DOCUMENTATION_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: '.'
+          DEST_DIR: 'concrete-compiler/${{ env.RELEASE_VERSION }}'
+      - name: Invalidate CloudFront Cache
+        if: ${{ steps.publish.outcome == 'success' }}
+        uses: awact/cloudfront-action@8bcfabc7b4bbc0cb8e55e48527f0e3a6d681627c
+        env:
+          SOURCE_PATH: '/concrete-compiler/*'
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DISTRIBUTION_ID: ${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}
 
   CreateRelease:
     runs-on: ubuntu-latest
