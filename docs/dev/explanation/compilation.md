@@ -84,9 +84,9 @@ the goal of tracing is to create the following operation graph without needing a
 
 (Note that the edge labels are for non-commutative operations. To give an example, a subtraction node represents `(predecessor with edge label 0) - (predecessor with edge label 1)`)
 
-To do this, we make use of `Tracer`s, which are objects that record the operation performed during their creation.
+To do this, we make use of Tracers, which are objects that record the operation performed during their creation.
 We create a `Tracer` for each argument of the function and call the function with those tracers.
-`Tracer`s make use of operator overloading feature of Python to achieve their goal.
+Tracers make use of operator overloading feature of Python to achieve their goal.
 
 Here is an example:
 
@@ -108,7 +108,7 @@ resulting_tracer = f(x, y)
 `Tracer(computation=Add(self.computation, (2 * y).computation))` which is equal to:
 `Tracer(computation=Add(Input("x"), Multiply(Constant(2), Input("y")))`
 
-In the end, we will have output `Tracer`s that can be used to create the operation graph.
+In the end, we will have output Tracers that can be used to create the operation graph.
 The implementation is a bit more complex than this, but the idea is the same.
 
 Tracing is also responsible for indicating whether the values in the node would be encrypted or not, and the rule for that is if a node has an encrypted predecessor, it is encrypted as well.
@@ -124,12 +124,12 @@ Let's take a closer look at the transforms we can currently perform.
 
 ### Fusing floating point operations
 
-We have allocated a whole new chapter to explain float fusing.
+We have allocated a whole new chapter to explaining float fusing.
 You can find it [here](./float-fusing.md).
 
 ## Bounds measurement
 
-Given an operation graph, goal of the bound measurement step is to assign the minimal data type to each node in the graph.
+Given an operation graph, the goal of the bound measurement step is to assign the minimal data type to each node in the graph.
 
 Let's say we have an encrypted input that is always between `0` and `10`, we should assign the type `Encrypted<uint4>` to node of this input as `Encrypted<uint4>` is the minimal encrypted integer that supports all the values between `0` and `10`.
 
@@ -149,7 +149,7 @@ Rather, it is a set of values which are typical inputs of the function.
 
 The idea is to evaluate each input in the inputset and record the result of each operation in the operation graph.
 Then we compare the evaluation results with the current minimum/maximum values of each node and update the minimum/maximum accordingly.
-After the entire inputset is evaluated, we assign a data type to each node using the minimum and the maximum value it contained.
+After the entire inputset is evaluated, we assign a data type to each node using the minimum and the maximum value it contains.
 
 Here is an example, given this operation graph where `x` is encrypted:
 
