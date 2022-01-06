@@ -91,7 +91,12 @@ class PostTrainingAffineQuantization:
                 # Check if layer is last layer from the model
                 if name == list(self.numpy_model.torch_model.named_children())[-1][0]:
                     # If last layer, we can use 7 bits (maximum allowed) of precision.
-                    q_layer = QuantizedLinear(7, q_weights, q_bias)
+                    # However, 6 bits is currently used to allow 100% FHE precision
+                    # compared to its quantized counterpart.
+                    # Since this is the last layer and mostly used for classification,
+                    # this does not have much impact.
+                    # Put back 7 bits when 100% at 7b is achieved.
+                    q_layer = QuantizedLinear(6, q_weights, q_bias)
                 else:
                     q_layer = QuantizedLinear(self.n_bits, q_weights, q_bias)
                 # Calibrate and get new calibration_data for next layer/activation

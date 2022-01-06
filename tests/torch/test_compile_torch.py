@@ -8,7 +8,7 @@ from concrete.torch.compile import compile_torch_model
 
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
-INPUT_OUTPUT_FEATURE = [1, 2, 3]
+INPUT_OUTPUT_FEATURE = [1, 2]
 
 
 class FC(nn.Module):
