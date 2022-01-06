@@ -60,7 +60,7 @@ pylint_tests:
 pylint_benchmarks:
 	@# Disable duplicate code detection, docstring requirement, too many locals/statements
 	find ./benchmarks/ -type f -name "*.py" | xargs poetry run pylint \
-	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116,W0108 --rcfile=pylintrc
+	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116,C0302,W0108 --rcfile=pylintrc
 
 .PHONY: pylint_script # Run pylint on scripts
 pylint_script:

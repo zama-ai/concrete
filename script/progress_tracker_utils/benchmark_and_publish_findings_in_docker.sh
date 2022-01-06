@@ -21,8 +21,9 @@ if ! source "${DEV_VENV_PATH}/bin/activate"; then
     source "${DEV_VENV_PATH}/bin/activate"
 fi
 
-cd /src/ && make sync_env
+cd /src/ && make setup_env
 
+mkdir -p /tmp/keycache
 mkdir -p logs
 
 initial_concrete_log=logs/$(date -u --iso-8601=seconds).concrete.log

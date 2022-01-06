@@ -94,7 +94,7 @@ class QuantizedLinearRegression(QuantizedModule):
         return q_input_arr
 
 
-@progress.track([{"id": "linear-regression", "name": "Linear Regression", "parameters": {}}])
+@progress.track([{"id": "linear-regression", "name": "Linear Regression"}])
 def main():
     """
     Our linear regression benchmark. Use some synthetic data to train a regression model,

@@ -157,7 +157,7 @@ def score_concrete_glm_estimator(poisson_glm_pca, q_glm, df_test):
     return score_estimator(y_pred, df_test["Frequency"], df_test["Exposure"])
 
 
-@progress.track([{"id": "glm", "name": "Generalized Linear Model", "parameters": {}}])
+@progress.track([{"id": "glm", "name": "Generalized Linear Model"}])
 def main():
     """
     This is our main benchmark function. It gets a dataset, trains a GLM model,

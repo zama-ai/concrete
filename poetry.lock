@@ -1354,7 +1354,7 @@ python-versions = "*"
 
 [[package]]
 name = "py-progress-tracker"
-version = "0.1.0"
+version = "0.3.3"
 description = "A simple benchmarking library"
 category = "dev"
 optional = false
@@ -1742,7 +1742,7 @@ md = ["cmarkgfm (>=0.5.0,<0.7.0)"]
 
 [[package]]
 name = "requests"
-version = "2.27.0"
+version = "2.27.1"
 description = "Python HTTP for Humans."
 category = "dev"
 optional = false
@@ -2282,7 +2282,7 @@ full = ["pygraphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "51dccbf357cf2a087c60beef5bc118d0ef469b5c5c7d72794550c4ea3c318f28"
+content-hash = "70b6612a3502ea69dc5cd7d89d92245dc102a9acf8797562c2e26a1e074818a1"
 
 [metadata.files]
 alabaster = [
@@ -3193,8 +3193,8 @@ py-cpuinfo = [
     {file = "py-cpuinfo-8.0.0.tar.gz", hash = "sha256:5f269be0e08e33fd959de96b34cd4aeeeacac014dd8305f70eb28d06de2345c5"},
 ]
 py-progress-tracker = [
-    {file = "py-progress-tracker-0.1.0.tar.gz", hash = "sha256:ebda5b1e9d87a6cb8d9af02c625f372d89e7b6f52d0637cb8476db25ea55f5b4"},
-    {file = "py_progress_tracker-0.1.0-py3-none-any.whl", hash = "sha256:5fcc8abaea1c46ea81fa2e99f2028cd988cf022db22bd7d70c684644534fccf9"},
+    {file = "py-progress-tracker-0.3.3.tar.gz", hash = "sha256:344a312bc183f4ab4fca5deb5d7d8b94195d3e4c81a2aa929cefee63952ac4d2"},
+    {file = "py_progress_tracker-0.3.3-py3-none-any.whl", hash = "sha256:f298f203c86c32539ba50ee955e8f7121e1095e0704436057f405e2527c7695c"},
 ]
 pycodestyle = [
     {file = "pycodestyle-2.7.0-py2.py3-none-any.whl", hash = "sha256:514f76d918fcc0b55c6680472f0a37970994e07bbb80725808c17089be302068"},
@@ -3458,8 +3458,8 @@ readme-renderer = [
     {file = "readme_renderer-32.0.tar.gz", hash = "sha256:b512beafa6798260c7d5af3e1b1f097e58bfcd9a575da7c4ddd5e037490a5b85"},
 ]
 requests = [
-    {file = "requests-2.27.0-py2.py3-none-any.whl", hash = "sha256:f71a09d7feba4a6b64ffd8e9d9bc60f9bf7d7e19fd0e04362acb1cfc2e3d98df"},
-    {file = "requests-2.27.0.tar.gz", hash = "sha256:8e5643905bf20a308e25e4c1dd379117c09000bf8a82ebccc462cfb1b34a16b5"},
+    {file = "requests-2.27.1-py2.py3-none-any.whl", hash = "sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d"},
+    {file = "requests-2.27.1.tar.gz", hash = "sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"},
 ]
 requests-toolbelt = [
     {file = "requests-toolbelt-0.9.1.tar.gz", hash = "sha256:968089d4584ad4ad7c171454f0a5c6dac23971e9472521ea3b6d49d610aa6fc0"},

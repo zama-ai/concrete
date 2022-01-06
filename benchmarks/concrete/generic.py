@@ -1,8 +1,8 @@
-# pylint: disable=too-many-lines
 import random
 
 import numpy as np
 import progress
+from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp
 
@@ -813,7 +813,7 @@ import concrete.numpy as hnp
                         "type": "encrypted",
                         "shape": (2, 3),
                         "minimum": 0,
-                        "maximum": 30,
+                        "maximum": 25,
                     },
                 },
                 "accuracy_alert_threshold": 100,
@@ -829,13 +829,13 @@ import concrete.numpy as hnp
                         "type": "encrypted",
                         "shape": (2, 3),
                         "minimum": 0,
-                        "maximum": 14,
+                        "maximum": 15,
                     },
                     "y": {
                         "type": "encrypted",
                         "shape": (3, 2),
                         "minimum": 0,
-                        "maximum": 3,
+                        "maximum": 4,
                     },
                 },
                 "accuracy_alert_threshold": 100,
@@ -975,14 +975,14 @@ import concrete.numpy as hnp
                 "function": lambda x: hnp.MultiLookupTable(
                     [
                         [
-                            hnp.LookupTable([(i ** 5) + 2 % 32 for i in range(32)]),
-                            hnp.LookupTable([(i ** 5) * 3 % 32 for i in range(32)]),
-                            hnp.LookupTable([(i ** 5) // 6 % 32 for i in range(32)]),
+                            hnp.LookupTable([((i ** 5) + 2) % 32 for i in range(32)]),
+                            hnp.LookupTable([((i ** 5) * 3) % 32 for i in range(32)]),
+                            hnp.LookupTable([((i ** 5) // 6) % 32 for i in range(32)]),
                         ],
                         [
-                            hnp.LookupTable([(i ** 5) // 2 % 32 for i in range(32)]),
-                            hnp.LookupTable([(i ** 5) + 5 % 32 for i in range(32)]),
-                            hnp.LookupTable([(i ** 5) * 4 % 32 for i in range(32)]),
+                            hnp.LookupTable([((i ** 5) // 2) % 32 for i in range(32)]),
+                            hnp.LookupTable([((i ** 5) + 5) % 32 for i in range(32)]),
+                            hnp.LookupTable([((i ** 5) * 4) % 32 for i in range(32)]),
                         ],
                     ]
                 )[x],
@@ -1035,14 +1035,14 @@ import concrete.numpy as hnp
                 "function": lambda x: hnp.MultiLookupTable(
                     [
                         [
-                            hnp.LookupTable([(i ** 6) + 2 % 64 for i in range(64)]),
-                            hnp.LookupTable([(i ** 6) * 3 % 64 for i in range(64)]),
-                            hnp.LookupTable([(i ** 6) // 6 % 64 for i in range(64)]),
+                            hnp.LookupTable([((i ** 6) + 2) % 64 for i in range(64)]),
+                            hnp.LookupTable([((i ** 6) * 3) % 64 for i in range(64)]),
+                            hnp.LookupTable([((i ** 6) // 6) % 64 for i in range(64)]),
                         ],
                         [
-                            hnp.LookupTable([(i ** 6) // 2 % 64 for i in range(64)]),
-                            hnp.LookupTable([(i ** 6) + 5 % 64 for i in range(64)]),
-                            hnp.LookupTable([(i ** 6) * 4 % 64 for i in range(64)]),
+                            hnp.LookupTable([((i ** 6) // 2) % 64 for i in range(64)]),
+                            hnp.LookupTable([((i ** 6) + 5) % 64 for i in range(64)]),
+                            hnp.LookupTable([((i ** 6) * 4) % 64 for i in range(64)]),
                         ],
                     ]
                 )[x],
@@ -1095,14 +1095,14 @@ import concrete.numpy as hnp
                 "function": lambda x: hnp.MultiLookupTable(
                     [
                         [
-                            hnp.LookupTable([(i ** 7) + 2 % 128 for i in range(128)]),
-                            hnp.LookupTable([(i ** 7) * 3 % 128 for i in range(128)]),
-                            hnp.LookupTable([(i ** 7) // 6 % 128 for i in range(128)]),
+                            hnp.LookupTable([((i ** 7) + 2) % 128 for i in range(128)]),
+                            hnp.LookupTable([((i ** 7) * 3) % 128 for i in range(128)]),
+                            hnp.LookupTable([((i ** 7) // 6) % 128 for i in range(128)]),
                         ],
                         [
-                            hnp.LookupTable([(i ** 7) // 2 % 128 for i in range(128)]),
-                            hnp.LookupTable([(i ** 7) + 5 % 128 for i in range(128)]),
-                            hnp.LookupTable([(i ** 7) * 4 % 128 for i in range(128)]),
+                            hnp.LookupTable([((i ** 7) // 2) % 128 for i in range(128)]),
+                            hnp.LookupTable([((i ** 7) + 5) % 128 for i in range(128)]),
+                            hnp.LookupTable([((i ** 7) * 4) % 128 for i in range(128)]),
                         ],
                     ]
                 )[x],
@@ -1510,7 +1510,9 @@ def main(function, inputs, accuracy_alert_threshold):
         inputset.append(tuple(input_) if len(input_) > 1 else input_[0])
 
     compiler = hnp.NPFHECompiler(
-        function, {name: description["type"] for name, description in inputs.items()}
+        function,
+        {name: description["type"] for name, description in inputs.items()},
+        compilation_configuration=BENCHMARK_CONFIGURATION,
     )
 
     circuit = compiler.compile_on_inputset(inputset)
@@ -1540,8 +1542,11 @@ def main(function, inputs, accuracy_alert_threshold):
         with progress.measure(id="evaluation-time-ms", label="Evaluation Time (ms)"):
             result_i = circuit.run(*sample_i)
 
-        if np.array_equal(result_i, expectation_i):
-            correct += 1
+        np_result_i = np.array(result_i, dtype=np.uint8)
+        np_expectation_i = np.array(expectation_i, dtype=np.uint8)
+
+        if np_result_i.shape == np_expectation_i.shape:
+            correct += np.sum(np_result_i == np_expectation_i) / np_result_i.size
     accuracy = (correct / len(samples)) * 100
 
     print(f"Accuracy (%): {accuracy:.4f}")

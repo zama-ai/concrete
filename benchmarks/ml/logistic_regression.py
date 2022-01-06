@@ -116,7 +116,7 @@ class QuantizedLogisticRegression(QuantizedModule):
         return q_input_arr
 
 
-@progress.track([{"id": "logistic-regression", "name": "Logistic Regression", "parameters": {}}])
+@progress.track([{"id": "logistic-regression", "name": "Logistic Regression"}])
 def main():
     """Main benchmark function: generate some synthetic data for two class classification,
     split train-test, train a sklearn classifier, calibrate and quantize it on the whole dataset
