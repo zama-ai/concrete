@@ -10,9 +10,9 @@ on:
 
 # DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
 env:
-  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concretefhe-compiler
-  DOCKER_IMAGE_TEST_GCC6: ghcr.io/zama-ai/concretefhe-compiler-gcc6
-  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/concretefhe-compiler-df
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  DOCKER_IMAGE_TEST_GCC6: ghcr.io/zama-ai/concrete-compiler-gcc6
+  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/concrete-compiler-df
 
 jobs:
   ########################
@@ -447,14 +447,14 @@ jobs:
       matrix:
         include:
           - name: test-env
-            image: ghcr.io/zama-ai/concretefhe-compiler
-            dockerfile: builders/Dockerfile.concretefhe-compiler-env
+            image: ghcr.io/zama-ai/concrete-compiler
+            dockerfile: builders/Dockerfile.concrete-compiler-env
           - name: test-env-gcc6
-            image: ghcr.io/zama-ai/concretefhe-compiler-gcc6
-            dockerfile: builders/Dockerfile.concretefhe-compiler-gcc6-env
+            image: ghcr.io/zama-ai/concrete-compiler-gcc6
+            dockerfile: builders/Dockerfile.concrete-compiler-gcc6-env
           - name: test-df
-            image: ghcr.io/zama-ai/concretefhe-compiler-df
-            dockerfile: builders/Dockerfile.concretefhe-compiler-df-env
+            image: ghcr.io/zama-ai/concrete-compiler-df
+            dockerfile: builders/Dockerfile.concrete-compiler-df-env
 
     steps:
       - uses: actions/checkout@v2

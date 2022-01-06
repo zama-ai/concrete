@@ -165,8 +165,8 @@ not:
 # Python packages
 
 define build_image_and_copy_wheels
-	docker image build -t concretefhe-compiler-manylinux:$(1) --build-arg python_tag=$(1) -f ../builders/Dockerfile.release_manylinux_2_24_x86_64 ..
-	docker container run --rm -v ${PWD}/../wheels:/wheels_volume concretefhe-compiler-manylinux:$(1) cp -r /wheels/. /wheels_volume/.
+	docker image build -t concrete-compiler-manylinux:$(1) --build-arg python_tag=$(1) -f ../builders/Dockerfile.release_manylinux_2_24_x86_64 ..
+	docker container run --rm -v ${PWD}/../wheels:/wheels_volume concrete-compiler-manylinux:$(1) cp -r /wheels/. /wheels_volume/.
 endef
 
 package_py38: update_python_version
@@ -179,8 +179,8 @@ package_py310: update_python_version
 	$(call build_image_and_copy_wheels,cp310-cp310)
 
 release_tarballs:
-	docker image build -t concretefhe-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
-	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concretefhe-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
+	docker image build -t concrete-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
+	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concrete-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
 
 update_python_version:
 	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/version.txt
