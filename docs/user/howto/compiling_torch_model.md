@@ -1,6 +1,6 @@
 # Compiling a Torch Model
 
-**Concrete Numpy** allows to compile a torch model to its FHE counterpart.
+**Concrete Numpy** allows you to compile a torch model to its FHE counterpart.
 
 
 A simple command can compile a torch model to its FHE counterpart. This process executes most of the concepts described in the documentation on [how to use quantization](use_quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
@@ -47,7 +47,7 @@ quantized_numpy_module = compile_torch_model(
 
 You can then call `quantized_numpy_module.forward_fhe.run()` to have the FHE inference.
 
-Now your model is ready to infer in FHE settings !
+Now your model is ready to infer in FHE settings.
 
 <!--pytest-codeblocks:cont-->
 ```python
