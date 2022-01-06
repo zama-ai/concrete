@@ -26,6 +26,10 @@ on:
     # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
     - cron: '0 22 * * 0'
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_REBUILD_DOCKER: ${{ (github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.rebuild-env-docker)) || (github.event_name == 'repository_dispatch' && github.event.action == 'rebuild-env-docker') }}
   ENV_DOCKERFILE: docker/Dockerfile.env
@@ -40,10 +44,6 @@ env:
 
 jobs:
   build-preflight-docker:
-    concurrency:
-      group: ${{ github.ref }}
-      cancel-in-progress: true
-
     name: Build & Push the concrete-numpy-env preflight Docker Image
     runs-on: ubuntu-20.04
     outputs:
@@ -289,9 +289,6 @@ jobs:
 
   build-linux:
     needs: [build-preflight-docker, start-runner-linux]
-    concurrency:
-      group: ${{ github.ref }}
-      cancel-in-progress: true
 
     runs-on: ${{ matrix.runs_on }}
     container:
@@ -301,10 +298,12 @@ jobs:
         password: ${{ secrets.BOT_TOKEN }}
     defaults:
       run:
-        shell: '/usr/bin/bash -e {0}'
+        shell: bash
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.start-runner-linux.outputs.matrix)) }}
+    env:
+      IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
 
     steps:
       - name: Checkout Code
@@ -402,17 +401,18 @@ jobs:
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           cd docs/_build/html
-          tar -cvf docs.tar *
+          tar -cvf docs.tar ./*
 
+      # Only upload docs once from reference build
       - name: Archive docs artifacts
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: html-docs
           path: docs/_build/html/docs.tar
 
       - name: Upload changelog artifacts
-        if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.changelog.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
         with:
           name: changelog
@@ -434,9 +434,10 @@ jobs:
         run: |
           make pytest_nb
 
+      # Compute coverage only on reference build
       - name: Test coverage
         id: coverage
-        if: ${{ always() && steps.pytest.outcome != 'skipped' && !cancelled() }}
+        if: ${{ always() && fromJSON(env.IS_REF_BUILD) && steps.pytest.outcome != 'skipped' && !cancelled() }}
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
 
@@ -507,6 +508,39 @@ jobs:
           ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-39 }}
           mode: stop
 
+  build-macos:
+    needs: [matrix-preparation]
+    if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
+
+    runs-on: ${{ matrix.runs_on }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.macos-matrix)) }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+
+          PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
+          echo "PATH=${PATH}" >> "$GITHUB_ENV"
+
+          which make
+          make setup_env
+
+          poetry run python --version
+
   weekly-pip-audit:
     if: ${{ github.event_name == 'schedule' }}
     runs-on: ubuntu-20.04
@@ -560,9 +594,6 @@ jobs:
 
   publish-docs:
     needs: [build-linux]
-    concurrency:
-      group: ${{ github.ref }}
-      cancel-in-progress: true
 
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
@@ -652,10 +683,6 @@ jobs:
     needs: [build-preflight-docker, build-linux]
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && fromJSON(needs.build-preflight-docker.outputs.needs-push)) || fromJSON(needs.build-preflight-docker.outputs.force-rebuild-docker) }}
 
-    concurrency:
-      group: ${{ github.ref }}
-      cancel-in-progress: true
-
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
@@ -715,10 +742,6 @@ jobs:
   package-release:
     needs: [build-linux]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
-
-    concurrency:
-      group: ${{ github.ref }}
-      cancel-in-progress: true
 
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
@@ -1016,6 +1039,7 @@ jobs:
         start-runner-linux,
         build-linux,
         stop-runner-linux,
+        build-macos,
         publish-docs,
         push-docker-image,
         package-release,
@@ -1048,10 +1072,11 @@ jobs:
           SLACK_MESSAGE: "Full run finished with status ${{ env.JOB_STATUS || 'failure' }} \
             (${{ env.ACTION_RUN_URL }})\n\
             - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
-            - matrix-preparation: ${{ needs.matrix-preparation.result }}\n\n
-            - start-runner-linux: ${{ needs.start-runner-linux.result }}\n\n\
-            - build-linux: ${{ needs.build-linux.outputs.result || 'Did not run.' }}\n\n\
-            - stop-runner-linux: ${{ needs.stop-runner-linux.result }}\n\n\
+            - matrix-preparation: ${{ needs.matrix-preparation.result || 'Did not run.'}}\n\n\
+            - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
+            - build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
+            - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}\n\n\
+            - build-macos: ${{ needs.build-macos.result || 'Did not run.' }}\n\n\
             - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
             - push-docker-image: ${{ needs.push-docker-image.outputs.report || 'Did not run.' }}\n\n\
             - package-release: ${{ needs.package-release.outputs.report || 'Did not run.' }}"
