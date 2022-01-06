@@ -148,7 +148,7 @@ It is now possible to compile the `quantized_numpy_module`. Details on how to co
 - QuantizedReLU6, the quantized version of `nn.ReLU6`
 
 
-A well detailed example is available for a [QuantizedLinearRegression](../advanced_examples/QuantizedLinearRegression.ipynb).
+A well detailed example is available for a [Linear Regression](../advanced_examples/LinearRegression.ipynb).
 
 
 ## Future releases

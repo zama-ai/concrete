@@ -4,8 +4,8 @@ Advanced examples
 .. toctree::
    :maxdepth: 1
 
-   IrisFHE.ipynb
-   QuantizedLinearRegression.ipynb
-   QuantizedLogisticRegression.ipynb
-   QuantizedGeneralizedLinearModel.ipynb
-   FHEDecisionTreeClassifier.ipynb
+   FullyConnectedNeuralNetwork.ipynb
+   LinearRegression.ipynb
+   LogisticRegression.ipynb
+   PoissonRegression.ipynb
+   DecisionTreeClassifier.ipynb

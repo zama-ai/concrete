@@ -69,7 +69,7 @@ Binarizing here is an extreme case of quantization which is introduced [here](..
 
 Quantization and binarization increase inference speed, reduce model byte-size and are required to run computation in FHE. However, quantization and, especially, binarization, induce a loss in the accuracy of the model since it's representation power is diminished. Choosing quantization parameters carefully can alleviate the accuracy loss all the while allowing compilation to FHE.
 
-This is illustrated in both advanced examples [Quantized Linear Regression](../advanced_examples/QuantizedLinearRegression.ipynb) and [Quantized Logistic Regression](../advanced_examples/QuantizedLogisticRegression.ipynb).
+This is illustrated in both advanced examples [Linear Regression](../advanced_examples/LinearRegression.ipynb) and [Logistic Regression](../advanced_examples/LogisticRegression.ipynb).
 
 The end result has a granularity/imprecision linked to the data types used and for the Quantized Logistic Regression to the lattice used to evaluate the logistic model.
 

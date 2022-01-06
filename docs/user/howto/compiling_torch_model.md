@@ -64,4 +64,4 @@ clear_output = quantized_numpy_module.dequantize_output(
 )
 ```
 
-If you want to see more compilation examples, you can check out the [IrisFHE notebook](../advanced_examples/IrisFHE.ipynb)
+If you want to see more compilation examples, you can check out the [Fully Connected Neural Network](../advanced_examples/FullyConnectedNeuralNetwork.ipynb)
