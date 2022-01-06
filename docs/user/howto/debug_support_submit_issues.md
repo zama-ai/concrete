@@ -1,8 +1,8 @@
 # Debugging / Support / Submitting Issues
 
-First, let's not forget that this version of **Concrete** is a first version of the product, meaning that it is not completely finished, contains several bugs (would they be known or unknown at this time), and will improve over time with the feedback from early users. Also, let's not forget that FHE is a highly hot topic, and notably, that it cannot be considered as a solved problem.
+This version of **Concrete Numpy** is a first version of the product, meaning that it is not completely finished, contains several bugs (would they be known or unknown at this time), and will improve over time with feedback from early users. 
 
-Anyway, let's list some ways to debug your problems here. If nothing seems conclusive, you can still report the issue, as explained in a later section of this page.
+Here are some ways to debug your problems. If nothing seems conclusive, you can still report the issue, as explained in a later section of this page.
 
 ## Is it a bug by the framework or by the user?
 
@@ -11,15 +11,15 @@ If ever your numpy program fails, it may be because:
 - of bugs due to the user, notably who would have a bug without even considering FHE (does the function you want to compile run well with numpy?), or who would not use the framework as expected or not consider the limits of the framework.
 
 For the latter kind of bugs, we encourage the user to have a look at:
-- the error message she gets
+- the error message received
 - the documentation of the product
 - the known limits of the product (such as the reduced set of supported operations at this time, or the limited precision of the computations).
 
-Once the user has tried to see if the bug was not her own, it is time to go further.
+Once you have tried to see if the bug was not your own, it is time to go further.
 
 ## Is the inputset sufficiently representative?
 
-A bug may happen if ever the inputset, which is internally used by the compilation core to set bit widths of some intermediate data, is not sufficiently representative. Notably, if ever, with all the inputs in the inputset, it appears that an intermediate data can be represented an `n`-bit integer, but for a particular computation, this same intermediate data needs a bit more bits to be represented, the FHE execution for this computation will result in a wrong output (as typically in integer overflows in classical programs).
+A bug may happen if ever the inputset, which is internally used by the compilation core to set bit widths of some intermediate data, is not sufficiently representative. If ever, with all the inputs in the inputset, it appears that an intermediate data can be represented an `n`-bit integer, but for a particular computation, this same intermediate data needs a bit more bits to be represented, the FHE execution for this computation will result in a wrong output (as typically in integer overflows in classical programs).
 
 So, in general, when a bug appears, it may be a good idea to enlarge the inputset, and try to have random-looking inputs in this latter, following distribution of inputs used with the function.
 
@@ -33,11 +33,11 @@ Once you're sure it is a bug, it would be nice to try to:
 
 You can directly ask the developers and community about your issue on our Discourse server (link on the right of the top menu).
 
-Hopefully, it is just a misunderstanding or a small mistake on your side, that one can help you fix easily. And, the good point with your feedback is that, once we have heard the problem or misunderstanding, we can make the documentation even clearer (such as, completing the FAQ).
+Hopefully, it is just a misunderstanding or a small mistake on your side, that we can help you fix easily. And, the good point with your feedback is that, once we have heard the problem or misunderstanding, we can make the documentation even clearer (by adding to the FAQ).
 
 ## Having a look to the compilation artifacts
 
-When things are more complicated, or if you want to have a look by yourself, you may want to have a look to the compilation reports, which are called artifacts. This is as simple as described in [here](../tutorial/compilation_artifacts.md)
+When things are more complicated, or if you want to have a look by yourself, you may want to start with the compilation reports, which are called artifacts. This is as simple as described in [here](../tutorial/compilation_artifacts.md)
 
 The artifact system will create a directory, containing:
 - **environment.txt:** information about your system
@@ -58,9 +58,9 @@ The artifact system will create a directory, containing:
 
 
 Attaching the artifact with your issue or Slack message may help people to have a look at the core of the problem.
-The more precise your bug, the more likely we can reproduce and fix
+The more precise your bug, the more likely we can reproduce and fix it.
 
-To simplify our work and let us reproduce your bug easily, we need all the information we can get. So, in addition to your python script, the following information would be very useful.
+To simplify our work and let us reproduce your bug easily, we need all the information we can get. So, in addition to your python script, the following information would be very useful:
 - compilation artifacts
 - reproducibility rate you see on your side
 - any insight you might have on the bug
