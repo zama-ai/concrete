@@ -17,7 +17,7 @@ The conversion uses as input the operation graph to convert, as well as a dictio
 
 ## Define function signature
 
-The first step would be to define the function signature (excluding return value at this point). We will convert input node's types to MLIR (e.g. convert `EncryptedTensor(Integer(64, is_signed=False), shape=(4,))` to `tensor<4xi64>`) and map their values to the argument of the function. So if we had an operation graph with one `EncryptedScalar(Integer(7, is_signed=False))`, we will get an MLIR function like `func @main(%arg0 : !FHE.eint<7>) -> (<ret-type>)`. Note that the return type would be detected automatically later on when returning MLIR values.
+The first step is to define the function signature (excluding return value at this point). We will convert the input node's types to MLIR (e.g. convert `EncryptedTensor(Integer(64, is_signed=False), shape=(4,))` to `tensor<4xi64>`) and map their values to the argument of the function. So if we had an operation graph with one `EncryptedScalar(Integer(7, is_signed=False))`, we will get an MLIR function like `func @main(%arg0 : !FHE.eint<7>) -> (<ret-type>)`. Note that the return type would be detected automatically later on when returning MLIR values.
 
 ## Convert nodes in the OpGraph
 
