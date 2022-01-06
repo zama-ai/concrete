@@ -8,7 +8,7 @@ In this section we will go over some terms that we use throughout the project.
     - a data structure to represent a calculation
     - basically a computation graph where nodes are either inputs or operations on other nodes
 - tracing
-    - it is our technique to take directly a plain numpy function from a user and deduce its intermediate representation in a painless way for the user
+    - it is our technique to directly take a plain numpy function from a user and deduce its intermediate representation in a painless way for the user
 - bounds
     - before intermediate representation is sent to the compiler, we need to know which node will output which type (e.g., uint3 vs uint5)
     - there are several ways to do this but the simplest one is to evaluate the intermediate representation with all combinations of inputs and remember the maximum and the minimum values for each node, which is what we call bounds, and bounds can be used to determine the appropriate type for each node
