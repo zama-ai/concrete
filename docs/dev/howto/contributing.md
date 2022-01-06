@@ -3,7 +3,7 @@
 
 ```{important}
 There are two ways to contribute to **concrete-numpy** or to **Concrete** tools in general:
-- you can open issues to report bugs, typos and suggest ideas
+- you can open issues to report bugs and typos and to suggest ideas
 - you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
 ```
 
@@ -28,7 +28,7 @@ git checkout -b fix/tracing_indexing_42
 
 ### Conformance
 
-Each commit to **concrete-numpy**  should be conformant to the standards decided by the team. Conformance can be checked using the following command.
+Each commit to **concrete-numpy**  should conform to the standards decided by the team. Conformance can be checked using the following command.
 
 ```shell
 make pcc
@@ -36,7 +36,7 @@ make pcc
 
 ### pytest
 
-Of course, tests must be passing as well.
+Of course, tests must pass as well.
 
 ```shell
 make pytest
@@ -44,9 +44,9 @@ make pytest
 
 ### Coverage
 
-The last requirement is to make sure you get a hundred percent code coverage. The `make pytest` command checks that by default and will fail with a coverage report at the end should some lines of your code not be executed during testing.
+The last requirement is to make sure you get 100 percent code coverage. The `make pytest` command checks that by default and will fail with a coverage report at the end should some lines of your code not be executed during testing.
 
-If your coverage is below hundred percent, you should write more tests and then create the pull request. If you ignore this warning and create the PR, GitHub actions will fail and your PR will not be merged anyway.
+If your coverage is below 100 percent, you should write more tests and then create the pull request. If you ignore this warning and create the PR, GitHub actions will fail and your PR will not be merged anyway.
 
 There may be cases where covering you code is not possible (exception that cannot be triggered in normal execution circumstances), in those cases you may be allowed to disable coverage for some specific lines. This should be the exception rather than the rule and reviewers will ask why some lines are not covered and if it appears they can be covered then the PR won't be accepted in that state.
 
@@ -66,7 +66,7 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 ```
 
-To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Remark that commit messages are checked in the comformance step, and rejected if they don't follow the rules.
+To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step, and rejected if they don't follow the rules.
 
 ## Before creating pull request
 
@@ -74,7 +74,7 @@ To learn more about conventional commits, check [this](https://www.conventionalc
 We remind that only official contributors can send pull requests. To become such an official contributor, please email hello@zama.ai.
 ```
 
-You should rebase on top of `main` branch before you create your pull request. We don't allow merge commits so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if some conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
+You should rebase on top of `main` branch before you create your pull request. We don't allow merge commits, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if some conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
 
 ```shell
 # fetch the list of active remote branches
