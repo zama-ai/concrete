@@ -8,6 +8,7 @@ from pathlib import Path
 WEEKLY = "weekly"
 RELEASE = "release"
 PR = "pr"
+PUSH_TO_MAIN = "push_to_main"
 
 LINUX = "linux"
 MACOS = "macos"
@@ -18,6 +19,10 @@ PR_OSES = {LINUX: "ubuntu-20.04"}
 PR_PYTHON_VERSIONS = ["3.8"]
 PR_CONF = {"os": PR_OSES, "python": PR_PYTHON_VERSIONS}
 
+PUSH_TO_MAIN_OSES = {LINUX: "ubuntu-20.04"}
+PUSH_TO_MAIN_PYTHON_VERSIONS = ["3.8"]
+PUSH_TO_MAIN_CONF = {"os": PUSH_TO_MAIN_OSES, "python": PUSH_TO_MAIN_PYTHON_VERSIONS}
+
 WEEKLY_OSES = {
     LINUX: "ubuntu-20.04",
     MACOS: "macos-10.15",
@@ -25,14 +30,21 @@ WEEKLY_OSES = {
 WEEKLY_PYTHON_VERSIONS = ["3.8", "3.9"]
 WEEKLY_CONF = {"os": WEEKLY_OSES, "python": WEEKLY_PYTHON_VERSIONS}
 
+# The OSes here are to indicate the OSes used for runners during release
 RELEASE_OSES = {
     LINUX: "ubuntu-20.04",
     MACOS: "macos-10.15",
 }
+# The python versions will be used to build packages during release
 RELEASE_PYTHON_VERSIONS = ["3.8", "3.9"]
 RELEASE_CONF = {"os": RELEASE_OSES, "python": RELEASE_PYTHON_VERSIONS}
 
-CONFIGURATIONS = {PR: PR_CONF, WEEKLY: WEEKLY_CONF, RELEASE: RELEASE_CONF}
+CONFIGURATIONS = {
+    PR: PR_CONF,
+    WEEKLY: WEEKLY_CONF,
+    RELEASE: RELEASE_CONF,
+    PUSH_TO_MAIN: PUSH_TO_MAIN_CONF,
+}
 
 
 def main(args):
@@ -68,7 +80,7 @@ if __name__ == "__main__":
         "--build-type",
         type=str,
         required=True,
-        choices=[WEEKLY, RELEASE, PR],
+        choices=[WEEKLY, RELEASE, PR, PUSH_TO_MAIN],
         help="The type of build for which the matrix generation is required",
     )
 

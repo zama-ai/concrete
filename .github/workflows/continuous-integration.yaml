@@ -36,6 +36,7 @@ env:
   IS_PR: ${{ github.event_name == 'pull_request' }}
   IS_WEEKLY: ${{ github.event_name == 'schedule' }}
   IS_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+  IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
 jobs:
   build-preflight-docker:
@@ -189,6 +190,8 @@ jobs:
             BUILD_TYPE="weekly"
           elif [[ "${IS_RELEASE}" == "true" ]]; then
             BUILD_TYPE="release"
+          elif [[ "${IS_PUSH_TO_MAIN}" == "true" ]]; then
+            BUILD_TYPE="push_to_main"
           else
             echo "Unknown BUILD_TYPE! Aborting"
             exit 1
@@ -302,9 +305,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.start-runner-linux.outputs.matrix)) }}
-
-    outputs:
-      report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
     steps:
       - name: Checkout Code
