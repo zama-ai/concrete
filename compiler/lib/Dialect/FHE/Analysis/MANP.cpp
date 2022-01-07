@@ -1061,8 +1061,8 @@ struct MaxMANPPass : public MaxMANPBase<MaxMANPPass> {
   }
   MaxMANPPass() = delete;
   MaxMANPPass(std::function<void(const llvm::APInt &, unsigned)> updateMax)
-      : maxMANP(llvm::APInt{1, 0, false}), maxEintWidth(0),
-        updateMax(updateMax){};
+      : updateMax(updateMax), maxMANP(llvm::APInt{1, 0, false}),
+        maxEintWidth(0){};
 
 protected:
   void processOperation(mlir::Operation *op) {
