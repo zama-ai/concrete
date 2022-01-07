@@ -1065,12 +1065,12 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table) {
       return %1: tensor<3x3x!FHE.eint<2>>
     }
 )XXX");
-  const uint8_t t[3][3]{
+  uint8_t t[3][3]{
       {0, 1, 2},
       {3, 0, 1},
       {2, 3, 0},
   };
-  const uint64_t luts[3][3][4]{
+  uint64_t luts[3][3][4]{
       {{1, 3, 5, 7}, {0, 4, 1, 3}, {3, 2, 5, 0}},
       {{0, 2, 1, 2}, {7, 1, 0, 2}, {0, 1, 2, 3}},
       {{2, 1, 0, 3}, {0, 1, 2, 3}, {6, 5, 4, 3}},
@@ -1114,12 +1114,12 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table_with_boradcast) {
       return %1: tensor<3x3x!FHE.eint<2>>
     }
 )XXX");
-  const uint8_t t[3][3]{
+  uint8_t t[3][3]{
       {0, 1, 2},
       {3, 0, 1},
       {2, 3, 0},
   };
-  const uint64_t luts[3][4]{
+  uint64_t luts[3][4]{
       {1, 3, 5, 7},
       {0, 2, 1, 3},
       {2, 1, 0, 6},
