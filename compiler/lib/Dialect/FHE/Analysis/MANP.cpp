@@ -840,7 +840,7 @@ static llvm::APInt getSqMANP(
 struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
   using ForwardDataFlowAnalysis<MANPLatticeValue>::ForwardDataFlowAnalysis;
   MANPAnalysis(mlir::MLIRContext *ctx, bool debug)
-      : debug(debug), mlir::ForwardDataFlowAnalysis<MANPLatticeValue>(ctx) {}
+      : mlir::ForwardDataFlowAnalysis<MANPLatticeValue>(ctx), debug(debug) {}
 
   ~MANPAnalysis() override = default;
 
