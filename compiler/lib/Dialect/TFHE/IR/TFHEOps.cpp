@@ -147,11 +147,9 @@ mlir::LogicalResult verifyUnaryGLWEOperator(Operator &op) {
 mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
   auto ct = op.ct().getType().cast<GLWECipherTextType>();
   auto l_cst = op.l_cst().getType().cast<RankedTensorType>();
-  auto result = op.getResult().getType().cast<GLWECipherTextType>();
 
   // Check the shape of l_cst argument
   auto width = ct.getP();
-  auto lCstShape = l_cst.getShape();
   auto expectedSize = 1 << width;
   mlir::SmallVector<int64_t, 1> expectedShape{expectedSize};
   if (!l_cst.hasStaticShape(expectedShape)) {
