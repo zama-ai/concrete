@@ -55,7 +55,7 @@ setuptools.setup(
     keywords="homomorphic encryption compiler",
     long_description=read("RELEASE_README.md"),
     long_description_content_type="text/markdown",
-    url="https://github.com/zama-ai/concrete-compiler-internal",
+    url="https://github.com/zama-ai/concrete-compiler",
     packages=setuptools.find_namespace_packages(
         where=build_dir() + "tools/concretelang/python_packages/concretelang_core",
         include=["concrete", "concrete.*"],
