@@ -95,7 +95,7 @@ class PostTrainingAffineQuantization:
                     # compared to its quantized counterpart.
                     # Since this is the last layer and mostly used for classification,
                     # this does not have much impact.
-                    # Put back 7 bits when 100% at 7b is achieved.
+                    # TODO: Put back 7 bits when 100% at 7b is achieved (see issue #1332).
                     q_layer = QuantizedLinear(6, q_weights, q_bias)
                 else:
                     q_layer = QuantizedLinear(self.n_bits, q_weights, q_bias)
