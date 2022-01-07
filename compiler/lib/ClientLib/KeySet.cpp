@@ -96,7 +96,7 @@ llvm::Error KeySet::setupEncryptionMaterial(ClientParameters &params,
       this->outputs.push_back(output);
     }
   }
-  int err;
+
   CAPI_ERR_TO_LLVM_ERROR(
       this->encryptionRandomGenerator =
           allocate_encryption_generator(&err, seed_msb, seed_lsb),
