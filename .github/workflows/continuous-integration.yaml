@@ -169,6 +169,9 @@ jobs:
 
       - name: Checkout Code
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        # Fetch-detph 0 to have all commits for changelog generation
+        with:
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
@@ -828,18 +831,16 @@ jobs:
           fail_on_unmatched_files: true
           token: ${{ secrets.BOT_TOKEN }}
 
-      # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/809
-      # Remove versions.html
-      - name: Push updated versions.html
+      - name: Push updated versions.json
         if: ${{ success() }}
         run: |
-          aws s3 cp "${OUTPUT_VERSIONS_HTML_FILE}" \
-          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/versions.html \
+          aws s3 cp "${OUTPUT_VERSIONS_JSON_FILE}" \
+          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/versions.json \
           --acl public-read
 
           aws cloudfront create-invalidation \
           --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
-          --paths /concrete-numpy/versions.html
+          --paths /concrete-numpy/versions.json
 
       - name: Set notification report
         id: report
