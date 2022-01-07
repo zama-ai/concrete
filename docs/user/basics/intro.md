@@ -3,7 +3,7 @@
 
 ## Introduction
 
-**Concrete Numpy**, or **Concrete** for short, is an open-source set of tools which aims to simplify the use of so-called fully homomorphic encryption (FHE) for data scientists.
+**Concrete Numpy**, or **Concrete** for short, is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists.
 
 FHE is a powerful cryptographic tool, which allows servers to perform computations directly on encrypted data without needing to decrypt first. With FHE, privacy is at the center, and you can build services which ensure full privacy of the user and are the perfect equivalent of their unsecure counterpart.
 
