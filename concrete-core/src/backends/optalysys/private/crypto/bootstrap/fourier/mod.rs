@@ -3,6 +3,12 @@ use std::fmt::Debug;
 use concrete_fftw::array::AlignedVec;
 use serde::{Deserialize, Serialize};
 
+use concrete_commons::numeric::{CastInto, Numeric};
+use concrete_commons::parameters::{
+    DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, MonomialDegree,
+    PolynomialSize,
+};
+
 use crate::backends::core::private::crypto::bootstrap::standard::StandardBootstrapKey;
 use crate::backends::core::private::crypto::ggsw::GgswCiphertext;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
@@ -15,17 +21,12 @@ use crate::backends::core::private::math::tensor::{
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::{zip, zip_args};
-use concrete_commons::numeric::{CastInto, Numeric};
-use concrete_commons::parameters::{
-    DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, MonomialDegree,
-    PolynomialSize,
-};
+use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FftBuffers;
+use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FourierBskBuffers;
 
-mod buffers;
+pub(crate) mod buffers;
 #[cfg(test)]
 mod tests;
-
-pub use buffers::{FftBuffers, FourierBskBuffers};
 
 /// A bootstrapping key in the fourier domain.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -717,7 +718,7 @@ where
     }
 }
 
-pub(crate) fn constant_sample_extract<LweCont, RlweCont, Scalar>(
+fn constant_sample_extract<LweCont, RlweCont, Scalar>(
     lwe: &mut LweCiphertext<LweCont>,
     glwe: &GlweCiphertext<RlweCont>,
 ) where

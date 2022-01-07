@@ -3,24 +3,23 @@
 //! The bootstrapping operation allows to reduce the level of noise in an LWE ciphertext, while
 //! evaluating an univariate function.
 
-pub use fourier::{FourierBootstrapKey, FourierBskBuffers};
-pub use standard::StandardBootstrapKey;
+pub use fourier::FourierBootstrapKey;
 
 pub(crate) mod fourier;
-pub(crate) mod standard;
 
 #[cfg(all(test, feature = "multithread"))]
 mod test {
+    use concrete_commons::dispersion::StandardDev;
+    use concrete_commons::parameters::{
+        DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
+    };
+
     use crate::backends::core::private::crypto::bootstrap::StandardBootstrapKey;
     use crate::backends::core::private::crypto::secret::generators::{
         EncryptionRandomGenerator, SecretRandomGenerator,
     };
     use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
     use crate::backends::core::private::math::torus::UnsignedTorus;
-    use concrete_commons::dispersion::StandardDev;
-    use concrete_commons::parameters::{
-        DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
-    };
 
     fn test_bsk_gen_equivalence<T: UnsignedTorus + Send + Sync>() {
         for _ in 0..10 {
