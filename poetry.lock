@@ -2293,7 +2293,7 @@ full = ["pygraphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "5b9f4408f601802b92c991083622bc54f2d09a7e829a6b6385aed32dd641c7b8"
+content-hash = "6d24b64da2afe879eff54d4cc70661ba72f6cf95878f8e2bb9aa75b4ae72f02e"
 
 [metadata.files]
 alabaster = [

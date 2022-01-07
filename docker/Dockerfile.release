@@ -1,28 +1,13 @@
-FROM ghcr.io/zama-ai/zamalang-compiler:a9fae4c19b96ee61c7ea0a2ce26b1cd8d049e159 as builder
-
-RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
-    apt-get install --no-install-recommends -y \
-    python3.8 \
-    python-is-python3 && \
-    rm -rf /var/lib/apt/lists/* && \
-    python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
-    python3 -m pip install --no-cache-dir poetry
-
-WORKDIR /build
-COPY concrete ./concrete
-COPY pyproject.toml ./pyproject.toml
-
-RUN poetry build --format wheel
-
-FROM ghcr.io/zama-ai/zamalang-compiler:a9fae4c19b96ee61c7ea0a2ce26b1cd8d049e159
+FROM ubuntu:20.04
 
 RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
-COPY --from=builder /build/dist/*.whl .
 COPY docker/release_resources/release_requirements.txt .
+COPY ./pkg/*.whl .
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
+    python3-pip \
     python3.8 \
     python3.8-tk \
     python-is-python3 \
@@ -32,8 +17,6 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
     python3 -m pip install --no-cache-dir ./*.whl && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
-
-ENV LD_PRELOAD=${RT_LIB}:${LD_PRELOAD}
 
 WORKDIR /app
 COPY docker/release_resources/entry_point.sh ./entry_point.sh

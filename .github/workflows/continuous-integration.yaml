@@ -278,6 +278,23 @@ jobs:
           name: changelog
           path: ${{ steps.changelog.outputs.changelog-file }}
 
+      # Create packages before tests, to be able to get them if some unexpected test failure happens
+      # Build the package only once, as we don't have binary dependency this can be used on Linux
+      # and macOS as long as the dependencies are available
+      - name: Build wheel
+        id: build-wheel
+        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          rm -rf dist
+          poetry build -f wheel
+
+      - name: Upload wheel artifact
+        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.build-wheel.outcome == 'success' }}
+        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
+        with:
+          name: py3-wheel
+          path: dist/*.whl
+
       - name: PyTest Source Code
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
@@ -396,10 +413,11 @@ jobs:
           PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
           echo "PATH=${PATH}" >> "$GITHUB_ENV"
 
-          which make
           make setup_env
 
-          poetry run python --version
+      - name: PyTest Source Code
+        run: |
+          make pytest
 
   weekly-pip-audit:
     if: ${{ github.event_name == 'schedule' }}
@@ -607,36 +625,6 @@ jobs:
 
           echo "RELEASE_IMG_TAGS_TO_PUSH=${RELEASE_IMG_TAGS_TO_PUSH}" >> "$GITHUB_ENV"
 
-      # Disabled buildx for now as we are seeing a lot of fails on layer pushes
-      # - name: Set up Docker Buildx
-      #   id: buildx
-      #   uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.BOT_USERNAME }}
-          password: ${{ secrets.BOT_TOKEN }}
-
-      - name: Build concrete-numpy Image
-        if: ${{ success() && !cancelled() }}
-        uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
-        with:
-          context: .
-          # builder: ${{ steps.buildx.outputs.name }}
-          file: docker/Dockerfile.release
-          load: true
-          push: false
-          tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
-          no-cache: true
-
-      - name: Release image sanity check
-        if: ${{ success() && !cancelled() }}
-        run: |
-          echo "Running sanity check for ${RELEASE_IMG_GIT_TAG}"
-          docker run --rm -v "$(pwd)"/docker/release_resources:/data \
-          "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
-
       - name: Create directory for artifacts
         if: ${{ success() && !cancelled() }}
         run: |
@@ -659,7 +647,7 @@ jobs:
       - name: Untar docs artifacts
         if: ${{ success() && !cancelled() }}
         run: |
-          cd ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
+          cd ${{ steps.download-docs.outputs.download-path }}
           tar -xvf docs.tar
           rm docs.tar
 
@@ -670,6 +658,44 @@ jobs:
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
+
+      - name: Download python3 wheel
+        if: ${{ success() && !cancelled() }}
+        id: download-wheel
+        uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
+        with:
+          name: py3-wheel
+          path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/
+
+      - name: Copy wheel to docker build context
+        run: |
+          mkdir -p ./pkg
+          cp "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl ./pkg
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.BOT_USERNAME }}
+          password: ${{ secrets.BOT_TOKEN }}
+
+      - name: Build concrete-numpy Image
+        if: ${{ success() && !cancelled() }}
+        uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
+        with:
+          context: .
+          file: docker/Dockerfile.release
+          load: true
+          push: false
+          tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
+          no-cache: true
+
+      - name: Release image sanity check
+        if: ${{ success() && !cancelled() }}
+        run: |
+          echo "Running sanity check for ${RELEASE_IMG_GIT_TAG}"
+          docker run --rm -v "$(pwd)"/docker/release_resources:/data \
+          "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
 
       - name: Prepare docs push
         id: docs-push-infos
@@ -753,6 +779,13 @@ jobs:
         if: ${{ success() && !cancelled() }}
         run: |
           docker image push --all-tags "${RELEASE_IMAGE_BASE}"
+
+      - name: Push package to PyPi
+        if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) }}
+        run: |
+          twine upload \
+          -u __token__ -p ${{ secrets.PYPI_BOT_TOKEN }} \
+          -r pypi "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
       - name: Push release documentation
         if: ${{ success() && !cancelled() }}

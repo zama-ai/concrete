@@ -33,7 +33,9 @@ WEEKLY_CONF = {"os": WEEKLY_OSES, "python": WEEKLY_PYTHON_VERSIONS}
 # The OSes here are to indicate the OSes used for runners during release
 RELEASE_OSES = {
     LINUX: "ubuntu-20.04",
-    MACOS: "macos-10.15",
+    # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/1340
+    # Re-enable macOS for release once we have the duration of the tests
+    # MACOS: "macos-10.15",
 }
 # The python versions will be used to build packages during release
 RELEASE_PYTHON_VERSIONS = ["3.8", "3.9"]

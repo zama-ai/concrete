@@ -8,13 +8,15 @@ def main():
         return x + 42
 
     n_bits = 3
-    x = hnp.EncryptedScalar(hnp.UnsignedInteger(n_bits))
 
-    engine = hnp.compile_numpy_function(
+    compiler = hnp.NPFHECompiler(
         function_to_compile,
-        {"x": x},
-        [(i,) for i in range(2 ** n_bits)],
+        {"x": "encrypted"},
     )
+
+    print("Compiling...")
+
+    engine = compiler.compile_on_inputset(range(2 ** n_bits))
 
     inputs = []
     labels = []
@@ -25,11 +27,14 @@ def main():
         labels.append(function_to_compile(*inputs[-1]))
 
     correct = 0
-    for input_i, label_i in zip(inputs, labels):
+    for idx, (input_i, label_i) in enumerate(zip(inputs, labels), 1):
+        print(f"Inference #{idx}")
         result_i = engine.run(*input_i)
 
         if result_i == label_i:
             correct += 1
+
+    print(f"{correct}/{len(inputs)}")
 
 
 if __name__ == "__main__":

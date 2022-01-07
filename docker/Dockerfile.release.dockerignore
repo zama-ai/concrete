@@ -1,12 +1,6 @@
-# Ignore all
-**
-
 # Not our sources
-!concrete
-!pyproject.toml
 !docker/release_resources/entry_point.sh
 !docker/release_resources/release_requirements.txt
 
-# But still ignore pycache
-**/__pycache__
-**/*.pyc
+!pkg/
+!pkg/**
