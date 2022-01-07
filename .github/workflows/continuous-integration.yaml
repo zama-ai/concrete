@@ -7,19 +7,6 @@ on:
     tags:
       - "v*"
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-    inputs:
-      rebuild-env-docker:
-        description: "String to indicate whether the docker should be rebuilt, true or false"
-        required: true
-        default: "false"
-
-  # Allows external webhook trigger
-  repository_dispatch:
-    types:
-      - rebuild-env-docker
-
   schedule:
     # * is a special character in YAML so you have to quote this string
     # At 22:00 on Sunday
@@ -31,11 +18,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FORCE_REBUILD_DOCKER: ${{ (github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.rebuild-env-docker)) || (github.event_name == 'repository_dispatch' && github.event.action == 'rebuild-env-docker') }}
-  ENV_DOCKERFILE: docker/Dockerfile.env
-  PREFLIGHT_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy-env:preflight
-  LATEST_IMAGE: ghcr.io/zama-ai/concrete-numpy-env:latest
-  BASE_IMAGE: ghcr.io/zama-ai/concrete-numpy-env
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
   IS_WEEKLY: ${{ github.event_name == 'schedule' }}
@@ -43,133 +25,7 @@ env:
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
 jobs:
-  build-preflight-docker:
-    name: Build & Push the concrete-numpy-env preflight Docker Image
-    runs-on: ubuntu-20.04
-    outputs:
-      image: ${{ steps.set_image.outputs.image || env.LATEST_IMAGE }}
-      compiler-tag: ${{ steps.set_image.outputs.compiler-tag }}
-      needs-push: ${{ env.BUILD_DOCKER }}
-      force-rebuild-docker: ${{ env.FORCE_REBUILD_DOCKER }}
-      report: ${{ steps.report.outputs.report || 'Did not run.' }}
-
-    steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-        with:
-          fetch-depth: 0
-
-      - name: Get changed files
-        if: ${{ (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')) || github.event_name == 'pull_request' }}
-        id: files
-        run: |
-          CURRENT_SHA="${{ github.sha }}"
-          if [[ "${IS_PR}" == "true" ]]; then
-            BEFORE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BEFORE_SHA="$(./script/actions_utils/get_latest_run.sh \
-            --token ${{ secrets.BOT_TOKEN }} \
-            --org-repo ${{ github.repository }} \
-            --event-types 'push workflow_dispatch repository_dispatch')"
-          fi
-          ALL_CHANGED_FILES=$(git diff --name-only "${CURRENT_SHA}" "${BEFORE_SHA}")
-
-          echo "Before sha1 ${BEFORE_SHA}"
-          echo "Current sha1 ${CURRENT_SHA}"
-
-          echo "Changed files:"
-          echo "${ALL_CHANGED_FILES}"
-
-          echo "::set-output name=all::${ALL_CHANGED_FILES//$'\n'/ }"
-
-      - name: Should rebuild docker check
-        run: |
-          set +e
-          ALL_CHANGED_FILES="${{ steps.files.outputs.all }}"
-          ALL_CHANGED_FILES="${ALL_CHANGED_FILES// /$'\n'}"
-          echo "${ALL_CHANGED_FILES}" | grep "${ENV_DOCKERFILE}$"
-          DOCKERFILE_CHANGED=$?
-          if [[ "${DOCKERFILE_CHANGED}" == "0" || "${FORCE_REBUILD_DOCKER}" == "true" ]]; then
-            echo "Should rebuild docker image!"
-            echo "BUILD_DOCKER=true" >> "$GITHUB_ENV"
-          else
-            echo "Docker image up to date."
-            echo "BUILD_DOCKER=false" >> "$GITHUB_ENV"
-          fi
-
-      # https://github.com/zama-ai/concrete-numpy-internal/issues/809
-      # Remove gh_dl_release call once package is on PyPi
-      - name: Set prefligh Docker image download compiler
-        id: set_image
-        if: ${{ fromJSON(env.BUILD_DOCKER) }}
-        env:
-          WHEEL_SPEC: cp38-cp38-manylinux_2_24_x86_64
-        run: |
-          PREFLIGHT_IMAGE_TAG=$(echo ${{ github.ref }} | sed -e 's/\//-/g')
-          PREFLIGHT_IMAGE="${PREFLIGHT_IMAGE_BASE}-${PREFLIGHT_IMAGE_TAG}"
-          LABEL_SHA1=$(git rev-parse HEAD)
-          echo "::set-output name=image::${PREFLIGHT_IMAGE}"
-          echo "PREFLIGHT_IMAGE=${PREFLIGHT_IMAGE}" >> "$GITHUB_ENV"
-          echo "LABEL_SHA1=${LABEL_SHA1}" >> "$GITHUB_ENV"
-
-          mkdir -p pkg
-          ./script/actions_utils/gh_dl_release.sh \
-          --token ${{ secrets.BOT_TOKEN }} \
-          --org-repo ${{ secrets.COMPILER_REPO }} \
-          --file "${WHEEL_SPEC}" \
-          --dest-dir "pkg" \
-          --github-env "${GITHUB_ENV}" \
-          --compiler-tag-output-file compiler-output-tag.txt
-
-          COMPILER_TAG=$(cat compiler-output-tag.txt)
-          echo "::set-output name=compiler-tag::${COMPILER_TAG}"
-
-      - name: Login to GitHub Container Registry
-        if: ${{ fromJSON(env.BUILD_DOCKER) }}
-        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.BOT_USERNAME }}
-          password: ${{ secrets.BOT_TOKEN }}
-
-      - name: Build concrete-numpy-env Image
-        if: ${{ success() && !cancelled() && fromJSON(env.BUILD_DOCKER) }}
-        uses: docker/build-push-action@a66e35b9cbcf4ad0ea91ffcaf7bbad63ad9e0229
-        with:
-          context: .
-          # builder: ${{ steps.buildx.outputs.name }}
-          build-args: |
-            WHEEL=${{ env.WHEEL }}
-          file: docker/Dockerfile.env
-          no-cache: true
-          push: true
-          tags: "${{ env.PREFLIGHT_IMAGE }}"
-          labels: |
-            concrete_numpy_sha=${{ env.LABEL_SHA1 }}
-
-      - name: Set notification report
-        id: report
-        if: ${{ always() }}
-        run: |
-          REPORT="Docker image preflight build ${{ env.PREFLIGHT_IMAGE }} finished with \
-          status ${{ job.status }}. Rebuilt image: ${{ env.BUILD_DOCKER || 'false' }}."
-          echo "${REPORT}"
-          echo "::set-output name=report::${REPORT}"
-          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
-
-      - name: Slack Notification
-        if: ${{ always() && !success() }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
-        env:
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
-          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
   matrix-preparation:
-    needs: [build-preflight-docker]
     runs-on: ubuntu-20.04
     outputs:
       linux-matrix: ${{ steps.set-matrix.outputs.linux-matrix }}
@@ -288,14 +144,12 @@ jobs:
           echo "::set-output name=linux-matrix::${MATRIX}"
 
   build-linux:
-    needs: [build-preflight-docker, start-runner-linux]
+    needs: [start-runner-linux]
 
     runs-on: ${{ matrix.runs_on }}
+    # Run in a clean container
     container:
-      image: ${{ needs.build-preflight-docker.outputs.image }}
-      credentials:
-        username: ${{ secrets.BOT_USERNAME }}
-        password: ${{ secrets.BOT_TOKEN }}
+      image: ubuntu:20.04
     defaults:
       run:
         shell: bash
@@ -306,6 +160,13 @@ jobs:
       IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
 
     steps:
+      - name: Docker container related setup and git installation
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          apt update && apt install git -y
+
       - name: Checkout Code
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
 
@@ -317,8 +178,7 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
+          ./script/make_utils/setup_os_deps.sh
           make setup_env
 
       - name: Check commits first line format
@@ -679,66 +539,6 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-  push-docker-image:
-    needs: [build-preflight-docker, build-linux]
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && fromJSON(needs.build-preflight-docker.outputs.needs-push)) || fromJSON(needs.build-preflight-docker.outputs.force-rebuild-docker) }}
-
-    outputs:
-      report: ${{ steps.report.outputs.report || 'Did not run.' }}
-
-    name: Push env docker image
-    runs-on: ubuntu-20.04
-    env:
-      PREFLIGHT_IMAGE: ${{ needs.build-preflight-docker.outputs.image }}
-      COMPILER_TAG: ${{ needs.build-preflight-docker.outputs.compiler-tag }}
-
-    steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.BOT_USERNAME }}
-          password: ${{ secrets.BOT_TOKEN }}
-
-      - name: Pull preflight image
-        run: |
-          docker pull "${PREFLIGHT_IMAGE}"
-
-      # https://github.com/zama-ai/concrete-numpy-internal/issues/809
-      # update once release workflow is ok on the compiler side
-      - name: Retag to latest and concrete_compiler_version-concrete_numpy_sha1 and push
-        run: |
-          SHA1=$(git rev-parse HEAD)
-          TAGGED_IMAGE="${BASE_IMAGE}:${COMPILER_TAG}-${SHA1}"
-          docker tag "${PREFLIGHT_IMAGE}" "${LATEST_IMAGE}"
-          docker tag "${PREFLIGHT_IMAGE}" "${TAGGED_IMAGE}"
-          docker push "${LATEST_IMAGE}"
-          docker push "${TAGGED_IMAGE}"
-
-      - name: Set notification report
-        id: report
-        if: ${{ always() }}
-        run: |
-          REPORT="Pushing docker image ${{ env.BASE_IMAGE }} finished with status \
-          ${{ job.status }}."
-          echo "${REPORT}"
-          echo "::set-output name=report::${REPORT}"
-          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
-
-      - name: Slack Notification
-        if: ${{ always() && !success() }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
-        env:
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
-          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
   package-release:
     needs: [build-linux]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
@@ -1034,14 +834,12 @@ jobs:
     if: ${{ always() }}
     needs:
       [
-        build-preflight-docker,
         matrix-preparation,
         start-runner-linux,
         build-linux,
         stop-runner-linux,
         build-macos,
         publish-docs,
-        push-docker-image,
         package-release,
       ]
 
@@ -1071,14 +869,12 @@ jobs:
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
           SLACK_MESSAGE: "Full run finished with status ${{ env.JOB_STATUS || 'failure' }} \
             (${{ env.ACTION_RUN_URL }})\n\
-            - build-preflight-docker: ${{ needs.build-preflight-docker.outputs.report || 'Did not run.' }}\n\n\
             - matrix-preparation: ${{ needs.matrix-preparation.result || 'Did not run.'}}\n\n\
             - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
             - build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
             - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}\n\n\
             - build-macos: ${{ needs.build-macos.result || 'Did not run.' }}\n\n\
             - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
-            - push-docker-image: ${{ needs.push-docker-image.outputs.report || 'Did not run.' }}\n\n\
             - package-release: ${{ needs.package-release.outputs.report || 'Did not run.' }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

@@ -18,6 +18,12 @@ You can follow [this](https://realpython.com/installing-python/) guide to instal
 
 You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
+```{WARNING}
+As there is no `concrete-compiler` package for Windows, only the dev dependencies can be installed. This requires poetry >= 1.2.
+
+At the time of writing (January 2022), there is only an alpha version of poetry 1.2 that you can install. In the meantime we recommend following [this link to setup the docker environment](./docker.md) on Windows.
+```
+
 ## Installing make
 
 The dev tools use `make` to launch the various commands.
@@ -54,6 +60,10 @@ git clone https://github.com/zama-ai/concrete-numpy-internal.git
 ## Setting up environment on your host OS
 
 We are going to make use of virtual environments. This helps to keep the project isolated from other `Python` projects in the system. The following commands will create a new virtual environment under the project directory and install dependencies to it.
+
+```{DANGER}
+The following command will not work on Windows if you don't have poetry >= 1.2. As poetry 1.2 is still in alpha we recommend following [this link to setup the docker environment](./docker.md) instead.
+```
 
 ```shell
 cd concrete-numpy-internal

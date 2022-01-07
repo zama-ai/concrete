@@ -2,6 +2,7 @@
 name = "concrete-numpy"
 version = "0.2.0-rc5"
 description = "Concrete Numpy"
+license = "BSD-3-Clause"
 authors = ["Zama <hello@zama.ai>"]
 packages = [
     { include = "concrete" },
@@ -17,6 +18,7 @@ Pillow = "^8.3.2"
 loguru = "^0.5.3"
 torch = "^1.10.0"
 setuptools = "*"
+concrete-compiler = "^0.1.0"
 
 [tool.poetry.extras]
 full = ["pygraphviz"]

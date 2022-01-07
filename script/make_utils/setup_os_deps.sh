@@ -15,6 +15,23 @@ isDockerContainer(){
     [[ -e ./dockerenv ]]
 }
 
+LINUX_INSTALL_PYTHON=0
+
+while [ -n "$1" ]
+do
+   case "$1" in
+        "--linux-install-python" )
+            LINUX_INSTALL_PYTHON=1
+            ;;
+
+        *)
+            echo "Unknown param : $1"
+            exit 1
+            ;;
+   esac
+   shift
+done
+
 OS_NAME=$(uname)
 
 if [[ "${OS_NAME}" == "Linux" ]]; then
@@ -30,16 +47,22 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         fi
     fi
 
+    PYTHON_PACKAGES=
+    if [[ "${LINUX_INSTALL_PYTHON}" == "1" ]]; then
+        PYTHON_PACKAGES="python3-pip \
+        python3.8 \
+        python3.8-dev \
+        python3.8-tk \
+        python3.8-venv \
+        python-is-python3 \
+        "
+    fi
+
     SETUP_CMD="${SUDO_BIN:+$SUDO_BIN}apt-get update && apt-get upgrade --no-install-recommends -y && \
-    ${SUDO_BIN+$SUDO_BIN}apt-get install --no-install-recommends -y \
+    ${SUDO_BIN:+$SUDO_BIN}apt-get install --no-install-recommends -y \
     build-essential \
     curl \
-    python3-pip \
-    python3.8 \
-    python3.8-dev \
-    python3.8-tk \
-    python3.8-venv \
-    python-is-python3 \
+    ${PYTHON_PACKAGES:+$PYTHON_PACKAGES} \
     git \
     graphviz* \
     jq \

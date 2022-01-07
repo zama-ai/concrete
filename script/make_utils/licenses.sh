@@ -3,7 +3,7 @@
 set -e
 
 BASENAME="licenses"
-LICENSE_DIRECTORY="licenses"
+LICENSE_DIRECTORY="deps_licenses"
 CHECK=0
 DIFF_TOOL="diff --ignore-all-space --ignore-tab-expansion --ignore-space-change --ignore-all-space --ignore-blank-lines --strip-trailing-cr"
 TMP_VENV_PATH="/tmp/tmp_venv"

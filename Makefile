@@ -10,22 +10,19 @@ SRC_DIR:=concrete
 setup_env:
 	poetry run python -m pip install -U pip wheel
 	poetry run python -m pip install -U --force-reinstall setuptools
-	poetry install --extras full
-	@# This is required to be friendly in the docker and on bare systems until the package is on pip
-	@# https://github.com/zama-ai/concrete-numpy-internal/issues/809
-	if [[ -d /pkg ]]; then														\
-		NUM_PKG=$$(ls /pkg | wc -l);											\
-		if [[ "$${NUM_PKG}" != "0" ]]; then										\
-			poetry run python -m pip install --force-reinstall /pkg/*.whl;		\
-			poetry run python -m pip install --force-reinstall numpy==1.22.0;	\
-		fi;																		\
+	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
+		poetry install --extras full --only dev; \
+	else \
+		poetry install --extras full; \
 	fi
-	@# we need to pin a specific version of numpy to avoid having license conflicts
-	@# see https://github.com/zama-ai/concrete-numpy-internal/runs/4455022611?check_suite_focus=true for details
 
 .PHONY: sync_env # Synchronise the environment
 sync_env:
-	poetry install --remove-untracked
+	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
+		poetry install --extras full --remove-untracked --only dev; \
+	else \
+		poetry install --extras full --remove-untracked; \
+	fi
 	$(MAKE) setup_env
 
 .PHONY: python_format # Apply python formatting

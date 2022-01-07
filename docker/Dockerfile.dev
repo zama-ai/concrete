@@ -1,4 +1,10 @@
-FROM ghcr.io/zama-ai/concrete-numpy-env
+FROM ubuntu:20.04
+
+ENV TZ=Europe/Paris
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
+RUN ./setup_os_deps.sh --linux-install-python && rm ./setup_os_deps.sh
 
 ENV SRC_DIR=/src
 
