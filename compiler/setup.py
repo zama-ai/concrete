@@ -51,9 +51,9 @@ setuptools.setup(
     author="Zama Team",
     author_email="hello@zama.ai",
     description="Concrete Compiler",
-    license="",
+    license="BSD-3",
     keywords="homomorphic encryption compiler",
-    long_description=read("README.md"),
+    long_description=read("RELEASE_README.md"),
     long_description_content_type="text/markdown",
     url="https://github.com/zama-ai/concrete-compiler-internal",
     packages=setuptools.find_namespace_packages(
