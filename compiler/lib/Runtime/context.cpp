@@ -18,8 +18,8 @@ get_keyswitch_key(mlir::concretelang::RuntimeContext *context) {
 
 LweBootstrapKey_u64 *
 get_bootstrap_key(mlir::concretelang::RuntimeContext *context) {
-  int err;
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+  int err;
   std::string threadName = hpx::get_thread_name();
   auto bskIt = context->bsk.find(threadName);
   if (bskIt == context->bsk.end()) {
