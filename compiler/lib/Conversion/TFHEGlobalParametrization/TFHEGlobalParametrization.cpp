@@ -159,8 +159,7 @@ struct TFHEApplyLookupTablePaddingPattern
                           .cast<mlir::concretelang::TFHE::GLWECipherTextType>();
     auto tabulatedLambdaType =
         op.l_cst().getType().cast<mlir::RankedTensorType>();
-    auto glweOutType =
-        op.getType().cast<mlir::concretelang::TFHE::GLWECipherTextType>();
+
     auto expectedSize = 1 << glweInType.getP();
     if (tabulatedLambdaType.getShape()[0] < expectedSize) {
       auto constantOp = mlir::dyn_cast_or_null<mlir::arith::ConstantOp>(
@@ -250,8 +249,6 @@ void populateWithTFHEApplyLookupTablePaddingPattern(
                 .cast<mlir::concretelang::TFHE::GLWECipherTextType>();
         auto tabulatedLambdaType =
             op.getOperandTypes()[1].cast<mlir::RankedTensorType>();
-        auto glweOutType =
-            op.getType().cast<mlir::concretelang::TFHE::GLWECipherTextType>();
 
         return tabulatedLambdaType.getShape()[0] == 1 << glweInType.getP();
       });
