@@ -1,12 +1,40 @@
 [tool.poetry]
 name = "concrete-numpy"
 version = "0.2.0-rc5"
-description = "Concrete Numpy"
+description = "Concrete Numpy is a package containing tools to compile Numpy functions into Fully Homomorphic Encryption equivalents. Concrete Numpy goes on top of the Concrete Compiler and Concrete Library."
 license = "BSD-3-Clause"
-authors = ["Zama <hello@zama.ai>"]
+authors = [
+    "Zama <hello@zama.ai>",
+    "Arthur Meyre <hello@zama.ai>",
+    "Umut Sahin <hello@zama.ai>",
+    "Benoit Chevallier-Mames <hello@zama.ai>",
+    "Jordan Frery <hello@zama.ai>",
+    "Alexandre Quint <hello@zama.ai>",
+    "Ayoub Benaissa <hello@zama.ai>",
+    "Andrei Stoian <hello@zama.ai>",
+    "Jeremy Bradley <hello@zama.ai>",
+]
+homepage = "https://zama.ai/concrete/"
+repository = "https://github.com/zama-ai/concrete-numpy"
+documentation = "http://docs.zama.ai/concrete-numpy/"
+keywords = ["FHE", "homomorphic encryption", "privacy", "security"]
 packages = [
     { include = "concrete" },
 ]
+classifiers = [
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Security",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Compilers",
+]
+readme = "pypi_readme.md"
+
+[tool.poetry.urls]
+"README" = "https://github.com/zama-ai/concrete-numpy/blob/main/README.md"
+"Bug Tracker" = "https://github.com/zama-ai/concrete-numpy/issues"
+"Discourse" = "https://community.zama.ai/c/concrete-numpy/7"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
@@ -18,7 +46,7 @@ Pillow = "^8.3.2"
 loguru = "^0.5.3"
 torch = "^1.10.0"
 setuptools = "*"
-concrete-compiler = "^0.1.0"
+concrete-compiler = "^0.1.1"
 
 [tool.poetry.extras]
 full = ["pygraphviz"]
