@@ -36,6 +36,7 @@ bench = false
 default = ["backend_core"]
 doc = []
 backend_core = []
+backend_optalysys = []
 slow-csprng = ["concrete-csprng/slow"]
 multithread = ["rayon", "concrete-csprng/multithread"]
 serde_serialize = ["serde", "serde/derive", "concrete-commons/serde_serialize",

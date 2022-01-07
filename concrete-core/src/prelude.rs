@@ -14,3 +14,8 @@ pub use super::backends::core::engines::*;
 pub use super::backends::core::entities::*;
 pub use super::specification::engines::*;
 pub use super::specification::entities::*;
+
+#[cfg(feature = "backend_optalysys")]
+pub use super::backends::optalysys::engines::*;
+#[cfg(feature = "backend_optalysys")]
+pub use super::backends::optalysys::entities::*;

@@ -7,3 +7,6 @@
 
 #[cfg(feature = "backend_core")]
 pub mod core;
+
+#[cfg(feature = "backend_optalysys")]
+pub mod optalysys;
