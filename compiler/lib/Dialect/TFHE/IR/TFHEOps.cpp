@@ -42,7 +42,7 @@ mlir::LogicalResult _verifyGLWEIntegerOperator(mlir::OpState &op,
   }
 
   // verify consistency of width of inputs
-  if (b.getWidth() > a.getP() + 1) {
+  if ((int)b.getWidth() > a.getP() + 1) {
     op.emitOpError()
         << "should have the width of `b` equals or less than 'p'+1: "
         << b.getWidth() << " <= " << a.getP() << "+ 1";
