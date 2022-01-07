@@ -109,12 +109,11 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
 ::mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
   auto ct = op.a().getType().cast<EncryptedIntegerType>();
   auto lut = op.lut().getType().cast<TensorType>();
-  auto result = op.getResult().getType().cast<EncryptedIntegerType>();
 
   // Check the shape of lut argument
   auto width = ct.getWidth();
   auto expectedSize = 1 << width;
-  auto lCstShape = lut.getShape();
+
   mlir::SmallVector<int64_t, 1> expectedShape{expectedSize};
   if (!lut.hasStaticShape(expectedShape)) {
     emitErrorBadLutSize(op, "lut", "ct", expectedSize, width);
