@@ -231,9 +231,6 @@ static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp,
   assert(tensorType.getElementType().isSignlessInteger() &&
          "Can only handle tensors with signless integer elements");
 
-  mlir::IntegerType elementType =
-      tensorType.getElementType().cast<mlir::IntegerType>();
-
   llvm::APInt accu{1, 0, false};
 
   for (llvm::APInt val : denseVals.getValues<llvm::APInt>()) {
