@@ -1088,6 +1088,20 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             ),
             True,
         ),
+        pytest.param(
+            lambda x: numpy.array([120, 60, 30], dtype=numpy.uint8) // x,
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(1, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            True,
+        ),
     ],
 )
 def test_compile_and_run_tensor_correctness(

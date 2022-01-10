@@ -406,7 +406,7 @@ class GenericFunction(IntermediateNode):
         )
         variable_input_dtype = cast(Integer, variable_input_dtype)
 
-        input_value_constructor = self.inputs[0].underlying_constructor
+        input_value_constructor = self.inputs[variable_input_idx].underlying_constructor
         if input_value_constructor is None:
             logger.info(
                 f"{self.__class__.__name__} input data type constructor was None, defaulting to int"
