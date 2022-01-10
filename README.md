@@ -1,6 +1,6 @@
 
 <p align="center">
-  <h1 align="center">Concrete Numpy</h1>
+  <img src="docs/_static/CN_logo.png">
 </p>
 
 Concrete Numpy is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists.
