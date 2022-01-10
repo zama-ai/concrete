@@ -199,9 +199,12 @@ public:
   // to `jla` failed.
   static inline llvm::Error addArgument(JITLambda::Argument &jla, size_t pos,
                                         const LambdaArgument &arg) {
+    // Try the supported integer types; size_t needs explicit
+    // treatment, since it may alias none of the fixed size integer
+    // types
     llvm::Expected<bool> successOrError =
         JITLambdaArgumentAdaptor::tryAddArg<uint64_t, uint32_t, uint16_t,
-                                            uint8_t>(jla, pos, arg);
+                                            uint8_t, size_t>(jla, pos, arg);
 
     if (!successOrError)
       return std::move(successOrError.takeError());
