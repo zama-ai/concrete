@@ -786,7 +786,7 @@ jobs:
       - name: Push package to PyPi
         if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) }}
         run: |
-          twine upload \
+          poetry run twine upload \
           -u __token__ -p ${{ secrets.PYPI_BOT_TOKEN }} \
           -r pypi "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
