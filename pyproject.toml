@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "concrete-numpy"
-version = "0.2.0-rc6"
+version = "0.2.0"
 description = "Concrete Numpy is a package containing tools to compile Numpy functions into Fully Homomorphic Encryption equivalents. Concrete Numpy goes on top of the Concrete Compiler and Concrete Library."
 license = "BSD-3-Clause"
 authors = [
