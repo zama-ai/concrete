@@ -9,7 +9,7 @@ use concrete_npe as npe;
 use std::fmt::Debug;
 
 use crate::backends::core::private::crypto::bootstrap::fourier::constant_sample_extract;
-use crate::backends::core::private::crypto::bootstrap::{FourierBskBuffers, StandardBootstrapKey};
+use crate::backends::core::private::crypto::bootstrap::StandardBootstrapKey;
 use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
@@ -24,7 +24,9 @@ use crate::backends::core::private::math::tensor::{
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::test_tools::{assert_delta_std_dev, assert_noise_distribution};
-use crate::backends::optalysys::private::crypto::bootstrap::FourierBootstrapKey;
+use crate::backends::optalysys::private::crypto::bootstrap::fourier::{
+    FourierBootstrapKey, FourierBskBuffers,
+};
 
 fn test_bootstrap_noise<T: UnsignedTorus>() {
     //! test that the bootstrapping noise matches the theoretical noise
