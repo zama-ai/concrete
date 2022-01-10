@@ -357,3 +357,12 @@ help:
 .PHONY: pip_audit # Run pip-audit and check if there are known vulnerabilities in our dependencies
 pip_audit:
 	poetry run pip-audit
+
+.PHONY: clean_local_git # Tell the user how to delete local git branches, except main
+clean_local_git:
+	@git fetch --all --prune
+	@echo "Consider doing: "
+	@echo
+	@# Don't consider deleting `main` or current branches
+	@git branch | grep -v "^*" | grep -v main | xargs echo "git branch -D "
+	@echo
