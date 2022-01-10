@@ -51,11 +51,9 @@ In the following sections, be sure to use the proper `make` tool for your system
 
 ## Cloning repository
 
-Now, it's time to get the source code of **concrete-numpy**. You can use the following command to do that.
+Now, it's time to get the source code of **concrete-numpy**.
 
-```shell
-git clone https://github.com/zama-ai/concrete-numpy-internal.git
-```
+Clone the code repository using the link for your favourite communication protocol (ssh or https).
 
 ## Setting up environment on your host OS
 
@@ -66,7 +64,7 @@ The following command will not work on Windows if you don't have poetry >= 1.2. 
 ```
 
 ```shell
-cd concrete-numpy-internal
+cd concrete-numpy
 make setup_env
 ```
 
