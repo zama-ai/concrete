@@ -1329,42 +1329,42 @@ def test_compile_and_run_constant_dot_correctness(
 
 
 @pytest.mark.parametrize(
-    "lhs_shape,rhs_shape,input_range",
+    "lhs_shape,rhs_shape,input_range_inclusive_bound",
     [
         pytest.param(
             (3, 2),
             (2, 3),
-            (0, 4),
+            (0, 3),
         ),
         pytest.param(
             (1, 2),
             (2, 1),
-            (0, 4),
+            (0, 3),
         ),
         pytest.param(
             (3, 3),
             (3, 3),
-            (0, 4),
+            (0, 3),
         ),
         pytest.param(
             (2, 1),
             (1, 2),
-            (0, 8),
+            (0, 7),
         ),
         pytest.param(
             (2,),
             (2,),
-            (0, 8),
+            (0, 7),
         ),
         pytest.param(
             (5, 5),
             (5,),
-            (0, 4),
+            (0, 3),
         ),
         pytest.param(
             (5,),
             (5, 5),
-            (0, 4),
+            (0, 3),
         ),
         pytest.param(
             (3, 2),
@@ -1374,21 +1374,25 @@ def test_compile_and_run_constant_dot_correctness(
         pytest.param(
             (5,),
             (5, 3),
-            (0, 4),
+            (0, 3),
         ),
         pytest.param(
             (5, 3),
             (3,),
-            (0, 4),
+            (0, 3),
         ),
     ],
 )
 def test_compile_and_run_matmul_correctness(
-    lhs_shape, rhs_shape, input_range, default_compilation_configuration, check_array_equality
+    lhs_shape,
+    rhs_shape,
+    input_range_inclusive_bound,
+    default_compilation_configuration,
+    check_array_equality,
 ):
     """Test correctness of results when running a compiled function"""
 
-    low, high = input_range
+    low, high = input_range_inclusive_bound
 
     check_mod = low < 0 or high < 0
 
