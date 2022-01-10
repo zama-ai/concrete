@@ -96,7 +96,7 @@ class PostTrainingAffineQuantization:
                     # Since this is the last layer and mostly used for classification,
                     # this does not have much impact.
                     # TODO: Put back 7 bits when 100% at 7b is achieved (see issue #1332).
-                    q_layer = QuantizedLinear(6, q_weights, q_bias)
+                    q_layer = QuantizedLinear(numpy.maximum(6, self.n_bits), q_weights, q_bias)
                 else:
                     q_layer = QuantizedLinear(self.n_bits, q_weights, q_bias)
                 # Calibrate and get new calibration_data for next layer/activation
