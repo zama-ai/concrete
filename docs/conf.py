@@ -26,7 +26,7 @@ project = 'Concrete Compiler'
 copyright = '2021, Zama'
 author = 'Zama'
 description = 'Concrete Compiler is part of Zama Concrete Framework that help you turn any program into its homomorphic equivalent.'
-root_url = os.environ.get("DOC_ROOT_URL", "")
+root_url = os.environ.get("DOC_ROOT_URL", "/concrete-compiler")
 root_url = root_url if root_url.endswith('/') else root_url + '/'
 
 # The full version, including alpha/beta/rc tags
