@@ -1,19 +1,14 @@
 # Benchmarks
 
-To track our progress over time, we have created a couple of progress trackers, one for our [core functionality](https://concrete.progress.zama.ai) and one for [machine learning](https://ml.progress.zama.ai) built on top of our core funtionality.
+To track **Concrete Numpy** features, performance, and related metrics progress over time, we will make benchmark trackers available at a later date.
 
-We track:
+Ideally the trackers will be tracking:
 - targets that we want to compile
 - status of the compilability of these functions
-- evaluation times on different hardwares
-- accuracy of the functions when it makes sense
-- loss and other metrics of the functions when it makes sense
+- evaluation times on various hardware configurations
+- accuracy of the functions (when it makes sense)
+- loss and other metrics of the functions (when it makes sense)
 
-Note that we are not limited to these, and we'll certainly add more information (e.g., key generation time, encryption time, inference time, decryption time, etc.) once the explicit inference API is available.
+Note that these are preliminary ideas; more information (e.g., key generation time, encryption time, inference time, decryption time, etc.) can be added once the related APIs are available.
 
-Our public benchmarks can be used by competing frameworks or technologies for comparison with **Concrete Numpy**. Notably, you can see:
-- if the same functions can be compiled
-- what are the discrepancies in the exactness of the evaluations
-- how do evaluation times compare
-
-If you want to see more functions in the progress tracker or if there is another metric you would like to track, don't hesitate to drop an email to <hello@zama.ai>.
+If there are benchmarks you would like to see in the progress tracker or if there are metrics you would like to see tracked once the benchmarks are made public, don't hesitate to drop an email to <hello@zama.ai>.
