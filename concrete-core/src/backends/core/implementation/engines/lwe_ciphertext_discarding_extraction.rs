@@ -1,4 +1,5 @@
-use concrete_commons::parameters::MonomialDegree;
+#[allow(deprecated)]
+use concrete_commons::parameters::{MonomialDegree, MonomialIndex};
 
 use crate::backends::core::implementation::engines::CoreEngine;
 use crate::backends::core::implementation::entities::{
@@ -17,7 +18,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext32, LweCiphertext32> 
     /// ```
     /// use concrete_commons::dispersion::Variance;
     /// use concrete_commons::parameters::{
-    ///     GlweDimension, LweDimension, MonomialDegree, PolynomialSize,
+    ///     GlweDimension, LweDimension, MonomialIndex, PolynomialSize,
     /// };
     /// use concrete_core::prelude::*;
     /// # use std::error::Error;
@@ -48,7 +49,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext32, LweCiphertext32> 
     /// engine.discard_extract_lwe_ciphertext(
     ///     &mut lwe_ciphertext,
     ///     &glwe_ciphertext,
-    ///     MonomialDegree(0),
+    ///     MonomialIndex(0),
     /// )?;
     /// #
     /// assert_eq!(lwe_ciphertext.lwe_dimension(), lwe_dimension);
@@ -66,7 +67,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext32, LweCiphertext32> 
         &mut self,
         output: &mut LweCiphertext32,
         input: &GlweCiphertext32,
-        nth: MonomialDegree,
+        nth: MonomialIndex,
     ) -> Result<(), LweCiphertextDiscardingExtractionError<Self::EngineError>> {
         if output.0.lwe_size().to_lwe_dimension().0
             != input.0.polynomial_size().0 * input.0.size().to_glwe_dimension().0
@@ -74,7 +75,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext32, LweCiphertext32> 
             return Err(LweCiphertextDiscardingExtractionError::SizeMismatch);
         }
         if nth.0 > input.glwe_dimension().0 - 1 {
-            return Err(LweCiphertextDiscardingExtractionError::MonomialDegreeTooLarge);
+            return Err(LweCiphertextDiscardingExtractionError::MonomialIndexTooLarge);
         }
         unsafe { self.discard_extract_lwe_ciphertext_unchecked(output, input, nth) };
         Ok(())
@@ -84,9 +85,12 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext32, LweCiphertext32> 
         &mut self,
         output: &mut LweCiphertext32,
         input: &GlweCiphertext32,
-        nth: MonomialDegree,
+        nth: MonomialIndex,
     ) {
-        output.0.fill_with_glwe_sample_extraction(&input.0, nth);
+        #[allow(deprecated)]
+        output
+            .0
+            .fill_with_glwe_sample_extraction(&input.0, MonomialDegree(nth.0));
     }
 }
 
@@ -98,7 +102,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext64, LweCiphertext64> 
     /// ```
     /// use concrete_commons::dispersion::Variance;
     /// use concrete_commons::parameters::{
-    ///     GlweDimension, LweDimension, MonomialDegree, PolynomialSize,
+    ///     GlweDimension, LweDimension, MonomialIndex, PolynomialSize,
     /// };
     /// use concrete_core::prelude::*;
     /// # use std::error::Error;
@@ -129,7 +133,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext64, LweCiphertext64> 
     /// engine.discard_extract_lwe_ciphertext(
     ///     &mut lwe_ciphertext,
     ///     &glwe_ciphertext,
-    ///     MonomialDegree(0),
+    ///     MonomialIndex(0),
     /// )?;
     /// #
     /// assert_eq!(lwe_ciphertext.lwe_dimension(), lwe_dimension);
@@ -147,7 +151,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext64, LweCiphertext64> 
         &mut self,
         output: &mut LweCiphertext64,
         input: &GlweCiphertext64,
-        nth: MonomialDegree,
+        nth: MonomialIndex,
     ) -> Result<(), LweCiphertextDiscardingExtractionError<Self::EngineError>> {
         if output.0.lwe_size().to_lwe_dimension().0
             != input.0.polynomial_size().0 * input.0.size().to_glwe_dimension().0
@@ -155,7 +159,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext64, LweCiphertext64> 
             return Err(LweCiphertextDiscardingExtractionError::SizeMismatch);
         }
         if nth.0 > input.glwe_dimension().0 - 1 {
-            return Err(LweCiphertextDiscardingExtractionError::MonomialDegreeTooLarge);
+            return Err(LweCiphertextDiscardingExtractionError::MonomialIndexTooLarge);
         }
         unsafe { self.discard_extract_lwe_ciphertext_unchecked(output, input, nth) };
         Ok(())
@@ -165,8 +169,11 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext64, LweCiphertext64> 
         &mut self,
         output: &mut LweCiphertext64,
         input: &GlweCiphertext64,
-        nth: MonomialDegree,
+        nth: MonomialIndex,
     ) {
-        output.0.fill_with_glwe_sample_extraction(&input.0, nth);
+        #[allow(deprecated)]
+        output
+            .0
+            .fill_with_glwe_sample_extraction(&input.0, MonomialDegree(nth.0));
     }
 }

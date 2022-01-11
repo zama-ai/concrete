@@ -11,13 +11,14 @@ engine_error! {
 /// # Semantics
 ///
 /// This [pure](super#operation-semantics) operation generates a GLWE ciphertext containing the
-/// conversion of the `input` GLWE ciphertext to a type with a different representation (for instance from cpu to gpu memory).
+/// conversion of the `input` GLWE ciphertext to a type with a different representation (for
+/// instance from cpu to gpu memory).
 ///
 /// # Formal Definition
 pub trait GlweCiphertextConversionEngine<Input, Output>: AbstractEngine
 where
     Input: GlweCiphertextEntity,
-    Output: GlweCiphertextEntity<KeyFlavor = Input::KeyFlavor>,
+    Output: GlweCiphertextEntity<KeyDistribution = Input::KeyDistribution>,
 {
     /// Converts a GLWE ciphertext.
     fn convert_glwe_ciphertext(

@@ -27,8 +27,10 @@ pub trait LweCiphertextVectorDiscardingKeyswitchEngine<
     OutputCiphertextVector,
 >: AbstractEngine where
     KeyswitchKey: LweKeyswitchKeyEntity,
-    InputCiphertextVector: LweCiphertextVectorEntity<KeyFlavor = KeyswitchKey::InputKeyFlavor>,
-    OutputCiphertextVector: LweCiphertextVectorEntity<KeyFlavor = KeyswitchKey::OutputKeyFlavor>,
+    InputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = KeyswitchKey::InputKeyDistribution>,
+    OutputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = KeyswitchKey::OutputKeyDistribution>,
 {
     /// Keyswitch an LWE ciphertext vector.
     fn discard_keyswitch_lwe_ciphertext_vector(

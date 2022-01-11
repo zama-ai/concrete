@@ -27,8 +27,8 @@
 //!
 //! + Multiple __general__ error variants which can be potentially produced by any backend
 //! (see the
-//! [`InputLweDimensionMismatch`](`LweCiphertextDiscardingKeyswitchError::InputLweDimensionMismatch`)
-//! variant for an example)
+//! [`InputLweDimensionMismatch`](`LweCiphertextDiscardingKeyswitchError::
+//! InputLweDimensionMismatch`) variant for an example)
 //! + One __specific__ variant which encapsulate the generic argument error `E`
 //! (see the [`Engine`](`LweCiphertextDiscardingKeyswitchError::Engine`) variant for an example)
 //!
@@ -36,8 +36,8 @@
 //! [`EngineError`](`AbstractEngine::EngineError`) from the [`AbstractEngine`] super-trait, by the
 //! signature of the operation entry point
 //! (see
-//! [`discard_keyswitch_lwe_ciphertext`](`LweCiphertextDiscardingKeyswitchEngine::discard_keyswitch_lwe_ciphertext`)
-//! for instance).
+//! [`discard_keyswitch_lwe_ciphertext`](`LweCiphertextDiscardingKeyswitchEngine::
+//! discard_keyswitch_lwe_ciphertext`) for instance).
 //!
 //! This design makes it possible for each operation, to match the error exhaustively against both
 //! general error variants, and backend-related error variants.
@@ -120,11 +120,15 @@ pub(crate) use engine_error;
 mod cleartext_conversion;
 mod cleartext_creation;
 mod cleartext_discarding_conversion;
+mod cleartext_discarding_retrieval;
 mod cleartext_encoding;
+mod cleartext_retrieval;
 mod cleartext_vector_conversion;
 mod cleartext_vector_creation;
 mod cleartext_vector_discarding_conversion;
+mod cleartext_vector_discarding_retrieval;
 mod cleartext_vector_encoding;
+mod cleartext_vector_retrieval;
 mod destruction;
 mod glwe_ciphertext_conversion;
 mod glwe_ciphertext_decryption;
@@ -193,19 +197,27 @@ mod plaintext_conversion;
 mod plaintext_creation;
 mod plaintext_decoding;
 mod plaintext_discarding_conversion;
+mod plaintext_discarding_retrieval;
+mod plaintext_retrieval;
 mod plaintext_vector_conversion;
 mod plaintext_vector_creation;
 mod plaintext_vector_decoding;
 mod plaintext_vector_discarding_conversion;
+mod plaintext_vector_discarding_retrieval;
+mod plaintext_vector_retrieval;
 
 pub use cleartext_conversion::*;
 pub use cleartext_creation::*;
 pub use cleartext_discarding_conversion::*;
+pub use cleartext_discarding_retrieval::*;
 pub use cleartext_encoding::*;
+pub use cleartext_retrieval::*;
 pub use cleartext_vector_conversion::*;
 pub use cleartext_vector_creation::*;
 pub use cleartext_vector_discarding_conversion::*;
+pub use cleartext_vector_discarding_retrieval::*;
 pub use cleartext_vector_encoding::*;
+pub use cleartext_vector_retrieval::*;
 pub use destruction::*;
 pub use glwe_ciphertext_conversion::*;
 pub use glwe_ciphertext_decryption::*;
@@ -274,7 +286,11 @@ pub use plaintext_conversion::*;
 pub use plaintext_creation::*;
 pub use plaintext_decoding::*;
 pub use plaintext_discarding_conversion::*;
+pub use plaintext_discarding_retrieval::*;
+pub use plaintext_retrieval::*;
 pub use plaintext_vector_conversion::*;
 pub use plaintext_vector_creation::*;
 pub use plaintext_vector_decoding::*;
 pub use plaintext_vector_discarding_conversion::*;
+pub use plaintext_vector_discarding_retrieval::*;
+pub use plaintext_vector_retrieval::*;

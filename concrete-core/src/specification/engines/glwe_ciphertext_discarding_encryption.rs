@@ -17,8 +17,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` GLWE ciphertext with the
-/// encryption of the `input` plaintext vector, under the `key` secret key.
+/// This [discarding](super#operation-semantics) operation fills the `output` GLWE ciphertext with
+/// the encryption of the `input` plaintext vector, under the `key` secret key.
 ///
 /// # Formal Definition
 pub trait GlweCiphertextDiscardingEncryptionEngine<SecretKey, PlaintextVector, Ciphertext>:
@@ -26,7 +26,7 @@ pub trait GlweCiphertextDiscardingEncryptionEngine<SecretKey, PlaintextVector, C
 where
     SecretKey: GlweSecretKeyEntity,
     PlaintextVector: PlaintextVectorEntity,
-    Ciphertext: GlweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: GlweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts a GLWE ciphertext .
     fn discard_encrypt_glwe_ciphertext(

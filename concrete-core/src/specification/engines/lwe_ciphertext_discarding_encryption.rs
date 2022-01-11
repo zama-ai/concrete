@@ -13,8 +13,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// encryption of the `input` plaintext, under the `key` secret key.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the encryption of the `input` plaintext, under the `key` secret key.
 ///
 /// # Formal Definition
 pub trait LweCiphertextDiscardingEncryptionEngine<SecretKey, Plaintext, Ciphertext>:
@@ -22,7 +22,7 @@ pub trait LweCiphertextDiscardingEncryptionEngine<SecretKey, Plaintext, Cipherte
 where
     SecretKey: LweSecretKeyEntity,
     Plaintext: PlaintextEntity,
-    Ciphertext: LweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: LweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts an LWE ciphertext.
     fn discard_encrypt_lwe_ciphertext(

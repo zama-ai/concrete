@@ -21,7 +21,7 @@ pub trait LweCiphertextVectorDecryptionEngine<SecretKey, CiphertextVector, Plain
     AbstractEngine
 where
     SecretKey: LweSecretKeyEntity,
-    CiphertextVector: LweCiphertextVectorEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    CiphertextVector: LweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
     PlaintextVector: PlaintextVectorEntity,
 {
     /// Decrypts an LWE ciphertext vector.

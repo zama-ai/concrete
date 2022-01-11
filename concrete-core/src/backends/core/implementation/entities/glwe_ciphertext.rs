@@ -1,5 +1,5 @@
 use super::super::super::private::crypto::glwe::GlweCiphertext as ImplGlweCiphertext;
-use crate::specification::entities::markers::{BinaryKeyFlavor, GlweCiphertextKind};
+use crate::specification::entities::markers::{BinaryKeyDistribution, GlweCiphertextKind};
 use crate::specification::entities::{AbstractEntity, GlweCiphertextEntity};
 use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 
@@ -10,7 +10,7 @@ impl AbstractEntity for GlweCiphertext32 {
     type Kind = GlweCiphertextKind;
 }
 impl GlweCiphertextEntity for GlweCiphertext32 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.size().to_glwe_dimension()
@@ -28,7 +28,7 @@ impl AbstractEntity for GlweCiphertext64 {
     type Kind = GlweCiphertextKind;
 }
 impl GlweCiphertextEntity for GlweCiphertext64 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn glwe_dimension(&self) -> GlweDimension {
         self.0.size().to_glwe_dimension()

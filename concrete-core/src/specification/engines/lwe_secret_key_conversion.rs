@@ -18,7 +18,7 @@ engine_error! {
 pub trait LweSecretKeyConversionEngine<Input, Output>: AbstractEngine
 where
     Input: LweSecretKeyEntity,
-    Output: LweSecretKeyEntity<KeyFlavor = Input::KeyFlavor>,
+    Output: LweSecretKeyEntity<KeyDistribution = Input::KeyDistribution>,
 {
     /// Converts a LWE secret key.
     fn convert_lwe_secret_key(

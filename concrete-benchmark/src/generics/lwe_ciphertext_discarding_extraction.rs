@@ -3,7 +3,7 @@ use crate::synthesizer::{
 };
 use crate::utils::benchmark_name;
 use concrete_commons::dispersion::Variance;
-use concrete_commons::parameters::{GlweDimension, LweDimension, MonomialDegree, PolynomialSize};
+use concrete_commons::parameters::{GlweDimension, LweDimension, MonomialIndex, PolynomialSize};
 use concrete_core::specification::engines::LweCiphertextDiscardingExtractionEngine;
 use criterion::{black_box, BenchmarkId, Criterion};
 
@@ -12,7 +12,8 @@ pub fn bench<Engine, GlweCiphertext, LweCiphertext>(c: &mut Criterion)
 where
     Engine: LweCiphertextDiscardingExtractionEngine<GlweCiphertext, LweCiphertext>,
     GlweCiphertext: SynthesizableGlweCiphertextEntity,
-    LweCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = GlweCiphertext::KeyFlavor>,
+    LweCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = GlweCiphertext::KeyDistribution>,
 {
     let mut group = c.benchmark_group(
         benchmark_name!(impl LweCiphertextDiscardingExtractionEngine<
@@ -40,7 +41,7 @@ where
                         .discard_extract_lwe_ciphertext(
                             black_box(&mut lwe_ciphertext),
                             black_box(&glwe_ciphertext),
-                            black_box(MonomialDegree(0)),
+                            black_box(MonomialIndex(0)),
                         )
                         .unwrap();
                 });

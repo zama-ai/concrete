@@ -1,20 +1,23 @@
-use crate::specification::entities::markers::{KeyFlavorMarker, LweKeyswitchKeyKind};
+use crate::specification::entities::markers::{KeyDistributionMarker, LweKeyswitchKeyKind};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweDimension};
 
 /// A trait implemented by types embodying an LWE keyswitch key.
 ///
-/// An LWE keyswitch key is associated with two [`KeyFlavorMarker`] types:
+/// An LWE keyswitch key is associated with two [`KeyDistributionMarker`] types:
 ///
-/// + The [`InputKeyFlavor`](`LweKeyswitchKeyEntity::InputKeyFlavor`) type conveys the flavor of the
-/// input secret key. + The [`OutputKeyFlavor`](`LweKeyswitchKeyEntity::OutputKeyFlavor`) type
-/// conveys the flavor of the output secret key.
+/// + The [`InputKeyDistribution`](`LweKeyswitchKeyEntity::InputKeyDistribution`) type conveys the
+/// distribution of the input secret key.
+/// + The [`OutputKeyDistribution`](`LweKeyswitchKeyEntity::OutputKeyDistribution`) type conveys the
+/// distribution of the output secret key.
+///
+/// # Formal Definition
 pub trait LweKeyswitchKeyEntity: AbstractEntity<Kind = LweKeyswitchKeyKind> {
-    /// The flavor of key the input ciphertext is encrypted with.
-    type InputKeyFlavor: KeyFlavorMarker;
+    /// The distribution of the key the input ciphertext is encrypted with.
+    type InputKeyDistribution: KeyDistributionMarker;
 
-    /// The flavor of the key the output ciphertext is encrypted with.
-    type OutputKeyFlavor: KeyFlavorMarker;
+    /// The distribution of the key the output ciphertext is encrypted with.
+    type OutputKeyDistribution: KeyDistributionMarker;
 
     /// Returns the input LWE dimension of the key.
     fn input_lwe_dimension(&self) -> LweDimension;

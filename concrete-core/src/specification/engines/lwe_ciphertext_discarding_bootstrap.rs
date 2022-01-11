@@ -18,9 +18,9 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// bootstrap of the `input` LWE ciphertext, using the `acc` accumulator as lookup-table, and the
-/// `bsk` bootstrap key.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the bootstrap of the `input` LWE ciphertext, using the `acc` accumulator as lookup-table, and
+/// the `bsk` bootstrap key.
 ///
 /// # Formal Definition
 pub trait LweCiphertextDiscardingBootstrapEngine<
@@ -30,9 +30,9 @@ pub trait LweCiphertextDiscardingBootstrapEngine<
     OutputCiphertext,
 >: AbstractEngine where
     BootstrapKey: LweBootstrapKeyEntity,
-    Accumulator: GlweCiphertextEntity<KeyFlavor = BootstrapKey::OutputKeyFlavor>,
-    InputCiphertext: LweCiphertextEntity<KeyFlavor = BootstrapKey::InputKeyFlavor>,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = BootstrapKey::OutputKeyFlavor>,
+    Accumulator: GlweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+    InputCiphertext: LweCiphertextEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
 {
     /// Bootstrap an LWE ciphertext .
     fn discard_bootstrap_lwe_ciphertext(

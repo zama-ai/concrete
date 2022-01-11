@@ -27,8 +27,8 @@ where
     InputSecretKey: LweSecretKeyEntity,
     OutputSecretKey: LweSecretKeyEntity,
     KeyswitchKey: LweKeyswitchKeyEntity<
-        InputKeyFlavor = InputSecretKey::KeyFlavor,
-        OutputKeyFlavor = OutputSecretKey::KeyFlavor,
+        InputKeyDistribution = InputSecretKey::KeyDistribution,
+        OutputKeyDistribution = OutputSecretKey::KeyDistribution,
     >,
 {
     /// Creates an LWE keyswitch key.

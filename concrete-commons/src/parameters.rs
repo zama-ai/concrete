@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use serde::{Deserialize, Serialize};
 
 /// The number plaintexts in a plaintext list.
@@ -64,7 +65,7 @@ impl LweDimension {
 
 /// The number of polynomials in a GLWE ciphertext, i.e. the number of polynomials in a GLWE mask
 /// plus one.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Serialize, Deserialize)]
 pub struct GlweSize(pub usize);
 
 impl GlweSize {
@@ -87,7 +88,7 @@ impl GlweDimension {
 /// The number of coefficients of a polynomial.
 ///
 /// Assuming a polynomial $a_0 + a_1X + /dots + a_nX^N$, this returns $N+1$.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct PolynomialSize(pub usize);
 
 /// The number of polynomials in a polynomial list.
@@ -100,7 +101,12 @@ pub struct PolynomialCount(pub usize);
 ///
 /// Assuming a monomial $aX^N$, this returns the $N$ value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[deprecated(note = "MonomialDegree is not used anymore in the API. You should not use it.")]
 pub struct MonomialDegree(pub usize);
+
+/// The index of a monomial in a polynomial.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MonomialIndex(pub usize);
 
 /// The logarithm of the base used in a decomposition.
 ///

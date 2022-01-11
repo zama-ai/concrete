@@ -12,8 +12,10 @@ pub fn bench<Engine, KeyswitchKey, InputCiphertext, OutputCiphertext>(c: &mut Cr
 where
     Engine: LweCiphertextDiscardingKeyswitchEngine<KeyswitchKey, InputCiphertext, OutputCiphertext>,
     KeyswitchKey: SynthesizableLweKeyswitchKeyEntity,
-    InputCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = KeyswitchKey::InputKeyFlavor>,
-    OutputCiphertext: SynthesizableLweCiphertextEntity<KeyFlavor = KeyswitchKey::OutputKeyFlavor>,
+    InputCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = KeyswitchKey::InputKeyDistribution>,
+    OutputCiphertext:
+        SynthesizableLweCiphertextEntity<KeyDistribution = KeyswitchKey::OutputKeyDistribution>,
 {
     let mut group = c.benchmark_group(benchmark_name!(impl LweCiphertextDiscardingKeyswitchEngine<
             KeyswitchKey, 

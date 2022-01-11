@@ -16,15 +16,15 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` plaintext vector with the
-/// decryption of the `input` GLWE ciphertext, under the `key` secret key.
+/// This [discarding](super#operation-semantics) operation fills the `output` plaintext vector with
+/// the decryption of the `input` GLWE ciphertext, under the `key` secret key.
 ///
 /// # Formal Definition
 pub trait GlweCiphertextDiscardingDecryptionEngine<SecretKey, Ciphertext, PlaintextVector>:
     AbstractEngine
 where
     SecretKey: GlweSecretKeyEntity,
-    Ciphertext: GlweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: GlweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
     PlaintextVector: PlaintextVectorEntity,
 {
     /// Decrypts a GLWE ciphertext .

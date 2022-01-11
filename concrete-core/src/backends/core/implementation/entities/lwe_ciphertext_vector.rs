@@ -1,5 +1,5 @@
 use super::super::super::private::crypto::lwe::LweList as ImplLweList;
-use crate::specification::entities::markers::{BinaryKeyFlavor, LweCiphertextVectorKind};
+use crate::specification::entities::markers::{BinaryKeyDistribution, LweCiphertextVectorKind};
 use crate::specification::entities::{AbstractEntity, LweCiphertextVectorEntity};
 use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
 
@@ -10,7 +10,7 @@ impl AbstractEntity for LweCiphertextVector32 {
     type Kind = LweCiphertextVectorKind;
 }
 impl LweCiphertextVectorEntity for LweCiphertextVector32 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn lwe_dimension(&self) -> LweDimension {
         self.0.lwe_size().to_lwe_dimension()
@@ -28,7 +28,7 @@ impl AbstractEntity for LweCiphertextVector64 {
     type Kind = LweCiphertextVectorKind;
 }
 impl LweCiphertextVectorEntity for LweCiphertextVector64 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn lwe_dimension(&self) -> LweDimension {
         self.0.lwe_size().to_lwe_dimension()

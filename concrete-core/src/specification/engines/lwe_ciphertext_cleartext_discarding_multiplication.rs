@@ -11,8 +11,8 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// multiplication of the `input_1` LWE ciphertext with the `input_2` cleartext.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the multiplication of the `input_1` LWE ciphertext with the `input_2` cleartext.
 ///
 /// # Formal Definition
 pub trait LweCiphertextCleartextDiscardingMultiplicationEngine<
@@ -22,7 +22,7 @@ pub trait LweCiphertextCleartextDiscardingMultiplicationEngine<
 >: AbstractEngine where
     Cleartext: CleartextEntity,
     InputCiphertext: LweCiphertextEntity,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
     /// Multiply an LWE ciphertext with a cleartext.
     fn discard_mul_lwe_ciphertext_cleartext(
@@ -36,8 +36,8 @@ pub trait LweCiphertextCleartextDiscardingMultiplicationEngine<
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`LweCiphertextCleartextDiscardingMultiplicationError`]. For safety concerns _specific_ to
-    /// an engine, refer to the implementer safety section.
+    /// of [`LweCiphertextCleartextDiscardingMultiplicationError`]. For safety concerns _specific_
+    /// to an engine, refer to the implementer safety section.
     unsafe fn discard_mul_lwe_ciphertext_cleartext_unchecked(
         &mut self,
         output: &mut OutputCiphertext,

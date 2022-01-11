@@ -19,7 +19,7 @@ engine_error! {
 pub trait LweCiphertextZeroEncryptionEngine<SecretKey, Ciphertext>: AbstractEngine
 where
     SecretKey: LweSecretKeyEntity,
-    Ciphertext: LweCiphertextEntity<KeyFlavor = SecretKey::KeyFlavor>,
+    Ciphertext: LweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
 {
     /// Encrypts zero into an LWE ciphertext.
     fn zero_encrypt_lwe_ciphertext(

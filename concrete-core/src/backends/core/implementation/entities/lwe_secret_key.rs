@@ -1,5 +1,5 @@
 use crate::backends::core::private::crypto::secret::LweSecretKey as ImpLweSecretKey;
-use crate::specification::entities::markers::{BinaryKeyFlavor, LweSecretKeyKind};
+use crate::specification::entities::markers::{BinaryKeyDistribution, LweSecretKeyKind};
 use crate::specification::entities::{AbstractEntity, LweSecretKeyEntity};
 use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_commons::parameters::LweDimension;
@@ -11,7 +11,7 @@ impl AbstractEntity for LweSecretKey32 {
     type Kind = LweSecretKeyKind;
 }
 impl LweSecretKeyEntity for LweSecretKey32 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn lwe_dimension(&self) -> LweDimension {
         self.0.key_size()
@@ -25,7 +25,7 @@ impl AbstractEntity for LweSecretKey64 {
     type Kind = LweSecretKeyKind;
 }
 impl LweSecretKeyEntity for LweSecretKey64 {
-    type KeyFlavor = BinaryKeyFlavor;
+    type KeyDistribution = BinaryKeyDistribution;
 
     fn lwe_dimension(&self) -> LweDimension {
         self.0.key_size()

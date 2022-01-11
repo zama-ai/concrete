@@ -32,8 +32,8 @@ where
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`PlaintextVectorDiscardingConversionError`]. For safety concerns _specific_ to an engine,
-    /// refer to the implementer safety section.
+    /// of [`PlaintextVectorDiscardingConversionError`]. For safety concerns _specific_ to an
+    /// engine, refer to the implementer safety section.
     unsafe fn discard_convert_plaintext_vector_unchecked(
         &mut self,
         output: &mut Output,

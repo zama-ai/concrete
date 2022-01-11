@@ -24,8 +24,8 @@ pub trait LweBootstrapKeyDiscardingConversionEngine<Input, Output>: AbstractEngi
 where
     Input: LweBootstrapKeyEntity,
     Output: LweBootstrapKeyEntity<
-        InputKeyFlavor = Input::InputKeyFlavor,
-        OutputKeyFlavor = Input::OutputKeyFlavor,
+        InputKeyDistribution = Input::InputKeyDistribution,
+        OutputKeyDistribution = Input::OutputKeyDistribution,
     >,
 {
     /// Converts a LWE bootstrap key .
@@ -39,8 +39,8 @@ where
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`LweBootstrapKeyDiscardingConversionError`]. For safety concerns _specific_ to an engine,
-    /// refer to the implementer safety section.
+    /// of [`LweBootstrapKeyDiscardingConversionError`]. For safety concerns _specific_ to an
+    /// engine, refer to the implementer safety section.
     unsafe fn discard_convert_lwe_bootstrap_key_unchecked(
         &mut self,
         output: &mut Output,

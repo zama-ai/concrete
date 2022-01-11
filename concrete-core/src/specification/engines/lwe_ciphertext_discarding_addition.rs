@@ -11,15 +11,15 @@ engine_error! {
 ///
 /// # Semantics
 ///
-/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with the
-/// addition of the `input_1` LWE ciphertext and the `input_2` LWE ciphertext.
+/// This [discarding](super#operation-semantics) operation fills the `output` LWE ciphertext with
+/// the addition of the `input_1` LWE ciphertext and the `input_2` LWE ciphertext.
 ///
 /// # Formal Definition
 pub trait LweCiphertextDiscardingAdditionEngine<InputCiphertext, OutputCiphertext>:
     AbstractEngine
 where
     InputCiphertext: LweCiphertextEntity,
-    OutputCiphertext: LweCiphertextEntity<KeyFlavor = InputCiphertext::KeyFlavor>,
+    OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
     /// Adds two LWE ciphertexts.
     fn discard_add_lwe_ciphertext(

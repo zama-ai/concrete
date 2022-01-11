@@ -294,7 +294,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBo
             noise,
             &mut self.encryption_generator,
         );
-        let mut fourier_key = ImplFourierBootstrapKey::allocate(
+        let fourier_key = ImplFourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             output_key.0.key_size().to_glwe_size(),
             output_key.0.polynomial_size(),
@@ -302,8 +302,11 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBo
             decomposition_base_log,
             input_key.0.key_size(),
         );
-        fourier_key.fill_with_forward_fourier(&key);
-        FourierLweBootstrapKey32(fourier_key)
+
+        let mut fourier_key = FourierLweBootstrapKey32(fourier_key);
+        let buffers = self.get_fourier_bootstrap_u32_buffer(&fourier_key);
+        fourier_key.0.fill_with_forward_fourier(&key, buffers);
+        fourier_key
     }
 }
 
@@ -398,7 +401,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, FourierLweBo
             noise,
             &mut self.encryption_generator,
         );
-        let mut fourier_key = ImplFourierBootstrapKey::allocate(
+        let fourier_key = ImplFourierBootstrapKey::allocate(
             Complex64::new(0., 0.),
             output_key.0.key_size().to_glwe_size(),
             output_key.0.polynomial_size(),
@@ -406,7 +409,10 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, FourierLweBo
             decomposition_base_log,
             input_key.0.key_size(),
         );
-        fourier_key.fill_with_forward_fourier(&key);
-        FourierLweBootstrapKey64(fourier_key)
+
+        let mut fourier_key = FourierLweBootstrapKey64(fourier_key);
+        let buffers = self.get_fourier_bootstrap_u64_buffer(&fourier_key);
+        fourier_key.0.fill_with_forward_fourier(&key, buffers);
+        fourier_key
     }
 }
