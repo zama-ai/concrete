@@ -1,5 +1,5 @@
  Name               Version   License
- Pillow             8.4.0     Historical Permission Notice and Disclaimer (HPND)
+ Pillow             9.0.0     Historical Permission Notice and Disclaimer (HPND)
  PyYAML             6.0       MIT License
  concrete-compiler  0.1.1     BSD-3
  cycler             0.11.0    BSD License
