@@ -147,6 +147,7 @@ jobs:
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           brew install ninja
           pip3 install numpy pybind11==2.6.2 wheel delocate
+          pip3 install pytest
           cd ${{ github.workspace }}/concrete/concrete-ffi
           RUSTFLAGS="-C target-cpu=native" cargo build --release
 
