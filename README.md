@@ -46,24 +46,20 @@ You can find more detailed installation instructions in [installing.md](docs/use
 
 ```python
 import concrete.numpy as hnp
-def f(x, y):
+
+def add(x, y):
     return x + y
 
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
+compiler = hnp.NPFHECompiler(add, {"x": "encrypted", "y": "encrypted"})
 
-compiler = hnp.NPFHECompiler(
-    f, {"x": "encrypted", "y": "encrypted"},
-)
+print(f"Compiling...")
 circuit = compiler.compile_on_inputset(inputset)
 
-print(circuit.run(3, 4))
-# 7
-print(circuit.run(1, 2))
-# 3
-print(circuit.run(7, 7))
-# 14
-print(circuit.run(0, 0))
-# 0
+examples = [(3, 4), (1, 2), (7, 7), (0, 0)]
+for example in examples:
+    result = circuit.run(*example)
+    print(f"Evaluation of {' + '.join(map(str, example))} homomorphically = {result}")
 ```
 
 # For developers
