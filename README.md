@@ -52,17 +52,17 @@ def f(x, y):
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
 
 compiler = hnp.NPFHECompiler(
-    f, {"x": x, "y": y},
+    f, {"x": "encrypted", "y": "encrypted"},
 )
 circuit = compiler.compile_on_inputset(inputset)
 
-circuit.run(3, 4)
+print(circuit.run(3, 4))
 # 7
-circuit.run(1, 2)
+print(circuit.run(1, 2))
 # 3
-circuit.run(7, 7)
+print(circuit.run(7, 7))
 # 14
-circuit.run(0, 0)
+print(circuit.run(0, 0))
 # 0
 ```
 
