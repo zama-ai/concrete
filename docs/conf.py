@@ -30,7 +30,7 @@ root_url = os.environ.get("DOC_ROOT_URL", "/concrete-compiler")
 root_url = root_url if root_url.endswith('/') else root_url + '/'
 
 # The full version, including alpha/beta/rc tags
-release = 'v0.1.0-alpha'
+release = 'v0.1.1'
 
 
 # -- General configuration ---------------------------------------------------
