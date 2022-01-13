@@ -107,7 +107,7 @@ jobs:
       - name: Start EC2 runner python 38
         id: start-ec2-runner-38
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-38-linux-runner) }}
-        uses: machulav/ec2-github-runner@502fc5cc476bcf6771c5ab7863d706715d124202
+        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
