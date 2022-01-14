@@ -773,6 +773,7 @@ jobs:
           cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
           {
             echo "Docker Image: ${RELEASE_IMG_GIT_TAG}";
+            echo "pip: https://pypi.org/project/concrete-numpy/${PROJECT_VERSION}";
             echo "Documentation: https://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/${PROJECT_VERSION}";
             echo "";
           } >> "${RELEASE_BODY_FILE}"
