@@ -11,7 +11,7 @@ on:
 # DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-  DOCKER_IMAGE_TEST_GCC6: ghcr.io/zama-ai/concrete-compiler-gcc6
+  DOCKER_IMAGE_TEST_GCC7: ghcr.io/zama-ai/concrete-compiler-gcc7
   DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/concrete-compiler-df
 
 jobs:
@@ -39,14 +39,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [gcc6, latest]
+        compiler: [gcc7, latest]
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
 
       - name: "KeySetCache"
-        if: ${{ matrix.compiler == 'gcc6' }}
+        if: ${{ matrix.compiler == 'gcc7' }}
         uses: actions/cache@v2
         with:
           path: ${{ github.workspace }}/KeySetCache
@@ -56,12 +56,12 @@ jobs:
             ${{ runner.os }}-KeySetCache-
 
       - name: Build and test compiler
-        if: ${{ matrix.compiler == 'gcc6' }}
+        if: ${{ matrix.compiler == 'gcc7' }}
         id: build-compiler
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST_GCC6 }}
+          image: ${{ env.DOCKER_IMAGE_TEST_GCC7 }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
@@ -73,7 +73,7 @@ jobs:
             cd /compiler
             /opt/python/cp38-cp38/bin/pip install pytest
             sed "s/pytest/\/opt\/python\/cp38-cp38\/bin\/python -m pytest/g" -i Makefile
-            make CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test doc
+            make CXX_COMPILER=/usr/local/bin/g++-7.5.0 CC_COMPILER=/usr/local/bin/gcc-7.5.0 CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test doc
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache
@@ -105,7 +105,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST_GCC6 }}
+          image: ${{ env.DOCKER_IMAGE_TEST_GCC7 }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/docs:/docs -v ${{ github.workspace }}/build:/compiler/build
@@ -515,9 +515,9 @@ jobs:
           - name: test-env
             image: ghcr.io/zama-ai/concrete-compiler
             dockerfile: builders/Dockerfile.concrete-compiler-env
-          - name: test-env-gcc6
-            image: ghcr.io/zama-ai/concrete-compiler-gcc6
-            dockerfile: builders/Dockerfile.concrete-compiler-gcc6-env
+          - name: test-env-gcc7
+            image: ghcr.io/zama-ai/concrete-compiler-gcc7
+            dockerfile: builders/Dockerfile.concrete-compiler-gcc7-env
           - name: test-df
             image: ghcr.io/zama-ai/concrete-compiler-df
             dockerfile: builders/Dockerfile.concrete-compiler-df-env
