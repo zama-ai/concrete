@@ -1,0 +1,21 @@
+FROM quay.io/pypa/manylinux_2_24_x86_64
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y build-essential
+
+# Build GCC-7.5.0
+RUN curl -L https://mirrorservice.org/sites/sourceware.org/pub/gcc/releases/gcc-7.5.0/gcc-7.5.0.tar.gz --output gcc750.tar.gz && tar xzf gcc750.tar.gz && rm -f gcc750.tar.gz
+ENV GCC750=$PWD/gcc-7.5.0
+RUN curl -L https://mirrorservice.org/sites/sourceware.org/pub/gcc/infrastructure/gmp-6.2.1.tar.bz2 --output gmp.tar.bz2 && tar xjf gmp.tar.bz2
+RUN mv gmp-6.2.1 ${GCC750}/gmp && rm -f gmp.tar.bz2
+RUN curl -L https://mirrorservice.org/sites/sourceware.org/pub/gcc/infrastructure/mpc-1.2.1.tar.gz --output mpc.tar.gz && tar xzf mpc.tar.gz
+RUN mv mpc-1.2.1 ${GCC750}/mpc && rm -f mpc.tar.gz
+RUN curl -L https://mirrorservice.org/sites/sourceware.org/pub/gcc/infrastructure/mpfr-4.1.0.tar.bz2 --output mpfr.tar.bz2 && tar xjf mpfr.tar.bz2
+RUN mv mpfr-4.1.0 ${GCC750}/mpfr && rm -f mpfr.tar.bz2
+RUN curl -L https://mirrorservice.org/sites/sourceware.org/pub/gcc/infrastructure/isl-0.24.tar.bz2 --output isl.tar.bz2 && tar xjf isl.tar.bz2
+RUN mv isl-0.24 ${GCC750}/isl && rm -f isl-0.24.tar.bz2
+RUN mkdir ${GCC750}/build
+RUN cd ${GCC750}/build && ../configure --disable-bootstrap --disable-multilib --program-suffix=-7.5.0 --prefix=/gcc7 && make -j4 && make install
+
+FROM quay.io/pypa/manylinux_2_24_x86_64
+COPY --from=0 /gcc7/ /gcc7/

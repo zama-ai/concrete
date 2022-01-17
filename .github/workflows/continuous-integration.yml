@@ -73,7 +73,7 @@ jobs:
             cd /compiler
             /opt/python/cp38-cp38/bin/pip install pytest
             sed "s/pytest/\/opt\/python\/cp38-cp38\/bin\/python -m pytest/g" -i Makefile
-            make CXX_COMPILER=/usr/local/bin/g++-7.5.0 CC_COMPILER=/usr/local/bin/gcc-7.5.0 CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test doc
+            make CXX_COMPILER=/gcc7/bin/g++-7.5.0 CC_COMPILER=/gcc7/bin/gcc-7.5.0 CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test doc
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache
@@ -547,7 +547,6 @@ jobs:
           docker image push ${{ matrix.image }}:${{ github.ref_name }}
 
   BuildAndPublishHPXDockerImage:
-    needs: [BuildAndTest]
     name: Build & Publish HPX Docker Image
     runs-on: ubuntu-latest
     env:
@@ -570,4 +569,29 @@ jobs:
         if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env')
         run: |
           docker build -t $IMAGE -f builders/Dockerfile.hpx-env .
+          docker push $IMAGE:latest
+
+  BuildAndPublishGCC7DockerImage:
+    name: Build & Publish GCC7 Docker Image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/zama-ai/gcc7
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v2.0.0
+
+      - name: Login
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env')
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
+      - name: Build Tag and Publish
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env')
+        run: |
+          docker build -t $IMAGE -f builders/Dockerfile.gcc7-env .
           docker push $IMAGE:latest
