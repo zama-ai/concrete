@@ -7,6 +7,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Wouldn't be able to compile LLVM without this on Mac (using either Clang or AppleClang)
+if (APPLE)
+  add_definitions("-Wno-narrowing")
+endif()
 
 # If we are trying to build the compiler with LLVM/MLIR as libraries
 if( NOT DEFINED LLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR )
