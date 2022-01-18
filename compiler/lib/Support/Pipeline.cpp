@@ -245,7 +245,7 @@ lowerLLVMDialectToLLVMIR(mlir::MLIRContext &context,
 
 mlir::LogicalResult optimizeLLVMModule(llvm::LLVMContext &llvmContext,
                                        llvm::Module &module) {
-  llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline =
+  std::function<llvm::Error(llvm::Module *)> optPipeline =
       mlir::makeOptimizingTransformer(3, 0, nullptr);
 
   if (optPipeline(&module))
