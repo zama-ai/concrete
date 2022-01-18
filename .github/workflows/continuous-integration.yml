@@ -155,7 +155,7 @@ jobs:
         run: |
           cd compiler
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
-          make CC_COMPILER=/usr/local/bin/gcc-9 CXX_COMPILER=/usr/local/bin/g++-9 test
+          make test
 
   BuildAndTestDF:
     runs-on: ubuntu-latest
@@ -376,7 +376,7 @@ jobs:
         run: |
           cd compiler
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
-          make CC_COMPILER=/usr/local/bin/gcc-9 CXX_COMPILER=/usr/local/bin/g++-9 Python3_EXECUTABLE=`which python` python-bindings
+          make Python3_EXECUTABLE=`which python` python-bindings
           pip wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
           echo "::set-output name=ASSET_NAME::`find ${{ github.workspace }}/wheels/ -name *macosx*.whl | rev |cut -d "/" -f 1 |rev `"
