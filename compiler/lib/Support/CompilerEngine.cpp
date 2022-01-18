@@ -408,11 +408,16 @@ const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
 const std::string CompilerEngine::Library::CLIENT_PARAMETERS_EXT =
     ".concrete.params.json";
 const std::string CompilerEngine::Library::LINKER = "ld";
+#ifdef __APPLE__
+const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " -dylib -o ";
+const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".dylib";
+#else // Linux
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";
+const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".so";
+#endif
 const std::string CompilerEngine::Library::AR = "ar";
 const std::string CompilerEngine::Library::AR_STATIC_OPT = " rcs ";
 const std::string CompilerEngine::Library::DOT_STATIC_LIB_EXT = ".a";
-const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".so";
 
 void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
   objectsPath.push_back(path);

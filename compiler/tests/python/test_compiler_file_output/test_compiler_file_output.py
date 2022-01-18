@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 import pytest
 
@@ -17,7 +18,8 @@ SOURCE_C_2 = f'{TEST_PATH}/main_return_0.c'
 OUTPUT = f'{TEST_PATH}/output.mlir'
 LIB = f'{TEST_PATH}/outlib'
 LIB_STATIC = LIB + '.a'
-LIB_DYNAMIC = LIB + '.so'
+DYNAMIC_LIB_EXT = '.dylib' if sys.platform == 'darwin' else '.so'
+LIB_DYNAMIC = LIB + DYNAMIC_LIB_EXT
 LIBS = (LIB_STATIC, LIB_DYNAMIC)
 
 assert_exists(SOURCE_1, SOURCE_2, SOURCE_C_1, SOURCE_C_2)
