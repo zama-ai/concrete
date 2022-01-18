@@ -1,4 +1,4 @@
-// #![deny(rustdoc::broken_intra_doc_links)]
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Welcome to the `concrete-core` documentation!
 //!
 //! This library contains a set of low-level primitives which can be used to implement *Fully

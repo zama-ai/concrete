@@ -44,8 +44,8 @@ pub trait LweCiphertextVectorDiscardingAffineTransformationEngine<
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`LweCiphertextDiscardingAffineTransformationError`]. For safety concerns _specific_ to
-    /// an engine, refer to the implementer safety section.
+    /// of [`LweCiphertextVectorDiscardingAffineTransformationError`]. For safety concerns
+    /// _specific_ to an engine, refer to the implementer safety section.
     unsafe fn discard_affine_transform_lwe_ciphertext_vector_unchecked(
         &mut self,
         output: &mut OutputCiphertext,
