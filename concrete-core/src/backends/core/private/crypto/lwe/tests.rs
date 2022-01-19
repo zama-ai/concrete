@@ -200,8 +200,7 @@ where
         random_generator.fill_tensor_with_random_uniform(&mut messages);
 
         // generate trivial encryptions for the witness
-        let mut witness = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);
-        sk.trivial_encrypt_lwe_list(&mut witness, &messages, std, &mut encryption_generator);
+        let witness = LweList::new_trivial_encryption(dimension.to_lwe_size(), &messages);
 
         // generate ciphertexts with the secret key
         let mut ciphertext = LweList::allocate(T::ZERO, dimension.to_lwe_size(), nb_ct);

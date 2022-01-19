@@ -43,6 +43,53 @@ where
     }
 }
 
+impl<Scalar> LweCiphertext<Vec<Scalar>>
+where
+    Scalar: Numeric,
+{
+    /// Creates a new ciphertext containing the trivial encryption of the plain text
+    ///
+    /// `Trivial` means tha the LWE mask consists of zeros only.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{LweDimension, LweSize};
+    /// use concrete_core::backends::core::private::crypto::encoding::*;
+    /// use concrete_core::backends::core::private::crypto::lwe::*;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::secret::*;
+    /// use concrete_core::backends::core::private::crypto::*;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+    ///
+    /// let encoder = RealEncoder {
+    ///     offset: 0. as f32,
+    ///     delta: 10.,
+    /// };
+    /// let clear = Cleartext(2. as f32);
+    /// let plain: Plaintext<u32> = encoder.encode(clear);
+    ///
+    /// let mut encrypted =
+    ///     LweCiphertext::new_trivial_encryption(secret_key.key_size().to_lwe_size(), &plain);
+    ///
+    /// let mut decrypted = Plaintext(0u32);
+    /// secret_key.decrypt_lwe(&mut decrypted, &encrypted);
+    /// let decoded = encoder.decode(decrypted);
+    ///
+    /// assert!((decoded.0 - clear.0).abs() < 0.1);
+    /// ```
+    pub fn new_trivial_encryption(lwe_size: LweSize, plaintext: &Plaintext<Scalar>) -> Self {
+        let mut ciphertext = Self::allocate(Scalar::ZERO, lwe_size);
+        ciphertext.fill_with_trivial_encryption(plaintext);
+        ciphertext
+    }
+}
+
 impl<Cont> LweCiphertext<Cont> {
     /// Creates a ciphertext from a container of values.
     ///
@@ -599,6 +646,23 @@ impl<Cont> LweCiphertext<Cont> {
         Element: UnsignedTorus,
     {
         glwe.fill_lwe_with_sample_extraction(self, n_th);
+    }
+
+    pub fn fill_with_trivial_encryption<Scalar>(&mut self, plaintext: &Plaintext<Scalar>)
+    where
+        Scalar: Numeric,
+        Self: AsMutTensor<Element = Scalar>,
+    {
+        let (output_body, mut output_mask) = self.get_mut_body_and_mask();
+
+        // generate a uniformly random mask
+        output_mask.as_mut_tensor().fill_with_element(Scalar::ZERO);
+
+        // No need to do the multisum between the secret key and the mask
+        // as the mask only contains zeros
+
+        // add the encoded message
+        output_body.0 = plaintext.0;
     }
 }
 

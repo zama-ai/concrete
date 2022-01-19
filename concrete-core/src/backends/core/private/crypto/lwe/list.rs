@@ -43,6 +43,76 @@ where
     }
 }
 
+impl<Scalar> LweList<Vec<Scalar>>
+where
+    Scalar: UnsignedTorus,
+{
+    /// Creates a new ciphertext containing the trivial encryption of the plain text
+    ///
+    /// `Trivial` means that the LWE masks consist of zeros only.
+    ///
+    /// # Example
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     CiphertextCount, CleartextCount, LweDimension, LweSize, PlaintextCount,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::encoding::*;
+    /// use concrete_core::backends::core::private::crypto::lwe::*;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::secret::*;
+    /// use concrete_core::backends::core::private::crypto::*;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+    ///
+    /// let clear_values = CleartextList::allocate(2. as f32, CleartextCount(100));
+    /// let mut plain_values = PlaintextList::allocate(0u32, PlaintextCount(100));
+    /// let encoder = RealEncoder {
+    ///     offset: 0. as f32,
+    ///     delta: 10.,
+    /// };
+    ///
+    /// encoder.encode_list(&mut plain_values, &clear_values);
+    /// let mut encrypted_values =
+    ///     LweList::new_trivial_encryption(secret_key.key_size().to_lwe_size(), &plain_values);
+    ///
+    /// for ciphertext in encrypted_values.ciphertext_iter() {
+    ///     for mask in ciphertext.get_mask().mask_element_iter() {
+    ///         assert_eq!(*mask, 0);
+    ///     }
+    /// }
+    ///
+    /// let mut decrypted_values = PlaintextList::allocate(0u32, PlaintextCount(100));
+    /// secret_key.decrypt_lwe_list(&mut decrypted_values, &encrypted_values);
+    /// let mut decoded_values = CleartextList::allocate(0. as f32, CleartextCount(100));
+    /// encoder.decode_list(&mut decoded_values, &decrypted_values);
+    /// for (clear, decoded) in clear_values
+    ///     .cleartext_iter()
+    ///     .zip(decoded_values.cleartext_iter())
+    /// {
+    ///     assert!((clear.0 - decoded.0).abs() < 0.1);
+    /// }
+    /// ```
+    pub fn new_trivial_encryption<PlaintextContainer>(
+        lwe_size: LweSize,
+        plaintexts: &PlaintextList<PlaintextContainer>,
+    ) -> Self
+    where
+        PlaintextList<PlaintextContainer>: AsRefTensor<Element = Scalar>,
+    {
+        let mut ciphertexts = Self::allocate(
+            Scalar::ZERO,
+            lwe_size,
+            CiphertextCount(plaintexts.count().0),
+        );
+        ciphertexts.fill_with_trivial_encryption(plaintexts);
+        ciphertexts
+    }
+}
+
 impl<Cont> LweList<Cont> {
     /// Creates a list from a container and a lwe size.
     ///
@@ -346,6 +416,23 @@ impl<Cont> LweList<Cont> {
             biases_list.plaintext_iter()
         ) {
             output.fill_with_multisum_with_bias(&input, &weights, bias);
+        }
+    }
+
+    pub fn fill_with_trivial_encryption<InputCont, Scalar>(
+        &mut self,
+        encoded: &PlaintextList<InputCont>,
+    ) where
+        Self: AsMutTensor<Element = Scalar>,
+        PlaintextList<InputCont>: AsRefTensor<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        debug_assert!(
+            self.count().0 == encoded.count().0,
+            "Lwe cipher list size and encoded list size are not compatible"
+        );
+        for (mut cipher, plaintext) in self.ciphertext_iter_mut().zip(encoded.plaintext_iter()) {
+            cipher.fill_with_trivial_encryption(plaintext);
         }
     }
 }
