@@ -4,7 +4,6 @@ use crate::backends::core::private::math::tensor::{AsMutTensor, AsRefTensor};
 use crate::specification::engines::{
     LweCiphertextDiscardingNegationEngine, LweCiphertextDiscardingNegationError,
 };
-use crate::specification::entities::LweCiphertextEntity;
 
 /// # Description:
 /// Implementation of [`LweCiphertextDiscardingNegationEngine`] for [`CoreEngine`] that operates on
@@ -47,9 +46,7 @@ impl LweCiphertextDiscardingNegationEngine<LweCiphertext32, LweCiphertext32> for
         output: &mut LweCiphertext32,
         input: &LweCiphertext32,
     ) -> Result<(), LweCiphertextDiscardingNegationError<Self::EngineError>> {
-        if output.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextDiscardingNegationError::LweDimensionMismatch);
-        }
+        LweCiphertextDiscardingNegationError::perform_generic_checks(output, input)?;
         unsafe { self.discard_neg_lwe_ciphertext_unchecked(output, input) };
         Ok(())
     }
@@ -105,9 +102,7 @@ impl LweCiphertextDiscardingNegationEngine<LweCiphertext64, LweCiphertext64> for
         output: &mut LweCiphertext64,
         input: &LweCiphertext64,
     ) -> Result<(), LweCiphertextDiscardingNegationError<Self::EngineError>> {
-        if output.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextDiscardingNegationError::LweDimensionMismatch);
-        }
+        LweCiphertextDiscardingNegationError::perform_generic_checks(output, input)?;
         unsafe { self.discard_neg_lwe_ciphertext_unchecked(output, input) };
         Ok(())
     }

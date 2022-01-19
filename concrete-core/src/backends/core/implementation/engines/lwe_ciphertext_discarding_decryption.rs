@@ -5,7 +5,6 @@ use crate::backends::core::implementation::entities::{
 use crate::specification::engines::{
     LweCiphertextDiscardingDecryptionEngine, LweCiphertextDiscardingDecryptionError,
 };
-use crate::specification::entities::{LweCiphertextEntity, LweSecretKeyEntity};
 
 /// # Description:
 /// Implementation of [`LweCiphertextDiscardingDecryptionEngine`] for [`CoreEngine`] that operates
@@ -49,9 +48,7 @@ impl LweCiphertextDiscardingDecryptionEngine<LweSecretKey32, LweCiphertext32, Pl
         output: &mut Plaintext32,
         input: &LweCiphertext32,
     ) -> Result<(), LweCiphertextDiscardingDecryptionError<Self::EngineError>> {
-        if key.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextDiscardingDecryptionError::LweDimensionMismatch);
-        }
+        LweCiphertextDiscardingDecryptionError::perform_generic_checks(key, input)?;
         unsafe { self.discard_decrypt_lwe_ciphertext_unchecked(key, output, input) };
         Ok(())
     }
@@ -108,9 +105,7 @@ impl LweCiphertextDiscardingDecryptionEngine<LweSecretKey64, LweCiphertext64, Pl
         output: &mut Plaintext64,
         input: &LweCiphertext64,
     ) -> Result<(), LweCiphertextDiscardingDecryptionError<Self::EngineError>> {
-        if key.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextDiscardingDecryptionError::LweDimensionMismatch);
-        }
+        LweCiphertextDiscardingDecryptionError::perform_generic_checks(key, input)?;
         unsafe { self.discard_decrypt_lwe_ciphertext_unchecked(key, output, input) };
         Ok(())
     }

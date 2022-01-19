@@ -4,7 +4,6 @@ use crate::backends::core::private::math::tensor::AsRefTensor;
 use crate::specification::engines::{
     CleartextVectorDiscardingRetrievalEngine, CleartextVectorDiscardingRetrievalError,
 };
-use crate::specification::entities::CleartextVectorEntity;
 
 /// # Description:
 /// Implementation of [`CleartextVectorDiscardingRetrievalEngine`] for [`CoreEngine`] that operates
@@ -35,9 +34,7 @@ impl CleartextVectorDiscardingRetrievalEngine<CleartextVector32, u32> for CoreEn
         output: &mut [u32],
         input: &CleartextVector32,
     ) -> Result<(), CleartextVectorDiscardingRetrievalError<Self::EngineError>> {
-        if output.len() != input.cleartext_count().0 {
-            return Err(CleartextVectorDiscardingRetrievalError::CleartextCountMismatch);
-        }
+        CleartextVectorDiscardingRetrievalError::perform_generic_checks(output, input)?;
         unsafe { self.discard_retrieve_cleartext_vector_unchecked(output, input) };
         Ok(())
     }
@@ -80,9 +77,7 @@ impl CleartextVectorDiscardingRetrievalEngine<CleartextVector64, u64> for CoreEn
         output: &mut [u64],
         input: &CleartextVector64,
     ) -> Result<(), CleartextVectorDiscardingRetrievalError<Self::EngineError>> {
-        if output.len() != input.cleartext_count().0 {
-            return Err(CleartextVectorDiscardingRetrievalError::CleartextCountMismatch);
-        }
+        CleartextVectorDiscardingRetrievalError::perform_generic_checks(output, input)?;
         unsafe { self.discard_retrieve_cleartext_vector_unchecked(output, input) };
         Ok(())
     }

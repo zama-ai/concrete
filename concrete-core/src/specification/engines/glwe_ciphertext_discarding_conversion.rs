@@ -8,6 +8,25 @@ engine_error! {
     PolynomialSizeMismatch => "The input and output polynomial size must be the same."
 }
 
+impl<EngineError: std::error::Error> GlweCiphertextDiscardingConversionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Input, Output>(output: &Output, input: &Input) -> Result<(), Self>
+    where
+        Input: GlweCiphertextEntity,
+        Output: GlweCiphertextEntity<KeyDistribution = Input::KeyDistribution>,
+    {
+        if input.glwe_dimension() != output.glwe_dimension() {
+            return Err(Self::GlweDimensionMismatch);
+        }
+
+        if input.polynomial_size() != output.polynomial_size() {
+            return Err(Self::PolynomialSizeMismatch);
+        }
+
+        Ok(())
+    }
+}
+
 /// A trait for engines converting (discarding) GLWE ciphertexts .
 ///
 /// # Semantics

@@ -14,6 +14,33 @@ engine_error! {
                                capacity (poly size * length) must be the same."
 }
 
+impl<EngineError: std::error::Error> GlweCiphertextVectorDiscardingDecryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<SecretKey, CiphertextVector, PlaintextVector>(
+        key: &SecretKey,
+        output: &PlaintextVector,
+        input: &CiphertextVector,
+    ) -> Result<(), Self>
+    where
+        SecretKey: GlweSecretKeyEntity,
+        CiphertextVector: GlweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
+        PlaintextVector: PlaintextVectorEntity,
+    {
+        if key.glwe_dimension() != input.glwe_dimension() {
+            return Err(Self::GlweDimensionMismatch);
+        }
+        if key.polynomial_size() != input.polynomial_size() {
+            return Err(Self::PolynomialSizeMismatch);
+        }
+        if output.plaintext_count().0
+            != (input.polynomial_size().0 * input.glwe_ciphertext_count().0)
+        {
+            return Err(Self::PlaintextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines decrypting (discarding) GLWE ciphertext vectors.
 ///
 /// # Semantics

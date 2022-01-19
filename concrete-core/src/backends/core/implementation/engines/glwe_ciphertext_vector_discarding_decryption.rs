@@ -6,9 +6,6 @@ use crate::backends::core::implementation::entities::{
 use crate::specification::engines::{
     GlweCiphertextVectorDiscardingDecryptionEngine, GlweCiphertextVectorDiscardingDecryptionError,
 };
-use crate::specification::entities::{
-    GlweCiphertextVectorEntity, GlweSecretKeyEntity, PlaintextVectorEntity,
-};
 
 /// # Description:
 /// Implementation of [`GlweCiphertextVectorDiscardingDecryptionEngine`] for [`CoreEngine`] that
@@ -62,17 +59,7 @@ impl
         output: &mut PlaintextVector32,
         input: &GlweCiphertextVector32,
     ) -> Result<(), GlweCiphertextVectorDiscardingDecryptionError<Self::EngineError>> {
-        if key.glwe_dimension() != input.glwe_dimension() {
-            return Err(GlweCiphertextVectorDiscardingDecryptionError::GlweDimensionMismatch);
-        }
-        if key.polynomial_size() != input.polynomial_size() {
-            return Err(GlweCiphertextVectorDiscardingDecryptionError::PolynomialSizeMismatch);
-        }
-        if output.plaintext_count().0
-            != (input.polynomial_size().0 * input.glwe_ciphertext_count().0)
-        {
-            return Err(GlweCiphertextVectorDiscardingDecryptionError::PlaintextCountMismatch);
-        }
+        GlweCiphertextVectorDiscardingDecryptionError::perform_generic_checks(key, output, input)?;
         unsafe { self.discard_decrypt_glwe_ciphertext_vector_unchecked(key, output, input) };
         Ok(())
     }
@@ -139,17 +126,7 @@ impl
         output: &mut PlaintextVector64,
         input: &GlweCiphertextVector64,
     ) -> Result<(), GlweCiphertextVectorDiscardingDecryptionError<Self::EngineError>> {
-        if key.glwe_dimension() != input.glwe_dimension() {
-            return Err(GlweCiphertextVectorDiscardingDecryptionError::GlweDimensionMismatch);
-        }
-        if key.polynomial_size() != input.polynomial_size() {
-            return Err(GlweCiphertextVectorDiscardingDecryptionError::PolynomialSizeMismatch);
-        }
-        if output.plaintext_count().0
-            != (input.polynomial_size().0 * input.glwe_ciphertext_count().0)
-        {
-            return Err(GlweCiphertextVectorDiscardingDecryptionError::PlaintextCountMismatch);
-        }
+        GlweCiphertextVectorDiscardingDecryptionError::perform_generic_checks(key, output, input)?;
         unsafe { self.discard_decrypt_glwe_ciphertext_vector_unchecked(key, output, input) };
         Ok(())
     }

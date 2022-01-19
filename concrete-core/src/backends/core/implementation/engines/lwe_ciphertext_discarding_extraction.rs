@@ -8,7 +8,6 @@ use crate::backends::core::implementation::entities::{
 use crate::specification::engines::{
     LweCiphertextDiscardingExtractionEngine, LweCiphertextDiscardingExtractionError,
 };
-use crate::specification::entities::GlweCiphertextEntity;
 
 /// # Description:
 /// Implementation of [`LweCiphertextDiscardingExtractionEngine`] for [`CoreEngine`] that operates
@@ -69,14 +68,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext32, LweCiphertext32> 
         input: &GlweCiphertext32,
         nth: MonomialIndex,
     ) -> Result<(), LweCiphertextDiscardingExtractionError<Self::EngineError>> {
-        if output.0.lwe_size().to_lwe_dimension().0
-            != input.0.polynomial_size().0 * input.0.size().to_glwe_dimension().0
-        {
-            return Err(LweCiphertextDiscardingExtractionError::SizeMismatch);
-        }
-        if nth.0 > input.glwe_dimension().0 - 1 {
-            return Err(LweCiphertextDiscardingExtractionError::MonomialIndexTooLarge);
-        }
+        LweCiphertextDiscardingExtractionError::perform_generic_checks(output, input, nth)?;
         unsafe { self.discard_extract_lwe_ciphertext_unchecked(output, input, nth) };
         Ok(())
     }
@@ -153,14 +145,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext64, LweCiphertext64> 
         input: &GlweCiphertext64,
         nth: MonomialIndex,
     ) -> Result<(), LweCiphertextDiscardingExtractionError<Self::EngineError>> {
-        if output.0.lwe_size().to_lwe_dimension().0
-            != input.0.polynomial_size().0 * input.0.size().to_glwe_dimension().0
-        {
-            return Err(LweCiphertextDiscardingExtractionError::SizeMismatch);
-        }
-        if nth.0 > input.glwe_dimension().0 - 1 {
-            return Err(LweCiphertextDiscardingExtractionError::MonomialIndexTooLarge);
-        }
+        LweCiphertextDiscardingExtractionError::perform_generic_checks(output, input, nth)?;
         unsafe { self.discard_extract_lwe_ciphertext_unchecked(output, input, nth) };
         Ok(())
     }

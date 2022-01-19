@@ -1,13 +1,36 @@
 use super::engine_error;
 use crate::specification::engines::AbstractEngine;
 use crate::specification::entities::{GlweCiphertextEntity, LweCiphertextEntity};
-use concrete_commons::parameters::MonomialIndex;
+use concrete_commons::parameters::{LweDimension, MonomialIndex};
 
 engine_error! {
     LweCiphertextDiscardingExtractionError for LweCiphertextDiscardingExtractionEngine @
     SizeMismatch => "The sizes of the output LWE (LWE dimension) and the input GLWE (GLWE \
                      dimension * poly size) must be compatible.",
     MonomialIndexTooLarge => "The monomial index must be smaller than the GLWE polynomial size."
+}
+
+impl<EngineError: std::error::Error> LweCiphertextDiscardingExtractionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<GlweCiphertext, LweCiphertext>(
+        output: &LweCiphertext,
+        input: &GlweCiphertext,
+        nth: MonomialIndex,
+    ) -> Result<(), Self>
+    where
+        GlweCiphertext: GlweCiphertextEntity,
+        LweCiphertext: LweCiphertextEntity<KeyDistribution = GlweCiphertext::KeyDistribution>,
+    {
+        if output.lwe_dimension()
+            != LweDimension(input.polynomial_size().0 * input.glwe_dimension().0)
+        {
+            return Err(Self::SizeMismatch);
+        }
+        if nth.0 >= input.polynomial_size().0 {
+            return Err(Self::MonomialIndexTooLarge);
+        }
+        Ok(())
+    }
 }
 
 /// A trait for engines extracting (discarding) LWE ciphertext from GLWE ciphertexts.

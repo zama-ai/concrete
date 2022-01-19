@@ -83,16 +83,38 @@ pub trait AbstractEngine: sealed::AbstractEngineSeal {
         Self: Sized;
 }
 
-macro_rules! engine_error{
-    ($name:ident for $trait:ident @ $($variants:ident => $messages:literal),*) =>{
-        #[doc="An error used with the [`"]
-        #[doc=stringify!($trait)]
-        #[doc="`] trait."]
+macro_rules! engine_error {
+    ($name:ident for $trait:ident @) => {
+        #[doc=concat!("An error used with the [`", stringify!($trait), "`] trait.")]
+        #[non_exhaustive]
+        #[derive(Debug, Clone, Eq, PartialEq)]
+        pub enum $name<EngineError: std::error::Error> {
+            #[doc="_Specific_ error to the implementing engine."]
+            Engine(EngineError),
+        }
+        impl<EngineError: std::error::Error> std::fmt::Display for $name<EngineError>{
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                match self {
+                    Self::Engine(error) => write!(f, "Error occurred in the engine: {}", error),
+                }
+            }
+        }
+        impl<EngineError: std::error::Error> std::error::Error for $name<EngineError>{}
+    };
+    ($name:ident for $trait:ident @ $($variants:ident => $messages:literal),*) => {
+        #[doc=concat!("An error used with the [`", stringify!($trait), "`] trait.")]
+        #[doc=""]
+        #[doc="This type provides a "]
+        #[doc=concat!("[`", stringify!($name), "::perform_generic_checks`] ")]
+        #[doc="function that does error checking for the general cases, returning an `Ok(())` "]
+        #[doc="if the inputs are valid, meaning that engine implementors would then only "]
+        #[doc="need to check for their own specific errors."]
+        #[doc="Otherwise an `Err(..)` with the proper error variant is returned."]
         #[non_exhaustive]
         #[derive(Debug, Clone, Eq, PartialEq)]
         pub enum $name<EngineError: std::error::Error> {
             $(
-                #[doc="_Generic_ error:"]
+                #[doc="_Generic_ error: "]
                 #[doc=$messages]
                 $variants,
             )*
@@ -110,7 +132,7 @@ macro_rules! engine_error{
             }
         }
         impl<EngineError: std::error::Error> std::error::Error for $name<EngineError>{}
-    }
+    };
 }
 pub(crate) use engine_error;
 

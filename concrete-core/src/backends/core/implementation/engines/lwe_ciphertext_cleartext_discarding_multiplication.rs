@@ -6,7 +6,6 @@ use crate::specification::engines::{
     LweCiphertextCleartextDiscardingMultiplicationEngine,
     LweCiphertextCleartextDiscardingMultiplicationError,
 };
-use crate::specification::entities::LweCiphertextEntity;
 
 /// # Description:
 /// Implementation of [`LweCiphertextCleartextDiscardingMultiplicationEngine`] for [`CoreEngine`]
@@ -59,9 +58,9 @@ impl
         input_1: &LweCiphertext32,
         input_2: &Cleartext32,
     ) -> Result<(), LweCiphertextCleartextDiscardingMultiplicationError<Self::EngineError>> {
-        if output.lwe_dimension() != input_1.lwe_dimension() {
-            return Err(LweCiphertextCleartextDiscardingMultiplicationError::LweDimensionMismatch);
-        }
+        LweCiphertextCleartextDiscardingMultiplicationError::perform_generic_checks(
+            output, input_1,
+        )?;
         unsafe { self.discard_mul_lwe_ciphertext_cleartext_unchecked(output, input_1, input_2) };
         Ok(())
     }
@@ -127,9 +126,9 @@ impl
         input_1: &LweCiphertext64,
         input_2: &Cleartext64,
     ) -> Result<(), LweCiphertextCleartextDiscardingMultiplicationError<Self::EngineError>> {
-        if output.lwe_dimension() != input_1.lwe_dimension() {
-            return Err(LweCiphertextCleartextDiscardingMultiplicationError::LweDimensionMismatch);
-        }
+        LweCiphertextCleartextDiscardingMultiplicationError::perform_generic_checks(
+            output, input_1,
+        )?;
         unsafe { self.discard_mul_lwe_ciphertext_cleartext_unchecked(output, input_1, input_2) };
         Ok(())
     }

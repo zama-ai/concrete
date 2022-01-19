@@ -29,9 +29,7 @@ impl CleartextVectorCreationEngine<u32, CleartextVector32> for CoreEngine {
         &mut self,
         input: &[u32],
     ) -> Result<CleartextVector32, CleartextVectorCreationError<Self::EngineError>> {
-        if input.is_empty() {
-            return Err(CleartextVectorCreationError::EmptyInput);
-        }
+        CleartextVectorCreationError::perform_generic_checks(input)?;
         Ok(unsafe { self.create_cleartext_vector_unchecked(input) })
     }
 
@@ -66,9 +64,7 @@ impl CleartextVectorCreationEngine<u64, CleartextVector64> for CoreEngine {
         &mut self,
         input: &[u64],
     ) -> Result<CleartextVector64, CleartextVectorCreationError<Self::EngineError>> {
-        if input.is_empty() {
-            return Err(CleartextVectorCreationError::EmptyInput);
-        }
+        CleartextVectorCreationError::perform_generic_checks(input)?;
         Ok(unsafe { self.create_cleartext_vector_unchecked(input) })
     }
 

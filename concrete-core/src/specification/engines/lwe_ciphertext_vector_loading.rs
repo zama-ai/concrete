@@ -9,6 +9,28 @@ engine_error! {
     OutOfVectorInputRange => "The input vector must contain the input range."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextVectorLoadingError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<CiphertextVector, SubCiphertextVector>(
+        vector: &CiphertextVector,
+        range: LweCiphertextRange,
+    ) -> Result<(), Self>
+    where
+        CiphertextVector: LweCiphertextVectorEntity,
+        SubCiphertextVector:
+            LweCiphertextVectorEntity<KeyDistribution = CiphertextVector::KeyDistribution>,
+    {
+        if !range.is_ordered() {
+            return Err(Self::UnorderedInputRange);
+        }
+
+        if range.1 >= vector.lwe_ciphertext_count().0 {
+            return Err(Self::OutOfVectorInputRange);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines loading a sub LWE ciphertext vector from another one.
 ///
 /// # Semantics

@@ -9,6 +9,29 @@ engine_error! {
     CiphertextCountMismatch => "The input and output ciphertext count must be the same."
 }
 
+impl<EngineError: std::error::Error> GlweCiphertextVectorDiscardingConversionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Input, Output>(output: &Output, input: &Input) -> Result<(), Self>
+    where
+        Input: GlweCiphertextVectorEntity,
+        Output: GlweCiphertextVectorEntity<KeyDistribution = Input::KeyDistribution>,
+    {
+        if input.glwe_dimension() != output.glwe_dimension() {
+            return Err(Self::GlweDimensionMismatch);
+        }
+
+        if input.polynomial_size() != output.polynomial_size() {
+            return Err(Self::PolynomialSizeMismatch);
+        }
+
+        if input.glwe_ciphertext_count() != output.glwe_ciphertext_count() {
+            return Err(Self::CiphertextCountMismatch);
+        }
+
+        Ok(())
+    }
+}
+
 /// A trait for engines converting (discarding) GLWE ciphertext vectors .
 ///
 /// # Semantics

@@ -9,7 +9,7 @@ use crate::backends::core::private::crypto::encoding::PlaintextList as ImplPlain
 use crate::specification::engines::{
     GlweCiphertextDecryptionEngine, GlweCiphertextDecryptionError,
 };
-use crate::specification::entities::{GlweCiphertextEntity, GlweSecretKeyEntity};
+use crate::specification::entities::GlweSecretKeyEntity;
 
 /// # Description:
 /// Implementation of [`GlweCiphertextDecryptionEngine`] for [`CoreEngine`] that operates on 32 bits
@@ -57,12 +57,7 @@ impl GlweCiphertextDecryptionEngine<GlweSecretKey32, GlweCiphertext32, Plaintext
         key: &GlweSecretKey32,
         input: &GlweCiphertext32,
     ) -> Result<PlaintextVector32, GlweCiphertextDecryptionError<Self::EngineError>> {
-        if input.glwe_dimension() != key.glwe_dimension() {
-            return Err(GlweCiphertextDecryptionError::GlweDimensionMismatch);
-        }
-        if input.polynomial_size() != key.polynomial_size() {
-            return Err(GlweCiphertextDecryptionError::PolynomialSizeMismatch);
-        }
+        GlweCiphertextDecryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.decrypt_glwe_ciphertext_unchecked(key, input) })
     }
 
@@ -124,12 +119,7 @@ impl GlweCiphertextDecryptionEngine<GlweSecretKey64, GlweCiphertext64, Plaintext
         key: &GlweSecretKey64,
         input: &GlweCiphertext64,
     ) -> Result<PlaintextVector64, GlweCiphertextDecryptionError<Self::EngineError>> {
-        if input.glwe_dimension() != key.glwe_dimension() {
-            return Err(GlweCiphertextDecryptionError::GlweDimensionMismatch);
-        }
-        if input.polynomial_size() != key.polynomial_size() {
-            return Err(GlweCiphertextDecryptionError::PolynomialSizeMismatch);
-        }
+        GlweCiphertextDecryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.decrypt_glwe_ciphertext_unchecked(key, input) })
     }
 

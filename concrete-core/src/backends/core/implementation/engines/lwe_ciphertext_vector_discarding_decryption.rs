@@ -6,9 +6,6 @@ use crate::backends::core::implementation::entities::{
 use crate::specification::engines::{
     LweCiphertextVectorDiscardingDecryptionEngine, LweCiphertextVectorDiscardingDecryptionError,
 };
-use crate::specification::entities::{
-    LweCiphertextVectorEntity, LweSecretKeyEntity, PlaintextVectorEntity,
-};
 
 /// # Description:
 /// Implementation of [`LweCiphertextVectorDiscardingDecryptionEngine`] for [`CoreEngine`] that
@@ -61,12 +58,7 @@ impl
         output: &mut PlaintextVector32,
         input: &LweCiphertextVector32,
     ) -> Result<(), LweCiphertextVectorDiscardingDecryptionError<Self::EngineError>> {
-        if key.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextVectorDiscardingDecryptionError::LweDimensionMismatch);
-        }
-        if input.lwe_ciphertext_count().0 != output.plaintext_count().0 {
-            return Err(LweCiphertextVectorDiscardingDecryptionError::PlaintextCountMismatch);
-        }
+        LweCiphertextVectorDiscardingDecryptionError::perform_generic_checks(key, output, input)?;
         unsafe { self.discard_decrypt_lwe_ciphertext_vector_unchecked(key, output, input) };
         Ok(())
     }
@@ -132,12 +124,7 @@ impl
         output: &mut PlaintextVector64,
         input: &LweCiphertextVector64,
     ) -> Result<(), LweCiphertextVectorDiscardingDecryptionError<Self::EngineError>> {
-        if key.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextVectorDiscardingDecryptionError::LweDimensionMismatch);
-        }
-        if input.lwe_ciphertext_count().0 != output.plaintext_count().0 {
-            return Err(LweCiphertextVectorDiscardingDecryptionError::PlaintextCountMismatch);
-        }
+        LweCiphertextVectorDiscardingDecryptionError::perform_generic_checks(key, output, input)?;
         unsafe { self.discard_decrypt_lwe_ciphertext_vector_unchecked(key, output, input) };
         Ok(())
     }

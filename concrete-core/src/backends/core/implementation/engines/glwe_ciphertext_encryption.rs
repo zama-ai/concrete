@@ -55,9 +55,7 @@ impl GlweCiphertextEncryptionEngine<GlweSecretKey32, PlaintextVector32, GlweCiph
         input: &PlaintextVector32,
         noise: Variance,
     ) -> Result<GlweCiphertext32, GlweCiphertextEncryptionError<Self::EngineError>> {
-        if key.0.polynomial_size().0 != input.0.count().0 {
-            return Err(GlweCiphertextEncryptionError::PlaintextCountMismatch);
-        }
+        GlweCiphertextEncryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.encrypt_glwe_ciphertext_unchecked(key, input, noise) })
     }
 
@@ -126,9 +124,7 @@ impl GlweCiphertextEncryptionEngine<GlweSecretKey64, PlaintextVector64, GlweCiph
         input: &PlaintextVector64,
         noise: Variance,
     ) -> Result<GlweCiphertext64, GlweCiphertextEncryptionError<Self::EngineError>> {
-        if key.0.polynomial_size().0 != input.0.count().0 {
-            return Err(GlweCiphertextEncryptionError::PlaintextCountMismatch);
-        }
+        GlweCiphertextEncryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.encrypt_glwe_ciphertext_unchecked(key, input, noise) })
     }
 

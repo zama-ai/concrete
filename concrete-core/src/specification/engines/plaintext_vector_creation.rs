@@ -7,6 +7,16 @@ engine_error! {
     EmptyInput => "The input slice must not be empty."
 }
 
+impl<EngineError: std::error::Error> PlaintextVectorCreationError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Value>(values: &[Value]) -> Result<(), Self> {
+        if values.is_empty() {
+            return Err(Self::EmptyInput);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines creating plaintext vectors from arbitrary values.
 ///
 /// # Semantics
