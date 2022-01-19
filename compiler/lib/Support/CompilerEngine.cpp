@@ -409,7 +409,9 @@ const std::string CompilerEngine::Library::CLIENT_PARAMETERS_EXT =
     ".concrete.params.json";
 const std::string CompilerEngine::Library::LINKER = "ld";
 #ifdef __APPLE__
-const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " -dylib -o ";
+// ld in Mac can't find some symbols without specifying these libs
+const std::string CompilerEngine::Library::LINKER_SHARED_OPT =
+    " -dylib -lConcretelangRuntime -lc -o ";
 const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".dylib";
 #else // Linux
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";
