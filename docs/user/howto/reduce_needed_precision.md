@@ -61,15 +61,9 @@ The input contains 28x28x8 = 6272 bits of information. In practice you could sti
 
 This shows how adapting your data can allow you to use models that may require smaller data types (i.e. use less precision) to perform their computations.
 
-```{note}
-Binarizing here is an extreme case of quantization which is introduced [here](../explanation/quantization.md). You can also find further resources on the linked page.
-```
-
 ### Model accuracy when quantizing for FHE
 
 Quantization and binarization increase inference speed, reduce model byte-size and are required to run computation in FHE. However, quantization and, especially, binarization, induce a loss in the accuracy of the model since it's representation power is diminished. Choosing quantization parameters carefully can alleviate the accuracy loss all the while allowing compilation to FHE.
-
-This is illustrated in both advanced examples [Linear Regression](../advanced_examples/LinearRegression.ipynb) and [Logistic Regression](../advanced_examples/LogisticRegression.ipynb).
 
 The end result has a granularity/imprecision linked to the data types used and for the Quantized Logistic Regression to the lattice used to evaluate the logistic model.
 

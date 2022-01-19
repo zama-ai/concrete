@@ -9,7 +9,6 @@ from typing import Any, Callable, Dict, Optional, Union
 
 import networkx as nx
 from loguru import logger
-from PIL import Image
 
 from ..debugging import assert_true, draw_graph, format_operation_graph
 from ..operator_graph import OPGraph
@@ -27,7 +26,7 @@ class CompilationArtifacts:
     source_code_of_the_function_to_compile: Optional[str]
     parameters_of_the_function_to_compile: Dict[str, str]
 
-    drawings_of_operation_graphs: Dict[str, Image.Image]
+    drawings_of_operation_graphs: Dict[str, str]
     textual_representations_of_operation_graphs: Dict[str, str]
 
     final_operation_graph: Optional[OPGraph]

@@ -10,7 +10,7 @@ However, one still has to consider that FHE is slow, as compared to the vanilla 
 
 ### Multiplying by constants
 
-In the scheme used in **Concrete Numpy**, namely [TFHE](https://tfhe.github.io/tfhe/), multiplications by constants is only defined for integer constants. Notably, one can't multiply by floats. As float multiplication is very usual in the data science (think of weights of dense layers, for example), this could be a problem, but quantization is at our rescue. See [this](quantization.md) section for more details.
+In the scheme used in **Concrete Numpy**, namely [TFHE](https://tfhe.github.io/tfhe/), multiplications by constants is only defined for integer constants. Notably, one can't multiply by floats. As float multiplication is very usual in the data science (think of weights of dense layers, for example), this could be a problem, but quantization is at our rescue. See [Quantization](https://docs.preprod.zama.ai/concrete-ml/main/user/explanation/quantization.html) section of Concrete ML documentation for more details.
 
 ### Achieving computations of not-linear functions
 
@@ -30,5 +30,4 @@ As we explained, we wanted to focus first on cryptographic challenges. Performan
 
 ### Currently restricted to 7 bits computations
 
-For the moment, we can only perform computations with 7 bits or less. Furthermore, the exactness of computations is only ensured for 6 bits or less; for 7 bits, the computations are exact with a probability close to 90%. Of course, we are working on increasing this limit, and making the probability of a wrong computation as close to 0% as possible. Don't hesitate to look at our [quantization](quantization.md) section to know how to use smaller integers.
-
+For the moment, we can only perform computations with 7 bits or less. Furthermore, the exactness of computations is only ensured for 6 bits or less; for 7 bits, the computations are exact with a probability close to 90%. Of course, we are working on increasing this limit, and making the probability of a wrong computation as close to 0% as possible. Don't hesitate to look at [Quantization](https://docs.preprod.zama.ai/concrete-ml/main/user/explanation/quantization.html) section of Concrete ML documentation to know how to use smaller integers.

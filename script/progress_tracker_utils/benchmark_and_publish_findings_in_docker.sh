@@ -27,7 +27,7 @@ mkdir -p /tmp/keycache
 mkdir -p logs
 
 initial_concrete_log=logs/$(date -u --iso-8601=seconds).concrete.log
-make -s concrete_benchmark 2>&1 | tee -a "$initial_concrete_log"
+make -s benchmark 2>&1 | tee -a "$initial_concrete_log"
 
 final_concrete_log=logs/$(date -u --iso-8601=seconds).concrete.log
 cat -s "$initial_concrete_log" | sed '1d; $d' > "$final_concrete_log"
@@ -44,22 +44,3 @@ curl \
      -H 'Content-Type: application/json' \
      -d @progress.json \
      -X POST "$CONCRETE_PROGRESS_TRACKER_URL"/measurement
-
-initial_ml_log=logs/$(date -u --iso-8601=seconds).ml.log
-make -s ml_benchmark 2>&1 | tee -a "$initial_ml_log"
-
-final_ml_log=logs/$(date -u --iso-8601=seconds).ml.log
-cat -s "$initial_ml_log" | sed '1d; $d' > "$final_ml_log"
-
-# sed above removes the first and the last lines of the log
-# which are empty to provide a nice console output
-# but empty lines are useless for logs so we get rid of them
-
-rm "$initial_ml_log"
-cp "$final_ml_log" logs/latest.ml.log
-
-curl \
-     -H 'Authorization: Bearer '"$ML_PROGRESS_TRACKER_TOKEN"'' \
-     -H 'Content-Type: application/json' \
-     -d @progress.json \
-     -X POST "$ML_PROGRESS_TRACKER_URL"/measurement

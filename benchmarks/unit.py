@@ -1,7 +1,7 @@
 import random
 
 import numpy as np
-import progress
+import py_progress_tracker as progress
 from common import BENCHMARK_CONFIGURATION
 
 import concrete.numpy as hnp

@@ -8,13 +8,11 @@
  loguru             0.5.3     MIT License
  matplotlib         3.5.1     Python Software Foundation License
  networkx           2.6.3     BSD License
- numpy              1.22.0    BSD License
+ numpy              1.22.1    BSD License
  packaging          21.3      Apache Software License; BSD License
  pygraphviz         1.7       BSD License
  pyparsing          3.0.6     MIT License
  python-dateutil    2.8.2     Apache Software License; BSD License
- setuptools-scm     6.3.2     MIT License
+ setuptools-scm     6.4.1     MIT License
  six                1.16.0    MIT License
  tomli              1.2.3     MIT License
- torch              1.10.1    BSD License
- typing-extensions  4.0.1     Python Software Foundation License

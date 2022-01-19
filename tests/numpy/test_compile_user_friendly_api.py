@@ -261,3 +261,20 @@ def test_np_fhe_compiler_full_compilation(default_compilation_configuration, che
 
     for i in range(64):
         assert fhe_circuit.run(i) == function_to_compile(i)
+
+
+def test_np_fhe_compiler_compile_on_inputset(default_compilation_configuration):
+    """Test the case where we generate an FHE circuit with a single call."""
+
+    def function_to_compile(x):
+        return x + 42
+
+    compiler = NPFHECompiler(
+        function_to_compile,
+        {"x": "encrypted"},
+        default_compilation_configuration,
+    )
+    circuit = compiler.compile_on_inputset(numpy.arange(64))
+
+    for i in range(64):
+        assert circuit.run(i) == function_to_compile(i)

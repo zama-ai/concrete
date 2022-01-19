@@ -112,16 +112,8 @@ mypy_ns:
 mypy_test:
 	find ./tests/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 
-.PHONY: mypy_concrete_benchmark # Run mypy on concrete benchmark files
-mypy_concrete_benchmark:
-	find ./benchmarks/concrete/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
-
-.PHONY: mypy_ml_benchmark # Run mypy on ml benchmark files
-mypy_ml_benchmark:
-	find ./benchmarks/ml/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
-
 .PHONY: mypy_benchmark # Run mypy on benchmark files
-mypy_benchmark: mypy_concrete_benchmark mypy_ml_benchmark
+	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 
 .PHONY: mypy_script # Run mypy on scripts
 mypy_script:
@@ -216,17 +208,10 @@ finalize_nb:
 pytest_nb:
 	find docs -name "*.ipynb" | grep -v _build | grep -v .ipynb_checkpoints | xargs poetry run pytest -Wignore --nbmake
 
-.PHONY: concrete_benchmark # Launch concrete benchmarks
-concrete_benchmark:
+.PHONY: benchmark # Launch concrete benchmarks
+benchmark:
 	rm -rf progress.json && \
-	for script in benchmarks/concrete/*.py; do \
-	  poetry run python $$script; \
-	done
-
-.PHONY: ml_benchmark # Launch ml benchmarks
-ml_benchmark:
-	rm -rf progress.json && \
-	for script in benchmarks/ml/*.py; do \
+	for script in benchmarks/*.py; do \
 	  poetry run python $$script; \
 	done
 

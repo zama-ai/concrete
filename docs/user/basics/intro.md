@@ -14,7 +14,6 @@ With **Concrete Numpy**, data scientists can implement machine learning models u
 **Concrete Numpy** is made of several parts:
 - an entry API, which is the main function of the so-called **Concrete frontend**, which takes programs made from a subset of numpy, and converts them to an FHE program
 - the **Concrete compiler**, which is called by the frontend, which allows you to turn an MLIR program into an FHE program, on the top of **Concrete Library**, which contains the core cryptographic APIs for computing with FHE;
-- some ML tools, in an early version, allowing for example to turn some torch programs into numpy, and then to use the main API stack to finally get an FHE program.
 
 In a further release, **Concrete Numpy** will be divided into a **Concrete Framework** package, containing the compiler, the core lib and the frontend(s), and in a **Concrete ML**, which will contain ML tools, made on top of the **Concrete Framework**. Names of these packages are succeptible to change.
 
@@ -36,5 +35,3 @@ The main _current_ limits are:
 - **Concrete** only supports unsigned integers
 - **Concrete** needs integers to fit in a maximum of 7 bits
 - **Concrete** computations are exact (except a very small probability) for computations on 6 bits or less, and exact at a probability close to 90% for 7 bits computations
-
-To overcome the above limitations, Concrete has a [popular quantization](../explanation/quantization.md) method built in the framework that allows map floating point values to integers. We can [use this approach](../howto/use_quantization.md) to run models in FHE. Lastly, we give hints to the user on how to [reduce the precision](../howto/reduce_needed_precision.md) of a model to make it work in Concrete.

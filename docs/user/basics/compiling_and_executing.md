@@ -107,4 +107,3 @@ Today, we cannot simulate a client / server API in python, but it is for very so
 
 - [Working With Floating Points Tutorial](../tutorial/working_with_floating_points.md)
 - [Table Lookup Tutorial](../tutorial/table_lookup.md)
-- [Compiling a torch model](../howto/compiling_torch_model.md)
