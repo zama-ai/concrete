@@ -29,6 +29,12 @@ pub struct LweCiphertextIndex(pub usize);
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct LweCiphertextRange(pub usize, pub usize);
 
+impl LweCiphertextRange {
+    pub fn is_ordered(&self) -> bool {
+        self.1 <= self.0
+    }
+}
+
 /// The number of ciphertexts in a glwe ciphertext list.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct GlweCiphertextCount(pub usize);

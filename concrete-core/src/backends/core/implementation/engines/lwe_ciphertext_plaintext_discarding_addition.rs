@@ -5,7 +5,6 @@ use crate::backends::core::implementation::entities::{
 use crate::specification::engines::{
     LweCiphertextPlaintextDiscardingAdditionEngine, LweCiphertextPlaintextDiscardingAdditionError,
 };
-use crate::specification::entities::LweCiphertextEntity;
 
 /// # Description:
 /// Implementation of [`LweCiphertextPlaintextDiscardingAdditionEngine`] for [`CoreEngine`] that
@@ -51,9 +50,7 @@ impl LweCiphertextPlaintextDiscardingAdditionEngine<LweCiphertext32, Plaintext32
         input_1: &LweCiphertext32,
         input_2: &Plaintext32,
     ) -> Result<(), LweCiphertextPlaintextDiscardingAdditionError<Self::EngineError>> {
-        if input_1.lwe_dimension() != output.lwe_dimension() {
-            return Err(LweCiphertextPlaintextDiscardingAdditionError::LweDimensionMismatch);
-        }
+        LweCiphertextPlaintextDiscardingAdditionError::perform_generic_checks(output, input_1)?;
         unsafe { self.discard_add_lwe_ciphertext_plaintext_unchecked(output, input_1, input_2) };
         Ok(())
     }
@@ -112,9 +109,7 @@ impl LweCiphertextPlaintextDiscardingAdditionEngine<LweCiphertext64, Plaintext64
         input_1: &LweCiphertext64,
         input_2: &Plaintext64,
     ) -> Result<(), LweCiphertextPlaintextDiscardingAdditionError<Self::EngineError>> {
-        if input_1.lwe_dimension() != output.lwe_dimension() {
-            return Err(LweCiphertextPlaintextDiscardingAdditionError::LweDimensionMismatch);
-        }
+        LweCiphertextPlaintextDiscardingAdditionError::perform_generic_checks(output, input_1)?;
         unsafe { self.discard_add_lwe_ciphertext_plaintext_unchecked(output, input_1, input_2) };
         Ok(())
     }

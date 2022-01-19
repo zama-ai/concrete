@@ -7,6 +7,20 @@ engine_error! {
     PlaintextCountMismatch => "The input and output plaintext count must be the same"
 }
 
+impl<EngineError: std::error::Error> PlaintextVectorDiscardingConversionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Input, Output>(output: &Output, input: &Input) -> Result<(), Self>
+    where
+        Input: PlaintextVectorEntity,
+        Output: PlaintextVectorEntity,
+    {
+        if input.plaintext_count() != output.plaintext_count() {
+            return Err(Self::PlaintextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines converting (discarding) plaintext vectors.
 ///
 /// # Semantics

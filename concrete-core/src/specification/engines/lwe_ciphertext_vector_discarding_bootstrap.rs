@@ -15,6 +15,54 @@ engine_error! {
     CiphertextCountMismatch => "The input and output ciphertext count must be the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextVectorDiscardingBootstrapError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<
+        BootstrapKey,
+        AccumulatorVector,
+        InputCiphertextVector,
+        OutputCiphertextVector,
+    >(
+        output: &OutputCiphertextVector,
+        input: &InputCiphertextVector,
+        acc: &AccumulatorVector,
+        bsk: &BootstrapKey,
+    ) -> Result<(), Self>
+    where
+        BootstrapKey: LweBootstrapKeyEntity,
+        AccumulatorVector:
+            GlweCiphertextVectorEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+        InputCiphertextVector:
+            LweCiphertextVectorEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
+        OutputCiphertextVector:
+            LweCiphertextVectorEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+    {
+        if bsk.input_lwe_dimension() != input.lwe_dimension() {
+            return Err(Self::InputLweDimensionMismatch);
+        }
+
+        if bsk.output_lwe_dimension() != output.lwe_dimension() {
+            return Err(Self::OutputLweDimensionMismatch);
+        }
+
+        if bsk.glwe_dimension() != acc.glwe_dimension() {
+            return Err(Self::AccumulatorGlweDimensionMismatch);
+        }
+
+        if bsk.polynomial_size() != acc.polynomial_size() {
+            return Err(Self::AccumulatorPolynomialSizeMismatch);
+        }
+        if acc.glwe_ciphertext_count().0 != input.lwe_ciphertext_count().0 {
+            return Err(Self::AccumulatorCountMismatch);
+        }
+
+        if input.lwe_ciphertext_count() != output.lwe_ciphertext_count() {
+            return Err(Self::CiphertextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines bootstrapping (discarding) LWE ciphertext vectors.
 ///
 /// # Semantics

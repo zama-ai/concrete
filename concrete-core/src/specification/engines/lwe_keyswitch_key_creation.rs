@@ -13,6 +13,29 @@ engine_error! {
                               the precision of the ciphertext."
 }
 
+impl<EngineError: std::error::Error> LweKeyswitchKeyCreationError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks(
+        decomposition_level_count: DecompositionLevelCount,
+        decomposition_base_log: DecompositionBaseLog,
+        integer_precision: usize,
+    ) -> Result<(), Self> {
+        if decomposition_base_log.0 == 0 {
+            return Err(Self::NullDecompositionBaseLog);
+        }
+
+        if decomposition_level_count.0 == 0 {
+            return Err(Self::NullDecompositionLevelCount);
+        }
+
+        if decomposition_level_count.0 * decomposition_base_log.0 > integer_precision {
+            return Err(Self::DecompositionTooLarge);
+        }
+
+        Ok(())
+    }
+}
+
 /// A trait for engines creating LWE keyswitch keys.
 ///
 /// # Semantics

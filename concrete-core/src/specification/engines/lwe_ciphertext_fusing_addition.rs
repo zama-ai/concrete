@@ -7,6 +7,23 @@ engine_error! {
     LweDimensionMismatch => "The input and output LWE dimensions must be the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextFusingAdditionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<InputCiphertext, OutputCiphertext>(
+        output: &OutputCiphertext,
+        input: &InputCiphertext,
+    ) -> Result<(), Self>
+    where
+        InputCiphertext: LweCiphertextEntity,
+        OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
+    {
+        if output.lwe_dimension() != input.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines adding (fusing) LWE ciphertexts.
 ///
 /// # Semantics

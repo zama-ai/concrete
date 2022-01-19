@@ -7,6 +7,20 @@ engine_error! {
     LweDimensionMismatch => "All the ciphertext LWE dimensions must be the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextDiscardingConversionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Input, Output>(output: &Output, input: &Input) -> Result<(), Self>
+    where
+        Input: LweCiphertextEntity,
+        Output: LweCiphertextEntity<KeyDistribution = Input::KeyDistribution>,
+    {
+        if input.lwe_dimension() != output.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines converting (discarding) LWE ciphertexts .
 ///
 /// # Semantics

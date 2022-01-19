@@ -10,6 +10,26 @@ engine_error! {
     PolynomialSizeMismatch => "The ciphertext and secret key polynomial size must be the same."
 }
 
+impl<EngineError: std::error::Error> GlweCiphertextDecryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<SecretKey, Ciphertext>(
+        key: &SecretKey,
+        input: &Ciphertext,
+    ) -> Result<(), Self>
+    where
+        SecretKey: GlweSecretKeyEntity,
+        Ciphertext: GlweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
+    {
+        if input.glwe_dimension() != key.glwe_dimension() {
+            return Err(Self::GlweDimensionMismatch);
+        }
+        if input.polynomial_size() != key.polynomial_size() {
+            return Err(Self::PolynomialSizeMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines decrypting GLWE ciphertexts.
 ///
 /// # Semantics

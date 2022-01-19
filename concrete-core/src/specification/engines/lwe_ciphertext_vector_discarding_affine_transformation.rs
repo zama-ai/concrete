@@ -9,6 +9,30 @@ engine_error! {
     LweDimensionMismatch => "The output and inputs LWE dimensions must be the same.",
     CleartextCountMismatch => "The cleartext vector count and input vector count must be the same."
 }
+impl<EngineError: std::error::Error>
+    LweCiphertextVectorDiscardingAffineTransformationError<EngineError>
+{
+    /// Validates the inputs
+    pub fn perform_generic_checks<CiphertextVector, CleartextVector, OutputCiphertext>(
+        output: &OutputCiphertext,
+        inputs: &CiphertextVector,
+        weights: &CleartextVector,
+    ) -> Result<(), Self>
+    where
+        OutputCiphertext: LweCiphertextEntity,
+        CiphertextVector:
+            LweCiphertextVectorEntity<KeyDistribution = OutputCiphertext::KeyDistribution>,
+        CleartextVector: CleartextVectorEntity,
+    {
+        if output.lwe_dimension() != inputs.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+        if inputs.lwe_ciphertext_count().0 != weights.cleartext_count().0 {
+            return Err(Self::CleartextCountMismatch);
+        }
+        Ok(())
+    }
+}
 
 /// A trait for engines performing (discarding) affine transformation of LWE ciphertexts.
 ///

@@ -7,6 +7,22 @@ engine_error! {
     CleartextCountMismatch => "The input and output cleartext count must be the same."
 }
 
+impl<EngineError: std::error::Error> CleartextVectorDiscardingRetrievalError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Value, CleartextVector>(
+        output: &[Value],
+        input: &CleartextVector,
+    ) -> Result<(), Self>
+    where
+        CleartextVector: CleartextVectorEntity,
+    {
+        if output.len() != input.cleartext_count().0 {
+            return Err(Self::CleartextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines retrieving (discarding) arbitrary values from cleartext vectors.
 ///
 /// # Semantics

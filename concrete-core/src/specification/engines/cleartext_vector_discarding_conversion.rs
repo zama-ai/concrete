@@ -7,6 +7,20 @@ engine_error! {
     CleartextCountMismatch => "The input and output cleartext count must be the same"
 }
 
+impl<EngineError: std::error::Error> CleartextVectorDiscardingConversionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Input, Output>(output: &Output, input: &Input) -> Result<(), Self>
+    where
+        Input: CleartextVectorEntity,
+        Output: CleartextVectorEntity,
+    {
+        if output.cleartext_count() != input.cleartext_count() {
+            return Err(Self::CleartextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines converting (discarding) cleartexts vector.
 ///
 /// # Semantics

@@ -7,6 +7,16 @@ engine_error! {
     NullLweDimension => "The LWE dimension must be greater than zero."
 }
 
+impl<EngineError: std::error::Error> LweSecretKeyCreationError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks(lwe_dimension: LweDimension) -> Result<(), Self> {
+        if lwe_dimension.0 == 0 {
+            return Err(Self::NullLweDimension);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines creating LWE secret keys.
 ///
 /// # Semantics

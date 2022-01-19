@@ -9,6 +9,23 @@ engine_error! {
     EncoderCountMismatch => "The encoder count and cleartext count must be the same."
 }
 
+impl<EngineError: std::error::Error> CleartextVectorEncodingError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<EncoderVector, CleartextVector>(
+        encoder_vector: &EncoderVector,
+        cleartext_vector: &CleartextVector,
+    ) -> Result<(), Self>
+    where
+        EncoderVector: EncoderVectorEntity,
+        CleartextVector: CleartextVectorEntity,
+    {
+        if encoder_vector.encoder_count().0 != cleartext_vector.cleartext_count().0 {
+            return Err(Self::EncoderCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines encoding cleartext vectors.
 ///
 /// # Semantics

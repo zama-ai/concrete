@@ -9,6 +9,28 @@ engine_error! {
     IndexTooLarge => "The index must not exceed the size of the vector."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextDiscardingLoadingError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<CiphertextVector, Ciphertext>(
+        ciphertext: &Ciphertext,
+        vector: &CiphertextVector,
+        i: LweCiphertextIndex,
+    ) -> Result<(), Self>
+    where
+        Ciphertext: LweCiphertextEntity,
+        CiphertextVector: LweCiphertextVectorEntity<KeyDistribution = Ciphertext::KeyDistribution>,
+    {
+        if ciphertext.lwe_dimension() != vector.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+
+        if i.0 >= vector.lwe_ciphertext_count().0 {
+            return Err(Self::IndexTooLarge);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines loading (discarding) an LWE ciphertext from a LWE ciphertext vector.
 ///
 /// # Semantics

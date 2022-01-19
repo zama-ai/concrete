@@ -51,9 +51,7 @@ impl LweCiphertextVectorZeroEncryptionEngine<LweSecretKey32, LweCiphertextVector
         count: LweCiphertextCount,
     ) -> Result<LweCiphertextVector32, LweCiphertextVectorZeroEncryptionError<Self::EngineError>>
     {
-        if count.0 == 0 {
-            return Err(LweCiphertextVectorZeroEncryptionError::NullCiphertextCount);
-        }
+        LweCiphertextVectorZeroEncryptionError::perform_generic_checks(count)?;
         Ok(unsafe { self.zero_encrypt_lwe_ciphertext_vector_unchecked(key, noise, count) })
     }
 
@@ -118,9 +116,7 @@ impl LweCiphertextVectorZeroEncryptionEngine<LweSecretKey64, LweCiphertextVector
         count: LweCiphertextCount,
     ) -> Result<LweCiphertextVector64, LweCiphertextVectorZeroEncryptionError<Self::EngineError>>
     {
-        if count.0 == 0 {
-            return Err(LweCiphertextVectorZeroEncryptionError::NullCiphertextCount);
-        }
+        LweCiphertextVectorZeroEncryptionError::perform_generic_checks(count)?;
         Ok(unsafe { self.zero_encrypt_lwe_ciphertext_vector_unchecked(key, noise, count) })
     }
 

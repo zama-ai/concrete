@@ -3,7 +3,6 @@ use crate::backends::core::implementation::entities::{LweCiphertext32, LweCipher
 use crate::specification::engines::{
     LweCiphertextFusingAdditionEngine, LweCiphertextFusingAdditionError,
 };
-use crate::specification::entities::LweCiphertextEntity;
 
 /// # Description:
 /// Implementation of [`LweCiphertextFusingAdditionEngine`] for [`CoreEngine`] that operates on
@@ -49,9 +48,7 @@ impl LweCiphertextFusingAdditionEngine<LweCiphertext32, LweCiphertext32> for Cor
         output: &mut LweCiphertext32,
         input: &LweCiphertext32,
     ) -> Result<(), LweCiphertextFusingAdditionError<Self::EngineError>> {
-        if output.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextFusingAdditionError::LweDimensionMismatch);
-        }
+        LweCiphertextFusingAdditionError::perform_generic_checks(output, input)?;
         unsafe { self.fuse_add_lwe_ciphertext_unchecked(output, input) };
         Ok(())
     }
@@ -109,9 +106,7 @@ impl LweCiphertextFusingAdditionEngine<LweCiphertext64, LweCiphertext64> for Cor
         output: &mut LweCiphertext64,
         input: &LweCiphertext64,
     ) -> Result<(), LweCiphertextFusingAdditionError<Self::EngineError>> {
-        if output.lwe_dimension() != input.lwe_dimension() {
-            return Err(LweCiphertextFusingAdditionError::LweDimensionMismatch);
-        }
+        LweCiphertextFusingAdditionError::perform_generic_checks(output, input)?;
         unsafe { self.fuse_add_lwe_ciphertext_unchecked(output, input) };
         Ok(())
     }

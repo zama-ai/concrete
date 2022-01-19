@@ -37,6 +37,7 @@ impl GlweSecretKeyCreationEngine<GlweSecretKey32> for CoreEngine {
         glwe_dimension: GlweDimension,
         polynomial_size: PolynomialSize,
     ) -> Result<GlweSecretKey32, GlweSecretKeyCreationError<Self::EngineError>> {
+        GlweSecretKeyCreationError::perform_generic_checks(glwe_dimension, polynomial_size)?;
         Ok(unsafe { self.create_glwe_secret_key_unchecked(glwe_dimension, polynomial_size) })
     }
 
@@ -85,6 +86,7 @@ impl GlweSecretKeyCreationEngine<GlweSecretKey64> for CoreEngine {
         glwe_dimension: GlweDimension,
         polynomial_size: PolynomialSize,
     ) -> Result<GlweSecretKey64, GlweSecretKeyCreationError<Self::EngineError>> {
+        GlweSecretKeyCreationError::perform_generic_checks(glwe_dimension, polynomial_size)?;
         Ok(unsafe { self.create_glwe_secret_key_unchecked(glwe_dimension, polynomial_size) })
     }
 

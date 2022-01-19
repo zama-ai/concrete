@@ -32,6 +32,7 @@ impl LweSecretKeyCreationEngine<LweSecretKey32> for CoreEngine {
         &mut self,
         lwe_dimension: LweDimension,
     ) -> Result<LweSecretKey32, LweSecretKeyCreationError<Self::EngineError>> {
+        LweSecretKeyCreationError::perform_generic_checks(lwe_dimension)?;
         Ok(unsafe { self.create_lwe_secret_key_unchecked(lwe_dimension) })
     }
 
@@ -73,6 +74,7 @@ impl LweSecretKeyCreationEngine<LweSecretKey64> for CoreEngine {
         &mut self,
         lwe_dimension: LweDimension,
     ) -> Result<LweSecretKey64, LweSecretKeyCreationError<Self::EngineError>> {
+        LweSecretKeyCreationError::perform_generic_checks(lwe_dimension)?;
         Ok(unsafe { self.create_lwe_secret_key_unchecked(lwe_dimension) })
     }
 

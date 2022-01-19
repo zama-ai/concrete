@@ -12,6 +12,35 @@ engine_error! {
     CiphertextCountMismatch => "The input and output ciphertexts have different ciphertext counts."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextVectorDiscardingKeyswitchError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<KeyswitchKey, InputCiphertextVector, OutputCiphertextVector>(
+        output: &mut OutputCiphertextVector,
+        input: &InputCiphertextVector,
+        ksk: &KeyswitchKey,
+    ) -> Result<(), Self>
+    where
+        KeyswitchKey: LweKeyswitchKeyEntity,
+        InputCiphertextVector:
+            LweCiphertextVectorEntity<KeyDistribution = KeyswitchKey::InputKeyDistribution>,
+        OutputCiphertextVector:
+            LweCiphertextVectorEntity<KeyDistribution = KeyswitchKey::OutputKeyDistribution>,
+    {
+        if input.lwe_dimension() != ksk.input_lwe_dimension() {
+            return Err(Self::InputLweDimensionMismatch);
+        }
+
+        if output.lwe_dimension() != ksk.output_lwe_dimension() {
+            return Err(Self::OutputLweDimensionMismatch);
+        }
+
+        if input.lwe_ciphertext_count() != output.lwe_ciphertext_count() {
+            return Err(Self::CiphertextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines keyswitching (discarding) LWE ciphertext vectors.
 ///
 /// # Semantics

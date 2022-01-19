@@ -7,9 +7,6 @@ use crate::specification::engines::{
     LweCiphertextVectorDiscardingAffineTransformationEngine,
     LweCiphertextVectorDiscardingAffineTransformationError,
 };
-use crate::specification::entities::{
-    CleartextVectorEntity, LweCiphertextEntity, LweCiphertextVectorEntity,
-};
 
 /// # Description:
 /// Implementation of [`LweCiphertextVectorDiscardingAffineTransformationEngine`] for [`CoreEngine`]
@@ -72,16 +69,9 @@ impl
         weights: &CleartextVector32,
         bias: &Plaintext32,
     ) -> Result<(), LweCiphertextVectorDiscardingAffineTransformationError<Self::EngineError>> {
-        if output.lwe_dimension() != inputs.lwe_dimension() {
-            return Err(
-                LweCiphertextVectorDiscardingAffineTransformationError::LweDimensionMismatch,
-            );
-        }
-        if inputs.lwe_ciphertext_count().0 != weights.cleartext_count().0 {
-            return Err(
-                LweCiphertextVectorDiscardingAffineTransformationError::CleartextCountMismatch,
-            );
-        }
+        LweCiphertextVectorDiscardingAffineTransformationError::perform_generic_checks(
+            output, inputs, weights,
+        )?;
         unsafe {
             self.discard_affine_transform_lwe_ciphertext_vector_unchecked(
                 output, inputs, weights, bias,
@@ -164,16 +154,9 @@ impl
         weights: &CleartextVector64,
         bias: &Plaintext64,
     ) -> Result<(), LweCiphertextVectorDiscardingAffineTransformationError<Self::EngineError>> {
-        if output.lwe_dimension() != inputs.lwe_dimension() {
-            return Err(
-                LweCiphertextVectorDiscardingAffineTransformationError::LweDimensionMismatch,
-            );
-        }
-        if inputs.lwe_ciphertext_count().0 != weights.cleartext_count().0 {
-            return Err(
-                LweCiphertextVectorDiscardingAffineTransformationError::CleartextCountMismatch,
-            );
-        }
+        LweCiphertextVectorDiscardingAffineTransformationError::perform_generic_checks(
+            output, inputs, weights,
+        )?;
         unsafe {
             self.discard_affine_transform_lwe_ciphertext_vector_unchecked(
                 output, inputs, weights, bias,

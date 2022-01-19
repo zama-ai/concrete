@@ -11,6 +11,26 @@ engine_error! {
                                same."
 }
 
+impl<EngineError: std::error::Error> GlweCiphertextVectorDecryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<SecretKey, CiphertextVector>(
+        key: &SecretKey,
+        input: &CiphertextVector,
+    ) -> Result<(), Self>
+    where
+        SecretKey: GlweSecretKeyEntity,
+        CiphertextVector: GlweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
+    {
+        if key.glwe_dimension() != input.glwe_dimension() {
+            return Err(Self::GlweDimensionMismatch);
+        }
+        if key.polynomial_size() != input.polynomial_size() {
+            return Err(Self::PolynomialSizeMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines decrypting GLWE ciphertext vectors.
 ///
 /// # Semantics

@@ -11,6 +11,28 @@ engine_error! {
                           should prefer the LWE scheme."
 }
 
+impl<EngineError: std::error::Error> GlweSecretKeyCreationError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks(
+        glwe_dimension: GlweDimension,
+        polynomial_size: PolynomialSize,
+    ) -> Result<(), Self> {
+        if glwe_dimension.0 == 0 {
+            return Err(Self::NullGlweDimension);
+        }
+
+        if polynomial_size.0 == 0 {
+            return Err(Self::NullPolynomialSize);
+        }
+
+        if polynomial_size.0 == 1 {
+            return Err(Self::SizeOnePolynomial);
+        }
+
+        Ok(())
+    }
+}
+
 /// A trait for engines creating GLWE secret keys.
 ///
 /// # Semantics

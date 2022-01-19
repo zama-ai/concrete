@@ -54,9 +54,7 @@ impl GlweCiphertextVectorZeroEncryptionEngine<GlweSecretKey32, GlweCiphertextVec
         count: GlweCiphertextCount,
     ) -> Result<GlweCiphertextVector32, GlweCiphertextVectorZeroEncryptionError<Self::EngineError>>
     {
-        if count.0 == 0 {
-            return Err(GlweCiphertextVectorZeroEncryptionError::NullCiphertextCount);
-        }
+        GlweCiphertextVectorZeroEncryptionError::perform_generic_checks(count)?;
         Ok(unsafe { self.zero_encrypt_glwe_ciphertext_vector_unchecked(key, noise, count) })
     }
 
@@ -124,9 +122,7 @@ impl GlweCiphertextVectorZeroEncryptionEngine<GlweSecretKey64, GlweCiphertextVec
         count: GlweCiphertextCount,
     ) -> Result<GlweCiphertextVector64, GlweCiphertextVectorZeroEncryptionError<Self::EngineError>>
     {
-        if count.0 == 0 {
-            return Err(GlweCiphertextVectorZeroEncryptionError::NullCiphertextCount);
-        }
+        GlweCiphertextVectorZeroEncryptionError::perform_generic_checks(count)?;
         Ok(unsafe { self.zero_encrypt_glwe_ciphertext_vector_unchecked(key, noise, count) })
     }
 
