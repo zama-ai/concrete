@@ -17,16 +17,15 @@ import os
 
 # -- Project information -----------------------------------------------------
 
-project = 'Concrete Core'
-copyright = '2022, Zama'
+project = 'Concrete Boolean'
+copyright = '2021, Zama'
 author = 'Zama'
-description = 'Zama Concrete Core library'
-root_url = os.environ.get("DOC_ROOT_URL", "/concrete/core-lib")
+description = 'Zama Concrete Boolean Library'
+root_url = os.environ.get("DOC_ROOT_URL", "/concrete/boolean-lib")
 root_url = root_url if root_url.endswith('/') else root_url + '/'
 
 # The full version, including alpha/beta/rc tags
 release = os.environ.get("RELEASE_VERSION", "dev")
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -34,8 +33,8 @@ release = os.environ.get("RELEASE_VERSION", "dev")
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_parser",
-    "sphinx_copybutton",
+    'myst_parser',
+    'sphinx_copybutton'
 ]
 
 myst_enable_extensions = [
@@ -59,11 +58,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'sphinx_zama_theme'
-
+html_static_path = ['_static']
+html_logo = '_static/logo.png'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
 html_theme_options = {
     "github_url": "https://github.com/zama-ai/concrete",
     "twitter_url": "https://twitter.com/zama_fhe",
@@ -74,7 +73,7 @@ html_theme_options = {
     }],
     "navigation_depth": 2,
     "collapse_navigation": False,
-    "google_analytics_id": "G-XRM93J9QBW",
+    # "google_analytics_id": "G-XRM93J9QBW",
 }
 html_context = {
     "show_version": True,
