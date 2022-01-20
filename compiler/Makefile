@@ -73,6 +73,18 @@ test: test-check test-end-to-end-jit test-python support-unit-test testlib-unit-
 
 test-dataflow: test-end-to-end-jit-dfr test-end-to-end-jit-auto-parallelization
 
+# install/uninstall
+
+install: install_runtime_lib
+
+uninstall: uninstall_runtime_lib
+
+install_runtime_lib: concretecompiler
+	cp $(BUILD_DIR)/lib/libConcretelangRuntime* /usr/local/lib
+
+uninstall_runtime_lib:
+	-rm /usr/local/lib/libConcretelangRuntime*
+
 # unit-test
 
 testlib-unit-test: build-testlib-unit-test
@@ -204,4 +216,8 @@ update_python_version:
 	package_py39 \
 	package_py310 \
 	release_tarballs \
-	update_python_version
+	update_python_version \
+	install \
+	uninstall\
+	install_runtime_lib \
+	uninstall_runtime_lib

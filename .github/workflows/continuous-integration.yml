@@ -155,6 +155,7 @@ jobs:
         run: |
           cd compiler
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          make install_runtime_lib
           make test
 
   BuildAndTestDF:
