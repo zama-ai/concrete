@@ -21,8 +21,7 @@ project = 'Concrete Core'
 copyright = '2022, Zama'
 author = 'Zama'
 description = 'Zama Concrete Core library'
-root_url = os.environ.get("DOC_ROOT_URL", "/concrete/core-lib")
-root_url = root_url if root_url.endswith('/') else root_url + '/'
+root_url = os.environ.get("DOC_ROOT_URL", "/")
 
 # The full version, including alpha/beta/rc tags
 release = os.environ.get("RELEASE_VERSION", "dev")

@@ -1,0 +1,1 @@
+sphinx-zama-theme==2.0.8
