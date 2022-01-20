@@ -201,7 +201,9 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   }
 }
 
+/********************************/
 /* Distributed key management.  */
+/********************************/
 void _dfr_register_key(void *key, size_t key_id, size_t size) {
   node_level_key_manager->register_key(key, key_id, size);
 }
@@ -212,9 +214,13 @@ void *_dfr_get_key(size_t key_id) {
   return *node_level_key_manager->get_key(key_id).key.get();
 }
 
+/************************************/
+/*  Initialization & Finalization.  */
+/************************************/
 /* Runtime initialization and finalization.  */
 static inline void _dfr_stop_impl() {
-  hpx::apply([]() { hpx::finalize(); });
+  if (_dfr_is_root_node())
+    hpx::apply([]() { hpx::finalize(); });
   hpx::stop();
 }
 
@@ -228,35 +234,29 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
     hpx::start(nullptr, argc, argv);
   }
 
+  // Instantiate on each node
   new PbsKeyManager();
   new WorkFunctionRegistry();
 
-  if (!_dfr_is_root_node()) {
-    _dfr_stop_impl();
+  if (_dfr_is_root_node()) {
+    // Create compute server components on each node - from the root
+    // node only - and the corresponding compute client on the root
+    // node.
+    auto num_nodes = hpx::get_num_localities().get();
+    gcc = hpx::new_<GenericComputeClient[]>(
+              hpx::default_layout(hpx::find_all_localities()), num_nodes)
+              .get();
+  } else {
+    hpx::stop();
     exit(EXIT_SUCCESS);
   }
-
-  // Create compute server components on each node and the
-  // corresponding compute client.
-  auto num_nodes = hpx::get_num_localities().get();
-  gcc = hpx::new_<GenericComputeClient[]>(
-            hpx::default_layout(hpx::find_all_localities()), num_nodes)
-            .get();
 }
 
-// TODO: we need a better way to wrap main. For now loader --wrap and
-// main's constructor/destructor are not functional, but that should
-// replace the current, inefficient calls to _dfr_start/stop generated
-// in each compiled function.
-void _dfr_start() {
-  static int first_p = 0;
-  if (!first_p) {
-    _dfr_start_impl(0, nullptr);
-    first_p = 1;
-  } else {
-    hpx::resume();
-  }
-}
+/*  Start/stop functions to be called from within user code (or during
+    JIT invocation).  These serve to pause/resume the runtime
+    scheduler and to clean up used resources.  */
+void _dfr_start() { hpx::resume(); }
+
 void _dfr_stop() {
   hpx::suspend();
 
@@ -274,7 +274,32 @@ void _dfr_stop() {
   }
 }
 
+/*******************/
+/*  Main wrapper.  */
+/*******************/
+extern "C" {
+extern int main(int argc, char *argv[]); // __attribute__((weak));
+extern int __real_main(int argc, char *argv[]) __attribute__((weak));
+int __wrap_main(int argc, char *argv[]) {
+  int r;
+  // Initialize and immediately suspend the HPX runtime.
+  _dfr_start_impl(0, nullptr);
+  hpx::suspend();
+  // Run the actual main function. Within there should be a call to
+  // _dfr_start to resume execution of the HPX scheduler if needed.
+  r = __real_main(argc, argv);
+  // By default all _dfr_start should be matched to a _dfr_stop, so we
+  // need to resume before being able to finalize.
+  hpx::resume();
+  _dfr_stop_impl();
+
+  return r;
+}
+}
+
+/**********************/
 /*  Debug interface.  */
+/**********************/
 size_t _dfr_debug_get_node_id() { return hpx::get_locality_id(); }
 
 size_t _dfr_debug_get_worker_id() { return hpx::get_worker_thread_num(); }

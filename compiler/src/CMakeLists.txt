@@ -28,6 +28,7 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     -Wl,-rpath,${HPX_DIR}/../../
     -Wl,--no-as-needed
     DFRuntime
+    omp
     )
 else()
   target_link_libraries(concretecompiler

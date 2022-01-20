@@ -3,14 +3,28 @@ enable_testing()
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+  set (CMAKE_LIBRARY_OUTPUT_DIRECTORY, ${CMAKE_BINARY_DIR}/lib/)
+  set (CMAKE_SHARED_LINKER_FLAGS)
+  add_custom_command(
+    OUTPUT "${CMAKE_BINARY_DIR}/lib/gtest_main_shared_src/TestMain.cpp.o"
+    COMMAND mkdir -p ${CMAKE_BINARY_DIR}/lib/gtest_main_shared_src
+    COMMAND ${CMAKE_C_COMPILER_AR} -x ${CMAKE_BINARY_DIR}/lib/libgtest_main.a --output ${CMAKE_BINARY_DIR}/lib/gtest_main_shared_src
+    DEPENDS gtest_main
+  )
+  add_library(gtest_main_shared SHARED
+    "${CMAKE_BINARY_DIR}/lib/gtest_main_shared_src/TestMain.cpp.o"
+    )
+  set_target_properties(gtest_main_shared PROPERTIES LINKER_LANGUAGE C)
   add_compile_options(
     -DCONCRETELANG_PARALLEL_TESTING_ENABLED
     )
   link_libraries(
-    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
+    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/
     -Wl,-rpath,${HPX_DIR}/../../
     -Wl,--no-as-needed
     DFRuntime
+    gtest_main_shared
+    omp
   )
 endif()
 
@@ -111,7 +125,7 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     end_to_end_jit_dfr
     gtest_main
     ConcretelangSupport
-    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
+    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/
     -Wl,-rpath,${HPX_DIR}/../../
     -Wl,--no-as-needed
     DFRuntime
@@ -121,7 +135,7 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     end_to_end_jit_auto_parallelization
     gtest_main
     ConcretelangSupport
-    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
+    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/
     -Wl,-rpath,${HPX_DIR}/../../
     -Wl,--no-as-needed
     DFRuntime
