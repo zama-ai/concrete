@@ -8,6 +8,7 @@
 
 #include "concretelang-c/Dialect/FHE.h"
 #include "concretelang-c/Dialect/FHELinalg.h"
+#include "concretelang/Support/Constants.h"
 #include "mlir-c/Bindings/Python/Interop.h"
 #include "mlir-c/Registration.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
@@ -22,6 +23,9 @@ PYBIND11_MODULE(_concretelang, m) {
   m.doc() = "Concretelang Python Native Extension";
   llvm::sys::PrintStackTraceOnErrorSignal(/*argv=*/"");
   LLVMEnablePrettyStackTrace();
+
+  m.attr("MAXIMUM_BIT_WIDTH") =
+      pybind11::int_(mlir::concretelang::MAXIMUM_BIT_WIDTH);
 
   m.def(
       "register_dialects",

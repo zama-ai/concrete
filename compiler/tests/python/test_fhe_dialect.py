@@ -1,7 +1,11 @@
 import pytest
 from mlir.ir import Context, RankedTensorType, Location
-from concrete.lang import register_dialects
+from concrete.lang import register_dialects, MAXIMUM_BIT_WIDTH
 from concrete.lang.dialects import fhe
+
+
+def test_constants():
+    assert MAXIMUM_BIT_WIDTH == 7
 
 
 @pytest.mark.parametrize("width", list(range(1, 8)))

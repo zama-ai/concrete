@@ -12,6 +12,8 @@
 
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.cpp.inc"
 
+#include "concretelang/Support/Constants.h"
+
 using namespace mlir::concretelang::FHE;
 
 void FHEDialect::initialize() {
@@ -51,8 +53,9 @@ void FHEDialect::printType(::mlir::Type type,
 
 mlir::LogicalResult EncryptedIntegerType::verify(
     llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
-  if (p == 0 || p > 7) {
-    emitError() << "FHE.eint support only precision in ]0;7]";
+  if (p == 0 || p > mlir::concretelang::MAXIMUM_BIT_WIDTH) {
+    emitError() << "FHE.eint support only precision in ]0;"
+                << mlir::concretelang::MAXIMUM_BIT_WIDTH << "]";
     return mlir::failure();
   }
   return mlir::success();

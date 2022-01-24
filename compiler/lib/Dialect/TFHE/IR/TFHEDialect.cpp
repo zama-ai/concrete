@@ -12,6 +12,8 @@
 
 #include "concretelang/Dialect/TFHE/IR/TFHEOpsDialect.cpp.inc"
 
+#include "concretelang/Support/Constants.h"
+
 using namespace mlir::concretelang::TFHE;
 
 void TFHEDialect::initialize() {
@@ -47,7 +49,7 @@ void TFHEDialect::printType(::mlir::Type type,
 
 /// Verify that GLWE parameter are consistant
 /// - The bits parameter is 64 (we support only this for v0)
-/// - The p parameter is ]0;7]
+/// - The p parameter is ]0;MAXIMUM_BIT_WIDTH]
 ::mlir::LogicalResult GLWECipherTextType::verify(
     ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
     signed dimension, signed polynomialSize, signed bits, signed p) {
@@ -55,8 +57,9 @@ void TFHEDialect::printType(::mlir::Type type,
     emitError() << "GLWE bits parameter can only be 64";
     return ::mlir::failure();
   }
-  if (p == 0 || p > 7) {
-    emitError() << "GLWE p parameter can only be in ]0;7]";
+  if (p == 0 || p > (signed)mlir::concretelang::MAXIMUM_BIT_WIDTH) {
+    emitError() << "GLWE p parameter can only be in ]0;"
+                << mlir::concretelang::MAXIMUM_BIT_WIDTH << "]";
     return mlir::failure();
   }
   return ::mlir::success();
