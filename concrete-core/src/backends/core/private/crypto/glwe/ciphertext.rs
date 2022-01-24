@@ -1,10 +1,12 @@
 use super::{GlweBody, GlweMask};
+use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::math::polynomial::PolynomialList;
 use crate::backends::core::private::math::tensor::{
     tensor_traits, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
+use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::{GlweDimension, GlweSize, MonomialDegree, PolynomialSize};
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +42,24 @@ impl<Scalar> GlweCiphertext<Vec<Scalar>> {
         Scalar: Copy,
     {
         GlweCiphertext::from_container(vec![value; poly_size.0 * size.0], poly_size)
+    }
+}
+
+impl<Scalar> GlweCiphertext<Vec<Scalar>>
+where
+    Scalar: Numeric,
+{
+    pub fn new_trivial_encryption<Cont>(
+        glwe_size: GlweSize,
+        plaintexts: &PlaintextList<Cont>,
+    ) -> Self
+    where
+        PlaintextList<Cont>: AsRefTensor<Element = Scalar>,
+    {
+        let poly_size = PolynomialSize(plaintexts.count().0);
+        let mut ciphertext = Self::allocate(Scalar::ZERO, poly_size, glwe_size);
+        ciphertext.fill_with_trivial_encryption(plaintexts);
+        ciphertext
     }
 }
 
@@ -451,5 +471,34 @@ impl<Cont> GlweCiphertext<Cont> {
             // We rotate the polynomial properly
             lwe_mask_poly.rotate_left(negated_count);
         }
+    }
+
+    pub fn fill_with_trivial_encryption<PlaintextContainer, Scalar>(
+        &mut self,
+        plaintexts: &PlaintextList<PlaintextContainer>,
+    ) where
+        PlaintextList<PlaintextContainer>: AsRefTensor<Element = Scalar>,
+        Self: AsMutTensor<Element = Scalar>,
+        Scalar: Numeric,
+    {
+        debug_assert_eq!(plaintexts.count().0, self.poly_size.0);
+        let (mut body, mut mask) = self.get_mut_body_and_mask();
+
+        mask.as_mut_polynomial_list()
+            .polynomial_iter_mut()
+            .for_each(|mut polynomial| {
+                polynomial
+                    .coefficient_iter_mut()
+                    .for_each(|mask_coeff| *mask_coeff = <Scalar as Numeric>::ZERO)
+            });
+
+        body.as_mut_polynomial()
+            .coefficient_iter_mut()
+            .zip(plaintexts.plaintext_iter())
+            .for_each(
+                |(body_coeff, plaintext): (&mut Scalar, &Plaintext<Scalar>)| {
+                    *body_coeff = plaintext.0;
+                },
+            );
     }
 }

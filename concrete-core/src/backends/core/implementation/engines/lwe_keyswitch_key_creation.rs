@@ -70,6 +70,11 @@ impl LweKeyswitchKeyCreationEngine<LweSecretKey32, LweSecretKey32, LweKeyswitchK
         decomposition_base_log: DecompositionBaseLog,
         noise: Variance,
     ) -> Result<LweKeyswitchKey32, LweKeyswitchKeyCreationError<Self::EngineError>> {
+        LweKeyswitchKeyCreationError::perform_generic_checks(
+            decomposition_level_count,
+            decomposition_base_log,
+            32,
+        )?;
         Ok(unsafe {
             self.create_lwe_keyswitch_key_unchecked(
                 input_key,
@@ -167,6 +172,11 @@ impl LweKeyswitchKeyCreationEngine<LweSecretKey64, LweSecretKey64, LweKeyswitchK
         decomposition_base_log: DecompositionBaseLog,
         noise: Variance,
     ) -> Result<LweKeyswitchKey64, LweKeyswitchKeyCreationError<Self::EngineError>> {
+        LweKeyswitchKeyCreationError::perform_generic_checks(
+            decomposition_level_count,
+            decomposition_base_log,
+            64,
+        )?;
         Ok(unsafe {
             self.create_lwe_keyswitch_key_unchecked(
                 input_key,

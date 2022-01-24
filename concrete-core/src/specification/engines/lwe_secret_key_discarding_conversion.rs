@@ -7,6 +7,20 @@ engine_error! {
     LweDimensionMismatch => "The input and output LWE dimensions must be the same."
 }
 
+impl<EngineError: std::error::Error> LweSecretKeyDiscardingConversionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Input, Output>(output: &Output, input: &Input) -> Result<(), Self>
+    where
+        Input: LweSecretKeyEntity,
+        Output: LweSecretKeyEntity<KeyDistribution = Input::KeyDistribution>,
+    {
+        if input.lwe_dimension() != output.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines converting (discarding) LWE secret keys .
 ///
 /// # Semantics

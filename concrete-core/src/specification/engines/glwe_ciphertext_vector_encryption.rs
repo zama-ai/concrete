@@ -11,6 +11,23 @@ engine_error! {
                                vector."
 }
 
+impl<EngineError: std::error::Error> GlweCiphertextVectorEncryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<SecretKey, PlaintextVector>(
+        key: &SecretKey,
+        input: &PlaintextVector,
+    ) -> Result<(), Self>
+    where
+        SecretKey: GlweSecretKeyEntity,
+        PlaintextVector: PlaintextVectorEntity,
+    {
+        if (input.plaintext_count().0 % key.polynomial_size().0) != 0 {
+            return Err(Self::PlaintextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines encrypting GLWE ciphertext vectors.
 ///
 /// # Semantics

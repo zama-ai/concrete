@@ -9,6 +9,22 @@ engine_error! {
     EncoderCountMismatch => "The encoder count and plaintext count must be the same."
 }
 
+impl<EngineError: std::error::Error> PlaintextVectorDecodingError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<EncoderVector, PlaintextVector>(
+        encoder: &EncoderVector,
+        input: &PlaintextVector,
+    ) -> Result<(), Self>
+    where
+        EncoderVector: EncoderVectorEntity,
+        PlaintextVector: PlaintextVectorEntity,
+    {
+        if input.plaintext_count().0 != encoder.encoder_count().0 {
+            return Err(Self::EncoderCountMismatch);
+        }
+        Ok(())
+    }
+}
 /// A trait for engines decoding plaintext vectors.
 ///
 /// # Semantics

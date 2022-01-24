@@ -7,6 +7,22 @@ engine_error! {
     PlaintextCountMismatch => "The input and output plaintext count must be the same."
 }
 
+impl<EngineError: std::error::Error> PlaintextVectorDiscardingRetrievalError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Value, PlaintextVector>(
+        output: &[Value],
+        input: &PlaintextVector,
+    ) -> Result<(), Self>
+    where
+        PlaintextVector: PlaintextVectorEntity,
+    {
+        if output.len() != input.plaintext_count().0 {
+            return Err(Self::PlaintextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines retrieving (discarding) arbitrary values from plaintext vectors.
 ///
 /// # Semantics

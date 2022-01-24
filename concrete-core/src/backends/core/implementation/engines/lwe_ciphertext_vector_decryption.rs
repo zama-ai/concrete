@@ -58,6 +58,7 @@ impl LweCiphertextVectorDecryptionEngine<LweSecretKey32, LweCiphertextVector32, 
         key: &LweSecretKey32,
         input: &LweCiphertextVector32,
     ) -> Result<PlaintextVector32, LweCiphertextVectorDecryptionError<Self::EngineError>> {
+        LweCiphertextVectorDecryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.decrypt_lwe_ciphertext_vector_unchecked(key, input) })
     }
 
@@ -120,6 +121,7 @@ impl LweCiphertextVectorDecryptionEngine<LweSecretKey64, LweCiphertextVector64, 
         key: &LweSecretKey64,
         input: &LweCiphertextVector64,
     ) -> Result<PlaintextVector64, LweCiphertextVectorDecryptionError<Self::EngineError>> {
+        LweCiphertextVectorDecryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.decrypt_lwe_ciphertext_vector_unchecked(key, input) })
     }
 

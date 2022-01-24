@@ -7,6 +7,25 @@ engine_error! {
     LweDimensionMismatch => "The input and output ciphertext LWE dimension must be the same."
 }
 
+impl<EngineError: std::error::Error>
+    LweCiphertextCleartextDiscardingMultiplicationError<EngineError>
+{
+    /// Validates the inputs
+    pub fn perform_generic_checks<InputCiphertext, OutputCiphertext>(
+        output: &OutputCiphertext,
+        input_1: &InputCiphertext,
+    ) -> Result<(), Self>
+    where
+        InputCiphertext: LweCiphertextEntity,
+        OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
+    {
+        if output.lwe_dimension() != input_1.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines multiplying (discarding) LWE ciphertext by cleartexts.
 ///
 /// # Semantics

@@ -11,6 +11,29 @@ engine_error! {
                                    dimensions must be the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextDiscardingKeyswitchError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<KeyswitchKey, InputCiphertext, OutputCiphertext>(
+        output: &OutputCiphertext,
+        input: &InputCiphertext,
+        ksk: &KeyswitchKey,
+    ) -> Result<(), Self>
+    where
+        KeyswitchKey: LweKeyswitchKeyEntity,
+        InputCiphertext: LweCiphertextEntity<KeyDistribution = KeyswitchKey::InputKeyDistribution>,
+        OutputCiphertext:
+            LweCiphertextEntity<KeyDistribution = KeyswitchKey::OutputKeyDistribution>,
+    {
+        if input.lwe_dimension() != ksk.input_lwe_dimension() {
+            return Err(Self::InputLweDimensionMismatch);
+        }
+        if output.lwe_dimension() != ksk.output_lwe_dimension() {
+            return Err(Self::OutputLweDimensionMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines keyswitching (discarding) LWE ciphertexts.
 ///
 /// # Semantics

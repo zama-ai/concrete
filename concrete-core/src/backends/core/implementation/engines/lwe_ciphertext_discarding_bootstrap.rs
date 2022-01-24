@@ -6,9 +6,6 @@ use crate::backends::core::implementation::entities::{
 use crate::specification::engines::{
     LweCiphertextDiscardingBootstrapEngine, LweCiphertextDiscardingBootstrapError,
 };
-use crate::specification::entities::{
-    GlweCiphertextEntity, LweBootstrapKeyEntity, LweCiphertextEntity,
-};
 
 /// # Description:
 /// Implementation of [`LweCiphertextDiscardingBootstrapEngine`] for [`CoreEngine`] that operates on
@@ -81,18 +78,7 @@ impl
         acc: &GlweCiphertext32,
         bsk: &FourierLweBootstrapKey32,
     ) -> Result<(), LweCiphertextDiscardingBootstrapError<Self::EngineError>> {
-        if input.lwe_dimension() != bsk.input_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::InputLweDimensionMismatch);
-        }
-        if acc.polynomial_size() != bsk.polynomial_size() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorPolynomialSizeMismatch);
-        }
-        if acc.glwe_dimension() != bsk.glwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorGlweDimensionMismatch);
-        }
-        if output.lwe_dimension() != bsk.output_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::OutputLweDimensionMismatch);
-        }
+        LweCiphertextDiscardingBootstrapError::perform_generic_checks(output, input, acc, bsk)?;
         unsafe { self.discard_bootstrap_lwe_ciphertext_unchecked(output, input, acc, bsk) };
         Ok(())
     }
@@ -180,18 +166,7 @@ impl
         acc: &GlweCiphertext64,
         bsk: &FourierLweBootstrapKey64,
     ) -> Result<(), LweCiphertextDiscardingBootstrapError<Self::EngineError>> {
-        if input.lwe_dimension() != bsk.input_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::InputLweDimensionMismatch);
-        }
-        if acc.polynomial_size() != bsk.polynomial_size() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorPolynomialSizeMismatch);
-        }
-        if acc.glwe_dimension() != bsk.glwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorGlweDimensionMismatch);
-        }
-        if output.lwe_dimension() != bsk.output_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::OutputLweDimensionMismatch);
-        }
+        LweCiphertextDiscardingBootstrapError::perform_generic_checks(output, input, acc, bsk)?;
         unsafe { self.discard_bootstrap_lwe_ciphertext_unchecked(output, input, acc, bsk) };
         Ok(())
     }

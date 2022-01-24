@@ -60,12 +60,7 @@ impl
         key: &GlweSecretKey32,
         input: &GlweCiphertextVector32,
     ) -> Result<PlaintextVector32, GlweCiphertextVectorDecryptionError<Self::EngineError>> {
-        if key.glwe_dimension() != input.glwe_dimension() {
-            return Err(GlweCiphertextVectorDecryptionError::GlweDimensionMismatch);
-        }
-        if key.polynomial_size() != input.polynomial_size() {
-            return Err(GlweCiphertextVectorDecryptionError::PolynomialSizeMismatch);
-        }
+        GlweCiphertextVectorDecryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.decrypt_glwe_ciphertext_vector_unchecked(key, input) })
     }
 
@@ -132,12 +127,7 @@ impl
         key: &GlweSecretKey64,
         input: &GlweCiphertextVector64,
     ) -> Result<PlaintextVector64, GlweCiphertextVectorDecryptionError<Self::EngineError>> {
-        if key.glwe_dimension() != input.glwe_dimension() {
-            return Err(GlweCiphertextVectorDecryptionError::GlweDimensionMismatch);
-        }
-        if key.polynomial_size() != input.polynomial_size() {
-            return Err(GlweCiphertextVectorDecryptionError::PolynomialSizeMismatch);
-        }
+        GlweCiphertextVectorDecryptionError::perform_generic_checks(key, input)?;
         Ok(unsafe { self.decrypt_glwe_ciphertext_vector_unchecked(key, input) })
     }
 

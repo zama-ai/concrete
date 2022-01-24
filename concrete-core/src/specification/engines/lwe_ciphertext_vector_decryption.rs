@@ -9,6 +9,23 @@ engine_error! {
     LweDimensionMismatch => "The input and secret key LWE dimension must be the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextVectorDecryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<SecretKey, CiphertextVector>(
+        key: &SecretKey,
+        input: &CiphertextVector,
+    ) -> Result<(), Self>
+    where
+        SecretKey: LweSecretKeyEntity,
+        CiphertextVector: LweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
+    {
+        if key.lwe_dimension() != input.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines decrypting LWE ciphertext vectors.
 ///
 /// # Semantics

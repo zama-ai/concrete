@@ -14,6 +14,38 @@ engine_error! {
     AccumulatorGlweDimensionMismatch => "The accumulator and key GLWE dimensions must be the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextDiscardingBootstrapError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<BootstrapKey, Accumulator, InputCiphertext, OutputCiphertext>(
+        output: &OutputCiphertext,
+        input: &InputCiphertext,
+        acc: &Accumulator,
+        bsk: &BootstrapKey,
+    ) -> Result<(), Self>
+    where
+        BootstrapKey: LweBootstrapKeyEntity,
+        Accumulator: GlweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+        InputCiphertext: LweCiphertextEntity<KeyDistribution = BootstrapKey::InputKeyDistribution>,
+        OutputCiphertext:
+            LweCiphertextEntity<KeyDistribution = BootstrapKey::OutputKeyDistribution>,
+    {
+        if input.lwe_dimension() != bsk.input_lwe_dimension() {
+            return Err(Self::InputLweDimensionMismatch);
+        }
+        if acc.polynomial_size() != bsk.polynomial_size() {
+            return Err(Self::AccumulatorPolynomialSizeMismatch);
+        }
+        if acc.glwe_dimension() != bsk.glwe_dimension() {
+            return Err(Self::AccumulatorGlweDimensionMismatch);
+        }
+        if output.lwe_dimension() != bsk.output_lwe_dimension() {
+            return Err(Self::OutputLweDimensionMismatch);
+        }
+
+        Ok(())
+    }
+}
+
 /// A trait for engines bootstrapping (discarding) LWE ciphertexts.
 ///
 /// # Semantics

@@ -27,17 +27,14 @@
 //!
 //! + Multiple __general__ error variants which can be potentially produced by any backend
 //! (see the
-//! [`InputLweDimensionMismatch`](`LweCiphertextDiscardingKeyswitchError::
-//! InputLweDimensionMismatch`) variant for an example)
+//! [`LweCiphertextDiscardingKeyswitchError::InputLweDimensionMismatch`] variant for an example)
 //! + One __specific__ variant which encapsulate the generic argument error `E`
 //! (see the [`Engine`](`LweCiphertextDiscardingKeyswitchError::Engine`) variant for an example)
 //!
 //! When implementing a particular `*Engine` trait, this `E` argument will be forced to be the
 //! [`EngineError`](`AbstractEngine::EngineError`) from the [`AbstractEngine`] super-trait, by the
 //! signature of the operation entry point
-//! (see
-//! [`discard_keyswitch_lwe_ciphertext`](`LweCiphertextDiscardingKeyswitchEngine::
-//! discard_keyswitch_lwe_ciphertext`) for instance).
+//! (see [`LweCiphertextDiscardingKeyswitchEngine::discard_keyswitch_lwe_ciphertext`] for instance).
 //!
 //! This design makes it possible for each operation, to match the error exhaustively against both
 //! general error variants, and backend-related error variants.
@@ -86,16 +83,38 @@ pub trait AbstractEngine: sealed::AbstractEngineSeal {
         Self: Sized;
 }
 
-macro_rules! engine_error{
-    ($name:ident for $trait:ident @ $($variants:ident => $messages:literal),*) =>{
-        #[doc="An error used with the [`"]
-        #[doc=stringify!($trait)]
-        #[doc="`] trait."]
+macro_rules! engine_error {
+    ($name:ident for $trait:ident @) => {
+        #[doc=concat!("An error used with the [`", stringify!($trait), "`] trait.")]
+        #[non_exhaustive]
+        #[derive(Debug, Clone, Eq, PartialEq)]
+        pub enum $name<EngineError: std::error::Error> {
+            #[doc="_Specific_ error to the implementing engine."]
+            Engine(EngineError),
+        }
+        impl<EngineError: std::error::Error> std::fmt::Display for $name<EngineError>{
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                match self {
+                    Self::Engine(error) => write!(f, "Error occurred in the engine: {}", error),
+                }
+            }
+        }
+        impl<EngineError: std::error::Error> std::error::Error for $name<EngineError>{}
+    };
+    ($name:ident for $trait:ident @ $($variants:ident => $messages:literal),*) => {
+        #[doc=concat!("An error used with the [`", stringify!($trait), "`] trait.")]
+        #[doc=""]
+        #[doc="This type provides a "]
+        #[doc=concat!("[`", stringify!($name), "::perform_generic_checks`] ")]
+        #[doc="function that does error checking for the general cases, returning an `Ok(())` "]
+        #[doc="if the inputs are valid, meaning that engine implementors would then only "]
+        #[doc="need to check for their own specific errors."]
+        #[doc="Otherwise an `Err(..)` with the proper error variant is returned."]
         #[non_exhaustive]
         #[derive(Debug, Clone, Eq, PartialEq)]
         pub enum $name<EngineError: std::error::Error> {
             $(
-                #[doc="_Generic_ error:"]
+                #[doc="_Generic_ error: "]
                 #[doc=$messages]
                 $variants,
             )*
@@ -113,7 +132,7 @@ macro_rules! engine_error{
             }
         }
         impl<EngineError: std::error::Error> std::error::Error for $name<EngineError>{}
-    }
+    };
 }
 pub(crate) use engine_error;
 
@@ -136,6 +155,7 @@ mod glwe_ciphertext_discarding_conversion;
 mod glwe_ciphertext_discarding_decryption;
 mod glwe_ciphertext_discarding_encryption;
 mod glwe_ciphertext_encryption;
+mod glwe_ciphertext_trivial_encryption;
 mod glwe_ciphertext_vector_conversion;
 mod glwe_ciphertext_vector_decryption;
 mod glwe_ciphertext_vector_discarding_conversion;
@@ -147,6 +167,7 @@ mod glwe_ciphertext_zero_encryption;
 mod glwe_secret_key_conversion;
 mod glwe_secret_key_creation;
 mod glwe_secret_key_discarding_conversion;
+mod glwe_secret_key_to_lwe_secret_key_transmutation;
 mod lwe_bootstrap_key_conversion;
 mod lwe_bootstrap_key_creation;
 mod lwe_bootstrap_key_discarding_conversion;
@@ -170,6 +191,7 @@ mod lwe_ciphertext_fusing_negation;
 mod lwe_ciphertext_loading;
 mod lwe_ciphertext_plaintext_discarding_addition;
 mod lwe_ciphertext_plaintext_fusing_addition;
+mod lwe_ciphertext_trivial_encryption;
 mod lwe_ciphertext_vector_conversion;
 mod lwe_ciphertext_vector_decryption;
 mod lwe_ciphertext_vector_discarding_addition;
@@ -185,6 +207,7 @@ mod lwe_ciphertext_vector_encryption;
 mod lwe_ciphertext_vector_fusing_addition;
 mod lwe_ciphertext_vector_fusing_negation;
 mod lwe_ciphertext_vector_loading;
+mod lwe_ciphertext_vector_trivial_encryption;
 mod lwe_ciphertext_vector_zero_encryption;
 mod lwe_ciphertext_zero_encryption;
 mod lwe_keyswitch_key_conversion;
@@ -225,6 +248,7 @@ pub use glwe_ciphertext_discarding_conversion::*;
 pub use glwe_ciphertext_discarding_decryption::*;
 pub use glwe_ciphertext_discarding_encryption::*;
 pub use glwe_ciphertext_encryption::*;
+pub use glwe_ciphertext_trivial_encryption::*;
 pub use glwe_ciphertext_vector_conversion::*;
 pub use glwe_ciphertext_vector_decryption::*;
 pub use glwe_ciphertext_vector_discarding_conversion::*;
@@ -236,6 +260,7 @@ pub use glwe_ciphertext_zero_encryption::*;
 pub use glwe_secret_key_conversion::*;
 pub use glwe_secret_key_creation::*;
 pub use glwe_secret_key_discarding_conversion::*;
+pub use glwe_secret_key_to_lwe_secret_key_transmutation::*;
 pub use lwe_bootstrap_key_conversion::*;
 pub use lwe_bootstrap_key_creation::*;
 pub use lwe_bootstrap_key_discarding_conversion::*;
@@ -259,6 +284,7 @@ pub use lwe_ciphertext_fusing_negation::*;
 pub use lwe_ciphertext_loading::*;
 pub use lwe_ciphertext_plaintext_discarding_addition::*;
 pub use lwe_ciphertext_plaintext_fusing_addition::*;
+pub use lwe_ciphertext_trivial_encryption::*;
 pub use lwe_ciphertext_vector_conversion::*;
 pub use lwe_ciphertext_vector_decryption::*;
 pub use lwe_ciphertext_vector_discarding_addition::*;
@@ -274,6 +300,7 @@ pub use lwe_ciphertext_vector_encryption::*;
 pub use lwe_ciphertext_vector_fusing_addition::*;
 pub use lwe_ciphertext_vector_fusing_negation::*;
 pub use lwe_ciphertext_vector_loading::*;
+pub use lwe_ciphertext_vector_trivial_encryption::*;
 pub use lwe_ciphertext_vector_zero_encryption::*;
 pub use lwe_ciphertext_zero_encryption::*;
 pub use lwe_keyswitch_key_conversion::*;

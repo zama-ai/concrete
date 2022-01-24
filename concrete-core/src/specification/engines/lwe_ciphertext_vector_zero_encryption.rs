@@ -9,6 +9,16 @@ engine_error! {
     NullCiphertextCount => "The ciphertext count must be greater than zero."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextVectorZeroEncryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks(count: LweCiphertextCount) -> Result<(), Self> {
+        if count.0 == 0 {
+            return Err(Self::NullCiphertextCount);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines encrypting zero in LWE ciphertext vectors.
 ///
 /// # Semantics

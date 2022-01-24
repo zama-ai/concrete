@@ -8,6 +8,28 @@ engine_error! {
     CiphertextCountMismatch => "The input and output ciphertext count must be the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextVectorDiscardingNegationError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<InputCiphertextVector, OutputCiphertextVector>(
+        output: &OutputCiphertextVector,
+        input: &InputCiphertextVector,
+    ) -> Result<(), Self>
+    where
+        InputCiphertextVector: LweCiphertextVectorEntity,
+        OutputCiphertextVector:
+            LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
+    {
+        if input.lwe_dimension() != output.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+
+        if input.lwe_ciphertext_count() != output.lwe_ciphertext_count() {
+            return Err(Self::CiphertextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines negating (discarding) LWE ciphertext vectors.
 ///
 /// # Semantics

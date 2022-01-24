@@ -13,6 +13,31 @@ engine_error! {
                                polynomial size must be the same."
 }
 
+impl<EngineError: std::error::Error> GlweCiphertextDiscardingEncryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<SecretKey, PlaintextVector, Ciphertext>(
+        key: &SecretKey,
+        output: &Ciphertext,
+        input: &PlaintextVector,
+    ) -> Result<(), Self>
+    where
+        SecretKey: GlweSecretKeyEntity,
+        PlaintextVector: PlaintextVectorEntity,
+        Ciphertext: GlweCiphertextEntity<KeyDistribution = SecretKey::KeyDistribution>,
+    {
+        if key.polynomial_size() != output.polynomial_size() {
+            return Err(Self::PolynomialSizeMismatch);
+        }
+        if key.glwe_dimension() != output.glwe_dimension() {
+            return Err(Self::GlweDimensionMismatch);
+        }
+        if key.polynomial_size().0 != input.plaintext_count().0 {
+            return Err(Self::PlaintextCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines encrypting (discarding) GLWE ciphertexts.
 ///
 /// # Semantics

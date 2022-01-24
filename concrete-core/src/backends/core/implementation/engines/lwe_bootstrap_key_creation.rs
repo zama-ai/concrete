@@ -62,15 +62,11 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, LweBootstrap
         decomposition_level_count: DecompositionLevelCount,
         noise: Variance,
     ) -> Result<LweBootstrapKey32, LweBootstrapKeyCreationError<Self::EngineError>> {
-        if decomposition_base_log.0 == 0 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionBaseLog);
-        }
-        if decomposition_level_count.0 == 1 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionLevelCount);
-        }
-        if decomposition_base_log.0 * decomposition_level_count.0 > 32 {
-            return Err(LweBootstrapKeyCreationError::DecompositionTooLarge);
-        }
+        LweBootstrapKeyCreationError::perform_generic_checks(
+            decomposition_base_log,
+            decomposition_level_count,
+            32,
+        )?;
         Ok(unsafe {
             self.create_lwe_bootstrap_key_unchecked(
                 input_key,
@@ -157,15 +153,11 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, LweBootstrap
         decomposition_level_count: DecompositionLevelCount,
         noise: Variance,
     ) -> Result<LweBootstrapKey64, LweBootstrapKeyCreationError<Self::EngineError>> {
-        if decomposition_base_log.0 == 0 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionBaseLog);
-        }
-        if decomposition_level_count.0 == 1 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionLevelCount);
-        }
-        if decomposition_base_log.0 * decomposition_level_count.0 > 64 {
-            return Err(LweBootstrapKeyCreationError::DecompositionTooLarge);
-        }
+        LweBootstrapKeyCreationError::perform_generic_checks(
+            decomposition_base_log,
+            decomposition_level_count,
+            64,
+        )?;
         Ok(unsafe {
             self.create_lwe_bootstrap_key_unchecked(
                 input_key,
@@ -252,15 +244,11 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBo
         decomposition_level_count: DecompositionLevelCount,
         noise: Variance,
     ) -> Result<FourierLweBootstrapKey32, LweBootstrapKeyCreationError<Self::EngineError>> {
-        if decomposition_base_log.0 == 0 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionBaseLog);
-        }
-        if decomposition_level_count.0 == 1 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionLevelCount);
-        }
-        if decomposition_base_log.0 * decomposition_level_count.0 > 32 {
-            return Err(LweBootstrapKeyCreationError::DecompositionTooLarge);
-        }
+        LweBootstrapKeyCreationError::perform_generic_checks(
+            decomposition_base_log,
+            decomposition_level_count,
+            32,
+        )?;
         Ok(unsafe {
             self.create_lwe_bootstrap_key_unchecked(
                 input_key,
@@ -359,15 +347,11 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, FourierLweBo
         decomposition_level_count: DecompositionLevelCount,
         noise: Variance,
     ) -> Result<FourierLweBootstrapKey64, LweBootstrapKeyCreationError<Self::EngineError>> {
-        if decomposition_base_log.0 == 0 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionBaseLog);
-        }
-        if decomposition_level_count.0 == 1 {
-            return Err(LweBootstrapKeyCreationError::NullDecompositionLevelCount);
-        }
-        if decomposition_base_log.0 * decomposition_level_count.0 > 32 {
-            return Err(LweBootstrapKeyCreationError::DecompositionTooLarge);
-        }
+        LweBootstrapKeyCreationError::perform_generic_checks(
+            decomposition_base_log,
+            decomposition_level_count,
+            64,
+        )?;
         Ok(unsafe {
             self.create_lwe_bootstrap_key_unchecked(
                 input_key,

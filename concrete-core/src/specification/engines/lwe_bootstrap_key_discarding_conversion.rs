@@ -11,6 +11,39 @@ engine_error! {
     DecompositionLevelCountMismatch => "The two keys must have the same level counts."
 }
 
+impl<EngineError: std::error::Error> LweBootstrapKeyDiscardingConversionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<Input, Output>(output: &Output, input: &Input) -> Result<(), Self>
+    where
+        Input: LweBootstrapKeyEntity,
+        Output: LweBootstrapKeyEntity<
+            InputKeyDistribution = Input::InputKeyDistribution,
+            OutputKeyDistribution = Input::OutputKeyDistribution,
+        >,
+    {
+        if input.input_lwe_dimension() != output.input_lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+
+        if input.glwe_dimension() != output.glwe_dimension() {
+            return Err(Self::GlweDimensionMismatch);
+        }
+
+        if input.polynomial_size() != output.polynomial_size() {
+            return Err(Self::PolynomialSizeMismatch);
+        }
+
+        if input.decomposition_base_log() != output.decomposition_base_log() {
+            return Err(Self::DecompositionBaseLogMismatch);
+        }
+
+        if input.decomposition_level_count() != output.decomposition_level_count() {
+            return Err(Self::DecompositionLevelCountMismatch);
+        }
+        Ok(())
+    }
+}
+
 /// A trait for engines converting (discarding) LWE bootstrap keys .
 ///
 /// # Semantics

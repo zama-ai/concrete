@@ -12,6 +12,29 @@ engine_error! {
                                the same."
 }
 
+impl<EngineError: std::error::Error> LweCiphertextVectorDiscardingEncryptionError<EngineError> {
+    /// Validates the inputs
+    pub fn perform_generic_checks<SecretKey, PlaintextVector, CiphertextVector>(
+        key: &SecretKey,
+        output: &CiphertextVector,
+        input: &PlaintextVector,
+    ) -> Result<(), Self>
+    where
+        SecretKey: LweSecretKeyEntity,
+        PlaintextVector: PlaintextVectorEntity,
+        CiphertextVector: LweCiphertextVectorEntity<KeyDistribution = SecretKey::KeyDistribution>,
+    {
+        if key.lwe_dimension() != output.lwe_dimension() {
+            return Err(Self::LweDimensionMismatch);
+        }
+        if input.plaintext_count().0 != output.lwe_ciphertext_count().0 {
+            return Err(Self::PlaintextCountMismatch);
+        }
+
+        Ok(())
+    }
+}
+
 /// A trait for engines encrypting (discarding) LWE ciphertext vectors.
 ///
 /// # Semantics

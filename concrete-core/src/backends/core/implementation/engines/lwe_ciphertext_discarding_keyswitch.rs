@@ -5,7 +5,6 @@ use crate::backends::core::implementation::entities::{
 use crate::specification::engines::{
     LweCiphertextDiscardingKeyswitchEngine, LweCiphertextDiscardingKeyswitchError,
 };
-use crate::specification::entities::{LweCiphertextEntity, LweKeyswitchKeyEntity};
 
 /// # Description:
 /// Implementation of [`LweCiphertextDiscardingKeyswitchEngine`] for [`CoreEngine`] that operates on
@@ -66,12 +65,7 @@ impl LweCiphertextDiscardingKeyswitchEngine<LweKeyswitchKey32, LweCiphertext32, 
         input: &LweCiphertext32,
         ksk: &LweKeyswitchKey32,
     ) -> Result<(), LweCiphertextDiscardingKeyswitchError<Self::EngineError>> {
-        if input.lwe_dimension() != ksk.input_lwe_dimension() {
-            return Err(LweCiphertextDiscardingKeyswitchError::InputLweDimensionMismatch);
-        }
-        if output.lwe_dimension() != ksk.output_lwe_dimension() {
-            return Err(LweCiphertextDiscardingKeyswitchError::OutputLweDimensionMismatch);
-        }
+        LweCiphertextDiscardingKeyswitchError::perform_generic_checks(output, input, ksk)?;
         unsafe { self.discard_keyswitch_lwe_ciphertext_unchecked(output, input, ksk) };
         Ok(())
     }
@@ -145,12 +139,7 @@ impl LweCiphertextDiscardingKeyswitchEngine<LweKeyswitchKey64, LweCiphertext64, 
         input: &LweCiphertext64,
         ksk: &LweKeyswitchKey64,
     ) -> Result<(), LweCiphertextDiscardingKeyswitchError<Self::EngineError>> {
-        if input.lwe_dimension() != ksk.input_lwe_dimension() {
-            return Err(LweCiphertextDiscardingKeyswitchError::InputLweDimensionMismatch);
-        }
-        if output.lwe_dimension() != ksk.output_lwe_dimension() {
-            return Err(LweCiphertextDiscardingKeyswitchError::OutputLweDimensionMismatch);
-        }
+        LweCiphertextDiscardingKeyswitchError::perform_generic_checks(output, input, ksk)?;
         unsafe { self.discard_keyswitch_lwe_ciphertext_unchecked(output, input, ksk) };
         Ok(())
     }
