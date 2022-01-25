@@ -24,7 +24,7 @@ jobs:
       - name: Download release assets
         uses: duhow/download-github-release-assets@v1
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN_RELEASE }}
           repository: ${{ github.repository }}
           tag: ${{ github.event.inputs.tag }}
           files: '*'
@@ -38,8 +38,8 @@ jobs:
 
       - name: Push packages to internal pypi
         if: ${{ github.event.inputs.internal_pypi }}
-        run: twine upload -u ${{ secrets.INTERNAL_PYPI_USER }} -p ${{ secrets.INTERNAL_PYPI_PASSWORD }} --repository-url ${{ secrets.INTERNAL_PYPI_URL }} ${{ github.workspace }}/release/*.whl
+        run: twine upload -u ${{ secrets.INTERNAL_PYPI_USER }} -p "${{ secrets.INTERNAL_PYPI_PASSWORD }}" --repository-url ${{ secrets.INTERNAL_PYPI_URL }} ${{ github.workspace }}/release/*.whl
 
       - name: Push packages to public pypi
         if: ${{ github.event.inputs.public_pypi }}
-        run: twine upload -u ${{ secrets.PUBLIC_PYPI_USER }} -p ${{ secrets.PUBLIC_PYPI_PASSWORD }} -r pypi ${{ github.workspace }}/release/*.whl
+        run: twine upload -u ${{ secrets.PUBLIC_PYPI_USER }} -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" -r pypi ${{ github.workspace }}/release/*.whl
