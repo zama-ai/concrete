@@ -1,5 +1,8 @@
 FROM ubuntu:20.04
 
+ENV TZ=Europe/Paris
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 RUN mkdir /pkg && mkdir /app
 WORKDIR /pkg
 COPY docker/release_resources/release_requirements.txt .
@@ -7,15 +10,17 @@ COPY ./pkg/*.whl .
 
 RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
+    build-essential \
     python3-pip \
     python3.8 \
+    python3.8-dev \
     python3.8-tk \
     python-is-python3 \
     graphviz* && \
     rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
-    python3 -m pip install --no-cache-dir ./*.whl && \
+    python3 -m pip install --no-cache-dir "$(ls ./*.whl)[full]" && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
 
 WORKDIR /app
