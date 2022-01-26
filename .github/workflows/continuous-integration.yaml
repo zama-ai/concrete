@@ -791,6 +791,13 @@ jobs:
           -u __token__ -p ${{ secrets.PYPI_BOT_TOKEN }} \
           -r pypi "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
+      - name: Push package to Internal PyPi
+        if: ${{ success() && !cancelled() && fromJSON(env.IS_PRERELEASE) }}
+        run: |
+          poetry run twine upload \
+          -u "${{ secrets.INTERNAL_PYPI_BOT_USERNAME }}" -p "${{ secrets.INTERNAL_PYPI_BOT_PASSWORD }}" \
+          -r "${{ secrets.INTERNAL_PYPI_URL }}" "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
+
       - name: Push release documentation
         if: ${{ success() && !cancelled() }}
         env:
