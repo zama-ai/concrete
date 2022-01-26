@@ -1,4 +1,11 @@
-use std::cell::RefCell;
+/* WARNING: Using the functions ft_inplace_stable_from_other_type and 
+ * ift_inplace_stable_ns_from_other_type is unsafe.
+ *
+ * TO DO: replace them by ft_inplace_stable and ift_inplace_stable_ns
+ * TO DO: replace the `unwrap`s by proper error handling
+ */
+
+
 use std::slice;
 
 use concrete_fftw::array::AlignedVec;
@@ -7,9 +14,8 @@ use concrete_fftw::types::c64;
 use concrete_commons::numeric::{CastInto, SignedInteger, UnsignedInteger};
 use concrete_commons::parameters::PolynomialSize;
 
-use crate::backends::core::private::math::fft::plan::Plans;
-use crate::backends::core::private::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
-use crate::backends::core::private::math::fft::ALLOWED_POLY_SIZE;
+use crate::backends::core::private::math::fft::twiddles::{BackwardCorrector,
+                                                                ForwardCorrector};
 use crate::backends::core::private::math::polynomial::Polynomial;
 use crate::backends::core::private::math::tensor::{
     ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor,
@@ -17,7 +23,15 @@ use crate::backends::core::private::math::tensor::{
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::zip;
 
-use super::{Complex64, Correctors, FourierPolynomial};
+use pseudo_graphec::prelude::{OFTSimulator1 as Simulator, FourierEngine};
+use std::cell::RefCell;
+
+use crate::backends::core::private::math::fft::{
+    FourierPolynomial, Complex64, Correctors,
+};
+
+// Number of bits of accuracy for the OFT simulator.
+const ACCURACY: usize = 40;
 
 /// A fast fourier transformer.
 ///
@@ -25,7 +39,7 @@ use super::{Complex64, Correctors, FourierPolynomial};
 /// domain.
 #[derive(Debug, Clone)]
 pub struct Fft {
-    plans: Plans,
+    plans: Simulator,
     correctors: Correctors,
     buffer: RefCell<FourierPolynomial<AlignedVec<Complex64>>>,
 }
@@ -37,18 +51,19 @@ impl Fft {
     ///
     /// ```
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::core::private::math::fft::Fft;
+    /// use concrete_core::backends::optalysys::private::math::fft::Fft;
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
     pub fn new(size: PolynomialSize) -> Fft {
         debug_assert!(
-            ALLOWED_POLY_SIZE.contains(&size.0),
-            "The size chosen is not valid ({}). Should be 256, 512, 1024, 2048, 4096, \
-            8192 or 16384",
+            [128, 256, 512, 1024, 2048, 4096, 8192, 16384].contains(&size.0),
+            "The size chosen is not valid ({}). Should be 256, 512, 1024, 2048 or 4096",
             size.0
         );
-        let plans = Plans::new(size);
+
+        // TO DO: implement proper error handling
+        let plans = Simulator::new(ACCURACY, size.0).unwrap();
         let buffer = RefCell::new(FourierPolynomial::allocate(
             Complex64::new(0., 0.),
             PolynomialSize(size.0),
@@ -67,12 +82,12 @@ impl Fft {
     ///
     /// ```
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::core::private::math::fft::Fft;
+    /// use concrete_core::backends::optalysys::private::math::fft::Fft;
     /// let fft = Fft::new(PolynomialSize(256));
     /// assert_eq!(fft.polynomial_size(), PolynomialSize(256));
     /// ```
     pub fn polynomial_size(&self) -> PolynomialSize {
-        self.plans.polynomial_size()
+        PolynomialSize(self.plans.get_ft_size())
     }
 
     /// Performs the forward fourier transform of the `poly` polynomial, viewed as a polynomial of
@@ -88,8 +103,7 @@ impl Fft {
     ///
     /// ```
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::backends::core::private::math::polynomial::Polynomial;
+    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
     /// use concrete_core::backends::core::private::math::random::RandomGenerator;
     /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
     /// use concrete_core::backends::core::private::math::torus::UnsignedTorus;
@@ -126,11 +140,11 @@ impl Fft {
     ///
     /// ```
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::backends::core::private::math::polynomial::Polynomial;
-    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
-    /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
-    /// use concrete_core::backends::core::private::math::torus::UnsignedTorus;
+    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
+    /// use concrete_core::backends::optalysys::private::math::polynomial::Polynomial;
+    /// use concrete_core::backends::optalysys::private::math::random::RandomGenerator;
+    /// use concrete_core::backends::optalysys::private::math::tensor::AsRefTensor;
+    /// use concrete_core::backends::optalysys::private::math::torus::UnsignedTorus;
     ///
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
@@ -204,10 +218,10 @@ impl Fft {
     /// ```
     /// use concrete_commons::numeric::UnsignedInteger;
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::backends::core::private::math::polynomial::Polynomial;
-    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
-    /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
+    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
+    /// use concrete_core::backends::optalysys::private::math::polynomial::Polynomial;
+    /// use concrete_core::backends::optalysys::private::math::random::RandomGenerator;
+    /// use concrete_core::backends::optalysys::private::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
@@ -242,10 +256,10 @@ impl Fft {
     /// ```
     /// use concrete_commons::numeric::UnsignedInteger;
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::backends::core::private::math::polynomial::Polynomial;
-    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
-    /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
+    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
+    /// use concrete_core::backends::optalysys::private::math::polynomial::Polynomial;
+    /// use concrete_core::backends::optalysys::private::math::random::RandomGenerator;
+    /// use concrete_core::backends::optalysys::private::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly_1 =
@@ -332,29 +346,6 @@ impl Fft {
     }
 
     /// Performs the backward fourier transform of the `fourier_poly` polynomial, viewed as a
-    /// polynomial of torus coefficients.
-    ///
-    /// See [`Fft::forward_as_torus`] for an example.
-    ///
-    /// # Note
-    ///
-    /// It should be noted that this method is subotpimal, as it only uses half of the computational
-    /// power of the transformer. For a faster approach, you should consider processing the
-    /// polynomials two by two with the [`Fft::backward_two_as_torus`] method.
-    pub fn backward_as_torus<OutCont, InCont, Coef>(
-        &self,
-        poly: &mut Polynomial<OutCont>,
-        fourier_poly: &mut FourierPolynomial<InCont>,
-    ) where
-        Polynomial<OutCont>: AsMutTensor<Element = Coef>,
-        FourierPolynomial<InCont>: AsMutTensor<Element = Complex64>,
-        Coef: UnsignedTorus,
-    {
-        ck_dim_eq!(self.polynomial_size().0 => fourier_poly.polynomial_size().0, poly.polynomial_size().0);
-        self.backward(poly, fourier_poly, regular_convert_backward_single_torus);
-    }
-
-    /// Performs the backward fourier transform of the `fourier_poly` polynomial, viewed as a
     /// polynomial of integer coefficients, and adds the result to `poly`.
     ///
     /// See [`Fft::forward_as_integer`] for an example.
@@ -415,38 +406,6 @@ impl Fft {
     }
 
     /// Performs the backward fourier transform of the `fourier_poly_1` and `fourier_poly_2`
-    /// polynomials, viewed as polynomials of torus elements.
-    ///
-    /// See [`Fft::forward_two_as_torus`] for an example.
-    pub fn backward_two_as_torus<OutCont1, OutCont2, InCont1, InCont2, Coef>(
-        &self,
-        poly_1: &mut Polynomial<OutCont1>,
-        poly_2: &mut Polynomial<OutCont2>,
-        fourier_poly_1: &mut FourierPolynomial<InCont1>,
-        fourier_poly_2: &mut FourierPolynomial<InCont2>,
-    ) where
-        Polynomial<OutCont1>: AsMutTensor<Element = Coef>,
-        Polynomial<OutCont2>: AsMutTensor<Element = Coef>,
-        FourierPolynomial<InCont1>: AsMutTensor<Element = Complex64>,
-        FourierPolynomial<InCont2>: AsMutTensor<Element = Complex64>,
-        Coef: UnsignedTorus,
-    {
-        ck_dim_eq!(self.polynomial_size().0 =>
-            fourier_poly_1.polynomial_size().0,
-            poly_1.polynomial_size().0,
-            fourier_poly_2.polynomial_size().0,
-            poly_2.polynomial_size().0
-        );
-        self.backward_two(
-            poly_1,
-            poly_2,
-            fourier_poly_1,
-            fourier_poly_2,
-            regular_convert_backward_two_torus,
-        );
-    }
-
-    /// Performs the backward fourier transform of the `fourier_poly_1` and `fourier_poly_2`
     /// polynomials, viewed as polynomials of integer coefficients, and adds the result to the  
     /// `poly_1` and `poly_2` polynomials.
     ///
@@ -479,7 +438,7 @@ impl Fft {
         );
     }
 
-    pub(crate) fn forward<OutCont, InCont, Coef>(
+    pub(super) fn forward<OutCont, InCont, Coef>(
         &self,
         fourier_poly: &mut FourierPolynomial<OutCont>,
         poly: &Polynomial<InCont>,
@@ -502,13 +461,13 @@ impl Fft {
         );
 
         // We perform the forward fft
-        self.plans.forward(
+        self.plans.ft_inplace_stable_from_other_type(
             self.buffer.borrow().as_tensor().as_slice(),
             fourier_poly.as_mut_tensor().as_mut_slice(),
-        );
+        ).unwrap();
     }
 
-    pub(crate) fn forward_two<InCont1, InCont2, OutCont1, OutCont2, Coef>(
+    pub(super) fn forward_two<InCont1, InCont2, OutCont1, OutCont2, Coef>(
         &self,
         fourier_poly_1: &mut FourierPolynomial<OutCont1>,
         fourier_poly_2: &mut FourierPolynomial<OutCont2>,
@@ -541,10 +500,10 @@ impl Fft {
         );
 
         // We perform the forward on the first fourier polynomial.
-        self.plans.forward(
+        self.plans.ft_inplace_stable_from_other_type(
             self.buffer.borrow().as_tensor().as_slice(),
             fourier_poly_1.as_mut_tensor().as_mut_slice(),
-        );
+        ).unwrap();
 
         // We replicate the coefficients on the second fourier polynomial.
         replicate_coefficients(
@@ -554,7 +513,7 @@ impl Fft {
         );
     }
 
-    pub(crate) fn backward<OutCont, InCont, Coef>(
+    pub(super) fn backward<OutCont, InCont, Coef>(
         &self,
         poly: &mut Polynomial<OutCont>,
         fourier_poly: &mut FourierPolynomial<InCont>,
@@ -575,16 +534,16 @@ impl Fft {
         }
 
         // We perform the backward fft
-        self.plans.backward(
+        self.plans.ift_inplace_stable_ns_from_other_type(
             fourier_poly.as_tensor().as_slice(),
             self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
-        );
+        ).unwrap();
 
         // We fill the polynomial with the conversion function
         convert_function(poly, &*self.buffer.borrow(), &self.correctors.backward)
     }
 
-    pub(crate) fn backward_two<OutCont1, OutCont2, InCont1, InCont2, Coef>(
+    pub(super) fn backward_two<OutCont1, OutCont2, InCont1, InCont2, Coef>(
         &self,
         poly_1: &mut Polynomial<OutCont1>,
         poly_2: &mut Polynomial<OutCont2>,
@@ -630,10 +589,10 @@ impl Fft {
         }
 
         // We perform the backward fft
-        self.plans.backward(
+        self.plans.ift_inplace_stable_ns_from_other_type(
             fourier_poly_1.as_tensor().as_slice(),
             self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
-        );
+        ).unwrap();
 
         convert_function(
             poly_1,
@@ -693,7 +652,7 @@ fn replicate_coefficients(fft_a: &mut [Complex64], fft_b: &mut [Complex64], big_
     fft_b[1] = fft_a[0];
 
     let s = Complex64::new(0., -0.5);
-    let mut tmp: Complex64 = fft_a[0];
+    let mut tmp = fft_a[0];
     fft_a[0] = (fft_a[0] + fft_b[0].conj()) * 0.5;
     fft_b[0] = (tmp - fft_b[0].conj()) * s;
     tmp = fft_a[1];
@@ -830,25 +789,6 @@ fn regular_convert_add_backward_single_torus<OutCont, Coef>(
     }
 }
 
-fn regular_convert_backward_single_torus<OutCont, Coef>(
-    out: &mut Polynomial<OutCont>,
-    inp: &FourierPolynomial<AlignedVec<Complex64>>,
-    corr: &BackwardCorrector<&'static [Complex64]>,
-) where
-    Polynomial<OutCont>: AsMutTensor<Element = Coef>,
-    Coef: UnsignedTorus,
-{
-    ck_dim_eq!(inp.as_tensor().len() => corr.as_tensor().len(), out.as_tensor().len());
-    for (input, (corrector, output)) in inp
-        .as_tensor()
-        .iter()
-        .zip(corr.as_tensor().iter().zip(out.as_mut_tensor().iter_mut()))
-    {
-        let interm = (input * corrector).re;
-        *output = Coef::from_torus(interm);
-    }
-}
-
 fn regular_convert_add_backward_single_integer<OutCont, Coef>(
     out: &mut Polynomial<OutCont>,
     inp: &FourierPolynomial<AlignedVec<Complex64>>,
@@ -895,35 +835,6 @@ fn regular_convert_add_backward_two_torus<OutCont1, OutCont2, Coef>(
         let im_interm = interm.im;
         *output_1 = output_1.wrapping_add(Coef::from_torus(re_interm));
         *output_2 = output_2.wrapping_add(Coef::from_torus(im_interm));
-    }
-}
-
-fn regular_convert_backward_two_torus<OutCont1, OutCont2, Coef>(
-    out1: &mut Polynomial<OutCont1>,
-    out2: &mut Polynomial<OutCont2>,
-    inp: &FourierPolynomial<AlignedVec<Complex64>>,
-    corr: &BackwardCorrector<&'static [Complex64]>,
-) where
-    Polynomial<OutCont1>: AsMutTensor<Element = Coef>,
-    Polynomial<OutCont2>: AsMutTensor<Element = Coef>,
-    Coef: UnsignedTorus,
-{
-    ck_dim_eq!(
-        out1.as_tensor().len() =>
-        corr.as_tensor().len(),
-        inp.as_tensor().len(),
-        out2.as_tensor().len()
-    );
-    for (output_1, (output_2, (corrector, input))) in out1.as_mut_tensor().iter_mut().zip(
-        out2.as_mut_tensor()
-            .iter_mut()
-            .zip(corr.as_tensor().iter().zip(inp.as_tensor().iter())),
-    ) {
-        let interm = input * corrector;
-        let re_interm = interm.re;
-        let im_interm = interm.im;
-        *output_1 = Coef::from_torus(re_interm);
-        *output_2 = Coef::from_torus(im_interm);
     }
 }
 

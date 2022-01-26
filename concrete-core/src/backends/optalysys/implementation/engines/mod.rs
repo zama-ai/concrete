@@ -1,8 +1,13 @@
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crate::prelude::sealed::AbstractEngineSeal;
+use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FourierBskBuffers;
 use crate::prelude::{AbstractEngine, FourierBufferKey};
+use crate::prelude::{
+    LweBootstrapKeyEntity, OptalysysFourierLweBootstrapKey32, OptalysysFourierLweBootstrapKey64,
+};
+use crate::prelude::sealed::AbstractEngineSeal;
 
 #[derive(Debug)]
 pub enum OptalysysError {
@@ -20,13 +25,6 @@ impl Display for OptalysysError {
 }
 
 impl Error for OptalysysError {}
-
-use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FourierBskBuffers;
-use crate::prelude::{
-    LweBootstrapKeyEntity, OptalysysFourierLweBootstrapKey32, OptalysysFourierLweBootstrapKey64,
-};
-use concrete_commons::parameters::{GlweSize, PolynomialSize};
-use std::collections::BTreeMap;
 
 /// The main engine exposed by the Optalysys backend.
 pub struct OptalysysEngine {

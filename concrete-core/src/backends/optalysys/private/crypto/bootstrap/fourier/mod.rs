@@ -14,7 +14,6 @@ use crate::backends::core::private::crypto::ggsw::GgswCiphertext;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::math::decomposition::SignedDecomposer;
-use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
 use crate::backends::core::private::math::polynomial::{Polynomial, PolynomialList};
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
@@ -23,6 +22,7 @@ use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::{zip, zip_args};
 use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FftBuffers;
 use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FourierBskBuffers;
+use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
 
 pub(crate) mod buffers;
 #[cfg(test)]
