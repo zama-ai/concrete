@@ -9,8 +9,8 @@ use std::fmt;
 #[cfg(test)]
 mod tests;
 
-mod twiddles;
-use twiddles::*;
+pub(crate) mod twiddles;
+pub use twiddles::*;
 
 mod plan;
 
@@ -27,7 +27,7 @@ pub use concrete_fftw::array::AlignedVec as FourierVec;
 
 #[derive(PartialEq, Copy, Clone, Debug, Default)]
 #[repr(transparent)]
-pub struct SerializableComplex64(Complex64);
+pub struct SerializableComplex64(pub(crate) Complex64);
 
 impl Serialize for SerializableComplex64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
