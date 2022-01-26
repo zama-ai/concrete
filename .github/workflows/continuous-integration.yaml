@@ -796,7 +796,7 @@ jobs:
         run: |
           poetry run twine upload \
           -u "${{ secrets.INTERNAL_PYPI_BOT_USERNAME }}" -p "${{ secrets.INTERNAL_PYPI_BOT_PASSWORD }}" \
-          -r "${{ secrets.INTERNAL_PYPI_URL }}" "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
+          --repository-url "${{ secrets.INTERNAL_PYPI_URL }}" "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
       - name: Push release documentation
         if: ${{ success() && !cancelled() }}
