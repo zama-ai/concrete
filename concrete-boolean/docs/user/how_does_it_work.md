@@ -1,4 +1,4 @@
-# How Does It Work ?
+# How Does It Work?
 
 The `concrete-boolean` crate is a cryptographic library for [Fully
 Homomorphic Encryption](https://en.wikipedia.org/wiki/Homomorphic_encryption) for boolean circuits. It relies on `concrete-core`, the core library of the Concrete ecosystem developed at **Zama**.
