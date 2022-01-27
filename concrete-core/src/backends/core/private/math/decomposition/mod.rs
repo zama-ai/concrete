@@ -19,6 +19,7 @@
 //! located in the least significant bits, which are already erroneous.
 use std::fmt::Debug;
 
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 pub use decomposer::*;
@@ -35,5 +36,6 @@ mod tests;
 ///
 /// When decomposing an integer over the $l$ levels, this type represent the level (in $[0,l)$)
 /// currently manipulated.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct DecompositionLevel(pub usize);

@@ -1,5 +1,7 @@
 use crate::backends::core::private::crypto::encoding::Plaintext;
+
 use crate::backends::core::private::crypto::glwe::GlweList;
+use crate::backends::core::private::math::decomposition::DecompositionLevel;
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, tensor_traits, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
 };
@@ -7,7 +9,6 @@ use crate::backends::core::private::math::torus::UnsignedTorus;
 
 use super::GgswLevelMatrix;
 
-use crate::backends::core::private::math::decomposition::DecompositionLevel;
 use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweSize, PolynomialSize,
@@ -15,7 +16,11 @@ use concrete_commons::parameters::{
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 
+#[cfg(feature = "serde_serialize")]
+use serde::{Deserialize, Serialize};
+
 /// A GGSW ciphertext.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct StandardGgswCiphertext<Cont> {
     tensor: Tensor<Cont>,

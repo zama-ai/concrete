@@ -2,8 +2,11 @@
 //!
 //! This module provides the tools to perform a fast product of two polynomials, reduced modulo
 //! $X^N+1$, using the fast fourier transform.
+#[cfg(feature = "serde_serialize")]
 use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
+#[cfg(feature = "serde_serialize")]
 use serde::ser::{Serialize, SerializeTuple, Serializer};
+#[cfg(feature = "serde_serialize")]
 use std::fmt;
 
 #[cfg(test)]
@@ -27,8 +30,10 @@ pub use concrete_fftw::array::AlignedVec as FourierVec;
 
 #[derive(PartialEq, Copy, Clone, Debug, Default)]
 #[repr(transparent)]
+#[cfg(feature = "serde_serialize")]
 pub struct SerializableComplex64(Complex64);
 
+#[cfg(feature = "serde_serialize")]
 impl Serialize for SerializableComplex64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -41,6 +46,7 @@ impl Serialize for SerializableComplex64 {
     }
 }
 
+#[cfg(feature = "serde_serialize")]
 impl<'de> Deserialize<'de> for SerializableComplex64 {
     fn deserialize<D>(deserializer: D) -> Result<SerializableComplex64, D::Error>
     where

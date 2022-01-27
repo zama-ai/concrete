@@ -1,17 +1,22 @@
 //! This module contains types to manage the different kinds of secret keys.
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 /// This type is a marker for keys using binary elements as scalar.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct BinaryKeyKind;
 /// This type is a marker for keys using ternary elements as scalar.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct TernaryKeyKind;
 /// This type is a marker for keys using normaly sampled elements as scalar.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct GaussianKeyKind;
 /// This type is a marker for keys using uniformly sampled elements as scalar.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct UniformKeyKind;
 
 #[derive(Clone)]

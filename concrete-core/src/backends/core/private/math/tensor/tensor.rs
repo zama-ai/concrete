@@ -5,15 +5,16 @@ use std::ops::{
 };
 use std::slice::SliceIndex;
 
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
+
+use concrete_commons::numeric::{CastFrom, UnsignedInteger};
 
 use crate::backends::core::private::utils::zip;
 
 use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor};
-
-use concrete_commons::numeric::{CastFrom, UnsignedInteger};
-#[cfg(feature = "multithread")]
-use rayon::{iter::IndexedParallelIterator, prelude::*};
 
 /// A generic type to perform operations on collections of scalar values.
 ///
@@ -27,7 +28,8 @@ use rayon::{iter::IndexedParallelIterator, prelude::*};
 /// operation.
 /// + Methods prefixed with `fill_with` discard the current vales of `self`, and overwrite it with
 /// the result of an operation on other values.
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(PartialEq, Eq, Debug, Clone)]
 #[repr(transparent)]
 pub struct Tensor<Container: ?Sized>(Container);
 
