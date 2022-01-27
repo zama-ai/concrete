@@ -1,3 +1,4 @@
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 use crate::backends::core::private::crypto::encoding::{Cleartext, CleartextList, Plaintext};
@@ -14,7 +15,8 @@ use concrete_commons::numeric::{Numeric, UnsignedInteger};
 use concrete_commons::parameters::{LweDimension, LweSize, MonomialDegree};
 
 /// A ciphertext encrypted using the LWE scheme.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LweCiphertext<Cont> {
     pub(super) tensor: Tensor<Cont>,
 }

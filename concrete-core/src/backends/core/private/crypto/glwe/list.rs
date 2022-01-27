@@ -1,3 +1,4 @@
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 use crate::backends::core::private::math::tensor::{
@@ -8,7 +9,8 @@ use super::GlweCiphertext;
 use concrete_commons::parameters::{CiphertextCount, GlweDimension, GlweSize, PolynomialSize};
 
 /// A list of ciphertexts encoded with the GLWE scheme.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GlweList<Cont> {
     pub(crate) tensor: Tensor<Cont>,
     pub(crate) rlwe_size: GlweSize,

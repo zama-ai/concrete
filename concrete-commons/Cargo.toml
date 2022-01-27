@@ -1,6 +1,6 @@
 [package]
 name = "concrete-commons"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2018"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "BSD-3-Clause-Clear"
@@ -16,4 +16,7 @@ name = "concrete_commons"
 bench = false
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"]}
+serde = { version = "1.0", optional = true }
+
+[features]
+serde_serialize = ["serde", "serde/derive"]

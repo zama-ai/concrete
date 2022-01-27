@@ -18,7 +18,11 @@ use concrete_fftw::array::AlignedVec;
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 
+#[cfg(feature = "serde_serialize")]
+use serde::{Deserialize, Serialize};
+
 /// A GGSW ciphertext in the Fourier Domain.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct FourierGgswCiphertext<Cont, Scalar> {
     tensor: Tensor<Cont>,
