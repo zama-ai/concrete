@@ -6,7 +6,8 @@
 #include <llvm/Support/TargetSelect.h>
 
 #include <llvm/Support/Error.h>
-#include <mlir/Conversion/SCFToStandard/SCFToStandard.h>
+#include <mlir/Conversion/Passes.h>
+
 #include <mlir/Dialect/Linalg/Passes.h>
 #include <mlir/Dialect/SCF/Passes.h>
 #include <mlir/Dialect/StandardOps/Transforms/Passes.h>
@@ -14,6 +15,7 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
 
@@ -206,7 +208,7 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(pm, mlir::createStdBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createTensorBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createLinalgBufferizePass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
+  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToParallelLoopsPass(),
                            enablePass);
   addPotentiallyNestedPass(pm, mlir::createSCFBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
@@ -214,14 +216,14 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass(),
                            enablePass);
+  addPotentiallyNestedPass(pm, mlir::createConvertSCFToOpenMPPass(),
+                           enablePass);
 
   // Lower Dataflow tasks to DRF
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFixupDataflowTaskOpsPass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createLowerDataflowTasksPass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
-                           enablePass);
   addPotentiallyNestedPass(pm, mlir::createLowerToCFGPass(), enablePass);
 
   // Convert to MLIR LLVM Dialect
@@ -239,6 +241,7 @@ lowerLLVMDialectToLLVMIR(mlir::MLIRContext &context,
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
   mlir::registerLLVMDialectTranslation(*module->getContext());
+  mlir::registerOpenMPDialectTranslation(*module->getContext());
 
   return mlir::translateModuleToLLVMIR(module, llvmContext);
 }

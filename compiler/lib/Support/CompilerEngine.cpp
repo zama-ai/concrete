@@ -13,6 +13,7 @@
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/Linalg/IR/LinalgOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/OpenMP/OpenMPDialect.h>
 #include <mlir/Dialect/SCF/SCF.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -65,6 +66,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
     this->mlirContext->getOrLoadDialect<mlir::linalg::LinalgDialect>();
     this->mlirContext->getOrLoadDialect<mlir::LLVM::LLVMDialect>();
     this->mlirContext->getOrLoadDialect<mlir::scf::SCFDialect>();
+    this->mlirContext->getOrLoadDialect<mlir::omp::OpenMPDialect>();
   }
 
   return this->mlirContext;

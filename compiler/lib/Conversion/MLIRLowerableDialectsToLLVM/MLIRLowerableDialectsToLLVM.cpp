@@ -12,10 +12,12 @@
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
+#include "mlir/Conversion/OpenMPToLLVM/ConvertOpenMPToLLVM.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
@@ -67,6 +69,15 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
                                                           patterns);
   mlir::populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::populateOpenMPToLLVMConversionPatterns(typeConverter, patterns);
+
+  target.addDynamicallyLegalOp<mlir::omp::MasterOp, mlir::omp::ParallelOp,
+                               mlir::omp::WsLoopOp>([&](mlir::Operation *op) {
+    return typeConverter.isLegal(&op->getRegion(0));
+  });
+  target.addLegalOp<mlir::omp::TerminatorOp, mlir::omp::TaskyieldOp,
+                    mlir::omp::FlushOp, mlir::omp::BarrierOp,
+                    mlir::omp::TaskwaitOp, mlir::omp::YieldOp>();
 
   // Apply a `FullConversion` to `llvm`.
   auto module = getOperation();
