@@ -2,9 +2,10 @@ use super::super::super::private::crypto::glwe::GlweCiphertext as ImplGlweCipher
 use crate::specification::entities::markers::{BinaryKeyDistribution, GlweCiphertextKind};
 use crate::specification::entities::{AbstractEntity, GlweCiphertextEntity};
 use concrete_commons::parameters::{GlweDimension, PolynomialSize};
+use serde::{Deserialize, Serialize};
 
 /// A structure representing a GLWE ciphertext with 32 bits of precision.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GlweCiphertext32(pub(crate) ImplGlweCiphertext<Vec<u32>>);
 impl AbstractEntity for GlweCiphertext32 {
     type Kind = GlweCiphertextKind;
@@ -22,7 +23,7 @@ impl GlweCiphertextEntity for GlweCiphertext32 {
 }
 
 /// A structure representing a GLWE ciphertext with 64 bits of precision.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GlweCiphertext64(pub(crate) ImplGlweCiphertext<Vec<u64>>);
 impl AbstractEntity for GlweCiphertext64 {
     type Kind = GlweCiphertextKind;
