@@ -23,7 +23,7 @@ use crate::backends::core::private::math::tensor::{
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::zip;
 
-use pseudo_graphec::prelude::{OFTSimulator1 as Simulator, FourierEngine};
+use proto_graphec::prelude::{OFTSimulator1 as Simulator, FourierEngine};
 use std::cell::RefCell;
 
 use crate::backends::core::private::math::fft::{

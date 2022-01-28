@@ -1,0 +1,1 @@
+{"rustc":8020860686714880400,"features":"[]","target":14360582636618029776,"profile":6269190295429226618,"path":8649858445903542252,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"release/.fingerprint/same-file-07ec80a3e5c0350b/dep-lib-same-file"}}],"rustflags":["-Cembed-bitcode=y"],"metadata":11023981866482830203,"config":2202906307356721367,"compile_kind":0}
