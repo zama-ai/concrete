@@ -1,1 +1,0 @@
-{"rustc":8020860686714880400,"features":"[]","target":8644617822219043352,"profile":6269190295429226618,"path":5487736247727857583,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"release/.fingerprint/plotters-backend-a7a54f6d38ed474c/dep-lib-plotters-backend"}}],"rustflags":["-Cembed-bitcode=y"],"metadata":4919280019191581104,"config":2202906307356721367,"compile_kind":0}

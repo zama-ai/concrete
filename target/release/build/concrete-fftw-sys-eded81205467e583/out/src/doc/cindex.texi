@@ -1,3 +1,0 @@
-@node Concept Index, Library Index, License and Copyright, Top
-@chapter Concept Index
-@printindex cp

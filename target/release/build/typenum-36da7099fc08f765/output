@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/home/florent/zama_optalysys_plugin/concrete/target/release/build/typenum-36da7099fc08f765/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=/home/florent/zama_optalysys_plugin/concrete/target/release/build/typenum-36da7099fc08f765/out/op.rs
