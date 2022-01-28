@@ -13,3 +13,4 @@ criterion = "=0.3.5"
 [features]
 default = ["backend_core"]
 backend_core = []
+backend_optalysys = []

@@ -15,6 +15,9 @@ fn main() {
     #[cfg(feature = "backend_core")]
     backends::core::bench();
 
+    #[cfg(feature = "backend_optalysys")]
+    backends::optalysys::bench();
+
     // We launch the benchmarks.
     criterion::Criterion::default()
         .configure_from_args()
