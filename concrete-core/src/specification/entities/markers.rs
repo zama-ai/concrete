@@ -52,6 +52,8 @@ entity_kind_marker! {
             => "An empty type representing the GSW ciphertext vector kind in the type system.",
         LweSecretKeyKind
             => "An empty type representing the LWE secret key kind in the type system.",
+        GlweRelinearizationKeyKind
+            => "An empty type representing the GLWE relinearization key kind in the type system",
         GlweSecretKeyKind
             => "An empty type representing the GLWE secret key kind in the type system.",
         LweKeyswitchKeyKind
