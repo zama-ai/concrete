@@ -193,7 +193,8 @@ lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                      std::function<bool(mlir::Pass *)> enablePass) {
+                      std::function<bool(mlir::Pass *)> enablePass,
+                      bool parallelizeLoops) {
   mlir::PassManager pm(&context);
   pipelinePrinting("StdToLLVM", pm, context);
 
@@ -208,16 +209,21 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(pm, mlir::createStdBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createTensorBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createLinalgBufferizePass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createConvertLinalgToParallelLoopsPass(),
-                           enablePass);
+  if (parallelizeLoops)
+    addPotentiallyNestedPass(pm, mlir::createConvertLinalgToParallelLoopsPass(),
+                             enablePass);
+  else
+    addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
+                             enablePass);
   addPotentiallyNestedPass(pm, mlir::createSCFBufferizePass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass(),
                            enablePass);
-  addPotentiallyNestedPass(pm, mlir::createConvertSCFToOpenMPPass(),
-                           enablePass);
+  if (parallelizeLoops)
+    addPotentiallyNestedPass(pm, mlir::createConvertSCFToOpenMPPass(),
+                             enablePass);
 
   // Lower Dataflow tasks to DRF
   addPotentiallyNestedPass(

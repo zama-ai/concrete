@@ -48,7 +48,8 @@ lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                      std::function<bool(mlir::Pass *)> enablePass);
+                      std::function<bool(mlir::Pass *)> enablePass,
+                      bool parallelizeLoops);
 
 mlir::LogicalResult optimizeLLVMModule(llvm::LLVMContext &llvmContext,
                                        llvm::Module &module);

@@ -296,8 +296,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   // MLIR canonical dialects -> LLVM Dialect
-  if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(mlirContext, module,
-                                                          enablePass)
+  if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(
+          mlirContext, module, enablePass,
+          /*parallelizeLoops =*/this->autoParallelize)
           .failed()) {
     return errorDiag("Failed to lower to LLVM dialect");
   }
