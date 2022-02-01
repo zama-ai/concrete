@@ -449,7 +449,7 @@ fn random_index() -> usize {
 /// randomly select a gate, randomly select inputs and the output,
 /// compute the selected gate with the selected inputs
 /// and write in the selected output
-fn random_gate_all(ct_tab: &mut Vec<Ciphertext>, bool_tab: &mut Vec<bool>, sks: &ServerKey) {
+fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &ServerKey) {
     // select a random gate in the array [NOT,CMUX,AND,NAND,NOR,OR,XOR,XNOR]
     let gate_id = random_integer() % 8;
 
