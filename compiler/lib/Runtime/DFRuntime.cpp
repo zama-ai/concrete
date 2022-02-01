@@ -15,6 +15,7 @@
 #include <hpx/future.hpp>
 #include <hpx/hpx_start.hpp>
 #include <hpx/hpx_suspend.hpp>
+#include <hwloc.h>
 
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/distributed_generic_task_server.hpp"
@@ -227,8 +228,33 @@ static inline void _dfr_stop_impl() {
 static inline void _dfr_start_impl(int argc, char *argv[]) {
   dl_handle = dlopen(nullptr, RTLD_NOW);
   if (argc == 0) {
-    char *_argv[1] = {const_cast<char *>("__dummy_dfr_HPX_program_name__")};
-    int _argc = 1;
+    unsigned long nCores, nOMPThreads, nHPXThreads;
+    hwloc_topology_t topology;
+    hwloc_topology_init(&topology);
+    hwloc_topology_set_all_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_NONE);
+    hwloc_topology_set_type_filter(topology, HWLOC_OBJ_CORE,
+                                   HWLOC_TYPE_FILTER_KEEP_ALL);
+    hwloc_topology_load(topology);
+    nCores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+    if (nCores < 1)
+      nCores = 1;
+    nOMPThreads = 1;
+    char *env = getenv("OMP_NUM_THREADS");
+    if (env != nullptr) {
+      nOMPThreads = strtoul(env, NULL, 10);
+      if (nOMPThreads == 0)
+        nOMPThreads = 1;
+      if (nOMPThreads >= nCores)
+        nOMPThreads = nCores;
+    }
+    std::string numOMPThreads = std::to_string(nOMPThreads);
+    setenv("OMP_NUM_THREADS", numOMPThreads.c_str(), 0);
+    nHPXThreads = nCores + 1 - nOMPThreads;
+    std::string numHPXThreads = std::to_string(nHPXThreads);
+    char *_argv[3] = {const_cast<char *>("__dummy_dfr_HPX_program_name__"),
+                      const_cast<char *>("--hpx:threads"),
+                      const_cast<char *>(numHPXThreads.c_str())};
+    int _argc = 3;
     hpx::start(nullptr, _argc, _argv);
   } else {
     hpx::start(nullptr, argc, argv);
