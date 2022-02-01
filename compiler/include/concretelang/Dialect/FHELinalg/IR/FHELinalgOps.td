@@ -185,7 +185,7 @@ def NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
         Examples:
         ```mlir
         // Returns the term to term negation of `%a0`
-        "FHELinalg.neg_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
+        "FHELinalg.neg_eint"(%a0) : (tensor<3x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
         //
         //        ( [1,2,3] )   [31,30,29]
         // negate ( [4,5,6] ) = [28,27,26]
@@ -297,7 +297,7 @@ def ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", []> {
     let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element.";
 
     let description = [{
-        Performs for each encrypted indice a lookup on a table of clear integers. Multiple lookup tables are passed, and the application of lookup tables 
+        Performs for each encrypted indice a lookup on a table of clear integers. Multiple lookup tables are passed, and the application of lookup tables
         is performed following the broadcasting rules.
 
         ```mlir
@@ -398,7 +398,6 @@ def ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", []>
     }];
 }
 
-// Dot product
 def Dot : FHELinalg_Op<"dot_eint_int"> {
     let summary = "Returns the encrypted dot product between a vector of encrypted integers and a vector of clean integers.";
 
