@@ -561,9 +561,18 @@ impl LWE {
         // correction related to the addition
         let mut tmp_ec = enc1.clone();
         tmp_ec.o = new_min;
-        let update = self.ciphertext.as_tensor().as_slice()[self.dimension]
-            .wrapping_add(tmp_ec.encode_outside_interval_operators(enc1.o + enc2.o)?);
-        self.ciphertext.as_mut_tensor().as_mut_slice()[self.dimension] = update;
+        let tmp_sum = enc1.o + enc2.o;
+
+        let lwe_body = self.ciphertext.get_body().0;
+        let updated_body_value = if tmp_sum <= new_min {
+            let tmp_shift = new_min + (new_min - tmp_sum);
+            let plaintext = tmp_ec.encode_outside_interval_operators(tmp_shift)?;
+            lwe_body.wrapping_sub(plaintext)
+        } else {
+            let plaintext = tmp_ec.encode_outside_interval_operators(tmp_sum)?;
+            lwe_body.wrapping_add(plaintext)
+        };
+        self.ciphertext.get_mut_body().0 = updated_body_value;
 
         // update the Encoder
         self.encoder.o = new_min;

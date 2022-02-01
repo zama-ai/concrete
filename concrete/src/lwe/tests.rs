@@ -647,6 +647,66 @@ fn test_encode_encrypt_x_add_with_new_min_inplace_x_decrypt() {
     }
 }
 
+
+#[test]
+fn test_encode_encrypt_x_add_with_new_min_inplace_x_bootstrap_x_decrypt() {
+    let (mut precision, mut padding) = generate_precision_padding!(4, 3);
+    if precision == 0 {
+        precision +=1;
+    }
+    if padding == 0 {
+        padding +=1;
+    }
+
+    // random settings for the first encoder and some messages
+    let (min1, max1) = generate_random_interval!();
+    let encoder_1 = crate::Encoder::new(min1, max1, precision, padding).unwrap();
+
+    // random settings for the second encoder and some messages
+    let (min2, _max2) = generate_random_interval!();
+    let encoder_2 =
+        crate::Encoder::new(min2, min2 + encoder_1.get_size(), precision, padding).unwrap();
+
+    // generate a secret key
+    let rlwe_secret_key = crate::RLWESecretKey::new(&crate::RLWE128_1024_1);
+    let secret_key_input = crate::LWESecretKey::new(&crate::LWE128_630);
+    let secret_key_output = rlwe_secret_key.to_lwe_secret_key();
+
+    // bootstrapping key
+    let bsk = crate::LWEBSK::new(&secret_key_input, &rlwe_secret_key, 5, 3);
+
+    for _ in 0..100 {
+        // random messages
+        let message_1: f64 = random_message!(min1 + encoder_1.get_size() / 2., max1);
+        let message_2: f64 = random_message!(min2, min2 + encoder_1.get_size() / 2.);
+
+        // encode and encrypt
+        let mut ciphertext_1 =
+            crate::LWE::encode_encrypt(&secret_key_input, message_1, &encoder_1).unwrap();
+        let ciphertext_2 = crate::LWE::encode_encrypt(&secret_key_input, message_2, &encoder_2)
+            .unwrap();
+
+        // new_min
+        let new_min: f64 = min1 + min2 + encoder_1.get_size() / 2.;
+
+        // addition between ciphertext_1 and ciphertext_2
+        ciphertext_1
+            .add_with_new_min_inplace(&ciphertext_2, new_min)
+            .unwrap();
+
+        // compute a bootstrap to check if padding bits have not been altered
+        let ciphertext_res = ciphertext_1.bootstrap(&bsk).unwrap();
+
+        // decrypt
+        let decryption = ciphertext_res
+            .decrypt_decode(&secret_key_output)
+            .unwrap();
+
+        // test
+        assert_eq_granularity!(message_1 + message_2, decryption, ciphertext_1.encoder); }
+}
+
+
 #[test]
 fn test_valid_lookup_table() {
     // generate a random encoder and encode the min value, encrypt it
