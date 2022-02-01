@@ -837,6 +837,29 @@ static llvm::APInt getSqMANP(
   return operandMANPs[0]->getValue().getMANP().getValue();
 }
 
+static llvm::APInt getSqMANP(
+    mlir::concretelang::FHELinalg::SumOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  auto type = op->getOperand(0).getType().dyn_cast_or_null<mlir::TensorType>();
+
+  uint64_t numberOfElements = type.getNumElements();
+  if (numberOfElements == 0) {
+    return llvm::APInt{1, 1, false};
+  }
+
+  assert(operandMANPs.size() == 1 &&
+         operandMANPs[0]->getValue().getMANP().hasValue() &&
+         "Missing squared Minimal Arithmetic Noise Padding for encrypted "
+         "operands");
+  llvm::APInt operandMANP = operandMANPs[0]->getValue().getMANP().getValue();
+
+  unsigned int multiplierBits = ceilLog2(numberOfElements + 1);
+  auto multiplier = llvm::APInt{multiplierBits, numberOfElements, false};
+
+  return APIntWidthExtendUMul(multiplier, operandMANP);
+}
+
 struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
   using ForwardDataFlowAnalysis<MANPLatticeValue>::ForwardDataFlowAnalysis;
   MANPAnalysis(mlir::MLIRContext *ctx, bool debug)
@@ -909,6 +932,9 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    mlir::concretelang::FHELinalg::ApplyMappedLookupTableEintOp>(
                    op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
+    } else if (auto sumOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::SumOp>(op)) {
+      norm2SqEquiv = getSqMANP(sumOp, operands);
     }
     // Tensor Operators
     // ExtractOp

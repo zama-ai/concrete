@@ -1579,6 +1579,152 @@ func @main() -> tensor<2x2x4x!FHE.eint<6>> {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// FHELinalg sum /////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_FHELinalg, sum_empty) {
+
+  using llvm::ArrayRef;
+  using llvm::Expected;
+
+  using mlir::concretelang::IntLambdaArgument;
+  using mlir::concretelang::JitCompilerEngine;
+  using mlir::concretelang::TensorLambdaArgument;
+
+  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%x) : (tensor<0x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  return %0 : !FHE.eint<7>
+}
+
+)XXX");
+
+  const uint8_t expected = 0;
+
+  ArrayRef<uint8_t> xRef(nullptr, (size_t)0);
+  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {0});
+
+  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(result);
+
+  ASSERT_EQ(*result, expected);
+}
+
+TEST(End2EndJit_FHELinalg, sum_1D) {
+
+  using llvm::ArrayRef;
+  using llvm::Expected;
+
+  using mlir::concretelang::IntLambdaArgument;
+  using mlir::concretelang::JitCompilerEngine;
+  using mlir::concretelang::TensorLambdaArgument;
+
+  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%x) : (tensor<4x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  return %0 : !FHE.eint<7>
+}
+
+)XXX");
+
+  const uint8_t x[4]{0, 1, 2, 3};
+  const uint8_t expected = 6;
+
+  ArrayRef<uint8_t> xRef((const uint8_t *)x, 4);
+  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {4});
+
+  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(result);
+
+  ASSERT_EQ(*result, expected);
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D) {
+
+  using llvm::ArrayRef;
+  using llvm::Expected;
+
+  using mlir::concretelang::IntLambdaArgument;
+  using mlir::concretelang::JitCompilerEngine;
+  using mlir::concretelang::TensorLambdaArgument;
+
+  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%x) : (tensor<3x4x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  return %0 : !FHE.eint<7>
+}
+
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected = 46;
+
+  ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {3, 4});
+
+  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(result);
+
+  ASSERT_EQ(*result, expected);
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D) {
+
+  using llvm::ArrayRef;
+  using llvm::Expected;
+
+  using mlir::concretelang::IntLambdaArgument;
+  using mlir::concretelang::JitCompilerEngine;
+  using mlir::concretelang::TensorLambdaArgument;
+
+  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%x) : (tensor<3x4x2x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  return %0 : !FHE.eint<7>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected = 96;
+
+  ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {3, 4, 2});
+
+  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(result);
+
+  ASSERT_EQ(*result, expected);
+}
+
 class TiledMatMulParametric
     : public ::testing::TestWithParam<std::vector<int64_t>> {};
 

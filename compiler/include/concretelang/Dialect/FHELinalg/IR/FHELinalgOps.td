@@ -516,4 +516,29 @@ def ZeroOp : FHELinalg_Op<"zero", []> {
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$aggregate);
 }
 
+def SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
+    let summary = "Returns the sum of all elements of a tensor of encrypted integers.";
+
+    let description = [{
+        Performs a sum to a tensor of encrypted integers.
+
+        Examples:
+        ```mlir
+        // Returns the sum of all elements of `%a0`
+        "FHELinalg.sum"(%a0) : (tensor<3x3x!FHE.eint<4>>) -> !FHE.eint<4>
+        //
+        //     ( [1,2,3] )
+        // sum ( [4,5,6] ) = 45
+        //     ( [7,8,9] )
+        //
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor
+    );
+
+    let results = (outs EncryptedIntegerType:$out);
+}
+
 #endif

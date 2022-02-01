@@ -367,3 +367,43 @@ func @zero_2D() -> tensor<4x9x!FHE.eint<2>> {
   %0 = "FHELinalg.zero"() : () -> tensor<4x9x!FHE.eint<2>>
   return %0 : tensor<4x9x!FHE.eint<2>>
 }
+
+/////////////////////////////////////////////////
+// FHELinalg.sum
+/////////////////////////////////////////////////
+
+// CHECK:      func @sum_empty(%[[a0:.*]]: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
+// CHECK-NEXT:   %[[v0:.*]] = "FHELinalg.sum"(%[[a0]]) : (tensor<0x!FHE.eint<7>>) -> !FHE.eint<7>
+// CHECK-NEXT:   return %[[v0]] : !FHE.eint<7>
+// CHECK-NEXT: }
+func @sum_empty(%arg0: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%arg0) : (tensor<0x!FHE.eint<7>>) -> !FHE.eint<7>
+  return %0 : !FHE.eint<7>
+}
+
+// CHECK:      func @sum_1D(%[[a0:.*]]: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+// CHECK-NEXT:   %[[v0:.*]] = "FHELinalg.sum"(%[[a0]]) : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
+// CHECK-NEXT:   return %[[v0]] : !FHE.eint<7>
+// CHECK-NEXT: }
+func @sum_1D(%arg0: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%arg0) : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
+  return %0 : !FHE.eint<7>
+}
+
+// CHECK:      func @sum_2D(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+// CHECK-NEXT:   %[[v0:.*]] = "FHELinalg.sum"(%[[a0]]) : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
+// CHECK-NEXT:   return %[[v0]] : !FHE.eint<7>
+// CHECK-NEXT: }
+func @sum_2D(%arg0: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%arg0) : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
+  return %0 : !FHE.eint<7>
+}
+
+// CHECK:      func @sum_3D(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+// CHECK-NEXT:   %[[v0:.*]] = "FHELinalg.sum"(%[[a0]]) : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
+// CHECK-NEXT:   return %[[v0]] : !FHE.eint<7>
+// CHECK-NEXT: }
+func @sum_3D(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%arg0) : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
+  return %0 : !FHE.eint<7>
+}

@@ -227,7 +227,7 @@ func @matmul_eint_int_dyn_p_1(%arg0: tensor<3x1x!FHE.eint<2>>, %arg1: tensor<1x2
   // mul = manp(mul_eint_int(eint<2>, i3) = 1 * (2^3)^2 = 64
   // manp(add_eint(mul, acc)) = 64 + 1 = 65
   // ceil(sqrt(65)) = 9
-  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_eint_int"(%[[A0:.*]], %[[A1:.*]]) {MANP = 9 : ui{{[0-9]+}}} 
+  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_eint_int"(%[[A0:.*]], %[[A1:.*]]) {MANP = 9 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<3x1x!FHE.eint<2>>, tensor<1x2xi3>) -> tensor<3x2x!FHE.eint<2>>
   return %1 : tensor<3x2x!FHE.eint<2>>
 }
@@ -310,7 +310,7 @@ func @matmul_int_eint_dyn_p_1(%arg0: tensor<3x1xi3>, %arg1: tensor<1x2x!FHE.eint
   // mul = manp(mul_eint_int(eint<2>, i3) = 1 * (2^3)^2 = 64
   // manp(add_eint(mul, acc)) = 64 + 1 = 65
   // ceil(sqrt(65)) = 9
-  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 9 : ui{{[0-9]+}}} 
+  // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 9 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x1xi3>, tensor<1x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>>
   return %1 : tensor<3x2x!FHE.eint<2>>
 }
@@ -389,4 +389,26 @@ func @zero() -> tensor<8x!FHE.eint<2>>
   %0 = "FHELinalg.zero"() : () -> tensor<8x!FHE.eint<2>>
 
   return %0 : tensor<8x!FHE.eint<2>>
+}
+
+// -----
+
+func @sum() -> !FHE.eint<7> {
+  %0 = "FHELinalg.zero"() : () -> tensor<4x!FHE.eint<7>>
+  // CHECK: "FHELinalg.sum"(%0) {MANP = 2 : ui{{[0-9]+}}} : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
+  %1 = "FHELinalg.sum"(%0) : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
+
+  %2 = "FHELinalg.zero"() : () -> tensor<5x!FHE.eint<7>>
+  // CHECK: "FHELinalg.sum"(%2) {MANP = 3 : ui{{[0-9]+}}} : (tensor<5x!FHE.eint<7>>) -> !FHE.eint<7>
+  %3 = "FHELinalg.sum"(%2) : (tensor<5x!FHE.eint<7>>) -> !FHE.eint<7>
+
+  %4 = "FHELinalg.zero"() : () -> tensor<9x!FHE.eint<7>>
+  // CHECK: "FHELinalg.sum"(%4) {MANP = 3 : ui{{[0-9]+}}} : (tensor<9x!FHE.eint<7>>) -> !FHE.eint<7>
+  %5 = "FHELinalg.sum"(%4) : (tensor<9x!FHE.eint<7>>) -> !FHE.eint<7>
+
+  %6 = "FHELinalg.zero"() : () -> tensor<10x!FHE.eint<7>>
+  // CHECK: "FHELinalg.sum"(%6) {MANP = 4 : ui{{[0-9]+}}} : (tensor<10x!FHE.eint<7>>) -> !FHE.eint<7>
+  %7 = "FHELinalg.sum"(%6) : (tensor<10x!FHE.eint<7>>) -> !FHE.eint<7>
+
+  return %7 : !FHE.eint<7>
 }

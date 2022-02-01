@@ -961,6 +961,128 @@ struct FHELinalgZeroToLinalgGenerate
   };
 };
 
+// This rewrite pattern transforms any instance of operators
+// `FHELinalg.zero` to an instance of `linalg.generate` with an
+// appropriate region yielding a zero value.
+//
+// Example:
+//
+//   %result = "FHELinalg.sum"(%input) :
+//     tensor<d0xd1x...xdNx!FHE.eint<p>>() -> !FHE.eint<p>
+//
+// becomes:
+//
+//   #map0 = affine_map<(i0, i1, ..., iN) -> (i0, i1, ..., iN)>
+//   #map1 = affine_map<(i0, i1, ..., iN) -> (0)>
+//
+//   %zero = "FHE.zero"() : () -> !FHE.eint<7>
+//   %accumulator = tensor.from_elements %zero : tensor<1x!FHE.eint<7>>
+//
+//   %accumulation = linalg.generic
+//     { indexing_maps = [#map0, #map1], iterator_types = ["reduction",
+//     "reduction", ..., "reduction"] } ins(%input :
+//     tensor<d0xd1x...xdNx!FHE.eint<7>>) outs(%accumulator :
+//     tensor<1x!FHE.eint<7>>)
+//     {
+//       ^bb0(%a: !FHE.eint<7>, %b: !FHE.eint<7>):
+//         %c = "FHE.add_eint"(%a, %b) :
+//           (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
+//         linalg.yield %c : !FHE.eint<7>
+//     } -> tensor<1x!FHE.eint<7>>
+//
+//   %index = arith.constant 0 : index
+//   %result = tensor.extract %index : tensor<1x!FHE.eint<7>>
+//
+struct SumToLinalgGeneric
+    : public ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::SumOp> {
+  SumToLinalgGeneric(::mlir::MLIRContext *context)
+      : ::mlir::OpRewritePattern<::mlir::concretelang::FHELinalg::SumOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(::mlir::concretelang::FHELinalg::SumOp sumOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+
+    namespace arith = mlir::arith;
+    namespace linalg = mlir::linalg;
+    namespace tensor = mlir::tensor;
+
+    namespace FHE = mlir::concretelang::FHE;
+
+    mlir::Location location = sumOp.getLoc();
+
+    mlir::Value input = sumOp.getOperand();
+    mlir::Value output = sumOp.getResult();
+
+    auto inputType = input.getType().dyn_cast_or_null<mlir::TensorType>();
+    assert(inputType != nullptr);
+
+    llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
+    size_t inputDimensions = inputShape.size();
+
+    mlir::Value zero =
+        rewriter.create<FHE::ZeroEintOp>(location, output.getType())
+            .getResult();
+
+    for (size_t i = 0; i < inputDimensions; i++) {
+      if (inputShape[i] == 0) {
+        rewriter.replaceOp(sumOp, {zero});
+        return mlir::success();
+      }
+    }
+
+    mlir::Value accumulator =
+        rewriter.create<tensor::FromElementsOp>(location, zero).getResult();
+
+    auto ins = llvm::SmallVector<mlir::Value, 1>{input};
+    auto outs = llvm::SmallVector<mlir::Value, 1>{accumulator};
+
+    mlir::AffineMap inputMap = mlir::AffineMap::getMultiDimIdentityMap(
+        inputDimensions, this->getContext());
+
+    mlir::AffineMap outputMap = mlir::AffineMap::get(
+        inputDimensions, 0, {rewriter.getAffineConstantExpr(0)},
+        rewriter.getContext());
+
+    auto maps = llvm::SmallVector<mlir::AffineMap, 2>{inputMap, outputMap};
+
+    auto iteratorTypes = llvm::SmallVector<llvm::StringRef, 3>{};
+    for (size_t i = 0; i < inputDimensions; i++) {
+      iteratorTypes.push_back("reduction");
+    }
+
+    auto regionBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                             mlir::Location nestedLoc,
+                             mlir::ValueRange blockArgs) {
+      mlir::Value lhs = blockArgs[0];
+      mlir::Value rhs = blockArgs[1];
+
+      mlir::Value addition =
+          nestedBuilder.create<FHE::AddEintOp>(location, lhs, rhs).getResult();
+
+      nestedBuilder.create<linalg::YieldOp>(location, addition);
+    };
+
+    auto resultTypes = llvm::SmallVector<mlir::Type, 1>{accumulator.getType()};
+    mlir::Value accumulation =
+        rewriter
+            .create<linalg::GenericOp>(location, resultTypes, ins, outs, maps,
+                                       iteratorTypes, regionBuilder)
+            .getResult(0);
+
+    mlir::Value index =
+        rewriter.create<arith::ConstantIndexOp>(location, 0).getResult();
+    auto indices = llvm::SmallVector<mlir::Value, 1>{index};
+
+    mlir::Value result =
+        rewriter.create<tensor::ExtractOp>(location, accumulation, indices)
+            .getResult();
+    rewriter.replaceOp(sumOp, {result});
+
+    return mlir::success();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -1020,6 +1142,7 @@ void FHETensorOpsToLinalg::runOnFunction() {
   patterns.insert<FHELinalgApplyMappedLookupTableToLinalgGeneric>(
       &getContext());
   patterns.insert<FHELinalgZeroToLinalgGenerate>(&getContext());
+  patterns.insert<SumToLinalgGeneric>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())
