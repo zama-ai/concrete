@@ -96,6 +96,12 @@ void CompilerEngine::setVerifyDiagnostics(bool v) {
 
 void CompilerEngine::setAutoParallelize(bool v) { this->autoParallelize = v; }
 
+void CompilerEngine::setLoopParallelize(bool v) { this->loopParallelize = v; }
+
+void CompilerEngine::setDataflowParallelize(bool v) {
+  this->dataflowParallelize = v;
+}
+
 void CompilerEngine::setGenerateClientParameters(bool v) {
   this->generateClientParameters = v;
 }
@@ -227,11 +233,11 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Tiling of FHELinalg operations failed");
   }
 
-  // Auto parallelization
-  if (this->autoParallelize &&
+  // Dataflow parallelization
+  if ((this->autoParallelize || this->dataflowParallelize) &&
       mlir::concretelang::pipeline::autopar(mlirContext, module, enablePass)
           .failed()) {
-    return StreamStringError("Auto parallelization failed");
+    return StreamStringError("Dataflow parallelization failed");
   }
 
   if (target == Target::FHE)
@@ -298,7 +304,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   // MLIR canonical dialects -> LLVM Dialect
   if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(
           mlirContext, module, enablePass,
-          /*parallelizeLoops =*/this->autoParallelize)
+          this->loopParallelize || this->autoParallelize)
           .failed()) {
     return errorDiag("Failed to lower to LLVM dialect");
   }

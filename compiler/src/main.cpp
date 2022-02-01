@@ -133,6 +133,18 @@ llvm::cl::opt<bool> autoParallelize(
     llvm::cl::desc("Generate (and execute if JIT) parallel code"),
     llvm::cl::init(false));
 
+llvm::cl::opt<bool> loopParallelize(
+    "parallelize-loops",
+    llvm::cl::desc(
+        "Generate (and execute if JIT) parallel loops from Linalg operations"),
+    llvm::cl::init(false));
+
+llvm::cl::opt<bool> dataflowParallelize(
+    "parallelize-dataflow",
+    llvm::cl::desc(
+        "Generate (and execute if JIT) the program as a dataflow graph"),
+    llvm::cl::init(false));
+
 llvm::cl::opt<std::string>
     funcName("funcname",
              llvm::cl::desc("Name of the function to compile, default 'main'"),
@@ -244,7 +256,7 @@ mlir::LogicalResult processInputBuffer(
     llvm::Optional<size_t> overrideMaxEintPrecision,
     llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
     llvm::Optional<llvm::ArrayRef<int64_t>> fhelinalgTileSizes,
-    bool autoParallelize,
+    bool autoParallelize, bool loopParallelize, bool dataflowParallelize,
     llvm::Optional<mlir::concretelang::KeySetCache> keySetCache,
     llvm::raw_ostream &os,
     std::shared_ptr<mlir::concretelang::CompilerEngine::Library> outputLib) {
@@ -255,6 +267,8 @@ mlir::LogicalResult processInputBuffer(
 
   ce.setVerifyDiagnostics(verifyDiagnostics);
   ce.setAutoParallelize(autoParallelize);
+  ce.setLoopParallelize(loopParallelize);
+  ce.setDataflowParallelize(dataflowParallelize);
   if (cmdline::passes.size() != 0) {
     ce.setEnablePass([](mlir::Pass *pass) {
       return std::any_of(
@@ -429,8 +443,9 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
           std::move(inputBuffer), fileName, cmdline::action, cmdline::funcName,
           cmdline::jitArgs, cmdline::assumeMaxEintPrecision,
           cmdline::assumeMaxMANP, cmdline::verifyDiagnostics,
-          fhelinalgTileSizes, cmdline::autoParallelize, jitKeySetCache, os,
-          outputLib);
+          fhelinalgTileSizes, cmdline::autoParallelize,
+          cmdline::loopParallelize, cmdline::dataflowParallelize,
+          jitKeySetCache, os, outputLib);
     };
     auto &os = output->os();
     auto res = mlir::failure();

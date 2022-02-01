@@ -145,7 +145,8 @@ public:
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(),
         clientParametersFuncName(), verifyDiagnostics(false),
-        autoParallelize(false), generateClientParameters(false),
+        autoParallelize(false), loopParallelize(false),
+        dataflowParallelize(false), generateClientParameters(false),
         enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
@@ -170,6 +171,8 @@ public:
   void setMaxMANP(size_t v);
   void setVerifyDiagnostics(bool v);
   void setAutoParallelize(bool v);
+  void setLoopParallelize(bool v);
+  void setDataflowParallelize(bool v);
   void setGenerateClientParameters(bool v);
   void setClientParametersFuncName(const llvm::StringRef &name);
   void setFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes);
@@ -183,6 +186,8 @@ protected:
 
   bool verifyDiagnostics;
   bool autoParallelize;
+  bool loopParallelize;
+  bool dataflowParallelize;
   bool generateClientParameters;
   std::function<bool(mlir::Pass *)> enablePass;
 
