@@ -1,0 +1,15 @@
+[package]
+name = "concrete-core-fixture"
+version = "0.1.0"
+edition = "2018"
+license = "BSD-3-Clause-Clear"
+
+[dependencies]
+concrete-core = { path="../concrete-core" }
+concrete-commons = { path="../concrete-commons" }
+concrete-npe = { path="../concrete-npe" }
+kolmogorov_smirnov = "1.1.0"
+paste = "1.0"
+
+[features]
+backend_core = []
