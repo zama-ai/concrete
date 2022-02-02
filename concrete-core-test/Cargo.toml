@@ -1,0 +1,13 @@
+[package]
+name = "concrete-core-test"
+version = "0.1.0"
+edition = "2018"
+license = "BSD-3-Clause-Clear"
+
+[dependencies]
+concrete-core = { path="../concrete-core" }
+concrete-core-fixture = { path="../concrete-core-fixture" }
+paste = "1.0"
+
+[features]
+backend_core = ["concrete-core/backend_core", "concrete-core-fixture/backend_core"]
