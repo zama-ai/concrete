@@ -74,6 +74,7 @@ pub struct Range {
 }
 
 #[must_use]
+#[allow(clippy::needless_pass_by_value)]
 pub fn minimal_unify(_g: unparametrized::AtomicPatternDag) -> parameter_indexed::AtomicPatternDag {
     todo!()
 }
@@ -161,7 +162,7 @@ pub fn domains_to_ranges(
     let mut constrained_glwe_parameter_indexes = HashSet::new();
     for op in &operators {
         if let Operator::AtomicPattern { extra_data, .. } = op {
-            constrained_glwe_parameter_indexes.insert(extra_data.output_glwe_params);
+            let _ = constrained_glwe_parameter_indexes.insert(extra_data.output_glwe_params);
         }
     }
 

@@ -39,14 +39,22 @@ jobs:
           command: fmt
           args: -- --check
 
+      - name: cargo build
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: -D warnings
+        with:
+          command: build
+          args: ${{ env.CARGO_ARGS }}
+
       - name: cargo clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: ${{ env.CARGO_ARGS }}
+          args: ${{ env.CARGO_ARGS }} -- -D warnings
 
       - name: cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: ${{ env.CARGO_ARGS }}
+          args: ${{ env.CARGO_ARGS }} --no-fail-fast

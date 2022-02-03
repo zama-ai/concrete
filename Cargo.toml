@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 concrete-commons = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
 concrete-npe = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
+
+[dev-dependencies]
+approx = "0.5.1"
+pretty_assertions = "1"
