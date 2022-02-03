@@ -1,8 +1,7 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}
+#![warn(clippy::nursery)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::style)]
+#![allow(clippy::missing_panics_doc)]
+
+pub mod graph;
+pub mod weight;
