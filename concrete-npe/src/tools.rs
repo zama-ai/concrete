@@ -31,3 +31,20 @@ where
 {
     x * x
 }
+
+#[cfg(test)]
+pub mod tests {
+    #[macro_export]
+    macro_rules! assert_float_eq {
+        ($given:expr, $expected:expr, $opt:ident = $eps:expr) => {
+            assert!(
+                ($given - $expected).abs() <= $eps,
+                "{} != {} +- {}",
+                $given,
+                $expected,
+                $eps
+            );
+        };
+    }
+    pub(crate) use assert_float_eq;
+}
