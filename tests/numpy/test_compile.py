@@ -2080,24 +2080,6 @@ return %9
             ),
         ),
         pytest.param(
-            lambda x: numpy.transpose(x),
-            {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
-            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
-            RuntimeError,
-            (
-                """
-
-function you are trying to compile isn't supported for MLIR lowering
-
-%0 = x                    # EncryptedTensor<uint3, shape=(3, 2)>
-%1 = transpose(%0)        # EncryptedTensor<uint3, shape=(2, 3)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ transpose is not supported for the time being
-return %1
-
-                """.strip()  # noqa: E501
-            ),
-        ),
-        pytest.param(
             lambda x: numpy.ravel(x),
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],

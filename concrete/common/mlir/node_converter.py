@@ -126,6 +126,8 @@ class IntermediateNodeConverter:
                 result = self.convert_sum()
             elif self.node.op_name == "concat":
                 result = self.convert_concat()
+            elif self.node.op_name == "transpose":
+                result = self.convert_transpose()
             else:
                 result = self.convert_generic_function(additional_conversion_info)
 
@@ -855,3 +857,17 @@ class IntermediateNodeConverter:
             ArrayAttr.get([IntegerAttr.get(IntegerType.get_signless(64), axis) for axis in axes]),
             BoolAttr.get(keep_dims),
         ).result
+
+    def convert_transpose(self) -> OpResult:
+        """Convert a Transpose node to its corresponding MLIR representation.
+
+        Returns:
+            str: textual MLIR representation corresponding to self.node
+        """
+
+        assert_true(len(self.node.inputs) == 1)
+        assert_true(len(self.node.outputs) == 1)
+
+        resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+        preds = self.preds
+        return fhelinalg.TransposeOp(resulting_type, *preds).result
