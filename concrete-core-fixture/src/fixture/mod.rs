@@ -210,3 +210,6 @@ pub use lwe_ciphertext_discarding_encryption::*;
 
 mod lwe_ciphertext_vector_decryption;
 pub use lwe_ciphertext_vector_decryption::*;
+
+mod lwe_ciphertext_cleartext_discarding_multiplication;
+pub use lwe_ciphertext_cleartext_discarding_multiplication::*;
