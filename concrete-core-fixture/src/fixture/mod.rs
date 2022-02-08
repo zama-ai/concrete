@@ -219,3 +219,6 @@ pub use glwe_ciphertext_encryption::*;
 
 mod lwe_ciphertext_vector_discarding_affine_transformation;
 pub use lwe_ciphertext_vector_discarding_affine_transformation::*;
+
+mod lwe_ciphertext_discarding_keyswitch;
+pub use lwe_ciphertext_discarding_keyswitch::*;
