@@ -1584,18 +1584,12 @@ func @main() -> tensor<2x2x4x!FHE.eint<6>> {
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_FHELinalg, sum_empty) {
+  namespace concretelang = mlir::concretelang;
 
-  using llvm::ArrayRef;
-  using llvm::Expected;
-
-  using mlir::concretelang::IntLambdaArgument;
-  using mlir::concretelang::JitCompilerEngine;
-  using mlir::concretelang::TensorLambdaArgument;
-
-  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
-  %0 = "FHELinalg.sum"(%x) : (tensor<0x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  %0 = "FHELinalg.sum"(%x) : (tensor<0x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
 
@@ -1603,28 +1597,23 @@ func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
 
   const uint8_t expected = 0;
 
-  ArrayRef<uint8_t> xRef(nullptr, (size_t)0);
-  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {0});
+  llvm::ArrayRef<uint8_t> xRef(nullptr, (size_t)0);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {0});
 
-  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  llvm::Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
   ASSERT_EXPECTED_SUCCESS(result);
 
   ASSERT_EQ(*result, expected);
 }
 
-TEST(End2EndJit_FHELinalg, sum_1D) {
+TEST(End2EndJit_FHELinalg, sum_1D_no_axes) {
+  namespace concretelang = mlir::concretelang;
 
-  using llvm::ArrayRef;
-  using llvm::Expected;
-
-  using mlir::concretelang::IntLambdaArgument;
-  using mlir::concretelang::JitCompilerEngine;
-  using mlir::concretelang::TensorLambdaArgument;
-
-  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
-  %0 = "FHELinalg.sum"(%x) : (tensor<4x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  %0 = "FHELinalg.sum"(%x) : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
 
@@ -1633,28 +1622,48 @@ func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
   const uint8_t x[4]{0, 1, 2, 3};
   const uint8_t expected = 6;
 
-  ArrayRef<uint8_t> xRef((const uint8_t *)x, 4);
-  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {4});
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {4});
 
-  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  llvm::Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
   ASSERT_EXPECTED_SUCCESS(result);
 
   ASSERT_EQ(*result, expected);
 }
 
-TEST(End2EndJit_FHELinalg, sum_2D) {
+TEST(End2EndJit_FHELinalg, sum_1D_axes_0) {
+  namespace concretelang = mlir::concretelang;
 
-  using llvm::ArrayRef;
-  using llvm::Expected;
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
-  using mlir::concretelang::IntLambdaArgument;
-  using mlir::concretelang::JitCompilerEngine;
-  using mlir::concretelang::TensorLambdaArgument;
+func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
+  return %0 : !FHE.eint<7>
+}
 
-  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+)XXX");
+
+  const uint8_t x[4]{0, 1, 2, 3};
+  const uint8_t expected = 6;
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {4});
+
+  llvm::Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(result);
+
+  ASSERT_EQ(*result, expected);
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D_no_axes) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
-  %0 = "FHELinalg.sum"(%x) : (tensor<3x4x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  %0 = "FHELinalg.sum"(%x) : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
 
@@ -1667,28 +1676,134 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
   };
   const uint8_t expected = 46;
 
-  ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
-  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {3, 4});
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
 
-  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  llvm::Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
   ASSERT_EXPECTED_SUCCESS(result);
 
   ASSERT_EQ(*result, expected);
 }
 
-TEST(End2EndJit_FHELinalg, sum_3D) {
+TEST(End2EndJit_FHELinalg, sum_2D_axes_0) {
+  namespace concretelang = mlir::concretelang;
 
-  using llvm::ArrayRef;
-  using llvm::Expected;
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
-  using mlir::concretelang::IntLambdaArgument;
-  using mlir::concretelang::JitCompilerEngine;
-  using mlir::concretelang::TensorLambdaArgument;
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
+  return %0 : tensor<4x!FHE.eint<7>>
+}
 
-  JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected[4]{12, 15, 8, 11};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 4);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 4);
+
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D_axes_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
+  return %0 : tensor<3x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected[3]{6, 22, 18};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D_axes_0_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
+  return %0 : !FHE.eint<7>
+}
+
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected = 46;
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
+
+  llvm::Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(result);
+
+  ASSERT_EQ(*result, expected);
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_no_axes) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
-  %0 = "FHELinalg.sum"(%x) : (tensor<3x4x2x!FHE.eint<7>>) -> (!FHE.eint<7>)
+  %0 = "FHELinalg.sum"(%x) : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
 
@@ -1716,13 +1831,1232 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
   };
   const uint8_t expected = 96;
 
-  ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
-  TensorLambdaArgument<IntLambdaArgument<uint8_t>> xArg(xRef, {3, 4, 2});
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
 
-  Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  llvm::Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
   ASSERT_EXPECTED_SUCCESS(result);
 
   ASSERT_EQ(*result, expected);
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_axes_0) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>>
+  return %0 : tensor<4x2x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[4][2]{
+      {14, 17},
+      {10, 13},
+      {6, 9},
+      {12, 15},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 4);
+  ASSERT_EQ(res.getDimensions().at(1), 2);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 8);
+
+  for (size_t i = 0; i < 4; i++) {
+    for (size_t j = 0; j < 2; j++) {
+      EXPECT_EQ(res.getValue()[(i * 2) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_axes_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>>
+  return %0 : tensor<3x2x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[3][2]{
+      {12, 16},
+      {14, 18},
+      {16, 20},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EQ(res.getDimensions().at(1), 2);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 6);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 2; j++) {
+      EXPECT_EQ(res.getValue()[(i * 2) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_axes_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>>
+  return %0 : tensor<3x4x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[3][4]{
+      {1, 5, 9, 13},
+      {17, 1, 5, 9},
+      {13, 17, 1, 5},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EQ(res.getDimensions().at(1), 4);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 12);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      EXPECT_EQ(res.getValue()[(i * 4) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_axes_0_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>>
+  return %0 : tensor<2x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[2]{42, 54};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 2);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 2);
+
+  for (size_t i = 0; i < 2; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_axes_1_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
+  return %0 : tensor<3x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[3]{28, 32, 36};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_axes_0_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
+  return %0 : tensor<4x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[4]{31, 23, 15, 27};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 4);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 4);
+
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_axes_0_1_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
+  return %0 : !FHE.eint<7>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected = 96;
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<uint64_t> result = lambda.operator()<uint64_t>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(result);
+
+  ASSERT_EQ(*result, expected);
+}
+
+TEST(End2EndJit_FHELinalg, sum_keep_dims_empty) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+  return %0 : tensor<1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t expected[1] = {0};
+
+  llvm::ArrayRef<uint8_t> xRef(nullptr, (size_t)0);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {0});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 1);
+
+  for (size_t i = 0; i < 1; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_1D_keep_dims_no_axes) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+  return %0 : tensor<1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[4]{0, 1, 2, 3};
+  const uint8_t expected[1] = {6};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 1);
+
+  for (size_t i = 0; i < 1; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_1D_keep_dims_axes_0) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+  return %0 : tensor<1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[4]{0, 1, 2, 3};
+  const uint8_t expected[1] = {6};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 1);
+
+  for (size_t i = 0; i < 1; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_no_axes) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
+  return %0 : tensor<1x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected[1][1] = {{46}};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 1);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      EXPECT_EQ(res.getValue()[(i * 1) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_0) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>>
+  return %0 : tensor<1x4x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected[1][4]{
+      {12, 15, 8, 11},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 4);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 4);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      EXPECT_EQ(res.getValue()[(i * 4) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>>
+  return %0 : tensor<3x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected[3][1]{
+      {6},
+      {22},
+      {18},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      EXPECT_EQ(res.getValue()[(i * 1) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_0_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
+  return %0 : tensor<1x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4]{
+      {0, 1, 2, 3},
+      {4, 5, 6, 7},
+      {8, 9, 0, 1},
+  };
+  const uint8_t expected[1][1] = {{46}};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 1);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      EXPECT_EQ(res.getValue()[(i * 1) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_no_axes) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
+  return %0 : tensor<1x1x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[1][1][1] = {{{96}}};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EQ(res.getDimensions().at(2), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 1);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      for (size_t k = 0; k < 1; k++) {
+        EXPECT_EQ(res.getValue()[(i * 1 * 1) + (j * 1) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>>
+  return %0 : tensor<1x4x2x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[1][4][2]{{
+      {14, 17},
+      {10, 13},
+      {6, 9},
+      {12, 15},
+  }};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 4);
+  ASSERT_EQ(res.getDimensions().at(2), 2);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 8);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      for (size_t k = 0; k < 2; k++) {
+        EXPECT_EQ(res.getValue()[(i * 4 * 2) + (j * 2) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>>
+  return %0 : tensor<3x1x2x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[3][1][2]{
+      {{12, 16}},
+      {{14, 18}},
+      {{16, 20}},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EQ(res.getDimensions().at(2), 2);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 6);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      for (size_t k = 0; k < 2; k++) {
+        EXPECT_EQ(res.getValue()[(i * 1 * 2) + (j * 2) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>>
+  return %0 : tensor<3x4x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[3][4][1]{
+      {{1}, {5}, {9}, {13}},
+      {{17}, {1}, {5}, {9}},
+      {{13}, {17}, {1}, {5}},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EQ(res.getDimensions().at(1), 4);
+  ASSERT_EQ(res.getDimensions().at(2), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 12);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      for (size_t k = 0; k < 1; k++) {
+        EXPECT_EQ(res.getValue()[(i * 4 * 1) + (j * 1) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>>
+  return %0 : tensor<1x1x2x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[1][1][2]{{{42, 54}}};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EQ(res.getDimensions().at(2), 2);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 2);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      for (size_t k = 0; k < 2; k++) {
+        EXPECT_EQ(res.getValue()[(i * 1 * 2) + (j * 2) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_1_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>>
+  return %0 : tensor<3x1x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[3][1][1]{{{28}}, {{32}}, {{36}}};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EQ(res.getDimensions().at(2), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      for (size_t k = 0; k < 1; k++) {
+        EXPECT_EQ(res.getValue()[(i * 1 * 1) + (j * 1) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>>
+  return %0 : tensor<1x4x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[1][4][1]{{{31}, {23}, {15}, {27}}};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 4);
+  ASSERT_EQ(res.getDimensions().at(2), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 4);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      for (size_t k = 0; k < 1; k++) {
+        EXPECT_EQ(res.getValue()[(i * 4 * 1) + (j * 1) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_1_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+
+func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
+  return %0 : tensor<1x1x1x!FHE.eint<7>>
+}
+
+)XXX");
+
+  const uint8_t x[3][4][2]{
+      {
+          {0, 1},
+          {2, 3},
+          {4, 5},
+          {6, 7},
+      },
+      {
+          {8, 9},
+          {0, 1},
+          {2, 3},
+          {4, 5},
+      },
+      {
+          {6, 7},
+          {8, 9},
+          {0, 1},
+          {2, 3},
+      },
+  };
+  const uint8_t expected[1][1][1] = {{{96}}};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 4 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 4, 2});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>({&xArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 1);
+  ASSERT_EQ(res.getDimensions().at(1), 1);
+  ASSERT_EQ(res.getDimensions().at(2), 1);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 1);
+
+  for (size_t i = 0; i < 1; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      for (size_t k = 0; k < 1; k++) {
+        EXPECT_EQ(res.getValue()[(i * 1 * 1) + (j * 1) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
 }
 
 class TiledMatMulParametric

@@ -3,6 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
+#include <unordered_set>
+
 #include "mlir/IR/TypeUtilities.h"
 
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
@@ -391,6 +393,101 @@ verifyApplyMappedLookupTable(ApplyMappedLookupTableEintOp &op) {
     return ::mlir::failure();
   }
   return ::mlir::success();
+}
+
+llvm::SmallVector<int64_t, 3>
+verifySumCalculateActualOutputShape(mlir::Type outputType) {
+  auto actualOutputShape = llvm::SmallVector<int64_t, 3>{};
+  if (outputType.isa<mlir::TensorType>()) {
+    auto outputTensorType = outputType.dyn_cast<mlir::TensorType>();
+    for (int64_t size : outputTensorType.getShape()) {
+      actualOutputShape.push_back(size);
+    }
+  }
+  return actualOutputShape;
+}
+
+llvm::SmallVector<int64_t, 3> verifySumCalculateExpectedOutputShape(
+    llvm::ArrayRef<int64_t> inputShape, int64_t inputDimensions,
+    std::unordered_set<int64_t> &axesToDestroy, bool keepDims) {
+
+  auto expectedOutputShape = llvm::SmallVector<int64_t, 3>{};
+  for (int64_t i = 0; i < inputDimensions; i++) {
+    bool ithAxisIsDestroyed = axesToDestroy.find(i) != axesToDestroy.end();
+    if (!ithAxisIsDestroyed) {
+      expectedOutputShape.push_back(inputShape[i]);
+    } else if (keepDims) {
+      expectedOutputShape.push_back(1);
+    }
+  }
+  return expectedOutputShape;
+}
+
+mlir::LogicalResult verifySum(SumOp &op) {
+  mlir::Value input = op.getOperand();
+  mlir::Value output = op.getResult();
+
+  auto inputType = input.getType().dyn_cast<mlir::TensorType>();
+  mlir::Type outputType = output.getType();
+
+  FHE::EncryptedIntegerType inputElementType =
+      inputType.getElementType().dyn_cast<FHE::EncryptedIntegerType>();
+  FHE::EncryptedIntegerType outputElementType =
+      !outputType.isa<mlir::TensorType>()
+          ? outputType.dyn_cast<FHE::EncryptedIntegerType>()
+          : outputType.dyn_cast<mlir::TensorType>()
+                .getElementType()
+                .dyn_cast<FHE::EncryptedIntegerType>();
+
+  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
+          op, inputElementType, outputElementType)) {
+    return mlir::failure();
+  }
+
+  llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
+  int64_t inputDimensions = (int64_t)inputShape.size();
+
+  mlir::ArrayAttr axes = op.axes();
+  bool keepDims = op.keep_dims();
+
+  auto axesToDestroy = std::unordered_set<int64_t>{};
+  for (mlir::Attribute axisAttribute : axes) {
+    int64_t axis = axisAttribute.cast<mlir::IntegerAttr>().getInt();
+
+    bool axisIsValid = (0 <= axis) && (axis < inputDimensions);
+    if (!axisIsValid) {
+      op.emitOpError("has invalid axes attribute");
+      return mlir::failure();
+    }
+
+    axesToDestroy.insert(axis);
+  }
+  if (axesToDestroy.empty()) {
+    for (int64_t i = 0; i < inputDimensions; i++) {
+      axesToDestroy.insert(i);
+    }
+  }
+
+  auto expectedOutputShape = verifySumCalculateExpectedOutputShape(
+      inputShape, inputDimensions, axesToDestroy, keepDims);
+  auto actualOutputShape = verifySumCalculateActualOutputShape(outputType);
+
+  if (expectedOutputShape != actualOutputShape) {
+    auto stream = op.emitOpError();
+
+    stream << "does not have the proper output shape of <";
+    if (!expectedOutputShape.empty()) {
+      stream << expectedOutputShape[0];
+      for (size_t i = 1; i < expectedOutputShape.size(); i++) {
+        stream << "x" << expectedOutputShape[i];
+      }
+    }
+    stream << ">";
+
+    return mlir::failure();
+  }
+
+  return mlir::success();
 }
 
 /// Verify the matmul shapes, the type of tensor elements should be checked by

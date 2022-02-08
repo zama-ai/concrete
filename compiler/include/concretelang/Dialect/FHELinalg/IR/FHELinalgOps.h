@@ -8,6 +8,7 @@
 
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgTypes.h"
+#include "mlir/IR/Builders.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
 #include <mlir/IR/BuiltinOps.h>

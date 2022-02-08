@@ -841,23 +841,43 @@ static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::SumOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
-  auto type = op->getOperand(0).getType().dyn_cast_or_null<mlir::TensorType>();
+  auto inputType = op.getOperand().getType().dyn_cast<mlir::TensorType>();
 
-  uint64_t numberOfElements = type.getNumElements();
-  if (numberOfElements == 0) {
+  uint64_t numberOfElementsInTheInput = inputType.getNumElements();
+  if (numberOfElementsInTheInput == 0) {
     return llvm::APInt{1, 1, false};
   }
+
+  uint64_t numberOfElementsAddedTogetherInEachOutputCell = 1;
+
+  mlir::ArrayAttr axes = op.axes();
+  if (axes.empty()) {
+    numberOfElementsAddedTogetherInEachOutputCell *= numberOfElementsInTheInput;
+  } else {
+    llvm::ArrayRef<int64_t> shape = inputType.getShape();
+    for (mlir::Attribute axisAttribute : op.axes()) {
+      int64_t axis = axisAttribute.cast<IntegerAttr>().getInt();
+      numberOfElementsAddedTogetherInEachOutputCell *= shape[axis];
+    }
+  }
+
+  unsigned int noiseMultiplierBits =
+      ceilLog2(numberOfElementsAddedTogetherInEachOutputCell + 1);
+
+  auto noiseMultiplier = llvm::APInt{
+      noiseMultiplierBits,
+      numberOfElementsAddedTogetherInEachOutputCell,
+      false,
+  };
 
   assert(operandMANPs.size() == 1 &&
          operandMANPs[0]->getValue().getMANP().hasValue() &&
          "Missing squared Minimal Arithmetic Noise Padding for encrypted "
          "operands");
+
   llvm::APInt operandMANP = operandMANPs[0]->getValue().getMANP().getValue();
 
-  unsigned int multiplierBits = ceilLog2(numberOfElements + 1);
-  auto multiplier = llvm::APInt{multiplierBits, numberOfElements, false};
-
-  return APIntWidthExtendUMul(multiplier, operandMANP);
+  return APIntWidthExtendUMul(noiseMultiplier, operandMANP);
 }
 
 struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
