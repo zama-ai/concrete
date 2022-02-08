@@ -639,8 +639,8 @@ mod optalysys {
                 .core_engine
                 .create_glwe_secret_key(glwe_dimension, poly_size)
                 .unwrap();
-            let bsk: LweBootstrapKey32 = synthesizer
-                .core_engine
+            let bsk: OptalysysLweBootstrapKey32 = synthesizer
+                .optalysys_engine
                 .create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, base_log, level_count, noise)
                 .unwrap();
             synthesizer
@@ -668,8 +668,8 @@ mod optalysys {
                 .core_engine
                 .create_glwe_secret_key(glwe_dimension, poly_size)
                 .unwrap();
-            let bsk: LweBootstrapKey64 = synthesizer
-                .core_engine
+            let bsk: OptalysysLweBootstrapKey64 = synthesizer
+                .optalysys_engine
                 .create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, base_log, level_count, noise)
                 .unwrap();
             synthesizer
