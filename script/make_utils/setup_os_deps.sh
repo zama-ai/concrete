@@ -12,7 +12,7 @@ isDockerBuildkit(){
 }
 
 isDockerContainer(){
-    [[ -e ./dockerenv ]]
+    [[ -e /.dockerenv ]]
 }
 
 LINUX_INSTALL_PYTHON=0
