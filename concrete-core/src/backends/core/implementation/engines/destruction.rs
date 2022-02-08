@@ -8,6 +8,9 @@ use crate::backends::core::implementation::entities::{
     PlaintextVector32, PlaintextVector64,
 };
 use crate::backends::core::private::math::tensor::AsMutTensor;
+use crate::prelude::{
+    FourierGgswCiphertext32, FourierGgswCiphertext64, GgswCiphertext32, GgswCiphertext64,
+};
 use crate::specification::engines::{DestructionEngine, DestructionError};
 
 impl DestructionEngine<Cleartext32> for CoreEngine {
@@ -188,6 +191,54 @@ impl DestructionEngine<GlweCiphertextVector64> for CoreEngine {
     }
 
     unsafe fn destroy_unchecked(&mut self, _entity: GlweCiphertextVector64) {}
+}
+
+impl DestructionEngine<GgswCiphertext32> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: GgswCiphertext32,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: GgswCiphertext32) {}
+}
+
+impl DestructionEngine<GgswCiphertext64> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: GgswCiphertext64,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: GgswCiphertext64) {}
+}
+
+impl DestructionEngine<FourierGgswCiphertext32> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: FourierGgswCiphertext32,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: FourierGgswCiphertext32) {}
+}
+
+impl DestructionEngine<FourierGgswCiphertext64> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: FourierGgswCiphertext64,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: FourierGgswCiphertext64) {}
 }
 
 impl DestructionEngine<LweBootstrapKey32> for CoreEngine {
