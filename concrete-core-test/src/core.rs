@@ -37,5 +37,6 @@ macro_rules! test {
 }
 
 test! {
-    (CleartextCreationFixture, (Cleartext))
+    (CleartextCreationFixture, (Cleartext)),
+    (LweCiphertextEncryptionHarness, (Plaintext, LweSecretKey, LweCiphertext))
 }
