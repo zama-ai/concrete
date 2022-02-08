@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script>
+      window.fetch('versions.json').then(function(response) { response.json().then(function(data) { window.location.href = data.latest; }); });
+    </script>
+  </head>
+  <body>
+    <h3>Something went wrong. No versions file found!</h3>
+  </body>
+</html>

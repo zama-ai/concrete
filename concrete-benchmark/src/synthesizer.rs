@@ -120,6 +120,8 @@ pub trait SynthesizablePlaintextVectorEntity: PlaintextVectorEntity {
 pub struct Synthesizer {
     #[cfg(feature = "backend_core")]
     core_engine: concrete_core::backends::core::engines::CoreEngine,
+    #[cfg(feature = "backend_optalysys")]
+    optalysys_engine: concrete_core::backends::optalysys::engines::OptalysysEngine,
 }
 
 impl Default for Synthesizer {
@@ -127,6 +129,8 @@ impl Default for Synthesizer {
         Synthesizer {
             #[cfg(feature = "backend_core")]
             core_engine: concrete_core::backends::core::engines::CoreEngine::new().unwrap(),
+            #[cfg(feature = "backend_optalysys")]
+            optalysys_engine: concrete_core::backends::optalysys::engines::OptalysysEngine::new().unwrap(),
         }
     }
 }
@@ -552,6 +556,125 @@ mod core {
             synthesizer
                 .core_engine
                 .create_plaintext_vector(vec![1u64; count.0].as_slice())
+                .unwrap()
+        }
+    }
+}
+
+
+#[cfg(feature = "backend_optalysys")]
+mod optalysys {
+    use super::*;
+    use concrete_commons::dispersion::Variance;
+    use concrete_commons::parameters::{
+        CleartextCount, DecompositionBaseLog, DecompositionLevelCount, GlweCiphertextCount,
+        GlweDimension, LweCiphertextCount, LweDimension, PlaintextCount, PolynomialSize,
+    };
+
+    impl SynthesizableLweBootstrapKeyEntity for OptalysysLweBootstrapKey32 {
+        fn synthesize(
+            synthesizer: &mut Synthesizer,
+            lwe_dimension: LweDimension,
+            poly_size: PolynomialSize,
+            glwe_dimension: GlweDimension,
+            base_log: DecompositionBaseLog,
+            level_count: DecompositionLevelCount,
+            noise: Variance,
+        ) -> Self {
+            let lwe_sk = synthesizer
+                .core_engine
+                .create_lwe_secret_key(lwe_dimension)
+                .unwrap();
+            let glwe_sk = synthesizer
+                .core_engine
+                .create_glwe_secret_key(glwe_dimension, poly_size)
+                .unwrap();
+            synthesizer
+                .optalysys_engine
+                .create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, base_log, level_count, noise)
+                .unwrap()
+        }
+    }
+
+    impl SynthesizableLweBootstrapKeyEntity for OptalysysLweBootstrapKey64 {
+        fn synthesize(
+            synthesizer: &mut Synthesizer,
+            lwe_dimension: LweDimension,
+            poly_size: PolynomialSize,
+            glwe_dimension: GlweDimension,
+            base_log: DecompositionBaseLog,
+            level_count: DecompositionLevelCount,
+            noise: Variance,
+        ) -> Self {
+            let lwe_sk = synthesizer
+                .core_engine
+                .create_lwe_secret_key(lwe_dimension)
+                .unwrap();
+            let glwe_sk = synthesizer
+                .core_engine
+                .create_glwe_secret_key(glwe_dimension, poly_size)
+                .unwrap();
+            synthesizer
+                .optalysys_engine
+                .create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, base_log, level_count, noise)
+                .unwrap()
+        }
+    }
+
+    impl SynthesizableLweBootstrapKeyEntity for OptalysysFourierLweBootstrapKey32 {
+        fn synthesize(
+            synthesizer: &mut Synthesizer,
+            lwe_dimension: LweDimension,
+            poly_size: PolynomialSize,
+            glwe_dimension: GlweDimension,
+            base_log: DecompositionBaseLog,
+            level_count: DecompositionLevelCount,
+            noise: Variance,
+        ) -> Self {
+            let lwe_sk: LweSecretKey32 = synthesizer
+                .core_engine
+                .create_lwe_secret_key(lwe_dimension)
+                .unwrap();
+            let glwe_sk: GlweSecretKey32 = synthesizer
+                .core_engine
+                .create_glwe_secret_key(glwe_dimension, poly_size)
+                .unwrap();
+            let bsk: OptalysysLweBootstrapKey32 = synthesizer
+                .optalysys_engine
+                .create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, base_log, level_count, noise)
+                .unwrap();
+            synthesizer
+                .optalysys_engine
+                .convert_lwe_bootstrap_key(&bsk)
+                .unwrap()
+        }
+    }
+
+    impl SynthesizableLweBootstrapKeyEntity for OptalysysFourierLweBootstrapKey64 {
+        fn synthesize(
+            synthesizer: &mut Synthesizer,
+            lwe_dimension: LweDimension,
+            poly_size: PolynomialSize,
+            glwe_dimension: GlweDimension,
+            base_log: DecompositionBaseLog,
+            level_count: DecompositionLevelCount,
+            noise: Variance,
+        ) -> Self {
+            let lwe_sk: LweSecretKey64 = synthesizer
+                .core_engine
+                .create_lwe_secret_key(lwe_dimension)
+                .unwrap();
+            let glwe_sk: GlweSecretKey64 = synthesizer
+                .core_engine
+                .create_glwe_secret_key(glwe_dimension, poly_size)
+                .unwrap();
+            let bsk: OptalysysLweBootstrapKey64 = synthesizer
+                .optalysys_engine
+                .create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, base_log, level_count, noise)
+                .unwrap();
+            synthesizer
+                .optalysys_engine
+                .convert_lwe_bootstrap_key(&bsk)
                 .unwrap()
         }
     }

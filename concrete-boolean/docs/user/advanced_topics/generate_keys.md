@@ -18,8 +18,9 @@ let (client_key, server_key) = gen_keys();
 
 It will use `DEFAULT_PARAMETERS` to generate the two keys.
 
-To generate a pair of keys with a different parameter set, such as `TFHE_LIB_PARAMETERS`, you can 
+To generate a pair of keys with a different parameter set, such as `TFHE_LIB_PARAMETERS`, you can
 use the following function:
+
 ```rust
 extern crate concrete_boolean;
 use concrete_boolean::client_key::ClientKey;
@@ -37,7 +38,7 @@ let sks = ServerKey::new(&cks);
 ## Custom Parameter Sets
 
 If you are a cryptographer and know enough about FHE to tune the cryptographic parameters
-yourself, `concrete-boolean`offers the possibility to use your own parameter set.
+yourself, `concrete-boolean` offers the possibility to use your own parameter set.
 
 Note that as soon as you do not use the default parameters, it is up to
 you to ensure the **correctness** and **security** of your program.

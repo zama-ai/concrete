@@ -12,7 +12,7 @@ readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 
 [dev-dependencies]
-concrete-npe = "=0.1.10"
+concrete-npe = "0.2.0"
 criterion = "0.3.4"
 rand = "0.7"
 rand_distr = "0.2.2"
