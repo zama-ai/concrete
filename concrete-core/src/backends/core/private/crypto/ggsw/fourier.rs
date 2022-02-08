@@ -1,11 +1,13 @@
+use crate::backends::core::private::crypto::bootstrap::FourierBuffers;
 use crate::backends::core::private::crypto::glwe::GlweList;
-use crate::backends::core::private::math::fft::Complex64;
+use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
+use crate::backends::core::private::math::polynomial::Polynomial;
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
 
-use super::GgswLevelMatrix;
+use super::{GgswLevelMatrix, StandardGgswCiphertext};
 
 use crate::backends::core::private::math::decomposition::DecompositionLevel;
 use concrete_commons::parameters::{
@@ -466,6 +468,40 @@ impl<Cont, Scalar> FourierGgswCiphertext<Cont, Scalar> {
                     DecompositionLevel(index + 1),
                 )
             })
+    }
+
+    /// Fills a GGSW ciphertext with the fourier transform of a GGSW ciphertext in
+    /// coefficient domain.
+    pub fn fill_with_forward_fourier<InputCont>(
+        &mut self,
+        coef_ggsw: &StandardGgswCiphertext<InputCont>,
+        buffers: &mut FourierBuffers<Scalar>,
+    ) where
+        Cont: AsMutSlice<Element = Complex64>,
+        StandardGgswCiphertext<InputCont>: AsRefTensor<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        // We retrieve a buffer for the fft.
+        let fft_buffer = &mut buffers.fft_buffers.first_buffer;
+        let fft = &mut buffers.fft_buffers.fft;
+
+        // We move every polynomials to the fourier domain.
+        let iterator = self
+            .tensor
+            .subtensor_iter_mut(self.poly_size.0)
+            .map(|t| FourierPolynomial::from_container(t.into_container()))
+            .zip(
+                coef_ggsw
+                    .as_tensor()
+                    .subtensor_iter(coef_ggsw.polynomial_size().0)
+                    .map(|t| Polynomial::from_container(t.into_container())),
+            );
+        for (mut fourier_poly, coef_poly) in iterator {
+            fft.forward_as_torus(fft_buffer, &coef_poly);
+            fourier_poly
+                .as_mut_tensor()
+                .fill_with_one((fft_buffer).as_tensor(), |a| *a);
+        }
     }
 }
 

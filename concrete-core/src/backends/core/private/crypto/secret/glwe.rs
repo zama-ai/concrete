@@ -793,10 +793,11 @@ where
             .expect("Failed to split generator into ggsw levels");
         let base_log = encrypted.decomposition_base_log();
         for (mut matrix, mut generator) in encrypted.level_matrix_iter_mut().zip(gen_iter) {
-            let decomposition = encoded.0
-                * (Scalar::ONE
+            let decomposition = encoded.0.wrapping_mul(
+                Scalar::ONE
                     << (<Scalar as Numeric>::BITS
-                        - (base_log.0 * (matrix.decomposition_level().0))));
+                        - (base_log.0 * (matrix.decomposition_level().0))),
+            );
             let gen_iter = generator
                 .fork_ggsw_level_to_glwe::<Scalar>(self.key_size().to_glwe_size(), self.poly_size)
                 .expect("Failed to split generator into rlwe");
