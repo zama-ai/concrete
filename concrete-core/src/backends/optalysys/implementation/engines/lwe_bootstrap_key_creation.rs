@@ -1,23 +1,30 @@
 use concrete_commons::dispersion::Variance;
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
 
-use crate::backends::core::implementation::engines::CoreEngine;
+use crate::backends::optalysys::implementation::engines::OptalysysEngine;
+use crate::backends::optalysys::implementation::entities::{
+    OptalysysFourierLweBootstrapKey32 as FourierLweBootstrapKey32, 
+    OptalysysFourierLweBootstrapKey64 as FourierLweBootstrapKey64, 
+    OptalysysLweBootstrapKey32 as LweBootstrapKey32, 
+    OptalysysLweBootstrapKey64 as LweBootstrapKey64, 
+};
 use crate::backends::core::implementation::entities::{
-    FourierLweBootstrapKey32, FourierLweBootstrapKey64, GlweSecretKey32, GlweSecretKey64,
-    LweBootstrapKey32, LweBootstrapKey64, LweSecretKey32, LweSecretKey64,
+    GlweSecretKey32, GlweSecretKey64, LweSecretKey32, LweSecretKey64,
+};
+use crate::backends::optalysys::private::crypto::bootstrap::{
+    FourierBootstrapKey as ImplFourierBootstrapKey,
 };
 use crate::backends::core::private::crypto::bootstrap::{
-    FourierBootstrapKey as ImplFourierBootstrapKey,
     StandardBootstrapKey as ImplStandardBootstrapKey,
 };
 use crate::backends::core::private::math::fft::Complex64;
 use crate::specification::engines::{LweBootstrapKeyCreationEngine, LweBootstrapKeyCreationError};
 
 /// # Description:
-/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`OptalysysEngine`] that operates on
 /// 32 bits integers. It outputs a bootstrap key in the standard domain.
 impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, LweBootstrapKey32>
-    for CoreEngine
+    for OptalysysEngine
 {
     /// # Example
     /// ```
@@ -34,7 +41,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, LweBootstrap
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = OptalysysEngine::new()?;
     /// let lwe_sk: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///
@@ -105,10 +112,10 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, LweBootstrap
 }
 
 /// # Description:
-/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`OptalysysEngine`] that operates on
 /// 64 bits integers. It outputs a bootstrap key in the standard domain.
 impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, LweBootstrapKey64>
-    for CoreEngine
+    for OptalysysEngine
 {
     /// # Example
     /// ```
@@ -125,7 +132,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, LweBootstrap
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = OptalysysEngine::new()?;
     /// let lwe_sk: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///
@@ -196,10 +203,10 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, LweBootstrap
 }
 
 /// # Description:
-/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`OptalysysEngine`] that operates on
 /// 32 bits integers. It outputs a bootstrap key in the Fourier domain.
 impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBootstrapKey32>
-    for CoreEngine
+    for OptalysysEngine
 {
     /// # Example
     /// ```
@@ -216,7 +223,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBo
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = OptalysysEngine::new()?;
     /// let lwe_sk: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///
@@ -299,10 +306,10 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBo
 }
 
 /// # Description:
-/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweBootstrapKeyCreationEngine`] for [`OptalysysEngine`] that operates on
 /// 64 bits integers. It outputs a bootstrap key in the Fourier domain.
 impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, FourierLweBootstrapKey64>
-    for CoreEngine
+    for OptalysysEngine
 {
     /// # Example
     /// ```
@@ -319,7 +326,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, FourierLweBo
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = OptalysysEngine::new()?;
     /// let lwe_sk: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///
