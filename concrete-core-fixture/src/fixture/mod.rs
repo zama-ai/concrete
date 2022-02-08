@@ -207,3 +207,6 @@ pub use lwe_ciphertext_encryption::*;
 
 mod lwe_ciphertext_discarding_encryption;
 pub use lwe_ciphertext_discarding_encryption::*;
+
+mod lwe_ciphertext_vector_decryption;
+pub use lwe_ciphertext_vector_decryption::*;
