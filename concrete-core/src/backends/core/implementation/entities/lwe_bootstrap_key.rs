@@ -9,6 +9,7 @@ use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
 };
 use concrete_fftw::array::AlignedVec;
+use serde::{Deserialize, Serialize};
 
 /// A structure representing an LWE bootstrap key with 32 bits of precision.
 #[derive(Debug, Clone, PartialEq)]
@@ -73,7 +74,7 @@ impl LweBootstrapKeyEntity for LweBootstrapKey64 {
 }
 
 /// A structure representing an LWE bootstrap key with 32 bits of precision, in the fourier domain.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct FourierLweBootstrapKey32(pub(crate) ImplFourierBootstrapKey<AlignedVec<Complex64>, u32>);
 impl AbstractEntity for FourierLweBootstrapKey32 {
     type Kind = LweBootstrapKeyKind;
@@ -104,7 +105,7 @@ impl LweBootstrapKeyEntity for FourierLweBootstrapKey32 {
 }
 
 /// A structure representing an LWE bootstrap key with 64 bits of precision, in the fourier domain.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct FourierLweBootstrapKey64(pub(crate) ImplFourierBootstrapKey<AlignedVec<Complex64>, u64>);
 impl AbstractEntity for FourierLweBootstrapKey64 {
     type Kind = LweBootstrapKeyKind;

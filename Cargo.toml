@@ -8,7 +8,8 @@ members = [
     "concrete-commons",
     "concrete-tasks",
     "concrete-boolean",
-    "concrete-benchmark"
+    "concrete-benchmark",
+    "concrete-test"
 ]
 
 [patch.crates-io]
@@ -18,3 +19,6 @@ concrete-core = {path="concrete-core"}
 concrete-csprng = {path="concrete-csprng"}
 concrete-commons = {path="concrete-commons"}
 concrete-boolean = {path="concrete-boolean"}
+
+[profile.bench]
+lto = "fat"

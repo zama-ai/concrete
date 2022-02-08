@@ -19,8 +19,8 @@ possibility to make the more convenient choice according to the use-case.
 
 |    Parameter set    | Time per binary gate | Error probability |
 |:-------------------:|:--------------------:|:-----------------:|
-|  DEFAULT_PARAMETERS |        11.3 ms       |    $$2^{-25}$$    |
-| TFHE_LIB_PARAMETERS |        18.0 ms       |   $$2^{-165}$$    |
+|  DEFAULT_PARAMETERS |        11.3 ms       |    $ 2^{-25} $    |
+| TFHE_LIB_PARAMETERS |        18.0 ms       |    $ 2^{-165} $   |
 
 
 The previous table gives the error probability for a boolean gate according to the parameter set.

@@ -527,6 +527,7 @@ where
 
     Variance(res)
 }
+
 /// Computes the dispersion of the bits greater than $q$ after a modulus switching.
 /// # Example
 /// ```rust
@@ -709,7 +710,7 @@ where
 {
     let n = lwe_mask_size.0 as f64;
     let k = rlwe_mask_size.0 as f64;
-    let b = base_log.0 as f64;
+    let b = (1 << base_log.0) as f64;
     let l = level.0 as f64;
     let b2l = f64::powf(b, 2. * l) as f64;
     let big_n = poly_size.0 as f64;
