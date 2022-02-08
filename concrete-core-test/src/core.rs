@@ -35,3 +35,7 @@ macro_rules! test {
         )+
     };
 }
+
+test! {
+    (CleartextCreationFixture, (Cleartext))
+}
