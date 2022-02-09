@@ -51,7 +51,7 @@ impl
     /// let mut core_engine = CoreEngine::new()?;
     /// let lwe_sk: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey32 = core_engine.create_glwe_secret_key(glwe_dim, poly_size)?;
-    /// let bsk: FourierLweBootstrapKey32 =
+    /// let bsk: OptalysysFourierLweBootstrapKey32 =
     ///     engine.create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, dec_bl, dec_lc, noise)?;
     /// let lwe_sk_output: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dim_output)?;
     /// let plaintext = core_engine.create_plaintext(&input)?;
