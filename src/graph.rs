@@ -1,2 +1,2 @@
-pub mod operator_index;
+pub mod operator;
 pub mod unparametrized;

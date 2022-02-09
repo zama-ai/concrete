@@ -1,22 +1,10 @@
-use super::operator_index::OperatorIndex;
+use super::operator::{Operator, OperatorIndex};
 use crate::weight::Weight;
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub(crate) enum Operator {
-    Input {
-        out_precision: u8,
-    },
-    AtomicPattern {
-        in_precision: u8,
-        out_precision: u8,
-        multisum_inputs: Vec<(Weight, OperatorIndex)>,
-    },
-}
 
 #[derive(Clone)]
 #[must_use]
 pub struct AtomicPatternDag {
-    operators: Vec<Operator>,
+    operators: Vec<Operator<(), ()>>,
 }
 
 impl AtomicPatternDag {
@@ -24,7 +12,7 @@ impl AtomicPatternDag {
         Self { operators: vec![] }
     }
 
-    fn add_operator(&mut self, operator: Operator) -> OperatorIndex {
+    fn add_operator(&mut self, operator: Operator<(), ()>) -> OperatorIndex {
         let operator_index = self.operators.len();
 
         self.operators.push(operator);
@@ -33,7 +21,10 @@ impl AtomicPatternDag {
     }
 
     pub fn add_input(&mut self, out_precision: u8) -> OperatorIndex {
-        self.add_operator(Operator::Input { out_precision })
+        self.add_operator(Operator::Input {
+            out_precision,
+            extra_data: (),
+        })
     }
 
     pub fn add_atomic_pattern(
@@ -46,6 +37,7 @@ impl AtomicPatternDag {
             in_precision,
             out_precision,
             multisum_inputs,
+            extra_data: (),
         })
     }
 }
@@ -74,17 +66,25 @@ mod tests {
         assert_eq!(
             &graph.operators,
             &[
-                Operator::Input { out_precision: 1 },
-                Operator::Input { out_precision: 2 },
+                Operator::Input {
+                    out_precision: 1,
+                    extra_data: ()
+                },
+                Operator::Input {
+                    out_precision: 2,
+                    extra_data: ()
+                },
                 Operator::AtomicPattern {
                     in_precision: 3,
                     out_precision: 3,
-                    multisum_inputs: vec![(Weight(1), input1), (Weight(2), input2)]
+                    multisum_inputs: vec![(Weight(1), input1), (Weight(2), input2)],
+                    extra_data: ()
                 },
                 Operator::AtomicPattern {
                     in_precision: 4,
                     out_precision: 4,
-                    multisum_inputs: vec![(Weight(1), atomic_pattern1), (Weight(2), input2)]
+                    multisum_inputs: vec![(Weight(1), atomic_pattern1), (Weight(2), input2)],
+                    extra_data: ()
                 },
             ]
         );
