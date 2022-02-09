@@ -3,7 +3,6 @@ use crate::backends::optalysys::implementation::entities::{
     OptalysysFourierLweBootstrapKey32, OptalysysFourierLweBootstrapKey64, 
     OptalysysLweBootstrapKey32, OptalysysLweBootstrapKey64,
 };
-use crate::backends::core::private::math::tensor::AsMutTensor;
 use crate::specification::engines::{DestructionEngine, DestructionError};
 
 impl DestructionEngine<OptalysysLweBootstrapKey32> for OptalysysEngine {
