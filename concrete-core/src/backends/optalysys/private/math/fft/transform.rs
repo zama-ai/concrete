@@ -103,7 +103,8 @@ impl Fft {
     ///
     /// ```
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
+    /// use concrete_core::backends::optalysys::private::math::fft::Fft;
+    /// use concrete_core::backends::core::private::math::fft::{Complex64, FourierPolynomial};
     /// use concrete_core::backends::core::private::math::random::RandomGenerator;
     /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
     /// use concrete_core::backends::core::private::math::torus::UnsignedTorus;
@@ -140,11 +141,12 @@ impl Fft {
     ///
     /// ```
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::backends::optalysys::private::math::polynomial::Polynomial;
-    /// use concrete_core::backends::optalysys::private::math::random::RandomGenerator;
-    /// use concrete_core::backends::optalysys::private::math::tensor::AsRefTensor;
-    /// use concrete_core::backends::optalysys::private::math::torus::UnsignedTorus;
+    /// use concrete_core::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
+    /// use concrete_core::backends::optalysys::private::math::fft::Fft;
+    /// use concrete_core::backends::core::private::math::polynomial::Polynomial;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
+    /// use concrete_core::backends::core::private::math::torus::UnsignedTorus;
     ///
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
@@ -218,10 +220,11 @@ impl Fft {
     /// ```
     /// use concrete_commons::numeric::UnsignedInteger;
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::backends::optalysys::private::math::polynomial::Polynomial;
-    /// use concrete_core::backends::optalysys::private::math::random::RandomGenerator;
-    /// use concrete_core::backends::optalysys::private::math::tensor::AsRefTensor;
+    /// use concrete_core::backends::optalysys::private::math::fft::Fft;
+    /// use concrete_core::backends::core::private::math::fft::{Complex64, FourierPolynomial};
+    /// use concrete_core::backends::core::private::math::polynomial::Polynomial;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly = FourierPolynomial::allocate(Complex64::new(0., 0.), PolynomialSize(256));
@@ -256,10 +259,11 @@ impl Fft {
     /// ```
     /// use concrete_commons::numeric::UnsignedInteger;
     /// use concrete_commons::parameters::PolynomialSize;
-    /// use concrete_core::backends::optalysys::private::math::fft::{Complex64, Fft, FourierPolynomial};
-    /// use concrete_core::backends::optalysys::private::math::polynomial::Polynomial;
-    /// use concrete_core::backends::optalysys::private::math::random::RandomGenerator;
-    /// use concrete_core::backends::optalysys::private::math::tensor::AsRefTensor;
+    /// use concrete_core::backends::optalysys::private::math::fft::Fft;
+    /// use concrete_core::backends::core::private::math::fft::{Complex64, FourierPolynomial};
+    /// use concrete_core::backends::core::private::math::polynomial::Polynomial;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    /// use concrete_core::backends::core::private::math::tensor::AsRefTensor;
     /// let mut generator = RandomGenerator::new(None);
     /// let mut fft = Fft::new(PolynomialSize(256));
     /// let mut fourier_poly_1 =
