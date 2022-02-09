@@ -58,6 +58,7 @@ assert_eq!((output_cleartext.0 - 50.).abs() < 0.01);
 ## Links
 
 - [TFHE](https://eprint.iacr.org/2018/421.pdf)
+- [concrete-core-1.0.0-alpha release](https://community.zama.ai/t/concrete-core-v1-0-0-alpha/120)
 
 ## License
 
