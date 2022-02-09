@@ -1,4 +1,4 @@
-use crate::backends::core::private::crypto::ggsw::GgswCiphertext as ImplGgswCiphertext;
+use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext as ImplStandardGgswCiphertext;
 use crate::specification::entities::markers::{BinaryKeyDistribution, GgswCiphertextKind};
 use crate::specification::entities::{AbstractEntity, GgswCiphertextEntity};
 use concrete_commons::parameters::{
@@ -7,7 +7,7 @@ use concrete_commons::parameters::{
 
 /// A structure representing a GGSW ciphertext with 32 bits of precision.
 #[derive(Debug, Clone, PartialEq)]
-pub struct GgswCiphertext32(ImplGgswCiphertext<Vec<u32>>);
+pub struct GgswCiphertext32(ImplStandardGgswCiphertext<Vec<u32>>);
 impl AbstractEntity for GgswCiphertext32 {
     type Kind = GgswCiphertextKind;
 }
@@ -33,7 +33,7 @@ impl GgswCiphertextEntity for GgswCiphertext32 {
 
 /// A structure representing a GGSW ciphertext with 64 bits of precision.
 #[derive(Debug, Clone, PartialEq)]
-pub struct GgswCiphertext64(ImplGgswCiphertext<Vec<u64>>);
+pub struct GgswCiphertext64(ImplStandardGgswCiphertext<Vec<u64>>);
 impl AbstractEntity for GgswCiphertext64 {
     type Kind = GgswCiphertextKind;
 }
