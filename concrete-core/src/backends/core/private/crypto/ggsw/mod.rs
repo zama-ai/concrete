@@ -1,7 +1,10 @@
 //! GGSW encryption scheme.
 
-mod ciphertext;
-pub use ciphertext::*;
+mod standard;
+pub use standard::*;
+
+mod fourier;
+pub use fourier::*;
 
 mod levels;
 pub use levels::*;

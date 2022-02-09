@@ -1,5 +1,5 @@
 use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
-use crate::backends::core::private::crypto::ggsw::GgswCiphertext;
+use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
 use crate::backends::core::private::crypto::glwe::{GlweCiphertext, GlweList};
 use crate::backends::core::private::crypto::secret::LweSecretKey;
 use crate::backends::core::private::math::tensor::{
@@ -746,7 +746,7 @@ where
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
-    /// use concrete_core::backends::core::private::crypto::ggsw::GgswCiphertext;
+    /// use concrete_core::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
     /// use concrete_core::backends::core::private::crypto::secret::generators::{
     ///     EncryptionRandomGenerator, SecretRandomGenerator,
     /// };
@@ -754,7 +754,7 @@ where
     /// let mut generator = SecretRandomGenerator::new(None);
     /// let secret_key =
     ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut generator);
-    /// let mut ciphertext = GgswCiphertext::allocate(
+    /// let mut ciphertext = StandardGgswCiphertext::allocate(
     ///     0 as u32,
     ///     PolynomialSize(10),
     ///     GlweSize(3),
@@ -772,13 +772,13 @@ where
     /// ```
     pub fn encrypt_constant_ggsw<OutputCont, Scalar>(
         &self,
-        encrypted: &mut GgswCiphertext<OutputCont>,
+        encrypted: &mut StandardGgswCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
         generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsRefTensor<Element = Scalar>,
-        GgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
+        StandardGgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
@@ -830,7 +830,7 @@ where
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
-    /// use concrete_core::backends::core::private::crypto::ggsw::GgswCiphertext;
+    /// use concrete_core::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
     /// use concrete_core::backends::core::private::crypto::secret::generators::{
     ///     EncryptionRandomGenerator, SecretRandomGenerator,
     /// };
@@ -838,7 +838,7 @@ where
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let secret_key =
     ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut secret_generator);
-    /// let mut ciphertext = GgswCiphertext::allocate(
+    /// let mut ciphertext = StandardGgswCiphertext::allocate(
     ///     0 as u32,
     ///     PolynomialSize(10),
     ///     GlweSize(3),
@@ -857,13 +857,13 @@ where
     #[cfg(feature = "multithread")]
     pub fn par_encrypt_constant_ggsw<OutputCont, Scalar>(
         &self,
-        encrypted: &mut GgswCiphertext<OutputCont>,
+        encrypted: &mut StandardGgswCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter + Send + Sync,
         generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsRefTensor<Element = Scalar>,
-        GgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
+        StandardGgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus + Send + Sync,
         Cont: Sync,
@@ -923,7 +923,7 @@ where
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
-    /// use concrete_core::backends::core::private::crypto::ggsw::GgswCiphertext;
+    /// use concrete_core::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
     /// use concrete_core::backends::core::private::crypto::secret::generators::{
     ///     EncryptionRandomGenerator, SecretRandomGenerator,
     /// };
@@ -931,7 +931,7 @@ where
     /// let mut secret_generator = SecretRandomGenerator::new(None);
     /// let secret_key: GlweSecretKey<_, Vec<u32>> =
     ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut secret_generator);
-    /// let mut ciphertext = GgswCiphertext::allocate(
+    /// let mut ciphertext = StandardGgswCiphertext::allocate(
     ///     0 as u32,
     ///     PolynomialSize(10),
     ///     GlweSize(3),
@@ -949,13 +949,13 @@ where
     /// ```
     pub fn trivial_encrypt_constant_ggsw<OutputCont, Scalar>(
         &self,
-        encrypted: &mut GgswCiphertext<OutputCont>,
+        encrypted: &mut StandardGgswCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
         generator: &mut EncryptionRandomGenerator,
     ) where
         Self: AsRefTensor<Element = Scalar>,
-        GgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
+        StandardGgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
