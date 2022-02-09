@@ -203,6 +203,11 @@ release_tarballs:
 update_python_version:
 	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/version.txt
 
+generate_conv_op:
+	python -m mlir.dialects.linalg.opdsl.dump_oplib ops.core_named_ops > ops/LinalgNamedStructuredOps.yaml
+	$(BUILD_DIR)/bin/mlir-linalg-ods-yaml-gen ops/LinalgNamedStructuredOps.yaml --o-impl=ops/LinalgOps.cpp --o-ods-decl=ops/LinalgNamedStructuredOps.yamlgen.td
+
+
 .PHONY: build-initialized \
 	build-end-to-end-jit \
 	concretecompiler \
@@ -226,4 +231,5 @@ update_python_version:
 	install \
 	uninstall\
 	install_runtime_lib \
-	uninstall_runtime_lib
+	uninstall_runtime_lib \
+	generate_conv_op

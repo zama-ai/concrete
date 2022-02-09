@@ -11,6 +11,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
+#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 
@@ -96,6 +97,10 @@ public:
 } // namespace mlir
 
 #define GET_OP_CLASSES
+// TODO: remove this when removing the custom linalg op for Conv
+// the generated code was calling functions from the mlir::linalg namespace
+using namespace mlir::linalg;
+// END TODO
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h.inc"
 
 #endif
