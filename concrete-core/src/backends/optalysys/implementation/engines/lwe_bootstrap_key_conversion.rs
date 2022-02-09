@@ -32,12 +32,13 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey32, FourierLweBootstrapKey32
     /// let noise = Variance(2_f64.powf(-25.));
     ///
     /// let mut engine = OptalysysEngine::new()?;
-    /// let lwe_sk: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim)?;
-    /// let glwe_sk: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
-    /// let bsk: LweBootstrapKey32 =
+    /// let mut core_engine = CoreEngine::new()?;
+    /// let lwe_sk: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dim)?;
+    /// let glwe_sk: GlweSecretKey32 = core_engine.create_glwe_secret_key(glwe_dim, poly_size)?;
+    /// let bsk: OptalysysLweBootstrapKey32 =
     ///     engine.create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, dec_bl, dec_lc, noise)?;
     ///
-    /// let fourier_bsk: FourierLweBootstrapKey32 = engine.convert_lwe_bootstrap_key(&bsk)?;
+    /// let fourier_bsk: OptalysysFourierLweBootstrapKey32 = engine.convert_lwe_bootstrap_key(&bsk)?;
     /// #
     /// assert_eq!(fourier_bsk.glwe_dimension(), glwe_dim);
     /// assert_eq!(fourier_bsk.polynomial_size(), poly_size);
@@ -45,8 +46,8 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey32, FourierLweBootstrapKey32
     /// assert_eq!(fourier_bsk.decomposition_base_log(), dec_bl);
     /// assert_eq!(fourier_bsk.decomposition_level_count(), dec_lc);
     ///
-    /// engine.destroy(lwe_sk)?;
-    /// engine.destroy(glwe_sk)?;
+    /// core_engine.destroy(lwe_sk)?;
+    /// core_engine.destroy(glwe_sk)?;
     /// engine.destroy(bsk)?;
     /// engine.destroy(fourier_bsk)?;
     /// #
@@ -99,12 +100,13 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey64, FourierLweBootstrapKey64
     /// let noise = Variance(2_f64.powf(-25.));
     ///
     /// let mut engine = OptalysysEngine::new()?;
-    /// let lwe_sk: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim)?;
-    /// let glwe_sk: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
-    /// let bsk: LweBootstrapKey64 =
+    /// let mut core_engine = CoreEngine::new()?;
+    /// let lwe_sk: LweSecretKey64 = core_engine.create_lwe_secret_key(lwe_dim)?;
+    /// let glwe_sk: GlweSecretKey64 = core_engine.create_glwe_secret_key(glwe_dim, poly_size)?;
+    /// let bsk: OptalysysLweBootstrapKey64 =
     ///     engine.create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, dec_bl, dec_lc, noise)?;
     ///
-    /// let fourier_bsk: FourierLweBootstrapKey64 = engine.convert_lwe_bootstrap_key(&bsk)?;
+    /// let fourier_bsk: OptalysysFourierLweBootstrapKey64 = engine.convert_lwe_bootstrap_key(&bsk)?;
     /// #
     /// assert_eq!(fourier_bsk.glwe_dimension(), glwe_dim);
     /// assert_eq!(fourier_bsk.polynomial_size(), poly_size);
@@ -112,8 +114,8 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey64, FourierLweBootstrapKey64
     /// assert_eq!(fourier_bsk.decomposition_base_log(), dec_bl);
     /// assert_eq!(fourier_bsk.decomposition_level_count(), dec_lc);
     ///
-    /// engine.destroy(lwe_sk)?;
-    /// engine.destroy(glwe_sk)?;
+    /// core_engine.destroy(lwe_sk)?;
+    /// core_engine.destroy(glwe_sk)?;
     /// engine.destroy(bsk)?;
     /// engine.destroy(fourier_bsk)?;
     /// #
