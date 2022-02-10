@@ -26,7 +26,6 @@ root_url = os.environ.get("DOC_ROOT_URL", "/")
 # The full version, including alpha/beta/rc tags
 release = os.environ.get("RELEASE_VERSION", "dev")
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
