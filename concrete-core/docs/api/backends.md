@@ -4,9 +4,7 @@
 
 ![core_architecture](../_static/core.png)
 
--
-
-The [`specification`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/index.html)
+- The [`specification`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/index.html)
 module contains a blueprint (in the form of Rust Traits) of the FHE scheme exposed
 in `concrete-core`.
 
@@ -66,14 +64,10 @@ now, we include it automatically (it is part of the `default` flag).
 
 In this core backend, you will find the same structure as in the `specification`:
 
-+
-
-One [`engines`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/engines/index.html)
++ One [`engines`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/engines/index.html)
 module containing the engines exported by the `core` backend
 
-+
-
-One [`entities`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/entities/index.html)
++ One [`entities`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/entities/index.html)
 module containing the entities exported by the `core` backend
 
 In the `entities` module, among other types, we find the
