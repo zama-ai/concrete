@@ -19,6 +19,7 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser.h>
 
+#include <concretelang/Dialect/BConcrete/IR/BConcreteDialect.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
 #include <concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h>
@@ -61,6 +62,8 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
         ->getOrLoadDialect<mlir::concretelang::FHELinalg::FHELinalgDialect>();
     this->mlirContext
         ->getOrLoadDialect<mlir::concretelang::Concrete::ConcreteDialect>();
+    this->mlirContext
+        ->getOrLoadDialect<mlir::concretelang::BConcrete::BConcreteDialect>();
     this->mlirContext->getOrLoadDialect<mlir::StandardOpsDialect>();
     this->mlirContext->getOrLoadDialect<mlir::memref::MemRefDialect>();
     this->mlirContext->getOrLoadDialect<mlir::linalg::LinalgDialect>();

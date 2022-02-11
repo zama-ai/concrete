@@ -12,6 +12,7 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     ${conversion_libs}
 
     MLIRTransforms
+    BConcreteDialect
     ConcreteDialect
     TFHEDialect
     FHEDialect
@@ -37,6 +38,7 @@ else()
     ${conversion_libs}
 
     MLIRTransforms
+    BConcreteDialect
     ConcreteDialect
     TFHEDialect
     FHEDialect
