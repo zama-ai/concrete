@@ -11,6 +11,8 @@
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 
+#include "concretelang/Conversion/BConcreteToBConcreteCAPI/Pass.h"
+#include "concretelang/Conversion/ConcreteToBConcrete/Pass.h"
 #include "concretelang/Conversion/ConcreteToConcreteCAPI/Pass.h"
 #include "concretelang/Conversion/ConcreteUnparametrize/Pass.h"
 #include "concretelang/Conversion/FHETensorOpsToLinalg/Pass.h"
@@ -18,6 +20,7 @@
 #include "concretelang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h"
 #include "concretelang/Conversion/TFHEGlobalParametrization/Pass.h"
 #include "concretelang/Conversion/TFHEToConcrete/Pass.h"
+#include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"

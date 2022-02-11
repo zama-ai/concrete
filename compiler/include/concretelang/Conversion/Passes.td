@@ -29,13 +29,27 @@ def TFHEToConcrete : Pass<"tfhe-to-concrete", "mlir::ModuleOp"> {
   let description = [{ Lowers operations from the TFHE dialect to Concrete }];
   let constructor = "mlir::concretelang::createConvertTFHEToConcretePass()";
   let options = [];
-  let dependentDialects = ["mlir::linalg::LinalgDialect"];
+  let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::TFHE::TFHEDialect"];
+}
+
+def ConcreteToBConcrete : Pass<"concrete-to-bconcrete", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the Concrete dialect to Bufferized Concrete";
+  let description = [{ Lowers operations from the Concrete dialect to Bufferized Concrete }];
+  let constructor = "mlir::concretelang::createConvertConcreteToBConcretePass()";
+  let options = [];
+  let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::Concrete::ConcreteDialect", "mlir::concretelang::BConcrete::BConcreteDialect"];
 }
 
 def ConcreteToConcreteCAPI : Pass<"concrete-to-concrete-c-api", "mlir::ModuleOp"> {
   let summary = "Lower operations from the Concrete dialect to std with function call to the Concrete C API";
   let constructor = "mlir::concretelang::createConvertConcreteToConcreteCAPIPass()";
   let dependentDialects = ["mlir::concretelang::Concrete::ConcreteDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
+}
+
+def BConcreteToBConcreteCAPI : Pass<"bconcrete-to-bconcrete-c-api", "mlir::ModuleOp"> {
+  let summary = "Lower operations from the Bufferized Concrete dialect to std with function call to the Bufferized Concrete C API";
+  let constructor = "mlir::concretelang::createConvertBConcreteToBConcreteCAPIPass()";
+  let dependentDialects = ["mlir::concretelang::BConcrete::BConcreteDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
 }
 
 def ConcreteUnparametrize : Pass<"concrete-unparametrize", "mlir::ModuleOp"> {

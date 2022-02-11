@@ -43,8 +43,12 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-lowerConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                   std::function<bool(mlir::Pass *)> enablePass);
+lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                         std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                    std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,

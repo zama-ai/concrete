@@ -264,16 +264,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   if (target == Target::CONCRETE)
     return std::move(res);
 
-  // Concrete -> Canonical dialects
-  if (mlir::concretelang::pipeline::lowerConcreteToStd(mlirContext, module,
-                                                       enablePass)
-          .failed()) {
-    return errorDiag(
-        "Lowering from Concrete to canonical MLIR dialects failed");
-  }
-  if (target == Target::STD)
-    return std::move(res);
-
   // Generate client parameters if requested
   if (this->generateClientParameters) {
     if (!this->clientParametersFuncName.hasValue()) {
@@ -303,6 +293,28 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       res.clientParameters = clientParametersOrErr.get();
     }
   }
+
+  // Concrete -> BConcrete
+  if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
+          mlirContext, module, this->enablePass)
+          .failed()) {
+    return StreamStringError(
+        "Lowering from Concrete to Bufferized Concrete failed");
+  }
+
+  if (target == Target::BCONCRETE) {
+    return std::move(res);
+  }
+
+  // BConcrete -> Canonical dialects
+  if (mlir::concretelang::pipeline::lowerBConcreteToStd(mlirContext, module,
+                                                        enablePass)
+          .failed()) {
+    return errorDiag(
+        "Lowering from Bufferized Concrete to canonical MLIR dialects failed");
+  }
+  if (target == Target::STD)
+    return std::move(res);
 
   // MLIR canonical dialects -> LLVM Dialect
   if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(

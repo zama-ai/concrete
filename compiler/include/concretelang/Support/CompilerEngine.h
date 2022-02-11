@@ -119,6 +119,10 @@ public:
     // operations
     CONCRETE,
 
+    // Read sources and lower all FHE, TFHE and Concrete operations to BConcrete
+    // operations
+    BCONCRETE,
+
     // Read sources and lower all FHE, TFHE and Concrete
     // operations to canonical MLIR dialects. Cryptographic operations
     // are lowered to invocations of the concrete library.
