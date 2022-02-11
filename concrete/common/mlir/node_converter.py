@@ -12,6 +12,7 @@ from mlir.dialects import arith, linalg, tensor
 from mlir.ir import (
     ArrayAttr,
     Attribute,
+    BoolAttr,
     Context,
     DenseElementsAttr,
     IndexType,
@@ -37,7 +38,7 @@ from ..representation.intermediate import (
     Sub,
 )
 from ..values import TensorValue
-from .conversion_helpers import value_to_mlir_type
+from .conversion_helpers import integer_to_mlir_type, value_to_mlir_type
 
 # pylint: enable=no-name-in-module
 
@@ -120,6 +121,10 @@ class IntermediateNodeConverter:
             if self.node.op_name in ["flatten", "reshape"]:
                 # notice flatten() == reshape(-1) and convert_reshape can handle that
                 result = self.convert_reshape()
+            elif self.node.op_name == "sum":
+                result = self.convert_sum()
+            elif self.node.op_name == "concat":
+                result = self.convert_concat()
             else:
                 result = self.convert_generic_function(additional_conversion_info)
 
@@ -187,6 +192,61 @@ class IntermediateNodeConverter:
                 result = fhe.AddEintIntOp(resulting_type, *preds).result
 
         return result
+
+    def convert_concat(self) -> OpResult:
+        """Convert a "concat" node to its corresponding MLIR representation.
+
+        Returns:
+            str: textual MLIR representation corresponding to self.node
+        """
+
+        assert_true(len(self.node.inputs) >= 2)
+        assert_true(len(self.node.outputs) == 1)
+
+        node = cast(GenericFunction, self.node)
+        resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+
+        axis = node.op_kwargs.get("axis", 0)
+        if axis is not None:
+            if axis < 0:
+                axis += len(cast(TensorValue, self.node.inputs[0]).shape)
+            return fhelinalg.ConcatOp(
+                resulting_type,
+                self.preds,
+                IntegerAttr.get(IntegerType.get_signless(64), axis),
+            ).result
+
+        flattened_preds = []
+        for pred, input_value in zip(self.preds, self.node.inputs):
+            input_shape = cast(TensorValue, input_value).shape
+            input_size = numpy.prod(input_shape)
+            input_dtype = cast(Integer, input_value.dtype)
+
+            flattened_pred_type = RankedTensorType.get(
+                [input_size],
+                integer_to_mlir_type(self.ctx, input_dtype, input_value.is_encrypted),
+            )
+            flattened_pred = linalg.TensorCollapseShapeOp(
+                flattened_pred_type,
+                pred,
+                ArrayAttr.get(
+                    [
+                        ArrayAttr.get(
+                            [
+                                IntegerAttr.get(IndexType.parse("index"), i)
+                                for i in range(len(input_shape))
+                            ]
+                        )
+                    ]
+                ),
+            ).result
+            flattened_preds.append(flattened_pred)
+
+        return fhelinalg.ConcatOp(
+            resulting_type,
+            flattened_preds,
+            IntegerAttr.get(IntegerType.get_signless(64), 0),
+        ).result
 
     def convert_constant(self) -> OpResult:
         """Convert a Constant node to its corresponding MLIR representation.
@@ -655,3 +715,36 @@ class IntermediateNodeConverter:
             result = fhe.SubIntEintOp(resulting_type, *preds).result
 
         return result
+
+    def convert_sum(self) -> OpResult:
+        """Convert a "sum" node to its corresponding MLIR representation.
+
+        Returns:
+            str: textual MLIR representation corresponding to self.node
+        """
+
+        assert_true(len(self.node.inputs) == 1)
+        assert_true(len(self.node.outputs) == 1)
+
+        node = cast(GenericFunction, self.node)
+        resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+
+        axes = node.op_kwargs.get("axis", [])
+        keep_dims = node.op_kwargs.get("keepdims", False)
+
+        if isinstance(axes, int):
+            axes = [axes]
+        elif isinstance(axes, tuple):
+            axes = list(axes)
+
+        input_dimensions = len(cast(TensorValue, self.node.inputs[0]).shape)
+        for i, axis in enumerate(axes):
+            if axis < 0:
+                axes[i] += input_dimensions
+
+        return fhelinalg.SumOp(
+            resulting_type,
+            self.preds[0],
+            ArrayAttr.get([IntegerAttr.get(IntegerType.get_signless(64), axis) for axis in axes]),
+            BoolAttr.get(keep_dims),
+        ).result

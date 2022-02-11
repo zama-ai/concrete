@@ -100,7 +100,10 @@ class BaseTracer(ABC):
         return cls._mix_values_func
 
     def _sanitize(self, inp) -> "BaseTracer":
-        if not isinstance(inp, BaseTracer):
+        if not isinstance(inp, BaseTracer) and not (
+            isinstance(inp, Tuple)  # type: ignore
+            and all(isinstance(item, BaseTracer) for item in inp)  # type: ignore
+        ):
             return self._make_const_input_tracer(inp)
         return inp
 

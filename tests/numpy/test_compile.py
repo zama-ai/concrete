@@ -1102,6 +1102,292 @@ def test_compile_and_run_correctness__for_prog_with_tlu(
             ),
             True,
         ),
+        pytest.param(
+            lambda x: numpy.sum(x),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=0),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=1),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=(0, 1)),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, keepdims=True),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=0, keepdims=True),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=1, keepdims=True),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=(0, 1), keepdims=True),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=-1, keepdims=True),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=-2, keepdims=True),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis=(-2, -1), keepdims=True),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [numpy.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(10)],
+            (
+                [
+                    [1, 7, 6],
+                    [3, 2, 5],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x, y: numpy.concatenate((x, y)),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(4, 2)),
+                "y": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
+            },
+            [
+                (
+                    numpy.random.randint(0, 2 ** 3, size=(4, 2)),
+                    numpy.random.randint(0, 2 ** 3, size=(3, 2)),
+                )
+                for _ in range(10)
+            ],
+            (
+                [
+                    [0, 1],
+                    [2, 3],
+                    [4, 5],
+                    [6, 7],
+                ],
+                [
+                    [4, 5],
+                    [2, 3],
+                    [0, 1],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x, y: numpy.concatenate((x, y), axis=1),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 4)),
+                "y": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [
+                (
+                    numpy.random.randint(0, 2 ** 3, size=(2, 4)),
+                    numpy.random.randint(0, 2 ** 3, size=(2, 3)),
+                )
+                for _ in range(10)
+            ],
+            (
+                [
+                    [0, 1, 2, 3],
+                    [4, 5, 6, 7],
+                ],
+                [
+                    [5, 4, 3],
+                    [2, 1, 0],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x, y: numpy.concatenate((x, y), axis=-1),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(2, 4)),
+                "y": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [
+                (
+                    numpy.random.randint(0, 2 ** 3, size=(2, 4)),
+                    numpy.random.randint(0, 2 ** 3, size=(2, 3)),
+                )
+                for _ in range(10)
+            ],
+            (
+                [
+                    [0, 1, 2, 3],
+                    [4, 5, 6, 7],
+                ],
+                [
+                    [5, 4, 3],
+                    [2, 1, 0],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x, y: numpy.concatenate((x, y), axis=-2),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(4, 2)),
+                "y": EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
+            },
+            [
+                (
+                    numpy.random.randint(0, 2 ** 3, size=(4, 2)),
+                    numpy.random.randint(0, 2 ** 3, size=(3, 2)),
+                )
+                for _ in range(10)
+            ],
+            (
+                [
+                    [0, 1],
+                    [2, 3],
+                    [4, 5],
+                    [6, 7],
+                ],
+                [
+                    [4, 5],
+                    [2, 3],
+                    [0, 1],
+                ],
+            ),
+            False,
+        ),
+        pytest.param(
+            lambda x, y: numpy.concatenate((x, y), axis=None),
+            {
+                "x": EncryptedTensor(UnsignedInteger(3), shape=(3, 4)),
+                "y": EncryptedTensor(UnsignedInteger(3), shape=(2, 3)),
+            },
+            [
+                (
+                    numpy.random.randint(0, 2 ** 3, size=(3, 4)),
+                    numpy.random.randint(0, 2 ** 3, size=(2, 3)),
+                )
+                for _ in range(10)
+            ],
+            (
+                [
+                    [0, 1, 2, 3],
+                    [4, 5, 6, 7],
+                    [7, 6, 5, 4],
+                ],
+                [
+                    [5, 4, 3],
+                    [2, 1, 0],
+                ],
+            ),
+            False,
+        ),
     ],
 )
 def test_compile_and_run_tensor_correctness(
@@ -1682,7 +1968,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
 
 # pylint: disable=line-too-long
 @pytest.mark.parametrize(
-    "function,parameters,inputset,match",
+    "function,parameters,inputset,error,match",
     [
         pytest.param(
             lambda x: numpy.dot(x, numpy.array([-1.5])),
@@ -1690,6 +1976,7 @@ def test_compile_function_with_direct_tlu_overflow(default_compilation_configura
                 "x": EncryptedTensor(Integer(2, is_signed=False), shape=(1,)),
             },
             [numpy.array([i]) for i in [1, 1, 0, 0, 1, 1, 0, 0, 2, 2]],
+            RuntimeError,
             (
                 """
 
@@ -1708,6 +1995,7 @@ return %2
             no_fuse_unhandled,
             {"x": EncryptedScalar(Integer(2, False)), "y": EncryptedScalar(Integer(2, False))},
             [(numpy.array(i), numpy.array(i)) for i in range(10)],
+            RuntimeError,
             (
                 """
 
@@ -1740,6 +2028,7 @@ return %9
             lambda x: numpy.transpose(x),
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
+            RuntimeError,
             (
                 """
 
@@ -1757,6 +2046,7 @@ return %1
             lambda x: numpy.ravel(x),
             {"x": EncryptedTensor(Integer(3, is_signed=False), shape=(3, 2))},
             [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
+            RuntimeError,
             (
                 """
 
@@ -1770,13 +2060,98 @@ return %1
                 """.strip()  # noqa: E501
             ),
         ),
+        pytest.param(
+            lambda x: numpy.sum(x),
+            {"x": EncryptedScalar(UnsignedInteger(3))},
+            [numpy.random.randint(0, 2 ** 3) for i in range(10)],
+            ValueError,
+            (
+                """
+
+only encrypted tensor sum is supported but you tried to sum EncryptedScalar<uint3>
+
+                """.strip()  # noqa: E501
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x, axis="abc"),  # type: ignore
+            {"x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2))},
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
+            ValueError,
+            (
+                """
+
+invalid sum on EncryptedTensor<uint3, shape=(3, 2)> with axis=abc
+
+                """.strip()  # noqa: E501
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.sum(x),  # type: ignore
+            {"x": ClearTensor(UnsignedInteger(3), shape=(3, 2))},
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
+            ValueError,
+            (
+                """
+
+only encrypted tensor sum is supported but you tried to sum ClearTensor<uint3, shape=(3, 2)>
+
+                """.strip()  # noqa: E501
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.concatenate((x, x)),
+            {"x": EncryptedScalar(UnsignedInteger(3))},
+            [numpy.random.randint(0, 2 ** 3) for i in range(10)],
+            ValueError,
+            (
+                """
+
+only encrypted tensor concatenation is supported but you tried to concatenate EncryptedScalar<uint3>, EncryptedScalar<uint3>
+
+                """.strip()  # noqa: E501
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.concatenate((x, x), axis="abc"),  # type: ignore
+            {"x": EncryptedTensor(UnsignedInteger(3), shape=(3, 2))},
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
+            ValueError,
+            (
+                """
+
+invalid concatenation of EncryptedTensor<uint3, shape=(3, 2)>, EncryptedTensor<uint3, shape=(3, 2)> with axis=abc
+
+                """.strip()  # noqa: E501
+            ),
+        ),
+        pytest.param(
+            lambda x: numpy.concatenate((x, x)),  # type: ignore
+            {"x": ClearTensor(UnsignedInteger(3), shape=(3, 2))},
+            [numpy.random.randint(0, 2 ** 3, size=(3, 2)) for i in range(10)],
+            ValueError,
+            (
+                """
+
+only encrypted tensor concatenation is supported but you tried to concatenate ClearTensor<uint3, shape=(3, 2)>, ClearTensor<uint3, shape=(3, 2)>
+
+                """.strip()  # noqa: E501
+            ),
+        ),
     ],
 )
 # pylint: enable=line-too-long
-def test_fail_compile(function, parameters, inputset, match, default_compilation_configuration):
+def test_fail_compile(
+    function,
+    parameters,
+    inputset,
+    error,
+    match,
+    default_compilation_configuration,
+):
     """Test function compile_numpy_function_into_op_graph for a program with signed values"""
 
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(error) as excinfo:
         compile_numpy_function(
             function,
             parameters,

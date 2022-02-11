@@ -353,7 +353,10 @@ class GenericFunction(IntermediateNode):
         self.op_name = op_name if op_name is not None else self.__class__.__name__
 
     def text_for_formatting(self, predecessors: List[str], maximum_constant_length: int) -> str:
-        all_args = deepcopy(predecessors)
+        if self.op_name == "concat":
+            all_args = ["(" + ", ".join(predecessors) + ")"]
+        else:
+            all_args = deepcopy(predecessors)
 
         all_args.extend(format_constant(value, maximum_constant_length) for value in self.op_args)
         all_args.extend(
@@ -371,6 +374,8 @@ class GenericFunction(IntermediateNode):
         # This is the continuation of the mypy bug workaround
         assert self.arbitrary_func is not None
         ordered_inputs = [inputs[idx] for idx in range(len(inputs))]
+        if self.op_name == "concat":
+            return self.arbitrary_func(tuple(ordered_inputs), *self.op_args, **self.op_kwargs)
         return self.arbitrary_func(*ordered_inputs, *self.op_args, **self.op_kwargs)
 
     def get_table(self, ordered_preds: List[IntermediateNode]) -> List[Any]:

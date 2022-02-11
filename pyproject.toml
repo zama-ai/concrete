@@ -45,7 +45,7 @@ pygraphviz = { version = "^1.7", optional = true }
 Pillow = "^9.0.0"
 loguru = "^0.5.3"
 setuptools = "*"
-concrete-compiler = "^0.1.1"
+concrete-compiler = "^0.2.0"
 
 [tool.poetry.extras]
 full = ["pygraphviz"]

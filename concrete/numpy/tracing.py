@@ -61,7 +61,7 @@ class NPTracer(BaseTracer):
         """
         tracing_func = self.get_tracing_func_for_np_function(func)
         assert_true(
-            (len(kwargs) == 0),
+            (tracing_func in [NPTracer.numpy_sum, NPTracer.numpy_concatenate]) or len(kwargs) == 0,
             f"**kwargs are currently not supported for numpy functions, func: {func}",
         )
 
@@ -464,6 +464,128 @@ class NPTracer(BaseTracer):
         )
         return output_tracer
 
+    def numpy_sum(self, inp: "NPTracer", **kwargs) -> "NPTracer":
+        """Trace numpy.sum.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+
+        input_value = inp.output
+
+        def supported(value):
+            if not value.is_encrypted or not isinstance(input_value, TensorValue):
+                return False
+
+            value = cast(TensorValue, value)
+            if value.shape == ():
+                return False
+
+            return True
+
+        if not supported(input_value):
+            raise ValueError(
+                f"only encrypted tensor sum is supported but you tried to sum {input_value}"
+            )
+
+        try:
+            # calculate a newshape using numpy to handle all cases
+            newshape = numpy.sum(numpy.zeros(input_value.shape), **kwargs).shape  # type: ignore
+        except Exception as error:
+            raise ValueError(
+                f"invalid sum on {input_value} with "
+                f"{', '.join('='.join([key, str(value)]) for key, value in kwargs.items())}"
+            ) from error
+
+        output_value = TensorValue(
+            input_value.dtype,
+            input_value.is_encrypted,
+            newshape,
+        )
+        traced_computation = GenericFunction(
+            inputs=[input_value],
+            arbitrary_func=numpy.sum,
+            output_value=output_value,
+            op_kind="Memory",
+            op_kwargs=kwargs,
+            op_name="sum",
+            op_attributes={"fusable": False},
+        )
+        output_tracer = self.__class__(
+            [inp],
+            traced_computation=traced_computation,
+            output_idx=0,
+        )
+        return output_tracer
+
+    def numpy_concatenate(self, inputs: Tuple["NPTracer", ...], **kwargs) -> "NPTracer":
+        """Trace numpy.concatenate.
+
+        Returns:
+            NPTracer: The output NPTracer containing the traced function
+        """
+
+        input_values = [tracer.output for tracer in inputs]
+
+        def supported(values):
+            if any(
+                not value.is_encrypted or not isinstance(value, TensorValue) for value in values
+            ):
+                return False
+
+            values = [cast(TensorValue, value) for value in values]
+            if any(value.shape == () for value in values):
+                return False
+
+            return True
+
+        if not supported(input_values):
+            raise ValueError(
+                f"only encrypted tensor concatenation is supported "
+                f"but you tried to concatenate "
+                f"{', '.join(str(input_value) for input_value in input_values)}"
+            )
+
+        input_tensor_values = [cast(TensorValue, value) for value in input_values]
+
+        try:
+            # calculate a newshape using numpy to handle all cases
+            sample = tuple(numpy.zeros(input_value.shape) for input_value in input_tensor_values)
+            newshape = numpy.concatenate(sample, **kwargs).shape
+        except Exception as error:
+            kwarg_info = ""
+            if len(kwargs) != 0:
+                kwarg_info += " with "
+                kwarg_info += ", ".join(
+                    "=".join([key, str(value)]) for key, value in kwargs.items()
+                )
+
+            raise ValueError(
+                f"invalid concatenation of "
+                f"{', '.join(str(input_value) for input_value in input_values)}{kwarg_info}"
+            ) from error
+
+        output_value = TensorValue(
+            input_tensor_values[0].dtype,
+            input_tensor_values[0].is_encrypted,
+            newshape,
+        )
+        traced_computation = GenericFunction(
+            inputs=input_values,
+            arbitrary_func=numpy.concatenate,
+            output_value=output_value,
+            op_kind="Memory",
+            op_kwargs=kwargs,
+            op_name="concat",
+            op_attributes={"fusable": False},
+        )
+        output_tracer = self.__class__(
+            list(inputs),
+            traced_computation=traced_computation,
+            output_idx=0,
+        )
+        return output_tracer
+
     def __getitem__(self, item):
         if isinstance(item, tuple):
             item = tuple(process_indexing_element(indexing_element) for indexing_element in item)
@@ -581,6 +703,8 @@ class NPTracer(BaseTracer):
         numpy.reshape: numpy_reshape,
         numpy.ravel: numpy_ravel,
         numpy.clip: numpy_clip,
+        numpy.sum: numpy_sum,
+        numpy.concatenate: numpy_concatenate,
     }
 
 
