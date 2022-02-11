@@ -108,6 +108,9 @@ build-end-to-end-jit-test: build-initialized
 build-end-to-end-jit-clear-tensor: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_clear_tensor
 
+build-end-to-end-jit-fhe: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_fhe
+
 build-end-to-end-jit-encrypted-tensor: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_encrypted_tensor
 
@@ -131,6 +134,9 @@ test-end-to-end-jit-test: build-end-to-end-jit-test
 
 test-end-to-end-jit-clear-tensor: build-end-to-end-jit-clear-tensor
 	$(BUILD_DIR)/bin/end_to_end_jit_clear_tensor
+
+test-end-to-end-jit-fhe: build-end-to-end-jit-fhe
+	$(BUILD_DIR)/bin/end_to_end_jit_fhe
 
 test-end-to-end-jit-encrypted-tensor: build-end-to-end-jit-encrypted-tensor
 	$(BUILD_DIR)/bin/end_to_end_jit_encrypted_tensor
