@@ -3521,15 +3521,15 @@ TEST_P(TiledMatMulParametric, tiled_matmul_eint_int) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(TiledMatMul, TiledMatMulParametric,
+INSTANTIATE_TEST_SUITE_P(DISABLED_TiledMatMul, TiledMatMulParametric,
                          ::testing::Values(
-					   // Element-sized tiles
-					   std::vector<int64_t>{1, 1, 1},
+                             // Element-sized tiles
+                             std::vector<int64_t>{1, 1, 1},
 
-					   // Mixed tiles
-					   std::vector<int64_t>{2, 2, 2},
-					   std::vector<int64_t>{4, 4, 2},
-					   std::vector<int64_t>{2, 4, 2},
+                             // Mixed tiles
+                             std::vector<int64_t>{2, 2, 2},
+                             std::vector<int64_t>{4, 4, 2},
+                             std::vector<int64_t>{2, 4, 2},
 
-					   // Single, big tile
-					   std::vector<int64_t>{8, 4, 2}));
+                             // Single, big tile
+                             std::vector<int64_t>{8, 4, 2}));
