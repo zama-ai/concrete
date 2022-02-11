@@ -19,7 +19,6 @@ get_keyswitch_key(mlir::concretelang::RuntimeContext *context) {
 LweBootstrapKey_u64 *
 get_bootstrap_key(mlir::concretelang::RuntimeContext *context) {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
-  int err;
   std::string threadName = hpx::get_thread_name();
   auto bskIt = context->bsk.find(threadName);
   if (bskIt == context->bsk.end()) {
@@ -27,10 +26,8 @@ get_bootstrap_key(mlir::concretelang::RuntimeContext *context) {
                 .insert(std::pair<std::string, LweBootstrapKey_u64 *>(
                     threadName,
                     clone_lwe_bootstrap_key_u64(
-                        &err, context->bsk["_concretelang_base_context_bsk"])))
+                        context->bsk["_concretelang_base_context_bsk"])))
                 .first;
-    if (err != 0)
-      fprintf(stderr, "Runtime: cloning bootstrap key failed.\n");
   }
 #else
   std::string baseName = "_concretelang_base_context_bsk";

@@ -96,13 +96,13 @@ public:
     // Store the values of outputs
     std::vector<void *> outputs;
     // Store the input gates description and the offset of the argument.
-    std::vector<std::tuple<CircuitGate, size_t /*offet*/>> inputGates;
+    std::vector<std::tuple<CircuitGate, size_t /*offset*/>> inputGates;
     // Store the outputs gates description and the offset of the argument.
-    std::vector<std::tuple<CircuitGate, size_t /*offet*/>> outputGates;
+    std::vector<std::tuple<CircuitGate, size_t /*offset*/>> outputGates;
     // Store allocated lwe ciphertexts (for free)
-    std::vector<LweCiphertext_u64 *> allocatedCiphertexts;
+    std::vector<uint64_t *> allocatedCiphertexts;
     // Store buffers of ciphertexts
-    std::vector<LweCiphertext_u64 **> ciphertextBuffers;
+    std::vector<uint64_t *> ciphertextBuffers;
 
     KeySet &keySet;
     RuntimeContext context;

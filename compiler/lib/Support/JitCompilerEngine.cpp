@@ -58,7 +58,6 @@ JitCompilerEngine::buildLambda(llvm::StringRef s, llvm::StringRef funcName,
   std::unique_ptr<llvm::MemoryBuffer> mb = llvm::MemoryBuffer::getMemBuffer(s);
   llvm::Expected<JitCompilerEngine::Lambda> res =
       this->buildLambda(std::move(mb), funcName, cache, runtimeLibPath);
-
   return std::move(res);
 }
 

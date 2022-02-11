@@ -20,10 +20,9 @@ typedef struct RuntimeContext {
   std::map<std::string, LweBootstrapKey_u64 *> bsk;
 
   ~RuntimeContext() {
-    int err;
     for (const auto &key : bsk) {
       if (key.first != "_concretelang_base_context_bsk")
-        free_lwe_bootstrap_key_u64(&err, key.second);
+        free_lwe_bootstrap_key_u64(key.second);
     }
   }
 } RuntimeContext;

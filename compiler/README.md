@@ -12,9 +12,9 @@ pip install pybind11
 Build concrete library:
 
 ```sh
-git clone https://github.com/zama-ai/concrete
-cd concrete
-git checkout feature/core_c_api
+git clone https://github.com/zama-ai/concrete_internal
+cd concrete_internal
+git checkout compiler_c_api
 cd concrete-ffi
 RUSTFLAGS="-C target-cpu=native" cargo build --release 
 ```
@@ -23,7 +23,7 @@ Generate the compiler build system, in the `build` directory
 
 ```sh
 export LLVM_PROJECT="PATH_TO_LLVM_PROJECT"
-export CONCRETE_PROJECT="PATH_TO_CONCRETE_PROJECT"
+export CONCRETE_PROJECT="PATH_TO_CONCRETE_INTERNAL_PROJECT"
 make build-initialized
 ```
 

@@ -142,13 +142,10 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   auto contextType =
       mlir::concretelang::Concrete::ContextType::get(rewriter.getContext());
 
-  auto errType = mlir::IndexType::get(rewriter.getContext());
-
   // Insert forward declaration of allocate lwe ciphertext
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {
-                                                errType,
                                                 rewriter.getIndexType(),
                                             },
 
@@ -163,7 +160,6 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {
-                                                errType,
                                                 genericLweCiphertextType,
                                                 genericLweCiphertextType,
                                                 genericLweCiphertextType,
@@ -179,7 +175,6 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {
-                                                errType,
                                                 genericLweCiphertextType,
                                                 genericLweCiphertextType,
                                                 genericPlaintextType,
@@ -195,7 +190,6 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {
-                                                errType,
                                                 genericLweCiphertextType,
                                                 genericLweCiphertextType,
                                                 genericCleartextType,
@@ -211,7 +205,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(
         rewriter.getContext(),
-        {errType, genericLweCiphertextType, genericLweCiphertextType}, {});
+        {genericLweCiphertextType, genericLweCiphertextType}, {});
     if (insertForwardDeclaration(op, rewriter, "negate_lwe_ciphertext_u64",
                                  funcType)
             .failed()) {
@@ -231,7 +225,6 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {
-                                                errType,
                                                 genericBSKType,
                                                 genericLweCiphertextType,
                                                 genericLweCiphertextType,
@@ -256,7 +249,6 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {
-                                                errType,
                                                 // ksk
                                                 genericKSKType,
                                                 // output ct
@@ -274,7 +266,6 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {
-                                                errType,
                                                 rewriter.getI32Type(),
                                                 rewriter.getI32Type(),
                                             },
@@ -287,9 +278,9 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   }
   // Insert forward declaration of the alloc_plaintext_list function
   {
-    auto funcType = mlir::FunctionType::get(rewriter.getContext(),
-                                            {errType, rewriter.getI32Type()},
-                                            {genericPlaintextListType});
+    auto funcType =
+        mlir::FunctionType::get(rewriter.getContext(), {rewriter.getI32Type()},
+                                {genericPlaintextListType});
     if (insertForwardDeclaration(op, rewriter, "allocate_plaintext_list_u64",
                                  funcType)
             .failed()) {
@@ -300,7 +291,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(
         rewriter.getContext(),
-        {errType, genericPlaintextListType, genericForeignPlaintextList}, {});
+        {genericPlaintextListType, genericForeignPlaintextList}, {});
     if (insertForwardDeclaration(
             op, rewriter, "fill_plaintext_list_with_expansion_u64", funcType)
             .failed()) {
@@ -310,7 +301,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   // Insert forward declaration of the add_plaintext_list_glwe function
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
-                                            {errType, genericGlweCiphertextType,
+                                            {genericGlweCiphertextType,
                                              genericGlweCiphertextType,
                                              genericPlaintextListType},
                                             {});
@@ -356,24 +347,20 @@ struct ConcreteOpToConcreteCAPICallPattern : public mlir::OpRewritePattern<Op> {
         resultType.cast<mlir::concretelang::Concrete::LweCiphertextType>();
     // Replace the operation with a call to the `funcName`
     {
-      // Create the err value
-      auto errOp = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), rewriter.getIndexAttr(0));
       // Get the size from the dimension
       int64_t lweDimension = lweResultType.getDimension();
-      int64_t lweSize = lweDimension + 1;
-      mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), rewriter.getIndexAttr(lweSize));
+
+      mlir::Value lweDimensionOp = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(), rewriter.getIndexAttr(lweDimension));
       // Add the call to the allocation
-      mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
+      mlir::SmallVector<mlir::Value> allocOperands{lweDimensionOp};
       auto allocGeneric = rewriter.create<mlir::CallOp>(
           op.getLoc(), allocName,
           getGenericLweCiphertextType(rewriter.getContext()), allocOperands);
       // Construct operands for the operation.
       // errOp doesn't need to be casted to something generic, allocGeneric
       // already is. All the rest will be converted if needed
-      mlir::SmallVector<mlir::Value, 4> newOperands{errOp,
-                                                    allocGeneric.getResult(0)};
+      mlir::SmallVector<mlir::Value, 4> newOperands{allocGeneric.getResult(0)};
       for (mlir::Value operand : op->getOperands()) {
         mlir::Type operandType = operand.getType();
         mlir::Type castedType = getGenericType(operandType);
@@ -420,16 +407,13 @@ struct ConcreteZeroOpPattern
     mlir::Type resultType = op->getResultTypes().front();
     auto lweResultType =
         resultType.cast<mlir::concretelang::Concrete::LweCiphertextType>();
-    // Create the err value
-    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(0));
     // Get the size from the dimension
     int64_t lweDimension = lweResultType.getDimension();
-    int64_t lweSize = lweDimension + 1;
-    mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(lweSize));
+
+    mlir::Value lweDimensionOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(lweDimension));
     // Allocate a fresh new ciphertext
-    mlir::SmallVector<mlir::Value> allocOperands{errOp, lweSizeOp};
+    mlir::SmallVector<mlir::Value> allocOperands{lweDimensionOp};
     auto allocGeneric = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",
         getGenericLweCiphertextType(rewriter.getContext()), allocOperands);
@@ -506,7 +490,6 @@ struct GlweFromTableOpPattern
   matchAndRewrite(mlir::concretelang::Concrete::GlweFromTable op,
                   mlir::PatternRewriter &rewriter) const override {
     ConcreteToConcreteCAPITypeConverter typeConverter;
-    auto errType = mlir::IndexType::get(rewriter.getContext());
 
     // TODO: move this to insertForwardDeclarations
     // issue: can't define function with tensor<*xtype> that accept ranked
@@ -516,28 +499,22 @@ struct GlweFromTableOpPattern
     {
       auto funcType = mlir::FunctionType::get(
           rewriter.getContext(),
-          {errType, op->getOperandTypes().front(), rewriter.getI64Type(),
-           rewriter.getI32Type()},
+          {op->getOperandTypes().front(), rewriter.getI32Type()},
           {getGenericForeignPlaintextListType(rewriter.getContext())});
-      if (insertForwardDeclaration(
-              op, rewriter, "runtime_foreign_plaintext_list_u64", funcType)
+      if (insertForwardDeclaration(op, rewriter,
+                                   "memref_runtime_foreign_plaintext_list_u64",
+                                   funcType)
               .failed()) {
         return mlir::failure();
       }
     }
 
-    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(0));
-    // Get the size from the dimension
-    int64_t glweDimension =
-        op->getAttr("glweDimension").cast<mlir::IntegerAttr>().getInt();
-    int64_t glweSize = glweDimension + 1;
-    mlir::Value glweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getI32IntegerAttr(glweSize));
     // allocate two glwe to build accumulator
     auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), op->getAttr("polynomialSize"));
-    mlir::SmallVector<mlir::Value> allocGlweOperands{errOp, glweSizeOp,
+    auto glweDimensionOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), op->getAttr("glweDimension"));
+    mlir::SmallVector<mlir::Value> allocGlweOperands{glweDimensionOp,
                                                      polySizeOp};
     // first accumulator would replace the op since it's the returned value
     auto accumulatorOp = rewriter.replaceOpWithNewOp<mlir::CallOp>(
@@ -548,8 +525,7 @@ struct GlweFromTableOpPattern
         op.getLoc(), "allocate_glwe_ciphertext_u64",
         getGenericGlweCiphertextType(rewriter.getContext()), allocGlweOperands);
     // allocate plaintext list
-    mlir::SmallVector<mlir::Value> allocPlaintextListOperands{errOp,
-                                                              polySizeOp};
+    mlir::SmallVector<mlir::Value> allocPlaintextListOperands{polySizeOp};
     auto plaintextListOp = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_plaintext_list_u64",
         getGenericPlaintextListType(rewriter.getContext()),
@@ -559,27 +535,23 @@ struct GlweFromTableOpPattern
         op->getOperandTypes().front().cast<mlir::RankedTensorType>();
     assert(rankedTensorType.getRank() == 1 &&
            "table lookup must be of a single dimension");
-    auto sizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(),
-        rewriter.getI64IntegerAttr(rankedTensorType.getDimSize(0)));
     auto precisionOp =
         rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), op->getAttr("p"));
     mlir::SmallVector<mlir::Value> ForeignPlaintextListOperands{
-        errOp, op->getOperand(0), sizeOp, precisionOp};
+        op->getOperand(0), precisionOp};
     auto foreignPlaintextListOp = rewriter.create<mlir::CallOp>(
-        op.getLoc(), "runtime_foreign_plaintext_list_u64",
+        op.getLoc(), "memref_runtime_foreign_plaintext_list_u64",
         getGenericForeignPlaintextListType(rewriter.getContext()),
         ForeignPlaintextListOperands);
     // fill plaintext list
     mlir::SmallVector<mlir::Value> FillPlaintextListOperands{
-        errOp, plaintextListOp.getResult(0),
-        foreignPlaintextListOp.getResult(0)};
+        plaintextListOp.getResult(0), foreignPlaintextListOp.getResult(0)};
     rewriter.create<mlir::CallOp>(
         op.getLoc(), "fill_plaintext_list_with_expansion_u64",
         mlir::TypeRange({}), FillPlaintextListOperands);
     // add plaintext list and glwe to build final accumulator for pbs
     mlir::SmallVector<mlir::Value> AddPlaintextListGlweOperands{
-        errOp, accumulatorOp.getResult(0), _accumulatorOp.getResult(0),
+        accumulatorOp.getResult(0), _accumulatorOp.getResult(0),
         plaintextListOp.getResult(0)};
     rewriter.create<mlir::CallOp>(
         op.getLoc(), "add_plaintext_list_glwe_ciphertext_u64",
@@ -626,18 +598,15 @@ struct ConcreteBootstrapLweOpPattern
   matchAndRewrite(mlir::concretelang::Concrete::BootstrapLweOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto resultType = op->getResultTypes().front();
-    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(0));
     // Get the size from the dimension
     int64_t outputLweDimension =
         resultType.cast<mlir::concretelang::Concrete::LweCiphertextType>()
             .getDimension();
-    int64_t outputLweSize = outputLweDimension + 1;
     mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(outputLweSize));
+        op.getLoc(), rewriter.getIndexAttr(outputLweDimension));
     // allocate the result lwe ciphertext, should be of a generic type, to cast
     // before return
-    mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
+    mlir::SmallVector<mlir::Value> allocLweCtOperands{lweSizeOp};
     auto allocateGenericLweCtOp = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",
         getGenericLweCiphertextType(rewriter.getContext()), allocLweCtOperands);
@@ -662,7 +631,7 @@ struct ConcreteBootstrapLweOpPattern
                 op.getOperand(1))
             .getResult(0);
     mlir::SmallVector<mlir::Value> bootstrapOperands{
-        errOp, getBskOp.getResult(0), allocateGenericLweCtOp.getResult(0),
+        getBskOp.getResult(0), allocateGenericLweCtOp.getResult(0),
         lweToBootstrap, accumulator};
     rewriter.create<mlir::CallOp>(op.getLoc(), "bootstrap_lwe_u64",
                                   mlir::TypeRange({}), bootstrapOperands);
@@ -690,20 +659,17 @@ struct ConcreteKeySwitchLweOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::Concrete::KeySwitchLweOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto errOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(0));
     // Get the size from the dimension
     int64_t lweDimension =
         op.getResult()
             .getType()
             .cast<mlir::concretelang::Concrete::LweCiphertextType>()
             .getDimension();
-    int64_t lweSize = lweDimension + 1;
-    mlir::Value lweSizeOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexAttr(lweSize));
+    mlir::Value lweDimensionOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getIndexAttr(lweDimension));
     // allocate the result lwe ciphertext, should be of a generic type, to cast
     // before return
-    mlir::SmallVector<mlir::Value> allocLweCtOperands{errOp, lweSizeOp};
+    mlir::SmallVector<mlir::Value> allocLweCtOperands{lweDimensionOp};
     auto allocateGenericLweCtOp = rewriter.create<mlir::CallOp>(
         op.getLoc(), "allocate_lwe_ciphertext_u64",
         getGenericLweCiphertextType(rewriter.getContext()), allocLweCtOperands);
@@ -721,7 +687,7 @@ struct ConcreteKeySwitchLweOpPattern
                 op.getOperand())
             .getResult(0);
     mlir::SmallVector<mlir::Value> keyswitchOperands{
-        errOp, getKskOp.getResult(0), allocateGenericLweCtOp.getResult(0),
+        getKskOp.getResult(0), allocateGenericLweCtOp.getResult(0),
         lweToKeyswitch};
     rewriter.create<mlir::CallOp>(op.getLoc(), "keyswitch_lwe_u64",
                                   mlir::TypeRange({}), keyswitchOperands);

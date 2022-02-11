@@ -78,6 +78,12 @@ llvm::Error JITLambda::invoke(Argument &args) {
          << actualInputs << "arguments instead of " << expectedInputs;
 }
 
+// memref is a struct which is flattened aligned, allocated pointers, offset,
+// and two array of rank size for sizes and strides.
+uint64_t numArgOfRankedMemrefCallingConvention(uint64_t rank) {
+  return 3 + 2 * rank;
+}
+
 JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
   // Setting the inputs
   auto numInputs = 0;
@@ -86,16 +92,20 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
       auto offset = numInputs;
       auto gate = keySet.inputGate(i);
       inputGates.push_back({gate, offset});
-      if (keySet.inputGate(i).shape.dimensions.empty()) {
+      if (gate.shape.dimensions.empty()) {
         // scalar gate
-        numInputs = numInputs + 1;
+        if (gate.encryption.hasValue()) {
+          // encrypted is a memref<lweSizexi64>
+          numInputs = numInputs + numArgOfRankedMemrefCallingConvention(1);
+        } else {
+          numInputs = numInputs + 1;
+        }
         continue;
       }
       // memref gate, as we follow the standard calling convention
-      numInputs = numInputs + 3;
-      // Offsets and strides are array of size N where N is the number of
-      // dimension of the tensor.
-      numInputs = numInputs + 2 * keySet.inputGate(i).shape.dimensions.size();
+      auto rank = keySet.inputGate(i).shape.dimensions.size() +
+                  (keySet.isInputEncrypted(i) ? 1 /* for lwe size */ : 0);
+      numInputs = numInputs + numArgOfRankedMemrefCallingConvention(rank);
     }
     // Reserve for the context argument
     numInputs = numInputs + 1;
@@ -111,19 +121,21 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
       outputGates.push_back({gate, offset});
       if (gate.shape.dimensions.empty()) {
         // scalar gate
-        numOutputs = numOutputs + 1;
+        if (gate.encryption.hasValue()) {
+          // encrypted is a memref<lweSizexi64>
+          numOutputs = numOutputs + numArgOfRankedMemrefCallingConvention(1);
+        } else {
+          numOutputs = numOutputs + 1;
+        }
         continue;
       }
       // memref gate, as we follow the standard calling convention
-      numOutputs = numOutputs + 3;
-      // Offsets and strides are array of size N where N is the number of
-      // dimension of the tensor.
-      numOutputs =
-          numOutputs + 2 * keySet.outputGate(i).shape.dimensions.size();
+      auto rank = keySet.outputGate(i).shape.dimensions.size() +
+                  (keySet.isOutputEncrypted(i) ? 1 /* for lwe size */ : 0);
+      numOutputs = numOutputs + numArgOfRankedMemrefCallingConvention(rank);
     }
     outputs = std::vector<void *>(numOutputs);
   }
-
   // The raw argument contains pointers to inputs and pointers to store the
   // results
   rawArg = std::vector<void *>(inputs.size() + outputs.size(), nullptr);
@@ -139,9 +151,8 @@ JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {
 }
 
 JITLambda::Argument::~Argument() {
-  int err;
   for (auto ct : allocatedCiphertexts) {
-    free_lwe_ciphertext_u64(&err, ct);
+    free(ct);
   }
   for (auto buffer : ciphertextBuffers) {
     free(buffer);
@@ -185,16 +196,31 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, uint64_t arg) {
     return llvm::Error::success();
   }
   // Else if is encryted, allocate ciphertext and encrypt.
-  LweCiphertext_u64 *ctArg;
-  if (auto err = this->keySet.allocate_lwe(pos, &ctArg)) {
+  uint64_t *ctArg;
+  uint64_t ctSize;
+  if (auto err = this->keySet.allocate_lwe(pos, &ctArg, ctSize)) {
     return std::move(err);
   }
   allocatedCiphertexts.push_back(ctArg);
   if (auto err = this->keySet.encrypt_lwe(pos, ctArg, arg)) {
     return std::move(err);
   }
-  inputs[offset] = ctArg;
+  // memref calling convention
+  // allocated
+  inputs[offset] = nullptr;
+  // aligned
+  inputs[offset + 1] = ctArg;
+  // offset
+  inputs[offset + 2] = (void *)0;
+  // size
+  inputs[offset + 3] = (void *)ctSize;
+  // stride
+  inputs[offset + 4] = (void *)1;
   rawArg[offset] = &inputs[offset];
+  rawArg[offset + 1] = &inputs[offset + 1];
+  rawArg[offset + 2] = &inputs[offset + 2];
+  rawArg[offset + 3] = &inputs[offset + 3];
+  rawArg[offset + 4] = &inputs[offset + 4];
   return llvm::Error::success();
 }
 
@@ -279,17 +305,18 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
           llvm::inconvertibleErrorCode());
     }
 
-    // Allocate a buffer for ciphertexts.
-    auto ctBuffer = (LweCiphertext_u64 **)malloc(info.shape.size *
-                                                 sizeof(LweCiphertext_u64 *));
+    // Allocate a buffer for ciphertexts, the size of the buffer is the number
+    // of elements of the tensor * the size of the lwe ciphertext
+    auto lweSize = keySet.getInputLweSecretKeyParam(pos).size + 1;
+    uint64_t *ctBuffer =
+        (uint64_t *)malloc(info.shape.size * lweSize * sizeof(uint64_t));
     ciphertextBuffers.push_back(ctBuffer);
-    // Allocate ciphertexts and encrypt
-    for (size_t i = 0; i < info.shape.size; i++) {
-      if (auto err = this->keySet.allocate_lwe(pos, &ctBuffer[i])) {
-        return std::move(err);
-      }
-      allocatedCiphertexts.push_back(ctBuffer[i]);
-      if (auto err = this->keySet.encrypt_lwe(pos, ctBuffer[i], data8[i])) {
+    // Encrypt ciphertexts
+    for (size_t i = 0, offset = 0; i < info.shape.size;
+         i++, offset += lweSize) {
+
+      if (auto err =
+              this->keySet.encrypt_lwe(pos, ctBuffer + offset, data8[i])) {
         return std::move(err);
       }
     }
@@ -316,17 +343,27 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
     rawArg[offset] = &inputs[offset];
     offset++;
   }
+  // If encrypted +1 for the lwe size rank
+  if (keySet.isInputEncrypted(pos)) {
+    inputs[offset] = (void *)(keySet.getInputLweSecretKeyParam(pos).size + 1);
+    rawArg[offset] = &inputs[offset];
+    offset++;
+  }
 
   // Set the stride for each dimension, equal to the product of the
   // following dimensions.
   int64_t stride = 1;
-
+  // If encrypted +1 set the stride for the lwe size rank
+  if (keySet.isInputEncrypted(pos)) {
+    inputs[offset + shape.size()] = (void *)stride;
+    rawArg[offset + shape.size()] = &inputs[offset];
+    stride *= keySet.getInputLweSecretKeyParam(pos).size + 1;
+  }
   for (ssize_t i = shape.size() - 1; i >= 0; i--) {
     inputs[offset + i] = (void *)stride;
     rawArg[offset + i] = &inputs[offset + i];
     stride *= shape[i];
   }
-
   offset += shape.size();
 
   return llvm::Error::success();
@@ -349,7 +386,7 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, uint64_t &res) {
     return llvm::Error::success();
   }
   // Else if is encryted, decrypt
-  LweCiphertext_u64 *ct = (LweCiphertext_u64 *)(outputs[offset]);
+  uint64_t *ct = (uint64_t *)(outputs[offset + 1]);
   if (auto err = this->keySet.decrypt_lwe(pos, ct, res)) {
     return std::move(err);
   }
@@ -463,8 +500,10 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, void *res,
     }
   } else {
     // decrypt and fill the result buffer
-    for (size_t i = 0; i < numElements; i++) {
-      LweCiphertext_u64 *ct = ((LweCiphertext_u64 **)alignedBytes)[i];
+    auto lweSize = keySet.getOutputLweSecretKeyParam(pos).size + 1;
+
+    for (size_t i = 0, o = 0; i < numElements; i++, o += lweSize) {
+      uint64_t *ct = ((uint64_t *)alignedBytes) + o;
       if (auto err = this->keySet.decrypt_lwe(pos, ct, ((uint64_t *)res)[i])) {
         return std::move(err);
       }
