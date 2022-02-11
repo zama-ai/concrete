@@ -89,7 +89,7 @@ protected:
 
   ClientParameters clientParameters;
   std::shared_ptr<KeySet> keySet;
-  void *(*func)(void *...);
+  void *func;
   // Retain module and open shared lib alive
   std::shared_ptr<DynamicModule> module;
 };

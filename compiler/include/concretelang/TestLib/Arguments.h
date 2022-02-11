@@ -91,9 +91,9 @@ private:
   std::vector<void *> preparedArgs;
 
   // Store allocated lwe ciphertexts (for free)
-  std::vector<LweCiphertext_u64 *> allocatedCiphertexts;
+  std::vector<uint64_t *> allocatedCiphertexts;
   // Store buffers of ciphertexts
-  std::vector<LweCiphertext_u64 **> ciphertextBuffers;
+  std::vector<uint64_t *> ciphertextBuffers;
 
   KeySet &keySet;
   RuntimeContext context;

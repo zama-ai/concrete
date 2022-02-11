@@ -14,27 +14,27 @@ namespace mlir {
 namespace concretelang {
 
 template <size_t N> struct MemRefDescriptor {
-  LweCiphertext_u64 **allocated;
-  LweCiphertext_u64 **aligned;
+  uint64_t *allocated;
+  uint64_t *aligned;
   size_t offset;
   size_t sizes[N];
   size_t strides[N];
 };
 
-llvm::Expected<std::vector<uint64_t>> decryptSlice(LweCiphertext_u64 **aligned,
-                                                   KeySet &keySet, size_t start,
-                                                   size_t size,
-                                                   size_t stride = 1) {
-  stride = (stride == 0) ? 1 : stride;
+llvm::Expected<std::vector<uint64_t>>
+decryptSlice(KeySet &keySet, uint64_t *aligned, size_t size) {
+  auto pos = 0;
   std::vector<uint64_t> result(size);
+  auto lweSize = keySet.getInputLweSecretKeyParam(pos).size + 1;
   for (size_t i = 0; i < size; i++) {
-    size_t offset = start + i * stride;
-    auto err = keySet.decrypt_lwe(0, aligned[offset], result[i]);
+    size_t offset = i * lweSize;
+    auto err = keySet.decrypt_lwe(pos, aligned + offset, result[i]);
     if (err) {
       return StreamStringError()
              << "cannot decrypt result #" << i << ", err:" << err;
     }
   }
+
   return result;
 }
 
@@ -53,8 +53,7 @@ DynamicLambda::load(std::shared_ptr<DynamicModule> module,
   DynamicLambda lambda;
   lambda.module =
       module; // prevent module and library handler from being destroyed
-  lambda.func =
-      (void *(*)(void *, ...))dlsym(module->libraryHandle, funcName.c_str());
+  lambda.func = dlsym(module->libraryHandle, funcName.c_str());
 
   if (auto err = dlerror()) {
     return StreamStringError("Cannot open lambda: ") << err;
@@ -93,13 +92,13 @@ llvm::Expected<uint64_t> invoke<uint64_t>(DynamicLambda &lambda,
     return StreamStringError("the function doesn't return a scalar");
   }
   // Scalar encrypted result
-  auto fCasted = (LweCiphertext_u64 * (*)(void *...))(lambda.func);
-  ;
-  LweCiphertext_u64 *lweResult =
+  auto fCasted = (MemRefDescriptor<1>(*)(void *...))(lambda.func);
+  MemRefDescriptor<1> lweResult =
       mlir::concretelang::call(fCasted, args.preparedArgs);
 
   uint64_t decryptedResult;
-  if (auto err = lambda.keySet->decrypt_lwe(0, lweResult, decryptedResult)) {
+  if (auto err =
+          lambda.keySet->decrypt_lwe(0, lweResult.aligned, decryptedResult)) {
     return std::move(err);
   }
   return decryptedResult;
@@ -112,15 +111,15 @@ DynamicLambda::invokeMemRefDecriptor(const Arguments &args) {
   if (output.shape.size == 0) {
     return StreamStringError("the function doesn't return a tensor");
   }
-  if (output.shape.dimensions.size() != Rank) {
+  if (output.shape.dimensions.size() != Rank - 1) {
     return StreamStringError("the function doesn't return a tensor of rank ")
-           << Rank;
+           << Rank - 1;
   }
   // Tensor encrypted result
   auto fCasted = (MemRefDescriptor<Rank>(*)(void *...))(func);
   auto encryptedResult = mlir::concretelang::call(fCasted, args.preparedArgs);
 
-  for (size_t dim = 0; dim < Rank; dim++) {
+  for (size_t dim = 0; dim < Rank - 1; dim++) {
     size_t actual_size = encryptedResult.sizes[dim];
     size_t expected_size = output.shape.dimensions[dim];
     if (actual_size != expected_size) {
@@ -134,35 +133,32 @@ DynamicLambda::invokeMemRefDecriptor(const Arguments &args) {
 template <>
 llvm::Expected<std::vector<uint64_t>>
 invoke<std::vector<uint64_t>>(DynamicLambda &lambda, const Arguments &args) {
-  auto encryptedResultOrErr = lambda.invokeMemRefDecriptor<1>(args);
-  if (!encryptedResultOrErr) {
-    return encryptedResultOrErr.takeError();
-  }
-  auto &encryptedResult = encryptedResultOrErr.get();
-  auto &keySet = lambda.keySet;
-  return decryptSlice(encryptedResult.aligned, *keySet, encryptedResult.offset,
-                      encryptedResult.sizes[0], encryptedResult.strides[0]);
-}
-
-template <>
-llvm::Expected<std::vector<std::vector<uint64_t>>>
-invoke<std::vector<std::vector<uint64_t>>>(DynamicLambda &lambda,
-                                           const Arguments &args) {
   auto encryptedResultOrErr = lambda.invokeMemRefDecriptor<2>(args);
   if (!encryptedResultOrErr) {
     return encryptedResultOrErr.takeError();
   }
   auto &encryptedResult = encryptedResultOrErr.get();
   auto &keySet = lambda.keySet;
+  return decryptSlice(*keySet, encryptedResult.aligned,
+                      encryptedResult.sizes[0]);
+}
+
+template <>
+llvm::Expected<std::vector<std::vector<uint64_t>>>
+invoke<std::vector<std::vector<uint64_t>>>(DynamicLambda &lambda,
+                                           const Arguments &args) {
+  auto encryptedResultOrErr = lambda.invokeMemRefDecriptor<3>(args);
+  if (!encryptedResultOrErr) {
+    return encryptedResultOrErr.takeError();
+  }
+  auto &encryptedResult = encryptedResultOrErr.get();
 
   std::vector<std::vector<uint64_t>> result;
   result.reserve(encryptedResult.sizes[0]);
   for (size_t i = 0; i < encryptedResult.sizes[0]; i++) {
-    // TODO : strides
-    int offset = encryptedResult.offset + i * encryptedResult.sizes[1];
-    auto slice =
-        decryptSlice(encryptedResult.aligned, *keySet, offset,
-                     encryptedResult.sizes[1], encryptedResult.strides[1]);
+    int offset = encryptedResult.offset + i * encryptedResult.strides[1];
+    auto slice = decryptSlice(*lambda.keySet, encryptedResult.aligned + offset,
+                              encryptedResult.sizes[1]);
     if (!slice) {
       return StreamStringError(llvm::toString(slice.takeError()));
     }
@@ -175,7 +171,7 @@ template <>
 llvm::Expected<std::vector<std::vector<std::vector<uint64_t>>>>
 invoke<std::vector<std::vector<std::vector<uint64_t>>>>(DynamicLambda &lambda,
                                                         const Arguments &args) {
-  auto encryptedResultOrErr = lambda.invokeMemRefDecriptor<3>(args);
+  auto encryptedResultOrErr = lambda.invokeMemRefDecriptor<4>(args);
   if (!encryptedResultOrErr) {
     return encryptedResultOrErr.takeError();
   }
@@ -188,13 +184,10 @@ invoke<std::vector<std::vector<std::vector<uint64_t>>>>(DynamicLambda &lambda,
     std::vector<std::vector<uint64_t>> result1;
     result1.reserve(encryptedResult.sizes[1]);
     for (size_t j = 0; j < encryptedResult.sizes[1]; j++) {
-      // TODO : strides
-      int offset = encryptedResult.offset +
-                   i * encryptedResult.sizes[1] * encryptedResult.sizes[2] +
-                   j * encryptedResult.sizes[2];
-      auto slice =
-          decryptSlice(encryptedResult.aligned, *keySet, offset,
-                       encryptedResult.sizes[2], encryptedResult.strides[2]);
+      int offset = encryptedResult.offset + (i * encryptedResult.sizes[1] + j) *
+                                                encryptedResult.strides[1];
+      auto slice = decryptSlice(*keySet, encryptedResult.aligned + offset,
+                                encryptedResult.sizes[2]);
       if (!slice) {
         return StreamStringError(llvm::toString(slice.takeError()));
       }
