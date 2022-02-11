@@ -5,12 +5,11 @@ use std::ops::{
 };
 use std::slice::SliceIndex;
 
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use crate::backends::core::private::utils::zip;
 
-use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, LoadError, SaveError};
+use super::{AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor};
 
 use concrete_commons::numeric::{CastFrom, UnsignedInteger};
 #[cfg(feature = "multithread")]
@@ -47,69 +46,6 @@ impl<Element> Tensor<Vec<Element>> {
         Element: Copy,
     {
         Tensor(vec![value; size])
-    }
-
-    /// Saves a tensor to a binary file.
-    ///
-    /// # Note
-    /// The file format does not contain a type signature that guarantees that the file was
-    /// restored to the same type it was saved.
-    ///
-    /// # Example
-    /// ```rust
-    /// use concrete_core::backends::core::private::math::tensor::Tensor;
-    /// use std::path::PathBuf;
-    /// let t = Tensor::allocate(66 as u8, 10_000);
-    /// let path = PathBuf::from("/tmp/test_save_tensor.ts");
-    /// # if path.exists() {std::fs::remove_file(&path);}
-    /// assert!(!path.exists());
-    /// t.save_to_file(&path);
-    /// assert!(path.exists());
-    /// ```
-    pub fn save_to_file<Path: AsRef<std::path::Path>>(&self, path: Path) -> Result<(), SaveError>
-    where
-        Self: Serialize,
-    {
-        let file =
-            std::fs::File::create(path.as_ref()).map_err(|source| SaveError::CreatingFile {
-                filename: path.as_ref().to_owned().to_str().unwrap().into(),
-                source,
-            })?;
-        bincode::serialize_into(file, self).map_err(|source| SaveError::WritingFile {
-            filename: path.as_ref().to_owned().to_str().unwrap().into(),
-            source,
-        })
-    }
-
-    /// Loads a tensor from a binary file.
-    ///
-    /// # Note
-    /// The file format does not contain a type signature that guarantees that the file was
-    /// restored to the same type it was saved.
-    ///
-    /// # Example
-    /// ```rust
-    /// use concrete_core::backends::core::private::math::tensor::Tensor;
-    /// use std::path::PathBuf;
-    /// let t_initial = Tensor::allocate(66 as u8, 10_000);
-    /// let path = PathBuf::from("/tmp/test_save_tensor.ts");
-    /// # if path.exists() {std::fs::remove_file(&path);}
-    /// t_initial.save_to_file(&path);
-    /// let t_recovered = Tensor::load_from_file(&path).unwrap();
-    /// assert_eq!(t_initial, t_recovered);
-    /// ```
-    pub fn load_from_file<Path: AsRef<std::path::Path>>(path: Path) -> Result<Self, LoadError>
-    where
-        Self: DeserializeOwned,
-    {
-        let file = std::fs::File::open(path.as_ref()).map_err(|source| LoadError::OpeningFile {
-            filename: path.as_ref().to_owned().to_str().unwrap().into(),
-            source,
-        })?;
-        bincode::deserialize_from(file).map_err(|source| LoadError::ReadingFile {
-            filename: path.as_ref().to_owned().to_str().unwrap().into(),
-            source,
-        })
     }
 }
 
