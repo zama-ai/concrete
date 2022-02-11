@@ -9,6 +9,24 @@ func @zero() -> !FHE.eint<2> {
   return %1: !FHE.eint<2>
 }
 
+// CHECK: func @zero_1D() -> tensor<4x!FHE.eint<2>> {
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<4x!FHE.eint<2>>
+// CHECK-NEXT:   return %[[v0]] : tensor<4x!FHE.eint<2>>
+// CHECK-NEXT: }
+func @zero_1D() -> tensor<4x!FHE.eint<2>> {
+  %0 = "FHE.zero_tensor"() : () -> tensor<4x!FHE.eint<2>>
+  return %0 : tensor<4x!FHE.eint<2>>
+}
+
+// CHECK: func @zero_2D() -> tensor<4x9x!FHE.eint<2>> {
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<4x9x!FHE.eint<2>>
+// CHECK-NEXT:   return %[[v0]] : tensor<4x9x!FHE.eint<2>>
+// CHECK-NEXT: }
+func @zero_2D() -> tensor<4x9x!FHE.eint<2>> {
+  %0 = "FHE.zero_tensor"() : () -> tensor<4x9x!FHE.eint<2>>
+  return %0 : tensor<4x9x!FHE.eint<2>>
+}
+
 // CHECK-LABEL: func @add_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2>
 func @add_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   // CHECK-NEXT: %[[V1:.*]] = arith.constant 1 : i3

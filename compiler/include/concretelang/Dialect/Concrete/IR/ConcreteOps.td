@@ -17,6 +17,13 @@ def ZeroLWEOp : Concrete_Op<"zero"> {
     let results = (outs LweCiphertextType:$out);
 }
 
+def ZeroTensorLWEOp : Concrete_Op<"zero_tensor"> {
+    let summary = "Returns a trivial encyption of 0";
+
+    let arguments = (ins);
+    let results = (outs Type<And<[TensorOf<[LweCiphertextType]>.predicate, HasStaticShapePred]>>:$tensor);
+}
+
 def AddLweCiphertextsOp : Concrete_Op<"add_lwe_ciphertexts"> {
     let summary = "Returns the sum of 2 lwe ciphertexts";
 

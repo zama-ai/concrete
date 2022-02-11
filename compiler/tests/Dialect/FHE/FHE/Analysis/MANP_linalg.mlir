@@ -383,18 +383,8 @@ func @matmul_int_eint_cst_p_2_n_1(%arg0: tensor<2x3x!FHE.eint<2>>) -> tensor<2x3
 
 // -----
 
-func @zero() -> tensor<8x!FHE.eint<2>>
-{
-  // CHECK: %[[ret:.*]] = "FHELinalg.zero"() {MANP = 1 : ui{{[0-9]+}}} : () -> tensor<8x!FHE.eint<2>>
-  %0 = "FHELinalg.zero"() : () -> tensor<8x!FHE.eint<2>>
-
-  return %0 : tensor<8x!FHE.eint<2>>
-}
-
-// -----
-
 func @sum() -> !FHE.eint<7> {
-  %0 = "FHELinalg.zero"() : () -> tensor<5x3x4x2x!FHE.eint<7>>
+  %0 = "FHE.zero_tensor"() : () -> tensor<5x3x4x2x!FHE.eint<7>>
 
   // CHECK: MANP = 11 : ui{{[0-9]+}}
   %1 = "FHELinalg.sum"(%0) : (tensor<5x3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -494,7 +484,7 @@ func @sum() -> !FHE.eint<7> {
 
   // ===============================
 
-  %35 = "FHELinalg.zero"() : () -> tensor<2x0x3x!FHE.eint<7>>
+  %35 = "FHE.zero_tensor"() : () -> tensor<2x0x3x!FHE.eint<7>>
 
   // CHECK: MANP = 1 : ui{{[0-9]+}}
   %36 = "FHELinalg.sum"(%35) : (tensor<2x0x3x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -550,15 +540,15 @@ func @sum() -> !FHE.eint<7> {
 // -----
 
 func @concat() -> tensor<3x!FHE.eint<7>> {
-  %0 = "FHELinalg.zero"() : () -> tensor<4x!FHE.eint<7>>
+  %0 = "FHE.zero_tensor"() : () -> tensor<4x!FHE.eint<7>>
   // CHECK: MANP = 2 : ui{{[0-9]+}}
   %1 = "FHELinalg.sum"(%0) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
 
-  %2 = "FHELinalg.zero"() : () -> tensor<5x!FHE.eint<7>>
+  %2 = "FHE.zero_tensor"() : () -> tensor<5x!FHE.eint<7>>
   // CHECK: MANP = 3 : ui{{[0-9]+}}
   %3 = "FHELinalg.sum"(%2) { keep_dims = true } : (tensor<5x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
 
-  %4 = "FHELinalg.zero"() : () -> tensor<10x!FHE.eint<7>>
+  %4 = "FHE.zero_tensor"() : () -> tensor<10x!FHE.eint<7>>
   // CHECK: MANP = 4 : ui{{[0-9]+}}
   %5 = "FHELinalg.sum"(%4) { keep_dims = true } : (tensor<10x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
 

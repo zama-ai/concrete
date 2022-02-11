@@ -23,6 +23,43 @@ func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   ASSERT_EXPECTED_VALUE(lambda(8_u64), 8);
 }
 
+// FHE.zero_tensor ////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_FHE, zero_tensor) {
+  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main() -> tensor<2x2x4x!FHE.eint<6>> {
+  %0 = "FHE.zero_tensor"() : () -> tensor<2x2x4x!FHE.eint<6>>
+  return %0 : tensor<2x2x4x!FHE.eint<6>>
+}
+)XXX");
+
+  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
+      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>();
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<>> &resp =
+      (*res)
+          ->cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(resp.getDimensions().at(0), 2);
+  ASSERT_EQ(resp.getDimensions().at(1), 2);
+  ASSERT_EQ(resp.getDimensions().at(2), 4);
+  ASSERT_EXPECTED_VALUE(resp.getNumElements(), 2 * 2 * 4);
+
+  for (size_t i = 0; i < 2; i++) {
+    for (size_t j = 0; j < 2; j++) {
+      for (size_t k = 0; k < 4; k++) {
+        EXPECT_EQ(resp.getValue()[i * 8 + j * 4 + k], 0)
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
 // FHE.add_eint_int /////////////////////////////////////////////////////////
 
 TEST(End2EndJit_FHE, add_eint_int_cst) {

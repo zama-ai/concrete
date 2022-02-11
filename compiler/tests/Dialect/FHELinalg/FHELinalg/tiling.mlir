@@ -5,7 +5,7 @@
 // CHECK-NEXT:    %[[Vc0:.*]] = arith.constant 0 : index
 // CHECK-NEXT:    %[[Vc8:.*]] = arith.constant 8 : index
 // CHECK-NEXT:    %[[Vc4:.*]] = arith.constant 4 : index
-// CHECK-NEXT:    %[[V0:.*]] = "FHELinalg.zero"() : () -> tensor<8x2x!FHE.eint<6>>
+// CHECK-NEXT:    %[[V0:.*]] = "FHE.zero_tensor"() : () -> tensor<8x2x!FHE.eint<6>>
 // CHECK-NEXT:    %[[V1:.*]] = scf.for %[[Varg2:.*]] = %[[Vc0]] to %[[Vc8]] step %[[Vc2]] iter_args(%[[Varg3:.*]] = %[[V0]]) -> (tensor<8x2x!FHE.eint<6>>) {
 // CHECK-NEXT:      %[[V2:.*]] = scf.for %[[Varg4:.*]] = %[[Vc0]] to %[[Vc4]] step %[[Vc2]] iter_args(%[[Varg5:.*]] = %[[Varg3]]) -> (tensor<8x2x!FHE.eint<6>>) {
 // CHECK-NEXT:        %[[V3:.*]] = scf.for %[[Varg6:.*]] = %[[Vc0]] to %[[Vc2]] step %[[Vc2]] iter_args(%[[Varg7:.*]] = %[[Varg5]]) -> (tensor<8x2x!FHE.eint<6>>) {
@@ -35,7 +35,7 @@ func @tiled_2x2(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x
 // CHECK-NEXT:   %[[Vc4:.*]] = arith.constant 4 : index
 // CHECK-NEXT:   %[[Vc2:.*]] = arith.constant 2 : index
 // CHECK-NEXT:   %[[Vc0:.*]] = arith.constant 0 : index
-// CHECK-NEXT:   %[[V0:.*]] = "FHELinalg.zero"() : () -> tensor<8x2x!FHE.eint<6>>
+// CHECK-NEXT:   %[[V0:.*]] = "FHE.zero_tensor"() : () -> tensor<8x2x!FHE.eint<6>>
 // CHECK-NEXT:   %[[V1:.*]] = scf.for %[[Varg2:.*]] = %[[Vc0]] to %[[Vc8]] step %[[Vc8]] iter_args(%[[Varg3:.*]] = %[[V0]]) -> (tensor<8x2x!FHE.eint<6>>) {
 // CHECK-NEXT:     %[[V2:.*]] = scf.for %[[Varg4:.*]] = %[[Vc0]] to %[[Vc4]] step %[[Vc4]] iter_args(%[[Varg5:.*]] = %[[Varg3]]) -> (tensor<8x2x!FHE.eint<6>>) {
 // CHECK-NEXT:       %[[V3:.*]] = scf.for %[[Varg6:.*]] = %[[Vc0]] to %[[Vc2]] step %[[Vc2]] iter_args(%[[Varg7:.*]] = %[[Varg5]]) -> (tensor<8x2x!FHE.eint<6>>) {

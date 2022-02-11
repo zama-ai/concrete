@@ -189,8 +189,8 @@ public:
     mlir::Value B = op.getOperand(1);
 
     // Initialization of the output matrix with zeros
-    mlir::concretelang::FHELinalg::ZeroOp Cinit =
-        rewriter.create<mlir::concretelang::FHELinalg::ZeroOp>(
+    mlir::concretelang::FHE::ZeroTensorOp Cinit =
+        rewriter.create<mlir::concretelang::FHE::ZeroTensorOp>(
             origLoc, op.getResult().getType());
 
     mlir::TensorType ATTy = A.getType().cast<mlir::TensorType>();

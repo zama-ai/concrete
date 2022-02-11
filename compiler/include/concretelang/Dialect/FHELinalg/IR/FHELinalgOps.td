@@ -499,23 +499,6 @@ def MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
     }];
 }
 
-def ZeroOp : FHELinalg_Op<"zero", []> {
-    let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
-
-    let description = [{
-        Creates a new tensor with the shape specified in the result type and initializes its elements with an encrypted zero.
-
-        Example:
-        ```mlir
-        %tensor = "FHELinalg.zero"() : () -> tensor<5x!FHE.eint<4>>
-        ```
-    }];
-
-    let arguments = (ins);
-
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$aggregate);
-}
-
 def SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
     let summary = "Returns the sum of elements of a tensor of encrypted integers along specified axes.";
 

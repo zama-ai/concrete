@@ -51,6 +51,32 @@ private:
   mlir::TypeConverter &converter;
 };
 
+template <typename OldOp, typename NewOp>
+struct GenericTypeAndOpConverterPattern : public mlir::OpRewritePattern<OldOp> {
+  GenericTypeAndOpConverterPattern(mlir::MLIRContext *context,
+                                   mlir::TypeConverter &converter,
+                                   mlir::PatternBenefit benefit = 100)
+      : mlir::OpRewritePattern<OldOp>(context, benefit), converter(converter) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(OldOp oldOp, mlir::PatternRewriter &rewriter) const override {
+    // Rewrite results
+    mlir::SmallVector<mlir::Type> resultTypes(oldOp->getNumResults());
+    {
+      for (unsigned i = 0; i < oldOp->getNumResults(); i++) {
+        auto result = oldOp->getResult(i);
+        resultTypes[i] = converter.convertType(result.getType());
+      }
+    }
+    rewriter.replaceOpWithNewOp<NewOp>(oldOp, resultTypes,
+                                       oldOp->getOperands());
+    return mlir::success();
+  }
+
+private:
+  mlir::TypeConverter &converter;
+};
+
 template <typename Op>
 void addDynamicallyLegalTypeOp(mlir::ConversionTarget &target,
                                mlir::TypeConverter &typeConverter) {

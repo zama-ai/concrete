@@ -263,6 +263,9 @@ void populateWithTFHEOpTypeConversionPatterns(
   populateWithTFHEOpTypeConversionPattern<mlir::concretelang::TFHE::ZeroGLWEOp>(
       patterns, target, typeConverter);
   populateWithTFHEOpTypeConversionPattern<
+      mlir::concretelang::TFHE::ZeroTensorGLWEOp>(patterns, target,
+                                                  typeConverter);
+  populateWithTFHEOpTypeConversionPattern<
       mlir::concretelang::TFHE::AddGLWEIntOp>(patterns, target, typeConverter);
   populateWithTFHEOpTypeConversionPattern<mlir::concretelang::TFHE::AddGLWEOp>(
       patterns, target, typeConverter);

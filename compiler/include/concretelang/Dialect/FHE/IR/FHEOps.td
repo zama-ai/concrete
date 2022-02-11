@@ -34,6 +34,24 @@ def ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
     let results = (outs EncryptedIntegerType:$out);
 }
 
+
+def ZeroTensorOp : FHE_Op<"zero_tensor", []> {
+    let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
+
+    let description = [{
+        Creates a new tensor with the shape specified in the result type and initializes its elements with an encrypted zero.
+
+        Example:
+        ```mlir
+        %tensor = "FHE.zero_tensor"() : () -> tensor<5x!FHE.eint<4>>
+        ```
+    }];
+
+    let arguments = (ins);
+
+    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor);
+}
+
 def AddEintIntOp : FHE_Op<"add_eint_int"> {
 
     let summary = "Adds an encrypted integer and a clear integer";

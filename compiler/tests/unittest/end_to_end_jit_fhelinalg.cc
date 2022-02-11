@@ -1542,44 +1542,6 @@ func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// FHELinalg.zero ///////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-TEST(End2EndJit_Linalg, zero) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
-func @main() -> tensor<2x2x4x!FHE.eint<6>> {
-  %0 = "FHELinalg.zero"() : () -> tensor<2x2x4x!FHE.eint<6>>
-  return %0 : tensor<2x2x4x!FHE.eint<6>>
-}
-)XXX");
-
-  llvm::Expected<std::unique_ptr<mlir::concretelang::LambdaArgument>> res =
-      lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>();
-
-  ASSERT_EXPECTED_SUCCESS(res);
-
-  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
-      &resp = (*res)
-                  ->cast<mlir::concretelang::TensorLambdaArgument<
-                      mlir::concretelang::IntLambdaArgument<>>>();
-
-  ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
-  ASSERT_EQ(resp.getDimensions().at(0), 2);
-  ASSERT_EQ(resp.getDimensions().at(1), 2);
-  ASSERT_EQ(resp.getDimensions().at(2), 4);
-  ASSERT_EXPECTED_VALUE(resp.getNumElements(), 2 * 2 * 4);
-
-  for (size_t i = 0; i < 2; i++) {
-    for (size_t j = 0; j < 2; j++) {
-      for (size_t k = 0; k < 4; k++) {
-        EXPECT_EQ(resp.getValue()[i * 8 + j * 4 + k], 0)
-            << ", at pos(" << i << "," << j << "," << k << ")";
-      }
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // FHELinalg sum /////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 

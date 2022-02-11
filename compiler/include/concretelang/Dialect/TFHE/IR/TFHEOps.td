@@ -25,6 +25,13 @@ def ZeroGLWEOp : TFHE_Op<"zero"> {
     let results = (outs GLWECipherTextType:$out);
 }
 
+def ZeroTensorGLWEOp : TFHE_Op<"zero_tensor"> {
+    let summary = "Returns a tensor of trivial encyption of 0";
+
+    let arguments = (ins);
+    let results = (outs Type<And<[TensorOf<[GLWECipherTextType]>.predicate, HasStaticShapePred]>>:$tensor);
+}
+
 def AddGLWEIntOp : TFHE_Op<"add_glwe_int"> {
     let summary = "Returns the sum of a clear integer and a lwe ciphertext";    
 

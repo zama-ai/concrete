@@ -10,6 +10,16 @@ func @single_zero() -> !FHE.eint<2>
 
 // -----
 
+func @zero() -> tensor<8x!FHE.eint<2>>
+{
+  // CHECK: %[[ret:.*]] = "FHE.zero_tensor"() {MANP = 1 : ui{{[0-9]+}}} : () -> tensor<8x!FHE.eint<2>>
+  %0 = "FHE.zero_tensor"() : () -> tensor<8x!FHE.eint<2>>
+
+  return %0 : tensor<8x!FHE.eint<2>>
+}
+
+// -----
+
 func @single_cst_add_eint_int(%e: !FHE.eint<2>) -> !FHE.eint<2>
 {
   %cst = arith.constant 3 : i3

@@ -270,23 +270,3 @@ func @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<4x2x!FHE.eint<2>>) ->
   %1 = "FHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x4xi3>, tensor<4x2x!FHE.eint<2>>) -> tensor<4x2x!FHE.eint<2>>
   return %1 : tensor<4x2x!FHE.eint<2>>
 }
-
-// -----
-
-/////////////////////////////////////////////////
-// FHELinalg.zero
-/////////////////////////////////////////////////
-
-func @zero_1D_scalar() -> tensor<4x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.zero' op}}
-  %0 = "FHELinalg.zero"() : () -> !FHE.eint<2>
-  return %0 : !FHE.eint<2>
-}
-
-// -----
-
-func @zero_plaintext() -> tensor<4x9xi32> {
-  // expected-error @+1 {{'FHELinalg.zero' op}}
-  %0 = "FHELinalg.zero"() : () -> tensor<4x9xi32>
-  return %0 : tensor<4x9xi32>
-}

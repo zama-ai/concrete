@@ -52,14 +52,13 @@ struct DotToLinalgGeneric
   //
   // becomes:
   //
-  //   %0 = "FHE.zero"() : () -> !FHE.eint<0>
-  //   %1 = tensor.from_elements %0 : tensor<1x!FHE.eint<0>>
-  //   %2 = linalg.generic {
+  //   %0 = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<0>>
+  //   %1 = linalg.generic {
   //          indexing_maps = [#map0, #map0, #map1],
   //          iterator_types = ["reduction"]
   //        }
   //        ins(%arg0, %arg1 : tensor<2x!FHE.eint<0>>, tensor<2xi32>)
-  //        outs(%1 : tensor<1x!FHE.eint<0>>) {
+  //        outs(%0 : tensor<1x!FHE.eint<0>>) {
   //          ^bb0(%arg2: !FHE.eint<0>, %arg3: i32, %arg4: !FHE.eint<0>):
   //            %4 = "FHE.mul_eint_int"(%arg2, %arg3) :
   //                    (!FHE.eint<0>, i32) -> !FHE.eint<0>
@@ -71,28 +70,19 @@ struct DotToLinalgGeneric
   //        } -> tensor<1x!FHE.eint<0>>
   //
   //   %c0 = constant 0 : index
-  //   %o = tensor.extract %2[%c0] : tensor<1x!FHE.eint<0>>
+  //   %o = tensor.extract %1[%c0] : tensor<1x!FHE.eint<0>>
   //
   ::mlir::LogicalResult
   matchAndRewrite(::mlir::concretelang::FHELinalg::Dot dotOp,
                   ::mlir::PatternRewriter &rewriter) const override {
-    // Zero value to initialize accumulator
-    mlir::Value zeroCst = rewriter.create<mlir::concretelang::FHE::ZeroEintOp>(
-        dotOp.getLoc(),
-        dotOp.lhs().getType().cast<mlir::ShapedType>().getElementType());
 
-    // Create one-dimensional accumulator with a single element
-    // (`tensor.from_elements` does not allow for the creation of 0d
-    // tensors)
-    mlir::tensor::FromElementsOp feOp =
-        rewriter.create<mlir::tensor::FromElementsOp>(dotOp.getLoc(), zeroCst);
-
-    mlir::Value accu = feOp.getResult();
+    auto zeroTensorOp = rewriter.create<mlir::concretelang::FHE::ZeroTensorOp>(
+        dotOp.getLoc(), mlir::RankedTensorType::get({1}, dotOp.getType()));
 
     // Create `linalg.generic` op
-    llvm::SmallVector<mlir::Type, 1> resTypes{accu.getType()};
+    llvm::SmallVector<mlir::Type, 1> resTypes{zeroTensorOp.getType()};
     llvm::SmallVector<mlir::Value, 2> ins{dotOp.lhs(), dotOp.rhs()};
-    llvm::SmallVector<mlir::Value, 1> outs{accu};
+    llvm::SmallVector<mlir::Value, 1> outs{zeroTensorOp};
     llvm::SmallVector<mlir::AffineMap, 3> maps{
         mlir::AffineMap::getMultiDimIdentityMap(1, this->getContext()),
         mlir::AffineMap::getMultiDimIdentityMap(1, this->getContext()),
@@ -334,7 +324,8 @@ llvm::SmallVector<llvm::StringRef> parallelIteratorType(int n) {
 //          %e3 = tensor.extract %arg5[%lut_idx, %i3] : tensor<5x4xi64>
 //          %lut = tensor.from_elements %e0, ..., %e3 : tensor<4xi64>
 //          %res  = "TFHE.apply_lookup_table"(%arg3, %[[LUT]])
-//                    {baseLogBS = -1 : i32, baseLogKS = -1 : i32, k = -1 : i32,
+//                    {baseLogBS = -1 : i32, baseLogKS = -1 : i32, glweDimension
+//                    = -1 : i32,
 //                      levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS =
 //                      -1 : i32, polynomialSize = -1 : i32}
 //                 : (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
@@ -808,11 +799,7 @@ struct FHELinalgNegEintToLinalgGeneric
 //   indexing_maps = #maps_0,
 //   iterator_types = ["parallel", "parallel", "reduction"]
 // }
-// %init = linalg.generate {
-//   ^bb0(%i : index, %j : index, %k : index):
-//     %z = "FHE.zero" : () -> !FHE.eint<2>
-//     linalg.yield %z
-// }: tensor<MxNx!FHE.eint<p>>
+// %init = FHE.zero_tensor : tensor<MxNx!FHE.eint<p>>
 // linalg.generic #attributes_0
 //   ins(%A, %B : tensor<MxPx!FHE.eint<p>>,
 //                tensor<PxNxip'>)
@@ -847,20 +834,9 @@ struct FHELinalgMatmulToLinalgGeneric
         ((mlir::Type)matmulOp->getResult(0).getType())
             .cast<mlir::RankedTensorType>();
     mlir::Type resultElementTy = resultTy.getElementType();
-    // Create tensor.generate for initial value
-    auto generateBody = [&](mlir::OpBuilder &nestedBuilder,
-                            mlir::Location nestedLoc,
-                            mlir::ValueRange blockArgs) {
-      // %z = "FHE.zero" : () -> !FHE.eint<2>
-      mlir::concretelang::FHE::ZeroEintOp zeroOp =
-          nestedBuilder.create<mlir::concretelang::FHE::ZeroEintOp>(
-              matmulLoc, resultElementTy);
-      // linalg.yield %z : !FHE.eint<p>
-      nestedBuilder.create<mlir::tensor::YieldOp>(matmulLoc,
-                                                  zeroOp.getResult());
-    };
-    mlir::tensor::GenerateOp init = rewriter.create<mlir::tensor::GenerateOp>(
-        matmulLoc, (mlir::Type)resultTy, mlir::ValueRange{}, generateBody);
+    // Create the initial value, `FHE.zero_tensor`
+    auto init = rewriter.create<mlir::concretelang::FHE::ZeroTensorOp>(
+        matmulLoc, resultTy);
     // Create the affine #maps_0
     llvm::SmallVector<mlir::AffineMap> maps{
         // (m, n, p) -> (m, p),
@@ -923,54 +899,6 @@ private:
 };
 
 // This rewrite pattern transforms any instance of operators
-// `FHELinalg.zero` to an instance of `linalg.generate` with an
-// appropriate region yielding a zero value.
-//
-// Example:
-//
-//   %out = "FHELinalg.zero"() : () -> tensor<MxNx!FHE.eint<p>>
-//
-// becomes:
-//
-//   %0 = tensor.generate   {
-//     ^bb0(%arg2: index, %arg3: index):
-//        %zero = "FHE.zero"() : () -> !FHE.eint<p>
-//        tensor.yield %zero : !FHE.eint<p>
-//   } : tensor<MxNx!FHE.eint<p>>
-//
-struct FHELinalgZeroToLinalgGenerate
-    : public mlir::OpRewritePattern<mlir::concretelang::FHELinalg::ZeroOp> {
-  FHELinalgZeroToLinalgGenerate(::mlir::MLIRContext *context,
-                                mlir::PatternBenefit benefit =
-                                    mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::ZeroOp>(
-            context, benefit) {}
-
-  ::mlir::LogicalResult
-  matchAndRewrite(mlir::concretelang::FHELinalg::ZeroOp zeroOp,
-                  ::mlir::PatternRewriter &rewriter) const override {
-    mlir::RankedTensorType resultTy =
-        zeroOp->getResult(0).getType().cast<mlir::RankedTensorType>();
-
-    auto generateBody = [&](mlir::OpBuilder &nestedBuilder,
-                            mlir::Location nestedLoc,
-                            mlir::ValueRange blockArgs) {
-      mlir::Value zeroScalar =
-          nestedBuilder.create<mlir::concretelang::FHE::ZeroEintOp>(
-              zeroOp.getLoc(), resultTy.getElementType());
-      nestedBuilder.create<mlir::tensor::YieldOp>(zeroOp.getLoc(), zeroScalar);
-    };
-    mlir::tensor::GenerateOp generateOp =
-        rewriter.create<mlir::tensor::GenerateOp>(
-            zeroOp.getLoc(), resultTy, mlir::ValueRange{}, generateBody);
-
-    rewriter.replaceOp(zeroOp, {generateOp.getResult()});
-
-    return ::mlir::success();
-  };
-};
-
-// This rewrite pattern transforms any instance of operators
 // `FHELinalg.sum` to an instance of `linalg.generic`.
 //
 // Example:
@@ -983,7 +911,7 @@ struct FHELinalgZeroToLinalgGenerate
 //   #map0 = affine_map<(i0, i1, ..., iN) -> (i0, i1, ..., iN)>
 //   #map1 = affine_map<(i0, i1, ..., iN) -> (0)>
 //
-//   %accumulator = "FHELinalg.zero"() : () -> tensor<1x!FHE.eint<7>>
+//   %accumulator = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 //   %accumulation = linalg.generic
 //     {
 //       indexing_maps = [#map0, #map1],
@@ -1028,7 +956,7 @@ struct SumToLinalgGeneric
       if (size == 0) {
         mlir::Value result;
         if (outputIsTensor) {
-          result = rewriter.create<FHELinalg::ZeroOp>(location, outputType)
+          result = rewriter.create<FHE::ZeroTensorOp>(location, outputType)
                        .getResult();
         } else {
           result = rewriter.create<FHE::ZeroEintOp>(location, outputType)
@@ -1058,7 +986,7 @@ struct SumToLinalgGeneric
     }
 
     mlir::Value accumulator =
-        rewriter.create<FHELinalg::ZeroOp>(location, accumulatorType)
+        rewriter.create<FHE::ZeroTensorOp>(location, accumulatorType)
             .getResult();
 
     auto ins = llvm::SmallVector<mlir::Value, 1>{input};
@@ -1137,7 +1065,7 @@ struct SumToLinalgGeneric
 //
 // becomes:
 //
-//   %empty = "FHELinalg.zero"() : () -> tensor<2x7x!FHE.eint<4>>
+//   %empty = "FHE.zero_tensor"() : () -> tensor<2x7x!FHE.eint<4>>
 //
 //   %x_copied = tensor.insert_slice %x into %empty[0, 0] [2, 3] [1, 1]
 //     : tensor<2x3x!FHE.eint<4>> into tensor<2x7x!FHE.eint<4>>
@@ -1165,7 +1093,7 @@ struct ConcatRewritePattern
     size_t outputDimensions = outputShape.size();
 
     mlir::Value result =
-        rewriter.create<FHELinalg::ZeroOp>(location, outputType).getResult();
+        rewriter.create<FHE::ZeroTensorOp>(location, outputType).getResult();
 
     auto offsets = llvm::SmallVector<int64_t, 3>{};
     auto sizes = llvm::SmallVector<int64_t, 3>{};
@@ -1299,7 +1227,6 @@ void FHETensorOpsToLinalg::runOnFunction() {
   patterns.insert<FHELinalgApplyMultiLookupTableToLinalgGeneric>(&getContext());
   patterns.insert<FHELinalgApplyMappedLookupTableToLinalgGeneric>(
       &getContext());
-  patterns.insert<FHELinalgZeroToLinalgGenerate>(&getContext());
   patterns.insert<SumToLinalgGeneric>(&getContext());
   patterns.insert<ConcatRewritePattern>(&getContext());
 

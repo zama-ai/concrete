@@ -81,10 +81,10 @@ void TFHEToConcretePass::runOnOperation() {
   mlir::OwningRewritePatternList patterns(&getContext());
 
   populateWithGeneratedTFHEToConcrete(patterns);
+  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+      mlir::concretelang::TFHE::ZeroTensorGLWEOp,
+      mlir::concretelang::Concrete::ZeroTensorLWEOp>>(&getContext(), converter);
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
-                                            TFHEToConcreteTypeConverter>>(
-      &getContext(), converter);
-  patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
                                             TFHEToConcreteTypeConverter>>(
       &getContext(), converter);
   patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,

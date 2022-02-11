@@ -926,7 +926,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::concretelang::FHE::MulEintIntOp>(op)) {
       norm2SqEquiv = getSqMANP(mulEintIntOp, operands);
     } else if (llvm::isa<mlir::concretelang::FHE::ZeroEintOp>(op) ||
-               llvm::isa<mlir::concretelang::FHELinalg::ZeroOp>(op) ||
+               llvm::isa<mlir::concretelang::FHE::ZeroTensorOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::ApplyLookupTableEintOp>(op)) {
       norm2SqEquiv = llvm::APInt{1, 1, false};
     }

@@ -345,25 +345,3 @@ func @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<4x2x!FHE.eint<2>>) ->
   %1 = "FHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x4xi3>, tensor<4x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>>
   return %1 : tensor<3x2x!FHE.eint<2>>
 }
-
-/////////////////////////////////////////////////
-// FHELinalg.zero
-/////////////////////////////////////////////////
-
-// CHECK: func @zero_1D() -> tensor<4x!FHE.eint<2>> {
-// CHECK-NEXT:   %[[v0:.*]] = "FHELinalg.zero"() : () -> tensor<4x!FHE.eint<2>>
-// CHECK-NEXT:   return %[[v0]] : tensor<4x!FHE.eint<2>>
-// CHECK-NEXT: }
-func @zero_1D() -> tensor<4x!FHE.eint<2>> {
-  %0 = "FHELinalg.zero"() : () -> tensor<4x!FHE.eint<2>>
-  return %0 : tensor<4x!FHE.eint<2>>
-}
-
-// CHECK: func @zero_2D() -> tensor<4x9x!FHE.eint<2>> {
-// CHECK-NEXT:   %[[v0:.*]] = "FHELinalg.zero"() : () -> tensor<4x9x!FHE.eint<2>>
-// CHECK-NEXT:   return %[[v0]] : tensor<4x9x!FHE.eint<2>>
-// CHECK-NEXT: }
-func @zero_2D() -> tensor<4x9x!FHE.eint<2>> {
-  %0 = "FHELinalg.zero"() : () -> tensor<4x9x!FHE.eint<2>>
-  return %0 : tensor<4x9x!FHE.eint<2>>
-}

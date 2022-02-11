@@ -25,11 +25,7 @@ func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> !FHE.eint<7> {
 // -----
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x4x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x4x!FHE.eint<7>>
 // CHECK-NEXT:   return %[[v0]] : tensor<3x4x!FHE.eint<7>>
 // CHECK-NEXT: }
 func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
@@ -40,11 +36,7 @@ func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
 // -----
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x1x4x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x1x4x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x1x4x!FHE.eint<7>>
 // CHECK-NEXT:   return %[[v0]] : tensor<3x1x4x!FHE.eint<7>>
 // CHECK-NEXT: }
 func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x1x4x!FHE.eint<7>> {
@@ -55,11 +47,7 @@ func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x1x4x!FHE.eint<7>> {
 // -----
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x0x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x0x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x0x!FHE.eint<7>>
 // CHECK-NEXT:   return %[[v0]] : tensor<3x0x!FHE.eint<7>>
 // CHECK-NEXT: }
 func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x0x!FHE.eint<7>> {
@@ -70,11 +58,7 @@ func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x0x!FHE.eint<7>> {
 // -----
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x0x1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x0x1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x0x1x!FHE.eint<7>>
 // CHECK-NEXT:   return %[[v0]] : tensor<3x0x1x!FHE.eint<7>>
 // CHECK-NEXT: }
 func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x0x1x!FHE.eint<7>> {
@@ -88,11 +72,7 @@ func @main(%arg0: tensor<3x0x4x!FHE.eint<7>>) -> tensor<3x0x1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction"]} ins(%[[a0]] : tensor<4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -113,11 +93,7 @@ func @main(%arg0: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction"]} ins(%[[a0]] : tensor<4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -138,11 +114,7 @@ func @main(%arg0: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction"]} ins(%[[a0]] : tensor<4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -161,11 +133,7 @@ func @main(%arg0: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction"]} ins(%[[a0]] : tensor<4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -184,11 +152,7 @@ func @main(%arg0: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -209,11 +173,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (0, 0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -232,11 +192,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (d1)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<4x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<4x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "parallel"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<4x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -255,11 +211,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (0, d1)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x4x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x4x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "parallel"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x4x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -278,11 +230,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (d0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["parallel", "reduction"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<3x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -301,11 +249,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (d0, 0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["parallel", "reduction"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<3x1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -324,11 +268,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -349,11 +289,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1) -> (0, 0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -372,11 +308,7 @@ func @main(%arg0: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -397,11 +329,7 @@ func @main(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (0, 0, 0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x1x1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x1x1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x1x1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -420,11 +348,7 @@ func @main(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (d0, d2)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x2x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x2x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["parallel", "reduction", "parallel"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<3x2x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -443,11 +367,7 @@ func @main(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (d0, 0, d2)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<3x1x2x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<3x1x2x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["parallel", "reduction", "parallel"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<3x1x2x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -466,11 +386,7 @@ func @main(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (d1)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<4x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<4x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "parallel", "reduction"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<4x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -489,11 +405,7 @@ func @main(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (0, d1, 0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x4x1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x4x1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "parallel", "reduction"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x4x1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -512,11 +424,7 @@ func @main(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
@@ -537,11 +445,7 @@ func @main(%arg0: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
 // CHECK: #[[$MAP1:.*]] = affine_map<(d0, d1, d2) -> (0, 0, 0)>
 
 // CHECK:      func @main(%[[a0:.*]]: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
-// CHECK-NEXT:   %[[v0:.*]] = tensor.generate {
-// CHECK-NEXT:   ^bb0(%[[d0:.*]]: index):
-// CHECK-NEXT:     %[[yld:.*]] = "FHE.zero"() : () -> !FHE.eint<7>
-// CHECK-NEXT:     tensor.yield %[[yld]] : !FHE.eint<7>
-// CHECK-NEXT:   } : tensor<1x1x1x!FHE.eint<7>>
+// CHECK-NEXT:   %[[v0:.*]] = "FHE.zero_tensor"() : () -> tensor<1x1x1x!FHE.eint<7>>
 // CHECK-NEXT:   %[[v1:.*]] = linalg.generic {indexing_maps = [#[[$MAP0]], #[[$MAP1]]], iterator_types = ["reduction", "reduction", "reduction"]} ins(%[[a0]] : tensor<3x4x2x!FHE.eint<7>>) outs(%[[v0]] : tensor<1x1x1x!FHE.eint<7>>) {
 // CHECK-NEXT:     ^bb0(%[[aa0:.*]]: !FHE.eint<7>, %[[aa1:.*]]: !FHE.eint<7>):
 // CHECK-NEXT:       %[[vv0:.*]] = "FHE.add_eint"(%[[aa0]], %[[aa1]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>

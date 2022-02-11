@@ -88,12 +88,12 @@ void FHEToTFHEPass::runOnOperation() {
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
                                             FHEToTFHETypeConverter>>(
       &getContext(), converter);
-  patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
-                                            FHEToTFHETypeConverter>>(
-      &getContext(), converter);
   patterns.add<
       RegionOpTypeConverterPattern<mlir::scf::ForOp, FHEToTFHETypeConverter>>(
       &getContext(), converter);
+  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+      mlir::concretelang::FHE::ZeroTensorOp,
+      mlir::concretelang::TFHE::ZeroTensorGLWEOp>>(&getContext(), converter);
 
   mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                               converter);
