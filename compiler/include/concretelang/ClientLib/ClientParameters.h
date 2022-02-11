@@ -23,12 +23,12 @@ typedef size_t PolynomialSize;
 typedef size_t Precision;
 typedef double Variance;
 
-typedef uint64_t LweSize;
+typedef uint64_t LweDimension;
 typedef uint64_t GlweDimension;
 
 typedef std::string LweSecretKeyID;
 struct LweSecretKeyParam {
-  LweSize size;
+  LweDimension size;
 
   void hash(size_t &seed);
 };
