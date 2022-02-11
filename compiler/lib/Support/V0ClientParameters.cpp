@@ -143,9 +143,14 @@ createClientParametersForV0(V0FHEContext fheContext,
 
   // Create input and output circuit gate parameters
   auto funcType = (*funcOp).getType();
-  bool hasContext = funcType.getInputs()
-                        .back()
-                        .isa<mlir::concretelang::Concrete::ContextType>();
+
+  auto inputs = funcType.getInputs();
+
+  bool hasContext =
+      inputs.empty()
+          ? false
+          : inputs.back().isa<mlir::concretelang::Concrete::ContextType>();
+
   for (auto inType = funcType.getInputs().begin();
        inType < funcType.getInputs().end() - hasContext; inType++) {
     auto gate =
