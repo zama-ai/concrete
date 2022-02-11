@@ -420,11 +420,9 @@ where
     let n = lwe_mask_size.0 as f64;
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
     Variance::from_modular_variance::<T>(
-        square(w) * var_in.get_modular_variance::<T>() / q_square + 1. / 12.
-            - square(w) / (12. * q_square)
-            // TO BE CHECKED IN REVIEW: w is in scale but what about n ?
-            + n / 24.
-            + n * square(w) / (48. * q_square),
+        var_in.get_modular_variance::<T>() + 1. / 12. * q_square / square(w) - 1. / 12.
+            + n / 24. * q_square / square(w)
+            + n / 48.,
     )
 }
 
