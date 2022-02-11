@@ -26,6 +26,7 @@
 #include <concretelang/Support/Pipeline.h>
 #include <concretelang/Support/logging.h>
 #include <concretelang/Support/math.h>
+#include <concretelang/Transforms/Bufferize.h>
 
 namespace mlir {
 namespace concretelang {
@@ -234,8 +235,9 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createFinalizingBufferizePass(),
-                           enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createFinalizingBufferizePass(), enablePass);
+
   if (parallelizeLoops)
     addPotentiallyNestedPass(pm, mlir::createConvertSCFToOpenMPPass(),
                              enablePass);

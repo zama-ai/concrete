@@ -26,6 +26,7 @@ add_mlir_library(ConcretelangSupport
   MLIRLowerableDialectsToLLVM
   FHEDialectAnalysis
   RTDialectAnalysis
+  ConcretelangTransforms
 
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
