@@ -68,10 +68,11 @@ TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
-      &resp = (*res)
-                  ->cast<mlir::concretelang::TensorLambdaArgument<
-                      mlir::concretelang::IntLambdaArgument<>>>();
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<>> &resp =
+      (*res)
+          ->cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)1);
   ASSERT_EQ(resp.getDimensions().at(0), 4);
@@ -112,10 +113,11 @@ TEST(End2EndJit_FHELinalg,
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
-      &resp = (*res)
-                  ->cast<mlir::concretelang::TensorLambdaArgument<
-                      mlir::concretelang::IntLambdaArgument<>>>();
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<>> &resp =
+      (*res)
+          ->cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
   ASSERT_EQ(resp.getDimensions().at(0), 4);
@@ -1052,8 +1054,7 @@ TEST(End2EndJit_FHELinalg, apply_lookup_table) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// FHELinalg apply_multi_lookup_table
-// /////////////////////////////////////////////
+// FHELinalg apply_multi_lookup_table /////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_FHELinalg, apply_multi_lookup_table) {
@@ -1154,7 +1155,7 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table_with_boradcast) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// FHELinalg apply_mapped_lookup_table /////////////////////////////////////////////
+// FHELinalg apply_mapped_lookup_table ////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_sequential) {
@@ -1173,9 +1174,8 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_sequential) {
       {2, 3, 0},
   };
   uint64_t luts[9][4]{
-      {3, 0, 0, 0}, {0, 3, 0, 0}, {0, 0, 3, 0},
-      {0, 0, 0, 3}, {3, 0, 0, 0}, {0, 3, 0, 0},
-      {0, 0, 3, 0}, {0, 0, 0, 3}, {3, 0, 0, 0},
+      {3, 0, 0, 0}, {0, 3, 0, 0}, {0, 0, 3, 0}, {0, 0, 0, 3}, {3, 0, 0, 0},
+      {0, 3, 0, 0}, {0, 0, 3, 0}, {0, 0, 0, 3}, {3, 0, 0, 0},
   };
   uint64_t map[3][3]{
       {0, 1, 2},
@@ -1192,8 +1192,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_sequential) {
   tensorArgTy<uint64_t> lutsArg(luts), mapArg(map);
 
   llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>(
-        {&tArg, &lutsArg, &mapArg});
+      lambda.operator()<std::vector<uint64_t>>({&tArg, &lutsArg, &mapArg});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
@@ -1223,9 +1222,8 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_same_lut) {
       {2, 3, 0},
   };
   uint64_t luts[9][4]{
-      {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
-      {0, 0, 0, 0}, {1, 2, 3, 1}, {0, 0, 0, 0},
-      {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
+      {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {1, 2, 3, 1},
+      {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
   };
   uint64_t map[3][3]{
       {4, 4, 4},
@@ -1242,8 +1240,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_same_lut) {
   tensorArgTy<uint64_t> lutsArg(luts), mapArg(map);
 
   llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>(
-        {&tArg, &lutsArg, &mapArg});
+      lambda.operator()<std::vector<uint64_t>>({&tArg, &lutsArg, &mapArg});
 
   ASSERT_EXPECTED_SUCCESS(res);
 
@@ -1281,7 +1278,7 @@ func @main(%arg0: tensor<4x!FHE.eint<7>>,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// FHELinalg neg_eint /////////////////////////////////////////////
+// FHELinalg neg_eint /////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_FHELinalg, neg_eint) {
@@ -1447,7 +1444,7 @@ TEST(End2EndJit_Linalg, tensor_collapse_shape) {
 
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
-  %0 = linalg.tensor_collapse_shape %a [[0],[1,2]]  : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
+  %0 = linalg.tensor_collapse_shape %a [[0],[1,2]] : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
   return %0 : tensor<2x8x!FHE.eint<6>>
 }
 )XXX");
@@ -1470,10 +1467,11 @@ func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
-      &resp = (*res)
-                  ->cast<mlir::concretelang::TensorLambdaArgument<
-                      mlir::concretelang::IntLambdaArgument<>>>();
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<>> &resp =
+      (*res)
+          ->cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)2);
   ASSERT_EQ(resp.getDimensions().at(0), 2);
@@ -1496,7 +1494,7 @@ TEST(End2EndJit_Linalg, tensor_expand_shape) {
 
   mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
 func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
-  %0 = linalg.tensor_expand_shape %a [[0],[1,2]]  : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
+  %0 = linalg.tensor_expand_shape %a [[0],[1,2]] : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
   return %0 : tensor<2x2x4x!FHE.eint<6>>
 }
 )XXX");
@@ -1520,10 +1518,11 @@ func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  mlir::concretelang::TensorLambdaArgument<mlir::concretelang::IntLambdaArgument<>>
-      &resp = (*res)
-                  ->cast<mlir::concretelang::TensorLambdaArgument<
-                      mlir::concretelang::IntLambdaArgument<>>>();
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<>> &resp =
+      (*res)
+          ->cast<mlir::concretelang::TensorLambdaArgument<
+              mlir::concretelang::IntLambdaArgument<>>>();
 
   ASSERT_EQ(resp.getDimensions().size(), (size_t)3);
   ASSERT_EQ(resp.getDimensions().at(0), 2);

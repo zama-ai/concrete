@@ -2,8 +2,6 @@
 
 #include "end_to_end_jit_test.h"
 
-const mlir::concretelang::V0FHEConstraint defaultV0Constraints{10, 7};
-
 using Lambda = mlir::concretelang::JitCompilerEngine::Lambda;
 
 
