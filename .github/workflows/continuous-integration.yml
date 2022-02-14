@@ -64,13 +64,14 @@ jobs:
           image: ${{ env.DOCKER_IMAGE_TEST_GCC7 }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/build:/build -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
           shell: bash
           run: |
             set -e
             echo "Debug: ccache statistics (prior to the build):"
             ccache -s
             cd /compiler
+            rm -rf /build
             /opt/python/cp38-cp38/bin/pip install pytest
             sed "s/pytest/\/opt\/python\/cp38-cp38\/bin\/python -m pytest/g" -i Makefile
             make CXX_COMPILER=/gcc7/bin/g++-7.5.0 CC_COMPILER=/gcc7/bin/gcc-7.5.0 CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python BUILD_DIR=/build test doc
@@ -80,44 +81,44 @@ jobs:
 
       - name: Build compiler
         if: ${{ matrix.compiler == 'latest' }}
+        id: build-compiler-latest
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
             echo "Debug: ccache statistics (prior to the build):"
             ccache -s
             cd /compiler
-            rm -rf /build
             export PYTHONPATH=""
-            make CCACHE=ON BUILD_DIR=/build concretecompiler python-bindings
+            make CCACHE=ON BUILD_DIR=/build concretecompiler python-bindings doc
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
       - name: Build the documentation
         id: build-doc
-        if: ${{ steps.build-compiler.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.build-compiler-latest.outcome == 'success' && !cancelled() }}
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST_GCC7 }}
+          image: ${{ env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/docs:/docs -v ${{ github.workspace }}/build:/compiler/build
           shell: bash
           run: |
             set -e
+            make CCACHE=ON BUILD_DIR=/build concretecompiler python-bindings doc
             cd /docs
-            export PATH=/opt/python/cp38-cp38/bin:$PATH
             pip install -r requirements.txt
             pip install -r ../llvm-project/mlir/python/requirements.txt
             DEBIAN_FRONTEND="noninteractive" apt-get install -y doxygen
-            make CCACHE=ON Python3_EXECUTABLE=/opt/python/cp38-cp38/bin/python doc
+            make CCACHE=ON doc
 
       - name: Archive docs artifacts
         if: ${{ steps.build-doc.outcome == 'success' && !cancelled() }}
