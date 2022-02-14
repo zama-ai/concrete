@@ -424,7 +424,7 @@ where
     {
         let (body, masks) = cipher.get_body_and_mask();
         // put body inside result
-        output.0 = output.0.wrapping_add(body.0);
+        output.0 = body.0;
         // subtract the multisum between the key and the mask
         output.0 = output.0.wrapping_sub(masks.compute_multisum(self));
     }
