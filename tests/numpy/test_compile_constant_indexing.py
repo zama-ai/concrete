@@ -688,7 +688,6 @@ def test_invalid_constant_indexing_with_numpy_values(
             [np.random.randint(0, 2 ** 6, size=(3, 2)) for _ in range(10)],
             ([[11, 12], [21, 22], [31, 32]],),
             [11, 12],
-            marks=pytest.mark.xfail(strict=True),
         ),
         pytest.param(
             lambda x: x[:, 0],
@@ -698,7 +697,6 @@ def test_invalid_constant_indexing_with_numpy_values(
             [np.random.randint(0, 2 ** 6, size=(3, 2)) for _ in range(10)],
             ([[11, 12], [21, 22], [31, 32]],),
             [11, 21, 31],
-            marks=pytest.mark.xfail(strict=True),
         ),
     ],
 )
@@ -727,39 +725,3 @@ def test_constant_indexing_run_correctness(
     expected = np.array(expected_output, dtype=np.uint8)
 
     check_array_equality(output, expected)
-
-
-@pytest.mark.parametrize(
-    "function,parameters,inputset,match",
-    [
-        pytest.param(
-            lambda x: x[0:1],
-            {
-                "x": EncryptedTensor(UnsignedInteger(3), shape=(3,)),
-            },
-            [np.random.randint(0, 2 ** 3, size=(3,)) for _ in range(10)],
-            (
-                "Indexing of EncryptedTensor<uint3, shape=(3,)> with [0:1] "
-                "cannot be converted to MLIR yet"
-            ),
-        ),
-    ],
-)
-def test_constant_indexing_failed_compilation(
-    function,
-    parameters,
-    inputset,
-    match,
-    default_compilation_configuration,
-):
-    """Test compilation failures of compiled function with constant indexing"""
-
-    with pytest.raises(RuntimeError) as excinfo:
-        compile_numpy_function(
-            function,
-            parameters,
-            inputset,
-            default_compilation_configuration,
-        )
-
-    assert str(excinfo.value) == match, str(excinfo.value)
