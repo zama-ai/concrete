@@ -880,6 +880,20 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUMul(noiseMultiplier, operandMANP);
 }
 
+static llvm::APInt getSqMANP(
+    mlir::concretelang::FHELinalg::ConcatOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  llvm::APInt result = llvm::APInt{1, 0, false};
+  for (mlir::LatticeElement<MANPLatticeValue> *operandMANP : operandMANPs) {
+    llvm::APInt candidate = operandMANP->getValue().getMANP().getValue();
+    if (candidate.getLimitedValue() >= result.getLimitedValue()) {
+      result = candidate;
+    }
+  }
+  return result;
+}
+
 struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
   using ForwardDataFlowAnalysis<MANPLatticeValue>::ForwardDataFlowAnalysis;
   MANPAnalysis(mlir::MLIRContext *ctx, bool debug)
@@ -955,6 +969,10 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     } else if (auto sumOp =
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::SumOp>(op)) {
       norm2SqEquiv = getSqMANP(sumOp, operands);
+    } else if (auto concatOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::ConcatOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(concatOp, operands);
     }
     // Tensor Operators
     // ExtractOp

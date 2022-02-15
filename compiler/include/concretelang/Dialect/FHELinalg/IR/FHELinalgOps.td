@@ -601,4 +601,48 @@ def SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
     }];
 }
 
+def ConcatOp : FHELinalg_Op<"concat"> {
+    let summary = "Concatenates a sequence of tensors along an existing axis.";
+
+    let description = [{
+        Concatenates several tensors along a given axis.
+
+        Examples:
+
+        ```mlir
+        "FHELinalg.concat"(%a, %b) { axis = 0 } : (tensor<3x3x!FHE.eint<4>>, tensor<3x3x!FHE.eint<4>>) -> tensor<6x3x!FHE.eint<4>>
+        //
+        //        ( [1,2,3]  [1,2,3] )   [1,2,3]
+        // concat ( [4,5,6], [4,5,6] ) = [4,5,6]
+        //        ( [7,8,9]  [7,8,9] )   [7,8,9]
+        //                               [1,2,3]
+        //                               [4,5,6]
+        //                               [7,8,9]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.concat"(%a, %b) { axis = 1 } : (tensor<3x3x!FHE.eint<4>>, tensor<3x3x!FHE.eint<4>>) -> tensor<3x6x!FHE.eint<4>>
+        //
+        //        ( [1,2,3]  [1,2,3] )   [1,2,3,1,2,3]
+        // concat ( [4,5,6], [4,5,6] ) = [4,5,6,4,5,6]
+        //        ( [7,8,9]  [7,8,9] )   [7,8,9,7,8,9]
+        //
+        ```
+    }];
+
+    let arguments = (ins
+        Variadic<Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>>:$ins,
+        DefaultValuedAttr<I64Attr, "0">:$axis
+    );
+
+    let results = (outs
+        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$out
+    );
+
+    let verifier = [{
+        return mlir::concretelang::FHELinalg::verifyConcat(*this);
+    }];
+}
+
 #endif

@@ -3059,6 +3059,445 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
   }
 }
 
+TEST(End2EndJit_FHELinalg, concat_1D_axis_0) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%x: tensor<3x!FHE.eint<7>>, %y: tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>> {
+  %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<3x!FHE.eint<7>>, tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>>
+  return %0 : tensor<7x!FHE.eint<7>>
+}
+)XXX");
+
+  const uint8_t x[3]{0, 1, 2};
+  const uint8_t y[4]{3, 4, 5, 6};
+
+  const uint8_t expected[7]{0, 1, 2, 3, 4, 5, 6};
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3});
+
+  llvm::ArrayRef<uint8_t> yRef((const uint8_t *)y, 4);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      yArg(yRef, {4});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>(
+          {&xArg, &yArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)1);
+  ASSERT_EQ(res.getDimensions().at(0), 7);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 7);
+
+  for (size_t i = 0; i < 7; i++) {
+    EXPECT_EQ(res.getValue()[i], expected[i]) << ", at pos(" << i << ")";
+  }
+}
+
+TEST(End2EndJit_FHELinalg, concat_2D_axis_0) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%x: tensor<2x3x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>> {
+  %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x3x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>>
+  return %0 : tensor<5x3x!FHE.eint<7>>
+}
+)XXX");
+
+  const uint8_t x[2][3]{
+      {0, 1, 2},
+      {3, 4, 5},
+  };
+  const uint8_t y[3][3]{
+      {6, 7, 8},
+      {9, 0, 1},
+      {2, 3, 4},
+  };
+
+  const uint8_t expected[5][3]{
+      {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, {9, 0, 1}, {2, 3, 4},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 2 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {2, 3});
+
+  llvm::ArrayRef<uint8_t> yRef((const uint8_t *)y, 3 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      yArg(yRef, {3, 3});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>(
+          {&xArg, &yArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 5);
+  ASSERT_EQ(res.getDimensions().at(1), 3);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 15);
+
+  for (size_t i = 0; i < 5; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ(res.getValue()[(i * 3) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, concat_2D_axis_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%x: tensor<3x2x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>> {
+  %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<3x2x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>>
+  return %0 : tensor<3x5x!FHE.eint<7>>
+}
+)XXX");
+
+  const uint8_t x[3][2]{
+      {0, 1},
+      {2, 3},
+      {4, 5},
+  };
+  const uint8_t y[3][3]{
+      {6, 7, 8},
+      {9, 0, 1},
+      {2, 3, 4},
+  };
+
+  const uint8_t expected[3][5]{
+      {0, 1, 6, 7, 8},
+      {2, 3, 9, 0, 1},
+      {4, 5, 2, 3, 4},
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 3 * 2);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {3, 2});
+
+  llvm::ArrayRef<uint8_t> yRef((const uint8_t *)y, 3 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      yArg(yRef, {3, 3});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>(
+          {&xArg, &yArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)2);
+  ASSERT_EQ(res.getDimensions().at(0), 3);
+  ASSERT_EQ(res.getDimensions().at(1), 5);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 15);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 5; j++) {
+      EXPECT_EQ(res.getValue()[(i * 5) + j], expected[i][j])
+          << ", at pos(" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, concat_3D_axis_0) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>> {
+  %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>>
+  return %0 : tensor<4x4x3x!FHE.eint<7>>
+}
+)XXX");
+
+  const uint8_t x[2][4][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+  const uint8_t y[2][4][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+
+  const uint8_t expected[4][4][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 2 * 4 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {2, 4, 3});
+
+  llvm::ArrayRef<uint8_t> yRef((const uint8_t *)y, 2 * 4 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      yArg(yRef, {2, 4, 3});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>(
+          {&xArg, &yArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 4);
+  ASSERT_EQ(res.getDimensions().at(1), 4);
+  ASSERT_EQ(res.getDimensions().at(2), 3);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 48);
+
+  for (size_t i = 0; i < 4; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      for (size_t k = 0; k < 3; k++) {
+        EXPECT_EQ(res.getValue()[(i * 4 * 3) + (j * 3) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, concat_3D_axis_1) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>> {
+  %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>>
+  return %0 : tensor<2x8x3x!FHE.eint<7>>
+}
+)XXX");
+
+  const uint8_t x[2][4][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+  const uint8_t y[2][4][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+
+  const uint8_t expected[2][8][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 2 * 4 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {2, 4, 3});
+
+  llvm::ArrayRef<uint8_t> yRef((const uint8_t *)y, 2 * 4 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      yArg(yRef, {2, 4, 3});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>(
+          {&xArg, &yArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 2);
+  ASSERT_EQ(res.getDimensions().at(1), 8);
+  ASSERT_EQ(res.getDimensions().at(2), 3);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 48);
+
+  for (size_t i = 0; i < 2; i++) {
+    for (size_t j = 0; j < 8; j++) {
+      for (size_t k = 0; k < 3; k++) {
+        EXPECT_EQ(res.getValue()[(i * 8 * 3) + (j * 3) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, concat_3D_axis_2) {
+  namespace concretelang = mlir::concretelang;
+
+  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>> {
+  %0 = "FHELinalg.concat"(%x, %y) { axis = 2 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>>
+  return %0 : tensor<2x4x6x!FHE.eint<7>>
+}
+)XXX");
+
+  const uint8_t x[2][4][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+  const uint8_t y[2][4][3]{
+      {
+          {0, 1, 2},
+          {3, 4, 5},
+          {6, 7, 8},
+          {9, 0, 1},
+      },
+      {
+          {2, 3, 4},
+          {5, 6, 7},
+          {8, 9, 0},
+          {1, 2, 3},
+      },
+  };
+
+  const uint8_t expected[2][4][6]{
+      {
+          {0, 1, 2, 0, 1, 2},
+          {3, 4, 5, 3, 4, 5},
+          {6, 7, 8, 6, 7, 8},
+          {9, 0, 1, 9, 0, 1},
+      },
+      {
+          {2, 3, 4, 2, 3, 4},
+          {5, 6, 7, 5, 6, 7},
+          {8, 9, 0, 8, 9, 0},
+          {1, 2, 3, 1, 2, 3},
+      },
+  };
+
+  llvm::ArrayRef<uint8_t> xRef((const uint8_t *)x, 2 * 4 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      xArg(xRef, {2, 4, 3});
+
+  llvm::ArrayRef<uint8_t> yRef((const uint8_t *)y, 2 * 4 * 3);
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<uint8_t>>
+      yArg(yRef, {2, 4, 3});
+
+  llvm::Expected<std::unique_ptr<concretelang::LambdaArgument>> call =
+      lambda.operator()<std::unique_ptr<concretelang::LambdaArgument>>(
+          {&xArg, &yArg});
+  ASSERT_EXPECTED_SUCCESS(call);
+
+  concretelang::TensorLambdaArgument<concretelang::IntLambdaArgument<>> &res =
+      (*call)
+          ->cast<concretelang::TensorLambdaArgument<
+              concretelang::IntLambdaArgument<>>>();
+
+  ASSERT_EQ(res.getDimensions().size(), (size_t)3);
+  ASSERT_EQ(res.getDimensions().at(0), 2);
+  ASSERT_EQ(res.getDimensions().at(1), 4);
+  ASSERT_EQ(res.getDimensions().at(2), 6);
+  ASSERT_EXPECTED_VALUE(res.getNumElements(), 48);
+
+  for (size_t i = 0; i < 2; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      for (size_t k = 0; k < 6; k++) {
+        EXPECT_EQ(res.getValue()[(i * 4 * 6) + (j * 6) + k], expected[i][j][k])
+            << ", at pos(" << i << "," << j << "," << k << ")";
+      }
+    }
+  }
+}
+
 class TiledMatMulParametric
     : public ::testing::TestWithParam<std::vector<int64_t>> {};
 

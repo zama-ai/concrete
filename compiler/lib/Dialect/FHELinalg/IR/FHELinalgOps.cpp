@@ -490,6 +490,105 @@ mlir::LogicalResult verifySum(SumOp &op) {
   return mlir::success();
 }
 
+static bool sameShapeExceptAxis(llvm::ArrayRef<int64_t> shape1,
+                                llvm::ArrayRef<int64_t> shape2, size_t axis) {
+  if (shape1.size() != shape2.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < shape1.size(); i++) {
+    if (i != axis && shape1[i] != shape2[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+mlir::LogicalResult verifyConcat(ConcatOp &op) {
+  unsigned numOperands = op.getNumOperands();
+  if (numOperands < 2) {
+    op->emitOpError() << "should have at least 2 inputs";
+    return mlir::failure();
+  }
+
+  int64_t axis = op.axis();
+  mlir::Value out = op.out();
+
+  auto outVectorType = out.getType().dyn_cast<mlir::TensorType>();
+  auto outElementType =
+      outVectorType.getElementType().dyn_cast<FHE::EncryptedIntegerType>();
+
+  llvm::ArrayRef<int64_t> outShape = outVectorType.getShape();
+  size_t outDims = outShape.size();
+
+  if (axis < 0 || (size_t)axis >= outDims) {
+    op->emitOpError() << "has invalid axis attribute";
+    return mlir::failure();
+  }
+
+  int64_t expectedOutputElementsInAxis = 0;
+
+  size_t index = 0;
+  for (mlir::Value in : op.ins()) {
+    auto inVectorType = in.getType().dyn_cast<mlir::TensorType>();
+    auto inElementType =
+        inVectorType.getElementType().dyn_cast<FHE::EncryptedIntegerType>();
+    if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(op, inElementType,
+                                                              outElementType)) {
+      return ::mlir::failure();
+    }
+
+    llvm::ArrayRef<int64_t> inShape = inVectorType.getShape();
+    if (!sameShapeExceptAxis(inShape, outShape, (size_t)axis)) {
+      auto stream = op->emitOpError();
+
+      stream << "does not have the proper shape of <";
+      if (axis == 0) {
+        stream << "?";
+      } else {
+        stream << outShape[0];
+      }
+      for (size_t i = 1; i < outDims; i++) {
+        stream << "x";
+        if (i == (size_t)axis) {
+          stream << "?";
+        } else {
+          stream << outShape[i];
+        }
+      }
+      stream << "> for input #" << index;
+
+      return mlir::failure();
+    }
+    expectedOutputElementsInAxis += inShape[axis];
+
+    index += 1;
+  }
+
+  if (outShape[axis] != expectedOutputElementsInAxis) {
+    auto stream = op->emitOpError();
+
+    stream << "does not have the proper output shape of <";
+    if (axis == 0) {
+      stream << expectedOutputElementsInAxis;
+    } else {
+      stream << outShape[0];
+    }
+    for (size_t i = 1; i < outDims; i++) {
+      stream << "x";
+      if (i == (size_t)axis) {
+        stream << expectedOutputElementsInAxis;
+      } else {
+        stream << outShape[i];
+      }
+    }
+    stream << ">";
+
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 /// Verify the matmul shapes, the type of tensor elements should be checked by
 /// something else
 template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {

@@ -546,3 +546,30 @@ func @sum() -> !FHE.eint<7> {
 
   return %1 : !FHE.eint<7>
 }
+
+// -----
+
+func @concat() -> tensor<3x!FHE.eint<7>> {
+  %0 = "FHELinalg.zero"() : () -> tensor<4x!FHE.eint<7>>
+  // CHECK: MANP = 2 : ui{{[0-9]+}}
+  %1 = "FHELinalg.sum"(%0) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+
+  %2 = "FHELinalg.zero"() : () -> tensor<5x!FHE.eint<7>>
+  // CHECK: MANP = 3 : ui{{[0-9]+}}
+  %3 = "FHELinalg.sum"(%2) { keep_dims = true } : (tensor<5x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+
+  %4 = "FHELinalg.zero"() : () -> tensor<10x!FHE.eint<7>>
+  // CHECK: MANP = 4 : ui{{[0-9]+}}
+  %5 = "FHELinalg.sum"(%4) { keep_dims = true } : (tensor<10x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
+
+  // CHECK: MANP = 3 : ui{{[0-9]+}}
+  %6 = "FHELinalg.concat"(%1, %3) : (tensor<1x!FHE.eint<7>>, tensor<1x!FHE.eint<7>>) ->  tensor<2x!FHE.eint<7>>
+  // CHECK: MANP = 4 : ui{{[0-9]+}}
+  %7 = "FHELinalg.concat"(%1, %5) : (tensor<1x!FHE.eint<7>>, tensor<1x!FHE.eint<7>>) ->  tensor<2x!FHE.eint<7>>
+  // CHECK: MANP = 4 : ui{{[0-9]+}}
+  %8 = "FHELinalg.concat"(%3, %5) : (tensor<1x!FHE.eint<7>>, tensor<1x!FHE.eint<7>>) ->  tensor<2x!FHE.eint<7>>
+  // CHECK: MANP = 4 : ui{{[0-9]+}}
+  %9 = "FHELinalg.concat"(%1, %3, %5) : (tensor<1x!FHE.eint<7>>, tensor<1x!FHE.eint<7>>, tensor<1x!FHE.eint<7>>) ->  tensor<3x!FHE.eint<7>>
+
+  return %9 : tensor<3x!FHE.eint<7>>
+}

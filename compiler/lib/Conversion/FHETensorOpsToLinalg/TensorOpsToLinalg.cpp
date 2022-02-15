@@ -1126,6 +1126,121 @@ struct SumToLinalgGeneric
   };
 };
 
+// This rewrite pattern transforms any instance of operators
+// `FHELinalg.concat` to instances of `tensor.insert_slice`
+//
+// Example:
+//
+//   %result = "FHELinalg.concat"(%x, %y) { axis = 1 } :
+//     (tensor<2x3x!FHE.eint<4>>, tensor<2x4x!FHE.eint<4>>)
+//       -> tensor<2x7x!FHE.eint<4>>
+//
+// becomes:
+//
+//   %empty = "FHELinalg.zero"() : () -> tensor<2x7x!FHE.eint<4>>
+//
+//   %x_copied = tensor.insert_slice %x into %empty[0, 0] [2, 3] [1, 1]
+//     : tensor<2x3x!FHE.eint<4>> into tensor<2x7x!FHE.eint<4>>
+//
+//   %y_copied = tensor.insert_slice %y into %x_copied[0, 3] [2, 4] [1, 1]
+//     : tensor<2x4x!FHE.eint<4>> into tensor<2x7x!FHE.eint<4>>
+//
+struct ConcatRewritePattern
+    : public mlir::OpRewritePattern<FHELinalg::ConcatOp> {
+  ConcatRewritePattern(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<FHELinalg::ConcatOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHELinalg::ConcatOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+
+    mlir::Location location = op.getLoc();
+    size_t axis = op.axis();
+
+    mlir::Value output = op.getResult();
+    auto outputType = output.getType().dyn_cast<mlir::TensorType>();
+
+    llvm::ArrayRef<int64_t> outputShape = outputType.getShape();
+    size_t outputDimensions = outputShape.size();
+
+    mlir::Value result =
+        rewriter.create<FHELinalg::ZeroOp>(location, outputType).getResult();
+
+    auto offsets = llvm::SmallVector<int64_t, 3>{};
+    auto sizes = llvm::SmallVector<int64_t, 3>{};
+    auto strides = llvm::SmallVector<int64_t, 3>{};
+
+    // set up the initial values of offsets, sizes, and strides
+    // each one has exactly `outputDimensions` number of elements
+    // - offsets will be [0, 0, 0, ..., 0, 0, 0]
+    // - strides will be [1, 1, 1, ..., 1, 1, 1]
+    // - sizes will be the output shape except at the 'axis' which will be 0
+    for (size_t i = 0; i < outputDimensions; i++) {
+      offsets.push_back(0);
+      if (i == axis) {
+        sizes.push_back(0);
+      } else {
+        sizes.push_back(outputShape[i]);
+      }
+      strides.push_back(1);
+    }
+
+    // these are not used, but they are required
+    // for the creation of InsertSliceOp operation
+    auto dynamicOffsets = llvm::ArrayRef<mlir::Value>{};
+    auto dynamicSizes = llvm::ArrayRef<mlir::Value>{};
+    auto dynamicStrides = llvm::ArrayRef<mlir::Value>{};
+
+    for (mlir::Value input : op.getOperands()) {
+      auto inputType = input.getType().dyn_cast<mlir::TensorType>();
+      int64_t axisSize = inputType.getShape()[axis];
+
+      // offsets and sizes will be modified for each input tensor
+      // if we have:
+      //     "FHELinalg.concat"(%x, %y, %z) :
+      //     (
+      //         tensor<3x!FHE.eint<7>>,
+      //         tensor<4x!FHE.eint<7>>,
+      //         tensor<2x!FHE.eint<7>>,
+      //     )
+      //     -> tensor<9x!FHE.eint<7>>
+      //
+      // for the first copy:
+      //     offsets = [0], sizes = [3], strides = [1]
+      //
+      // for the second copy:
+      //     offsets = [3], sizes = [4], strides = [1]
+      //
+      // for the third copy:
+      //     offsets = [7], sizes = [2], strides = [1]
+      //
+      // so in each iteration:
+      // - the size is set to the axis size of the input
+      // - the offset is increased by the size of the previous input
+
+      sizes[axis] = axisSize;
+
+      // these arrays are copied, so it's fine to modify and use them again
+      mlir::ArrayAttr offsetsAttr = rewriter.getI64ArrayAttr(offsets);
+      mlir::ArrayAttr sizesAttr = rewriter.getI64ArrayAttr(sizes);
+      mlir::ArrayAttr stridesAttr = rewriter.getI64ArrayAttr(strides);
+
+      offsets[axis] += axisSize;
+
+      result = rewriter
+                   .create<mlir::tensor::InsertSliceOp>(
+                       location, outputType, input, result, dynamicOffsets,
+                       dynamicSizes, dynamicStrides, offsetsAttr, sizesAttr,
+                       stridesAttr)
+                   .getResult();
+    }
+
+    rewriter.replaceOp(op, {result});
+    return mlir::success();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -1186,6 +1301,7 @@ void FHETensorOpsToLinalg::runOnFunction() {
       &getContext());
   patterns.insert<FHELinalgZeroToLinalgGenerate>(&getContext());
   patterns.insert<SumToLinalgGeneric>(&getContext());
+  patterns.insert<ConcatRewritePattern>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())
