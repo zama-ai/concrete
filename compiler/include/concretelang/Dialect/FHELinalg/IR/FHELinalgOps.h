@@ -104,3 +104,23 @@ using namespace mlir::linalg;
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h.inc"
 
 #endif
+
+namespace mlir {
+namespace concretelang {
+namespace FHELinalg {
+
+/// Get padding from the Conv2dOp if defined, or return default value
+mlir::SmallVector<int64_t, 4>
+getPaddingFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp);
+
+/// Get strides from the Conv2dOp if defined, or return default value
+mlir::SmallVector<int64_t, 2>
+getStridesFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp);
+
+/// Get dilations from the Conv2dOp if defined, or return default value
+mlir::SmallVector<int64_t, 2>
+getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp);
+
+} // namespace FHELinalg
+} // namespace concretelang
+} // namespace mlir

@@ -3,6 +3,7 @@
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Dialect/StandardOps/IR/StandardOpsBase.td"
 include "mlir/Dialect/Linalg/IR/LinalgBase.td"
 include "mlir/Dialect/Linalg/IR/LinalgInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
@@ -628,6 +629,23 @@ def ConcatOp : FHELinalg_Op<"concat"> {
 
     let verifier = [{
         return mlir::concretelang::FHELinalg::verifyConcat(*this);
+    }];
+}
+
+def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
+  let summary = "Returns the 2D convolution of a tensor in the form NCHW with weights in the form FCHW";
+  let arguments = (ins
+    Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$input,
+    Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$weight,
+    Optional<Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>>:$bias,
+    // Since there is no U64ElementsAttr, we use I64 and make sure there is no neg values during verification
+    OptionalAttr<I64ElementsAttr>:$padding,
+    OptionalAttr<I64ElementsAttr>:$strides,
+    OptionalAttr<I64ElementsAttr>:$dilations
+  );
+  let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+  let verifier = [{
+        return ::mlir::concretelang::FHELinalg::verifyConv2d(*this);
     }];
 }
 

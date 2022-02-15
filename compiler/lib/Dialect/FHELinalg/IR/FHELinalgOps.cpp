@@ -625,6 +625,253 @@ template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
   return mlir::success();
 }
 
+mlir::SmallVector<int64_t, 4>
+getPaddingFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
+  mlir::SmallVector<int64_t, 4> paddingInts;
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalPadding = convOp.padding();
+  if (optionalPadding.hasValue()) {
+    auto paddingAttr = optionalPadding.getValue();
+    auto paddingAttrShape =
+        paddingAttr.getType().cast<RankedTensorType>().getShape();
+    assert(paddingAttrShape.size() == 1 && paddingAttrShape[0] == 4 &&
+           "incorrect padding shape");
+    paddingInts.insert(paddingInts.begin(), paddingAttr.value_begin<int64_t>(),
+                       paddingAttr.value_end<int64_t>());
+  } else {
+    paddingInts.insert(paddingInts.begin(), {0, 0, 0, 0});
+  }
+  return paddingInts;
+}
+
+mlir::SmallVector<int64_t, 2>
+getStridesFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
+  mlir::SmallVector<int64_t, 2> stridesInts;
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalStrides = convOp.strides();
+  if (optionalStrides.hasValue()) {
+    auto stridesAttr = optionalStrides.getValue();
+    auto stridesAttrShape =
+        stridesAttr.getType().cast<RankedTensorType>().getShape();
+    assert(stridesAttrShape.size() == 1 && stridesAttrShape[0] == 2 &&
+           "incorrect strides shape");
+    stridesInts.insert(stridesInts.begin(), stridesAttr.value_begin<int64_t>(),
+                       stridesAttr.value_end<int64_t>());
+  } else {
+    stridesInts.insert(stridesInts.begin(), {1, 1});
+  }
+  return stridesInts;
+}
+
+mlir::SmallVector<int64_t, 2>
+getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
+  mlir::SmallVector<int64_t, 2> dilationsInts;
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalDilations =
+      convOp.dilations();
+  if (optionalDilations.hasValue()) {
+    auto dilationsAttr = optionalDilations.getValue();
+    auto dilationsAttrShape =
+        dilationsAttr.getType().cast<RankedTensorType>().getShape();
+    assert(dilationsAttrShape.size() == 1 && dilationsAttrShape[0] == 2 &&
+           "incorrect dilations shape");
+    dilationsInts.insert(dilationsInts.begin(),
+                         dilationsAttr.value_begin<int64_t>(),
+                         dilationsAttr.value_end<int64_t>());
+  } else {
+    dilationsInts.insert(dilationsInts.begin(), {1, 1});
+  }
+  return dilationsInts;
+}
+
+/// Verify the Conv2d shapes, attributes, and expected output dimensions
+mlir::LogicalResult
+verifyConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
+  auto inputTy =
+      ((mlir::Type)convOp.input().getType()).cast<mlir::RankedTensorType>();
+  auto weightTy =
+      ((mlir::Type)convOp.weight().getType()).cast<mlir::RankedTensorType>();
+  auto resultTy =
+      ((mlir::Type)convOp.getResult().getType()).cast<mlir::RankedTensorType>();
+  auto inputShape = inputTy.getShape();
+  auto weightShape = weightTy.getShape();
+  auto resultShape = resultTy.getShape();
+
+  auto p = inputTy.getElementType()
+               .cast<mlir::concretelang::FHE::EncryptedIntegerType>()
+               .getWidth();
+  auto weightElementTyWidth =
+      weightTy.getElementType().cast<mlir::IntegerType>().getWidth();
+  if (weightElementTyWidth != p + 1) {
+    convOp.emitOpError() << "expected weight element type to have width "
+                         << p + 1 << " but got " << weightElementTyWidth;
+    return mlir::failure();
+  }
+
+  // Checking dimensions
+  if (inputShape.size() != 4) {
+    convOp.emitOpError() << "input should have 4 dimensions (N*C*H*W) but got "
+                         << inputShape.size();
+    return mlir::failure();
+  }
+  if (weightShape.size() != 4) {
+    convOp.emitOpError() << "weight should have 4 dimensions (F*C*H*W) but got "
+                         << weightShape.size();
+    return mlir::failure();
+  }
+  if (resultShape.size() != 4) {
+    convOp.emitOpError() << "result should have 4 dimensions (N*C*H*W) but got "
+                         << resultShape.size();
+    return mlir::failure();
+  }
+
+  // Checking attributes
+  mlir::SmallVector<int64_t, 4> paddingInts = getPaddingFromConv2d(convOp);
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalPadding = convOp.padding();
+  if (optionalPadding.hasValue()) {
+    auto paddingAttr = optionalPadding.getValue();
+    auto paddingAttrShape =
+        paddingAttr.getType().cast<RankedTensorType>().getShape();
+    if (paddingAttrShape.size() != 1 || paddingAttrShape[0] != 4) {
+      convOp.emitOpError()
+          << "padding should have a single dimension of size 4, but got shape ["
+          << paddingAttrShape << "]";
+      return mlir::failure();
+    }
+    for (auto i = 0; i < 4; i++) {
+      // TODO: Support padding (#427)
+      if (paddingInts[i] != 0) {
+        convOp.emitOpError()
+            << "padding isn't yet supported, but got a non zero value ("
+            << paddingInts[i] << ") at index " << i;
+        return mlir::failure();
+      }
+
+      if (paddingInts[i] < 0) {
+        convOp.emitOpError() << "padding can't have a negative value, but got "
+                             << paddingInts[i] << " at index " << i;
+        return mlir::failure();
+      }
+    }
+  }
+  mlir::SmallVector<int64_t, 2> stridesInts = getStridesFromConv2d(convOp);
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalStrides = convOp.strides();
+  if (optionalStrides.hasValue()) {
+    auto stridesAttr = optionalStrides.getValue();
+    auto stridesAttrShape =
+        stridesAttr.getType().cast<RankedTensorType>().getShape();
+    if (stridesAttrShape.size() != 1 || stridesAttrShape[0] != 2) {
+      convOp.emitOpError()
+          << "strides should have a single dimension of size 2, but got shape ["
+          << stridesAttrShape << "]";
+      return mlir::failure();
+    }
+    for (auto i = 0; i < 2; i++) {
+      if (stridesInts[i] < 1) {
+        convOp.emitOpError()
+            << "strides can't have a value less than 1, but got "
+            << stridesInts[i] << " at index " << i;
+        return mlir::failure();
+      }
+    }
+  }
+  mlir::SmallVector<int64_t, 2> dilationsInts = getDilationsFromConv2d(convOp);
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalDilations =
+      convOp.dilations();
+  if (optionalDilations.hasValue()) {
+    auto dilationsAttr = optionalDilations.getValue();
+    auto dilationsAttrShape =
+        dilationsAttr.getType().cast<RankedTensorType>().getShape();
+    if (dilationsAttrShape.size() != 1 || dilationsAttrShape[0] != 2) {
+      convOp.emitOpError() << "dilations should have a single dimension of "
+                              "size 2, but got shape ["
+                           << dilationsAttrShape << "]";
+      return mlir::failure();
+    }
+    for (auto i = 0; i < 2; i++) {
+      if (dilationsInts[i] < 1) {
+        convOp.emitOpError()
+            << "dilations can't have a value less than 1, but got "
+            << dilationsInts[i] << " at index " << i;
+        return mlir::failure();
+      }
+    }
+  }
+
+  // Extracting dimensions
+  int64_t inputN = inputShape[0], inputC = inputShape[1],
+          inputH = inputShape[2], inputW = inputShape[3];
+  int64_t weightF = weightShape[0], weightC = weightShape[1],
+          weightH = weightShape[2], weightW = weightShape[3];
+  int64_t resultN = resultShape[0], resultC = resultShape[1],
+          resultH = resultShape[2], resultW = resultShape[3];
+
+  // Bias check if specified
+  mlir::Value bias = convOp.bias();
+  if (bias) {
+    auto biasTy = ((mlir::Type)bias.getType()).cast<mlir::RankedTensorType>();
+    auto biasShape = biasTy.getShape();
+    if (biasShape.size() != 1) {
+      convOp.emitOpError() << "bias should have 1 dimension but got "
+                           << biasShape.size();
+      return mlir::failure();
+    }
+    if (biasShape[0] != weightF) {
+      convOp.emitOpError() << "expected bias vector to have size " << weightF
+                           << " but got " << biasShape[0];
+      return mlir::failure();
+    }
+    auto biasElementTyWidth =
+        biasTy.getElementType().cast<mlir::IntegerType>().getWidth();
+    if (biasElementTyWidth != p + 1) {
+      convOp.emitOpError() << "expected bias element type to have width "
+                           << p + 1 << " but got " << biasElementTyWidth;
+      return mlir::failure();
+    }
+  }
+
+  // Dimension sizes checks
+  if (resultN != inputN) {
+    convOp.emitOpError()
+        << "expected result batch size to be equal to input batch size ("
+        << inputN << ") but got " << resultN;
+    return mlir::failure();
+  }
+  if (inputC != weightC) {
+    convOp.emitOpError() << "expected number of channels in weight to be equal "
+                            "to number of channels in input ("
+                         << inputC << ") but got " << weightC;
+    return mlir::failure();
+  }
+  if (weightF != resultC) {
+    convOp.emitOpError() << "expected number of output channels to be equal to "
+                            "the number of filters ("
+                         << weightF << ") but got " << resultC;
+    return mlir::failure();
+  }
+
+  int64_t paddingH = paddingInts[0] + paddingInts[2];
+  int64_t paddingW = paddingInts[1] + paddingInts[3];
+  int64_t dilationH = dilationsInts[0];
+  int64_t dilationW = dilationsInts[1];
+  int64_t strideH = stridesInts[0];
+  int64_t strideW = stridesInts[1];
+  int64_t expectedResultH =
+      floor((inputH + paddingH - dilationH * (weightH - 1) - 1) / strideH) + 1;
+  int64_t expectedResultW =
+      floor((inputW + paddingW - dilationW * (weightW - 1) - 1) / strideW) + 1;
+
+  if (expectedResultH != resultH) {
+    convOp.emitOpError() << "expected height of output to be equal to "
+                         << expectedResultH << " but got " << resultH;
+    return mlir::failure();
+  }
+  if (expectedResultW != resultW) {
+    convOp.emitOpError() << "expected width of output to be equal to "
+                         << expectedResultW << " but got " << resultW;
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 //===----------------------------------------------------------------------===//
 // Implementation of FhelinalgConv2DNchwFchwOp
 // This is a generated functions from `make generate_conv_op`, and some helpers
