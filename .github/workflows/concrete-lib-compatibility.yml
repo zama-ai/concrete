@@ -17,7 +17,7 @@ jobs:
         run: |
           ./.github/workflows/scripts/container_timestamp_check.sh \
           --base_img_url \
-          https://api.github.com/orgs/zama-ai/packages/container/concrete-api-env/versions \
+          https://api.github.com/orgs/zama-ai/packages/container/concrete-compiler-api-env/versions \
           --env_img_url \
           https://api.github.com/orgs/zama-ai/packages/container/concretelang-compiler/versions \
           --token ${{ secrets.GH_TOKEN }}
@@ -38,7 +38,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           registry: ghcr.io
-          image: ghcr.io/zama-ai/concrete-api-env:latest
+          image: ghcr.io/zama-ai/concrete-compiler-api-env:latest
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: -v ${{ github.workspace }}:/workspace
