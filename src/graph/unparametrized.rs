@@ -4,7 +4,7 @@ use crate::weight::Weight;
 #[derive(Clone)]
 #[must_use]
 pub struct AtomicPatternDag {
-    operators: Vec<Operator<(), ()>>,
+    pub(crate) operators: Vec<Operator<(), ()>>,
 }
 
 impl AtomicPatternDag {
