@@ -10,6 +10,10 @@ pub trait RawUnsignedIntegers: UnsignedInteger + CastInto<f64> + CastInto<i64> +
     fn one_vec(size: usize) -> Vec<Self>;
     fn zero() -> Self;
     fn zero_vec(size: usize) -> Vec<Self>;
+    fn power_of_two(pow: usize) -> Self;
+    fn power_of_two_vec(pow: usize, size: usize) -> Vec<Self>;
+    fn pick(array: &[Self]) -> Self;
+    fn pick_vec(array: &[Self], size: usize) -> Vec<Self>;
     fn uniform() -> Self;
     fn uniform_vec(size: usize) -> Vec<Self>;
     fn uniform_n_msb(n: usize) -> Self;
@@ -33,6 +37,33 @@ impl RawUnsignedIntegers for u32 {
     fn zero_vec(size: usize) -> Vec<Self> {
         vec![0u32; size]
     }
+
+    fn power_of_two(pow: usize) -> Self {
+        2u32.pow(pow as u32)
+    }
+
+    fn power_of_two_vec(pow: usize, size: usize) -> Vec<Self> {
+        vec![2u32.pow(pow as u32); size]
+    }
+
+    fn pick(array: &[Self]) -> Self {
+        let mut generator = RandomGenerator::new(None);
+        let index: u16 = generator.random_uniform();
+        let index = index % array.len() as u16;
+        array[index as usize]
+    }
+
+    fn pick_vec(array: &[Self], size: usize) -> Vec<Self> {
+        let mut generator = RandomGenerator::new(None);
+        (0..size)
+            .map(|_| {
+                let index: u16 = generator.random_uniform();
+                let index = index % array.len() as u16;
+                array[index as usize]
+            })
+            .collect()
+    }
+
     fn uniform() -> Self {
         let mut generator = RandomGenerator::new(None);
         generator.random_uniform()
@@ -99,6 +130,31 @@ impl RawUnsignedIntegers for u64 {
     }
     fn zero_vec(size: usize) -> Vec<Self> {
         vec![0u64; size]
+    }
+    fn power_of_two(pow: usize) -> Self {
+        2u64.pow(pow as u32)
+    }
+
+    fn power_of_two_vec(pow: usize, size: usize) -> Vec<Self> {
+        vec![2u64.pow(pow as u32); size]
+    }
+
+    fn pick(array: &[Self]) -> Self {
+        let mut generator = RandomGenerator::new(None);
+        let index: u16 = generator.random_uniform();
+        let index = index % array.len() as u16;
+        array[index as usize]
+    }
+
+    fn pick_vec(array: &[Self], size: usize) -> Vec<Self> {
+        let mut generator = RandomGenerator::new(None);
+        (0..size)
+            .map(|_| {
+                let index: u16 = generator.random_uniform();
+                let index = index % array.len() as u16;
+                array[index as usize]
+            })
+            .collect()
     }
     fn uniform() -> Self {
         let mut generator = RandomGenerator::new(None);
