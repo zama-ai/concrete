@@ -127,6 +127,7 @@ mod lwe_ciphertext_fusing_addition;
 mod lwe_ciphertext_fusing_negation;
 mod lwe_ciphertext_fusing_subtraction;
 mod lwe_ciphertext_plaintext_discarding_addition;
+mod lwe_ciphertext_plaintext_discarding_subtraction;
 mod lwe_ciphertext_plaintext_fusing_addition;
 mod lwe_ciphertext_plaintext_fusing_subtraction;
 mod lwe_ciphertext_trivial_encryption;
