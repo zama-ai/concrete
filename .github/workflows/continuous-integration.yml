@@ -51,9 +51,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/KeySetCache
           # actions/cache does not permit to update a cache entry
-          key: ${{ runner.os }}-KeySetCache-2021-12-02
-          restore-keys: |
-            ${{ runner.os }}-KeySetCache-
+          key: ${{ runner.os }}-KeySetCache-2022-02-17
 
       - name: Build and test compiler
         if: ${{ matrix.compiler == 'gcc7' }}
@@ -171,9 +169,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/KeySetCache
           # actions/cache does not permit to update a cache entry
-          key: ${{ runner.os }}-KeySetCache-2021-12-02
-          restore-keys: |
-            ${{ runner.os }}-KeySetCache-
+          key: ${{ runner.os }}-KeySetCache-2022-02-17
 
       - name: Build and test compiler (dataflow)
         uses: addnab/docker-run-action@v3
