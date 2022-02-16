@@ -7,6 +7,7 @@ add_mlir_dialect_library(FHEToTFHE
   DEPENDS
   FHEDialect
   FHEToTFHEPatternsIncGen
+  ConcretelangConversionPassIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR

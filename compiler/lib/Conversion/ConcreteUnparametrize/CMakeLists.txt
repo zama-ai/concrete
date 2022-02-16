@@ -6,7 +6,7 @@ add_mlir_dialect_library(ConcreteUnparametrize
 
   DEPENDS
   ConcreteDialect
-  MLIRConversionPassIncGen
+  ConcretelangConversionPassIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR

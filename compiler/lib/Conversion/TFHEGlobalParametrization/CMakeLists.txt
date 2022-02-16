@@ -6,6 +6,7 @@ TFHEGlobalParametrization.cpp
 
   DEPENDS
   TFHEDialect
+  ConcretelangConversionPassIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR

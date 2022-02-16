@@ -7,7 +7,7 @@ add_mlir_dialect_library(FHETensorOpsToLinalg
   DEPENDS
   FHEDialect
   FHELinalgDialect
-  MLIRConversionPassIncGen
+  ConcretelangConversionPassIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR
