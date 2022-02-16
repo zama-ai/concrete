@@ -2,6 +2,7 @@ use crate::backends::core::implementation::engines::CoreEngine;
 use crate::backends::core::implementation::entities::{
     LweCiphertext32, LweCiphertext64, Plaintext32, Plaintext64,
 };
+use crate::backends::core::private::math::tensor::{AsMutTensor, AsRefTensor};
 use crate::specification::engines::{
     LweCiphertextPlaintextDiscardingAdditionEngine, LweCiphertextPlaintextDiscardingAdditionError,
 };
@@ -61,7 +62,11 @@ impl LweCiphertextPlaintextDiscardingAdditionEngine<LweCiphertext32, Plaintext32
         input_1: &LweCiphertext32,
         input_2: &Plaintext32,
     ) {
-        output.0.get_mut_body().0 = input_1.0.get_body().0 + input_2.0 .0;
+        output
+            .0
+            .as_mut_tensor()
+            .fill_with_copy(input_1.0.as_tensor());
+        output.0.get_mut_body().0 = output.0.get_body().0.wrapping_add(input_2.0 .0);
     }
 }
 
@@ -120,6 +125,10 @@ impl LweCiphertextPlaintextDiscardingAdditionEngine<LweCiphertext64, Plaintext64
         input_1: &LweCiphertext64,
         input_2: &Plaintext64,
     ) {
-        output.0.get_mut_body().0 = input_1.0.get_body().0 + input_2.0 .0;
+        output
+            .0
+            .as_mut_tensor()
+            .fill_with_copy(input_1.0.as_tensor());
+        output.0.get_mut_body().0 = output.0.get_body().0.wrapping_add(input_2.0 .0);
     }
 }
