@@ -136,6 +136,7 @@ mod lwe_ciphertext_vector_discarding_addition;
 mod lwe_ciphertext_vector_discarding_affine_transformation;
 mod lwe_ciphertext_vector_discarding_decryption;
 mod lwe_ciphertext_vector_discarding_encryption;
+mod lwe_ciphertext_vector_discarding_subtraction;
 mod lwe_ciphertext_vector_encryption;
 mod lwe_ciphertext_vector_fusing_addition;
 mod lwe_ciphertext_vector_fusing_subtraction;
