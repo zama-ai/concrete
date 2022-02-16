@@ -344,6 +344,12 @@ pub use lwe_ciphertext_discarding_bootstrap_2::*;
 mod plaintext_creation;
 pub use plaintext_creation::*;
 
+mod glwe_ciphertext_ggsw_ciphertext_discarding_external_product;
+pub use glwe_ciphertext_ggsw_ciphertext_discarding_external_product::*;
+
+mod glwe_ciphertext_ggsw_ciphertext_external_product;
+pub use glwe_ciphertext_ggsw_ciphertext_external_product::*;
+
 mod plaintext_discarding_retrieval;
 pub use plaintext_discarding_retrieval::*;
 

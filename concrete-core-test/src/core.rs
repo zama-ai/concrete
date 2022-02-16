@@ -91,5 +91,7 @@ test! {
     (PlaintextRetrievalFixture, (Plaintext)),
     (PlaintextVectorDiscardingRetrievalFixture, (PlaintextVector)),
     (PlaintextVectorCreationFixture, (PlaintextVector)),
-    (PlaintextVectorRetrievalFixture, (PlaintextVector))
+    (PlaintextVectorRetrievalFixture, (PlaintextVector)),
+    (GlweCiphertextGgswCiphertextExternalProductFixture, (GlweCiphertext, FourierGgswCiphertext, GlweCiphertext)),
+    (GlweCiphertextGgswCiphertextDiscardingExternalProductFixture, (GlweCiphertext, FourierGgswCiphertext, GlweCiphertext))
 }
