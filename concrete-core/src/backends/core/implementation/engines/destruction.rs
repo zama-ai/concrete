@@ -1,16 +1,15 @@
 use crate::backends::core::implementation::engines::CoreEngine;
 use crate::backends::core::implementation::entities::{
-    Cleartext32, Cleartext64, CleartextVector32, CleartextVector64, FourierLweBootstrapKey32,
-    FourierLweBootstrapKey64, GlweCiphertext32, GlweCiphertext64, GlweCiphertextVector32,
-    GlweCiphertextVector64, GlweSecretKey32, GlweSecretKey64, LweBootstrapKey32, LweBootstrapKey64,
-    LweCiphertext32, LweCiphertext64, LweCiphertextVector32, LweCiphertextVector64,
-    LweKeyswitchKey32, LweKeyswitchKey64, LweSecretKey32, LweSecretKey64, Plaintext32, Plaintext64,
-    PlaintextVector32, PlaintextVector64,
+    Cleartext32, Cleartext64, CleartextVector32, CleartextVector64, FourierGgswCiphertext32,
+    FourierGgswCiphertext64, FourierGlweCiphertext32, FourierGlweCiphertext64,
+    FourierLweBootstrapKey32, FourierLweBootstrapKey64, GgswCiphertext32, GgswCiphertext64,
+    GlweCiphertext32, GlweCiphertext64, GlweCiphertextVector32, GlweCiphertextVector64,
+    GlweSecretKey32, GlweSecretKey64, LweBootstrapKey32, LweBootstrapKey64, LweCiphertext32,
+    LweCiphertext64, LweCiphertextVector32, LweCiphertextVector64, LweKeyswitchKey32,
+    LweKeyswitchKey64, LweSecretKey32, LweSecretKey64, Plaintext32, Plaintext64, PlaintextVector32,
+    PlaintextVector64,
 };
 use crate::backends::core::private::math::tensor::AsMutTensor;
-use crate::prelude::{
-    FourierGgswCiphertext32, FourierGgswCiphertext64, GgswCiphertext32, GgswCiphertext64,
-};
 use crate::specification::engines::{DestructionEngine, DestructionError};
 
 impl DestructionEngine<Cleartext32> for CoreEngine {
@@ -167,6 +166,30 @@ impl DestructionEngine<GlweCiphertext64> for CoreEngine {
     }
 
     unsafe fn destroy_unchecked(&mut self, _entity: GlweCiphertext64) {}
+}
+
+impl DestructionEngine<FourierGlweCiphertext32> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: FourierGlweCiphertext32,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: FourierGlweCiphertext32) {}
+}
+
+impl DestructionEngine<FourierGlweCiphertext64> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: FourierGlweCiphertext64,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: FourierGlweCiphertext64) {}
 }
 
 impl DestructionEngine<GlweCiphertextVector32> for CoreEngine {

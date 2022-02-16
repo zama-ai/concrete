@@ -1,5 +1,11 @@
 //! A module containing the [engines](crate::specification::engines) exposed by the core backend.
 
+use std::collections::BTreeMap;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+
+use concrete_commons::parameters::{GlweSize, PolynomialSize};
+
 use crate::backends::core::private::crypto::bootstrap::FourierBuffers;
 use crate::backends::core::private::crypto::secret::generators::{
     EncryptionRandomGenerator as ImplEncryptionRandomGenerator,
@@ -7,10 +13,6 @@ use crate::backends::core::private::crypto::secret::generators::{
 };
 use crate::specification::engines::sealed::AbstractEngineSeal;
 use crate::specification::engines::AbstractEngine;
-use concrete_commons::parameters::{GlweSize, PolynomialSize};
-use std::collections::BTreeMap;
-use std::error::Error;
-use std::fmt::{Display, Formatter};
 
 /// The error which can occur in the execution of FHE operations, due to the core implementation.
 ///
@@ -105,6 +107,7 @@ mod ggsw_ciphertext_discarding_conversion;
 mod ggsw_ciphertext_scalar_discarding_encryption;
 mod ggsw_ciphertext_scalar_encryption;
 mod ggsw_ciphertext_scalar_trivial_encryption;
+mod glwe_ciphertext_conversion;
 mod glwe_ciphertext_decryption;
 mod glwe_ciphertext_discarding_decryption;
 mod glwe_ciphertext_discarding_encryption;
