@@ -601,6 +601,17 @@ struct MemrefOpPattern : public mlir::OpRewritePattern<MemrefOp> {
   };
 };
 
+template <typename MemrefOp>
+void insertMemrefOpPatternImpl(mlir::MLIRContext &context,
+                               mlir::RewritePatternSet &patterns,
+                               mlir::ConversionTarget &target) {
+  patterns.insert<MemrefOpPattern<MemrefOp>>(&context);
+  target.addDynamicallyLegalOp<MemrefOp>([&](MemrefOp op) {
+    ConcreteToBConcreteTypeConverter converter;
+    return converter.isLegal(op->getResultTypes());
+  });
+}
+
 // Add the instantiated MemrefOpPattern rewrite pattern with the `MemrefOp`
 // to the patterns set and populate the conversion target.
 template <typename... MemrefOp>
@@ -608,12 +619,8 @@ void insertMemrefOpPattern(mlir::MLIRContext &context,
                            mlir::RewritePatternSet &patterns,
                            mlir::ConversionTarget &target) {
   (void)std::initializer_list<int>{
-      0, (patterns.insert<MemrefOpPattern<MemrefOp>>(&context),
-          target.addDynamicallyLegalOp<MemrefOp>([&](MemrefOp op) {
-            ConcreteToBConcreteTypeConverter converter;
-            return converter.isLegal(op->getResultTypes());
-          }),
-          0)...};
+      0,
+      (insertMemrefOpPatternImpl<MemrefOp>(context, patterns, target), 0)...};
 }
 
 // cc from Loops.cpp
