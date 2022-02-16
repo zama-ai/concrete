@@ -5,10 +5,11 @@ use serde::{Deserialize, Serialize};
 use concrete_commons::parameters::{GlweSize, PolynomialSize};
 
 use crate::backends::core::private::crypto::bootstrap::FourierBuffers;
+use crate::backends::core::private::crypto::encoding::Cleartext;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
 use crate::backends::core::private::math::tensor::{
-    ck_dim_div, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
+    ck_dim_div, ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
 
@@ -268,6 +269,106 @@ impl<Cont, Scalar: UnsignedTorus> FourierGlweCiphertext<Cont, Scalar> {
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
             .map(FourierPolynomial::from_tensor)
+    }
+
+    /// Returns the tensor product of two GLWE ciphertexts
+    ///
+    /// # Example
+    // we might need another argument: the division that we have to do to keep the msg
+    // we need to divide all of the coeffs by some values div_val the values depends on
+    // the original
+    // scaling factors of the RLWE ciphertexts
+    pub fn tensor_product<Container>(
+        &self,
+        glwe: &FourierGlweCiphertext<Container, Scalar>,
+        scale: Cleartext<f64>,
+    ) -> FourierGlweCiphertext<AlignedVec<Complex64>, Scalar>
+    where
+        Self: AsRefTensor<Element = Complex64>,
+        FourierGlweCiphertext<Container, Scalar>: AsRefTensor<Element = Complex64>,
+    {
+        // We check that the polynomial sizes match
+        ck_dim_eq!(
+            self.poly_size =>
+            glwe.polynomial_size(),
+            self.polynomial_size()
+        );
+        // We check that the glwe sizes match
+        ck_dim_eq!(
+            self.glwe_size() =>
+            glwe.glwe_size(),
+            self.glwe_size()
+        );
+
+        // create an output FourierGLWECiphertext of the correct size
+        let mut output = FourierGlweCiphertext::allocate(
+            Complex64::new(0., 0.),
+            self.poly_size,
+            GlweSize((1 / 2) * self.poly_size.0 * (3 + self.poly_size.0)),
+        );
+
+        // TODO: figure out how to represent the division/multiplication by the correct scaling
+        // factor
+        let iter_glwe_1 = self.polynomial_iter();
+        {
+            let mut iter_output = output.polynomial_iter_mut();
+            // Here the output contains all the multiplied terms
+            // in the order defined by the loops
+            let mut counter_1 = 0;
+            let k = self.glwe_size().0;
+
+            // 1. Get the T_i = A1i * A2i terms
+            for (i, polynomial1) in iter_glwe_1.enumerate() {
+                // create an iterator iter_glwe_2 (mutable)
+                let iter_glwe_2 = glwe.polynomial_iter();
+                // consumes the iterator object with enumerate()
+                for (j, polynomial2) in iter_glwe_2.enumerate() {
+                    let mut output_poly = iter_output.next().unwrap();
+                    let mut iter_glwe_1_ = self.polynomial_iter();
+                    let mut iter_glwe_2_ = glwe.polynomial_iter();
+                    if i == j {
+                        // Put A1i * A2i into the output
+                        output_poly.update_with_multiply_accumulate(&polynomial1, &polynomial2);
+                        // Put A1i * B2 + B1 * A2i into the output
+                        // create new iterators for glwe_1 and glwe_2
+                        output_poly.update_with_two_multiply_accumulate(
+                            &polynomial1,
+                            // TODO: make sure that this index is correct, should be [-1]
+                            &iter_glwe_2_
+                                .nth(polynomial1.polynomial_size().0 - 1)
+                                .unwrap(),
+                            &iter_glwe_1_
+                                .nth(polynomial1.polynomial_size().0 - 1)
+                                .unwrap(),
+                            &polynomial2,
+                        );
+                        counter_1 += 1;
+                    } else {
+                        // else condition means i != j
+                        if j < i {
+                            // Put A1i * A2j + A1j * A2i
+                            output_poly.update_with_two_multiply_accumulate(
+                                &polynomial1,
+                                &polynomial2,
+                                &iter_glwe_1_.nth(j).unwrap(),
+                                &iter_glwe_2_.nth(i).unwrap(),
+                            )
+                        }
+                    }
+                }
+                if counter_1 > k {
+                    break;
+                }
+            }
+        }
+        let iter_output = output.polynomial_iter_mut();
+
+        for (_i, mut polynomial_out) in iter_output.enumerate() {
+            for coef in polynomial_out.coefficient_iter_mut() {
+                *coef /= scale.0;
+            }
+        }
+        output
     }
 }
 
