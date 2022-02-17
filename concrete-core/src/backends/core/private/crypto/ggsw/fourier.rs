@@ -1,15 +1,16 @@
 use crate::backends::core::private::crypto::bootstrap::FourierBuffers;
-use crate::backends::core::private::crypto::glwe::GlweList;
+use crate::backends::core::private::crypto::glwe::{GlweCiphertext, GlweList};
 use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
 use crate::backends::core::private::math::polynomial::Polynomial;
 use crate::backends::core::private::math::tensor::{
-    ck_dim_div, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
+    ck_dim_div, ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
+use crate::backends::core::private::utils::{zip, zip_args};
 
 use super::{GgswLevelMatrix, StandardGgswCiphertext};
 
-use crate::backends::core::private::math::decomposition::DecompositionLevel;
+use crate::backends::core::private::math::decomposition::{DecompositionLevel, SignedDecomposer};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweSize, PolynomialSize,
 };
@@ -501,6 +502,190 @@ impl<Cont, Scalar> FourierGgswCiphertext<Cont, Scalar> {
             fourier_poly
                 .as_mut_tensor()
                 .fill_with_one((fft_buffer).as_tensor(), |a| *a);
+        }
+    }
+
+    pub fn external_product<C1, C2>(
+        &self,
+        output: &mut GlweCiphertext<C1>,
+        glwe: &GlweCiphertext<C2>,
+        buffers: &mut FourierBuffers<Scalar>,
+    ) where
+        Self: AsRefTensor<Element = Complex64>,
+        GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
+        GlweCiphertext<C2>: AsRefTensor<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        // We check that the polynomial sizes match
+        ck_dim_eq!(
+            self.poly_size =>
+            glwe.polynomial_size(),
+            output.polynomial_size()
+        );
+        // We check that the glwe sizes match
+        ck_dim_eq!(
+            self.glwe_size() =>
+            glwe.size(),
+            output.size()
+        );
+
+        let fft_buffers = &mut buffers.fft_buffers;
+        let rounded_buffer = &mut buffers.rounded_buffer;
+
+        // "alias" buffers to save some typing
+        let fft = &mut fft_buffers.fft;
+        let first_fft_buffer = &mut fft_buffers.first_buffer;
+        let second_fft_buffer = &mut fft_buffers.second_buffer;
+        let output_fft_buffer = &mut fft_buffers.output_buffer;
+        output_fft_buffer.fill_with_element(Complex64::new(0., 0.));
+
+        let rounded_input_glwe = rounded_buffer;
+
+        // We round the input mask and body
+        let decomposer =
+            SignedDecomposer::new(self.decomp_base_log, self.decomposition_level_count());
+        decomposer.fill_tensor_with_closest_representable(rounded_input_glwe, glwe);
+
+        // ------------------------------------------------------ EXTERNAL PRODUCT IN FOURIER DOMAIN
+        // In this section, we perform the external product in the fourier domain, and accumulate
+        // the result in the output_fft_buffer variable.
+        let mut decomposition = decomposer.decompose_tensor(rounded_input_glwe);
+        // We loop through the levels (we reverse to match the order of the decomposition iterator.)
+        for ggsw_decomp_matrix in self.level_matrix_iter().rev() {
+            // We retrieve the decomposition of this level.
+            let glwe_decomp_term = decomposition.next_term().unwrap();
+            debug_assert_eq!(
+                ggsw_decomp_matrix.decomposition_level(),
+                glwe_decomp_term.level()
+            );
+            // For each levels we have to add the result of the vector-matrix product between the
+            // decomposition of the glwe, and the ggsw level matrix to the output. To do so, we
+            // iteratively add to the output, the product between every lines of the matrix, and
+            // the corresponding (scalar) polynomial in the glwe decomposition:
+            //
+            //                ggsw_mat                        ggsw_mat
+            //   glwe_dec   | - - - - | <        glwe_dec   | - - - - |
+            //  | - - - | x | - - - - |         | - - - | x | - - - - | <
+            //    ^         | - - - - |             ^       | - - - - |
+            //
+            //        t = 1                           t = 2                     ...
+            // When possible we iterate two times in a row, to benefit from the fact that fft can
+            // transform two polynomials at once.
+            let mut iterator = zip!(
+                ggsw_decomp_matrix.row_iter(),
+                glwe_decomp_term
+                    .as_tensor()
+                    .subtensor_iter(self.poly_size.0)
+                    .map(Polynomial::from_tensor)
+            );
+
+            //---------------------------------------------------------------- VECTOR-MATRIX PRODUCT
+            loop {
+                match (iterator.next(), iterator.next()) {
+                    // Two iterates are available, we use the fast fft.
+                    (Some(first), Some(second)) => {
+                        // We unpack the iterator values
+                        let zip_args!(first_ggsw_row, first_glwe_poly) = first;
+                        let zip_args!(second_ggsw_row, second_glwe_poly) = second;
+                        // We perform the forward fft transform for the glwe polynomials
+                        fft.forward_two_as_integer(
+                            first_fft_buffer,
+                            second_fft_buffer,
+                            &first_glwe_poly,
+                            &second_glwe_poly,
+                        );
+                        // Now we loop through the polynomials of the output, and add the
+                        // corresponding product of polynomials.
+                        let iterator = zip!(
+                            first_ggsw_row
+                                .as_tensor()
+                                .subtensor_iter(self.poly_size.0)
+                                .map(FourierPolynomial::from_tensor),
+                            second_ggsw_row
+                                .as_tensor()
+                                .subtensor_iter(self.poly_size.0)
+                                .map(FourierPolynomial::from_tensor),
+                            output_fft_buffer
+                                .as_mut_tensor()
+                                .subtensor_iter_mut(self.poly_size.0)
+                                .map(FourierPolynomial::from_tensor)
+                        );
+                        for zip_args!(first_ggsw_poly, second_ggsw_poly, mut output_poly) in
+                            iterator
+                        {
+                            output_poly.update_with_two_multiply_accumulate(
+                                &first_ggsw_poly,
+                                first_fft_buffer,
+                                &second_ggsw_poly,
+                                second_fft_buffer,
+                            );
+                        }
+                    }
+                    // We reach the  end of the loop and one element remains.
+                    (Some(first), None) => {
+                        // We unpack the iterator values
+                        let (first_ggsw_row, first_glwe_poly) = first;
+                        // We perform the forward fft transform for the glwe polynomial
+                        fft.forward_as_integer(first_fft_buffer, &first_glwe_poly);
+                        // Now we loop through the polynomials of the output, and add the
+                        // corresponding product of polynomials.
+                        let iterator = zip!(
+                            first_ggsw_row
+                                .as_tensor()
+                                .subtensor_iter(self.poly_size.0)
+                                .map(FourierPolynomial::from_tensor),
+                            output_fft_buffer
+                                .subtensor_iter_mut(self.poly_size.0)
+                                .map(FourierPolynomial::from_tensor)
+                        );
+                        for zip_args!(first_ggsw_poly, mut output_poly) in iterator {
+                            output_poly.update_with_multiply_accumulate(
+                                &first_ggsw_poly,
+                                first_fft_buffer,
+                            );
+                        }
+                    }
+                    // The loop is over, we can exit.
+                    _ => break,
+                }
+            }
+        }
+
+        // --------------------------------------------  TRANSFORMATION OF RESULT TO STANDARD DOMAIN
+        // In this section, we bring the result from the fourier domain, back to the standard
+        // domain, and add it to the output.
+        //
+        // We iterate over the polynomials in the output. Again, when possible, we process two
+        // iterations simultaneously to benefit from the fft acceleration.
+        let mut _output_bind = output.as_mut_polynomial_list();
+        let mut iterator = zip!(
+            _output_bind.polynomial_iter_mut(),
+            output_fft_buffer
+                .subtensor_iter_mut(self.poly_size.0)
+                .map(FourierPolynomial::from_tensor)
+        );
+        loop {
+            match (iterator.next(), iterator.next()) {
+                (Some(first), Some(second)) => {
+                    // We unpack the iterates
+                    let zip_args!(mut first_output, mut first_fourier) = first;
+                    let zip_args!(mut second_output, mut second_fourier) = second;
+                    // We perform the backward transform
+                    fft.add_backward_two_as_torus(
+                        &mut first_output,
+                        &mut second_output,
+                        &mut first_fourier,
+                        &mut second_fourier,
+                    );
+                }
+                (Some(first), None) => {
+                    // We unpack the iterates
+                    let (mut first_output, mut first_fourier) = first;
+                    // We perform the backward transform
+                    fft.add_backward_as_torus(&mut first_output, &mut first_fourier);
+                }
+                _ => break,
+            }
         }
     }
 }
