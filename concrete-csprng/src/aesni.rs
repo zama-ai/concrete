@@ -3,7 +3,7 @@
 //! This module implements a cryptographically secure pseudorandom number generator
 //! (CS-PRNG), using a fast streamcipher: aes128 in counter-mode (CTR). The implementation
 //! is based on the [intel aesni white paper 323641-001 revision 3.0](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf).
-use crate::counter::{AesBatchedGenerator, AesCtr, AesKey};
+use crate::counter::{AesBatchedGenerator, AesIndex, AesKey};
 use std::arch::x86_64::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_aeskeygenassist_si128, _mm_load_si128,
     _mm_shuffle_epi32, _mm_slli_si128, _mm_store_si128, _mm_xor_si128,
@@ -33,7 +33,7 @@ impl AesBatchedGenerator for Generator {
         }
     }
 
-    fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) -> [u8; 128] {
+    fn generate_batch(&mut self, AesIndex(aes_ctr): AesIndex) -> [u8; 128] {
         si128arr_to_u8arr(aes_encrypt_many(
             &u128_to_si128(aes_ctr),
             &u128_to_si128(aes_ctr + 1),
@@ -269,7 +269,7 @@ mod test {
         let mut counts = [0usize; 256];
         let expected_prob: f64 = 1. / 256.;
         for counter in 0..n_samples {
-            let generated = generator.generate_batch(AesCtr(counter as u128));
+            let generated = generator.generate_batch(AesIndex(counter as u128));
             for i in 0..128 {
                 counts[generated[i] as usize] += 1;
             }

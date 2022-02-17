@@ -1,5 +1,5 @@
 //! A module using a software fallback implementation of `aes128-counter` random number generator.
-use crate::counter::{AesBatchedGenerator, AesCtr, AesKey};
+use crate::counter::{AesBatchedGenerator, AesIndex, AesKey};
 use aes_soft::cipher::generic_array::GenericArray;
 use aes_soft::cipher::{BlockCipher, NewBlockCipher};
 use aes_soft::Aes128;
@@ -73,7 +73,7 @@ impl AesBatchedGenerator for Generator {
         Generator { aes }
     }
 
-    fn generate_batch(&mut self, AesCtr(aes_ctr): AesCtr) -> [u8; 128] {
+    fn generate_batch(&mut self, AesIndex(aes_ctr): AesIndex) -> [u8; 128] {
         aes_encrypt_many(
             aes_ctr,
             aes_ctr + 1,
@@ -180,7 +180,7 @@ mod test {
         let mut counts = [0usize; 256];
         let expected_prob: f64 = 1. / 256.;
         for counter in 0..n_samples {
-            let batch = generator.generate_batch(AesCtr(counter as u128));
+            let batch = generator.generate_batch(AesIndex(counter as u128));
             for i in 0..128 {
                 counts[batch[i] as usize] += 1;
             }

@@ -9,18 +9,21 @@
 
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
-use std::fmt::{Debug, Display, Formatter, Result};
+use std::fmt::{Debug, Display, Formatter};
 
 mod aesni;
 mod counter;
 mod software;
-use crate::counter::{AesKey, BytesPerChild, ChildCount, HardAesCtrGenerator, SoftAesCtrGenerator};
+use crate::counter::{
+    AesKey, ByteCount, BytesPerChild, ChildrenCount, ForkError, HardAesCtrGenerator,
+    SoftAesCtrGenerator,
+};
 pub use software::set_soft_rdseed_secret;
 
 /// The pseudorandom number generator.
 ///
 /// If the correct instructions sets are available on the machine, an hardware accelerated version
-/// of the generator can be used.  
+/// of the generator can be used.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum RandomGenerator {
@@ -73,16 +76,15 @@ impl RandomGenerator {
         }
     }
 
-    /// Returns whether the generator is bounded.
     pub fn is_bounded(&self) -> bool {
         match self {
-            Self::Hardware(rand) => rand.is_bounded(),
-            Self::Software(rand) => rand.is_bounded(),
+            Self::Hardware(ref rand) => rand.is_bounded(),
+            Self::Software(ref rand) => rand.is_bounded(),
         }
     }
 
     /// Returns the number of remaining bytes, if the generator is bounded.
-    pub fn remaining_bytes(&self) -> Option<usize> {
+    pub fn remaining_bytes(&self) -> ByteCount {
         match self {
             Self::Hardware(rand) => rand.remaining_bytes(),
             Self::Software(rand) => rand.remaining_bytes(),
@@ -98,7 +100,7 @@ impl RandomGenerator {
         &mut self,
         n_child: usize,
         child_bytes: usize,
-    ) -> Option<impl Iterator<Item = RandomGenerator>> {
+    ) -> Result<impl Iterator<Item = RandomGenerator>, ForkError> {
         enum GeneratorChildIter<HardIter, SoftIter>
         where
             HardIter: Iterator<Item = HardAesCtrGenerator>,
@@ -128,10 +130,10 @@ impl RandomGenerator {
         }
         match self {
             Self::Hardware(ref mut rand) => rand
-                .try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .try_fork(ChildrenCount(n_child), BytesPerChild(child_bytes))
                 .map(GeneratorChildIter::Hardware),
             Self::Software(ref mut rand) => rand
-                .try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .try_fork(ChildrenCount(n_child), BytesPerChild(child_bytes))
                 .map(GeneratorChildIter::Software),
         }
     }
@@ -150,7 +152,7 @@ impl RandomGenerator {
         &mut self,
         n_child: usize,
         child_bytes: usize,
-    ) -> Option<impl IndexedParallelIterator<Item = RandomGenerator>> {
+    ) -> Result<impl IndexedParallelIterator<Item = RandomGenerator>, ForkError> {
         use rayon::iter::plumbing::{Consumer, ProducerCallback, UnindexedConsumer};
         enum GeneratorChildIter<HardIter, SoftIter>
         where
@@ -217,23 +219,23 @@ impl RandomGenerator {
 
         match self {
             Self::Hardware(ref mut rand) => rand
-                .par_try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .par_try_fork(ChildrenCount(n_child), BytesPerChild(child_bytes))
                 .map(GeneratorChildIter::Hardware),
             Self::Software(ref mut rand) => rand
-                .par_try_fork(ChildCount(n_child), BytesPerChild(child_bytes))
+                .par_try_fork(ChildrenCount(n_child), BytesPerChild(child_bytes))
                 .map(GeneratorChildIter::Software),
         }
     }
 }
 
 impl Debug for RandomGenerator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "RandomGenerator")
     }
 }
 
 impl Display for RandomGenerator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "RandomGenerator")
     }
 }
