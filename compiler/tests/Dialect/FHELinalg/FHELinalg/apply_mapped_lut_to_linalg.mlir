@@ -4,15 +4,15 @@
 //CHECK-LABEL: #map = affine_map<(d0, d1) -> (d0, d1)>
 //CHECK-NEXT:module  {
 //CHECK-NEXT:  func @mapped_lut(%arg0: tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>, %[[LUTS:.*]]: tensor<5x4xi64>, %arg2: tensor<2x3xindex>) -> tensor<2x3x!TFHE.glwe<{_,_,_}{2}>> {
+//CHECK-NEXT:     %[[C0:.*]] = arith.constant 0 : index
+//CHECK-NEXT:     %[[C1:.*]] = arith.constant 1 : index
+//CHECK-NEXT:     %[[C2:.*]] = arith.constant 2 : index
+//CHECK-NEXT:     %[[C3:.*]] = arith.constant 3 : index
 //CHECK-NEXT:     %[[V0:.*]] = linalg.init_tensor [2, 3] : tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:     %[[V1:.*]] = linalg.generic {indexing_maps = [#map, #map, #map], iterator_types = ["parallel", "parallel"]} ins(%arg0, %arg2 : tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>, tensor<2x3xindex>) outs(%0 : tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>) {
 //CHECK-NEXT:     ^bb0(%arg3: !TFHE.glwe<{_,_,_}{2}>, %[[LUTIDX:.*]]: index, %arg5: !TFHE.glwe<{_,_,_}{2}>):  // no predecessors
 //DISABLED-CHECK-NEXT:       %[[V3:.*]] = tensor.extract_slice %arg1[%[[LUTIDX]], 0] [1, 4] [1, 1] : tensor<5x4xi64> to tensor<4xi64>
 //WORKAROUND BEGIN
-//CHECK-NEXT:       %[[C0:.*]] = arith.constant 0 : index
-//CHECK-NEXT:       %[[C1:.*]] = arith.constant 1 : index
-//CHECK-NEXT:       %[[C2:.*]] = arith.constant 2 : index
-//CHECK-NEXT:       %[[C3:.*]] = arith.constant 3 : index
 //CHECK-NEXT:       %[[E0:.*]] = tensor.extract %[[LUTS]][%[[LUTIDX]], %[[C0]]] : tensor<5x4xi64>
 //CHECK-NEXT:       %[[E1:.*]] = tensor.extract %[[LUTS]][%[[LUTIDX]], %[[C1]]] : tensor<5x4xi64>
 //CHECK-NEXT:       %[[E2:.*]] = tensor.extract %[[LUTS]][%[[LUTIDX]], %[[C2]]] : tensor<5x4xi64>
