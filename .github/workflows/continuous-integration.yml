@@ -10,9 +10,9 @@ on:
 
 # DOCKER_IMAGE variables aren't used in BuildAndPushDockerImages because of https://github.com/actions/runner/issues/480
 env:
-  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler:bufferized-env-base
-  DOCKER_IMAGE_TEST_GCC7: ghcr.io/zama-ai/concrete-compiler-gcc7:bufferized-env-base
-  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/concrete-compiler-df:bufferized-env-base
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  DOCKER_IMAGE_TEST_GCC7: ghcr.io/zama-ai/concrete-compiler-gcc7
+  DOCKER_IMAGE_TEST_DF: ghcr.io/zama-ai/concrete-compiler-df
 
 jobs:
   ########################
