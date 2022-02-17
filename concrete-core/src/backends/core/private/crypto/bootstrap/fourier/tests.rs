@@ -11,7 +11,7 @@ use concrete_commons::parameters::{
 
 use crate::backends::core::private::crypto::bootstrap::fourier::constant_sample_extract;
 use crate::backends::core::private::crypto::bootstrap::{
-    FourierBootstrapKey, FourierBskBuffers, StandardBootstrapKey,
+    FourierBootstrapKey, FourierBuffers, StandardBootstrapKey,
 };
 use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
@@ -80,7 +80,7 @@ fn test_bootstrap_noise<T: UnsignedTorus>() {
                 base_log,
                 lwe_dimension,
             );
-            let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+            let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
             fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
 
             // Create a fix message (encoded in the most significant bit of the torus)
@@ -111,7 +111,7 @@ fn test_bootstrap_noise<T: UnsignedTorus>() {
                 .fill_with_element(cst);
 
             let mut buffers =
-                FourierBskBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
+                FourierBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
             fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator, &mut buffers);
 
             // Initialize a m1 message
@@ -201,7 +201,7 @@ fn test_external_product_generic<T: UnsignedTorus>() {
                 base_log,
                 lwe_dimension,
             );
-            let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+            let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
             fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
 
             // allocate vectors for glwe ciphertexts (inputs)
@@ -227,7 +227,7 @@ fn test_external_product_generic<T: UnsignedTorus>() {
             );
             let rgsw = fourier_bsk.ggsw_iter().next().unwrap();
 
-            let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+            let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
             fourier_bsk.external_product(
                 &mut res,
                 &rgsw,
@@ -314,7 +314,7 @@ fn test_cmux_0<T: UnsignedTorus>() {
             base_log,
             lwe_dimension,
         );
-        let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+        let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
         fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
 
         // allocate glwe vectors
@@ -346,7 +346,7 @@ fn test_cmux_0<T: UnsignedTorus>() {
         let rgsw = fourier_bsk.ggsw_iter().next().unwrap();
 
         // compute cmux
-        let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+        let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
         fourier_bsk.cmux(
             &mut ciphertext0,
             &mut ciphertext1,
@@ -425,7 +425,7 @@ fn test_cmux_1<T: UnsignedTorus>() {
             base_log,
             lwe_dimension,
         );
-        let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+        let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
         fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
 
         // allocate glwe vectors
@@ -457,7 +457,7 @@ fn test_cmux_1<T: UnsignedTorus>() {
         let rgsw = fourier_bsk.ggsw_iter().next().unwrap();
 
         // compute cmux
-        let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+        let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
         fourier_bsk.cmux(
             &mut ciphertext0,
             &mut ciphertext1,
@@ -596,7 +596,7 @@ where
             base_log,
             lwe_dimension,
         );
-        let mut buffers = FourierBskBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
+        let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
         fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
 
         let val = (polynomial_size.0 as f64 - (10. * f64::sqrt((lwe_dimension.0 as f64) / 16.0)))
@@ -627,7 +627,7 @@ where
 
         // bootstrap
         let mut buffers =
-            FourierBskBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
+            FourierBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
         fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator, &mut buffers);
 
         let mut m1 = Plaintext(T::ZERO);

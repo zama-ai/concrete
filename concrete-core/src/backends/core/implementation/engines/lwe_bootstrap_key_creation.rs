@@ -11,6 +11,7 @@ use crate::backends::core::private::crypto::bootstrap::{
     StandardBootstrapKey as ImplStandardBootstrapKey,
 };
 use crate::backends::core::private::math::fft::Complex64;
+use crate::prelude::LweBootstrapKeyEntity;
 use crate::specification::engines::{LweBootstrapKeyCreationEngine, LweBootstrapKeyCreationError};
 
 /// # Description:
@@ -292,7 +293,10 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBo
         );
 
         let mut fourier_key = FourierLweBootstrapKey32(fourier_key);
-        let buffers = self.get_fourier_bootstrap_u32_buffer(&fourier_key);
+        let buffers = self.get_fourier_u32_buffer(
+            fourier_key.polynomial_size(),
+            fourier_key.glwe_dimension().to_glwe_size(),
+        );
         fourier_key.0.fill_with_forward_fourier(&key, buffers);
         fourier_key
     }
@@ -395,7 +399,10 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, FourierLweBo
         );
 
         let mut fourier_key = FourierLweBootstrapKey64(fourier_key);
-        let buffers = self.get_fourier_bootstrap_u64_buffer(&fourier_key);
+        let buffers = self.get_fourier_u64_buffer(
+            fourier_key.polynomial_size(),
+            fourier_key.glwe_dimension().to_glwe_size(),
+        );
         fourier_key.0.fill_with_forward_fourier(&key, buffers);
         fourier_key
     }
