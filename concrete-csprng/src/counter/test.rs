@@ -1,432 +1,187 @@
 use super::*;
 use crate::AesKey;
-use rand::Rng;
+use rand::{thread_rng, Rng};
+
+const REPEATS: usize = 1_000_000;
+
+fn any_table_index() -> impl Iterator<Item = TableIndex> {
+    std::iter::repeat_with(|| {
+        TableIndex::new(
+            AesIndex(thread_rng().gen()),
+            ByteIndex(thread_rng().gen::<usize>() % 16),
+        )
+    })
+}
+
+fn any_usize() -> impl Iterator<Item = usize> {
+    std::iter::repeat_with(|| thread_rng().gen())
+}
+
+fn any_children_count() -> impl Iterator<Item = ChildrenCount> {
+    std::iter::repeat_with(|| ChildrenCount(thread_rng().gen::<usize>() % 2048 + 1))
+}
+
+fn any_bytes_per_child() -> impl Iterator<Item = BytesPerChild> {
+    std::iter::repeat_with(|| BytesPerChild(thread_rng().gen::<usize>() % 2048 + 1))
+}
+
+fn any_key() -> impl Iterator<Item = AesKey> {
+    std::iter::repeat_with(|| AesKey(thread_rng().gen()))
+}
 
 #[test]
-fn test_gen_byte_incr() {
-    // Checks that the byte counter is correctly incremented.
-    for _ in 0..1000 {
-        let state = rand::thread_rng().gen::<u128>();
-        let mut a = SoftAesCtrGenerator::new(
-            Some(AesKey(0)),
-            Some(State::from_aes_counter(AesCtr(state))),
-            None,
-        );
+fn prop_fork_first_state_table_index() {
+    for _ in 0..REPEATS {
+        let ((((t, nc), nb), k), i) = any_table_index()
+            .zip(any_children_count())
+            .zip(any_bytes_per_child())
+            .zip(any_key())
+            .zip(any_usize())
+            .find(|((((t, nc), nb), _k), i)| {
+                TableIndex::distance(&TableIndex::LAST, t).unwrap().0 > (nc.0 * nb.0 + i) as u128
+            })
+            .unwrap();
+        let original_generator =
+            SoftAesCtrGenerator::new(Some(k), Some(t), Some(t.increased(nc.0 * nb.0 + i)));
+        let mut forked_generator = original_generator.clone();
+        let first_child = forked_generator.try_fork(nc, nb).unwrap().next().unwrap();
         assert_eq!(
-            *a.get_state(),
-            State {
-                aes_ctr: AesCtr(state),
-                byte_ctr: ByteCtr(0),
-            }
-        );
-        a.generate_next();
-        assert_eq!(
-            *a.get_state(),
-            State {
-                aes_ctr: AesCtr(state),
-                byte_ctr: ByteCtr(1),
-            }
+            original_generator.last_table_index(),
+            first_child.last_table_index()
         );
     }
 }
 
 #[test]
-fn test_gen_aes_incr() {
-    // Checks that the aes counter is correctly incremented.
-    for _ in 0..1000 {
-        let state = rand::thread_rng().gen::<u128>();
-        let mut a = SoftAesCtrGenerator::new(
-            Some(AesKey(0)),
-            Some(State::from_aes_counter(AesCtr(state))),
-            None,
-        );
+fn prop_fork_last_bound_table_index() {
+    for _ in 0..REPEATS {
+        let ((((t, nc), nb), k), i) = any_table_index()
+            .zip(any_children_count())
+            .zip(any_bytes_per_child())
+            .zip(any_key())
+            .zip(any_usize())
+            .find(|((((t, nc), nb), _k), i)| {
+                TableIndex::distance(&TableIndex::LAST, t).unwrap().0 > (nc.0 * nb.0 + i) as u128
+            })
+            .unwrap();
+        let mut parent_generator =
+            SoftAesCtrGenerator::new(Some(k), Some(t), Some(t.increased(nc.0 * nb.0 + i)));
+        let last_child = parent_generator.try_fork(nc, nb).unwrap().last().unwrap();
         assert_eq!(
-            *a.get_state(),
-            State {
-                aes_ctr: AesCtr(state),
-                byte_ctr: ByteCtr(0),
-            }
-        );
-        for _ in 0..127 {
-            a.generate_next();
-        }
-        assert_eq!(
-            *a.get_state(),
-            State {
-                aes_ctr: AesCtr(state),
-                byte_ctr: ByteCtr(127),
-            }
-        );
-        a.generate_next();
-        assert_eq!(
-            *a.get_state(),
-            State {
-                aes_ctr: AesCtr(state.wrapping_add(8)),
-                byte_ctr: ByteCtr(0),
-            }
+            parent_generator.last_table_index().incremented(),
+            last_child.get_bound()
         );
     }
 }
 
 #[test]
-fn test_state_fork_initial_batch() {
-    // Checks that forking the prng into children that spawns the initial batch gives the
-    // correct states.
-    let state = State::from_aes_counter(AesCtr(0));
-    let mut generator = SoftAesCtrGenerator::new(None, Some(state), None);
-    assert_eq!(
-        *generator.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(0)
-        }
-    );
-    let children: Vec<_> = generator
-        .try_fork(ChildCount(2), BytesPerChild(3))
-        .unwrap()
-        .collect();
-    assert_eq!(
-        *generator.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(6)
-        }
-    );
-    let mut first = children.get(0).unwrap().clone();
-    assert_eq!(
-        *first.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(0)
-        }
-    );
-    assert_eq!(
-        *first.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(3)
-        }
-    );
-    let out_first: Vec<_> = first
-        .try_fork(ChildCount(3), BytesPerChild(1))
-        .unwrap()
-        .collect();
-    assert_eq!(
-        *first.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(3)
-        }
-    );
-    assert_eq!(
-        *first.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(3)
-        }
-    );
-    let first_first = out_first.get(0).unwrap();
-    assert_eq!(
-        *first_first.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(0)
-        }
-    );
-    assert_eq!(
-        *first_first.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(1)
-        }
-    );
-    let first_second = out_first.get(1).unwrap();
-    assert_eq!(
-        *first_second.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(1)
-        }
-    );
-    assert_eq!(
-        *first_second.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(2)
-        }
-    );
-    let first_third = out_first.get(2).unwrap();
-    assert_eq!(
-        *first_third.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(2)
-        }
-    );
-    assert_eq!(
-        *first_third.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(3)
-        }
-    );
-    let second = children.get(1).unwrap();
-    assert_eq!(
-        *second.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(3)
-        }
-    );
-    assert_eq!(
-        *second.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(6)
-        }
-    );
+fn prop_fork_parent_bound_table_index() {
+    for _ in 0..REPEATS {
+        let ((((t, nc), nb), k), i) = any_table_index()
+            .zip(any_children_count())
+            .zip(any_bytes_per_child())
+            .zip(any_key())
+            .zip(any_usize())
+            .find(|((((t, nc), nb), _k), i)| {
+                TableIndex::distance(&TableIndex::LAST, t).unwrap().0 > (nc.0 * nb.0 + i) as u128
+            })
+            .unwrap();
+        let original_generator =
+            SoftAesCtrGenerator::new(Some(k), Some(t), Some(t.increased(nc.0 * nb.0 + i)));
+        let mut forked_generator = original_generator.clone();
+        forked_generator.try_fork(nc, nb).unwrap().last().unwrap();
+        assert_eq!(original_generator.get_bound(), forked_generator.get_bound());
+    }
 }
 
 #[test]
-fn test_state_fork_next_batch() {
-    // Checks that forking the prng into children that spawns the next batch gives the
-    // correct states.
-    let state = State::from_aes_counter(AesCtr(0));
-    let mut generator = SoftAesCtrGenerator::new(None, Some(state), None);
-    assert_eq!(
-        *generator.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(0)
-        }
-    );
-    let out: Vec<_> = generator
-        .try_fork(ChildCount(4), BytesPerChild(127))
-        .unwrap()
-        .collect();
-    assert_eq!(
-        *generator.get_state(),
-        State {
-            aes_ctr: AesCtr(24),
-            byte_ctr: ByteCtr(124)
-        }
-    );
-    let mut first = out.get(0).unwrap().clone();
-    assert_eq!(
-        *first.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(0)
-        }
-    );
-    assert_eq!(
-        *first.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(127)
-        }
-    );
-    let out_first: Vec<_> = first
-        .try_fork(ChildCount(3), BytesPerChild(1))
-        .unwrap()
-        .collect();
-    assert_eq!(
-        *first.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(3)
-        }
-    );
-    assert_eq!(
-        *first.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(127)
-        }
-    );
-    let first_first = out_first.get(0).unwrap();
-    assert_eq!(
-        *first_first.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(0)
-        }
-    );
-    assert_eq!(
-        *first_first.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(1)
-        }
-    );
-    let first_second = out_first.get(1).unwrap();
-    assert_eq!(
-        *first_second.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(1)
-        }
-    );
-    assert_eq!(
-        *first_second.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(2)
-        }
-    );
-    let first_third = out_first.get(2).unwrap();
-    assert_eq!(
-        *first_third.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(2)
-        }
-    );
-    assert_eq!(
-        *first_third.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(3)
-        }
-    );
-    let second = out.get(1).unwrap();
-    assert_eq!(
-        *second.get_state(),
-        State {
-            aes_ctr: AesCtr(0),
-            byte_ctr: ByteCtr(127)
-        }
-    );
-    assert_eq!(
-        *second.get_bound().unwrap(),
-        State {
-            aes_ctr: AesCtr(8),
-            byte_ctr: ByteCtr(126)
-        }
-    );
+fn prop_fork_parent_state_table_index() {
+    for _ in 0..REPEATS {
+        let ((((t, nc), nb), k), i) = any_table_index()
+            .zip(any_children_count())
+            .zip(any_bytes_per_child())
+            .zip(any_key())
+            .zip(any_usize())
+            .find(|((((t, nc), nb), _k), i)| {
+                TableIndex::distance(&TableIndex::LAST, t).unwrap().0 > (nc.0 * nb.0 + i) as u128
+            })
+            .unwrap();
+        let original_generator =
+            SoftAesCtrGenerator::new(Some(k), Some(t), Some(t.increased(nc.0 * nb.0 + i)));
+        let mut forked_generator = original_generator.clone();
+        forked_generator.try_fork(nc, nb).unwrap().last().unwrap();
+        assert!(original_generator.last_table_index() < forked_generator.last_table_index());
+    }
 }
 
 #[test]
-fn test_state_ordering() {
-    // Checks that state ordering is correct.
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(56),
-    };
-    let second = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(56),
-    };
-    assert_eq!(first, second);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(56),
-    };
-    let second = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(55),
-    };
-    assert!(first > second);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(56),
-    };
-    let second = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(57),
-    };
-    assert!(first < second);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(127),
-    };
-    let second = State {
-        aes_ctr: AesCtr(9),
-        byte_ctr: ByteCtr(0),
-    };
-    assert!(first < second);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(56),
-    };
-    let second = State {
-        aes_ctr: AesCtr(4),
-        byte_ctr: ByteCtr(8),
-    };
-    assert_eq!(first, second);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(56),
-    };
-    let second = State {
-        aes_ctr: AesCtr(4),
-        byte_ctr: ByteCtr(7),
-    };
-    assert!(second < first);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(57),
-    };
-    let second = State {
-        aes_ctr: AesCtr(4),
-        byte_ctr: ByteCtr(8),
-    };
-    assert!(second < first);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(55),
-    };
-    let second = State {
-        aes_ctr: AesCtr(4),
-        byte_ctr: ByteCtr(8),
-    };
-    assert!(second > first);
-    let first = State {
-        aes_ctr: AesCtr(1),
-        byte_ctr: ByteCtr(56),
-    };
-    let second = State {
-        aes_ctr: AesCtr(4),
-        byte_ctr: ByteCtr(9),
-    };
-    assert!(second > first);
-}
-
-#[test]
-fn test_randomized_fork_generation() {
-    // Checks that whatever the fork, whatever the state, children generate the same outputs
-    // sequence as parent, and that parent recover at the proper position.
-    for _ in 0..100 {
-        let state = State::from_aes_counter(AesCtr(rand::thread_rng().gen()));
-        let n_child = ChildCount(rand::thread_rng().gen::<usize>() % 200);
-        let bytes_child = BytesPerChild(rand::thread_rng().gen::<usize>() % 200);
-        let key = AesKey(rand::thread_rng().gen());
-        let mut generator = SoftAesCtrGenerator::new(Some(key), Some(state.clone()), None);
-        let n_to_gen = n_child.0 * bytes_child.0;
-        let initial_output: Vec<u8> = (0..n_to_gen).map(|_| generator.generate_next()).collect();
-        let mut forking_generator = SoftAesCtrGenerator::new(Some(key), Some(state), None);
-        let children_output: Vec<u8> = forking_generator
-            .try_fork(n_child, bytes_child)
+fn prop_fork() {
+    for _ in 0..REPEATS {
+        let ((((t, nc), nb), k), i) = any_table_index()
+            .zip(any_children_count())
+            .zip(any_bytes_per_child())
+            .zip(any_key())
+            .zip(any_usize())
+            .find(|((((t, nc), nb), _k), i)| {
+                TableIndex::distance(&TableIndex::LAST, t).unwrap().0 > (nc.0 * nb.0 + i) as u128
+            })
+            .unwrap();
+        let bytes_to_go = nc.0 * nb.0;
+        let original_generator =
+            SoftAesCtrGenerator::new(Some(k), Some(t), Some(t.increased(nc.0 * nb.0 + i)));
+        let mut forked_generator = original_generator.clone();
+        let initial_output: Vec<u8> = original_generator.take(bytes_to_go as usize).collect();
+        let forked_output: Vec<u8> = forked_generator
+            .try_fork(nc, nb)
             .unwrap()
-            .flat_map(|mut child| (0..bytes_child.0).map(move |_| child.generate_next()))
+            .flat_map(|child| child.collect::<Vec<_>>())
             .collect();
-        assert_eq!(initial_output, children_output);
-        assert_eq!(forking_generator.generate_next(), generator.generate_next());
+        assert_eq!(initial_output, forked_output);
     }
 }
 
 #[test]
-fn test_randomized_remaining_bytes() {
-    for _ in 0..1000 {
-        let state = State::from_aes_counter(AesCtr(rand::thread_rng().gen()));
-        let n_child = ChildCount(rand::thread_rng().gen::<usize>() % 200);
-        let bytes_child = BytesPerChild(rand::thread_rng().gen::<usize>() % 200);
-        let key = AesKey(rand::thread_rng().gen());
-        let mut forking_generator = SoftAesCtrGenerator::new(Some(key), Some(state), None);
-        forking_generator
-            .try_fork(n_child, bytes_child)
+fn prop_fork_children_remaining_bytes() {
+    for _ in 0..REPEATS {
+        let ((((t, nc), nb), k), i) = any_table_index()
+            .zip(any_children_count())
+            .zip(any_bytes_per_child())
+            .zip(any_key())
+            .zip(any_usize())
+            .find(|((((t, nc), nb), _k), i)| {
+                TableIndex::distance(&TableIndex::LAST, t).unwrap().0 > (nc.0 * nb.0 + i) as u128
+            })
+            .unwrap();
+        let mut generator =
+            SoftAesCtrGenerator::new(Some(k), Some(t), Some(t.increased(nc.0 * nb.0 + i)));
+        assert!(generator
+            .try_fork(nc, nb)
             .unwrap()
-            .for_each(|child| assert_eq!(child.remaining_bytes(), Some(bytes_child.0)));
-        assert_eq!(forking_generator.remaining_bytes(), None);
+            .all(|c| c.remaining_bytes().0 == nb.0 as u128));
+    }
+}
+
+#[test]
+fn prop_fork_parent_remaining_bytes() {
+    for _ in 0..REPEATS {
+        let ((((t, nc), nb), k), i) = any_table_index()
+            .zip(any_children_count())
+            .zip(any_bytes_per_child())
+            .zip(any_key())
+            .zip(any_usize())
+            .find(|((((t, nc), nb), _k), i)| {
+                TableIndex::distance(&TableIndex::LAST, t).unwrap().0 > (nc.0 * nb.0 + i) as u128
+            })
+            .unwrap();
+        let bytes_to_go = nc.0 * nb.0;
+        let mut generator =
+            SoftAesCtrGenerator::new(Some(k), Some(t), Some(t.increased(nc.0 * nb.0 + i)));
+        let before_remaining_bytes = generator.remaining_bytes();
+        let _ = generator.try_fork(nc, nb).unwrap();
+        let after_remaining_bytes = generator.remaining_bytes();
+        assert_eq!(
+            before_remaining_bytes.0 - after_remaining_bytes.0,
+            bytes_to_go as u128
+        );
     }
 }

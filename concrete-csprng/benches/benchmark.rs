@@ -21,7 +21,7 @@ fn bounded_benchmark(c: &mut Criterion) {
         .unwrap()
         .next()
         .unwrap();
-    c.bench_function("unbounded", |b| {
+    c.bench_function("bounded", |b| {
         b.iter(|| {
             (0..N_GEN).for_each(|_| {
                 generator.generate_next();
