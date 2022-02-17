@@ -2,6 +2,11 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
+use crate::backends::core::private::crypto::secret::generators::{
+    EncryptionRandomGenerator as ImplEncryptionRandomGenerator,
+    SecretRandomGenerator as ImplSecretRandomGenerator,
+};
+
 use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FourierBskBuffers;
 use crate::prelude::{AbstractEngine, FourierBufferKey};
 use crate::prelude::{
@@ -28,6 +33,8 @@ impl Error for OptalysysError {}
 
 /// The main engine exposed by the Optalysys backend.
 pub struct OptalysysEngine {
+    secret_generator: ImplSecretRandomGenerator,
+    encryption_generator: ImplEncryptionRandomGenerator,
     fourier_bsk_buffers_u32: BTreeMap<FourierBufferKey, FourierBskBuffers<u32>>,
     fourier_bsk_buffers_u64: BTreeMap<FourierBufferKey, FourierBskBuffers<u64>>,
 }
@@ -65,6 +72,8 @@ impl AbstractEngine for OptalysysEngine {
 
     fn new() -> Result<Self, Self::EngineError> {
         Ok(OptalysysEngine {
+            secret_generator: ImplSecretRandomGenerator::new(None),
+            encryption_generator: ImplEncryptionRandomGenerator::new(None),
             fourier_bsk_buffers_u32: Default::default(),
             fourier_bsk_buffers_u64: Default::default(),
         })
@@ -72,3 +81,6 @@ impl AbstractEngine for OptalysysEngine {
 }
 
 mod lwe_ciphertext_discarding_bootstrap;
+mod lwe_bootstrap_key_creation;
+mod lwe_bootstrap_key_conversion;
+mod destruction;

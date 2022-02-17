@@ -47,31 +47,32 @@ impl
     /// let lut = vec![8_u32 << 20; poly_size.0];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
-    /// let lwe_sk: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim)?;
-    /// let glwe_sk: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
-    /// let bsk: FourierLweBootstrapKey32 =
+    /// let mut engine = OptalysysEngine::new()?;
+    /// let mut core_engine = CoreEngine::new()?;
+    /// let lwe_sk: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dim)?;
+    /// let glwe_sk: GlweSecretKey32 = core_engine.create_glwe_secret_key(glwe_dim, poly_size)?;
+    /// let bsk: OptalysysFourierLweBootstrapKey32 =
     ///     engine.create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, dec_bl, dec_lc, noise)?;
-    /// let lwe_sk_output: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim_output)?;
-    /// let plaintext = engine.create_plaintext(&input)?;
-    /// let plaintext_vector = engine.create_plaintext_vector(&lut)?;
-    /// let acc = engine.encrypt_glwe_ciphertext(&glwe_sk, &plaintext_vector, noise)?;
-    /// let input = engine.encrypt_lwe_ciphertext(&lwe_sk, &plaintext, noise)?;
-    /// let mut output = engine.zero_encrypt_lwe_ciphertext(&lwe_sk_output, noise)?;
+    /// let lwe_sk_output: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dim_output)?;
+    /// let plaintext = core_engine.create_plaintext(&input)?;
+    /// let plaintext_vector = core_engine.create_plaintext_vector(&lut)?;
+    /// let acc = core_engine.encrypt_glwe_ciphertext(&glwe_sk, &plaintext_vector, noise)?;
+    /// let input = core_engine.encrypt_lwe_ciphertext(&lwe_sk, &plaintext, noise)?;
+    /// let mut output = core_engine.zero_encrypt_lwe_ciphertext(&lwe_sk_output, noise)?;
     ///
     /// engine.discard_bootstrap_lwe_ciphertext(&mut output, &input, &acc, &bsk)?;
     /// #
     /// assert_eq!(output.lwe_dimension(), lwe_dim_output);
     ///
-    /// engine.destroy(lwe_sk)?;
-    /// engine.destroy(glwe_sk)?;
+    /// core_engine.destroy(lwe_sk)?;
+    /// core_engine.destroy(glwe_sk)?;
     /// engine.destroy(bsk)?;
-    /// engine.destroy(lwe_sk_output)?;
-    /// engine.destroy(plaintext)?;
-    /// engine.destroy(plaintext_vector)?;
-    /// engine.destroy(acc)?;
-    /// engine.destroy(input)?;
-    /// engine.destroy(output)?;
+    /// core_engine.destroy(lwe_sk_output)?;
+    /// core_engine.destroy(plaintext)?;
+    /// core_engine.destroy(plaintext_vector)?;
+    /// core_engine.destroy(acc)?;
+    /// core_engine.destroy(input)?;
+    /// core_engine.destroy(output)?;
     /// #
     /// # Ok(())
     /// # }
