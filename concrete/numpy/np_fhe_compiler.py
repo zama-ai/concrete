@@ -1,5 +1,6 @@
 """Module to hold a user friendly class to compile programs."""
 
+import itertools
 from copy import deepcopy
 from enum import Enum, unique
 from pathlib import Path
@@ -177,8 +178,11 @@ class NPFHECompiler:
             inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]]]): The inputset on which the
                 function should be evaluated.
         """
-        inputset_as_list = list(inputset)
-        if len(inputset_as_list) == 0:
+
+        inputset_iter = iter(inputset)
+        try:
+            first_sample = next(inputset_iter)
+        except StopIteration:
             return
 
         inferred_args = {
@@ -187,9 +191,9 @@ class NPFHECompiler:
             )
             for (param_name, is_encrypted), val in zip(
                 self._function_parameters_encrypted_status.items(),
-                inputset_as_list[0]
+                first_sample
                 if len(self._function_parameters_encrypted_status) > 1
-                else (inputset_as_list[0],),
+                else (first_sample,),
             )
         }
 
@@ -203,7 +207,7 @@ class NPFHECompiler:
         self._nodes_and_bounds = measure_op_graph_bounds_and_update(
             self._op_graph,
             inferred_args,
-            inputset_as_list,
+            itertools.chain((first_sample,), inputset_iter),
             self._compilation_configuration,
             self.compilation_artifacts,
             self._nodes_and_bounds,
