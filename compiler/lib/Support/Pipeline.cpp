@@ -154,6 +154,10 @@ lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertFHETensorOpsToLinalg(), enablePass);
+  // FHETensorOpsToLinalg does generate linalg named ops that need to be lowered
+  // to linalg.generic operations
+  addPotentiallyNestedPass(pm, mlir::createLinalgGeneralizationPass(),
+                           enablePass);
   addPotentiallyNestedPass(pm, mlir::concretelang::createConvertFHEToTFHEPass(),
                            enablePass);
 
@@ -241,6 +245,8 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   if (parallelizeLoops)
     addPotentiallyNestedPass(pm, mlir::createConvertSCFToOpenMPPass(),
                              enablePass);
+  // Lower affine
+  addPotentiallyNestedPass(pm, mlir::createLowerAffinePass(), enablePass);
 
   // Lower Dataflow tasks to DRF
   addPotentiallyNestedPass(
