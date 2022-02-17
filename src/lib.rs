@@ -17,5 +17,6 @@ pub mod computing_cost;
 
 pub mod global_parameters;
 pub mod graph;
+pub mod noise_estimator;
 pub mod parameters;
 pub mod weight;
