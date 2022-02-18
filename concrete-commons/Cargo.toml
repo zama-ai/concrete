@@ -13,7 +13,6 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 
 [lib]
 name = "concrete_commons"
-crate-type = ["cdylib", "rlib"]
 bench = false
 
 [dependencies]
