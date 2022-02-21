@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Welcome the the `concrete-boolean` documentation!
 //!
 //! # Description

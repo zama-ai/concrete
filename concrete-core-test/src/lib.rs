@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! A module containing backends correctness tests.
 //!
 //! Each submodule here is expected to be activated by a given feature flag (matching the
