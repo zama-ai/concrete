@@ -16,7 +16,7 @@ use concrete_core::prelude::{
 };
 
 /// A fixture for the types implementing the `LweCiphertextEncryptionEngine` trait.
-pub struct LweCiphertextEncryptionHarness;
+pub struct LweCiphertextEncryptionFixture;
 
 #[derive(Debug)]
 pub struct LweCiphertextEncryptionParameters {
@@ -26,7 +26,7 @@ pub struct LweCiphertextEncryptionParameters {
 
 impl<Precision, Engine, Plaintext, SecretKey, Ciphertext>
     Fixture<Precision, Engine, (Plaintext, SecretKey, Ciphertext)>
-    for LweCiphertextEncryptionHarness
+    for LweCiphertextEncryptionFixture
 where
     Precision: IntegerPrecision,
     Engine: LweCiphertextEncryptionEngine<SecretKey, Plaintext, Ciphertext>,
