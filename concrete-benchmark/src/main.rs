@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! An application to execute benchmarks on `concrete-core` engines.
 //!
 //! This application contains generic benchmarking functions, which makes it possible to benchmark

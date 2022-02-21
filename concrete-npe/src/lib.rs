@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Welcome the the `concrete-npe` documentation!
 //!
 //! # Description
@@ -34,6 +35,7 @@
 //! ```
 
 #![allow(clippy::upper_case_acronyms)]
+
 mod key_dispersion;
 mod operators;
 mod tools;

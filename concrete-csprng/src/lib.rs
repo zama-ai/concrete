@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Cryptographically secure pseudo random number generator, that uses AES in CTR mode.
 //!
 //! Welcome to the `concrete-csprng` documentation.

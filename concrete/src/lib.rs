@@ -1,4 +1,5 @@
 #![allow(clippy::upper_case_acronyms)]
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Concrete
 //!
 //! Welcome to the concrete documentation. If you are new to FHE, you may have a look at the

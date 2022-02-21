@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! Common tools for the concrete packages
 //!
 //! # Dispersion
