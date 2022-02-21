@@ -22,7 +22,7 @@
 //! implementor of the `*Engine` trait.
 //!
 //! In particular, once the [`Fixture`] mandatory methods and types are defined, the user can
-//! benefit from the default methods [`Harness::sample`], [`Harness::test`] or [`Harness::stress`].
+//! benefit from the default methods [`Fixture::sample`], [`Fixture::test`] or [`Fixture::stress`].
 use crate::generation::{IntegerPrecision, Maker};
 use crate::{Repetitions, SampleSize};
 use concrete_core::prelude::AbstractEngine;
@@ -171,7 +171,9 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
 }
 
 mod cleartext_creation;
+
 pub use cleartext_creation::*;
 
 mod lwe_ciphertext_encryption;
+
 pub use lwe_ciphertext_encryption::*;
