@@ -3,7 +3,7 @@ use crate::backends::core::private::math::decomposition::{
 };
 use crate::backends::core::private::math::tensor::Tensor;
 use crate::backends::core::private::utils::{zip, zip_args};
-use concrete_commons::numeric::{SignedInteger, UnsignedInteger};
+use concrete_commons::numeric::UnsignedInteger;
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount};
 
 /// An iterator-like object that yields the terms of the signed decomposition of a tensor of values.
@@ -35,14 +35,10 @@ where
     // A mask which allows to compute the mod B of a value. For B=2^4, this guy is of the form:
     // ...0001111
     mod_b_mask: Scalar,
-    // A mask which allows to test whether the value is larger than B/2. For B=2^4, this guy is
-    // of the form:
-    // ...0001000
-    carry_mask: Scalar,
     // The values being decomposed
     inputs: Vec<Scalar>,
-    // The carries from the previous level
-    previous_carries: Vec<Scalar>,
+    // The internal states of each decomposition
+    states: Vec<Scalar>,
     // In order to avoid allocating a new Vec every time we yield a decomposition term, we store
     // a Vec inside the structure and yield slices pointing to it.
     outputs: Vec<Scalar>,
@@ -66,10 +62,12 @@ where
             level_count: level.0,
             current_level: level.0,
             mod_b_mask: (Scalar::ONE << base_log.0) - Scalar::ONE,
-            carry_mask: Scalar::ONE << (base_log.0 - 1),
-            inputs: input.into_container(),
+            inputs: input.clone().into_container(),
             outputs: vec![Scalar::ZERO; len],
-            previous_carries: vec![Scalar::ZERO; len],
+            states: input
+                .iter()
+                .map(|i| *i >> (Scalar::BITS - base_log.0 * level.0))
+                .collect(),
             fresh: true,
         }
     }
@@ -149,21 +147,8 @@ where
             return None;
         }
         // We iterate over the elements of the outputs and decompose
-        for zip_args!(output_i, carry_i, input_i) in zip!(
-            self.outputs.iter_mut(),
-            self.previous_carries.iter_mut(),
-            self.inputs.iter()
-        ) {
-            let (dec, carry) = decompose_one_level(
-                self.base_log,
-                self.current_level,
-                *input_i,
-                *carry_i,
-                self.mod_b_mask,
-                self.carry_mask,
-            );
-            *carry_i = carry;
-            *output_i = dec;
+        for zip_args!(output_i, state_i) in zip!(self.outputs.iter_mut(), self.states.iter_mut()) {
+            *output_i = decompose_one_level(self.base_log, state_i, self.mod_b_mask);
         }
         self.current_level -= 1;
         // We return the term tensor.
@@ -191,17 +176,13 @@ where
     base_log: usize,
     // The number of levels of the decomposition
     level_count: usize,
-    // The carry from the previous level
-    previous_carry: T,
+    // The internal state of the decomposition
+    state: T,
     // The current level
     current_level: usize,
     // A mask which allows to compute the mod B of a value. For B=2^4, this guy is of the form:
     // ...0001111
     mod_b_mask: T,
-    // A mask which allows to test whether the value is larger than B/2. For B=2^4, this guy is
-    // of the form:
-    // ...0001000
-    carry_mask: T,
     // A flag which store whether the iterator is a fresh one (for the recompose method)
     fresh: bool,
 }
@@ -219,10 +200,9 @@ where
             input,
             base_log: base_log.0,
             level_count: level.0,
-            previous_carry: T::ZERO,
+            state: input >> (T::BITS - base_log.0 * level.0),
             current_level: level.0,
             mod_b_mask: (T::ONE << base_log.0) - T::ONE,
-            carry_mask: T::ONE << (base_log.0 - 1),
             fresh: true,
         }
     }
@@ -284,15 +264,7 @@ where
             return None;
         }
         // We decompose the current level
-        let (output, carry) = decompose_one_level(
-            self.base_log,
-            self.current_level,
-            self.input,
-            self.previous_carry,
-            self.mod_b_mask,
-            self.carry_mask,
-        );
-        self.previous_carry = carry;
+        let output = decompose_one_level(self.base_log, &mut self.state, self.mod_b_mask);
         self.current_level -= 1;
         // We return the output for this level
         Some(DecompositionTerm::new(
@@ -303,28 +275,11 @@ where
     }
 }
 
-fn decompose_one_level<S: UnsignedInteger>(
-    base_log: usize,
-    current_level: usize,
-    input: S,
-    previous_carry: S,
-    mod_b_mask: S,
-    carry_mask: S,
-) -> (S, S) {
-    // We perform the division of the input by q/B^i
-    let res = input >> (S::BITS - base_log * current_level);
-    // We reduce the result modulo B
-    let res = res & mod_b_mask;
-    // The result may already be greater or equal to B/2.
-    let carry = res & carry_mask;
-    // We propagate the carry from the previous level
-    let res = res.wrapping_add(previous_carry);
-    // The previous carry may have made the result larger or equal to B/2.
-    let carry = carry | (res & carry_mask);
-    // If the result is greater or equal to B/2, we subtract B from the result (viewed as a
-    // signed integer)
-    let res = (res.into_signed() - (carry << 1).into_signed()).into_unsigned();
-    let carry = carry >> (base_log - 1);
-    // We return the decomposition and the carry
-    (res, carry)
+fn decompose_one_level<S: UnsignedInteger>(base_log: usize, state: &mut S, mod_b_mask: S) -> S {
+    let res = *state & mod_b_mask;
+    *state >>= base_log;
+    let mut carry = (res.wrapping_sub(S::ONE) | *state) & res;
+    carry >>= base_log - 1;
+    *state += carry;
+    res.wrapping_sub(carry << base_log)
 }

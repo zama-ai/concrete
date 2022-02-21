@@ -38,7 +38,7 @@ where
             let signed_term = term.value().into_signed();
             let half_basis = (T::Signed::ONE << decomposer.base_log) / T::TWO.into_signed();
             assert!(-half_basis <= signed_term);
-            assert!(signed_term < half_basis);
+            assert!(signed_term <= half_basis);
         }
         let closest = decomposer.closest_representable(input);
         assert_eq!(
@@ -73,7 +73,7 @@ where
             let signed_term = term.as_tensor().get_element(0).into_signed();
             let half_basis = (T::Signed::ONE << decomposer.base_log) / T::TWO.into_signed();
             assert!(-half_basis <= signed_term);
-            assert!(signed_term < half_basis);
+            assert!(signed_term <= half_basis);
         }
         let mut rounded = Tensor::allocate(T::ZERO, 1);
         decomposer.fill_tensor_with_closest_representable(&mut rounded, &input);
