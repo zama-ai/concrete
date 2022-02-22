@@ -15,7 +15,7 @@ from ..debugging import format_operation_graph
 from ..debugging.custom_assert import assert_not_reached, assert_true
 from ..operator_graph import OPGraph
 from ..representation import intermediate
-from ..representation.intermediate import IntermediateNode
+from ..representation.intermediate import Conv2D, IntermediateNode
 
 # TODO: should come from compiler, through an API, #402
 ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
@@ -102,6 +102,9 @@ def check_node_compatibility_with_mlir(
 
     elif isinstance(node, intermediate.MatMul):  # constraints for matrix multiplication
         assert_true(len(inputs) == 2)
+
+    elif isinstance(node, Conv2D):
+        assert_true(len(inputs) in [2, 3])
 
     else:  # pragma: no cover
         assert_not_reached("Non IntermediateNode object in the OPGraph")

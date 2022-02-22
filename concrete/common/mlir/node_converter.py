@@ -29,6 +29,7 @@ from ..operator_graph import OPGraph
 from ..representation.intermediate import (
     Add,
     Constant,
+    Conv2D,
     Dot,
     GenericFunction,
     IndexConstant,
@@ -139,6 +140,9 @@ class IntermediateNodeConverter:
 
         elif isinstance(self.node, Sub):
             result = self.convert_sub()
+
+        elif isinstance(self.node, Conv2D):
+            result = self.convert_conv2d()
 
         else:  # pragma: no cover
             # this branch is not covered as unsupported opeations fail on check mlir compatibility
@@ -281,6 +285,51 @@ class IntermediateNodeConverter:
             attr = Attribute.parse(f"dense<{str(data.tolist())}> : {resulting_type}")
 
         return arith.ConstantOp(resulting_type, attr).result
+
+    def convert_conv2d(self) -> OpResult:
+        """Convert a Conv2D node to its corresponding MLIR representation.
+
+        Returns:
+            str: textual MLIR representation corresponding to self.node
+        """
+
+        assert_true(len(self.node.inputs) == 2 or len(self.node.inputs) == 3)
+        assert_true(len(self.node.outputs) == 1)
+        has_bias = len(self.node.inputs) == 3
+
+        x = self.node.inputs[0]
+        weight = self.node.inputs[1]
+        if not (x.is_encrypted and weight.is_clear):  # pragma: no cover
+            raise NotImplementedError(
+                f"Conv2D with input {x} and weight {weight} cannot be converted to MLIR yet",
+            )
+
+        resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
+        preds = self.preds
+
+        node = cast(Conv2D, self.node)
+        integer_type = IntegerType.get_signless(64, context=self.ctx)
+        strides = DenseElementsAttr.get(
+            numpy.array(list(node.strides), dtype=numpy.uint64),
+            context=self.ctx,
+            type=integer_type,
+        )
+        dilations = DenseElementsAttr.get(
+            numpy.array(list(node.dilations), dtype=numpy.uint64),
+            context=self.ctx,
+            type=integer_type,
+        )
+        pads = DenseElementsAttr.get(
+            numpy.array(list(node.pads), dtype=numpy.uint64), context=self.ctx, type=integer_type
+        )
+        if has_bias:
+            result = fhelinalg.Conv2dOp(resulting_type, *preds, pads, strides, dilations).result
+        else:
+            result = fhelinalg.Conv2dOp(
+                resulting_type, *preds, None, pads, strides, dilations
+            ).result
+
+        return result
 
     def convert_dot(self) -> OpResult:
         """Convert a Dot node to its corresponding MLIR representation.

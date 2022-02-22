@@ -21,6 +21,7 @@ from concrete.common.representation.intermediate import (
     ALL_IR_NODES,
     Add,
     Constant,
+    Conv2D,
     Dot,
     GenericFunction,
     IndexConstant,
@@ -261,6 +262,11 @@ def is_equivalent_matmul(lhs: MatMul, rhs: object) -> bool:
     return isinstance(rhs, MatMul) and is_equivalent_intermediate_node(lhs, rhs)
 
 
+def is_equivalent_conv2d(lhs: Conv2D, rhs: object) -> bool:
+    """Helper function to check if a Conv2D node is equivalent to an other object."""
+    return isinstance(rhs, Conv2D) and is_equivalent_intermediate_node(lhs, rhs)
+
+
 def is_equivalent_intermediate_node(lhs: IntermediateNode, rhs: object) -> bool:
     """Helper function to check if an IntermediateNode node is equivalent to an other object."""
     return (
@@ -274,6 +280,7 @@ EQUIVALENT_TEST_FUNC: Dict[Type, Callable[..., bool]] = {
     Add: is_equivalent_add,
     GenericFunction: is_equivalent_arbitrary_function,
     Constant: is_equivalent_constant,
+    Conv2D: is_equivalent_conv2d,
     Dot: is_equivalent_dot,
     IndexConstant: is_equivalent_index_constant,
     Input: is_equivalent_input,

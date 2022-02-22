@@ -15,6 +15,7 @@ from ..representation.intermediate import (
     ALL_IR_NODES,
     Add,
     Constant,
+    Conv2D,
     Dot,
     GenericFunction,
     IndexConstant,
@@ -27,6 +28,7 @@ from ..representation.intermediate import (
 IR_NODE_COLOR_MAPPING = {
     Input: "blue",
     Constant: "cyan",
+    Conv2D: "brown",
     Add: "red",
     Sub: "yellow",
     Mul: "green",

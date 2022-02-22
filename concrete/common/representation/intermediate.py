@@ -4,8 +4,11 @@ from abc import ABC, abstractmethod
 from collections import deque
 from copy import deepcopy
 from enum import Enum, unique
+from math import floor
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
 
+import numpy as np
+import torch
 from loguru import logger
 
 from ..data_types.base import BaseDataType
@@ -219,6 +222,109 @@ class Constant(IntermediateNode):
             Any: The constant data that was stored.
         """
         return self._constant_data
+
+
+class Conv2D(IntermediateNode):
+    """Return the node representing a 2d-convolution."""
+
+    def __init__(
+        self,
+        inputs: Iterable[BaseValue],
+        output_dtype: BaseDataType,
+        pads: Union[List[int], Tuple[int, int, int, int]],
+        strides: Union[List[int], Tuple[int, int]],
+        dilations: Union[List[int], Tuple[int, int]],
+    ) -> None:
+
+        # TODO: remove this when padding is supported (#427)
+        assert all(pad == 0 for pad in pads), "conv2d doesn't support padding yet"
+
+        super().__init__(inputs)
+        self.pads = pads
+        self.strides = strides
+        self.dilations = dilations
+
+        self._n_in = len(self.inputs)
+        assert_true(len(self.inputs) == 2 or len(self.inputs) == 3)
+
+        assert_true(
+            all(
+                isinstance(input_value, TensorValue) and input_value.ndim == 4
+                for input_value in self.inputs[:2]
+            ),
+            f"Conv2D only supports input and weight tensors of 4 dimensions"
+            f"({TensorValue.__name__} with ndim == 4)",
+        )
+        bias = cast(TensorValue, self.inputs[2]) if len(self.inputs) == 3 else None
+        if bias is not None:
+            assert_true(
+                isinstance(bias, TensorValue) and bias.ndim == 1,
+                f"Conv2D only supports bias 1 dimension ({TensorValue.__name__} with ndim == 1)",
+            )
+
+        x = cast(TensorValue, self.inputs[0])
+        weight = cast(TensorValue, self.inputs[1])
+
+        # Compute output shape
+        input_n, _, input_h, input_w = x.shape
+        weight_f, _, weight_h, weight_w = weight.shape
+        pads_h = pads[0] + pads[2]
+        pads_w = pads[1] + pads[3]
+        output_h = floor((input_h + pads_h - dilations[0] * (weight_h - 1) - 1) / strides[0]) + 1
+        output_w = floor((input_w + pads_w - dilations[1] * (weight_w - 1) - 1) / strides[1]) + 1
+        output_shape = (input_n, weight_f, output_h, output_w)
+
+        output_value = EncryptedTensor(dtype=output_dtype, shape=output_shape)
+        self.outputs = [output_value]
+
+    def text_for_drawing(self) -> str:
+        return "conv2d"
+
+    def evaluate(self, inputs: Dict[int, Any]) -> Any:
+
+        assert_true(
+            len(inputs) == self._n_in, f"expected {self.n_in} inputs, but got {len(inputs)}"
+        )
+        x, weight = inputs[0], inputs[1]
+        bias = inputs[2] if len(inputs) == 3 else np.zeros(weight.shape[0])
+
+        return self.evaluate_conv2d(x, weight, bias, self.pads, self.strides, self.dilations)
+
+    @staticmethod
+    def evaluate_conv2d(
+        x: np.ndarray,
+        weight: np.ndarray,
+        bias: np.ndarray,
+        # TODO: use padding when supported (#427)
+        _: Union[Tuple[int, int, int, int], List[int]],
+        strides: Union[Tuple[int, int], List[int]],
+        dilations: Union[Tuple[int, int], List[int]],
+    ):
+        """Evaluate 2D convolution.
+
+        Args:
+            x (np.ndarray): Input of shape (NxCxHxW)
+            weight (np.ndarray): Weight (kernel) of shape (FxCxHxW)
+            bias (np.ndarray): Bias vector of size (F)
+            pads (Union[Tuple[int, int, int, int], List[int]]): Padding over each
+                axis (H_beg, W_beg, H_end, W_end)
+            strides (Union[Tuple[int, int], List[int]]): Stride over each
+                axis (height and width)
+            dilations (Union[Tuple[int, int], List[int]]): Dilation over each
+                axis (height and width)
+
+        Returns:
+            np.ndarray: Result of the convolution of shape (NxCxHxW)
+        """
+        # pylint: disable=no-member
+        return torch.conv2d(
+            torch.tensor(x, dtype=torch.long),
+            torch.tensor(weight, dtype=torch.long),
+            torch.tensor(bias, dtype=torch.long),
+            stride=strides,
+            dilation=dilations,
+        ).numpy()
+        # pylint: enable=no-member
 
 
 class IndexConstant(IntermediateNode):
