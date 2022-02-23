@@ -629,20 +629,93 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUMul(sqNorm, eNorm);
 }
 
+static llvm::APInt computeVectorNorm(
+    llvm::ArrayRef<int64_t> shape, int64_t axis,
+    mlir::DenseIntElementsAttr denseValues, llvm::APInt encryptedOperandNorm,
+    llvm::SmallVector<uint64_t, /*size-hint=*/4> &elementSelector) {
+
+  llvm::APInt accumulationNorm = llvm::APInt{1, 1, false};
+  for (int64_t i = 0; i < shape[axis]; i++) {
+    elementSelector[axis] = i;
+
+    llvm::APInt weight = denseValues.getValue<llvm::APInt>(elementSelector);
+    llvm::APInt weightNorm = APIntWidthExtendUSq(weight);
+
+    llvm::APInt multiplicationNorm =
+        APIntWidthExtendUMul(encryptedOperandNorm, weightNorm);
+    accumulationNorm =
+        APIntWidthExtendUAdd(multiplicationNorm, accumulationNorm);
+  }
+  return accumulationNorm;
+}
+
+static void determineNextVector(
+    llvm::ArrayRef<int64_t> shape, int64_t destroyedDimension,
+    llvm::SmallVector<uint64_t, /*size-hint=*/4> &vectorSelector) {
+
+  for (int64_t i = shape.size() - 1; i >= 0; i--) {
+    if (i == destroyedDimension) {
+      continue;
+    }
+
+    if (vectorSelector[i] + 1 < (uint64_t)shape[i]) {
+      vectorSelector[i]++;
+      break;
+    }
+
+    vectorSelector[i] = 0;
+  }
+}
+
+static llvm::APInt calculateSqManpForMatMulWithDenseValues(
+    llvm::ArrayRef<int64_t> shape, int64_t destroyedDimension,
+    mlir::DenseIntElementsAttr denseValues, llvm::APInt encryptedOperandNorm) {
+
+  llvm::APInt maximumNorm = llvm::APInt{1, 1, false};
+
+  size_t numberOfVectorsToInspect = 1;
+  for (auto size : shape) {
+    numberOfVectorsToInspect *= size;
+  }
+  numberOfVectorsToInspect /= shape[destroyedDimension];
+
+  auto vectorSelector =
+      llvm::SmallVector<uint64_t, /*size-hint=*/4>(shape.size(), 0);
+
+  auto elementSelector = vectorSelector;
+  for (size_t n = 0; n < numberOfVectorsToInspect; n++) {
+    elementSelector.assign(vectorSelector);
+
+    llvm::APInt accumulationNorm =
+        computeVectorNorm(shape, destroyedDimension, denseValues,
+                          encryptedOperandNorm, elementSelector);
+    maximumNorm = APIntUMax(maximumNorm, accumulationNorm);
+
+    determineNextVector(shape, destroyedDimension, vectorSelector);
+  }
+
+  return maximumNorm;
+}
+
 // Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
 // that is equivalent to an `FHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::MatMulEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
-  mlir::RankedTensorType rhsTy =
-      op.rhs().getType().cast<mlir::RankedTensorType>();
-  mlir::RankedTensorType lhsTy =
-      op.lhs().getType().cast<mlir::RankedTensorType>();
+  auto lhsType =
+      ((mlir::Type)op.lhs().getType()).cast<mlir::RankedTensorType>();
+  auto rhsType =
+      ((mlir::Type)op.rhs().getType()).cast<mlir::RankedTensorType>();
 
-  mlir::Type iTy = rhsTy.getElementType();
+  llvm::ArrayRef<int64_t> lhsShape = lhsType.getShape();
+  llvm::ArrayRef<int64_t> rhsShape = rhsType.getShape();
 
-  assert(iTy.isSignlessInteger() &&
+  int64_t lhsDims = (int64_t)lhsShape.size();
+  int64_t rhsDims = (int64_t)rhsShape.size();
+
+  mlir::Type rhsElementType = rhsType.getElementType();
+  assert(rhsElementType.isSignlessInteger() &&
          "Only multiplications with signless integers are currently allowed");
 
   assert(
@@ -651,7 +724,6 @@ static llvm::APInt getSqMANP(
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt lhsNorm = operandMANPs[0]->getValue().getMANP().getValue();
-  // Initial value of the accumulator
   llvm::APInt accNorm = llvm::APInt{1, 1, false};
 
   mlir::arith::ConstantOp cstOp =
@@ -661,33 +733,64 @@ static llvm::APInt getSqMANP(
       cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
             : nullptr;
 
+  int64_t N = rhsDims <= 2 ? rhsShape[0] : rhsShape[rhsDims - 2];
+
   if (denseVals) {
-    // For a constant operand use actual constant to calculate 2-norm
-    // tensor<MxN> = tensor<MxP> * tensor<PxN> compute the max 2-norm of the
-    // result
-    int64_t M = lhsTy.getShape()[0];
-    int64_t N = rhsTy.getShape()[1];
-    int64_t P = rhsTy.getShape()[0];
-    for (int64_t m = 0; m < M; m++) {
-      for (int64_t n = 0; n < N; n++) {
-        llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
+
+    if (lhsDims == 2 && rhsDims == 2) {
+
+      // MxN @ NxP -> MxP
+
+      int64_t M = lhsShape[0];
+      int64_t P = rhsShape[1];
+      for (int64_t m = 0; m < M; m++) {
         for (int64_t p = 0; p < P; p++) {
-          llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(p * N + n);
-          llvm::APInt rhsNorm = APIntWidthExtendUSq(cst);
-          llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
-          tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
+          llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
+          for (int64_t n = 0; n < N; n++) {
+            llvm::APInt cst =
+                denseVals.getValue<llvm::APInt>({(uint64_t)n, (uint64_t)p});
+            llvm::APInt rhsNorm = APIntWidthExtendUSq(cst);
+            llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
+            tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
+          }
+          accNorm = APIntUMax(accNorm, tmpNorm);
         }
-        accNorm = APIntUMax(accNorm, tmpNorm);
       }
+
+    } else if (rhsDims == 1) {
+
+      //     MxN @ N ->     M
+      //   LxMxN @ N ->   LxM
+      // KxLxMxN @ N -> KxLxM
+
+      for (int64_t i = 0; i < N; i++) {
+        llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(i);
+        llvm::APInt rhsNorm = APIntWidthExtendUSq(cst);
+        llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
+        accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
+      }
+
+    } else if (rhsDims >= 2) {
+
+      // KxLxMxN @   NxP -> KxLxMxP
+      // KxLxMxN @ LxNxP -> KxLxMxP
+      // Kx1xMxN @ LxNxP -> KxLxMxP
+
+      //   MxN @ KxLxNxP -> KxLxMxP
+      // LxMxN @ KxLxNxP -> KxLxMxP
+      // 1xMxN @ KxLxNxP -> KxLxMxP
+
+      // N @     NxP ->     P
+      // N @   LxNxP ->   LxP
+      // N @ KxLxNxP -> KxLxP
+
+      accNorm = calculateSqManpForMatMulWithDenseValues(rhsShape, rhsDims - 2,
+                                                        denseVals, lhsNorm);
     }
+
   } else {
-    // For a dynamic operand conservatively assume that the value is
-    // the maximum for the integer width
-    llvm::APInt rhsNorm = conservativeIntNorm2Sq(iTy);
-    // For tensor<MxN> = tensor<MxP> * tensor<PxN> they are P FHE.mul_eint_int
-    // and FHE.add_eint operations for each elements of the result
-    int64_t P = rhsTy.getShape()[0];
-    for (int64_t i = 0; i < P; i++) {
+    llvm::APInt rhsNorm = conservativeIntNorm2Sq(rhsElementType);
+    for (int64_t i = 0; i < N; i++) {
       llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
       accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
     }
@@ -700,14 +803,19 @@ static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::MatMulIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
-  mlir::RankedTensorType rhsTy =
-      op.rhs().getType().cast<mlir::RankedTensorType>();
-  mlir::RankedTensorType lhsTy =
-      op.lhs().getType().cast<mlir::RankedTensorType>();
+  auto lhsType =
+      ((mlir::Type)op.lhs().getType()).cast<mlir::RankedTensorType>();
+  auto rhsType =
+      ((mlir::Type)op.rhs().getType()).cast<mlir::RankedTensorType>();
 
-  mlir::Type iTy = lhsTy.getElementType();
+  llvm::ArrayRef<int64_t> lhsShape = lhsType.getShape();
+  llvm::ArrayRef<int64_t> rhsShape = rhsType.getShape();
 
-  assert(iTy.isSignlessInteger() &&
+  int64_t lhsDims = (int64_t)lhsShape.size();
+  int64_t rhsDims = (int64_t)rhsShape.size();
+
+  mlir::Type lhsElementType = lhsType.getElementType();
+  assert(lhsElementType.isSignlessInteger() &&
          "Only multiplications with signless integers are currently allowed");
 
   assert(
@@ -716,7 +824,6 @@ static llvm::APInt getSqMANP(
       "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
 
   llvm::APInt rhsNorm = operandMANPs[1]->getValue().getMANP().getValue();
-  // Initial value of the accumulator
   llvm::APInt accNorm = llvm::APInt{1, 1, false};
 
   mlir::arith::ConstantOp cstOp =
@@ -726,34 +833,65 @@ static llvm::APInt getSqMANP(
       cstOp ? cstOp->getAttrOfType<mlir::DenseIntElementsAttr>("value")
             : nullptr;
 
+  int64_t N = rhsDims <= 2 ? rhsShape[0] : rhsShape[rhsDims - 2];
+
   if (denseVals) {
-    // For a constant operand use actual constant to calculate 2-norm
-    // tensor<MxN> = tensor<MxP> * tensor<PxN> compute the max 2-norm of the
-    // result
-    int64_t M = lhsTy.getShape()[0];
-    int64_t N = rhsTy.getShape()[1];
-    int64_t P = rhsTy.getShape()[0];
-    for (int64_t m = 0; m < M; m++) {
-      for (int64_t n = 0; n < N; n++) {
-        llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
+
+    if (lhsDims == 2 && rhsDims == 2) {
+
+      // MxN @ NxP -> MxP
+
+      int64_t M = lhsShape[0];
+      int64_t P = rhsShape[1];
+      for (int64_t m = 0; m < M; m++) {
         for (int64_t p = 0; p < P; p++) {
-          llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(m * P + p);
-          llvm::APInt lhsNorm = APIntWidthExtendUSq(cst);
-          llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
-          tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
+          llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
+          for (int64_t n = 0; n < N; n++) {
+            llvm::APInt cst =
+                denseVals.getValue<llvm::APInt>({(uint64_t)m, (uint64_t)n});
+            llvm::APInt lhsNorm = APIntWidthExtendUSq(cst);
+            llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
+            tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
+          }
+          accNorm = APIntUMax(accNorm, tmpNorm);
         }
-        accNorm = APIntUMax(accNorm, tmpNorm);
       }
+
+    } else if (lhsDims == 1) {
+
+      // N @     NxP ->     P
+      // N @   LxNxP ->   LxP
+      // N @ KxLxNxP -> KxLxP
+
+      for (int64_t i = 0; i < N; i++) {
+        llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(i);
+        llvm::APInt lhsNorm = APIntWidthExtendUSq(cst);
+        llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
+        accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
+      }
+
+    } else if (lhsDims >= 2) {
+
+      // KxLxMxN @   NxP -> KxLxMxP
+      // KxLxMxN @ LxNxP -> KxLxMxP
+      // Kx1xMxN @ LxNxP -> KxLxMxP
+
+      //   MxN @ KxLxNxP -> KxLxMxP
+      // LxMxN @ KxLxNxP -> KxLxMxP
+      // 1xMxN @ KxLxNxP -> KxLxMxP
+
+      //     MxN @ N ->     M
+      //   LxMxN @ N ->   LxM
+      // KxLxMxN @ N -> KxLxM
+
+      accNorm = calculateSqManpForMatMulWithDenseValues(lhsShape, lhsDims - 1,
+                                                        denseVals, rhsNorm);
     }
+
   } else {
-    // For a dynamic operand conservatively assume that the value is
-    // the maximum for the integer width
-    llvm::APInt lhsNorm = conservativeIntNorm2Sq(iTy);
-    // For tensor<MxN> = tensor<MxP> * tensor<PxN> they are P FHE.mul_eint_int
-    // and FHE.add_eint operations for each elements of the result
-    int64_t P = rhsTy.getShape()[0];
-    for (int64_t i = 0; i < P; i++) {
-      llvm::APInt mulNorm = APIntWidthExtendUMul(rhsNorm, lhsNorm);
+    llvm::APInt lhsNorm = conservativeIntNorm2Sq(lhsElementType);
+    for (int64_t i = 0; i < N; i++) {
+      llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
       accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
     }
   }

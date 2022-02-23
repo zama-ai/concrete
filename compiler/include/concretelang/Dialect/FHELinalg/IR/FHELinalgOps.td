@@ -434,8 +434,111 @@ def MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
         Performs a matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.
         The width of the clear integers must be less than or equals to the witdh of encrypted integers.
 
+        The behavior depends on the arguments in the following way:
+
+            - If both arguments are 2-D,
+              they are multiplied like conventional matrices.
+
+              e.g.,
+
+              arg0: tensor<MxN> = [...]
+              arg1: tensor<NxP> = [...]
+
+              result: tensor<MxP> = [...]
+
+            - If the first argument is a vector (1-D),
+              it is treated as a matrix with a single row and standard matrix multiplication is performed.
+
+              After standard matrix multiplication,
+              the first dimension is removed from the result.
+
+              e.g.,
+
+              arg0: tensor<3> = [x, y, z]
+              arg1: tensor<3xM> = [
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+              ]
+
+              is treated as
+
+              arg0: tensor<1x3> = [
+                  [x, y, z]
+              ]
+              arg1: tensor<3xM> = [
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+              ]
+
+              and matrix multiplication is performed with the following form (1x3 @ 3xM -> 1xM)
+
+              result: tensor<1xM> = [[_, _, ..., _, _]]
+
+              finally, the first dimension is removed by definition so the result has the following form
+
+              result: tensor<M>  = [_, _, ..., _, _]
+
+            - If the second argument is 1-D,
+              it is treated as a matrix with a single column and standard matrix multiplication is performed.
+
+              After standard matrix multiplication,
+              the last dimension is removed from the result.
+
+              e.g.,
+
+              arg0: tensor<Mx3> = [
+                  [_, _, _],
+                  [_, _, _],
+                  ...,
+                  [_, _, _],
+                  [_, _, _],
+              ]
+              arg1: tensor<3> = [x, y, z]
+
+              is treated as
+
+              arg0: tensor<Mx3> = [
+                  [_, _, _],
+                  [_, _, _],
+                  ...,
+                  [_, _, _],
+                  [_, _, _],
+              ]
+              arg1: tensor<3x1> = [
+                [x],
+                [y],
+                [z],
+              ]
+
+              and matrix multiplication is performed with the following form (Mx3 @ 3x1 -> Mx1)
+
+              result: tensor<Mx1> = [
+                [_],
+                [_],
+                  ...,
+                [_],
+                [_],
+              ]
+
+              finally, the last dimension is removed by definition so the result has the following form
+
+              result: tensor<M> = [_, _, _]
+
+            - If either argument is N-D where N > 2,
+              the operation is treated as a collection of matrices residing in the last two indices and broadcasted accordingly.
+
+              arg0: tensor<Kx1MxN> = [...]
+              arg1: tensor<LxNxP> = [...]
+
+              result: tensor<KxLxMxP> = [...]
+
         ```mlir
         "FHELinalg.matmul_eint_int(%a, %b) : (tensor<MxNx!FHE.eint<p>>, tensor<NxPxip'>) -> tensor<MxPx!FHE.eint<p>>"
+        "FHELinalg.matmul_eint_int(%a, %b) : (tensor<KxLxMxNx!FHE.eint<p>>, tensor<KxLxNxPxip'>) -> tensor<KxLxMxPx!FHE.eint<p>>"
+        "FHELinalg.matmul_eint_int(%a, %b) : (tensor<MxNx!FHE.eint<p>>, tensor<Nxip'>) -> tensor<Mx!FHE.eint<p>>"
+        "FHELinalg.matmul_eint_int(%a, %b) : (tensor<Nx!FHE.eint<p>>, tensor<NxPxip'>) -> tensor<Px!FHE.eint<p>>"
         ```
 
         Examples:
@@ -449,7 +552,6 @@ def MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
         // [5,6]   [17,28,39]
         //
         "FHELinalg.matmul_eint_int"(%a, %b) : (tensor<3x2x!FHE.eint<6>>, tensor<2x3xi7>) -> tensor<3x3x!FHE.eint<6>>
-
         ```
     }];
 
@@ -472,8 +574,111 @@ def MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
         Performs a matrix multiplication of a matrix of clear integers and a matrix of encrypted integers.
         The width of the clear integers must be less than or equals to the witdh of encrypted integers.
 
+        The behavior depends on the arguments in the following way:
+
+            - If both arguments are 2-D,
+              they are multiplied like conventional matrices.
+
+              e.g.,
+
+              arg0: tensor<MxN> = [...]
+              arg1: tensor<NxP> = [...]
+
+              result: tensor<MxP> = [...]
+
+            - If the first argument is a vector (1-D),
+              it is treated as a matrix with a single row and standard matrix multiplication is performed.
+
+              After standard matrix multiplication,
+              the first dimension is removed from the result.
+
+              e.g.,
+
+              arg0: tensor<3> = [x, y, z]
+              arg1: tensor<3xM> = [
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+              ]
+
+              is treated as
+
+              arg0: tensor<1x3> = [
+                  [x, y, z]
+              ]
+              arg1: tensor<3xM> = [
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+                  [_, _, ..., _, _],
+              ]
+
+              and matrix multiplication is performed with the following form (1x3 @ 3xM -> 1xM)
+
+              result: tensor<1xM> = [[_, _, ..., _, _]]
+
+              finally, the first dimension is removed by definition so the result has the following form
+
+              result: tensor<M>  = [_, _, ..., _, _]
+
+            - If the second argument is 1-D,
+              it is treated as a matrix with a single column and standard matrix multiplication is performed.
+
+              After standard matrix multiplication,
+              the last dimension is removed from the result.
+
+              e.g.,
+
+              arg0: tensor<Mx3> = [
+                  [_, _, _],
+                  [_, _, _],
+                  ...,
+                  [_, _, _],
+                  [_, _, _],
+              ]
+              arg1: tensor<3> = [x, y, z]
+
+              is treated as
+
+              arg0: tensor<Mx3> = [
+                  [_, _, _],
+                  [_, _, _],
+                  ...,
+                  [_, _, _],
+                  [_, _, _],
+              ]
+              arg1: tensor<3x1> = [
+                [x],
+                [y],
+                [z],
+              ]
+
+              and matrix multiplication is performed with the following form (Mx3 @ 3x1 -> Mx1)
+
+              result: tensor<Mx1> = [
+                [_],
+                [_],
+                  ...,
+                [_],
+                [_],
+              ]
+
+              finally, the last dimension is removed by definition so the result has the following form
+
+              result: tensor<M> = [_, _, _]
+
+            - If either argument is N-D where N > 2,
+              the operation is treated as a collection of matrices residing in the last two indices and broadcasted accordingly.
+
+              arg0: tensor<Kx1MxN> = [...]
+              arg1: tensor<LxNxP> = [...]
+
+              result: tensor<KxLxMxP> = [...]
+
         ```mlir
         "FHELinalg.matmul_int_eint(%a, %b) : (tensor<MxNxip'>, tensor<NxPxFHE.eint<p>>) -> tensor<MxPx!FHE.eint<p>>"
+        "FHELinalg.matmul_int_eint(%a, %b) : (tensor<KxLxMxNxip'>, tensor<KxLxNxPxFHE.eint<p>>) -> tensor<KxLxMxPx!FHE.eint<p>>"
+        "FHELinalg.matmul_int_eint(%a, %b) : (tensor<MxNxip'>, tensor<NxFHE.eint<p>>) -> tensor<Mx!FHE.eint<p>>"
+        "FHELinalg.matmul_int_eint(%a, %b) : (tensor<Nxip'>, tensor<NxPxFHE.eint<p>>) -> tensor<Px!FHE.eint<p>>"
         ```
 
         Examples:
@@ -487,7 +692,6 @@ def MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
         // [5,6]   [17,28,39]
         //
         "FHELinalg.matmul_int_eint"(%a, %b) : (tensor<3x2xi7>, tensor<2x3x!FHE.eint<6>>) -> tensor<3x3x!FHE.eint<6>>
-
         ```
     }];
 
@@ -671,7 +875,7 @@ class LinalgStructuredBase_Op<string mnemonic, list<OpTrait> props>
 
 def FhelinalgConv2DNchwFchwOp : LinalgStructuredBase_Op<"fhelinalg_conv_2d_nchw_fchw", !listconcat([AttrSizedOperandSegments],
   /*extraInterfaces=*/[LinalgConvolutionOpInterface])> {
-    
+
   let cppNamespace = "mlir::concretelang::FHELinalg";
   let summary = [{ Performs 2-D convolution. }];
   let description = [{
@@ -746,7 +950,7 @@ RankedI64ElementsAttr<[2]>:$dilations
         $_state.addTypes(resultTensorTypes);
         (void)$_state.addRegion();
       }]>
-      
+
   , OpBuilder<
   (ins "TypeRange":$resultTensorTypes, "ValueRange":$inputs,
        "ValueRange":$outputs, "Attribute":$strides, "Attribute":$dilations,
@@ -790,10 +994,10 @@ $_state.addAttribute("dilations", dilations);
       // Generic methods.
       static unsigned getNumRegionArgs();
       std::string getLibraryCallName();
-      
+
       bool hasDynamicIndexingMaps();
       LogicalResult verifyIndexingMapRequiredAttributes();
-    
+
     }];
 }
 

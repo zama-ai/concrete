@@ -596,32 +596,151 @@ mlir::LogicalResult verifyConcat(ConcatOp &op) {
 /// Verify the matmul shapes, the type of tensor elements should be checked by
 /// something else
 template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
-  auto lhsTy = ((mlir::Type)op.lhs().getType()).cast<mlir::RankedTensorType>();
+  auto lhsType =
+      ((mlir::Type)op.lhs().getType()).cast<mlir::RankedTensorType>();
+  auto rhsType =
+      ((mlir::Type)op.rhs().getType()).cast<mlir::RankedTensorType>();
 
-  auto rhsTy = ((mlir::Type)op.rhs().getType()).cast<mlir::RankedTensorType>();
+  llvm::ArrayRef<int64_t> lhsShape = lhsType.getShape();
+  llvm::ArrayRef<int64_t> rhsShape = rhsType.getShape();
 
-  auto resultTy =
+  int64_t lhsDims = (int64_t)lhsShape.size();
+  int64_t rhsDims = (int64_t)rhsShape.size();
+
+  auto expectedOutputShape = mlir::SmallVector<int64_t, 2>{};
+  if (lhsDims == 2 && rhsDims == 2) {
+
+    // MxN @ NxP -> MxP
+
+    if (lhsShape[1] != rhsShape[0]) {
+      op.emitOpError() << "should have the same size "
+                          "on dimension #1 of operand #0 "
+                          "and dimension #0 of operand #1";
+      return mlir::failure();
+    }
+
+    expectedOutputShape.push_back(lhsShape[0]);
+    expectedOutputShape.push_back(rhsShape[1]);
+
+  } else if (lhsDims >= 2 && rhsDims >= 2) {
+
+    // KxLxMxN @   NxP -> KxLxMxP
+    // KxLxMxN @ LxNxP -> KxLxMxP
+    // Kx1xMxN @ LxNxP -> KxLxMxP
+
+    //   MxN @ KxLxNxP -> KxLxMxP
+    // LxMxN @ KxLxNxP -> KxLxMxP
+    // 1xMxN @ KxLxNxP -> KxLxMxP
+
+    if (lhsShape[lhsDims - 1] != rhsShape[rhsDims - 2]) {
+      op.emitOpError() << "should have the same size "
+                       << "on dimension #" << lhsDims - 1 << " of operand #0 "
+                       << "and dimension #" << rhsDims - 2 << " of operand #1";
+      return mlir::failure();
+    }
+
+    auto expectedOutputShapeReversed = mlir::SmallVector<int64_t, 4>{};
+
+    expectedOutputShapeReversed.push_back(rhsShape[rhsDims - 1]);
+    expectedOutputShapeReversed.push_back(lhsShape[lhsDims - 2]);
+
+    int64_t i = lhsDims - 3;
+    int64_t j = rhsDims - 3;
+    while (i >= 0 && j >= 0) {
+      int64_t lhsSize = lhsShape[i];
+      int64_t rhsSize = rhsShape[j];
+
+      if (lhsSize == rhsSize || lhsSize == 1 || rhsSize == 1) {
+        expectedOutputShapeReversed.push_back(std::max(lhsSize, rhsSize));
+      } else {
+        op.emitOpError() << "should have the same size or size of 1 "
+                         << "on dimension #" << i << " of operand #0 "
+                         << "and dimension #" << j << " of operand #1";
+        return mlir::failure();
+      }
+
+      i--;
+      j--;
+    }
+    while (i >= 0) {
+      int64_t lhsSize = lhsShape[i];
+      expectedOutputShapeReversed.push_back(lhsSize);
+      i--;
+    }
+    while (j >= 0) {
+      int64_t rhsSize = rhsShape[j];
+      expectedOutputShapeReversed.push_back(rhsSize);
+      j--;
+    }
+
+    while (!expectedOutputShapeReversed.empty()) {
+      expectedOutputShape.push_back(expectedOutputShapeReversed.back());
+      expectedOutputShapeReversed.pop_back();
+    }
+
+  } else if (lhsDims == 1 && rhsDims >= 2) {
+
+    // N @     NxP ->     P
+    // N @   LxNxP ->   LxP
+    // N @ KxLxNxP -> KxLxP
+
+    if (rhsShape[rhsDims - 2] != lhsShape[0]) {
+      op.emitOpError() << "should have the same size "
+                       << "on dimension #0 of operand #0 "
+                       << "and dimension #" << rhsDims - 2 << " of operand #1";
+      return mlir::failure();
+    }
+
+    for (int64_t i = 0; i < rhsDims; i++) {
+      if (i != rhsDims - 2) {
+        expectedOutputShape.push_back(rhsShape[i]);
+      }
+    }
+
+  } else if (lhsDims >= 2 && rhsDims == 1) {
+
+    //     MxN @ N ->     M
+    //   LxMxN @ N ->   LxM
+    // KxLxMxN @ N -> KxLxM
+
+    if (lhsShape[lhsDims - 1] != rhsShape[0]) {
+      op.emitOpError() << "should have the same size "
+                       << "on dimension #" << lhsDims - 1 << " of operand #0 "
+                       << "and dimension #0 of operand #1";
+      return mlir::failure();
+    }
+
+    for (int64_t i = 0; i < lhsDims - 1; i++) {
+      expectedOutputShape.push_back(lhsShape[i]);
+    }
+
+  } else {
+
+    // M @ N
+
+    op.emitOpError() << "should have at least one "
+                        "multi dimensional tensor "
+                        "as an operand";
+    return mlir::failure();
+  }
+
+  auto resultType =
       ((mlir::Type)op.getResult().getType()).cast<mlir::RankedTensorType>();
 
-  if (lhsTy.getShape().size() != 2 || rhsTy.getShape().size() != 2) {
-    op.emitOpError() << "should have 2D tensors as operands";
+  if (!resultType.hasStaticShape(expectedOutputShape)) {
+    auto stream = op->emitOpError();
+
+    stream << "does not have the proper output shape of ";
+
+    stream << "<" << expectedOutputShape[0];
+    for (size_t i = 1; i < expectedOutputShape.size(); i++) {
+      stream << "x" << expectedOutputShape[i];
+    }
+    stream << ">";
+
     return mlir::failure();
   }
-  if (lhsTy.getDimSize(1) != rhsTy.getDimSize(0)) {
-    op.emitOpError() << "should have the dimension #0 of operand #1"
-                        "equals to the dimension #1 of operand #0, expect "
-                     << lhsTy.getDimSize(1) << " got " << rhsTy.getDimSize(0);
-    return mlir::failure();
-  }
-  // Check the shape of lut argument
-  mlir::SmallVector<int64_t, 2> expectedShape{lhsTy.getDimSize(0),
-                                              rhsTy.getDimSize(1)};
-  if (!resultTy.hasStaticShape(expectedShape)) {
-    op.emitOpError() << "should have the result shape compatible with operands "
-                     << "shape, expect " << expectedShape[0] << "x"
-                     << expectedShape[1] << " as the shape of the result";
-    return mlir::failure();
-  }
+
   return mlir::success();
 }
 

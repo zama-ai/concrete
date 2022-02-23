@@ -819,84 +819,265 @@ struct FHELinalgMatmulToLinalgGeneric
     : public mlir::OpRewritePattern<FHELinalgMatmulOp> {
   FHELinalgMatmulToLinalgGeneric(
       mlir::MLIRContext *context,
-      std::function<mlir::concretelang::FHE::MulEintIntOp(
-          mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value,
-          mlir::Value)>
+      std::function<FHE::MulEintIntOp(mlir::OpBuilder &, mlir::Location,
+                                      mlir::Type, mlir::Value, mlir::Value)>
           createMulOp,
       mlir::PatternBenefit benefit =
           mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : ::mlir::OpRewritePattern<FHELinalgMatmulOp>(context, benefit),
+      : mlir::OpRewritePattern<FHELinalgMatmulOp>(context, benefit),
         createMulOp(createMulOp) {}
 
-  ::mlir::LogicalResult
+  mlir::LogicalResult
   matchAndRewrite(FHELinalgMatmulOp matmulOp,
-                  ::mlir::PatternRewriter &rewriter) const override {
-    mlir::Location matmulLoc = matmulOp.getLoc();
-    mlir::RankedTensorType resultTy =
-        ((mlir::Type)matmulOp->getResult(0).getType())
-            .cast<mlir::RankedTensorType>();
-    mlir::Type resultElementTy = resultTy.getElementType();
-    // Create the initial value, `FHE.zero_tensor`
-    auto init = rewriter.create<mlir::concretelang::FHE::ZeroTensorOp>(
-        matmulLoc, resultTy);
-    // Create the affine #maps_0
-    llvm::SmallVector<mlir::AffineMap> maps{
-        // (m, n, p) -> (m, p),
-        mlir::AffineMap::get(
-            3, 0, {rewriter.getAffineDimExpr(0), rewriter.getAffineDimExpr(2)},
-            rewriter.getContext()),
-        // (m, n, p) -> (p, n),
-        mlir::AffineMap::get(
-            3, 0, {rewriter.getAffineDimExpr(2), rewriter.getAffineDimExpr(1)},
-            rewriter.getContext()),
-        // (m, n, p) -> (m, n)
-        mlir::AffineMap::get(
-            3, 0, {rewriter.getAffineDimExpr(0), rewriter.getAffineDimExpr(1)},
-            rewriter.getContext()),
+                  mlir::PatternRewriter &rewriter) const override {
+
+    mlir::Location location = matmulOp.getLoc();
+
+    mlir::Value lhs = matmulOp.lhs();
+    mlir::Value rhs = matmulOp.rhs();
+    mlir::Value out = matmulOp.getResult();
+
+    auto lhsType = ((mlir::Type)lhs.getType()).cast<mlir::RankedTensorType>();
+    auto rhsType = ((mlir::Type)rhs.getType()).cast<mlir::RankedTensorType>();
+    auto outType = ((mlir::Type)out.getType()).cast<mlir::RankedTensorType>();
+
+    llvm::ArrayRef<int64_t> lhsShape = lhsType.getShape();
+    llvm::ArrayRef<int64_t> rhsShape = rhsType.getShape();
+    llvm::ArrayRef<int64_t> outShape = outType.getShape();
+
+    int64_t lhsDims = (int64_t)lhsShape.size();
+    int64_t rhsDims = (int64_t)rhsShape.size();
+    int64_t outDims = (int64_t)outShape.size();
+
+    mlir::Value zeros =
+        rewriter.create<FHE::ZeroTensorOp>(location, outType).getResult();
+
+    auto ins = llvm::SmallVector<mlir::Value, 2>{lhs, rhs};
+    auto outs = llvm::SmallVector<mlir::Value, 1>{zeros};
+
+    auto iteratorTypes = llvm::SmallVector<llvm::StringRef, 3>{};
+
+    auto lhsAffineExpressions = llvm::SmallVector<mlir::AffineExpr, 2>{};
+    auto rhsAffineExpressions = llvm::SmallVector<mlir::AffineExpr, 2>{};
+    auto outAffineExpressions = llvm::SmallVector<mlir::AffineExpr, 2>{};
+
+    if (lhsDims >= 2 && rhsDims >= 2) {
+
+      // here are some example shapes to help understand the logic below
+      // notation: lhs.shape @ rhs.shape -> output.shape
+
+      // MxN @ NxP -> MxP
+
+      // KxLxMxN @   NxP -> KxLxMxP
+      // KxLxMxN @ LxNxP -> KxLxMxP
+      // Kx1xMxN @ LxNxP -> KxLxMxP
+
+      //   MxN @ KxLxNxP -> KxLxMxP
+      // LxMxN @ KxLxNxP -> KxLxMxP
+      // 1xMxN @ KxLxNxP -> KxLxMxP
+
+      // make iterator types
+      //   ["parallel", "parallel", ..., "parallel", "reduction"]
+      //    ---------------------------------------
+      //    output.shape.size() times
+      //
+      // think of it as
+      //
+      // - 1st iterator is for the 1st dimension of the output (K in examples)
+      // - 2nd iterator is for the 2nd dimension of the output (L in examples)
+      // - ...
+      // - Nth iterator is for the Nth dimension of the output
+      // - Last iterator is for the reduced dimension (N in the examples)
+
+      for (int64_t i = 0; i < outDims; i++) {
+        iteratorTypes.push_back(mlir::getParallelIteratorTypeName());
+      }
+      iteratorTypes.push_back(mlir::getReductionIteratorTypeName());
+
+      // we need to put appropriate affine dimension expressions
+      // that match lhs.shape on iterator types array
+
+      // in KxLxMxN @ NxP -> KxLxMxP, we need to create the following map
+      //
+      // (dK, dL, dM, dP, dN) -> (dK, dL, dM, dN)
+      // ==
+      // (d0, d1, d2, d3, d4) -> (d0, d1, d2, d4)
+
+      // in LxMxN @ KxLxNxP -> KxLxMxP, we need to create the following map
+      //
+      // (dK, dL, dM, dP, dN) -> (dL, dM, dN)
+      // ==
+      // (d0, d1, d2, d3, d4) -> (d1, d2, d4)
+
+      // in MxN @ KxLxNxP -> KxLxMxP, we need to create the following map
+      //
+      // (dK, dL, dM, dP, dN) -> (dM, dN)
+      // ==
+      // (d0, d1, d2, d3, d4) -> (d2, d4)
+
+      // so the first AffineDimExpr we need to create is
+      // output.shape.size() - lhs.shape.size() == outDims - lhsDims
+
+      // then we need to add all dims in the output except it's last dim
+      // so, we iterate up to output.shape.size() - 1 == outDims - 1
+
+      // and finally, we add the AffineDimExpr corresponding to `N`
+      // which is at the last index of `iteratorTypes`
+
+      for (int64_t dim = outDims - lhsDims; dim < outDims - 1; dim++) {
+        if (lhsShape[dim] == 1) {
+          // broadcasted so current `dim` will always be indexed with `0`
+          lhsAffineExpressions.push_back(rewriter.getAffineConstantExpr(0));
+        } else {
+          lhsAffineExpressions.push_back(rewriter.getAffineDimExpr(dim));
+        }
+      }
+      lhsAffineExpressions.push_back(
+          rewriter.getAffineDimExpr(iteratorTypes.size() - 1));
+
+      // we need to put appropriate affine dimension expressions
+      // that match rhs.shape on iterator types array
+
+      // in KxLxMxN @ NxP -> KxLxMxP, we need to create the following map
+      //
+      // (dK, dL, dM, dP, dN) -> (dN, dP)
+      // ==
+      // (d0, d1, d2, d3, d4) -> (d4, d3)
+
+      // in KxLxMxN @ LxNxP -> KxLxMxP, we need to create the following map
+      //
+      // (dK, dL, dM, dP, dN) -> (dL, dN, dP)
+      // ==
+      // (d0, d1, d2, d3, d4) -> (d1, d4, d3)
+
+      // in LxMxN @ KxLxNxP -> KxLxMxP, we need to create the following map
+      //
+      // (dK, dL, dM, dP, dN) -> (dK, dL, dN, dP)
+      // ==
+      // (d0, d1, d2, d3, d4) -> (d0, d1, d4, d3)
+
+      // so the first AffineDimExpr we need to create is
+      // output.shape.size() - rhs.shape.size() == outDims - rhsDims
+
+      // then we need to add all dims in the output except it's last 2 dims
+      // so, we iterate up to output.shape.size() - 2 == outDims - 2
+
+      // and finally, we add the AffineDimExpr corresponding to `N` and `P`
+      // which is at the last and one before last indices of `iteratorTypes`
+
+      for (int64_t dim = outDims - rhsDims; dim < outDims - 2; dim++) {
+        if (rhsShape[dim] == 1) {
+          // broadcasted so current `dim` will always be indexed with `0`
+          rhsAffineExpressions.push_back(rewriter.getAffineConstantExpr(0));
+        } else {
+          rhsAffineExpressions.push_back(rewriter.getAffineDimExpr(dim));
+        }
+      }
+      rhsAffineExpressions.push_back(
+          rewriter.getAffineDimExpr(iteratorTypes.size() - 1));
+      rhsAffineExpressions.push_back(
+          rewriter.getAffineDimExpr(iteratorTypes.size() - 2));
+
+      for (int64_t i = 0; i < outDims; i++) {
+        outAffineExpressions.push_back(rewriter.getAffineDimExpr(i));
+      }
+
+    } else if (lhsDims == 1 && rhsDims >= 2) {
+
+      // here are some example shapes to help understand the logic below
+      // notation: lhs.shape @ rhs.shape -> output.shape
+
+      // N @     NxP ->     P
+      // N @   LxNxP ->   LxP
+      // N @ KxLxNxP -> KxLxP
+
+      int64_t commonDim = rhsDims - 2;
+      for (int64_t i = 0; i < rhsDims; i++) {
+        if (i == commonDim) {
+          iteratorTypes.push_back(mlir::getReductionIteratorTypeName());
+        } else {
+          iteratorTypes.push_back(mlir::getParallelIteratorTypeName());
+        }
+      }
+
+      lhsAffineExpressions.push_back(rewriter.getAffineDimExpr(commonDim));
+
+      for (int64_t i = 0; i < rhsDims; i++) {
+        rhsAffineExpressions.push_back(rewriter.getAffineDimExpr(i));
+      }
+
+      for (int64_t i = 0; i < rhsDims; i++) {
+        if (i != commonDim) {
+          outAffineExpressions.push_back(rewriter.getAffineDimExpr(i));
+        }
+      }
+
+    } else if (lhsDims >= 2 && rhsDims == 1) {
+
+      // here are some example shapes to help understand the logic below
+      // notation: lhs.shape @ rhs.shape -> output.shape
+
+      //     MxN @ N ->     M
+      //   LxMxN @ N ->   LxM
+      // KxLxMxN @ N -> KxLxM
+
+      for (int64_t i = 0; i < lhsDims - 1; i++) {
+        iteratorTypes.push_back(mlir::getParallelIteratorTypeName());
+      }
+      iteratorTypes.push_back(mlir::getReductionIteratorTypeName());
+
+      for (int64_t i = 0; i < lhsDims; i++) {
+        lhsAffineExpressions.push_back(rewriter.getAffineDimExpr(i));
+      }
+
+      rhsAffineExpressions.push_back(rewriter.getAffineDimExpr(lhsDims - 1));
+
+      for (int64_t i = 0; i < lhsDims - 1; i++) {
+        outAffineExpressions.push_back(rewriter.getAffineDimExpr(i));
+      }
+    }
+
+    auto maps = llvm::SmallVector<mlir::AffineMap, 3>{
+        mlir::AffineMap::get(iteratorTypes.size(), 0, lhsAffineExpressions,
+                             rewriter.getContext()),
+        mlir::AffineMap::get(iteratorTypes.size(), 0, rhsAffineExpressions,
+                             rewriter.getContext()),
+        mlir::AffineMap::get(iteratorTypes.size(), 0, outAffineExpressions,
+                             rewriter.getContext()),
     };
 
-    // Create the iterator_types
-    llvm::SmallVector<llvm::StringRef> iteratorTypes{"parallel", "parallel",
-                                                     "reduction"};
+    mlir::Type outElementType = outType.getElementType();
+    auto regionBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                             mlir::Location nestedLoc,
+                             mlir::ValueRange blockArgs) {
+      mlir::Value multiplication =
+          createMulOp(nestedBuilder, location, outElementType, blockArgs[0],
+                      blockArgs[1])
+              .getResult();
 
-    // Create the body of the `linalg.generic` op
-    auto bodyBuilder = [&](mlir::OpBuilder &nestedBuilder,
-                           mlir::Location nestedLoc,
-                           mlir::ValueRange blockArgs) {
-      // "FHE.mul_eint_int"(%a, %b) : (!FHE.eint<p>, ip') -> !FHE.eint<p>
-      mlir::concretelang::FHE::MulEintIntOp mulEintIntOp =
-          createMulOp(nestedBuilder, matmulLoc, resultElementTy, blockArgs[0],
-                      blockArgs[1]);
-      // "FHE.add_eint"(%c, %d): (!FHE.eint<p>, !FHE.eint<p>) ->
-      // !FHE.eint<p>
-      mlir::concretelang::FHE::AddEintOp addEintOp =
-          nestedBuilder.create<mlir::concretelang::FHE::AddEintOp>(
-              matmulLoc, resultElementTy, blockArgs[2], mulEintIntOp);
-      // linalg.yield %e : !FHE.eint<p>
-      nestedBuilder.create<mlir::linalg::YieldOp>(matmulLoc,
-                                                  addEintOp.getResult());
+      mlir::Value addition =
+          nestedBuilder
+              .create<FHE::AddEintOp>(location, outElementType, blockArgs[2],
+                                      multiplication)
+              .getResult();
+
+      nestedBuilder.create<linalg::YieldOp>(location, addition);
     };
 
-    // Create the `linalg.generic` op
-    llvm::SmallVector<mlir::Type> resTypes{init.getType()};
-    llvm::SmallVector<mlir::Value> ins{matmulOp.lhs(), matmulOp.rhs()};
-    llvm::SmallVector<mlir::Value> outs{init};
-    llvm::StringRef doc{""};
-    llvm::StringRef call{""};
+    auto resultTypes = llvm::SmallVector<mlir::Type, 1>{outType};
+    mlir::Value result =
+        rewriter
+            .create<linalg::GenericOp>(location, resultTypes, ins, outs, maps,
+                                       iteratorTypes, regionBuilder)
+            .getResult(0);
 
-    mlir::linalg::GenericOp genericOp =
-        rewriter.create<mlir::linalg::GenericOp>(matmulLoc, resTypes, ins, outs,
-                                                 maps, iteratorTypes, doc, call,
-                                                 bodyBuilder);
-
-    rewriter.replaceOp(matmulOp, {genericOp.getResult(0)});
-
-    return ::mlir::success();
+    rewriter.replaceOp(matmulOp, {result});
+    return mlir::success();
   };
 
 private:
-  std::function<mlir::concretelang::FHE::MulEintIntOp(
-      mlir::OpBuilder &, mlir::Location, mlir::Type, mlir::Value, mlir::Value)>
+  std::function<FHE::MulEintIntOp(mlir::OpBuilder &, mlir::Location, mlir::Type,
+                                  mlir::Value, mlir::Value)>
       createMulOp;
 };
 

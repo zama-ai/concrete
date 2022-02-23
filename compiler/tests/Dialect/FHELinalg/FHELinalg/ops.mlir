@@ -321,32 +321,6 @@ func @dot_eint_int(%arg0: tensor<2x!FHE.eint<2>>,
 }
 
 /////////////////////////////////////////////////
-// FHELinalg.matmul_eint_int
-/////////////////////////////////////////////////
-
-// CHECK-LABEL:  @matmul_eint_int(%arg0: tensor<3x4x!FHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>>
-func @matmul_eint_int(%arg0: tensor<3x4x!FHE.eint<2>>, %arg1: tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>> {
-  // CHECK-NEXT: %[[V1:.*]] = "FHELinalg.matmul_eint_int"(%arg0, %arg1) : (tensor<3x4x!FHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>>
-  // CHECK-NEXT: return %[[V1]] : tensor<3x2x!FHE.eint<2>>
-
-  %1 = "FHELinalg.matmul_eint_int"(%arg0, %arg1): (tensor<3x4x!FHE.eint<2>>, tensor<4x2xi3>) -> tensor<3x2x!FHE.eint<2>>
-  return %1 : tensor<3x2x!FHE.eint<2>>
-}
-
-/////////////////////////////////////////////////
-// FHELinalg.matmul_int_eint
-/////////////////////////////////////////////////
-
-// CHECK-LABEL:  @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<4x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>>
-func @matmul_int_eint(%arg0: tensor<3x4xi3>, %arg1: tensor<4x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>> {
-  // CHECK-NEXT: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%arg0, %arg1) : (tensor<3x4xi3>, tensor<4x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>>
-  // CHECK-NEXT: return %[[V1]] : tensor<3x2x!FHE.eint<2>>
-
-  %1 = "FHELinalg.matmul_int_eint"(%arg0, %arg1): (tensor<3x4xi3>, tensor<4x2x!FHE.eint<2>>) -> tensor<3x2x!FHE.eint<2>>
-  return %1 : tensor<3x2x!FHE.eint<2>>
-}
-
-/////////////////////////////////////////////////
 // FHELinalg.conv2d
 /////////////////////////////////////////////////
 

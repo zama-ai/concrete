@@ -298,6 +298,206 @@ func @matmul_eint_int_cst_p_2_n_1(%arg0: tensor<3x2x!FHE.eint<2>>) -> tensor<3x2
   return %1 : tensor<3x2x!FHE.eint<2>>
 }
 
+// -----
+
+func @matmul_eint_int_cst() -> tensor<4x3x!FHE.eint<7>> {
+  %0 = "FHE.zero_tensor"() : () -> tensor<4x3x!FHE.eint<7>>
+
+  // ===============================
+
+  %1 = arith.constant dense<
+    // ceil(sqrt(2^2 + 1^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+    [2, 1, 5]
+  > : tensor<3xi8>
+
+  // CHECK: MANP = 6 : ui{{[0-9]+}}
+  %2 = "FHELinalg.matmul_eint_int"(%0, %1) : (tensor<4x3x!FHE.eint<7>>, tensor<3xi8>) -> tensor<4x!FHE.eint<7>>
+
+  // ===============================
+
+  %3 = arith.constant dense<
+    // ceil(sqrt(2^2 + 3^2 + 5^2 + 1)) = ceil(sqrt(39)) = 7
+    // ceil(sqrt(3^2 + 2^2 + 6^2 + 1)) = ceil(sqrt(50)) = 8
+    [
+      [2, 3],
+      [3, 2],
+      [5, 6]
+    ]
+  > : tensor<3x2xi8>
+
+  // CHECK: MANP = 8 : ui{{[0-9]+}}
+  %4 = "FHELinalg.matmul_eint_int"(%0, %3) : (tensor<4x3x!FHE.eint<7>>, tensor<3x2xi8>) -> tensor<4x2x!FHE.eint<7>>
+
+  // ===============================
+
+  %5 = arith.constant dense<
+    [
+      // ceil(sqrt(1^2 + 4^2 + 6^2 + 1)) = ceil(sqrt(54)) = 8
+      // ceil(sqrt(6^2 + 3^2 + 2^2 + 1)) = ceil(sqrt(50)) = 8
+      [
+        [1, 6],
+        [4, 3],
+        [6, 2]
+      ],
+
+      // ceil(sqrt(5^2 + 3^2 + 5^2 + 1)) = ceil(sqrt(60)) = 8
+      // ceil(sqrt(3^2 + 2^2 + 6^2 + 1)) = ceil(sqrt(50)) = 8
+      [
+        [5, 3],
+        [3, 2],
+        [5, 6]
+      ],
+
+      // ceil(sqrt(5^2 + 5^2 + 3^2 + 1)) = ceil(sqrt(60)) = 8
+      // ceil(sqrt(3^2 + 6^2 + 3^2 + 1)) = ceil(sqrt(55)) = 8
+      [
+        [5, 3],
+        [5, 6],
+        [3, 3]
+      ],
+
+      // ceil(sqrt(6^2 + 1^2 + 4^2 + 1)) = ceil(sqrt(54)) = 8
+      // ceil(sqrt(3^2 + 4^2 + 3^2 + 1)) = ceil(sqrt(35)) = 6
+      [
+        [6, 3],
+        [1, 4],
+        [4, 3]
+      ],
+
+      // ceil(sqrt(1^2 + 6^2 + 6^2 + 1)) = ceil(sqrt(74)) = 9
+      // ceil(sqrt(2^2 + 1^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+      [
+        [1, 2],
+        [6, 1],
+        [6, 5]
+      ]
+   ]
+  > : tensor<5x3x2xi8>
+
+  // CHECK: MANP = 9 : ui{{[0-9]+}}
+  %6 = "FHELinalg.matmul_eint_int"(%0, %5) : (tensor<4x3x!FHE.eint<7>>, tensor<5x3x2xi8>) -> tensor<5x4x2x!FHE.eint<7>>
+
+  // ===============================
+
+  %7 = arith.constant dense<
+    [
+      [
+        // ceil(sqrt(1^2 + 4^2 + 6^2 + 1)) = ceil(sqrt(54)) = 8
+        // ceil(sqrt(6^2 + 3^2 + 2^2 + 1)) = ceil(sqrt(50)) = 8
+        [
+          [1, 6],
+          [4, 3],
+          [6, 2]
+        ],
+
+        // ceil(sqrt(5^2 + 3^2 + 5^2 + 1)) = ceil(sqrt(60)) = 8
+        // ceil(sqrt(3^2 + 2^2 + 6^2 + 1)) = ceil(sqrt(50)) = 8
+        [
+          [5, 3],
+          [3, 2],
+          [5, 6]
+        ],
+
+        // ceil(sqrt(5^2 + 5^2 + 3^2 + 1)) = ceil(sqrt(60)) = 8
+        // ceil(sqrt(3^2 + 6^2 + 3^2 + 1)) = ceil(sqrt(55)) = 8
+        [
+          [5, 3],
+          [5, 6],
+          [3, 3]
+        ],
+
+        // ceil(sqrt(6^2 + 1^2 + 4^2 + 1)) = ceil(sqrt(54)) = 8
+        // ceil(sqrt(3^2 + 4^2 + 3^2 + 1)) = ceil(sqrt(35)) = 6
+        [
+          [6, 3],
+          [1, 4],
+          [4, 3]
+        ],
+
+        // ceil(sqrt(1^2 + 6^2 + 6^2 + 1)) = ceil(sqrt(74)) = 9
+        // ceil(sqrt(2^2 + 1^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+        [
+          [1, 2],
+          [6, 1],
+          [6, 5]
+        ]
+      ],
+      [
+        // ceil(sqrt(6^2 + 1^2 + 3^2 + 1)) = ceil(sqrt(47)) = 7
+        // ceil(sqrt(5^2 + 6^2 + 6^2 + 1)) = ceil(sqrt(98)) = 10
+        [
+          [6, 5],
+          [1, 6],
+          [3, 6]
+        ],
+
+        // ceil(sqrt(1^2 + 2^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+        // ceil(sqrt(6^2 + 3^2 + 1^2 + 1)) = ceil(sqrt(47)) = 7
+        [
+          [1, 6],
+          [2, 3],
+          [5, 1]
+        ],
+
+        // ceil(sqrt(4^2 + 3^2 + 6^2 + 1)) = ceil(sqrt(62)) = 8
+        // ceil(sqrt(1^2 + 5^2 + 2^2 + 1)) = ceil(sqrt(31)) = 6
+        [
+          [4, 1],
+          [3, 5],
+          [6, 2]
+        ],
+
+        // ceil(sqrt(2^2 + 3^2 + 3^2 + 1)) = ceil(sqrt(23)) = 5
+        // ceil(sqrt(2^2 + 2^2 + 1^2 + 1)) = ceil(sqrt(10)) = 4
+        [
+          [2, 2],
+          [3, 2],
+          [3, 1]
+        ],
+
+        // ceil(sqrt(6^2 + 2^2 + 3^2 + 1)) = ceil(sqrt(50)) = 8
+        // ceil(sqrt(2^2 + 4^2 + 2^2 + 1)) = ceil(sqrt(25)) = 5
+        [
+          [6, 2],
+          [2, 4],
+          [3, 2]
+        ]
+      ]
+    ]
+  > : tensor<2x5x3x2xi8>
+
+  // CHECK: MANP = 10 : ui{{[0-9]+}}
+  %8 = "FHELinalg.matmul_eint_int"(%0, %7) : (tensor<4x3x!FHE.eint<7>>, tensor<2x5x3x2xi8>) -> tensor<2x5x4x2x!FHE.eint<7>>
+
+  // ===============================
+
+  return %0 : tensor<4x3x!FHE.eint<7>>
+}
+
+// -----
+
+func @matmul_eint_int_cst_different_operand_manp() -> tensor<4x3x!FHE.eint<7>> {
+  %z = "FHE.zero_tensor"() : () -> tensor<4x3x!FHE.eint<7>>
+  %a = arith.constant dense<[[4, 6, 5], [2, 6, 3], [5, 6, 1], [5, 5, 3]]> : tensor<4x3xi8>
+
+  // CHECK: {MANP = 7 : ui{{[0-9]+}}}
+  %0 = "FHELinalg.add_eint_int"(%z, %a) : (tensor<4x3x!FHE.eint<7>>, tensor<4x3xi8>) -> tensor<4x3x!FHE.eint<7>>
+
+  // ===============================
+
+  %1 = arith.constant dense<
+    // ceil(sqrt(37 * (2^2 + 1^2 + 5^2) + 1)) = ceil(sqrt(1111)) = 34
+    [2, 1, 5]
+  > : tensor<3xi8>
+
+  // CHECK: MANP = 34 : ui{{[0-9]+}}
+  %2 = "FHELinalg.matmul_eint_int"(%0, %1) : (tensor<4x3x!FHE.eint<7>>, tensor<3xi8>) -> tensor<4x!FHE.eint<7>>
+
+  // ===============================
+
+  return %0 : tensor<4x3x!FHE.eint<7>>
+}
+
 /////////////////////////////////////////////////
 // FHELinalg.matmul_int_eint
 /////////////////////////////////////////////////
@@ -379,6 +579,190 @@ func @matmul_int_eint_cst_p_2_n_1(%arg0: tensor<2x3x!FHE.eint<2>>) -> tensor<2x3
   // CHECK: %[[V1:.*]] = "FHELinalg.matmul_int_eint"(%[[A0:.*]], %[[A1:.*]]) {MANP = 5 : ui{{[0-9]+}}}
   %1 = "FHELinalg.matmul_int_eint"(%0, %arg0): (tensor<2x2xi3>, tensor<2x3x!FHE.eint<2>>) -> tensor<2x3x!FHE.eint<2>>
   return %1 : tensor<2x3x!FHE.eint<2>>
+}
+
+// -----
+
+func @matmul_int_eint_cst() -> tensor<3x2x!FHE.eint<7>> {
+  %0 = "FHE.zero_tensor"() : () -> tensor<3x2x!FHE.eint<7>>
+
+  // ===============================
+
+  %1 = arith.constant dense<
+    // ceil(sqrt(2^2 + 1^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+    [2, 1, 5]
+  > : tensor<3xi8>
+
+  // CHECK: MANP = 6 : ui{{[0-9]+}}
+  %2 = "FHELinalg.matmul_int_eint"(%1, %0) : (tensor<3xi8>, tensor<3x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>>
+
+  // ===============================
+
+  %3 = arith.constant dense<
+    // ceil(sqrt(2^2 + 3^2 + 5^2 + 1)) = ceil(sqrt(39)) = 7
+    // ceil(sqrt(3^2 + 2^2 + 6^2 + 1)) = ceil(sqrt(50)) = 8
+    [
+      [2, 3, 5],
+      [3, 2, 6]
+    ]
+  > : tensor<2x3xi8>
+
+  // CHECK: MANP = 8 : ui{{[0-9]+}}
+  %4 = "FHELinalg.matmul_int_eint"(%3, %0) : (tensor<2x3xi8>, tensor<3x2x!FHE.eint<7>>) -> tensor<2x2x!FHE.eint<7>>
+
+  // ===============================
+
+  %5 = arith.constant dense<
+    [
+      // ceil(sqrt(1^2 + 4^2 + 6^2 + 1)) = ceil(sqrt(54)) = 8
+      // ceil(sqrt(6^2 + 3^2 + 2^2 + 1)) = ceil(sqrt(50)) = 8
+      [
+        [1, 4, 6],
+        [6, 3, 2]
+      ],
+
+      // ceil(sqrt(5^2 + 3^2 + 5^2 + 1)) = ceil(sqrt(60)) = 8
+      // ceil(sqrt(3^2 + 2^2 + 6^2 + 1)) = ceil(sqrt(50)) = 8
+      [
+        [5, 3, 5],
+        [3, 2, 6]
+      ],
+
+      // ceil(sqrt(5^2 + 5^2 + 3^2 + 1)) = ceil(sqrt(60)) = 8
+      // ceil(sqrt(3^2 + 6^2 + 3^2 + 1)) = ceil(sqrt(55)) = 8
+      [
+        [5, 5, 3],
+        [3, 6, 3]
+      ],
+
+      // ceil(sqrt(6^2 + 1^2 + 4^2 + 1)) = ceil(sqrt(54)) = 8
+      // ceil(sqrt(3^2 + 4^2 + 3^2 + 1)) = ceil(sqrt(35)) = 6
+      [
+        [6, 1, 4],
+        [3, 4, 3]
+      ],
+
+      // ceil(sqrt(1^2 + 6^2 + 6^2 + 1)) = ceil(sqrt(74)) = 9
+      // ceil(sqrt(2^2 + 1^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+      [
+        [1, 6, 6],
+        [2, 1, 5]
+      ]
+   ]
+  > : tensor<5x2x3xi8>
+
+  // CHECK: MANP = 9 : ui{{[0-9]+}}
+  %6 = "FHELinalg.matmul_int_eint"(%5, %0) : (tensor<5x2x3xi8>, tensor<3x2x!FHE.eint<7>>) -> tensor<5x2x2x!FHE.eint<7>>
+
+  // ===============================
+
+  %7 = arith.constant dense<
+    [
+      [
+        // ceil(sqrt(1^2 + 4^2 + 6^2 + 1)) = ceil(sqrt(54)) = 8
+        // ceil(sqrt(6^2 + 3^2 + 2^2 + 1)) = ceil(sqrt(50)) = 8
+        [
+          [1, 4, 6],
+          [6, 3, 2]
+        ],
+
+        // ceil(sqrt(5^2 + 3^2 + 5^2 + 1)) = ceil(sqrt(60)) = 8
+        // ceil(sqrt(3^2 + 2^2 + 6^2 + 1)) = ceil(sqrt(50)) = 8
+        [
+          [5, 3, 5],
+          [3, 2, 6]
+        ],
+
+        // ceil(sqrt(5^2 + 5^2 + 3^2 + 1)) = ceil(sqrt(60)) = 8
+        // ceil(sqrt(3^2 + 6^2 + 3^2 + 1)) = ceil(sqrt(55)) = 8
+        [
+          [5, 5, 3],
+          [3, 6, 3]
+        ],
+
+        // ceil(sqrt(6^2 + 1^2 + 4^2 + 1)) = ceil(sqrt(54)) = 8
+        // ceil(sqrt(3^2 + 4^2 + 3^2 + 1)) = ceil(sqrt(35)) = 6
+        [
+          [6, 1, 4],
+          [3, 4, 3]
+        ],
+
+        // ceil(sqrt(1^2 + 6^2 + 6^2 + 1)) = ceil(sqrt(74)) = 9
+        // ceil(sqrt(2^2 + 1^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+        [
+          [1, 6, 6],
+          [2, 1, 5]
+        ]
+      ],
+      [
+        // ceil(sqrt(6^2 + 1^2 + 3^2 + 1)) = ceil(sqrt(47)) = 7
+        // ceil(sqrt(5^2 + 6^2 + 6^2 + 1)) = ceil(sqrt(98)) = 10
+        [
+          [6, 1, 3],
+          [5, 6, 6]
+        ],
+
+        // ceil(sqrt(1^2 + 2^2 + 5^2 + 1)) = ceil(sqrt(31)) = 6
+        // ceil(sqrt(6^2 + 3^2 + 1^2 + 1)) = ceil(sqrt(47)) = 7
+        [
+          [1, 2, 5],
+          [6, 3, 1]
+        ],
+
+        // ceil(sqrt(4^2 + 3^2 + 6^2 + 1)) = ceil(sqrt(62)) = 8
+        // ceil(sqrt(1^2 + 5^2 + 2^2 + 1)) = ceil(sqrt(31)) = 6
+        [
+          [4, 3, 6],
+          [1, 5, 2]
+        ],
+
+        // ceil(sqrt(2^2 + 3^2 + 3^2 + 1)) = ceil(sqrt(23)) = 5
+        // ceil(sqrt(2^2 + 2^2 + 1^2 + 1)) = ceil(sqrt(10)) = 4
+        [
+          [2, 3, 3],
+          [2, 2, 1]
+        ],
+
+        // ceil(sqrt(6^2 + 2^2 + 3^2 + 1)) = ceil(sqrt(50)) = 8
+        // ceil(sqrt(2^2 + 4^2 + 2^2 + 1)) = ceil(sqrt(25)) = 5
+        [
+          [6, 2, 3],
+          [2, 4, 2]
+        ]
+      ]
+    ]
+  > : tensor<2x5x2x3xi8>
+
+  // CHECK: MANP = 10 : ui{{[0-9]+}}
+  %8 = "FHELinalg.matmul_int_eint"(%7, %0) : (tensor<2x5x2x3xi8>, tensor<3x2x!FHE.eint<7>>) -> tensor<2x5x2x2x!FHE.eint<7>>
+
+  // ===============================
+
+  return %0 : tensor<3x2x!FHE.eint<7>>
+}
+
+// -----
+
+func @matmul_int_eint_cst_different_operand_manp() -> tensor<3x2x!FHE.eint<7>> {
+  %z = "FHE.zero_tensor"() : () -> tensor<3x2x!FHE.eint<7>>
+  %a = arith.constant dense<[[4, 6], [2, 6], [5, 6]]> : tensor<3x2xi8>
+
+  // CHECK: {MANP = 7 : ui{{[0-9]+}}}
+  %0 = "FHELinalg.add_eint_int"(%z, %a) : (tensor<3x2x!FHE.eint<7>>, tensor<3x2xi8>) -> tensor<3x2x!FHE.eint<7>>
+
+  // ===============================
+
+  %1 = arith.constant dense<
+    // ceil(sqrt(37 * (2^2 + 1^2 + 5^2) + 1)) = ceil(sqrt(1111)) = 34
+    [2, 1, 5]
+  > : tensor<3xi8>
+
+  // CHECK: MANP = 34 : ui{{[0-9]+}}
+  %2 = "FHELinalg.matmul_int_eint"(%1, %0) : (tensor<3xi8>, tensor<3x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>>
+
+  // ===============================
+
+  return %0 : tensor<3x2x!FHE.eint<7>>
 }
 
 // -----
