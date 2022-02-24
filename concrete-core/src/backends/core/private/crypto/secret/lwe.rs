@@ -10,11 +10,13 @@ use concrete_commons::key_kinds::{
     BinaryKeyKind, GaussianKeyKind, KeyKind, TernaryKeyKind, UniformKeyKind,
 };
 use concrete_commons::numeric::Numeric;
-use concrete_commons::parameters::LweDimension;
+use concrete_commons::parameters::{LweDimension, Seed};
 
 use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
 use crate::backends::core::private::crypto::gsw::GswCiphertext;
-use crate::backends::core::private::crypto::lwe::{LweCiphertext, LweList};
+use crate::backends::core::private::crypto::lwe::{
+    LweCiphertext, LweList, LweMask, LweSeededCiphertext,
+};
 use crate::backends::core::private::crypto::secret::generators::{
     EncryptionRandomGenerator, SecretRandomGenerator,
 };
@@ -340,6 +342,60 @@ where
         output_body.0 = output_body
             .0
             .wrapping_add(output_masks.compute_multisum(self));
+
+        // add the encoded message
+        output_body.0 = output_body.0.wrapping_add(encoded.0);
+    }
+
+    /// Encrypts a single seeded ciphertext.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{LweDimension, LweSize, Seed};
+    /// use concrete_core::backends::core::private::crypto::encoding::*;
+    /// use concrete_core::backends::core::private::crypto::lwe::*;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::backends::core::private::crypto::secret::*;
+    /// use concrete_core::backends::core::private::crypto::*;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let plain = Plaintext(3u32);
+    /// let mut encrypted = LweSeededCiphertext::allocate(0u32, LweDimension(256));
+    /// let mut seed_generator = RandomGenerator::new(None);
+    /// let seed = seed_generator.generate_seed();
+    /// secret_key.encrypt_seeded_lwe(&mut encrypted, &plain, noise, seed);
+    /// ```
+    pub fn encrypt_seeded_lwe<Scalar>(
+        &self,
+        output: &mut LweSeededCiphertext<Scalar>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter,
+        seed: Seed,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        let mut generator = EncryptionRandomGenerator::new(Some(seed.seed));
+        generator.shift(seed.shift);
+        *output.get_mut_seed() = Some(seed);
+
+        let mut tensor_mask = vec![Scalar::ZERO; self.key_size().0];
+        let mut mask = LweMask::from_container(tensor_mask.as_mut_slice());
+
+        generator.fill_tensor_with_random_mask(&mut mask);
+
+        let mut output_body = output.get_mut_body();
+
+        // generate an error from the normal distribution described by std_dev
+        output_body.0 = generator.random_noise(noise_parameters);
+
+        // compute the multisum between the secret key and the mask
+        output_body.0 = output_body.0.wrapping_add(mask.compute_multisum(self));
 
         // add the encoded message
         output_body.0 = output_body.0.wrapping_add(encoded.0);

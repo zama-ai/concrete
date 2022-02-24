@@ -784,6 +784,7 @@ impl<Cont> LweMask<Cont> {
 }
 
 /// The body of an Lwe ciphertext.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct LweBody<T>(pub T);
