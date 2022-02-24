@@ -49,6 +49,7 @@ add_executable(
 add_executable(
   end_to_end_jit_fhe
   end_to_end_jit_fhe.cc
+  EndToEndFixture.cpp
   globals.cc
   )
 
@@ -71,6 +72,7 @@ set_source_files_properties(
   end_to_end_jit_fhe.cc
   end_to_end_jit_fhelinalg.cc
   end_to_end_jit_lambda.cc
+  EndToEndFixture.cpp
 
   PROPERTIES COMPILE_FLAGS "-fno-rtti"
 )

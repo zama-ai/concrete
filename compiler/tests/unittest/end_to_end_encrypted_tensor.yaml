@@ -1,0 +1,113 @@
+description: identity
+program: |
+  func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
+    return %t : tensor<2x10x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    outputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+---
+description: extract
+program: |
+  func @main(%t: tensor<2x10x!FHE.eint<6>>, %i: index, %j: index) ->
+  !FHE.eint<6> {
+    %c = tensor.extract %t[%i, %j] : tensor<2x10x!FHE.eint<6>>
+    return %c : !FHE.eint<6>
+  }
+tests:
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 63
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    - scalar: 0
+    - scalar: 9
+    outputs:
+    - scalar: 0
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    - scalar: 1
+    - scalar: 9
+    outputs:
+    - scalar: 9
+---
+description: extract_slice
+program: |
+  func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
+    %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
+    return %r : tensor<1x5x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    outputs:
+    - tensor: [ 5,  6,  7,  8,  9]
+      shape: [1,5]
+---
+description: extract_slice_stride
+program: |
+  func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
+    %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
+    return %r : tensor<1x5x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    outputs:
+    - tensor: [0, 2, 4, 6, 8]
+      shape: [1,5]
+---
+description: insert_slice
+program: |
+  func @main(%t0: tensor<2x10x!FHE.eint<6>>, %t1: tensor<2x2x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
+    %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!FHE.eint<6>> into tensor<2x10x!FHE.eint<6>>
+    return %r : tensor<2x10x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+      width: 8
+    - tensor: [31, 32,
+               33, 34]
+      shape: [2,2]
+      width: 8
+    outputs:
+    - tensor: [63, 12, 7, 43, 52, 31, 32, 34, 22,  0,
+               0,  1,  2,  3,  4, 33, 34,  7,  8,  9]
+      shape: [2,10]

@@ -10,8 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(ParallelizeAndRunFHE, add_eint_tree) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %arg3: !FHE.eint<7>) -> !FHE.eint<7> {
   %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
   %2 = "FHE.add_eint"(%arg0, %arg2): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
@@ -56,7 +55,7 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %arg3:
   return %35: !FHE.eint<7>
 }
 )XXX",
-                 "main", false, true);
+             "main", false, true);
 
   ASSERT_EXPECTED_VALUE(lambda(1_u64, 2_u64, 3_u64, 4_u64), 150);
   ASSERT_EXPECTED_VALUE(lambda(4_u64, 5_u64, 6_u64, 7_u64), 74);

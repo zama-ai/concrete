@@ -13,7 +13,7 @@ using tensorArgTy = Z::TensorLambdaArgument<Z::IntLambdaArgument<Elmt>>;
 
 TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
@@ -45,7 +45,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term) {
 // Same as add_eint_int_term_to_term test above, but returning a lambda argument
 TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
@@ -88,7 +88,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
 TEST(End2EndJit_FHELinalg,
      add_eint_int_term_to_term_ret_lambda_argument_multi_dim) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x2x3x!FHE.eint<6>>, %a1: tensor<4x2x3xi7>) -> tensor<4x2x3x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x2x3x!FHE.eint<6>>, tensor<4x2x3xi7>) -> tensor<4x2x3x!FHE.eint<6>>
@@ -132,7 +132,7 @@ TEST(End2EndJit_FHELinalg,
 
 TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_broadcast) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4xi6>) -> tensor<4x4x4x!FHE.eint<5>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4xi6>) -> tensor<4x4x4x!FHE.eint<5>>
@@ -181,7 +181,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_broadcast) {
 
 TEST(End2EndJit_FHELinalg, add_eint_int_matrix_column) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
   //
   // [1,2,3]   [1]   [2,3,4]
@@ -227,7 +227,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_matrix_column) {
 }
 
 TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
   //
   // [1,2,3]             [2,4,6]
@@ -271,7 +271,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line) {
 }
 
 TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line_missing_dim) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
    // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
    func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
      %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>>
@@ -314,7 +314,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line_missing_dim) {
 
 TEST(End2EndJit_FHELinalg, add_eint_term_to_term) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
@@ -348,7 +348,7 @@ TEST(End2EndJit_FHELinalg, add_eint_term_to_term) {
 
 TEST(End2EndJit_FHELinalg, add_eint_term_to_term_broadcast) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
   func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1:
   tensor<1x4x4x!FHE.eint<5>>) -> tensor<4x4x4x!FHE.eint<5>> {
@@ -399,7 +399,7 @@ TEST(End2EndJit_FHELinalg, add_eint_term_to_term_broadcast) {
 
 TEST(End2EndJit_FHELinalg, add_eint_matrix_column) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of encrypted integers.
   //
   // [1,2,3]   [1]   [2,3,4]
@@ -447,7 +447,7 @@ TEST(End2EndJit_FHELinalg, add_eint_matrix_column) {
 
 TEST(End2EndJit_FHELinalg, add_eint_matrix_line) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the addition of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of encrypted integers.
   //
   // [1,2,3]             [2,4,6]
@@ -494,7 +494,7 @@ TEST(End2EndJit_FHELinalg, add_eint_matrix_line) {
 
 TEST(End2EndJit_FHELinalg, add_eint_matrix_line_missing_dim) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
   func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
@@ -533,7 +533,7 @@ TEST(End2EndJit_FHELinalg, add_eint_matrix_line_missing_dim) {
 
 TEST(End2EndJit_FHELinalg, add_eint_tensor_dim_equals_1) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Broadcasting shouldn't happen when some dimensions are equals to 1
   func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
     %1 = "FHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x1x2x!FHE.eint<5>>, tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>>
@@ -580,7 +580,7 @@ TEST(End2EndJit_FHELinalg, add_eint_tensor_dim_equals_1) {
 
 TEST(End2EndJit_FHELinalg, sub_int_eint_term_to_term) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term substraction of `%a0` with `%a1`
   func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi5>, tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>>
@@ -611,7 +611,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_term_to_term) {
 
 TEST(End2EndJit_FHELinalg, sub_int_eint_term_to_term_broadcast) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term substraction of `%a0` with `%a1`, where dimensions equals to one are stretched.
   func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi8>, tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>>
@@ -658,7 +658,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_term_to_term_broadcast) {
 
 TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_column) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the substraction of a 3x3 matrix of integers and a 3x1 matrix (a column) of encrypted integers.
   //
   // [1,2,3]   [1]   [0,2,3]
@@ -707,7 +707,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_column) {
 
 TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the substraction of a 3x3 matrix of integers and a 1x3 matrix (a line) of encrypted integers.
   //
   // [1,2,3]             [0,0,0]
@@ -754,7 +754,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line) {
 
 TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line_missing_dim) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
   func @main(%a0: tensor<3x3xi5>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
@@ -797,7 +797,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line_missing_dim) {
 
 TEST(End2EndJit_FHELinalg, mul_eint_int_term_to_term) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`
   func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
@@ -828,7 +828,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_term_to_term) {
 
 TEST(End2EndJit_FHELinalg, mul_eint_int_term_to_term_broadcast) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equals to one are stretched.
   func @main(%a0: tensor<4x1x4x!FHE.eint<6>>, %a1: tensor<1x4x4xi7>) -> tensor<4x4x4x!FHE.eint<6>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<6>>, tensor<1x4x4xi7>) -> tensor<4x4x4x!FHE.eint<6>>
@@ -876,7 +876,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_term_to_term_broadcast) {
 
 TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_column) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the multiplication of a 3x3 matrix of encrypted integers and a 3x1 matrix (a column) of integers.
   //
   // [1,2,3]   [1]   [1,2,3]
@@ -923,7 +923,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_column) {
 
 TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_line) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the multiplication of a 3x3 matrix of encrypted integers and a 1x3 matrix (a line) of integers.
   //
   // [1,2,3]             [2,4,6]
@@ -968,7 +968,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_line) {
 
 TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_line_missing_dim) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
   func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>>
@@ -1011,7 +1011,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_line_missing_dim) {
 
 TEST(End2EndJit_FHELinalg, apply_lookup_table) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of with 2 on a table of size 4=2² of clear integers.
     //
     // [0,1,2]                 [1,3,5]
@@ -1059,7 +1059,7 @@ TEST(End2EndJit_FHELinalg, apply_lookup_table) {
 
 TEST(End2EndJit_FHELinalg, apply_multi_lookup_table) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a 3x3 matrix of tables of size 4=2² of clear integers.
     func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
@@ -1108,7 +1108,7 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table) {
 
 TEST(End2EndJit_FHELinalg, apply_multi_lookup_table_with_boradcast) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a vector of 3 tables of size 4=2² of clear integers.
     func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
@@ -1160,7 +1160,7 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table_with_boradcast) {
 
 TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_sequential) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
     func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
@@ -1208,7 +1208,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_sequential) {
 
 TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_same_lut) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
     func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
@@ -1259,7 +1259,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_same_lut) {
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(CompileAndRunTensorEncrypted, dot_eint_int_7) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%arg0: tensor<4x!FHE.eint<7>>,
                    %arg1: tensor<4xi8>) -> !FHE.eint<7>
 {
@@ -1283,7 +1283,7 @@ func @main(%arg0: tensor<4x!FHE.eint<7>>,
 
 TEST(End2EndJit_FHELinalg, neg_eint) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
     // Returns the negation of a 3x3 matrix of encrypted integers of width 2.
     //
     //        ([0,1,2])   [0,7,6]
@@ -1331,7 +1331,7 @@ TEST(End2EndJit_FHELinalg, neg_eint) {
 TEST(End2EndJit_FHELinalg, matmul_eint_int_2d_2d) {
   namespace concretelang = mlir::concretelang;
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
   %y = arith.constant dense<
@@ -1389,7 +1389,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, matmul_eint_int_1d_2d) {
   namespace concretelang = mlir::concretelang;
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
   %y = arith.constant dense<
@@ -1434,7 +1434,7 @@ func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, matmul_eint_int_1d_3d) {
   namespace concretelang = mlir::concretelang;
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
   %y = arith.constant dense<
@@ -1505,7 +1505,7 @@ func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, matmul_eint_int_2d_1d) {
   namespace concretelang = mlir::concretelang;
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   %y = arith.constant dense<
@@ -1554,7 +1554,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, matmul_eint_int_3d_1d) {
   namespace concretelang = mlir::concretelang;
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
   %y = arith.constant dense<
@@ -1613,7 +1613,7 @@ func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, matmul_eint_int_3d_3d) {
   namespace concretelang = mlir::concretelang;
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x2x!FHE.eint<7>> {
   %y = arith.constant dense<
@@ -1696,7 +1696,7 @@ func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, matmul_eint_int_4d_3d) {
   namespace concretelang = mlir::concretelang;
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<2x1x3x4x!FHE.eint<7>>) -> tensor<2x5x3x2x!FHE.eint<7>> {
   %y = arith.constant dense<
@@ -1852,7 +1852,7 @@ func @main(%x: tensor<2x1x3x4x!FHE.eint<7>>) -> tensor<2x5x3x2x!FHE.eint<7>> {
 
 TEST(End2EndJit_FHELinalg, matmul_int_eint) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   // Returns the matrix multiplication of a 3x2 matrix of encrypted integers and a 2x3 matrix of integers.
   //         [ 1, 2, 3]
   //         [ 2, 3, 4]
@@ -1908,7 +1908,7 @@ TEST(End2EndJit_FHELinalg, matmul_int_eint) {
 
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
@@ -1955,7 +1955,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22) {
 
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_const_kernel22) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %weight = arith.constant dense<[[[[1, 2], [2, 1]]]]> : tensor<1x1x2x2xi7>
     %0 = "FHELinalg.conv2d"(%input, %weight){
@@ -1996,7 +1996,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_const_kernel22) {
 
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_const_bias) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %bias = arith.constant dense<[1]> : tensor<1xi7>
     %0 = "FHELinalg.conv2d"(%input, %weight, %bias){
@@ -2044,7 +2044,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_const_bias) {
 
 TEST(End2EndJit_FHELinalg, conv2d_batched_input44_kernel22) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   func @main(%input: tensor<3x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<3x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
@@ -2114,7 +2114,7 @@ TEST(End2EndJit_FHELinalg, conv2d_batched_input44_kernel22) {
 
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel2122) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<2x1x2x2xi7>) -> tensor<1x2x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
@@ -2174,7 +2174,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel2122) {
 
 TEST(End2EndJit_FHELinalg, conv2d_simple_input1244_kernel1222) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   func @main(%input: tensor<1x2x4x4x!FHE.eint<6>>, %weight: tensor<1x2x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
@@ -2233,7 +2233,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input1244_kernel1222) {
 
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_dilation2) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[2,2]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
@@ -2284,7 +2284,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_dilation2) {
 
 TEST(End2EndJit_Linalg, tensor_collapse_shape) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
   %0 = linalg.tensor_collapse_shape %a [[0],[1,2]] : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
   return %0 : tensor<2x8x!FHE.eint<6>>
@@ -2334,7 +2334,7 @@ func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
 
 TEST(End2EndJit_Linalg, tensor_expand_shape) {
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
   %0 = linalg.tensor_expand_shape %a [[0],[1,2]] : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
   return %0 : tensor<2x2x4x!FHE.eint<6>>
@@ -2389,7 +2389,7 @@ func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
 TEST(End2EndJit_FHELinalg, sum_empty) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<0x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -2413,7 +2413,7 @@ func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
 TEST(End2EndJit_FHELinalg, sum_1D_no_axes) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -2438,7 +2438,7 @@ func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
 TEST(End2EndJit_FHELinalg, sum_1D_axes_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -2463,7 +2463,7 @@ func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
 TEST(End2EndJit_FHELinalg, sum_2D_no_axes) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -2492,7 +2492,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
 TEST(End2EndJit_FHELinalg, sum_2D_axes_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
@@ -2533,7 +2533,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_2D_axes_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
@@ -2574,7 +2574,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_2D_axes_0_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -2603,7 +2603,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
 TEST(End2EndJit_FHELinalg, sum_3D_no_axes) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -2647,7 +2647,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
 TEST(End2EndJit_FHELinalg, sum_3D_axes_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>>
@@ -2712,7 +2712,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_axes_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>>
@@ -2776,7 +2776,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_axes_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>>
@@ -2840,7 +2840,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_axes_0_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>>
@@ -2896,7 +2896,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_axes_1_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
@@ -2952,7 +2952,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_axes_0_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
@@ -3008,7 +3008,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_axes_0_1_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
@@ -3052,7 +3052,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
 TEST(End2EndJit_FHELinalg, sum_keep_dims_empty) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
@@ -3088,7 +3088,7 @@ func @main(%x: tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_1D_keep_dims_no_axes) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
@@ -3125,7 +3125,7 @@ func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_1D_keep_dims_axes_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
@@ -3162,7 +3162,7 @@ func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_no_axes) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
@@ -3207,7 +3207,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>>
@@ -3254,7 +3254,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>>
@@ -3303,7 +3303,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_0_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
@@ -3348,7 +3348,7 @@ func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_no_axes) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
@@ -3411,7 +3411,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>>
@@ -3479,7 +3479,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>>
@@ -3546,7 +3546,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>>
@@ -3613,7 +3613,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>>
@@ -3676,7 +3676,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_1_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>>
@@ -3739,7 +3739,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>>
@@ -3802,7 +3802,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_1_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 
 func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
@@ -3865,7 +3865,7 @@ func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
 TEST(End2EndJit_FHELinalg, concat_1D_axis_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%x: tensor<3x!FHE.eint<7>>, %y: tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<3x!FHE.eint<7>>, tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>>
   return %0 : tensor<7x!FHE.eint<7>>
@@ -3907,7 +3907,7 @@ func @main(%x: tensor<3x!FHE.eint<7>>, %y: tensor<4x!FHE.eint<7>>) -> tensor<7x!
 TEST(End2EndJit_FHELinalg, concat_2D_axis_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%x: tensor<2x3x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x3x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>>
   return %0 : tensor<5x3x!FHE.eint<7>>
@@ -3962,7 +3962,7 @@ func @main(%x: tensor<2x3x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor
 TEST(End2EndJit_FHELinalg, concat_2D_axis_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%x: tensor<3x2x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<3x2x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>>
   return %0 : tensor<3x5x!FHE.eint<7>>
@@ -4020,7 +4020,7 @@ func @main(%x: tensor<3x2x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor
 TEST(End2EndJit_FHELinalg, concat_3D_axis_0) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>>
   return %0 : tensor<4x4x3x!FHE.eint<7>>
@@ -4120,7 +4120,7 @@ func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> te
 TEST(End2EndJit_FHELinalg, concat_3D_axis_1) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>>
   return %0 : tensor<2x8x3x!FHE.eint<7>>
@@ -4216,7 +4216,7 @@ func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> te
 TEST(End2EndJit_FHELinalg, concat_3D_axis_2) {
   namespace concretelang = mlir::concretelang;
 
-  concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 2 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>>
   return %0 : tensor<2x4x6x!FHE.eint<7>>
@@ -4319,8 +4319,7 @@ TEST_P(TiledMatMulParametric, tiled_matmul_eint_int) {
       << "    return %0 : tensor<8x2x!FHE.eint<6>>\n"
       << "  }";
 
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(mlirProgram.str());
+  checkedJit(lambda, mlirProgram.str());
 
   const size_t rowsA = 8;
   const size_t colsA = 4;

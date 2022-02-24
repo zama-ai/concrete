@@ -12,8 +12,7 @@
 
 #define ASSERT_LLVM_ERROR(err)                                                 \
   if (err) {                                                                   \
-    llvm::errs() << "error: " << std::move(err) << "\n";                       \
-    ASSERT_TRUE(false);                                                        \
+    ASSERT_TRUE(false) << llvm::toString(err);                                 \
   }
 
 // Checks that the value `val` is not in an error state. Returns
@@ -21,7 +20,6 @@
 template <typename T>
 static bool assert_expected_success(llvm::Expected<T> &val) {
   if (!((bool)val)) {
-    llvm::errs() << llvm::toString(std::move(val.takeError())) << "\n";
     return false;
   }
 
@@ -46,8 +44,10 @@ static bool assert_expected_failure(llvm::Expected<T> &&val) {
 // an error state.
 #define ASSERT_EXPECTED_SUCCESS(val)                                           \
   do {                                                                         \
-    if (!assert_expected_success(val))                                         \
-      GTEST_FATAL_FAILURE_("Expected<T> in error state");                      \
+    if (!assert_expected_success(val)) {                                       \
+      GTEST_FATAL_FAILURE_("Expected<T> in error state")                       \
+          << llvm::toString(val.takeError());                                  \
+    }                                                                          \
   } while (0)
 
 // Checks that the value `val` of type `llvm::Expected<T>` is in
@@ -121,10 +121,10 @@ getTestKeySetCachePtr() {
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
-template <typename F>
-mlir::concretelang::JitCompilerEngine::Lambda internalCheckedJit(
-    F checkFunc, llvm::StringRef src, llvm::StringRef func = "main",
-    bool useDefaultFHEConstraints = false, bool autoParallelize = false) {
+inline llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda>
+internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
+                   bool useDefaultFHEConstraints = false,
+                   bool autoParallelize = false) {
 
   mlir::concretelang::JitCompilerEngine engine;
 
@@ -139,12 +139,7 @@ mlir::concretelang::JitCompilerEngine::Lambda internalCheckedJit(
   llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> lambdaOrErr =
       engine.buildLambda(src, func, getTestKeySetCache());
 
-  if (!lambdaOrErr) {
-    std::cout << llvm::toString(lambdaOrErr.takeError()) << std::endl;
-  }
-  checkFunc(lambdaOrErr);
-
-  return std::move(*lambdaOrErr);
+  return lambdaOrErr;
 }
 
 // Shorthands to create integer literals of a specific type
@@ -160,10 +155,9 @@ static inline uint64_t operator"" _u64(unsigned long long int v) { return v; }
 // Wrapper around `internalCheckedJit` that causes
 // `ASSERT_EXPECTED_SUCCESS` to use the file and line number of the
 // caller instead of `internalCheckedJit`.
-#define checkedJit(...)                                                        \
-  internalCheckedJit(                                                          \
-      [](llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda>         \
-             &lambda) { ASSERT_EXPECTED_SUCCESS(lambda); },                    \
-      __VA_ARGS__)
+#define checkedJit(VARNAME, ...)                                               \
+  auto VARNAMEOrErr = internalCheckedJit(__VA_ARGS__);                         \
+  ASSERT_EXPECTED_SUCCESS(VARNAMEOrErr);                                       \
+  auto VARNAME = std::move(*VARNAMEOrErr);
 
 #endif

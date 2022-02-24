@@ -8,8 +8,7 @@
 const mlir::concretelang::V0FHEConstraint defaultV0Constraints{10, 7};
 
 TEST(CompileAndRunDFR, start_stop) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func private @_dfr_stop()
 func private @_dfr_start()
 func @main() -> i64{
@@ -19,13 +18,12 @@ func @main() -> i64{
   return %1 : i64
 }
 )XXX",
-                 "main", true);
+             "main", true);
   ASSERT_EXPECTED_VALUE(lambda(), 7);
 }
 
 TEST(CompileAndRunDFR, 0in1out_task) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @_dfr_stop()
@@ -56,13 +54,12 @@ TEST(CompileAndRunDFR, 0in1out_task) {
     llvm.return
   }
 )XXX",
-                 "main", true);
+             "main", true);
   ASSERT_EXPECTED_VALUE(lambda(), 7);
 }
 
 TEST(CompileAndRunDFR, 1in1out_task) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @malloc(i64) -> !llvm.ptr<i8>
@@ -102,14 +99,13 @@ TEST(CompileAndRunDFR, 1in1out_task) {
     llvm.return
   }
 )XXX",
-                 "main", true);
+             "main", true);
 
   ASSERT_EXPECTED_VALUE(lambda(5_u64), 7);
 }
 
 TEST(CompileAndRunDFR, 2in1out_task) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @malloc(i64) -> !llvm.ptr<i8>
@@ -158,14 +154,13 @@ TEST(CompileAndRunDFR, 2in1out_task) {
     llvm.return
   }
 )XXX",
-                 "main", true);
+             "main", true);
 
   ASSERT_EXPECTED_VALUE(lambda(1_u64, 6_u64), 7);
 }
 
 TEST(CompileAndRunDFR, taskgraph) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
   llvm.func @_dfr_await_future(!llvm.ptr<i64>) -> !llvm.ptr<ptr<i64>> attributes {sym_visibility = "private"}
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @malloc(i64) -> !llvm.ptr<i8>
@@ -348,7 +343,7 @@ TEST(CompileAndRunDFR, taskgraph) {
     llvm.return
   }
 )XXX",
-                 "main", true);
+             "main", true);
 
   ASSERT_EXPECTED_VALUE(lambda(1_u64, 2_u64, 3_u64), 54);
   ASSERT_EXPECTED_VALUE(lambda(2_u64, 5_u64, 1_u64), 72);

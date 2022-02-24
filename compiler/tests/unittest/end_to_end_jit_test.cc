@@ -6,14 +6,13 @@
 #include "end_to_end_jit_test.h"
 
 TEST(CompileAndRunClear, add_u64) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%arg0: i64, %arg1: i64) -> i64 {
   %1 = arith.addi %arg0, %arg1 : i64
   return %1: i64
 }
 )XXX",
-                 "main", true);
+             "main", true);
 
   ASSERT_EXPECTED_VALUE(lambda(1_u64, 2_u64), (uint64_t)3);
   ASSERT_EXPECTED_VALUE(lambda(4_u64, 5_u64), (uint64_t)9);
@@ -21,7 +20,7 @@ func @main(%arg0: i64, %arg1: i64) -> i64 {
 }
 
 TEST(CompileAndRunTensorEncrypted, extract_5) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%t: tensor<10x!FHE.eint<5>>, %i: index) -> !FHE.eint<5>{
   %c = tensor.extract %t[%i] : tensor<10x!FHE.eint<5>>
   return %c : !FHE.eint<5>
@@ -35,7 +34,7 @@ func @main(%t: tensor<10x!FHE.eint<5>>, %i: index) -> !FHE.eint<5>{
 }
 
 TEST(CompileAndRunTensorEncrypted, extract_twice_and_add_5) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
 !FHE.eint<5>{
   %ti = tensor.extract %t[%i] : tensor<10x!FHE.eint<5>>
@@ -54,7 +53,7 @@ func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
 }
 
 TEST(CompileAndRunTensorEncrypted, dim_5) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%t: tensor<10x!FHE.eint<5>>) -> index{
   %c0 = arith.constant 0 : index
   %c = tensor.dim %t, %c0 : tensor<10x!FHE.eint<5>>
@@ -67,7 +66,7 @@ func @main(%t: tensor<10x!FHE.eint<5>>) -> index{
 }
 
 TEST(CompileAndRunTensorEncrypted, from_elements_5) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
   %t = tensor.from_elements %0 : tensor<1x!FHE.eint<5>>
   return %t: tensor<1x!FHE.eint<5>>
@@ -85,7 +84,7 @@ func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
 // Same as `CompileAndRunTensorEncrypted::from_elements_5 but with
 // `LambdaArgument` instances as arguments and as a result type
 TEST(CompileAndRunTensorEncrypted, from_elements_5_lambda_argument_res) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
   %t = tensor.from_elements %0 : tensor<1x!FHE.eint<5>>
   return %t: tensor<1x!FHE.eint<5>>
@@ -116,7 +115,7 @@ func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
 }
 
 TEST(CompileAndRunTensorEncrypted, in_out_tensor_with_op_5) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda = checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 func @main(%in: tensor<2x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
   %c_0 = arith.constant 0 : index
   %c_1 = arith.constant 1 : index
@@ -147,8 +146,7 @@ func @main(%in: tensor<2x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
 // Test is failing since with the bufferization and the parallel options.
 // DISABLED as is a bit artificial test, let's investigate later.
 TEST(CompileAndRunTensorEncrypted, DISABLED_linalg_generic) {
-  mlir::concretelang::JitCompilerEngine::Lambda lambda =
-      checkedJit(R"XXX(
+  checkedJit(lambda, R"XXX(
 #map0 = affine_map<(d0) -> (d0)>
 #map1 = affine_map<(d0) -> (0)>
 func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
@@ -167,7 +165,7 @@ func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
   return %ret : !FHE.eint<7>
 }
 )XXX",
-                 "main", true);
+             "main", true);
 
   static uint8_t arg0[] = {2, 8};
   static uint8_t arg1[] = {6, 8};
