@@ -2,11 +2,18 @@ use crate::backends::core::implementation::engines::CoreEngine;
 use crate::backends::core::implementation::entities::{
     FourierGgswCiphertext32, FourierGgswCiphertext64, GlweCiphertext32, GlweCiphertext64,
 };
-use crate::prelude::GgswCiphertextEntity;
+use crate::backends::core::private::math::fft::ALLOWED_POLY_SIZE;
+use crate::prelude::{CoreError, GgswCiphertextEntity, GlweCiphertextEntity};
 use crate::specification::engines::{
     GlweCiphertextGgswCiphertextDiscardingExternalProductEngine,
     GlweCiphertextGgswCiphertextDiscardingExternalProductError,
 };
+
+impl From<CoreError> for GlweCiphertextGgswCiphertextDiscardingExternalProductError<CoreError> {
+    fn from(err: CoreError) -> Self {
+        Self::Engine(err)
+    }
+}
 
 /// # Description:
 /// Implementation of [`GlweCiphertextGgswCiphertextDiscardingExternalProductEngine`] for
@@ -73,6 +80,13 @@ impl
         output: &mut GlweCiphertext32,
     ) -> Result<(), GlweCiphertextGgswCiphertextDiscardingExternalProductError<Self::EngineError>>
     {
+        if !ALLOWED_POLY_SIZE.contains(&glwe_input.polynomial_size().0) {
+            return Err(
+                GlweCiphertextGgswCiphertextDiscardingExternalProductError::from(
+                    CoreError::UnsupportedPolynomialSize,
+                ),
+            );
+        }
         GlweCiphertextGgswCiphertextDiscardingExternalProductError::perform_generic_checks(
             glwe_input, ggsw_input, output,
         )?;
@@ -165,6 +179,13 @@ impl
         output: &mut GlweCiphertext64,
     ) -> Result<(), GlweCiphertextGgswCiphertextDiscardingExternalProductError<Self::EngineError>>
     {
+        if !ALLOWED_POLY_SIZE.contains(&glwe_input.polynomial_size().0) {
+            return Err(
+                GlweCiphertextGgswCiphertextDiscardingExternalProductError::from(
+                    CoreError::UnsupportedPolynomialSize,
+                ),
+            );
+        }
         GlweCiphertextGgswCiphertextDiscardingExternalProductError::perform_generic_checks(
             glwe_input, ggsw_input, output,
         )?;

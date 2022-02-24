@@ -24,3 +24,5 @@ pub use transform::*;
 pub type Complex64 = concrete_fftw::types::c64;
 
 pub use concrete_fftw::array::AlignedVec;
+
+pub(crate) const ALLOWED_POLY_SIZE: [usize; 8] = [128, 256, 512, 1024, 2048, 4096, 8192, 16384];

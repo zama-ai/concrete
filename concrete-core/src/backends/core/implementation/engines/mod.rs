@@ -21,6 +21,7 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug)]
 pub enum CoreError {
     Borrow,
+    UnsupportedPolynomialSize,
 }
 
 impl Display for CoreError {
@@ -28,6 +29,13 @@ impl Display for CoreError {
         match self {
             CoreError::Borrow => {
                 write!(f, "The borrowing rules were broken during execution.")
+            }
+            CoreError::UnsupportedPolynomialSize => {
+                write!(
+                    f,
+                    "The Core Backend only supports polynomials of size: 512, \
+                1024, 2048, 4096, 8192, 16384."
+                )
             }
         }
     }
