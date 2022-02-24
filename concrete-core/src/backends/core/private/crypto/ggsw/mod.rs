@@ -12,6 +12,9 @@ pub use levels::*;
 mod standard_seeded;
 pub use standard_seeded::*;
 
+mod fourier_seeded;
+pub use fourier_seeded::*;
+
 mod levels_seeded;
 pub use levels_seeded::*;
 
