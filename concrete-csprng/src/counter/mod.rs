@@ -295,6 +295,12 @@ impl<G: AesBatchedGenerator> AesCtrGenerator<G> {
         output
     }
 
+    pub fn generate_u128(&mut self) -> u128 {
+        let mut bytes_vec = [0; 16];
+        bytes_vec.fill_with(|| self.generate_next());
+        u128::from_ne_bytes(bytes_vec)
+    }
+
     /// Tries to fork the current generator into `n_child` generators each able to yield
     /// `child_bytes` random bytes.
     ///

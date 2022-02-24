@@ -73,6 +73,13 @@ impl RandomGenerator {
         }
     }
 
+    pub fn generate_u128(&mut self) -> u128 {
+        match self {
+            Self::Hardware(ref mut rand) => rand.generate_u128(),
+            Self::Software(ref mut rand) => rand.generate_u128(),
+        }
+    }
+
     /// Returns whether the generator is bounded.
     pub fn is_bounded(&self) -> bool {
         match self {
