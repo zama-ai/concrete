@@ -13,7 +13,7 @@ use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::{LweDimension, Seed};
 
 use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
-use crate::backends::core::private::crypto::gsw::GswCiphertext;
+use crate::backends::core::private::crypto::gsw::{GswCiphertext, GswSeededCiphertext};
 use crate::backends::core::private::crypto::lwe::{
     LweCiphertext, LweList, LweMask, LweSeededCiphertext, LweSeededList,
 };
@@ -634,10 +634,11 @@ where
             .expect("Failed to split generator into gsw levels");
         let base_log = encrypted.decomposition_base_log();
         for (mut matrix, mut generator) in encrypted.level_matrix_iter_mut().zip(gen_iter) {
-            let decomposition = encoded.0
-                * (Scalar::ONE
+            let decomposition = encoded.0.wrapping_mul(
+                Scalar::ONE
                     << (<Scalar as Numeric>::BITS
-                        - (base_log.0 * (matrix.decomposition_level().0))));
+                        - (base_log.0 * (matrix.decomposition_level().0))),
+            );
             let gen_iter = generator
                 .fork_gsw_level_to_lwe::<Scalar>(self.key_size().to_lwe_size())
                 .expect("Failed to split generator into lwe");
@@ -665,6 +666,102 @@ where
                 // We update it
                 *level_coeff = level_coeff.wrapping_add(decomposition);
             }
+        }
+    }
+
+    /// This function encrypts a message as a GSW seeded ciphertext.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    ///
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
+    /// use concrete_core::backends::core::private::crypto::gsw::GswSeededCiphertext;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::secret::LweSecretKey;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    ///
+    /// let mut generator = SecretRandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(256), &mut generator);
+    /// let mut ciphertext = GswSeededCiphertext::allocate(
+    ///     0 as u32,
+    ///     LweSize(257),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut seed_generator = RandomGenerator::new(None);
+    /// let seed = seed_generator.generate_seed();
+    /// secret_key.encrypt_constant_seeded_gsw(&mut ciphertext, &Plaintext(10), noise, seed);
+    /// ```
+    pub fn encrypt_constant_seeded_gsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut GswSeededCiphertext<OutputCont>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter,
+        seed: Seed,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
+
+        let mut generator = EncryptionRandomGenerator::new(Some(seed.seed));
+        *encrypted.get_mut_seed() = Some(seed);
+
+        let base_log = encrypted.decomposition_base_log();
+        for mut matrix in encrypted.level_matrix_iter_mut() {
+            let factor = encoded.0.wrapping_neg().wrapping_mul(
+                Scalar::ONE
+                    << (<Scalar as Numeric>::BITS
+                        - (base_log.0 * (matrix.decomposition_level().0))),
+            );
+            // We iterate over the rows of the level matrix
+            let mut rows = matrix.row_iter_mut();
+            for sk_coeff in self.as_tensor().iter() {
+                let row = rows.next().unwrap();
+                let encoded = Plaintext(sk_coeff.wrapping_mul(factor));
+                let mut lwe_ct = row.into_seeded_lwe();
+                let mut tensor_mask = vec![Scalar::ZERO; self.key_size().0];
+                let mut mask = LweMask::from_container(tensor_mask.as_mut_slice());
+                generator.fill_tensor_with_random_mask(&mut mask);
+
+                // generate an error from the normal distribution described by std_dev
+                *lwe_ct.get_mut_body().0 = generator.random_noise(noise_parameters);
+
+                // compute the multisum between the secret key and the mask
+                *lwe_ct.get_mut_body().0 = lwe_ct
+                    .get_mut_body()
+                    .0
+                    .wrapping_add(mask.compute_multisum(self));
+
+                // add the encoded message
+                *lwe_ct.get_mut_body().0 = lwe_ct.get_mut_body().0.wrapping_add(encoded.0);
+            }
+            let last_row = rows.next().unwrap();
+            let mut lwe_ct = last_row.into_seeded_lwe();
+            let mut tensor_mask = vec![Scalar::ZERO; self.key_size().0];
+            let mut mask = LweMask::from_container(tensor_mask.as_mut_slice());
+            generator.fill_tensor_with_random_mask(&mut mask);
+
+            // generate an error from the normal distribution described by std_dev
+            *lwe_ct.get_mut_body().0 = generator.random_noise(noise_parameters);
+
+            // compute the multisum between the secret key and the mask
+            *lwe_ct.get_mut_body().0 = lwe_ct
+                .get_mut_body()
+                .0
+                .wrapping_add(mask.compute_multisum(self));
+
+            // add the encoded message
+            *lwe_ct.get_mut_body().0 = lwe_ct.get_mut_body().0.wrapping_add(factor.wrapping_neg());
         }
     }
 
@@ -731,10 +828,11 @@ where
             .par_level_matrix_iter_mut()
             .zip(generators)
             .for_each(move |(mut matrix, mut generator)| {
-                let decomposition = encoded.0
-                    * (Scalar::ONE
+                let decomposition = encoded.0.wrapping_mul(
+                    Scalar::ONE
                         << (<Scalar as Numeric>::BITS
-                            - (base_log.0 * (matrix.decomposition_level().0))));
+                            - (base_log.0 * (matrix.decomposition_level().0))),
+                );
                 let gen_iter = generator
                     .par_fork_gsw_level_to_lwe::<Scalar>(self.key_size().to_lwe_size())
                     .expect("Failed to split generator into lwe");
@@ -763,6 +861,108 @@ where
                         *level_coeff = level_coeff.wrapping_add(decomposition);
                     })
             })
+    }
+
+    /// This function encrypts a message as a GSW seeded ciphertext, using as many threads as
+    /// possible.
+    ///
+    /// # Notes
+    /// This method is hidden behind the "multithread" feature gate.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    ///
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
+    /// use concrete_core::backends::core::private::crypto::gsw::GswSeededCiphertext;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::secret::LweSecretKey;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = LweSecretKey::generate_binary(LweDimension(256), &mut secret_generator);
+    /// let mut ciphertext = GswSeededCiphertext::allocate(
+    ///     0 as u32,
+    ///     LweSize(257),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut seed_generator = RandomGenerator::new(None);
+    /// let seed = seed_generator.generate_seed();
+    /// secret_key.par_encrypt_constant_seeded_gsw(&mut ciphertext, &Plaintext(10), noise, seed);
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_encrypt_constant_seeded_gsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut GswSeededCiphertext<OutputCont>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter + Send + Sync,
+        seed: Seed,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus + Send + Sync,
+        Cont: Send + Sync,
+    {
+        ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
+
+        let mut key_appended = self.as_tensor().as_slice().to_vec();
+        key_appended.push(Scalar::ONE.wrapping_neg());
+
+        let mut generator = EncryptionRandomGenerator::new(Some(seed.seed));
+        *encrypted.get_mut_seed() = Some(seed);
+
+        let generators = generator
+            .par_fork_gsw_to_gsw_levels::<Scalar>(
+                encrypted.decomposition_level_count(),
+                self.key_size().to_lwe_size(),
+            )
+            .expect("Failed to split generator into gsw levels");
+        let base_log = encrypted.decomposition_base_log();
+        encrypted
+            .par_level_matrix_iter_mut()
+            .zip(generators)
+            .for_each(|(mut matrix, mut generator)| {
+                let factor = encoded.0.wrapping_neg().wrapping_mul(
+                    Scalar::ONE
+                        << (<Scalar as Numeric>::BITS
+                            - (base_log.0 * (matrix.decomposition_level().0))),
+                );
+                let gen_iter = generator
+                    .par_fork_gsw_level_to_lwe::<Scalar>(self.key_size().to_lwe_size())
+                    .expect("Failed to split generator into lwe");
+                // We iterate over the rows of the level matrix
+                matrix
+                    .par_row_iter_mut()
+                    .zip(key_appended.par_iter())
+                    .zip(gen_iter)
+                    .for_each(|((row, sk_coeff), mut generator)| {
+                        let encoded = Plaintext(sk_coeff.wrapping_mul(factor));
+                        let mut lwe_ct = row.into_seeded_lwe();
+                        let mut tensor_mask = vec![Scalar::ZERO; self.key_size().0];
+                        let mut mask = LweMask::from_container(tensor_mask.as_mut_slice());
+                        generator.fill_tensor_with_random_mask(&mut mask);
+
+                        // generate an error from the normal distribution described by std_dev
+                        *lwe_ct.get_mut_body().0 = generator.random_noise(noise_parameters);
+
+                        // compute the multisum between the secret key and the mask
+                        *lwe_ct.get_mut_body().0 = lwe_ct
+                            .get_mut_body()
+                            .0
+                            .wrapping_add(mask.compute_multisum(self));
+
+                        // add the encoded message
+                        *lwe_ct.get_mut_body().0 = lwe_ct.get_mut_body().0.wrapping_add(encoded.0);
+                    });
+            });
     }
 
     /// This function encrypts a message as a GSW ciphertext whose lwe masks are all zeros.
