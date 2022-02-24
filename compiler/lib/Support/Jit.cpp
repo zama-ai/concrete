@@ -299,7 +299,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
 
     // Allocate a buffer for ciphertexts, the size of the buffer is the number
     // of elements of the tensor * the size of the lwe ciphertext
-    auto lweSize = keySet.getInputLweSecretKeyParam(pos).size + 1;
+    auto lweSize = keySet.getInputLweSecretKeyParam(pos).lweSize();
     uint64_t *ctBuffer =
         (uint64_t *)malloc(info.shape.size * lweSize * sizeof(uint64_t));
     ciphertextBuffers.push_back(ctBuffer);
@@ -337,7 +337,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
   }
   // If encrypted +1 for the lwe size rank
   if (keySet.isInputEncrypted(pos)) {
-    inputs[offset] = (void *)(keySet.getInputLweSecretKeyParam(pos).size + 1);
+    inputs[offset] = (void *)(keySet.getInputLweSecretKeyParam(pos).lweSize());
     rawArg[offset] = &inputs[offset];
     offset++;
   }
@@ -349,7 +349,7 @@ llvm::Error JITLambda::Argument::setArg(size_t pos, size_t width,
   if (keySet.isInputEncrypted(pos)) {
     inputs[offset + shape.size()] = (void *)stride;
     rawArg[offset + shape.size()] = &inputs[offset];
-    stride *= keySet.getInputLweSecretKeyParam(pos).size + 1;
+    stride *= keySet.getInputLweSecretKeyParam(pos).lweSize();
   }
   for (ssize_t i = shape.size() - 1; i >= 0; i--) {
     inputs[offset + i] = (void *)stride;
@@ -493,7 +493,7 @@ llvm::Error JITLambda::Argument::getResult(size_t pos, void *res,
     }
   } else {
     // decrypt and fill the result buffer
-    auto lweSize = keySet.getOutputLweSecretKeyParam(pos).size + 1;
+    auto lweSize = keySet.getOutputLweSecretKeyParam(pos).lweSize();
 
     for (size_t i = 0, o = 0; i < numElements; i++, o += lweSize) {
       uint64_t *ct = ((uint64_t *)alignedBytes) + o;

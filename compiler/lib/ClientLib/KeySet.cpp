@@ -139,7 +139,7 @@ outcome::checked<void, StringError>
 KeySet::generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,
                           SecretRandomGenerator *generator) {
   LweSecretKey_u64 *sk;
-  sk = allocate_lwe_secret_key_u64({param.size});
+  sk = allocate_lwe_secret_key_u64({param.dimension});
 
   fill_lwe_secret_key_u64(sk, generator);
 
@@ -163,7 +163,7 @@ KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param,
   // Allocate the bootstrap key
   LweBootstrapKey_u64 *bsk;
 
-  uint64_t total_dimension = outputSk->second.first.size;
+  uint64_t total_dimension = outputSk->second.first.dimension;
 
   assert(total_dimension % param.glweDimension == 0);
 
@@ -171,7 +171,7 @@ KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param,
 
   bsk = allocate_lwe_bootstrap_key_u64(
       {param.level}, {param.baseLog}, {param.glweDimension},
-      {inputSk->second.first.size}, {polynomialSize});
+      {inputSk->second.first.dimension}, {polynomialSize});
 
   // Store the bootstrap key
   bootstrapKeys[id] = {param, bsk};
@@ -208,8 +208,8 @@ KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param,
   LweKeyswitchKey_u64 *ksk;
 
   ksk = allocate_lwe_keyswitch_key_u64({param.level}, {param.baseLog},
-                                       {inputSk->second.first.size},
-                                       {outputSk->second.first.size});
+                                       {inputSk->second.first.dimension},
+                                       {outputSk->second.first.dimension});
 
   // Store the keyswitch key
   keyswitchKeys[id] = {param, ksk};
@@ -228,7 +228,7 @@ KeySet::allocate_lwe(size_t argPos, uint64_t **ciphertext, uint64_t &size) {
   }
   auto inputSk = inputs[argPos];
 
-  size = std::get<1>(inputSk).size + 1;
+  size = std::get<1>(inputSk).lweSize();
   *ciphertext = (uint64_t *)malloc(sizeof(uint64_t) * size);
   return outcome::success();
 }

@@ -43,7 +43,7 @@ EncryptedArgs::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
   }
   ciphertextBuffers.resize(ciphertextBuffers.size() + 1); // Allocate empty
   encrypted_scalars_and_sizes_t &values_and_sizes = ciphertextBuffers.back();
-  auto lweSize = keySet->getInputLweSecretKeyParam(pos).size + 1;
+  auto lweSize = keySet->getInputLweSecretKeyParam(pos).lweSize();
   values_and_sizes.sizes.push_back(lweSize);
   values_and_sizes.values.resize(lweSize);
 
@@ -106,7 +106,7 @@ EncryptedArgs::pushArg(size_t width, void *data, llvm::ArrayRef<int64_t> shape,
     }
   }
   if (input.encryption.hasValue()) {
-    auto lweSize = keySet->getInputLweSecretKeyParam(pos).size + 1;
+    auto lweSize = keySet->getInputLweSecretKeyParam(pos).lweSize();
     values_and_sizes.sizes.push_back(lweSize);
 
     // Encrypted tensor: for now we support only 8 bits for encrypted tensor

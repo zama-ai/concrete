@@ -37,15 +37,15 @@ typedef uint64_t GlweDimension;
 
 typedef std::string LweSecretKeyID;
 struct LweSecretKeyParam {
-  LweDimension size;
+  LweDimension dimension;
 
   void hash(size_t &seed);
-  inline uint64_t lweDimension() { return size; }
-  inline uint64_t lweSize() { return size + 1; }
+  inline uint64_t lweDimension() { return dimension; }
+  inline uint64_t lweSize() { return dimension + 1; }
 };
 static bool operator==(const LweSecretKeyParam &lhs,
                        const LweSecretKeyParam &rhs) {
-  return lhs.size == rhs.size;
+  return lhs.dimension == rhs.dimension;
 }
 
 typedef std::string BootstrapKeyID;

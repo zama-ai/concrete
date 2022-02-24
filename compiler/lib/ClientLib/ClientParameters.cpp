@@ -25,7 +25,7 @@ static inline void hash_(std::size_t &seed, const T &v, Rest... rest) {
   hash_(seed, rest...);
 }
 
-void LweSecretKeyParam::hash(size_t &seed) { hash_(seed, size); }
+void LweSecretKeyParam::hash(size_t &seed) { hash_(seed, dimension); }
 
 void BootstrapKeyParam::hash(size_t &seed) {
   hash_(seed, inputSecretKeyID, outputSecretKeyID, level, baseLog,
@@ -59,7 +59,7 @@ LweSecretKeyParam ClientParameters::lweSecretKeyParam(CircuitGate gate) {
 
 llvm::json::Value toJSON(const LweSecretKeyParam &v) {
   llvm::json::Object object{
-      {"size", v.size},
+      {"dimension", v.dimension},
   };
   return object;
 }
@@ -71,12 +71,12 @@ bool fromJSON(const llvm::json::Value j, LweSecretKeyParam &v,
     p.report("should be an object");
     return false;
   }
-  auto size = obj->getInteger("size");
-  if (!size.hasValue()) {
+  auto dimension = obj->getInteger("dimension");
+  if (!dimension.hasValue()) {
     p.report("missing size field");
     return false;
   }
-  v.size = *size;
+  v.dimension = *dimension;
   return true;
 }
 
