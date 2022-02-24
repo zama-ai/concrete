@@ -5,7 +5,7 @@ use concrete_fftw::array::AlignedVec;
 use serde::{Deserialize, Serialize};
 
 use crate::backends::core::private::crypto::bootstrap::standard::StandardBootstrapKey;
-use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
+use crate::backends::core::private::crypto::ggsw::FourierGgswCiphertext;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::math::decomposition::SignedDecomposer;
@@ -391,7 +391,7 @@ where
     /// }
     /// assert_eq!(bsk.ggsw_iter().count(), 4);
     /// ```
-    pub fn ggsw_iter(&self) -> impl Iterator<Item = StandardGgswCiphertext<&[Complex64]>>
+    pub fn ggsw_iter(&self) -> impl Iterator<Item = FourierGgswCiphertext<&[Complex64], Scalar>>
     where
         Self: AsRefTensor<Element = Complex64>,
     {
@@ -403,7 +403,7 @@ where
         self.as_tensor()
             .subtensor_iter(chunks_size)
             .map(move |tensor| {
-                StandardGgswCiphertext::from_container(
+                FourierGgswCiphertext::from_container(
                     tensor.into_container(),
                     rlwe_size,
                     poly_size,
@@ -440,7 +440,7 @@ where
     /// ```
     pub fn ggsw_iter_mut(
         &mut self,
-    ) -> impl Iterator<Item = StandardGgswCiphertext<&mut [Complex64]>>
+    ) -> impl Iterator<Item = FourierGgswCiphertext<&mut [Complex64], Scalar>>
     where
         Self: AsMutTensor<Element = Complex64>,
     {
@@ -452,7 +452,7 @@ where
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
             .map(move |tensor| {
-                StandardGgswCiphertext::from_container(
+                FourierGgswCiphertext::from_container(
                     tensor.into_container(),
                     rlwe_size,
                     poly_size,
@@ -464,13 +464,13 @@ where
     fn external_product<C1, C2, C3>(
         &self,
         output: &mut GlweCiphertext<C1>,
-        ggsw: &StandardGgswCiphertext<C2>,
+        ggsw: &FourierGgswCiphertext<C2, Scalar>,
         glwe: &GlweCiphertext<C3>,
         fft_buffers: &mut FftBuffers,
         rounded_buffer: &mut GlweCiphertext<Vec<Scalar>>,
     ) where
         GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
-        StandardGgswCiphertext<C2>: AsRefTensor<Element = Complex64>,
+        FourierGgswCiphertext<C2, Scalar>: AsRefTensor<Element = Complex64>,
         GlweCiphertext<C3>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
@@ -650,13 +650,13 @@ where
         &self,
         ct0: &mut GlweCiphertext<C0>,
         ct1: &mut GlweCiphertext<C1>,
-        ggsw: &StandardGgswCiphertext<C2>,
+        ggsw: &FourierGgswCiphertext<C2, Scalar>,
         fft_buffers: &mut FftBuffers,
         rounded_buffer: &mut GlweCiphertext<Vec<Scalar>>,
     ) where
         GlweCiphertext<C0>: AsMutTensor<Element = Scalar>,
         GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
-        StandardGgswCiphertext<C2>: AsRefTensor<Element = Complex64>,
+        FourierGgswCiphertext<C2, Scalar>: AsRefTensor<Element = Complex64>,
         Scalar: UnsignedTorus,
     {
         ct1.as_mut_tensor()
