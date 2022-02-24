@@ -1,12 +1,14 @@
 """Test file for float subgraph fusing"""
 
 import random
+from copy import deepcopy
 from inspect import signature
 
 import numpy
 import pytest
 
 from concrete.common.data_types.integers import Integer
+from concrete.common.debugging import format_operation_graph
 from concrete.common.debugging.custom_assert import assert_not_reached
 from concrete.common.optimization.topological import fuse_float_operations
 from concrete.common.values import EncryptedScalar, EncryptedTensor
@@ -386,9 +388,14 @@ def test_fuse_float_operations(
         function_to_trace,
         params,
     )
+    copied_graph = deepcopy(op_graph)
     orig_num_nodes = len(op_graph.graph)
     fuse_float_operations(op_graph)
     fused_num_nodes = len(op_graph.graph)
+    fuse_float_operations(copied_graph)
+
+    # Check determinism
+    assert format_operation_graph(copied_graph) == format_operation_graph(op_graph)
 
     if fused:
         assert fused_num_nodes < orig_num_nodes
@@ -504,9 +511,14 @@ def subtest_fuse_float_unary_operations_correctness(fun, tensor_shape):
                     for param_name in params_names
                 },
             )
+            copied_graph = deepcopy(op_graph)
             orig_num_nodes = len(op_graph.graph)
             fuse_float_operations(op_graph)
             fused_num_nodes = len(op_graph.graph)
+            fuse_float_operations(copied_graph)
+
+            # Check determinism
+            assert format_operation_graph(copied_graph) == format_operation_graph(op_graph)
 
             assert fused_num_nodes < orig_num_nodes
 
@@ -643,9 +655,14 @@ def subtest_fuse_float_binary_operations_correctness(fun, tensor_shape):
                     for param_name in params_names
                 },
             )
+            copied_graph = deepcopy(op_graph)
             orig_num_nodes = len(op_graph.graph)
             fuse_float_operations(op_graph)
             fused_num_nodes = len(op_graph.graph)
+            fuse_float_operations(copied_graph)
+
+            # Check determinism
+            assert format_operation_graph(copied_graph) == format_operation_graph(op_graph)
 
             assert fused_num_nodes < orig_num_nodes
 

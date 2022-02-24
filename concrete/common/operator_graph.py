@@ -1,7 +1,7 @@
 """Code to wrap and make manipulating networkx graphs easier."""
 
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 
 import networkx as nx
 
@@ -126,7 +126,7 @@ class OPGraph:
         """
         # Replication of pred is managed e.g. x + x will yield the proper pred x twice
         idx_to_pred: Dict[int, IntermediateNode] = {}
-        for pred in self.graph.pred[node]:
+        for pred in self.graph.predecessors(node):
             edge_data = self.graph.get_edge_data(pred, node)
             idx_to_pred.update((data["input_idx"], pred) for data in edge_data.values())
         return [idx_to_pred[i] for i in range(len(idx_to_pred))]
@@ -144,7 +144,7 @@ class OPGraph:
         """
 
         idx_to_inp: Dict[int, Tuple[IntermediateNode, int]] = {}
-        for pred in self.graph.pred[node]:
+        for pred in self.graph.predecessors(node):
             edge_data = self.graph.get_edge_data(pred, node)
             idx_to_inp.update(
                 (data["input_idx"], (pred, data["output_idx"])) for data in edge_data.values()
@@ -190,7 +190,7 @@ class OPGraph:
         for node in nx.topological_sort(self.graph):
             if not isinstance(node, Input):
                 curr_inputs = {}
-                for pred_node in self.graph.pred[node]:
+                for pred_node in self.graph.predecessors(node):
                     edges = self.graph.get_edge_data(pred_node, node)
                     curr_inputs.update(
                         {
@@ -296,7 +296,7 @@ class OPGraph:
 
                 node.outputs[0] = deepcopy(node.inputs[0])
 
-            successors = self.graph.succ[node]
+            successors = self.graph.successors(node)
             for succ in successors:
                 edge_data = self.graph.get_edge_data(node, succ)
                 for edge in edge_data.values():
@@ -306,14 +306,14 @@ class OPGraph:
     def prune_nodes(self):
         """Remove unreachable nodes from outputs."""
 
-        current_nodes = set(self.output_nodes.values())
-        useful_nodes: Set[IntermediateNode] = set()
+        current_nodes = {node: None for node in self.get_ordered_outputs()}
+        useful_nodes: Dict[IntermediateNode, None] = {}
         while current_nodes:
-            next_nodes: Set[IntermediateNode] = set()
+            next_nodes: Dict[IntermediateNode, None] = {}
             useful_nodes.update(current_nodes)
             for node in current_nodes:
-                next_nodes.update(self.graph.pred[node])
+                next_nodes.update({node: None for node in self.graph.predecessors(node)})
             current_nodes = next_nodes
 
-        useless_nodes = set(self.graph.nodes()) - useful_nodes
+        useless_nodes = [node for node in self.graph.nodes() if node not in useful_nodes]
         self.graph.remove_nodes_from(useless_nodes)
