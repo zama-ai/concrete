@@ -51,7 +51,8 @@ impl
     /// let lwe_sk_output: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim_output)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     /// let plaintext_vector = engine.create_plaintext_vector(&lut)?;
-    /// let acc = engine.encrypt_glwe_ciphertext(&glwe_sk, &plaintext_vector, noise)?;
+    /// let acc =
+    ///     engine.trivially_encrypt_glwe_ciphertext(glwe_dim.to_glwe_size(), &plaintext_vector)?;
     /// let input = engine.encrypt_lwe_ciphertext(&lwe_sk, &plaintext, noise)?;
     /// let mut output = engine.zero_encrypt_lwe_ciphertext(&lwe_sk_output, noise)?;
     ///
@@ -140,7 +141,8 @@ impl
     /// let lwe_sk_output: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim_output)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     /// let plaintext_vector = engine.create_plaintext_vector(&lut)?;
-    /// let acc = engine.encrypt_glwe_ciphertext(&glwe_sk, &plaintext_vector, noise)?;
+    /// let acc =
+    ///     engine.trivially_encrypt_glwe_ciphertext(glwe_dim.to_glwe_size(), &plaintext_vector)?;
     /// let input = engine.encrypt_lwe_ciphertext(&lwe_sk, &plaintext, noise)?;
     /// let mut output = engine.encrypt_lwe_ciphertext(&lwe_sk_output, &plaintext, noise)?;
     ///
