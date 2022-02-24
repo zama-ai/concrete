@@ -1,7 +1,9 @@
 use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
-use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
+use crate::backends::core::private::crypto::ggsw::{
+    StandardGgswCiphertext, StandardGgswSeededCiphertext,
+};
 use crate::backends::core::private::crypto::glwe::{
-    GlweCiphertext, GlweList, GlweSeededCiphertext, GlweSeededList,
+    GlweCiphertext, GlweList, GlweMask, GlweSeededCiphertext, GlweSeededList,
 };
 use crate::backends::core::private::crypto::secret::LweSecretKey;
 use crate::backends::core::private::math::tensor::{
@@ -963,6 +965,134 @@ where
         }
     }
 
+    /// This function encrypts a message as a GGSW seeded ciphertext.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
+    /// use concrete_core::backends::core::private::crypto::ggsw::StandardGgswSeededCiphertext;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::SecretRandomGenerator;
+    /// use concrete_core::backends::core::private::crypto::secret::GlweSecretKey;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    ///
+    /// let mut generator = SecretRandomGenerator::new(None);
+    /// let secret_key =
+    ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut generator);
+    /// let mut ciphertext = StandardGgswSeededCiphertext::allocate(
+    ///     0 as u32,
+    ///     PolynomialSize(10),
+    ///     GlweSize(3),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut seed_generator = RandomGenerator::new(None);
+    /// let seed = seed_generator.generate_seed();
+    /// secret_key.encrypt_constant_seeded_ggsw(&mut ciphertext, &Plaintext(10), noise, seed);
+    /// ```
+    pub fn encrypt_constant_seeded_ggsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut StandardGgswSeededCiphertext<OutputCont>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter,
+        seed: Seed,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        StandardGgswCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus,
+    {
+        ck_dim_eq!(self.polynomial_size() => encrypted.polynomial_size());
+        ck_dim_eq!(self.key_size() => encrypted.glwe_size().to_glwe_dimension());
+        let mut generator = EncryptionRandomGenerator::new(Some(seed.seed));
+        generator.shift(seed.shift);
+        *encrypted.get_mut_seed() = Some(seed);
+
+        let base_log = encrypted.decomposition_base_log();
+        for mut matrix in encrypted.level_matrix_iter_mut() {
+            let factor = encoded.0.wrapping_neg().wrapping_mul(
+                Scalar::ONE << (Scalar::BITS - (base_log.0 * (matrix.decomposition_level().0))),
+            );
+            // We iterate over the rows of the level matrix
+            let mut rows = matrix.row_iter_mut();
+            for sk_poly in self.as_tensor().as_slice().chunks(self.poly_size.0) {
+                let row = rows.next().unwrap();
+                let mut sk_factored = Tensor::from_container(sk_poly.to_vec());
+                sk_factored.update_with_scalar_mul(&factor);
+                let encoded = PlaintextList::from_tensor(sk_factored);
+
+                let mut glwe_ct = row.into_seeded_glwe();
+
+                let mut mask = GlweMask {
+                    tensor: Tensor::from_container(vec![
+                        Scalar::ZERO;
+                        self.key_size().0
+                            * self.polynomial_size().0
+                    ]),
+                    poly_size: self.poly_size,
+                };
+                generator.fill_tensor_with_random_mask(&mut mask);
+
+                // generate an error from the normal distribution described by std_dev
+                generator.fill_tensor_with_random_noise(
+                    glwe_ct.get_mut_body().as_mut_tensor(),
+                    noise_parameters,
+                );
+
+                glwe_ct
+                    .get_mut_body()
+                    .as_mut_polynomial()
+                    .update_with_wrapping_add_multisum(
+                        &mask.as_mut_polynomial_list(),
+                        &self.as_polynomial_list(),
+                    );
+                glwe_ct
+                    .get_mut_body()
+                    .as_mut_polynomial()
+                    .update_with_wrapping_add(&encoded.as_polynomial());
+            }
+            let last_row = rows.next().unwrap();
+            let mut message = Tensor::from_container(vec![Scalar::ZERO; self.poly_size.0]);
+            let first_coeff = message.first_mut();
+            *first_coeff = first_coeff.wrapping_add(factor.wrapping_neg());
+            let encoded = PlaintextList::from_tensor(message);
+
+            let mut glwe_ct = last_row.into_seeded_glwe();
+
+            let mut mask = GlweMask {
+                tensor: Tensor::from_container(vec![
+                    Scalar::ZERO;
+                    self.key_size().0 * self.polynomial_size().0
+                ]),
+                poly_size: self.poly_size,
+            };
+            generator.fill_tensor_with_random_mask(&mut mask);
+
+            // generate an error from the normal distribution described by std_dev
+            generator.fill_tensor_with_random_noise(
+                glwe_ct.get_mut_body().as_mut_tensor(),
+                noise_parameters,
+            );
+
+            glwe_ct
+                .get_mut_body()
+                .as_mut_polynomial()
+                .update_with_wrapping_add_multisum(
+                    &mask.as_mut_polynomial_list(),
+                    &self.as_polynomial_list(),
+                );
+            glwe_ct
+                .get_mut_body()
+                .as_mut_polynomial()
+                .update_with_wrapping_add(&encoded.as_polynomial());
+        }
+    }
+
     /// This function encrypts a message as a GGSW ciphertext, using as many threads as possible.
     ///
     /// # Notes
@@ -1028,17 +1158,18 @@ where
             .par_level_matrix_iter_mut()
             .zip(generators)
             .for_each(move |(mut matrix, mut generator)| {
-                let decomposition = encoded.0
-                    * (Scalar::ONE
+                let decomposition = encoded.0.wrapping_mul(
+                    Scalar::ONE
                         << (<Scalar as Numeric>::BITS
-                            - (base_log.0 * (matrix.decomposition_level().0))));
+                            - (base_log.0 * (matrix.decomposition_level().0))),
+                );
                 let gen_iter = generator
                     .par_fork_ggsw_level_to_glwe::<Scalar>(
                         self.key_size().to_glwe_size(),
                         self.poly_size,
                     )
                     .expect("Failed to split generator into glwe");
-                // We iterate over the rowe of the level matrix
+                // We iterate over the rows of the level matrix
                 matrix
                     .par_row_iter_mut()
                     .enumerate()
@@ -1057,6 +1188,131 @@ where
                         *first_coef = first_coef.wrapping_add(decomposition);
                     })
             })
+    }
+
+    /// This function encrypts a message as a GGSW seeded ciphertext.
+    ///
+    /// # Notes
+    /// This method is hidden behind the "multithread" feature gate.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{
+    ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, GlweSize, PolynomialSize,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
+    /// use concrete_core::backends::core::private::crypto::ggsw::StandardGgswSeededCiphertext;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::secret::GlweSecretKey;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    ///
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key =
+    ///     GlweSecretKey::generate_binary(GlweDimension(2), PolynomialSize(10), &mut secret_generator);
+    /// let mut ciphertext = StandardGgswSeededCiphertext::allocate(
+    ///     0 as u32,
+    ///     PolynomialSize(10),
+    ///     GlweSize(3),
+    ///     DecompositionLevelCount(3),
+    ///     DecompositionBaseLog(7),
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-15.);
+    /// let mut encryption_generator = EncryptionRandomGenerator::new(None);
+    /// let mut seed_generator = RandomGenerator::new(None);
+    /// let seed = seed_generator.generate_seed();
+    /// secret_key.par_encrypt_constant_seeded_ggsw(&mut ciphertext, &Plaintext(10), noise, seed);
+    /// ```
+    #[cfg(feature = "multithread")]
+    pub fn par_encrypt_constant_seeded_ggsw<OutputCont, Scalar>(
+        &self,
+        encrypted: &mut StandardGgswSeededCiphertext<OutputCont>,
+        encoded: &Plaintext<Scalar>,
+        noise_parameters: impl DispersionParameter + Sync + Send,
+        seed: Seed,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        OutputCont: AsMutSlice<Element = Scalar>,
+        Scalar: UnsignedTorus + Send + Sync,
+        Cont: Send + Sync,
+    {
+        ck_dim_eq!(self.polynomial_size() => encrypted.polynomial_size());
+        ck_dim_eq!(self.key_size() => encrypted.glwe_size().to_glwe_dimension());
+
+        let mut key_appended = self.as_tensor().as_slice().to_vec();
+        let mut last = vec![Scalar::ZERO; self.poly_size.0];
+        let first_coeff = last.first_mut().unwrap();
+        *first_coeff = first_coeff.wrapping_add(Scalar::ONE);
+        key_appended.append(&mut last);
+
+        let mut generator = EncryptionRandomGenerator::new(Some(seed.seed));
+        generator.shift(seed.shift);
+        *encrypted.get_mut_seed() = Some(seed);
+        let generators = generator
+            .par_fork_ggsw_to_ggsw_levels::<Scalar>(
+                encrypted.decomposition_level_count(),
+                self.key_size().to_glwe_size(),
+                self.poly_size,
+            )
+            .expect("Failed to split generator into ggsw levels");
+        let base_log = encrypted.decomposition_base_log();
+        encrypted
+            .par_level_matrix_iter_mut()
+            .zip(generators)
+            .for_each(move |(mut matrix, mut generator)| {
+                let factor = encoded.0.wrapping_mul(
+                    Scalar::ONE << (Scalar::BITS - (base_log.0 * (matrix.decomposition_level().0))),
+                );
+                let gen_iter = generator
+                    .par_fork_ggsw_level_to_glwe::<Scalar>(
+                        self.key_size().to_glwe_size(),
+                        self.poly_size,
+                    )
+                    .expect("Failed to split generator into glwe");
+                // We iterate over the rows of the level matrix
+                matrix
+                    .par_row_iter_mut()
+                    .zip(key_appended.par_chunks(self.poly_size.0))
+                    .zip(gen_iter)
+                    .for_each(|((row, sk_poly), mut generator)| {
+                        let mut sk_factored = Tensor::from_container(sk_poly.to_vec());
+                        sk_factored.update_with_scalar_mul(&factor.wrapping_neg());
+                        let encoded = PlaintextList::from_tensor(sk_factored);
+
+                        let mut glwe_ct = row.into_seeded_glwe();
+
+                        let mut mask = GlweMask {
+                            tensor: Tensor::from_container(vec![
+                                Scalar::ZERO;
+                                self.key_size().0
+                                    * self.polynomial_size().0
+                            ]),
+                            poly_size: self.poly_size,
+                        };
+                        generator.fill_tensor_with_random_mask(&mut mask);
+
+                        // generate an error from the normal distribution described by std_dev
+                        generator.fill_tensor_with_random_noise(
+                            glwe_ct.get_mut_body().as_mut_tensor(),
+                            noise_parameters,
+                        );
+
+                        glwe_ct
+                            .get_mut_body()
+                            .as_mut_polynomial()
+                            .update_with_wrapping_add_multisum(
+                                &mask.as_mut_polynomial_list(),
+                                &self.as_polynomial_list(),
+                            );
+                        glwe_ct
+                            .get_mut_body()
+                            .as_mut_polynomial()
+                            .update_with_wrapping_add(&encoded.as_polynomial());
+                    });
+            });
     }
 
     /// This function encrypts a message as a GGSW ciphertext whose glwe masks are all zeros.

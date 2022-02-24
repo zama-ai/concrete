@@ -8,3 +8,12 @@ pub use fourier::*;
 
 mod levels;
 pub use levels::*;
+
+mod standard_seeded;
+pub use standard_seeded::*;
+
+mod levels_seeded;
+pub use levels_seeded::*;
+
+#[cfg(test)]
+mod tests;
