@@ -1,7 +1,7 @@
 use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
 use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
 use crate::backends::core::private::crypto::glwe::{
-    GlweCiphertext, GlweList, GlweSeededCiphertext,
+    GlweCiphertext, GlweList, GlweSeededCiphertext, GlweSeededList,
 };
 use crate::backends::core::private::crypto::secret::LweSecretKey;
 use crate::backends::core::private::math::tensor::{
@@ -697,6 +697,83 @@ where
             .zip(encoded.sublist_iter(count))
         {
             self.encrypt_glwe(&mut ciphertext, &encoded, noise_parameters, generator);
+        }
+    }
+
+    /// Encrypts a list of seeded GLWE ciphertexts.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::dispersion::LogStandardDev;
+    /// use concrete_commons::parameters::{CiphertextCount, GlweDimension, PolynomialSize};
+    /// use concrete_core::backends::core::private::crypto::encoding::PlaintextList;
+    /// use concrete_core::backends::core::private::crypto::glwe::GlweSeededList;
+    /// use concrete_core::backends::core::private::crypto::secret::generators::{
+    ///     EncryptionRandomGenerator, SecretRandomGenerator,
+    /// };
+    /// use concrete_core::backends::core::private::crypto::secret::*;
+    /// use concrete_core::backends::core::private::crypto::*;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    /// use concrete_core::backends::core::private::math::tensor::{AsMutTensor, AsRefTensor};
+    /// let mut secret_generator = SecretRandomGenerator::new(None);
+    /// let secret_key = GlweSecretKey::generate_binary(
+    ///     GlweDimension(256),
+    ///     PolynomialSize(2),
+    ///     &mut secret_generator,
+    /// );
+    /// let noise = LogStandardDev::from_log_standard_dev(-25.);
+    /// let mut seed_generator = RandomGenerator::new(None);
+    /// let seed = seed_generator.generate_seed();
+    /// let plaintexts = PlaintextList::from_container(vec![1000 as u32, 2000, 3000, 4000]);
+    /// let mut ciphertexts = GlweSeededList::allocate(
+    ///     0 as u32,
+    ///     PolynomialSize(2),
+    ///     GlweDimension(256),
+    ///     CiphertextCount(2),
+    /// );
+    /// secret_key.encrypt_seeded_glwe_list(&mut ciphertexts, &plaintexts, noise, seed);
+    /// ```
+    pub fn encrypt_seeded_glwe_list<CiphCont, EncCont, Scalar>(
+        &self,
+        encrypt: &mut GlweSeededList<CiphCont>,
+        encoded: &PlaintextList<EncCont>,
+        noise_parameters: impl DispersionParameter,
+        seed: Seed,
+    ) where
+        Self: AsRefTensor<Element = Scalar>,
+        GlweSeededList<CiphCont>: AsMutTensor<Element = Scalar>,
+        PlaintextList<EncCont>: AsRefTensor<Element = Scalar>,
+        Scalar: UnsignedTorus,
+        for<'a> PlaintextList<&'a [Scalar]>: AsRefTensor<Element = Scalar>,
+    {
+        ck_dim_eq!(encrypt.ciphertext_count().0 * encrypt.polynomial_size().0 => encoded.count().0);
+        ck_dim_eq!(encrypt.glwe_dimension().0 => self.key_size().0);
+
+        let mut generator = EncryptionRandomGenerator::new(Some(seed.seed));
+        generator.shift(seed.shift);
+        *encrypt.get_mut_seed() = Some(seed);
+
+        let count = PlaintextCount(encrypt.polynomial_size().0);
+        for (mut body, encoded) in encrypt
+            .as_mut_tensor()
+            .subtensor_iter_mut(self.polynomial_size().0)
+            .zip(encoded.sublist_iter(count))
+        {
+            let mut masks =
+                Tensor::allocate(Scalar::ZERO, self.polynomial_size().0 * self.key_size().0);
+            generator.fill_tensor_with_random_mask(&mut masks);
+
+            generator.fill_tensor_with_random_noise(&mut body, noise_parameters);
+            Polynomial::from_container(body.as_mut_slice()).update_with_wrapping_add_multisum(
+                &PolynomialList::from_container(
+                    masks.as_mut_tensor().as_mut_slice(),
+                    self.poly_size,
+                ),
+                &self.as_polynomial_list(),
+            );
+            Polynomial::from_container(body.as_mut_slice())
+                .update_with_wrapping_add(&encoded.as_polynomial());
         }
     }
 
