@@ -34,10 +34,6 @@ public:
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
   generate(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb);
 
-  static outcome::checked<std::unique_ptr<KeySet>, StringError>
-  generateCached(ClientParameters &params, uint64_t seed_msb,
-                 uint64_t seed_lsb);
-
   // isInputEncrypted return true if the input at the given pos is encrypted.
   bool isInputEncrypted(size_t pos);
 

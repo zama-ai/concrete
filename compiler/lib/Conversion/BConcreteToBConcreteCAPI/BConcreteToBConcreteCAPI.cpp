@@ -85,16 +85,6 @@ inline mlir::Type getGenericCleartextType(mlir::MLIRContext *context) {
   return mlir::IntegerType::get(context, 64);
 }
 
-inline mlir::concretelang::Concrete::PlaintextListType
-getGenericPlaintextListType(mlir::MLIRContext *context) {
-  return mlir::concretelang::Concrete::PlaintextListType::get(context);
-}
-
-inline mlir::concretelang::Concrete::ForeignPlaintextListType
-getGenericForeignPlaintextListType(mlir::MLIRContext *context) {
-  return mlir::concretelang::Concrete::ForeignPlaintextListType::get(context);
-}
-
 inline mlir::concretelang::Concrete::LweKeySwitchKeyType
 getGenericLweKeySwitchKeyType(mlir::MLIRContext *context) {
   return mlir::concretelang::Concrete::LweKeySwitchKeyType::get(context);

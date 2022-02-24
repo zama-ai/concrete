@@ -307,7 +307,7 @@ mlir::LogicalResult processInputBuffer(
     if (!resOrErr) {
       mlir::concretelang::log_error()
           << "Failed to JIT-invoke " << funcName << " with arguments "
-          << jitArgs << ": " << llvm::toString(std::move(resOrErr.takeError()));
+          << jitArgs << ": " << llvm::toString(resOrErr.takeError());
       return mlir::failure();
     }
 
@@ -348,13 +348,14 @@ mlir::LogicalResult processInputBuffer(
       break;
     case JIT_INVOKE:
       // Case just here to satisfy the compiler; already handled above
+      abort();
       break;
     }
     auto retOrErr = ce.compile(std::move(buffer), target, outputLib);
 
     if (!retOrErr) {
       mlir::concretelang::log_error()
-          << llvm::toString(std::move(retOrErr.takeError())) << "\n";
+          << llvm::toString(retOrErr.takeError()) << "\n";
 
       return mlir::failure();
     }

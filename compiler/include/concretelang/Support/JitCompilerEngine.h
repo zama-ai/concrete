@@ -67,22 +67,22 @@ typedVectorResult(JITLambda::Argument &arguments) {
 template <>
 inline llvm::Expected<std::vector<uint8_t>>
 typedResult(JITLambda::Argument &arguments) {
-  return std::move(typedVectorResult<uint8_t>(arguments));
+  return typedVectorResult<uint8_t>(arguments);
 }
 template <>
 inline llvm::Expected<std::vector<uint16_t>>
 typedResult(JITLambda::Argument &arguments) {
-  return std::move(typedVectorResult<uint16_t>(arguments));
+  return typedVectorResult<uint16_t>(arguments);
 }
 template <>
 inline llvm::Expected<std::vector<uint32_t>>
 typedResult(JITLambda::Argument &arguments) {
-  return std::move(typedVectorResult<uint32_t>(arguments));
+  return typedVectorResult<uint32_t>(arguments);
 }
 template <>
 inline llvm::Expected<std::vector<uint64_t>>
 typedResult(JITLambda::Argument &arguments) {
-  return std::move(typedVectorResult<uint64_t>(arguments));
+  return typedVectorResult<uint64_t>(arguments);
 }
 
 template <typename T>
@@ -98,7 +98,7 @@ buildTensorLambdaResult(JITLambda::Argument &arguments) {
       arguments.getResultDimensions(0);
 
   if (!tensorDimOrError)
-    return std::move(tensorDimOrError.takeError());
+    return tensorDimOrError.takeError();
 
   return std::move(std::make_unique<TensorLambdaArgument<IntLambdaArgument<T>>>(
       *tensorOrError, *tensorDimOrError));
@@ -113,7 +113,7 @@ typedResult(JITLambda::Argument &arguments) {
       arguments.getResultType(0);
 
   if (!resTy)
-    return std::move(resTy.takeError());
+    return resTy.takeError();
 
   switch (*resTy) {
   case JITLambda::Argument::ResultType::SCALAR: {
@@ -122,14 +122,14 @@ typedResult(JITLambda::Argument &arguments) {
     if (llvm::Error err = arguments.getResult(0, res))
       return std::move(err);
 
-    return std::move(std::make_unique<IntLambdaArgument<uint64_t>>(res));
+    return std::make_unique<IntLambdaArgument<uint64_t>>(res);
   }
 
   case JITLambda::Argument::ResultType::TENSOR: {
     llvm::Expected<size_t> width = arguments.getResultWidth(0);
 
     if (!width)
-      return std::move(width.takeError());
+      return width.takeError();
 
     if (*width > 64)
       return StreamStringError("Cannot handle scalars with more than 64 bits");
@@ -187,7 +187,7 @@ public:
     llvm::Expected<bool> successOrError = tryAddArg<IntT>(jla, pos, arg);
 
     if (!successOrError)
-      return std::move(successOrError.takeError());
+      return successOrError.takeError();
 
     if (successOrError.get() == false)
       return tryAddArg<NextIntT, IntTs...>(jla, pos, arg);
@@ -209,7 +209,7 @@ public:
                                             uint8_t, size_t>(jla, pos, arg);
 
     if (!successOrError)
-      return std::move(successOrError.takeError());
+      return successOrError.takeError();
 
     if (successOrError.get() == false)
       return StreamStringError("Unknown argument type");

@@ -149,8 +149,7 @@ struct TFHEApplyLookupTablePaddingPattern
       mlir::PatternBenefit benefit =
           mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
       : mlir::OpRewritePattern<mlir::concretelang::TFHE::ApplyLookupTable>(
-            context, benefit),
-        typeConverter(typeConverter), v0Parameter(v0Parameter) {}
+            context, benefit) {}
 
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::TFHE::ApplyLookupTable op,
@@ -201,10 +200,6 @@ struct TFHEApplyLookupTablePaddingPattern
 
     return mlir::success();
   };
-
-private:
-  mlir::TypeConverter &typeConverter;
-  mlir::concretelang::V0Parameter &v0Parameter;
 };
 
 template <typename Op>
@@ -227,7 +222,8 @@ void populateWithTFHEApplyLookupTableParametrizationPattern(
       [&](mlir::concretelang::TFHE::ApplyLookupTable op) {
         if (op.glweDimension() != v0Parameter.glweDimension ||
             // TODO remove the shift when we have true polynomial size
-            op.polynomialSize() != (1 << v0Parameter.logPolynomialSize) ||
+            op.polynomialSize() !=
+                ((uint32_t)1 << v0Parameter.logPolynomialSize) ||
             op.levelKS() != v0Parameter.ksLevel ||
             op.baseLogKS() != v0Parameter.ksLogBase ||
             op.levelBS() != v0Parameter.brLevel ||

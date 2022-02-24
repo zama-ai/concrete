@@ -136,7 +136,6 @@ llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
 CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
   mlir::ModuleOp module = res.mlirModuleRef->get();
-  llvm::Optional<mlir::concretelang::V0FHEConstraint> fheConstraints;
   // If the values has been overwritten returns
   if (this->overrideMaxEintPrecision.hasValue() &&
       this->overrideMaxMANP.hasValue()) {
@@ -160,7 +159,7 @@ CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
 llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   auto fheConstraintOrErr = getV0FHEConstraint(res);
   if (auto err = fheConstraintOrErr.takeError())
-    return std::move(err);
+    return err;
   if (!fheConstraintOrErr.get().hasValue()) {
     return llvm::Error::success();
   }
