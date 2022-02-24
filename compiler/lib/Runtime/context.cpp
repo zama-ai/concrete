@@ -11,39 +11,32 @@
 #include <hpx/include/runtime.hpp>
 #endif
 
-namespace mlir {
-namespace concretelang {
-
-std::string RuntimeContext::BASE_CONTEXT_BSK = "_concretelang_base_context_bsk";
-
-} // namespace concretelang
-} // namespace mlir
-
 LweKeyswitchKey_u64 *
-get_keyswitch_key(mlir::concretelang::RuntimeContext *context) {
+get_keyswitch_key_u64(mlir::concretelang::RuntimeContext *context) {
   return context->ksk;
 }
 
 LweBootstrapKey_u64 *
-get_bootstrap_key(mlir::concretelang::RuntimeContext *context) {
-  using RuntimeContext = mlir::concretelang::RuntimeContext;
+get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context) {
+  return context->bsk;
+}
+
+// Instantiate one engine per thread on demand
+Engine *get_engine(mlir::concretelang::RuntimeContext *context) {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   std::string threadName = hpx::get_thread_name();
-  auto bskIt = context->bsk.find(threadName);
-  if (bskIt == context->bsk.end()) {
-    assert((bskIt = context->bsk.find(RuntimeContext::BASE_CONTEXT_BSK)) !=
-               context->bsk.end() &&
-           bskIt->second && "No BASE_CONTEXT_BSK registered in context.");
-    bskIt = context->bsk
-                .insert(std::pair<std::string, LweBootstrapKey_u64 *>(
-                    threadName,
-                    clone_lwe_bootstrap_key_u64(
-                        context->bsk[RuntimeContext::BASE_CONTEXT_BSK])))
-                .first;
+  std::lock_guard<std::mutex> guard(context->engines_map_guard);
+  auto engineIt = context->engines.find(threadName);
+  if (engineIt == context->engines.end()) {
+    engineIt =
+        context->engines
+            .insert(std::pair<std::string, Engine *>(threadName, new_engine()))
+            .first;
   }
+  assert(engineIt->second && "No engine available in context");
+  return engineIt->second;
 #else
-  auto bskIt = context->bsk.find(RuntimeContext::BASE_CONTEXT_BSK);
+  return (context->engine == nullptr) ? context->engine = new_engine()
+                                      : context->engine;
 #endif
-  assert(bskIt->second && "No bootstrap key available in context");
-  return bskIt->second;
 }

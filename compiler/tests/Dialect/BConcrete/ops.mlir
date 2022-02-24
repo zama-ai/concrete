@@ -40,13 +40,13 @@ func @negate_lwe_ciphertext(%arg0: tensor<2049xi64>) -> tensor<2049xi64> {
   return %0 : tensor<2049xi64>
 }
 
-// CHECK-LABEL: func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: !Concrete.glwe_ciphertext) -> tensor<2049xi64>
-func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: !Concrete.glwe_ciphertext) -> tensor<2049xi64> {
+// CHECK-LABEL: func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: tensor<4096xi64>) -> tensor<2049xi64>
+func @bootstrap_lwe(%arg0: tensor<2049xi64>, %arg1: tensor<4096xi64>) -> tensor<2049xi64> {
   // CHECK-NEXT: %[[V0:.*]] = linalg.init_tensor [2049] : tensor<2049xi64>
-  // CHECK-NEXT: "BConcrete.bootstrap_lwe_buffer"(%[[V0]], %arg0, %arg1) {baseLog = -1 : i32, glweDimension = 1 : i32, level = -1 : i32, polynomialSize = 1024 : i32} : (tensor<2049xi64>, tensor<2049xi64>, !Concrete.glwe_ciphertext) -> ()
+  // CHECK-NEXT: "BConcrete.bootstrap_lwe_buffer"(%[[V0]], %arg0, %arg1) {baseLog = -1 : i32, glweDimension = 1 : i32, level = -1 : i32, polynomialSize = 1024 : i32} : (tensor<2049xi64>, tensor<2049xi64>, tensor<4096xi64>) -> ()
   // CHECK-NEXT: return %[[V0]] : tensor<2049xi64>
   %0 = linalg.init_tensor [2049] : tensor<2049xi64>
-  "BConcrete.bootstrap_lwe_buffer"(%0, %arg0, %arg1) {baseLog = -1 : i32, glweDimension = 1 : i32, level = -1 : i32, polynomialSize = 1024 : i32} : (tensor<2049xi64>, tensor<2049xi64>, !Concrete.glwe_ciphertext) -> ()
+  "BConcrete.bootstrap_lwe_buffer"(%0, %arg0, %arg1) {baseLog = -1 : i32, glweDimension = 1 : i32, level = -1 : i32, polynomialSize = 1024 : i32} : (tensor<2049xi64>, tensor<2049xi64>, tensor<4096xi64>) -> ()
   return %0 : tensor<2049xi64>
 }
 

@@ -40,22 +40,10 @@ def ConcreteToBConcrete : Pass<"concrete-to-bconcrete", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::Concrete::ConcreteDialect", "mlir::concretelang::BConcrete::BConcreteDialect"];
 }
 
-def ConcreteToConcreteCAPI : Pass<"concrete-to-concrete-c-api", "mlir::ModuleOp"> {
-  let summary = "Lower operations from the Concrete dialect to std with function call to the Concrete C API";
-  let constructor = "mlir::concretelang::createConvertConcreteToConcreteCAPIPass()";
-  let dependentDialects = ["mlir::concretelang::Concrete::ConcreteDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
-}
-
 def BConcreteToBConcreteCAPI : Pass<"bconcrete-to-bconcrete-c-api", "mlir::ModuleOp"> {
   let summary = "Lower operations from the Bufferized Concrete dialect to std with function call to the Bufferized Concrete C API";
   let constructor = "mlir::concretelang::createConvertBConcreteToBConcreteCAPIPass()";
   let dependentDialects = ["mlir::concretelang::BConcrete::BConcreteDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
-}
-
-def ConcreteUnparametrize : Pass<"concrete-unparametrize", "mlir::ModuleOp"> {
-  let summary = "Unparametrize Concrete types and remove unrealized_conversion_cast";
-  let constructor = "mlir::concretelang::createConvertConcreteToConcreteCAPIPass()";
-  let dependentDialects = ["mlir::concretelang::Concrete::ConcreteDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
 }
 
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {

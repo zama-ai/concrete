@@ -18,6 +18,8 @@
 namespace concretelang {
 namespace clientlib {
 
+KeySet::KeySet() : engine(new_engine()) {}
+
 KeySet::~KeySet() {
   for (auto it : secretKeys) {
     free_lwe_secret_key_u64(it.second.second);
@@ -28,7 +30,7 @@ KeySet::~KeySet() {
   for (auto it : keyswitchKeys) {
     free_lwe_keyswitch_key_u64(it.second.second);
   }
-  free_encryption_generator(encryptionRandomGenerator);
+  free_engine(engine);
 }
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
@@ -81,9 +83,6 @@ KeySet::setupEncryptionMaterial(ClientParameters &params, uint64_t seed_msb,
     }
   }
 
-  this->encryptionRandomGenerator =
-      allocate_encryption_generator(seed_msb, seed_lsb);
-
   return outcome::success();
 }
 
@@ -93,29 +92,20 @@ KeySet::generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
 
   {
     // Generate LWE secret keys
-    SecretRandomGenerator *generator;
-
-    generator = allocate_secret_generator(seed_msb, seed_lsb);
     for (auto secretKeyParam : params.secretKeys) {
-      OUTCOME_TRYV(this->generateSecretKey(secretKeyParam.first,
-                                           secretKeyParam.second, generator));
+      OUTCOME_TRYV(
+          this->generateSecretKey(secretKeyParam.first, secretKeyParam.second));
     }
-    free_secret_generator(generator);
   }
-  // Allocate the encryption random generator
-  this->encryptionRandomGenerator =
-      allocate_encryption_generator(seed_msb, seed_lsb);
   // Generate bootstrap and keyswitch keys
   {
     for (auto bootstrapKeyParam : params.bootstrapKeys) {
       OUTCOME_TRYV(this->generateBootstrapKey(bootstrapKeyParam.first,
-                                              bootstrapKeyParam.second,
-                                              this->encryptionRandomGenerator));
+                                              bootstrapKeyParam.second));
     }
     for (auto keyswitchParam : params.keyswitchKeys) {
       OUTCOME_TRYV(this->generateKeyswitchKey(keyswitchParam.first,
-                                              keyswitchParam.second,
-                                              this->encryptionRandomGenerator));
+                                              keyswitchParam.second));
     }
   }
   return outcome::success();
@@ -136,12 +126,9 @@ void KeySet::setKeys(
 }
 
 outcome::checked<void, StringError>
-KeySet::generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,
-                          SecretRandomGenerator *generator) {
+KeySet::generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param) {
   LweSecretKey_u64 *sk;
-  sk = allocate_lwe_secret_key_u64({param.dimension});
-
-  fill_lwe_secret_key_u64(sk, generator);
+  sk = generate_lwe_secret_key_u64(engine, param.dimension);
 
   secretKeys[id] = {param, sk};
 
@@ -149,8 +136,7 @@ KeySet::generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,
 }
 
 outcome::checked<void, StringError>
-KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param,
-                             EncryptionRandomGenerator *generator) {
+KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param) {
   // Finding input and output secretKeys
   auto inputSk = secretKeys.find(param.inputSecretKeyID);
   if (inputSk == secretKeys.end()) {
@@ -169,32 +155,18 @@ KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param,
 
   uint64_t polynomialSize = total_dimension / param.glweDimension;
 
-  bsk = allocate_lwe_bootstrap_key_u64(
-      {param.level}, {param.baseLog}, {param.glweDimension},
-      {inputSk->second.first.dimension}, {polynomialSize});
+  bsk = generate_lwe_bootstrap_key_u64(
+      engine, inputSk->second.second, outputSk->second.second, param.baseLog,
+      param.level, param.variance, param.glweDimension, polynomialSize);
 
   // Store the bootstrap key
   bootstrapKeys[id] = {param, bsk};
 
-  // Convert the output lwe key to glwe key
-  GlweSecretKey_u64 *glwe_sk;
-
-  glwe_sk =
-      allocate_glwe_secret_key_u64({param.glweDimension}, {polynomialSize});
-
-  fill_glwe_secret_key_with_lwe_secret_key_u64(glwe_sk,
-                                               outputSk->second.second);
-
-  // Initialize the bootstrap key
-  fill_lwe_bootstrap_key_u64(bsk, inputSk->second.second, glwe_sk, generator,
-                             {param.variance});
-  free_glwe_secret_key_u64(glwe_sk);
   return outcome::success();
 }
 
 outcome::checked<void, StringError>
-KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param,
-                             EncryptionRandomGenerator *generator) {
+KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param) {
   // Finding input and output secretKeys
   auto inputSk = secretKeys.find(param.inputSecretKeyID);
   if (inputSk == secretKeys.end()) {
@@ -207,17 +179,13 @@ KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param,
   // Allocate the keyswitch key
   LweKeyswitchKey_u64 *ksk;
 
-  ksk = allocate_lwe_keyswitch_key_u64({param.level}, {param.baseLog},
-                                       {inputSk->second.first.dimension},
-                                       {outputSk->second.first.dimension});
+  ksk = generate_lwe_keyswitch_key_u64(engine, inputSk->second.second,
+                                       outputSk->second.second, param.level,
+                                       param.baseLog, param.variance);
 
   // Store the keyswitch key
   keyswitchKeys[id] = {param, ksk};
-  // Initialize the keyswitch key
 
-  fill_lwe_keyswitch_key_u64(ksk, inputSk->second.second,
-                             outputSk->second.second, generator,
-                             {param.variance});
   return outcome::success();
 }
 
@@ -255,9 +223,8 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
   // Encode - TODO we could check if the input value is in the right range
   uint64_t plaintext =
       input << (64 - (std::get<0>(inputSk).encryption->encoding.precision + 1));
-  encrypt_lwe_u64(std::get<2>(inputSk), ciphertext, plaintext,
-                  encryptionRandomGenerator,
-                  {std::get<0>(inputSk).encryption->variance});
+  ::encrypt_lwe_u64(engine, std::get<2>(inputSk), ciphertext, plaintext,
+                    std::get<0>(inputSk).encryption->variance);
   return outcome::success();
 }
 
@@ -271,7 +238,8 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
   if (!std::get<0>(outputSk).encryption.hasValue()) {
     return StringError("decrypt_lwe: the positional argument is not encrypted");
   }
-  uint64_t plaintext = decrypt_lwe_u64(std::get<2>(outputSk), ciphertext);
+  uint64_t plaintext =
+      ::decrypt_lwe_u64(engine, std::get<2>(outputSk), ciphertext);
   // Decode
   size_t precision = std::get<0>(outputSk).encryption->encoding.precision;
   output = plaintext >> (64 - precision - 2);

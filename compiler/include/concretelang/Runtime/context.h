@@ -7,6 +7,7 @@
 #define CONCRETELANG_RUNTIME_CONTEXT_H
 
 #include <map>
+#include <mutex>
 #include <string>
 
 extern "C" {
@@ -18,14 +19,29 @@ namespace concretelang {
 
 typedef struct RuntimeContext {
   LweKeyswitchKey_u64 *ksk;
-  std::map<std::string, LweBootstrapKey_u64 *> bsk;
+  LweBootstrapKey_u64 *bsk;
+#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+  std::map<std::string, Engine *> engines;
+  std::mutex engines_map_guard;
+#else
+  Engine *engine;
+#endif
 
-  static std::string BASE_CONTEXT_BSK;
+  RuntimeContext()
+#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+      : engine(nullptr)
+#endif
+  {
+  }
   ~RuntimeContext() {
-    for (const auto &key : bsk) {
-      if (key.first != BASE_CONTEXT_BSK)
-        free_lwe_bootstrap_key_u64(key.second);
+#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+    for (const auto &key : engines) {
+      free_engine(key.second);
     }
+#else
+    if (engine != nullptr)
+      free_engine(engine);
+#endif
   }
 } RuntimeContext;
 
@@ -34,9 +50,11 @@ typedef struct RuntimeContext {
 
 extern "C" {
 LweKeyswitchKey_u64 *
-get_keyswitch_key(mlir::concretelang::RuntimeContext *context);
+get_keyswitch_key_u64(mlir::concretelang::RuntimeContext *context);
 
 LweBootstrapKey_u64 *
-get_bootstrap_key(mlir::concretelang::RuntimeContext *context);
+get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context);
+
+Engine *get_engine(mlir::concretelang::RuntimeContext *context);
 }
 #endif

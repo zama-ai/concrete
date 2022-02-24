@@ -99,7 +99,7 @@ std::istream &operator>>(std::istream &istream, ClientParameters &params) {
 std::istream &operator>>(std::istream &istream,
                          RuntimeContext &runtimeContext) {
   istream >> runtimeContext.ksk;
-  istream >> runtimeContext.bsk[RuntimeContext::BASE_CONTEXT_BSK];
+  istream >> runtimeContext.bsk;
   assert(istream.good());
   return istream;
 }
@@ -107,7 +107,7 @@ std::istream &operator>>(std::istream &istream,
 std::ostream &operator<<(std::ostream &ostream,
                          const RuntimeContext &runtimeContext) {
   ostream << runtimeContext.ksk;
-  ostream << runtimeContext.bsk.at(RuntimeContext::BASE_CONTEXT_BSK);
+  ostream << runtimeContext.bsk;
   assert(ostream.good());
   return ostream;
 }

@@ -36,6 +36,17 @@ def NegateLweBufferOp : BConcrete_Op<"negate_lwe_buffer"> {
     let results = (outs);
 }
 
+def FillGlweFromTable : BConcrete_Op<"fill_glwe_from_table"> {
+    let arguments = (ins
+        1DTensorOf<[I64]>:$glwe,
+        I32Attr:$polynomialSize,
+        I32Attr:$glweDimension,
+        I32Attr:$outPrecision,
+        1DTensorOf<[I64]>:$table
+    );
+    let results = (outs);
+}
+
 def KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
     let arguments = (ins
         1DTensorOf<[I64]>:$result,
@@ -52,7 +63,7 @@ def BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
         1DTensorOf<[I64]>:$result,
         // LweBootstrapKeyType:$bootstrap_key,
         1DTensorOf<[I64]>:$input_ciphertext,
-        GlweCiphertextType:$accumulator,
+        1DTensorOf<[I64]>:$accumulator,
         I32Attr:$glweDimension,
         I32Attr:$polynomialSize,
         I32Attr:$level,

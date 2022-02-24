@@ -16,12 +16,48 @@ def GlweCiphertextType : Concrete_Type<"GlweCiphertext"> {
        GLWE ciphertext.
     }];
 
+    let parameters = (ins
+        "signed":$polynomialSize,
+        "signed":$glweDimension,
+        // Precision of the lwe ciphertext
+        "signed":$p
+    );
+
     let printer = [{
-        $_printer << "glwe_ciphertext";
+        $_printer << "glwe_ciphertext<";
+        if (getImpl()->polynomialSize == -1) $_printer << "_";
+        else $_printer << getImpl()->polynomialSize;
+        $_printer << ",";
+        if (getImpl()->glweDimension == -1) $_printer << "_";
+        else $_printer << getImpl()->glweDimension;
+        $_printer << ",";
+        if (getImpl()->p == -1) $_printer << "_";
+        else $_printer << getImpl()->p;
+        $_printer << ">";
     }];
 
+    
     let parser = [{
-        return get($_ctxt);
+        if ($_parser.parseLess())
+            return Type();
+        int polynomialSize = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(polynomialSize))
+            return Type();
+        if ($_parser.parseComma())
+            return Type();
+        int glweDimension = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(glweDimension))
+            return Type();
+        if ($_parser.parseComma())
+            return Type();
+        
+        int p = -1;
+        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
+            return Type();
+        if ($_parser.parseGreater())
+            return Type();
+        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
+        return getChecked(loc, loc.getContext(), polynomialSize, glweDimension, p);
     }];
 }
 

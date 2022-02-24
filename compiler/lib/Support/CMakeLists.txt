@@ -22,7 +22,6 @@ add_mlir_library(ConcretelangSupport
   FHELinalgDialectTransforms
   FHETensorOpsToLinalg
   FHEToTFHE
-  ConcreteUnparametrize
   MLIRLowerableDialectsToLLVM
   FHEDialectAnalysis
   RTDialectAnalysis

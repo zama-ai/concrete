@@ -205,9 +205,6 @@ lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertBConcreteToBConcreteCAPIPass(),
       enablePass);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertConcreteToConcreteCAPIPass(),
-      enablePass);
   return pm.run(module.getOperation());
 }
 
@@ -217,11 +214,6 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
                       bool parallelizeLoops) {
   mlir::PassManager pm(&context);
   pipelinePrinting("StdToLLVM", pm, context);
-
-  // Unparametrize Concrete
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertConcreteUnparametrizePass(),
-      enablePass);
 
   // Bufferize
   addPotentiallyNestedPass(pm, mlir::createTensorConstantBufferizePass(),

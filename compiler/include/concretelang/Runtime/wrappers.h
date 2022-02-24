@@ -6,11 +6,17 @@
 #ifndef CONCRETELANG_RUNTIME_WRAPPERS_H
 #define CONCRETELANG_RUNTIME_WRAPPERS_H
 
+#include "concretelang/Runtime/context.h"
+
+extern "C" {
 #include "concrete-ffi.h"
 
-struct ForeignPlaintextList_u64 *memref_runtime_foreign_plaintext_list_u64(
-    uint64_t *allocated, uint64_t *aligned, uint64_t offset, uint64_t size,
-    uint64_t stride, uint32_t precision);
+void memref_expand_lut_in_trivial_glwe_ct_u64(
+    uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
+    uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
+    uint32_t poly_size, uint32_t glwe_dimension, uint32_t out_precision,
+    uint64_t *lut_allocated, uint64_t *lut_aligned, uint64_t lut_offset,
+    uint64_t lut_size, uint64_t lut_stride);
 
 void memref_add_lwe_ciphertexts_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
@@ -37,19 +43,20 @@ void memref_negate_lwe_ciphertext_u64(
     uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
     uint64_t ct0_stride);
 
-void memref_keyswitch_lwe_u64(struct LweKeyswitchKey_u64 *keyswitch_key,
-                              uint64_t *out_allocated, uint64_t *out_aligned,
-                              uint64_t out_offset, uint64_t out_size,
-                              uint64_t out_stride, uint64_t *ct0_allocated,
-                              uint64_t *ct0_aligned, uint64_t ct0_offset,
-                              uint64_t ct0_size, uint64_t ct0_stride);
-
-void memref_bootstrap_lwe_u64(struct LweBootstrapKey_u64 *bootstrap_key,
-                              uint64_t *out_allocated, uint64_t *out_aligned,
+void memref_keyswitch_lwe_u64(uint64_t *out_allocated, uint64_t *out_aligned,
                               uint64_t out_offset, uint64_t out_size,
                               uint64_t out_stride, uint64_t *ct0_allocated,
                               uint64_t *ct0_aligned, uint64_t ct0_offset,
                               uint64_t ct0_size, uint64_t ct0_stride,
-                              struct GlweCiphertext_u64 *accumulator);
+                              mlir::concretelang::RuntimeContext *context);
+
+void memref_bootstrap_lwe_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
+    uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
+    mlir::concretelang::RuntimeContext *context);
+}
 
 #endif

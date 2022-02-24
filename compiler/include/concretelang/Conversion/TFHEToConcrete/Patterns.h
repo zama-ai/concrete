@@ -210,7 +210,7 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
 //         % [[TABLE]]){glweDimension = 1 : i32, p = 4 : i32, polynomialSize =
 //         2048 : i32}
 //     : (tensor<16xi4>)
-//           ->!Concrete.glwe_ciphertext
+//           ->!Concrete.glwe_ciphertext<2048, 1, 4>
 // % keyswitched = "Concrete.keyswitch_lwe"(% arg0){
 //   baseLog = 2 : i32,
 //   level = 3 : i32
@@ -221,7 +221,7 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
 //   glweDimension = 1 : i32,
 //   level = 5 : i32,
 //   polynomialSize = 2048 : i32
-// } : (!Concrete.lwe_ciphertext<600, 4>, !Concrete.glwe_ciphertext)
+// } : (!Concrete.lwe_ciphertext<600, 4>, !Concrete.glwe_ciphertext<2048, 1, 4>)
 //         ->!Concrete.lwe_ciphertext<2048, 4>
 // ```
 mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
@@ -240,8 +240,11 @@ mlir::Value createPBS(mlir::PatternRewriter &rewriter, mlir::Location loc,
   mlir::Value accumulator =
       rewriter
           .create<mlir::concretelang::Concrete::GlweFromTable>(
-              loc, Concrete::GlweCiphertextType::get(rewriter.getContext()),
-              table, polynomialSize, glweDimension, precision)
+              loc,
+              Concrete::GlweCiphertextType::get(
+                  rewriter.getContext(), polynomialSize.getInt(),
+                  glweDimension.getInt(), lwe_type.getP()),
+              table)
           .result();
 
   // keyswitch

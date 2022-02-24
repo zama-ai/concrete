@@ -37,8 +37,17 @@ public:
   ConcreteToBConcreteTypeConverter() {
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](mlir::concretelang::Concrete::LweCiphertextType type) {
+      assert(type.getDimension() != -1);
       return mlir::RankedTensorType::get(
           {type.getDimension() + 1},
+          mlir::IntegerType::get(type.getContext(), 64));
+    });
+    addConversion([&](mlir::concretelang::Concrete::GlweCiphertextType type) {
+      assert(type.getGlweDimension() != -1);
+      assert(type.getPolynomialSize() != -1);
+
+      return mlir::RankedTensorType::get(
+          {type.getPolynomialSize() * (type.getGlweDimension() + 1)},
           mlir::IntegerType::get(type.getContext(), 64));
     });
     addConversion([&](mlir::RankedTensorType type) {
@@ -48,6 +57,7 @@ public:
       if (lwe == nullptr) {
         return (mlir::Type)(type);
       }
+      assert(lwe.getDimension() != -1);
       mlir::SmallVector<int64_t> newShape;
       newShape.reserve(type.getShape().size() + 1);
       newShape.append(type.getShape().begin(), type.getShape().end());
@@ -63,6 +73,7 @@ public:
       if (lwe == nullptr) {
         return (mlir::Type)(type);
       }
+      assert(lwe.getDimension() != -1);
       mlir::SmallVector<int64_t> newShape;
       newShape.reserve(type.getShape().size() + 1);
       newShape.append(type.getShape().begin(), type.getShape().end());
@@ -172,6 +183,65 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
     rewriter.create<BConcreteOp>(concreteOp.getLoc(),
                                  mlir::SmallVector<mlir::Type>{}, newOperands,
                                  attributes);
+
+    return ::mlir::success();
+  };
+};
+
+// This rewrite pattern transforms any instance of
+// `Concrete.glwe_from_table` operators.
+//
+// Example:
+//
+// ```mlir
+// %0 = "Concrete.glwe_from_table"(%tlu)
+//   : (tensor<$Dxi64>) ->
+//   !Concrete.glwe_ciphertext<$polynomialSize,$glweDimension,$p>
+// ```
+//
+// with $D = 2^$p
+//
+// becomes:
+//
+// ```mlir
+// %0 = linalg.init_tensor [polynomialSize*(glweDimension+1)]
+//        : tensor<polynomialSize*(glweDimension+1), i64>
+// "BConcrete.fill_glwe_from_table" : (%0, polynomialSize, glweDimension, %tlu)
+//   : tensor<polynomialSize*(glweDimension+1), i64>, i64, i64, tensor<$Dxi64>
+// ```
+struct GlweFromTablePattern : public mlir::OpRewritePattern<
+                                  mlir::concretelang::Concrete::GlweFromTable> {
+  GlweFromTablePattern(::mlir::MLIRContext *context,
+                       mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::concretelang::Concrete::GlweFromTable>(
+            context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::Concrete::GlweFromTable op,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    ConcreteToBConcreteTypeConverter converter;
+    auto resultTy =
+        op.result()
+            .getType()
+            .cast<mlir::concretelang::Concrete::GlweCiphertextType>();
+
+    auto newResultTy =
+        converter.convertType(resultTy).cast<mlir::RankedTensorType>();
+    // %0 = linalg.init_tensor [polynomialSize*(glweDimension+1)]
+    //        : tensor<polynomialSize*(glweDimension+1), i64>
+    mlir::Value init = rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
+        op, newResultTy.getShape(), newResultTy.getElementType());
+
+    // "BConcrete.fill_glwe_from_table" : (%0, polynomialSize, glweDimension,
+    // %tlu)
+
+    // polynomialSize*(glweDimension+1)
+    auto polySize = resultTy.getPolynomialSize();
+    auto glweDimension = resultTy.getGlweDimension();
+    auto outPrecision = resultTy.getP();
+
+    rewriter.create<mlir::concretelang::BConcrete::FillGlweFromTable>(
+        op.getLoc(), init, polySize, glweDimension, outPrecision, op.table());
 
     return ::mlir::success();
   };
@@ -827,7 +897,6 @@ void ConcreteToBConcretePass::runOnOperation() {
     // ciphertexts)
     target.addIllegalDialect<mlir::concretelang::Concrete::ConcreteDialect>();
     target.addLegalOp<mlir::concretelang::Concrete::EncodeIntOp>();
-    target.addLegalOp<mlir::concretelang::Concrete::GlweFromTable>();
     target.addLegalOp<mlir::concretelang::Concrete::IntToCleartextOp>();
 
     // Add patterns to convert the zero ops to tensor.generate
@@ -860,7 +929,10 @@ void ConcreteToBConcretePass::runOnOperation() {
                        mlir::concretelang::BConcrete::BootstrapLweBufferOp>>(
         &getContext());
 
-    // Add patterns to rewrite tensor operators that works on encrypted tensors
+    patterns.insert<GlweFromTablePattern>(&getContext());
+
+    // Add patterns to rewrite tensor operators that works on encrypted
+    // tensors
     patterns.insert<ExtractSliceOpPattern, ExtractOpPattern,
                     InsertSliceOpPattern, FromElementsOpPattern>(&getContext());
     target.addDynamicallyLegalOp<

@@ -13,8 +13,6 @@
 
 #include "concretelang/Conversion/BConcreteToBConcreteCAPI/Pass.h"
 #include "concretelang/Conversion/ConcreteToBConcrete/Pass.h"
-#include "concretelang/Conversion/ConcreteToConcreteCAPI/Pass.h"
-#include "concretelang/Conversion/ConcreteUnparametrize/Pass.h"
 #include "concretelang/Conversion/FHETensorOpsToLinalg/Pass.h"
 #include "concretelang/Conversion/FHEToTFHE/Pass.h"
 #include "concretelang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h"

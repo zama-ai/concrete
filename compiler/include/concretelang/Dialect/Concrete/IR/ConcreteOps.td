@@ -55,7 +55,7 @@ def NegateLweCiphertextOp : Concrete_Op<"negate_lwe_ciphertext"> {
 def GlweFromTable : Concrete_Op<"glwe_from_table"> {
     let summary = "Creates a GLWE ciphertext which is the trivial encrytion of a the input table interpreted as a polynomial (to use later in a bootstrap)";
 
-    let arguments = (ins TensorOf<[AnyInteger]>:$table, I32Attr:$polynomialSize, I32Attr:$glweDimension, I32Attr:$p);
+    let arguments = (ins 1DTensorOf<[I64]>:$table);
     let results = (outs GlweCiphertextType:$result);
 }
 

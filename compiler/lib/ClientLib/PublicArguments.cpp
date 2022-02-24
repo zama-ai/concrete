@@ -45,10 +45,9 @@ PublicArguments::~PublicArguments() {
   if (!clearRuntimeContext) {
     return;
   }
-  for (auto bsk_entry : runtimeContext.bsk) {
-    free_lwe_bootstrap_key_u64(bsk_entry.second);
+  if (runtimeContext.bsk != nullptr) {
+    free_lwe_bootstrap_key_u64(runtimeContext.bsk);
   }
-  runtimeContext.bsk.clear();
   if (runtimeContext.ksk != nullptr) {
     free_lwe_keyswitch_key_u64(runtimeContext.ksk);
     runtimeContext.ksk = nullptr;

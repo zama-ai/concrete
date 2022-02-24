@@ -17,6 +17,7 @@
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
+#include "concretelang/Support/Constants.h"
 
 namespace {
 class BConcreteToBConcreteCAPITypeConverter : public mlir::TypeConverter {
@@ -72,9 +73,8 @@ inline mlir::Type getGenericLweBufferType(mlir::MLIRContext *context) {
   return mlir::RankedTensorType::get({-1}, mlir::IntegerType::get(context, 64));
 }
 
-inline mlir::concretelang::Concrete::GlweCiphertextType
-getGenericGlweCiphertextType(mlir::MLIRContext *context) {
-  return mlir::concretelang::Concrete::GlweCiphertextType::get(context);
+inline mlir::Type getGenericGlweBufferType(mlir::MLIRContext *context) {
+  return mlir::RankedTensorType::get({-1}, mlir::IntegerType::get(context, 64));
 }
 
 inline mlir::Type getGenericPlaintextType(mlir::MLIRContext *context) {
@@ -114,10 +114,6 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   auto lweBufferType = getGenericLweBufferType(rewriter.getContext());
   auto plaintextType = getGenericPlaintextType(rewriter.getContext());
   auto cleartextType = getGenericCleartextType(rewriter.getContext());
-  auto glweCiphertextType = getGenericGlweCiphertextType(rewriter.getContext());
-  auto plaintextListType = getGenericPlaintextListType(rewriter.getContext());
-  auto foreignPlaintextList =
-      getGenericForeignPlaintextListType(rewriter.getContext());
   auto keySwitchKeyType = getGenericLweKeySwitchKeyType(rewriter.getContext());
   auto bootstrapKeyType = getGenericLweBootstrapKeyType(rewriter.getContext());
   auto contextType =
@@ -134,7 +130,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
       return mlir::failure();
     }
   }
-  // Insert forward declaration of the add_plaintext_lwe_ciphertext_u64 function
+  // Insert forward declaration of the add_plaintext_lwe_ciphertext function
   {
     auto funcType = mlir::FunctionType::get(
         rewriter.getContext(), {lweBufferType, lweBufferType, plaintextType},
@@ -145,7 +141,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
       return mlir::failure();
     }
   }
-  // Insert forward declaration of the mul_cleartext_lwe_ciphertext_u64 function
+  // Insert forward declaration of the mul_cleartext_lwe_ciphertext function
   {
     auto funcType = mlir::FunctionType::get(
         rewriter.getContext(), {lweBufferType, lweBufferType, cleartextType},
@@ -156,7 +152,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
       return mlir::failure();
     }
   }
-  // Insert forward declaration of the negate_lwe_ciphertext_u64 function
+  // Insert forward declaration of the negate_lwe_ciphertext function
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {lweBufferType, lweBufferType}, {});
@@ -169,8 +165,7 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   // Insert forward declaration of the memref_keyswitch_lwe_u64 function
   {
     auto funcType = mlir::FunctionType::get(
-        rewriter.getContext(), {keySwitchKeyType, lweBufferType, lweBufferType},
-        {});
+        rewriter.getContext(), {lweBufferType, lweBufferType, contextType}, {});
     if (insertForwardDeclaration(op, rewriter, "memref_keyswitch_lwe_u64",
                                  funcType)
             .failed()) {
@@ -181,40 +176,40 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(
         rewriter.getContext(),
-        {bootstrapKeyType, lweBufferType, lweBufferType, glweCiphertextType},
-        {});
+        {lweBufferType, lweBufferType, lweBufferType, contextType}, {});
     if (insertForwardDeclaration(op, rewriter, "memref_bootstrap_lwe_u64",
                                  funcType)
             .failed()) {
       return mlir::failure();
     }
   }
-  // Insert forward declaration of the fill_plaintext_list function
-  {
-    auto funcType = mlir::FunctionType::get(
-        rewriter.getContext(), {plaintextListType, foreignPlaintextList}, {});
-    if (insertForwardDeclaration(
-            op, rewriter, "fill_plaintext_list_with_expansion_u64", funcType)
-            .failed()) {
-      return mlir::failure();
-    }
-  }
-  // Insert forward declaration of the add_plaintext_list_glwe function
+
+  // Insert forward declaration of the expand_lut_in_trivial_glwe_ct function
   {
     auto funcType = mlir::FunctionType::get(
         rewriter.getContext(),
-        {glweCiphertextType, glweCiphertextType, plaintextListType}, {});
+        {
+            getGenericGlweBufferType(rewriter.getContext()),
+            rewriter.getI32Type(),
+            rewriter.getI32Type(),
+            rewriter.getI32Type(),
+            mlir::RankedTensorType::get(
+                {-1}, mlir::IntegerType::get(rewriter.getContext(), 64)),
+        },
+        {});
     if (insertForwardDeclaration(
-            op, rewriter, "add_plaintext_list_glwe_ciphertext_u64", funcType)
+            op, rewriter, "memref_expand_lut_in_trivial_glwe_ct_u64", funcType)
             .failed()) {
       return mlir::failure();
     }
   }
+
   // Insert forward declaration of the getGlobalKeyswitchKey function
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {contextType}, {keySwitchKeyType});
-    if (insertForwardDeclaration(op, rewriter, "get_keyswitch_key", funcType)
+    if (insertForwardDeclaration(op, rewriter, "get_keyswitch_key_u64",
+                                 funcType)
             .failed()) {
       return mlir::failure();
     }
@@ -223,7 +218,8 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   {
     auto funcType = mlir::FunctionType::get(rewriter.getContext(),
                                             {contextType}, {bootstrapKeyType});
-    if (insertForwardDeclaration(op, rewriter, "get_bootstrap_key", funcType)
+    if (insertForwardDeclaration(op, rewriter, "get_bootstrap_key_u64",
+                                 funcType)
             .failed()) {
       return mlir::failure();
     }
@@ -233,21 +229,29 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
 
 // For all operands `tensor<Axi64>` replace with
 // `%casted = tensor.cast %op : tensor<Axi64> to tensor<?xui64>`
-template <typename Op>
 mlir::SmallVector<mlir::Value>
-getCastedTensorOperands(Op op, mlir::PatternRewriter &rewriter) {
+getCastedTensor(mlir::Location loc, mlir::Operation::operand_range operands,
+                mlir::PatternRewriter &rewriter) {
   mlir::SmallVector<mlir::Value, 4> newOperands{};
-  for (mlir::Value operand : op->getOperands()) {
+  for (mlir::Value operand : operands) {
     mlir::Type operandType = operand.getType();
     if (operandType.isa<mlir::RankedTensorType>()) {
       mlir::Value castedOp = rewriter.create<mlir::tensor::CastOp>(
-          op.getLoc(), getGenericLweBufferType(rewriter.getContext()), operand);
+          loc, getGenericLweBufferType(rewriter.getContext()), operand);
       newOperands.push_back(castedOp);
     } else {
       newOperands.push_back(operand);
     }
   }
   return std::move(newOperands);
+}
+
+// For all operands `tensor<Axi64>` replace with
+// `%casted = tensor.cast %op : tensor<Axi64> to tensor<?xui64>`
+template <typename Op>
+mlir::SmallVector<mlir::Value>
+getCastedTensorOperands(Op op, mlir::PatternRewriter &rewriter) {
+  return getCastedTensor(op->getLoc(), op->getOperands(), rewriter);
 }
 
 /// BConcreteOpToConcreteCAPICallPattern<Op> match the `BConcreteOp`
@@ -379,15 +383,12 @@ struct BConcreteKeySwitchLweOpPattern
   matchAndRewrite(mlir::concretelang::BConcrete::KeySwitchLweBufferOp op,
                   mlir::PatternRewriter &rewriter) const override {
 
-    mlir::CallOp kskOp = rewriter.create<mlir::CallOp>(
-        op.getLoc(), "get_keyswitch_key",
-        getGenericLweKeySwitchKeyType(rewriter.getContext()),
-        mlir::SmallVector<mlir::Value>{getContextArgument(op)});
-    mlir::SmallVector<mlir::Value, 3> operands{kskOp.getResult(0)};
-
+    mlir::SmallVector<mlir::Value, 3> operands{};
     operands.append(
         getCastedTensorOperands<
             mlir::concretelang::BConcrete::KeySwitchLweBufferOp>(op, rewriter));
+    operands.push_back(getContextArgument(op));
+
     rewriter.replaceOpWithNewOp<mlir::CallOp>(op, "memref_keyswitch_lwe_u64",
                                               mlir::TypeRange({}), operands);
     return mlir::success();
@@ -422,18 +423,79 @@ struct BConcreteBootstrapLweOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::BConcrete::BootstrapLweBufferOp op,
                   mlir::PatternRewriter &rewriter) const override {
-
-    mlir::SmallVector<mlir::Value> getkskOperands{};
-    mlir::CallOp bskOp = rewriter.create<mlir::CallOp>(
-        op.getLoc(), "get_bootstrap_key",
-        getGenericLweBootstrapKeyType(rewriter.getContext()),
-        mlir::SmallVector<mlir::Value>{getContextArgument(op)});
-    mlir::SmallVector<mlir::Value, 4> operands{bskOp.getResult(0)};
+    mlir::SmallVector<mlir::Value, 4> operands{};
     operands.append(
         getCastedTensorOperands<
             mlir::concretelang::BConcrete::BootstrapLweBufferOp>(op, rewriter));
+    operands.push_back(getContextArgument(op));
     rewriter.replaceOpWithNewOp<mlir::CallOp>(op, "memref_bootstrap_lwe_u64",
                                               mlir::TypeRange({}), operands);
+    return mlir::success();
+  };
+};
+
+// Rewrite pattern that rewrite every
+// ```
+// "BConcrete.fill_glwe_table"(%glwe, %lut) {glweDimension=1,
+// polynomialSize=2048, outPrecision=3} :
+//   (tensor<4096xi64>, tensor<32xi64>) -> ()
+// ```
+//
+// to
+//
+// ```
+// %glweDim = arith.constant 1 : i32
+// %polySize = arith.constant 2048 : i32
+// %outPrecision = arith.constant 3 : i32
+// %glwe_ = tensor.cast %glwe : tensor<4096xi64> to tensor<?xi64>
+// %lut_ = tensor.cast %lut : tensor<32xi64> to tensor<?xi64>
+// call @expand_lut_in_trivial_glwe_ct(%glwe, %polySize, %glweDim,
+// %outPrecision, %lut_) :
+//   (tensor<?xi64>, i32, i32, tensor<?xi64>) -> ()
+// ```
+struct BConcreteGlweFromTableOpPattern
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::BConcrete::FillGlweFromTable> {
+  BConcreteGlweFromTableOpPattern(
+      mlir::MLIRContext *context,
+      mlir::PatternBenefit benefit =
+          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<
+            mlir::concretelang::BConcrete::FillGlweFromTable>(context,
+                                                              benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::BConcrete::FillGlweFromTable op,
+                  mlir::PatternRewriter &rewriter) const override {
+    BConcreteToBConcreteCAPITypeConverter typeConverter;
+    // %glweDim = arith.constant 1 : i32
+    // %polySize = arith.constant 2048 : i32
+    // %outPrecision = arith.constant 3 : i32
+
+    auto castedOp = getCastedTensorOperands(op, rewriter);
+
+    auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getI32IntegerAttr(op.polynomialSize()));
+    auto glweDimensionOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getI32IntegerAttr(op.glweDimension()));
+    auto outPrecisionOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getI32IntegerAttr(op.outPrecision()));
+
+    mlir::SmallVector<mlir::Value> newOperands{
+        castedOp[0], polySizeOp, glweDimensionOp, outPrecisionOp, castedOp[1]};
+
+    // getCastedTensor(op.getLoc(), newOperands, rewriter);
+    // perform operands conversion
+    // %glwe_ = tensor.cast %glwe : tensor<4096xi64> to tensor<?xi64>
+    // %lut_ = tensor.cast %lut : tensor<32xi64> to tensor<?xi64>
+
+    // call @expand_lut_in_trivial_glwe_ct(%glwe, %polySize, %glweDim,
+    // %lut_) :
+    //   (tensor<?xi64>, i32, i32, tensor<?xi64>) -> ()
+
+    rewriter.replaceOpWithNewOp<mlir::CallOp>(
+        op, "memref_expand_lut_in_trivial_glwe_ct_u64",
+        mlir::SmallVector<mlir::Type>{}, newOperands);
     return mlir::success();
   };
 };
@@ -455,9 +517,9 @@ void populateBConcreteToBConcreteCAPICall(mlir::RewritePatternSet &patterns) {
       patterns.getContext(), "memref_negate_lwe_ciphertext_u64");
   patterns.add<ConcreteEncodeIntOpPattern>(patterns.getContext());
   patterns.add<ConcreteIntToCleartextOpPattern>(patterns.getContext());
-  // patterns.add<ConcreteZeroOpPattern>(patterns.getContext());
   patterns.add<BConcreteKeySwitchLweOpPattern>(patterns.getContext());
   patterns.add<BConcreteBootstrapLweOpPattern>(patterns.getContext());
+  patterns.add<BConcreteGlweFromTableOpPattern>(patterns.getContext());
 }
 
 struct AddRuntimeContextToFuncOpPattern

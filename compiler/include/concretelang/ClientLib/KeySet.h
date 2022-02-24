@@ -27,6 +27,7 @@ using RuntimeContext = mlir::concretelang::RuntimeContext;
 
 class KeySet {
 public:
+  KeySet();
   ~KeySet();
 
   // allocate a KeySet according the ClientParameters.
@@ -81,8 +82,7 @@ public:
 
   void setRuntimeContext(RuntimeContext &context) {
     context.ksk = std::get<1>(this->keyswitchKeys["ksk_v0"]);
-    context.bsk[RuntimeContext::BASE_CONTEXT_BSK] =
-        std::get<1>(this->bootstrapKeys.at("bsk_v0"));
+    context.bsk = std::get<1>(this->bootstrapKeys.at("bsk_v0"));
   }
 
   RuntimeContext runtimeContext() {
@@ -105,14 +105,13 @@ public:
 
 protected:
   outcome::checked<void, StringError>
-  generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param,
-                    SecretRandomGenerator *generator);
+  generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param);
+
   outcome::checked<void, StringError>
-  generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param,
-                       EncryptionRandomGenerator *generator);
+  generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param);
+
   outcome::checked<void, StringError>
-  generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param,
-                       EncryptionRandomGenerator *generator);
+  generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param);
 
   outcome::checked<void, StringError>
   generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
@@ -125,7 +124,7 @@ protected:
   friend class KeySetCache;
 
 private:
-  EncryptionRandomGenerator *encryptionRandomGenerator;
+  Engine *engine;
   std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
       secretKeys;
   std::map<LweSecretKeyID, std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>>
