@@ -147,3 +147,14 @@ pub struct DecompositionBaseLog(pub usize);
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct DecompositionLevelCount(pub usize);
+
+/// The seed of a seeded ciphertext.
+///
+/// This type also contains the shift of the CSPRNG, for the case where several ciphertexts
+/// have been encrypted with the same seed.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+pub struct Seed {
+    pub seed: u128,
+    pub shift: usize,
+}

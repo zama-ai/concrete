@@ -4,6 +4,7 @@ use crate::backends::core::private::math::random::{
 };
 use crate::backends::core::private::math::tensor::{AsMutSlice, AsMutTensor, Tensor};
 use concrete_commons::numeric::{FloatingPoint, Numeric};
+use concrete_commons::parameters::Seed;
 use concrete_csprng::RandomGenerator as RandomGeneratorImpl;
 #[cfg(feature = "multithread")]
 use rayon::prelude::*;
@@ -67,6 +68,45 @@ impl RandomGenerator {
     /// ```
     pub fn new(seed: Option<u128>) -> RandomGenerator {
         RandomGenerator(RandomGeneratorImpl::new(seed))
+    }
+
+    /// Generates a new seed
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new(None);
+    /// let seed = generator.generate_seed();
+    /// assert_eq!(seed.shift, 0);
+    /// ```
+    pub fn generate_seed(&mut self) -> Seed {
+        Seed {
+            seed: self.0.generate_u128(),
+            shift: 0,
+        }
+    }
+
+    /// Generates a new generator, from a given seed.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_commons::parameters::Seed;
+    /// use concrete_core::backends::core::private::math::random::RandomGenerator;
+    /// let mut generator = RandomGenerator::new_from_seed(Seed { seed: 0, shift: 0 });
+    /// assert!(!generator.is_bounded());
+    /// ```
+    pub fn new_from_seed(seed: Seed) -> RandomGenerator {
+        let mut prng = RandomGenerator(RandomGeneratorImpl::new(Some(seed.seed)));
+        prng.shift(seed.shift);
+        prng
+    }
+
+    pub fn shift(&mut self, n_bytes: usize) {
+        for _ in 0..n_bytes {
+            self.0.generate_next();
+        }
     }
 
     /// Returns the number of bytes that can still be generated, if the generator is bounded.
