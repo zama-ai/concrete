@@ -84,8 +84,8 @@ pub const DEFAULT_PARAMETERS: BooleanParameters = BooleanParameters {
     lwe_dimension: LweDimension(586),
     glwe_dimension: GlweDimension(2),
     polynomial_size: PolynomialSize(512),
-    lwe_modular_std_dev: StandardDev(0.000_089_761_673_968_349_98), // 2^{-13.44...}
-    glwe_modular_std_dev: StandardDev(0.000_000_029_890_407_929_674_34), // 2^{-24.9...}
+    lwe_modular_std_dev: StandardDev(0.000_092_511_997_467_675_6), // 2^{-13.4}
+    glwe_modular_std_dev: StandardDev(0.000_000_034_233_878_701_836_9), // 2^{-24.8}
     pbs_base_log: DecompositionBaseLog(8),
     pbs_level: DecompositionLevelCount(2),
     ks_base_log: DecompositionBaseLog(2),
@@ -102,8 +102,8 @@ pub const TFHE_LIB_PARAMETERS: BooleanParameters = BooleanParameters {
     lwe_dimension: LweDimension(630),
     glwe_dimension: GlweDimension(1),
     polynomial_size: PolynomialSize(1024),
-    lwe_modular_std_dev: StandardDev(0.000_030_517_578_125), // 2^{-15}
-    glwe_modular_std_dev: StandardDev(0.000_000_029_802_322_387_695_313), // 2^{-25}
+    lwe_modular_std_dev: StandardDev(0.000_043_158_372_875_155_5), // 2^{-14.5}
+    glwe_modular_std_dev: StandardDev(0.000_000_034_233_878_701_836_9), // 2^{-24.8}
     pbs_base_log: DecompositionBaseLog(7),
     pbs_level: DecompositionLevelCount(3),
     ks_base_log: DecompositionBaseLog(2),
