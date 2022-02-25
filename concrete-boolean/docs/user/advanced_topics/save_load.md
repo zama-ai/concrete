@@ -7,7 +7,7 @@ keys to disk.
 Here is an example using the `bincode` serialization library, which serializes to a
 binary format:
 
-```rust
+```rust, ignore
 extern crate concrete_boolean;
 extern crate bincode;
 use concrete_boolean::gen_keys;

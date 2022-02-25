@@ -14,12 +14,12 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-concrete-core = {version = "=0.1.10", features=["multithread"]}
-concrete-commons = "=0.1.1"
+concrete-core = {version = "1.0.0-alpha", features=["multithread", "serde_serialize"]}
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 criterion = "0.3.4"
+rand = "0.8.4"
 
 [[bench]]
 name = "bench"

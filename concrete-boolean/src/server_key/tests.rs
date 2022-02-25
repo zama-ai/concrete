@@ -2,18 +2,7 @@ use crate::ciphertext::Ciphertext;
 use crate::client_key::ClientKey;
 use crate::parameters::DEFAULT_PARAMETERS;
 use crate::server_key::ServerKey;
-use crate::{
-    random_boolean, random_integer, PLAINTEXT_FALSE, PLAINTEXT_LOG_SCALING_FACTOR, PLAINTEXT_TRUE,
-};
-use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
-use concrete_core::crypto::bootstrap::Bootstrap;
-use concrete_core::crypto::encoding::Plaintext;
-use concrete_core::crypto::glwe::GlweCiphertext;
-use concrete_core::crypto::lwe::LweCiphertext;
-use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
-use concrete_core::crypto::secret::LweSecretKey;
-use concrete_core::math::decomposition::SignedDecomposer;
-use concrete_core::math::tensor::{AsMutTensor, AsRefTensor};
+use crate::{random_boolean, random_integer};
 
 /// Number of assert in randomized tests
 const NB_TEST: usize = 128;
@@ -28,7 +17,7 @@ const NB_GATE: usize = 1 << 11;
 /// test encryption and decryption with the LWE secret key
 fn test_encrypt_decrypt_lwe_secret_key() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     for _ in 0..NB_TEST {
         // encryption of false
@@ -50,164 +39,12 @@ fn test_encrypt_decrypt_lwe_secret_key() {
 }
 
 #[test]
-/// test encryption with the LWE secret key and bootstrap
-/// and then decryption with the LWE from the RLWE secret key
-fn test_encrypt_pbs_decrypt() {
-    // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
-
-    // generate the server key set
-    let sks = ServerKey::new(&cks);
-
-    // convert the GLWE secret key into an LWE secret key
-    let big_lwe_secret_key =
-        LweSecretKey::binary_from_container(cks.glwe_secret_key.as_tensor().clone());
-
-    for _ in 0..NB_TEST {
-        // encryption of true
-        let ct_true = cks.encrypt(true);
-
-        // encryption of false
-        let ct_false = cks.encrypt(false);
-
-        // Allocation of the accumulator
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            sks.bootstrapping_key.polynomial_size(),
-            sks.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocation for the output of the PBS
-        let mut ct_pbs_true = LweCiphertext::allocate(
-            0_u32,
-            LweSize(
-                sks.bootstrapping_key.polynomial_size().0
-                    * sks.bootstrapping_key.glwe_size().to_glwe_dimension().0
-                    + 1,
-            ),
-        );
-        let mut ct_pbs_false = LweCiphertext::allocate(
-            0_u32,
-            sks.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Compute the two PBS
-        sks.bootstrapping_key
-            .bootstrap(&mut ct_pbs_true, &ct_true.0, &accumulator);
-        sks.bootstrapping_key
-            .bootstrap(&mut ct_pbs_false, &ct_false.0, &accumulator);
-
-        // allocation of the plaintexts
-        let mut decrypted_true = Plaintext(0_u32);
-        let mut decrypted_false = Plaintext(0_u32);
-
-        // decryption
-        big_lwe_secret_key.decrypt_lwe(&mut decrypted_true, &ct_pbs_true);
-        big_lwe_secret_key.decrypt_lwe(&mut decrypted_false, &ct_pbs_false);
-
-        // decomposer
-        let decomposer: SignedDecomposer<u32> = SignedDecomposer::<u32>::new(
-            DecompositionBaseLog(PLAINTEXT_LOG_SCALING_FACTOR),
-            DecompositionLevelCount(1),
-        );
-
-        // rounding
-        let rounded_true = decomposer.closest_representable(decrypted_true.0);
-        let rounded_false = decomposer.closest_representable(decrypted_false.0);
-
-        // asserts
-        if rounded_true != PLAINTEXT_TRUE {
-            panic!(
-                "fail with the true: {} -> {}",
-                decrypted_true.0, rounded_true
-            )
-        }
-        if rounded_false != PLAINTEXT_FALSE {
-            panic!(
-                "fail with the false: {} -> {}",
-                decrypted_false.0, rounded_false
-            )
-        }
-    }
-}
-
-#[test]
-/// test encryption with the LWE secret key from the RLWE secret key,
-/// and key switch and then decryption with the LWE secret key
-fn test_encrypt_ks_decrypt() {
-    // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
-
-    // generate the server key set
-    let sks = ServerKey::new(&cks);
-
-    // convert the GLWE secret key into an LWE secret key
-    let big_lwe_secret_key =
-        LweSecretKey::binary_from_container(cks.glwe_secret_key.as_tensor().clone());
-
-    // instantiate an encryption random generator
-    let mut encryption_generator = EncryptionRandomGenerator::new(None);
-
-    // allocate the ciphertexts
-    let big_size =
-        LweSize(DEFAULT_PARAMETERS.polynomial_size.0 * DEFAULT_PARAMETERS.glwe_dimension.0);
-    let mut ct_false = LweCiphertext::allocate(0_u32, big_size);
-    let mut ct_true = LweCiphertext::allocate(0_u32, big_size);
-
-    for _ in 0..NB_TEST {
-        // encryption of false
-        big_lwe_secret_key.encrypt_lwe(
-            &mut ct_false,
-            &Plaintext(PLAINTEXT_FALSE),
-            DEFAULT_PARAMETERS.glwe_modular_std_dev,
-            &mut encryption_generator,
-        );
-
-        // encryption of true
-        big_lwe_secret_key.encrypt_lwe(
-            &mut ct_true,
-            &Plaintext(PLAINTEXT_TRUE),
-            DEFAULT_PARAMETERS.glwe_modular_std_dev,
-            &mut encryption_generator,
-        );
-
-        // key switch of false
-        let mut ct_ks_false =
-            LweCiphertext::allocate(0_u32, DEFAULT_PARAMETERS.lwe_dimension.to_lwe_size());
-        sks.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks_false, &ct_false);
-
-        // key switch of true
-        let mut ct_ks_true =
-            LweCiphertext::allocate(0_u32, DEFAULT_PARAMETERS.lwe_dimension.to_lwe_size());
-        sks.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks_true, &ct_true);
-
-        // decryption of false
-        let dec_false = cks.decrypt(&Ciphertext(ct_ks_false));
-
-        // decryption of true
-        let dec_true = cks.decrypt(&Ciphertext(ct_ks_true));
-
-        // assert
-        assert!(!dec_false);
-        assert!(dec_true);
-    }
-}
-
-#[test]
 fn test_and_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -234,10 +71,10 @@ fn test_and_gate() {
 #[test]
 fn test_mux_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of three random booleans
@@ -268,10 +105,10 @@ fn test_mux_gate() {
 #[test]
 fn test_nand_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -298,10 +135,10 @@ fn test_nand_gate() {
 #[test]
 fn test_nor_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -328,10 +165,10 @@ fn test_nor_gate() {
 #[test]
 fn test_not_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of one random booleans
@@ -354,10 +191,10 @@ fn test_not_gate() {
 #[test]
 fn test_or_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -384,10 +221,10 @@ fn test_or_gate() {
 #[test]
 fn test_xnor_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -414,10 +251,10 @@ fn test_xnor_gate() {
 #[test]
 fn test_xor_gate() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     for _ in 0..NB_TEST {
         // generation of two random booleans
@@ -449,7 +286,7 @@ fn random_index() -> usize {
 /// randomly select a gate, randomly select inputs and the output,
 /// compute the selected gate with the selected inputs
 /// and write in the selected output
-fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &ServerKey) {
+fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &mut ServerKey) {
     // select a random gate in the array [NOT,CMUX,AND,NAND,NOR,OR,XOR,XNOR]
     let gate_id = random_integer() % 8;
 
@@ -505,10 +342,10 @@ fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &Serve
 #[test]
 fn test_deep_circuit() {
     // generate the client key set
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
     // generate the server key set
-    let sks = ServerKey::new(&cks);
+    let mut sks = ServerKey::new(&cks);
 
     // create an array of ciphertexts
     let mut ct_tab: Vec<Ciphertext> = vec![cks.encrypt(true); NB_CT];
@@ -524,7 +361,7 @@ fn test_deep_circuit() {
 
     // compute NB_GATE gates
     for _ in 0..NB_GATE {
-        random_gate_all(&mut ct_tab, &mut bool_tab, &sks);
+        random_gate_all(&mut ct_tab, &mut bool_tab, &mut sks);
     }
 
     // decrypt and assert equality
