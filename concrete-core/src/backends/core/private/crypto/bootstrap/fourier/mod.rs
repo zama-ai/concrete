@@ -16,10 +16,9 @@ use crate::backends::core::private::math::tensor::{
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::{zip, zip_args};
-use concrete_commons::numeric::{CastInto, Numeric};
 use concrete_commons::parameters::{
-    DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, MonomialDegree,
-    PolynomialSize,
+    DecompositionBaseLog, DecompositionLevelCount, GlweSize, LutCountLog, LweDimension,
+    ModulusSwitchOffset, MonomialDegree, PolynomialSize,
 };
 
 mod buffers;
@@ -675,18 +674,15 @@ where
         let (lwe_body, lwe_mask) = lwe.get_body_and_mask();
         let lut = &mut buffers.lut_buffer;
 
-        // We define a closure which performs the modulus switching.
-        let lut_coef_count: f64 = lut.polynomial_size().0.cast_into();
-        let modulus_switch = |input: Scalar| -> usize {
-            let tmp: f64 = input.cast_into() / (<Scalar as Numeric>::MAX.cast_into() + 1.);
-            let tmp: f64 = tmp * 2. * lut_coef_count;
-            let input_hat: usize = tmp.round().cast_into();
-            input_hat
-        };
-
         // We perform the initial clear rotation by performing lut <- lut * X^{-body_hat}
+        let lut_poly_size = lut.polynomial_size();
         lut.as_mut_polynomial_list()
-            .update_with_wrapping_monic_monomial_div(MonomialDegree(modulus_switch(lwe_body.0)));
+            .update_with_wrapping_monic_monomial_div(pbs_modulus_switch(
+                lwe_body.0,
+                lut_poly_size,
+                ModulusSwitchOffset(0),
+                LutCountLog(0),
+            ));
 
         // We initialize the ct_0 and ct_1 used for the successive cmuxes
         let ct_0 = lut;
@@ -705,9 +701,12 @@ where
             if *lwe_mask_element != Scalar::ZERO {
                 // We rotate ct_1 by performing ct_1 <- ct_1 * X^{a_hat}
                 ct_1.as_mut_polynomial_list()
-                    .update_with_wrapping_monic_monomial_mul(MonomialDegree(modulus_switch(
+                    .update_with_wrapping_monic_monomial_mul(pbs_modulus_switch(
                         *lwe_mask_element,
-                    )));
+                        lut_poly_size,
+                        ModulusSwitchOffset(0),
+                        LutCountLog(0),
+                    ));
                 // We perform the cmux.
                 self.cmux(
                     ct_0,
@@ -719,6 +718,33 @@ where
             }
         }
     }
+}
+
+// This function switches modulus for a single coefficient of a ciphertext,
+// only in the context of a PBS
+//
+// offset: the number of msb discarded
+// lut_count_log: the right padding
+pub fn pbs_modulus_switch<Scalar>(
+    input: Scalar,
+    poly_size: PolynomialSize,
+    offset: ModulusSwitchOffset,
+    lut_count_log: LutCountLog,
+) -> MonomialDegree
+where
+    Scalar: UnsignedTorus,
+{
+    // First, do the left shift (we discard the offset msb)
+    let mut output = input << offset.0;
+    // Start doing the right shift
+    output >>= Scalar::BITS - poly_size.log2().0 - 2 + lut_count_log.0;
+    // Do the rounding
+    output += output & Scalar::ONE;
+    // Finish the right shift
+    output >>= 1;
+    // Apply the lsb padding
+    output <<= lut_count_log.0;
+    MonomialDegree(output.cast_into() as usize)
 }
 
 fn constant_sample_extract<LweCont, RlweCont, Scalar>(

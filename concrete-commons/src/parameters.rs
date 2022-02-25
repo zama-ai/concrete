@@ -106,12 +106,34 @@ impl GlweDimension {
         GlweSize(self.0 + 1)
     }
 }
+
 /// The number of coefficients of a polynomial.
 ///
-/// Assuming a polynomial $a_0 + a_1X + /dots + a_nX^N$, this returns $N+1$.
+/// Assuming a polynomial $a_0 + a_1X + /dots + a_{N-1}X^{N-1}$, this returns $N$.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct PolynomialSize(pub usize);
+
+impl PolynomialSize {
+    /// Returns the associated [`PolynomialSizeLog`].
+    pub fn log2(&self) -> PolynomialSizeLog {
+        PolynomialSizeLog((self.0 as f64).log2().ceil() as usize)
+    }
+}
+
+/// The logarithm of the number of coefficients of a polynomial.
+///
+/// Assuming a polynomial $a_0 + a_1X + /dots + a_{N-1}X^{N-1}$, this returns $\log_2(N)$.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+pub struct PolynomialSizeLog(pub usize);
+
+impl PolynomialSizeLog {
+    /// Returns the associated [`PolynomialSizeLog`].
+    pub fn to_polynomial_size(&self) -> PolynomialSize {
+        PolynomialSize(1 << self.0)
+    }
+}
 
 /// The number of polynomials in a polynomial list.
 ///
@@ -147,3 +169,16 @@ pub struct DecompositionBaseLog(pub usize);
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct DecompositionLevelCount(pub usize);
+
+/// The logarithm of the number of LUT evaluated in a PBS.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+pub struct LutCountLog(pub usize);
+
+/// The number of MSB shifted in a Modulus Switch.
+///
+/// When performing a Modulus Switch, this type represents the number of MSB that will be
+/// discarded.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+pub struct ModulusSwitchOffset(pub usize);
