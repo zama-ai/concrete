@@ -32,8 +32,8 @@ llvm::TargetMachine *getDefaultTargetMachine() {
   auto CPU = "generic";
   auto Features = "";
   llvm::TargetOptions opt;
-  auto RM = llvm::Optional<llvm::Reloc::Model>();
-  return Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+  return Target->createTargetMachine(TargetTriple, CPU, Features, opt,
+                                     llvm::Reloc::PIC_);
 }
 
 llvm::Error emitObject(llvm::Module &module, string objectPath) {
