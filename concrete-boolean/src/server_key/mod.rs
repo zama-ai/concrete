@@ -176,6 +176,50 @@ impl ServerKey {
         sks
     }
 
+    /// Trivially encrypts a Boolean message, i.e. does not encrypt at all!
+    /// The output is a Ciphertext and can be provided as a input to any gate as if it was truly
+    /// encrypted.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Trivial encryption of one message:
+    /// let ct = sks.trivial_encrypt(true);
+    ///
+    /// // Decryption:
+    /// let dec = cks.decrypt(&ct);
+    /// assert_eq!(true, dec);
+    /// ```
+    pub fn trivial_encrypt(&mut self, message: bool) -> Ciphertext {
+        Ciphertext::Trivial(message)
+    }
+
+    /// convert into an actual LWE ciphertext even when trivial
+    fn convert_into_lwe_ciphertext_32(&mut self, ct: &Ciphertext) -> LweCiphertext32 {
+        match ct {
+            Ciphertext::Encrypted(ct_ct) => ct_ct.clone(),
+            Ciphertext::Trivial(message) => {
+                // encode the boolean message
+                let plain: Plaintext32 = if *message {
+                    self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap()
+                } else {
+                    self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap()
+                };
+                self.engine
+                    .trivially_encrypt_lwe_ciphertext(
+                        LweSize(self.key_switching_key.output_lwe_dimension().0 + 1),
+                        &plain,
+                    )
+                    .unwrap()
+            }
+        }
+    }
+
     /// function that computes a bootstrap and a keys witch
     fn bootstrap_keyswitch(&mut self) -> Ciphertext {
         // Compute the programmable bootstrapping with fixed test polynomial
@@ -208,44 +252,7 @@ impl ServerKey {
             .unwrap();
 
         // Result
-        Ciphertext(ct_ks)
-    }
-
-    /// Computes homomorphically an AND gate between two ciphertexts encrypting Boolean values:
-    /// $$ ct_{out} = ct_{left}~\mathrm{AND}~ct_{right} $$
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use concrete_boolean::gen_keys;
-    ///
-    /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys();
-    ///
-    /// // Encrypt two messages:
-    /// let ct1 = cks.encrypt(true);
-    /// let ct2 = cks.encrypt(false);
-    ///
-    /// // Compute homomorphically an AND gate:
-    /// let ct_res = sks.and(&ct1, &ct2);
-    ///
-    /// // Decrypt:
-    /// let dec_and = cks.decrypt(&ct_res);
-    /// assert_eq!(false, dec_and);
-    /// ```
-    pub fn and(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // compute the linear combination for AND: ct_left + ct_right + (0,...,0,-1/8)
-        self.engine
-            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
-            .unwrap(); // ct_left + ct_right
-        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
-            .unwrap(); //
-                       // - 1/8
-
-        // compute the bootstrap and the key switch
-        self.bootstrap_keyswitch()
+        Ciphertext::Encrypted(ct_ks)
     }
 
     /// Computes an homomorphic MUX gate between three ciphertexts encrypting Boolean values:
@@ -279,166 +286,127 @@ impl ServerKey {
     ) -> Ciphertext {
         // In theory MUX gate = (ct_condition AND ct_then) + (!ct_condition AND ct_else)
 
-        // Compute the linear combination for first AND: ct_condition + ct_then + (0,...,0,-1/8)
-        self.engine
-            .discard_add_lwe_ciphertext(
-                &mut self.buffer_lwe_before_pbs,
-                &ct_condition.0,
-                &ct_then.0,
-            )
-            .unwrap(); // ct_condition + ct_then
-        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
-            .unwrap(); //
-                       // - 1/8
+        match ct_condition {
+            // in the case of the condition is trivially encrypted
+            Ciphertext::Trivial(message_condition) => {
+                if *message_condition {
+                    ct_then.clone()
+                } else {
+                    ct_else.clone()
+                }
+            }
+            Ciphertext::Encrypted(ct_condition_ct) => {
+                // condition is actually encrypted
 
-        // Compute the linear combination for second AND: - ct_condition + ct_else + (0,...,0,-1/8)
-        let mut ct_temp_2 = ct_condition.0.clone(); // ct_condition
-        self.engine.fuse_neg_lwe_ciphertext(&mut ct_temp_2).unwrap(); // compute the negation
-        self.engine
-            .fuse_add_lwe_ciphertext(&mut ct_temp_2, &ct_else.0)
-            .unwrap(); // + ct_else
-        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut ct_temp_2, &cst)
-            .unwrap(); //
-                       // - 1/8
+                // take a shortcut if ct_then is trivially encrypted
+                if let Ciphertext::Trivial(message_then) = ct_then {
+                    return if *message_then {
+                        self.or(ct_condition, ct_else)
+                    } else {
+                        let ct_not_condition = self.not(ct_condition);
+                        self.and(&ct_not_condition, ct_else)
+                    };
+                }
 
-        // Compute the first programmable bootstrapping with fixed test polynomial:
-        self.engine
-            .discard_bootstrap_lwe_ciphertext(
-                &mut self.buffer_lwe_after_pbs,
-                &self.buffer_lwe_before_pbs,
-                &self.accumulator,
-                &self.bootstrapping_key,
-            )
-            .unwrap();
+                // take a shortcut if ct_else is trivially encrypted
+                if let Ciphertext::Trivial(message_else) = ct_else {
+                    return if *message_else {
+                        let ct_not_condition = self.not(ct_condition);
+                        self.or(ct_then, &ct_not_condition)
+                    } else {
+                        self.and(ct_condition, ct_then)
+                    };
+                }
 
-        // Allocate the output of the second PBS:
-        let mut ct_pbs_2 = self.buffer_lwe_after_pbs.clone();
+                // convert inputs into LweCiphertext32
+                let ct_then_ct = self.convert_into_lwe_ciphertext_32(ct_then);
+                let ct_else_ct = self.convert_into_lwe_ciphertext_32(ct_else);
 
-        // Compute the second programmable bootstrapping with fixed test polynomial:
-        self.engine
-            .discard_bootstrap_lwe_ciphertext(
-                &mut ct_pbs_2,
-                &ct_temp_2,
-                &self.accumulator,
-                &self.bootstrapping_key,
-            )
-            .unwrap();
+                // Compute the linear combination for first AND: ct_condition + ct_then +
+                // (0,...,0,-1/8)
+                self.engine
+                    .discard_add_lwe_ciphertext(
+                        &mut self.buffer_lwe_before_pbs,
+                        ct_condition_ct,
+                        &ct_then_ct,
+                    )
+                    .unwrap(); // ct_condition + ct_then
+                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+                    .unwrap(); //
+                               // - 1/8
 
-        // Compute the linear combination to add the two results : buffer_lwe_pbs + ct_pbs_2 +
-        // (0,...,0,
-        // +1/8)
-        self.engine
-            .fuse_add_lwe_ciphertext(&mut self.buffer_lwe_after_pbs, &ct_pbs_2)
-            .unwrap(); // + buffer_lwe_pbs
-        let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_after_pbs, &cst)
-            .unwrap(); // + 1/8
+                // Compute the linear combination for second AND: - ct_condition + ct_else +
+                // (0,...,0,-1/8)
+                let mut ct_temp_2 = ct_condition_ct.clone(); // ct_condition
+                self.engine.fuse_neg_lwe_ciphertext(&mut ct_temp_2).unwrap(); // compute the negation
+                self.engine
+                    .fuse_add_lwe_ciphertext(&mut ct_temp_2, &ct_else_ct)
+                    .unwrap(); // + ct_else
+                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut ct_temp_2, &cst)
+                    .unwrap(); //
+                               // - 1/8
 
-        // Allocate the output of the KS
-        let zero_plaintext = self.engine.create_plaintext(&0_u32).unwrap();
-        let mut ct_ks = self
-            .engine
-            .trivially_encrypt_lwe_ciphertext(
-                LweSize(self.key_switching_key.output_lwe_dimension().0 + 1),
-                &zero_plaintext,
-            )
-            .unwrap();
+                // Compute the first programmable bootstrapping with fixed test polynomial:
+                self.engine
+                    .discard_bootstrap_lwe_ciphertext(
+                        &mut self.buffer_lwe_after_pbs,
+                        &self.buffer_lwe_before_pbs,
+                        &self.accumulator,
+                        &self.bootstrapping_key,
+                    )
+                    .unwrap();
 
-        // Compute the key switch to get back to input key
-        self.engine
-            .discard_keyswitch_lwe_ciphertext(
-                &mut ct_ks,
-                &self.buffer_lwe_after_pbs,
-                &self.key_switching_key,
-            )
-            .unwrap();
+                // Allocate the output of the second PBS:
+                let mut ct_pbs_2 = self.buffer_lwe_after_pbs.clone();
 
-        // Output the result:
-        Ciphertext(ct_ks)
-    }
+                // Compute the second programmable bootstrapping with fixed test polynomial:
+                self.engine
+                    .discard_bootstrap_lwe_ciphertext(
+                        &mut ct_pbs_2,
+                        &ct_temp_2,
+                        &self.accumulator,
+                        &self.bootstrapping_key,
+                    )
+                    .unwrap();
 
-    /// Computes homomorphically a NAND gate between two ciphertexts encrypting Boolean values:
-    /// $$ct_{out} = \mathrm{NOT} (ct_{left}~\mathrm{AND}~ct_{right})$$
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use concrete_boolean::gen_keys;
-    ///
-    /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys();
-    ///
-    /// // Encrypt two messages:
-    /// let ct1 = cks.encrypt(true);
-    /// let ct2 = cks.encrypt(false);
-    ///
-    /// // Compute homomorphically a NAND gate:
-    /// let ct_res = sks.nand(&ct1, &ct2);
-    ///
-    /// // Decrypt:
-    /// let dec_nand = cks.decrypt(&ct_res);
-    /// assert_eq!(true, dec_nand);
-    /// ```
-    pub fn nand(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for NAND: - ct_left - ct_right + (0,...,0,1/8)
-        self.engine
-            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
-            .unwrap(); // ct_left + ct_right
-        self.engine
-            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
-            .unwrap(); // compute the negation
-        let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
-            .unwrap(); // + 1/8
+                // Compute the linear combination to add the two results : buffer_lwe_pbs + ct_pbs_2
+                // + (0,...,0,
+                // +1/8)
+                self.engine
+                    .fuse_add_lwe_ciphertext(&mut self.buffer_lwe_after_pbs, &ct_pbs_2)
+                    .unwrap(); // + buffer_lwe_pbs
+                let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_after_pbs, &cst)
+                    .unwrap(); // + 1/8
 
-        // compute the bootstrap and the key switch
-        self.bootstrap_keyswitch()
-    }
+                // Allocate the output of the KS
+                let zero_plaintext = self.engine.create_plaintext(&0_u32).unwrap();
+                let mut ct_ks = self
+                    .engine
+                    .trivially_encrypt_lwe_ciphertext(
+                        LweSize(self.key_switching_key.output_lwe_dimension().0 + 1),
+                        &zero_plaintext,
+                    )
+                    .unwrap();
 
-    /// Computes homomorphically a NOR gate between two ciphertexts encrypting Boolean values:
-    /// $$ ct_{out} = \mathrm{NOT}(ct_{left}~\mathrm{OR}~ct_{right}) $$
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use concrete_boolean::gen_keys;
-    ///
-    /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys();
-    ///
-    /// // Encrypt two messages:
-    /// let ct1 = cks.encrypt(true);
-    /// let ct2 = cks.encrypt(false);
-    ///
-    /// // Compute homomorphically the NOR gate:
-    /// let ct_res = sks.nor(&ct1, &ct2);
-    ///
-    /// // Decrypt:
-    /// let dec_nor = cks.decrypt(&ct_res);
-    /// assert_eq!(false, dec_nor);
-    /// ```
-    pub fn nor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for NOR: - ct_left - ct_right + (0,...,0,-1/8)
-        self.engine
-            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
-            .unwrap(); // ct_left + ct_right
-        self.engine
-            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
-            .unwrap(); // compute the negation
-        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
-            .unwrap(); //
-                       // - 1/8
+                // Compute the key switch to get back to input key
+                self.engine
+                    .discard_keyswitch_lwe_ciphertext(
+                        &mut ct_ks,
+                        &self.buffer_lwe_after_pbs,
+                        &self.key_switching_key,
+                    )
+                    .unwrap();
 
-        // compute the bootstrap and the key switch
-        self.bootstrap_keyswitch()
+                // Output the result:
+                Ciphertext::Encrypted(ct_ks)
+            }
+        }
     }
 
     /// Computes homomorphically a NOT gate of a ciphertexts encrypting a Boolean value:
@@ -463,12 +431,186 @@ impl ServerKey {
     /// assert_eq!(false, dec_not);
     /// ```
     pub fn not(&mut self, ct: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for NOT: -ct
-        let mut ct_res = ct.0.clone();
-        self.engine.fuse_neg_lwe_ciphertext(&mut ct_res).unwrap(); // compute the negation
+        match ct {
+            Ciphertext::Trivial(message) => Ciphertext::Trivial(!*message),
+            Ciphertext::Encrypted(ct_ct) => {
+                // Compute the linear combination for NOT: -ct
+                let mut ct_res = ct_ct.clone();
+                self.engine.fuse_neg_lwe_ciphertext(&mut ct_res).unwrap(); // compute the negation
 
-        // Output the result:
-        Ciphertext(ct_res)
+                // Output the result:
+                Ciphertext::Encrypted(ct_res)
+            }
+        }
+    }
+}
+
+impl BinaryBooleanGates<&Ciphertext, &Ciphertext> for ServerKey {
+    /// Computes homomorphically an AND gate between two ciphertexts encrypting Boolean values:
+    /// $$ ct_{out} = ct_{left}~\mathrm{AND}~ct_{right} $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute homomorphically an AND gate:
+    /// let ct_res = sks.and(&ct1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_and = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_and);
+    /// ```
+    fn and(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        match (ct_left, ct_right) {
+            (Ciphertext::Trivial(message_left), Ciphertext::Trivial(message_right)) => {
+                Ciphertext::Trivial(*message_left && *message_right)
+            }
+            (Ciphertext::Encrypted(_), Ciphertext::Trivial(message_right)) => {
+                self.and(ct_left, *message_right)
+            }
+            (Ciphertext::Trivial(message_left), Ciphertext::Encrypted(_)) => {
+                self.and(*message_left, ct_right)
+            }
+            (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
+                // compute the linear combination for AND: ct_left + ct_right + (0,...,0,-1/8)
+                self.engine
+                    .discard_add_lwe_ciphertext(
+                        &mut self.buffer_lwe_before_pbs,
+                        ct_left_ct,
+                        ct_right_ct,
+                    )
+                    .unwrap(); // ct_left + ct_right
+                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+                    .unwrap(); //
+                               // - 1/8
+
+                // compute the bootstrap and the key switch
+                self.bootstrap_keyswitch()
+            }
+        }
+    }
+
+    /// Computes homomorphically a NAND gate between two ciphertexts encrypting Boolean values:
+    /// $$ct_{out} = \mathrm{NOT} (ct_{left}~\mathrm{AND}~ct_{right})$$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute homomorphically a NAND gate:
+    /// let ct_res = sks.nand(&ct1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_nand = cks.decrypt(&ct_res);
+    /// assert_eq!(true, dec_nand);
+    /// ```
+    fn nand(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        match (ct_left, ct_right) {
+            (Ciphertext::Trivial(message_left), Ciphertext::Trivial(message_right)) => {
+                Ciphertext::Trivial(!(*message_left && *message_right))
+            }
+            (Ciphertext::Encrypted(_), Ciphertext::Trivial(message_right)) => {
+                self.nand(ct_left, *message_right)
+            }
+            (Ciphertext::Trivial(message_left), Ciphertext::Encrypted(_)) => {
+                self.nand(*message_left, ct_right)
+            }
+            (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
+                // Compute the linear combination for NAND: - ct_left - ct_right + (0,...,0,1/8)
+                self.engine
+                    .discard_add_lwe_ciphertext(
+                        &mut self.buffer_lwe_before_pbs,
+                        ct_left_ct,
+                        ct_right_ct,
+                    )
+                    .unwrap(); // ct_left + ct_right
+                self.engine
+                    .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+                    .unwrap(); // compute the negation
+                let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+                    .unwrap(); // + 1/8
+
+                // compute the bootstrap and the key switch
+                self.bootstrap_keyswitch()
+            }
+        }
+    }
+
+    /// Computes homomorphically a NOR gate between two ciphertexts encrypting Boolean values:
+    /// $$ ct_{out} = \mathrm{NOT}(ct_{left}~\mathrm{OR}~ct_{right}) $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute homomorphically the NOR gate:
+    /// let ct_res = sks.nor(&ct1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_nor = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_nor);
+    /// ```
+    fn nor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        match (ct_left, ct_right) {
+            (Ciphertext::Trivial(message_left), Ciphertext::Trivial(message_right)) => {
+                Ciphertext::Trivial(!(*message_left || *message_right))
+            }
+            (Ciphertext::Encrypted(_), Ciphertext::Trivial(message_right)) => {
+                self.nor(ct_left, *message_right)
+            }
+            (Ciphertext::Trivial(message_left), Ciphertext::Encrypted(_)) => {
+                self.nor(*message_left, ct_right)
+            }
+            (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
+                // Compute the linear combination for NOR: - ct_left - ct_right + (0,...,0,-1/8)
+                self.engine
+                    .discard_add_lwe_ciphertext(
+                        &mut self.buffer_lwe_before_pbs,
+                        ct_left_ct,
+                        ct_right_ct,
+                    )
+                    .unwrap(); // ct_left + ct_right
+                self.engine
+                    .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+                    .unwrap(); // compute the negation
+                let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+                    .unwrap(); //
+                               // - 1/8
+
+                // compute the bootstrap and the key switch
+                self.bootstrap_keyswitch()
+            }
+        }
     }
 
     /// Computes homomorphically an OR gate between two ciphertexts encrypting Boolean values:
@@ -477,7 +619,7 @@ impl ServerKey {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_boolean::gen_keys;
+    /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key and the server key:
     /// let (mut cks, mut sks) = gen_keys();
@@ -493,62 +635,35 @@ impl ServerKey {
     /// let dec_or = cks.decrypt(&ct_res);
     /// assert_eq!(true, dec_or);
     /// ```
-    pub fn or(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for OR: ct_left + ct_right + (0,...,0,+1/8)
-        self.engine
-            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
-            .unwrap(); // ct_left + ct_right
-        let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
-            .unwrap(); // + 1/8
+    fn or(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        match (ct_left, ct_right) {
+            (Ciphertext::Trivial(message_left), Ciphertext::Trivial(message_right)) => {
+                Ciphertext::Trivial(*message_left || *message_right)
+            }
+            (Ciphertext::Encrypted(_), Ciphertext::Trivial(message_right)) => {
+                self.or(ct_left, *message_right)
+            }
+            (Ciphertext::Trivial(message_left), Ciphertext::Encrypted(_)) => {
+                self.or(*message_left, ct_right)
+            }
+            (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
+                // Compute the linear combination for OR: ct_left + ct_right + (0,...,0,+1/8)
+                self.engine
+                    .discard_add_lwe_ciphertext(
+                        &mut self.buffer_lwe_before_pbs,
+                        ct_left_ct,
+                        ct_right_ct,
+                    )
+                    .unwrap(); // ct_left + ct_right
+                let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+                    .unwrap(); // + 1/8
 
-        // compute the bootstrap and the key switch
-        self.bootstrap_keyswitch()
-    }
-
-    /// Computes homomorphically an XNOR gate (or equality test) between two ciphertexts encrypting
-    /// Boolean values:
-    /// $$ct_{out} = (ct_{left}~==~ct_{right}) $$
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use concrete_boolean::gen_keys;
-    ///
-    /// // Generate the client key and the server key:
-    /// let (mut cks, mut sks) = gen_keys();
-    ///
-    /// // Encrypt two messages:
-    /// let ct1 = cks.encrypt(true);
-    /// let ct2 = cks.encrypt(false);
-    ///
-    /// // Compute the XNOR gate:
-    /// let ct_res = sks.xnor(&ct1, &ct2);
-    ///
-    /// // Decrypt:
-    /// let dec_xnor = cks.decrypt(&ct_res);
-    /// assert_eq!(false, dec_xnor);
-    /// ```
-    pub fn xnor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for XNOR: 2*(-ct_left - ct_right + (0,...,0,-1/8))
-        self.engine
-            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
-            .unwrap(); // ct_left + ct_right
-        let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst_add)
-            .unwrap(); // + 1/8
-        self.engine
-            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
-            .unwrap(); // compute the negation
-        let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
-        self.engine
-            .fuse_mul_lwe_ciphertext_cleartext(&mut self.buffer_lwe_before_pbs, &cst_mul)
-            .unwrap(); //* 2
-
-        // compute the bootstrap and the key switch
-        self.bootstrap_keyswitch()
+                // compute the bootstrap and the key switch
+                self.bootstrap_keyswitch()
+            }
+        }
     }
 
     /// Computes homomorphically an XOR gate between two ciphertexts encrypting Boolean values:
@@ -557,7 +672,7 @@ impl ServerKey {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_boolean::gen_keys;
+    /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key and the server key:
     /// let (mut cks, mut sks) = gen_keys();
@@ -573,21 +688,463 @@ impl ServerKey {
     /// let dec_xor = cks.decrypt(&ct_res);
     /// assert_eq!(true, dec_xor);
     /// ```
-    pub fn xor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for XOR: 2*(ct_left + ct_right) + (0,...,0,1/4)
-        self.engine
-            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
-            .unwrap(); // ct_left + ct_right
-        let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
-        self.engine
-            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst_add)
-            .unwrap(); // + 1/8
-        let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
-        self.engine
-            .fuse_mul_lwe_ciphertext_cleartext(&mut self.buffer_lwe_before_pbs, &cst_mul)
-            .unwrap(); //* 2
+    fn xor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        match (ct_left, ct_right) {
+            (Ciphertext::Trivial(message_left), Ciphertext::Trivial(message_right)) => {
+                Ciphertext::Trivial(*message_left ^ *message_right)
+            }
+            (Ciphertext::Encrypted(_), Ciphertext::Trivial(message_right)) => {
+                self.xor(ct_left, *message_right)
+            }
+            (Ciphertext::Trivial(message_left), Ciphertext::Encrypted(_)) => {
+                self.xor(*message_left, ct_right)
+            }
+            (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
+                // Compute the linear combination for XOR: 2*(ct_left + ct_right) + (0,...,0,1/4)
+                self.engine
+                    .discard_add_lwe_ciphertext(
+                        &mut self.buffer_lwe_before_pbs,
+                        ct_left_ct,
+                        ct_right_ct,
+                    )
+                    .unwrap(); // ct_left + ct_right
+                let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst_add)
+                    .unwrap(); // + 1/8
+                let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
+                self.engine
+                    .fuse_mul_lwe_ciphertext_cleartext(&mut self.buffer_lwe_before_pbs, &cst_mul)
+                    .unwrap(); //* 2
 
-        // compute the bootstrap and the key switch
-        self.bootstrap_keyswitch()
+                // compute the bootstrap and the key switch
+                self.bootstrap_keyswitch()
+            }
+        }
+    }
+
+    /// Computes homomorphically an XNOR gate (or equality test) between two ciphertexts encrypting
+    /// Boolean values:
+    /// $$ct_{out} = (ct_{left}~==~ct_{right}) $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute the XNOR gate:
+    /// let ct_res = sks.xnor(&ct1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_xnor = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_xnor);
+    /// ```
+    fn xnor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        match (ct_left, ct_right) {
+            (Ciphertext::Trivial(message_left), Ciphertext::Trivial(message_right)) => {
+                Ciphertext::Trivial(!(*message_left ^ *message_right))
+            }
+            (Ciphertext::Encrypted(_), Ciphertext::Trivial(message_right)) => {
+                self.xnor(ct_left, *message_right)
+            }
+            (Ciphertext::Trivial(message_left), Ciphertext::Encrypted(_)) => {
+                self.xnor(*message_left, ct_right)
+            }
+            (Ciphertext::Encrypted(ct_left_ct), Ciphertext::Encrypted(ct_right_ct)) => {
+                // Compute the linear combination for XNOR: 2*(-ct_left - ct_right + (0,...,0,-1/8))
+                self.engine
+                    .discard_add_lwe_ciphertext(
+                        &mut self.buffer_lwe_before_pbs,
+                        ct_left_ct,
+                        ct_right_ct,
+                    )
+                    .unwrap(); // ct_left + ct_right
+                let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+                self.engine
+                    .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst_add)
+                    .unwrap(); // + 1/8
+                self.engine
+                    .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+                    .unwrap(); // compute the negation
+                let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
+                self.engine
+                    .fuse_mul_lwe_ciphertext_cleartext(&mut self.buffer_lwe_before_pbs, &cst_mul)
+                    .unwrap(); //* 2
+
+                // compute the bootstrap and the key switch
+                self.bootstrap_keyswitch()
+            }
+        }
+    }
+}
+
+impl BinaryBooleanGates<&Ciphertext, bool> for ServerKey {
+    /// Computes homomorphically an AND gate between one ciphertext encrypting Boolean value and
+    /// a clear boolean:
+    /// $$ ct_{out} = ct_{left}~\mathrm{AND}~ct_{right} $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let bool2 = false;
+    ///
+    /// // Compute homomorphically an AND gate:
+    /// let ct_res = sks.and(&ct1, bool2);
+    ///
+    /// // Decrypt:
+    /// let dec_and = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_and);
+    /// ```
+    fn and(&mut self, ct_left: &Ciphertext, ct_right: bool) -> Ciphertext {
+        if ct_right {
+            // ct AND true = ct
+            ct_left.clone()
+        } else {
+            // ct AND false = false
+            self.trivial_encrypt(false)
+        }
+    }
+
+    /// Computes homomorphically a NAND gate between one ciphertext encrypting Boolean value and
+    /// a clear boolean:
+    /// $$ct_{out} = \mathrm{NOT} (ct_{left}~\mathrm{AND}~ct_{right})$$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let bool2 = false;
+    ///
+    /// // Compute homomorphically a NAND gate:
+    /// let ct_res = sks.nand(&ct1, bool2);
+    ///
+    /// // Decrypt:
+    /// let dec_nand = cks.decrypt(&ct_res);
+    /// assert_eq!(true, dec_nand);
+    /// ```
+    fn nand(&mut self, ct_left: &Ciphertext, ct_right: bool) -> Ciphertext {
+        if ct_right {
+            // NOT (ct AND true) = NOT(ct)
+            self.not(ct_left)
+        } else {
+            // NOT (ct AND false) = NOT(false) = true
+            self.trivial_encrypt(true)
+        }
+    }
+
+    /// Computes homomorphically a NOR gate between one ciphertext encrypting Boolean value and
+    /// a clear boolean:
+    /// $$ ct_{out} = \mathrm{NOT}(ct_{left}~\mathrm{OR}~ct_{right}) $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let bool2 = false;
+    ///
+    /// // Compute homomorphically the NOR gate:
+    /// let ct_res = sks.nor(&ct1, bool2);
+    ///
+    /// // Decrypt:
+    /// let dec_nor = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_nor);
+    /// ```
+    fn nor(&mut self, ct_left: &Ciphertext, ct_right: bool) -> Ciphertext {
+        if ct_right {
+            // NOT (ct OR true) = NOT(true) = false
+            self.trivial_encrypt(false)
+        } else {
+            // NOT (ct OR false) = NOT(ct)
+            self.not(ct_left)
+        }
+    }
+
+    /// Computes homomorphically an OR gate between one ciphertext encrypting Boolean value and
+    /// a clear boolean:
+    /// $$ct_{out} = ct_{left}~\mathrm{OR}~ct_{right}$$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let bool2 = false;
+    ///
+    /// // Compute homomorphically the OR gate:
+    /// let ct_res = sks.or(&ct1, bool2);
+    ///
+    /// // Decrypt:
+    /// let dec_or = cks.decrypt(&ct_res);
+    /// assert_eq!(true, dec_or);
+    /// ```
+    fn or(&mut self, ct_left: &Ciphertext, ct_right: bool) -> Ciphertext {
+        if ct_right {
+            // ct OR true = true
+            self.trivial_encrypt(true)
+        } else {
+            // ct OR false = ct
+            ct_left.clone()
+        }
+    }
+
+    /// Computes homomorphically an XOR gate between one ciphertext encrypting Boolean value and
+    /// a clear boolean:
+    /// $$ct_{out}= ct_{left}~\mathrm{XOR}~ct_{right}$$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encryption of two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let bool2 = false;
+    ///
+    /// // Compute the XOR gate:
+    /// let ct_res = sks.xor(&ct1, bool2);
+    ///
+    /// // Decryption:
+    /// let dec_xor = cks.decrypt(&ct_res);
+    /// assert_eq!(true, dec_xor);
+    /// ```
+    fn xor(&mut self, ct_left: &Ciphertext, ct_right: bool) -> Ciphertext {
+        if ct_right {
+            // ct XOR true = NOT(ct)
+            self.not(ct_left)
+        } else {
+            // ct XOR false = ct
+            ct_left.clone()
+        }
+    }
+
+    /// Computes homomorphically an XNOR gate (or equality test) between one ciphertext encrypting
+    /// Boolean value and a clear boolean:
+    /// $$ct_{out} = (ct_{left}~==~ct_{right}) $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let ct1 = cks.encrypt(true);
+    /// let bool2 = false;
+    ///
+    /// // Compute the XNOR gate:
+    /// let ct_res = sks.xnor(&ct1, bool2);
+    ///
+    /// // Decrypt:
+    /// let dec_xnor = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_xnor);
+    /// ```
+    fn xnor(&mut self, ct_left: &Ciphertext, ct_right: bool) -> Ciphertext {
+        if ct_right {
+            // NOT(ct XOR true) = NOT(NOT(ct)) = ct
+            ct_left.clone()
+        } else {
+            // NOT(ct XOR false) = NOT(ct)
+            self.not(ct_left)
+        }
+    }
+}
+
+impl BinaryBooleanGates<bool, &Ciphertext> for ServerKey {
+    /// Computes homomorphically an AND gate between a clear boolean and one ciphertext encrypting
+    /// a Boolean value:
+    /// $$ ct_{out} = ct_{left}~\mathrm{AND}~ct_{right} $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let bool1 = true;
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute homomorphically an AND gate:
+    /// let ct_res = sks.and(bool1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_and = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_and);
+    /// ```
+    fn and(&mut self, ct_left: bool, ct_right: &Ciphertext) -> Ciphertext {
+        self.and(ct_right, ct_left)
+    }
+
+    /// Computes homomorphically a NAND gate between a clear boolean and one ciphertext encrypting
+    /// a Boolean value:
+    /// $$ct_{out} = \mathrm{NOT} (ct_{left}~\mathrm{AND}~ct_{right})$$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let bool1 = true;
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute homomorphically a NAND gate:
+    /// let ct_res = sks.nand(bool1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_nand = cks.decrypt(&ct_res);
+    /// assert_eq!(true, dec_nand);
+    /// ```
+    fn nand(&mut self, ct_left: bool, ct_right: &Ciphertext) -> Ciphertext {
+        self.nand(ct_right, ct_left)
+    }
+
+    /// Computes homomorphically a NOR gate between a clear boolean and one ciphertext encrypting
+    /// a Boolean value:
+    /// $$ ct_{out} = \mathrm{NOT}(ct_{left}~\mathrm{OR}~ct_{right}) $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let bool1 = true;
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute homomorphically the NOR gate:
+    /// let ct_res = sks.nor(bool1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_nor = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_nor);
+    /// ```
+    fn nor(&mut self, ct_left: bool, ct_right: &Ciphertext) -> Ciphertext {
+        self.nor(ct_right, ct_left)
+    }
+
+    /// Computes homomorphically an OR gate between a clear boolean and one ciphertext encrypting
+    /// a Boolean value:
+    /// $$ct_{out} = ct_{left}~\mathrm{OR}~ct_{right}$$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let bool1 = true;
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute homomorphically the OR gate:
+    /// let ct_res = sks.or(bool1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_or = cks.decrypt(&ct_res);
+    /// assert_eq!(true, dec_or);
+    /// ```
+    fn or(&mut self, ct_left: bool, ct_right: &Ciphertext) -> Ciphertext {
+        self.or(ct_right, ct_left)
+    }
+
+    /// Computes homomorphically an XOR gate between a clear boolean and one ciphertext encrypting
+    /// a Boolean value:
+    /// $$ct_{out}= ct_{left}~\mathrm{XOR}~ct_{right}$$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encryption of two messages:
+    /// let bool1 = true;
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute the XOR gate:
+    /// let ct_res = sks.xor(bool1, &ct2);
+    ///
+    /// // Decryption:
+    /// let dec_xor = cks.decrypt(&ct_res);
+    /// assert_eq!(true, dec_xor);
+    /// ```
+    fn xor(&mut self, ct_left: bool, ct_right: &Ciphertext) -> Ciphertext {
+        self.xor(ct_right, ct_left)
+    }
+
+    /// Computes homomorphically an XNOR gate (or equality test) between a clear boolean and one
+    /// ciphertext encrypting a Boolean value:
+    /// $$ct_{out} = (ct_{left}~==~ct_{right}) $$
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use concrete_boolean::prelude::*;
+    ///
+    /// // Generate the client key and the server key:
+    /// let (mut cks, mut sks) = gen_keys();
+    ///
+    /// // Encrypt two messages:
+    /// let bool1 = true;
+    /// let ct2 = cks.encrypt(false);
+    ///
+    /// // Compute the XNOR gate:
+    /// let ct_res = sks.xnor(bool1, &ct2);
+    ///
+    /// // Decrypt:
+    /// let dec_xnor = cks.decrypt(&ct_res);
+    /// assert_eq!(false, dec_xnor);
+    /// ```
+    fn xnor(&mut self, ct_left: bool, ct_right: &Ciphertext) -> Ciphertext {
+        self.xnor(ct_right, ct_left)
     }
 }

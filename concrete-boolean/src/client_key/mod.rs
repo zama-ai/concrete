@@ -65,7 +65,7 @@ impl ClientKey {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_boolean::gen_keys;
+    /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key and the server key:
     /// let (mut cks, mut sks) = gen_keys();
@@ -94,7 +94,7 @@ impl ClientKey {
             .encrypt_lwe_ciphertext(&self.lwe_secret_key, &plain, var)
             .unwrap();
 
-        Ciphertext(ct)
+        Ciphertext::Encrypted(ct)
     }
 
     /// Decrypts a ciphertext encrypting a Boolean message using the client key.
@@ -102,7 +102,7 @@ impl ClientKey {
     /// # Example
     ///
     /// ```rust
-    /// use concrete_boolean::gen_keys;
+    /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key and the server key:
     /// let (mut cks, mut sks) = gen_keys();
@@ -115,20 +115,26 @@ impl ClientKey {
     /// assert_eq!(true, dec);
     /// ```
     pub fn decrypt(&mut self, ct: &Ciphertext) -> bool {
-        // decryption
-        let decrypted = self
-            .engine
-            .decrypt_lwe_ciphertext(&self.lwe_secret_key, &ct.0)
-            .unwrap();
+        match ct {
+            // in case of a trivial ciphertext (i.e. unencrypted)
+            Ciphertext::Trivial(b) => *b,
+            Ciphertext::Encrypted(ciphertext) => {
+                // decryption
+                let decrypted = self
+                    .engine
+                    .decrypt_lwe_ciphertext(&self.lwe_secret_key, ciphertext)
+                    .unwrap();
 
-        // cast as a u32
-        let mut decrypted_u32: u32 = 0;
-        self.engine
-            .discard_retrieve_plaintext(&mut decrypted_u32, &decrypted)
-            .unwrap();
+                // cast as a u32
+                let mut decrypted_u32: u32 = 0;
+                self.engine
+                    .discard_retrieve_plaintext(&mut decrypted_u32, &decrypted)
+                    .unwrap();
 
-        // return
-        decrypted_u32 < (1 << 31)
+                // return
+                decrypted_u32 < (1 << 31)
+            }
+        }
     }
 
     /// Allocates and generates a client key.
@@ -138,6 +144,7 @@ impl ClientKey {
     /// ```rust
     /// use concrete_boolean::client_key::ClientKey;
     /// use concrete_boolean::parameters::DEFAULT_PARAMETERS;
+    /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key:
     /// let cks = ClientKey::new(&DEFAULT_PARAMETERS);

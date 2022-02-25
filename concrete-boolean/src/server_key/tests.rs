@@ -1,7 +1,7 @@
 use crate::ciphertext::Ciphertext;
 use crate::client_key::ClientKey;
 use crate::parameters::DEFAULT_PARAMETERS;
-use crate::server_key::ServerKey;
+use crate::server_key::{BinaryBooleanGates, ServerKey};
 use crate::{random_boolean, random_integer};
 
 /// Number of assert in randomized tests
@@ -19,6 +19,9 @@ fn test_encrypt_decrypt_lwe_secret_key() {
     // generate the client key set
     let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
 
+    // generate the server key set
+    let mut sks = ServerKey::new(&cks);
+
     for _ in 0..NB_TEST {
         // encryption of false
         let ct_false = cks.encrypt(false);
@@ -35,6 +38,32 @@ fn test_encrypt_decrypt_lwe_secret_key() {
         // assert
         assert!(!dec_false);
         assert!(dec_true);
+
+        // encryption of false
+        let ct_false = sks.trivial_encrypt(false);
+
+        // encryption of true
+        let ct_true = sks.trivial_encrypt(true);
+
+        // decryption of false
+        let dec_false = cks.decrypt(&ct_false);
+
+        // decryption of true
+        let dec_true = cks.decrypt(&ct_true);
+
+        // assert
+        assert!(!dec_false);
+        assert!(dec_true);
+    }
+}
+
+/// This function randomly either computes a regular encryption of the message or a trivial
+/// encryption of the message
+fn random_enum_encryption(cks: &mut ClientKey, sks: &mut ServerKey, message: bool) -> Ciphertext {
+    if random_boolean() {
+        cks.encrypt(message)
+    } else {
+        sks.trivial_encrypt(message)
     }
 }
 
@@ -50,21 +79,44 @@ fn test_and_gate() {
         // generation of two random booleans
         let b1 = random_boolean();
         let b2 = random_boolean();
+        let expected_result = b1 && b2;
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // encryption of b2
-        let ct2 = cks.encrypt(b2);
+        let ct2 = random_enum_encryption(&mut cks, &mut sks, b2);
 
-        // AND gate
+        // AND gate -> "left: {:?}, right: {:?}",ct1, ct2
         let ct_res = sks.and(&ct1, &ct2);
 
         // decryption
         let dec_and = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(b1 && b2, dec_and);
+        assert_eq!(
+            expected_result, dec_and,
+            "left: {:?}, right: {:?}",
+            ct1, ct2
+        );
+
+        // AND gate -> left: Ciphertext, right: bool
+        let ct_res = sks.and(&ct1, b2);
+
+        // decryption
+        let dec_and = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_and, "left: {:?}, right: {:?}", ct1, b2);
+
+        // AND gate -> left: bool, right: Ciphertext
+        let ct_res = sks.and(b1, &ct2);
+
+        // decryption
+        let dec_and = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_and, "left: {:?}, right: {:?}", b1, ct2);
     }
 }
 
@@ -81,15 +133,16 @@ fn test_mux_gate() {
         let b1 = random_boolean();
         let b2 = random_boolean();
         let b3 = random_boolean();
+        let expected_result = if b1 { b2 } else { b3 };
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // encryption of b2
-        let ct2 = cks.encrypt(b2);
+        let ct2 = random_enum_encryption(&mut cks, &mut sks, b2);
 
         // encryption of b3
-        let ct3 = cks.encrypt(b3);
+        let ct3 = random_enum_encryption(&mut cks, &mut sks, b3);
 
         // MUX gate
         let ct_res = sks.mux(&ct1, &ct2, &ct3);
@@ -98,7 +151,11 @@ fn test_mux_gate() {
         let dec_mux = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(if b1 { b2 } else { b3 }, dec_mux);
+        assert_eq!(
+            expected_result, dec_mux,
+            "cond: {:?}, then: {:?}, else: {:?}",
+            ct1, ct2, ct3
+        );
     }
 }
 
@@ -114,21 +171,52 @@ fn test_nand_gate() {
         // generation of two random booleans
         let b1 = random_boolean();
         let b2 = random_boolean();
+        let expected_result = !(b1 && b2);
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // encryption of b2
-        let ct2 = cks.encrypt(b2);
+        let ct2 = random_enum_encryption(&mut cks, &mut sks, b2);
 
-        // NAND gate
+        // NAND gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.nand(&ct1, &ct2);
 
         // decryption
         let dec_nand = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(!(b1 && b2), dec_nand);
+        assert_eq!(
+            expected_result, dec_nand,
+            "left: {:?}, right: {:?}",
+            ct1, ct2
+        );
+
+        // NAND gate -> left: Ciphertext, right: bool
+        let ct_res = sks.nand(&ct1, b2);
+
+        // decryption
+        let dec_nand = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(
+            expected_result, dec_nand,
+            "left: {:?}, right: {:?}",
+            ct1, b2
+        );
+
+        // NAND gate -> left: bool, right: Ciphertext
+        let ct_res = sks.nand(b1, &ct2);
+
+        // decryption
+        let dec_nand = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(
+            expected_result, dec_nand,
+            "left: {:?}, right: {:?}",
+            b1, ct2
+        );
     }
 }
 
@@ -144,21 +232,44 @@ fn test_nor_gate() {
         // generation of two random booleans
         let b1 = random_boolean();
         let b2 = random_boolean();
+        let expected_result = !(b1 || b2);
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // encryption of b2
-        let ct2 = cks.encrypt(b2);
+        let ct2 = random_enum_encryption(&mut cks, &mut sks, b2);
 
-        // NOR gate
+        // NOR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.nor(&ct1, &ct2);
 
         // decryption
         let dec_nor = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(!(b1 || b2), dec_nor);
+        assert_eq!(
+            expected_result, dec_nor,
+            "left: {:?}, right: {:?}",
+            ct1, ct2
+        );
+
+        // NOR gate -> left: Ciphertext, right: bool
+        let ct_res = sks.nor(&ct1, b2);
+
+        // decryption
+        let dec_nor = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_nor, "left: {:?}, right: {:?}", ct1, b2);
+
+        // NOR gate -> left: bool, right: Ciphertext
+        let ct_res = sks.nor(b1, &ct2);
+
+        // decryption
+        let dec_nor = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_nor, "left: {:?}, right: {:?}", b1, ct2);
     }
 }
 
@@ -173,9 +284,10 @@ fn test_not_gate() {
     for _ in 0..NB_TEST {
         // generation of one random booleans
         let b1 = random_boolean();
+        let expected_result = !b1;
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // NOT gate
         let ct_res = sks.not(&ct1);
@@ -184,7 +296,7 @@ fn test_not_gate() {
         let dec_not = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(!b1, dec_not);
+        assert_eq!(expected_result, dec_not);
     }
 }
 
@@ -200,21 +312,40 @@ fn test_or_gate() {
         // generation of two random booleans
         let b1 = random_boolean();
         let b2 = random_boolean();
+        let expected_result = b1 || b2;
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // encryption of b2
-        let ct2 = cks.encrypt(b2);
+        let ct2 = random_enum_encryption(&mut cks, &mut sks, b2);
 
-        // OR gate
+        // OR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.or(&ct1, &ct2);
 
         // decryption
         let dec_or = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(b1 || b2, dec_or);
+        assert_eq!(expected_result, dec_or, "left: {:?}, right: {:?}", ct1, ct2);
+
+        // OR gate -> left: Ciphertext, right: bool
+        let ct_res = sks.or(&ct1, b2);
+
+        // decryption
+        let dec_or = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_or, "left: {:?}, right: {:?}", ct1, b2);
+
+        // OR gate -> left: bool, right: Ciphertext
+        let ct_res = sks.or(b1, &ct2);
+
+        // decryption
+        let dec_or = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_or, "left: {:?}, right: {:?}", b1, ct2);
     }
 }
 
@@ -230,21 +361,52 @@ fn test_xnor_gate() {
         // generation of two random booleans
         let b1 = random_boolean();
         let b2 = random_boolean();
+        let expected_result = b1 == b2;
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // encryption of b2
-        let ct2 = cks.encrypt(b2);
+        let ct2 = random_enum_encryption(&mut cks, &mut sks, b2);
 
-        // XNOR gate
+        // XNOR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.xnor(&ct1, &ct2);
 
         // decryption
         let dec_xnor = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(b1 == b2, dec_xnor);
+        assert_eq!(
+            expected_result, dec_xnor,
+            "left: {:?}, right: {:?}",
+            ct1, ct2
+        );
+
+        // XNOR gate -> left: Ciphertext, right: bool
+        let ct_res = sks.xnor(&ct1, b2);
+
+        // decryption
+        let dec_xnor = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(
+            expected_result, dec_xnor,
+            "left: {:?}, right: {:?}",
+            ct1, b2
+        );
+
+        // XNOR gate -> left: bool, right: Ciphertext
+        let ct_res = sks.xnor(b1, &ct2);
+
+        // decryption
+        let dec_xnor = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(
+            expected_result, dec_xnor,
+            "left: {:?}, right: {:?}",
+            b1, ct2
+        );
     }
 }
 
@@ -260,21 +422,44 @@ fn test_xor_gate() {
         // generation of two random booleans
         let b1 = random_boolean();
         let b2 = random_boolean();
+        let expected_result = b1 ^ b2;
 
         // encryption of b1
-        let ct1 = cks.encrypt(b1);
+        let ct1 = random_enum_encryption(&mut cks, &mut sks, b1);
 
         // encryption of b2
-        let ct2 = cks.encrypt(b2);
+        let ct2 = random_enum_encryption(&mut cks, &mut sks, b2);
 
-        // XOR gate
+        // XOR gate -> left: Ciphertext, right: Ciphertext
         let ct_res = sks.xor(&ct1, &ct2);
 
         // decryption
         let dec_xor = cks.decrypt(&ct_res);
 
         // assert
-        assert_eq!(b1 ^ b2, dec_xor);
+        assert_eq!(
+            expected_result, dec_xor,
+            "left: {:?}, right: {:?}",
+            ct1, ct2
+        );
+
+        // XOR gate -> left: Ciphertext, right: bool
+        let ct_res = sks.xor(&ct1, b2);
+
+        // decryption
+        let dec_xor = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_xor, "left: {:?}, right: {:?}", ct1, b2);
+
+        // XOR gate -> left: bool, right: Ciphertext
+        let ct_res = sks.xor(b1, &ct2);
+
+        // decryption
+        let dec_xor = cks.decrypt(&ct_res);
+
+        // assert
+        assert_eq!(expected_result, dec_xor, "left: {:?}, right: {:?}", b1, ct2);
     }
 }
 

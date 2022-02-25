@@ -8,5 +8,8 @@ use serde::{Deserialize, Serialize};
 /// A structure containing a ciphertext, meant to encrypt a Boolean message.
 ///
 /// It is used to evaluate a Boolean circuits homomorphically.
-#[derive(Serialize, Clone, Deserialize)]
-pub struct Ciphertext(pub(crate) LweCiphertext32);
+#[derive(Serialize, Clone, Deserialize, Debug)]
+pub enum Ciphertext {
+    Encrypted(LweCiphertext32),
+    Trivial(bool),
+}

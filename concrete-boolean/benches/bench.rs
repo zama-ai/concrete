@@ -1,5 +1,6 @@
 use concrete_boolean::client_key::ClientKey;
 use concrete_boolean::parameters::{BooleanParameters, DEFAULT_PARAMETERS, TFHE_LIB_PARAMETERS};
+use concrete_boolean::prelude::BinaryBooleanGates;
 use concrete_boolean::server_key::ServerKey;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 

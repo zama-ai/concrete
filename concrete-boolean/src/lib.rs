@@ -18,7 +18,7 @@
 //! homomorphically.
 //!
 //! ```rust
-//! use concrete_boolean::gen_keys;
+//! use concrete_boolean::prelude::*;
 //!
 //! // We generate a set of client/server keys, using the default parameters:
 //! let (mut client_key, mut server_key) = gen_keys();
@@ -35,8 +35,20 @@
 //! let ct_6 = server_key.mux(&ct_5, &ct_3, &ct_4);
 //!
 //! // We use the client key to decrypt the output of the circuit:
-//! let output = client_key.decrypt(&ct_6);
-//! assert_eq!(output, true);
+//! let output_1 = client_key.decrypt(&ct_6);
+//! assert_eq!(output_1, true);
+//!
+//! // It is possible to compute gates with one input unencrypted
+//! let ct_7 = server_key.and(&ct_6, true);
+//! let output_2 = client_key.decrypt(&ct_7);
+//! assert_eq!(output_2, true);
+//!
+//! // It is possible to trivially encrypt on the server side
+//! // i.e. to not encrypt but still generate a compatible Ciphertext
+//! let ct_8 = server_key.trivial_encrypt(false);
+//! let ct_9 = server_key.mux(&ct_7, &ct_3, &ct_8);
+//! let output_3 = client_key.decrypt(&ct_9);
+//! assert_eq!(output_3, true);
 //! ```
 
 use crate::client_key::ClientKey;
@@ -49,6 +61,7 @@ use rand::Rng;
 pub mod ciphertext;
 pub mod client_key;
 pub mod parameters;
+pub mod prelude;
 pub mod server_key;
 
 /// The scaling factor used for the plaintext
@@ -96,7 +109,7 @@ fn default_engine() -> CoreEngine {
 /// meant to be published (the client sends it to the server).
 ///
 /// ```rust
-/// use concrete_boolean::gen_keys;
+/// use concrete_boolean::prelude::*;
 /// // generate the client key and the server key:
 /// let (cks, sks) = gen_keys();
 /// ```
