@@ -28,7 +28,7 @@ use concrete_boolean::server_key::ServerKey;
 use concrete_boolean::parameters::TFHE_LIB_PARAMETERS;
 
 // generate the client key set
-let cks = ClientKey::new(&TFHE_LIB_PARAMETERS);
+let cks = ClientKey::new(TFHE_LIB_PARAMETERS);
 
 // generate the server key set
 let sks = ServerKey::new(&cks);
@@ -72,6 +72,6 @@ let parameters = unsafe{
 };
 
 // We generate the client key from the parameters:
-let client_key = ClientKey::new(&parameters);
+let client_key = ClientKey::new(parameters);
 let server_key = ServerKey::new(&client_key);
 ```

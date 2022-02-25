@@ -39,7 +39,7 @@ In more details:
 Note that both the `client_key` and `server_key` implement the `Serialize` and `Deserialize` traits.
 This way you can use any compatible serializer to store/send the data. For instance, to store
 the `server_key` in a binary file, you can use the `bincode` library:
-```rust
+```rust, ignore
 extern crate concrete_boolean;
 extern crate bincode;
 use concrete_boolean::gen_keys;
@@ -88,12 +88,12 @@ the `Deserialize` traits, so that any serializer and communication tool suiting 
 can be
 used:
 
-```rust
+```rust, ignore
 # extern crate concrete_boolean;
 # extern crate bincode;
 # use concrete_boolean::gen_keys;
 # // Don't consider the following line; you should follow the procedure above.
-# let (client_key, _) = gen_keys();
+# let (mut client_key, _) = gen_keys();
 
 //---------------------------- SERVER SIDE
 
@@ -114,13 +114,15 @@ let encoded_2: Vec<u8> = bincode::serialize(&ct_2).unwrap();
 
 Once the encrypted inputs are on the **server side**, the `server_key` can be used to
 homomorphically execute the desired boolean circuit:
-```rust
+
+```rust, ignore
 # extern crate concrete_boolean;
 # extern crate bincode;
 # use concrete_boolean::gen_keys;
+# use concrete_boolean::prelude::*;
 # use concrete_boolean::ciphertext::Ciphertext;
 # // Don't consider the following lines; you should follow the procedure above.
-# let (client_key, server_key) = gen_keys();
+# let (mut client_key, mut server_key) = gen_keys();
 # let ct_1 = client_key.encrypt(true);
 # let ct_2 = client_key.encrypt(false);
 # let encoded_1: Vec<u8> = bincode::serialize(&ct_1).unwrap();
@@ -155,13 +157,13 @@ let encoded_output:Vec<u8> = bincode::serialize(&ct_6)
 Once the encrypted output is on the client side, the `client_key` can be used to
 decrypt it:
 
-```rust
+```rust, ignore
 # extern crate concrete_boolean;
 # extern crate bincode;
 # use concrete_boolean::gen_keys;
 # use concrete_boolean::ciphertext::Ciphertext;
 # // Don't consider the following lines; you should follow the procedure above.
-# let (client_key, server_key) = gen_keys();
+# let (mut client_key, mut server_key) = gen_keys();
 # let ct_6 = client_key.encrypt(true);
 # let encoded_output: Vec<u8> = bincode::serialize(&ct_6).unwrap();
 

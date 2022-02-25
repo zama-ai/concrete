@@ -32,8 +32,8 @@ criterion_main!(
 );
 
 fn and_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
     let ct2 = cks.encrypt(false);
     c.bench_function(&*("AND gate ".to_owned() + option), |b| {
@@ -50,8 +50,8 @@ fn and_gate_tfhelib(c: &mut Criterion) {
 }
 
 fn mux_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
     let ct2 = cks.encrypt(false);
     let ct3 = cks.encrypt(true);
@@ -69,8 +69,8 @@ fn mux_gate_tfhelib(c: &mut Criterion) {
 }
 
 fn nand_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
     let ct2 = cks.encrypt(false);
     c.bench_function(&*("NAND gate ".to_owned() + option), |b| {
@@ -87,8 +87,8 @@ fn nand_gate_tfhelib(c: &mut Criterion) {
 }
 
 fn nor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
     let ct2 = cks.encrypt(false);
     c.bench_function(&*("NOR gate ".to_owned() + option), |b| {
@@ -105,8 +105,8 @@ fn nor_gate_tfhelib(c: &mut Criterion) {
 }
 
 fn not_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct = cks.encrypt(true);
     c.bench_function(&*("NOT gate ".to_owned() + option), |b| {
         b.iter(|| black_box(sks.not(&ct)))
@@ -122,8 +122,8 @@ fn not_gate_tfhelib(c: &mut Criterion) {
 }
 
 fn or_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
     let ct2 = cks.encrypt(false);
     c.bench_function(&*("OR gate ".to_owned() + option), |b| {
@@ -140,8 +140,8 @@ fn or_gate_tfhelib(c: &mut Criterion) {
 }
 
 fn xnor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
     let ct2 = cks.encrypt(false);
     c.bench_function(&*("XNOR gate ".to_owned() + option), |b| {
@@ -158,8 +158,8 @@ fn xnor_gate_tfhelib(c: &mut Criterion) {
 }
 
 fn xor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
-    let cks = ClientKey::new(params);
-    let sks = ServerKey::new(&cks);
+    let mut cks = ClientKey::new(params);
+    let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
     let ct2 = cks.encrypt(false);
     c.bench_function(&*("XOR gate ".to_owned() + option), |b| {
