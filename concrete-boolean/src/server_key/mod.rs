@@ -10,16 +10,10 @@ mod tests;
 
 use crate::ciphertext::Ciphertext;
 use crate::client_key::ClientKey;
-use crate::{PLAINTEXT_LOG_SCALING_FACTOR, PLAINTEXT_TRUE};
-use concrete_commons::parameters::LweDimension;
-use concrete_core::crypto::bootstrap::{Bootstrap, FourierBootstrapKey, StandardBootstrapKey};
-use concrete_core::crypto::encoding::Cleartext;
-use concrete_core::crypto::glwe::GlweCiphertext;
-use concrete_core::crypto::lwe::{LweCiphertext, LweKeyswitchKey};
-use concrete_core::crypto::secret::generators::EncryptionRandomGenerator;
-use concrete_core::math::fft::{AlignedVec, Complex64};
-use concrete_core::math::tensor::AsMutTensor;
+use crate::{PLAINTEXT_FALSE, PLAINTEXT_TRUE};
+use concrete_core::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter};
 
 /// A structure containing the server public key.
 ///
@@ -29,10 +23,63 @@ use serde::{Deserialize, Serialize};
 /// In more details, it contains:
 /// * `key_switching_key` - a public key, used to perform the key-switching operation.
 /// * `bootstrapping_key` - a public key, used to perform the bootstrapping operation.
-#[derive(Serialize, Clone, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct ServerKey {
-    pub(crate) key_switching_key: LweKeyswitchKey<Vec<u32>>,
-    pub(crate) bootstrapping_key: FourierBootstrapKey<AlignedVec<Complex64>, u32>,
+    pub(crate) key_switching_key: LweKeyswitchKey32,
+    pub(crate) bootstrapping_key: FourierLweBootstrapKey32,
+    #[serde(skip, default = "crate::default_engine")]
+    pub(crate) engine: CoreEngine,
+    pub(crate) accumulator: GlweCiphertext32,
+    pub(crate) buffer_lwe_before_pbs: LweCiphertext32,
+    pub(crate) buffer_lwe_after_pbs: LweCiphertext32,
+}
+
+pub trait BinaryBooleanGates<L, R> {
+    fn and(&mut self, ct_left: L, ct_right: R) -> Ciphertext;
+    fn nand(&mut self, ct_left: L, ct_right: R) -> Ciphertext;
+    fn nor(&mut self, ct_left: L, ct_right: R) -> Ciphertext;
+    fn or(&mut self, ct_left: L, ct_right: R) -> Ciphertext;
+    fn xor(&mut self, ct_left: L, ct_right: R) -> Ciphertext;
+    fn xnor(&mut self, ct_left: L, ct_right: R) -> Ciphertext;
+}
+
+impl PartialEq for ServerKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.key_switching_key == other.key_switching_key
+            && self.bootstrapping_key == other.bootstrapping_key
+    }
+}
+
+impl Debug for ServerKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ServerKey {{ ")?;
+        write!(f, "key_switching_key: {:?}, ", self.key_switching_key)?;
+        write!(f, "bootstrapping_key: {:?}, ", self.bootstrapping_key)?;
+        write!(f, "engine: CoreEngine, ")?;
+        write!(f, "accumulator: {:?}, ", self.accumulator)?;
+        write!(
+            f,
+            "buffer_lwe_before_pbs: {:?}, ",
+            self.buffer_lwe_before_pbs
+        )?;
+        write!(f, "buffer_lwe_after_pbs: {:?}, ", self.buffer_lwe_after_pbs)?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl Clone for ServerKey {
+    fn clone(&self) -> ServerKey {
+        let sks_clone: ServerKey = ServerKey {
+            key_switching_key: self.key_switching_key.clone(),
+            bootstrapping_key: self.bootstrapping_key.clone(),
+            accumulator: self.accumulator.clone(),
+            buffer_lwe_before_pbs: self.buffer_lwe_before_pbs.clone(),
+            buffer_lwe_after_pbs: self.buffer_lwe_after_pbs.clone(),
+            engine: crate::default_engine(),
+        };
+        sks_clone
+    }
 }
 
 impl ServerKey {
@@ -52,60 +99,116 @@ impl ServerKey {
     /// let sks = ServerKey::new(&cks);
     /// ```
     pub fn new(cks: &ClientKey) -> ServerKey {
-        // Allocate and generate the key in coefficient domain:
-        let mut coef_bsk = StandardBootstrapKey::allocate(
-            0_u32,
-            cks.parameters.glwe_dimension.to_glwe_size(),
-            cks.parameters.polynomial_size,
-            cks.parameters.pbs_level,
-            cks.parameters.pbs_base_log,
-            cks.parameters.lwe_dimension,
-        );
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
-        coef_bsk.par_fill_with_new_key(
-            &cks.lwe_secret_key,
-            &cks.glwe_secret_key,
-            cks.parameters.glwe_modular_std_dev,
-            &mut encryption_generator,
-        );
+        // creation of a core-engine
+        let mut engine = super::default_engine();
 
-        // Allocate the bootstrapping key in Fourier domain and forward FFT:
-        let mut fourier_bsk = FourierBootstrapKey::allocate(
-            Complex64::new(0., 0.),
-            cks.parameters.glwe_dimension.to_glwe_size(),
-            cks.parameters.polynomial_size,
-            cks.parameters.pbs_level,
-            cks.parameters.pbs_base_log,
-            cks.parameters.lwe_dimension,
-        );
-        fourier_bsk.fill_with_forward_fourier(&coef_bsk);
+        // convert into a variance for rlwe context
+        let var_rlwe = Variance(cks.parameters.glwe_modular_std_dev.get_variance());
 
-        // Allocate the key switching key:
-        let mut ksk = LweKeyswitchKey::allocate(
-            0_u32,
-            cks.parameters.ks_level,
-            cks.parameters.ks_base_log,
-            LweDimension(cks.parameters.glwe_dimension.0 * cks.parameters.polynomial_size.0),
-            cks.parameters.lwe_dimension,
-        );
+        // creation of the bootstrapping key in the Fourier domain
+        let fourier_bsk: FourierLweBootstrapKey32 = engine
+            .create_lwe_bootstrap_key(
+                &cks.lwe_secret_key,
+                &cks.glwe_secret_key,
+                cks.parameters.pbs_base_log,
+                cks.parameters.pbs_level,
+                var_rlwe,
+            )
+            .unwrap();
 
         // Convert the GLWE secret key into an LWE secret key:
-        let big_lwe_secret_key = cks.glwe_secret_key.clone().into_lwe_secret_key();
+        let big_lwe_secret_key = engine
+            .transmute_glwe_secret_key_to_lwe_secret_key(cks.glwe_secret_key.clone())
+            .unwrap();
 
-        // Fill the key switching key:
-        ksk.fill_with_keyswitch_key(
-            &big_lwe_secret_key,
-            &cks.lwe_secret_key,
-            cks.parameters.lwe_modular_std_dev,
-            &mut encryption_generator,
-        );
+        // convert into a variance for lwe context
+        let var_lwe = Variance(cks.parameters.lwe_modular_std_dev.get_variance());
+
+        // creation of the key switching key
+        let ksk = engine
+            .create_lwe_keyswitch_key(
+                &big_lwe_secret_key,
+                &cks.lwe_secret_key,
+                cks.parameters.ks_level,
+                cks.parameters.ks_base_log,
+                var_lwe,
+            )
+            .unwrap();
+
+        // create the accumulator
+        let accumulator_u32 = vec![PLAINTEXT_TRUE; fourier_bsk.polynomial_size().0]; // 1/8
+                                                                                     // everywhere
+        let accumulator_plaintext = engine.create_plaintext_vector(&accumulator_u32).unwrap();
+        let accumulator = engine
+            .trivially_encrypt_glwe_ciphertext(
+                GlweSize(fourier_bsk.glwe_dimension().0 + 1),
+                &accumulator_plaintext,
+            )
+            .unwrap();
+
+        // Allocate the buffer for the input of the PBS
+        let zero_plaintext = engine.create_plaintext(&0_u32).unwrap();
+        let buffer_lwe_before_pbs = engine
+            .trivially_encrypt_lwe_ciphertext(
+                LweSize(ksk.output_lwe_dimension().0 + 1),
+                &zero_plaintext,
+            )
+            .unwrap();
+
+        // Allocate the buffer for the output of the PBS
+        let zero_plaintext = engine.create_plaintext(&0_u32).unwrap();
+        let buffer_lwe_after_pbs = engine
+            .trivially_encrypt_lwe_ciphertext(
+                LweSize(ksk.input_lwe_dimension().0 + 1),
+                &zero_plaintext,
+            )
+            .unwrap();
 
         // Pack the keys in the server key set:
         let sks: ServerKey = ServerKey {
             key_switching_key: ksk,
             bootstrapping_key: fourier_bsk,
+            engine,
+            accumulator,
+            buffer_lwe_before_pbs,
+            buffer_lwe_after_pbs,
         };
         sks
+    }
+
+    /// function that computes a bootstrap and a keys witch
+    fn bootstrap_keyswitch(&mut self) -> Ciphertext {
+        // Compute the programmable bootstrapping with fixed test polynomial
+        self.engine
+            .discard_bootstrap_lwe_ciphertext(
+                &mut self.buffer_lwe_after_pbs,
+                &self.buffer_lwe_before_pbs,
+                &self.accumulator,
+                &self.bootstrapping_key,
+            )
+            .unwrap();
+
+        // Allocate the output of the KS
+        let zero_plaintext = self.engine.create_plaintext(&0_u32).unwrap();
+        let mut ct_ks = self
+            .engine
+            .trivially_encrypt_lwe_ciphertext(
+                LweSize(self.key_switching_key.output_lwe_dimension().0 + 1),
+                &zero_plaintext,
+            )
+            .unwrap();
+
+        // Compute a key switch to get back to input key
+        self.engine
+            .discard_keyswitch_lwe_ciphertext(
+                &mut ct_ks,
+                &self.buffer_lwe_after_pbs,
+                &self.key_switching_key,
+            )
+            .unwrap();
+
+        // Result
+        Ciphertext(ct_ks)
     }
 
     /// Computes homomorphically an AND gate between two ciphertexts encrypting Boolean values:
@@ -117,7 +220,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encrypt two messages:
     /// let ct1 = cks.encrypt(true);
@@ -130,45 +233,19 @@ impl ServerKey {
     /// let dec_and = cks.decrypt(&ct_res);
     /// assert_eq!(false, dec_and);
     /// ```
-    pub fn and(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for AND: ct_left + ct_right + (0,...,0,-1/8)
-        let mut ct_temp = ct_left.0.clone();
-        ct_temp.update_with_add(&ct_right.0);
-        ct_temp.get_mut_body().0 = ct_temp
-            .get_mut_body()
-            .0
-            .wrapping_sub(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)); // -1/8
+    pub fn and(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        // compute the linear combination for AND: ct_left + ct_right + (0,...,0,-1/8)
+        self.engine
+            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
+            .unwrap(); // ct_left + ct_right
+        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+            .unwrap(); //
+                       // - 1/8
 
-        // Create the accumulator
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.polynomial_size(),
-            self.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocate the output of the PBS
-        let mut ct_pbs = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Compute the programmable bootstrapping with fixed test polynomial
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs, &ct_temp, &accumulator);
-
-        // Compute a key switch to get back to input key
-        let mut ct_ks = LweCiphertext::allocate(0_u32, ct_left.0.lwe_size());
-        self.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks, &ct_pbs);
-
-        // Result
-        Ciphertext(ct_ks)
+        // compute the bootstrap and the key switch
+        self.bootstrap_keyswitch()
     }
 
     /// Computes an homomorphic MUX gate between three ciphertexts encrypting Boolean values:
@@ -180,7 +257,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encrypt three messages:
     /// let ct1 = cks.encrypt(true);
@@ -195,7 +272,7 @@ impl ServerKey {
     /// assert_eq!(false, dec_mux);
     /// ```
     pub fn mux(
-        &self,
+        &mut self,
         ct_condition: &Ciphertext,
         ct_then: &Ciphertext,
         ct_else: &Ciphertext,
@@ -203,68 +280,83 @@ impl ServerKey {
         // In theory MUX gate = (ct_condition AND ct_then) + (!ct_condition AND ct_else)
 
         // Compute the linear combination for first AND: ct_condition + ct_then + (0,...,0,-1/8)
-        let mut ct_temp_1 = ct_condition.0.clone();
-        ct_temp_1.update_with_add(&ct_then.0);
-        ct_temp_1.get_mut_body().0 = ct_temp_1
-            .get_mut_body()
-            .0
-            .wrapping_sub(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)); // -1/8
+        self.engine
+            .discard_add_lwe_ciphertext(
+                &mut self.buffer_lwe_before_pbs,
+                &ct_condition.0,
+                &ct_then.0,
+            )
+            .unwrap(); // ct_condition + ct_then
+        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+            .unwrap(); //
+                       // - 1/8
 
         // Compute the linear combination for second AND: - ct_condition + ct_else + (0,...,0,-1/8)
-        let mut ct_temp_2 = ct_condition.0.clone();
-        ct_temp_2.update_with_neg();
-        ct_temp_2.update_with_add(&ct_else.0);
-        ct_temp_2.get_mut_body().0 = ct_temp_2
-            .get_mut_body()
-            .0
-            .wrapping_sub(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)); // -1/8
-
-        // Create the accumulator:
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.polynomial_size(),
-            self.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocate the output of the first PBS:
-        let mut ct_pbs_1 = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Allocate the output of the second PBS:
-        let mut ct_pbs_2 = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
+        let mut ct_temp_2 = ct_condition.0.clone(); // ct_condition
+        self.engine.fuse_neg_lwe_ciphertext(&mut ct_temp_2).unwrap(); // compute the negation
+        self.engine
+            .fuse_add_lwe_ciphertext(&mut ct_temp_2, &ct_else.0)
+            .unwrap(); // + ct_else
+        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut ct_temp_2, &cst)
+            .unwrap(); //
+                       // - 1/8
 
         // Compute the first programmable bootstrapping with fixed test polynomial:
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs_1, &ct_temp_1, &accumulator);
+        self.engine
+            .discard_bootstrap_lwe_ciphertext(
+                &mut self.buffer_lwe_after_pbs,
+                &self.buffer_lwe_before_pbs,
+                &self.accumulator,
+                &self.bootstrapping_key,
+            )
+            .unwrap();
+
+        // Allocate the output of the second PBS:
+        let mut ct_pbs_2 = self.buffer_lwe_after_pbs.clone();
 
         // Compute the second programmable bootstrapping with fixed test polynomial:
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs_2, &ct_temp_2, &accumulator);
+        self.engine
+            .discard_bootstrap_lwe_ciphertext(
+                &mut ct_pbs_2,
+                &ct_temp_2,
+                &self.accumulator,
+                &self.bootstrapping_key,
+            )
+            .unwrap();
 
-        // Compute the linear combination to add the two results : ct_pbs_1 + ct_pbs_2 + (0,...,0,
+        // Compute the linear combination to add the two results : buffer_lwe_pbs + ct_pbs_2 +
+        // (0,...,0,
         // +1/8)
-        let mut ct_temp = ct_pbs_1;
-        ct_temp.update_with_add(&ct_pbs_2);
-        ct_temp.get_mut_body().0 = ct_temp
-            .get_mut_body()
-            .0
-            .wrapping_add(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)); // +1/8
+        self.engine
+            .fuse_add_lwe_ciphertext(&mut self.buffer_lwe_after_pbs, &ct_pbs_2)
+            .unwrap(); // + buffer_lwe_pbs
+        let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_after_pbs, &cst)
+            .unwrap(); // + 1/8
+
+        // Allocate the output of the KS
+        let zero_plaintext = self.engine.create_plaintext(&0_u32).unwrap();
+        let mut ct_ks = self
+            .engine
+            .trivially_encrypt_lwe_ciphertext(
+                LweSize(self.key_switching_key.output_lwe_dimension().0 + 1),
+                &zero_plaintext,
+            )
+            .unwrap();
 
         // Compute the key switch to get back to input key
-        let mut ct_ks = LweCiphertext::allocate(0_u32, ct_condition.0.lwe_size());
-        self.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks, &ct_temp);
+        self.engine
+            .discard_keyswitch_lwe_ciphertext(
+                &mut ct_ks,
+                &self.buffer_lwe_after_pbs,
+                &self.key_switching_key,
+            )
+            .unwrap();
 
         // Output the result:
         Ciphertext(ct_ks)
@@ -279,7 +371,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encrypt two messages:
     /// let ct1 = cks.encrypt(true);
@@ -292,46 +384,21 @@ impl ServerKey {
     /// let dec_nand = cks.decrypt(&ct_res);
     /// assert_eq!(true, dec_nand);
     /// ```
-    pub fn nand(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+    pub fn nand(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
         // Compute the linear combination for NAND: - ct_left - ct_right + (0,...,0,1/8)
-        let mut ct_temp = ct_left.0.clone();
-        ct_temp.update_with_neg();
-        ct_temp.update_with_sub(&ct_right.0);
-        ct_temp.get_mut_body().0 = ct_temp
-            .get_mut_body()
-            .0
-            .wrapping_add(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)); // 1/8
+        self.engine
+            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
+            .unwrap(); // ct_left + ct_right
+        self.engine
+            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+            .unwrap(); // compute the negation
+        let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+            .unwrap(); // + 1/8
 
-        // Create the accumulator:
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.polynomial_size(),
-            self.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial:
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocate the output of the PBS:
-        let mut ct_pbs = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Compute the programmable bootstrapping with fixed test polynomial:
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs, &ct_temp, &accumulator);
-
-        // Compute the key switch to get back to input key:
-        let mut ct_ks = LweCiphertext::allocate(0_u32, ct_left.0.lwe_size());
-        self.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks, &ct_pbs);
-
-        // Output the result
-        Ciphertext(ct_ks)
+        // compute the bootstrap and the key switch
+        self.bootstrap_keyswitch()
     }
 
     /// Computes homomorphically a NOR gate between two ciphertexts encrypting Boolean values:
@@ -343,7 +410,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encrypt two messages:
     /// let ct1 = cks.encrypt(true);
@@ -356,46 +423,22 @@ impl ServerKey {
     /// let dec_nor = cks.decrypt(&ct_res);
     /// assert_eq!(false, dec_nor);
     /// ```
-    pub fn nor(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+    pub fn nor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
         // Compute the linear combination for NOR: - ct_left - ct_right + (0,...,0,-1/8)
-        let mut ct_temp = ct_left.0.clone();
-        ct_temp.update_with_neg();
-        ct_temp.update_with_sub(&ct_right.0);
-        ct_temp.get_mut_body().0 = ct_temp
-            .get_mut_body()
-            .0
-            .wrapping_sub(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)); // -1/8
+        self.engine
+            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
+            .unwrap(); // ct_left + ct_right
+        self.engine
+            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+            .unwrap(); // compute the negation
+        let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+            .unwrap(); //
+                       // - 1/8
 
-        // Create the accumulator:
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.polynomial_size(),
-            self.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial:
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocate the output of the PBS:
-        let mut ct_pbs = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Compute the Programmable bootstrapping with fixed test polynomial:
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs, &ct_temp, &accumulator);
-
-        // Compute the key switch to get back to input key:
-        let mut ct_ks = LweCiphertext::allocate(0_u32, ct_left.0.lwe_size());
-        self.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks, &ct_pbs);
-
-        // Output the result:
-        Ciphertext(ct_ks)
+        // compute the bootstrap and the key switch
+        self.bootstrap_keyswitch()
     }
 
     /// Computes homomorphically a NOT gate of a ciphertexts encrypting a Boolean value:
@@ -407,7 +450,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encrypt a message:
     /// let ct = cks.encrypt(true);
@@ -419,13 +462,13 @@ impl ServerKey {
     /// let dec_not = cks.decrypt(&ct_res);
     /// assert_eq!(false, dec_not);
     /// ```
-    pub fn not(&self, ct: &Ciphertext) -> Ciphertext {
+    pub fn not(&mut self, ct: &Ciphertext) -> Ciphertext {
         // Compute the linear combination for NOT: -ct
-        let mut ct = ct.0.clone();
-        ct.update_with_neg();
+        let mut ct_res = ct.0.clone();
+        self.engine.fuse_neg_lwe_ciphertext(&mut ct_res).unwrap(); // compute the negation
 
         // Output the result:
-        Ciphertext(ct)
+        Ciphertext(ct_res)
     }
 
     /// Computes homomorphically an OR gate between two ciphertexts encrypting Boolean values:
@@ -437,7 +480,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encrypt two messages:
     /// let ct1 = cks.encrypt(true);
@@ -450,45 +493,18 @@ impl ServerKey {
     /// let dec_or = cks.decrypt(&ct_res);
     /// assert_eq!(true, dec_or);
     /// ```
-    pub fn or(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+    pub fn or(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
         // Compute the linear combination for OR: ct_left + ct_right + (0,...,0,+1/8)
-        let mut ct_temp = ct_left.0.clone();
-        ct_temp.update_with_add(&ct_right.0);
-        ct_temp.get_mut_body().0 = ct_temp
-            .get_mut_body()
-            .0
-            .wrapping_add(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)); // +1/8
+        self.engine
+            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
+            .unwrap(); // ct_left + ct_right
+        let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
+            .unwrap(); // + 1/8
 
-        // Create the accumulator:
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.polynomial_size(),
-            self.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial:
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocate the output of the PBS:
-        let mut ct_pbs = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Compute the programmable bootstrapping with fixed test polynomial:
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs, &ct_temp, &accumulator);
-
-        // Compute a key switch to get back to input key:
-        let mut ct_ks = LweCiphertext::allocate(0_u32, ct_left.0.lwe_size());
-        self.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks, &ct_pbs);
-
-        // Output the result:
-        Ciphertext(ct_ks)
+        // compute the bootstrap and the key switch
+        self.bootstrap_keyswitch()
     }
 
     /// Computes homomorphically an XNOR gate (or equality test) between two ciphertexts encrypting
@@ -501,7 +517,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encrypt two messages:
     /// let ct1 = cks.encrypt(true);
@@ -514,47 +530,25 @@ impl ServerKey {
     /// let dec_xnor = cks.decrypt(&ct_res);
     /// assert_eq!(false, dec_xnor);
     /// ```
-    pub fn xnor(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
-        // Compute the linear combination for XNOR: 2*(-ct_left - ct_right) + (0,...,0,-1/4)
-        let mut ct_temp = ct_left.0.clone();
-        ct_temp.update_with_neg();
-        ct_temp.update_with_sub(&ct_right.0);
-        ct_temp.update_with_scalar_mul(Cleartext(2));
-        ct_temp.get_mut_body().0 = ct_temp
-            .get_mut_body()
-            .0
-            .wrapping_sub(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR + 1)); // -1/4
+    pub fn xnor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+        // Compute the linear combination for XNOR: 2*(-ct_left - ct_right + (0,...,0,-1/8))
+        self.engine
+            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
+            .unwrap(); // ct_left + ct_right
+        let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst_add)
+            .unwrap(); // + 1/8
+        self.engine
+            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+            .unwrap(); // compute the negation
+        let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
+        self.engine
+            .fuse_mul_lwe_ciphertext_cleartext(&mut self.buffer_lwe_before_pbs, &cst_mul)
+            .unwrap(); //* 2
 
-        // Create the accumulator:
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.polynomial_size(),
-            self.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial:
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocate the output of the PBS:
-        let mut ct_pbs = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Compute a programmable bootstrapping with fixed test polynomial:
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs, &ct_temp, &accumulator);
-
-        // Compute a key switching to get back to input key:
-        let mut ct_ks = LweCiphertext::allocate(0_u32, ct_left.0.lwe_size());
-        self.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks, &ct_pbs);
-
-        // Output the result:
-        Ciphertext(ct_ks)
+        // compute the bootstrap and the key switch
+        self.bootstrap_keyswitch()
     }
 
     /// Computes homomorphically an XOR gate between two ciphertexts encrypting Boolean values:
@@ -566,7 +560,7 @@ impl ServerKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encryption of two messages:
     /// let ct1 = cks.encrypt(true);
@@ -579,45 +573,21 @@ impl ServerKey {
     /// let dec_xor = cks.decrypt(&ct_res);
     /// assert_eq!(true, dec_xor);
     /// ```
-    pub fn xor(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+    pub fn xor(&mut self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
         // Compute the linear combination for XOR: 2*(ct_left + ct_right) + (0,...,0,1/4)
-        let mut ct_temp = ct_left.0.clone();
-        ct_temp.update_with_add(&ct_right.0);
-        ct_temp.update_with_scalar_mul(Cleartext(2));
-        ct_temp.get_mut_body().0 = ct_temp
-            .get_mut_body()
-            .0
-            .wrapping_add(1_u32 << (32 - PLAINTEXT_LOG_SCALING_FACTOR + 1)); // +1/4
+        self.engine
+            .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
+            .unwrap(); // ct_left + ct_right
+        let cst_add = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
+        self.engine
+            .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst_add)
+            .unwrap(); // + 1/8
+        let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
+        self.engine
+            .fuse_mul_lwe_ciphertext_cleartext(&mut self.buffer_lwe_before_pbs, &cst_mul)
+            .unwrap(); //* 2
 
-        // Create the accumulator:
-        let mut accumulator = GlweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.polynomial_size(),
-            self.bootstrapping_key.glwe_size(),
-        );
-
-        // Fill the body of accumulator with the Test Polynomial:
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .fill_with_element(PLAINTEXT_TRUE); // 1/8
-
-        // Allocate for the output of the PBS:
-        let mut ct_pbs = LweCiphertext::allocate(
-            0_u32,
-            self.bootstrapping_key.output_lwe_dimension().to_lwe_size(),
-        );
-
-        // Compute the programmable bootstrapping with fixed test polynomial:
-        self.bootstrapping_key
-            .bootstrap(&mut ct_pbs, &ct_temp, &accumulator);
-
-        // Compute the key switching to get back to input key:
-        let mut ct_ks = LweCiphertext::allocate(0_u32, ct_left.0.lwe_size());
-        self.key_switching_key
-            .keyswitch_ciphertext(&mut ct_ks, &ct_pbs);
-
-        // Output the result:
-        Ciphertext(ct_ks)
+        // compute the bootstrap and the key switch
+        self.bootstrap_keyswitch()
     }
 }
