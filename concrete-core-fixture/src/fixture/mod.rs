@@ -4,13 +4,19 @@
 //! used to sample / test / benchmark the implementors of any of the `*Engine` traits defined in
 //! `concrete-core`. This logic is always roughly the same and, depending on the use of the fixture,
 //! boils down to:
-//!
-//! + Iterating over a set of parameters:
-//!     - Repeating multiple times: + Generate repetition-level input prototypes. + Sample multiple
-//!       executions: + Generate sample-level input prototypes. + Synthesize actual input entities
-//!       expected by the engine + Execute the engine + Compute raw outcome in a form that can be
-//!       tested + Collect and dispose of the entities + Check that sample outcomes match some
-//!       criteria
+//! ```text
+//! | Iterate over a set of parameters:
+//! | | Repeat multiple times:
+//! | | | Generate repetition-level input prototypes.
+//! | | | Sample multiple executions:
+//! | | | | Generate sample-level input prototypes.
+//! | | | | Synthesize actual input entities expected by the engine
+//! | | | | Execute the engine
+//! | | | | Compute raw outcome in a form that can be tested
+//! | | | | Collect and dispose of the entities
+//! | | | Compute verification criteria
+//! | | | Verify that the repetition sample outcomes match the criteria
+//! ```
 //!
 //! Note that this structure allows the generated data to be used for multiple executions or not.
 //! Prototypes generated at the repetition level will be used for every samples, while prototyped
@@ -49,6 +55,9 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
 
     /// A type containing all the objects existing after the engine got executed.
     type PostExecutionContext;
+
+    /// A type containing the criteria needed to perform the verification of a repetition.
+    type Criteria;
 
     /// A type containing the outcome of an execution, such as it can be analyzed for correctness.
     type Outcome;
@@ -97,8 +106,15 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
         context: Self::PostExecutionContext,
     ) -> Self::Outcome;
 
-    /// A method which verify that the outcomes verify some criterions.
-    fn check_sample_outcomes(parameters: &Self::Parameters, outputs: &[Self::Outcome]) -> bool;
+    /// A method which computes the verification criteria for a repetition.
+    fn compute_criteria(
+        parameters: &Self::Parameters,
+        maker: &mut Maker,
+        repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::Criteria;
+
+    /// A method which verify that the outcomes verify some criteria.
+    fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool;
 
     /// A method which verifies the statistical properties of a sample of engine executions, over
     /// multiple randomly generated raw inputs, over multiple sets of parameters.
@@ -145,11 +161,12 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
         maker: &mut Maker,
         engine: &mut Engine,
         parameters: &Self::Parameters,
-        stable_prototypes: &Self::RepetitionPrototypes,
+        repetition_proto: &Self::RepetitionPrototypes,
         sample_size: SampleSize,
     ) -> bool {
-        let outputs = Self::sample(maker, engine, parameters, stable_prototypes, sample_size);
-        Self::check_sample_outcomes(parameters, outputs.as_slice())
+        let outputs = Self::sample(maker, engine, parameters, repetition_proto, sample_size);
+        let criteria = Self::compute_criteria(parameters, maker, repetition_proto);
+        Self::verify(&criteria, outputs.as_slice())
     }
 
     /// A method which generates a sample of engine execution, for a fixed set of raw inputs and a
@@ -183,9 +200,7 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
 }
 
 mod cleartext_creation;
-
 pub use cleartext_creation::*;
 
 mod lwe_ciphertext_encryption;
-
 pub use lwe_ciphertext_encryption::*;

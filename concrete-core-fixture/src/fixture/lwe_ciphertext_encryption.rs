@@ -44,6 +44,7 @@ where
     );
     type PreExecutionContext = (Plaintext, SecretKey);
     type PostExecutionContext = (Plaintext, SecretKey, Ciphertext);
+    type Criteria = (Variance,);
     type Outcome = (Precision::Raw, Precision::Raw);
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
@@ -143,8 +144,16 @@ where
         )
     }
 
-    fn check_sample_outcomes(parameters: &Self::Parameters, outputs: &[Self::Outcome]) -> bool {
+    fn compute_criteria(
+        parameters: &Self::Parameters,
+        _maker: &mut Maker,
+        _repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::Criteria {
+        (parameters.noise,)
+    }
+
+    fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool {
         let (means, actual): (Vec<_>, Vec<_>) = outputs.iter().cloned().unzip();
-        assert_noise_distribution(&actual, means.as_slice(), parameters.noise)
+        assert_noise_distribution(&actual, means.as_slice(), criteria.0)
     }
 }
