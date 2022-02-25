@@ -384,8 +384,8 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
-          repository: zama-ai/concrete
-          ref: feature/core_c_api
+          repository: zama-ai/concrete_internal
+          ref: compiler_c_api
           path: concrete
           token: ${{ secrets.GH_TOKEN }}
 
