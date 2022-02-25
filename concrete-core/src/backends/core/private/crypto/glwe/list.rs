@@ -1,12 +1,15 @@
 #[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
+use concrete_commons::parameters::{CiphertextCount, GlweDimension, GlweSize, PolynomialSize};
+
+use crate::backends::core::private::crypto::encoding::PlaintextList;
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, tensor_traits, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
 };
+use crate::prelude::numeric::Numeric;
 
 use super::GlweCiphertext;
-use concrete_commons::parameters::{CiphertextCount, GlweDimension, GlweSize, PolynomialSize};
 
 /// A list of ciphertexts encoded with the GLWE scheme.
 #[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
@@ -249,5 +252,39 @@ impl<Cont> GlweList<Cont> {
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
             .map(move |sub| GlweCiphertext::from_container(sub.into_container(), poly_size))
+    }
+
+    pub fn fill_with_trivial_encryption<PlaintextContainer, Scalar>(
+        &mut self,
+        plaintexts: &PlaintextList<PlaintextContainer>,
+    ) where
+        PlaintextList<PlaintextContainer>: AsRefTensor<Element = Scalar>,
+        Self: AsMutTensor<Element = Scalar>,
+        Scalar: Numeric,
+    {
+        debug_assert_eq!(
+            plaintexts.count().0,
+            self.poly_size.0 * self.ciphertext_count().0
+        );
+        let mut ciphertext_iter = self.ciphertext_iter_mut();
+        let mut plaintext_iter = plaintexts.plaintext_iter();
+        for mut ciphertext in ciphertext_iter.next() {
+            let (mut body, mut mask) = ciphertext.get_mut_body_and_mask();
+
+            mask.as_mut_polynomial_list()
+                .polynomial_iter_mut()
+                .for_each(|mut polynomial| {
+                    polynomial
+                        .coefficient_iter_mut()
+                        .for_each(|mask_coeff| *mask_coeff = <Scalar as Numeric>::ZERO)
+                });
+
+            let plaintext = plaintext_iter.next().unwrap();
+            body.as_mut_polynomial()
+                .coefficient_iter_mut()
+                .for_each(|body_coeff: &mut Scalar| {
+                    *body_coeff = plaintext.0;
+                });
+        }
     }
 }

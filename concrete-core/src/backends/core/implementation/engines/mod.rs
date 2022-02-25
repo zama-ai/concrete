@@ -108,6 +108,7 @@ mod glwe_ciphertext_vector_decryption;
 mod glwe_ciphertext_vector_discarding_decryption;
 mod glwe_ciphertext_vector_discarding_encryption;
 mod glwe_ciphertext_vector_encryption;
+mod glwe_ciphertext_vector_trivial_encryption;
 mod glwe_ciphertext_vector_zero_encryption;
 mod glwe_ciphertext_zero_encryption;
 mod glwe_secret_key_creation;

@@ -1,9 +1,10 @@
-use super::engine_error;
-use crate::prelude::PlaintextVectorEntity;
 use concrete_commons::parameters::GlweSize;
 
+use crate::prelude::PlaintextVectorEntity;
 use crate::specification::engines::AbstractEngine;
 use crate::specification::entities::GlweCiphertextEntity;
+
+use super::engine_error;
 
 engine_error! {
     GlweCiphertextTrivialEncryptionError for GlweCiphertextTrivialEncryptionEngine @
