@@ -52,7 +52,7 @@ impl Clone for ClientKey {
         let cks_clone: ClientKey = ClientKey {
             lwe_secret_key: self.lwe_secret_key.clone(),
             glwe_secret_key: self.glwe_secret_key.clone(),
-            parameters: self.parameters.clone(),
+            parameters: self.parameters,
             engine: crate::default_engine(),
         };
         cks_clone
@@ -147,9 +147,9 @@ impl ClientKey {
     /// use concrete_boolean::prelude::*;
     ///
     /// // Generate the client key:
-    /// let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    /// let cks = ClientKey::new(DEFAULT_PARAMETERS);
     /// ```
-    pub fn new(parameter_set: &BooleanParameters) -> ClientKey {
+    pub fn new(parameter_set: BooleanParameters) -> ClientKey {
         // creation of a core-engine
         let mut engine = crate::default_engine();
 
@@ -167,7 +167,7 @@ impl ClientKey {
         let cks: ClientKey = ClientKey {
             lwe_secret_key,
             glwe_secret_key,
-            parameters: (*parameter_set).clone(),
+            parameters: parameter_set,
             engine,
         };
         cks

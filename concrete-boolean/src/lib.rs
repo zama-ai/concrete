@@ -115,7 +115,7 @@ fn default_engine() -> CoreEngine {
 /// ```
 pub fn gen_keys() -> (ClientKey, ServerKey) {
     // generate the client key
-    let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key
     let sks = ServerKey::new(&cks);

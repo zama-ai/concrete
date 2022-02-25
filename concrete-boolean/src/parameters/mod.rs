@@ -26,7 +26,7 @@ use concrete_core::prelude::{
 use serde::{Deserialize, Serialize};
 
 /// A set of cryptographic parameters for homomorphic Boolean circuit evaluation.
-#[derive(Serialize, Clone, Deserialize, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BooleanParameters {
     pub(crate) lwe_dimension: LweDimension,
     pub(crate) glwe_dimension: GlweDimension,

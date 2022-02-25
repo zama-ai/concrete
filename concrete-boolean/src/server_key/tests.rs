@@ -17,7 +17,7 @@ const NB_GATE: usize = 1 << 11;
 /// test encryption and decryption with the LWE secret key
 fn test_encrypt_decrypt_lwe_secret_key() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -70,7 +70,7 @@ fn random_enum_encryption(cks: &mut ClientKey, sks: &mut ServerKey, message: boo
 #[test]
 fn test_and_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -123,7 +123,7 @@ fn test_and_gate() {
 #[test]
 fn test_mux_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -162,7 +162,7 @@ fn test_mux_gate() {
 #[test]
 fn test_nand_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -223,7 +223,7 @@ fn test_nand_gate() {
 #[test]
 fn test_nor_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -276,7 +276,7 @@ fn test_nor_gate() {
 #[test]
 fn test_not_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -303,7 +303,7 @@ fn test_not_gate() {
 #[test]
 fn test_or_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -352,7 +352,7 @@ fn test_or_gate() {
 #[test]
 fn test_xnor_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -413,7 +413,7 @@ fn test_xnor_gate() {
 #[test]
 fn test_xor_gate() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);
@@ -527,7 +527,7 @@ fn random_gate_all(ct_tab: &mut [Ciphertext], bool_tab: &mut [bool], sks: &mut S
 #[test]
 fn test_deep_circuit() {
     // generate the client key set
-    let mut cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    let mut cks = ClientKey::new(DEFAULT_PARAMETERS);
 
     // generate the server key set
     let mut sks = ServerKey::new(&cks);

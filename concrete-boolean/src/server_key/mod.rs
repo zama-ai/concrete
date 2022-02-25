@@ -93,7 +93,7 @@ impl ServerKey {
     /// use concrete_boolean::server_key::ServerKey;
     ///
     /// // Generate the client key:
-    /// let cks = ClientKey::new(&DEFAULT_PARAMETERS);
+    /// let cks = ClientKey::new(DEFAULT_PARAMETERS);
     ///
     /// // Generate the server key:
     /// let sks = ServerKey::new(&cks);

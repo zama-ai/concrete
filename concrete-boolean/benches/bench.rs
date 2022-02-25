@@ -32,7 +32,7 @@ criterion_main!(
     gate_bootstrapping_tfhelib_params
 );
 
-fn and_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn and_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
@@ -43,14 +43,14 @@ fn and_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn and_gate_default(c: &mut Criterion) {
-    and_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    and_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn and_gate_tfhelib(c: &mut Criterion) {
-    and_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    and_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
 
-fn mux_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn mux_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
@@ -62,14 +62,14 @@ fn mux_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn mux_gate_default(c: &mut Criterion) {
-    mux_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    mux_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn mux_gate_tfhelib(c: &mut Criterion) {
-    mux_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    mux_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
 
-fn nand_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn nand_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
@@ -80,14 +80,14 @@ fn nand_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn nand_gate_default(c: &mut Criterion) {
-    nand_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    nand_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn nand_gate_tfhelib(c: &mut Criterion) {
-    nand_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    nand_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
 
-fn nor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn nor_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
@@ -98,14 +98,14 @@ fn nor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn nor_gate_default(c: &mut Criterion) {
-    nor_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    nor_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn nor_gate_tfhelib(c: &mut Criterion) {
-    nor_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    nor_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
 
-fn not_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn not_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct = cks.encrypt(true);
@@ -115,14 +115,14 @@ fn not_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn not_gate_default(c: &mut Criterion) {
-    not_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    not_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn not_gate_tfhelib(c: &mut Criterion) {
-    not_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    not_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
 
-fn or_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn or_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
@@ -133,14 +133,14 @@ fn or_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn or_gate_default(c: &mut Criterion) {
-    or_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    or_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn or_gate_tfhelib(c: &mut Criterion) {
-    or_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    or_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
 
-fn xnor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn xnor_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
@@ -151,14 +151,14 @@ fn xnor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn xnor_gate_default(c: &mut Criterion) {
-    xnor_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    xnor_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn xnor_gate_tfhelib(c: &mut Criterion) {
-    xnor_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    xnor_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
 
-fn xor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
+fn xor_gate(c: &mut Criterion, params: BooleanParameters, option: &str) {
     let mut cks = ClientKey::new(params);
     let mut sks = ServerKey::new(&cks);
     let ct1 = cks.encrypt(true);
@@ -169,9 +169,9 @@ fn xor_gate(c: &mut Criterion, params: &BooleanParameters, option: &str) {
 }
 
 fn xor_gate_default(c: &mut Criterion) {
-    xor_gate(c, &DEFAULT_PARAMETERS, "(default parameters)");
+    xor_gate(c, DEFAULT_PARAMETERS, "(default parameters)");
 }
 
 fn xor_gate_tfhelib(c: &mut Criterion) {
-    xor_gate(c, &TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
+    xor_gate(c, TFHE_LIB_PARAMETERS, "(TFHE-lib parameters)");
 }
