@@ -18,11 +18,10 @@
 //! homomorphically.
 //!
 //! ```rust
-//! extern crate concrete_boolean;
 //! use concrete_boolean::gen_keys;
 //!
 //! // We generate a set of client/server keys, using the default parameters:
-//! let (client_key, server_key) = gen_keys();
+//! let (mut client_key, mut server_key) = gen_keys();
 //!
 //! // We use the client secret key to encrypt two messages:
 //! let ct_1 = client_key.encrypt(true);
@@ -43,6 +42,9 @@
 use crate::client_key::ClientKey;
 use crate::parameters::DEFAULT_PARAMETERS;
 use crate::server_key::ServerKey;
+use concrete_core::prelude::*;
+#[cfg(test)]
+use rand::Rng;
 
 pub mod ciphertext;
 pub mod client_key;
@@ -62,10 +64,10 @@ pub(crate) const PLAINTEXT_FALSE: u32 = 7 << (32 - PLAINTEXT_LOG_SCALING_FACTOR)
 #[cfg(test)]
 pub(crate) fn random_boolean() -> bool {
     // create a random generator
-    let mut generator = concrete_core::math::random::RandomGenerator::new(None);
+    let mut rng = rand::thread_rng();
 
-    // generate a bit
-    let n: u32 = generator.random_uniform_binary();
+    // generate a random bit
+    let n: u32 = (rng.gen::<u32>()) % 2;
 
     // convert it to boolean and return
     n != 0
@@ -75,10 +77,15 @@ pub(crate) fn random_boolean() -> bool {
 #[cfg(test)]
 pub(crate) fn random_integer() -> u32 {
     // create a random generator
-    let mut generator = concrete_core::math::random::RandomGenerator::new(None);
+    let mut rng = rand::thread_rng();
 
-    // generate a bit
-    generator.random_uniform()
+    // generate a random u32
+    rng.gen::<u32>()
+}
+
+/// generate a default core engine
+fn default_engine() -> CoreEngine {
+    CoreEngine::new().unwrap()
 }
 
 /// Generate a couple of client and server keys with the default cryptographic parameters:

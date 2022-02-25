@@ -6,12 +6,9 @@
 use crate::ciphertext::Ciphertext;
 use crate::parameters::BooleanParameters;
 use crate::{PLAINTEXT_FALSE, PLAINTEXT_TRUE};
-use concrete_commons::key_kinds::BinaryKeyKind;
-use concrete_core::crypto::encoding::Plaintext;
-use concrete_core::crypto::lwe::LweCiphertext;
-use concrete_core::crypto::secret::generators::{EncryptionRandomGenerator, SecretRandomGenerator};
-use concrete_core::crypto::secret::{GlweSecretKey, LweSecretKey};
+use concrete_core::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter};
 
 /// A structure containing the client key, which must be kept secret.
 ///
@@ -21,11 +18,45 @@ use serde::{Deserialize, Serialize};
 /// * `glwe_secret_key` - a GLWE secret key, used to generate the bootstrapping keys and key
 /// switching keys.
 /// * `parameters` - the cryptographic parameter set.
-#[derive(Serialize, Clone, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct ClientKey {
-    pub(crate) lwe_secret_key: LweSecretKey<BinaryKeyKind, Vec<u32>>,
-    pub(crate) glwe_secret_key: GlweSecretKey<BinaryKeyKind, Vec<u32>>,
+    pub(crate) lwe_secret_key: LweSecretKey32,
+    pub(crate) glwe_secret_key: GlweSecretKey32,
     pub(crate) parameters: BooleanParameters,
+    #[serde(skip, default = "crate::default_engine")]
+    pub(crate) engine: CoreEngine,
+}
+
+impl PartialEq for ClientKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.parameters == other.parameters
+            && self.lwe_secret_key == other.lwe_secret_key
+            && self.glwe_secret_key == other.glwe_secret_key
+    }
+}
+
+impl Debug for ClientKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ClientKey {{ ")?;
+        write!(f, "lwe_secret_key: {:?}, ", self.lwe_secret_key)?;
+        write!(f, "glwe_secret_key: {:?}, ", self.glwe_secret_key)?;
+        write!(f, "parameters: {:?}, ", self.parameters)?;
+        write!(f, "engine: CoreEngine, ")?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl Clone for ClientKey {
+    fn clone(&self) -> ClientKey {
+        let cks_clone: ClientKey = ClientKey {
+            lwe_secret_key: self.lwe_secret_key.clone(),
+            glwe_secret_key: self.glwe_secret_key.clone(),
+            parameters: self.parameters.clone(),
+            engine: crate::default_engine(),
+        };
+        cks_clone
+    }
 }
 
 impl ClientKey {
@@ -37,7 +68,7 @@ impl ClientKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encryption of one message:
     /// let ct = cks.encrypt(true);
@@ -46,27 +77,22 @@ impl ClientKey {
     /// let dec = cks.decrypt(&ct);
     /// assert_eq!(true, dec);
     /// ```
-    pub fn encrypt(&self, message: bool) -> Ciphertext {
+    pub fn encrypt(&mut self, message: bool) -> Ciphertext {
         // encode the boolean message
-        let plain: Plaintext<u32> = if message {
-            Plaintext(PLAINTEXT_TRUE)
+        let plain: Plaintext32 = if message {
+            self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap()
         } else {
-            Plaintext(PLAINTEXT_FALSE)
+            self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap()
         };
 
-        // instantiate an encryption random generator
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
+        // convert into a variance
+        let var = Variance(self.parameters.lwe_modular_std_dev.get_variance());
 
-        // allocate the ciphertext
-        let mut ct = LweCiphertext::allocate(0_u32, self.parameters.lwe_dimension.to_lwe_size());
-
-        // encrypt the encoded boolean
-        self.lwe_secret_key.encrypt_lwe(
-            &mut ct,
-            &plain,
-            self.parameters.lwe_modular_std_dev,
-            &mut encryption_generator,
-        );
+        // encryption
+        let ct = self
+            .engine
+            .encrypt_lwe_ciphertext(&self.lwe_secret_key, &plain, var)
+            .unwrap();
 
         Ciphertext(ct)
     }
@@ -79,7 +105,7 @@ impl ClientKey {
     /// use concrete_boolean::gen_keys;
     ///
     /// // Generate the client key and the server key:
-    /// let (cks, sks) = gen_keys();
+    /// let (mut cks, mut sks) = gen_keys();
     ///
     /// // Encryption of one message:
     /// let ct = cks.encrypt(true);
@@ -88,15 +114,21 @@ impl ClientKey {
     /// let dec = cks.decrypt(&ct);
     /// assert_eq!(true, dec);
     /// ```
-    pub fn decrypt(&self, ct: &Ciphertext) -> bool {
-        // allocation for the decryption
-        let mut decrypted = Plaintext(0_u32);
-
+    pub fn decrypt(&mut self, ct: &Ciphertext) -> bool {
         // decryption
-        self.lwe_secret_key.decrypt_lwe(&mut decrypted, &ct.0);
+        let decrypted = self
+            .engine
+            .decrypt_lwe_ciphertext(&self.lwe_secret_key, &ct.0)
+            .unwrap();
+
+        // cast as a u32
+        let mut decrypted_u32: u32 = 0;
+        self.engine
+            .discard_retrieve_plaintext(&mut decrypted_u32, &decrypted)
+            .unwrap();
 
         // return
-        decrypted.0 < (1 << 31)
+        decrypted_u32 < (1 << 31)
     }
 
     /// Allocates and generates a client key.
@@ -111,26 +143,25 @@ impl ClientKey {
     /// let cks = ClientKey::new(&DEFAULT_PARAMETERS);
     /// ```
     pub fn new(parameter_set: &BooleanParameters) -> ClientKey {
-        // instantiate a secret random generator
-        let mut secret_generator = SecretRandomGenerator::new(None);
+        // creation of a core-engine
+        let mut engine = crate::default_engine();
 
         // generate the lwe secret key
-        let lwe_secret_key: LweSecretKey<BinaryKeyKind, Vec<u32>> =
-            LweSecretKey::generate_binary(parameter_set.lwe_dimension, &mut secret_generator);
+        let lwe_secret_key: LweSecretKey32 = engine
+            .create_lwe_secret_key(parameter_set.lwe_dimension)
+            .unwrap();
 
         // generate the rlwe secret key
-        let glwe_secret_key: GlweSecretKey<BinaryKeyKind, Vec<u32>> =
-            GlweSecretKey::generate_binary(
-                parameter_set.glwe_dimension,
-                parameter_set.polynomial_size,
-                &mut secret_generator,
-            );
+        let glwe_secret_key: GlweSecretKey32 = engine
+            .create_glwe_secret_key(parameter_set.glwe_dimension, parameter_set.polynomial_size)
+            .unwrap();
 
         // pack the keys in the client key set
         let cks: ClientKey = ClientKey {
             lwe_secret_key,
             glwe_secret_key,
             parameters: (*parameter_set).clone(),
+            engine,
         };
         cks
     }
