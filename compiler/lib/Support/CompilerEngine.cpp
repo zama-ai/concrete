@@ -542,9 +542,11 @@ llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
     out << "  static const std::string name = \"" << params.functionName
         << "\";\n";
     out << "\n";
-    out << "  static outcome::checked<extract_t, StringError>\n";
+    out << "  static outcome::checked<" << params.functionName
+        << "_t, StringError>\n";
     out << "  load(std::string outputLib)\n";
-    out << "  { return extract_t::load(name, outputLib); }\n";
+    out << "  { return " << params.functionName
+        << "_t::load(name, outputLib); }\n";
     out << "} // namespace " << params.functionName << "\n";
   }
   out << "\n";
