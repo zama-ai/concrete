@@ -26,6 +26,14 @@ using concretelang::clientlib::tensor2_out;
 using concretelang::clientlib::tensor3_out;
 
 std::vector<uint8_t>
+values_3bits() {
+  return {0, 1, 2, 5, 7};
+}
+std::vector<uint8_t>
+values_6bits() {
+  return {0, 1, 2, 13, 22, 59, 62, 63};
+}
+std::vector<uint8_t>
 values_7bits() {
   return {0, 1, 2, 63, 64, 65, 125, 126};
 }
@@ -363,4 +371,24 @@ func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !
   EXPECT_EQ(
     fileContent(THIS_TEST_DIRECTORY + "/call_2t_1s_with_header-client.h.generated"),
     fileContent(OUT_DIRECTORY + "/call_2t_1s_with_header-client.h"));
+}
+
+TEST(CompiledModule, call_2s_1s_lookup_table) {
+  std::string source = R"(
+func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<3>) -> !FHE.eint<6> {
+    %tlu_7 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]> : tensor<64xi64>
+    %tlu_3 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7]> : tensor<8xi64>
+    %a = "FHE.apply_lookup_table"(%arg0, %tlu_7): (!FHE.eint<6>, tensor<64xi64>) -> (!FHE.eint<6>)
+    %b = "FHE.apply_lookup_table"(%arg1, %tlu_3): (!FHE.eint<3>, tensor<8xi64>) -> (!FHE.eint<6>)
+    %a_plus_b = "FHE.add_eint"(%a, %b): (!FHE.eint<6>, !FHE.eint<6>) -> (!FHE.eint<6>)
+    return %a_plus_b: !FHE.eint<6>
+}
+)";
+  std::string outputLib = outputLibFromThis(this->test_info_);
+  auto compiled = compile(outputLib, source);
+  auto lambda = load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
+  for(auto a: values_6bits()) for(auto b: values_3bits()) {
+    auto res = lambda.call(a, b);
+    ASSERT_EQ_OUTCOME(res, a + b);
+  }
 }
