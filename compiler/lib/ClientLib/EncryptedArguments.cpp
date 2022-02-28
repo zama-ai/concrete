@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
-#include "concretelang/ClientLib/EncryptedArgs.h"
+#include "concretelang/ClientLib/EncryptedArguments.h"
 #include "concretelang/ClientLib/PublicArguments.h"
 
 namespace concretelang {
@@ -11,20 +11,23 @@ namespace clientlib {
 
 using StringError = concretelang::error::StringError;
 
-EncryptedArgs::~EncryptedArgs() {
-  // There is no explicit allocation
-  // All buffers are owned by ciphertextBuffers
+outcome::checked<std::unique_ptr<PublicArguments>, StringError>
+EncryptedArguments::exportPublicArguments(ClientParameters clientParameters,
+                                          RuntimeContext runtimeContext) {
+  // On client side the runtimeContext is hold by the KeySet
+  bool clearContext = false;
+  return std::make_unique<PublicArguments>(
+      clientParameters, runtimeContext, clearContext, std::move(preparedArgs),
+      std::move(ciphertextBuffers));
 }
 
-EncryptedArgs::EncryptedArgs() : currentPos(0) {}
-
 outcome::checked<void, StringError>
-EncryptedArgs::pushArg(uint8_t arg, std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::pushArg(uint8_t arg, std::shared_ptr<KeySet> keySet) {
   return pushArg((uint64_t)arg, keySet);
 }
 
 outcome::checked<void, StringError>
-EncryptedArgs::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
   // TODO: NON ENCRYPTED
   OUTCOME_TRYV(checkPushTooManyArgs(keySet));
   auto pos = currentPos;
@@ -65,14 +68,15 @@ EncryptedArgs::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
 }
 
 outcome::checked<void, StringError>
-EncryptedArgs::pushArg(std::vector<uint8_t> arg,
-                       std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::pushArg(std::vector<uint8_t> arg,
+                            std::shared_ptr<KeySet> keySet) {
   return pushArg(8, (void *)arg.data(), {(int64_t)arg.size()}, keySet);
 }
 
 outcome::checked<void, StringError>
-EncryptedArgs::pushArg(size_t width, void *data, llvm::ArrayRef<int64_t> shape,
-                       std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::pushArg(size_t width, void *data,
+                            llvm::ArrayRef<int64_t> shape,
+                            std::shared_ptr<KeySet> keySet) {
   OUTCOME_TRYV(checkPushTooManyArgs(keySet));
   auto pos = currentPos;
   CircuitGate input = keySet->inputGate(pos);
@@ -148,7 +152,7 @@ EncryptedArgs::pushArg(size_t width, void *data, llvm::ArrayRef<int64_t> shape,
 }
 
 outcome::checked<void, StringError>
-EncryptedArgs::checkPushTooManyArgs(std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::checkPushTooManyArgs(std::shared_ptr<KeySet> keySet) {
   size_t arity = keySet->numInputs();
   if (currentPos < arity) {
     return outcome::success();
@@ -158,7 +162,7 @@ EncryptedArgs::checkPushTooManyArgs(std::shared_ptr<KeySet> keySet) {
 }
 
 outcome::checked<void, StringError>
-EncryptedArgs::checkAllArgs(std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::checkAllArgs(std::shared_ptr<KeySet> keySet) {
   size_t arity = keySet->numInputs();
   if (currentPos == arity) {
     return outcome::success();
@@ -166,15 +170,6 @@ EncryptedArgs::checkAllArgs(std::shared_ptr<KeySet> keySet) {
   return StringError("function expects ")
          << arity << " arguments but has been called with " << currentPos
          << " arguments";
-}
-
-outcome::checked<PublicArguments, StringError>
-EncryptedArgs::asPublicArguments(ClientParameters clientParameters,
-                                 RuntimeContext runtimeContext) {
-  // On client side the runtimeContext is hold by the KeySet
-  bool clearContext = false;
-  return PublicArguments(clientParameters, runtimeContext, clearContext,
-                         std::move(preparedArgs), std::move(ciphertextBuffers));
 }
 
 } // namespace clientlib

@@ -14,7 +14,7 @@ add_mlir_library(
   ConcretelangClientLib
   ClientLambda.cpp
   ClientParameters.cpp
-  EncryptedArgs.cpp
+  EncryptedArguments.cpp
   KeySet.cpp
   KeySetCache.cpp
   PublicArguments.cpp

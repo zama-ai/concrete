@@ -63,41 +63,17 @@ public:
         keySet(keySet) {}
 
   outcome::checked<Result, StringError> call(Args... args) {
-    // client
-    auto BINARY = std::ios::binary;
-    std::string message;
-    {
-      // client
-      std::ostringstream clientOuput(BINARY);
-      OUTCOME_TRYV(this->serializeCall(args..., keySet, clientOuput));
-      if (clientOuput.fail()) {
-        return StringError("Error on clientOuput");
-      }
-      message = clientOuput.str();
-    }
-    {
-      // server
-      std::istringstream serverInput(message, BINARY);
-      freeStringMemory(message);
-      assert(serverInput.tellg() == 0);
-      std::ostringstream serverOutput(BINARY);
-      OUTCOME_TRYV(serverLambda.read_call_write(serverInput, serverOutput));
-      if (serverInput.fail()) {
-        return StringError("Error on serverInput");
-      }
-      if (serverOutput.fail()) {
-        return StringError("Error on serverOutput");
-      }
-      message = serverOutput.str();
-    }
-    {
-      // client
-      std::istringstream clientInput(message, BINARY);
-      freeStringMemory(message);
-      OUTCOME_TRY(auto result, this->decryptReturned(*keySet, clientInput));
-      assert(clientInput.good());
-      return result;
-    }
+    // client argument encryption
+    OUTCOME_TRY(auto encryptedArgs,
+                clientlib::EncryptedArguments::create(keySet, args...));
+    OUTCOME_TRY(auto publicArgument,
+                encryptedArgs->exportPublicArguments(this->clientParameters,
+                                                     keySet->runtimeContext()));
+    // server function call
+    auto publicResult = serverLambda.call(*publicArgument);
+
+    // client result decryption
+    return this->decryptResult(*keySet, *publicResult);
   }
 
 private:

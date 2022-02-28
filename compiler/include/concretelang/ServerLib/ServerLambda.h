@@ -27,17 +27,23 @@ encrypted_scalars_and_sizes_t encrypted_scalars_and_sizes_t_from_MemRef(
     size_t rank, encrypted_scalars_t allocated, encrypted_scalars_t aligned,
     size_t offset, size_t *sizes, size_t *strides);
 
+/// ServerLambda is a utility class that allows to call a function of a
+/// compilation result.
 class ServerLambda {
 
 public:
+  /// Load the symbol `funcName` of the compilation result located at the path
+  /// `outputLib`.
   static outcome::checked<ServerLambda, concretelang::error::StringError>
   load(std::string funcName, std::string outputLib);
 
+  /// Load the symbol `funcName` of the dynamic loaded library
   static outcome::checked<ServerLambda, concretelang::error::StringError>
   loadFromModule(std::shared_ptr<DynamicModule> module, std::string funcName);
 
-  outcome::checked<void, concretelang::error::StringError>
-  read_call_write(std::istream &istream, std::ostream &ostream);
+  /// Call the ServerLambda with public arguments.
+  std::unique_ptr<clientlib::PublicResult>
+  call(clientlib::PublicArguments &args);
 
 protected:
   ClientParameters clientParameters;

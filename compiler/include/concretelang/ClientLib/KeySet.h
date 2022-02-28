@@ -29,6 +29,7 @@ class KeySet {
 public:
   KeySet();
   ~KeySet();
+  KeySet(KeySet &other) = delete;
 
   // allocate a KeySet according the ClientParameters.
   static outcome::checked<std::unique_ptr<KeySet>, StringError>

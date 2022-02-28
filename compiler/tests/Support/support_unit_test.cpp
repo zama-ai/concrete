@@ -2,7 +2,7 @@
 
 #include "../unittest/end_to_end_jit_test.h"
 #include "concretelang/ClientLib/ClientParameters.h"
-#include "concretelang/ClientLib/EncryptedArgs.h"
+#include "concretelang/ClientLib/EncryptedArguments.h"
 
 namespace clientlib = concretelang::clientlib;
 

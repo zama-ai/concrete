@@ -29,18 +29,6 @@ PublicArguments::PublicArguments(
   ciphertextBuffers = std::move(ciphertextBuffers_);
 }
 
-PublicArguments::PublicArguments(PublicArguments &&other) {
-  clientParameters = other.clientParameters;
-  runtimeContext = other.runtimeContext;
-  runtimeContext.bsk = std::move(other.runtimeContext.bsk);
-  clearRuntimeContext = other.clearRuntimeContext;
-  preparedArgs = std::move(other.preparedArgs);
-  ciphertextBuffers = std::move(other.ciphertextBuffers);
-  // transfer ownership
-  other.clearRuntimeContext = false;
-  other.runtimeContext.ksk = nullptr;
-}
-
 PublicArguments::~PublicArguments() {
   if (!clearRuntimeContext) {
     return;
@@ -68,7 +56,7 @@ PublicArguments::serialize(std::ostream &ostream) {
     size_t rank = gate.shape.dimensions.size();
     if (!gate.encryption.hasValue()) {
       return StringError("PublicArguments::serialize: Clear arguments "
-                         "are not supported. Argument ")
+                         "are not yet supported. Argument ")
              << iGate;
     }
     /*auto allocated = */ preparedArgs[iPreparedArgs++];
@@ -140,13 +128,26 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
   }
   std::vector<void *> empty;
   std::vector<encrypted_scalars_and_sizes_t> emptyBuffers;
-  // On server side the PublicArguments is responsible for the context
-  auto clearRuntimeContext = true;
   auto sArguments = std::make_shared<PublicArguments>(
-      clientParameters, runtimeContext, clearRuntimeContext, std::move(empty),
+      clientParameters, runtimeContext, true, std::move(empty),
       std::move(emptyBuffers));
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));
   return sArguments;
+}
+
+outcome::checked<std::vector<decrypted_scalar_t>, StringError>
+PublicResult::decryptVector(KeySet &keySet, size_t pos) {
+  auto lweSize =
+      clientParameters.lweSecretKeyParam(clientParameters.outputs[pos])
+          .lweSize();
+
+  auto buffer = buffers[pos];
+  decrypted_tensor_1_t decryptedValues(buffer.length() / lweSize);
+  for (size_t i = 0; i < decryptedValues.size(); i++) {
+    auto ciphertext = &buffer.values[i * lweSize];
+    OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertext, decryptedValues[i]));
+  }
+  return decryptedValues;
 }
 
 } // namespace clientlib

@@ -9,7 +9,7 @@
 #include <cassert>
 
 #include "concretelang/ClientLib/ClientParameters.h"
-#include "concretelang/ClientLib/EncryptedArgs.h"
+#include "concretelang/ClientLib/EncryptedArguments.h"
 #include "concretelang/ClientLib/KeySet.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/ClientLib/PublicArguments.h"
@@ -33,15 +33,10 @@ class ClientLambda {
   /// Low-level class to create the client side view of a FHE function.
 public:
   virtual ~ClientLambda() = default;
-  static outcome::checked<ClientLambda, StringError>
-  /// Construct a ClientLambda from a ClientParameter file.
-  load(std::string funcName, std::string jsonPath);
 
-  /// Emit a call to the given ostream, no meta-date are include, so it's the
-  /// responsability of the the caller/callee to verify the add/verify the
-  /// function to be called.
-  outcome::checked<void, StringError>
-  untypedSerializeCall(PublicArguments &publicArguments, std::ostream &ostream);
+  /// Construct a ClientLambda from a ClientParameter file.
+  static outcome::checked<ClientLambda, StringError> load(std::string funcName,
+                                                          std::string jsonPath);
 
   /// Generate or get from cache a KeySet suitable for this ClientLambda
   outcome::checked<std::unique_ptr<KeySet>, StringError>
@@ -49,19 +44,19 @@ public:
          uint64_t seed_lsb);
 
   outcome::checked<std::vector<decrypted_scalar_t>, StringError>
-  decryptReturnedValues(KeySet &keySet, std::istream &istream);
+  decryptReturnedValues(KeySet &keySet, PublicResult &result);
 
   outcome::checked<decrypted_scalar_t, StringError>
-  decryptReturnedScalar(KeySet &keySet, std::istream &istream);
+  decryptReturnedScalar(KeySet &keySet, PublicResult &result);
 
   outcome::checked<decrypted_tensor_1_t, StringError>
-  decryptReturnedTensor1(KeySet &keySet, std::istream &istream);
+  decryptReturnedTensor1(KeySet &keySet, PublicResult &result);
 
   outcome::checked<decrypted_tensor_2_t, StringError>
-  decryptReturnedTensor2(KeySet &keySet, std::istream &istream);
+  decryptReturnedTensor2(KeySet &keySet, PublicResult &result);
 
   outcome::checked<decrypted_tensor_3_t, StringError>
-  decryptReturnedTensor3(KeySet &keySet, std::istream &istream);
+  decryptReturnedTensor3(KeySet &keySet, PublicResult &result);
 
 public:
   ClientParameters clientParameters;
@@ -70,7 +65,7 @@ public:
 template <typename Result>
 outcome::checked<Result, StringError>
 topLevelDecryptResult(ClientLambda &lambda, KeySet &keySet,
-                      std::istream &istream);
+                      PublicResult &result);
 
 template <typename Result, typename... Args>
 class TypedClientLambda : public ClientLambda {
@@ -90,19 +85,21 @@ public:
   serializeCall(Args... args, std::shared_ptr<KeySet> keySet,
                 std::ostream &ostream) {
     OUTCOME_TRY(auto publicArguments, publicArguments(args..., keySet));
-    return ClientLambda::untypedSerializeCall(publicArguments, ostream);
+    return publicArguments->serialize(ostream);
   }
 
-  outcome::checked<PublicArguments, StringError>
+  outcome::checked<std::unique_ptr<PublicArguments>, StringError>
   publicArguments(Args... args, std::shared_ptr<KeySet> keySet) {
-    OUTCOME_TRY(auto clientArguments, EncryptedArgs::create(keySet, args...));
-    return clientArguments->asPublicArguments(clientParameters,
-                                              keySet->runtimeContext());
+    OUTCOME_TRY(auto clientArguments,
+                EncryptedArguments::create(keySet, args...));
+
+    return clientArguments->exportPublicArguments(clientParameters,
+                                                  keySet->runtimeContext());
   }
 
-  outcome::checked<Result, StringError> decryptReturned(KeySet &keySet,
-                                                        std::istream &istream) {
-    return topLevelDecryptResult<Result>((*this), keySet, istream);
+  outcome::checked<Result, StringError> decryptResult(KeySet &keySet,
+                                                      PublicResult &result) {
+    return topLevelDecryptResult<Result>((*this), keySet, result);
   }
 
   TypedClientLambda(ClientLambda &lambda) : ClientLambda(lambda) {
@@ -115,25 +112,25 @@ protected:
   template <typename Result_>
   friend outcome::checked<Result_, StringError>
   topLevelDecryptResult(ClientLambda &lambda, KeySet &keySet,
-                        std::istream &istream);
+                        PublicResult &result);
 };
 
 template <>
 outcome::checked<decrypted_scalar_t, StringError>
 topLevelDecryptResult<decrypted_scalar_t>(ClientLambda &lambda, KeySet &keySet,
-                                          std::istream &istream);
+                                          PublicResult &result);
 
 template <>
 outcome::checked<decrypted_tensor_1_t, StringError>
 topLevelDecryptResult<decrypted_tensor_1_t>(ClientLambda &lambda,
                                             KeySet &keySet,
-                                            std::istream &istream);
+                                            PublicResult &result);
 
 template <>
 outcome::checked<decrypted_tensor_2_t, StringError>
 topLevelDecryptResult<decrypted_tensor_2_t>(ClientLambda &lambda,
                                             KeySet &keySet,
-                                            std::istream &istream);
+                                            PublicResult &result);
 
 } // namespace clientlib
 } // namespace concretelang

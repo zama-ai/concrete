@@ -73,10 +73,11 @@ func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   ASSERT_TRUE(maybeKeySet.has_value());
   std::shared_ptr<KeySet> keySet = std::move(maybeKeySet.value());
   auto maybePublicArguments = lambda.publicArguments(1, keySet);
+
   ASSERT_TRUE(maybePublicArguments.has_value());
   auto publicArguments = std::move(maybePublicArguments.value());
   std::ostringstream osstream(std::ios::binary);
-  EXPECT_TRUE(lambda.untypedSerializeCall(publicArguments, osstream));
+  ASSERT_TRUE(publicArguments->serialize(osstream).has_value());
   EXPECT_TRUE(osstream.good());
   // Direct call without intermediate
   EXPECT_TRUE(lambda.serializeCall(1, keySet, osstream));
@@ -119,6 +120,7 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
 }
 
 TEST(CompiledModule, call_2s_1s) {
+
   std::string source = R"(
 func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)

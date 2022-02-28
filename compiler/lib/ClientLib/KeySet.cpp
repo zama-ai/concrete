@@ -230,7 +230,6 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
 
 outcome::checked<void, StringError>
 KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
-
   if (argPos >= outputs.size()) {
     return StringError("decrypt_lwe: position of argument is too high");
   }

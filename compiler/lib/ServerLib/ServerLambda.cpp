@@ -123,37 +123,20 @@ ServerLambda::load(std::string funcName, std::string outputLib) {
 
 encrypted_scalars_and_sizes_t dynamicCall(void *(*func)(void *...),
                                           std::vector<void *> &preparedArgs,
-                                          CircuitGate &output,
-                                          std::ostream &ostream) {
+                                          CircuitGate &output) {
   size_t rank = output.shape.dimensions.size();
   return multi_arity_call_dynamic_rank(func, preparedArgs, rank);
 }
 
-outcome::checked<void, StringError>
-ServerLambda::read_call_write(std::istream &istream, std::ostream &ostream) {
-  OUTCOME_TRY(auto argumentsPtr,
-              PublicArguments::unserialize(clientParameters, istream));
-  assert(istream.good());
-
-  PublicArguments &arguments = *argumentsPtr;
-  // The runtime context is always the last argument list
-  arguments.preparedArgs.push_back((void *)&arguments.runtimeContext);
-  auto values_and_sizes = dynamicCall(this->func, arguments.preparedArgs,
-                                      clientParameters.outputs[0], ostream);
-  auto shape = clientParameters.outputs[0].shape;
-  size_t rank = shape.dimensions.size();
-  for (size_t dim = 0; dim < rank; dim++) {
-    if (values_and_sizes.sizes[dim] != (size_t)shape.dimensions[dim]) {
-      return StringError("Dimension mismatch on dim ")
-             << dim << " actual: " << values_and_sizes.sizes[dim]
-             << " vs expected: " << shape.dimensions[dim] << "\n";
-    }
-  }
-  serializeEncryptedValues(values_and_sizes, ostream);
-  if (ostream.fail()) {
-    return StringError("Cannot write result");
-  }
-  return outcome::success();
+std::unique_ptr<clientlib::PublicResult>
+ServerLambda::call(PublicArguments &args) {
+  std::vector<void *> preparedArgs(args.preparedArgs.begin(),
+                                   args.preparedArgs.end());
+  preparedArgs.push_back((void *)&args.runtimeContext);
+  return clientlib::PublicResult::fromBuffers(
+      clientParameters,
+      {dynamicCall(this->func, preparedArgs, clientParameters.outputs[0])});
+  ;
 }
 
 } // namespace serverlib
