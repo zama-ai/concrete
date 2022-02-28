@@ -80,6 +80,7 @@ test! {
     (LweCiphertextPlaintextFusingAdditionFixture, (Plaintext, LweCiphertext)),
     (LweCiphertextPlaintextDiscardingSubtractionFixture, (LweCiphertext, Plaintext, LweCiphertext)),
     (LweCiphertextPlaintextFusingSubtractionFixture, (Plaintext, LweCiphertext)),
+    (LweCiphertextDiscardingBootstrapFixture, (FourierLweBootstrapKey, GlweCiphertext, LweCiphertext, LweCiphertext)),
     (PlaintextCreationFixture, (Plaintext)),
     (PlaintextDiscardingRetrievalFixture, (Plaintext)),
     (PlaintextRetrievalFixture, (Plaintext)),

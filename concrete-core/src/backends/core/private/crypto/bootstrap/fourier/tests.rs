@@ -29,121 +29,6 @@ use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::test_tools::{assert_delta_std_dev, assert_noise_distribution};
 use concrete_commons::key_kinds::BinaryKeyKind;
 
-fn test_bootstrap_noise<T: UnsignedTorus>() {
-    //! test that the bootstrapping noise matches the theoretical noise
-    //! This test is design to remove the impact of the drift, we only
-    //! check the noise added by the external products
-
-    for size in &[512, 1024, 2048] {
-        // fix a set of parameters
-        let nb_test: usize = 2;
-        let polynomial_size = PolynomialSize(*size);
-        let rlwe_dimension = GlweDimension(1);
-        let lwe_dimension = LweDimension(630);
-        let level = DecompositionLevelCount(3);
-        let base_log = DecompositionBaseLog(7);
-        let std = LogStandardDev::from_log_standard_dev(-29.);
-        let mut secret_generator = SecretRandomGenerator::new(None);
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
-
-        // allocate message vectors
-        let mut msg = Tensor::allocate(T::ZERO, nb_test);
-        let mut new_msg = Tensor::allocate(T::ZERO, nb_test);
-
-        // launch nb_test tests
-        for i in 0..nb_test {
-            // allocate secret keys
-            let rlwe_sk = GlweSecretKey::generate_binary(
-                rlwe_dimension,
-                polynomial_size,
-                &mut secret_generator,
-            );
-            let lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
-
-            // allocation and generation of the key in coef domain:
-            let mut coef_bsk = StandardBootstrapKey::allocate(
-                T::ZERO,
-                rlwe_dimension.to_glwe_size(),
-                polynomial_size,
-                level,
-                base_log,
-                lwe_dimension,
-            );
-            coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut encryption_generator);
-
-            // allocation for the bootstrapping key
-            let mut fourier_bsk = FourierBootstrapKey::allocate(
-                Complex64::new(0., 0.),
-                rlwe_dimension.to_glwe_size(),
-                polynomial_size,
-                level,
-                base_log,
-                lwe_dimension,
-            );
-            let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
-            fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
-
-            // Create a fix message (encoded in the most significant bit of the torus)
-            // put a 3 bit message XXX here 0XXX000...000 in the torus bit representation
-            let mut random_generator = RandomGenerator::new(None);
-            let random: T = random_generator.random_uniform();
-            let m0 = Plaintext(random & (((T::ONE << 3) - T::ONE) << (T::BITS - 4)));
-            println!("{:?}", m0.0);
-
-            // allocate ciphertext vectors
-            let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
-            let mut lwe_out =
-                LweCiphertext::allocate(T::ZERO, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
-            lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut encryption_generator);
-            // Here we define a LUT that takes a message as an input
-            // and outputs:
-            // -1/8 if the most significant bit of the message is one
-            // 1/8 otherwise
-            let cst = T::ONE << (T::BITS - 3);
-            msg.as_mut_slice()[i] = cst;
-
-            // create a constant accumulator
-            let mut accumulator =
-                GlweCiphertext::allocate(T::ZERO, polynomial_size, rlwe_dimension.to_glwe_size());
-            accumulator
-                .get_mut_body()
-                .as_mut_tensor()
-                .fill_with_element(cst);
-
-            let mut buffers =
-                FourierBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
-            fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator, &mut buffers);
-
-            // Initialize a m1 message
-            let mut m1 = Plaintext(T::ZERO);
-
-            // now the lwe is decrypted using a flatten of the rlwe encryption key
-            let flattened_key = LweSecretKey::binary_from_container(rlwe_sk.as_tensor().as_slice());
-            flattened_key.decrypt_lwe(&mut m1, &lwe_out);
-            // store the decryption of the bootstrapped ciphertext
-            new_msg.as_mut_slice()[i] = m1.0;
-        }
-
-        // call the NPE to find the theoretical amount of noise after the bootstrap
-        let output_variance = npe::estimate_pbs_noise::<T, Variance, BinaryKeyKind>(
-            lwe_dimension,
-            polynomial_size,
-            rlwe_dimension,
-            base_log,
-            level,
-            Variance(f64::powi(std.get_standard_dev(), 2)),
-        );
-        // if we have enough test, we check that the obtain distribution is the same
-        // as the theoretical one
-        // if not, it only tests if the noise remains in the 99% confidence interval
-        if nb_test < 7 {
-            assert_delta_std_dev(&msg, &new_msg, output_variance);
-        } else {
-            assert_noise_distribution(&msg, &new_msg, output_variance);
-        }
-    }
-}
-
 fn test_external_product_generic<T: UnsignedTorus>() {
     let n_tests = 10;
     for _n in 0..n_tests {
@@ -660,16 +545,6 @@ pub fn test_bootstrap_drift_u32() {
 #[test]
 pub fn test_bootstrap_drift_u64() {
     test_bootstrap_drift::<u64>();
-}
-
-#[test]
-pub fn test_bootstrap_noise_u32() {
-    test_bootstrap_noise::<u32>()
-}
-
-#[test]
-pub fn test_bootstrap_noise_u64() {
-    test_bootstrap_noise::<u64>()
 }
 
 #[test]
