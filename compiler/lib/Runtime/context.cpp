@@ -31,6 +31,9 @@ get_bootstrap_key(mlir::concretelang::RuntimeContext *context) {
   std::string threadName = hpx::get_thread_name();
   auto bskIt = context->bsk.find(threadName);
   if (bskIt == context->bsk.end()) {
+    assert((bskIt = context->bsk.find(RuntimeContext::BASE_CONTEXT_BSK)) !=
+               context->bsk.end() &&
+           bskIt->second && "No BASE_CONTEXT_BSK registered in context.");
     bskIt = context->bsk
                 .insert(std::pair<std::string, LweBootstrapKey_u64 *>(
                     threadName,
