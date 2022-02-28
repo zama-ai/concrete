@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use concrete_commons::dispersion::DispersionParameter;
 use concrete_commons::key_kinds::BinaryKeyKind;
-use concrete_commons::numeric::SignedInteger;
 use concrete_commons::parameters::{
     CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, LweDimension, LweSize,
 };
@@ -12,7 +11,7 @@ use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList}
 use crate::backends::core::private::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::backends::core::private::crypto::secret::LweSecretKey;
 use crate::backends::core::private::math::decomposition::{
-    DecompositionLevel, DecompositionTerm, SignedDecomposer,
+    torus_small_sign_decompose, DecompositionLevel, DecompositionTerm, SignedDecomposer,
 };
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, ck_dim_eq, tensor_traits, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
@@ -716,28 +715,5 @@ impl<Cont> LweKeyBitDecomposition<Cont> {
             tensor: self.tensor,
             lwe_size: self.lwe_size,
         }
-    }
-}
-
-fn torus_small_sign_decompose<Scalar>(res: &mut [Scalar], val: Scalar, base_log: usize)
-where
-    Scalar: UnsignedTorus,
-    Scalar::Signed: SignedInteger,
-{
-    let mut tmp: Scalar;
-    let mut carry = Scalar::ZERO;
-    let mut previous_carry: Scalar;
-    let block_bit_mask: Scalar = (Scalar::ONE << base_log) - Scalar::ONE;
-    let msb_block_mask: Scalar = Scalar::ONE << (base_log - 1);
-
-    // compute the decomposition from LSB to MSB (because of the carry)
-    for i in (0..res.len()).rev() {
-        previous_carry = carry;
-        tmp = (val >> (Scalar::BITS - base_log * (i + 1))) & block_bit_mask;
-        carry = tmp & msb_block_mask;
-        tmp = tmp.wrapping_add(previous_carry);
-        carry |= tmp & msb_block_mask; // 0000...0001000 or 0000...0000000
-        res[i] = ((tmp.into_signed()) - ((carry << 1).into_signed())).into_unsigned();
-        carry >>= base_log - 1; // 000...0001 or 000...0000
     }
 }

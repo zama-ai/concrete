@@ -6,8 +6,8 @@ use crate::backends::core::implementation::entities::{
     GlweCiphertext32, GlweCiphertext64, GlweCiphertextVector32, GlweCiphertextVector64,
     GlweSecretKey32, GlweSecretKey64, LweBootstrapKey32, LweBootstrapKey64, LweCiphertext32,
     LweCiphertext64, LweCiphertextVector32, LweCiphertextVector64, LweKeyswitchKey32,
-    LweKeyswitchKey64, LweSecretKey32, LweSecretKey64, Plaintext32, Plaintext64, PlaintextVector32,
-    PlaintextVector64,
+    LweKeyswitchKey64, LweSecretKey32, LweSecretKey64, PackingKeyswitchKey32,
+    PackingKeyswitchKey64, Plaintext32, Plaintext64, PlaintextVector32, PlaintextVector64,
 };
 use crate::backends::core::private::math::tensor::AsMutTensor;
 use crate::specification::engines::{DestructionEngine, DestructionError};
@@ -394,4 +394,28 @@ impl DestructionEngine<GlweSecretKey64> for CoreEngine {
         let mut entity = entity;
         entity.0.as_mut_tensor().fill_with_element(0u64);
     }
+}
+
+impl DestructionEngine<PackingKeyswitchKey32> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: PackingKeyswitchKey32,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: PackingKeyswitchKey32) {}
+}
+
+impl DestructionEngine<PackingKeyswitchKey64> for CoreEngine {
+    fn destroy(
+        &mut self,
+        entity: PackingKeyswitchKey64,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(entity) };
+        Ok(())
+    }
+
+    unsafe fn destroy_unchecked(&mut self, _entity: PackingKeyswitchKey64) {}
 }
