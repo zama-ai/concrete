@@ -139,20 +139,21 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
         repetitions: Repetitions,
         sample_size: SampleSize,
     ) -> bool {
-        (0..repetitions.0)
-            .map(|_| {
-                let repetition_prototypes =
-                    Self::generate_random_repetition_prototypes(parameters, maker);
-                Self::test(
-                    maker,
-                    engine,
-                    parameters,
-                    &repetition_prototypes,
-                    sample_size,
-                )
-            })
-            .reduce(BitAnd::bitand)
-            .expect("At least one repetition is needed.")
+        for _ in 0..repetitions.0 {
+            let repetition_prototypes =
+                Self::generate_random_repetition_prototypes(parameters, maker);
+            let output = Self::test(
+                maker,
+                engine,
+                parameters,
+                &repetition_prototypes,
+                sample_size,
+            );
+            if !output {
+                return false;
+            }
+        }
+        true
     }
 
     /// A method which verifies the statistical properties of a sample of engine execution, for a
@@ -222,3 +223,6 @@ pub use lwe_ciphertext_vector_discarding_affine_transformation::*;
 
 mod lwe_ciphertext_discarding_keyswitch;
 pub use lwe_ciphertext_discarding_keyswitch::*;
+
+mod lwe_ciphertext_discarding_bootstrap;
+pub use lwe_ciphertext_discarding_bootstrap::*;

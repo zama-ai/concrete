@@ -14,6 +14,8 @@ pub trait RawUnsignedIntegers: UnsignedInteger + CastInto<f64> + Debug {
     fn uniform_vec(size: usize) -> Vec<Self>;
     fn uniform_n_msb(n: usize) -> Self;
     fn uniform_n_msb_vec(n: usize, size: usize) -> Vec<Self>;
+    fn uniform_n_msb_padding(padding: usize, n: usize) -> Self;
+    fn uniform_n_msb_padding_vec(padding: usize, n: usize, size: usize) -> Vec<Self>;
     fn uniform_between(range: Range<usize>) -> Self;
     fn uniform_between_vec(range: Range<usize>, size: usize) -> Vec<Self>;
     fn uniform_zero_centered(width: usize) -> Self;
@@ -50,6 +52,20 @@ impl RawUnsignedIntegers for u32 {
         generator
             .random_uniform_n_msb_tensor(size, n)
             .into_container()
+    }
+    fn uniform_n_msb_padding(padding: usize, n: usize) -> Self {
+        let mut generator = RandomGenerator::new(None);
+        let tmp: Self = generator.random_uniform();
+        let mask = ((1u32 << n) - 1) << (32 - padding - n);
+        tmp & mask
+    }
+
+    fn uniform_n_msb_padding_vec(padding: usize, n: usize, size: usize) -> Vec<Self> {
+        let mut generator = RandomGenerator::new(None);
+        let mut output = generator.random_uniform_tensor(size).into_container();
+        let mask = ((1u32 << n) - 1) << (32 - padding - n);
+        output.iter_mut().for_each(|v| *v &= mask);
+        output
     }
 
     fn uniform_between(range: Range<usize>) -> Self {
@@ -117,6 +133,20 @@ impl RawUnsignedIntegers for u64 {
         generator
             .random_uniform_n_msb_tensor(size, n)
             .into_container()
+    }
+    fn uniform_n_msb_padding(padding: usize, n: usize) -> Self {
+        let mut generator = RandomGenerator::new(None);
+        let tmp: Self = generator.random_uniform();
+        let mask = ((1u64 << n) - 1) << (64 - padding - n);
+        tmp & mask
+    }
+
+    fn uniform_n_msb_padding_vec(padding: usize, n: usize, size: usize) -> Vec<Self> {
+        let mut generator = RandomGenerator::new(None);
+        let mut output = generator.random_uniform_tensor(size).into_container();
+        let mask = ((1u64 << n) - 1) << (64 - padding - n);
+        output.iter_mut().for_each(|v| *v &= mask);
+        output
     }
 
     fn uniform_between(range: Range<usize>) -> Self {

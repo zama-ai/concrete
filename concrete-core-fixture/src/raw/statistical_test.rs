@@ -65,6 +65,24 @@ where
     }
 }
 
+pub fn assert_delta_std_dev<Raw>(
+    first: &[Raw],
+    second: &[Raw],
+    dist: impl DispersionParameter,
+) -> bool
+where
+    Raw: RawUnsignedIntegers,
+{
+    for (x, y) in first.iter().zip(second.iter()) {
+        let distance: f64 = torus_modular_distance(*x, *y);
+        let torus_distance = distance / 2_f64.powi(Raw::BITS as i32);
+        if torus_distance > 5. * dist.get_standard_dev() {
+            return false;
+        }
+    }
+    true
+}
+
 fn torus_modular_distance<T: RawUnsignedIntegers>(first: T, other: T) -> f64 {
     let d0 = first.wrapping_sub(other);
     let d1 = other.wrapping_sub(first);
