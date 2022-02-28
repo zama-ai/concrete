@@ -22,6 +22,8 @@ use std::fmt::Debug;
 #[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
+use crate::backends::core::private::math::torus::UnsignedTorus;
+use crate::prelude::numeric::SignedInteger;
 pub use decomposer::*;
 pub use iter::*;
 pub use term::*;
@@ -39,3 +41,26 @@ mod tests;
 #[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct DecompositionLevel(pub usize);
+
+pub(crate) fn torus_small_sign_decompose<Scalar>(res: &mut [Scalar], val: Scalar, base_log: usize)
+where
+    Scalar: UnsignedTorus,
+    Scalar::Signed: SignedInteger,
+{
+    let mut tmp: Scalar;
+    let mut carry = Scalar::ZERO;
+    let mut previous_carry: Scalar;
+    let block_bit_mask: Scalar = (Scalar::ONE << base_log) - Scalar::ONE;
+    let msb_block_mask: Scalar = Scalar::ONE << (base_log - 1);
+
+    // compute the decomposition from LSB to MSB (because of the carry)
+    for i in (0..res.len()).rev() {
+        previous_carry = carry;
+        tmp = (val >> (Scalar::BITS - base_log * (i + 1))) & block_bit_mask;
+        carry = tmp & msb_block_mask;
+        tmp = tmp.wrapping_add(previous_carry);
+        carry |= tmp & msb_block_mask; // 0000...0001000 or 0000...0000000
+        res[i] = ((tmp.into_signed()) - ((carry << 1).into_signed())).into_unsigned();
+        carry >>= base_log - 1; // 000...0001 or 000...0000
+    }
+}
