@@ -83,7 +83,7 @@ public:
       std::ostringstream serverOutput(BINARY);
       OUTCOME_TRYV(serverLambda.read_call_write(serverInput, serverOutput));
       if (serverInput.fail()) {
-        return StringError("Error on serverOutput");
+        return StringError("Error on serverInput");
       }
       if (serverOutput.fail()) {
         return StringError("Error on serverOutput");
