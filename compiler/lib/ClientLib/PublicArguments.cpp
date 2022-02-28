@@ -148,7 +148,6 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
       clientParameters, runtimeContext, clearRuntimeContext, std::move(empty),
       std::move(emptyBuffers));
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));
-  sArguments->preparedArgs.push_back((void *)&runtimeContext);
   return sArguments;
 }
 
