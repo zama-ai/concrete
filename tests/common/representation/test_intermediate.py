@@ -176,6 +176,7 @@ from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, En
                     ClearTensor(Integer(32, True), shape=(2, 3)),
                 ],
                 Integer(32, True),
+                (3, 3),
             ),
             [numpy.arange(1, 7).reshape(3, 2), numpy.arange(1, 7).reshape(2, 3)],
             numpy.array([[9, 12, 15], [19, 26, 33], [29, 40, 51]]),

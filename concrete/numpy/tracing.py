@@ -773,36 +773,12 @@ def _on_numpy_matmul(lhs: NPTracer, rhs: NPTracer):
     assert_true(len(common_output_dtypes_and_shapes) == 1)
 
     output_shape = common_output_dtypes_and_shapes[0][1]
-
-    # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/1174
-    # remove all the reshape logic once matmul supports more combinations of arguments
-    if isinstance(lhs_output := lhs.output, TensorValue) and isinstance(
-        rhs_output := rhs.output, TensorValue
-    ):
-        # Manage non 2D cases
-        if lhs_output.ndim == 1 and rhs_output.ndim == 1:
-            lhs = lhs.reshape((1, lhs_output.shape[0]))
-            rhs = rhs.reshape((rhs_output.shape[0], 1))
-        elif lhs_output.ndim == 1:
-            # lhs is a vector, reshape to be 2D and give proper result
-            lhs = lhs.reshape((1, lhs_output.shape[0]))
-        elif rhs_output.ndim == 1:
-            # rhs is a vector, reshape to be 2D and give proper result
-            rhs = rhs.reshape((rhs_output.shape[0], 1))
-
     traced_computation = MatMul(
         [lhs.output, rhs.output],
         common_output_dtypes_and_shapes[0][0],
+        output_shape,
     )
-
-    matmul_tracer = NPTracer([lhs, rhs], traced_computation, output_idx=0)
-
-    # Return the reshaped result if vector reshaping for 2D matmul happened
-    if matmul_tracer.shape != output_shape:
-        if output_shape == ():
-            return matmul_tracer[0, 0]
-        return matmul_tracer.reshape(output_shape)
-    return matmul_tracer
+    return NPTracer([lhs, rhs], traced_computation, output_idx=0)
 
 
 NPTracer.UFUNC_ROUTING[numpy.add] = _on_numpy_add

@@ -628,7 +628,13 @@ class IntermediateNodeConverter:
         resulting_type = value_to_mlir_type(self.ctx, self.node.outputs[0])
         preds = self.preds
 
-        if self.node.inputs[0].is_clear:
+        assert isinstance(self.node.outputs[0], TensorValue)
+        if self.node.outputs[0].shape == ():
+            if self.node.inputs[0].is_clear:
+                preds = preds[::-1]
+            result = fhelinalg.Dot(resulting_type, *preds).result
+
+        elif self.node.inputs[0].is_clear:
             result = fhelinalg.MatMulIntEintOp(resulting_type, *preds).result
         else:
             result = fhelinalg.MatMulEintIntOp(resulting_type, *preds).result
