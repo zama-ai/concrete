@@ -224,6 +224,9 @@ pub use cleartext_vector_retrieval::*;
 mod glwe_ciphertext_trivial_decryption;
 pub use glwe_ciphertext_trivial_decryption::*;
 
+mod glwe_ciphertext_trivial_encryption;
+pub use glwe_ciphertext_trivial_encryption::*;
+
 mod glwe_ciphertext_encryption;
 pub use glwe_ciphertext_encryption::*;
 

@@ -7,50 +7,48 @@ use crate::raw::statistical_test::assert_noise_distribution;
 use concrete_commons::dispersion::Variance;
 use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 use concrete_core::prelude::{
-    GlweCiphertextEntity, GlweCiphertextTrivialDecryptionEngine, PlaintextVectorEntity,
+    GlweCiphertextEntity, GlweCiphertextTrivialEncryptionEngine, PlaintextVectorEntity,
 };
 
-/// A fixture for the types implementing the `GlweCiphertextTrivialDecryptionEngine` trait.
-pub struct GlweCiphertextTrivialDecryptionFixture;
+/// A fixture for the types implementing the `GlweCiphertextTrivialEncryptionEngine` trait.
+pub struct GlweCiphertextTrivialEncryptionFixture;
 
 #[derive(Debug)]
-pub struct GlweCiphertextTrivialDecryptionParameters {
+pub struct GlweCiphertextTrivialEncryptionParameters {
     pub glwe_dimension: GlweDimension,
     pub polynomial_size: PolynomialSize,
 }
 
 impl<Precision, Engine, PlaintextVector, Ciphertext>
     Fixture<Precision, Engine, (PlaintextVector, Ciphertext)>
-    for GlweCiphertextTrivialDecryptionFixture
+    for GlweCiphertextTrivialEncryptionFixture
 where
     Precision: IntegerPrecision,
-    Engine: GlweCiphertextTrivialDecryptionEngine<Ciphertext, PlaintextVector>,
+    Engine: GlweCiphertextTrivialEncryptionEngine<PlaintextVector, Ciphertext>,
     PlaintextVector: PlaintextVectorEntity,
     Ciphertext: GlweCiphertextEntity,
     Maker: SynthesizesPlaintextVector<Precision, PlaintextVector>
         + SynthesizesGlweCiphertext<Precision, Ciphertext>,
 {
-    type Parameters = GlweCiphertextTrivialDecryptionParameters;
+    type Parameters = GlweCiphertextTrivialEncryptionParameters;
     type RepetitionPrototypes = ();
-    type SamplePrototypes = (
-        <Maker as PrototypesPlaintextVector<Precision>>::PlaintextVectorProto,
-        <Maker as PrototypesGlweCiphertext<Precision, Ciphertext::KeyDistribution>>::GlweCiphertextProto,
-    );
-    type PreExecutionContext = (Ciphertext,);
-    type PostExecutionContext = (Ciphertext, PlaintextVector);
+    type SamplePrototypes =
+        (<Maker as PrototypesPlaintextVector<Precision>>::PlaintextVectorProto,);
+    type PreExecutionContext = (PlaintextVector,);
+    type PostExecutionContext = (PlaintextVector, Ciphertext);
     type Criteria = (Variance,);
     type Outcome = (Vec<Precision::Raw>, Vec<Precision::Raw>);
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(
             vec![
-                GlweCiphertextTrivialDecryptionParameters {
+                GlweCiphertextTrivialEncryptionParameters {
                     glwe_dimension: GlweDimension(200),
                     polynomial_size: PolynomialSize(256),
                 },
-                GlweCiphertextTrivialDecryptionParameters {
+                GlweCiphertextTrivialEncryptionParameters {
                     glwe_dimension: GlweDimension(1),
-                    polynomial_size: PolynomialSize(2),
+                    polynomial_size: PolynomialSize(256),
                 },
             ]
             .into_iter(),
@@ -71,11 +69,7 @@ where
         let raw_plaintext_vector = Precision::Raw::uniform_vec(parameters.polynomial_size.0);
         let proto_plaintext_vector =
             maker.transform_raw_vec_to_plaintext_vector(raw_plaintext_vector.as_slice());
-        let proto_ciphertext = maker.trivially_encrypt_plaintext_vector_to_glwe_ciphertext(
-            parameters.glwe_dimension,
-            &proto_plaintext_vector,
-        );
-        (proto_plaintext_vector, proto_ciphertext)
+        (proto_plaintext_vector,)
     }
 
     fn prepare_context(
@@ -84,20 +78,23 @@ where
         _repetition_proto: &Self::RepetitionPrototypes,
         sample_proto: &Self::SamplePrototypes,
     ) -> Self::PreExecutionContext {
-        let (_, proto_ciphertext_vector) = sample_proto;
-        let ciphertext = maker.synthesize_glwe_ciphertext(proto_ciphertext_vector);
-        (ciphertext,)
+        let (proto_plaintext_vector,) = sample_proto;
+        (maker.synthesize_plaintext_vector(proto_plaintext_vector),)
     }
 
     fn execute_engine(
-        _parameters: &Self::Parameters,
+        parameters: &Self::Parameters,
         engine: &mut Engine,
         context: Self::PreExecutionContext,
     ) -> Self::PostExecutionContext {
-        let (ciphertext,) = context;
-        let plaintext_vector =
-            unsafe { engine.trivially_decrypt_glwe_ciphertext_unchecked(&ciphertext) };
-        (ciphertext, plaintext_vector)
+        let (plaintext_vector,) = context;
+        let ciphertext = unsafe {
+            engine.trivially_encrypt_glwe_ciphertext_unchecked(
+                parameters.glwe_dimension.to_glwe_size(),
+                &plaintext_vector,
+            )
+        };
+        (plaintext_vector, ciphertext)
     }
 
     fn process_context(
@@ -107,11 +104,13 @@ where
         sample_proto: &Self::SamplePrototypes,
         context: Self::PostExecutionContext,
     ) -> Self::Outcome {
-        let (proto_plaintext_vector, _) = sample_proto;
-        let (ciphertext, plaintext_vector) = context;
-        let proto_output_plaintext_vector = maker.unsynthesize_plaintext_vector(&plaintext_vector);
-        maker.destroy_glwe_ciphertext(ciphertext);
+        let (proto_plaintext_vector,) = sample_proto;
+        let (plaintext_vector, ciphertext) = context;
+        let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(&ciphertext);
+        let proto_output_plaintext_vector =
+            maker.trivially_decrypt_glwe_ciphertext(&proto_output_ciphertext);
         maker.destroy_plaintext_vector(plaintext_vector);
+        maker.destroy_glwe_ciphertext(ciphertext);
         (
             maker.transform_plaintext_vector_to_raw_vec(proto_plaintext_vector),
             maker.transform_plaintext_vector_to_raw_vec(&proto_output_plaintext_vector),
@@ -130,6 +129,6 @@ where
         let (means, actual): (Vec<_>, Vec<_>) = outputs.iter().cloned().unzip();
         let means: Vec<Precision::Raw> = means.into_iter().flatten().collect();
         let actual: Vec<Precision::Raw> = actual.into_iter().flatten().collect();
-        assert_noise_distribution(actual.as_slice(), means.as_slice(), criteria.0)
+        assert_noise_distribution(&actual, means.as_slice(), criteria.0)
     }
 }
