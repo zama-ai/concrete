@@ -541,7 +541,7 @@ struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
         ((mlir::Type)converter.convertType(
              (inRank ? shapeOp.src() : shapeOp.result()).getType()))
             .cast<mlir::MemRefType>();
-    lweAssoc.push_back(reassocTy.getRank());
+    lweAssoc.push_back(reassocTy.getRank() - 1);
     newReassocs.push_back(lweAssoc);
 
     rewriter.replaceOpWithNewOp<ShapeOp>(shapeOp, newResultTy, shapeOp.src(),
@@ -874,9 +874,9 @@ void ConcreteToBConcretePass::runOnOperation() {
 
     // Add patterns to rewrite some of memref ops that was introduced by the
     // linalg bufferization of encrypted tensor (first conversion of this pass)
-    insertTensorShapeOpPattern<mlir::memref::ExpandShapeOp, true>(
+    insertTensorShapeOpPattern<mlir::memref::ExpandShapeOp, false>(
         getContext(), patterns, target);
-    insertTensorShapeOpPattern<mlir::memref::CollapseShapeOp, false>(
+    insertTensorShapeOpPattern<mlir::memref::CollapseShapeOp, true>(
         getContext(), patterns, target);
 
     // Add patterns to rewrite linalg op to nested loops with views on
