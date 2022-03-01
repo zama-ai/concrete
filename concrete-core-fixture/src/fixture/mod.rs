@@ -209,6 +209,9 @@ pub use cleartext_discarding_retrieval::*;
 mod cleartext_retrieval;
 pub use cleartext_retrieval::*;
 
+mod cleartext_vector_creation;
+pub use cleartext_vector_creation::*;
+
 mod lwe_ciphertext_encryption;
 pub use lwe_ciphertext_encryption::*;
 
