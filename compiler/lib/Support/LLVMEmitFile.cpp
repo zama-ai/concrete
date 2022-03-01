@@ -65,7 +65,7 @@ llvm::Error emitObject(llvm::Module &module, string objectPath) {
   objectFile->os().flush();
   objectFile->os().close();
   objectFile->keep();
-
+  delete targetMachine;
   return llvm::Error::success();
 }
 
