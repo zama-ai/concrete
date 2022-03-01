@@ -224,6 +224,9 @@ pub use glwe_ciphertext_decryption::*;
 mod glwe_ciphertext_discarding_decryption;
 pub use glwe_ciphertext_discarding_decryption::*;
 
+mod glwe_ciphertext_discarding_encryption;
+pub use glwe_ciphertext_discarding_encryption::*;
+
 mod lwe_ciphertext_encryption;
 pub use lwe_ciphertext_encryption::*;
 
