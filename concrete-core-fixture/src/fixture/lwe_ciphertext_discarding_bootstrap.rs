@@ -277,8 +277,8 @@ where
     }
 }
 
-// The current NPE does not use the key distribution markers of concrete-core. This function makes the
-// mapping. This function should be removed as soon as the npe uses the types of concrete-core.
+// The current NPE does not use the key distribution markers of concrete-core. This function makes
+// the mapping. This function should be removed as soon as the npe uses the types of concrete-core.
 fn fix_estimate_pbs_noise<T, D, K>(
     lwe_mask_size: LweDimension,
     poly_size: PolynomialSize,
