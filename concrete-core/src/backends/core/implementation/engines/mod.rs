@@ -103,6 +103,7 @@ mod glwe_ciphertext_discarding_encryption;
 mod glwe_ciphertext_encryption;
 mod glwe_ciphertext_ggsw_ciphertext_discarding_external_product;
 mod glwe_ciphertext_ggsw_ciphertext_external_product;
+mod glwe_ciphertext_trivial_decryption;
 mod glwe_ciphertext_trivial_encryption;
 mod glwe_ciphertext_vector_decryption;
 mod glwe_ciphertext_vector_discarding_decryption;
