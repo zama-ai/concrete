@@ -87,7 +87,7 @@ where
         let raw_plaintext_vector = Precision::Raw::uniform_vec(parameters.polynomial_size.0);
         let proto_plaintext_vector =
             maker.transform_raw_vec_to_plaintext_vector(raw_plaintext_vector.as_slice());
-        let proto_ciphertext = maker.trivial_encrypt_zeros_to_glwe_ciphertext(
+        let proto_ciphertext = maker.trivially_encrypt_zeros_to_glwe_ciphertext(
             parameters.glwe_dimension,
             parameters.polynomial_size,
         );

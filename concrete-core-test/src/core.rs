@@ -1,5 +1,4 @@
 use crate::{REPETITIONS, SAMPLE_SIZE};
-
 use concrete_core::prelude::*;
 use concrete_core_fixture::fixture::*;
 use concrete_core_fixture::generation::{Maker, Precision32, Precision64};
@@ -51,6 +50,7 @@ test! {
     (GlweCiphertextDiscardingDecryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
     (GlweCiphertextDiscardingEncryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
     (GlweCiphertextEncryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
+    (GlweCiphertextTrivialEncryptionFixture, (PlaintextVector, GlweCiphertext)),
     (LweCiphertextEncryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),
     (LweCiphertextZeroEncryptionFixture, (LweSecretKey, LweCiphertext)),
     (LweCiphertextTrivialEncryptionFixture, (Plaintext, LweCiphertext)),

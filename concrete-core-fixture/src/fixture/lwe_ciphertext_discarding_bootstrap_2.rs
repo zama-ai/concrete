@@ -98,7 +98,7 @@ where
             .collect();
         let proto_plaintext_vector =
             maker.transform_raw_vec_to_plaintext_vector(raw_plaintext_vector.as_slice());
-        let proto_accumulator = maker.trivial_encrypt_plaintext_vector_to_glwe_ciphertext(
+        let proto_accumulator = maker.trivially_encrypt_plaintext_vector_to_glwe_ciphertext(
             parameters.glwe_dimension,
             &proto_plaintext_vector,
         );
