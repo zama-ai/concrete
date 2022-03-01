@@ -65,37 +65,6 @@ std::istream &operator>>(std::istream &istream, LweBootstrapKey_u64 *&key) {
   return istream;
 }
 
-std::ostream &operator<<(std::ostream &ostream, const ClientParameters &cp) {
-  // For binary stream == not formatting
-  std::string json;
-  llvm::raw_string_ostream tmpostream(json);
-  tmpostream << toJSON(cp);
-  writeSize(ostream, json.size());
-  assert(ostream.good());
-  ostream << json;
-  assert(ostream.good());
-  return ostream;
-}
-
-std::istream &operator>>(std::istream &istream, ClientParameters &params) {
-  size_t size;
-  readSize(istream, size);
-  char *buffer = new char[size + 1];
-  buffer[size] = '\0'; // llvm::json::parse requires \0 ended buffer.
-  istream.read(buffer, size);
-  auto paramsOrErr = llvm::json::parse<ClientParameters>(buffer);
-  delete[] buffer;
-  if (auto err = paramsOrErr.takeError()) {
-    llvm::errs() << "Parsing client parameters error: " << std::move(err)
-                 << "\n";
-    istream.setstate(std::ios::failbit);
-    return istream;
-  }
-  params = paramsOrErr.get();
-  assert(istream.good());
-  return istream;
-}
-
 std::istream &operator>>(std::istream &istream,
                          RuntimeContext &runtimeContext) {
   istream >> runtimeContext.ksk;
