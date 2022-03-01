@@ -202,6 +202,9 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
 mod cleartext_creation;
 pub use cleartext_creation::*;
 
+mod cleartext_retrieval;
+pub use cleartext_retrieval::*;
+
 mod lwe_ciphertext_encryption;
 pub use lwe_ciphertext_encryption::*;
 
