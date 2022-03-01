@@ -53,8 +53,6 @@ encrypted_scalars_and_sizes_t encrypted_scalars_and_sizes_t_from_MemRef(
     size_t memref_rank, encrypted_scalars_t allocated,
     encrypted_scalars_t aligned, size_t offset, size_t *sizes,
     size_t *strides) {
-
-  (void)allocated;
   encrypted_scalars_and_sizes_t result;
   assert(aligned != nullptr);
   result.sizes.resize(memref_rank);
@@ -75,6 +73,12 @@ encrypted_scalars_and_sizes_t encrypted_scalars_and_sizes_t_from_MemRef(
     next_coord_index(index, sizes, memref_rank);
   }
   delete[] index;
+  // TEMPORARY: That quick and dirty but as this function is used only to
+  // convert a result of the mlir program and as data are copied here, we
+  // release the alocated pointer if it set.
+  if (allocated != nullptr) {
+    free(allocated);
+  }
   return result;
 }
 
