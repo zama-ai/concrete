@@ -42,6 +42,7 @@ test! {
     (CleartextDiscardingRetrievalFixture, (Cleartext)),
     (GlweCiphertextTrivialDecryptionFixture, (PlaintextVector, GlweCiphertext)),
     (CleartextVectorDiscardingRetrievalFixture, (CleartextVector)),
+    (CleartextVectorRetrievalFixture, (CleartextVector)),
     (LweCiphertextEncryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),
     (CleartextVectorCreationFixture, (CleartextVector)),
     (LweCiphertextDiscardingEncryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),

@@ -217,6 +217,9 @@ pub use glwe_ciphertext_trivial_decryption::*;
 mod cleartext_vector_discarding_retrieval;
 pub use cleartext_vector_discarding_retrieval::*;
 
+mod cleartext_vector_retrieval;
+pub use cleartext_vector_retrieval::*;
+
 mod lwe_ciphertext_encryption;
 pub use lwe_ciphertext_encryption::*;
 
