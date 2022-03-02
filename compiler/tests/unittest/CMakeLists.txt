@@ -111,6 +111,40 @@ target_link_libraries(
   ConcretelangSupport
 )
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  
+target_link_libraries(
+  end_to_end_jit_test
+  Concrete
+)
+
+target_link_libraries(
+  end_to_end_jit_clear_tensor
+  Concrete
+)
+
+target_link_libraries(
+  end_to_end_jit_encrypted_tensor
+  Concrete
+)
+
+target_link_libraries(
+  end_to_end_jit_fhe
+  Concrete
+)
+
+target_link_libraries(
+  end_to_end_jit_fhelinalg
+  Concrete
+)
+
+target_link_libraries(
+  end_to_end_jit_lambda
+  Concrete
+)
+
+endif()
+
 include(GoogleTest)
 gtest_discover_tests(end_to_end_jit_test)
 gtest_discover_tests(end_to_end_jit_clear_tensor)

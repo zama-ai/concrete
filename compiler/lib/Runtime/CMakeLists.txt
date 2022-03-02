@@ -1,7 +1,3 @@
-if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
-  add_compile_options(-DCONCRETELANG_PARALLEL_EXECUTION_ENABLED)
-endif()
-
 add_library(ConcretelangRuntime SHARED
     context.cpp
     wrappers.cpp

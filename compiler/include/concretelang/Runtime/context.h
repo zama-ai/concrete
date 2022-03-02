@@ -33,6 +33,23 @@ typedef struct RuntimeContext {
 #endif
   {
   }
+  // Ensure that the engines map is not copied
+  RuntimeContext(const RuntimeContext &ctx)
+      : ksk(ctx.ksk), bsk(ctx.bsk)
+#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+        ,
+        engine(nullptr)
+#endif
+  {
+  }
+  RuntimeContext(const RuntimeContext &&other)
+      : ksk(other.ksk), bsk(other.bsk)
+#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+        ,
+        engine(nullptr)
+#endif
+  {
+  }
   ~RuntimeContext() {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
     for (const auto &key : engines) {
@@ -42,6 +59,15 @@ typedef struct RuntimeContext {
     if (engine != nullptr)
       free_engine(engine);
 #endif
+  }
+
+  RuntimeContext &operator=(const RuntimeContext &rhs) {
+    ksk = rhs.ksk;
+    bsk = rhs.bsk;
+#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+    engine = nullptr;
+#endif
+    return *this;
   }
 } RuntimeContext;
 

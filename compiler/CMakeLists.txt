@@ -105,6 +105,7 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   find_package(HPX REQUIRED CONFIG)
   include_directories(SYSTEM ${HPX_INCLUDE_DIRS})
   list(APPEND CMAKE_MODULE_PATH "${HPX_CMAKE_DIR}")
+  add_compile_options(-DCONCRETELANG_PARALLEL_EXECUTION_ENABLED)
 
 else()
   message(STATUS "ConcreteLang parallel execution disabled.")
