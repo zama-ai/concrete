@@ -127,8 +127,6 @@ jobs:
 
   BuildAndTestMacOS:
     runs-on: macos-10.15
-    # TODO: enable on all PRs when we have ccache enabled (#362)
-    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -144,18 +142,46 @@ jobs:
       - name: Install Deps
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
-          brew install ninja
+          brew install ninja ccache
           pip3 install numpy pybind11==2.6.2 wheel delocate
           pip3 install pytest
           cd ${{ github.workspace }}/concrete/concrete-ffi
           RUSTFLAGS="-C target-cpu=native" cargo build --release
 
+      - name: Cache compilation (push)
+        if: github.event_name == 'push'
+        uses: actions/cache@v2
+        with:
+          path: /Users/runner/Library/Caches/ccache
+          key: ${{ runner.os }}-compilation-cache-$GITHUB_SHA
+
+      - name: Cache compilation (pull_request)
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@v2
+        with:
+          path: /Users/runner/Library/Caches/ccache
+          key: ${{ runner.os }}-compilation-cache-${{ github.event.pull_request.base.sha }}
+
+      - name: Get tmpdir path
+        id: tmpdir-path
+        run: echo "::set-output name=TMPDIR_PATH::`echo $TMPDIR`"
+
+      - name: KeySetCache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.tmpdir-path.outputs.TMPDIR_PATH }}/KeySetCache
+          key: ${{ runner.os }}-KeySetCache-2022-03-03-7pm
+
       - name: Build
         run: |
           cd compiler
+          echo "Debug: ccache statistics (prior to the build):"
+          ccache -s
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           make install_runtime_lib
           make test
+          echo "Debug: ccache statistics (after the build):"
+          ccache -s
 
   BuildAndTestDF:
     runs-on: ubuntu-latest
