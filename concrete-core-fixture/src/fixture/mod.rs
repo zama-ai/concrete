@@ -236,6 +236,9 @@ pub use glwe_ciphertext_trivial_decryption::*;
 mod glwe_ciphertext_vector_encryption;
 pub use glwe_ciphertext_vector_encryption::*;
 
+mod glwe_ciphertext_vector_discarding_encryption;
+pub use glwe_ciphertext_vector_discarding_encryption::*;
+
 mod lwe_ciphertext_encryption;
 pub use lwe_ciphertext_encryption::*;
 
