@@ -681,10 +681,10 @@ extern "C" void _mm_pause();
 #endif
 #endif
 #ifndef QUICKCPPLIB_NODISCARD
-#if QUICKCPPLIB_HAS_CPP_ATTRIBUTE(nodiscard)
-#define QUICKCPPLIB_NODISCARD [[nodiscard]]
-#elif defined(__clang__) // deliberately not GCC
+#if defined(__clang__) && !_HAS_CXX17
 #define QUICKCPPLIB_NODISCARD __attribute__((warn_unused_result))
+#elif QUICKCPPLIB_HAS_CPP_ATTRIBUTE(nodiscard)
+#define QUICKCPPLIB_NODISCARD [[nodiscard]]
 #elif defined(_MSC_VER)
 // _Must_inspect_result_ expands into this
 #define QUICKCPPLIB_NODISCARD __declspec("SAL_name" "(" "\"_Must_inspect_result_\"" "," "\"\"" "," "\"2\"" ")") __declspec("SAL_begin") __declspec("SAL_post") __declspec("SAL_mustInspect") __declspec("SAL_post") __declspec("SAL_checkReturn") __declspec("SAL_end")
