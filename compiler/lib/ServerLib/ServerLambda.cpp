@@ -61,8 +61,8 @@ encrypted_scalars_and_sizes_t encrypted_scalars_and_sizes_t_from_MemRef(
   for (size_t r = 0; r < memref_rank; r++) {
     result.sizes[r] = sizes[r];
   }
-  size_t
-      index[memref_rank]; // ephemeral multi dim index to compute global strides
+  size_t *index = new size_t[memref_rank]; // ephemeral multi dim index to
+                                           // compute global strides
   for (size_t r = 0; r < memref_rank; r++) {
     index[r] = 0;
   }
@@ -74,6 +74,7 @@ encrypted_scalars_and_sizes_t encrypted_scalars_and_sizes_t_from_MemRef(
     result.values[i] = aligned[offset + g_index];
     next_coord_index(index, sizes, memref_rank);
   }
+  delete[] index;
   return result;
 }
 

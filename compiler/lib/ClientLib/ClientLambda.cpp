@@ -138,11 +138,11 @@ decryptReturnedTensor(std::istream &istream, ClientLambda &lambda,
            << expectedRank << " which cannot be decrypted to rank " << rank;
   }
   OUTCOME_TRY(auto values, lambda.decryptReturnedValues(keySet, istream));
-  size_t sizes[rank];
+  llvm::SmallVector<size_t, 6> sizes;
   for (size_t dim = 0; dim < rank; dim++) {
-    sizes[dim] = shape.dimensions[dim];
+    sizes.push_back(shape.dimensions[dim]);
   }
-  return flatToTensor<DecryptedTensor>(values, sizes);
+  return flatToTensor<DecryptedTensor>(values, sizes.data());
 }
 
 outcome::checked<decrypted_tensor_1_t, StringError>

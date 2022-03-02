@@ -82,10 +82,11 @@ std::ostream &operator<<(std::ostream &ostream, const ClientParameters &cp) {
 std::istream &operator>>(std::istream &istream, ClientParameters &params) {
   size_t size;
   readSize(istream, size);
-  char buffer[size + 1];
+  char *buffer = new char[size + 1];
   buffer[size] = '\0'; // llvm::json::parse requires \0 ended buffer.
   istream.read(buffer, size);
   auto paramsOrErr = llvm::json::parse<ClientParameters>(buffer);
+  delete[] buffer;
   if (auto err = paramsOrErr.takeError()) {
     llvm::errs() << "Parsing client parameters error: " << std::move(err)
                  << "\n";

@@ -12,16 +12,6 @@ if (APPLE)
   add_definitions("-Wno-narrowing")
 endif()
 
-add_compile_options(-Wfatal-errors) # stop at first error
- # variable length array = vla
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  # using Clang
-  add_compile_options(-Wno-vla-extension)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  # using GCC
-  add_compile_options(-Wno-vla)
-endif()
-
 # If we are trying to build the compiler with LLVM/MLIR as libraries
 if( NOT DEFINED LLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR )
   message(FATAL_ERROR "Concrete compiler requires a unified build with LLVM/MLIR")
