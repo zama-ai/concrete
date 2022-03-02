@@ -82,19 +82,18 @@ public:
   /// ServerLambda::real_call_write function. ostream must be in binary mode
   /// std::ios_base::openmode::binary
   outcome::checked<void, StringError>
-  serializeCall(Args... args, std::shared_ptr<KeySet> keySet,
-                std::ostream &ostream) {
+  serializeCall(Args... args, KeySet &keySet, std::ostream &ostream) {
     OUTCOME_TRY(auto publicArguments, publicArguments(args..., keySet));
     return publicArguments->serialize(ostream);
   }
 
   outcome::checked<std::unique_ptr<PublicArguments>, StringError>
-  publicArguments(Args... args, std::shared_ptr<KeySet> keySet) {
+  publicArguments(Args... args, KeySet &keySet) {
     OUTCOME_TRY(auto clientArguments,
                 EncryptedArguments::create(keySet, args...));
 
     return clientArguments->exportPublicArguments(clientParameters,
-                                                  keySet->runtimeContext());
+                                                  keySet.runtimeContext());
   }
 
   outcome::checked<Result, StringError> decryptResult(KeySet &keySet,

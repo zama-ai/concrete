@@ -19,10 +19,11 @@ namespace clientlib {
 using concretelang::error::StringError;
 
 // TODO: optimize the move
-PublicArguments::PublicArguments(
-    const ClientParameters &clientParameters, RuntimeContext runtimeContext,
-    bool clearRuntimeContext, std::vector<void *> &&preparedArgs_,
-    std::vector<encrypted_scalars_and_sizes_t> &&ciphertextBuffers_)
+PublicArguments::PublicArguments(const ClientParameters &clientParameters,
+                                 RuntimeContext runtimeContext,
+                                 bool clearRuntimeContext,
+                                 std::vector<void *> &&preparedArgs_,
+                                 std::vector<TensorData> &&ciphertextBuffers_)
     : clientParameters(clientParameters), runtimeContext(runtimeContext),
       clearRuntimeContext(clearRuntimeContext) {
   preparedArgs = std::move(preparedArgs_);
@@ -63,7 +64,7 @@ PublicArguments::serialize(std::ostream &ostream) {
     auto aligned = (encrypted_scalars_t)preparedArgs[iPreparedArgs++];
     assert(aligned != nullptr);
     auto offset = (size_t)preparedArgs[iPreparedArgs++];
-    std::vector<size_t> sizes; // includes lweSize as last dim
+    std::vector<int64_t> sizes; // includes lweSize as last dim
     sizes.resize(rank + 1);
     for (auto dim = 0u; dim < sizes.size(); dim++) {
       // sizes are part of the client parameters signature
@@ -91,7 +92,7 @@ PublicArguments::unserializeArgs(std::istream &istream) {
     if (!gate.encryption.hasValue()) {
       return StringError("Clear values are not handled");
     }
-    auto lweSize = clientParameters.lweSecretKeyParam(gate).lweSize();
+    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
     std::vector<int64_t> sizes = gate.shape.dimensions;
     sizes.push_back(lweSize);
     ciphertextBuffers.push_back(unserializeTensorData(sizes, istream));
@@ -135,19 +136,80 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
   return sArguments;
 }
 
-outcome::checked<std::vector<decrypted_scalar_t>, StringError>
-PublicResult::decryptVector(KeySet &keySet, size_t pos) {
-  auto lweSize =
-      clientParameters.lweSecretKeyParam(clientParameters.outputs[pos])
-          .lweSize();
+outcome::checked<std::vector<uint64_t>, StringError>
+PublicResult::asClearTextVector(KeySet &keySet, size_t pos) {
+  OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
+  if (!gate.isEncrypted()) {
+    return buffers[pos].values;
+  }
 
   auto buffer = buffers[pos];
-  decrypted_tensor_1_t decryptedValues(buffer.length() / lweSize);
+  auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
+
+  std::vector<uint64_t> decryptedValues(buffer.length() / lweSize);
   for (size_t i = 0; i < decryptedValues.size(); i++) {
     auto ciphertext = &buffer.values[i * lweSize];
     OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertext, decryptedValues[i]));
   }
   return decryptedValues;
+}
+
+void next_coord_index(size_t index[], size_t sizes[], size_t rank) {
+  // increase multi dim index
+  for (int r = rank - 1; r >= 0; r--) {
+    if (index[r] < sizes[r] - 1) {
+      index[r]++;
+      return;
+    }
+    index[r] = 0;
+  }
+}
+
+size_t global_index(size_t index[], size_t sizes[], size_t strides[],
+                    size_t rank) {
+  // compute global index from multi dim index
+  size_t g_index = 0;
+  size_t default_stride = 1;
+  for (int r = rank - 1; r >= 0; r--) {
+    g_index += index[r] * ((strides[r] == 0) ? default_stride : strides[r]);
+    default_stride *= sizes[r];
+  }
+  return g_index;
+}
+
+TensorData tensorDataFromScalar(uint64_t value) { return {{value}, {1}}; }
+
+TensorData tensorDataFromMemRef(size_t memref_rank,
+                                encrypted_scalars_t allocated,
+                                encrypted_scalars_t aligned, size_t offset,
+                                size_t *sizes, size_t *strides) {
+  TensorData result;
+  assert(aligned != nullptr);
+  result.sizes.resize(memref_rank);
+  for (size_t r = 0; r < memref_rank; r++) {
+    result.sizes[r] = sizes[r];
+  }
+  // ephemeral multi dim index to compute global strides
+  size_t *index = new size_t[memref_rank];
+  for (size_t r = 0; r < memref_rank; r++) {
+    index[r] = 0;
+  }
+  auto len = result.length();
+  result.values.resize(len);
+  // TODO: add a fast path for dense result (no real strides)
+  for (size_t i = 0; i < len; i++) {
+    int g_index = offset + global_index(index, sizes, strides, memref_rank);
+    result.values[i] = aligned[offset + g_index];
+    next_coord_index(index, sizes, memref_rank);
+  }
+  delete[] index;
+  // TEMPORARY: That quick and dirty but as this function is used only to
+  // convert a result of the mlir program and as data are copied here, we
+  // release the alocated pointer if it set.
+  if (allocated != nullptr) {
+    free(allocated);
+  }
+  return result;
 }
 
 } // namespace clientlib

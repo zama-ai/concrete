@@ -38,6 +38,10 @@ compile(std::string outputLib, std::string source,
   mlir::concretelang::JitCompilerEngine ce{ccx};
   ce.setClientParametersFuncName(funcname);
   auto result = ce.compile(sources, outputLib);
+  if (!result) {
+    llvm::errs() << result.takeError();
+    assert(false);
+  }
   assert(result);
   return result.get();
 }
@@ -72,7 +76,7 @@ func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   auto maybeKeySet = lambda.keySet(getTestKeySetCachePtr(), 0, 0);
   ASSERT_TRUE(maybeKeySet.has_value());
   std::shared_ptr<KeySet> keySet = std::move(maybeKeySet.value());
-  auto maybePublicArguments = lambda.publicArguments(1, keySet);
+  auto maybePublicArguments = lambda.publicArguments(1, *keySet);
 
   ASSERT_TRUE(maybePublicArguments.has_value());
   auto publicArguments = std::move(maybePublicArguments.value());
@@ -80,7 +84,7 @@ func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   ASSERT_TRUE(publicArguments->serialize(osstream).has_value());
   EXPECT_TRUE(osstream.good());
   // Direct call without intermediate
-  EXPECT_TRUE(lambda.serializeCall(1, keySet, osstream));
+  EXPECT_TRUE(lambda.serializeCall(1, *keySet, osstream));
   EXPECT_TRUE(osstream.good());
 }
 

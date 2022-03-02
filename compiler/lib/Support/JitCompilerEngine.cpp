@@ -129,7 +129,8 @@ JitCompilerEngine::buildLambda(llvm::SourceMgr &sm, llvm::StringRef funcName,
 
   auto keySet = std::move(keySetOrErr.value());
 
-  return Lambda{this->compilationContext, std::move(lambda), std::move(keySet)};
+  return Lambda{this->compilationContext, std::move(lambda), std::move(keySet),
+                *compRes.clientParameters};
 }
 
 } // namespace concretelang

@@ -19,7 +19,7 @@ TensorData multi_arity_call_dynamic_rank(void *(*func)(void *...),
                                          std::vector<void *> args,
                                          size_t rank) {
   using concretelang::clientlib::MemRefDescriptor;
-  constexpr auto convert = &TensorData_from_MemRef;
+  constexpr auto convert = concretelang::clientlib::tensorDataFromMemRef;
   switch (rank) {
   case 0: {
     auto m = multi_arity_call((MemRefDescriptor<1>(*)(void *...))func, args);

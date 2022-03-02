@@ -69,20 +69,86 @@ llvm::Error JITLambda::invokeRaw(llvm::MutableArrayRef<void *> args) {
          << pos << " is null or missing";
 }
 
-llvm::Error JITLambda::invoke(Argument &args) {
-  size_t expectedInputs = this->type.getNumParams();
-  size_t actualInputs = args.inputs.size();
-  if (expectedInputs == actualInputs) {
-    return invokeRaw(args.rawArg);
-  }
-  return StreamStringError("invokeRaw: received ")
-         << actualInputs << "arguments instead of " << expectedInputs;
-}
-
 // memref is a struct which is flattened aligned, allocated pointers, offset,
 // and two array of rank size for sizes and strides.
 uint64_t numArgOfRankedMemrefCallingConvention(uint64_t rank) {
   return 3 + 2 * rank;
+}
+
+llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
+JITLambda::call(clientlib::PublicArguments &args) {
+  // invokeRaw needs to have pointers on arguments and a pointers on the result
+  // as last argument.
+  // Prepare the outputs vector to store the output value of the lambda.
+  auto numOutputs = 0;
+  for (auto &output : args.clientParameters.outputs) {
+    if (output.shape.dimensions.empty()) {
+      // scalar gate
+      if (output.encryption.hasValue()) {
+        // encrypted scalar : memref<lweSizexi64>
+        numOutputs += numArgOfRankedMemrefCallingConvention(1);
+      } else {
+        // clear scalar
+        numOutputs += 1;
+      }
+    } else {
+      // memref gate : rank+1 if the output is encrypted for the lwe size
+      // dimension
+      auto rank = output.shape.dimensions.size() +
+                  (output.encryption.hasValue() ? 1 : 0);
+      numOutputs += numArgOfRankedMemrefCallingConvention(rank);
+    }
+  }
+  std::vector<void *> outputs(numOutputs);
+  // Prepare the raw arguments of invokeRaw, i.e. a vector with pointer on
+  // inputs and outputs.
+  std::vector<void *> rawArgs(args.preparedArgs.size() + 1 /*runtime context*/ +
+                              outputs.size());
+  size_t i = 0;
+  // Pointers on inputs
+  for (auto &arg : args.preparedArgs) {
+    rawArgs[i++] = &arg;
+  }
+  // Pointer on runtime context, the rawArgs take pointer on actual value that
+  // is passed to the compiled function.
+  auto rtCtxPtr = &args.runtimeContext;
+  rawArgs[i++] = &rtCtxPtr;
+  // Pointers on outputs
+  for (auto &out : outputs) {
+    rawArgs[i++] = &out;
+  }
+
+  // Invoke
+  if (auto err = invokeRaw(rawArgs)) {
+    return std::move(err);
+  }
+
+  // Store the result to the PublicResult
+  std::vector<clientlib::TensorData> buffers;
+  {
+    size_t outputOffset = 0;
+    for (auto &output : args.clientParameters.outputs) {
+      if (output.shape.dimensions.empty() && !output.encryption.hasValue()) {
+        // clear scalar
+        buffers.push_back(
+            clientlib::tensorDataFromScalar((uint64_t)outputs[outputOffset++]));
+      } else {
+        // encrypted scalar, and tensor gate are memref
+        auto rank = output.shape.dimensions.size() +
+                    (output.encryption.hasValue() ? 1 : 0);
+        auto allocated = (uint64_t *)outputs[outputOffset++];
+        auto aligned = (uint64_t *)outputs[outputOffset++];
+        auto offset = (size_t)outputs[outputOffset++];
+        size_t *sizes = (size_t *)&outputs[outputOffset];
+        outputOffset += rank;
+        size_t *strides = (size_t *)&outputs[outputOffset];
+        outputOffset += rank;
+        buffers.push_back(clientlib::tensorDataFromMemRef(
+            rank, allocated, aligned, offset, sizes, strides));
+      }
+    }
+  }
+  return clientlib::PublicResult::fromBuffers(args.clientParameters, buffers);
 }
 
 JITLambda::Argument::Argument(KeySet &keySet) : keySet(keySet) {

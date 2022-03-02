@@ -53,10 +53,6 @@ std::size_t ClientParameters::hash() {
   return currentHash;
 }
 
-LweSecretKeyParam ClientParameters::lweSecretKeyParam(CircuitGate gate) {
-  return secretKeys.find(gate.encryption->secretKeyID)->second;
-}
-
 llvm::json::Value toJSON(const LweSecretKeyParam &v) {
   llvm::json::Object object{
       {"dimension", v.dimension},

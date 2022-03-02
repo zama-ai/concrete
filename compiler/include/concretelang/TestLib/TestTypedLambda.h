@@ -63,12 +63,29 @@ public:
         keySet(keySet) {}
 
   outcome::checked<Result, StringError> call(Args... args) {
+    // std::string message;
+
+    // client stream
+    // std::ostringstream clientOuput(std::ios::binary);
     // client argument encryption
     OUTCOME_TRY(auto encryptedArgs,
-                clientlib::EncryptedArguments::create(keySet, args...));
+                clientlib::EncryptedArguments::create(*keySet, args...));
     OUTCOME_TRY(auto publicArgument,
                 encryptedArgs->exportPublicArguments(this->clientParameters,
                                                      keySet->runtimeContext()));
+    // client argument serialization
+    // publicArgument->serialize(clientOuput);
+    // message = clientOuput.str();
+
+    // server stream
+    // std::istringstream serverInput(message, std::ios::binary);
+    // freeStringMemory(message);
+    //
+    // OUTCOME_TRY(auto publicArguments,
+    // clientlib::PublicArguments::unserialize(
+    //                                      this->clientParameters,
+    //                                      serverInput));
+
     // server function call
     auto publicResult = serverLambda.call(*publicArgument);
 

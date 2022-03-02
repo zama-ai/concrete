@@ -93,7 +93,7 @@ std::ostream &serializeTensorData(uint64_t *values, size_t length,
   return ostream;
 }
 
-std::ostream &serializeTensorData(std::vector<size_t> &sizes, uint64_t *values,
+std::ostream &serializeTensorData(std::vector<int64_t> &sizes, uint64_t *values,
                                   std::ostream &ostream) {
   size_t length = 1;
   for (auto size : sizes) {
@@ -107,7 +107,7 @@ std::ostream &serializeTensorData(std::vector<size_t> &sizes, uint64_t *values,
 
 std::ostream &serializeTensorData(TensorData &values_and_sizes,
                                   std::ostream &ostream) {
-  std::vector<size_t> &sizes = values_and_sizes.sizes;
+  std::vector<int64_t> &sizes = values_and_sizes.sizes;
   encrypted_scalars_t values = values_and_sizes.values.data();
   return serializeTensorData(sizes, values, ostream);
 }

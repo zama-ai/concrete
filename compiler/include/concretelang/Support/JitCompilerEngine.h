@@ -17,6 +17,7 @@ namespace mlir {
 namespace concretelang {
 
 using ::concretelang::clientlib::KeySetCache;
+namespace clientlib = ::concretelang::clientlib;
 
 namespace {
 // Generic function template as well as specializations of
@@ -26,34 +27,35 @@ namespace {
 // Helper function for `JitCompilerEngine::Lambda::operator()`
 // implementing type-dependent preparation of the result.
 template <typename ResT>
-llvm::Expected<ResT> typedResult(JITLambda::Argument &arguments);
+llvm::Expected<ResT> typedResult(clientlib::KeySet &keySet,
+                                 clientlib::PublicResult &result);
 
 // Specialization of `typedResult()` for scalar results, forwarding
 // scalar value to caller
 template <>
-inline llvm::Expected<uint64_t> typedResult(JITLambda::Argument &arguments) {
-  uint64_t res = 0;
-
-  if (auto err = arguments.getResult(0, res))
-    return StreamStringError() << "Cannot retrieve result:" << err;
-
-  return res;
+inline llvm::Expected<uint64_t> typedResult(clientlib::KeySet &keySet,
+                                            clientlib::PublicResult &result) {
+  auto clearResult = result.asClearTextVector(keySet, 0);
+  if (!clearResult.has_value()) {
+    return StreamStringError("typedResult cannot get clear text vector")
+           << clearResult.error().mesg;
+  }
+  if (clearResult.value().size() != 1) {
+    return StreamStringError("typedResult expect only one value but got ")
+           << clearResult.value().size();
+  }
+  return clearResult.value()[0];
 }
 
 template <typename T>
 inline llvm::Expected<std::vector<T>>
-typedVectorResult(JITLambda::Argument &arguments) {
-  llvm::Expected<size_t> n = arguments.getResultVectorSize(0);
-
-  if (auto err = n.takeError())
-    return std::move(err);
-
-  std::vector<T> res(*n);
-
-  if (auto err = arguments.getResult(0, res.data(), res.size()))
-    return StreamStringError() << "Cannot retrieve result:" << err;
-
-  return std::move(res);
+typedVectorResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  auto clearResult = result.asClearTextVector(keySet, 0);
+  if (!clearResult.has_value()) {
+    return StreamStringError("typedVectorResult cannot get clear text vector")
+           << clearResult.error().mesg;
+  }
+  return std::move(clearResult.value());
 }
 
 // Specializations of `typedResult()` for vector results, initializing
@@ -62,151 +64,144 @@ typedVectorResult(JITLambda::Argument &arguments) {
 //
 // Cannot factor out into a template template <typename T> inline
 // llvm::Expected<std::vector<uint8_t>>
-// typedResult(JITLambda::Argument &arguments); due to ambiguity with
-// scalar template
-template <>
-inline llvm::Expected<std::vector<uint8_t>>
-typedResult(JITLambda::Argument &arguments) {
-  return typedVectorResult<uint8_t>(arguments);
-}
-template <>
-inline llvm::Expected<std::vector<uint16_t>>
-typedResult(JITLambda::Argument &arguments) {
-  return typedVectorResult<uint16_t>(arguments);
-}
-template <>
-inline llvm::Expected<std::vector<uint32_t>>
-typedResult(JITLambda::Argument &arguments) {
-  return typedVectorResult<uint32_t>(arguments);
-}
+// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result); due
+// to ambiguity with scalar template
+// template <>
+// inline llvm::Expected<std::vector<uint8_t>>
+// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+//   return typedVectorResult<uint8_t>(keySet, result);
+// }
+// template <>
+// inline llvm::Expected<std::vector<uint16_t>>
+// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+//   return typedVectorResult<uint16_t>(keySet, result);
+// }
+// template <>
+// inline llvm::Expected<std::vector<uint32_t>>
+// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+//   return typedVectorResult<uint32_t>(keySet, result);
+// }
 template <>
 inline llvm::Expected<std::vector<uint64_t>>
-typedResult(JITLambda::Argument &arguments) {
-  return typedVectorResult<uint64_t>(arguments);
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<uint64_t>(keySet, result);
 }
 
 template <typename T>
 llvm::Expected<std::unique_ptr<LambdaArgument>>
-buildTensorLambdaResult(JITLambda::Argument &arguments) {
+buildTensorLambdaResult(clientlib::KeySet &keySet,
+                        clientlib::PublicResult &result) {
   llvm::Expected<std::vector<T>> tensorOrError =
-      typedResult<std::vector<T>>(arguments);
+      typedResult<std::vector<T>>(keySet, result);
 
-  if (!tensorOrError)
-    return std::move(tensorOrError.takeError());
+  if (auto err = tensorOrError.takeError())
+    return std::move(err);
+  std::vector<int64_t> tensorDim(result.buffers[0].sizes.begin(),
+                                 result.buffers[0].sizes.end() - 1);
 
-  llvm::Expected<std::vector<int64_t>> tensorDimOrError =
-      arguments.getResultDimensions(0);
-
-  if (!tensorDimOrError)
-    return tensorDimOrError.takeError();
-
-  return std::move(std::make_unique<TensorLambdaArgument<IntLambdaArgument<T>>>(
-      *tensorOrError, *tensorDimOrError));
+  return std::make_unique<TensorLambdaArgument<IntLambdaArgument<T>>>(
+      *tensorOrError, tensorDim);
 }
 
 // Specialization of `typedResult()` for a single result wrapped into
 // a `LambdaArgument`.
 template <>
 inline llvm::Expected<std::unique_ptr<LambdaArgument>>
-typedResult(JITLambda::Argument &arguments) {
-  llvm::Expected<enum JITLambda::Argument::ResultType> resTy =
-      arguments.getResultType(0);
-
-  if (!resTy)
-    return resTy.takeError();
-
-  switch (*resTy) {
-  case JITLambda::Argument::ResultType::SCALAR: {
-    uint64_t res;
-
-    if (llvm::Error err = arguments.getResult(0, res))
-      return std::move(err);
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  auto gate = keySet.outputGate(0);
+  // scalar case
+  if (gate.shape.dimensions.empty()) {
+    auto clearResult = result.asClearTextVector(keySet, 0);
+    if (clearResult.has_error()) {
+      return StreamStringError("typedResult: ") << clearResult.error().mesg;
+    }
+    auto res = clearResult.value()[0];
 
     return std::make_unique<IntLambdaArgument<uint64_t>>(res);
   }
+  // tensor case
+  // auto width = gate.shape.width;
 
-  case JITLambda::Argument::ResultType::TENSOR: {
-    llvm::Expected<size_t> width = arguments.getResultWidth(0);
+  // if (width > 32)
+  return buildTensorLambdaResult<uint64_t>(keySet, result);
+  // else if (width > 16)
+  //   return buildTensorLambdaResult<uint32_t>(keySet, result);
+  // else if (width > 8)
+  //   return buildTensorLambdaResult<uint16_t>(keySet, result);
+  // else if (width <= 8)
+  //   return buildTensorLambdaResult<uint8_t>(keySet, result);
 
-    if (!width)
-      return width.takeError();
+  // return StreamStringError("Cannot handle scalars with more than 64 bits");
+}
 
-    if (*width > 64)
-      return StreamStringError("Cannot handle scalars with more than 64 bits");
-    if (*width > 32)
-      return buildTensorLambdaResult<uint64_t>(arguments);
-    else if (*width > 16)
-      return buildTensorLambdaResult<uint32_t>(arguments);
-    else if (*width > 8)
-      return buildTensorLambdaResult<uint16_t>(arguments);
-    else if (*width <= 8)
-      return buildTensorLambdaResult<uint8_t>(arguments);
-  }
-  }
-
-  return StreamStringError("Unknown result type");
 } // namespace
 
-// Adaptor class that adds arguments specified as instances of
-// `LambdaArgument` to `JitLambda::Argument`.
+// Adaptor class that push arguments specified as instances of
+// `LambdaArgument` to `clientlib::EncryptedArguments`.
 class JITLambdaArgumentAdaptor {
 public:
   // Checks if the argument `arg` is an plaintext / encrypted integer
   // argument or a plaintext / encrypted tensor argument with a
-  // backing integer type `IntT` and adds the argument to `jla` at
-  // position `pos`.
+  // backing integer type `IntT` and push the argument to `encryptedArgs`.
   //
   // Returns `true` if `arg` has one of the types above and its value
-  // was successfully added to `jla`, `false` if none of the types
+  // was successfully added to `encryptedArgs`, `false` if none of the types
   // matches or an error if a type matched, but adding the argument to
-  // `jla` failed.
+  // `encryptedArgs` failed.
   template <typename IntT>
   static inline llvm::Expected<bool>
-  tryAddArg(JITLambda::Argument &jla, size_t pos, const LambdaArgument &arg) {
+  tryAddArg(clientlib::EncryptedArguments &encryptedArgs,
+            const LambdaArgument &arg, clientlib::KeySet &keySet) {
     if (auto ila = arg.dyn_cast<IntLambdaArgument<IntT>>()) {
-      if (llvm::Error err = jla.setArg(pos, ila->getValue()))
-        return std::move(err);
-      else
+      auto res = encryptedArgs.pushArg(ila->getValue(), keySet);
+      if (!res.has_value()) {
+        return StreamStringError(res.error().mesg);
+      } else {
         return true;
+      }
     } else if (auto tla = arg.dyn_cast<
                           TensorLambdaArgument<IntLambdaArgument<IntT>>>()) {
-      if (llvm::Error err =
-              jla.setArg(pos, tla->getValue(), tla->getDimensions()))
-        return std::move(err);
-      else
+      auto res =
+          encryptedArgs.pushArg(tla->getValue(), tla->getDimensions(), keySet);
+      if (!res.has_value()) {
+        return StreamStringError(res.error().mesg);
+      } else {
         return true;
+      }
     }
-
     return false;
   }
 
   // Recursive case for `tryAddArg<IntT>(...)`
   template <typename IntT, typename NextIntT, typename... IntTs>
   static inline llvm::Expected<bool>
-  tryAddArg(JITLambda::Argument &jla, size_t pos, const LambdaArgument &arg) {
-    llvm::Expected<bool> successOrError = tryAddArg<IntT>(jla, pos, arg);
+  tryAddArg(clientlib::EncryptedArguments &encryptedArgs,
+            const LambdaArgument &arg, clientlib::KeySet &keySet) {
+    llvm::Expected<bool> successOrError =
+        tryAddArg<IntT>(encryptedArgs, arg, keySet);
 
     if (!successOrError)
       return successOrError.takeError();
 
     if (successOrError.get() == false)
-      return tryAddArg<NextIntT, IntTs...>(jla, pos, arg);
+      return tryAddArg<NextIntT, IntTs...>(encryptedArgs, arg, keySet);
     else
       return true;
   }
 
-  // Attempts to add a single argument `arg` to `jla` at position
-  // `pos`. Returns an error if either the argument type is
-  // unsupported or if the argument types is supported, but adding it
-  // to `jla` failed.
-  static inline llvm::Error addArgument(JITLambda::Argument &jla, size_t pos,
-                                        const LambdaArgument &arg) {
+  // Attempts to push a single argument `arg` to `encryptedArgs`. Returns an
+  // error if either the argument type is unsupported or if the argument types
+  // is supported, but adding it to `encryptedArgs` failed.
+  static inline llvm::Error
+  addArgument(clientlib::EncryptedArguments &encryptedArgs,
+              const LambdaArgument &arg, clientlib::KeySet &keySet) {
     // Try the supported integer types; size_t needs explicit
     // treatment, since it may alias none of the fixed size integer
     // types
     llvm::Expected<bool> successOrError =
         JITLambdaArgumentAdaptor::tryAddArg<uint64_t, uint32_t, uint16_t,
-                                            uint8_t, size_t>(jla, pos, arg);
+                                            uint8_t, size_t>(encryptedArgs, arg,
+                                                             keySet);
 
     if (!successOrError)
       return successOrError.takeError();
@@ -217,7 +212,6 @@ public:
       return llvm::Error::success();
   }
 };
-} // namespace
 
 // A compiler engine that JIT-compiles a source and produces a lambda
 // object directly invocable through its call operator.
@@ -231,12 +225,15 @@ public:
     Lambda(Lambda &&other)
         : innerLambda(std::move(other.innerLambda)),
           keySet(std::move(other.keySet)),
-          compilationContext(other.compilationContext) {}
+          compilationContext(other.compilationContext),
+          clientParameters(other.clientParameters) {}
 
     Lambda(std::shared_ptr<CompilationContext> compilationContext,
-           std::unique_ptr<JITLambda> lambda, std::unique_ptr<KeySet> keySet)
+           std::unique_ptr<JITLambda> lambda, std::unique_ptr<KeySet> keySet,
+           clientlib::ClientParameters clientParameters)
         : innerLambda(std::move(lambda)), keySet(std::move(keySet)),
-          compilationContext(compilationContext) {}
+          compilationContext(compilationContext),
+          clientParameters(clientParameters) {}
 
     // Returns the number of arguments required for an invocation of
     // the lambda
@@ -251,81 +248,96 @@ public:
     template <typename ResT = uint64_t>
     llvm::Expected<ResT>
     operator()(llvm::ArrayRef<LambdaArgument *> lambdaArgs) {
-      // Create the arguments of the JIT lambda
-      llvm::Expected<std::unique_ptr<JITLambda::Argument>> argsOrErr =
-          mlir::concretelang::JITLambda::Argument::create(*this->keySet.get());
-
-      if (llvm::Error err = argsOrErr.takeError())
-        return StreamStringError("Could not create lambda arguments");
-
-      // Set the arguments
-      std::unique_ptr<JITLambda::Argument> arguments =
-          std::move(argsOrErr.get());
+      // Encrypt the arguments
+      auto encryptedArgs = clientlib::EncryptedArguments::empty();
 
       for (size_t i = 0; i < lambdaArgs.size(); i++) {
         if (llvm::Error err = JITLambdaArgumentAdaptor::addArgument(
-                *arguments, i, *lambdaArgs[i])) {
+                *encryptedArgs, *lambdaArgs[i], *this->keySet)) {
           return std::move(err);
         }
       }
 
-      // Invoke the lambda
-      if (auto err = this->innerLambda->invoke(*arguments))
-        return StreamStringError() << "Cannot invoke lambda:" << err;
+      auto check = encryptedArgs->checkAllArgs(*this->keySet);
+      if (check.has_error()) {
+        return StreamStringError(check.error().mesg);
+      }
 
-      return std::move(typedResult<ResT>(*arguments));
+      // Export as public arguments
+      auto publicArguments = encryptedArgs->exportPublicArguments(
+          clientParameters, keySet->runtimeContext());
+      if (!publicArguments.has_value()) {
+        return StreamStringError(publicArguments.error().mesg);
+      }
+
+      // Call the lambda
+      auto publicResult = this->innerLambda->call(*publicArguments.value());
+      if (auto err = publicResult.takeError()) {
+        return std::move(err);
+      }
+
+      return typedResult<ResT>(*keySet, **publicResult);
     }
 
     // Invocation with an array of arguments of the same type
     template <typename T, typename ResT = uint64_t>
     llvm::Expected<ResT> operator()(const llvm::ArrayRef<T> args) {
-      // Create the arguments of the JIT lambda
-      llvm::Expected<std::unique_ptr<JITLambda::Argument>> argsOrErr =
-          mlir::concretelang::JITLambda::Argument::create(*this->keySet.get());
-
-      if (llvm::Error err = argsOrErr.takeError())
-        return StreamStringError("Could not create lambda arguments");
-
-      // Set the arguments
-      std::unique_ptr<JITLambda::Argument> arguments =
-          std::move(argsOrErr.get());
+      // Encrypt the arguments
+      auto encryptedArgs = clientlib::EncryptedArguments::empty();
 
       for (size_t i = 0; i < args.size(); i++) {
-        if (auto err = arguments->setArg(i, args[i])) {
-          return StreamStringError()
-                 << "Cannot push argument " << i << ": " << err;
+        auto res = encryptedArgs->pushArg(args[i], *keySet);
+        if (res.has_error()) {
+          return StreamStringError(res.error().mesg);
         }
       }
 
-      // Invoke the lambda
-      if (auto err = this->innerLambda->invoke(*arguments))
-        return StreamStringError() << "Cannot invoke lambda:" << err;
+      auto check = encryptedArgs->checkAllArgs(*this->keySet);
+      if (check.has_error()) {
+        return StreamStringError(check.error().mesg);
+      }
 
-      return std::move(typedResult<ResT>(*arguments));
+      // Export as public arguments
+      auto publicArguments = encryptedArgs->exportPublicArguments(
+          clientParameters, keySet->runtimeContext());
+      if (!publicArguments.has_value()) {
+        return StreamStringError(publicArguments.error().mesg);
+      }
+
+      // Call the lambda
+      auto publicResult = this->innerLambda->call(*publicArguments.value());
+      if (auto err = publicResult.takeError()) {
+        return std::move(err);
+      }
+
+      return typedResult<ResT>(*keySet, **publicResult);
     }
 
     // Invocation with arguments of different types
     template <typename ResT = uint64_t, typename... Ts>
     llvm::Expected<ResT> operator()(const Ts... ts) {
-      // Create the arguments of the JIT lambda
-      llvm::Expected<std::unique_ptr<JITLambda::Argument>> argsOrErr =
-          mlir::concretelang::JITLambda::Argument::create(*this->keySet.get());
+      // Encrypt the arguments
+      auto encryptedArgs =
+          clientlib::EncryptedArguments::create(*keySet, ts...);
 
-      if (llvm::Error err = argsOrErr.takeError())
-        return StreamStringError("Could not create lambda arguments");
+      if (encryptedArgs.has_error()) {
+        return StreamStringError(encryptedArgs.error().mesg);
+      }
 
-      // Set the arguments
-      std::unique_ptr<JITLambda::Argument> arguments =
-          std::move(argsOrErr.get());
+      // Export as public arguments
+      auto publicArguments = encryptedArgs.value()->exportPublicArguments(
+          clientParameters, keySet->runtimeContext());
+      if (!publicArguments.has_value()) {
+        return StreamStringError(publicArguments.error().mesg);
+      }
 
-      if (llvm::Error err = this->addArgs<0>(arguments.get(), ts...))
+      // Call the lambda
+      auto publicResult = this->innerLambda->call(*publicArguments.value());
+      if (auto err = publicResult.takeError()) {
         return std::move(err);
+      }
 
-      // Invoke the lambda
-      if (auto err = this->innerLambda->invoke(*arguments))
-        return StreamStringError() << "Cannot invoke lambda:" << err;
-
-      return std::move(typedResult<ResT>(*arguments));
+      return typedResult<ResT>(*keySet, **publicResult);
     }
 
   protected:
@@ -364,6 +376,7 @@ public:
     std::unique_ptr<JITLambda> innerLambda;
     std::unique_ptr<KeySet> keySet;
     std::shared_ptr<CompilationContext> compilationContext;
+    const clientlib::ClientParameters clientParameters;
   };
 
   JitCompilerEngine(std::shared_ptr<CompilationContext> compilationContext =

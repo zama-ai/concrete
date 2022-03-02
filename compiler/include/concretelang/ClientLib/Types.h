@@ -35,7 +35,7 @@ using encrypted_scalars_t = uint64_t *;
 
 struct TensorData {
   std::vector<uint64_t> values; // tensor of rank r + 1
-  std::vector<size_t> sizes;    // r sizes
+  std::vector<int64_t> sizes;   // r sizes
 
   inline size_t length() {
     if (sizes.empty()) {

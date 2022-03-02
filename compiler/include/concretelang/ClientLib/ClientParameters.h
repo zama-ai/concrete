@@ -120,6 +120,8 @@ static inline bool operator==(const CircuitGateShape &lhs,
 struct CircuitGate {
   llvm::Optional<EncryptionGate> encryption;
   CircuitGateShape shape;
+
+  bool isEncrypted() { return encryption.hasValue(); }
 };
 static inline bool operator==(const CircuitGate &lhs, const CircuitGate &rhs) {
   return lhs.encryption == rhs.encryption && lhs.shape == rhs.shape;
@@ -140,7 +142,32 @@ struct ClientParameters {
 
   static std::string getClientParametersPath(std::string path);
 
-  LweSecretKeyParam lweSecretKeyParam(CircuitGate gate);
+  outcome::checked<CircuitGate, StringError> input(size_t pos) {
+    if (pos >= inputs.size()) {
+      return StringError("input gate ") << pos << " didn't exists";
+    }
+    return inputs[pos];
+  }
+
+  outcome::checked<CircuitGate, StringError> ouput(size_t pos) {
+    if (pos >= outputs.size()) {
+      return StringError("output gate ") << pos << " didn't exists";
+    }
+    return outputs[pos];
+  }
+
+  outcome::checked<LweSecretKeyParam, StringError>
+  lweSecretKeyParam(CircuitGate gate) {
+    if (!gate.encryption.hasValue()) {
+      return StringError("gate is not encrypted");
+    }
+    auto secretKey = secretKeys.find(gate.encryption->secretKeyID);
+    if (secretKey == secretKeys.end()) {
+      return StringError("cannot find ")
+             << gate.encryption->secretKeyID << " in client parameters";
+    }
+    return secretKey->second;
+  }
 };
 
 static inline bool operator==(const ClientParameters &lhs,

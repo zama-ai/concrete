@@ -24,11 +24,9 @@ ClientLambda::load(std::string functionName, std::string jsonPath) {
     return StringError("ClientLambda: cannot find function ")
            << functionName << " in client parameters" << jsonPath;
   }
-
   if (param->outputs.size() != 1) {
     return StringError("ClientLambda: output arity (")
-           << std::to_string(param->outputs.size())
-           << ") != 1 is not supported";
+           << std::to_string(param->outputs.size()) << ") != 1 is not supprted";
   }
 
   if (!param->outputs[0].encryption.hasValue()) {
@@ -54,7 +52,7 @@ ClientLambda::decryptReturnedScalar(KeySet &keySet, PublicResult &result) {
 
 outcome::checked<std::vector<decrypted_scalar_t>, StringError>
 ClientLambda::decryptReturnedValues(KeySet &keySet, PublicResult &result) {
-  return result.decryptVector(keySet, 0);
+  return result.asClearTextVector(keySet, 0);
 }
 
 outcome::checked<void, StringError> errorResultRank(size_t expected,

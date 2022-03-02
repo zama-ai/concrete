@@ -11,12 +11,14 @@
 #include <mlir/Support/LogicalResult.h>
 
 #include <concretelang/ClientLib/KeySet.h>
+#include <concretelang/ClientLib/PublicArguments.h>
 
 namespace mlir {
 namespace concretelang {
 
 using ::concretelang::clientlib::CircuitGate;
 using ::concretelang::clientlib::KeySet;
+namespace clientlib = ::concretelang::clientlib;
 
 /// JITLambda is a tool to JIT compile an mlir module and to invoke a function
 /// of the module.
@@ -118,6 +120,11 @@ public:
          llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline,
          llvm::Optional<llvm::StringRef> runtimeLibPath = {});
 
+  /// Call the JIT lambda with the public arguments.
+  llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
+  call(clientlib::PublicArguments &args);
+
+private:
   /// invokeRaw execute the jit lambda with a list of Argument, the last one is
   /// used to store the result of the computation.
   /// Example:
@@ -126,9 +133,6 @@ public:
   /// llvm::SmallVector<void *> args{&arg1, &res};
   /// lambda.invokeRaw(args);
   llvm::Error invokeRaw(llvm::MutableArrayRef<void *> args);
-
-  /// invoke the jit lambda with the Argument.
-  llvm::Error invoke(Argument &args);
 
 private:
   mlir::LLVM::LLVMFunctionType type;

@@ -21,6 +21,11 @@ namespace serverlib {
 class ServerLambda;
 }
 } // namespace concretelang
+namespace mlir {
+namespace concretelang {
+class JITLambda;
+}
+} // namespace mlir
 namespace concretelang {
 namespace clientlib {
 
@@ -45,7 +50,8 @@ public:
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 
 private:
-  friend class ::concretelang::serverlib::ServerLambda; // from ServerLib
+  friend class ::concretelang::serverlib::ServerLambda;
+  friend class ::mlir::concretelang::JITLambda;
 
   outcome::checked<void, StringError> unserializeArgs(std::istream &istream);
 
@@ -82,15 +88,26 @@ struct PublicResult {
   /// Serialize into an output stream.
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 
-  /// Decrypt the result at `pos` as a vector.
+  /// Get the result at `pos` as a vector, if the result is a scalar returns a
+  /// vector of size 1. Decryption happens if the result is encrypted.
   outcome::checked<std::vector<decrypted_scalar_t>, StringError>
-  decryptVector(KeySet &keySet, size_t pos);
+  asClearTextVector(KeySet &keySet, size_t pos);
 
-private:
+  // private: TODO tmp
   friend class ::concretelang::serverlib::ServerLambda;
   ClientParameters clientParameters;
   std::vector<TensorData> buffers;
 };
+
+/// Helper function to convert from a scalar to TensorData
+TensorData tensorDataFromScalar(uint64_t value);
+
+/// Helper function to convert from MemRefDescriptor to
+/// TensorData
+TensorData tensorDataFromMemRef(size_t memref_rank,
+                                encrypted_scalars_t allocated,
+                                encrypted_scalars_t aligned, size_t offset,
+                                size_t *sizes, size_t *strides);
 
 } // namespace clientlib
 } // namespace concretelang

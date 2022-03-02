@@ -35,10 +35,14 @@ public:
   /// an EncryptedArguments
   template <typename... Args>
   static outcome::checked<std::unique_ptr<EncryptedArguments>, StringError>
-  create(std::shared_ptr<KeySet> keySet, Args... args) {
+  create(KeySet &keySet, Args... args) {
     auto arguments = std::make_unique<EncryptedArguments>();
     OUTCOME_TRYV(arguments->pushArgs(keySet, args...));
     return arguments;
+  }
+
+  static std::unique_ptr<EncryptedArguments> empty() {
+    return std::make_unique<EncryptedArguments>();
   }
 
   /// Export encrypted arguments as public arguments, reset the encrypted
@@ -48,31 +52,44 @@ public:
   exportPublicArguments(ClientParameters clientParameters,
                         RuntimeContext runtimeContext);
 
-public:
-  /// Add a uint8_t scalar argument.
-  outcome::checked<void, StringError> pushArg(uint8_t arg,
-                                              std::shared_ptr<KeySet> keySet);
+  /// Check that all arguments as been pushed.
+  /// TODO: Remove public method here
+  outcome::checked<void, StringError> checkAllArgs(KeySet &keySet);
 
+public:
   // Add a uint64_t scalar argument.
-  outcome::checked<void, StringError> pushArg(uint64_t arg,
-                                              std::shared_ptr<KeySet> keySet);
+  outcome::checked<void, StringError> pushArg(uint64_t arg, KeySet &keySet);
 
   /// Add a vector-tensor argument.
   outcome::checked<void, StringError> pushArg(std::vector<uint8_t> arg,
-                                              std::shared_ptr<KeySet> keySet);
+                                              KeySet &keySet);
+
+  // Add a 1D tensor argument with data and size of the dimension.
+  template <typename T>
+  outcome::checked<void, StringError> pushArg(const T *data, int64_t dim1,
+                                              KeySet &keySet) {
+    return pushArg(std::vector<uint8_t>(data, data + dim1), keySet);
+  }
+
+  // Add a tensor argument.
+  template <typename T>
+  outcome::checked<void, StringError>
+  pushArg(const T *data, llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
+    return pushArg(8 * sizeof(T), static_cast<const void *>(data), shape,
+                   keySet);
+  }
 
   /// Add a 1D tensor argument.
   template <size_t size>
   outcome::checked<void, StringError> pushArg(std::array<uint8_t, size> arg,
-                                              std::shared_ptr<KeySet> keySet) {
+                                              KeySet &keySet) {
     return pushArg(8, (void *)arg.data(), {size}, keySet);
   }
 
   /// Add a 2D tensor argument.
   template <size_t size0, size_t size1>
   outcome::checked<void, StringError>
-  pushArg(std::array<std::array<uint8_t, size1>, size0> arg,
-          std::shared_ptr<KeySet> keySet) {
+  pushArg(std::array<std::array<uint8_t, size1>, size0> arg, KeySet &keySet) {
     return pushArg(8, (void *)arg.data(), {size0, size1}, keySet);
   }
 
@@ -80,7 +97,7 @@ public:
   template <size_t size0, size_t size1, size_t size2>
   outcome::checked<void, StringError>
   pushArg(std::array<std::array<std::array<uint8_t, size2>, size1>, size0> arg,
-          std::shared_ptr<KeySet> keySet) {
+          KeySet &keySet) {
     return pushArg(8, (void *)arg.data(), {size0, size1, size2}, keySet);
   }
 
@@ -88,41 +105,48 @@ public:
 
   // Set a argument at the given pos as a 1D tensor of T.
   template <typename T>
-  outcome::checked<void, StringError> pushArg(T *data, size_t dim1,
-                                              std::shared_ptr<KeySet> keySet) {
-    return pushArg<T>(data, llvm::ArrayRef<size_t>(&dim1, 1), keySet);
+  outcome::checked<void, StringError> pushArg(T *data, int64_t dim1,
+                                              KeySet &keySet) {
+    return pushArg<T>(data, llvm::ArrayRef<int64_t>(&dim1, 1), keySet);
   }
 
   // Set a argument at the given pos as a tensor of T.
   template <typename T>
-  outcome::checked<void, StringError> pushArg(T *data,
-                                              llvm::ArrayRef<int64_t> shape,
-                                              std::shared_ptr<KeySet> keySet) {
-    return pushArg(8 * sizeof(T), static_cast<void *>(data), shape, keySet);
+  outcome::checked<void, StringError>
+  pushArg(T *data, llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
+    return pushArg(8 * sizeof(T), static_cast<const void *>(data), shape,
+                   keySet);
   }
 
-  outcome::checked<void, StringError> pushArg(size_t width, void *data,
+  outcome::checked<void, StringError> pushArg(size_t width, const void *data,
                                               llvm::ArrayRef<int64_t> shape,
-                                              std::shared_ptr<KeySet> keySet);
+                                              KeySet &keySet);
 
-  /// Push a variadic list of arguments.
+  // Recursive case for scalars: extract first scalar argument from
+  // parameter pack and forward rest
   template <typename Arg0, typename... OtherArgs>
-  outcome::checked<void, StringError> pushArgs(std::shared_ptr<KeySet> keySet,
-                                               Arg0 arg0, OtherArgs... others) {
+  outcome::checked<void, StringError> pushArgs(KeySet &keySet, Arg0 arg0,
+                                               OtherArgs... others) {
     OUTCOME_TRYV(pushArg(arg0, keySet));
     return pushArgs(keySet, others...);
   }
 
+  // Recursive case for tensors: extract pointer and size from
+  // parameter pack and forward rest
+  template <typename Arg0, typename... OtherArgs>
+  outcome::checked<void, StringError>
+  pushArgs(KeySet &keySet, Arg0 *arg0, size_t size, OtherArgs... others) {
+    OUTCOME_TRYV(pushArg(arg0, size, keySet));
+    return pushArgs(keySet, others...);
+  }
+
   // Terminal case of pushArgs
-  outcome::checked<void, StringError> pushArgs(std::shared_ptr<KeySet> keySet) {
+  outcome::checked<void, StringError> pushArgs(KeySet &keySet) {
     return checkAllArgs(keySet);
   }
 
 private:
-  outcome::checked<void, StringError>
-  checkPushTooManyArgs(std::shared_ptr<KeySet> keySet);
-  outcome::checked<void, StringError>
-  checkAllArgs(std::shared_ptr<KeySet> keySet);
+  outcome::checked<void, StringError> checkPushTooManyArgs(KeySet &keySet);
 
 private:
   // Position of the next pushed argument

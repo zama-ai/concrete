@@ -22,34 +22,25 @@ EncryptedArguments::exportPublicArguments(ClientParameters clientParameters,
 }
 
 outcome::checked<void, StringError>
-EncryptedArguments::pushArg(uint8_t arg, std::shared_ptr<KeySet> keySet) {
-  return pushArg((uint64_t)arg, keySet);
-}
-
-outcome::checked<void, StringError>
-EncryptedArguments::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::pushArg(uint64_t arg, KeySet &keySet) {
   OUTCOME_TRYV(checkPushTooManyArgs(keySet));
   auto pos = currentPos++;
-  CircuitGate input = keySet->inputGate(pos);
+  CircuitGate input = keySet.inputGate(pos);
   if (input.shape.size != 0) {
     return StringError("argument #") << pos << " is not a scalar";
   }
   if (!input.encryption.hasValue()) {
     // clear scalar: just push the argument
-    if (input.shape.width != 64) {
-      return StringError(
-          "scalar argument of with != 64 is not supported for DynamicLambda");
-    }
     preparedArgs.push_back((void *)arg);
     return outcome::success();
   }
   ciphertextBuffers.resize(ciphertextBuffers.size() + 1); // Allocate empty
   TensorData &values_and_sizes = ciphertextBuffers.back();
-  auto lweSize = keySet->getInputLweSecretKeyParam(pos).lweSize();
+  auto lweSize = keySet.getInputLweSecretKeyParam(pos).lweSize();
   values_and_sizes.sizes.push_back(lweSize);
   values_and_sizes.values.resize(lweSize);
 
-  OUTCOME_TRYV(keySet->encrypt_lwe(pos, values_and_sizes.values.data(), arg));
+  OUTCOME_TRYV(keySet.encrypt_lwe(pos, values_and_sizes.values.data(), arg));
   // Note: Since we bufferized lwe ciphertext take care of memref calling
   // convention
   // allocated
@@ -66,18 +57,16 @@ EncryptedArguments::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
 }
 
 outcome::checked<void, StringError>
-EncryptedArguments::pushArg(std::vector<uint8_t> arg,
-                            std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::pushArg(std::vector<uint8_t> arg, KeySet &keySet) {
   return pushArg(8, (void *)arg.data(), {(int64_t)arg.size()}, keySet);
 }
 
 outcome::checked<void, StringError>
-EncryptedArguments::pushArg(size_t width, void *data,
-                            llvm::ArrayRef<int64_t> shape,
-                            std::shared_ptr<KeySet> keySet) {
+EncryptedArguments::pushArg(size_t width, const void *data,
+                            llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
   OUTCOME_TRYV(checkPushTooManyArgs(keySet));
   auto pos = currentPos;
-  CircuitGate input = keySet->inputGate(pos);
+  CircuitGate input = keySet.inputGate(pos);
   // Check the width of data
   if (input.shape.width > 64) {
     return StringError("argument #")
@@ -108,7 +97,7 @@ EncryptedArguments::pushArg(size_t width, void *data,
     }
   }
   if (input.encryption.hasValue()) {
-    auto lweSize = keySet->getInputLweSecretKeyParam(pos).lweSize();
+    auto lweSize = keySet.getInputLweSecretKeyParam(pos).lweSize();
     values_and_sizes.sizes.push_back(lweSize);
 
     // Encrypted tensor: for now we support only 8 bits for encrypted tensor
@@ -124,9 +113,14 @@ EncryptedArguments::pushArg(size_t width, void *data,
     // Allocate ciphertexts and encrypt, for every values in tensor
     for (size_t i = 0, offset = 0; i < input.shape.size;
          i++, offset += lweSize) {
-      OUTCOME_TRYV(keySet->encrypt_lwe(pos, values.data() + offset, data8[i]));
+      OUTCOME_TRYV(keySet.encrypt_lwe(pos, values.data() + offset, data8[i]));
     }
-  } // TODO: NON ENCRYPTED, COPY CONTENT TO values_and_sizes
+  } else {
+    values_and_sizes.values.resize(input.shape.size);
+    for (size_t i = 0; i < input.shape.size; i++) {
+      values_and_sizes.values[i] = ((const uint64_t *)data)[i];
+    }
+  }
   // allocated
   preparedArgs.push_back(nullptr);
   // aligned
@@ -150,8 +144,8 @@ EncryptedArguments::pushArg(size_t width, void *data,
 }
 
 outcome::checked<void, StringError>
-EncryptedArguments::checkPushTooManyArgs(std::shared_ptr<KeySet> keySet) {
-  size_t arity = keySet->numInputs();
+EncryptedArguments::checkPushTooManyArgs(KeySet &keySet) {
+  size_t arity = keySet.numInputs();
   if (currentPos < arity) {
     return outcome::success();
   }
@@ -160,8 +154,8 @@ EncryptedArguments::checkPushTooManyArgs(std::shared_ptr<KeySet> keySet) {
 }
 
 outcome::checked<void, StringError>
-EncryptedArguments::checkAllArgs(std::shared_ptr<KeySet> keySet) {
-  size_t arity = keySet->numInputs();
+EncryptedArguments::checkAllArgs(KeySet &keySet) {
+  size_t arity = keySet.numInputs();
   if (currentPos == arity) {
     return outcome::success();
   }

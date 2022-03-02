@@ -56,7 +56,7 @@ std::ostream &operator<<(std::ostream &ostream,
                          const RuntimeContext &runtimeContext);
 std::istream &operator>>(std::istream &istream, RuntimeContext &runtimeContext);
 
-std::ostream &serializeTensorData(std::vector<size_t> &sizes, uint64_t *values,
+std::ostream &serializeTensorData(std::vector<int64_t> &sizes, uint64_t *values,
                                   std::ostream &ostream);
 
 std::ostream &serializeTensorData(TensorData &values_and_sizes,
