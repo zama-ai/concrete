@@ -28,9 +28,8 @@ EncryptedArguments::pushArg(uint8_t arg, std::shared_ptr<KeySet> keySet) {
 
 outcome::checked<void, StringError>
 EncryptedArguments::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
-  // TODO: NON ENCRYPTED
   OUTCOME_TRYV(checkPushTooManyArgs(keySet));
-  auto pos = currentPos;
+  auto pos = currentPos++;
   CircuitGate input = keySet->inputGate(pos);
   if (input.shape.size != 0) {
     return StringError("argument #") << pos << " is not a scalar";
@@ -63,7 +62,6 @@ EncryptedArguments::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
   preparedArgs.push_back((void *)values_and_sizes.values.size());
   // stride
   preparedArgs.push_back((void *)1);
-  currentPos++;
   return outcome::success();
 }
 
