@@ -33,7 +33,7 @@ template <size_t Rank> using encrypted_tensor_t = MemRefDescriptor<Rank>;
 using encrypted_scalar_t = uint64_t *;
 using encrypted_scalars_t = uint64_t *;
 
-struct encrypted_scalars_and_sizes_t {
+struct TensorData {
   std::vector<uint64_t> values; // tensor of rank r + 1
   std::vector<size_t> sizes;    // r sizes
 

@@ -78,7 +78,7 @@ PublicArguments::serialize(std::ostream &ostream) {
     }
     // TODO: STRIDES
     auto values = aligned + offset;
-    serializeEncryptedValues(sizes, values, ostream);
+    serializeTensorData(sizes, values, ostream);
   }
   return outcome::success();
 }
@@ -94,7 +94,7 @@ PublicArguments::unserializeArgs(std::istream &istream) {
     auto lweSize = clientParameters.lweSecretKeyParam(gate).lweSize();
     std::vector<int64_t> sizes = gate.shape.dimensions;
     sizes.push_back(lweSize);
-    ciphertextBuffers.push_back(unserializeEncryptedValues(sizes, istream));
+    ciphertextBuffers.push_back(unserializeTensorData(sizes, istream));
     auto &values_and_sizes = ciphertextBuffers.back();
     if (istream.fail()) {
       return StringError(
@@ -127,7 +127,7 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
     return StringError("Cannot read runtime context");
   }
   std::vector<void *> empty;
-  std::vector<encrypted_scalars_and_sizes_t> emptyBuffers;
+  std::vector<TensorData> emptyBuffers;
   auto sArguments = std::make_shared<PublicArguments>(
       clientParameters, runtimeContext, true, std::move(empty),
       std::move(emptyBuffers));

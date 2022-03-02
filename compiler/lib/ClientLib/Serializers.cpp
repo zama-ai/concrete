@@ -81,8 +81,8 @@ std::ostream &operator<<(std::ostream &ostream,
   return ostream;
 }
 
-std::ostream &serializeEncryptedValues(encrypted_scalars_t values,
-                                       size_t length, std::ostream &ostream) {
+std::ostream &serializeTensorData(uint64_t *values, size_t length,
+                                  std::ostream &ostream) {
   if (incorrectMode(ostream)) {
     return ostream;
   }
@@ -93,32 +93,30 @@ std::ostream &serializeEncryptedValues(encrypted_scalars_t values,
   return ostream;
 }
 
-std::ostream &serializeEncryptedValues(std::vector<size_t> &sizes,
-                                       encrypted_scalars_t values,
-                                       std::ostream &ostream) {
+std::ostream &serializeTensorData(std::vector<size_t> &sizes, uint64_t *values,
+                                  std::ostream &ostream) {
   size_t length = 1;
   for (auto size : sizes) {
     length *= size;
     writeSize(ostream, size);
   }
-  serializeEncryptedValues(values, length, ostream);
+  serializeTensorData(values, length, ostream);
   assert(ostream.good());
   return ostream;
 }
 
-std::ostream &
-serializeEncryptedValues(encrypted_scalars_and_sizes_t &values_and_sizes,
-                         std::ostream &ostream) {
+std::ostream &serializeTensorData(TensorData &values_and_sizes,
+                                  std::ostream &ostream) {
   std::vector<size_t> &sizes = values_and_sizes.sizes;
   encrypted_scalars_t values = values_and_sizes.values.data();
-  return serializeEncryptedValues(sizes, values, ostream);
+  return serializeTensorData(sizes, values, ostream);
 }
 
-encrypted_scalars_and_sizes_t unserializeEncryptedValues(
+TensorData unserializeTensorData(
     std::vector<int64_t> &expectedSizes, // includes lweSize, unsigned to
                                          // accomodate non static sizes
     std::istream &istream) {
-  encrypted_scalars_and_sizes_t result;
+  TensorData result;
   if (incorrectMode(istream)) {
     return result;
   }

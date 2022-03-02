@@ -31,10 +31,10 @@ class PublicArguments {
   /// PublicArguments will be sended to the server. It includes encrypted
   /// arguments and public keys.
 public:
-  PublicArguments(
-      const ClientParameters &clientParameters, RuntimeContext runtimeContext,
-      bool clearRuntimeContext, std::vector<void *> &&preparedArgs,
-      std::vector<encrypted_scalars_and_sizes_t> &&ciphertextBuffers);
+  PublicArguments(const ClientParameters &clientParameters,
+                  RuntimeContext runtimeContext, bool clearRuntimeContext,
+                  std::vector<void *> &&preparedArgs,
+                  std::vector<TensorData> &&ciphertextBuffers);
   ~PublicArguments();
   PublicArguments(PublicArguments &other) = delete;
   PublicArguments(PublicArguments &&other) = delete;
@@ -53,7 +53,7 @@ private:
   RuntimeContext runtimeContext;
   std::vector<void *> preparedArgs;
   // Store buffers of ciphertexts
-  std::vector<encrypted_scalars_and_sizes_t> ciphertextBuffers;
+  std::vector<TensorData> ciphertextBuffers;
 
   // Indicates if this public argument own the runtime keys.
   bool clearRuntimeContext;
@@ -64,7 +64,7 @@ struct PublicResult {
   /// results.
 
   PublicResult(const ClientParameters &clientParameters,
-               std::vector<encrypted_scalars_and_sizes_t> buffers = {})
+               std::vector<TensorData> buffers = {})
       : clientParameters(clientParameters), buffers(buffers){};
 
   PublicResult(PublicResult &) = delete;
@@ -72,7 +72,7 @@ struct PublicResult {
   /// Create a public result from buffers.
   static std::unique_ptr<PublicResult>
   fromBuffers(const ClientParameters &clientParameters,
-              std::vector<encrypted_scalars_and_sizes_t> buffers) {
+              std::vector<TensorData> buffers) {
     return std::make_unique<PublicResult>(clientParameters, buffers);
   }
 
@@ -89,7 +89,7 @@ struct PublicResult {
 private:
   friend class ::concretelang::serverlib::ServerLambda;
   ClientParameters clientParameters;
-  std::vector<encrypted_scalars_and_sizes_t> buffers;
+  std::vector<TensorData> buffers;
 };
 
 } // namespace clientlib

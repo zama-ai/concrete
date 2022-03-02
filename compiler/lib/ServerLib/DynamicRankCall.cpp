@@ -15,11 +15,11 @@
 namespace concretelang {
 namespace serverlib {
 
-encrypted_scalars_and_sizes_t
-multi_arity_call_dynamic_rank(void *(*func)(void *...),
-                              std::vector<void *> args, size_t rank) {
+TensorData multi_arity_call_dynamic_rank(void *(*func)(void *...),
+                                         std::vector<void *> args,
+                                         size_t rank) {
   using concretelang::clientlib::MemRefDescriptor;
-  constexpr auto convert = &encrypted_scalars_and_sizes_t_from_MemRef;
+  constexpr auto convert = &TensorData_from_MemRef;
   switch (rank) {
   case 0: {
     auto m = multi_arity_call((MemRefDescriptor<1>(*)(void *...))func, args);

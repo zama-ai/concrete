@@ -45,7 +45,7 @@ EncryptedArguments::pushArg(uint64_t arg, std::shared_ptr<KeySet> keySet) {
     return outcome::success();
   }
   ciphertextBuffers.resize(ciphertextBuffers.size() + 1); // Allocate empty
-  encrypted_scalars_and_sizes_t &values_and_sizes = ciphertextBuffers.back();
+  TensorData &values_and_sizes = ciphertextBuffers.back();
   auto lweSize = keySet->getInputLweSecretKeyParam(pos).lweSize();
   values_and_sizes.sizes.push_back(lweSize);
   values_and_sizes.values.resize(lweSize);
@@ -100,7 +100,7 @@ EncryptedArguments::pushArg(size_t width, void *data,
            << shape.size() << " expected " << input.shape.dimensions.size();
   }
   ciphertextBuffers.resize(ciphertextBuffers.size() + 1); // Allocate empty
-  encrypted_scalars_and_sizes_t &values_and_sizes = ciphertextBuffers.back();
+  TensorData &values_and_sizes = ciphertextBuffers.back();
   for (size_t i = 0; i < shape.size(); i++) {
     values_and_sizes.sizes.push_back(shape[i]);
     if (shape[i] != input.shape.dimensions[i]) {

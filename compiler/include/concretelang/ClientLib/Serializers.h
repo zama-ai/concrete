@@ -52,23 +52,18 @@ template <typename Stream> bool incorrectMode(Stream &stream) {
   return !binary;
 }
 
-std::ostream &operator<<(std::ostream &ostream, const ClientParameters &params);
-std::istream &operator>>(std::istream &istream, ClientParameters &params);
-
 std::ostream &operator<<(std::ostream &ostream,
                          const RuntimeContext &runtimeContext);
 std::istream &operator>>(std::istream &istream, RuntimeContext &runtimeContext);
 
-std::ostream &serializeEncryptedValues(std::vector<size_t> &sizes,
-                                       encrypted_scalars_t values,
-                                       std::ostream &ostream);
+std::ostream &serializeTensorData(std::vector<size_t> &sizes, uint64_t *values,
+                                  std::ostream &ostream);
 
-std::ostream &
-serializeEncryptedValues(encrypted_scalars_and_sizes_t &values_and_sizes,
-                         std::ostream &ostream);
+std::ostream &serializeTensorData(TensorData &values_and_sizes,
+                                  std::ostream &ostream);
 
-encrypted_scalars_and_sizes_t unserializeEncryptedValues(
-    std::vector<int64_t> &expectedSizes, // includes lweSize, unsigned to
+TensorData unserializeTensorData(
+    std::vector<int64_t> &expectedSizes, // includes unsigned to
                                          // accomodate non static sizes
     std::istream &istream);
 

@@ -13,11 +13,10 @@
 namespace concretelang {
 namespace serverlib {
 
-using concretelang::clientlib::encrypted_scalars_and_sizes_t;
+using concretelang::clientlib::TensorData;
 
-encrypted_scalars_and_sizes_t
-multi_arity_call_dynamic_rank(void *(*func)(void *...),
-                              std::vector<void *> args, size_t rank);
+TensorData multi_arity_call_dynamic_rank(void *(*func)(void *...),
+                                         std::vector<void *> args, size_t rank);
 
 } // namespace serverlib
 } // namespace concretelang

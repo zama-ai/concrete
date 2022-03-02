@@ -130,7 +130,7 @@ private:
   std::vector<void *> preparedArgs;
 
   // Store buffers of ciphertexts
-  std::vector<encrypted_scalars_and_sizes_t> ciphertextBuffers;
+  std::vector<TensorData> ciphertextBuffers;
 };
 
 } // namespace clientlib

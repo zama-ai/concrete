@@ -19,10 +19,10 @@ print(
 namespace concretelang {
 namespace serverlib {
 
-encrypted_scalars_and_sizes_t
+TensorData
 multi_arity_call_dynamic_rank(void* (*func)(void *...), std::vector<void *> args, size_t rank) {
   using concretelang::clientlib::MemRefDescriptor;
-  constexpr auto convert = &encrypted_scalars_and_sizes_t_from_MemRef;
+  constexpr auto convert = &TensorData_from_MemRef;
   switch (rank) {""")
 
 for tensor_rank in range(0, 33):

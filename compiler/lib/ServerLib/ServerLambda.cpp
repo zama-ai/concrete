@@ -48,12 +48,12 @@ size_t global_index(size_t index[], size_t sizes[], size_t strides[],
 }
 
 /** Helper function to convert from MemRefDescriptor to
- * encrypted_scalars_and_sizes_t assuming MemRefDescriptor are bufferized */
-encrypted_scalars_and_sizes_t encrypted_scalars_and_sizes_t_from_MemRef(
-    size_t memref_rank, encrypted_scalars_t allocated,
-    encrypted_scalars_t aligned, size_t offset, size_t *sizes,
-    size_t *strides) {
-  encrypted_scalars_and_sizes_t result;
+ * TensorData assuming MemRefDescriptor are bufferized */
+TensorData TensorData_from_MemRef(size_t memref_rank,
+                                  encrypted_scalars_t allocated,
+                                  encrypted_scalars_t aligned, size_t offset,
+                                  size_t *sizes, size_t *strides) {
+  TensorData result;
   assert(aligned != nullptr);
   result.sizes.resize(memref_rank);
   for (size_t r = 0; r < memref_rank; r++) {
@@ -125,9 +125,8 @@ ServerLambda::load(std::string funcName, std::string outputLib) {
   return ServerLambda::loadFromModule(module, funcName);
 }
 
-encrypted_scalars_and_sizes_t dynamicCall(void *(*func)(void *...),
-                                          std::vector<void *> &preparedArgs,
-                                          CircuitGate &output) {
+TensorData dynamicCall(void *(*func)(void *...),
+                       std::vector<void *> &preparedArgs, CircuitGate &output) {
   size_t rank = output.shape.dimensions.size();
   return multi_arity_call_dynamic_rank(func, preparedArgs, rank);
 }
