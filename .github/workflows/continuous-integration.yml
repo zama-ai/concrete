@@ -139,6 +139,16 @@ jobs:
           path: concrete
           token: ${{ secrets.GH_TOKEN }}
 
+      - name: Get ConcreteLib commit hash
+        id: concretelib-hash
+        run: cd ${{ github.workspace }}/concrete && echo "::set-output name=COMMIT_SHA::`git rev-parse HEAD`"
+
+      - name: Cache ConcreteLib
+        uses: actions/cache@v2
+        with:
+          path: ${{ github.workspace }}/concrete/target
+          key: concrete-compiler-concrete-lib-${{ steps.concretelib-hash.outputs.COMMIT_SHA }}
+
       - name: Install Deps
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
