@@ -40,10 +40,10 @@ where
 {
     type Parameters = LweCiphertextDiscardingEncryptionParameters;
     type RepetitionPrototypes = (
-        <Maker as PrototypesPlaintext<Precision>>::PlaintextProto,
         <Maker as PrototypesLweSecretKey<Precision, Ciphertext::KeyDistribution>>::LweSecretKeyProto,
     );
     type SamplePrototypes = (
+        <Maker as PrototypesPlaintext<Precision>>::PlaintextProto,
         <Maker as PrototypesLweCiphertext<Precision, Ciphertext::KeyDistribution>>::LweCiphertextProto,
     );
     type PreExecutionContext = (Plaintext, SecretKey, Ciphertext);
@@ -88,8 +88,7 @@ where
         maker: &mut Maker,
     ) -> Self::RepetitionPrototypes {
         let proto_secret_key = maker.new_lwe_secret_key(parameters.lwe_dimension);
-        let proto_plaintext = maker.transform_raw_to_plaintext(&Precision::Raw::uniform());
-        (proto_plaintext, proto_secret_key)
+        (proto_secret_key,)
     }
 
     fn generate_random_sample_prototypes(
@@ -98,9 +97,10 @@ where
         _repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::SamplePrototypes {
         let proto_val = maker.transform_raw_to_plaintext(&Precision::Raw::zero());
+        let proto_plaintext = maker.transform_raw_to_plaintext(&Precision::Raw::uniform());
         let proto_ciph =
             maker.trivial_encrypt_plaintext_to_lwe_ciphertext(parameters.lwe_dimension, &proto_val);
-        (proto_ciph,)
+        (proto_plaintext, proto_ciph)
     }
 
     fn prepare_context(
@@ -109,8 +109,8 @@ where
         repetition_proto: &Self::RepetitionPrototypes,
         sample_proto: &Self::SamplePrototypes,
     ) -> Self::PreExecutionContext {
-        let (proto_plaintext, proto_secret_key) = repetition_proto;
-        let (proto_ciph,) = sample_proto;
+        let (proto_secret_key,) = repetition_proto;
+        let (proto_plaintext, proto_ciph) = sample_proto;
         let synth_plaintext = maker.synthesize_plaintext(proto_plaintext);
         let synth_secret_key = maker.synthesize_lwe_secret_key(proto_secret_key);
         let synth_ciph = maker.synthesize_lwe_ciphertext(proto_ciph);
@@ -138,11 +138,12 @@ where
         _parameters: &Self::Parameters,
         maker: &mut Maker,
         repetition_proto: &Self::RepetitionPrototypes,
-        _sample_proto: &Self::SamplePrototypes,
+        sample_proto: &Self::SamplePrototypes,
         context: Self::PostExecutionContext,
     ) -> Self::Outcome {
         let (plaintext, secret_key, ciphertext) = context;
-        let (proto_plaintext, proto_secret_key) = repetition_proto;
+        let (proto_secret_key,) = repetition_proto;
+        let (proto_plaintext, _) = sample_proto;
         let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(&ciphertext);
         let proto_output_plaintext =
             maker.decrypt_lwe_ciphertext_to_plaintext(proto_secret_key, &proto_output_ciphertext);
