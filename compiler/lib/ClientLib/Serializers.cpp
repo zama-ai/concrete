@@ -3,8 +3,6 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
-#include <malloc.h>
-
 #include <iosfwd>
 #include <iostream>
 #include <stdlib.h>
