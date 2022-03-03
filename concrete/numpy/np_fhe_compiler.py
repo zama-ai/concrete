@@ -171,12 +171,18 @@ class NPFHECompiler:
             return None
         return draw_graph(self._op_graph, show, vertical, save_to)
 
-    def eval_on_inputset(self, inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]]) -> None:
+    def eval_on_inputset(
+        self,
+        inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]],
+        warn_on_inputset_length: bool = False,
+    ) -> None:
         """Evaluate the underlying function on an inputset in one go, populates OPGraph and bounds.
 
         Args:
             inputset (Union[Iterable[Any], Iterable[Tuple[Any, ...]]]): The inputset on which the
                 function should be evaluated.
+            warn_on_inputset_length (bool, optional): Set to True to get a warning
+                if inputset is not long enough. Defaults to False.
         """
 
         inputset_iter = iter(inputset)
@@ -211,7 +217,7 @@ class NPFHECompiler:
             self._compilation_configuration,
             self.compilation_artifacts,
             self._nodes_and_bounds,
-            False,
+            warn_on_inputset_length,
         )
 
     def _eval_on_current_inputset(self) -> None:
