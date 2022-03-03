@@ -173,7 +173,7 @@ encrypted_scalars_and_sizes_t unserializeEncryptedValues(
   }
   assert(actualLen == expectedLen);
   result.values.resize(actualLen);
-  for (size_t &value : result.values) {
+  for (uint64_t &value : result.values) {
     value = 0;
     readWord(istream, value);
   }
