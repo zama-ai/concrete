@@ -107,8 +107,7 @@ PublicArguments::unserializeArgs(std::istream &istream) {
     auto lweSize = clientParameters.lweSecretKeyParam(gate).lweSize();
     std::vector<int64_t> sizes = gate.shape.dimensions;
     sizes.push_back(lweSize);
-    ciphertextBuffers.push_back(
-        std::move(unserializeEncryptedValues(sizes, istream)));
+    ciphertextBuffers.push_back(unserializeEncryptedValues(sizes, istream));
     auto &values_and_sizes = ciphertextBuffers.back();
     if (istream.fail()) {
       return StringError(
