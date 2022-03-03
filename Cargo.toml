@@ -10,7 +10,15 @@ git-fetch-with-cli = true
 [dependencies]
 concrete-commons = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
 concrete-npe = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
+statrs = "0.15.0"
 
 [dev-dependencies]
 approx = "0.5.1"
-pretty_assertions = "1"
+clap = { version = "3.1.2", features = ["derive"] }
+rayon-cond = "0.2" # to avoid rayon code coloring
+# pprof = { version = "0.4", features = ["flamegraph"] }
+rayon = "1.5.1"
+text-diff = "0.4.0"
+
+[[example]]
+name = "v0_parameters"

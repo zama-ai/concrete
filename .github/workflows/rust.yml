@@ -44,7 +44,7 @@ jobs:
           RUSTFLAGS: -D warnings
         with:
           command: build
-          args: ${{ env.CARGO_ARGS }}
+          args: ${{ env.CARGO_ARGS }} --lib --examples --tests
 
       - name: cargo clippy
         uses: actions-rs/cargo@v1
@@ -56,4 +56,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: ${{ env.CARGO_ARGS }} --no-fail-fast
+          args: ${{ env.CARGO_ARGS }} --no-fail-fast --all-targets
