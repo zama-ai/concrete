@@ -269,14 +269,14 @@ jobs:
       # Only upload docs once from reference build
       - name: Archive docs artifacts
         if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
+        uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
         with:
           name: html-docs
           path: docs/_build/html/docs.tar
 
       - name: Upload changelog artifacts
         if: ${{ fromJSON(env.IS_REF_BUILD) && steps.changelog.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
+        uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
         with:
           name: changelog
           path: ${{ steps.changelog.outputs.changelog-file }}
@@ -293,7 +293,7 @@ jobs:
 
       - name: Upload wheel artifact
         if: ${{ fromJSON(env.IS_REF_BUILD) && steps.build-wheel.outcome == 'success' }}
-        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
+        uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
         with:
           name: py3-wheel
           path: dist/*.whl
