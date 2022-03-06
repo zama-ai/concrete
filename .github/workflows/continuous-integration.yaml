@@ -34,7 +34,7 @@ jobs:
       needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
 
       - name: Set matrix
         id: set-matrix
@@ -95,7 +95,7 @@ jobs:
       matrix: ${{ steps.update-linux-matrix.outputs.linux-matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
@@ -168,7 +168,7 @@ jobs:
           apt update && apt install git -y
 
       - name: Checkout Code
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
         # Fetch-detph 0 to have all commits for changelog generation
         with:
           fetch-depth: 0
@@ -401,7 +401,7 @@ jobs:
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.macos-matrix)) }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20
@@ -427,7 +427,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
 
       - name: Set up Python 3.8
         uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20
@@ -574,7 +574,7 @@ jobs:
       RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy
 
     steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+      - uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
 
       # See #570 To be updated to only install required dependencies group with poetry 1.2 and
       # remove graphviz installs which are only required for the actual package and not dev tools
@@ -888,7 +888,7 @@ jobs:
     name: Send Slack notification
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+      - uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
 
       - name: Prepare whole job status
         if: ${{ always() }}
