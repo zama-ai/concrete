@@ -40,6 +40,7 @@ test! {
     (CleartextCreationFixture, (Cleartext)),
     (CleartextRetrievalFixture, (Cleartext)),
     (CleartextDiscardingRetrievalFixture, (Cleartext)),
+    (CleartextVectorCreationFixture, (CleartextVector)),
     (GlweCiphertextVectorTrivialDecryptionFixture, (PlaintextVector, GlweCiphertextVector)),
     (GlweCiphertextVectorTrivialEncryptionFixture, (PlaintextVector, GlweCiphertextVector)),
     (GlweCiphertextTrivialDecryptionFixture, (PlaintextVector, GlweCiphertext)),
@@ -50,7 +51,6 @@ test! {
     (GlweCiphertextDiscardingEncryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
     (GlweCiphertextEncryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
     (LweCiphertextEncryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),
-    (CleartextVectorCreationFixture, (CleartextVector)),
     (LweCiphertextDecryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),
     (LweCiphertextDiscardingEncryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),
     (LweCiphertextVectorDecryptionFixture, (PlaintextVector, LweSecretKey, LweCiphertextVector)),
@@ -58,6 +58,7 @@ test! {
     (LweCiphertextCleartextFusingMultiplicationFixture, (LweCiphertext, Cleartext)),
     (LweCiphertextVectorDiscardingAffineTransformationFixture, (LweCiphertextVector, CleartextVector, Plaintext, LweCiphertext)),
     (LweCiphertextDiscardingKeyswitchFixture, (LweKeyswitchKey, LweCiphertext, LweCiphertext)),
+    (LweCiphertextDiscardingAdditionFixture, (LweCiphertext, LweCiphertext)),
     (PlaintextCreationFixture, (Plaintext)),
     (PlaintextDiscardingRetrievalFixture, (Plaintext)),
     (PlaintextRetrievalFixture, (Plaintext))
