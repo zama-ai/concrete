@@ -173,24 +173,39 @@ jobs:
           key: ${{ runner.os }}-compilation-cache-${{ github.event.pull_request.base.sha }}
 
       - name: Get tmpdir path
+        if: github.event_name == 'push'
         id: tmpdir-path
         run: echo "::set-output name=TMPDIR_PATH::`echo $TMPDIR`"
 
       - name: KeySetCache
+        if: github.event_name == 'push'
         uses: actions/cache@v2
         with:
           path: ${{ steps.tmpdir-path.outputs.TMPDIR_PATH }}/KeySetCache
           key: ${{ runner.os }}-KeySetCache-2022-03-03-7pm
 
+      # We do run test-check as part of the build, as they aren't that costly
+      # and will at least give minimum confidence that the compiler works in PRs
       - name: Build
         run: |
           cd compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
           export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          make python-bindings build-tests test-check
+          echo "Debug: ccache statistics (after the build):"
+          ccache -s
+
+      - name: Test
+        if: github.event_name == 'push'
+        run: |
+          cd compiler
+          echo "Debug: ccache statistics (prior to the tests):"
+          ccache -s
+          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
           make install_runtime_lib
           make test
-          echo "Debug: ccache statistics (after the build):"
+          echo "Debug: ccache statistics (after the tests):"
           ccache -s
 
   BuildAndTestDF:

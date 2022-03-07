@@ -143,8 +143,9 @@ build-end-to-end-jit-dfr: build-initialized
 build-end-to-end-jit-auto-parallelization: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_auto_parallelization
 
-build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg
+build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhe build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
 
+build-tests: build-end-to-end-jit build-support-unit-test build-testlib-unit-test
 
 test-end-to-end-jit-test: build-end-to-end-jit-test
 	$(BUILD_DIR)/bin/end_to_end_jit_test
@@ -237,6 +238,7 @@ generate_conv_op:
 	test-end-to-end-jit-fhelinalg \
 	test-python \
 	test \
+	build-tests \
 	add-deps \
 	file-check \
 	not \
