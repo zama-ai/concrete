@@ -17,3 +17,11 @@ impl AbstractEntity for Cleartext64 {
     type Kind = CleartextKind;
 }
 impl CleartextEntity for Cleartext64 {}
+
+/// A structure representing a cleartext wrapping a 64-bit float.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CleartextF64(pub(crate) ImplCleartext<f64>);
+impl AbstractEntity for CleartextF64 {
+    type Kind = CleartextKind;
+}
+impl CleartextEntity for CleartextF64 {}
