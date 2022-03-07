@@ -312,3 +312,6 @@ pub use plaintext_vector_discarding_retrieval::*;
 
 mod plaintext_vector_creation;
 pub use plaintext_vector_creation::*;
+
+mod plaintext_vector_retrieval;
+pub use plaintext_vector_retrieval::*;
