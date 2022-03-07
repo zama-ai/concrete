@@ -70,5 +70,6 @@ test! {
     (PlaintextCreationFixture, (Plaintext)),
     (PlaintextDiscardingRetrievalFixture, (Plaintext)),
     (PlaintextRetrievalFixture, (Plaintext)),
-    (PlaintextVectorDiscardingRetrievalFixture, (PlaintextVector))
+    (PlaintextVectorDiscardingRetrievalFixture, (PlaintextVector)),
+    (PlaintextVectorCreationFixture, (PlaintextVector))
 }

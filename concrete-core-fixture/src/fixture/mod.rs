@@ -214,14 +214,17 @@ pub use cleartext_discarding_retrieval::*;
 mod cleartext_vector_creation;
 pub use cleartext_vector_creation::*;
 
-mod glwe_ciphertext_trivial_decryption;
-pub use glwe_ciphertext_trivial_decryption::*;
-
 mod cleartext_vector_discarding_retrieval;
 pub use cleartext_vector_discarding_retrieval::*;
 
 mod cleartext_vector_retrieval;
 pub use cleartext_vector_retrieval::*;
+
+mod glwe_ciphertext_trivial_decryption;
+pub use glwe_ciphertext_trivial_decryption::*;
+
+mod glwe_ciphertext_encryption;
+pub use glwe_ciphertext_encryption::*;
 
 mod glwe_ciphertext_decryption;
 pub use glwe_ciphertext_decryption::*;
@@ -256,9 +259,6 @@ pub use lwe_ciphertext_cleartext_discarding_multiplication::*;
 mod lwe_ciphertext_cleartext_fusing_multiplication;
 pub use lwe_ciphertext_cleartext_fusing_multiplication::*;
 
-mod glwe_ciphertext_encryption;
-pub use glwe_ciphertext_encryption::*;
-
 mod lwe_ciphertext_vector_discarding_affine_transformation;
 pub use lwe_ciphertext_vector_discarding_affine_transformation::*;
 
@@ -271,15 +271,6 @@ pub use lwe_ciphertext_vector_trivial_encryption::*;
 mod lwe_ciphertext_discarding_keyswitch;
 pub use lwe_ciphertext_discarding_keyswitch::*;
 
-mod plaintext_creation;
-pub use plaintext_creation::*;
-
-mod plaintext_discarding_retrieval;
-pub use plaintext_discarding_retrieval::*;
-
-mod plaintext_retrieval;
-pub use plaintext_retrieval::*;
-
 mod lwe_ciphertext_discarding_addition;
 pub use lwe_ciphertext_discarding_addition::*;
 
@@ -289,11 +280,23 @@ pub use lwe_ciphertext_discarding_negation::*;
 mod lwe_ciphertext_fusing_addition;
 pub use lwe_ciphertext_fusing_addition::*;
 
-mod plaintext_vector_discarding_retrieval;
-pub use plaintext_vector_discarding_retrieval::*;
-
 mod lwe_ciphertext_fusing_negation;
 pub use lwe_ciphertext_fusing_negation::*;
 
 mod lwe_ciphertext_discarding_subtraction;
 pub use lwe_ciphertext_discarding_subtraction::*;
+
+mod plaintext_creation;
+pub use plaintext_creation::*;
+
+mod plaintext_discarding_retrieval;
+pub use plaintext_discarding_retrieval::*;
+
+mod plaintext_retrieval;
+pub use plaintext_retrieval::*;
+
+mod plaintext_vector_discarding_retrieval;
+pub use plaintext_vector_discarding_retrieval::*;
+
+mod plaintext_vector_creation;
+pub use plaintext_vector_creation::*;
