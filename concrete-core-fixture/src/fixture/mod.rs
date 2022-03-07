@@ -248,4 +248,8 @@ mod lwe_ciphertext_vector_discarding_affine_transformation;
 pub use lwe_ciphertext_vector_discarding_affine_transformation::*;
 
 mod lwe_ciphertext_discarding_keyswitch;
+
+mod plaintext_creation;
+pub use plaintext_creation::*;
+
 pub use lwe_ciphertext_discarding_keyswitch::*;
