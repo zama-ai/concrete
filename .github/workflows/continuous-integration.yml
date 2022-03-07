@@ -51,7 +51,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/KeySetCache
           # actions/cache does not permit to update a cache entry
-          key: ${{ runner.os }}-KeySetCache-2022-02-17
+          key: Linux-KeySetCache-2022-02-28
 
       - name: Build and test compiler
         if: ${{ matrix.compiler == 'gcc7' }}
@@ -182,7 +182,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.tmpdir-path.outputs.TMPDIR_PATH }}/KeySetCache
-          key: ${{ runner.os }}-KeySetCache-2022-03-03-7pm
+          # The cache is not specific to Linux and can be used on MacOS
+          key: Linux-KeySetCache-2022-02-28
 
       # We do run test-check as part of the build, as they aren't that costly
       # and will at least give minimum confidence that the compiler works in PRs
@@ -220,7 +221,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/KeySetCache
           # actions/cache does not permit to update a cache entry
-          key: ${{ runner.os }}-KeySetCache-2022-02-17
+          key: Linux-KeySetCache-2022-02-28
 
       - name: Build and test compiler (dataflow)
         uses: addnab/docker-run-action@v3
