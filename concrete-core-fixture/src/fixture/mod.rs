@@ -253,3 +253,6 @@ mod plaintext_creation;
 pub use plaintext_creation::*;
 
 pub use lwe_ciphertext_discarding_keyswitch::*;
+
+mod plaintext_discarding_retrieval;
+pub use plaintext_discarding_retrieval::*;
