@@ -62,5 +62,6 @@ test! {
     (LweCiphertextDiscardingNegationFixture, (LweCiphertext, LweCiphertext)),
     (PlaintextCreationFixture, (Plaintext)),
     (PlaintextDiscardingRetrievalFixture, (Plaintext)),
-    (PlaintextRetrievalFixture, (Plaintext))
+    (PlaintextRetrievalFixture, (Plaintext)),
+    (PlaintextVectorDiscardingRetrievalFixture, (PlaintextVector))
 }
