@@ -39,12 +39,10 @@ struct TensorData {
 
   inline size_t length() {
     if (sizes.empty()) {
-      assert(false);
       return 0;
     }
     size_t len = 1;
     for (auto size : sizes) {
-      assert(size > 0);
       len *= size;
     }
     return len;

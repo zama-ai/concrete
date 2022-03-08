@@ -142,12 +142,12 @@ EncryptedArguments::pushArg(size_t width, const void *data,
   for (size_t size : values_and_sizes.sizes) {
     preparedArgs.push_back((void *)size);
   }
+
   // Set the stride for each dimension, equal to the product of the
   // following dimensions.
   int64_t stride = values_and_sizes.length();
-  // If encrypted +1 set the stride for the lwe size rank
   for (size_t size : values_and_sizes.sizes) {
-    stride /= size;
+    stride = (size == 0 ? 0 : (stride / size));
     preparedArgs.push_back((void *)stride);
   }
   currentPos++;
