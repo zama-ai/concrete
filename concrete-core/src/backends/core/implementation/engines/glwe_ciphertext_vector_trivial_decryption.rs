@@ -67,7 +67,7 @@ impl GlweCiphertextVectorTrivialDecryptionEngine<GlweCiphertextVector32, Plainte
         {
             plaintext
                 .as_mut_tensor()
-                .fill_with_copy(&ciphertext.get_body().as_tensor());
+                .fill_with_copy(ciphertext.get_body().as_tensor());
         }
         PlaintextVector32(output)
     }
@@ -133,7 +133,7 @@ impl GlweCiphertextVectorTrivialDecryptionEngine<GlweCiphertextVector64, Plainte
         {
             plaintext
                 .as_mut_tensor()
-                .fill_with_copy(&ciphertext.get_body().as_tensor());
+                .fill_with_copy(ciphertext.get_body().as_tensor());
         }
         PlaintextVector64(output)
     }
