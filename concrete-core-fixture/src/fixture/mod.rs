@@ -264,6 +264,9 @@ pub use glwe_ciphertext_vector_trivial_encryption::*;
 mod lwe_ciphertext_vector_zero_encryption;
 pub use lwe_ciphertext_vector_zero_encryption::*;
 
+mod glwe_ciphertext_tensor_product;
+pub use glwe_ciphertext_tensor_product::*;
+
 mod lwe_ciphertext_encryption;
 pub use lwe_ciphertext_encryption::*;
 
