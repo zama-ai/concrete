@@ -11,6 +11,17 @@ namespace clientlib {
 
 using StringError = concretelang::error::StringError;
 
+size_t bitWidthAsWord(size_t exactBitWidth) {
+  size_t sortedWordBitWidths[] = {8, 16, 32, 64};
+  size_t previousWidth = 0;
+  for (auto currentWidth : sortedWordBitWidths) {
+    if (previousWidth < exactBitWidth && exactBitWidth <= currentWidth) {
+      return currentWidth;
+    }
+  }
+  return exactBitWidth;
+}
+
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 EncryptedArguments::exportPublicArguments(ClientParameters clientParameters,
                                           RuntimeContext runtimeContext) {
@@ -72,7 +83,7 @@ EncryptedArguments::pushArg(size_t width, const void *data,
     return StringError("argument #")
            << pos << " width > 64 bits is not supported";
   }
-  auto roundedSize = concretelang::common::bitWidthAsWord(input.shape.width);
+  auto roundedSize = bitWidthAsWord(input.shape.width);
   if (width != roundedSize) {
     return StringError("argument #") << pos << "width mismatch, got " << width
                                      << " expected " << roundedSize;

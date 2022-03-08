@@ -341,38 +341,6 @@ public:
     }
 
   protected:
-    template <int pos>
-    inline llvm::Error addArgs(JITLambda::Argument *jitArgs) {
-      // base case -- nothing to do
-      return llvm::Error::success();
-    }
-
-    // Recursive case for scalars: extract first scalar argument from
-    // parameter pack and forward rest
-    template <int pos, typename ArgT, typename... Ts>
-    inline llvm::Error addArgs(JITLambda::Argument *jitArgs, ArgT arg,
-                               Ts... remainder) {
-      if (auto err = jitArgs->setArg(pos, arg)) {
-        return StreamStringError()
-               << "Cannot push scalar argument " << pos << ": " << err;
-      }
-
-      return this->addArgs<pos + 1>(jitArgs, remainder...);
-    }
-
-    // Recursive case for tensors: extract pointer and size from
-    // parameter pack and forward rest
-    template <int pos, typename ArgT, typename... Ts>
-    inline llvm::Error addArgs(JITLambda::Argument *jitArgs, ArgT *arg,
-                               size_t size, Ts... remainder) {
-      if (auto err = jitArgs->setArg(pos, arg, size)) {
-        return StreamStringError()
-               << "Cannot push tensor argument " << pos << ": " << err;
-      }
-
-      return this->addArgs<pos + 1>(jitArgs, remainder...);
-    }
-
     std::unique_ptr<JITLambda> innerLambda;
     std::unique_ptr<KeySet> keySet;
     std::shared_ptr<CompilationContext> compilationContext;

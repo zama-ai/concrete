@@ -30,7 +30,6 @@ add_mlir_library(ConcretelangSupport
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
 
-  ConcretelangCommon
   ConcretelangRuntime
   ConcretelangClientLib
 )

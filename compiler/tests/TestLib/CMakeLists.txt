@@ -15,7 +15,6 @@ set_source_files_properties(
 
 target_link_libraries(
   testlib_unit_test
-  ConcretelangCommon
   ConcretelangRuntime
   ConcretelangSupport
   ConcretelangClientLib
