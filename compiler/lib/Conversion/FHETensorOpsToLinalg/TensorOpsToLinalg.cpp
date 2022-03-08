@@ -924,13 +924,16 @@ struct FHELinalgMatmulToLinalgGeneric
       // and finally, we add the AffineDimExpr corresponding to `N`
       // which is at the last index of `iteratorTypes`
 
-      for (int64_t dim = outDims - lhsDims; dim < outDims - 1; dim++) {
-        if (lhsShape[dim] == 1) {
+      int64_t lhsDim = 0;
+      for (int64_t outDim = outDims - lhsDims; outDim < outDims - 1; outDim++) {
+        if (lhsDim < lhsDims - 2 && lhsShape[lhsDim] == 1) {
           // broadcasted so current `dim` will always be indexed with `0`
           lhsAffineExpressions.push_back(rewriter.getAffineConstantExpr(0));
         } else {
-          lhsAffineExpressions.push_back(rewriter.getAffineDimExpr(dim));
+          assert(lhsShape[lhsDim] == outShape[outDim]);
+          lhsAffineExpressions.push_back(rewriter.getAffineDimExpr(outDim));
         }
+        lhsDim++;
       }
       lhsAffineExpressions.push_back(
           rewriter.getAffineDimExpr(iteratorTypes.size() - 1));
@@ -965,13 +968,16 @@ struct FHELinalgMatmulToLinalgGeneric
       // and finally, we add the AffineDimExpr corresponding to `N` and `P`
       // which is at the last and one before last indices of `iteratorTypes`
 
-      for (int64_t dim = outDims - rhsDims; dim < outDims - 2; dim++) {
-        if (rhsShape[dim] == 1) {
+      int64_t rhsDim = 0;
+      for (int64_t outDim = outDims - rhsDims; outDim < outDims - 2; outDim++) {
+        if (rhsShape[rhsDim] == 1) {
           // broadcasted so current `dim` will always be indexed with `0`
           rhsAffineExpressions.push_back(rewriter.getAffineConstantExpr(0));
         } else {
-          rhsAffineExpressions.push_back(rewriter.getAffineDimExpr(dim));
+          assert(rhsShape[rhsDim] == outShape[outDim]);
+          rhsAffineExpressions.push_back(rewriter.getAffineDimExpr(outDim));
         }
+        rhsDim++;
       }
       rhsAffineExpressions.push_back(
           rewriter.getAffineDimExpr(iteratorTypes.size() - 1));
