@@ -34,7 +34,8 @@ impl GlweCiphertextVectorTrivialDecryptionEngine<GlweCiphertextVector32, Plainte
     ///         ciphertext_count,
     ///         &plaintext_vector,
     ///     )?;
-    /// let output: PlaintextVector32 = engine.trivially_decrypt_glwe_ciphertext_vector(&ciphertext_vector)?;
+    /// let output: PlaintextVector32 =
+    ///     engine.trivially_decrypt_glwe_ciphertext_vector(&ciphertext_vector)?;
     ///
     /// assert_eq!(output.plaintext_count(), PlaintextCount(8));
     ///
@@ -99,7 +100,8 @@ impl GlweCiphertextVectorTrivialDecryptionEngine<GlweCiphertextVector64, Plainte
     ///         ciphertext_count,
     ///         &plaintext_vector,
     ///     )?;
-    /// let output: PlaintextVector64 = engine.trivially_decrypt_glwe_ciphertext_vector(&ciphertext_vector)?;
+    /// let output: PlaintextVector64 =
+    ///     engine.trivially_decrypt_glwe_ciphertext_vector(&ciphertext_vector)?;
     ///
     /// assert_eq!(output.plaintext_count(), PlaintextCount(8));
     ///
