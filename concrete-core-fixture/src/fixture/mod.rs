@@ -274,3 +274,6 @@ pub use plaintext_retrieval::*;
 
 mod lwe_ciphertext_discarding_addition;
 pub use lwe_ciphertext_discarding_addition::*;
+
+mod lwe_ciphertext_discarding_negation;
+pub use lwe_ciphertext_discarding_negation::*;
