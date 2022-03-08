@@ -59,6 +59,7 @@ test! {
     (LweCiphertextVectorDiscardingAffineTransformationFixture, (LweCiphertextVector, CleartextVector, Plaintext, LweCiphertext)),
     (LweCiphertextDiscardingKeyswitchFixture, (LweKeyswitchKey, LweCiphertext, LweCiphertext)),
     (LweCiphertextDiscardingAdditionFixture, (LweCiphertext, LweCiphertext)),
+    (LweCiphertextDiscardingNegationFixture, (LweCiphertext, LweCiphertext)),
     (PlaintextCreationFixture, (Plaintext)),
     (PlaintextDiscardingRetrievalFixture, (Plaintext)),
     (PlaintextRetrievalFixture, (Plaintext))
