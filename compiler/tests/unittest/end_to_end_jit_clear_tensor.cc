@@ -394,6 +394,6 @@ TEST_P(ReturnTensorWithPrecision, return_tensor) {
   ASSERT_TRUE(status);
 }
 
-INSTANTIATE_TEST_SUITE_P(ReturnTensor, ReturnTensorWithPrecision,
+INSTANTIATE_TEST_SUITE_P(DISABLED_ReturnTensor, ReturnTensorWithPrecision,
                          ::testing::Values(1, 7, 8, 9, 15, 16, 17, 31, 32, 33,
                                            63, 64));
