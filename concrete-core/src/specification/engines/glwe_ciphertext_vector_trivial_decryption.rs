@@ -33,8 +33,8 @@ where
     ///
     /// # Safety
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
-    /// of [`GlweCiphertextVectorTrivialDecryptionError`]. For safety concerns _specific_ to an engine,
-    /// refer to the implementer safety section.
+    /// of [`GlweCiphertextVectorTrivialDecryptionError`]. For safety concerns _specific_ to an
+    /// engine, refer to the implementer safety section.
     unsafe fn trivially_decrypt_glwe_ciphertext_vector_unchecked(
         &mut self,
         input: &CiphertextVector,
