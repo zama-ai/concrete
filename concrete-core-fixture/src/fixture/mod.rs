@@ -286,6 +286,9 @@ pub use lwe_ciphertext_fusing_negation::*;
 mod lwe_ciphertext_discarding_subtraction;
 pub use lwe_ciphertext_discarding_subtraction::*;
 
+mod lwe_ciphertext_fusing_subtraction;
+pub use lwe_ciphertext_fusing_subtraction::*;
+
 mod plaintext_creation;
 pub use plaintext_creation::*;
 
