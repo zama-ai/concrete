@@ -304,6 +304,9 @@ pub use lwe_ciphertext_plaintext_discarding_subtraction::*;
 mod lwe_ciphertext_vector_encryption;
 pub use lwe_ciphertext_vector_encryption::*;
 
+mod lwe_ciphertext_vector_fusing_subtraction;
+pub use lwe_ciphertext_vector_fusing_subtraction::*;
+
 mod plaintext_creation;
 pub use plaintext_creation::*;
 
