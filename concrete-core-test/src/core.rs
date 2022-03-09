@@ -71,6 +71,7 @@ test! {
     (LweCiphertextDiscardingSubtractionFixture, (LweCiphertext, LweCiphertext)),
     (LweCiphertextDiscardingDecryptionFixture, (LweCiphertext, LweSecretKey, Plaintext)),
     (LweCiphertextPlaintextDiscardingAdditionFixture, (LweCiphertext, Plaintext, LweCiphertext)),
+    (LweCiphertextPlaintextFusingAdditionFixture, (Plaintext, LweCiphertext)),
     (PlaintextCreationFixture, (Plaintext)),
     (PlaintextDiscardingRetrievalFixture, (Plaintext)),
     (PlaintextRetrievalFixture, (Plaintext)),
