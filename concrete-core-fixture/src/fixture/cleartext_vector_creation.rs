@@ -35,9 +35,14 @@ where
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(
-            vec![CleartextVectorCreationParameters {
-                count: CleartextCount(500),
-            }]
+            vec![
+                CleartextVectorCreationParameters {
+                    count: CleartextCount(100),
+                },
+                CleartextVectorCreationParameters {
+                    count: CleartextCount(1),
+                },
+            ]
             .into_iter(),
         )
     }

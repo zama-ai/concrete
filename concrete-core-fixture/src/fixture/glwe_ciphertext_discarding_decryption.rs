@@ -54,11 +54,18 @@ where
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(
-            vec![GlweCiphertextDiscardingDecryptionParameters {
-                noise: Variance(0.00000001),
-                glwe_dimension: GlweDimension(200),
-                polynomial_size: PolynomialSize(200),
-            }]
+            vec![
+                GlweCiphertextDiscardingDecryptionParameters {
+                    noise: Variance(0.00000001),
+                    glwe_dimension: GlweDimension(200),
+                    polynomial_size: PolynomialSize(256),
+                },
+                GlweCiphertextDiscardingDecryptionParameters {
+                    noise: Variance(0.00000001),
+                    glwe_dimension: GlweDimension(1),
+                    polynomial_size: PolynomialSize(2),
+                },
+            ]
             .into_iter(),
         )
     }

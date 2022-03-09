@@ -50,7 +50,7 @@ where
                 },
                 GlweCiphertextTrivialDecryptionParameters {
                     glwe_dimension: GlweDimension(1),
-                    polynomial_size: PolynomialSize(256),
+                    polynomial_size: PolynomialSize(2),
                 },
             ]
             .into_iter(),

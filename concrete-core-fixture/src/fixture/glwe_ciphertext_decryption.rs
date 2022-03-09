@@ -62,12 +62,7 @@ where
                 GlweCiphertextDecryptionParameters {
                     noise: Variance(0.00000001),
                     glwe_dimension: GlweDimension(1),
-                    polynomial_size: PolynomialSize(256),
-                },
-                GlweCiphertextDecryptionParameters {
-                    noise: Variance(0.00000001),
-                    glwe_dimension: GlweDimension(200),
-                    polynomial_size: PolynomialSize(1),
+                    polynomial_size: PolynomialSize(2),
                 },
             ]
             .into_iter(),
