@@ -90,7 +90,7 @@ where
             parameters.noise,
         );
         let proto_output_ciphertext =
-            maker.trivial_encrypt_zero_to_lwe_ciphertext(parameters.lwe_dimension);
+            maker.trivially_encrypt_zero_to_lwe_ciphertext(parameters.lwe_dimension);
         (
             proto_plaintext,
             proto_input_ciphertext,

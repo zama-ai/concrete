@@ -91,7 +91,7 @@ where
         let proto_plaintext_sub = maker.transform_raw_to_plaintext(&raw_plaintext_sub);
 
         let proto_output_ciphertext =
-            maker.trivial_encrypt_zero_to_lwe_ciphertext(parameters.lwe_dimension);
+            maker.trivially_encrypt_zero_to_lwe_ciphertext(parameters.lwe_dimension);
         (
             proto_plaintext,
             proto_plaintext_sub,
