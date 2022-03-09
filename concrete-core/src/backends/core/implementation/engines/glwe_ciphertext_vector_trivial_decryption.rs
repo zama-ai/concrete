@@ -22,7 +22,7 @@ impl GlweCiphertextVectorTrivialDecryptionEngine<GlweCiphertextVector32, Plainte
     /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
     /// let glwe_dimension = GlweDimension(2);
     /// let polynomial_size = PolynomialSize(4);
-    /// let input = vec![3_u32 << 50; 2 * polynomial_size.0];
+    /// let input = vec![3_u32 << 20; 2 * polynomial_size.0];
     /// let ciphertext_count = GlweCiphertextCount(2);
     ///
     /// let mut engine = CoreEngine::new()?;
