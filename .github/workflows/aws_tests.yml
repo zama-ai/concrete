@@ -31,8 +31,8 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
-          ec2-image-id: ami-0ad14d9cfbfb4a07b
-          ec2-instance-type: m5.2xlarge
+          ec2-image-id: ami-016cd2805f00564a5
+          ec2-instance-type: m5n.2xlarge
           subnet-id: subnet-da319dd4
           security-group-id: sg-064a7184f24469c76
           
@@ -55,18 +55,6 @@ jobs:
       if: ${{ !cancelled() }}
       run: |
         echo "HOME=/home/ubuntu" >> ${GITHUB_ENV}
-    - name: Update aptitude
-      if: ${{ !cancelled() }}
-      run: sudo apt-get update
-    - name: Install build_essential
-      if: ${{ !cancelled() }}
-      run: sudo apt-get install -y build-essential
-    - name: Install clang
-      if: ${{ !cancelled() }}
-      run: sudo apt-get install -y libclang-dev
-    - name: Install fftw3
-      if: ${{ !cancelled() }}
-      run: sudo apt-get install -y libfftw3-dev
     - name: Install Rust
       if: ${{ !cancelled() }}
       uses: actions-rs/toolchain@v1
