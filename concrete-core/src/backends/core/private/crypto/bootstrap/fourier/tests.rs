@@ -1,13 +1,10 @@
-use std::fmt::Debug;
-
-use concrete_npe as npe;
-
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_commons::numeric::{CastFrom, CastInto, Numeric};
+use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
     PlaintextCount, PolynomialSize,
 };
+use concrete_npe as npe;
 
 use crate::backends::core::private::crypto::bootstrap::fourier::constant_sample_extract;
 use crate::backends::core::private::crypto::bootstrap::{
@@ -22,12 +19,9 @@ use crate::backends::core::private::crypto::secret::generators::{
 use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::backends::core::private::math::fft::Complex64;
 use crate::backends::core::private::math::random::RandomGenerator;
-use crate::backends::core::private::math::tensor::{
-    AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
-};
+use crate::backends::core::private::math::tensor::{AsRefTensor, IntoTensor, Tensor};
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::test_tools::{assert_delta_std_dev, assert_noise_distribution};
-use concrete_commons::key_kinds::BinaryKeyKind;
 
 fn test_external_product_generic<T: UnsignedTorus>() {
     let n_tests = 10;
@@ -429,122 +423,6 @@ fn test_sample_extract<T: UnsignedTorus>() {
             assert_noise_distribution(&groundtruth_samples, &sdk_samples, std_dev);
         }
     }
-}
-
-fn test_bootstrap_drift<T: UnsignedTorus + Debug>()
-where
-    i64: CastFrom<T>,
-{
-    // define settings
-    let nb_test: usize = 10;
-    let polynomial_size = PolynomialSize(1024);
-    let rlwe_dimension = GlweDimension(1);
-    let lwe_dimension = LweDimension(630);
-    let level = DecompositionLevelCount(3);
-    let base_log = DecompositionBaseLog(7);
-    let std = LogStandardDev::from_log_standard_dev(-29.);
-    let log_degree = f64::log2(polynomial_size.0 as f64) as i32;
-    let mut random_generator = RandomGenerator::new(None);
-    let mut secret_generator = SecretRandomGenerator::new(None);
-    let mut encryption_generator = EncryptionRandomGenerator::new(None);
-
-    let mut rlwe_sk =
-        GlweSecretKey::generate_binary(rlwe_dimension, polynomial_size, &mut secret_generator);
-    let mut lwe_sk = LweSecretKey::generate_binary(lwe_dimension, &mut secret_generator);
-
-    let mut msg = Tensor::allocate(T::ZERO, nb_test);
-    let mut new_msg = Tensor::allocate(T::ZERO, nb_test);
-
-    // launch nb_test tests
-    for i in 0..nb_test {
-        // fill keys with random
-        random_generator.fill_tensor_with_random_uniform_binary(&mut rlwe_sk);
-        random_generator.fill_tensor_with_random_uniform_binary(&mut lwe_sk);
-
-        // allocation and generation of the key in coef domain:
-        let mut coef_bsk = StandardBootstrapKey::allocate(
-            T::ZERO,
-            rlwe_dimension.to_glwe_size(),
-            polynomial_size,
-            level,
-            base_log,
-            lwe_dimension,
-        );
-        coef_bsk.fill_with_new_key(&lwe_sk, &rlwe_sk, std, &mut encryption_generator);
-
-        // allocation for the bootstrapping key
-        let mut fourier_bsk = FourierBootstrapKey::allocate(
-            Complex64::new(0., 0.),
-            rlwe_dimension.to_glwe_size(),
-            polynomial_size,
-            level,
-            base_log,
-            lwe_dimension,
-        );
-        let mut buffers = FourierBuffers::new(fourier_bsk.poly_size, fourier_bsk.glwe_size);
-        fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
-
-        let val = (polynomial_size.0 as f64 - (10. * f64::sqrt((lwe_dimension.0 as f64) / 16.0)))
-            * 2_f64.powi(<T as Numeric>::BITS as i32 - log_degree - 1);
-        let val = T::cast_from(val);
-
-        let m0 = Plaintext(val);
-
-        msg.as_mut_slice()[i] = val;
-
-        let mut lwe_in = LweCiphertext::allocate(T::ZERO, lwe_dimension.to_lwe_size());
-        let mut lwe_out =
-            LweCiphertext::allocate(T::ZERO, LweSize(rlwe_dimension.0 * polynomial_size.0 + 1));
-        lwe_sk.encrypt_lwe(&mut lwe_in, &m0, std, &mut encryption_generator);
-
-        // accumulator is a trivial encryption of [0, 1/2N, 2/2N, ...]
-        let mut accumulator =
-            GlweCiphertext::allocate(T::ZERO, polynomial_size, rlwe_dimension.to_glwe_size());
-        accumulator
-            .get_mut_body()
-            .as_mut_tensor()
-            .iter_mut()
-            .enumerate()
-            .for_each(|(i, a)| {
-                *a = (i as f64 * 2_f64.powi(<T as Numeric>::BITS as i32 - log_degree - 1))
-                    .cast_into();
-            });
-
-        // bootstrap
-        let mut buffers =
-            FourierBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
-        fourier_bsk.bootstrap(&mut lwe_out, &lwe_in, &accumulator, &mut buffers);
-
-        let mut m1 = Plaintext(T::ZERO);
-
-        // now the lwe is encrypted using a flatten of the trlwe encryption key
-        let flattened_key = LweSecretKey::binary_from_container(rlwe_sk.as_tensor().as_slice());
-        flattened_key.decrypt_lwe(&mut m1, &lwe_out);
-        // store the decryption of the bootstrapped ciphertext
-        new_msg.as_mut_slice()[i] = m1.0;
-
-        // test that the drift remains within the bound of the theretical drift
-        let delta_max: i64 = ((5. * f64::sqrt((lwe_dimension.0 as f64) / 16.0))
-            * 2_f64.powi(<T as Numeric>::BITS as i32 - log_degree - 1))
-            as i64;
-        assert!(
-            (i64::cast_from(m0.0) - i64::cast_from(m1.0)).abs() <= delta_max,
-            "{:?} != {:?} +- {:?}",
-            m0.0,
-            m1.0,
-            delta_max
-        );
-    }
-}
-
-#[test]
-pub fn test_bootstrap_drift_u32() {
-    test_bootstrap_drift::<u32>();
-}
-
-#[test]
-pub fn test_bootstrap_drift_u64() {
-    test_bootstrap_drift::<u64>();
 }
 
 #[test]

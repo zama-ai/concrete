@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::ops::Range;
 
 /// A trait to generate raw unsigned integer values.
-pub trait RawUnsignedIntegers: UnsignedInteger + CastInto<f64> + Debug {
+pub trait RawUnsignedIntegers: UnsignedInteger + CastInto<f64> + CastInto<i64> + Debug {
     fn one() -> Self;
     fn one_vec(size: usize) -> Vec<Self>;
     fn zero() -> Self;
