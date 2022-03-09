@@ -25,7 +25,7 @@ root_url = os.environ.get("DOC_ROOT_URL", "/concrete-numpy")
 root_url = root_url if root_url.endswith('/') else root_url + '/'
 
 # The full version, including alpha/beta/rc tags
-release = "0.3.0-rc5"
+release = "0.3.0-rc6"
 
 
 # -- General configuration ---------------------------------------------------
