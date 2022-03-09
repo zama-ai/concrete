@@ -52,17 +52,7 @@ where
                 },
                 GlweCiphertextVectorTrivialEncryptionParameters {
                     glwe_dimension: GlweDimension(1),
-                    polynomial_size: PolynomialSize(256),
-                    count: GlweCiphertextCount(100),
-                },
-                GlweCiphertextVectorTrivialEncryptionParameters {
-                    glwe_dimension: GlweDimension(200),
-                    polynomial_size: PolynomialSize(1),
-                    count: GlweCiphertextCount(100),
-                },
-                GlweCiphertextVectorTrivialEncryptionParameters {
-                    glwe_dimension: GlweDimension(200),
-                    polynomial_size: PolynomialSize(256),
+                    polynomial_size: PolynomialSize(2),
                     count: GlweCiphertextCount(1),
                 },
             ]
