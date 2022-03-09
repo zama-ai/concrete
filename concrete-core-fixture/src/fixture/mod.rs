@@ -304,6 +304,9 @@ pub use lwe_ciphertext_plaintext_discarding_addition::*;
 mod lwe_ciphertext_plaintext_fusing_addition;
 pub use lwe_ciphertext_plaintext_fusing_addition::*;
 
+mod lwe_ciphertext_plaintext_fusing_subtraction;
+pub use lwe_ciphertext_plaintext_fusing_subtraction::*;
+
 mod lwe_ciphertext_plaintext_discarding_subtraction;
 pub use lwe_ciphertext_plaintext_discarding_subtraction::*;
 
