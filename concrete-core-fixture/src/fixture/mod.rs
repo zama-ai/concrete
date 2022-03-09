@@ -259,12 +259,17 @@ pub use glwe_ciphertext_encryption::*;
 mod lwe_ciphertext_vector_discarding_affine_transformation;
 pub use lwe_ciphertext_vector_discarding_affine_transformation::*;
 
+mod lwe_ciphertext_vector_trivial_decryption;
+pub use lwe_ciphertext_vector_trivial_decryption::*;
+
+mod lwe_ciphertext_vector_trivial_encryption;
+pub use lwe_ciphertext_vector_trivial_encryption::*;
+
 mod lwe_ciphertext_discarding_keyswitch;
+pub use lwe_ciphertext_discarding_keyswitch::*;
 
 mod plaintext_creation;
 pub use plaintext_creation::*;
-
-pub use lwe_ciphertext_discarding_keyswitch::*;
 
 mod plaintext_discarding_retrieval;
 pub use plaintext_discarding_retrieval::*;

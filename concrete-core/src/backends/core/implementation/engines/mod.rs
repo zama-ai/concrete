@@ -154,6 +154,7 @@ mod lwe_ciphertext_vector_discarding_subtraction;
 mod lwe_ciphertext_vector_encryption;
 mod lwe_ciphertext_vector_fusing_addition;
 mod lwe_ciphertext_vector_fusing_subtraction;
+mod lwe_ciphertext_vector_trivial_decryption;
 mod lwe_ciphertext_vector_trivial_encryption;
 mod lwe_ciphertext_vector_zero_encryption;
 mod lwe_ciphertext_zero_encryption;
