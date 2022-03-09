@@ -15,12 +15,18 @@ using mlir::concretelang::JitCompilerEngine;
 
 mlir::concretelang::JitCompilerEngine::Lambda
 buildLambda(const char *module, const char *funcName,
-            const char *runtimeLibPath, const char *keySetCachePath) {
+            const char *runtimeLibPath, const char *keySetCachePath,
+            bool autoParallelize, bool loopParallelize, bool dfParallelize) {
   // Set the runtime library path if not nullptr
   llvm::Optional<llvm::StringRef> runtimeLibPathOptional = {};
   if (runtimeLibPath != nullptr)
     runtimeLibPathOptional = runtimeLibPath;
   mlir::concretelang::JitCompilerEngine engine;
+
+  // Set parallelization flags
+  engine.setAutoParallelize(autoParallelize);
+  engine.setLoopParallelize(loopParallelize);
+  engine.setDataflowParallelize(dfParallelize);
 
   using KeySetCache = mlir::concretelang::KeySetCache;
   using optKeySetCache = llvm::Optional<mlir::concretelang::KeySetCache>;

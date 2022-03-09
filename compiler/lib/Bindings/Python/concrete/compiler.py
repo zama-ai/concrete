@@ -6,7 +6,9 @@ from collections.abc import Iterable
 import os
 from typing import List, Union
 
-from mlir._mlir_libs._concretelang._compiler import JitCompilerEngine as _JitCompilerEngine
+from mlir._mlir_libs._concretelang._compiler import (
+    JitCompilerEngine as _JitCompilerEngine,
+)
 from mlir._mlir_libs._concretelang._compiler import LambdaArgument as _LambdaArgument
 from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
 from mlir._mlir_libs._concretelang._compiler import library as _library
@@ -58,9 +60,11 @@ def round_trip(mlir_str: str) -> str:
         raise TypeError("input must be an `str`")
     return _round_trip(mlir_str)
 
-_MLIR_MODULES_TYPE = 'mlir_modules must be an `iterable` of `str` or a `str'
 
-def library(library_path: str, mlir_modules: Union['Iterable[str]', str]) -> str:
+_MLIR_MODULES_TYPE = "mlir_modules must be an `iterable` of `str` or a `str"
+
+
+def library(library_path: str, mlir_modules: Union["Iterable[str]", str]) -> str:
     """Compile the MLIR inputs to a library.
 
     Args:
@@ -74,7 +78,7 @@ def library(library_path: str, mlir_modules: Union['Iterable[str]', str]) -> str
         str: parsed MLIR input.
     """
     if not isinstance(library_path, str):
-        raise TypeError('library_path must be a `str`')
+        raise TypeError("library_path must be a `str`")
     if isinstance(mlir_modules, str):
         mlir_modules = [mlir_modules]
     elif isinstance(mlir_modules, list):
@@ -104,7 +108,9 @@ def create_execution_argument(value: Union[int, np.ndarray]) -> "_LambdaArgument
         _LambdaArgument: lambda argument holding the appropriate value
     """
     if not isinstance(value, ACCEPTED_TYPES):
-        raise TypeError("value of execution argument must be either int, numpy.array or numpy.uint{8,16,32,64}")
+        raise TypeError(
+            "value of execution argument must be either int, numpy.array or numpy.uint{8,16,32,64}"
+        )
     if isinstance(value, ACCEPTED_INTS):
         if isinstance(value, int) and not (0 <= value < np.iinfo(np.uint64).max):
             raise TypeError(
@@ -128,8 +134,14 @@ class CompilerEngine:
             self.compile_fhe(mlir_str)
 
     def compile_fhe(
-        self, mlir_str: str, func_name: str = "main", runtime_lib_path: str = None,
+        self,
+        mlir_str: str,
+        func_name: str = "main",
+        runtime_lib_path: str = None,
         unsecure_key_set_cache_path: str = None,
+        auto_parallelize: bool = False,
+        loop_parallelize: bool = False,
+        df_parallelize: bool = False,
     ):
         """Compile the MLIR input.
 
@@ -138,6 +150,9 @@ class CompilerEngine:
             func_name (str): name of the function to set as entrypoint (default: main).
             runtime_lib_path (str): path to the runtime lib (default: None).
             unsecure_key_set_cache_path (str): path to the activate keyset caching (default: None).
+            auto_parallelize (bool): whether to activate auto-parallelization or not (default: False),
+            loop_parallelize (bool): whether to activate loop-parallelization or not (default: False),
+            df_parallelize (bool): whether to activate dataflow-parallelization or not (default: False),
 
         Raises:
             TypeError: if the argument is not an str.
@@ -152,14 +167,25 @@ class CompilerEngine:
                 raise TypeError(
                     "runtime_lib_path must be an str representing the path to the runtime lib"
                 )
+        if not all(
+            isinstance(flag, bool)
+            for flag in [auto_parallelize, loop_parallelize, df_parallelize]
+        ):
+            raise TypeError(
+                "parallelization flags (auto_parallelize, loop_parallelize, df_parallelize), should be booleans"
+            )
         unsecure_key_set_cache_path = unsecure_key_set_cache_path or ""
         if not isinstance(unsecure_key_set_cache_path, str):
-            raise TypeError(
-                "unsecure_key_set_cache_path must be a str"
-            )
+            raise TypeError("unsecure_key_set_cache_path must be a str")
         self._lambda = self._engine.build_lambda(
-            mlir_str, func_name, runtime_lib_path,
-            unsecure_key_set_cache_path)
+            mlir_str,
+            func_name,
+            runtime_lib_path,
+            unsecure_key_set_cache_path,
+            auto_parallelize,
+            loop_parallelize,
+            df_parallelize,
+        )
 
     def run(self, *args: List[Union[int, np.ndarray]]) -> Union[int, np.ndarray]:
         """Run the compiled code.

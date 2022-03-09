@@ -39,10 +39,11 @@ typedef struct executionArguments executionArguments;
 // The lambda will have `funcName` as entrypoint, and use runtimeLibPath (if not
 // null) as a shared library during compilation,
 // a path to activate the use a cache for encryption keys for test purpose
-// (unsecure).
+// (unsecure), and a set of flags for parallelization.
 MLIR_CAPI_EXPORTED mlir::concretelang::JitCompilerEngine::Lambda
 buildLambda(const char *module, const char *funcName,
-            const char *runtimeLibPath, const char *keySetCachePath);
+            const char *runtimeLibPath, const char *keySetCachePath,
+            bool autoParallelize, bool loopParallelize, bool dfParallelize);
 
 // Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);

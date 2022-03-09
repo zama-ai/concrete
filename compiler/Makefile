@@ -33,6 +33,13 @@ else
 		CXX_COMPILER_OPTION=
 endif
 
+# don't run parallel python tests if compiler doesn't support it
+ifeq ($(PARALLEL_EXECUTION_ENABLED),ON)
+		PYTHON_TESTS_MARKER=""
+else
+		PYTHON_TESTS_MARKER="not parallel"
+endif
+
 $(BUILD_DIR)/configured.stamp:
 	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
 	$(CMAKE_CCACHE_OPTIONS) \
@@ -78,7 +85,7 @@ test-check: concretecompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/
 
 test-python: python-bindings concretecompiler
-	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs tests/python
+	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
 
 test: test-check test-end-to-end-jit test-python support-unit-test testlib-unit-test
 

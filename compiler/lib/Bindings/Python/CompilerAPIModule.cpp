@@ -43,11 +43,14 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def(pybind11::init())
       .def_static("build_lambda",
                   [](std::string mlir_input, std::string func_name,
-                     std::string runtime_lib_path,
-                     std::string keysetcache_path) {
+                     std::string runtime_lib_path, std::string keysetcache_path,
+                     bool auto_parallelize, bool loop_parallelize,
+                     bool df_parallelize) {
                     return buildLambda(mlir_input.c_str(), func_name.c_str(),
                                        noEmptyStringPtr(runtime_lib_path),
-                                       noEmptyStringPtr(keysetcache_path));
+                                       noEmptyStringPtr(keysetcache_path),
+                                       auto_parallelize, loop_parallelize,
+                                       df_parallelize);
                   });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
