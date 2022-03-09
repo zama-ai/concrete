@@ -129,7 +129,7 @@ where
         let proto_output_ciphertext = <Maker as PrototypesLweCiphertext<
             Precision,
             OutputCiphertext::KeyDistribution,
-        >>::trivial_encrypt_zero_to_lwe_ciphertext(
+        >>::trivially_encrypt_zero_to_lwe_ciphertext(
             maker, parameters.output_lwe_dimension
         );
         (

@@ -22,6 +22,7 @@ impl LweCiphertextTrivialEncryptionEngine<Plaintext32, LweCiphertext32> for Core
     ///
     /// let mut engine = CoreEngine::new()?;
     /// let plaintext: Plaintext32 = engine.create_plaintext(&input)?;
+    /// // DISCLAIMER: trivial encryption is NOT secure, and DOES NOT hide the message at all.
     /// let ciphertext: LweCiphertext32 =
     ///     engine.trivially_encrypt_lwe_ciphertext(lwe_size, &plaintext)?;
     ///
@@ -68,6 +69,7 @@ impl LweCiphertextTrivialEncryptionEngine<Plaintext64, LweCiphertext64> for Core
     ///
     /// let mut engine = CoreEngine::new()?;
     /// let plaintext: Plaintext64 = engine.create_plaintext(&input)?;
+    /// // DISCLAIMER: trivial encryption is NOT secure, and DOES NOT hide the message at all.
     /// let ciphertext: LweCiphertext64 =
     ///     engine.trivially_encrypt_lwe_ciphertext(lwe_size, &plaintext)?;
     ///

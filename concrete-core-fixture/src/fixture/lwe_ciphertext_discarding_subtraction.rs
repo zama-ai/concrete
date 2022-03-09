@@ -1,3 +1,8 @@
+use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
+use concrete_commons::numeric::UnsignedInteger;
+use concrete_commons::parameters::LweDimension;
+use concrete_core::prelude::{LweCiphertextDiscardingSubtractionEngine, LweCiphertextEntity};
+
 use crate::fixture::Fixture;
 use crate::generation::prototyping::{
     PrototypesLweCiphertext, PrototypesLweSecretKey, PrototypesPlaintext,
@@ -6,10 +11,6 @@ use crate::generation::synthesizing::SynthesizesLweCiphertext;
 use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::generation::RawUnsignedIntegers;
 use crate::raw::statistical_test::assert_noise_distribution;
-use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_commons::numeric::UnsignedInteger;
-use concrete_commons::parameters::LweDimension;
-use concrete_core::prelude::{LweCiphertextDiscardingSubtractionEngine, LweCiphertextEntity};
 
 /// A fixture for the types implementing the `LweCiphertextDiscardingSubtractionEngine`
 /// trait.
@@ -88,7 +89,7 @@ where
             parameters.noise,
         );
         let proto_output_ciphertext =
-            maker.trivial_encrypt_zero_to_lwe_ciphertext(parameters.lwe_dimension);
+            maker.trivially_encrypt_zero_to_lwe_ciphertext(parameters.lwe_dimension);
         (
             proto_plaintext1,
             proto_plaintext2,
