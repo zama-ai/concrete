@@ -20,30 +20,22 @@ using namespace concretelang::testlib;
 using concretelang::clientlib::scalar_in;
 using concretelang::clientlib::scalar_out;
 using concretelang::clientlib::tensor1_in;
-using concretelang::clientlib::tensor2_in;
 using concretelang::clientlib::tensor1_out;
+using concretelang::clientlib::tensor2_in;
 using concretelang::clientlib::tensor2_out;
 using concretelang::clientlib::tensor3_out;
 
-std::vector<uint8_t>
-values_3bits() {
-  return {0, 1, 2, 5, 7};
-}
-std::vector<uint8_t>
-values_6bits() {
-  return {0, 1, 2, 13, 22, 59, 62, 63};
-}
-std::vector<uint8_t>
-values_7bits() {
-  return {0, 1, 2, 63, 64, 65, 125, 126};
-}
+std::vector<uint8_t> values_3bits() { return {0, 1, 2, 5, 7}; }
+std::vector<uint8_t> values_6bits() { return {0, 1, 2, 13, 22, 59, 62, 63}; }
+std::vector<uint8_t> values_7bits() { return {0, 1, 2, 63, 64, 65, 125, 126}; }
 
 mlir::concretelang::CompilerEngine::Library
-compile(std::string outputLib, std::string source, std::string funcname = FUNCNAME) {
+compile(std::string outputLib, std::string source,
+        std::string funcname = FUNCNAME) {
   std::vector<std::string> sources = {source};
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
-  mlir::concretelang::JitCompilerEngine ce {ccx};
+  mlir::concretelang::JitCompilerEngine ce{ccx};
   ce.setClientParametersFuncName(funcname);
   auto result = ce.compile(sources, outputLib);
   assert(result);
@@ -53,13 +45,11 @@ compile(std::string outputLib, std::string source, std::string funcname = FUNCNA
 static const std::string THIS_TEST_DIRECTORY = "tests/TestLib";
 static const std::string OUT_DIRECTORY = THIS_TEST_DIRECTORY + "/out";
 
-template<typename Info>
-std::string outputLibFromThis(Info *info) {
+template <typename Info> std::string outputLibFromThis(Info *info) {
   return OUT_DIRECTORY + "/" + std::string(info->name());
 }
 
-template<typename Lambda>
-Lambda load(std::string outputLib) {
+template <typename Lambda> Lambda load(std::string outputLib) {
   auto l = Lambda::load(FUNCNAME, outputLib, 0, 0, getTestKeySetCachePtr());
   assert(l.has_value());
   return l.value();
@@ -102,7 +92,7 @@ func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
   auto lambda = load<TestTypedLambda<scalar_out, scalar_in>>(outputLib);
-  for(auto a: values_7bits()) {
+  for (auto a : values_7bits()) {
     auto res = lambda.call(a);
     ASSERT_EQ_OUTCOME(res, a);
   }
@@ -116,14 +106,16 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
-  auto lambda = load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
-  for(auto a: values_7bits()) for(auto b: values_7bits()) {
-    if (a > b) {
-      continue;
+  auto lambda =
+      load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
+  for (auto a : values_7bits())
+    for (auto b : values_7bits()) {
+      if (a > b) {
+        continue;
+      }
+      auto res = lambda.call(a, b);
+      ASSERT_EQ_OUTCOME(res, a);
     }
-    auto res = lambda.call(a, b);
-    ASSERT_EQ_OUTCOME(res, a);
-  }
 }
 
 TEST(CompiledModule, call_2s_1s) {
@@ -135,14 +127,16 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
-  auto lambda = load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
-  for(auto a: values_7bits()) for(auto b: values_7bits()) {
-    if (a > b) {
-      continue;
+  auto lambda =
+      load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
+  for (auto a : values_7bits())
+    for (auto b : values_7bits()) {
+      if (a > b) {
+        continue;
+      }
+      auto res = lambda.call(a, b);
+      ASSERT_EQ_OUTCOME(res, a + b);
     }
-    auto res = lambda.call(a, b);
-    ASSERT_EQ_OUTCOME(res, a + b);
-  }
 }
 
 TEST(CompiledModule, call_1s_1s_bad_call) {
@@ -169,7 +163,7 @@ func @main(%arg0: !FHE.eint<7>) -> tensor<1x!FHE.eint<7>> {
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
   auto lambda = load<TestTypedLambda<tensor1_out, scalar_in>>(outputLib);
-  for(auto a: values_7bits()) {
+  for (auto a : values_7bits()) {
     auto res = lambda.call(a);
     EXPECT_TRUE(res);
     tensor1_out v = res.value();
@@ -186,9 +180,10 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> tensor<2x!FHE.eint<7>> {
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
-  auto lambda = load<TestTypedLambda<tensor1_out, scalar_in, scalar_in>>(outputLib);
-  for(auto a : values_7bits()) {
-    auto res = lambda.call(a, a+1);
+  auto lambda =
+      load<TestTypedLambda<tensor1_out, scalar_in, scalar_in>>(outputLib);
+  for (auto a : values_7bits()) {
+    auto res = lambda.call(a, a + 1);
     EXPECT_TRUE(res);
     tensor1_out v = res.value();
     EXPECT_EQ(v[0], (scalar_out)a);
@@ -207,7 +202,7 @@ func @main(%arg0: tensor<1x!FHE.eint<7>>) -> !FHE.eint<7> {
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
   auto lambda = load<TestTypedLambda<scalar_out, tensor1_in>>(outputLib);
-  for(uint8_t a : values_7bits()) {
+  for (uint8_t a : values_7bits()) {
     tensor1_in ta = {a};
     auto res = lambda.call(ta);
     ASSERT_EQ_OUTCOME(res, a);
@@ -227,7 +222,7 @@ func @main(%arg0: tensor<3x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   auto res = lambda.call(ta);
   ASSERT_TRUE(res);
   tensor1_out v = res.value();
-  for(size_t i = 0; i < v.size(); i++) {
+  for (size_t i = 0; i < v.size(); i++) {
     EXPECT_EQ(v[i], ta[i]);
   }
 }
@@ -244,12 +239,14 @@ func @main(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !FHE
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
-  auto lambda = load<TestTypedLambda<scalar_out, tensor1_in, std::array<uint8_t, 3>>>(outputLib);
-  tensor1_in ta {1, 2, 3};
-  std::array<uint8_t, 3> tb {5, 7, 9};
+  auto lambda =
+      load<TestTypedLambda<scalar_out, tensor1_in, std::array<uint8_t, 3>>>(
+          outputLib);
+  tensor1_in ta{1, 2, 3};
+  std::array<uint8_t, 3> tb{5, 7, 9};
   auto res = lambda.call(ta, tb);
   auto expected = std::accumulate(ta.begin(), ta.end(), 0u) +
-    std::accumulate(tb.begin(), tb.end(), 0u);
+                  std::accumulate(tb.begin(), tb.end(), 0u);
   ASSERT_EQ_OUTCOME(res, expected);
 }
 
@@ -263,15 +260,12 @@ func @main(%arg0: tensor<2x3x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
   auto lambda = load<TestTypedLambda<tensor2_out, tensor2_in>>(outputLib);
-  tensor2_in ta = {{
-    {1, 2, 3},
-    {4, 5, 6}
-  }};
+  tensor2_in ta = {{{1, 2, 3}, {4, 5, 6}}};
   auto res = lambda.call(ta);
   ASSERT_TRUE(res);
   tensor2_out v = res.value();
-  for(size_t i = 0; i < v.size(); i++) {
-    for(size_t j = 0; j < v.size(); j++) {
+  for (size_t i = 0; i < v.size(); i++) {
+    for (size_t j = 0; j < v.size(); j++) {
       EXPECT_EQ(v[i][j], ta[i][j]);
     }
   }
@@ -287,16 +281,13 @@ func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>> {
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
   auto lambda = load<TestTypedLambda<tensor3_out, tensor3_in>>(outputLib);
-  tensor3_in ta = {{
-    {{ {1}, {2}, {3} }},
-    {{ {4}, {5}, {6} }}
-  }};
+  tensor3_in ta = {{{{{1}, {2}, {3}}}, {{{4}, {5}, {6}}}}};
   auto res = lambda.call(ta);
   ASSERT_TRUE(res);
   tensor3_out v = res.value();
-  for(size_t i = 0; i < v.size(); i++) {
-    for(size_t j = 0; j < v[i].size(); j++) {
-      for(size_t k = 0; k < v[i][j].size(); k++) {
+  for (size_t i = 0; i < v.size(); i++) {
+    for (size_t j = 0; j < v[i].size(); j++) {
+      for (size_t k = 0; k < v[i][j].size(); k++) {
         EXPECT_EQ(v[i][j][k], ta[i][j][k]);
       }
     }
@@ -313,17 +304,15 @@ func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>, %arg1: tensor<2x3x1x!FHE.eint<7>>)
   using tensor3_in = std::array<std::array<std::array<uint8_t, 1>, 3>, 2>;
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
-  auto lambda = load<TestTypedLambda<tensor3_out, tensor3_in, tensor3_in>>(outputLib);
-  tensor3_in ta = {{
-    {{ {1}, {2}, {3} }},
-    {{ {4}, {5}, {6} }}
-  }};
+  auto lambda =
+      load<TestTypedLambda<tensor3_out, tensor3_in, tensor3_in>>(outputLib);
+  tensor3_in ta = {{{{{1}, {2}, {3}}}, {{{4}, {5}, {6}}}}};
   auto res = lambda.call(ta, ta);
   ASSERT_TRUE(res);
   tensor3_out v = res.value();
-  for(size_t i = 0; i < v.size(); i++) {
-    for(size_t j = 0; j < v[i].size(); j++) {
-      for(size_t k = 0; k < v[i][j].size(); k++) {
+  for (size_t i = 0; i < v.size(); i++) {
+    for (size_t j = 0; j < v[i].size(); j++) {
+      for (size_t k = 0; k < v[i][j].size(); k++) {
         EXPECT_EQ(v[i][j][k], 2 * ta[i][j][k]);
       }
     }
@@ -353,8 +342,8 @@ func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !
   std::string jsonPath = ClientParameters::getClientParametersPath(outputLib);
   auto cLambda_ = extract::load(jsonPath);
   ASSERT_TRUE(cLambda_);
-  tensor1_in ta {1, 2, 3};
-  tensor1_in tb {5, 7, 9};
+  tensor1_in ta{1, 2, 3};
+  tensor1_in tb{5, 7, 9};
   auto sLambda_ = ServerLambda::load(extract::name, outputLib);
   ASSERT_TRUE(sLambda_);
   auto cLambda = cLambda_.value();
@@ -365,12 +354,12 @@ func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !
   auto testLambda = TestTypedLambdaFrom(cLambda, sLambda, keySet);
   auto res = testLambda.call(ta, tb);
   auto expected = std::accumulate(ta.begin(), ta.end(), 0u) +
-    std::accumulate(tb.begin(), tb.end(), 0u);
+                  std::accumulate(tb.begin(), tb.end(), 0u);
   ASSERT_EQ_OUTCOME(res, expected);
 
-  EXPECT_EQ(
-    fileContent(THIS_TEST_DIRECTORY + "/call_2t_1s_with_header-client.h.generated"),
-    fileContent(OUT_DIRECTORY + "/call_2t_1s_with_header-client.h"));
+  EXPECT_EQ(fileContent(THIS_TEST_DIRECTORY +
+                        "/call_2t_1s_with_header-client.h.generated"),
+            fileContent(OUT_DIRECTORY + "/call_2t_1s_with_header-client.h"));
 }
 
 TEST(CompiledModule, call_2s_1s_lookup_table) {
@@ -386,9 +375,11 @@ func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<3>) -> !FHE.eint<6> {
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
-  auto lambda = load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
-  for(auto a: values_6bits()) for(auto b: values_3bits()) {
-    auto res = lambda.call(a, b);
-    ASSERT_EQ_OUTCOME(res, a + b);
-  }
+  auto lambda =
+      load<TestTypedLambda<scalar_out, scalar_in, scalar_in>>(outputLib);
+  for (auto a : values_6bits())
+    for (auto b : values_3bits()) {
+      auto res = lambda.call(a, b);
+      ASSERT_EQ_OUTCOME(res, a + b);
+    }
 }

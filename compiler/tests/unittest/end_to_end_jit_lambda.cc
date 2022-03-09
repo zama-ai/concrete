@@ -4,7 +4,6 @@
 
 using Lambda = mlir::concretelang::JitCompilerEngine::Lambda;
 
-
 TEST(Lambda_check_param, int_to_void_missing_param) {
   Lambda lambda = checkedJit(R"XXX(
     func @main(%arg0: !FHE.eint<1>) {
@@ -68,7 +67,7 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar) {
       return %arg0: !FHE.eint<1>
     }
   )XXX");
-  uint8_t arg[2] = {1 ,2};
+  uint8_t arg[2] = {1, 2};
   ASSERT_EXPECTED_SUCCESS(lambda(1_u64, arg, ARRAY_SIZE(arg)));
 }
 
@@ -80,8 +79,9 @@ TEST(Lambda_check_param, scalar_tensor_to_scalar_superfluous_param) {
       return %arg0: !FHE.eint<1>
     }
   )XXX");
-  uint8_t arg[2] = {1 ,2};
-  ASSERT_EXPECTED_FAILURE(lambda(1_u64, arg, ARRAY_SIZE(arg), arg, ARRAY_SIZE(arg)));
+  uint8_t arg[2] = {1, 2};
+  ASSERT_EXPECTED_FAILURE(
+      lambda(1_u64, arg, ARRAY_SIZE(arg), arg, ARRAY_SIZE(arg)));
 }
 
 TEST(Lambda_check_param, scalar_tensor_to_tensor_good_number_param) {
@@ -92,10 +92,9 @@ TEST(Lambda_check_param, scalar_tensor_to_tensor_good_number_param) {
       return %arg1: tensor<2x!FHE.eint<1>>
     }
     )XXX");
-  uint8_t arg[2] = {1 ,2};
+  uint8_t arg[2] = {1, 2};
   ASSERT_EXPECTED_SUCCESS(
-    lambda.operator()<std::vector<uint8_t>>(1_u64, arg, ARRAY_SIZE(arg))
-  );
+      lambda.operator()<std::vector<uint8_t>>(1_u64, arg, ARRAY_SIZE(arg)));
 }
 
 TEST(Lambda_check_param, DISABLED_check_parameters_scalar_too_big) {

@@ -94,13 +94,14 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
   } while (0)
 
 #define ASSERT_EQ_OUTCOME(val, exp)                                            \
-  if(!val.has_value()) {                                                       \
+  if (!val.has_value()) {                                                      \
     std::string msg = "ERROR: <" + val.error().mesg + "> \n";                  \
     GTEST_FATAL_FAILURE_(msg.c_str());                                         \
   };                                                                           \
   ASSERT_EQ(val.value(), exp);
 
-static inline llvm::Optional<mlir::concretelang::KeySetCache> getTestKeySetCache() {
+static inline llvm::Optional<mlir::concretelang::KeySetCache>
+getTestKeySetCache() {
 
   llvm::SmallString<0> cachePath;
   llvm::sys::path::system_temp_directory(true, cachePath);
@@ -111,20 +112,19 @@ static inline llvm::Optional<mlir::concretelang::KeySetCache> getTestKeySetCache
       mlir::concretelang::KeySetCache(cachePathStr));
 }
 
-static inline std::shared_ptr<mlir::concretelang::KeySetCache> getTestKeySetCachePtr() {
+static inline std::shared_ptr<mlir::concretelang::KeySetCache>
+getTestKeySetCachePtr() {
   return std::make_shared<mlir::concretelang::KeySetCache>(
-    getTestKeySetCache().getValue());
+      getTestKeySetCache().getValue());
 }
 
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
 template <typename F>
-mlir::concretelang::JitCompilerEngine::Lambda
-internalCheckedJit(F checkFunc, llvm::StringRef src,
-                   llvm::StringRef func = "main",
-                   bool useDefaultFHEConstraints = false,
-		   bool autoParallelize = false) {
+mlir::concretelang::JitCompilerEngine::Lambda internalCheckedJit(
+    F checkFunc, llvm::StringRef src, llvm::StringRef func = "main",
+    bool useDefaultFHEConstraints = false, bool autoParallelize = false) {
 
   mlir::concretelang::JitCompilerEngine engine;
 
@@ -162,9 +162,8 @@ static inline uint64_t operator"" _u64(unsigned long long int v) { return v; }
 // caller instead of `internalCheckedJit`.
 #define checkedJit(...)                                                        \
   internalCheckedJit(                                                          \
-      [](llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> &lambda) {  \
-        ASSERT_EXPECTED_SUCCESS(lambda);                                       \
-      },                                                                       \
+      [](llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda>         \
+             &lambda) { ASSERT_EXPECTED_SUCCESS(lambda); },                    \
       __VA_ARGS__)
 
 #endif
