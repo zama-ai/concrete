@@ -294,3 +294,6 @@ pub use plaintext_vector_discarding_retrieval::*;
 
 mod lwe_ciphertext_fusing_negation;
 pub use lwe_ciphertext_fusing_negation::*;
+
+mod lwe_ciphertext_discarding_subtraction;
+pub use lwe_ciphertext_discarding_subtraction::*;
