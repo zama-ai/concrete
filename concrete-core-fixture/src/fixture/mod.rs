@@ -326,6 +326,9 @@ pub use lwe_ciphertext_trivial_decryption::*;
 mod lwe_ciphertext_discarding_bootstrap_1;
 pub use lwe_ciphertext_discarding_bootstrap_1::*;
 
+mod lwe_ciphertext_discarding_bootstrap_2;
+pub use lwe_ciphertext_discarding_bootstrap_2::*;
+
 mod plaintext_creation;
 pub use plaintext_creation::*;
 

@@ -8,27 +8,21 @@ use crate::generation::synthesizing::{
     SynthesizesGlweCiphertext, SynthesizesLweBootstrapKey, SynthesizesLweCiphertext,
 };
 use crate::generation::{IntegerPrecision, Maker};
-use crate::raw::statistical_test::assert_delta_std_dev;
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_commons::key_kinds::{BinaryKeyKind, GaussianKeyKind, TernaryKeyKind};
-use concrete_commons::numeric::{Numeric, UnsignedInteger};
+use concrete_commons::numeric::{CastInto, Numeric};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
-};
-use concrete_core::prelude::markers::{
-    BinaryKeyDistribution, GaussianKeyDistribution, KeyDistributionMarker, TernaryKeyDistribution,
 };
 use concrete_core::prelude::{
     GlweCiphertextEntity, LweBootstrapKeyEntity, LweCiphertextDiscardingBootstrapEngine,
     LweCiphertextEntity,
 };
-use std::any::TypeId;
 
 /// A fixture for the types implementing the `LweCiphertextDiscardingBootstrapEngine` trait.
-pub struct LweCiphertextDiscardingBootstrapFixture1;
+pub struct LweCiphertextDiscardingBootstrapFixture2;
 
 #[derive(Debug)]
-pub struct LweCiphertextDiscardingBootstrapParameters1 {
+pub struct LweCiphertextDiscardingBootstrapParameters2 {
     pub noise: Variance,
     pub lwe_dimension: LweDimension,
     pub glwe_dimension: GlweDimension,
@@ -40,7 +34,7 @@ pub struct LweCiphertextDiscardingBootstrapParameters1 {
 #[allow(clippy::type_complexity)]
 impl<Precision, Engine, BootstrapKey, Accumulator, InputCiphertext, OutputCiphertext>
     Fixture<Precision, Engine, (BootstrapKey, Accumulator, InputCiphertext, OutputCiphertext)>
-    for LweCiphertextDiscardingBootstrapFixture1
+    for LweCiphertextDiscardingBootstrapFixture2
 where
     Precision: IntegerPrecision,
     Engine: LweCiphertextDiscardingBootstrapEngine<
@@ -61,7 +55,7 @@ where
         + SynthesizesLweCiphertext<Precision, InputCiphertext>
         + SynthesizesLweCiphertext<Precision, OutputCiphertext>,
 {
-    type Parameters = LweCiphertextDiscardingBootstrapParameters1;
+    type Parameters = LweCiphertextDiscardingBootstrapParameters2;
     type RepetitionPrototypes = (
         <Maker as PrototypesGlweCiphertext<Precision, OutputCiphertext::KeyDistribution>>::GlweCiphertextProto,
         <Maker as PrototypesLweSecretKey<Precision, InputCiphertext::KeyDistribution>>::LweSecretKeyProto,
@@ -75,37 +69,19 @@ where
     );
     type PreExecutionContext = (BootstrapKey, Accumulator, OutputCiphertext, InputCiphertext);
     type PostExecutionContext = (BootstrapKey, Accumulator, OutputCiphertext, InputCiphertext);
-    type Criteria = (Variance,);
+    type Criteria = (i64,);
     type Outcome = (Precision::Raw, Precision::Raw);
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(
-            vec![
-                LweCiphertextDiscardingBootstrapParameters1 {
-                    noise: Variance(LogStandardDev::from_log_standard_dev(-29.).get_variance()),
-                    lwe_dimension: LweDimension(630),
-                    glwe_dimension: GlweDimension(1),
-                    poly_size: PolynomialSize(512),
-                    decomp_level_count: DecompositionLevelCount(3),
-                    decomp_base_log: DecompositionBaseLog(7),
-                },
-                LweCiphertextDiscardingBootstrapParameters1 {
-                    noise: Variance(LogStandardDev::from_log_standard_dev(-29.).get_variance()),
-                    lwe_dimension: LweDimension(630),
-                    glwe_dimension: GlweDimension(1),
-                    poly_size: PolynomialSize(1024),
-                    decomp_level_count: DecompositionLevelCount(3),
-                    decomp_base_log: DecompositionBaseLog(7),
-                },
-                LweCiphertextDiscardingBootstrapParameters1 {
-                    noise: Variance(LogStandardDev::from_log_standard_dev(-29.).get_variance()),
-                    lwe_dimension: LweDimension(630),
-                    glwe_dimension: GlweDimension(1),
-                    poly_size: PolynomialSize(2048),
-                    decomp_level_count: DecompositionLevelCount(3),
-                    decomp_base_log: DecompositionBaseLog(7),
-                },
-            ]
+            vec![LweCiphertextDiscardingBootstrapParameters2 {
+                noise: Variance(LogStandardDev::from_log_standard_dev(-29.).get_variance()),
+                lwe_dimension: LweDimension(630),
+                glwe_dimension: GlweDimension(1),
+                poly_size: PolynomialSize(1024),
+                decomp_level_count: DecompositionLevelCount(3),
+                decomp_base_log: DecompositionBaseLog(7),
+            }]
             .into_iter(),
         )
     }
@@ -114,8 +90,12 @@ where
         parameters: &Self::Parameters,
         maker: &mut Maker,
     ) -> Self::RepetitionPrototypes {
-        let raw_plaintext_vector =
-            vec![Precision::Raw::ONE << (Precision::Raw::BITS - 3); parameters.poly_size.0];
+        let log_degree = f64::log2(parameters.poly_size.0 as f64) as i32;
+        let raw_plaintext_vector: Vec<Precision::Raw> = (0..parameters.poly_size.0)
+            .map(|i| {
+                (i as f64 * 2_f64.powi(Precision::Raw::BITS as i32 - log_degree - 1)).cast_into()
+            })
+            .collect();
         let proto_plaintext_vector =
             maker.transform_raw_vec_to_plaintext_vector(raw_plaintext_vector.as_slice());
         let proto_accumulator = maker.trivial_encrypt_plaintext_vector_to_glwe_ciphertext(
@@ -153,7 +133,11 @@ where
         repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::SamplePrototypes {
         let (_, proto_lwe_secret_key, ..) = repetition_proto;
-        let raw_plaintext = Precision::Raw::ONE << (Precision::Raw::BITS - 2);
+        let log_degree = f64::log2(parameters.poly_size.0 as f64) as i32;
+        let raw_plaintext = ((parameters.poly_size.0 as f64
+            - (10. * f64::sqrt((parameters.lwe_dimension.0 as f64) / 16.0)))
+            * 2_f64.powi(Precision::Raw::BITS as i32 - log_degree - 1))
+        .cast_into();
         let proto_plaintext = maker.transform_raw_to_plaintext(&raw_plaintext);
         let proto_input_ciphertext = <Maker as PrototypesLweCiphertext<
             Precision,
@@ -256,69 +240,24 @@ where
         _maker: &mut Maker,
         _repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::Criteria {
-        let predicted_variance: Variance =
-            fix_estimate_pbs_noise::<Precision::Raw, Variance, OutputCiphertext::KeyDistribution>(
-                parameters.lwe_dimension,
-                parameters.poly_size,
-                parameters.glwe_dimension,
-                parameters.decomp_base_log,
-                parameters.decomp_level_count,
-                parameters.noise,
-            );
-        (predicted_variance,)
+        let log_degree = f64::log2(parameters.poly_size.0 as f64) as i32;
+        let delta_max: i64 = ((5. * f64::sqrt((parameters.lwe_dimension.0 as f64) / 16.0))
+            * 2_f64.powi(Precision::Raw::BITS as i32 - log_degree - 1))
+            as i64;
+        (delta_max,)
     }
 
     fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool {
-        let (means, actual): (Vec<_>, Vec<_>) = outputs.iter().cloned().unzip();
-        assert_delta_std_dev(&actual, means.as_slice(), criteria.0)
-    }
-}
-
-// FIXME:
-// The current NPE does not use the key distribution markers of concrete-core. This function makes
-// the mapping. This function should be removed as soon as the npe uses the types of concrete-core.
-fn fix_estimate_pbs_noise<T, D, K>(
-    lwe_mask_size: LweDimension,
-    poly_size: PolynomialSize,
-    rlwe_mask_size: GlweDimension,
-    base_log: DecompositionBaseLog,
-    level: DecompositionLevelCount,
-    dispersion_bsk: D,
-) -> Variance
-where
-    T: UnsignedInteger,
-    D: DispersionParameter,
-    K: KeyDistributionMarker,
-{
-    let k_type_id = TypeId::of::<K>();
-    if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
-        concrete_npe::estimate_pbs_noise::<T, D, BinaryKeyKind>(
-            lwe_mask_size,
-            poly_size,
-            rlwe_mask_size,
-            base_log,
-            level,
-            dispersion_bsk,
-        )
-    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
-        concrete_npe::estimate_pbs_noise::<T, D, TernaryKeyKind>(
-            lwe_mask_size,
-            poly_size,
-            rlwe_mask_size,
-            base_log,
-            level,
-            dispersion_bsk,
-        )
-    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
-        concrete_npe::estimate_pbs_noise::<T, D, GaussianKeyKind>(
-            lwe_mask_size,
-            poly_size,
-            rlwe_mask_size,
-            base_log,
-            level,
-            dispersion_bsk,
-        )
-    } else {
-        panic!("Unknown key distribution encountered.")
+        let (delta_max,) = criteria;
+        for (expected, obtained) in outputs.iter() {
+            if (<Precision::Raw as CastInto<i64>>::cast_into(*expected)
+                - <Precision::Raw as CastInto<i64>>::cast_into(*obtained))
+            .abs()
+                > *delta_max
+            {
+                return false;
+            }
+        }
+        true
     }
 }
