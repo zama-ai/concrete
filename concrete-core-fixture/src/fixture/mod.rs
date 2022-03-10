@@ -326,6 +326,9 @@ pub use lwe_ciphertext_vector_encryption::*;
 mod lwe_ciphertext_vector_fusing_addition;
 pub use lwe_ciphertext_vector_fusing_addition::*;
 
+mod lwe_ciphertext_vector_discarding_addition;
+pub use lwe_ciphertext_vector_discarding_addition::*;
+
 mod lwe_ciphertext_vector_fusing_subtraction;
 pub use lwe_ciphertext_vector_fusing_subtraction::*;
 
