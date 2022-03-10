@@ -20,5 +20,15 @@ rayon-cond = "0.2" # to avoid rayon code coloring
 rayon = "1.5.1"
 text-diff = "0.4.0"
 
+[build-dependencies]
+cbindgen = "0.20.0"
+
+[lib]
+crate-type= [
+    "staticlib",    # concretecompiler
+    "lib",          # rust
+]
+
 [[example]]
 name = "v0_parameters"
+crate-type= ["bin"]

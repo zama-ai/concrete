@@ -1,0 +1,11 @@
+# See https://github.com/eqrion/cbindgen/blob/master/docs.md#cbindgentoml
+# for detailed documentation of every option here.
+
+language = "C++"
+namespaces = ["concrete_optimizer"]
+
+[parse]
+include = ["optimisation"]
+
+[export]
+item_types = ["structs", "functions"]

@@ -22,3 +22,43 @@ pub mod optimisation;
 pub mod parameters;
 pub mod security;
 pub mod weight;
+
+#[no_mangle]
+pub extern "C" fn optimise_bootstrap(
+    precision: u64,
+    security_level: u64,
+    noise_factor: f64,
+    maximum_acceptable_error_probability: f64,
+) -> optimisation::atomic_pattern::Solution {
+    let sum_size = 1;
+    let glwe_log_polynomial_sizes: Vec<_> = (10..=12).collect();
+    let glwe_dimensions: Vec<_> = (1..=1).collect();
+    let internal_lwe_dimensions: Vec<_> = (512..=1024).collect();
+    let result = optimisation::atomic_pattern::optimise_one::<u64>(
+        sum_size,
+        precision,
+        security_level,
+        noise_factor,
+        maximum_acceptable_error_probability,
+        &glwe_log_polynomial_sizes,
+        &glwe_dimensions,
+        &internal_lwe_dimensions,
+        None,
+    );
+    match result.best_solution {
+        Some(solution) => solution,
+        None => optimisation::atomic_pattern::Solution {
+            input_lwe_dimension: 0,
+            internal_ks_output_lwe_dimension: 0,
+            ks_decomposition_level_count: 0,
+            ks_decomposition_base_log: 0,
+            glwe_polynomial_size: 0,
+            glwe_dimension: 0,
+            br_decomposition_level_count: 0,
+            br_decomposition_base_log: 0,
+            complexity: 0.0,
+            noise_max: 0.0,
+            p_error: 1.0, // error probability
+        },
+    }
+}
