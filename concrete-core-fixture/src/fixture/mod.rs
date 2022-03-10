@@ -272,6 +272,9 @@ pub use lwe_ciphertext_vector_trivial_decryption::*;
 mod lwe_ciphertext_vector_trivial_encryption;
 pub use lwe_ciphertext_vector_trivial_encryption::*;
 
+mod lwe_ciphertext_vector_discarding_decryption;
+pub use lwe_ciphertext_vector_discarding_decryption::*;
+
 mod lwe_ciphertext_vector_discarding_encryption;
 pub use lwe_ciphertext_vector_discarding_encryption::*;
 
