@@ -168,8 +168,12 @@ public:
   compile(llvm::SourceMgr &sm, Target target,
           llvm::Optional<std::shared_ptr<Library>> lib = {});
 
-  template <class T>
-  llvm::Expected<CompilerEngine::Library> compile(std::vector<T> inputs,
+  llvm::Expected<CompilerEngine::Library>
+  compile(std::vector<std::string> inputs, std::string libraryPath);
+
+  /// Compile and emit artifact to the given libraryPath from an LLVM source
+  /// manager.
+  llvm::Expected<CompilerEngine::Library> compile(llvm::SourceMgr &sm,
                                                   std::string libraryPath);
 
   void setFHEConstraints(const mlir::concretelang::V0FHEConstraint &c);

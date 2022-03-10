@@ -4,53 +4,88 @@
 #include <type_traits>
 
 #include "EndToEndFixture.h"
+#include "concretelang/Support/JitLambdaSupport.h"
+#include "concretelang/Support/LibraryLambdaSupport.h"
 
-class EndToEndJitTest : public testing::TestWithParam<EndToEndDesc> {};
-
-TEST_P(EndToEndJitTest, compile_and_run) {
-  EndToEndDesc desc = GetParam();
-
-  // Compile program
-  // mlir::concretelang::JitCompilerEngine::Lambda lambda =
-  checkedJit(lambda, desc.program);
-
-  // Prepare arguments
-  for (auto test : desc.tests) {
-    std::vector<mlir::concretelang::LambdaArgument *> inputArguments;
-    inputArguments.reserve(test.inputs.size());
-    for (auto input : test.inputs) {
-      auto arg = valueDescriptionToLambdaArgument(input);
-      ASSERT_EXPECTED_SUCCESS(arg);
-      inputArguments.push_back(arg.get());
-    }
-
-    // Call the lambda
-    auto res =
-        lambda.operator()<std::unique_ptr<mlir::concretelang::LambdaArgument>>(
-            llvm::ArrayRef<mlir::concretelang::LambdaArgument *>(
-                inputArguments));
-    ASSERT_EXPECTED_SUCCESS(res);
-    if (test.outputs.size() != 1) {
-      FAIL() << "Only one result function are supported.";
-    }
-    ASSERT_LLVM_ERROR(checkResult(test.outputs[0], res.get()));
-
-    // Free arguments
-    for (auto arg : inputArguments) {
-      delete arg;
-    }
+// Macro to define and end to end TestSuite that run test thanks the
+// LambdaSupport according a EndToEndDesc
+#define INSTANTIATE_END_TO_END_COMPILE_AND_RUN(TestSuite, LambdaSupport)       \
+  TEST_P(TestSuite, compile_and_run) {                                         \
+                                                                               \
+    auto desc = GetParam();                                                    \
+                                                                               \
+    LambdaSupport support;                                                     \
+                                                                               \
+    /* 1 - Compile the program */                                              \
+    auto compilationResult = support.compile(desc.program);                    \
+    ASSERT_EXPECTED_SUCCESS(compilationResult);                                \
+                                                                               \
+    /* 2 - Load the client parameters and build the keySet */                  \
+    auto clientParameters = support.loadClientParameters(**compilationResult); \
+    ASSERT_EXPECTED_SUCCESS(clientParameters);                                 \
+                                                                               \
+    auto keySet = support.keySet(*clientParameters, getTestKeySetCache());     \
+    ASSERT_EXPECTED_SUCCESS(keySet);                                           \
+                                                                               \
+    /* 3 - Load the server lambda */                                           \
+    auto serverLambda = support.loadServerLambda(**compilationResult);         \
+    ASSERT_EXPECTED_SUCCESS(serverLambda);                                     \
+                                                                               \
+    /* For each test entries */                                                \
+    for (auto test : desc.tests) {                                             \
+      std::vector<mlir::concretelang::LambdaArgument *> inputArguments;        \
+      inputArguments.reserve(test.inputs.size());                              \
+      for (auto input : test.inputs) {                                         \
+        auto arg = valueDescToLambdaArgument(input);                           \
+        ASSERT_EXPECTED_SUCCESS(arg);                                          \
+        inputArguments.push_back(arg.get());                                   \
+      }                                                                        \
+      /* 4 - Create the public arguments */                                    \
+      auto publicArguments = support.exportArguments(                          \
+          *clientParameters, **keySet, inputArguments);                        \
+      ASSERT_EXPECTED_SUCCESS(publicArguments);                                \
+                                                                               \
+      /* 5 - Call the server lambda */                                         \
+      auto publicResult =                                                      \
+          support.serverCall(*serverLambda, **publicArguments);                \
+      ASSERT_EXPECTED_SUCCESS(publicResult);                                   \
+                                                                               \
+      /* 6 - Decrypt the public result */                                      \
+      auto result = mlir::concretelang::typedResult<                           \
+          std::unique_ptr<mlir::concretelang::LambdaArgument>>(                \
+          **keySet, **publicResult);                                           \
+                                                                               \
+      ASSERT_EXPECTED_SUCCESS(result);                                         \
+                                                                               \
+      for (auto arg : inputArguments) {                                        \
+        delete arg;                                                            \
+      }                                                                        \
+    }                                                                          \
   }
-}
 
-#define INSTANTIATE_END_TO_END_JIT_TEST_SUITE_FROM_FILE(prefix, path)          \
-  namespace prefix {                                                           \
-  auto valuesVector = loadEndToEndDesc(path);                                  \
-  auto values = testing::ValuesIn<std::vector<EndToEndDesc>>(valuesVector);    \
-  INSTANTIATE_TEST_SUITE_P(prefix, EndToEndJitTest, values,                    \
-                           printEndToEndDesc);                                 \
+#define INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(prefix, suite,             \
+                                                    lambdasupport, path)       \
+  namespace prefix##suite {                                                    \
+    auto valuesVector = loadEndToEndDesc(path);                                \
+    auto values = testing::ValuesIn<std::vector<EndToEndDesc>>(valuesVector);  \
+    INSTANTIATE_TEST_SUITE_P(prefix, suite, values, printEndToEndDesc);        \
   }
 
-INSTANTIATE_END_TO_END_JIT_TEST_SUITE_FROM_FILE(
-    FHE, "tests/unittest/end_to_end_fhe.yaml")
-INSTANTIATE_END_TO_END_JIT_TEST_SUITE_FROM_FILE(
-    EncryptedTensor, "tests/unittest/end_to_end_encrypted_tensor.yaml")
+#define INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(suite,           \
+                                                              lambdasupport)   \
+                                                                               \
+  class suite : public testing::TestWithParam<EndToEndDesc> {};                \
+  INSTANTIATE_END_TO_END_COMPILE_AND_RUN(suite, lambdasupport)                 \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      FHE, suite, lambdasupport, "tests/unittest/end_to_end_fhe.yaml")         \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      EncryptedTensor, suite, lambdasupport,                                   \
+      "tests/unittest/end_to_end_encrypted_tensor.yaml")
+
+/// Instantiate the test suite for Jit
+INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
+    JitTest, mlir::concretelang::JitLambdaSupport)
+
+/// Instantiate the test suite for Jit
+INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
+    LibraryTest, mlir::concretelang::LibraryLambdaSupport)

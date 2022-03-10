@@ -36,9 +36,20 @@ public:
   template <typename... Args>
   static outcome::checked<std::unique_ptr<EncryptedArguments>, StringError>
   create(KeySet &keySet, Args... args) {
-    auto arguments = std::make_unique<EncryptedArguments>();
-    OUTCOME_TRYV(arguments->pushArgs(keySet, args...));
-    return arguments;
+    auto encryptedArgs = std::make_unique<EncryptedArguments>();
+    OUTCOME_TRYV(encryptedArgs->pushArgs(keySet, args...));
+    return std::move(encryptedArgs);
+  }
+
+  template <typename ArgT>
+  static outcome::checked<std::unique_ptr<EncryptedArguments>, StringError>
+  create(KeySet &keySet, const llvm::ArrayRef<ArgT> args) {
+    auto encryptedArgs = EncryptedArguments::empty();
+    for (size_t i = 0; i < args.size(); i++) {
+      OUTCOME_TRYV(encryptedArgs->pushArg(args[i], keySet));
+    }
+    OUTCOME_TRYV(encryptedArgs->checkAllArgs(keySet));
+    return std::move(encryptedArgs);
   }
 
   static std::unique_ptr<EncryptedArguments> empty() {

@@ -3,6 +3,7 @@ add_mlir_library(ConcretelangSupport
   Jit.cpp
   CompilerEngine.cpp
   JitCompilerEngine.cpp
+  JitLambdaSupport.cpp
   LambdaArgument.cpp
   V0Parameters.cpp
   V0Curves.cpp
@@ -32,4 +33,5 @@ add_mlir_library(ConcretelangSupport
 
   ConcretelangRuntime
   ConcretelangClientLib
+  ConcretelangServerLib
 )

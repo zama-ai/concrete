@@ -383,25 +383,41 @@ llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
                         Target target, OptionalLib lib) {
   llvm::SourceMgr sm;
-
   sm.AddNewSourceBuffer(std::move(buffer), llvm::SMLoc());
 
   return this->compile(sm, target, lib);
 }
 
-template <class T>
 llvm::Expected<CompilerEngine::Library>
-CompilerEngine::compile(std::vector<T> inputs, std::string libraryPath) {
+CompilerEngine::compile(std::vector<std::string> inputs,
+                        std::string libraryPath) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(libraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
-
   for (auto input : inputs) {
     auto compilation = compile(input, target, outputLib);
     if (!compilation) {
       return StreamStringError("Can't compile: ")
              << llvm::toString(compilation.takeError());
     }
+  }
+  if (auto err = outputLib->emitArtifacts()) {
+    return StreamStringError("Can't emit artifacts: ")
+           << llvm::toString(std::move(err));
+  }
+  return *outputLib.get();
+}
+
+llvm::Expected<CompilerEngine::Library>
+CompilerEngine::compile(llvm::SourceMgr &sm, std::string libraryPath) {
+  using Library = mlir::concretelang::CompilerEngine::Library;
+  auto outputLib = std::make_shared<Library>(libraryPath);
+  auto target = CompilerEngine::Target::LIBRARY;
+
+  auto compilation = compile(sm, target, outputLib);
+  if (!compilation) {
+    return StreamStringError("Can't compile: ")
+           << llvm::toString(compilation.takeError());
   }
 
   if (auto err = outputLib->emitArtifacts()) {
@@ -410,11 +426,6 @@ CompilerEngine::compile(std::vector<T> inputs, std::string libraryPath) {
   }
   return *outputLib.get();
 }
-
-// explicit instantiation for a vector of string (for linking with lib/CAPI)
-template llvm::Expected<CompilerEngine::Library>
-CompilerEngine::compile(std::vector<std::string> inputs,
-                        std::string libraryPath);
 
 /** Returns the path of the shared library */
 std::string CompilerEngine::Library::getSharedLibraryPath(std::string path) {

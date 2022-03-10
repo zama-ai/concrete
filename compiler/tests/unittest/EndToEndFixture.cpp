@@ -61,8 +61,8 @@ valueDescriptionToLambdaArgument(ValueDescription desc) {
 }
 
 llvm::Error checkResult(ScalarDesc &desc,
-                        mlir::concretelang::LambdaArgument *res) {
-  auto res64 = res->dyn_cast<mlir::concretelang::IntLambdaArgument<uint64_t>>();
+                        mlir::concretelang::LambdaArgument &res) {
+  auto res64 = res.dyn_cast<mlir::concretelang::IntLambdaArgument<uint64_t>>();
   if (res64 == nullptr) {
     return StreamStringError("invocation result is not a scalar");
   }
@@ -85,7 +85,7 @@ checkTensorResult(TensorDescription &desc,
              << resShape.size() << " expected " << desc.shape.size();
     }
     for (size_t i = 0; i < desc.shape.size(); i++) {
-      if ((uint64_t)resShape[i] != desc.shape[i]) {
+      if (resShape[i] != desc.shape[i]) {
         return StreamStringError("shape differs at pos ")
                << i << ", got " << resShape[i] << " expected " << desc.shape[i];
       }
@@ -112,37 +112,36 @@ checkTensorResult(TensorDescription &desc,
 }
 
 llvm::Error checkResult(TensorDescription &desc,
-                        mlir::concretelang::LambdaArgument *res) {
+                        mlir::concretelang::LambdaArgument &res) {
   switch (desc.width) {
   case 8:
     return checkTensorResult<uint8_t>(
-        desc, res->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+        desc, res.dyn_cast<mlir::concretelang::TensorLambdaArgument<
                   mlir::concretelang::IntLambdaArgument<uint8_t>>>());
   case 16:
     return checkTensorResult<uint16_t>(
-        desc, res->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+        desc, res.dyn_cast<mlir::concretelang::TensorLambdaArgument<
                   mlir::concretelang::IntLambdaArgument<uint16_t>>>());
   case 32:
     return checkTensorResult<uint32_t>(
-        desc, res->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+        desc, res.dyn_cast<mlir::concretelang::TensorLambdaArgument<
                   mlir::concretelang::IntLambdaArgument<uint32_t>>>());
   case 64:
     return checkTensorResult<uint64_t>(
-        desc, res->dyn_cast<mlir::concretelang::TensorLambdaArgument<
+        desc, res.dyn_cast<mlir::concretelang::TensorLambdaArgument<
                   mlir::concretelang::IntLambdaArgument<uint64_t>>>());
   default:
     return StreamStringError("Unsupported width");
   }
 }
 
-llvm::Error
-checkResult(ValueDescription &desc,
-            std::unique_ptr<mlir::concretelang::LambdaArgument> &res) {
+llvm::Error checkResult(ValueDescription &desc,
+                        mlir::concretelang::LambdaArgument &res) {
   switch (desc.tag) {
   case ValueDescription::SCALAR:
-    return checkResult(desc.scalar, res.get());
+    return checkResult(desc.scalar, res);
   case ValueDescription::TENSOR:
-    return checkResult(desc.tensor, res.get());
+    return checkResult(desc.tensor, res);
   }
   assert(false);
 }
@@ -190,7 +189,7 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
   }
 };
 
-LLVM_YAML_IS_DOCUMENT_LIST_VECTOR(EndToEndDesc);
+LLVM_YAML_IS_DOCUMENT_LIST_VECTOR(EndToEndDesc)
 
 std::vector<EndToEndDesc> loadEndToEndDesc(std::string path) {
   std::ifstream file(path);
