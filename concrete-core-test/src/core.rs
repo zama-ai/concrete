@@ -56,6 +56,7 @@ test! {
     (LweCiphertextDecryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),
     (LweCiphertextDiscardingEncryptionFixture, (Plaintext, LweSecretKey, LweCiphertext)),
     (LweCiphertextVectorDecryptionFixture, (PlaintextVector, LweSecretKey, LweCiphertextVector)),
+    (LweCiphertextVectorEncryptionFixture, (PlaintextVector, LweSecretKey, LweCiphertextVector)),
     (LweCiphertextCleartextDiscardingMultiplicationFixture, (LweCiphertext, Cleartext, LweCiphertext)),
     (LweCiphertextCleartextFusingMultiplicationFixture, (LweCiphertext, Cleartext)),
     (LweCiphertextFusingNegationFixture, (LweCiphertext)),
