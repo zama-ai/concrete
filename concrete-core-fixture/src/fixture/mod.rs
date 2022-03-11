@@ -230,6 +230,9 @@ pub use glwe_ciphertext_trivial_encryption::*;
 mod glwe_ciphertext_encryption;
 pub use glwe_ciphertext_encryption::*;
 
+mod glwe_ciphertext_zero_encryption;
+pub use glwe_ciphertext_zero_encryption::*;
+
 mod glwe_ciphertext_decryption;
 pub use glwe_ciphertext_decryption::*;
 
