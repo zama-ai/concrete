@@ -4,10 +4,12 @@
 //! evaluating an univariate function.
 
 pub use fourier::{FourierBootstrapKey, FourierBuffers};
+pub use fourier_seeded::FourierSeededBootstrapKey;
 pub use standard::StandardBootstrapKey;
 pub use standard_seeded::StandardSeededBootstrapKey;
 
 mod fourier;
+mod fourier_seeded;
 mod standard;
 mod standard_seeded;
 
