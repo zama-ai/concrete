@@ -323,6 +323,16 @@ int __wrap_main(int argc, char *argv[]) {
 }
 }
 
+void _dfr_pre_main() {
+  _dfr_start_impl(0, nullptr);
+  hpx::suspend();
+}
+
+void _dfr_post_main() {
+  hpx::resume();
+  _dfr_stop_impl();
+}
+
 /**********************/
 /*  Debug interface.  */
 /**********************/
