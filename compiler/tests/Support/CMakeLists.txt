@@ -17,7 +17,6 @@ target_link_libraries(
   support_unit_test
   gtest_main
   ConcretelangClientLib
-  ConcretelangSupport
 )
 
 include(GoogleTest)

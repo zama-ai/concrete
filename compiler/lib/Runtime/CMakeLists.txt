@@ -10,10 +10,20 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   install(TARGETS DFRuntime EXPORT DFRuntime)
   install(EXPORT DFRuntime DESTINATION "./")
 
-  target_link_libraries(ConcretelangRuntime Concrete pthread m dl HPX::hpx $<TARGET_OBJECTS:mlir_c_runner_utils>)
+
+  target_link_libraries(ConcretelangRuntime
+    Concrete
+    pthread
+    m
+    dl
+    $<TARGET_OBJECTS:mlir_c_runner_utils>
+    -Wl,--no-as-needed
+    DFRuntime
+    omp
+  )
 else()
   target_link_libraries(ConcretelangRuntime Concrete pthread m dl $<TARGET_OBJECTS:mlir_c_runner_utils>)
 endif()
 
-install(TARGETS ConcretelangRuntime EXPORT ConcretelangRuntime)
+install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
 install(EXPORT ConcretelangRuntime DESTINATION "./")
