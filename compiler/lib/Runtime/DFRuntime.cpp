@@ -28,6 +28,7 @@ WorkFunctionRegistry *node_level_work_function_registry;
 std::list<void *> new_allocated;
 std::list<void *> fut_allocated;
 std::list<void *> m_allocated;
+std::atomic<uint64_t> init_guard = {0};
 
 using namespace hpx;
 
@@ -324,13 +325,21 @@ int __wrap_main(int argc, char *argv[]) {
 }
 
 void _dfr_pre_main() {
-  _dfr_start_impl(0, nullptr);
-  hpx::suspend();
+  uint64_t uninitialised = 0;
+  uint64_t initialised = 1;
+  if (init_guard.compare_exchange_strong(uninitialised, initialised)) {
+    _dfr_start_impl(0, nullptr);
+    hpx::suspend();
+  }
 }
 
 void _dfr_post_main() {
-  hpx::resume();
-  _dfr_stop_impl();
+  uint64_t initialised = 1;
+  uint64_t finalised = 2;
+  if (init_guard.compare_exchange_strong(initialised, finalised)) {
+    hpx::resume();
+    _dfr_stop_impl();
+  }
 }
 
 /**********************/
