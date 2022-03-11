@@ -25,7 +25,7 @@ TRACE = os.path.join(TEST_PATH, 'trace')
 
 JIT_INVOKE_MAIN = (
     '--action=jit-invoke',
-    '--jit-funcname=main',
+    '--funcname=main',
     '--jit-keyset-cache-path=/tmp/StresstestsCache',
 )
 
