@@ -7,6 +7,7 @@
 
 #include "concretelang-c/Support/CompilerEngine.h"
 #include "concretelang/ClientLib/KeySetCache.h"
+#include "concretelang/Runtime/runtime_api.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Jit.h"
 #include "concretelang/Support/JitCompilerEngine.h"
@@ -45,6 +46,24 @@ buildLambda(const char *module, const char *funcName,
     throw std::runtime_error(os.str());
   }
   return std::move(*lambdaOrErr);
+}
+
+void initParallelization() {
+#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+  _dfr_pre_main();
+#else
+  throw std::runtime_error(
+      "This package was built without parallelization support");
+#endif
+}
+
+void terminateParallelization() {
+#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+  _dfr_post_main();
+#else
+  throw std::runtime_error(
+      "This package was built without parallelization support");
+#endif
 }
 
 lambdaArgument invokeLambda(lambda l, executionArguments args) {

@@ -4,10 +4,13 @@
 """Compiler submodule"""
 from collections.abc import Iterable
 import os
+import atexit
 from typing import List, Union
 
 from mlir._mlir_libs._concretelang._compiler import (
     JitCompilerEngine as _JitCompilerEngine,
+    init_parallelization as _init_parallelization,
+    terminate_parallelization as _terminate_parallelization,
 )
 from mlir._mlir_libs._concretelang._compiler import LambdaArgument as _LambdaArgument
 from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
@@ -18,6 +21,10 @@ import numpy as np
 ACCEPTED_NUMPY_UINTS = (np.uint8, np.uint16, np.uint32, np.uint64)
 ACCEPTED_INTS = (int,) + ACCEPTED_NUMPY_UINTS
 ACCEPTED_TYPES = (np.ndarray,) + ACCEPTED_INTS
+
+
+# Terminate parallelization in the compiler (if init) during cleanup
+atexit.register(_terminate_parallelization)
 
 
 def _lookup_runtime_lib() -> str:
@@ -177,6 +184,10 @@ class CompilerEngine:
         unsecure_key_set_cache_path = unsecure_key_set_cache_path or ""
         if not isinstance(unsecure_key_set_cache_path, str):
             raise TypeError("unsecure_key_set_cache_path must be a str")
+
+        if any([auto_parallelize, loop_parallelize, df_parallelize]):
+            # Multiple calls should be guarded in the compiler and only result in a single init
+            _init_parallelization()
         self._lambda = self._engine.build_lambda(
             mlir_str,
             func_name,
