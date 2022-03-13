@@ -187,7 +187,7 @@ jobs:
       - name: Check commits first line format
         id: ccfl
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
-        uses: gsactions/commit-message-checker@29413af74826eacb091984285fa96fac4a345c47
+        uses: gsactions/commit-message-checker@08f89134bc2a1e9d9be6f9bbb664779ad828d637
         with:
           pattern: '^((feat|fix|chore|refactor|style|test|docs)(\((bounds|helpers|data_types|debugging|extensions|fhe_circuit|mlir|graph|optimization|representation|tracing|values|benchmarks|ci|scripts|compilation|execution|deps)\))?\:) .+$'
           flags: 'gs'
@@ -201,7 +201,7 @@ jobs:
       - name: Check commits line length
         id: ccll
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
-        uses: gsactions/commit-message-checker@29413af74826eacb091984285fa96fac4a345c47
+        uses: gsactions/commit-message-checker@08f89134bc2a1e9d9be6f9bbb664779ad828d637
         with:
           pattern: '(^.{0,74}$\r?\n?){0,20}'
           flags: 'gm'
