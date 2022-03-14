@@ -1,10 +1,15 @@
 /// Contains material needed to estimate the growth of the noise when performing homomorphic
 /// computation
 use concrete_commons::dispersion::{DispersionParameter, Variance};
+use concrete_commons::key_kinds::{BinaryKeyKind, GaussianKeyKind, TernaryKeyKind};
+use concrete_commons::markers::{
+    BinaryKeyDistribution, GaussianKeyDistribution, KeyDistributionMarker, TernaryKeyDistribution,
+};
 use concrete_commons::numeric::{CastInto, UnsignedInteger};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
 };
+use std::any::TypeId;
 
 use super::*;
 
@@ -140,7 +145,7 @@ where
 /// # Example:
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
@@ -153,7 +158,7 @@ where
 /// let delta_2 = f64::powi(2., 42);
 /// let max_msg_1 = 15.;
 /// let max_msg_2 = 7.;
-/// let var_out = estimate_tensor_product_noise::<u64, _, _, BinaryKeyKind>(
+/// let var_out = estimate_tensor_product_noise::<u64, _, _, BinaryKeyDistribution>(
 ///     polynomial_size,
 ///     dimension,
 ///     dispersion_rlwe_0,
@@ -179,8 +184,52 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
+    let k_type_id = TypeId::of::<K>();
+
+    let (
+        variance_key_coefficient,
+        expectation_key_coefficient,
+        variance_coefficient_in_polynomial_key_times_key,
+        square_expectation_mean_in_polynomial_key_times_key,
+        variance_odd_coefficient_in_polynomial_key_squared,
+        variance_even_coefficient_in_polynomial_key_squared,
+        squared_expectation_mean_in_polynomial_key_squared,
+    ) = if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+        (
+            BinaryKeyKind::variance_key_coefficient::<T>(),
+            BinaryKeyKind::expectation_key_coefficient(),
+            BinaryKeyKind::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size),
+            BinaryKeyKind::square_expectation_mean_in_polynomial_key_times_key(poly_size),
+            BinaryKeyKind::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            BinaryKeyKind::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            BinaryKeyKind::squared_expectation_mean_in_polynomial_key_squared::<T>(poly_size),
+        )
+    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+        (
+            TernaryKeyKind::variance_key_coefficient::<T>(),
+            TernaryKeyKind::expectation_key_coefficient(),
+            TernaryKeyKind::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size),
+            TernaryKeyKind::square_expectation_mean_in_polynomial_key_times_key(poly_size),
+            TernaryKeyKind::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            TernaryKeyKind::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            TernaryKeyKind::squared_expectation_mean_in_polynomial_key_squared::<T>(poly_size),
+        )
+    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+        (
+            GaussianKeyKind::variance_key_coefficient::<T>(),
+            GaussianKeyKind::expectation_key_coefficient(),
+            GaussianKeyKind::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size),
+            GaussianKeyKind::square_expectation_mean_in_polynomial_key_times_key(poly_size),
+            GaussianKeyKind::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            GaussianKeyKind::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            GaussianKeyKind::squared_expectation_mean_in_polynomial_key_squared::<T>(poly_size),
+        )
+    } else {
+        panic!("Unknown key distribution encountered.")
+    };
+
     // constants
     let big_n = poly_size.0 as f64;
     let k = rlwe_dimension.0 as f64;
@@ -199,10 +248,10 @@ where
         // 1ere parenthese
         (q_square - 1.) / 12.
             * (1.
-                + k * big_n * K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-                + k * big_n * square(K::expectation_key_coefficient()))
-            + k * big_n / 4. * K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-            + 1. / 4. * square(1. + k * big_n * K::expectation_key_coefficient())
+                + k * big_n * variance_key_coefficient.get_modular_variance::<T>()
+                + k * big_n * square(expectation_key_coefficient))
+            + k * big_n / 4. * variance_key_coefficient.get_modular_variance::<T>()
+            + 1. / 4. * square(1. + k * big_n * expectation_key_coefficient)
     ) * (
         // 2e parenthese
         dispersion_glwe1.get_modular_variance::<T>() + dispersion_glwe2.get_modular_variance::<T>()
@@ -213,26 +262,24 @@ where
     let res_3 = 1. / 12.
         + k * big_n / (12. * delta_square)
             * ((delta_square - 1.)
-                * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-                    + square(K::expectation_key_coefficient()))
-                + 3. * K::variance_key_coefficient::<T>().get_modular_variance::<T>())
+                * (variance_key_coefficient.get_modular_variance::<T>()
+                    + square(expectation_key_coefficient))
+                + 3. * variance_key_coefficient.get_modular_variance::<T>())
         + k * (k - 1.) * big_n / (24. * delta_square)
             * ((delta_square - 1.)
-                * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
-                    .get_modular_variance::<T>()
-                    + K::square_expectation_mean_in_polynomial_key_times_key(poly_size))
-                + 3. * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
+                * (variance_coefficient_in_polynomial_key_times_key.get_modular_variance::<T>()
+                    + square_expectation_mean_in_polynomial_key_times_key)
+                + 3. * variance_coefficient_in_polynomial_key_times_key
                     .get_modular_variance::<T>())
         + k * big_n / (24. * delta_square)
             * ((delta_square - 1.)
-                * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                    .get_modular_variance::<T>()
-                    + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                * (variance_odd_coefficient_in_polynomial_key_squared.get_modular_variance::<T>()
+                    + variance_even_coefficient_in_polynomial_key_squared
                         .get_modular_variance::<T>()
-                    + 2. * K::squared_expectation_mean_in_polynomial_key_squared::<T>(poly_size))
-                + 3. * (K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                    + 2. * squared_expectation_mean_in_polynomial_key_squared)
+                + 3. * (variance_odd_coefficient_in_polynomial_key_squared
                     .get_modular_variance::<T>()
-                    + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
+                    + variance_even_coefficient_in_polynomial_key_squared
                         .get_modular_variance::<T>()));
 
     Variance::from_modular_variance::<T>(res_2 + res_1 + res_3)
@@ -242,7 +289,7 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
@@ -252,7 +299,7 @@ where
 /// let base_log = DecompositionBaseLog(7);
 /// let polynomial_size = PolynomialSize(1024);
 /// let dispersion_rlk = Variance(f64::powi(2., -38));
-/// let var_cmux = estimate_relinearization_noise::<u64, _, BinaryKeyKind>(
+/// let var_cmux = estimate_relinearization_noise::<u64, _, BinaryKeyDistribution>(
 ///     polynomial_size,
 ///     dimension,
 ///     dispersion_rlk,
@@ -270,8 +317,40 @@ pub fn estimate_relinearization_noise<T, D, K>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
+    let k_type_id = TypeId::of::<K>();
+
+    let (
+        variance_coefficient_in_polynomial_key_times_key,
+        square_expectation_mean_in_polynomial_key_times_key,
+        variance_odd_coefficient_in_polynomial_key_squared,
+        variance_even_coefficient_in_polynomial_key_squared,
+    ) = if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+        (
+            BinaryKeyKind::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size),
+            BinaryKeyKind::square_expectation_mean_in_polynomial_key_times_key(poly_size),
+            BinaryKeyKind::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            BinaryKeyKind::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size),
+        )
+    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+        (
+            TernaryKeyKind::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size),
+            TernaryKeyKind::square_expectation_mean_in_polynomial_key_times_key(poly_size),
+            TernaryKeyKind::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            TernaryKeyKind::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size),
+        )
+    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+        (
+            GaussianKeyKind::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size),
+            GaussianKeyKind::square_expectation_mean_in_polynomial_key_times_key(poly_size),
+            GaussianKeyKind::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size),
+            GaussianKeyKind::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size),
+        )
+    } else {
+        panic!("Unknown key distribution encountered.")
+    };
+
     // constants
     let big_n = poly_size.0 as f64;
     let k = glwe_dimension.0 as f64;
@@ -288,24 +367,17 @@ where
     let res_2 = k * big_n / 2.
         * (q_square / (12. * f64::powi(base, (2 * level.0) as i32)) - 1. / 12.)
         * ((k - 1.)
-            * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
-                .get_modular_variance::<T>()
-                + K::square_expectation_mean_in_polynomial_key_times_key(poly_size))
-            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                .get_modular_variance::<T>()
-            + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                .get_modular_variance::<T>()
-            + 2. * K::square_expectation_mean_in_polynomial_key_times_key(poly_size));
+            * (variance_coefficient_in_polynomial_key_times_key.get_modular_variance::<T>()
+                + square_expectation_mean_in_polynomial_key_times_key)
+            + variance_odd_coefficient_in_polynomial_key_squared.get_modular_variance::<T>()
+            + variance_even_coefficient_in_polynomial_key_squared.get_modular_variance::<T>()
+            + 2. * square_expectation_mean_in_polynomial_key_times_key);
 
     // third term
     let res_3 = k * big_n / 8.
-        * ((k - 1.)
-            * K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
-                .get_modular_variance::<T>()
-            + K::variance_odd_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                .get_modular_variance::<T>()
-            + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
-                .get_modular_variance::<T>());
+        * ((k - 1.) * variance_coefficient_in_polynomial_key_times_key.get_modular_variance::<T>()
+            + variance_odd_coefficient_in_polynomial_key_squared.get_modular_variance::<T>()
+            + variance_even_coefficient_in_polynomial_key_squared.get_modular_variance::<T>());
 
     Variance::from_modular_variance::<T>(res_1 + res_2 + res_3)
 }
@@ -315,7 +387,7 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
@@ -331,7 +403,7 @@ where
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let dispersion_rlk = Variance(f64::powi(2., -38));
-/// let var_out = estimate_multiplication_noise::<u64, _, _, _, BinaryKeyKind>(
+/// let var_out = estimate_multiplication_noise::<u64, _, _, _, BinaryKeyDistribution>(
 ///     polynomial_size,
 ///     dimension,
 ///     dispersion_rlwe_0,
@@ -364,7 +436,7 @@ where
     D1: DispersionParameter,
     D2: DispersionParameter,
     D3: DispersionParameter,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
     // res 1
     let res_1: Variance = estimate_tensor_product_noise::<T, _, _, K>(
@@ -431,7 +503,7 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, LweDimension,
 /// };
@@ -441,14 +513,12 @@ where
 /// let base_log = DecompositionBaseLog(7);
 /// let dispersion_lwe = Variance(f64::powi(2., -38));
 /// let dispersion_ks = Variance(f64::powi(2., -40));
-/// let var_ks = estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<u64, _, _,
-/// BinaryKeyKind>(
-///     lwe_mask_size,
-///     dispersion_lwe,
-///     dispersion_ks,
-///     base_log,
-///     l_ks,
-/// );
+/// let var_ks = estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<
+///     u64,
+///     _,
+///     _,
+///     BinaryKeyDistribution,
+/// >(lwe_mask_size, dispersion_lwe, dispersion_ks, base_log, l_ks);
 /// ```
 pub fn estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms<T, D1, D2, K>(
     lwe_mask_size: LweDimension,
@@ -461,8 +531,30 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
+    let k_type_id = TypeId::of::<K>();
+
+    let variance_key_coefficient = if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+        BinaryKeyKind::variance_key_coefficient::<T>()
+    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+        TernaryKeyKind::variance_key_coefficient::<T>()
+    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+        GaussianKeyKind::variance_key_coefficient::<T>()
+    } else {
+        panic!("Unknown key distribution encountered.")
+    };
+
+    let expectation_key_coefficient = if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+        BinaryKeyKind::expectation_key_coefficient()
+    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+        TernaryKeyKind::expectation_key_coefficient()
+    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+        GaussianKeyKind::expectation_key_coefficient()
+    } else {
+        panic!("Unknown key distribution encountered.")
+    };
+
     let n = lwe_mask_size.0 as f64;
     let base = (1 << base_log.0) as f64;
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
@@ -473,11 +565,11 @@ where
     // res 2
     let res_2 = n
         * (q_square / (12. * f64::powi(base, 2 * level.0 as i32)) - 1. / 12.)
-        * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-            + square(K::expectation_key_coefficient()));
+        * (variance_key_coefficient.get_modular_variance::<T>()
+            + square(expectation_key_coefficient));
 
     // res 3
-    let res_3 = n / 4. * K::variance_key_coefficient::<T>().get_modular_variance::<T>();
+    let res_3 = n / 4. * variance_key_coefficient.get_modular_variance::<T>();
 
     // res 4
     let res_4 =
@@ -532,29 +624,48 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::PolynomialSize;
 /// use concrete_npe::estimate_msb_noise_rlwe;
 /// use std::fmt::Binary;
 /// let rlwe_mask_size = PolynomialSize(1024);
-/// let var_out = estimate_msb_noise_rlwe::<u64, BinaryKeyKind>(rlwe_mask_size);
+/// let var_out = estimate_msb_noise_rlwe::<u64, BinaryKeyDistribution>(rlwe_mask_size);
 /// ```
 pub fn estimate_msb_noise_rlwe<T, K>(poly_size: PolynomialSize) -> Variance
 where
     T: UnsignedInteger,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
+    let k_type_id = TypeId::of::<K>();
+
+    let (variance_key_coefficient, expectation_key_coefficient) =
+        if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+            (
+                BinaryKeyKind::variance_key_coefficient::<T>(),
+                BinaryKeyKind::expectation_key_coefficient(),
+            )
+        } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+            (
+                TernaryKeyKind::variance_key_coefficient::<T>(),
+                TernaryKeyKind::expectation_key_coefficient(),
+            )
+        } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+            (
+                GaussianKeyKind::variance_key_coefficient::<T>(),
+                GaussianKeyKind::expectation_key_coefficient(),
+            )
+        } else {
+            panic!("Unknown key distribution encountered.")
+        };
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
     Variance::from_modular_variance::<T>(
         1. / q_square
             * ((q_square - 1.) / 12.
                 * (1.
-                    + (poly_size.0 as f64)
-                        * K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-                    + (poly_size.0 as f64) * square(K::expectation_key_coefficient()))
-                + (poly_size.0 as f64) / 4.
-                    * K::variance_key_coefficient::<T>().get_modular_variance::<T>()),
+                    + (poly_size.0 as f64) * variance_key_coefficient.get_modular_variance::<T>()
+                    + (poly_size.0 as f64) * square(expectation_key_coefficient))
+                + (poly_size.0 as f64) / 4. * variance_key_coefficient.get_modular_variance::<T>()),
     )
 }
 
@@ -563,7 +674,7 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
@@ -574,7 +685,7 @@ where
 /// let dispersion_rlwe = Variance(f64::powi(2., -40));
 /// let dispersion_rgsw = Variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
-/// let var_ks = estimate_external_product_noise_with_binary_ggsw::<u64, _, _, BinaryKeyKind>(
+/// let var_ks = estimate_external_product_noise_with_binary_ggsw::<u64, _, _, BinaryKeyDistribution>(
 ///     poly_size,
 ///     mask_size,
 ///     dispersion_rlwe,
@@ -595,8 +706,30 @@ where
     T: UnsignedInteger,
     D1: DispersionParameter,
     D2: DispersionParameter,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
+    let k_type_id = TypeId::of::<K>();
+
+    let (variance_key_coefficient, expectation_key_coefficient) =
+        if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+            (
+                BinaryKeyKind::variance_key_coefficient::<T>(),
+                BinaryKeyKind::expectation_key_coefficient(),
+            )
+        } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+            (
+                TernaryKeyKind::variance_key_coefficient::<T>(),
+                TernaryKeyKind::expectation_key_coefficient(),
+            )
+        } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+            (
+                GaussianKeyKind::variance_key_coefficient::<T>(),
+                GaussianKeyKind::expectation_key_coefficient(),
+            )
+        } else {
+            panic!("Unknown key distribution encountered.")
+        };
+
     let l = level.0 as f64;
     let k = rlwe_mask_size.0 as f64;
     let big_n = poly_size.0 as f64;
@@ -609,10 +742,10 @@ where
     let res_3 = (square(f64::powi(2., T::BITS as i32)) as f64 - b2l) / (24. * b2l)
         * (1.
             + k * big_n
-                * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-                    + square(K::expectation_key_coefficient())));
-    let res_4 = k * big_n / 8. * K::variance_key_coefficient::<T>().get_modular_variance::<T>();
-    let res_5 = 1. / 16. * square(1. - k * big_n * K::expectation_key_coefficient());
+                * (variance_key_coefficient.get_modular_variance::<T>()
+                    + square(expectation_key_coefficient)));
+    let res_4 = k * big_n / 8. * variance_key_coefficient.get_modular_variance::<T>();
+    let res_5 = 1. / 16. * square(1. - k * big_n * expectation_key_coefficient);
     Variance::from_modular_variance::<T>(res_1 + res_2 + res_3 + res_4 + res_5)
 }
 
@@ -620,7 +753,7 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::{DispersionParameter, Variance};
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
 /// };
@@ -633,7 +766,7 @@ where
 /// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(f64::powi(2., 25));
 /// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(f64::powi(2., 25));
 /// // Compute the noise
-/// let var_cmux = estimate_cmux_noise_with_binary_ggsw::<u64, _, _, _, BinaryKeyKind>(
+/// let var_cmux = estimate_cmux_noise_with_binary_ggsw::<u64, _, _, _, BinaryKeyDistribution>(
 ///     dimension,
 ///     polynomial_size,
 ///     base_log,
@@ -657,7 +790,7 @@ where
     D1: DispersionParameter,
     D2: DispersionParameter,
     D3: DispersionParameter,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
     let var_external_product = estimate_external_product_noise_with_binary_ggsw::<T, _, _, K>(
         polynomial_size,
@@ -675,7 +808,7 @@ where
 /// # Example
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
-/// use concrete_commons::key_kinds::BinaryKeyKind;
+/// use concrete_commons::markers::BinaryKeyDistribution;
 /// use concrete_commons::parameters::{
 ///     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
 /// };
@@ -686,7 +819,7 @@ where
 /// let level = DecompositionLevelCount(4);
 /// let dispersion_rgsw = Variance(f64::powi(2., -40));
 /// let base_log = DecompositionBaseLog(7);
-/// let var_ks = estimate_pbs_noise::<u64, _, BinaryKeyKind>(
+/// let var_ks = estimate_pbs_noise::<u64, _, BinaryKeyDistribution>(
 ///     mask_size,
 ///     poly_size,
 ///     rlwe_mask_size,
@@ -706,8 +839,30 @@ pub fn estimate_pbs_noise<T, D, K>(
 where
     T: UnsignedInteger,
     D: DispersionParameter,
-    K: KeyDispersion,
+    K: KeyDistributionMarker,
 {
+    let k_type_id = TypeId::of::<K>();
+
+    let variance_key_coefficient = if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+        BinaryKeyKind::variance_key_coefficient::<T>()
+    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+        TernaryKeyKind::variance_key_coefficient::<T>()
+    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+        GaussianKeyKind::variance_key_coefficient::<T>()
+    } else {
+        panic!("Unknown key distribution encountered.")
+    };
+
+    let expectation_key_coefficient = if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
+        BinaryKeyKind::expectation_key_coefficient()
+    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
+        TernaryKeyKind::expectation_key_coefficient()
+    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
+        GaussianKeyKind::expectation_key_coefficient()
+    } else {
+        panic!("Unknown key distribution encountered.")
+    };
+
     let n = lwe_mask_size.0 as f64;
     let k = rlwe_mask_size.0 as f64;
     let b = (1 << base_log.0) as f64;
@@ -721,10 +876,10 @@ where
     let res_2 = n * (q_square - b2l) / (24. * b2l)
         * (1.
             + k * big_n
-                * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-                    + square(K::expectation_key_coefficient())))
-        + n * k * big_n / 8. * K::variance_key_coefficient::<T>().get_modular_variance::<T>()
-        + n / 16. * square(1. - k * big_n * K::expectation_key_coefficient());
+                * (variance_key_coefficient.get_modular_variance::<T>()
+                    + square(expectation_key_coefficient)))
+        + n * k * big_n / 8. * variance_key_coefficient.get_modular_variance::<T>()
+        + n / 16. * square(1. - k * big_n * expectation_key_coefficient);
     Variance::from_modular_variance::<T>(res_1 + res_2)
 }
 
