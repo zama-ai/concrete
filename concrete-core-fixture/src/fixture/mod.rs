@@ -341,6 +341,9 @@ pub use lwe_ciphertext_discarding_bootstrap_1::*;
 mod lwe_ciphertext_discarding_bootstrap_2;
 pub use lwe_ciphertext_discarding_bootstrap_2::*;
 
+mod lwe_ciphertext_discarding_extraction;
+pub use lwe_ciphertext_discarding_extraction::*;
+
 mod plaintext_creation;
 pub use plaintext_creation::*;
 
