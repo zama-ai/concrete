@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{GlweSecretKeyKind, KeyDistributionMarker};
+use crate::prelude::{GlweSecretKeyKind, KeyDistributionMarker};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 

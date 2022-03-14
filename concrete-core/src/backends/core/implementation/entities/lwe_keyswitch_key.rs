@@ -1,5 +1,5 @@
 use crate::backends::core::private::crypto::lwe::LweKeyswitchKey as ImplLweKeyswitchKey;
-use crate::specification::entities::markers::{BinaryKeyDistribution, LweKeyswitchKeyKind};
+use crate::prelude::{BinaryKeyDistribution, LweKeyswitchKeyKind};
 use crate::specification::entities::{AbstractEntity, LweKeyswitchKeyEntity};
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweDimension};
 #[cfg(feature = "serde_serialize")]

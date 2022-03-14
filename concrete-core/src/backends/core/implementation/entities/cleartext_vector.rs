@@ -1,5 +1,5 @@
 use crate::backends::core::private::crypto::encoding::CleartextList as ImplCleartextList;
-use crate::specification::entities::markers::CleartextVectorKind;
+use crate::prelude::CleartextVectorKind;
 use crate::specification::entities::{AbstractEntity, CleartextVectorEntity};
 use concrete_commons::parameters::CleartextCount;
 

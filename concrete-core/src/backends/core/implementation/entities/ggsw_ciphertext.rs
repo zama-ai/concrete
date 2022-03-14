@@ -3,7 +3,7 @@ use crate::backends::core::private::crypto::ggsw::{
     StandardGgswCiphertext as ImplStandardGgswCiphertext,
 };
 use crate::backends::core::private::math::fft::Complex64;
-use crate::specification::entities::markers::{BinaryKeyDistribution, GgswCiphertextKind};
+use crate::prelude::{BinaryKeyDistribution, GgswCiphertextKind};
 use crate::specification::entities::{AbstractEntity, GgswCiphertextEntity};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,

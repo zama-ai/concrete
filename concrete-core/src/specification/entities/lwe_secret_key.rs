@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{KeyDistributionMarker, LweSecretKeyKind};
+use crate::prelude::{KeyDistributionMarker, LweSecretKeyKind};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::LweDimension;
 

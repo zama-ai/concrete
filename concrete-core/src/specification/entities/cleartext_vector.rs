@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::CleartextVectorKind;
+use crate::prelude::CleartextVectorKind;
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::CleartextCount;
 

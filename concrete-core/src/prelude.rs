@@ -5,6 +5,7 @@
 // in crates built on top of concrete-core
 pub use concrete_commons::dispersion::*;
 pub use concrete_commons::key_kinds::*;
+pub use concrete_commons::markers::*;
 pub use concrete_commons::parameters::*;
 pub use concrete_commons::*;
 

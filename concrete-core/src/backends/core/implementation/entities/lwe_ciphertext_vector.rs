@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
 
-use crate::specification::entities::markers::{BinaryKeyDistribution, LweCiphertextVectorKind};
+use crate::prelude::{BinaryKeyDistribution, LweCiphertextVectorKind};
 use crate::specification::entities::{AbstractEntity, LweCiphertextVectorEntity};
 
 use super::super::super::private::crypto::lwe::LweList as ImplLweList;

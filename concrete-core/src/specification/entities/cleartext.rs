@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::CleartextKind;
+use crate::prelude::CleartextKind;
 use crate::specification::entities::AbstractEntity;
 
 /// A trait implemented by types embodying a cleartext entity.

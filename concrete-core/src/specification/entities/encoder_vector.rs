@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::EncoderVectorKind;
+use crate::prelude::EncoderVectorKind;
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::EncoderCount;
 

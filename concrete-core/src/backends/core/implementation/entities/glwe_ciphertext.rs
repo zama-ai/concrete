@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 
-use crate::specification::entities::markers::{BinaryKeyDistribution, GlweCiphertextKind};
+use crate::prelude::{BinaryKeyDistribution, GlweCiphertextKind};
 use crate::specification::entities::{AbstractEntity, GlweCiphertextEntity};
 
 use super::super::super::private::crypto::glwe::GlweCiphertext as ImplGlweCiphertext;

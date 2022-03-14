@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::PlaintextKind;
+use crate::prelude::PlaintextKind;
 use crate::specification::entities::AbstractEntity;
 
 /// A trait implemented by types embodying a plaintext.

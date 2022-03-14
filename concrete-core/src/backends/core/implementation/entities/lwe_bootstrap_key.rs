@@ -3,7 +3,7 @@ use crate::backends::core::private::crypto::bootstrap::{
     StandardBootstrapKey as ImplStandardBootstrapKey,
 };
 use crate::backends::core::private::math::fft::Complex64;
-use crate::specification::entities::markers::{BinaryKeyDistribution, LweBootstrapKeyKind};
+use crate::prelude::{BinaryKeyDistribution, LweBootstrapKeyKind};
 use crate::specification::entities::{AbstractEntity, LweBootstrapKeyEntity};
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,

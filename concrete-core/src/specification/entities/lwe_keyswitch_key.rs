@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{KeyDistributionMarker, LweKeyswitchKeyKind};
+use crate::prelude::{KeyDistributionMarker, LweKeyswitchKeyKind};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweDimension};
 

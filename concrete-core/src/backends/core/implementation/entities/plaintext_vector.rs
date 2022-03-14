@@ -1,5 +1,5 @@
 use super::super::super::private::crypto::encoding::PlaintextList as CorePlaintextList;
-use crate::specification::entities::markers::PlaintextVectorKind;
+use crate::prelude::PlaintextVectorKind;
 use crate::specification::entities::{AbstractEntity, PlaintextVectorEntity};
 use concrete_commons::parameters::PlaintextCount;
 

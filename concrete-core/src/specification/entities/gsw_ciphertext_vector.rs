@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{GswCiphertextVectorKind, KeyDistributionMarker};
+use crate::prelude::{GswCiphertextVectorKind, KeyDistributionMarker};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GswCiphertextCount, LweDimension,

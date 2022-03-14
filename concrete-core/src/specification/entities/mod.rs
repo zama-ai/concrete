@@ -5,9 +5,6 @@
 //! + The [`AbstractEntity`] super-trait.
 //! + One of the `*Entity` traits.
 
-pub mod markers;
-
-use markers::*;
 use std::fmt::Debug;
 
 /// A top-level abstraction for entities of the concrete scheme.
@@ -55,6 +52,7 @@ mod plaintext_vector;
 
 pub use cleartext::*;
 pub use cleartext_vector::*;
+use concrete_commons::markers::EntityKindMarker;
 pub use encoder::*;
 pub use encoder_vector::*;
 pub use ggsw_ciphertext::*;

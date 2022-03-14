@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{KeyDistributionMarker, LweBootstrapKeyKind};
+use crate::prelude::{KeyDistributionMarker, LweBootstrapKeyKind};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,

@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{GlweCiphertextVectorKind, KeyDistributionMarker};
+use crate::prelude::{GlweCiphertextVectorKind, KeyDistributionMarker};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{GlweCiphertextCount, GlweDimension, PolynomialSize};
 

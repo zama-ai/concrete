@@ -1,4 +1,4 @@
-use crate::specification::entities::markers::{KeyDistributionMarker, LweCiphertextVectorKind};
+use crate::prelude::{KeyDistributionMarker, LweCiphertextVectorKind};
 use crate::specification::entities::AbstractEntity;
 use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
 

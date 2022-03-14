@@ -22,5 +22,6 @@
 
 pub mod dispersion;
 pub mod key_kinds;
+pub mod markers;
 pub mod numeric;
 pub mod parameters;
