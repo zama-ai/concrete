@@ -36,7 +36,6 @@ void _dfr_deallocate_future_data(void *);
 void _dfr_start();
 void _dfr_stop();
 
-void _dfr_pre_main();
-void _dfr_post_main();
+void _dfr_terminate();
 }
 #endif

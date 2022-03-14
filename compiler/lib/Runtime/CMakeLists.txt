@@ -5,7 +5,7 @@ add_library(ConcretelangRuntime SHARED
 
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   add_library(DFRuntime SHARED DFRuntime.cpp)
-  target_link_libraries(DFRuntime PUBLIC pthread m dl HPX::hpx HPX::iostreams_component -rdynamic -Wl,-wrap,main)
+  target_link_libraries(DFRuntime PUBLIC pthread m dl HPX::hpx HPX::iostreams_component -rdynamic)
 
   install(TARGETS DFRuntime EXPORT DFRuntime)
   install(EXPORT DFRuntime DESTINATION "./")

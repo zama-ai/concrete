@@ -282,7 +282,13 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
 /*  Start/stop functions to be called from within user code (or during
     JIT invocation).  These serve to pause/resume the runtime
     scheduler and to clean up used resources.  */
-void _dfr_start() { hpx::resume(); }
+void _dfr_start() {
+  uint64_t uninitialised = 0;
+  if (init_guard.compare_exchange_strong(uninitialised, 1))
+    _dfr_start_impl(0, nullptr);
+  else
+    hpx::resume();
+}
 
 void _dfr_stop() {
   hpx::suspend();
@@ -301,6 +307,14 @@ void _dfr_stop() {
   }
 }
 
+void _dfr_terminate() {
+  uint64_t initialised = 1;
+  if (init_guard.compare_exchange_strong(initialised, 2)) {
+    hpx::resume();
+    _dfr_stop_impl();
+  }
+}
+
 /*******************/
 /*  Main wrapper.  */
 /*******************/
@@ -309,38 +323,27 @@ extern int main(int argc, char *argv[]); // __attribute__((weak));
 extern int __real_main(int argc, char *argv[]) __attribute__((weak));
 int __wrap_main(int argc, char *argv[]) {
   int r;
-  // Initialize and immediately suspend the HPX runtime.
-  _dfr_start_impl(0, nullptr);
-  hpx::suspend();
+  // Initialize and immediately suspend the HPX runtime if not yet done.
+  uint64_t uninitialised = 0;
+  if (init_guard.compare_exchange_strong(uninitialised, 1)) {
+    _dfr_start_impl(0, nullptr);
+    hpx::suspend();
+  }
   // Run the actual main function. Within there should be a call to
   // _dfr_start to resume execution of the HPX scheduler if needed.
   r = __real_main(argc, argv);
   // By default all _dfr_start should be matched to a _dfr_stop, so we
   // need to resume before being able to finalize.
-  hpx::resume();
-  _dfr_stop_impl();
+  uint64_t initialised = 1;
+  if (init_guard.compare_exchange_strong(initialised, 2)) {
+    hpx::resume();
+    _dfr_stop_impl();
+  }
 
   return r;
 }
 }
 
-void _dfr_pre_main() {
-  uint64_t uninitialised = 0;
-  uint64_t initialised = 1;
-  if (init_guard.compare_exchange_strong(uninitialised, initialised)) {
-    _dfr_start_impl(0, nullptr);
-    hpx::suspend();
-  }
-}
-
-void _dfr_post_main() {
-  uint64_t initialised = 1;
-  uint64_t finalised = 2;
-  if (init_guard.compare_exchange_strong(initialised, finalised)) {
-    hpx::resume();
-    _dfr_stop_impl();
-  }
-}
 
 /**********************/
 /*  Debug interface.  */
