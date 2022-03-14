@@ -232,7 +232,7 @@ where
         let (proto_plaintext, ..) = sample_proto;
         let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(&output_ciphertext);
         let proto_output_lwe_secret_key =
-            maker.convert_glwe_secret_key_to_lwe_secret_key(proto_glwe_secret_key);
+            maker.transmute_glwe_secret_key_to_lwe_secret_key(proto_glwe_secret_key);
         let proto_output_plaintext = <Maker as PrototypesLweCiphertext<
             Precision,
             OutputCiphertext::KeyDistribution,
