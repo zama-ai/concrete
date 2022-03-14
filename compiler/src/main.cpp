@@ -29,6 +29,7 @@
 #include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
+#include "concretelang/Runtime/runtime_api.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/JitCompilerEngine.h"
 #include "concretelang/Support/LLVMEmitFile.h"
@@ -480,8 +481,10 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+  int result = 0;
   if (mlir::failed(compilerMain(argc, argv)))
-    return 1;
+    result = 1;
 
-  return 0;
+  _dfr_terminate();
+  return result;
 }

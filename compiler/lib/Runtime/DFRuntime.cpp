@@ -344,7 +344,6 @@ int __wrap_main(int argc, char *argv[]) {
 }
 }
 
-
 /**********************/
 /*  Debug interface.  */
 /**********************/

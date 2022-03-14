@@ -1,6 +1,7 @@
 add_library(ConcretelangRuntime SHARED
     context.cpp
     wrappers.cpp
+    dfr_terminate.cpp
 )
 
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
