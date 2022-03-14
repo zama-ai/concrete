@@ -53,10 +53,7 @@ MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 MLIR_CAPI_EXPORTED lambdaArgument invokeLambda(lambda l,
                                                executionArguments args);
 
-// Initialize and terminate parallelization. Init can be called only once (later
-// calls might be ignored by the runtime). You shouldn't reinit after
-// termination.
-MLIR_CAPI_EXPORTED void initParallelization();
+// Terminate parallelization
 MLIR_CAPI_EXPORTED void terminateParallelization();
 
 // Create a lambdaArgument from a tensor of different data types

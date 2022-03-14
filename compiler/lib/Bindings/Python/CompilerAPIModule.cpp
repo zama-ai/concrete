@@ -39,7 +39,6 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           return library(library_path, mlir_modules);
         });
 
-  m.def("init_parallelization", &initParallelization);
   m.def("terminate_parallelization", &terminateParallelization);
 
   pybind11::class_<JitCompilerEngine>(m, "JitCompilerEngine")

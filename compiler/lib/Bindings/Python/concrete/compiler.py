@@ -9,7 +9,6 @@ from typing import List, Union
 
 from mlir._mlir_libs._concretelang._compiler import (
     JitCompilerEngine as _JitCompilerEngine,
-    init_parallelization as _init_parallelization,
     terminate_parallelization as _terminate_parallelization,
 )
 from mlir._mlir_libs._concretelang._compiler import LambdaArgument as _LambdaArgument
@@ -185,9 +184,6 @@ class CompilerEngine:
         if not isinstance(unsecure_key_set_cache_path, str):
             raise TypeError("unsecure_key_set_cache_path must be a str")
 
-        if any([auto_parallelize, loop_parallelize, df_parallelize]):
-            # Multiple calls should be guarded in the compiler and only result in a single init
-            _init_parallelization()
         self._lambda = self._engine.build_lambda(
             mlir_str,
             func_name,

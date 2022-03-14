@@ -48,18 +48,9 @@ buildLambda(const char *module, const char *funcName,
   return std::move(*lambdaOrErr);
 }
 
-void initParallelization() {
-#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
-  _dfr_pre_main();
-#else
-  throw std::runtime_error(
-      "This package was built without parallelization support");
-#endif
-}
-
 void terminateParallelization() {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
-  _dfr_post_main();
+  _dfr_terminate();
 #else
   throw std::runtime_error(
       "This package was built without parallelization support");
