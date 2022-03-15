@@ -31,7 +31,7 @@
 #include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
-#include "concretelang/Runtime/runtime_api.h"
+#include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/JITSupport.h"

@@ -11,6 +11,7 @@
 
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
 
+#include <hpx/barrier.hpp>
 #include <hpx/future.hpp>
 #include <hpx/hpx_start.hpp>
 #include <hpx/hpx_suspend.hpp>
@@ -22,11 +23,16 @@
 
 std::vector<GenericComputeClient> gcc;
 void *dl_handle;
-PbsKeyManager *node_level_key_manager;
-WorkFunctionRegistry *node_level_work_function_registry;
+
+KeyManager<LweBootstrapKey_u64> *_dfr_node_level_bsk_manager;
+KeyManager<LweKeyswitchKey_u64> *_dfr_node_level_ksk_manager;
+
+WorkFunctionRegistry *_dfr_node_level_work_function_registry;
 std::list<void *> new_allocated;
 std::list<void *> fut_allocated;
 std::list<void *> m_allocated;
+hpx::lcos::barrier *_dfr_jit_workfunction_registration_barrier;
+hpx::lcos::barrier *_dfr_jit_phase_barrier;
 std::atomic<uint64_t> init_guard = {0};
 
 using namespace hpx;
@@ -52,6 +58,17 @@ void _dfr_deallocate_future(void *in) {
   delete (static_cast<hpx::shared_future<void *> *>(in));
 }
 
+// Determine where new task should run.  For now just round-robin
+// distribution - TODO: optimise.
+static inline size_t _dfr_find_next_execution_locality() {
+  static size_t num_nodes = hpx::get_num_localities().get();
+  static std::atomic<std::size_t> next_locality{0};
+
+  size_t next_loc = ++next_locality;
+
+  return next_loc % num_nodes;
+}
+
 /// Runtime generic async_task.  Each first NUM_PARAMS pairs of
 /// arguments in the variadic list corresponds to a void* pointer on a
 /// hpx::future<void*> and the size of data within the future.  After
@@ -60,28 +77,39 @@ void _dfr_deallocate_future(void *in) {
 void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
                             ...) {
   std::vector<void *> params;
-  std::vector<void *> outputs;
   std::vector<size_t> param_sizes;
+  std::vector<uint64_t> param_types;
+  std::vector<void *> outputs;
   std::vector<size_t> output_sizes;
+  std::vector<uint64_t> output_types;
 
   va_list args;
   va_start(args, num_outputs);
   for (size_t i = 0; i < num_params; ++i) {
     params.push_back(va_arg(args, void *));
-    param_sizes.push_back(va_arg(args, size_t));
+    param_sizes.push_back(va_arg(args, uint64_t));
+    param_types.push_back(va_arg(args, uint64_t));
   }
   for (size_t i = 0; i < num_outputs; ++i) {
     outputs.push_back(va_arg(args, void *));
-    output_sizes.push_back(va_arg(args, size_t));
+    output_sizes.push_back(va_arg(args, uint64_t));
+    output_types.push_back(va_arg(args, uint64_t));
   }
   va_end(args);
+
+  for (size_t i = 0; i < num_params; ++i) {
+    if (_dfr_get_arg_type(param_types[i] == _DFR_TASK_ARG_MEMREF)) {
+      m_allocated.push_back(
+          (void *)static_cast<StridedMemRefType<char, 1> *>(params[i])->data);
+    }
+  }
 
   // We pass functions by name - which is not strictly necessary in
   // shared memory as pointers suffice, but is needed in the
   // distributed case where the functions need to be located/loaded on
   // the node.
   auto wfnname =
-      node_level_work_function_registry->getWorkFunctionName((void *)wfn);
+      _dfr_node_level_work_function_registry->getWorkFunctionName((void *)wfn);
   hpx::future<hpx::future<OpaqueOutputData>> oodf;
 
   // In order to allow complete dataflow semantics for
@@ -93,20 +121,23 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   switch (num_params) {
   case 0:
     oodf = std::move(
-        hpx::dataflow([wfnname, param_sizes,
-                       output_sizes]() -> hpx::future<OpaqueOutputData> {
+        hpx::dataflow([wfnname, param_sizes, param_types, output_sizes,
+                       output_types]() -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         }));
     break;
 
   case 1:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {param0.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0]));
@@ -114,11 +145,13 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 2:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -127,13 +160,15 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 3:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -642,25 +677,44 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   }
 }
 
+/***************************/
+/* JIT execution support.  */
+/***************************/
+static inline bool _dfr_is_root_node_impl() {
+  static bool is_root_node_p = (hpx::find_here() == hpx::find_root_locality());
+  return is_root_node_p;
+}
+
+bool _dfr_is_root_node() { return _dfr_is_root_node_impl(); }
+
+void _dfr_register_work_function(wfnptr wfn) {
+  _dfr_node_level_work_function_registry->registerAnonymousWorkFunction(
+      (void *)wfn);
+}
+
 /********************************/
 /* Distributed key management.  */
 /********************************/
-void _dfr_register_key(void *key, size_t key_id, size_t size) {
-  node_level_key_manager->register_key(key, key_id, size);
-}
-
-void _dfr_broadcast_keys() { node_level_key_manager->broadcast_keys(); }
-
-void *_dfr_get_key(size_t key_id) {
-  return *node_level_key_manager->get_key(key_id).key.get();
-}
 
 /************************************/
 /*  Initialization & Finalization.  */
 /************************************/
-/* Runtime initialization and finalization.  */
+// TODO: need to set a flag for when executing in JIT to allow remote
+// nodes to execute generated function that registers work functions.
+// This also means that compute nodes need to go through all the
+// phases of computation synchronized with the root node.
+static inline bool _dfr_is_jit_impl(bool is_jit = false) {
+  static bool is_jit_p = is_jit;
+  if (is_jit && !is_jit_p)
+    is_jit_p = true;
+  return is_jit_p;
+}
+
+void _dfr_is_jit(bool is_jit) { _dfr_is_jit_impl(is_jit); }
+bool _dfr_is_jit() { return _dfr_is_jit_impl(); }
+
 static inline void _dfr_stop_impl() {
-  if (_dfr_is_root_node())
+  if (_dfr_is_root_node_impl())
     hpx::apply([]() { hpx::finalize(); });
   hpx::stop();
 }
@@ -701,10 +755,16 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
   }
 
   // Instantiate on each node
-  new PbsKeyManager();
+  new KeyManager<LweBootstrapKey_u64>();
+  new KeyManager<LweKeyswitchKey_u64>();
   new WorkFunctionRegistry();
+  _dfr_jit_workfunction_registration_barrier = new hpx::lcos::barrier(
+      "wait_register_remote_work_functions", hpx::get_num_localities().get(),
+      hpx::get_locality_id());
+  _dfr_jit_phase_barrier = new hpx::lcos::barrier(
+      "phase_barrier", hpx::get_num_localities().get(), hpx::get_locality_id());
 
-  if (_dfr_is_root_node()) {
+  if (_dfr_is_root_node_impl()) {
     // Create compute server components on each node - from the root
     // node only - and the corresponding compute client on the root
     // node.
@@ -712,9 +772,6 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
     gcc = hpx::new_<GenericComputeClient[]>(
               hpx::default_layout(hpx::find_all_localities()), num_nodes)
               .get();
-  } else {
-    hpx::stop();
-    exit(EXIT_SUCCESS);
   }
 }
 
@@ -722,15 +779,35 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
     JIT invocation).  These serve to pause/resume the runtime
     scheduler and to clean up used resources.  */
 void _dfr_start() {
-  uint64_t uninitialised = 0;
-  if (init_guard.compare_exchange_strong(uninitialised, 1))
-    _dfr_start_impl(0, nullptr);
-  else
-    hpx::resume();
+  hpx::resume();
+
+  if (!_dfr_is_jit())
+    _dfr_stop_impl();
+
+  // TODO: conditional -- If this is the root node, and this is JIT
+  // execution, we need to wait for the compute nodes to compile and
+  // register work functions
+  if (_dfr_is_root_node_impl() && _dfr_is_jit()) {
+    _dfr_jit_workfunction_registration_barrier->wait();
+  }
 }
 
 void _dfr_stop() {
+  if (!_dfr_is_root_node_impl() /*&& _dfr_is_jit() /** implicitly true*/) {
+    _dfr_jit_workfunction_registration_barrier->wait();
+  }
+
+  // The barrier is only needed to synchronize the different
+  // computation phases when the compute nodes need to generate and
+  // register new work functions in each phase.
+  if (_dfr_is_jit()) {
+    _dfr_jit_phase_barrier->wait();
+  }
+
   hpx::suspend();
+
+  _dfr_node_level_bsk_manager->clear_keys();
+  _dfr_node_level_ksk_manager->clear_keys();
 
   while (!new_allocated.empty()) {
     delete[] static_cast<char *>(new_allocated.front());
@@ -758,7 +835,7 @@ void _dfr_terminate() {
 /*  Main wrapper.  */
 /*******************/
 extern "C" {
-extern int main(int argc, char *argv[]); // __attribute__((weak));
+extern int main(int argc, char *argv[]) __attribute__((weak));
 extern int __real_main(int argc, char *argv[]) __attribute__((weak));
 int __wrap_main(int argc, char *argv[]) {
   int r;
@@ -790,7 +867,7 @@ size_t _dfr_debug_get_node_id() { return hpx::get_locality_id(); }
 
 size_t _dfr_debug_get_worker_id() { return hpx::get_worker_thread_num(); }
 
-void _dfr_debug_print_task(const char *name, int inputs, int outputs) {
+void _dfr_debug_print_task(const char *name, size_t inputs, size_t outputs) {
   // clang-format off
   hpx::cout << "Task \"" << name << "\""
 	    << " [" << inputs << " inputs, " << outputs << " outputs]"
@@ -806,7 +883,10 @@ void _dfr_print_debug(size_t val) {
 
 #else // CONCRETELANG_PARALLEL_EXECUTION_ENABLED
 
-#include <concretelang/Runtime/runtime_api.h>
+#include "concretelang/Runtime/DFRuntime.hpp"
 
+bool _dfr_is_root_node() { return true; }
+void _dfr_is_jit(bool) {}
 void _dfr_terminate() {}
+
 #endif

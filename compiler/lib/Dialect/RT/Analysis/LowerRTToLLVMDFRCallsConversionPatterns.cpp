@@ -171,6 +171,26 @@ struct CreateAsyncTaskOpInterfaceLowering
     return success();
   }
 };
+struct RegisterTaskWorkFunctionOpInterfaceLowering
+    : public ConvertOpToLLVMPattern<RT::RegisterTaskWorkFunctionOp> {
+  using ConvertOpToLLVMPattern<
+      RT::RegisterTaskWorkFunctionOp>::ConvertOpToLLVMPattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(RT::RegisterTaskWorkFunctionOp rtwfOp,
+                  ArrayRef<Value> operands,
+                  ConversionPatternRewriter &rewriter) const override {
+    RT::RegisterTaskWorkFunctionOp::Adaptor transformed(operands);
+
+    auto rtwfFuncType =
+        LLVM::LLVMFunctionType::get(getVoidType(), {}, /*isVariadic=*/true);
+    auto rtwfFuncOp = getOrInsertFuncOpDecl(
+        rtwfOp, "_dfr_register_work_function", rtwfFuncType, rewriter);
+    rewriter.replaceOpWithNewOp<LLVM::CallOp>(rtwfOp, rtwfFuncOp,
+                                              transformed.getOperands());
+    return success();
+  }
+};
 struct DeallocateFutureOpInterfaceLowering
     : public ConvertOpToLLVMPattern<RT::DeallocateFutureOp> {
   using ConvertOpToLLVMPattern<RT::DeallocateFutureOp>::ConvertOpToLLVMPattern;
@@ -296,6 +316,7 @@ void mlir::concretelang::populateRTToLLVMConversionPatterns(
     DerefReturnPtrPlaceholderOpInterfaceLowering,
     DerefWorkFunctionArgumentPtrPlaceholderOpInterfaceLowering,
     CreateAsyncTaskOpInterfaceLowering,
+    RegisterTaskWorkFunctionOpInterfaceLowering,
     DeallocateFutureOpInterfaceLowering,
     DeallocateFutureDataOpInterfaceLowering,
     WorkFunctionReturnOpInterfaceLowering>(converter);

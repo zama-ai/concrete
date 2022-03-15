@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/JITSupport.h>
 #include <llvm/Support/TargetSelect.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
@@ -48,8 +49,11 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
   // Mark the lambda as compiled using DF parallelization
   result->lambda->setUseDataflow(options.dataflowParallelize ||
                                  options.autoParallelize);
-  result->clientParameters =
-      compilationResult.get().clientParameters.getValue();
+  if (!mlir::concretelang::dfr::_dfr_is_root_node())
+    result->clientParameters = clientlib::ClientParameters();
+  else
+    result->clientParameters =
+        compilationResult.get().clientParameters.getValue();
   return std::move(result);
 }
 

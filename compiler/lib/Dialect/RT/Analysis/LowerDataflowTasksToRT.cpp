@@ -15,6 +15,7 @@
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/IR/RTOps.h>
 #include <concretelang/Dialect/RT/IR/RTTypes.h>
+#include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/math.h>
 #include <mlir/IR/BuiltinOps.h>
 
@@ -132,7 +133,8 @@ static void replaceAllUsesNotInDFTsInRegionWith(Value orig, Value replacement,
 }
 
 // TODO: Fix type sizes. For now we're using some default values.
-static mlir::Value getSizeInBytes(Value val, Location loc, OpBuilder builder) {
+static std::pair<mlir::Value, mlir::Value>
+getSizeInBytes(Value val, Location loc, OpBuilder builder) {
   DataLayout dataLayout = DataLayout::closest(val.getDefiningOp());
   Type type = (val.getType().isa<RT::FutureType>())
                   ? val.getType().dyn_cast<RT::FutureType>().getElementType()
@@ -153,26 +155,61 @@ static mlir::Value getSizeInBytes(Value val, Location loc, OpBuilder builder) {
     Value rank = builder.create<arith::ConstantOp>(
         loc, builder.getI64IntegerAttr(_rank));
     Value sizes_shapes = builder.create<LLVM::MulOp>(loc, rank, multiplier);
-    Value result = builder.create<LLVM::AddOp>(loc, ptrs_offset, sizes_shapes);
-    return result;
+    Value typeSize =
+        builder.create<LLVM::AddOp>(loc, ptrs_offset, sizes_shapes);
+
+    Type elementType = type.dyn_cast<mlir::MemRefType>().getElementType();
+    // Assume here that the base type is a simple scalar-type or at
+    // least its size can be determined.
+    // size_t elementAttr = dataLayout.getTypeSize(elementType);
+    // Make room for a byte to store the type of this argument/output
+    // elementAttr <<= 8;
+    // elementAttr |= _DFR_TASK_ARG_MEMREF;
+    uint64_t elementAttr = 0;
+    size_t element_size = dataLayout.getTypeSize(elementType);
+    elementAttr = _dfr_set_arg_type(elementAttr, _DFR_TASK_ARG_MEMREF);
+    elementAttr = _dfr_set_memref_element_size(elementAttr, element_size);
+    Value arg_type = builder.create<arith::ConstantOp>(
+        loc, builder.getI64IntegerAttr(elementAttr));
+    return std::pair<mlir::Value, mlir::Value>(typeSize, arg_type);
   }
 
   // Unranked memrefs should be lowered to just pointer + size, so we need 16
   // bytes.
-  if (type.isa<mlir::UnrankedMemRefType>())
-    return builder.create<arith::ConstantOp>(loc,
-                                             builder.getI64IntegerAttr(16));
+  if (type.isa<mlir::UnrankedMemRefType>()) {
+    Value arg_type = builder.create<arith::ConstantOp>(
+        loc, builder.getI64IntegerAttr(_DFR_TASK_ARG_UNRANKED_MEMREF));
+    Value result =
+        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(16));
+    return std::pair<mlir::Value, mlir::Value>(result, arg_type);
+  }
+
+  Value arg_type = builder.create<arith::ConstantOp>(
+      loc, builder.getI64IntegerAttr(_DFR_TASK_ARG_BASE));
 
   // FHE types are converted to pointers, so we take their size as 8
   // bytes until we can get the actual size of the actual types.
-  if (type.isa<mlir::concretelang::Concrete::ContextType>() ||
-      type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>())
-    return builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
+  if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
+      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
+      type.isa<mlir::concretelang::Concrete::LweKeySwitchKeyType>() ||
+      type.isa<mlir::concretelang::Concrete::LweBootstrapKeyType>() ||
+      type.isa<mlir::concretelang::Concrete::ForeignPlaintextListType>() ||
+      type.isa<mlir::concretelang::Concrete::PlaintextListType>()) {
+    Value result =
+        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
+    return std::pair<mlir::Value, mlir::Value>(result, arg_type);
+  } else if (type.isa<mlir::concretelang::Concrete::ContextType>()) {
+    Value arg_type = builder.create<arith::ConstantOp>(
+        loc, builder.getI64IntegerAttr(_DFR_TASK_ARG_CONTEXT));
+    Value result =
+        builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
+    return std::pair<mlir::Value, mlir::Value>(result, arg_type);
+  }
 
   // For all other types, get type size.
-  return builder.create<arith::ConstantOp>(
+  Value result = builder.create<arith::ConstantOp>(
       loc, builder.getI64IntegerAttr(dataLayout.getTypeSize(type)));
+  return std::pair<mlir::Value, mlir::Value>(result, arg_type);
 }
 
 static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
@@ -189,9 +226,22 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   builder.setInsertionPoint(DFTOp);
   for (Value val : DFTOp.getOperands()) {
     if (!val.getType().isa<RT::FutureType>()) {
-      Type futType = RT::FutureType::get(val.getType());
-      auto mrf =
-          builder.create<RT::MakeReadyFutureOp>(DFTOp.getLoc(), futType, val);
+      Value newval;
+      // If we are building a future on a MemRef, then we need to clone
+      // the memref in order to allow the deallocation pass which does
+      // not synchronize with task execution.
+      if (val.getType().isa<mlir::MemRefType>() && !val.isa<BlockArgument>()) {
+        newval = builder
+                     .create<memref::AllocOp>(
+                         DFTOp.getLoc(), val.getType().cast<mlir::MemRefType>())
+                     .getResult();
+        builder.create<memref::CopyOp>(DFTOp.getLoc(), val, newval);
+      } else {
+        newval = val;
+      }
+      Type futType = RT::FutureType::get(newval.getType());
+      auto mrf = builder.create<RT::MakeReadyFutureOp>(DFTOp.getLoc(), futType,
+                                                       newval);
       map.map(mrf->getResult(0), val);
       replaceAllUsesInDFTsInRegionWith(val, mrf->getResult(0), opBody);
     }
@@ -201,7 +251,7 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   // DataflowTaskOp.  This also includes the necessary handling of
   // operands and results (conversion to/from futures and propagation).
   SmallVector<Value, 4> catOperands;
-  int size = 3 + DFTOp.getNumResults() * 2 + DFTOp.getNumOperands() * 2;
+  int size = 3 + DFTOp.getNumResults() * 3 + DFTOp.getNumOperands() * 3;
   catOperands.reserve(size);
   auto fnptr = builder.create<mlir::func::ConstantOp>(
       DFTOp.getLoc(), workFunction.getFunctionType(),
@@ -214,8 +264,10 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   catOperands.push_back(numIns.getResult());
   catOperands.push_back(numOuts.getResult());
   for (auto operand : DFTOp.getOperands()) {
+    auto op_size = getSizeInBytes(operand, DFTOp.getLoc(), builder);
     catOperands.push_back(operand);
-    catOperands.push_back(getSizeInBytes(operand, DFTOp.getLoc(), builder));
+    catOperands.push_back(op_size.first);
+    catOperands.push_back(op_size.second);
   }
 
   // We need to adjust the results for the CreateAsyncTaskOp which
@@ -228,9 +280,11 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
     Type futType = RT::PointerType::get(RT::FutureType::get(result.getType()));
     auto brpp = builder.create<RT::BuildReturnPtrPlaceholderOp>(DFTOp.getLoc(),
                                                                 futType);
+    auto op_size = getSizeInBytes(result, DFTOp.getLoc(), builder);
     map.map(result, brpp->getResult(0));
     catOperands.push_back(brpp->getResult(0));
-    catOperands.push_back(getSizeInBytes(result, DFTOp.getLoc(), builder));
+    catOperands.push_back(op_size.first);
+    catOperands.push_back(op_size.second);
   }
   builder.create<RT::CreateAsyncTaskOp>(
       DFTOp.getLoc(),
@@ -272,6 +326,18 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   DFTOp.erase();
 }
 
+static void registerWorkFunction(FuncOp parentFunc, FuncOp workFunction) {
+  OpBuilder builder(parentFunc.body());
+  builder.setInsertionPointToStart(&parentFunc.body().front());
+
+  auto fnptr = builder.create<mlir::ConstantOp>(
+      parentFunc.getLoc(), workFunction.getType(),
+      SymbolRefAttr::get(builder.getContext(), workFunction.getName()));
+
+  builder.create<RT::RegisterTaskWorkFunctionOp>(parentFunc.getLoc(),
+                                                 fnptr.getResult());
+}
+
 /// For documentation see Autopar.td
 struct LowerDataflowTasksPass
     : public LowerDataflowTasksBase<LowerDataflowTasksPass> {
@@ -305,6 +371,33 @@ struct LowerDataflowTasksPass
       // Lower the DF task ops to RT dialect ops.
       for (auto mapping : outliningMap)
         lowerDataflowTaskOp(mapping.first, mapping.second);
+
+      // If this is a JIT invocation and we're not on the root node,
+      // we do not need to do any computation, only register all work
+      // functions with the runtime system
+      if (!outliningMap.empty()) {
+        if (!_dfr_is_root_node()) {
+          // auto regFunc = builder.create<FuncOp>(func.getLoc(),
+          // func.getName(), func.getType());
+
+          func.eraseBody();
+          Block *b = new Block;
+          b->addArguments(func.getType().getInputs());
+          func.body().push_front(b);
+          for (int i = func.getType().getNumInputs() - 1; i >= 0; --i)
+            func.eraseArgument(i);
+          for (int i = func.getType().getNumResults() - 1; i >= 0; --i)
+            func.eraseResult(i);
+          OpBuilder builder(func.body());
+          builder.setInsertionPointToEnd(&func.body().front());
+          builder.create<ReturnOp>(func.getLoc());
+        }
+      }
+
+      // Generate code to register all work-functions with the
+      // runtime.
+      for (auto mapping : outliningMap)
+        registerWorkFunction(func, mapping.second);
 
       // Issue _dfr_start/stop calls for this function
       if (!outliningMap.empty()) {

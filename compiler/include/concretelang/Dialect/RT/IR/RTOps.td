@@ -115,7 +115,13 @@ def RT_CreateAsyncTaskOp : RT_Op<"create_async_task"> {
     let summary = "Create a dataflow task.";
 }
 
-def RT_DeallocateFutureOp : RT_Op<"deallocate_future"> {
+def RegisterTaskWorkFunctionOp : RT_Op<"register_task_work_function"> {
+    let arguments = (ins Variadic<AnyType>:$list);
+    let results = (outs );
+    let summary = "Register the task work-function with the runtime system.";
+}
+
+def DeallocateFutureOp : RT_Op<"deallocate_future"> {
     let arguments = (ins RT_Future: $input);
     let results = (outs );
 }

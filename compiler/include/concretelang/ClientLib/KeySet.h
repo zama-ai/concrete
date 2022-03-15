@@ -19,6 +19,7 @@ extern "C" {
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Common/Error.h"
+#include <concretelang/Runtime/DFRuntime.hpp>
 
 namespace concretelang {
 namespace clientlib {

@@ -13,6 +13,7 @@
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
 #include "concretelang/Common/BitsSize.h"
+#include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/Error.h>
 #include <concretelang/Support/Jit.h>
 #include <concretelang/Support/logging.h>
@@ -88,6 +89,19 @@ JITLambda::call(clientlib::PublicArguments &args,
     return StreamStringError(
         "call: current runtime doesn't support dataflow execution, while "
         "compilation used dataflow parallelization");
+  }
+#else
+  dfr::_dfr_set_jit(true);
+  // When using JIT on distributed systems, the compiler only
+  // generates work-functions and their registration calls. No results
+  // are returned and no inputs are needed.
+  if (!dfr::_dfr_is_root_node()) {
+    std::vector<void *> rawArgs;
+    if (auto err = invokeRaw(rawArgs)) {
+      return std::move(err);
+    }
+    std::vector<clientlib::TensorData> buffers;
+    return clientlib::PublicResult::fromBuffers(args.clientParameters, buffers);
   }
 #endif
   // invokeRaw needs to have pointers on arguments and a pointers on the result

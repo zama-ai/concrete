@@ -16,13 +16,8 @@ typedef void (*wfnptr)(...);
 
 void *_dfr_make_ready_future(void *);
 void _dfr_create_async_task(wfnptr, size_t, size_t, ...);
+void _dfr_register_work_function(wfnptr);
 void *_dfr_await_future(void *);
-
-/*  Keys can have node-local copies which can be retrieved.  This
-    should only be called on the node where the key is required.  */
-void _dfr_register_key(void *, size_t, size_t);
-void _dfr_broadcast_keys();
-void *_dfr_get_key(size_t);
 
 /*  Memory management:
     _dfr_make_ready_future allocates the future, not the underlying storage.
@@ -36,4 +31,5 @@ void _dfr_stop();
 
 void _dfr_terminate();
 }
+
 #endif
