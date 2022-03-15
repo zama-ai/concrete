@@ -14,7 +14,7 @@ Build concrete library:
 ```sh
 git clone https://github.com/zama-ai/concrete_internal
 cd concrete_internal
-git checkout compiler_c_api
+git checkout engine_c_api
 cd concrete-ffi
 RUSTFLAGS="-C target-cpu=native" cargo build --release 
 ```
