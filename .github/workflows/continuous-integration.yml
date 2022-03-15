@@ -354,6 +354,82 @@ jobs:
           asset_name: ${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
           asset_content_type: application/zip
 
+  BuildAndPushPythonPackagesLinuxWithParallelization:
+    runs-on: ubuntu-latest
+    needs: CreateRelease
+    strategy:
+      matrix:
+        python: ['3.8', '3.9', '3.10']
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - uses: actions/checkout@v2
+        with:
+          repository: zama-ai/concrete_internal
+          ref: engine_c_api
+          path: concrete
+          token: ${{ secrets.GH_TOKEN }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: STEllAR-GROUP/hpx.git
+          ref: 1.7.1
+          path: hpx
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Build Concrete
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          cd ${{ github.workspace }}/concrete/concrete-ffi
+          RUSTFLAGS="-C target-cpu=native" cargo build --release
+
+      - name: Build HPX
+        run: |
+          sudo apt install -y libboost-filesystem-dev libhwloc-dev
+          cd ${{ github.workspace }}/hpx
+          mkdir build
+          cd build
+          cmake \
+            -DHPX_WITH_FETCH_ASIO=on \
+            -DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
+            -DHPX_WITH_MALLOC=system ..
+          make
+
+      - name: Update Python Version
+        run: cd compiler && make update_python_version
+
+      - name: Build Parallel Python Package
+        id: build-wheel-linux
+        run: |
+            set -e
+            export HPX=${{ github.workspace }}/hpx
+            export HPX_INSTALL_DIR=$HPX/build
+            export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+            sudo apt install -y ninja-build
+            pip install numpy pybind11==2.6.2 wheel auditwheel patchelf
+            cd compiler
+            mkdir build
+            make PARALLEL_EXECUTION_ENABLED=ON python-bindings
+            pip wheel --no-deps -w ./wheels .
+            auditwheel repair ./wheels/*.whl --plat linux_x86_64  -w ./wheels/
+            echo "::set-output name=ASSET_NAME::`find ./wheels/ -name *linux_x86_64*.whl | rev |cut -d "/" -f 1 |rev `"
+
+      - name: Upload Python Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RELEASE }}
+        with:
+          upload_url: ${{ needs.CreateRelease.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/compiler/wheels/${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.build-wheel-linux.outputs.ASSET_NAME }}
+          asset_content_type: application/zip
+
   BuildAndPushTarballLinux:
     runs-on: ubuntu-latest
     needs: CreateRelease
