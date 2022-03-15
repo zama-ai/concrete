@@ -8,19 +8,14 @@ use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::generation::RawUnsignedIntegers;
 use crate::raw::statistical_test::assert_noise_distribution;
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_commons::key_kinds::{BinaryKeyKind, GaussianKeyKind, TernaryKeyKind};
-use concrete_commons::numeric::UnsignedInteger;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, PolynomialSize,
-};
-use concrete_core::prelude::markers::{
-    BinaryKeyDistribution, GaussianKeyDistribution, KeyDistributionMarker, TernaryKeyDistribution,
 };
 use concrete_core::prelude::{
     GgswCiphertextEntity, GlweCiphertextEntity,
     GlweCiphertextGgswCiphertextDiscardingExternalProductEngine,
 };
-use std::any::TypeId;
+use concrete_npe::estimate_external_product_noise_with_binary_ggsw;
 
 /// A fixture for the types implementing the `GlweCiphertextGgswCiphertextDiscardingExternalProduct`
 /// trait.
@@ -219,7 +214,7 @@ where
         _maker: &mut Maker,
         _repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::Criteria {
-        let output_variance = fix_estimate_external_product_noise_with_binary_ggsw::<
+        let output_variance = estimate_external_product_noise_with_binary_ggsw::<
             Precision::Raw,
             Variance,
             Variance,
@@ -240,55 +235,5 @@ where
         let means = means.into_iter().flatten().collect::<Vec<_>>();
         let actual = actual.into_iter().flatten().collect::<Vec<_>>();
         assert_noise_distribution(&actual, means.as_slice(), criteria.0)
-    }
-}
-
-// FIXME:
-// The current NPE does not use the key distribution markers of concrete-core. This function makes
-// the mapping. This function should be removed as soon as the npe uses the types of concrete-core.
-fn fix_estimate_external_product_noise_with_binary_ggsw<T, D1, D2, K>(
-    poly_size: PolynomialSize,
-    rlwe_mask_size: GlweDimension,
-    var_glwe: D1,
-    var_ggsw: D2,
-    base_log: DecompositionBaseLog,
-    level: DecompositionLevelCount,
-) -> Variance
-where
-    T: UnsignedInteger,
-    D1: DispersionParameter,
-    D2: DispersionParameter,
-    K: KeyDistributionMarker,
-{
-    let k_type_id = TypeId::of::<K>();
-    if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
-        concrete_npe::estimate_external_product_noise_with_binary_ggsw::<T, D1, D2, BinaryKeyKind>(
-            poly_size,
-            rlwe_mask_size,
-            var_glwe,
-            var_ggsw,
-            base_log,
-            level,
-        )
-    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
-        concrete_npe::estimate_external_product_noise_with_binary_ggsw::<T, D1, D2, TernaryKeyKind>(
-            poly_size,
-            rlwe_mask_size,
-            var_glwe,
-            var_ggsw,
-            base_log,
-            level,
-        )
-    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
-        concrete_npe::estimate_external_product_noise_with_binary_ggsw::<T, D1, D2, GaussianKeyKind>(
-            poly_size,
-            rlwe_mask_size,
-            var_glwe,
-            var_ggsw,
-            base_log,
-            level,
-        )
-    } else {
-        panic!("Unknown key distribution encountered.")
     }
 }

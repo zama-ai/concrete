@@ -10,19 +10,15 @@ use crate::generation::synthesizing::{
 use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::statistical_test::assert_delta_std_dev;
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_commons::key_kinds::{BinaryKeyKind, GaussianKeyKind, TernaryKeyKind};
-use concrete_commons::numeric::{Numeric, UnsignedInteger};
+use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::{
     DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
-};
-use concrete_core::prelude::markers::{
-    BinaryKeyDistribution, GaussianKeyDistribution, KeyDistributionMarker, TernaryKeyDistribution,
 };
 use concrete_core::prelude::{
     GlweCiphertextEntity, LweBootstrapKeyEntity, LweCiphertextDiscardingBootstrapEngine,
     LweCiphertextEntity,
 };
-use std::any::TypeId;
+use concrete_npe::estimate_pbs_noise;
 
 /// A fixture for the types implementing the `LweCiphertextDiscardingBootstrapEngine` trait.
 pub struct LweCiphertextDiscardingBootstrapFixture1;
@@ -257,7 +253,7 @@ where
         _repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::Criteria {
         let predicted_variance: Variance =
-            fix_estimate_pbs_noise::<Precision::Raw, Variance, OutputCiphertext::KeyDistribution>(
+            estimate_pbs_noise::<Precision::Raw, Variance, OutputCiphertext::KeyDistribution>(
                 parameters.lwe_dimension,
                 parameters.poly_size,
                 parameters.glwe_dimension,
@@ -271,54 +267,5 @@ where
     fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool {
         let (means, actual): (Vec<_>, Vec<_>) = outputs.iter().cloned().unzip();
         assert_delta_std_dev(&actual, means.as_slice(), criteria.0)
-    }
-}
-
-// FIXME:
-// The current NPE does not use the key distribution markers of concrete-core. This function makes
-// the mapping. This function should be removed as soon as the npe uses the types of concrete-core.
-fn fix_estimate_pbs_noise<T, D, K>(
-    lwe_mask_size: LweDimension,
-    poly_size: PolynomialSize,
-    rlwe_mask_size: GlweDimension,
-    base_log: DecompositionBaseLog,
-    level: DecompositionLevelCount,
-    dispersion_bsk: D,
-) -> Variance
-where
-    T: UnsignedInteger,
-    D: DispersionParameter,
-    K: KeyDistributionMarker,
-{
-    let k_type_id = TypeId::of::<K>();
-    if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
-        concrete_npe::estimate_pbs_noise::<T, D, BinaryKeyKind>(
-            lwe_mask_size,
-            poly_size,
-            rlwe_mask_size,
-            base_log,
-            level,
-            dispersion_bsk,
-        )
-    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
-        concrete_npe::estimate_pbs_noise::<T, D, TernaryKeyKind>(
-            lwe_mask_size,
-            poly_size,
-            rlwe_mask_size,
-            base_log,
-            level,
-            dispersion_bsk,
-        )
-    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
-        concrete_npe::estimate_pbs_noise::<T, D, GaussianKeyKind>(
-            lwe_mask_size,
-            poly_size,
-            rlwe_mask_size,
-            base_log,
-            level,
-            dispersion_bsk,
-        )
-    } else {
-        panic!("Unknown key distribution encountered.")
     }
 }

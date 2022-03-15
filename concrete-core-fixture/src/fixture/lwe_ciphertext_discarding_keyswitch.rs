@@ -7,16 +7,11 @@ use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::generation::RawUnsignedIntegers;
 use crate::raw::statistical_test::assert_noise_distribution;
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
-use concrete_commons::key_kinds::{BinaryKeyKind, GaussianKeyKind, TernaryKeyKind};
-use concrete_commons::numeric::UnsignedInteger;
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweDimension};
-use concrete_core::prelude::markers::{
-    BinaryKeyDistribution, GaussianKeyDistribution, KeyDistributionMarker, TernaryKeyDistribution,
-};
 use concrete_core::prelude::{
     LweCiphertextDiscardingKeyswitchEngine, LweCiphertextEntity, LweKeyswitchKeyEntity,
 };
-use std::any::TypeId;
+use concrete_npe::estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms;
 
 /// A fixture for the types implementing the `LweCiphertextDiscardingKeyswitchEngine` trait.
 pub struct LweCiphertextDiscardingKeyswitchFixture;
@@ -206,85 +201,23 @@ where
         _maker: &mut Maker,
         _repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::Criteria {
-        let predicted_variance: Variance =
-            fix_estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<
-                Precision::Raw,
-                _,
-                _,
-                OutputCiphertext::KeyDistribution,
-            >(
-                parameters.input_lwe_dimension,
-                parameters.input_noise,
-                parameters.ksk_noise,
-                parameters.decomp_base_log,
-                parameters.decomp_level_count,
-            );
+        let predicted_variance: Variance = estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<
+            Precision::Raw,
+            _,
+            _,
+            OutputCiphertext::KeyDistribution,
+        >(
+            parameters.input_lwe_dimension,
+            parameters.input_noise,
+            parameters.ksk_noise,
+            parameters.decomp_base_log,
+            parameters.decomp_level_count,
+        );
         (predicted_variance,)
     }
 
     fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool {
         let (means, actual): (Vec<_>, Vec<_>) = outputs.iter().cloned().unzip();
         assert_noise_distribution(&actual, means.as_slice(), criteria.0)
-    }
-}
-
-// FIXME:
-// The current NPE does not use the key distribution markers of concrete-core. This function makes
-// the mapping. This function should be removed as soon as the npe uses the types of concrete-core.
-fn fix_estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms<T, D1, D2, K>(
-    lwe_mask_size: LweDimension,
-    dispersion_lwe: D1,
-    dispersion_ksk: D2,
-    base_log: DecompositionBaseLog,
-    level: DecompositionLevelCount,
-) -> Variance
-where
-    T: UnsignedInteger,
-    D1: DispersionParameter,
-    D2: DispersionParameter,
-    K: KeyDistributionMarker,
-{
-    let k_type_id = TypeId::of::<K>();
-    if k_type_id == TypeId::of::<BinaryKeyDistribution>() {
-        concrete_npe::estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<
-            T,
-            D1,
-            D2,
-            BinaryKeyKind,
-        >(
-            lwe_mask_size,
-            dispersion_lwe,
-            dispersion_ksk,
-            base_log,
-            level,
-        )
-    } else if k_type_id == TypeId::of::<TernaryKeyDistribution>() {
-        concrete_npe::estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<
-            T,
-            D1,
-            D2,
-            TernaryKeyKind,
-        >(
-            lwe_mask_size,
-            dispersion_lwe,
-            dispersion_ksk,
-            base_log,
-            level,
-        )
-    } else if k_type_id == TypeId::of::<GaussianKeyDistribution>() {
-        concrete_npe::estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<
-            T,
-            D1,
-            D2,
-            GaussianKeyKind,
-        >(
-            lwe_mask_size,
-            dispersion_lwe,
-            dispersion_ksk,
-            base_log,
-            level,
-        )
-    } else {
-        panic!("Unknown key distribution encountered.")
     }
 }
