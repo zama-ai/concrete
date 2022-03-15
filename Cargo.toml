@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[net]
+git-fetch-with-cli = true
 
 [dependencies]
 concrete-commons = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
