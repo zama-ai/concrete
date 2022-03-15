@@ -4,12 +4,20 @@
 // for license information.
 
 #include <concretelang/Support/JitLambdaSupport.h>
+#include <llvm/Support/TargetSelect.h>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
 namespace mlir {
 namespace concretelang {
 
+JitLambdaSupport::JitLambdaSupport(
+    llvm::Optional<llvm::StringRef> runtimeLibPath,
+    llvm::function_ref<llvm::Error(llvm::Module *)> llvmOptPipeline)
+    : runtimeLibPath(runtimeLibPath), llvmOptPipeline(llvmOptPipeline) {}
+
 llvm::Expected<std::unique_ptr<JitCompilationResult>>
 JitLambdaSupport::compile(llvm::SourceMgr &program, std::string funcname) {
+
   // Setup the compiler engine
   auto context = std::make_shared<CompilationContext>();
   concretelang::CompilerEngine engine(context);

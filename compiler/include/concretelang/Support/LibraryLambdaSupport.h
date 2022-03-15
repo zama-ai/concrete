@@ -33,8 +33,7 @@ class LibraryLambdaSupport
     : public LambdaSupport<serverlib::ServerLambda, LibraryCompilationResult> {
 
 public:
-  LibraryLambdaSupport(std::string outputPath = "/tmp/toto")
-      : outputPath(outputPath) {}
+  LibraryLambdaSupport(std::string outputPath) : outputPath(outputPath) {}
 
   llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
   compile(llvm::SourceMgr &program, std::string funcname = "main") override {

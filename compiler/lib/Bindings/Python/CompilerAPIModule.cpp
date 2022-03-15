@@ -8,6 +8,7 @@
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/Jit.h"
 #include "concretelang/Support/JitCompilerEngine.h"
+#include "concretelang/Support/JitLambdaSupport.h"
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -20,6 +21,7 @@
 #include <string>
 
 using mlir::concretelang::JitCompilerEngine;
+using mlir::concretelang::JitLambdaSupport;
 using mlir::concretelang::LambdaArgument;
 
 const char *noEmptyStringPtr(std::string &s) {
@@ -54,6 +56,110 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                                        auto_parallelize, loop_parallelize,
                                        df_parallelize);
                   });
+  pybind11::class_<mlir::concretelang::JitCompilationResult>(
+      m, "JitCompilationResult");
+  pybind11::class_<mlir::concretelang::JITLambda>(m, "JITLambda");
+  pybind11::class_<JITLambdaSupport_C>(m, "JITLambdaSupport")
+      .def(pybind11::init([](std::string runtimeLibPath) {
+        return jit_lambda_support(runtimeLibPath.c_str());
+      }))
+      .def("compile",
+           [](JITLambdaSupport_C &support, std::string mlir_program,
+              std::string func_name) {
+             return jit_compile(support, mlir_program.c_str(),
+                                func_name.c_str());
+           })
+      .def("load_client_parameters",
+           [](JITLambdaSupport_C &support,
+              mlir::concretelang::JitCompilationResult &result) {
+             return jit_load_client_parameters(support, result);
+           })
+      .def(
+          "load_server_lambda",
+          [](JITLambdaSupport_C &support,
+             mlir::concretelang::JitCompilationResult &result) {
+            return jit_load_server_lambda(support, result);
+          },
+          pybind11::return_value_policy::reference)
+      .def("server_call",
+           [](JITLambdaSupport_C &support, concretelang::JITLambda *lambda,
+              clientlib::PublicArguments &publicArguments) {
+             return jit_server_call(support, lambda, publicArguments);
+           });
+
+  pybind11::class_<mlir::concretelang::LibraryCompilationResult>(
+      m, "LibraryCompilationResult")
+      .def(pybind11::init([](std::string libraryPath, std::string funcname) {
+        return mlir::concretelang::LibraryCompilationResult{
+            libraryPath,
+            funcname,
+        };
+      }));
+  pybind11::class_<concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
+  pybind11::class_<LibraryLambdaSupport_C>(m, "LibraryLambdaSupport")
+      .def(pybind11::init([](std::string outputPath) {
+        return library_lambda_support(outputPath.c_str());
+      }))
+      .def("compile",
+           [](LibraryLambdaSupport_C &support, std::string mlir_program,
+              std::string func_name) {
+             return library_compile(support, mlir_program.c_str(),
+                                    func_name.c_str());
+           })
+      .def("load_client_parameters",
+           [](LibraryLambdaSupport_C &support,
+              mlir::concretelang::LibraryCompilationResult &result) {
+             return library_load_client_parameters(support, result);
+           })
+      .def(
+          "load_server_lambda",
+          [](LibraryLambdaSupport_C &support,
+             mlir::concretelang::LibraryCompilationResult &result) {
+            return library_load_server_lambda(support, result);
+          },
+          pybind11::return_value_policy::reference)
+      .def("server_call",
+           [](LibraryLambdaSupport_C &support, serverlib::ServerLambda lambda,
+              clientlib::PublicArguments &publicArguments) {
+             return library_server_call(support, lambda, publicArguments);
+           });
+
+  class ClientSupport {};
+  pybind11::class_<ClientSupport>(m, "ClientSupport")
+      .def(pybind11::init())
+      .def_static(
+          "key_set",
+          [](clientlib::ClientParameters clientParameters,
+             clientlib::KeySetCache *cache) {
+            auto optCache =
+                cache == nullptr
+                    ? llvm::None
+                    : llvm::Optional<clientlib::KeySetCache>(*cache);
+            return key_set(clientParameters, optCache);
+          },
+          pybind11::arg().none(false), pybind11::arg().none(true))
+      .def_static("encrypt_arguments",
+                  [](clientlib::ClientParameters clientParameters,
+                     clientlib::KeySet &keySet,
+                     std::vector<lambdaArgument> args) {
+                    std::vector<mlir::concretelang::LambdaArgument *> argsRef;
+                    for (auto i = 0u; i < args.size(); i++) {
+                      argsRef.push_back(args[i].ptr.get());
+                    }
+                    return encrypt_arguments(clientParameters, keySet, argsRef);
+                  })
+      .def_static("decrypt_result", [](clientlib::KeySet &keySet,
+                                       clientlib::PublicResult &publicResult) {
+        return decrypt_result(keySet, publicResult);
+      });
+  pybind11::class_<KeySetCache>(m, "KeySetCache")
+      .def(pybind11::init<std::string &>());
+
+  pybind11::class_<mlir::concretelang::ClientParameters>(m, "ClientParameters");
+
+  pybind11::class_<clientlib::KeySet>(m, "KeySet");
+  pybind11::class_<clientlib::PublicArguments>(m, "PublicArguments");
+  pybind11::class_<clientlib::PublicResult>(m, "PublicResult");
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
       .def_static("from_tensor",

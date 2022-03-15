@@ -35,8 +35,7 @@ public:
   JitLambdaSupport(
       llvm::Optional<llvm::StringRef> runtimeLibPath = llvm::None,
       llvm::function_ref<llvm::Error(llvm::Module *)> llvmOptPipeline =
-          mlir::makeOptimizingTransformer(3, 0, nullptr))
-      : runtimeLibPath(runtimeLibPath), llvmOptPipeline(llvmOptPipeline) {}
+          mlir::makeOptimizingTransformer(3, 0, nullptr));
 
   llvm::Expected<std::unique_ptr<JitCompilationResult>>
   compile(llvm::SourceMgr &program, std::string funcname = "main") override;

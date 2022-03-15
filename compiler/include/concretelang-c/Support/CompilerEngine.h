@@ -9,6 +9,8 @@
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Jit.h"
 #include "concretelang/Support/JitCompilerEngine.h"
+#include "concretelang/Support/JitLambdaSupport.h"
+#include "concretelang/Support/LibraryLambdaSupport.h"
 #include "mlir-c/IR.h"
 #include "mlir-c/Registration.h"
 
@@ -35,11 +37,79 @@ struct executionArguments {
 };
 typedef struct executionArguments executionArguments;
 
+// JIT Support bindings ///////////////////////////////////////////////////////
+
+struct JITLambdaSupport_C {
+  mlir::concretelang::JitLambdaSupport support;
+};
+typedef struct JITLambdaSupport_C JITLambdaSupport_C;
+
+MLIR_CAPI_EXPORTED JITLambdaSupport_C
+jit_lambda_support(const char *runtimeLibPath);
+
+MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
+jit_compile(JITLambdaSupport_C support, const char *module,
+            const char *funcname);
+
+MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
+jit_load_client_parameters(JITLambdaSupport_C support,
+                           mlir::concretelang::JitCompilationResult &);
+
+MLIR_CAPI_EXPORTED mlir::concretelang::JITLambda *
+jit_load_server_lambda(JITLambdaSupport_C support,
+                       mlir::concretelang::JitCompilationResult &);
+
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
+jit_server_call(JITLambdaSupport_C support,
+                mlir::concretelang::JITLambda *lambda,
+                concretelang::clientlib::PublicArguments &args);
+
+// Library Support bindings ///////////////////////////////////////////////////
+
+struct LibraryLambdaSupport_C {
+  mlir::concretelang::LibraryLambdaSupport support;
+};
+typedef struct LibraryLambdaSupport_C LibraryLambdaSupport_C;
+
+MLIR_CAPI_EXPORTED LibraryLambdaSupport_C
+library_lambda_support(const char *outputPath);
+
+MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
+library_compile(LibraryLambdaSupport_C support, const char *module,
+                const char *funcname);
+
+MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
+library_load_client_parameters(LibraryLambdaSupport_C support,
+                               mlir::concretelang::LibraryCompilationResult &);
+
+MLIR_CAPI_EXPORTED concretelang::serverlib::ServerLambda
+library_load_server_lambda(LibraryLambdaSupport_C support,
+                           mlir::concretelang::LibraryCompilationResult &);
+
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
+library_server_call(LibraryLambdaSupport_C support,
+                    concretelang::serverlib::ServerLambda lambda,
+                    concretelang::clientlib::PublicArguments &args);
+
+// Client Support bindings ///////////////////////////////////////////////////
+
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
+key_set(concretelang::clientlib::ClientParameters clientParameters,
+        llvm::Optional<concretelang::clientlib::KeySetCache> cache);
+
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
+encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
+                  concretelang::clientlib::KeySet &keySet,
+                  llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args);
+
+MLIR_CAPI_EXPORTED lambdaArgument
+decrypt_result(concretelang::clientlib::KeySet &keySet,
+               concretelang::clientlib::PublicResult &publicResult);
+
 // Build lambda from a textual representation of an MLIR module
-// The lambda will have `funcName` as entrypoint, and use runtimeLibPath (if not
-// null) as a shared library during compilation,
-// a path to activate the use a cache for encryption keys for test purpose
-// (unsecure), and a set of flags for parallelization.
+// The lambda will have `funcName` as entrypoint, and use runtimeLibPath (if
+// not null) as a shared library during compilation, a path to activate the
+// use a cache for encryption keys for test purpose (unsecure).
 MLIR_CAPI_EXPORTED mlir::concretelang::JitCompilerEngine::Lambda
 buildLambda(const char *module, const char *funcName,
             const char *runtimeLibPath, const char *keySetCachePath,

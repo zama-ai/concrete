@@ -14,7 +14,7 @@
                                                                                \
     auto desc = GetParam();                                                    \
                                                                                \
-    LambdaSupport support;                                                     \
+    auto support = LambdaSupport;                                              \
                                                                                \
     /* 1 - Compile the program */                                              \
     auto compilationResult = support.compile(desc.program);                    \
@@ -84,8 +84,10 @@
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
-    JitTest, mlir::concretelang::JitLambdaSupport)
+    JitTest, mlir::concretelang::JitLambdaSupport())
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
-    LibraryTest, mlir::concretelang::LibraryLambdaSupport)
+    LibraryTest,
+    mlir::concretelang::LibraryLambdaSupport("/tmp/end_to_end_test_" +
+                                             desc.description))
