@@ -251,6 +251,9 @@ pub use glwe_ciphertext_vector_discarding_decryption::*;
 mod glwe_ciphertext_vector_discarding_encryption;
 pub use glwe_ciphertext_vector_discarding_encryption::*;
 
+mod glwe_ciphertext_vector_zero_encryption;
+pub use glwe_ciphertext_vector_zero_encryption::*;
+
 mod glwe_ciphertext_vector_trivial_decryption;
 pub use glwe_ciphertext_vector_trivial_decryption::*;
 
