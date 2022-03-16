@@ -7,15 +7,10 @@ import os
 import atexit
 from typing import List, Union
 
-from mlir._mlir_libs._concretelang._compiler import (
-    JitCompilerEngine as _JitCompilerEngine,
-    terminate_parallelization as _terminate_parallelization,
-)
-from mlir._mlir_libs._concretelang._compiler import LambdaArgument as _LambdaArgument
+from mlir._mlir_libs._concretelang._compiler import terminate_parallelization as _terminate_parallelization
+
 from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
-from mlir._mlir_libs._concretelang._compiler import library as _library
-from mlir._mlir_libs._concretelang._compiler import JITLambdaSupport
-from mlir._mlir_libs._concretelang._compiler import LibraryLambdaSupport
+
 from mlir._mlir_libs._concretelang._compiler import ClientSupport as _ClientSupport
 
 from mlir._mlir_libs._concretelang._compiler import ClientParameters
@@ -25,10 +20,13 @@ from mlir._mlir_libs._concretelang._compiler import KeySetCache
 
 from mlir._mlir_libs._concretelang._compiler import PublicResult
 from mlir._mlir_libs._concretelang._compiler import PublicArguments
+from mlir._mlir_libs._concretelang._compiler import LambdaArgument as _LambdaArgument
 
+from mlir._mlir_libs._concretelang._compiler import JITLambdaSupport as _JITLambdaSupport
 from mlir._mlir_libs._concretelang._compiler import JitCompilationResult
 from mlir._mlir_libs._concretelang._compiler import JITLambda
 
+from mlir._mlir_libs._concretelang._compiler import LibraryLambdaSupport as _LibraryLambdaSupport
 from mlir._mlir_libs._concretelang._compiler import LibraryCompilationResult
 from mlir._mlir_libs._concretelang._compiler import LibraryLambda
 import numpy as np
@@ -83,70 +81,6 @@ def round_trip(mlir_str: str) -> str:
     if not isinstance(mlir_str, str):
         raise TypeError("input must be an `str`")
     return _round_trip(mlir_str)
-
-
-_MLIR_MODULES_TYPE = 'mlir_modules must be an `iterable` of `str` or a `str'
-
-
-def library(library_path: str, mlir_modules: Union['Iterable[str]', str]) -> str:
-    """Compile the MLIR inputs to a library.
-
-    Args:
-        library_path (str): destination path of the library
-        mlir_modules (list[str]|str): code of MLIR modules
-
-    Raises:
-        TypeError: if arguments have incorrect types.
-
-    Returns:
-        str: parsed MLIR input.
-    """
-    if not isinstance(library_path, str):
-        raise TypeError("library_path must be a `str`")
-    if isinstance(mlir_modules, str):
-        mlir_modules = [mlir_modules]
-    elif isinstance(mlir_modules, list):
-        pass
-    elif isinstance(mlir_modules, Iterable):
-        mlir_modules = list(mlir_modules)
-    else:
-        mlir_modules = [None]
-        raise TypeError(_MLIR_MODULES_TYPE)
-
-    if not all(isinstance(m, str) for m in mlir_modules):
-        raise TypeError(_MLIR_MODULES_TYPE)
-
-    return _library(library_path, mlir_modules)
-
-
-def create_execution_argument(value: Union[int, np.ndarray]) -> _LambdaArgument:
-    """Create an execution argument holding either an int or tensor value.
-
-    Args:
-        value (Union[int, numpy.array]): value of the argument, either an int, or a numpy array
-
-    Raises:
-        TypeError: if the values aren't in the expected range, or using a wrong type
-
-    Returns:
-        _LambdaArgument: lambda argument holding the appropriate value
-    """
-    if not isinstance(value, ACCEPTED_TYPES):
-        raise TypeError(
-            "value of execution argument must be either int, numpy.array or numpy.uint{8,16,32,64}")
-    if isinstance(value, ACCEPTED_INTS):
-        if isinstance(value, int) and not (0 <= value < np.iinfo(np.uint64).max):
-            raise TypeError(
-                "single integer must be in the range [0, 2**64 - 1] (uint64)"
-            )
-        return _LambdaArgument.from_scalar(value)
-    else:
-        assert isinstance(value, np.ndarray)
-        if value.shape == ():
-            return _LambdaArgument.from_scalar(value)
-        if value.dtype not in ACCEPTED_NUMPY_UINTS:
-            raise TypeError("numpy.array must be of dtype uint{8,16,32,64}")
-        return _LambdaArgument.from_tensor(value.flatten().tolist(), value.shape)
 
 
 class CompilerEngine:
@@ -264,7 +198,8 @@ class ClientSupport:
         Returns:
             PublicArguments: the public arguments
         """
-        execution_arguments = [create_execution_argument(arg) for arg in args]
+        execution_arguments = [
+            ClientSupport._create_execution_argument(arg) for arg in args]
         return _ClientSupport.encrypt_arguments(client_parameters, key_set, execution_arguments)
 
     def decrypt_result(key_set: KeySet, public_result: PublicResult) -> Union[int, np.ndarray]:
@@ -287,12 +222,42 @@ class ClientSupport:
         else:
             raise RuntimeError("unknown return type")
 
+    def _create_execution_argument(value: Union[int, np.ndarray]) -> _LambdaArgument:
+        """Create an execution argument holding either an int or tensor value.
+
+        Args:
+            value (Union[int, numpy.array]): value of the argument, either an int, or a numpy array
+
+        Raises:
+            TypeError: if the values aren't in the expected range, or using a wrong type
+
+        Returns:
+            _LambdaArgument: lambda argument holding the appropriate value
+        """
+        if not isinstance(value, ACCEPTED_TYPES):
+            raise TypeError(
+                "value of execution argument must be either int, numpy.array or numpy.uint{8,16,32,64}")
+        if isinstance(value, ACCEPTED_INTS):
+            if isinstance(value, int) and not (0 <= value < np.iinfo(np.uint64).max):
+                raise TypeError(
+                    "single integer must be in the range [0, 2**64 - 1] (uint64)"
+                )
+            return _LambdaArgument.from_scalar(value)
+        else:
+            assert isinstance(value, np.ndarray)
+            if value.shape == ():
+                return _LambdaArgument.from_scalar(value)
+            if value.dtype not in ACCEPTED_NUMPY_UINTS:
+                raise TypeError(
+                    "numpy.array must be of dtype uint{8,16,32,64}")
+            return _LambdaArgument.from_tensor(value.flatten().tolist(), value.shape)
+
 
 class JITCompilerSupport:
     def __init__(self, runtime_lib_path=None):
         if runtime_lib_path is None:
             runtime_lib_path = _lookup_runtime_lib()
-        self._support = JITLambdaSupport(runtime_lib_path)
+        self._support = _JITLambdaSupport(runtime_lib_path)
 
     def compile(self, mlir_program: str, func_name: str = "main") -> JitCompilationResult:
         """JIT Compile a function define in the mlir_program to its homomorphic equivalent.
@@ -332,7 +297,7 @@ class JITCompilerSupport:
 class LibraryCompilerSupport:
     def __init__(self, outputPath="./out"):
         self._library_path = outputPath
-        self._support = LibraryLambdaSupport(outputPath)
+        self._support = _LibraryLambdaSupport(outputPath)
 
     def compile(self, mlir_program: str, func_name: str = "main") -> LibraryCompilationResult:
         """Compile a function define in the mlir_program to its homomorphic equivalent and save as library.
