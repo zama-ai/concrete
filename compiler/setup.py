@@ -25,7 +25,8 @@ class MakeExtension(Extension):
 
 
 def build_dir():
-    return os.environ.get("CONCRETE_COMPILER_BUILD_DIR", "build/")
+    path = os.environ.get("CONCRETE_COMPILER_BUILD_DIR", "build/")
+    return os.path.relpath(path)
 
 
 class MakeBuild(build_ext):
@@ -57,15 +58,15 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/zama-ai/concrete-compiler",
     packages=setuptools.find_namespace_packages(
-        where=build_dir() + "tools/concretelang/python_packages/concretelang_core",
+        where=build_dir() + "/tools/concretelang/python_packages/concretelang_core",
         include=["concrete", "concrete.*"],
     )
     + setuptools.find_namespace_packages(
-        where=build_dir() + "tools/concretelang/python_packages/concretelang_core",
+        where=build_dir() + "/tools/concretelang/python_packages/concretelang_core",
         include=["mlir", "mlir.*"],
     ),
     install_requires=["numpy", "PyYAML", "setuptools"],
-    package_dir={"": build_dir() + "tools/concretelang/python_packages/concretelang_core"},
+    package_dir={"": build_dir() + "/tools/concretelang/python_packages/concretelang_core"},
     include_package_data=True,
     package_data={"": ["*.so", "*.dylib"]},
     classifiers=[
