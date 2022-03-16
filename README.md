@@ -146,3 +146,20 @@ We thank [Daniel May](https://gitlab.com/danieljrmay) for supporting this projec
 
 This software is distributed under the BSD-3-Clause-Clear license. If you have any questions,
 please contact us at `hello@zama.ai`.
+
+## Disclaimers
+
+### Security Estimation
+
+Security estimation, in this repository, used to be based on
+the [LWE Estimator](https://bitbucket.org/malb/lwe-estimator/src/master/),
+with `reduction_cost_model = BKZ.sieve`.
+We are currently moving to the [Lattice Estimator](https://github.com/malb/lattice-estimator)
+with `red_cost_model = reduction.RC.BDGL16`.
+
+When a new update is published in the Lattice Estimator, we update parameters accordingly.
+
+### Side-Channel Attacks
+
+Mitigation for side channel attacks have not yet been implemented in Concrete,
+and will be released in upcoming versions.
