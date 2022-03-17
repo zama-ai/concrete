@@ -26,5 +26,6 @@ add_mlir_library(
   ConcretelangCommon
   ConcretelangRuntime
   ConcretelangSupportLib
+  LINK_LIBS PUBLIC
   Concrete
 )
