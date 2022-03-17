@@ -7,7 +7,6 @@
 #include "concretelang-c/Support/CompilerEngine.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/Jit.h"
-#include "concretelang/Support/JitCompilerEngine.h"
 #include "concretelang/Support/JitLambdaSupport.h"
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
@@ -21,13 +20,8 @@
 #include <string>
 
 using mlir::concretelang::CompilationOptions;
-using mlir::concretelang::JitCompilerEngine;
 using mlir::concretelang::JitLambdaSupport;
 using mlir::concretelang::LambdaArgument;
-
-const char *noEmptyStringPtr(std::string &s) {
-  return (s.empty()) ? nullptr : s.c_str();
-}
 
 /// Populate the compiler API python module.
 void mlir::concretelang::python::populateCompilerAPISubmodule(
@@ -36,11 +30,6 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   m.def("round_trip",
         [](std::string mlir_input) { return roundTrip(mlir_input.c_str()); });
-
-  m.def("library",
-        [](std::string library_path, std::vector<std::string> mlir_modules) {
-          return library(library_path, mlir_modules);
-        });
 
   m.def("terminate_parallelization", &terminateParallelization);
 
@@ -157,7 +146,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                                        clientlib::PublicResult &publicResult) {
         return decrypt_result(keySet, publicResult);
       });
-  pybind11::class_<KeySetCache>(m, "KeySetCache")
+  pybind11::class_<clientlib::KeySetCache>(m, "KeySetCache")
       .def(pybind11::init<std::string &>());
 
   pybind11::class_<mlir::concretelang::ClientParameters>(m, "ClientParameters");
@@ -202,14 +191,5 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            })
       .def("get_scalar", [](lambdaArgument &lambda_arg) {
         return lambdaArgumentGetScalar(lambda_arg);
-      });
-
-  pybind11::class_<JitCompilerEngine::Lambda>(m, "Lambda")
-      .def("invoke", [](JitCompilerEngine::Lambda &py_lambda,
-                        std::vector<lambdaArgument> args) {
-        // wrap and call CAPI
-        lambda c_lambda{&py_lambda};
-        executionArguments a{args.data(), args.size()};
-        return invokeLambda(c_lambda, a);
       });
 }

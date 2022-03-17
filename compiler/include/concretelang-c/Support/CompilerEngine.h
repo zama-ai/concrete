@@ -8,7 +8,6 @@
 
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Jit.h"
-#include "concretelang/Support/JitCompilerEngine.h"
 #include "concretelang/Support/JitLambdaSupport.h"
 #include "concretelang/Support/LibraryLambdaSupport.h"
 #include "mlir-c/IR.h"
@@ -17,12 +16,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// C wrapper of the mlir::concretelang::JitCompilerEngine::Lambda
-struct lambda {
-  mlir::concretelang::JitCompilerEngine::Lambda *ptr;
-};
-typedef struct lambda lambda;
 
 // C wrapper of the mlir::concretelang::LambdaArgument
 struct lambdaArgument {
@@ -106,22 +99,8 @@ MLIR_CAPI_EXPORTED lambdaArgument
 decrypt_result(concretelang::clientlib::KeySet &keySet,
                concretelang::clientlib::PublicResult &publicResult);
 
-// Build lambda from a textual representation of an MLIR module
-// The lambda will have `funcName` as entrypoint, and use runtimeLibPath (if
-// not null) as a shared library during compilation, a path to activate the
-// use a cache for encryption keys for test purpose (unsecure).
-MLIR_CAPI_EXPORTED mlir::concretelang::JitCompilerEngine::Lambda
-buildLambda(const char *module, const char *funcName,
-            const char *runtimeLibPath, const char *keySetCachePath,
-            bool autoParallelize, bool loopParallelize, bool dfParallelize);
-
 // Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
-
-// Execute the lambda with executionArguments and get the result as
-// lambdaArgument
-MLIR_CAPI_EXPORTED lambdaArgument invokeLambda(lambda l,
-                                               executionArguments args);
 
 // Terminate parallelization
 MLIR_CAPI_EXPORTED void terminateParallelization();
