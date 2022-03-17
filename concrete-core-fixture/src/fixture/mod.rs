@@ -406,3 +406,6 @@ pub use lwe_bootstrap_key_creation::*;
 
 mod lwe_bootstrap_key_conversion;
 pub use lwe_bootstrap_key_conversion::*;
+
+mod lwe_bootstrap_key_discarding_conversion;
+pub use lwe_bootstrap_key_discarding_conversion::*;
