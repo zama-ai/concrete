@@ -360,6 +360,10 @@ jobs:
     strategy:
       matrix:
         python: ['3.8', '3.9', '3.10']
+    outputs:
+      python-package-name-linux-py38: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY38 }}
+      python-package-name-linux-py39: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY39 }}
+      python-package-name-linux-py310: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY310 }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -419,6 +423,8 @@ jobs:
             pip wheel --no-deps -w ./wheels .
             auditwheel repair ./wheels/*.whl --plat linux_x86_64  -w ./wheels/
             echo "::set-output name=ASSET_NAME::`find ./wheels/ -name *linux_x86_64*.whl | rev |cut -d "/" -f 1 |rev `"
+            # used later for python package test
+            echo "::set-output name=ASSET_NAME_PY`echo ${{ matrix.python }} |tr -d '.'`::`find ./wheels/ -name *linux_x86_64*.whl | rev |cut -d "/" -f 1 |rev `"
 
       - name: Upload Python Package
         uses: actions/upload-release-asset@v1
@@ -583,6 +589,47 @@ jobs:
         run: |
           cd compiler
           pip install pytest
+          pytest -vs -m "not parallel" --ignore=tests/python/test_compiler_file_output/ tests/python
+
+  TestPythonPackageLinuxWithParallelization:
+    runs-on: ubuntu-latest
+    needs: [BuildAndPushPythonPackagesLinuxWithParallelization, CreateRelease]
+    strategy:
+      matrix:
+        include:
+          - python: '3.8'
+            filename-index: 'python-package-name-linux-py38'
+          - python: '3.9'
+            filename-index: 'python-package-name-linux-py39'
+          - python: '3.10'
+            filename-index: 'python-package-name-linux-py310'
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Extract Package Filename
+        id: extract-filename
+        run: echo "::set-output name=FILE_NAME::`echo '${{ toJson(needs.BuildAndPushPythonPackagesLinuxWithParallelization.outputs) }}' | jq '.[\"${{ matrix.filename-index }}\"]' | tr -d '\"' `"
+
+      - name: Download and Install Package
+        run: |
+          wget --auth-no-challenge --header='Accept:application/octet-stream' \
+          "https://${{ secrets.GH_TOKEN_RELEASE }}:@api.github.com/repos/${{ github.repository }}/releases/assets/`curl -s -u "zama-bot:${{ secrets.GH_TOKEN_RELEASE }}" \
+          https://api.github.com/repos/${{ github.repository }}/releases | \
+          jq 'map(select(.tag_name == "${{ github.ref_name }}"))' | \
+          jq '.[0].assets' | \
+          jq 'map(select(.name == "${{ steps.extract-filename.outputs.FILE_NAME }}" ))' | \
+          jq '.[].id'`" -O ${{ steps.extract-filename.outputs.FILE_NAME }}
+          pip install ${{ steps.extract-filename.outputs.FILE_NAME }}
+
+      - name: Test
+        run: |
+          cd compiler
+          pip install pytest
           pytest -vs --ignore=tests/python/test_compiler_file_output/ tests/python
 
   TestPythonPackageMacOS:
@@ -624,7 +671,7 @@ jobs:
         run: |
           cd compiler
           pip install pytest
-          pytest -vs --ignore=tests/python/test_compiler_file_output/ tests/python
+          pytest -vs -m "not parallel" --ignore=tests/python/test_compiler_file_output/ tests/python
 
   #################
   # Docker Images #
