@@ -403,3 +403,6 @@ pub use glwe_secret_key_to_lwe_secret_key_transmutation::*;
 
 mod lwe_bootstrap_key_creation;
 pub use lwe_bootstrap_key_creation::*;
+
+mod lwe_bootstrap_key_conversion;
+pub use lwe_bootstrap_key_conversion::*;
