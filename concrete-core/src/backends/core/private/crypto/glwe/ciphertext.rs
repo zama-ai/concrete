@@ -456,8 +456,9 @@ impl<Cont> GlweCiphertext<Cont> {
             .as_mut_tensor()
             .fill_with_copy(glwe_mask.as_tensor());
 
-        // We compute the number of elements which must be negated
-        let negated_count = self.poly_size.0 - n_th.0 - 1;
+        // We compute the number of elements which must be
+        // turned into their opposite
+        let opposite_count = self.poly_size.0 - n_th.0 - 1;
 
         // We loop through the polynomials (as mut tensors)
         for mut lwe_mask_poly in lwe_mask
@@ -466,12 +467,12 @@ impl<Cont> GlweCiphertext<Cont> {
         {
             // We reverse the polynomial
             lwe_mask_poly.reverse();
-            // We negate the proper coefficients
+            // We compute the opposite of the proper coefficients
             lwe_mask_poly
-                .get_sub_mut(0..negated_count)
+                .get_sub_mut(0..opposite_count)
                 .update_with_wrapping_neg();
             // We rotate the polynomial properly
-            lwe_mask_poly.rotate_left(negated_count);
+            lwe_mask_poly.rotate_left(opposite_count);
         }
     }
 

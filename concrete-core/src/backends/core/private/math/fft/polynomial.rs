@@ -603,7 +603,7 @@ fn avx2_uthwatp<C1, C2, C3, C4, C5, C6, C7, C8>(
             vec_b = _mm256_permute_pd(vec_b, 0x5);
             vec_d = _mm256_permute_pd(vec_d, 0x5);
 
-            // Negate the imaginary elements of glwe
+            // Compute the opposite of the imaginary elements of glwe
             vec_b = _mm256_mul_pd(vec_b, neg);
             vec_d = _mm256_mul_pd(vec_d, neg);
 

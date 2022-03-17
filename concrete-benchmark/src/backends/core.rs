@@ -40,8 +40,8 @@ pub fn bench() {
     lwe_ciphertext_fusing_addition::bench::<CoreEngine, LweCiphertext64, LweCiphertext64>(&mut criterion);
     lwe_ciphertext_discarding_bootstrap::bench::<CoreEngine, FourierLweBootstrapKey32, GlweCiphertext32, LweCiphertext32, LweCiphertext32>(&mut criterion);
     lwe_ciphertext_discarding_bootstrap::bench::<CoreEngine, FourierLweBootstrapKey64, GlweCiphertext64, LweCiphertext64, LweCiphertext64>(&mut criterion);
-    lwe_ciphertext_fusing_negation::bench::<CoreEngine, LweCiphertext32>(&mut criterion);
-    lwe_ciphertext_fusing_negation::bench::<CoreEngine, LweCiphertext64>(&mut criterion);
+    lwe_ciphertext_fusing_opposite::bench::<CoreEngine, LweCiphertext32>(&mut criterion);
+    lwe_ciphertext_fusing_opposite::bench::<CoreEngine, LweCiphertext64>(&mut criterion);
     lwe_ciphertext_cleartext_fusing_multiplication::bench::<CoreEngine, LweCiphertext32, Cleartext32>(&mut criterion);
     lwe_ciphertext_cleartext_fusing_multiplication::bench::<CoreEngine, LweCiphertext64, Cleartext64>(&mut criterion);
     lwe_ciphertext_cleartext_discarding_multiplication::bench::<CoreEngine, LweCiphertext32, Cleartext32, LweCiphertext32>(&mut criterion);
@@ -62,8 +62,8 @@ pub fn bench() {
     lwe_ciphertext_discarding_extraction::bench::<CoreEngine, GlweCiphertext64, LweCiphertext64>(&mut criterion);
     lwe_ciphertext_discarding_keyswitch::bench::<CoreEngine, LweKeyswitchKey32, LweCiphertext32, LweCiphertext32>(&mut criterion);
     lwe_ciphertext_discarding_keyswitch::bench::<CoreEngine, LweKeyswitchKey64, LweCiphertext64, LweCiphertext64>(&mut criterion);
-    lwe_ciphertext_discarding_negation::bench::<CoreEngine, LweCiphertext32, LweCiphertext32>(&mut criterion);
-    lwe_ciphertext_discarding_negation::bench::<CoreEngine, LweCiphertext64, LweCiphertext64>(&mut criterion);
+    lwe_ciphertext_discarding_opposite::bench::<CoreEngine, LweCiphertext32, LweCiphertext32>(&mut criterion);
+    lwe_ciphertext_discarding_opposite::bench::<CoreEngine, LweCiphertext64, LweCiphertext64>(&mut criterion);
     lwe_ciphertext_plaintext_fusing_addition::bench::<CoreEngine, LweCiphertext32, Plaintext32>(&mut criterion);
     lwe_ciphertext_plaintext_fusing_addition::bench::<CoreEngine, LweCiphertext64, Plaintext64>(&mut criterion);
     lwe_ciphertext_plaintext_discarding_addition::bench::<CoreEngine, LweCiphertext32, Plaintext32, LweCiphertext32>(&mut criterion);

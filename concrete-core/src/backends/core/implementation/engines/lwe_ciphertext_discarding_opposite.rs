@@ -2,13 +2,13 @@ use crate::backends::core::implementation::engines::CoreEngine;
 use crate::backends::core::implementation::entities::{LweCiphertext32, LweCiphertext64};
 use crate::backends::core::private::math::tensor::{AsMutTensor, AsRefTensor};
 use crate::specification::engines::{
-    LweCiphertextDiscardingNegationEngine, LweCiphertextDiscardingNegationError,
+    LweCiphertextDiscardingOppositeEngine, LweCiphertextDiscardingOppositeError,
 };
 
 /// # Description:
-/// Implementation of [`LweCiphertextDiscardingNegationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweCiphertextDiscardingOppositeEngine`] for [`CoreEngine`] that operates on
 /// 32 bits integers.
-impl LweCiphertextDiscardingNegationEngine<LweCiphertext32, LweCiphertext32> for CoreEngine {
+impl LweCiphertextDiscardingOppositeEngine<LweCiphertext32, LweCiphertext32> for CoreEngine {
     /// # Example:
     /// ```
     /// use concrete_commons::dispersion::Variance;
@@ -29,7 +29,7 @@ impl LweCiphertextDiscardingNegationEngine<LweCiphertext32, LweCiphertext32> for
     /// let ciphertext_1 = engine.encrypt_lwe_ciphertext(&key, &plaintext, noise)?;
     /// let mut ciphertext_2 = engine.zero_encrypt_lwe_ciphertext(&key, noise)?;
     ///
-    /// engine.discard_neg_lwe_ciphertext(&mut ciphertext_2, &ciphertext_1)?;
+    /// engine.discard_opp_lwe_ciphertext(&mut ciphertext_2, &ciphertext_1)?;
     /// #
     /// assert_eq!(ciphertext_2.lwe_dimension(), lwe_dimension);
     ///
@@ -41,17 +41,17 @@ impl LweCiphertextDiscardingNegationEngine<LweCiphertext32, LweCiphertext32> for
     /// # Ok(())
     /// # }
     /// ```
-    fn discard_neg_lwe_ciphertext(
+    fn discard_opp_lwe_ciphertext(
         &mut self,
         output: &mut LweCiphertext32,
         input: &LweCiphertext32,
-    ) -> Result<(), LweCiphertextDiscardingNegationError<Self::EngineError>> {
-        LweCiphertextDiscardingNegationError::perform_generic_checks(output, input)?;
-        unsafe { self.discard_neg_lwe_ciphertext_unchecked(output, input) };
+    ) -> Result<(), LweCiphertextDiscardingOppositeError<Self::EngineError>> {
+        LweCiphertextDiscardingOppositeError::perform_generic_checks(output, input)?;
+        unsafe { self.discard_opp_lwe_ciphertext_unchecked(output, input) };
         Ok(())
     }
 
-    unsafe fn discard_neg_lwe_ciphertext_unchecked(
+    unsafe fn discard_opp_lwe_ciphertext_unchecked(
         &mut self,
         output: &mut LweCiphertext32,
         input: &LweCiphertext32,
@@ -62,9 +62,9 @@ impl LweCiphertextDiscardingNegationEngine<LweCiphertext32, LweCiphertext32> for
 }
 
 /// # Description:
-/// Implementation of [`LweCiphertextDiscardingNegationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweCiphertextDiscardingOppositeEngine`] for [`CoreEngine`] that operates on
 /// 64 bits integers.
-impl LweCiphertextDiscardingNegationEngine<LweCiphertext64, LweCiphertext64> for CoreEngine {
+impl LweCiphertextDiscardingOppositeEngine<LweCiphertext64, LweCiphertext64> for CoreEngine {
     /// # Example:
     /// ```
     /// use concrete_commons::dispersion::Variance;
@@ -85,7 +85,7 @@ impl LweCiphertextDiscardingNegationEngine<LweCiphertext64, LweCiphertext64> for
     /// let ciphertext_1 = engine.encrypt_lwe_ciphertext(&key, &plaintext, noise)?;
     /// let mut ciphertext_2 = engine.zero_encrypt_lwe_ciphertext(&key, noise)?;
     ///
-    /// engine.discard_neg_lwe_ciphertext(&mut ciphertext_2, &ciphertext_1)?;
+    /// engine.discard_opp_lwe_ciphertext(&mut ciphertext_2, &ciphertext_1)?;
     /// #
     /// assert_eq!(ciphertext_2.lwe_dimension(), lwe_dimension);
     ///
@@ -97,17 +97,17 @@ impl LweCiphertextDiscardingNegationEngine<LweCiphertext64, LweCiphertext64> for
     /// # Ok(())
     /// # }
     /// ```
-    fn discard_neg_lwe_ciphertext(
+    fn discard_opp_lwe_ciphertext(
         &mut self,
         output: &mut LweCiphertext64,
         input: &LweCiphertext64,
-    ) -> Result<(), LweCiphertextDiscardingNegationError<Self::EngineError>> {
-        LweCiphertextDiscardingNegationError::perform_generic_checks(output, input)?;
-        unsafe { self.discard_neg_lwe_ciphertext_unchecked(output, input) };
+    ) -> Result<(), LweCiphertextDiscardingOppositeError<Self::EngineError>> {
+        LweCiphertextDiscardingOppositeError::perform_generic_checks(output, input)?;
+        unsafe { self.discard_opp_lwe_ciphertext_unchecked(output, input) };
         Ok(())
     }
 
-    unsafe fn discard_neg_lwe_ciphertext_unchecked(
+    unsafe fn discard_opp_lwe_ciphertext_unchecked(
         &mut self,
         output: &mut LweCiphertext64,
         input: &LweCiphertext64,
