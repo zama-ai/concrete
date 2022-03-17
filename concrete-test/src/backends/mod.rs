@@ -6,3 +6,6 @@
 
 #[cfg(all(test, feature = "backend_core"))]
 pub mod core;
+
+#[cfg(all(test, feature = "backend_optalysys"))]
+pub mod optalysys;

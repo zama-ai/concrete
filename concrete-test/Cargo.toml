@@ -13,3 +13,4 @@ lazy_static = "1.4.0"
 [features]
 default = ["backend_core"]
 backend_core = []
+backend_optalysys = ["concrete-core/backend_optalysys"]

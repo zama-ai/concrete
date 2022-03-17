@@ -80,6 +80,7 @@ impl AbstractEngine for OptalysysEngine {
     }
 }
 
+mod lwe_ciphertext_encryption;
 mod lwe_ciphertext_discarding_bootstrap;
 mod lwe_bootstrap_key_creation;
 mod lwe_bootstrap_key_conversion;
