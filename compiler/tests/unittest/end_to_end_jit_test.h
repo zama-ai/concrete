@@ -100,7 +100,7 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
   };                                                                           \
   ASSERT_EQ(val.value(), exp);
 
-static inline llvm::Optional<mlir::concretelang::KeySetCache>
+static inline llvm::Optional<concretelang::clientlib::KeySetCache>
 getTestKeySetCache() {
 
   llvm::SmallString<0> cachePath;
@@ -108,36 +108,38 @@ getTestKeySetCache() {
   llvm::sys::path::append(cachePath, "KeySetCache");
 
   auto cachePathStr = std::string(cachePath);
-  return llvm::Optional<mlir::concretelang::KeySetCache>(
-      mlir::concretelang::KeySetCache(cachePathStr));
+  return llvm::Optional<concretelang::clientlib::KeySetCache>(
+      concretelang::clientlib::KeySetCache(cachePathStr));
 }
 
-static inline std::shared_ptr<mlir::concretelang::KeySetCache>
+static inline std::shared_ptr<concretelang::clientlib::KeySetCache>
 getTestKeySetCachePtr() {
-  return std::make_shared<mlir::concretelang::KeySetCache>(
+  return std::make_shared<concretelang::clientlib::KeySetCache>(
       getTestKeySetCache().getValue());
 }
 
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
-inline llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda>
+inline llvm::Expected<
+    mlir::concretelang::ClientServer<mlir::concretelang::JitLambdaSupport>>
 internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false,
                    bool autoParallelize = false) {
 
-  mlir::concretelang::JitCompilerEngine engine;
-
+  auto options =
+      mlir::concretelang::CompilationOptions(std::string(func.data()));
   if (useDefaultFHEConstraints)
-    engine.setFHEConstraints(defaultV0Constraints);
+    options.v0FHEConstraints = defaultV0Constraints;
 #ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
-  engine.setAutoParallelize(true);
+  options.autoParallelize = true;
 #else
-  engine.setAutoParallelize(autoParallelize);
+  options.autoParallelize = autoParallelize;
 #endif
-
-  llvm::Expected<mlir::concretelang::JitCompilerEngine::Lambda> lambdaOrErr =
-      engine.buildLambda(src, func, getTestKeySetCache());
+  auto lambdaOrErr =
+      mlir::concretelang::ClientServer<mlir::concretelang::JitLambdaSupport>::
+          create(src, options, getTestKeySetCache(),
+                 mlir::concretelang::JitLambdaSupport());
 
   return lambdaOrErr;
 }
