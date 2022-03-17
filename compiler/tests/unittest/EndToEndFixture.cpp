@@ -1,7 +1,6 @@
 #include "EndToEndFixture.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Jit.h"
-#include "concretelang/Support/JitCompilerEngine.h"
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
 

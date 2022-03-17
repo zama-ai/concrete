@@ -241,25 +241,29 @@ public:
 };
 
 template <typename Lambda, typename CompilationResult> class LambdaSupport {
-
 public:
+  typedef Lambda lambda;
+  typedef CompilationResult compilationResult;
+
   virtual ~LambdaSupport() {}
 
   /// Compile the mlir program and produces a compilation result if succeed.
   llvm::Expected<std::unique_ptr<CompilationResult>> virtual compile(
-      llvm::SourceMgr &program, std::string funcname = "main");
+      llvm::SourceMgr &program,
+      CompilationOptions options = CompilationOptions("main"));
 
   llvm::Expected<std::unique_ptr<CompilationResult>>
-  compile(llvm::StringRef program, std::string funcname = "main") {
-    return compile(llvm::MemoryBuffer::getMemBuffer(program), funcname);
+  compile(llvm::StringRef program,
+          CompilationOptions options = CompilationOptions("main")) {
+    return compile(llvm::MemoryBuffer::getMemBuffer(program), options);
   }
 
   llvm::Expected<std::unique_ptr<CompilationResult>>
   compile(std::unique_ptr<llvm::MemoryBuffer> program,
-          std::string funcname = "main") {
+          CompilationOptions options = CompilationOptions("main")) {
     llvm::SourceMgr sm;
     sm.AddNewSourceBuffer(std::move(program), llvm::SMLoc());
-    return compile(sm, funcname);
+    return compile(sm, options);
   }
 
   /// Load the server lambda from the compilation result.
@@ -310,6 +314,99 @@ public:
     // Decrypt the result
     return typedResult<ResT>(keySet, **publicResult);
   }
+};
+
+template <class LambdaSupport> class ClientServer {
+public:
+  static llvm::Expected<ClientServer>
+  create(llvm::StringRef program,
+         CompilationOptions options = CompilationOptions("main"),
+         llvm::Optional<clientlib::KeySetCache> cache = {},
+         LambdaSupport support = LambdaSupport()) {
+    auto compilationResult = support.compile(program, options);
+    if (auto err = compilationResult.takeError()) {
+      return std::move(err);
+    }
+    auto lambda = support.loadServerLambda(**compilationResult);
+    if (auto err = lambda.takeError()) {
+      return std::move(err);
+    }
+    auto clientParameters = support.loadClientParameters(**compilationResult);
+    if (auto err = clientParameters.takeError()) {
+      return std::move(err);
+    }
+    auto keySet = support.keySet(*clientParameters, cache);
+    if (auto err = keySet.takeError()) {
+      return std::move(err);
+    }
+    auto f = ClientServer();
+    f.lambda = *lambda;
+    f.compilationResult = std::move(*compilationResult);
+    f.keySet = std::move(*keySet);
+    f.clientParameters = *clientParameters;
+    f.support = support;
+    return std::move(f);
+  }
+
+  template <typename ResT = uint64_t>
+  llvm::Expected<ResT> operator()(llvm::ArrayRef<LambdaArgument *> args) {
+    auto publicArguments = LambdaArgumentAdaptor::exportArguments(
+        args, clientParameters, *this->keySet);
+
+    if (auto err = publicArguments.takeError()) {
+      return std::move(err);
+    }
+
+    auto publicResult = support.serverCall(lambda, **publicArguments);
+    if (auto err = publicResult.takeError()) {
+      return std::move(err);
+    }
+    return typedResult<ResT>(*keySet, **publicResult);
+  }
+
+  template <typename T, typename ResT = uint64_t>
+  llvm::Expected<ResT> operator()(const llvm::ArrayRef<T> args) {
+    auto encryptedArgs = clientlib::EncryptedArguments::create(*keySet, args);
+    if (encryptedArgs.has_error()) {
+      return StreamStringError(encryptedArgs.error().mesg);
+    }
+    auto publicArguments = encryptedArgs.value()->exportPublicArguments(
+        clientParameters, keySet->runtimeContext());
+    if (!publicArguments.has_value()) {
+      return StreamStringError(publicArguments.error().mesg);
+    }
+    auto publicResult = support.serverCall(lambda, *publicArguments.value());
+    if (auto err = publicResult.takeError()) {
+      return std::move(err);
+    }
+    return typedResult<ResT>(*keySet, **publicResult);
+  }
+
+  template <typename ResT = uint64_t, typename... Args>
+  llvm::Expected<ResT> operator()(const Args... args) {
+    auto encryptedArgs =
+        clientlib::EncryptedArguments::create(*keySet, args...);
+    if (encryptedArgs.has_error()) {
+      return StreamStringError(encryptedArgs.error().mesg);
+    }
+    auto publicArguments = encryptedArgs.value()->exportPublicArguments(
+        clientParameters, keySet->runtimeContext());
+    if (publicArguments.has_error()) {
+      return StreamStringError(publicArguments.error().mesg);
+    }
+    auto publicResult = support.serverCall(lambda, *publicArguments.value());
+    if (auto err = publicResult.takeError()) {
+      return std::move(err);
+    }
+    return typedResult<ResT>(*keySet, **publicResult);
+  }
+
+private:
+  typename LambdaSupport::lambda lambda;
+  std::unique_ptr<typename LambdaSupport::compilationResult> compilationResult;
+  std::unique_ptr<clientlib::KeySet> keySet;
+  clientlib::ClientParameters clientParameters;
+  LambdaSupport support;
 };
 
 } // namespace concretelang

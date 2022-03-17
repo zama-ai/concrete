@@ -16,15 +16,14 @@ JitLambdaSupport::JitLambdaSupport(
     : runtimeLibPath(runtimeLibPath), llvmOptPipeline(llvmOptPipeline) {}
 
 llvm::Expected<std::unique_ptr<JitCompilationResult>>
-JitLambdaSupport::compile(llvm::SourceMgr &program, std::string funcname) {
+JitLambdaSupport::compile(llvm::SourceMgr &program,
+                          CompilationOptions options) {
 
   // Setup the compiler engine
   auto context = std::make_shared<CompilationContext>();
   concretelang::CompilerEngine engine(context);
 
-  // We need client parameters to be generated
-  engine.setGenerateClientParameters(true);
-  engine.setClientParametersFuncName(funcname);
+  engine.setCompilationOptions(options);
 
   // Compile to LLVM Dialect
   auto compilationResult =
@@ -34,10 +33,15 @@ JitLambdaSupport::compile(llvm::SourceMgr &program, std::string funcname) {
     return std::move(err);
   }
 
+  if (!options.clientParametersFuncName.hasValue()) {
+    return StreamStringError("Need to have a funcname to JIT compile");
+  }
+
   // Compile from LLVM Dialect to JITLambda
   auto mlirModule = compilationResult.get().mlirModuleRef->get();
   auto lambda = concretelang::JITLambda::create(
-      funcname, mlirModule, llvmOptPipeline, runtimeLibPath);
+      *options.clientParametersFuncName, mlirModule, llvmOptPipeline,
+      runtimeLibPath);
   if (auto err = lambda.takeError()) {
     return std::move(err);
   }

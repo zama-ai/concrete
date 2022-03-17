@@ -5,7 +5,7 @@
 
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/Support/JitCompilerEngine.h"
+#include "concretelang/Support/JitLambdaSupport.h"
 #include "llvm/Support/Path.h"
 
 #include "globals.h"

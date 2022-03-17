@@ -36,11 +36,11 @@ public:
   LibraryLambdaSupport(std::string outputPath) : outputPath(outputPath) {}
 
   llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
-  compile(llvm::SourceMgr &program, std::string funcname = "main") override {
+  compile(llvm::SourceMgr &program, CompilationOptions options) override {
     // Setup the compiler engine
     auto context = CompilationContext::createShared();
     concretelang::CompilerEngine engine(context);
-    engine.setClientParametersFuncName(funcname);
+    engine.setCompilationOptions(options);
 
     // Compile to a library
     auto library = engine.compile(program, outputPath);
@@ -48,9 +48,13 @@ public:
       return std::move(err);
     }
 
+    if (!options.clientParametersFuncName.hasValue()) {
+      return StreamStringError("Need to have a funcname to compile library");
+    }
+
     auto result = std::make_unique<LibraryCompilationResult>();
     result->libraryPath = outputPath;
-    result->funcName = funcname;
+    result->funcName = *options.clientParametersFuncName;
     return std::move(result);
   }
   using LambdaSupport::compile;

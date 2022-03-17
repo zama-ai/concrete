@@ -36,6 +36,30 @@ protected:
   llvm::LLVMContext *llvmContext;
 };
 
+/// Compilation options allows to configure the compilation pipeline.
+struct CompilationOptions {
+  llvm::Optional<mlir::concretelang::V0FHEConstraint> v0FHEConstraints;
+
+  bool verifyDiagnostics;
+
+  bool autoParallelize;
+  bool loopParallelize;
+  bool dataflowParallelize;
+  llvm::Optional<std::vector<int64_t>> fhelinalgTileSizes;
+
+  llvm::Optional<std::string> clientParametersFuncName;
+
+  CompilationOptions()
+      : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
+        autoParallelize(false), loopParallelize(false),
+        dataflowParallelize(false), clientParametersFuncName(llvm::None){};
+
+  CompilationOptions(std::string funcname)
+      : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
+        autoParallelize(false), loopParallelize(false),
+        dataflowParallelize(false), clientParametersFuncName(funcname){};
+};
+
 class CompilerEngine {
 public:
   // Result of an invocation of the `CompilerEngine` with optional
@@ -175,6 +199,27 @@ public:
   /// manager.
   llvm::Expected<CompilerEngine::Library> compile(llvm::SourceMgr &sm,
                                                   std::string libraryPath);
+
+  void setCompilationOptions(CompilationOptions &options) {
+    if (options.v0FHEConstraints.hasValue()) {
+      setFHEConstraints(*options.v0FHEConstraints);
+    }
+
+    setVerifyDiagnostics(options.verifyDiagnostics);
+
+    setAutoParallelize(options.autoParallelize);
+    setLoopParallelize(options.loopParallelize);
+    setDataflowParallelize(options.dataflowParallelize);
+
+    if (options.clientParametersFuncName.hasValue()) {
+      setGenerateClientParameters(true);
+      setClientParametersFuncName(*options.clientParametersFuncName);
+    }
+
+    if (options.fhelinalgTileSizes.hasValue()) {
+      setFHELinalgTileSizes(*options.fhelinalgTileSizes);
+    }
+  }
 
   void setFHEConstraints(const mlir::concretelang::V0FHEConstraint &c);
   void setMaxEintPrecision(size_t v);

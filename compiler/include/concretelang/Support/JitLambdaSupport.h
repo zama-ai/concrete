@@ -38,7 +38,7 @@ public:
           mlir::makeOptimizingTransformer(3, 0, nullptr));
 
   llvm::Expected<std::unique_ptr<JitCompilationResult>>
-  compile(llvm::SourceMgr &program, std::string funcname = "main") override;
+  compile(llvm::SourceMgr &program, CompilationOptions options) override;
   using LambdaSupport::compile;
 
   llvm::Expected<concretelang::JITLambda *>

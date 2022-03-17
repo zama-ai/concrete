@@ -49,7 +49,7 @@ jit_lambda_support(const char *runtimeLibPath);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
 jit_compile(JITLambdaSupport_C support, const char *module,
-            const char *funcname);
+            mlir::concretelang::CompilationOptions options);
 
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 jit_load_client_parameters(JITLambdaSupport_C support,
@@ -76,7 +76,7 @@ library_lambda_support(const char *outputPath);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
 library_compile(LibraryLambdaSupport_C support, const char *module,
-                const char *funcname);
+                mlir::concretelang::CompilationOptions options);
 
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 library_load_client_parameters(LibraryLambdaSupport_C support,

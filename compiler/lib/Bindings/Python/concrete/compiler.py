@@ -22,6 +22,8 @@ from mlir._mlir_libs._concretelang._compiler import PublicResult
 from mlir._mlir_libs._concretelang._compiler import PublicArguments
 from mlir._mlir_libs._concretelang._compiler import LambdaArgument as _LambdaArgument
 
+from mlir._mlir_libs._concretelang._compiler import CompilationOptions
+
 from mlir._mlir_libs._concretelang._compiler import JITLambdaSupport as _JITLambdaSupport
 from mlir._mlir_libs._concretelang._compiler import JitCompilationResult
 from mlir._mlir_libs._concretelang._compiler import JITLambda
@@ -259,7 +261,7 @@ class JITCompilerSupport:
             runtime_lib_path = _lookup_runtime_lib()
         self._support = _JITLambdaSupport(runtime_lib_path)
 
-    def compile(self, mlir_program: str, func_name: str = "main") -> JitCompilationResult:
+    def compile(self, mlir_program: str, options: CompilationOptions = CompilationOptions("main")) -> JitCompilationResult:
         """JIT Compile a function define in the mlir_program to its homomorphic equivalent.
 
         Args:
@@ -271,7 +273,7 @@ class JITCompilerSupport:
         """
         if not isinstance(mlir_program, str):
             raise TypeError("mlir_program must be an `str`")
-        return self._support.compile(mlir_program, func_name)
+        return self._support.compile(mlir_program, options)
 
     def load_client_parameters(self, compilation_result: JitCompilationResult) -> ClientParameters:
         """Load the client parameters from the JIT compilation result"""
@@ -299,7 +301,7 @@ class LibraryCompilerSupport:
         self._library_path = outputPath
         self._support = _LibraryLambdaSupport(outputPath)
 
-    def compile(self, mlir_program: str, func_name: str = "main") -> LibraryCompilationResult:
+    def compile(self, mlir_program: str, options: CompilationOptions = CompilationOptions("main")) -> LibraryCompilationResult:
         """Compile a function define in the mlir_program to its homomorphic equivalent and save as library.
 
         Args:
@@ -311,9 +313,9 @@ class LibraryCompilerSupport:
         """
         if not isinstance(mlir_program, str):
             raise TypeError("mlir_program must be an `str`")
-        if not isinstance(func_name, str):
+        if not isinstance(options, CompilationOptions):
             raise TypeError("mlir_program must be an `str`")
-        return self._support.compile(mlir_program, func_name)
+        return self._support.compile(mlir_program, options)
 
     def reload(self, func_name: str = "main") -> LibraryCompilationResult:
         """Reload the library compilation result from the outputPath.

@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 
+using mlir::concretelang::CompilationOptions;
 using mlir::concretelang::JitCompilerEngine;
 using mlir::concretelang::JitLambdaSupport;
 using mlir::concretelang::LambdaArgument;
@@ -43,19 +44,25 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   m.def("terminate_parallelization", &terminateParallelization);
 
-  pybind11::class_<JitCompilerEngine>(m, "JitCompilerEngine")
-      .def(pybind11::init())
-      .def_static("build_lambda",
-                  [](std::string mlir_input, std::string func_name,
-                     std::string runtime_lib_path, std::string keysetcache_path,
-                     bool auto_parallelize, bool loop_parallelize,
-                     bool df_parallelize) {
-                    return buildLambda(mlir_input.c_str(), func_name.c_str(),
-                                       noEmptyStringPtr(runtime_lib_path),
-                                       noEmptyStringPtr(keysetcache_path),
-                                       auto_parallelize, loop_parallelize,
-                                       df_parallelize);
-                  });
+  pybind11::class_<CompilationOptions>(m, "CompilationOptions")
+      .def(pybind11::init(
+          [](std::string funcname) { return CompilationOptions(funcname); }))
+      .def("set_funcname",
+           [](CompilationOptions &options, std::string funcname) {
+             options.clientParametersFuncName = funcname;
+           })
+      .def("set_verify_diagnostics",
+           [](CompilationOptions &options, bool b) {
+             options.verifyDiagnostics = b;
+           })
+      .def("auto_parallelize", [](CompilationOptions &options,
+                                  bool b) { options.autoParallelize = b; })
+      .def("loop_parallelize", [](CompilationOptions &options,
+                                  bool b) { options.loopParallelize = b; })
+      .def("dataflow_parallelize", [](CompilationOptions &options, bool b) {
+        options.dataflowParallelize = b;
+      });
+
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JitCompilationResult");
   pybind11::class_<mlir::concretelang::JITLambda>(m, "JITLambda");
@@ -65,9 +72,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       }))
       .def("compile",
            [](JITLambdaSupport_C &support, std::string mlir_program,
-              std::string func_name) {
-             return jit_compile(support, mlir_program.c_str(),
-                                func_name.c_str());
+              CompilationOptions options) {
+             return jit_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
            [](JITLambdaSupport_C &support,
@@ -102,9 +108,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       }))
       .def("compile",
            [](LibraryLambdaSupport_C &support, std::string mlir_program,
-              std::string func_name) {
-             return library_compile(support, mlir_program.c_str(),
-                                    func_name.c_str());
+              mlir::concretelang::CompilationOptions options) {
+             return library_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
            [](LibraryLambdaSupport_C &support,
