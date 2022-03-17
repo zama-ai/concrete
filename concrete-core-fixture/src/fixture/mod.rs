@@ -388,3 +388,6 @@ pub use plaintext_vector_creation::*;
 
 mod plaintext_vector_retrieval;
 pub use plaintext_vector_retrieval::*;
+
+mod lwe_keyswitch_key_creation;
+pub use lwe_keyswitch_key_creation::*;
