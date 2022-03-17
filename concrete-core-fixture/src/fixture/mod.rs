@@ -391,3 +391,6 @@ pub use plaintext_vector_retrieval::*;
 
 mod lwe_keyswitch_key_creation;
 pub use lwe_keyswitch_key_creation::*;
+
+mod lwe_secret_key_creation;
+pub use lwe_secret_key_creation::*;
