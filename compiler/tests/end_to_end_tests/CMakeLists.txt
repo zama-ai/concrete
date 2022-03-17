@@ -60,10 +60,6 @@ add_concretecompiler_unittest(
 
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   add_concretecompiler_unittest(
-    end_to_end_jit_dfr
-    end_to_end_jit_dfr.cc
-  )
-  add_concretecompiler_unittest(
     end_to_end_jit_auto_parallelization
     end_to_end_jit_auto_parallelization.cc
     globals.cc
