@@ -20,6 +20,12 @@ void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
     options.v0Parameter = *desc.v0Parameter;
   }
 
+  /* 0 - Enable parallel testing where required */
+#ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
+  options.dataflowParallelize = true;
+  options.loopParallelize = true;
+#endif
+
   /* 1 - Compile the program */
   auto compilationResult = support.compile(desc.program, options);
   ASSERT_EXPECTED_SUCCESS(compilationResult);

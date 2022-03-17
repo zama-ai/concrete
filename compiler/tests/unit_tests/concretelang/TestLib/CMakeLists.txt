@@ -16,6 +16,12 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   )
 endif()
 
+if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
+  add_compile_options(
+    -DCONCRETELANG_PARALLEL_TESTING_ENABLED
+  )
+endif()
+
 add_concretecompiler_lib_test(
   unit_tests_concretelang_testlib
   testlib_unit_test.cpp

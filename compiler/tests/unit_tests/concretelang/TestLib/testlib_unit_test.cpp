@@ -40,6 +40,9 @@ compile(std::string outputLib, std::string source,
       mlir::concretelang::CompilationContext::createShared();
   mlir::concretelang::CompilerEngine ce{ccx};
   mlir::concretelang::CompilationOptions options(funcname);
+#ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
+  options.autoParallelize = true;
+#endif
   ce.setCompilationOptions(options);
   auto result = ce.compile(sources, outputLib);
   if (!result) {
