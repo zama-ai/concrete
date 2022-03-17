@@ -143,14 +143,16 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 4:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get(), param3.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -161,16 +163,18 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 5:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get(), param3.get(),
                                         param4.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -182,17 +186,19 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 6:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {param0.get(), param1.get(),
                                         param2.get(), param3.get(),
                                         param4.get(), param5.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -205,18 +211,20 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 7:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
               param4.get(), param5.get(), param6.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -230,19 +238,21 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 8:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
               param4.get(), param5.get(), param6.get(), param7.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -257,21 +267,23 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 9:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(),
               param3.get(), param4.get(), param5.get(),
               param6.get(), param7.get(), param8.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -287,22 +299,24 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 10:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8,
-                                             hpx::shared_future<void *> param9)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
               param4.get(), param5.get(), param6.get(), param7.get(),
               param8.get(), param9.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -319,23 +333,25 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 11:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8,
-                                             hpx::shared_future<void *> param9,
-                                             hpx::shared_future<void *> param10)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(), param3.get(),
               param4.get(), param5.get(), param6.get(), param7.get(),
               param8.get(), param9.get(), param10.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -353,24 +369,26 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 12:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8,
-                                             hpx::shared_future<void *> param9,
-                                             hpx::shared_future<void *> param10,
-                                             hpx::shared_future<void *> param11)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(),  param3.get(),
               param4.get(), param5.get(), param6.get(),  param7.get(),
               param8.get(), param9.get(), param10.get(), param11.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -389,26 +407,28 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 13:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8,
-                                             hpx::shared_future<void *> param9,
-                                             hpx::shared_future<void *> param10,
-                                             hpx::shared_future<void *> param11,
-                                             hpx::shared_future<void *> param12)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(), param1.get(), param2.get(),  param3.get(),
               param4.get(), param5.get(), param6.get(),  param7.get(),
               param8.get(), param9.get(), param10.get(), param11.get(),
               param12.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -428,27 +448,29 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 14:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8,
-                                             hpx::shared_future<void *> param9,
-                                             hpx::shared_future<void *> param10,
-                                             hpx::shared_future<void *> param11,
-                                             hpx::shared_future<void *> param12,
-                                             hpx::shared_future<void *> param13)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12,
+                       hpx::shared_future<void *> param13)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(), param2.get(),  param3.get(),
               param4.get(),  param5.get(), param6.get(),  param7.get(),
               param8.get(),  param9.get(), param10.get(), param11.get(),
               param12.get(), param13.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -469,28 +491,30 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 15:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8,
-                                             hpx::shared_future<void *> param9,
-                                             hpx::shared_future<void *> param10,
-                                             hpx::shared_future<void *> param11,
-                                             hpx::shared_future<void *> param12,
-                                             hpx::shared_future<void *> param13,
-                                             hpx::shared_future<void *> param14)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12,
+                       hpx::shared_future<void *> param13,
+                       hpx::shared_future<void *> param14)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
               param4.get(),  param5.get(),  param6.get(),  param7.get(),
               param8.get(),  param9.get(),  param10.get(), param11.get(),
               param12.get(), param13.get(), param14.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
@@ -512,29 +536,31 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   case 16:
     oodf = std::move(hpx::dataflow(
-        [wfnname, param_sizes, output_sizes](hpx::shared_future<void *> param0,
-                                             hpx::shared_future<void *> param1,
-                                             hpx::shared_future<void *> param2,
-                                             hpx::shared_future<void *> param3,
-                                             hpx::shared_future<void *> param4,
-                                             hpx::shared_future<void *> param5,
-                                             hpx::shared_future<void *> param6,
-                                             hpx::shared_future<void *> param7,
-                                             hpx::shared_future<void *> param8,
-                                             hpx::shared_future<void *> param9,
-                                             hpx::shared_future<void *> param10,
-                                             hpx::shared_future<void *> param11,
-                                             hpx::shared_future<void *> param12,
-                                             hpx::shared_future<void *> param13,
-                                             hpx::shared_future<void *> param14,
-                                             hpx::shared_future<void *> param15)
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12,
+                       hpx::shared_future<void *> param13,
+                       hpx::shared_future<void *> param14,
+                       hpx::shared_future<void *> param15)
             -> hpx::future<OpaqueOutputData> {
           std::vector<void *> params = {
               param0.get(),  param1.get(),  param2.get(),  param3.get(),
               param4.get(),  param5.get(),  param6.get(),  param7.get(),
               param8.get(),  param9.get(),  param10.get(), param11.get(),
               param12.get(), param13.get(), param14.get(), param15.get()};
-          OpaqueInputData oid(wfnname, params, param_sizes, output_sizes);
+          OpaqueInputData oid(wfnname, params, param_sizes, param_types,
+                              output_sizes, output_types);
           return gcc[_dfr_find_next_execution_locality()].execute_task(oid);
         },
         *(hpx::shared_future<void *> *)params[0],
