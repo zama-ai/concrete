@@ -1,7 +1,7 @@
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use concrete_commons::numeric::UnsignedInteger;
 use concrete_commons::parameters::LweDimension;
-use concrete_core::prelude::{LweCiphertextEntity, LweCiphertextFusingNegationEngine};
+use concrete_core::prelude::{LweCiphertextEntity, LweCiphertextFusingOppositeEngine};
 
 use crate::fixture::Fixture;
 use crate::generation::prototyping::{
@@ -12,26 +12,26 @@ use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::generation::RawUnsignedIntegers;
 use crate::raw::statistical_test::assert_noise_distribution;
 
-/// A fixture for the types implementing the `LweCiphertextFusingNegationEngine`
+/// A fixture for the types implementing the `LweCiphertextFusingOppositeEngine`
 /// trait.
-pub struct LweCiphertextFusingNegationFixture;
+pub struct LweCiphertextFusingOppositeFixture;
 
 #[derive(Debug)]
-pub struct LweCiphertextFusingNegationParameters {
+pub struct LweCiphertextFusingOppositeParameters {
     pub noise: Variance,
     pub lwe_dimension: LweDimension,
 }
 
 #[allow(clippy::type_complexity)]
 impl<Precision, Engine, Ciphertext> Fixture<Precision, Engine, (Ciphertext,)>
-    for LweCiphertextFusingNegationFixture
+    for LweCiphertextFusingOppositeFixture
 where
     Precision: IntegerPrecision,
-    Engine: LweCiphertextFusingNegationEngine<Ciphertext>,
+    Engine: LweCiphertextFusingOppositeEngine<Ciphertext>,
     Ciphertext: LweCiphertextEntity,
     Maker: SynthesizesLweCiphertext<Precision, Ciphertext>,
 {
-    type Parameters = LweCiphertextFusingNegationParameters;
+    type Parameters = LweCiphertextFusingOppositeParameters;
     type RepetitionPrototypes = (
         <Maker as PrototypesLweSecretKey<Precision, Ciphertext::KeyDistribution>>::LweSecretKeyProto,
     );
@@ -46,7 +46,7 @@ where
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(
-            vec![LweCiphertextFusingNegationParameters {
+            vec![LweCiphertextFusingOppositeParameters {
                 noise: Variance(LogStandardDev::from_log_standard_dev(-15.).get_variance()),
                 lwe_dimension: LweDimension(600),
             }]
@@ -94,7 +94,7 @@ where
         context: Self::PreExecutionContext,
     ) -> Self::PostExecutionContext {
         let (mut ciphertext,) = context;
-        unsafe { engine.fuse_neg_lwe_ciphertext_unchecked(&mut ciphertext) };
+        unsafe { engine.fuse_opp_lwe_ciphertext_unchecked(&mut ciphertext) };
         (ciphertext,)
     }
 

@@ -1,13 +1,13 @@
 use crate::backends::core::implementation::engines::CoreEngine;
 use crate::backends::core::implementation::entities::{LweCiphertext32, LweCiphertext64};
 use crate::specification::engines::{
-    LweCiphertextFusingNegationEngine, LweCiphertextFusingNegationError,
+    LweCiphertextFusingOppositeEngine, LweCiphertextFusingOppositeError,
 };
 
 /// # Description:
-/// Implementation of [`LweCiphertextFusingNegationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweCiphertextFusingOppositeEngine`] for [`CoreEngine`] that operates on
 /// 32 bits integers.
-impl LweCiphertextFusingNegationEngine<LweCiphertext32> for CoreEngine {
+impl LweCiphertextFusingOppositeEngine<LweCiphertext32> for CoreEngine {
     /// # Example:
     /// ```
     /// use concrete_commons::dispersion::Variance;
@@ -27,7 +27,7 @@ impl LweCiphertextFusingNegationEngine<LweCiphertext32> for CoreEngine {
     /// let plaintext = engine.create_plaintext(&input)?;
     /// let mut ciphertext = engine.encrypt_lwe_ciphertext(&key, &plaintext, noise)?;
     ///
-    /// engine.fuse_neg_lwe_ciphertext(&mut ciphertext)?;
+    /// engine.fuse_opp_lwe_ciphertext(&mut ciphertext)?;
     /// #
     /// assert_eq!(ciphertext.lwe_dimension(), lwe_dimension);
     ///
@@ -38,23 +38,23 @@ impl LweCiphertextFusingNegationEngine<LweCiphertext32> for CoreEngine {
     /// # Ok(())
     /// # }
     /// ```
-    fn fuse_neg_lwe_ciphertext(
+    fn fuse_opp_lwe_ciphertext(
         &mut self,
         input: &mut LweCiphertext32,
-    ) -> Result<(), LweCiphertextFusingNegationError<Self::EngineError>> {
-        unsafe { self.fuse_neg_lwe_ciphertext_unchecked(input) };
+    ) -> Result<(), LweCiphertextFusingOppositeError<Self::EngineError>> {
+        unsafe { self.fuse_opp_lwe_ciphertext_unchecked(input) };
         Ok(())
     }
 
-    unsafe fn fuse_neg_lwe_ciphertext_unchecked(&mut self, input: &mut LweCiphertext32) {
+    unsafe fn fuse_opp_lwe_ciphertext_unchecked(&mut self, input: &mut LweCiphertext32) {
         input.0.update_with_neg();
     }
 }
 
 /// # Description:
-/// Implementation of [`LweCiphertextFusingNegationEngine`] for [`CoreEngine`] that operates on
+/// Implementation of [`LweCiphertextFusingOppositeEngine`] for [`CoreEngine`] that operates on
 /// 64 bits integers.
-impl LweCiphertextFusingNegationEngine<LweCiphertext64> for CoreEngine {
+impl LweCiphertextFusingOppositeEngine<LweCiphertext64> for CoreEngine {
     /// # Example:
     /// ```
     /// use concrete_commons::dispersion::Variance;
@@ -74,7 +74,7 @@ impl LweCiphertextFusingNegationEngine<LweCiphertext64> for CoreEngine {
     /// let plaintext = engine.create_plaintext(&input)?;
     /// let mut ciphertext = engine.encrypt_lwe_ciphertext(&key, &plaintext, noise)?;
     ///
-    /// engine.fuse_neg_lwe_ciphertext(&mut ciphertext)?;
+    /// engine.fuse_opp_lwe_ciphertext(&mut ciphertext)?;
     /// #
     /// assert_eq!(ciphertext.lwe_dimension(), lwe_dimension);
     ///
@@ -85,15 +85,15 @@ impl LweCiphertextFusingNegationEngine<LweCiphertext64> for CoreEngine {
     /// # Ok(())
     /// # }
     /// ```
-    fn fuse_neg_lwe_ciphertext(
+    fn fuse_opp_lwe_ciphertext(
         &mut self,
         input: &mut LweCiphertext64,
-    ) -> Result<(), LweCiphertextFusingNegationError<Self::EngineError>> {
-        unsafe { self.fuse_neg_lwe_ciphertext_unchecked(input) };
+    ) -> Result<(), LweCiphertextFusingOppositeError<Self::EngineError>> {
+        unsafe { self.fuse_opp_lwe_ciphertext_unchecked(input) };
         Ok(())
     }
 
-    unsafe fn fuse_neg_lwe_ciphertext_unchecked(&mut self, input: &mut LweCiphertext64) {
+    unsafe fn fuse_opp_lwe_ciphertext_unchecked(&mut self, input: &mut LweCiphertext64) {
         input.0.update_with_neg();
     }
 }

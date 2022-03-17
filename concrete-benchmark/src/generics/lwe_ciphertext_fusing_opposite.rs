@@ -2,17 +2,17 @@ use crate::synthesizer::{SynthesizableLweCiphertextEntity, Synthesizer};
 use crate::utils::benchmark_name;
 use concrete_commons::dispersion::Variance;
 use concrete_commons::parameters::LweDimension;
-use concrete_core::specification::engines::LweCiphertextFusingNegationEngine;
+use concrete_core::specification::engines::LweCiphertextFusingOppositeEngine;
 use criterion::{black_box, BenchmarkId, Criterion};
 
-/// A generic function benchmarking the fusing lwe negation operation.
+/// A generic function benchmarking the fusing lwe opposite operation.
 pub fn bench<Engine, Ciphertext>(c: &mut Criterion)
 where
-    Engine: LweCiphertextFusingNegationEngine<Ciphertext>,
+    Engine: LweCiphertextFusingOppositeEngine<Ciphertext>,
     Ciphertext: SynthesizableLweCiphertextEntity,
 {
     let mut group = c.benchmark_group(
-        benchmark_name!(impl LweCiphertextFusingNegationEngine<Ciphertext> for Engine),
+        benchmark_name!(impl LweCiphertextFusingOppositeEngine<Ciphertext> for Engine),
     );
 
     let mut engine = Engine::new().unwrap();
@@ -27,7 +27,7 @@ where
                 let mut output = Ciphertext::synthesize(&mut synthesizer, lwe_dim, VARIANCE);
                 b.iter(|| {
                     engine
-                        .fuse_neg_lwe_ciphertext(black_box(&mut output))
+                        .fuse_opp_lwe_ciphertext(black_box(&mut output))
                         .unwrap();
                 });
             },

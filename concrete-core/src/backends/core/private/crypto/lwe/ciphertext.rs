@@ -493,7 +493,7 @@ impl<Cont> LweCiphertext<Cont> {
             .update_with_wrapping_sub(other.as_tensor())
     }
 
-    /// Negates the ciphertext.
+    /// Computes the opposite of the ciphertext.
     ///
     /// # Example
     ///

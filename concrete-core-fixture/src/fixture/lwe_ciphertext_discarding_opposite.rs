@@ -9,14 +9,14 @@ use crate::raw::statistical_test::assert_noise_distribution;
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use concrete_commons::numeric::UnsignedInteger;
 use concrete_commons::parameters::LweDimension;
-use concrete_core::prelude::{LweCiphertextDiscardingNegationEngine, LweCiphertextEntity};
+use concrete_core::prelude::{LweCiphertextDiscardingOppositeEngine, LweCiphertextEntity};
 
-/// A fixture for the types implementing the `LweCiphertextDiscardingNegationEngine`
+/// A fixture for the types implementing the `LweCiphertextDiscardingOppositeEngine`
 /// trait.
-pub struct LweCiphertextDiscardingNegationFixture;
+pub struct LweCiphertextDiscardingOppositeFixture;
 
 #[derive(Debug)]
-pub struct LweCiphertextDiscardingNegationParameters {
+pub struct LweCiphertextDiscardingOppositeParameters {
     pub noise: Variance,
     pub lwe_dimension: LweDimension,
 }
@@ -24,16 +24,16 @@ pub struct LweCiphertextDiscardingNegationParameters {
 #[allow(clippy::type_complexity)]
 impl<Precision, Engine, InputCiphertext, OutputCiphertext>
     Fixture<Precision, Engine, (InputCiphertext, OutputCiphertext)>
-    for LweCiphertextDiscardingNegationFixture
+    for LweCiphertextDiscardingOppositeFixture
 where
     Precision: IntegerPrecision,
-    Engine: LweCiphertextDiscardingNegationEngine<InputCiphertext, OutputCiphertext>,
+    Engine: LweCiphertextDiscardingOppositeEngine<InputCiphertext, OutputCiphertext>,
     InputCiphertext: LweCiphertextEntity,
     OutputCiphertext: LweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
     Maker: SynthesizesLweCiphertext<Precision, InputCiphertext>
         + SynthesizesLweCiphertext<Precision, OutputCiphertext>,
 {
-    type Parameters = LweCiphertextDiscardingNegationParameters;
+    type Parameters = LweCiphertextDiscardingOppositeParameters;
     type RepetitionPrototypes = (
         <Maker as PrototypesLweSecretKey<Precision, InputCiphertext::KeyDistribution>>::LweSecretKeyProto,
     );
@@ -49,7 +49,7 @@ where
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(
-            vec![LweCiphertextDiscardingNegationParameters {
+            vec![LweCiphertextDiscardingOppositeParameters {
                 noise: Variance(LogStandardDev::from_log_standard_dev(-15.).get_variance()),
                 lwe_dimension: LweDimension(600),
             }]
@@ -105,7 +105,7 @@ where
     ) -> Self::PostExecutionContext {
         let (input_ciphertext, mut output_ciphertext) = context;
         unsafe {
-            engine.discard_neg_lwe_ciphertext_unchecked(&mut output_ciphertext, &input_ciphertext)
+            engine.discard_opp_lwe_ciphertext_unchecked(&mut output_ciphertext, &input_ciphertext)
         };
         (input_ciphertext, output_ciphertext)
     }

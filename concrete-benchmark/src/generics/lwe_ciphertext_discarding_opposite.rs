@@ -2,18 +2,18 @@ use crate::synthesizer::{SynthesizableLweCiphertextEntity, Synthesizer};
 use crate::utils::benchmark_name;
 use concrete_commons::dispersion::Variance;
 use concrete_commons::parameters::LweDimension;
-use concrete_core::specification::engines::LweCiphertextDiscardingNegationEngine;
+use concrete_core::specification::engines::LweCiphertextDiscardingOppositeEngine;
 use criterion::{black_box, BenchmarkId, Criterion};
 
-/// A generic function benchmarking the discarding lwe negation operation.
+/// A generic function benchmarking the discarding lwe opposite operation.
 pub fn bench<Engine, InputCiphertext, OutputCiphertext>(c: &mut Criterion)
 where
-    Engine: LweCiphertextDiscardingNegationEngine<InputCiphertext, OutputCiphertext>,
+    Engine: LweCiphertextDiscardingOppositeEngine<InputCiphertext, OutputCiphertext>,
     InputCiphertext: SynthesizableLweCiphertextEntity,
     OutputCiphertext:
         SynthesizableLweCiphertextEntity<KeyDistribution = InputCiphertext::KeyDistribution>,
 {
-    let mut group = c.benchmark_group(benchmark_name!(impl LweCiphertextDiscardingNegationEngine<
+    let mut group = c.benchmark_group(benchmark_name!(impl LweCiphertextDiscardingOppositeEngine<
             InputCiphertext, 
             OutputCiphertext
             > for Engine));
@@ -31,7 +31,7 @@ where
                 let input_1 = InputCiphertext::synthesize(&mut synthesizer, lwe_dim, VARIANCE);
                 b.iter(|| {
                     engine
-                        .discard_neg_lwe_ciphertext(black_box(&mut output), black_box(&input_1))
+                        .discard_opp_lwe_ciphertext(black_box(&mut output), black_box(&input_1))
                         .unwrap();
                 });
             },
