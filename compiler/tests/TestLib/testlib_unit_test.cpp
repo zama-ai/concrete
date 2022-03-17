@@ -35,7 +35,7 @@ compile(std::string outputLib, std::string source,
   std::vector<std::string> sources = {source};
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
-  mlir::concretelang::JitCompilerEngine ce{ccx};
+  mlir::concretelang::CompilerEngine ce{ccx};
   ce.setClientParametersFuncName(funcname);
   auto result = ce.compile(sources, outputLib);
   if (!result) {

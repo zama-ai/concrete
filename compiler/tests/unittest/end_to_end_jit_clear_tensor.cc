@@ -233,7 +233,6 @@ func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
 
 TEST(End2EndJit_ClearTensor_2D, extract_slice) {
 
-  // mlir::concretelang::JitCompilerEngine::Lambda lambda =
   checkedJit(lambda, R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10xi64> to

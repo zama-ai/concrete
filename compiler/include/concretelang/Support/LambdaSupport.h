@@ -27,8 +27,7 @@ namespace {
 // `typedResult` must be declared at namespace scope due to return
 // type template specialization
 
-// Helper function for `JitCompilerEngine::Lambda::operator()`
-// implementing type-dependent preparation of the result.
+// Helper function for implementing type-dependent preparation of the result.
 template <typename ResT>
 llvm::Expected<ResT> typedResult(clientlib::KeySet &keySet,
                                  clientlib::PublicResult &result);

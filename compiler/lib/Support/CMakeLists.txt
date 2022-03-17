@@ -2,7 +2,6 @@ add_mlir_library(ConcretelangSupport
   Pipeline.cpp
   Jit.cpp
   CompilerEngine.cpp
-  JitCompilerEngine.cpp
   JitLambdaSupport.cpp
   LambdaArgument.cpp
   V0Parameters.cpp
