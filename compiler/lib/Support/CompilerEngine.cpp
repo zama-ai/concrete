@@ -34,6 +34,7 @@
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
 #include <concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
+#include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Error.h>
 #include <concretelang/Support/Jit.h>

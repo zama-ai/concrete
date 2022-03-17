@@ -14,9 +14,10 @@
 
 #include "concretelang/Runtime/runtime_api.h"
 
-bool _dfr_is_root_node();
-void _dfr_is_jit(bool);
+bool _dfr_set_required(bool);
+void _dfr_set_jit(bool);
 bool _dfr_is_jit();
+bool _dfr_is_root_node();
 void _dfr_terminate();
 
 typedef enum _dfr_task_arg_type {

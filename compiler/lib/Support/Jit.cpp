@@ -104,6 +104,7 @@ JITLambda::call(clientlib::PublicArguments &args,
     return clientlib::PublicResult::fromBuffers(args.clientParameters, buffers);
   }
 #endif
+
   // invokeRaw needs to have pointers on arguments and a pointers on the result
   // as last argument.
   // Prepare the outputs vector to store the output value of the lambda.
