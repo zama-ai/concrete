@@ -52,9 +52,8 @@ valueDescriptionToLambdaArgument(ValueDescription desc);
 llvm::Error checkResult(ScalarDesc &desc,
                         mlir::concretelang::LambdaArgument *res);
 
-llvm::Error
-checkResult(ValueDescription &desc,
-            std::unique_ptr<mlir::concretelang::LambdaArgument> &res);
+llvm::Error checkResult(ValueDescription &desc,
+                        mlir::concretelang::LambdaArgument &res);
 
 std::vector<EndToEndDesc> loadEndToEndDesc(std::string path);
 
