@@ -170,9 +170,6 @@ pub(crate) use ck_dim_div;
 #[cfg(test)]
 mod tests;
 
-mod errors;
-pub use errors::*;
-
 #[allow(clippy::module_inception)]
 mod tensor;
 pub use tensor::*;

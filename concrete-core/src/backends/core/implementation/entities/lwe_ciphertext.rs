@@ -2,10 +2,12 @@ use super::super::super::private::crypto::lwe::LweCiphertext as ImplLweCiphertex
 use crate::specification::entities::markers::{BinaryKeyDistribution, LweCiphertextKind};
 use crate::specification::entities::{AbstractEntity, LweCiphertextEntity};
 use concrete_commons::parameters::LweDimension;
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 /// A structure representing an LWE ciphertext with 32 bits of precision.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LweCiphertext32(pub(crate) ImplLweCiphertext<Vec<u32>>);
 impl AbstractEntity for LweCiphertext32 {
     type Kind = LweCiphertextKind;
@@ -19,7 +21,8 @@ impl LweCiphertextEntity for LweCiphertext32 {
 }
 
 /// A structure representing an LWE ciphertext with 64 bits of precision.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LweCiphertext64(pub(crate) ImplLweCiphertext<Vec<u64>>);
 impl AbstractEntity for LweCiphertext64 {
     type Kind = LweCiphertextKind;

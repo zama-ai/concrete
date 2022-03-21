@@ -8,6 +8,6 @@
 #[doc(hidden)]
 pub mod private;
 
-pub mod implementation;
+pub(crate) mod implementation;
 
 pub use implementation::{engines, entities};

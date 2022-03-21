@@ -14,3 +14,6 @@ criterion = "=0.3.5"
 default = ["backend_core"]
 backend_core = []
 backend_optalysys = ["concrete-core/backend_optalysys"]
+
+[profile.release]
+lto = true

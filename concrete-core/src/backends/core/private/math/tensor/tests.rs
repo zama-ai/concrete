@@ -1,33 +1,5 @@
 use super::Tensor;
 
-macro_rules! save_load_unsigned {
-    ($T:ty, $name: ident) => {
-        mod $name {
-            use super::super::Tensor;
-            use crate::backends::core::private::math::random;
-            use rand;
-
-            #[test]
-            fn test_save_load() {
-                let mut generator = random::RandomGenerator::new(None);
-                let tensor_in: Tensor<_> = generator.random_uniform_tensor::<$T>(10_000);
-                let path = format!("/tmp/{}", rand::random::<usize>());
-                tensor_in.save_to_file(&path).unwrap();
-                println!("saved");
-                let tensor_out: Tensor<Vec<$T>> = Tensor::load_from_file(&path).unwrap();
-                // test
-                assert_eq!(tensor_in, tensor_out);
-            }
-        }
-    };
-}
-
-save_load_unsigned!(u8, tests_u8);
-save_load_unsigned!(u16, tests_u16);
-save_load_unsigned!(u32, tests_u32);
-save_load_unsigned!(u64, tests_u64);
-save_load_unsigned!(u128, tests_u128);
-
 #[test]
 fn test_add_u32() {
     let t_1 = Tensor::from_container(vec![

@@ -76,7 +76,9 @@ fn rdseed_random_m128() -> __m128i {
                 break;
             }
         }
-        std::mem::transmute::<(u64, u64), __m128i>((rand1, rand2))
+        #[repr(C)]
+        struct _tuple(u64, u64);
+        std::mem::transmute::<_tuple, __m128i>(_tuple(rand1, rand2))
     }
 }
 

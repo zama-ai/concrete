@@ -14,8 +14,11 @@ use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::{DecompositionBaseLog, DecompositionLevelCount, LweSize};
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
+#[cfg(feature = "serde_serialize")]
+use serde::{Deserialize, Serialize};
 
 /// A GSW ciphertext.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct GswCiphertext<Cont, Scalar> {
     tensor: Tensor<Cont>,

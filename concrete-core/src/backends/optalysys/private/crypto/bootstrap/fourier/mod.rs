@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use concrete_fftw::array::AlignedVec;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use concrete_commons::numeric::{CastInto, Numeric};
@@ -29,7 +30,8 @@ pub(crate) mod buffers;
 mod tests;
 
 /// A bootstrapping key in the fourier domain.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FourierBootstrapKey<Cont, Scalar>
 where
     Scalar: UnsignedTorus,
@@ -718,7 +720,7 @@ where
     }
 }
 
-fn constant_sample_extract<LweCont, RlweCont, Scalar>(
+pub(crate) fn constant_sample_extract<LweCont, RlweCont, Scalar>(
     lwe: &mut LweCiphertext<LweCont>,
     glwe: &GlweCiphertext<RlweCont>,
 ) where

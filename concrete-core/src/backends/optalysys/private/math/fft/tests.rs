@@ -1,13 +1,14 @@
 use crate::backends::core::private::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
-use crate::backends::core::private::math::fft::{
-    Complex64, Fft, FourierPolynomial, SerializableComplex64,
-};
+#[cfg(feature = "serde_serialize")]
+use crate::backends::core::private::math::fft::SerializableComplex64;
+use crate::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::backends::core::private::math::polynomial::Polynomial;
 use crate::backends::core::private::math::random::RandomGenerator;
 use crate::backends::core::private::math::tensor::{AsMutTensor, AsRefTensor};
 use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::PolynomialSize;
 use concrete_fftw::array::AlignedVec;
+#[cfg(feature = "serde_serialize")]
 use serde_test::{assert_tokens, Token};
 
 #[test]
@@ -133,6 +134,7 @@ fn test_two_forward_backward() {
     }
 }
 
+#[cfg(feature = "serde_serialize")]
 #[test]
 fn test_ser_de_complex64() {
     let x = SerializableComplex64(Complex64 {

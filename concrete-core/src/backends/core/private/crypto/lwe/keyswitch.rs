@@ -1,3 +1,4 @@
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 use concrete_commons::dispersion::DispersionParameter;
@@ -31,7 +32,8 @@ use super::{LweCiphertext, LweList};
 /// The keyswitch key will be composed of $m$ encryptions of each bits of the $s_{out}$ key, under
 /// the key $s_{in}$; encryptions which will be stored as their decomposition over a given basis
 /// $B_{ks}\in\mathbb{N}$, up to a level $l_{ks}\in\mathbb{N}$.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LweKeyswitchKey<Cont> {
     tensor: Tensor<Cont>,
     decomp_base_log: DecompositionBaseLog,
@@ -577,7 +579,8 @@ impl<Cont> LweKeyswitchKey<Cont> {
 }
 
 /// The encryption of a single bit of the output key.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, PartialEq)]
 pub(crate) struct LweKeyBitDecomposition<Cont> {
     pub(crate) tensor: Tensor<Cont>,
     pub(crate) lwe_size: LweSize,

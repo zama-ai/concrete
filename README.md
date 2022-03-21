@@ -31,13 +31,13 @@ The ecosystem is composed of several crates (packages in the Rust language):
   implementation.
 + [`concrete-core`](concrete-core): A low-level library, useful to cryptographers who want the
   fastest implementation possible, with all the settings at their disposal.
-+ [`concrete-boolean`](concrete-boolean): A high-level library, implementing homomorphic Boolean 
++ [`concrete-boolean`](concrete-boolean): A high-level library, implementing homomorphic Boolean
   gates, making it easy to run any kind of circuits over encrypted data.
 + [`concrete-npe`](concrete-npe): A noise propagation estimator, used in `concrete` to simulate the
   evolution of the noise in ciphertexts, through homomorphic operations.
 + [`concrete-csprng`](concrete-csprng): A fast cryptographically secure pseudorandom number
   generator used in `concrete-core`.
-+ [`concrete-commons`](concrete-commons): contains types and traits to manipulate objects in a 
++ [`concrete-commons`](concrete-commons): contains types and traits to manipulate objects in a
   consistent way throughout the ecosystem.
 
 ## Installation
@@ -108,11 +108,17 @@ sudo apt install build-essential
 
 ### Windows
 
-Concrete __does not__ work natively on Windows. You can however, if you feel adventurous, use the `WSL`.
+Concrete is not currently supported on Windows.
 
-One thing to note when using concrete on WSL is that to improve compile times,
-the concrete repository should be located in the WSL's own space (that is, not somewhere under `/mnt/c`).
-For example in your WSL's user home directory.
+## Contributing
+
+There are two ways to contribute to Concrete:
+
+- you can open issues to report bugs or typos and to suggest new ideas
+- you can ask to become an official contributor by emailing [hello@zama.ai](mailto:hello@zama.ai).
+(becoming an approved contributor involves signing our Contributor License Agreement (CLA))
+
+Only approved contributors can send pull requests, so please make sure to get in touch before you do!
 
 ## Credits
 

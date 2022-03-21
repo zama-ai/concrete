@@ -79,7 +79,7 @@ where
 {
     let sn = n.into_signed();
     let product: f64 = (sn * sn).cast_into();
-    Variance(variance.get_modular_variance::<T>() * product)
+    Variance::from_variance(variance.get_variance() * product)
 }
 
 /// Computes the dispersion of a multisum between
@@ -101,10 +101,9 @@ where
     let mut var_res: f64 = 0.;
 
     for (dispersion, &w) in dispersion_list.iter().zip(weights) {
-        var_res += estimate_integer_plaintext_multiplication_noise(*dispersion, w)
-            .get_modular_variance::<T>();
+        var_res += estimate_integer_plaintext_multiplication_noise(*dispersion, w).get_variance();
     }
-    Variance(var_res)
+    Variance::from_variance(var_res)
 }
 
 /// Computes the dispersion of a multiplication
@@ -236,7 +235,7 @@ where
                     + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
                         .get_modular_variance::<T>()));
 
-    Variance(res_2 + res_1 + res_3)
+    Variance::from_modular_variance::<T>(res_2 + res_1 + res_3)
 }
 
 /// Computes the dispersion of a GLWE after relinearization.
@@ -308,7 +307,7 @@ where
             + K::variance_even_coefficient_in_polynomial_key_squared::<T>(poly_size)
                 .get_modular_variance::<T>());
 
-    Variance(res_1 + res_2 + res_3)
+    Variance::from_modular_variance::<T>(res_1 + res_2 + res_3)
 }
 
 /// Computes the dispersion of a GLWE multiplication between two GLWEs (i.e., a
@@ -388,7 +387,9 @@ where
         level,
     );
 
-    Variance(res_1.get_modular_variance::<T>() + res_2.get_modular_variance::<T>())
+    Variance::from_modular_variance::<T>(
+        res_1.get_modular_variance::<T>() + res_2.get_modular_variance::<T>(),
+    )
 }
 
 /// Computes the dispersion of a modulus switching of an LWE encrypted with binary keys.
@@ -418,11 +419,10 @@ where
     let w = (1 << nb_msb) as f64;
     let n = lwe_mask_size.0 as f64;
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
-    Variance(
-        square(w) * var_in.get_modular_variance::<T>() / q_square + 1. / 12.
-            - square(w) / (12. * q_square)
-            + n / 24.
-            + n * square(w) / (48. * q_square),
+    Variance::from_modular_variance::<T>(
+        var_in.get_modular_variance::<T>() + 1. / 12. * q_square / square(w) - 1. / 12.
+            + n / 24. * q_square / square(w)
+            + n / 48.,
     )
 }
 
@@ -468,7 +468,7 @@ where
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
     // res 1
-    let res_1 = dispersion_lwe;
+    let res_1 = dispersion_lwe.get_modular_variance::<T>();
 
     // res 2
     let res_2 = n
@@ -484,7 +484,7 @@ where
         n * (level.0 as f64) * dispersion_ksk.get_modular_variance::<T>() * (square(base) + 2.)
             / 12.;
 
-    Variance(res_1.get_modular_variance::<T>() + res_2 + res_3 + res_4)
+    Variance::from_modular_variance::<T>(res_1 + res_2 + res_3 + res_4)
 }
 
 /// Computes the dispersion of the non-constant GLWE terms after an LWE to GLWE keyswitch.
@@ -525,7 +525,7 @@ where
         n * (level.0 as f64) * dispersion_ksk.get_modular_variance::<T>() * (square(base) + 2.)
             / 12.;
 
-    Variance(res)
+    Variance::from_modular_variance::<T>(res)
 }
 
 /// Computes the dispersion of the bits greater than $q$ after a modulus switching.
@@ -546,7 +546,7 @@ where
 {
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
-    Variance(
+    Variance::from_modular_variance::<T>(
         1. / q_square
             * ((q_square - 1.) / 12.
                 * (1.
@@ -613,7 +613,7 @@ where
                     + square(K::expectation_key_coefficient())));
     let res_4 = k * big_n / 8. * K::variance_key_coefficient::<T>().get_modular_variance::<T>();
     let res_5 = 1. / 16. * square(1. - k * big_n * K::expectation_key_coefficient());
-    Variance(res_1 + res_2 + res_3 + res_4 + res_5)
+    Variance::from_modular_variance::<T>(res_1 + res_2 + res_3 + res_4 + res_5)
 }
 
 /// Computes the dispersion of a CMUX controlled with a GGSW encrypting binary keys.
@@ -725,5 +725,40 @@ where
                     + square(K::expectation_key_coefficient())))
         + n * k * big_n / 8. * K::variance_key_coefficient::<T>().get_modular_variance::<T>()
         + n / 16. * square(1. - k * big_n * K::expectation_key_coefficient());
-    Variance(res_1 + res_2)
+    Variance::from_modular_variance::<T>(res_1 + res_2)
+}
+
+#[cfg(test)]
+mod tests_estimate_weighted_sum_noise {
+    use super::estimate_weighted_sum_noise;
+    use crate::tools::tests::assert_float_eq;
+    use concrete_commons::dispersion::{DispersionParameter, Variance};
+    #[test]
+    fn no_noise() {
+        let weights = [1u8, 1];
+        let variance_in = [Variance(0.0), Variance(0.0)];
+        let variance_out = estimate_weighted_sum_noise(&variance_in, &weights);
+        assert_float_eq!(0.0, variance_out.get_variance(), eps = 0.0);
+    }
+    #[test]
+    fn no_more_noise() {
+        let weights = [1u8, 1, 1];
+        let variance_in = [Variance(1.0), Variance(0.0)];
+        let variance_out = estimate_weighted_sum_noise(&variance_in, &weights);
+        assert_float_eq!(1.0, variance_out.get_variance(), eps = 0.0);
+    }
+    #[test]
+    fn twice_the_noise() {
+        let weights = [1u8, 1];
+        let variance_in = [Variance(1.0), Variance(1.0)];
+        let variance_out = estimate_weighted_sum_noise(&variance_in, &weights);
+        assert_float_eq!(2.0, variance_out.get_variance(), eps = 0.0);
+    }
+    #[test]
+    fn more_noise() {
+        let weights = [1u8, 3];
+        let variance_in = [Variance(2.0), Variance(5.0)];
+        let variance_out = estimate_weighted_sum_noise(&variance_in, &weights);
+        assert_float_eq!(47.0, variance_out.get_variance(), eps = 0.001);
+    }
 }

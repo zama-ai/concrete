@@ -1,4 +1,5 @@
 use concrete_fftw::array::AlignedVec;
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 use crate::backends::core::private::math::tensor::{
@@ -12,7 +13,8 @@ use concrete_commons::parameters::PolynomialSize;
 /// A polynomial in the fourier domain.
 ///
 /// This structure represents a polynomial, which was put in the fourier domain.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct FourierPolynomial<Cont> {
     tensor: Tensor<Cont>,
 }

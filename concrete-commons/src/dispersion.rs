@@ -13,6 +13,7 @@
 //! which makes if possible to use any of those representations generically when noise must be
 //! defined.
 
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 use crate::numeric::UnsignedInteger;
@@ -134,7 +135,8 @@ impl DispersionParameter for LogStandardDev {
 ///     2_f64.powf(32. - 25.).powi(2)
 /// );
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct StandardDev(pub f64);
 
 impl StandardDev {

@@ -1,18 +1,22 @@
+#[cfg(feature = "multithread")]
+use rayon::{iter::IndexedParallelIterator, prelude::*};
+#[cfg(feature = "serde_serialize")]
+use serde::{Deserialize, Serialize};
+
+use concrete_commons::parameters::{
+    DecompositionBaseLog, DecompositionLevelCount, GlweSize, PolynomialSize,
+};
+
 use crate::backends::core::private::crypto::glwe::GlweList;
+use crate::backends::core::private::math::decomposition::DecompositionLevel;
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, tensor_traits, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
 };
 
 use super::GgswLevelMatrix;
 
-use crate::backends::core::private::math::decomposition::DecompositionLevel;
-use concrete_commons::parameters::{
-    DecompositionBaseLog, DecompositionLevelCount, GlweSize, PolynomialSize,
-};
-#[cfg(feature = "multithread")]
-use rayon::{iter::IndexedParallelIterator, prelude::*};
-
 /// A GGSW ciphertext.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct GgswCiphertext<Cont> {
     tensor: Tensor<Cont>,

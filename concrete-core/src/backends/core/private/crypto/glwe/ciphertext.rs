@@ -8,10 +8,12 @@ use crate::backends::core::private::math::tensor::{
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::{GlweDimension, GlweSize, MonomialDegree, PolynomialSize};
+#[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
 /// An GLWE ciphertext.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GlweCiphertext<Cont> {
     pub(crate) tensor: Tensor<Cont>,
     pub(crate) poly_size: PolynomialSize,

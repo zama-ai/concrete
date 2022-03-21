@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use concrete_fftw::array::AlignedVec;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::backends::core::private::crypto::bootstrap::standard::StandardBootstrapKey;
@@ -28,7 +29,8 @@ mod tests;
 pub use buffers::{FftBuffers, FourierBskBuffers};
 
 /// A bootstrapping key in the fourier domain.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FourierBootstrapKey<Cont, Scalar>
 where
     Scalar: UnsignedTorus,

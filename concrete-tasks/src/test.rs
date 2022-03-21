@@ -25,6 +25,10 @@ pub fn core() -> Result<(), Error> {
     cmd!(<ENV_TARGET_NATIVE> "cargo test --release --no-fail-fast --all-features -p concrete-core")
 }
 
+pub fn core_test() -> Result<(), Error> {
+    cmd!(<ENV_TARGET_NATIVE> "cargo test --release --no-fail-fast --all-features -p concrete-core-test")
+}
+
 pub fn csprng() -> Result<(), Error> {
     cmd!(<ENV_TARGET_NATIVE> "cargo test --release --no-fail-fast --all-features -p concrete-csprng")
 }
@@ -33,8 +37,18 @@ pub fn npe() -> Result<(), Error> {
     cmd!(<ENV_TARGET_NATIVE> "cargo test --release --no-fail-fast --all-features -p concrete-npe")
 }
 
+pub fn boolean() -> Result<(), Error> {
+    cmd!(<ENV_TARGET_NATIVE> "cargo test --release --no-fail-fast --all-features -p concrete-boolean")
+}
+
 pub fn crates() -> Result<(), Error> {
-    cmd!(<ENV_TARGET_NATIVE> "cargo test --release --no-fail-fast --all-features")
+    toplevel()?;
+    boolean()?;
+    commons()?;
+    core()?;
+    core_test()?;
+    csprng()?;
+    npe()
 }
 
 pub fn cov_crates() -> Result<(), Error> {

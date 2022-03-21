@@ -283,8 +283,8 @@ fn mask_bytes_per_ggsw<T: UnsignedInteger>(
 
 fn noise_bytes_per_coef() -> usize {
     // We use f64 to sample the noise for every precision, and we need 4/pi inputs to generate
-    // such an output (here we take 6 to keep a safety margin).
-    8 * 6
+    // such an output (here we take 32 to keep a safety margin).
+    8 * 32
 }
 fn noise_bytes_per_polynomial(poly_size: PolynomialSize) -> usize {
     poly_size.0 * noise_bytes_per_coef()
@@ -313,4 +313,52 @@ fn noise_bytes_per_ggsw(
     poly_size: PolynomialSize,
 ) -> usize {
     level.0 * noise_bytes_per_ggsw_level(glwe_size, poly_size)
+}
+
+#[cfg(all(test, feature = "multithread"))]
+mod test {
+    use crate::backends::core::private::crypto::bootstrap::StandardBootstrapKey;
+    use crate::backends::core::private::crypto::secret::generators::{
+        EncryptionRandomGenerator, SecretRandomGenerator,
+    };
+    use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
+    use concrete_commons::dispersion::Variance;
+    use concrete_commons::parameters::{
+        DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, PolynomialSize,
+    };
+
+    #[test]
+    fn test_gaussian_sampling_margin_factor_does_not_panic() {
+        struct Params {
+            glwe_size: GlweSize,
+            poly_size: PolynomialSize,
+            dec_level_count: DecompositionLevelCount,
+            dec_base_log: DecompositionBaseLog,
+            lwe_dim: LweDimension,
+        }
+        let params = Params {
+            glwe_size: GlweSize(1),
+            poly_size: PolynomialSize(1),
+            dec_level_count: DecompositionLevelCount(1),
+            dec_base_log: DecompositionBaseLog(4),
+            lwe_dim: LweDimension(17000),
+        };
+        let mut enc_generator = EncryptionRandomGenerator::new(None);
+        let mut sec_generator = SecretRandomGenerator::new(None);
+        let mut bsk = StandardBootstrapKey::allocate(
+            0u32,
+            params.glwe_size,
+            params.poly_size,
+            params.dec_level_count,
+            params.dec_base_log,
+            params.lwe_dim,
+        );
+        let lwe_sk = LweSecretKey::generate_binary(params.lwe_dim, &mut sec_generator);
+        let glwe_sk = GlweSecretKey::generate_binary(
+            params.glwe_size.to_glwe_dimension(),
+            params.poly_size,
+            &mut sec_generator,
+        );
+        bsk.par_fill_with_new_key(&lwe_sk, &glwe_sk, Variance(0.), &mut enc_generator);
+    }
 }

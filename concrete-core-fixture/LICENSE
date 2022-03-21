@@ -1,0 +1,42 @@
+BSD 3-Clause Clear License
+
+Copyright © 2021 ZAMA.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or other
+materials provided with the distribution.
+
+3. Neither the name of ZAMA nor the names of its contributors may be used to endorse
+or promote products derived from this software without specific prior written permission.
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY’S PATENT RIGHTS ARE GRANTED BY THIS LICENSE*.
+THIS SOFTWARE IS PROVIDED BY THE ZAMA AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+ZAMA OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*EXEMPTION: ZAMA grants to the user a non-exclusive, free and non-commercial license on all
+patents filed in its name relating to the open-source code (the “Patents”) for the sole
+purpose of development, research, prototyping and experimentation. It is agreed that ZAMA
+will support the user and the community to use, develop and improve Patents and the open-source
+code. As a counterpart, the user undertakes to collaborate and share information with ZAMA
+regarding any use, developments or improvements, whether protectable or not, of the exploited
+Patents and open-source code. In this context it is agreed that the user will declare to ZAMA,
+in writing and within a reasonable time, his/her wish to file any intellectual property right,
+including in particular any patent or copyright application, relating to the open-source code
+and/or the Patents. All declarations shall occur before the application is filed. Further to
+this declaration, ZAMA will continue to support the user in the development, research,
+prototyping and experimentation and may grant him the right to file the intellectual property
+right.
