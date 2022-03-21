@@ -1,9 +1,9 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! A module containing backends correctness tests.
 //!
 //! Each submodule here is expected to be activated by a given feature flag (matching the
 //! `backend_*` naming), and to contain the instantiation of a generic correctness test for every
 //! implemented operator.
-
 use concrete_core_fixture::{Repetitions, SampleSize};
 
 /// The number of time a test is repeated for a single set of parameter.

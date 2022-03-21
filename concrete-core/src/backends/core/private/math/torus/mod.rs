@@ -16,7 +16,7 @@ use crate::backends::core::private::math::random::{
     Gaussian, RandomGenerable, Uniform, UniformBinary, UniformTernary,
 };
 use concrete_commons::dispersion::LogStandardDev;
-use concrete_commons::numeric::{CastFrom, CastInto, FloatingPoint, Numeric, UnsignedInteger};
+use concrete_commons::numeric::{CastInto, FloatingPoint, Numeric, UnsignedInteger};
 use std::fmt::{Debug, Display};
 
 /// A trait that converts a torus element in unsigned integer representation to the closest
@@ -89,8 +89,6 @@ pub trait UnsignedTorus:
     + RandomGenerable<Uniform>
     + Display
     + Debug
-    + CastFrom<f64>
-    + CastInto<f64>
 {
     /// The log standard deviation used to sample gaussian keys in this precision.
     const GAUSSIAN_KEY_LOG_STD: LogStandardDev;

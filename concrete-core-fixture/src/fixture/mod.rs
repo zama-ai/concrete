@@ -2,17 +2,25 @@
 //!
 //! The central abstraction of the library is the [`Fixture`] trait. This trait defines the logic
 //! used to sample / test / benchmark the implementors of any of the `*Engine` traits defined in
-//! `concrete-core`. This logic is always the same and, depending on the use of the fixture, boils
-//! down to:
+//! `concrete-core`. This logic is always roughly the same and, depending on the use of the fixture,
+//! boils down to:
+//! ```text
+//! | Iterate over a set of parameters:
+//! | | Repeat multiple times:
+//! | | | Generate repetition-level input prototypes.
+//! | | | Sample multiple executions:
+//! | | | | Generate sample-level input prototypes.
+//! | | | | Synthesize actual input entities expected by the engine
+//! | | | | Execute the engine
+//! | | | | Compute raw outcome in a form that can be tested
+//! | | | | Collect and dispose of the entities
+//! | | | Compute verification criteria
+//! | | | Verify that the repetition sample outcomes match the criteria
+//! ```
 //!
-//! + Iterating over a set of parameters multiple times
-//! + Generating random raw inputs (where _raw_ is a type derived of rust´s integers like u32, u64,
-//! Vec<u32>,   etc...)
-//! + Preparing the operator pre-execution context using the raw inputs
-//! + Executing the operator in this context
-//! + Collecting the post-execution context, cleaning the entities, and extracting raw outputs
-//! + Predicting the statistical properties of the raw output sample using the raw inputs
-//! + Check that the output sample properties match the predictions
+//! Note that this structure allows the generated data to be used for multiple executions or not.
+//! Prototypes generated at the repetition level will be used for every samples, while prototyped
+//! generated at the sample level will only be used once.
 //!
 //! For any given `*Engine` trait, a matching `*Fixture` type is defined, which _generically_
 //! implements [`Fixture`]. Here _generically_ means that the implementation of the [`Fixture`]
@@ -22,7 +30,7 @@
 //! implementor of the `*Engine` trait.
 //!
 //! In particular, once the [`Fixture`] mandatory methods and types are defined, the user can
-//! benefit from the default methods [`Harness::sample`], [`Harness::test`] or [`Harness::stress`].
+//! benefit from the default methods [`Fixture::sample`], [`Fixture::test`] or [`Fixture::stress`].
 use crate::generation::{IntegerPrecision, Maker};
 use crate::{Repetitions, SampleSize};
 use concrete_core::prelude::AbstractEngine;
@@ -33,32 +41,42 @@ use std::ops::BitAnd;
 /// To understand how the different pieces fit, see how the default methods `sample`, `test`,
 /// `stress` and `stress_all` use the associated types and methods.
 pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEntities> {
-    /// A type containing the parameters needed to generate input data.
+    /// A type containing the parameters needed to generate the execution context.
     type Parameters;
 
-    /// A type containing the raw inputs used to generate the execution context.
-    type RawInputs;
+    /// A type containing the input prototypes generated at the level of the repetition (reused).
+    type RepetitionPrototypes;
+
+    /// A type containing the input prototypes generated at the level of the sample (not reused).
+    type SamplePrototypes;
 
     /// A type containing all the objects which must exist for the engine to be executed.
     type PreExecutionContext;
 
-    /// A type containing prototypical secret keys passed around the engine execution.
-    type SecretKeyPrototypes;
-
     /// A type containing all the objects existing after the engine got executed.
     type PostExecutionContext;
 
-    /// A type containing the (eventually decrypted) raw outputs of the operator execution.
-    type RawOutputs;
+    /// A type containing the criteria needed to perform the verification of a repetition.
+    type Criteria;
 
-    /// A type containing the prediction for the characteristics of the output sample distribution.
-    type Prediction;
+    /// A type containing the outcome of an execution, such as it can be analyzed for correctness.
+    type Outcome;
 
     /// A method which outputs an iterator over parameters.
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>>;
 
-    /// A method which generates random raw inputs.
-    fn generate_random_raw_inputs(parameters: &Self::Parameters) -> Self::RawInputs;
+    /// Generate a random set of repetition-level prototypes.
+    fn generate_random_repetition_prototypes(
+        parameters: &Self::Parameters,
+        maker: &mut Maker,
+    ) -> Self::RepetitionPrototypes;
+
+    /// Generate a random set of sample-level prototypes.
+    fn generate_random_sample_prototypes(
+        parameters: &Self::Parameters,
+        maker: &mut Maker,
+        repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::SamplePrototypes;
 
     /// A method which prepares the pre-execution context for the engine execution.
     ///
@@ -67,8 +85,9 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
     fn prepare_context(
         parameters: &Self::Parameters,
         maker: &mut Maker,
-        raw_inputs: &Self::RawInputs,
-    ) -> (Self::SecretKeyPrototypes, Self::PreExecutionContext);
+        repetition_proto: &Self::RepetitionPrototypes,
+        sample_proto: &Self::SamplePrototypes,
+    ) -> Self::PreExecutionContext;
 
     /// A method which executes the engine in the pre-execution context, returning the
     /// post-execution context.
@@ -82,23 +101,20 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
     fn process_context(
         parameters: &Self::Parameters,
         maker: &mut Maker,
-        secret_keys: Self::SecretKeyPrototypes,
+        repetition_proto: &Self::RepetitionPrototypes,
+        sample_proto: &Self::SamplePrototypes,
         context: Self::PostExecutionContext,
-    ) -> Self::RawOutputs;
+    ) -> Self::Outcome;
 
-    /// A method which computes the prediction for the statistics of the raw output sample.
-    fn compute_prediction(
+    /// A method which computes the verification criteria for a repetition.
+    fn compute_criteria(
         parameters: &Self::Parameters,
-        raw_inputs: &Self::RawInputs,
-        sample_size: SampleSize,
-    ) -> Self::Prediction;
+        maker: &mut Maker,
+        repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::Criteria;
 
-    /// A method which verify that the predictions are met by the raw output sample.
-    fn check_prediction(
-        parameters: &Self::Parameters,
-        prediction: &Self::Prediction,
-        actual: &[Self::RawOutputs],
-    ) -> bool;
+    /// A method which verify that the outcomes verify some criteria.
+    fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool;
 
     /// A method which verifies the statistical properties of a sample of engine executions, over
     /// multiple randomly generated raw inputs, over multiple sets of parameters.
@@ -123,18 +139,21 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
         repetitions: Repetitions,
         sample_size: SampleSize,
     ) -> bool {
-        (0..repetitions.0)
-            .map(|_| {
-                Self::test(
-                    maker,
-                    engine,
-                    parameters,
-                    &Self::generate_random_raw_inputs(parameters),
-                    sample_size,
-                )
-            })
-            .reduce(BitAnd::bitand)
-            .expect("At least one repetition is needed.")
+        for _ in 0..repetitions.0 {
+            let repetition_prototypes =
+                Self::generate_random_repetition_prototypes(parameters, maker);
+            let output = Self::test(
+                maker,
+                engine,
+                parameters,
+                &repetition_prototypes,
+                sample_size,
+            );
+            if !output {
+                return false;
+            }
+        }
+        true
     }
 
     /// A method which verifies the statistical properties of a sample of engine execution, for a
@@ -143,12 +162,12 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
         maker: &mut Maker,
         engine: &mut Engine,
         parameters: &Self::Parameters,
-        raw_inputs: &Self::RawInputs,
+        repetition_proto: &Self::RepetitionPrototypes,
         sample_size: SampleSize,
     ) -> bool {
-        let prediction = Self::compute_prediction(parameters, raw_inputs, sample_size);
-        let outputs = Self::sample(maker, engine, parameters, raw_inputs, sample_size);
-        Self::check_prediction(parameters, &prediction, outputs.as_slice())
+        let outputs = Self::sample(maker, engine, parameters, repetition_proto, sample_size);
+        let criteria = Self::compute_criteria(parameters, maker, repetition_proto);
+        Self::verify(&criteria, outputs.as_slice())
     }
 
     /// A method which generates a sample of engine execution, for a fixed set of raw inputs and a
@@ -157,14 +176,25 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
         maker: &mut Maker,
         engine: &mut Engine,
         parameters: &Self::Parameters,
-        raw_inputs: &Self::RawInputs,
+        repetition_proto: &Self::RepetitionPrototypes,
         sample_size: SampleSize,
-    ) -> Vec<Self::RawOutputs> {
+    ) -> Vec<Self::Outcome> {
         let mut outputs = Vec::with_capacity(sample_size.0);
         for _ in 0..sample_size.0 {
-            let (keys, inputs) = Self::prepare_context(parameters, maker, raw_inputs);
-            let out = Self::execute_engine(parameters, engine, inputs);
-            outputs.push(Self::process_context(parameters, maker, keys, out));
+            let sample_proto =
+                Self::generate_random_sample_prototypes(parameters, maker, repetition_proto);
+            let pre_execution_context =
+                Self::prepare_context(parameters, maker, repetition_proto, &sample_proto);
+            let post_execution_context =
+                Self::execute_engine(parameters, engine, pre_execution_context);
+            let output = Self::process_context(
+                parameters,
+                maker,
+                repetition_proto,
+                &sample_proto,
+                post_execution_context,
+            );
+            outputs.push(output);
         }
         outputs
     }
@@ -173,5 +203,209 @@ pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEn
 mod cleartext_creation;
 pub use cleartext_creation::*;
 
+mod glwe_ciphertext_discarding_encryption;
+pub use glwe_ciphertext_discarding_encryption::*;
+
+mod cleartext_retrieval;
+pub use cleartext_retrieval::*;
+
+mod cleartext_discarding_retrieval;
+pub use cleartext_discarding_retrieval::*;
+
+mod cleartext_vector_creation;
+pub use cleartext_vector_creation::*;
+
+mod cleartext_vector_discarding_retrieval;
+pub use cleartext_vector_discarding_retrieval::*;
+
+mod cleartext_vector_retrieval;
+pub use cleartext_vector_retrieval::*;
+
+mod glwe_ciphertext_trivial_decryption;
+pub use glwe_ciphertext_trivial_decryption::*;
+
+mod glwe_ciphertext_trivial_encryption;
+pub use glwe_ciphertext_trivial_encryption::*;
+
+mod glwe_ciphertext_encryption;
+pub use glwe_ciphertext_encryption::*;
+
+mod glwe_ciphertext_zero_encryption;
+pub use glwe_ciphertext_zero_encryption::*;
+
+mod glwe_ciphertext_decryption;
+pub use glwe_ciphertext_decryption::*;
+
+mod glwe_ciphertext_discarding_decryption;
+pub use glwe_ciphertext_discarding_decryption::*;
+
+mod glwe_ciphertext_vector_encryption;
+pub use glwe_ciphertext_vector_encryption::*;
+
+mod glwe_ciphertext_vector_decryption;
+pub use glwe_ciphertext_vector_decryption::*;
+
+mod glwe_ciphertext_vector_discarding_decryption;
+pub use glwe_ciphertext_vector_discarding_decryption::*;
+
+mod glwe_ciphertext_vector_discarding_encryption;
+pub use glwe_ciphertext_vector_discarding_encryption::*;
+
+mod glwe_ciphertext_vector_zero_encryption;
+pub use glwe_ciphertext_vector_zero_encryption::*;
+
+mod glwe_ciphertext_vector_trivial_decryption;
+pub use glwe_ciphertext_vector_trivial_decryption::*;
+
+mod glwe_ciphertext_vector_trivial_encryption;
+pub use glwe_ciphertext_vector_trivial_encryption::*;
+
+mod lwe_ciphertext_vector_zero_encryption;
+pub use lwe_ciphertext_vector_zero_encryption::*;
+
 mod lwe_ciphertext_encryption;
 pub use lwe_ciphertext_encryption::*;
+
+mod lwe_ciphertext_zero_encryption;
+pub use lwe_ciphertext_zero_encryption::*;
+
+mod lwe_ciphertext_decryption;
+pub use lwe_ciphertext_decryption::*;
+
+mod lwe_ciphertext_discarding_encryption;
+pub use lwe_ciphertext_discarding_encryption::*;
+
+mod lwe_ciphertext_vector_decryption;
+pub use lwe_ciphertext_vector_decryption::*;
+
+mod lwe_ciphertext_cleartext_discarding_multiplication;
+pub use lwe_ciphertext_cleartext_discarding_multiplication::*;
+
+mod lwe_ciphertext_cleartext_fusing_multiplication;
+pub use lwe_ciphertext_cleartext_fusing_multiplication::*;
+
+mod lwe_ciphertext_vector_discarding_affine_transformation;
+pub use lwe_ciphertext_vector_discarding_affine_transformation::*;
+
+mod lwe_ciphertext_vector_trivial_decryption;
+pub use lwe_ciphertext_vector_trivial_decryption::*;
+
+mod lwe_ciphertext_vector_trivial_encryption;
+pub use lwe_ciphertext_vector_trivial_encryption::*;
+
+mod lwe_ciphertext_vector_discarding_decryption;
+pub use lwe_ciphertext_vector_discarding_decryption::*;
+
+mod lwe_ciphertext_vector_discarding_encryption;
+pub use lwe_ciphertext_vector_discarding_encryption::*;
+
+mod lwe_ciphertext_discarding_keyswitch;
+pub use lwe_ciphertext_discarding_keyswitch::*;
+
+mod lwe_ciphertext_discarding_addition;
+pub use lwe_ciphertext_discarding_addition::*;
+
+mod lwe_ciphertext_discarding_negation;
+pub use lwe_ciphertext_discarding_negation::*;
+
+mod lwe_ciphertext_fusing_addition;
+pub use lwe_ciphertext_fusing_addition::*;
+
+mod lwe_ciphertext_fusing_negation;
+pub use lwe_ciphertext_fusing_negation::*;
+
+mod lwe_ciphertext_discarding_subtraction;
+pub use lwe_ciphertext_discarding_subtraction::*;
+
+mod lwe_ciphertext_fusing_subtraction;
+pub use lwe_ciphertext_fusing_subtraction::*;
+
+mod lwe_ciphertext_discarding_decryption;
+pub use lwe_ciphertext_discarding_decryption::*;
+
+mod lwe_ciphertext_plaintext_discarding_addition;
+pub use lwe_ciphertext_plaintext_discarding_addition::*;
+
+mod lwe_ciphertext_plaintext_fusing_addition;
+pub use lwe_ciphertext_plaintext_fusing_addition::*;
+
+mod lwe_ciphertext_plaintext_fusing_subtraction;
+pub use lwe_ciphertext_plaintext_fusing_subtraction::*;
+
+mod lwe_ciphertext_plaintext_discarding_subtraction;
+pub use lwe_ciphertext_plaintext_discarding_subtraction::*;
+
+mod lwe_ciphertext_vector_discarding_subtraction;
+pub use lwe_ciphertext_vector_discarding_subtraction::*;
+
+mod lwe_ciphertext_vector_encryption;
+pub use lwe_ciphertext_vector_encryption::*;
+
+mod lwe_ciphertext_vector_fusing_addition;
+pub use lwe_ciphertext_vector_fusing_addition::*;
+
+mod lwe_ciphertext_vector_discarding_addition;
+pub use lwe_ciphertext_vector_discarding_addition::*;
+
+mod lwe_ciphertext_vector_fusing_subtraction;
+pub use lwe_ciphertext_vector_fusing_subtraction::*;
+
+mod lwe_ciphertext_trivial_encryption;
+pub use lwe_ciphertext_trivial_encryption::*;
+
+mod lwe_ciphertext_trivial_decryption;
+pub use lwe_ciphertext_trivial_decryption::*;
+
+mod lwe_ciphertext_discarding_bootstrap_1;
+pub use lwe_ciphertext_discarding_bootstrap_1::*;
+
+mod lwe_ciphertext_discarding_bootstrap_2;
+pub use lwe_ciphertext_discarding_bootstrap_2::*;
+
+mod lwe_ciphertext_discarding_extraction;
+pub use lwe_ciphertext_discarding_extraction::*;
+
+mod plaintext_creation;
+pub use plaintext_creation::*;
+
+mod glwe_ciphertext_ggsw_ciphertext_discarding_external_product;
+pub use glwe_ciphertext_ggsw_ciphertext_discarding_external_product::*;
+
+mod glwe_ciphertext_ggsw_ciphertext_external_product;
+pub use glwe_ciphertext_ggsw_ciphertext_external_product::*;
+
+mod plaintext_discarding_retrieval;
+pub use plaintext_discarding_retrieval::*;
+
+mod plaintext_retrieval;
+pub use plaintext_retrieval::*;
+
+mod plaintext_vector_discarding_retrieval;
+pub use plaintext_vector_discarding_retrieval::*;
+
+mod plaintext_vector_creation;
+pub use plaintext_vector_creation::*;
+
+mod plaintext_vector_retrieval;
+pub use plaintext_vector_retrieval::*;
+
+mod lwe_keyswitch_key_creation;
+pub use lwe_keyswitch_key_creation::*;
+
+mod lwe_secret_key_creation;
+pub use lwe_secret_key_creation::*;
+
+mod glwe_secret_key_creation;
+pub use glwe_secret_key_creation::*;
+
+mod glwe_secret_key_to_lwe_secret_key_transmutation;
+pub use glwe_secret_key_to_lwe_secret_key_transmutation::*;
+
+mod lwe_bootstrap_key_creation;
+pub use lwe_bootstrap_key_creation::*;
+
+mod lwe_bootstrap_key_conversion;
+pub use lwe_bootstrap_key_conversion::*;
+
+mod lwe_bootstrap_key_discarding_conversion;
+pub use lwe_bootstrap_key_discarding_conversion::*;

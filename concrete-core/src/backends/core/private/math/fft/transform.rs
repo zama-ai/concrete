@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::slice;
 
 use concrete_fftw::array::AlignedVec;
@@ -6,7 +7,9 @@ use concrete_fftw::types::c64;
 use concrete_commons::numeric::{CastInto, SignedInteger, UnsignedInteger};
 use concrete_commons::parameters::PolynomialSize;
 
+use crate::backends::core::private::math::fft::plan::Plans;
 use crate::backends::core::private::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
+use crate::backends::core::private::math::fft::ALLOWED_POLY_SIZE;
 use crate::backends::core::private::math::polynomial::Polynomial;
 use crate::backends::core::private::math::tensor::{
     ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor,
@@ -15,8 +18,6 @@ use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::zip;
 
 use super::{Complex64, Correctors, FourierPolynomial};
-use crate::backends::core::private::math::fft::plan::Plans;
-use std::cell::RefCell;
 
 /// A fast fourier transformer.
 ///
@@ -42,8 +43,9 @@ impl Fft {
     /// ```
     pub fn new(size: PolynomialSize) -> Fft {
         debug_assert!(
-            [128, 256, 512, 1024, 2048, 4096, 8192, 16384].contains(&size.0),
-            "The size chosen is not valid ({}). Should be 256, 512, 1024, 2048 or 4096",
+            ALLOWED_POLY_SIZE.contains(&size.0),
+            "The size chosen is not valid ({}). Should be 256, 512, 1024, 2048, 4096, \
+            8192 or 16384",
             size.0
         );
         let plans = Plans::new(size);
@@ -330,6 +332,29 @@ impl Fft {
     }
 
     /// Performs the backward fourier transform of the `fourier_poly` polynomial, viewed as a
+    /// polynomial of torus coefficients.
+    ///
+    /// See [`Fft::forward_as_torus`] for an example.
+    ///
+    /// # Note
+    ///
+    /// It should be noted that this method is subotpimal, as it only uses half of the computational
+    /// power of the transformer. For a faster approach, you should consider processing the
+    /// polynomials two by two with the [`Fft::backward_two_as_torus`] method.
+    pub fn backward_as_torus<OutCont, InCont, Coef>(
+        &self,
+        poly: &mut Polynomial<OutCont>,
+        fourier_poly: &mut FourierPolynomial<InCont>,
+    ) where
+        Polynomial<OutCont>: AsMutTensor<Element = Coef>,
+        FourierPolynomial<InCont>: AsMutTensor<Element = Complex64>,
+        Coef: UnsignedTorus,
+    {
+        ck_dim_eq!(self.polynomial_size().0 => fourier_poly.polynomial_size().0, poly.polynomial_size().0);
+        self.backward(poly, fourier_poly, regular_convert_backward_single_torus);
+    }
+
+    /// Performs the backward fourier transform of the `fourier_poly` polynomial, viewed as a
     /// polynomial of integer coefficients, and adds the result to `poly`.
     ///
     /// See [`Fft::forward_as_integer`] for an example.
@@ -386,6 +411,38 @@ impl Fft {
             fourier_poly_1,
             fourier_poly_2,
             regular_convert_add_backward_two_torus,
+        );
+    }
+
+    /// Performs the backward fourier transform of the `fourier_poly_1` and `fourier_poly_2`
+    /// polynomials, viewed as polynomials of torus elements.
+    ///
+    /// See [`Fft::forward_two_as_torus`] for an example.
+    pub fn backward_two_as_torus<OutCont1, OutCont2, InCont1, InCont2, Coef>(
+        &self,
+        poly_1: &mut Polynomial<OutCont1>,
+        poly_2: &mut Polynomial<OutCont2>,
+        fourier_poly_1: &mut FourierPolynomial<InCont1>,
+        fourier_poly_2: &mut FourierPolynomial<InCont2>,
+    ) where
+        Polynomial<OutCont1>: AsMutTensor<Element = Coef>,
+        Polynomial<OutCont2>: AsMutTensor<Element = Coef>,
+        FourierPolynomial<InCont1>: AsMutTensor<Element = Complex64>,
+        FourierPolynomial<InCont2>: AsMutTensor<Element = Complex64>,
+        Coef: UnsignedTorus,
+    {
+        ck_dim_eq!(self.polynomial_size().0 =>
+            fourier_poly_1.polynomial_size().0,
+            poly_1.polynomial_size().0,
+            fourier_poly_2.polynomial_size().0,
+            poly_2.polynomial_size().0
+        );
+        self.backward_two(
+            poly_1,
+            poly_2,
+            fourier_poly_1,
+            fourier_poly_2,
+            regular_convert_backward_two_torus,
         );
     }
 
@@ -773,6 +830,25 @@ fn regular_convert_add_backward_single_torus<OutCont, Coef>(
     }
 }
 
+fn regular_convert_backward_single_torus<OutCont, Coef>(
+    out: &mut Polynomial<OutCont>,
+    inp: &FourierPolynomial<AlignedVec<Complex64>>,
+    corr: &BackwardCorrector<&'static [Complex64]>,
+) where
+    Polynomial<OutCont>: AsMutTensor<Element = Coef>,
+    Coef: UnsignedTorus,
+{
+    ck_dim_eq!(inp.as_tensor().len() => corr.as_tensor().len(), out.as_tensor().len());
+    for (input, (corrector, output)) in inp
+        .as_tensor()
+        .iter()
+        .zip(corr.as_tensor().iter().zip(out.as_mut_tensor().iter_mut()))
+    {
+        let interm = (input * corrector).re;
+        *output = Coef::from_torus(interm);
+    }
+}
+
 fn regular_convert_add_backward_single_integer<OutCont, Coef>(
     out: &mut Polynomial<OutCont>,
     inp: &FourierPolynomial<AlignedVec<Complex64>>,
@@ -819,6 +895,35 @@ fn regular_convert_add_backward_two_torus<OutCont1, OutCont2, Coef>(
         let im_interm = interm.im;
         *output_1 = output_1.wrapping_add(Coef::from_torus(re_interm));
         *output_2 = output_2.wrapping_add(Coef::from_torus(im_interm));
+    }
+}
+
+fn regular_convert_backward_two_torus<OutCont1, OutCont2, Coef>(
+    out1: &mut Polynomial<OutCont1>,
+    out2: &mut Polynomial<OutCont2>,
+    inp: &FourierPolynomial<AlignedVec<Complex64>>,
+    corr: &BackwardCorrector<&'static [Complex64]>,
+) where
+    Polynomial<OutCont1>: AsMutTensor<Element = Coef>,
+    Polynomial<OutCont2>: AsMutTensor<Element = Coef>,
+    Coef: UnsignedTorus,
+{
+    ck_dim_eq!(
+        out1.as_tensor().len() =>
+        corr.as_tensor().len(),
+        inp.as_tensor().len(),
+        out2.as_tensor().len()
+    );
+    for (output_1, (output_2, (corrector, input))) in out1.as_mut_tensor().iter_mut().zip(
+        out2.as_mut_tensor()
+            .iter_mut()
+            .zip(corr.as_tensor().iter().zip(inp.as_tensor().iter())),
+    ) {
+        let interm = input * corrector;
+        let re_interm = interm.re;
+        let im_interm = interm.im;
+        *output_1 = Coef::from_torus(re_interm);
+        *output_2 = Coef::from_torus(im_interm);
     }
 }
 

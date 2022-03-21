@@ -3,11 +3,11 @@
 //! The bootstrapping operation allows to reduce the level of noise in an LWE ciphertext, while
 //! evaluating an univariate function.
 
-pub use fourier::{FourierBootstrapKey, FourierBskBuffers};
+pub use fourier::{FourierBootstrapKey, FourierBuffers};
 pub use standard::StandardBootstrapKey;
 
 pub(crate) mod fourier;
-pub(crate) mod standard;
+mod standard;
 
 #[cfg(all(test, feature = "multithread"))]
 mod test {

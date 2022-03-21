@@ -1,3 +1,12 @@
+use concrete_commons::dispersion::Variance;
+use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
+use concrete_core::prelude::markers::{BinaryKeyDistribution, KeyDistributionMarker};
+use concrete_core::prelude::{
+    LweCiphertextVectorDecryptionEngine, LweCiphertextVectorEncryptionEngine,
+    LweCiphertextVectorTrivialDecryptionEngine, LweCiphertextVectorTrivialEncryptionEngine,
+    PlaintextVectorCreationEngine,
+};
+
 use crate::generation::prototypes::{
     LweCiphertextVectorPrototype, ProtoBinaryLweCiphertextVector32,
     ProtoBinaryLweCiphertextVector64, ProtoPlaintextVector32, ProtoPlaintextVector64,
@@ -5,13 +14,6 @@ use crate::generation::prototypes::{
 use crate::generation::prototyping::lwe_secret_key::PrototypesLweSecretKey;
 use crate::generation::prototyping::plaintext_vector::PrototypesPlaintextVector;
 use crate::generation::{IntegerPrecision, Maker, Precision32, Precision64};
-use concrete_commons::dispersion::Variance;
-use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
-use concrete_core::prelude::markers::{BinaryKeyDistribution, KeyDistributionMarker};
-use concrete_core::prelude::{
-    LweCiphertextVectorDecryptionEngine, LweCiphertextVectorEncryptionEngine,
-    LweCiphertextVectorTrivialEncryptionEngine, PlaintextVectorCreationEngine,
-};
 
 /// A trait allowing to manipulate lwe ciphertext vector prototypes.
 pub trait PrototypesLweCiphertextVector<
@@ -24,16 +26,18 @@ pub trait PrototypesLweCiphertextVector<
         Precision = Precision,
         KeyDistribution = KeyDistribution,
     >;
-    fn trivial_encrypt_zeros_to_lwe_ciphertext_vector(
+    fn trivially_encrypt_zeros_to_lwe_ciphertext_vector(
         &mut self,
         lwe_dimension: LweDimension,
         count: LweCiphertextCount,
     ) -> Self::LweCiphertextVectorProto;
-    fn trivial_encrypt_plaintext_vector_to_lwe_ciphertext(
+
+    fn trivially_encrypt_plaintext_vector_to_lwe_ciphertext_vector(
         &mut self,
         lwe_dimension: LweDimension,
         plaintext_vector: &Self::PlaintextVectorProto,
     ) -> Self::LweCiphertextVectorProto;
+
     fn encrypt_plaintext_vector_to_lwe_ciphertext_vector(
         &mut self,
         secret_key: &Self::LweSecretKeyProto,
@@ -46,12 +50,17 @@ pub trait PrototypesLweCiphertextVector<
         secret_key: &Self::LweSecretKeyProto,
         ciphertext_vector: &Self::LweCiphertextVectorProto,
     ) -> Self::PlaintextVectorProto;
+
+    fn trivially_decrypt_lwe_ciphertext_vector_to_plaintext_vector(
+        &mut self,
+        ciphertext: &Self::LweCiphertextVectorProto,
+    ) -> Self::PlaintextVectorProto;
 }
 
 impl PrototypesLweCiphertextVector<Precision32, BinaryKeyDistribution> for Maker {
     type LweCiphertextVectorProto = ProtoBinaryLweCiphertextVector32;
 
-    fn trivial_encrypt_zeros_to_lwe_ciphertext_vector(
+    fn trivially_encrypt_zeros_to_lwe_ciphertext_vector(
         &mut self,
         lwe_dimension: LweDimension,
         count: LweCiphertextCount,
@@ -70,7 +79,7 @@ impl PrototypesLweCiphertextVector<Precision32, BinaryKeyDistribution> for Maker
         )
     }
 
-    fn trivial_encrypt_plaintext_vector_to_lwe_ciphertext(
+    fn trivially_encrypt_plaintext_vector_to_lwe_ciphertext_vector(
         &mut self,
         lwe_dimension: LweDimension,
         plaintext_vector: &Self::PlaintextVectorProto,
@@ -109,12 +118,23 @@ impl PrototypesLweCiphertextVector<Precision32, BinaryKeyDistribution> for Maker
                 .unwrap(),
         )
     }
+
+    fn trivially_decrypt_lwe_ciphertext_vector_to_plaintext_vector(
+        &mut self,
+        ciphertext_vector: &Self::LweCiphertextVectorProto,
+    ) -> Self::PlaintextVectorProto {
+        ProtoPlaintextVector32(
+            self.core_engine
+                .trivially_decrypt_lwe_ciphertext_vector(&ciphertext_vector.0)
+                .unwrap(),
+        )
+    }
 }
 
 impl PrototypesLweCiphertextVector<Precision64, BinaryKeyDistribution> for Maker {
     type LweCiphertextVectorProto = ProtoBinaryLweCiphertextVector64;
 
-    fn trivial_encrypt_zeros_to_lwe_ciphertext_vector(
+    fn trivially_encrypt_zeros_to_lwe_ciphertext_vector(
         &mut self,
         lwe_dimension: LweDimension,
         count: LweCiphertextCount,
@@ -133,7 +153,7 @@ impl PrototypesLweCiphertextVector<Precision64, BinaryKeyDistribution> for Maker
         )
     }
 
-    fn trivial_encrypt_plaintext_vector_to_lwe_ciphertext(
+    fn trivially_encrypt_plaintext_vector_to_lwe_ciphertext_vector(
         &mut self,
         lwe_dimension: LweDimension,
         plaintext_vector: &Self::PlaintextVectorProto,
@@ -169,6 +189,17 @@ impl PrototypesLweCiphertextVector<Precision64, BinaryKeyDistribution> for Maker
         ProtoPlaintextVector64(
             self.core_engine
                 .decrypt_lwe_ciphertext_vector(&secret_key.0, &ciphertext_vector.0)
+                .unwrap(),
+        )
+    }
+
+    fn trivially_decrypt_lwe_ciphertext_vector_to_plaintext_vector(
+        &mut self,
+        ciphertext_vector: &Self::LweCiphertextVectorProto,
+    ) -> Self::PlaintextVectorProto {
+        ProtoPlaintextVector64(
+            self.core_engine
+                .trivially_decrypt_lwe_ciphertext_vector(&ciphertext_vector.0)
                 .unwrap(),
         )
     }

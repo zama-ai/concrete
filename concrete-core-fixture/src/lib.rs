@@ -1,3 +1,4 @@
+#![deny(rustdoc::broken_intra_doc_links)]
 //! A library containing generic fixtures for `concrete-core` operators.
 //!
 //! The central abstraction of this (private) library, is the [`Fixture`](fixture::Fixture) trait

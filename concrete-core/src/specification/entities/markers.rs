@@ -73,7 +73,7 @@ entity_kind_marker! {
 ///
 /// [`KeyDistributionMarker`] types are only defined in the specification part of the library, and
 /// can not be defined by a backend.
-pub trait KeyDistributionMarker: seal::KeyDistributionMarkerSealed {}
+pub trait KeyDistributionMarker: seal::KeyDistributionMarkerSealed + 'static {}
 macro_rules! key_distribution_marker {
         (@ $name: ident => $doc: literal)=>{
             #[doc=$doc]

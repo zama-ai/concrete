@@ -1,6 +1,6 @@
 use crate::backends::core::implementation::engines::CoreEngine;
 use crate::backends::core::implementation::entities::{LweCiphertext32, LweCiphertext64};
-use crate::backends::core::private::math::tensor::AsMutTensor;
+use crate::backends::core::private::math::tensor::{AsMutTensor, AsRefTensor};
 use crate::specification::engines::{
     LweCiphertextDiscardingAdditionEngine, LweCiphertextDiscardingAdditionError,
 };
@@ -63,8 +63,10 @@ impl LweCiphertextDiscardingAdditionEngine<LweCiphertext32, LweCiphertext32> for
         input_1: &LweCiphertext32,
         input_2: &LweCiphertext32,
     ) {
-        output.0.as_mut_tensor().fill_with_element(0);
-        output.0.update_with_add(&input_1.0);
+        output
+            .0
+            .as_mut_tensor()
+            .fill_with_copy(input_1.0.as_tensor());
         output.0.update_with_add(&input_2.0);
     }
 }
@@ -127,8 +129,10 @@ impl LweCiphertextDiscardingAdditionEngine<LweCiphertext64, LweCiphertext64> for
         input_1: &LweCiphertext64,
         input_2: &LweCiphertext64,
     ) {
-        output.0.as_mut_tensor().fill_with_element(0);
-        output.0.update_with_add(&input_1.0);
+        output
+            .0
+            .as_mut_tensor()
+            .fill_with_copy(input_1.0.as_tensor());
         output.0.update_with_add(&input_2.0);
     }
 }

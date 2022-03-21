@@ -1,4 +1,4 @@
-use crate::backends::core::private::math::fft::Complex64;
+use crate::backends::core::private::math::fft::{Complex64, ALLOWED_POLY_SIZE};
 use concrete_commons::parameters::PolynomialSize;
 use concrete_fftw::plan::{C2CPlan, C2CPlan64};
 use concrete_fftw::types::{Flag, Sign};
@@ -24,7 +24,7 @@ impl Plans {
     /// Generates a new plan
     pub fn new(size: PolynomialSize) -> Plans {
         debug_assert!(
-            [128, 256, 512, 1024, 2048, 4096, 8192, 16384].contains(&size.0),
+            ALLOWED_POLY_SIZE.contains(&size.0),
             "The size chosen is not valid ({}). Should be 128, 256, 512, 1024, 2048, 4096, 8192 \
             or 16384",
             size.0

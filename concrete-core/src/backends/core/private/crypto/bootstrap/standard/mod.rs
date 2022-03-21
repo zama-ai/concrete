@@ -1,5 +1,5 @@
 use crate::backends::core::private::crypto::encoding::Plaintext;
-use crate::backends::core::private::crypto::ggsw::GgswCiphertext;
+use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
 use crate::backends::core::private::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::backends::core::private::math::polynomial::Polynomial;
@@ -502,7 +502,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// ```
     pub fn ggsw_iter(
         &self,
-    ) -> impl Iterator<Item = GgswCiphertext<&[<Self as AsRefTensor>::Element]>>
+    ) -> impl Iterator<Item = StandardGgswCiphertext<&[<Self as AsRefTensor>::Element]>>
     where
         Self: AsRefTensor,
     {
@@ -514,7 +514,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
         self.as_tensor()
             .subtensor_iter(chunks_size)
             .map(move |tensor| {
-                GgswCiphertext::from_container(
+                StandardGgswCiphertext::from_container(
                     tensor.into_container(),
                     rlwe_size,
                     poly_size,
@@ -556,7 +556,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     #[cfg(feature = "multithread")]
     pub fn par_ggsw_iter_mut(
         &mut self,
-    ) -> impl IndexedParallelIterator<Item = GgswCiphertext<&mut [<Self as AsRefTensor>::Element]>>
+    ) -> impl IndexedParallelIterator<Item = StandardGgswCiphertext<&mut [<Self as AsRefTensor>::Element]>>
     where
         Self: AsMutTensor,
         <Self as AsRefTensor>::Element: Sync + Send,
@@ -570,7 +570,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
         self.as_mut_tensor()
             .par_subtensor_iter_mut(chunks_size)
             .map(move |tensor| {
-                GgswCiphertext::from_container(
+                StandardGgswCiphertext::from_container(
                     tensor.into_container(),
                     rlwe_size,
                     poly_size,
@@ -605,7 +605,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
     /// ```
     pub fn ggsw_iter_mut(
         &mut self,
-    ) -> impl Iterator<Item = GgswCiphertext<&mut [<Self as AsRefTensor>::Element]>>
+    ) -> impl Iterator<Item = StandardGgswCiphertext<&mut [<Self as AsRefTensor>::Element]>>
     where
         Self: AsMutTensor,
     {
@@ -617,7 +617,7 @@ impl<Cont> StandardBootstrapKey<Cont> {
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
             .map(move |tensor| {
-                GgswCiphertext::from_container(
+                StandardGgswCiphertext::from_container(
                     tensor.into_container(),
                     rlwe_size,
                     poly_size,

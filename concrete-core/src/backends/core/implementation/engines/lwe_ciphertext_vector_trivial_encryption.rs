@@ -24,6 +24,7 @@ impl LweCiphertextVectorTrivialEncryptionEngine<PlaintextVector32, LweCiphertext
     ///
     /// let mut engine = CoreEngine::new()?;
     /// let plaintext_vector: PlaintextVector32 = engine.create_plaintext_vector(&input)?;
+    /// // DISCLAIMER: trivial encryption is NOT secure, and DOES NOT hide the message at all.
     /// let ciphertext_vector: LweCiphertextVector32 =
     ///     engine.trivially_encrypt_lwe_ciphertext_vector(lwe_size, &plaintext_vector)?;
     ///
@@ -77,6 +78,7 @@ impl LweCiphertextVectorTrivialEncryptionEngine<PlaintextVector64, LweCiphertext
     ///
     /// let mut engine = CoreEngine::new()?;
     /// let plaintext_vector: PlaintextVector64 = engine.create_plaintext_vector(&input)?;
+    /// // DISCLAIMER: trivial encryption is NOT secure, and DOES NOT hide the message at all.
     /// let ciphertext_vector: LweCiphertextVector64 =
     ///     engine.trivially_encrypt_lwe_ciphertext_vector(lwe_size, &plaintext_vector)?;
     ///
