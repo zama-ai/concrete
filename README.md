@@ -119,8 +119,6 @@ There are two ways to contribute to Concrete:
 (becoming an approved contributor involves signing our Contributor License Agreement (CLA))
 
 Only approved contributors can send pull requests, so please make sure to get in touch before you do!
-<<<<<<< HEAD
-=======
 
 ## Citing Concrete
 
@@ -135,7 +133,6 @@ To cite Concrete in academic papers, please use the following entry:
   year={2020}
 }
 ```
->>>>>>> f4445e4535ecbd23d22476f0e244528721f4f792
 
 ## Citing Concrete
 
