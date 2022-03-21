@@ -8,7 +8,6 @@ use crate::generation::synthesizing::{
 use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::generation::RawUnsignedIntegers;
 use crate::raw::statistical_test::assert_noise_distribution;
-use crate::SampleSize;
 use concrete_commons::dispersion::Variance;
 use concrete_commons::parameters::LweDimension;
 use concrete_core::prelude::{
@@ -16,7 +15,7 @@ use concrete_core::prelude::{
 };
 
 /// A fixture for the types implementing the `LweCiphertextEncryptionEngine` trait.
-pub struct LweCiphertextEncryptionHarness;
+pub struct LweCiphertextEncryptionFixture;
 
 #[derive(Debug)]
 pub struct LweCiphertextEncryptionParameters {
@@ -26,7 +25,7 @@ pub struct LweCiphertextEncryptionParameters {
 
 impl<Precision, Engine, Plaintext, SecretKey, Ciphertext>
     Fixture<Precision, Engine, (Plaintext, SecretKey, Ciphertext)>
-    for LweCiphertextEncryptionHarness
+    for LweCiphertextEncryptionFixture
 where
     Precision: IntegerPrecision,
     Engine: LweCiphertextEncryptionEngine<SecretKey, Plaintext, Ciphertext>,
@@ -38,12 +37,15 @@ where
         + SynthesizesLweCiphertext<Precision, Ciphertext>,
 {
     type Parameters = LweCiphertextEncryptionParameters;
-    type RawInputs = (Precision::Raw,);
-    type RawOutputs = (Precision::Raw,);
-    type SecretKeyPrototypes = (<Maker as PrototypesLweSecretKey<Precision, Ciphertext::KeyDistribution>>::LweSecretKeyProto, );
+    type RepetitionPrototypes = (<Maker as PrototypesLweSecretKey<Precision, Ciphertext::KeyDistribution>>::LweSecretKeyProto, );
+    type SamplePrototypes = (
+        <Maker as PrototypesPlaintext<Precision>>::PlaintextProto,
+        Precision::Raw,
+    );
     type PreExecutionContext = (Plaintext, SecretKey);
     type PostExecutionContext = (Plaintext, SecretKey, Ciphertext);
-    type Prediction = (Vec<Precision::Raw>, Variance);
+    type Criteria = (Variance,);
+    type Outcome = (Precision::Raw, Precision::Raw);
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(
@@ -77,40 +79,35 @@ where
         )
     }
 
-    fn generate_random_raw_inputs(_parameters: &Self::Parameters) -> Self::RawInputs {
-        (Precision::Raw::uniform(),)
-    }
-
-    fn compute_prediction(
+    fn generate_random_repetition_prototypes(
         parameters: &Self::Parameters,
-        raw_inputs: &Self::RawInputs,
-        sample_size: SampleSize,
-    ) -> Self::Prediction {
-        let (raw_plaintext,) = raw_inputs;
-        (vec![*raw_plaintext; sample_size.0], parameters.noise)
+        maker: &mut Maker,
+    ) -> Self::RepetitionPrototypes {
+        let proto_secret_key = maker.new_lwe_secret_key(parameters.lwe_dimension);
+        (proto_secret_key,)
     }
 
-    fn check_prediction(
+    fn generate_random_sample_prototypes(
         _parameters: &Self::Parameters,
-        forecast: &Self::Prediction,
-        actual: &[Self::RawOutputs],
-    ) -> bool {
-        let (means, noise) = forecast;
-        let actual = actual.iter().map(|r| r.0).collect::<Vec<_>>();
-        assert_noise_distribution(&actual, means.as_slice(), *noise)
+        maker: &mut Maker,
+        _repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::SamplePrototypes {
+        let raw_plaintext = Precision::Raw::uniform();
+        let proto_plaintext = maker.transform_raw_to_plaintext(&raw_plaintext);
+        (proto_plaintext, raw_plaintext)
     }
 
     fn prepare_context(
-        parameters: &Self::Parameters,
+        _parameters: &Self::Parameters,
         maker: &mut Maker,
-        raw_inputs: &Self::RawInputs,
-    ) -> (Self::SecretKeyPrototypes, Self::PreExecutionContext) {
-        let (raw_plaintext,) = raw_inputs;
-        let proto_plaintext = maker.transform_raw_to_plaintext(raw_plaintext);
-        let proto_secret_key = maker.new_lwe_secret_key(parameters.lwe_dimension);
-        let synth_plaintext = maker.synthesize_plaintext(&proto_plaintext);
-        let synth_secret_key = maker.synthesize_lwe_secret_key(&proto_secret_key);
-        ((proto_secret_key,), (synth_plaintext, synth_secret_key))
+        repetition_proto: &Self::RepetitionPrototypes,
+        sample_proto: &Self::SamplePrototypes,
+    ) -> Self::PreExecutionContext {
+        let (proto_secret_key,) = repetition_proto;
+        let (proto_plaintext, _) = sample_proto;
+        let synth_plaintext = maker.synthesize_plaintext(proto_plaintext);
+        let synth_secret_key = maker.synthesize_lwe_secret_key(proto_secret_key);
+        (synth_plaintext, synth_secret_key)
     }
 
     fn execute_engine(
@@ -128,17 +125,35 @@ where
     fn process_context(
         _parameters: &Self::Parameters,
         maker: &mut Maker,
-        secret_keys: Self::SecretKeyPrototypes,
+        repetition_proto: &Self::RepetitionPrototypes,
+        sample_proto: &Self::SamplePrototypes,
         context: Self::PostExecutionContext,
-    ) -> Self::RawOutputs {
+    ) -> Self::Outcome {
         let (plaintext, secret_key, ciphertext) = context;
-        let (proto_secret_key,) = secret_keys;
+        let (proto_secret_key,) = repetition_proto;
+        let (_, raw_plaintext) = sample_proto;
         let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(&ciphertext);
         maker.destroy_lwe_ciphertext(ciphertext);
         maker.destroy_plaintext(plaintext);
         maker.destroy_lwe_secret_key(secret_key);
         let proto_plaintext =
-            maker.decrypt_lwe_ciphertext_to_plaintext(&proto_secret_key, &proto_output_ciphertext);
-        (maker.transform_plaintext_to_raw(&proto_plaintext),)
+            maker.decrypt_lwe_ciphertext_to_plaintext(proto_secret_key, &proto_output_ciphertext);
+        (
+            *raw_plaintext,
+            maker.transform_plaintext_to_raw(&proto_plaintext),
+        )
+    }
+
+    fn compute_criteria(
+        parameters: &Self::Parameters,
+        _maker: &mut Maker,
+        _repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::Criteria {
+        (parameters.noise,)
+    }
+
+    fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool {
+        let (means, actual): (Vec<_>, Vec<_>) = outputs.iter().cloned().unzip();
+        assert_noise_distribution(&actual, means.as_slice(), criteria.0)
     }
 }

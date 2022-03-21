@@ -4,7 +4,6 @@ use crate::generation::synthesizing::SynthesizesCleartext;
 use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::generation::RawUnsignedIntegers;
 use crate::raw::statistical_test::assert_noise_distribution;
-use crate::SampleSize;
 use concrete_commons::dispersion::Variance;
 
 use concrete_core::prelude::{CleartextCreationEngine, CleartextEntity};
@@ -24,47 +23,38 @@ where
     Maker: SynthesizesCleartext<Precision, Cleartext>,
 {
     type Parameters = CleartextCreationParameters;
-    type RawInputs = (Precision::Raw,);
-    type RawOutputs = (Precision::Raw,);
+    type RepetitionPrototypes = ();
+    type SamplePrototypes = (Precision::Raw,);
     type PreExecutionContext = (Precision::Raw,);
-    type SecretKeyPrototypes = ();
     type PostExecutionContext = (Cleartext,);
-    type Prediction = (Vec<Precision::Raw>, Variance);
+    type Criteria = (Variance,);
+    type Outcome = (Precision::Raw, Precision::Raw);
 
     fn generate_parameters_iterator() -> Box<dyn Iterator<Item = Self::Parameters>> {
         Box::new(vec![CleartextCreationParameters].into_iter())
     }
 
-    fn generate_random_raw_inputs(_parameters: &Self::Parameters) -> Self::RawInputs {
+    fn generate_random_repetition_prototypes(
+        _parameters: &Self::Parameters,
+        _maker: &mut Maker,
+    ) -> Self::RepetitionPrototypes {
+    }
+
+    fn generate_random_sample_prototypes(
+        _parameters: &Self::Parameters,
+        _maker: &mut Maker,
+        _repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::SamplePrototypes {
         (Precision::Raw::uniform(),)
-    }
-
-    fn compute_prediction(
-        _parameters: &Self::Parameters,
-        raw_inputs: &Self::RawInputs,
-        sample_size: SampleSize,
-    ) -> Self::Prediction {
-        let (raw_cleartext,) = raw_inputs;
-        (vec![*raw_cleartext; sample_size.0], Variance(0.))
-    }
-
-    fn check_prediction(
-        _parameters: &Self::Parameters,
-        forecast: &Self::Prediction,
-        actual: &[Self::RawOutputs],
-    ) -> bool {
-        let (means, noise) = forecast;
-        let actual = actual.iter().map(|r| r.0).collect::<Vec<_>>();
-        assert_noise_distribution(&actual, means.as_slice(), *noise)
     }
 
     fn prepare_context(
         _parameters: &Self::Parameters,
         _maker: &mut Maker,
-        raw_inputs: &Self::RawInputs,
-    ) -> (Self::SecretKeyPrototypes, Self::PreExecutionContext) {
-        let (raw_cleartext,) = raw_inputs;
-        ((), (*raw_cleartext,))
+        _repetition_proto: &Self::RepetitionPrototypes,
+        sample_proto: &Self::SamplePrototypes,
+    ) -> Self::PreExecutionContext {
+        sample_proto.to_owned()
     }
 
     fn execute_engine(
@@ -80,12 +70,29 @@ where
     fn process_context(
         _parameters: &Self::Parameters,
         maker: &mut Maker,
-        _secret_keys: Self::SecretKeyPrototypes,
+        _repetition_proto: &Self::RepetitionPrototypes,
+        sample_proto: &Self::SamplePrototypes,
         context: Self::PostExecutionContext,
-    ) -> Self::RawOutputs {
+    ) -> Self::Outcome {
         let (cleartext,) = context;
-        let proto_cleartext = maker.unsynthesize_cleartext(&cleartext);
+        let proto_output_cleartext = maker.unsynthesize_cleartext(&cleartext);
         maker.destroy_cleartext(cleartext);
-        (maker.transform_cleartext_to_raw(&proto_cleartext),)
+        (
+            sample_proto.0,
+            maker.transform_cleartext_to_raw(&proto_output_cleartext),
+        )
+    }
+
+    fn compute_criteria(
+        _parameters: &Self::Parameters,
+        _maker: &mut Maker,
+        _repetition_proto: &Self::RepetitionPrototypes,
+    ) -> Self::Criteria {
+        (Variance(0.),)
+    }
+
+    fn verify(criteria: &Self::Criteria, outputs: &[Self::Outcome]) -> bool {
+        let (means, actual): (Vec<_>, Vec<_>) = outputs.iter().cloned().unzip();
+        assert_noise_distribution(actual.as_slice(), means.as_slice(), criteria.0)
     }
 }

@@ -5,7 +5,7 @@ use concrete_fftw::array::AlignedVec;
 use serde::{Deserialize, Serialize};
 
 use crate::backends::core::private::crypto::bootstrap::standard::StandardBootstrapKey;
-use crate::backends::core::private::crypto::ggsw::GgswCiphertext;
+use crate::backends::core::private::crypto::ggsw::FourierGgswCiphertext;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::math::decomposition::SignedDecomposer;
@@ -26,7 +26,7 @@ mod buffers;
 #[cfg(test)]
 mod tests;
 
-pub use buffers::{FftBuffers, FourierBskBuffers};
+pub use buffers::{FftBuffers, FourierBuffers};
 
 /// A bootstrapping key in the fourier domain.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -162,7 +162,7 @@ where
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::bootstrap::{
-    ///     FourierBootstrapKey, FourierBskBuffers, StandardBootstrapKey,
+    ///     FourierBootstrapKey, FourierBuffers, StandardBootstrapKey,
     /// };
     /// use concrete_core::backends::core::private::math::fft::Complex64;
     /// let bsk = StandardBootstrapKey::allocate(
@@ -181,13 +181,13 @@ where
     ///     DecompositionBaseLog(5),
     ///     LweDimension(4),
     /// );
-    /// let mut buffers = FourierBskBuffers::new(frr_bsk.polynomial_size(), frr_bsk.glwe_size());
+    /// let mut buffers = FourierBuffers::new(frr_bsk.polynomial_size(), frr_bsk.glwe_size());
     /// frr_bsk.fill_with_forward_fourier(&bsk, &mut buffers);
     /// ```
     pub fn fill_with_forward_fourier<InputCont>(
         &mut self,
         coef_bsk: &StandardBootstrapKey<InputCont>,
-        buffers: &mut FourierBskBuffers<Scalar>,
+        buffers: &mut FourierBuffers<Scalar>,
     ) where
         Cont: AsMutSlice<Element = Complex64>,
         StandardBootstrapKey<InputCont>: AsRefTensor<Element = Scalar>,
@@ -391,7 +391,7 @@ where
     /// }
     /// assert_eq!(bsk.ggsw_iter().count(), 4);
     /// ```
-    pub fn ggsw_iter(&self) -> impl Iterator<Item = GgswCiphertext<&[Complex64]>>
+    pub fn ggsw_iter(&self) -> impl Iterator<Item = FourierGgswCiphertext<&[Complex64], Scalar>>
     where
         Self: AsRefTensor<Element = Complex64>,
     {
@@ -403,7 +403,7 @@ where
         self.as_tensor()
             .subtensor_iter(chunks_size)
             .map(move |tensor| {
-                GgswCiphertext::from_container(
+                FourierGgswCiphertext::from_container(
                     tensor.into_container(),
                     rlwe_size,
                     poly_size,
@@ -438,7 +438,9 @@ where
     /// assert!(bsk.as_tensor().iter().all(|a| *a == Complex64::new(0., 0.)));
     /// assert_eq!(bsk.ggsw_iter_mut().count(), 4);
     /// ```
-    pub fn ggsw_iter_mut(&mut self) -> impl Iterator<Item = GgswCiphertext<&mut [Complex64]>>
+    pub fn ggsw_iter_mut(
+        &mut self,
+    ) -> impl Iterator<Item = FourierGgswCiphertext<&mut [Complex64], Scalar>>
     where
         Self: AsMutTensor<Element = Complex64>,
     {
@@ -450,7 +452,7 @@ where
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
             .map(move |tensor| {
-                GgswCiphertext::from_container(
+                FourierGgswCiphertext::from_container(
                     tensor.into_container(),
                     rlwe_size,
                     poly_size,
@@ -462,13 +464,13 @@ where
     fn external_product<C1, C2, C3>(
         &self,
         output: &mut GlweCiphertext<C1>,
-        ggsw: &GgswCiphertext<C2>,
+        ggsw: &FourierGgswCiphertext<C2, Scalar>,
         glwe: &GlweCiphertext<C3>,
         fft_buffers: &mut FftBuffers,
         rounded_buffer: &mut GlweCiphertext<Vec<Scalar>>,
     ) where
         GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
-        GgswCiphertext<C2>: AsRefTensor<Element = Complex64>,
+        FourierGgswCiphertext<C2, Scalar>: AsRefTensor<Element = Complex64>,
         GlweCiphertext<C3>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
@@ -648,13 +650,13 @@ where
         &self,
         ct0: &mut GlweCiphertext<C0>,
         ct1: &mut GlweCiphertext<C1>,
-        ggsw: &GgswCiphertext<C2>,
+        ggsw: &FourierGgswCiphertext<C2, Scalar>,
         fft_buffers: &mut FftBuffers,
         rounded_buffer: &mut GlweCiphertext<Vec<Scalar>>,
     ) where
         GlweCiphertext<C0>: AsMutTensor<Element = Scalar>,
         GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
-        GgswCiphertext<C2>: AsRefTensor<Element = Complex64>,
+        FourierGgswCiphertext<C2, Scalar>: AsRefTensor<Element = Complex64>,
         Scalar: UnsignedTorus,
     {
         ct1.as_mut_tensor()
@@ -662,7 +664,7 @@ where
         self.external_product(ct0, ggsw, ct1, fft_buffers, rounded_buffer);
     }
 
-    fn blind_rotate<C2>(&self, buffers: &mut FourierBskBuffers<Scalar>, lwe: &LweCiphertext<C2>)
+    fn blind_rotate<C2>(&self, buffers: &mut FourierBuffers<Scalar>, lwe: &LweCiphertext<C2>)
     where
         LweCiphertext<C2>: AsRefTensor<Element = Scalar>,
         GlweCiphertext<Vec<Scalar>>: AsMutTensor<Element = Scalar>,
@@ -773,7 +775,7 @@ where
     ///     PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::bootstrap::{
-    ///     FourierBootstrapKey, FourierBskBuffers, StandardBootstrapKey,
+    ///     FourierBootstrapKey, FourierBuffers, StandardBootstrapKey,
     /// };
     /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
     /// use concrete_core::backends::core::private::crypto::glwe::GlweCiphertext;
@@ -822,8 +824,7 @@ where
     ///     lwe_dimension,
     /// );
     ///
-    /// let mut buffers =
-    ///     FourierBskBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
+    /// let mut buffers = FourierBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
     /// fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
     ///
     /// let message = Plaintext(2u32.pow(30));
@@ -853,7 +854,7 @@ where
         lwe_out: &mut LweCiphertext<C1>,
         lwe_in: &LweCiphertext<C2>,
         accumulator: &GlweCiphertext<C3>,
-        buffers: &mut FourierBskBuffers<Scalar>,
+        buffers: &mut FourierBuffers<Scalar>,
     ) where
         LweCiphertext<C1>: AsMutTensor<Element = Scalar>,
         LweCiphertext<C2>: AsRefTensor<Element = Scalar>,

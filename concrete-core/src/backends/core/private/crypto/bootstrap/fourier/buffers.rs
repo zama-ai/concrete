@@ -2,7 +2,6 @@ use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::math::fft::{Complex64, Fft, FourierPolynomial};
 use crate::backends::core::private::math::tensor::Tensor;
 use crate::backends::core::private::math::torus::UnsignedTorus;
-use crate::prelude::LweBootstrapKeyEntity;
 use concrete_commons::parameters::{GlweSize, PolynomialSize};
 use concrete_fftw::array::AlignedVec;
 
@@ -19,20 +18,18 @@ pub struct FftBuffers {
 }
 
 #[derive(Debug, Clone)]
-pub struct FourierBskBuffers<Scalar> {
+pub struct FourierBuffers<Scalar> {
     // Those buffers are also used to store the lut and the rounded input during the bootstrap.
     pub lut_buffer: GlweCiphertext<Vec<Scalar>>,
     pub rounded_buffer: GlweCiphertext<Vec<Scalar>>,
     pub fft_buffers: FftBuffers,
 }
 
-impl<Scalar> FourierBskBuffers<Scalar>
+impl<Scalar> FourierBuffers<Scalar>
 where
     Scalar: UnsignedTorus,
 {
-    pub fn for_key<Key: LweBootstrapKeyEntity>(key: &Key) -> Self {
-        let poly_size = key.polynomial_size();
-        let glwe_size = key.glwe_dimension().to_glwe_size();
+    pub fn for_params(poly_size: PolynomialSize, glwe_size: GlweSize) -> Self {
         Self::new(poly_size, glwe_size)
     }
 

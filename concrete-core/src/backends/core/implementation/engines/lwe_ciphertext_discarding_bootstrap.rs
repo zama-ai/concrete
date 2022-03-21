@@ -3,9 +3,17 @@ use crate::backends::core::implementation::entities::{
     FourierLweBootstrapKey32, FourierLweBootstrapKey64, GlweCiphertext32, GlweCiphertext64,
     LweCiphertext32, LweCiphertext64,
 };
+use crate::backends::core::private::math::fft::ALLOWED_POLY_SIZE;
+use crate::prelude::{CoreError, GlweCiphertextEntity, LweBootstrapKeyEntity};
 use crate::specification::engines::{
     LweCiphertextDiscardingBootstrapEngine, LweCiphertextDiscardingBootstrapError,
 };
+
+impl From<CoreError> for LweCiphertextDiscardingBootstrapError<CoreError> {
+    fn from(err: CoreError) -> Self {
+        Self::Engine(err)
+    }
+}
 
 /// # Description:
 /// Implementation of [`LweCiphertextDiscardingBootstrapEngine`] for [`CoreEngine`] that operates on
@@ -50,7 +58,8 @@ impl
     /// let lwe_sk_output: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim_output)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     /// let plaintext_vector = engine.create_plaintext_vector(&lut)?;
-    /// let acc = engine.encrypt_glwe_ciphertext(&glwe_sk, &plaintext_vector, noise)?;
+    /// let acc =
+    ///     engine.trivially_encrypt_glwe_ciphertext(glwe_dim.to_glwe_size(), &plaintext_vector)?;
     /// let input = engine.encrypt_lwe_ciphertext(&lwe_sk, &plaintext, noise)?;
     /// let mut output = engine.zero_encrypt_lwe_ciphertext(&lwe_sk_output, noise)?;
     ///
@@ -78,6 +87,11 @@ impl
         acc: &GlweCiphertext32,
         bsk: &FourierLweBootstrapKey32,
     ) -> Result<(), LweCiphertextDiscardingBootstrapError<Self::EngineError>> {
+        if !ALLOWED_POLY_SIZE.contains(&acc.polynomial_size().0) {
+            return Err(LweCiphertextDiscardingBootstrapError::from(
+                CoreError::UnsupportedPolynomialSize,
+            ));
+        }
         LweCiphertextDiscardingBootstrapError::perform_generic_checks(output, input, acc, bsk)?;
         unsafe { self.discard_bootstrap_lwe_ciphertext_unchecked(output, input, acc, bsk) };
         Ok(())
@@ -90,7 +104,8 @@ impl
         acc: &GlweCiphertext32,
         bsk: &FourierLweBootstrapKey32,
     ) {
-        let buffers = self.get_fourier_bootstrap_u32_buffer(bsk);
+        let buffers =
+            self.get_fourier_u32_buffer(bsk.polynomial_size(), bsk.glwe_dimension().to_glwe_size());
         bsk.0.bootstrap(&mut output.0, &input.0, &acc.0, buffers);
     }
 }
@@ -138,7 +153,8 @@ impl
     /// let lwe_sk_output: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim_output)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     /// let plaintext_vector = engine.create_plaintext_vector(&lut)?;
-    /// let acc = engine.encrypt_glwe_ciphertext(&glwe_sk, &plaintext_vector, noise)?;
+    /// let acc =
+    ///     engine.trivially_encrypt_glwe_ciphertext(glwe_dim.to_glwe_size(), &plaintext_vector)?;
     /// let input = engine.encrypt_lwe_ciphertext(&lwe_sk, &plaintext, noise)?;
     /// let mut output = engine.encrypt_lwe_ciphertext(&lwe_sk_output, &plaintext, noise)?;
     ///
@@ -166,6 +182,11 @@ impl
         acc: &GlweCiphertext64,
         bsk: &FourierLweBootstrapKey64,
     ) -> Result<(), LweCiphertextDiscardingBootstrapError<Self::EngineError>> {
+        if !ALLOWED_POLY_SIZE.contains(&acc.polynomial_size().0) {
+            return Err(LweCiphertextDiscardingBootstrapError::from(
+                CoreError::UnsupportedPolynomialSize,
+            ));
+        }
         LweCiphertextDiscardingBootstrapError::perform_generic_checks(output, input, acc, bsk)?;
         unsafe { self.discard_bootstrap_lwe_ciphertext_unchecked(output, input, acc, bsk) };
         Ok(())
@@ -178,7 +199,8 @@ impl
         acc: &GlweCiphertext64,
         bsk: &FourierLweBootstrapKey64,
     ) {
-        let buffers = self.get_fourier_bootstrap_u64_buffer(bsk);
+        let buffers =
+            self.get_fourier_u64_buffer(bsk.polynomial_size(), bsk.glwe_dimension().to_glwe_size());
 
         bsk.0.bootstrap(&mut output.0, &input.0, &acc.0, buffers);
     }

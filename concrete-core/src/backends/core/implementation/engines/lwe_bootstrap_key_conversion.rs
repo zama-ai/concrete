@@ -70,7 +70,10 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey32, FourierLweBootstrapKey32
             input.input_lwe_dimension(),
         );
         let mut output_bsk = FourierLweBootstrapKey32(output);
-        let buffers = self.get_fourier_bootstrap_u32_buffer(&output_bsk);
+        let buffers = self.get_fourier_u32_buffer(
+            output_bsk.polynomial_size(),
+            output_bsk.glwe_dimension().to_glwe_size(),
+        );
         output_bsk.0.fill_with_forward_fourier(&input.0, buffers);
         output_bsk
     }
@@ -137,7 +140,10 @@ impl LweBootstrapKeyConversionEngine<LweBootstrapKey64, FourierLweBootstrapKey64
             input.input_lwe_dimension(),
         );
         let mut output_bsk = FourierLweBootstrapKey64(output);
-        let buffers = self.get_fourier_bootstrap_u64_buffer(&output_bsk);
+        let buffers = self.get_fourier_u64_buffer(
+            output_bsk.polynomial_size(),
+            output_bsk.glwe_dimension().to_glwe_size(),
+        );
         output_bsk.0.fill_with_forward_fourier(&input.0, buffers);
         output_bsk
     }

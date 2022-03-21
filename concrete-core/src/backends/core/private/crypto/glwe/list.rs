@@ -1,3 +1,4 @@
+use concrete_commons::numeric::Numeric;
 #[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
@@ -6,7 +7,10 @@ use crate::backends::core::private::math::tensor::{
 };
 
 use super::GlweCiphertext;
-use concrete_commons::parameters::{CiphertextCount, GlweDimension, GlweSize, PolynomialSize};
+use crate::backends::core::private::crypto::encoding::PlaintextList;
+use concrete_commons::parameters::{
+    CiphertextCount, GlweDimension, GlweSize, PlaintextCount, PolynomialSize,
+};
 
 /// A list of ciphertexts encoded with the GLWE scheme.
 #[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
@@ -249,5 +253,27 @@ impl<Cont> GlweList<Cont> {
         self.as_mut_tensor()
             .subtensor_iter_mut(chunks_size)
             .map(move |sub| GlweCiphertext::from_container(sub.into_container(), poly_size))
+    }
+
+    pub fn fill_with_trivial_encryption<PlaintextContainer, Scalar>(
+        &mut self,
+        plaintexts: &PlaintextList<PlaintextContainer>,
+    ) where
+        PlaintextList<PlaintextContainer>: AsRefTensor<Element = Scalar>,
+        for<'a> PlaintextList<&'a [Scalar]>: AsRefTensor<Element = Scalar>,
+        Self: AsMutTensor<Element = Scalar>,
+        Scalar: Numeric,
+    {
+        debug_assert_eq!(
+            plaintexts.count().0,
+            self.poly_size.0 * self.ciphertext_count().0
+        );
+        let plaintext_count = PlaintextCount(self.poly_size.0);
+        for (mut ciphertext, plaintext) in self
+            .ciphertext_iter_mut()
+            .zip(plaintexts.sublist_iter(plaintext_count))
+        {
+            ciphertext.fill_with_trivial_encryption(&plaintext);
+        }
     }
 }

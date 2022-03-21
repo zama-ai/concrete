@@ -26,7 +26,7 @@ pub trait PrototypesLweBootstrapKey<
     >;
     fn new_lwe_bootstrap_key(
         &mut self,
-        input_key: &Self::LweSecretKeyProto,
+        input_key: &<Self as PrototypesLweSecretKey<Precision, InputKeyDistribution>>::LweSecretKeyProto,
         output_key: &Self::GlweSecretKeyProto,
         decomposition_level: DecompositionLevelCount,
         decomposition_base_log: DecompositionBaseLog,

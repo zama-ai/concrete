@@ -57,7 +57,7 @@ impl LweCiphertextPlaintextFusingAdditionEngine<LweCiphertext32, Plaintext32> fo
         output: &mut LweCiphertext32,
         input: &Plaintext32,
     ) {
-        output.0.get_mut_body().0 += input.0 .0;
+        output.0.get_mut_body().0 = output.0.get_body().0.wrapping_add(input.0 .0);
     }
 }
 
@@ -112,6 +112,6 @@ impl LweCiphertextPlaintextFusingAdditionEngine<LweCiphertext64, Plaintext64> fo
         output: &mut LweCiphertext64,
         input: &Plaintext64,
     ) {
-        output.0.get_mut_body().0 += input.0 .0;
+        output.0.get_mut_body().0 = output.0.get_body().0.wrapping_add(input.0 .0);
     }
 }
