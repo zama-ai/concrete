@@ -27,6 +27,7 @@ concrete-csprng = "=0.1.7"
 serde = { version = "1.0", optional = true }
 lazy_static = "1.4.0"
 rayon = { version = "1.5.0", optional = true }
+proto_graphec = { path = "../../optalysys/proto_graphec", optional = true }
 
 [lib]
 name = "concrete_core"
@@ -37,6 +38,7 @@ bench = false
 default = ["backend_core"]
 doc = []
 backend_core = []
+backend_optalysys = ["proto_graphec"]
 slow-csprng = ["concrete-csprng/slow"]
 multithread = ["rayon", "concrete-csprng/multithread"]
 serde_serialize = ["serde", "serde/derive", "concrete-commons/serde_serialize",
