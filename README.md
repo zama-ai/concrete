@@ -137,6 +137,20 @@ To cite Concrete in academic papers, please use the following entry:
 ```
 >>>>>>> f4445e4535ecbd23d22476f0e244528721f4f792
 
+## Citing Concrete
+
+To cite Concrete in academic papers, please use the following entry:
+
+```
+@inproceedings{WAHC:CJLOT20,
+  title={CONCRETE: Concrete Operates oN Ciphertexts Rapidly by Extending TfhE},
+  author={Chillotti, Ilaria and Joye, Marc and Ligier, Damien and Orfila, Jean-Baptiste and Tap, Samuel},
+  booktitle={WAHC 2020--8th Workshop on Encrypted Computing \& Applied Homomorphic Cryptography},
+  volume={15},
+  year={2020}
+}
+```
+
 ## Credits
 
 This library uses several dependencies and we would like to thank the contributors of those

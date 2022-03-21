@@ -6,8 +6,7 @@
 #[cfg(test)]
 mod tests;
 
-mod twiddles;
-
+pub(crate) mod twiddles;
 use twiddles::*;
 
 mod plan;

@@ -63,7 +63,7 @@ impl<Scalar> StandardGgswCiphertext<Vec<Scalar>> {
     where
         Scalar: Copy,
     {
-        GgswCiphertext {
+        StandardGgswCiphertext {
             tensor: Tensor::from_container(vec![
                 value;
                 decomp_level.0
@@ -78,7 +78,30 @@ impl<Scalar> StandardGgswCiphertext<Vec<Scalar>> {
     }
 }
 
-impl<Cont> GgswCiphertext<Cont> {
+impl<Scalar> StandardGgswCiphertext<Vec<Scalar>>
+where
+    Scalar: UnsignedTorus,
+{
+    pub fn new_trivial_encryption(
+        poly_size: PolynomialSize,
+        glwe_size: GlweSize,
+        decomp_level: DecompositionLevelCount,
+        decomp_base_log: DecompositionBaseLog,
+        plaintext: &Plaintext<Scalar>,
+    ) -> Self {
+        let mut ciphertext = Self::allocate(
+            Scalar::ZERO,
+            poly_size,
+            glwe_size,
+            decomp_level,
+            decomp_base_log,
+        );
+        ciphertext.fill_with_trivial_encryption(plaintext);
+        ciphertext
+    }
+}
+
+impl<Cont> StandardGgswCiphertext<Cont> {
     /// Creates an Rgsw ciphertext from an existing container.
     ///
     /// # Example
@@ -87,8 +110,9 @@ impl<Cont> GgswCiphertext<Cont> {
     /// use concrete_commons::parameters::{
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweSize, PolynomialSize,
     /// };
-    /// use concrete_core::backends::core::private::crypto::ggsw::GgswCiphertext;
-    /// let ggsw = GgswCiphertext::from_container(
+    /// use concrete_core::backends::core::private::crypto::ggsw::StandardGgswCiphertext;
+    ///
+    /// let ggsw = StandardGgswCiphertext::from_container(
     ///     vec![9 as u8; 7 * 7 * 10 * 3],
     ///     GlweSize(7),
     ///     PolynomialSize(10),
@@ -109,7 +133,7 @@ impl<Cont> GgswCiphertext<Cont> {
     {
         let tensor = Tensor::from_container(cont);
         ck_dim_div!(tensor.len() => rlwe_size.0, poly_size.0, rlwe_size.0 * rlwe_size.0);
-        GgswCiphertext {
+        StandardGgswCiphertext {
             tensor,
             poly_size,
             rlwe_size,
