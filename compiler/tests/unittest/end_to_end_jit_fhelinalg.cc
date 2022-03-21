@@ -1096,7 +1096,7 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (size_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
@@ -1144,7 +1144,7 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table_with_boradcast) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (size_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
@@ -1196,7 +1196,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_sequential) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (size_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
@@ -1244,7 +1244,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_same_lut) {
 
   ASSERT_EXPECTED_SUCCESS(res);
 
-  ASSERT_EQ(res->size(), 3 * 3);
+  ASSERT_EQ(res->size(), (size_t)3 * 3);
 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
