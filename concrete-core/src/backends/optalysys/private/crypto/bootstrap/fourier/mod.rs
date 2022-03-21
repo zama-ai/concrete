@@ -163,7 +163,7 @@ where
     ///     DecompositionBaseLog, DecompositionLevelCount, GlweSize, LweDimension, PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::bootstrap::{
-    ///     FourierBootstrapKey, FourierBskBuffers, StandardBootstrapKey,
+    ///     FourierBootstrapKey, FourierBuffers, StandardBootstrapKey,
     /// };
     /// use concrete_core::backends::core::private::math::fft::Complex64;
     /// let bsk = StandardBootstrapKey::allocate(
