@@ -7,7 +7,7 @@ pub use fourier::{FourierBootstrapKey, FourierBuffers};
 pub use standard::StandardBootstrapKey;
 
 pub(crate) mod fourier;
-mod standard;
+pub(crate) mod standard;
 
 #[cfg(all(test, feature = "multithread"))]
 mod test {

@@ -7,7 +7,7 @@
 mod tests;
 
 pub(crate) mod twiddles;
-use twiddles::*;
+pub(crate) use twiddles::*;
 
 mod plan;
 

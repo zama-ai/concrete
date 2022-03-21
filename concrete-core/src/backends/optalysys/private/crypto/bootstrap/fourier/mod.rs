@@ -11,7 +11,7 @@ use concrete_commons::parameters::{
 };
 
 use crate::backends::core::private::crypto::bootstrap::standard::StandardBootstrapKey;
-use crate::backends::core::private::crypto::ggsw::GgswCiphertext;
+use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext as GgswCiphertext;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::math::decomposition::SignedDecomposer;
