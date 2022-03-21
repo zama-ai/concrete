@@ -9,7 +9,6 @@
 namespace mlir {
 namespace concretelang {
 constexpr unsigned DEFAULT_PATTERN_BENEFIT = 1;
-constexpr unsigned MAXIMUM_BIT_WIDTH = 7;
 } // namespace concretelang
 } // namespace mlir
 

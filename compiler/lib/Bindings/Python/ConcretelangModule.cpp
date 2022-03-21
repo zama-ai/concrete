@@ -24,9 +24,6 @@ PYBIND11_MODULE(_concretelang, m) {
   llvm::sys::PrintStackTraceOnErrorSignal(/*argv=*/"");
   LLVMEnablePrettyStackTrace();
 
-  m.attr("MAXIMUM_BIT_WIDTH") =
-      pybind11::int_(mlir::concretelang::MAXIMUM_BIT_WIDTH);
-
   m.def(
       "register_dialects",
       [](py::object capsule) {

@@ -53,9 +53,8 @@ void FHEDialect::printType(::mlir::Type type,
 
 mlir::LogicalResult EncryptedIntegerType::verify(
     llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
-  if (p == 0 || p > mlir::concretelang::MAXIMUM_BIT_WIDTH) {
-    emitError() << "FHE.eint support only precision in ]0;"
-                << mlir::concretelang::MAXIMUM_BIT_WIDTH << "]";
+  if (p == 0) {
+    emitError() << "FHE.eint didn't support precision equals to 0";
     return mlir::failure();
   }
   return mlir::success();

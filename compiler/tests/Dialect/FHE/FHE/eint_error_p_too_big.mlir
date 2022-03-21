@@ -1,6 +1,6 @@
-// RUN: not concretecompiler --action=roundtrip %s  2>&1| FileCheck %s
+// RUN: not concretecompiler --action=dump-llvm-ir %s  2>&1| FileCheck %s
 
-// CHECK-LABEL: eint support only precision in ]0;7]
-func @test(%arg0: !FHE.eint<8>) {
+// CHECK-LABEL: Could not determine V0 parameters
+func @test(%arg0: !FHE.eint<9>) {
   return
 }
