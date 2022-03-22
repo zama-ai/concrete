@@ -1605,6 +1605,42 @@ void FhelinalgConv2DNchwFchwOp::getEffects(
                         outputBuffers);
 }
 
+/// Verify the transpose shapes
+mlir::LogicalResult verifyTranspose(TransposeOp &transposeOp) {
+  mlir::Type tensorTy = ((mlir::Type)transposeOp.tensor().getType());
+  if (!tensorTy.isa<RankedTensorType>()) {
+    transposeOp->emitOpError() << "should have operand as tensor";
+    return mlir::failure();
+  }
+  mlir::Type resultTy = ((mlir::Type)transposeOp.getResult().getType());
+  if (!resultTy.isa<RankedTensorType>()) {
+    transposeOp->emitOpError() << "should have result as tensor";
+    return mlir::failure();
+  }
+  auto tensorShapedTy = tensorTy.dyn_cast_or_null<mlir::ShapedType>();
+  auto resultShapedTy = resultTy.dyn_cast_or_null<mlir::ShapedType>();
+  if (tensorShapedTy.getShape().size() != resultShapedTy.getShape().size()) {
+    transposeOp.emitOpError()
+        << "input and output tensors should have the same number of dimensions";
+    return mlir::failure();
+  }
+  if (tensorShapedTy.getElementType() != resultShapedTy.getElementType()) {
+    transposeOp.emitOpError()
+        << "input and output tensors should have the same element type";
+    return mlir::failure();
+  }
+  size_t n_dims = tensorShapedTy.getShape().size();
+  for (size_t i = 0; i < n_dims; i++) {
+    if (tensorShapedTy.getDimSize(i) !=
+        resultShapedTy.getDimSize(n_dims - (i + 1))) {
+      transposeOp.emitOpError()
+          << "output tensor should have inverted dimensions of input";
+      return mlir::failure();
+    }
+  }
+  return mlir::success();
+}
+
 } // namespace FHELinalg
 } // namespace concretelang
 } // namespace mlir

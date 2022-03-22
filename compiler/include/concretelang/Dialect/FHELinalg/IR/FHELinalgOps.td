@@ -1001,5 +1001,35 @@ $_state.addAttribute("dilations", dilations);
     }];
 }
 
+def TransposeOp : FHELinalg_Op<"transpose", []> {
+    let summary = "Returns a tensor that contains the transposition of the input tensor.";
+
+    let description = [{
+        Performs a transpose operation on an N-dimensional tensor.
+
+        ```mlir
+        "FHELinalg.transpose"(%a) : (tensor<n0xn1x...xnNxType>) -> tensor<nNx...xn1xn0xType>
+        ```
+
+        Examples:
+        ```mlir
+        // Transpose the input tensor
+        // [1,2]    [1, 3, 5]
+        // [3,4] => [2, 4, 6]
+        // [5,6]
+        //
+        "FHELinalg.transpose"(%a) : (tensor<3x2xi7>) -> tensor<2x3xi7>
+        ```
+    }];
+
+    // Args and result are both supposed to be of tensor of enccrypted integers, and the verifier does check that
+    let arguments = (ins AnyType:$tensor);
+    let results = (outs AnyType);
+
+    let verifier = [{
+        return ::mlir::concretelang::FHELinalg::verifyTranspose(*this);
+    }];
+}
+
 
 #endif

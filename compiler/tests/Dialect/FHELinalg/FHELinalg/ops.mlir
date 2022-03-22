@@ -352,3 +352,34 @@ func @conv2d_without_bias(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: ten
   %1 = "FHELinalg.conv2d"(%input, %weight){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0, 0, 0]> : tensor<4xi64>}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
   return %1 : tensor<100x4x15x15x!FHE.eint<2>>
 }
+
+/////////////////////////////////////////////////
+// FHELinalg.transpose
+/////////////////////////////////////////////////
+
+// CHECK-LABEL:  @transpose_eint_2D(%arg0: tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>>
+func @transpose_eint_2D(%arg0: tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) : (tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>>
+  // CHECK-NEXT:   return %[[v0]] : tensor<10x2x!FHE.eint<6>>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) : (tensor<2x10x!FHE.eint<6>>) -> tensor<10x2x!FHE.eint<6>>
+  return %c : tensor<10x2x!FHE.eint<6>>
+}
+
+// CHECK-LABEL:  @transpose_int_2D(%arg0: tensor<2x10xi6>) -> tensor<10x2xi6>
+func @transpose_int_2D(%arg0: tensor<2x10xi6>) -> tensor<10x2xi6> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) : (tensor<2x10xi6>) -> tensor<10x2xi6>
+  // CHECK-NEXT:   return %[[v0]] : tensor<10x2xi6>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) : (tensor<2x10xi6>) -> tensor<10x2xi6>
+  return %c : tensor<10x2xi6>
+}
+
+// CHECK-LABEL:  @transpose_eint_3D(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>
+func @transpose_eint_3D(%arg0: tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHELinalg.transpose"(%arg0) : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>
+  // CHECK-NEXT:   return %[[v0]] : tensor<5x4x3x!FHE.eint<6>>
+  // CHECK-NEXT: }
+  %c = "FHELinalg.transpose"(%arg0) : (tensor<3x4x5x!FHE.eint<6>>) -> tensor<5x4x3x!FHE.eint<6>>
+  return %c : tensor<5x4x3x!FHE.eint<6>>
+}
