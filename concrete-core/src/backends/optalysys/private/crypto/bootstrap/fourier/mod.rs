@@ -182,7 +182,7 @@ where
     ///     DecompositionBaseLog(5),
     ///     LweDimension(4),
     /// );
-    /// let mut buffers = FourierBskBuffers::new(frr_bsk.polynomial_size(), frr_bsk.glwe_size());
+    /// let mut buffers = FourierBuffers::new(frr_bsk.polynomial_size(), frr_bsk.glwe_size());
     /// frr_bsk.fill_with_forward_fourier(&bsk, &mut buffers);
     /// ```
     pub fn fill_with_forward_fourier<InputCont>(
@@ -774,7 +774,7 @@ where
     ///     PolynomialSize,
     /// };
     /// use concrete_core::backends::core::private::crypto::bootstrap::{
-    ///     FourierBootstrapKey, FourierBskBuffers, StandardBootstrapKey,
+    ///     FourierBootstrapKey, FourierBuffers, StandardBootstrapKey,
     /// };
     /// use concrete_core::backends::core::private::crypto::encoding::Plaintext;
     /// use concrete_core::backends::core::private::crypto::glwe::GlweCiphertext;
@@ -824,7 +824,7 @@ where
     /// );
     ///
     /// let mut buffers =
-    ///     FourierBskBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
+    ///     FourierBuffers::new(fourier_bsk.polynomial_size(), fourier_bsk.glwe_size());
     /// fourier_bsk.fill_with_forward_fourier(&coef_bsk, &mut buffers);
     ///
     /// let message = Plaintext(2u32.pow(30));
