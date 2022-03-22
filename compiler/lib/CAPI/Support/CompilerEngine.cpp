@@ -30,9 +30,8 @@ jit_lambda_support(const char *runtimeLibPath) {
 std::unique_ptr<mlir::concretelang::JitCompilationResult>
 jit_compile(JITLambdaSupport_C support, const char *module,
             mlir::concretelang::CompilationOptions options) {
-  mlir::concretelang::JitLambdaSupport esupport;
   GET_OR_THROW_LLVM_EXPECTED(compilationResult,
-                             esupport.compile(module, options));
+                             support.support.compile(module, options));
   return std::move(*compilationResult);
 }
 
