@@ -11,20 +11,17 @@ namespace mlir {
 namespace concretelang {
 
 JitLambdaSupport::JitLambdaSupport(
-    llvm::Optional<llvm::StringRef> runtimeLibPath,
-    llvm::function_ref<llvm::Error(llvm::Module *)> llvmOptPipeline)
-    : runtimeLibPath(runtimeLibPath), llvmOptPipeline(llvmOptPipeline) {}
+    llvm::Optional<llvm::StringRef> runtimeLibPath)
+    : runtimeLibPath(runtimeLibPath) {}
 
 llvm::Expected<std::unique_ptr<JitCompilationResult>>
 JitLambdaSupport::compile(llvm::SourceMgr &program,
                           CompilationOptions options) {
-
   // Setup the compiler engine
   auto context = std::make_shared<CompilationContext>();
   concretelang::CompilerEngine engine(context);
 
   engine.setCompilationOptions(options);
-
   // Compile to LLVM Dialect
   auto compilationResult =
       engine.compile(program, CompilerEngine::Target::LLVM_IR);
@@ -36,16 +33,14 @@ JitLambdaSupport::compile(llvm::SourceMgr &program,
   if (!options.clientParametersFuncName.hasValue()) {
     return StreamStringError("Need to have a funcname to JIT compile");
   }
-
   // Compile from LLVM Dialect to JITLambda
   auto mlirModule = compilationResult.get().mlirModuleRef->get();
   auto lambda = concretelang::JITLambda::create(
-      *options.clientParametersFuncName, mlirModule, llvmOptPipeline,
-      runtimeLibPath);
+      *options.clientParametersFuncName, mlirModule,
+      mlir::makeOptimizingTransformer(3, 0, nullptr), runtimeLibPath);
   if (auto err = lambda.takeError()) {
     return std::move(err);
   }
-
   if (!compilationResult.get().clientParameters.hasValue()) {
     // i.e. that should not occurs
     return StreamStringError("No client parameters has been generated");

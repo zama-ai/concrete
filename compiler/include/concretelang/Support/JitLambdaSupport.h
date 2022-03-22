@@ -32,10 +32,7 @@ class JitLambdaSupport
     : public LambdaSupport<concretelang::JITLambda *, JitCompilationResult> {
 
 public:
-  JitLambdaSupport(
-      llvm::Optional<llvm::StringRef> runtimeLibPath = llvm::None,
-      llvm::function_ref<llvm::Error(llvm::Module *)> llvmOptPipeline =
-          mlir::makeOptimizingTransformer(3, 0, nullptr));
+  JitLambdaSupport(llvm::Optional<llvm::StringRef> runtimeLibPath = llvm::None);
 
   llvm::Expected<std::unique_ptr<JitCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override;
