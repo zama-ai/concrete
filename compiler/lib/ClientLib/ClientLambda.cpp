@@ -52,7 +52,7 @@ ClientLambda::decryptReturnedScalar(KeySet &keySet, PublicResult &result) {
 
 outcome::checked<std::vector<decrypted_scalar_t>, StringError>
 ClientLambda::decryptReturnedValues(KeySet &keySet, PublicResult &result) {
-  return result.asClearTextVector(keySet, 0);
+  return result.asClearTextVector<decrypted_scalar_t>(keySet, 0);
 }
 
 outcome::checked<void, StringError> errorResultRank(size_t expected,

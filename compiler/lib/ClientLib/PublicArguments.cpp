@@ -136,24 +136,6 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
   return sArguments;
 }
 
-outcome::checked<std::vector<uint64_t>, StringError>
-PublicResult::asClearTextVector(KeySet &keySet, size_t pos) {
-  OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
-  if (!gate.isEncrypted()) {
-    return buffers[pos].values;
-  }
-
-  auto buffer = buffers[pos];
-  auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
-
-  std::vector<uint64_t> decryptedValues(buffer.length() / lweSize);
-  for (size_t i = 0; i < decryptedValues.size(); i++) {
-    auto ciphertext = &buffer.values[i * lweSize];
-    OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertext, decryptedValues[i]));
-  }
-  return decryptedValues;
-}
-
 void next_coord_index(size_t index[], size_t sizes[], size_t rank) {
   // increase multi dim index
   for (int r = rank - 1; r >= 0; r--) {

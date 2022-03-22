@@ -37,7 +37,7 @@ llvm::Expected<ResT> typedResult(clientlib::KeySet &keySet,
 template <>
 inline llvm::Expected<uint64_t> typedResult(clientlib::KeySet &keySet,
                                             clientlib::PublicResult &result) {
-  auto clearResult = result.asClearTextVector(keySet, 0);
+  auto clearResult = result.asClearTextVector<uint64_t>(keySet, 0);
   if (!clearResult.has_value()) {
     return StreamStringError("typedResult cannot get clear text vector")
            << clearResult.error().mesg;
@@ -52,7 +52,7 @@ inline llvm::Expected<uint64_t> typedResult(clientlib::KeySet &keySet,
 template <typename T>
 inline llvm::Expected<std::vector<T>>
 typedVectorResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
-  auto clearResult = result.asClearTextVector(keySet, 0);
+  auto clearResult = result.asClearTextVector<T>(keySet, 0);
   if (!clearResult.has_value()) {
     return StreamStringError("typedVectorResult cannot get clear text vector")
            << clearResult.error().mesg;
@@ -68,21 +68,21 @@ typedVectorResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
 // llvm::Expected<std::vector<uint8_t>>
 // typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result); due
 // to ambiguity with scalar template
-// template <>
-// inline llvm::Expected<std::vector<uint8_t>>
-// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
-//   return typedVectorResult<uint8_t>(keySet, result);
-// }
-// template <>
-// inline llvm::Expected<std::vector<uint16_t>>
-// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
-//   return typedVectorResult<uint16_t>(keySet, result);
-// }
-// template <>
-// inline llvm::Expected<std::vector<uint32_t>>
-// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
-//   return typedVectorResult<uint32_t>(keySet, result);
-// }
+template <>
+inline llvm::Expected<std::vector<uint8_t>>
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<uint8_t>(keySet, result);
+}
+template <>
+inline llvm::Expected<std::vector<uint16_t>>
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<uint16_t>(keySet, result);
+}
+template <>
+inline llvm::Expected<std::vector<uint32_t>>
+typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
+  return typedVectorResult<uint32_t>(keySet, result);
+}
 template <>
 inline llvm::Expected<std::vector<uint64_t>>
 typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
@@ -113,7 +113,7 @@ typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
   auto gate = keySet.outputGate(0);
   // scalar case
   if (gate.shape.dimensions.empty()) {
-    auto clearResult = result.asClearTextVector(keySet, 0);
+    auto clearResult = result.asClearTextVector<uint64_t>(keySet, 0);
     if (clearResult.has_error()) {
       return StreamStringError("typedResult: ") << clearResult.error().mesg;
     }

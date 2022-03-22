@@ -90,8 +90,33 @@ struct PublicResult {
 
   /// Get the result at `pos` as a vector, if the result is a scalar returns a
   /// vector of size 1. Decryption happens if the result is encrypted.
-  outcome::checked<std::vector<decrypted_scalar_t>, StringError>
-  asClearTextVector(KeySet &keySet, size_t pos);
+  // outcome::checked<std::vector<decrypted_scalar_t>, StringError>
+  // asClearTextVector(KeySet &keySet, size_t pos);
+
+  template <typename T>
+  outcome::checked<std::vector<T>, StringError>
+  asClearTextVector(KeySet &keySet, size_t pos) {
+    OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
+    if (!gate.isEncrypted()) {
+      std::vector<T> result;
+      result.reserve(buffers[pos].values.size());
+      std::copy(buffers[pos].values.begin(), buffers[pos].values.end(),
+                std::back_inserter(result));
+      return result;
+    }
+
+    auto buffer = buffers[pos];
+    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
+
+    std::vector<T> decryptedValues(buffer.length() / lweSize);
+    for (size_t i = 0; i < decryptedValues.size(); i++) {
+      auto ciphertext = &buffer.values[i * lweSize];
+      uint64_t decrypted;
+      OUTCOME_TRYV(keySet.decrypt_lwe(0, ciphertext, decrypted));
+      decryptedValues[i] = decrypted;
+    }
+    return decryptedValues;
+  }
 
   // private: TODO tmp
   friend class ::concretelang::serverlib::ServerLambda;
