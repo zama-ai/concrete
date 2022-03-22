@@ -900,6 +900,18 @@ static llvm::APInt getSqMANP(
 }
 
 static llvm::APInt getSqMANP(
+    mlir::concretelang::FHELinalg::TransposeOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  assert(
+      operandMANPs.size() == 1 &&
+      operandMANPs[0]->getValue().getMANP().hasValue() &&
+      "Missing squared Minimal Arithmetic Noise Padding for encrypted operand");
+
+  return operandMANPs[0]->getValue().getMANP().getValue();
+}
+
+static llvm::APInt getSqMANP(
     mlir::tensor::ExtractOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
@@ -1220,7 +1232,20 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::Conv2dOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(conv2dOp, operands);
+    } else if (auto transposeOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::TransposeOp>(
+                       op)) {
+      if (transposeOp.tensor()
+              .getType()
+              .cast<mlir::TensorType>()
+              .getElementType()
+              .isa<mlir::concretelang::FHE::EncryptedIntegerType>()) {
+        norm2SqEquiv = getSqMANP(transposeOp, operands);
+      } else {
+        isDummy = true;
+      }
     }
+
     // Tensor Operators
     // ExtractOp
     else if (auto extractOp = llvm::dyn_cast<mlir::tensor::ExtractOp>(op)) {
