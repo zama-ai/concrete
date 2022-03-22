@@ -73,8 +73,8 @@ where
         repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::SamplePrototypes {
         let proto_secret_key = repetition_proto;
-        let raw_plaintext1 = Precision::Raw::uniform();
-        let raw_plaintext2 = Precision::Raw::uniform();
+        let raw_plaintext1 = Precision::Raw::uniform_n_msb(4);
+        let raw_plaintext2 = Precision::Raw::uniform_n_msb(4);
         let proto_plaintext1 = maker.transform_raw_to_plaintext(&raw_plaintext1);
         let proto_plaintext2 = maker.transform_raw_to_plaintext(&raw_plaintext2);
         let proto_input_ciphertext1 = maker.encrypt_plaintext_to_lwe_ciphertext(

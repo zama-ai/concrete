@@ -97,7 +97,7 @@ where
         _repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::SamplePrototypes {
         let proto_val = maker.transform_raw_to_plaintext(&Precision::Raw::zero());
-        let proto_plaintext = maker.transform_raw_to_plaintext(&Precision::Raw::uniform());
+        let proto_plaintext = maker.transform_raw_to_plaintext(&Precision::Raw::uniform_n_msb(4));
         let proto_ciph = maker
             .trivially_encrypt_plaintext_to_lwe_ciphertext(parameters.lwe_dimension, &proto_val);
         (proto_plaintext, proto_ciph)

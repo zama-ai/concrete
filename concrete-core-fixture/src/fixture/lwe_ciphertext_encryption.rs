@@ -92,7 +92,7 @@ where
         maker: &mut Maker,
         _repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::SamplePrototypes {
-        let raw_plaintext = Precision::Raw::uniform();
+        let raw_plaintext = Precision::Raw::uniform_n_msb(4);
         let proto_plaintext = maker.transform_raw_to_plaintext(&raw_plaintext);
         (proto_plaintext, raw_plaintext)
     }
