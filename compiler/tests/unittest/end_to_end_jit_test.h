@@ -37,7 +37,13 @@ static bool assert_expected_success(llvm::Expected<T> &&val) {
 // `true` if the test passes, otherwise `false`.
 template <typename T>
 static bool assert_expected_failure(llvm::Expected<T> &&val) {
-  return !assert_expected_success(val);
+  if (!((bool)val)) {
+    // We need to consume the error, so let's do it here
+    llvm::errs() << "assert_expected_failure: "
+                 << llvm::toString(val.takeError()) << "\n";
+    return true;
+  }
+  return false;
 }
 
 // Checks that the value `val` of type `llvm::Expected<T>` is not in
@@ -54,7 +60,7 @@ static bool assert_expected_failure(llvm::Expected<T> &&val) {
 // an error state.
 #define ASSERT_EXPECTED_FAILURE(val)                                           \
   do {                                                                         \
-    if (assert_expected_success(val))                                          \
+    if (!assert_expected_failure(val))                                         \
       GTEST_FATAL_FAILURE_("Expected<T> not in error state");                  \
   } while (0)
 
