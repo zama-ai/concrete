@@ -84,7 +84,10 @@ void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
       FHE, suite, lambdasupport, "tests/unittest/end_to_end_fhe.yaml")         \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
       EncryptedTensor, suite, lambdasupport,                                   \
-      "tests/unittest/end_to_end_encrypted_tensor.yaml")
+      "tests/unittest/end_to_end_encrypted_tensor.yaml")                       \
+  INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
+      FHELinalg, suite, lambdasupport,                                         \
+      "tests/unittest/end_to_end_fhelinalg.yaml")
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(

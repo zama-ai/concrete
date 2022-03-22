@@ -1,0 +1,29 @@
+description: transpose1d
+program: |
+  func @main(%input: tensor<3x!FHE.eint<6>>) -> tensor<3x!FHE.eint<6>> {
+    %1 = "FHELinalg.transpose"(%input): (tensor<3x!FHE.eint<6>>) ->
+    tensor<3x!FHE.eint<6>> return %1 : tensor<3x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1, 2, 3]
+      shape: [3]
+      width: 8
+    outputs:
+    - tensor: [1, 2, 3]
+      shape: [3]
+---
+description: transpose2d
+program: |
+  func @main(%input: tensor<3x2x!FHE.eint<6>>) -> tensor<2x3x!FHE.eint<6>> {
+    %1 = "FHELinalg.transpose"(%input): (tensor<3x2x!FHE.eint<6>>) -> tensor<2x3x!FHE.eint<6>>
+    return %1 : tensor<2x3x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1, 2, 3, 4, 5, 6]
+      shape: [3, 2]
+      width: 8
+    outputs:
+    - tensor: [1, 3, 5, 2, 4, 6]
+      shape: [2, 3]
