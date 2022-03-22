@@ -178,7 +178,7 @@ test-end-to-end-jit-dfr: build-end-to-end-jit-dfr
 test-end-to-end-jit-auto-parallelization: build-end-to-end-jit-auto-parallelization
 	$(BUILD_DIR)/bin/end_to_end_jit_auto_parallelization
 
-test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-fhe test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-fhelinalg
+test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-fhe test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-fhelinalg test-end-to-end-jit-lambda
 
 show-stress-tests-summary:
 	@echo '------ Stress tests summary ------'
