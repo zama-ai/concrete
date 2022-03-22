@@ -138,6 +138,10 @@ class CompilerEngine:
             raise TypeError(
                 "unsecure_key_set_cache_path must be a str"
             )
+        options = CompilationOptions(func_name)
+        options.auto_parallelize(auto_parallelize)
+        options.loop_parallelize(loop_parallelize)
+        options.dataflow_parallelize(df_parallelize)
         self._compilation_result = self._engine.compile(mlir_str)
         self._client_parameters = self._engine.load_client_parameters(
             self._compilation_result)
