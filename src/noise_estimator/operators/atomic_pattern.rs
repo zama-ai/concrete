@@ -62,7 +62,7 @@ pub fn fft_noise<W: UnsignedInteger>(
     let big_n = glwe_polynomial_size as f64;
     // 22 = 2 x 11, 11 = 64 -53
     let scale_margin = (1_u64 << 22) as f64;
-    let res = n * (0.016089458900501813 * scale_margin * l * b * b * big_n.powf(2.188930746713708));
+    let res = n * 0.1 * scale_margin * l * b * b * big_n.powf(2.0);
     Variance::from_modular_variance::<W>(res)
 }
 
@@ -280,9 +280,8 @@ mod tests {
     }
 
     #[test]
-    fn golden_python_prototype_security_variance_bootstrap_1() {
-        // golden value include fft correction
-        let golden_modular_variance = 6.283_575_623_979_502e30;
+    fn security_variance_bootstrap_1() {
+        let ref_modular_variance = 8.112_963_910_722_068e30;
         let internal_ks_output_lwe_dimension = 2048;
         let glwe_polynomial_size = 4096;
         let glwe_dimension = 10;
@@ -306,7 +305,7 @@ mod tests {
             variance_bsk,
         )
         .get_modular_variance::<u64>();
-        approx::assert_relative_eq!(actual, golden_modular_variance, max_relative = 1e-8);
+        approx::assert_relative_eq!(actual, ref_modular_variance, max_relative = 1e-8);
     }
 
     #[test]
