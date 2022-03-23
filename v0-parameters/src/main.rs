@@ -141,12 +141,12 @@ mod tests {
 
     #[test]
     fn test_reference_output() {
-        const REF_FILE: &str = "examples/v0_parameters.ref-23-03-2022";
-        const V0_PARAMETERS_EXE: &str = "target/debug/examples/v0_parameters";
+        const REF_FILE: &str = "src/v0_parameters.ref-23-03-2022";
+        const V0_PARAMETERS_EXE: &str = "../target/debug/v0-parameters";
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
         let _ = std::process::Command::new("cargo")
-            .args(["build", "-q", "--example", "v0_parameters"])
+            .args(["build", "-q"])
             .status()
             .expect("Can't build");
         assert!(std::path::Path::new(V0_PARAMETERS_EXE).exists());
