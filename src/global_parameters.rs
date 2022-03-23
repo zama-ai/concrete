@@ -48,13 +48,13 @@ pub struct ParameterDomains {
 pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
     glwe_pbs_constrained: GlweParameters {
         log2_polynomial_size: Range { start: 8, end: 15 },
-        glwe_dimension: Range { start: 1, end: 10 },
+        glwe_dimension: Range { start: 1, end: 2 },
     },
     free_glwe: GlweParameters {
         log2_polynomial_size: Range { start: 0, end: 1 },
         glwe_dimension: Range {
-            start: 600,
-            end: 2000,
+            start: 512,
+            end: 1025,
         },
     },
     pbs_decomposition: PbsDecompositionParameters {
@@ -80,6 +80,12 @@ impl IntoIterator for &Range {
 
     fn into_iter(self) -> Self::IntoIter {
         self.start..self.end
+    }
+}
+
+impl Range {
+    pub fn as_vec(self) -> Vec<u64> {
+        self.into_iter().collect()
     }
 }
 

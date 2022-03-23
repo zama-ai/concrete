@@ -1,9 +1,18 @@
 use clap::Parser;
 use rayon_cond::CondIterator;
 
+use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimisation::atomic_pattern as optimize_atomic_pattern;
 
 const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
+const MIN_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS
+    .glwe_pbs_constrained
+    .log2_polynomial_size
+    .start as u64;
+const MAX_LOG_POLY_SIZE: u64 =
+    DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end as u64 - 1;
+const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start as u64;
+const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end as u64 - 1;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -12,7 +21,7 @@ struct Args {
     #[clap(long, default_value_t = 1, help = "1..16")]
     min_precision: u64,
 
-    #[clap(long, default_value_t = 7, help = "1..16")]
+    #[clap(long, default_value_t = 8, help = "1..16")]
     max_precision: u64,
 
     #[clap(long, default_value_t = _4_SIGMA)]
@@ -21,10 +30,10 @@ struct Args {
     #[clap(long, default_value_t = 128, help = "Only 128 is supported")]
     security_level: u64,
 
-    #[clap(long, default_value_t = 10, help = "8..16")]
+    #[clap(long, default_value_t = MIN_LOG_POLY_SIZE, help = "8..16")]
     min_log_poly_size: u64,
 
-    #[clap(long, default_value_t = 12, help = "8..16")]
+    #[clap(long, default_value_t = MAX_LOG_POLY_SIZE, help = "8..16")]
     max_log_poly_size: u64,
 
     #[clap(long, default_value_t = 1, help = "EXPERIMENTAL")]
@@ -34,10 +43,10 @@ struct Args {
     // only usefull for very low precision, some parts are not correcte if used with k > 1
     max_glwe_dim: u64,
 
-    #[clap(long, default_value_t = 512)]
+    #[clap(long, default_value_t = MIN_LWE_DIM)]
     min_intern_lwe_dim: u64,
 
-    #[clap(long, default_value_t = 1024)]
+    #[clap(long, default_value_t = MAX_LWE_DIM)]
     max_intern_lwe_dim: u64, // 16bits needs around 1300
 
     #[clap(long, default_value_t = 4096)]
@@ -132,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_reference_output() {
-        const REF_FILE: &str = "examples/v0_parameters.ref-02-03-2022";
+        const REF_FILE: &str = "examples/v0_parameters.ref-23-03-2022";
         const V0_PARAMETERS_EXE: &str = "target/debug/examples/v0_parameters";
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;

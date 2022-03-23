@@ -33,10 +33,14 @@ pub extern "C" fn optimise_bootstrap(
     noise_factor: f64,
     maximum_acceptable_error_probability: f64,
 ) -> optimisation::atomic_pattern::Solution {
+    use global_parameters::DEFAUT_DOMAINS;
     let sum_size = 1;
-    let glwe_log_polynomial_sizes: Vec<_> = (10..=12).collect();
-    let glwe_dimensions: Vec<_> = (1..=1).collect();
-    let internal_lwe_dimensions: Vec<_> = (512..=1024).collect();
+    let glwe_log_polynomial_sizes = DEFAUT_DOMAINS
+        .glwe_pbs_constrained
+        .log2_polynomial_size
+        .as_vec();
+    let glwe_dimensions = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
+    let internal_lwe_dimensions = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
     let result = optimisation::atomic_pattern::optimise_one::<u64>(
         sum_size,
         precision,
