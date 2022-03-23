@@ -56,7 +56,7 @@ pub fn fft_noise<W: UnsignedInteger>(
 ) -> Variance {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L25
     let n = internal_ks_output_lwe_dimension as f64;
-    let b = (1_u64 << br_decomposition_base_log) as f64;
+    let b = 2_f64.powi(br_decomposition_base_log as i32);
     let l = br_decomposition_level_count as f64;
     let big_n = glwe_polynomial_size as f64;
     // 22 = 2 x 11, 11 = 64 -53
