@@ -122,15 +122,6 @@ static void replaceAllUsesInDFTsInRegionWith(Value orig, Value replacement,
       use.set(replacement);
   }
 }
-static void replaceAllUsesNotInDFTsInRegionWith(Value orig, Value replacement,
-                                                Region &region) {
-  for (auto &use : llvm::make_early_inc_range(orig.getUses())) {
-    if (!isa<RT::DataflowTaskOp>(use.getOwner()) &&
-        use.getOwner()->getParentOfType<RT::DataflowTaskOp>() == nullptr &&
-        region.isAncestor(use.getOwner()->getParentRegion()))
-      use.set(replacement);
-  }
-}
 
 // TODO: Fix type sizes. For now we're using some default values.
 static std::pair<mlir::Value, mlir::Value>
@@ -306,16 +297,13 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
     for (auto &use : llvm::make_early_inc_range(result.getUses())) {
       if (!isa<RT::DataflowTaskOp>(use.getOwner()) &&
           use.getOwner()->getParentOfType<RT::DataflowTaskOp>() == nullptr) {
-        // Wait for this future
-        // TODO: the wait function should ideally
-        // be issued as late as possible, but need to identify which
-        // use comes first.
+        // Wait for this future before its uses
+        OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPoint(use.getOwner());
         auto af = builder.create<RT::AwaitFutureOp>(
             DFTOp.getLoc(), result.getType(), drpp.getResult());
-        replaceAllUsesNotInDFTsInRegionWith(result, af->getResult(0), opBody);
-        // We only need to to this once, propagation will hit all
-        // other uses
-        break;
+        assert(opBody.isAncestor(use.getOwner()->getParentRegion()));
+        use.set(af->getResult(0));
       }
     }
     // All leftover uses (i.e. those within DFTs should use the future)
