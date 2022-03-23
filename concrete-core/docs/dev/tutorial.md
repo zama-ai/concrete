@@ -8,7 +8,8 @@ create your backend are:
 2. [Build the structure for the new backend](#build-the-structure-for-the-new-backend)
 3. [Implement some entities and engine traits of your choice](#implement-the-entity-and-engine-traits-of-your-choice)
 
-Let's see how to do this in more details. For the sake of this tutorial, we're going to add a GPU backend to
+Let's see how to do this in more details. For the sake of this tutorial, we're going to add a GPU
+backend to
 `concrete-core`, but it could be any other hardware.
 
 ## Prerequisites
@@ -53,7 +54,14 @@ multithread = ["rayon", "concrete-csprng/multithread"]
 Add this line at the end of it:
 
 ```ini
-backend_gpu = []
+backend_gpu = ["fhe_gpu"]
+```
+
+and an optional dependency to the crate `fhe_gpu`:
+
+```ini
+[dependencies]
+fhe-gpu = { version = "0.0.1", optional = true }
 ```
 
 Now, you'll be able to:
@@ -199,7 +207,7 @@ use std::fmt::Debug;
 
 use concrete_commons::parameters::{LweCiphertextCount, LweDimension};
 
-use crate::backends::cuda::private::crypto::lwe::list::CudaLweList;
+use crate::backends::cuda::private::crypto::lwe::list::GpuLweList;
 use crate::specification::entities::markers::{BinaryKeyDistribution, LweCiphertextVectorKind};
 use crate::specification::entities::{AbstractEntity, LweCiphertextVectorEntity};
 
@@ -247,17 +255,19 @@ use fhe_gpu::get_number_of_gpus;
 
 #[derive(Debug)]
 pub enum GpuError {
-DeviceNotFound,
+    DeviceNotFound,
 }
+
 impl Display for GpuError {
-fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    match self {
-        GpuError::DeviceNotFound => {
-            write!(f, "No GPU detected on the machine.")
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GpuError::DeviceNotFound => {
+                write!(f, "No GPU detected on the machine.")
+            }
         }
     }
 }
-}
+
 impl Error for GpuError {}
 
 /// The main engine exposed by the GPU backend.
@@ -310,15 +320,14 @@ impl DestructionEngine<GpuLweCiphertextVector32> for GpuEngine {
     unsafe fn destroy_unchecked(&mut self, entity: GpuLweCiphertextVector32) {
         // Here deallocate the Gpu memory
         cuda_drop(entity.0.get_ptr().0).unwrap();
-        }
     }
+}
 }
 ```
 
 Finally, the `lwe_ciphertext_vector_conversion.rs` file is going to contain:
 
 ```rust
-use crate::backends::core::entities::LweCiphertextVector64;
 use crate::backends::core::implementation::entities::LweCiphertextVector32;
 use crate::backends::core::private::crypto::lwe::LweList;
 use crate::backends::core::private::math::tensor::{AsRefSlice, AsRefTensor};
@@ -343,7 +352,7 @@ impl From<GpuError> for LweCiphertextVectorConversionError<GpuError> {
 /// Convert an LWE ciphertext vector with 32 bits of precision from CPU to GPU.
 ///
 impl LweCiphertextVectorConversionEngine<LweCiphertextVector32, GpuLweCiphertextVector32>
-    for GpuEngine
+for GpuEngine
 {
     fn convert_lwe_ciphertext_vector(
         &mut self,
@@ -369,6 +378,32 @@ impl LweCiphertextVectorConversionEngine<LweCiphertextVector32, GpuLweCiphertext
         })
     }
 }
+
+/// # Description
+/// Convert an LWE ciphertext vector with 32 bits of precision from GPU to CPU.
+impl LweCiphertextVectorConversionEngine<GpuLweCiphertextVector32, LweCiphertextVector32>
+for GpuEngine
+{
+    fn convert_lwe_ciphertext_vector(
+        &mut self,
+        input: &GpuLweCiphertextVector32,
+    ) -> Result<LweCiphertextVector32, LweCiphertextVectorConversionError<GpuError>> {
+        Ok(unsafe { self.convert_lwe_ciphertext_vector_unchecked(input) })
+    }
+
+    unsafe fn convert_lwe_ciphertext_vector_unchecked(
+        &mut self,
+        input: &GpuLweCiphertextVector32,
+    ) -> LweCiphertextVector32 {
+        let mut output = vec![0u32; input.lwe_dimension().to_lwe_size().0 * input.lwe_ciphertext_count().0];
+        copy_to_cpu::<u32>(output, input.0.get_ptr(GpuIndex(gpu_index as u32)).0);
+        LweCiphertextVector32(LweList::from_container(
+            output,
+            input.lwe_dimension().to_lwe_size(),
+        ))
+    }
+}
+
 ```
 
 Now, a user is able to write:
@@ -388,11 +423,13 @@ let mut core_engine = CoreEngine::new().unwrap();
 let h_key: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dimension).unwrap();
 let h_plaintext_vector: PlaintextVector32 = core_engine.create_plaintext_vector(&input).unwrap();
 let mut h_ciphertext_vector: LweCiphertextVector32 =
-    core_engine.encrypt_lwe_ciphertext_vector(&h_key, &h_plaintext_vector, noise).unwrap();
+core_engine.encrypt_lwe_ciphertext_vector(&h_key, &h_plaintext_vector, noise).unwrap();
 
-let mut cuda_engine = CudaEngine::new().unwrap();
-let d_ciphertext_vector: CudaLweCiphertextVector32 =
-    cuda_engine.convert_lwe_ciphertext_vector(&h_ciphertext_vector).unwrap();
+let mut gpu_engine = GpuEngine::new().unwrap();
+let d_ciphertext_vector: GpuLweCiphertextVector32 =
+gpu_engine.convert_lwe_ciphertext_vector(&h_ciphertext_vector).unwrap();
+let h_output_ciphertext_vector: LweCiphertextVector32 =
+gpu_engine.convert_lwe_ciphertext_vector(&d_ciphertext_vector).unwrap();
 
 assert_eq!(d_ciphertext_vector.lwe_dimension(), lwe_dimension);
 assert_eq!(
@@ -403,7 +440,9 @@ assert_eq!(
 core_engine.destroy(h_key).unwrap();
 core_engine.destroy(h_plaintext_vector).unwrap();
 core_engine.destroy(h_ciphertext_vector).unwrap();
-cuda_engine.destroy(d_ciphertext_vector).unwrap();
+gpu_engine.destroy(d_ciphertext_vector).unwrap();
+core_engine.destroy(h_output_ciphertext_vector).unwrap();
 ```
 
-And this converts an LWE ciphertext vector from the CPU to the GPU!
+And this converts an LWE ciphertext vector from the CPU to the GPU! Next step is to test your
+backend, for this head to the [tests tutorial](testing_backends.md)!
