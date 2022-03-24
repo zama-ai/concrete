@@ -48,13 +48,13 @@ MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 jit_load_client_parameters(JITLambdaSupport_C support,
                            mlir::concretelang::JitCompilationResult &);
 
-MLIR_CAPI_EXPORTED mlir::concretelang::JITLambda *
+MLIR_CAPI_EXPORTED std::shared_ptr<mlir::concretelang::JITLambda>
 jit_load_server_lambda(JITLambdaSupport_C support,
                        mlir::concretelang::JitCompilationResult &);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
 jit_server_call(JITLambdaSupport_C support,
-                mlir::concretelang::JITLambda *lambda,
+                mlir::concretelang::JITLambda &lambda,
                 concretelang::clientlib::PublicArguments &args);
 
 // Library Support bindings ///////////////////////////////////////////////////

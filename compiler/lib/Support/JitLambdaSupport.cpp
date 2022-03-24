@@ -46,7 +46,7 @@ JitLambdaSupport::compile(llvm::SourceMgr &program,
     return StreamStringError("No client parameters has been generated");
   }
   auto result = std::make_unique<JitCompilationResult>();
-  result->lambda = std::move(*lambda);
+  result->lambda = std::shared_ptr<concretelang::JITLambda>(std::move(*lambda));
   result->clientParameters =
       compilationResult.get().clientParameters.getValue();
   return std::move(result);

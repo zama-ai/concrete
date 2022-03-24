@@ -43,7 +43,7 @@ jit_load_client_parameters(JITLambdaSupport_C support,
   return *clientParameters;
 }
 
-MLIR_CAPI_EXPORTED mlir::concretelang::JITLambda *
+MLIR_CAPI_EXPORTED std::shared_ptr<mlir::concretelang::JITLambda>
 jit_load_server_lambda(JITLambdaSupport_C support,
                        mlir::concretelang::JitCompilationResult &result) {
   GET_OR_THROW_LLVM_EXPECTED(serverLambda,
@@ -53,10 +53,9 @@ jit_load_server_lambda(JITLambdaSupport_C support,
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
 jit_server_call(JITLambdaSupport_C support,
-                mlir::concretelang::JITLambda *lambda,
+                mlir::concretelang::JITLambda &lambda,
                 concretelang::clientlib::PublicArguments &args) {
-  GET_OR_THROW_LLVM_EXPECTED(publicResult,
-                             support.support.serverCall(lambda, args));
+  GET_OR_THROW_LLVM_EXPECTED(publicResult, lambda.call(args));
   return std::move(*publicResult);
 }
 

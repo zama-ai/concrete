@@ -54,7 +54,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JitCompilationResult");
-  pybind11::class_<mlir::concretelang::JITLambda>(m, "JITLambda");
+  pybind11::class_<mlir::concretelang::JITLambda,
+                   std::shared_ptr<mlir::concretelang::JITLambda>>(m,
+                                                                   "JITLambda");
   pybind11::class_<JITLambdaSupport_C>(m, "JITLambdaSupport")
       .def(pybind11::init([](std::string runtimeLibPath) {
         return jit_lambda_support(runtimeLibPath.c_str());
@@ -77,7 +79,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           },
           pybind11::return_value_policy::reference)
       .def("server_call",
-           [](JITLambdaSupport_C &support, concretelang::JITLambda *lambda,
+           [](JITLambdaSupport_C &support, concretelang::JITLambda &lambda,
               clientlib::PublicArguments &publicArguments) {
              return jit_server_call(support, lambda, publicArguments);
            });

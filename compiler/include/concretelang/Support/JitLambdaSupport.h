@@ -23,13 +23,14 @@ namespace clientlib = ::concretelang::clientlib;
 /// JitCompilationResult is the result of a Jit compilation, the server JIT
 /// lambda and the clientParameters.
 struct JitCompilationResult {
-  std::unique_ptr<concretelang::JITLambda> lambda;
+  std::shared_ptr<concretelang::JITLambda> lambda;
   clientlib::ClientParameters clientParameters;
 };
 
 /// JitLambdaSupport is the instantiated LambdaSupport for the Jit Compilation.
 class JitLambdaSupport
-    : public LambdaSupport<concretelang::JITLambda *, JitCompilationResult> {
+    : public LambdaSupport<std::shared_ptr<concretelang::JITLambda>,
+                           JitCompilationResult> {
 
 public:
   JitLambdaSupport(llvm::Optional<llvm::StringRef> runtimeLibPath = llvm::None);
@@ -38,9 +39,9 @@ public:
   compile(llvm::SourceMgr &program, CompilationOptions options) override;
   using LambdaSupport::compile;
 
-  llvm::Expected<concretelang::JITLambda *>
+  llvm::Expected<std::shared_ptr<concretelang::JITLambda>>
   loadServerLambda(JitCompilationResult &result) override {
-    return result.lambda.get();
+    return result.lambda;
   }
 
   llvm::Expected<clientlib::ClientParameters>
@@ -49,7 +50,7 @@ public:
   }
 
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
-  serverCall(concretelang::JITLambda *lambda,
+  serverCall(std::shared_ptr<concretelang::JITLambda> lambda,
              clientlib::PublicArguments &args) override {
     return lambda->call(args);
   }
