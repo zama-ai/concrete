@@ -44,7 +44,8 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                         std::function<bool(mlir::Pass *)> enablePass);
+                         std::function<bool(mlir::Pass *)> enablePass,
+                         bool parallelizeLoops);
 
 mlir::LogicalResult
 lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,

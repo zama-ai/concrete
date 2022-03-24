@@ -36,7 +36,6 @@ def ConcreteToBConcrete : Pass<"concrete-to-bconcrete", "mlir::ModuleOp"> {
   let summary = "Lowers operations from the Concrete dialect to Bufferized Concrete";
   let description = [{ Lowers operations from the Concrete dialect to Bufferized Concrete }];
   let constructor = "mlir::concretelang::createConvertConcreteToBConcretePass()";
-  let options = [];
   let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::Concrete::ConcreteDialect", "mlir::concretelang::BConcrete::BConcreteDialect"];
 }
 

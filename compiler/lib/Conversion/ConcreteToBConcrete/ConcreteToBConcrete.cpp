@@ -24,6 +24,12 @@ namespace {
 struct ConcreteToBConcretePass
     : public ConcreteToBConcreteBase<ConcreteToBConcretePass> {
   void runOnOperation() final;
+  ConcreteToBConcretePass() = delete;
+  ConcreteToBConcretePass(bool loopParallelize)
+      : loopParallelize(loopParallelize){};
+
+private:
+  bool loopParallelize;
 };
 } // namespace
 
@@ -953,12 +959,17 @@ void ConcreteToBConcretePass::runOnOperation() {
 
     // Add patterns to rewrite linalg op to nested loops with views on
     // ciphertexts
-    patterns.insert<LinalgRewritePattern<mlir::scf::ForOp>>(converter,
-                                                            &getContext());
+    if (loopParallelize) {
+      patterns.insert<LinalgRewritePattern<mlir::scf::ParallelOp>>(
+          converter, &getContext());
+    } else {
+      patterns.insert<LinalgRewritePattern<mlir::scf::ForOp>>(converter,
+                                                              &getContext());
+    }
     target.addLegalOp<mlir::arith::ConstantOp, mlir::scf::ForOp,
-                      mlir::scf::YieldOp, mlir::AffineApplyOp,
-                      mlir::memref::SubViewOp, mlir::memref::LoadOp,
-                      mlir::memref::TensorStoreOp>();
+                      mlir::scf::ParallelOp, mlir::scf::YieldOp,
+                      mlir::AffineApplyOp, mlir::memref::SubViewOp,
+                      mlir::memref::LoadOp, mlir::memref::TensorStoreOp>();
 
     // Add patterns to do the conversion of func
     mlir::populateFuncOpTypeConversionPattern(patterns, converter);
@@ -991,8 +1002,8 @@ void ConcreteToBConcretePass::runOnOperation() {
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertConcreteToBConcretePass() {
-  return std::make_unique<ConcreteToBConcretePass>();
+createConvertConcreteToBConcretePass(bool loopParallelize) {
+  return std::make_unique<ConcreteToBConcretePass>(loopParallelize);
 }
 } // namespace concretelang
 } // namespace mlir

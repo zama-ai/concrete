@@ -187,11 +187,14 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                         std::function<bool(mlir::Pass *)> enablePass) {
+                         std::function<bool(mlir::Pass *)> enablePass,
+                         bool parallelizeLoops) {
   mlir::PassManager pm(&context);
   pipelinePrinting("ConcreteToBConcrete", pm, context);
   addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertConcreteToBConcretePass(),
+      pm,
+      mlir::concretelang::createConvertConcreteToBConcretePass(
+          parallelizeLoops),
       enablePass);
 
   return pm.run(module.getOperation());

@@ -11,7 +11,8 @@
 namespace mlir {
 namespace concretelang {
 /// Create a pass to convert `Concrete` dialect to `BConcrete` dialect.
-std::unique_ptr<OperationPass<ModuleOp>> createConvertConcreteToBConcretePass();
+std::unique_ptr<OperationPass<ModuleOp>>
+createConvertConcreteToBConcretePass(bool loopParallelize);
 } // namespace concretelang
 } // namespace mlir
 
