@@ -6,7 +6,7 @@ env:
   # Target directory without leading / and with trailing /
   url_dest_dir: 'concrete/boolean-lib/'
   # default release version (will be overloaded for tags)
-  RELEASE_VERSION: 'master'
+  RELEASE_VERSION: 'main'
   # github tag refs filter (to trigger tag doc publication)
   # /!\ due to a github limit: need to be manually set in publish-docs jobs
   TAG_REFS_FILTER: 'refs/tags/concrete-boolean-'
@@ -62,7 +62,7 @@ jobs:
   publish-docs:
     runs-on: ubuntu-latest
     needs: [build-docs, test-docs]
-    if: github.event_name == 'push' && ( startsWith(github.ref, 'refs/tags/concrete-boolean-') || github.ref == 'refs/heads/master' )
+    if: github.event_name == 'push' && ( startsWith(github.ref, 'refs/tags/concrete-boolean-') || github.ref == 'refs/heads/main' )
     steps:
       - name: Download Documentation
         id: download

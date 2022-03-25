@@ -5,7 +5,7 @@ on:
   pull_request:
     types: [ labeled ]
     branches: 
-      - master
+      - main
 
 env:
   CARGO_TERM_COLOR: always

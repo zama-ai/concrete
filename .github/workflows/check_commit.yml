@@ -3,7 +3,7 @@ name: Check commit and PR compliance
 on:
   pull_request:
     branches: 
-      - master
+      - main
 jobs:
   check-commit-pr:
     name: Check commit and PR
