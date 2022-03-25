@@ -231,7 +231,7 @@ where
 // FIXME:
 // The current NPE does not use the key distribution markers of concrete-core. This function makes
 // the mapping. This function should be removed as soon as the npe uses the types of concrete-core.
-fn fix_estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms<T, D1, D2, K>(
+pub(crate) fn fix_estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms<T, D1, D2, K>(
     lwe_mask_size: LweDimension,
     dispersion_lwe: D1,
     dispersion_ksk: D2,
