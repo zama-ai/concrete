@@ -29,3 +29,9 @@ void DataflowTaskOp::build(
   reg->push_back(body);
   result.addTypes(resultTypes);
 }
+
+void DataflowTaskOp::getSuccessorRegions(
+    Optional<unsigned> index, ArrayRef<Attribute> operands,
+    SmallVectorImpl<RegionSuccessor> &regions) {
+  regions.push_back(RegionSuccessor(&body()));
+}

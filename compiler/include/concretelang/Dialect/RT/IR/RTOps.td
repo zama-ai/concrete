@@ -12,7 +12,9 @@ include "concretelang/Dialect/RT/IR/RTTypes.td"
 class RT_Op<string mnemonic, list<OpTrait> traits = []> :
     Op<RT_Dialect, mnemonic, traits>;
 
-def DataflowTaskOp : RT_Op<"dataflow_task", [SingleBlockImplicitTerminator<"DataflowYieldOp">]> {
+def DataflowTaskOp : RT_Op<"dataflow_task", [
+    DeclareOpInterfaceMethods<RegionBranchOpInterface>,
+    SingleBlockImplicitTerminator<"DataflowYieldOp">]> {
     let arguments = (ins Variadic<AnyType>: $inputs);
     let results = (outs Variadic<AnyType>:$outputs);
 
