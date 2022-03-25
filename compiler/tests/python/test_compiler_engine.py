@@ -4,9 +4,9 @@ import tempfile
 import pytest
 import numpy as np
 from concrete.compiler import CompilerEngine
-from lib.Bindings.Python.concrete.compiler import JITCompilerSupport, LibraryCompilerSupport
-from lib.Bindings.Python.concrete.compiler import ClientSupport
-from lib.Bindings.Python.concrete.compiler import KeySetCache
+from concrete.compiler import JITCompilerSupport, LibraryCompilerSupport
+from concrete.compiler import ClientSupport
+from concrete.compiler import KeySetCache
 
 KEY_SET_CACHE_PATH = os.path.join(tempfile.gettempdir(), 'KeySetCache')
 
