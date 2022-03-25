@@ -30,6 +30,13 @@ jit_lambda_support(const char *runtimeLibPath) {
 std::unique_ptr<mlir::concretelang::JitCompilationResult>
 jit_compile(JITLambdaSupport_C support, const char *module,
             mlir::concretelang::CompilationOptions options) {
+#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+  if (options.autoParallelize || options.loopParallelize ||
+      options.dataflowParallelize) {
+    throw std::runtime_error(
+        "This package was built without parallelization support");
+  }
+#endif
   GET_OR_THROW_LLVM_EXPECTED(compilationResult,
                              support.support.compile(module, options));
   return std::move(*compilationResult);
@@ -69,6 +76,13 @@ library_lambda_support(const char *outputPath) {
 std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
 library_compile(LibraryLambdaSupport_C support, const char *module,
                 mlir::concretelang::CompilationOptions options) {
+#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+  if (options.autoParallelize || options.loopParallelize ||
+      options.dataflowParallelize) {
+    throw std::runtime_error(
+        "This package was built without parallelization support");
+  }
+#endif
   GET_OR_THROW_LLVM_EXPECTED(compilationResult,
                              support.support.compile(module, options));
   return std::move(*compilationResult);
