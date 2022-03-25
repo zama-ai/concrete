@@ -10,6 +10,5 @@ add_mlir_library(FHELinalgDialectTransforms
   
   LINK_LIBS PUBLIC
   MLIRIR
-  FHELinalgDialect)
-
-target_link_libraries(FHELinalgDialectTransforms PUBLIC MLIRIR)
+  FHELinalgDialect
+)

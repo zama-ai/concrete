@@ -13,6 +13,6 @@ add_mlir_library(RTDialectAnalysis
 
   LINK_LIBS PUBLIC
   MLIRIR
-  RTDialect)
+  RTDialect
+)
 
-target_link_libraries(RTDialectAnalysis PUBLIC MLIRIR)

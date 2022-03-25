@@ -33,4 +33,5 @@ add_mlir_library(ConcretelangSupport
   ConcretelangRuntime
   ConcretelangClientLib
   ConcretelangServerLib
+  Concrete
 )

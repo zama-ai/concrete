@@ -10,6 +10,5 @@ add_mlir_library(FHEDialectAnalysis
   
   LINK_LIBS PUBLIC
   MLIRIR
-  FHEDialect)
-
-target_link_libraries(FHEDialectAnalysis PUBLIC MLIRIR)
+  FHEDialect
+)

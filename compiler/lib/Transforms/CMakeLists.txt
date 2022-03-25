@@ -9,8 +9,7 @@ add_mlir_library(ConcretelangTransforms
   mlir-headers
   
   LINK_LIBS PUBLIC
+  MLIRIR
   MLIRMemRef
   MLIRTransforms
 )
-
-target_link_libraries(FHELinalgDialectTransforms PUBLIC MLIRIR)

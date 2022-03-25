@@ -23,8 +23,8 @@ add_mlir_library(
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/ClientLib
 
+  LINK_LIBS
   ConcretelangRuntime
-  ConcretelangSupportLib
   LINK_LIBS PUBLIC
   Concrete
 )
