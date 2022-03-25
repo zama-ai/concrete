@@ -109,7 +109,7 @@ where
         let proto_plaintext_vector =
             maker.transform_raw_vec_to_plaintext_vector(raw_plaintext_vector.as_slice());
         let proto_ciphertext_vector = maker.encrypt_plaintext_vector_to_lwe_ciphertext_vector(
-            &key,
+            key,
             &proto_plaintext_vector,
             parameters.noise,
         );
@@ -148,13 +148,13 @@ where
         let proto_output_ciphertext_vector =
             maker.unsynthesize_lwe_ciphertext_vector(&output_ciphertext_vector);
         let proto_plaintext_vector =
-            maker.decrypt_lwe_ciphertext_vector_to_plaintext_vector(&key, &proto_ciphertext_vector);
+            maker.decrypt_lwe_ciphertext_vector_to_plaintext_vector(key, proto_ciphertext_vector);
         let proto_output_plaintext_vector = <Maker as PrototypesLweCiphertextVector<
             Precision,
             CiphertextVector::KeyDistribution,
         >>::decrypt_lwe_ciphertext_vector_to_plaintext_vector(
             maker,
-            &key,
+            key,
             &proto_output_ciphertext_vector,
         );
         maker.destroy_lwe_ciphertext_vector(output_ciphertext_vector);

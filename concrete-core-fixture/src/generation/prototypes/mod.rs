@@ -11,6 +11,7 @@ mod lwe_ciphertext;
 mod lwe_ciphertext_vector;
 mod lwe_keyswitch_key;
 mod lwe_secret_key;
+mod packing_keyswitch_key;
 mod plaintext;
 mod plaintext_vector;
 
@@ -25,5 +26,6 @@ pub use lwe_ciphertext::*;
 pub use lwe_ciphertext_vector::*;
 pub use lwe_keyswitch_key::*;
 pub use lwe_secret_key::*;
+pub use packing_keyswitch_key::*;
 pub use plaintext::*;
 pub use plaintext_vector::*;
