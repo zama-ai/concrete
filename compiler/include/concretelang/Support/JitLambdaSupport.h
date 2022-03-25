@@ -33,7 +33,7 @@ class JitLambdaSupport
                            JitCompilationResult> {
 
 public:
-  JitLambdaSupport(llvm::Optional<llvm::StringRef> runtimeLibPath = llvm::None);
+  JitLambdaSupport(llvm::Optional<std::string> runtimeLibPath = llvm::None);
 
   llvm::Expected<std::unique_ptr<JitCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override;
@@ -56,7 +56,7 @@ public:
   }
 
 private:
-  llvm::Optional<llvm::StringRef> runtimeLibPath;
+  llvm::Optional<std::string> runtimeLibPath;
   llvm::function_ref<llvm::Error(llvm::Module *)> llvmOptPipeline;
 };
 

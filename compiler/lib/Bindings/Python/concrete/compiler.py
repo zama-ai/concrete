@@ -96,7 +96,6 @@ class CompilerEngine:
         self,
         mlir_str: str,
         func_name: str = "main",
-        runtime_lib_path: str = None,
         unsecure_key_set_cache_path: str = None,
         auto_parallelize: bool = False,
         loop_parallelize: bool = False,
@@ -107,7 +106,6 @@ class CompilerEngine:
         Args:
             mlir_str (str): MLIR to compile.
             func_name (str): name of the function to set as entrypoint (default: main).
-            runtime_lib_path (str): path to the runtime lib (default: None).
             unsecure_key_set_cache_path (str): path to the activate keyset caching (default: None).
             auto_parallelize (bool): whether to activate auto-parallelization or not (default: False),
             loop_parallelize (bool): whether to activate loop-parallelization or not (default: False),
@@ -116,16 +114,6 @@ class CompilerEngine:
         Raises:
             TypeError: if the argument is not an str.
         """
-        if not isinstance(mlir_str, str):
-            raise TypeError("input must be an `str`")
-        if runtime_lib_path is None:
-            # Set to empty string if not found
-            runtime_lib_path = _lookup_runtime_lib()
-        else:
-            if not isinstance(runtime_lib_path, str):
-                raise TypeError(
-                    "runtime_lib_path must be an str representing the path to the runtime lib"
-                )
         if not all(
             isinstance(flag, bool)
             for flag in [auto_parallelize, loop_parallelize, df_parallelize]
@@ -263,6 +251,11 @@ class JITCompilerSupport:
     def __init__(self, runtime_lib_path=None):
         if runtime_lib_path is None:
             runtime_lib_path = _lookup_runtime_lib()
+        else:
+            if not isinstance(runtime_lib_path, str):
+                raise TypeError(
+                    "runtime_lib_path must be an str representing the path to the runtime lib"
+                )
         self._support = _JITLambdaSupport(runtime_lib_path)
 
     def compile(self, mlir_program: str, options: CompilationOptions = CompilationOptions("main")) -> JitCompilationResult:

@@ -59,7 +59,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                                                                    "JITLambda");
   pybind11::class_<JITLambdaSupport_C>(m, "JITLambdaSupport")
       .def(pybind11::init([](std::string runtimeLibPath) {
-        return jit_lambda_support(runtimeLibPath.c_str());
+        return jit_lambda_support(runtimeLibPath);
       }))
       .def("compile",
            [](JITLambdaSupport_C &support, std::string mlir_program,

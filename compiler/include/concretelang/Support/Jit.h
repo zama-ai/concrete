@@ -32,7 +32,7 @@ public:
   static llvm::Expected<std::unique_ptr<JITLambda>>
   create(llvm::StringRef name, mlir::ModuleOp &module,
          llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline,
-         llvm::Optional<llvm::StringRef> runtimeLibPath = {});
+         llvm::Optional<std::string> runtimeLibPath = {});
 
   /// Call the JIT lambda with the public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>

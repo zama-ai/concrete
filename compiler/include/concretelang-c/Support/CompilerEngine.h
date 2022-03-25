@@ -38,7 +38,7 @@ struct JITLambdaSupport_C {
 typedef struct JITLambdaSupport_C JITLambdaSupport_C;
 
 MLIR_CAPI_EXPORTED JITLambdaSupport_C
-jit_lambda_support(const char *runtimeLibPath);
+jit_lambda_support(std::string runtimeLibPath);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
 jit_compile(JITLambdaSupport_C support, const char *module,

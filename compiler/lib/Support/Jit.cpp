@@ -23,7 +23,7 @@ namespace concretelang {
 llvm::Expected<std::unique_ptr<JITLambda>>
 JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
                   llvm::function_ref<llvm::Error(llvm::Module *)> optPipeline,
-                  llvm::Optional<llvm::StringRef> runtimeLibPath) {
+                  llvm::Optional<std::string> runtimeLibPath) {
 
   // Looking for the function
   auto rangeOps = module.getOps<mlir::LLVM::LLVMFuncOp>();

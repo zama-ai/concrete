@@ -10,8 +10,7 @@
 namespace mlir {
 namespace concretelang {
 
-JitLambdaSupport::JitLambdaSupport(
-    llvm::Optional<llvm::StringRef> runtimeLibPath)
+JitLambdaSupport::JitLambdaSupport(llvm::Optional<std::string> runtimeLibPath)
     : runtimeLibPath(runtimeLibPath) {}
 
 llvm::Expected<std::unique_ptr<JitCompilationResult>>

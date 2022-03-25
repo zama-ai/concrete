@@ -21,9 +21,10 @@
 // JIT Support bindings ///////////////////////////////////////////////////////
 
 MLIR_CAPI_EXPORTED JITLambdaSupport_C
-jit_lambda_support(const char *runtimeLibPath) {
-  llvm::StringRef str(runtimeLibPath);
-  auto opt = str.empty() ? llvm::None : llvm::Optional<llvm::StringRef>(str);
+jit_lambda_support(std::string runtimeLibPath) {
+  auto opt = runtimeLibPath.empty()
+                 ? llvm::None
+                 : llvm::Optional<std::string>(runtimeLibPath);
   return JITLambdaSupport_C{mlir::concretelang::JitLambdaSupport(opt)};
 }
 
