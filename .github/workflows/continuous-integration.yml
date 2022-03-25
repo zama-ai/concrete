@@ -45,13 +45,12 @@ jobs:
         with:
           submodules: recursive
 
-      - name: "KeySetCache"
+      - name: Download KeySetCache
         if: ${{ matrix.compiler == 'gcc7' }}
-        uses: actions/cache@v2
-        with:
-          path: ${{ github.workspace }}/KeySetCache
-          # actions/cache does not permit to update a cache entry
-          key: Linux-KeySetCache-2022-02-28
+        continue-on-error: true
+        run: |
+          cd compiler
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
       - name: Build and test compiler
         if: ${{ matrix.compiler == 'gcc7' }}
@@ -62,7 +61,9 @@ jobs:
           image: ${{ env.DOCKER_IMAGE_TEST_GCC7 }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+          options: >-
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
           shell: bash
           run: |
             set -e
@@ -76,6 +77,21 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache
+
+      - name: Upload KeySetCache
+        if: ${{ matrix.compiler == 'gcc7' }} && github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v3
+        with:
+          name: KeySetCache
+          path: KeySetCache
+          retention-days: 90
+
+      - name: Cleanup Old KeySetCache
+        uses: Remagpie/gha-remove-artifact@v1
+        if: ${{ matrix.compiler == 'gcc7' }} && github.ref == 'refs/heads/master'
+        with:
+          only-name: KeySetCache
+          max-count: 1
 
       - name: Build compiler
         if: ${{ matrix.compiler == 'latest' }}
@@ -177,13 +193,11 @@ jobs:
         id: tmpdir-path
         run: echo "::set-output name=TMPDIR_PATH::`echo $TMPDIR`"
 
-      - name: KeySetCache
-        if: github.event_name == 'push'
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.tmpdir-path.outputs.TMPDIR_PATH }}/KeySetCache
-          # The cache is not specific to Linux and can be used on MacOS
-          key: Linux-KeySetCache-2022-02-28
+      - name: Download KeySetCache
+        continue-on-error: true
+        run: |
+          cd compiler
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
       # We do run test-check as part of the build, as they aren't that costly
       # and will at least give minimum confidence that the compiler works in PRs
@@ -216,12 +230,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: "KeySetCache"
-        uses: actions/cache@v2
-        with:
-          path: ${{ github.workspace }}/KeySetCache
-          # actions/cache does not permit to update a cache entry
-          key: Linux-KeySetCache-2022-02-28
+      - name: Download KeySetCache
+        continue-on-error: true
+        run: |
+          cd compiler
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
       - name: Build and test compiler (dataflow)
         uses: addnab/docker-run-action@v3
@@ -230,7 +243,9 @@ jobs:
           image: ${{ env.DOCKER_IMAGE_TEST_DF }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
+          options: >-
+            -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
           shell: bash
           run: |
             set -e

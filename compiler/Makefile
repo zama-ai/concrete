@@ -7,6 +7,9 @@ CXX_COMPILER=
 
 EXTERNAL_HEADERS=include/boost-single-header/outcome.hpp
 
+KEYSETCACHEDEV=/tmp/KeySetCache
+KEYSETCACHECI=../KeySetCache
+
 export PATH := $(BUILD_DIR)/bin:$(PATH)
 
 ifeq ($(shell which ccache),)
@@ -91,7 +94,23 @@ test: test-check test-end-to-end-jit test-python support-unit-test testlib-unit-
 
 test-dataflow: test-end-to-end-jit-dfr test-end-to-end-jit-auto-parallelization
 
-# install/uninstall
+GITHUB_URL=https://api.github.com/repos/zama-ai/concrete-compiler-internal
+GITHUB_URL_LIST_ARTIFACTS="${GITHUB_URL}/actions/artifacts"
+CURL=curl -H"Accept: application/vnd.github.v3+json" -H"authorization: Bearer ${GITHUB_TOKEN}"
+keysetcache.zip: REDIRECT_URL = $(shell ${CURL} -s ${GITHUB_URL_LIST_ARTIFACTS} | grep -A 10 KeySetCache | grep archive_download_url | head -n 1 | grep -o 'http[^"]\+')
+keysetcache.zip:
+	${CURL} --location -o keysetcache.zip ${REDIRECT_URL}
+	du -h keysetcache.zip
+
+keysetcache_ci_populated: keysetcache.zip
+	unzip keysetcache.zip -d ${KEYSETCACHECI}
+	du -sh ${KEYSETCACHECI}
+	rm keysetcache.zip
+
+keysetcache_populated: keysetcache.zip
+	unzip keysetcache.zip -d ${KEYSETCACHEDEV}
+	du -sh ${KEYSETCACHEDEV}
+	rm keysetcache.zip
 
 install: install_runtime_lib
 
