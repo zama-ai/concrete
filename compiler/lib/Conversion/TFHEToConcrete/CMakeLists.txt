@@ -7,7 +7,7 @@ add_mlir_dialect_library(TFHEToConcrete
   DEPENDS
   TFHEDialect
   ConcreteDialect
-  TFHEToConcretePatternsIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR

@@ -6,7 +6,7 @@ add_mlir_dialect_library(BConcreteDialect
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/BConcrete
 
   DEPENDS
-  MLIRBConcreteOpsIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR)

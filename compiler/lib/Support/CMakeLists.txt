@@ -15,7 +15,7 @@ add_mlir_library(ConcretelangSupport
   ${PROJECT_SOURCE_DIR}/include/concretelang/Support
 
   DEPENDS
-  MLIRConversionPassIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   FHELinalgDialect

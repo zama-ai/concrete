@@ -6,7 +6,7 @@ add_mlir_dialect_library(RTDialect
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/RT
 
   DEPENDS
-  MLIRRTOpsIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR)

@@ -9,7 +9,7 @@ add_mlir_library(RTDialectAnalysis
 
   DEPENDS
   RTDialect
-  AutoparPassIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR

@@ -6,7 +6,7 @@ add_mlir_library(FHELinalgDialectTransforms
 
   DEPENDS
   FHELinalgDialect
-  ConcretelangFHELinalgTilingPassIncGen
+  mlir-headers
   
   LINK_LIBS PUBLIC
   MLIRIR

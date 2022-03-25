@@ -6,7 +6,7 @@ add_mlir_dialect_library(FHELinalgDialect
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/FHELinalg
 
   DEPENDS
-  MLIRFHELinalgOpsIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR)

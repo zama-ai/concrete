@@ -6,7 +6,7 @@ add_mlir_library(FHEDialectAnalysis
 
   DEPENDS
   FHEDialect
-  MANPPassIncGen
+  mlir-headers
   
   LINK_LIBS PUBLIC
   MLIRIR

@@ -4,6 +4,9 @@ add_mlir_public_c_api_library(CONCRETELANGCAPIFHE
 
   FHE.cpp
 
+  DEPENDS
+  mlir-headers
+
   LINK_LIBS PUBLIC
   MLIRCAPIIR
   FHEDialect

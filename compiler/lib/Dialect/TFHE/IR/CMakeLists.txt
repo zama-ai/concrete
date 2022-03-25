@@ -6,7 +6,7 @@ add_mlir_dialect_library(TFHEDialect
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/TFHE
 
   DEPENDS
-  MLIRTFHEOpsIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR)

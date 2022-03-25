@@ -6,7 +6,7 @@ add_mlir_library(ConcretelangTransforms
 
   DEPENDS
   MLIRTransforms
-  ConcretelangTransformsPassIncGen
+  mlir-headers
   
   LINK_LIBS PUBLIC
   MLIRMemRef

@@ -5,6 +5,8 @@ llvm_update_compile_flags(concretecompiler)
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
 
+add_dependencies(concretecompiler mlir-headers)
+
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   target_link_libraries(concretecompiler
     PRIVATE

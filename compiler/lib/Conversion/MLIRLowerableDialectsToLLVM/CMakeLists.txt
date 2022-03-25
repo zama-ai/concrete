@@ -7,7 +7,7 @@ add_mlir_dialect_library(MLIRLowerableDialectsToLLVM
   ADDITIONAL_HEADER_DIRS
 
   DEPENDS
-  ConcretelangConversionPassIncGen
+  mlir-headers
   
   LINK_LIBS PUBLIC
   ${dialect_libs}

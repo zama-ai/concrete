@@ -6,7 +6,7 @@ add_mlir_dialect_library(BConcreteToBConcreteCAPI
 
   DEPENDS
   BConcreteDialect
-  ConcretelangConversionPassIncGen
+  mlir-headers
 
   LINK_LIBS PUBLIC
   MLIRIR
