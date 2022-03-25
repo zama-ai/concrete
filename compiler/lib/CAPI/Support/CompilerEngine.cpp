@@ -152,9 +152,6 @@ decrypt_result(concretelang::clientlib::KeySet &keySet,
 void terminateParallelization() {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   _dfr_terminate();
-#else
-  throw std::runtime_error(
-      "This package was built without parallelization support");
 #endif
 }
 
