@@ -35,24 +35,6 @@ def test_integer_to_mlir_type(integer, is_encrypted, expected_mlir_type_str):
 
 
 @pytest.mark.parametrize(
-    "integer,is_encrypted,expected_error_message",
-    [
-        pytest.param(SignedInteger(32), True, "can't create eint with the given width"),
-        pytest.param(UnsignedInteger(32), True, "can't create eint with the given width"),
-    ],
-)
-def test_fail_integer_to_mlir_type(integer, is_encrypted, expected_error_message):
-    """Test function for failed integer to MLIR type conversion."""
-
-    with pytest.raises(ValueError) as excinfo:
-        with Context() as ctx, Location.unknown():
-            concretelang.register_dialects(ctx)
-            integer_to_mlir_type(ctx, integer, is_encrypted)
-
-    assert str(excinfo.value) == expected_error_message
-
-
-@pytest.mark.parametrize(
     "value,expected_mlir_type_str",
     [
         pytest.param(ClearScalar(SignedInteger(5)), "i5"),
@@ -91,14 +73,6 @@ def test_value_to_mlir_type(value, expected_mlir_type_str):
         pytest.param(
             EncryptedTensor(Float(32), shape=(2, 3)),
             "EncryptedTensor<float32, shape=(2, 3)> is not supported for MLIR conversion",
-        ),
-        pytest.param(
-            EncryptedScalar(UnsignedInteger(32)),
-            "EncryptedScalar<uint32> is not supported for MLIR conversion",
-        ),
-        pytest.param(
-            EncryptedTensor(UnsignedInteger(32), shape=(2, 3)),
-            "EncryptedTensor<uint32, shape=(2, 3)> is not supported for MLIR conversion",
         ),
     ],
 )

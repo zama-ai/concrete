@@ -38,7 +38,7 @@ Traceback (most recent call last):
     update_bit_width_for_mlir(op_graph)
   File "/home/default/Documents/Projects/Zama/hdk/concrete/common/mlir/utils.py", line 204, in update_bit_width_for_mlir
     raise RuntimeError(
-RuntimeError: max_bit_width of some nodes is too high for the current version of the compiler (maximum must be 7) which is not compatible with:
+RuntimeError: max_bit_width of some nodes is too high for the current version of the compiler (maximum must be 8) which is not compatible with:
 
 %0 = x                  # EncryptedScalar<uint3>
 %1 = 42                 # ClearScalar<uint6>

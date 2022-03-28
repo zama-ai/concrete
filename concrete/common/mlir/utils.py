@@ -17,8 +17,8 @@ from ..operator_graph import OPGraph
 from ..representation import intermediate
 from ..representation.intermediate import Conv2D, IntermediateNode
 
-# TODO: should come from compiler, through an API, #402
-ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 7
+# TODO: should be removed as the supported bit-width is now dynamic
+ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB = 8
 
 
 def check_node_compatibility_with_mlir(
