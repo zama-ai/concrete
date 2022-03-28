@@ -571,7 +571,8 @@ jobs:
     runs-on: ubuntu-20.04
 
     env:
-      RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy
+      PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-numpy
+      PUBLIC_RELEASE_IMAGE_BASE: zamafhe/concrete-numpy
 
     steps:
       - uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
@@ -600,9 +601,9 @@ jobs:
 
           echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
-          RELEASE_IMG_GIT_TAG="${RELEASE_IMAGE_BASE}:${GIT_TAG}"
-          echo "RELEASE_IMG_GIT_TAG=${RELEASE_IMG_GIT_TAG}" >> "$GITHUB_ENV"
-          RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_GIT_TAG}"
+          PRIVATE_RELEASE_IMG_GIT_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:${GIT_TAG}"
+          echo "PRIVATE_RELEASE_IMG_GIT_TAG=${PRIVATE_RELEASE_IMG_GIT_TAG}" >> "$GITHUB_ENV"
+          RELEASE_IMG_TAGS_TO_PUSH="${PRIVATE_RELEASE_IMG_GIT_TAG}"
 
           EXISTING_TAGS=$(curl \
           -X GET \
@@ -622,8 +623,17 @@ jobs:
           echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
 
           if [[ "${IS_LATEST}" == "true" ]]; then
-            RELEASE_IMG_LATEST_TAG="${RELEASE_IMAGE_BASE}:latest"
+            RELEASE_IMG_LATEST_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:latest"
             RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${RELEASE_IMG_LATEST_TAG}"
+          fi
+
+          if [[ "${IS_PRERELEASE}" == "false" ]]; then
+            PUBLIC_RELEASE_IMG_GIT_TAG="${PUBLIC_RELEASE_IMAGE_BASE}:${GIT_TAG}"
+            RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${PUBLIC_RELEASE_IMG_GIT_TAG}"
+            if [[ "${IS_LATEST}" == "true" ]]; then
+              PUBLIC_RELEASE_IMG_LATEST_TAG="${PUBLIC_RELEASE_IMAGE_BASE}:latest"
+              RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${PUBLIC_RELEASE_IMG_LATEST_TAG}"
+            fi
           fi
 
           echo "RELEASE_IMG_TAGS_TO_PUSH=${RELEASE_IMG_TAGS_TO_PUSH}" >> "$GITHUB_ENV"
@@ -682,6 +692,13 @@ jobs:
           username: ${{ secrets.BOT_USERNAME }}
           password: ${{ secrets.BOT_TOKEN }}
 
+      - name: Login to DockerHub
+        if: ${{ env.IS_PRERELEASE == 'false' }}
+        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build concrete-numpy Image
         if: ${{ success() && !cancelled() }}
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
@@ -696,9 +713,9 @@ jobs:
       - name: Release image sanity check
         if: ${{ success() && !cancelled() }}
         run: |
-          echo "Running sanity check for ${RELEASE_IMG_GIT_TAG}"
+          echo "Running sanity check for ${PRIVATE_RELEASE_IMG_GIT_TAG}"
           docker run --rm -v "$(pwd)"/docker/release_resources:/data \
-          "${RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
+          "${PRIVATE_RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
 
       - name: Prepare docs push
         id: docs-push-infos
@@ -772,8 +789,8 @@ jobs:
 
           cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
           {
-            echo "Docker Image: ${RELEASE_IMG_GIT_TAG}";
-            echo "pip: https://pypi.org/project/concrete-numpy/${PROJECT_VERSION}";
+            echo "Docker Image: ${PRIVATE_RELEASE_IMG_GIT_TAG}";
+            echo "PyPI: https://pypi.org/project/concrete-numpy/${PROJECT_VERSION}";
             echo "Documentation: https://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/${PROJECT_VERSION}";
             echo "";
           } >> "${RELEASE_BODY_FILE}"
@@ -782,7 +799,10 @@ jobs:
       - name: Push release docker image
         if: ${{ success() && !cancelled() }}
         run: |
-          docker image push --all-tags "${RELEASE_IMAGE_BASE}"
+          docker image push --all-tags "${PRIVATE_RELEASE_IMAGE_BASE}"
+          if [[ "${IS_PRERELEASE}" == "false" ]]; then
+            docker image push --all-tags "${PUBLIC_RELEASE_IMAGE_BASE}"
+          fi
 
       - name: Push package to PyPi
         if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) }}
