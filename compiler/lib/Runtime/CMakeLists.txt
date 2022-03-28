@@ -4,6 +4,10 @@ add_library(ConcretelangRuntime SHARED
     dfr_terminate.cpp
 )
 
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  link_libraries(-Wl,--no-as-needed omp)
+endif()
+
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   add_library(DFRuntime SHARED DFRuntime.cpp)
   target_link_libraries(DFRuntime PUBLIC pthread m dl HPX::hpx HPX::iostreams_component -rdynamic)
@@ -21,9 +25,9 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     -Wl,--no-as-needed
     DFRuntime
     omp
-  )
+    )
 else()
-  target_link_libraries(ConcretelangRuntime Concrete pthread m dl $<TARGET_OBJECTS:mlir_c_runner_utils>)
+  target_link_libraries(ConcretelangRuntime Concrete pthread m dl $<TARGET_OBJECTS:mlir_c_runner_utils> omp)
 endif()
 
 install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
