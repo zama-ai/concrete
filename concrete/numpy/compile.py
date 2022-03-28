@@ -6,7 +6,6 @@ from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union, cast
 
 import numpy
-from concrete.compiler import CompilerEngine
 
 from ..common.bounds_measurement.inputset_eval import eval_op_graph_bounds_on_inputset
 from ..common.common_helpers import check_op_graph_is_integer_program
@@ -653,11 +652,14 @@ def _compile_op_graph_to_fhe_circuit_internal(
             "compilation_configuration"
         )
 
-    # Compile the MLIR representation
-    engine = CompilerEngine()
-    engine.compile_fhe(mlir_result, unsecure_key_set_cache_path=_COMPILE_FHE_INSECURE_KEY_CACHE_DIR)
-
-    return FHECircuit(op_graph, engine)
+    return FHECircuit(
+        op_graph,
+        mlir_result,
+        unsecure_key_set_cache_path=_COMPILE_FHE_INSECURE_KEY_CACHE_DIR,
+        auto_parallelize=compilation_configuration.auto_parallelize,
+        loop_parallelize=compilation_configuration.loop_parallelize,
+        dataflow_parallelize=compilation_configuration.dataflow_parallelize,
+    )
 
 
 def compile_op_graph_to_fhe_circuit(

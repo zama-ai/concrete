@@ -11,7 +11,7 @@ from concrete.common.data_types.integers import Integer, SignedInteger, Unsigned
 from concrete.common.debugging import draw_graph, format_operation_graph
 from concrete.common.extensions.multi_table import MultiLookupTable
 from concrete.common.extensions.table import LookupTable
-from concrete.common.values import ClearTensor, EncryptedScalar, EncryptedTensor
+from concrete.common.values import ClearScalar, ClearTensor, EncryptedScalar, EncryptedTensor
 from concrete.numpy import compile as compile_
 from concrete.numpy import tracing
 from concrete.numpy.compile import (
@@ -790,7 +790,7 @@ def test_compile_and_run_correctness(
     )
 
     args = [random.randint(low, high) for (low, high) in input_ranges]
-    assert compiler_engine.run(*args) == function(*args)
+    assert compiler_engine.encrypt_run_decrypt(*args) == function(*args)
 
 
 @pytest.mark.parametrize(
@@ -1417,7 +1417,7 @@ def test_compile_and_run_tensor_correctness(
         check_is_good_execution(circuit, function, numpy_test_input)
     else:
         check_array_equality(
-            circuit.run(*numpy_test_input),
+            circuit.encrypt_run_decrypt(*numpy_test_input),
             numpy.array(function(*numpy_test_input), dtype=numpy.uint8),
         )
 
@@ -1486,7 +1486,7 @@ def test_compile_and_run_dot_correctness(size, input_range, default_compilation_
         args = [
             numpy.random.randint(low, high + 1, size=shape, dtype=numpy.uint8) for __ in range(2)
         ]
-        assert compiler_engine.run(*args) == func_to_compile(*args)
+        assert compiler_engine.encrypt_run_decrypt(*args) == func_to_compile(*args)
 
 
 @pytest.mark.parametrize(
@@ -1563,7 +1563,9 @@ def test_compile_and_run_dot_correctness_with_signed_cst(
             args = [
                 numpy.random.randint(low_x, high_x + 1, size=(size,), dtype=numpy.uint8),
             ]
-            assert check_equality_modulo(compiler_engine.run(*args), function(*args), modulus)
+            assert check_equality_modulo(
+                compiler_engine.encrypt_run_decrypt(*args), function(*args), modulus
+            )
 
 
 @pytest.mark.parametrize(
@@ -1624,8 +1626,8 @@ def test_compile_and_run_constant_dot_correctness(
     )
 
     args = (numpy.random.randint(low, high + 1, size=shape, dtype=numpy.uint8),)
-    assert left_circuit.run(*args) == left(*args)
-    assert right_circuit.run(*args) == right(*args)
+    assert left_circuit.encrypt_run_decrypt(*args) == left(*args)
+    assert right_circuit.encrypt_run_decrypt(*args) == right(*args)
 
 
 @pytest.mark.parametrize(
@@ -1837,7 +1839,7 @@ def test_compile_and_run_matmul_correctness(
         # Stay positive for input to FHE circuit
         arg = numpy.clip(arg, 0, high).astype(numpy.uint8)
 
-        circuit_output = circuit.run(arg)
+        circuit_output = circuit.encrypt_run_decrypt(arg)
         func_output = func(arg)
 
         if check_mod:
@@ -2046,7 +2048,58 @@ def test_compile_and_run_transpose_correctness(input_shape, default_compilation_
     )
     x = numpy.random.randint(0, 120, size=input_shape, dtype=numpy.uint8)
     expected = transpose(x)
-    result = compiler_engine.run(x)
+    result = compiler_engine.encrypt_run_decrypt(x)
+    assert (expected == result).all()
+
+
+@pytest.mark.parametrize(
+    "input_shape",
+    [
+        pytest.param((8,)),
+    ],
+)
+@pytest.mark.parametrize(
+    "loop_parallelize",
+    [
+        pytest.param(True),
+        pytest.param(False),
+    ],
+)
+def test_compile_and_run_loop_parallelization(
+    input_shape, loop_parallelize, default_compilation_configuration
+):
+    """Test function to make sure compilation and execution with and without loop parallelization
+    works properly"""
+
+    def dot_and_add(x, y, a):
+        return numpy.dot(x, y) + a
+
+    # Enable/Disable loop parallelization
+    compilation_configuration = deepcopy(default_compilation_configuration)
+    compilation_configuration.loop_parallelize = loop_parallelize
+
+    compiler_engine = compile_numpy_function(
+        dot_and_add,
+        {
+            "x": EncryptedTensor(Integer(64, False), input_shape),
+            "y": ClearTensor(Integer(64, False), input_shape),
+            "a": ClearScalar(Integer(64, False)),
+        },
+        [
+            (
+                numpy.random.randint(0, 2, size=input_shape),
+                numpy.random.randint(0, 2, size=input_shape),
+                numpy.random.randint(0, 2, size=()),
+            )
+            for i in range(20)
+        ],
+        compilation_configuration,
+    )
+    x = numpy.random.randint(0, 2, size=input_shape, dtype=numpy.uint8)
+    y = numpy.random.randint(0, 2, size=input_shape, dtype=numpy.uint8)
+    a = numpy.random.randint(0, 2, size=(), dtype=numpy.uint8)
+    expected = dot_and_add(x, y, a)
+    result = compiler_engine.encrypt_run_decrypt(x, y, a)
     assert (expected == result).all()
 
 
@@ -2549,7 +2602,7 @@ def test_compile_and_run_correctness_with_negative_values(
     )
 
     args = [random.randint(low, high) for (low, high) in input_ranges]
-    assert compiler_engine.run(*args) == function(*args)
+    assert compiler_engine.encrypt_run_decrypt(*args) == function(*args)
 
 
 @pytest.mark.parametrize(
@@ -2623,7 +2676,9 @@ def test_compile_and_run_correctness_with_negative_results(
     )
 
     args = [random.randint(low, high) for (low, high) in input_ranges]
-    assert check_equality_modulo(compiler_engine.run(*args), function(*args), modulus)
+    assert check_equality_modulo(
+        compiler_engine.encrypt_run_decrypt(*args), function(*args), modulus
+    )
 
 
 @pytest.mark.parametrize(

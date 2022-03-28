@@ -40,5 +40,5 @@ def test_compile_and_run(
     )
     x = np.random.randint(0, 4, size=input_shape, dtype=np.uint8)
     expected = conv(x)
-    result = compiler_engine.run(x)
+    result = compiler_engine.encrypt_run_decrypt(x)
     assert (expected == result).all()

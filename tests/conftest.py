@@ -404,7 +404,9 @@ def check_is_good_execution_impl(
 
     for i in range(1, nb_tries + 1):
         preprocessed_args = tuple(preprocess_input_func(val) for val in args)
-        last_engine_result = postprocess_output_func(fhe_circuit.run(*preprocessed_args))
+        last_engine_result = postprocess_output_func(
+            fhe_circuit.encrypt_run_decrypt(*preprocessed_args)
+        )
         last_function_result = postprocess_output_func(function(*preprocessed_args))
 
         ok_execution = check_function(last_engine_result, last_function_result)

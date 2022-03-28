@@ -198,7 +198,7 @@ def test_memory_operation_run_correctness(
         default_compilation_configuration,
     )
 
-    actual = circuit.run(numpy.array(test_input, dtype=numpy.uint8))
+    actual = circuit.encrypt_run_decrypt(numpy.array(test_input, dtype=numpy.uint8))
     expected = numpy.array(expected_output, dtype=numpy.uint8)
 
     check_array_equality(actual, expected)

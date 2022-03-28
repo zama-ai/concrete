@@ -260,7 +260,7 @@ def test_np_fhe_compiler_full_compilation(default_compilation_configuration, che
     fhe_circuit = compiler.get_compiled_fhe_circuit()
 
     for i in range(64):
-        assert fhe_circuit.run(i) == function_to_compile(i)
+        assert fhe_circuit.encrypt_run_decrypt(i) == function_to_compile(i)
 
 
 def test_np_fhe_compiler_compile_on_inputset(default_compilation_configuration):
@@ -277,4 +277,4 @@ def test_np_fhe_compiler_compile_on_inputset(default_compilation_configuration):
     circuit = compiler.compile_on_inputset(numpy.arange(64))
 
     for i in range(64):
-        assert circuit.run(i) == function_to_compile(i)
+        assert circuit.encrypt_run_decrypt(i) == function_to_compile(i)

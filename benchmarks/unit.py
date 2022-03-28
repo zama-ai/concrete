@@ -1540,7 +1540,7 @@ def main(function, inputs, accuracy_alert_threshold):
     correct = 0
     for sample_i, expectation_i in zip(samples, expectations):
         with progress.measure(id="evaluation-time-ms", label="Evaluation Time (ms)"):
-            result_i = circuit.run(*sample_i)
+            result_i = circuit.encrypt_run_decrypt(*sample_i)
 
         np_result_i = np.array(result_i, dtype=np.uint8)
         np_expectation_i = np.array(expectation_i, dtype=np.uint8)

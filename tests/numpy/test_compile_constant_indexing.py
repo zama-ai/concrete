@@ -721,7 +721,7 @@ def test_constant_indexing_run_correctness(
         item if isinstance(item, int) else np.array(item, dtype=np.uint8) for item in test_input
     )
 
-    output = circuit.run(*numpy_test_input)
+    output = circuit.encrypt_run_decrypt(*numpy_test_input)
     expected = np.array(expected_output, dtype=np.uint8)
 
     check_array_equality(output, expected)

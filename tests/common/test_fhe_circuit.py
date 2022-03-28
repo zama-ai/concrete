@@ -36,7 +36,7 @@ def test_circuit_draw(default_compilation_configuration):
 
 
 def test_circuit_run(default_compilation_configuration):
-    """Test function for `run` method of `Circuit`"""
+    """Test equivalence of encrypt/run/decrypt and encrypt_run_decrypt"""
 
     def f(x):
         return x + 42
@@ -46,5 +46,9 @@ def test_circuit_run(default_compilation_configuration):
     inputset = range(2 ** 3)
     circuit = hnp.compile_numpy_function(f, {"x": x}, inputset, default_compilation_configuration)
 
+    circuit.keygen()
     for x in inputset:
-        assert circuit.run(x) == circuit.engine.run(x)
+        enc_x = circuit.encrypt(x)
+        enc_res = circuit.run(enc_x)
+        res = circuit.decrypt(enc_res)
+        assert circuit.encrypt_run_decrypt(x) == res
