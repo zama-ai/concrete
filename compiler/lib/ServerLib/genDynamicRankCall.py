@@ -22,7 +22,7 @@ namespace serverlib {
 TensorData
 multi_arity_call_dynamic_rank(void* (*func)(void *...), std::vector<void *> args, size_t rank) {
   using concretelang::clientlib::MemRefDescriptor;
-  constexpr auto convert = &TensorData_from_MemRef;
+  constexpr auto convert = concretelang::clientlib::tensorDataFromMemRef;
   switch (rank) {""")
 
 for tensor_rank in range(0, 33):
