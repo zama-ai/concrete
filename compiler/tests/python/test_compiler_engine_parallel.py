@@ -7,6 +7,7 @@ from concrete.compiler import CompilerEngine
 
 KEY_SET_CACHE_PATH = os.path.join(tempfile.gettempdir(), "KeySetCache")
 
+
 @pytest.mark.parallel
 @pytest.mark.parametrize(
     "mlir_input, args, expected_result",
@@ -45,7 +46,7 @@ def test_compile_and_run_parallel(mlir_input, args, expected_result):
     engine.compile_fhe(
         mlir_input,
         unsecure_key_set_cache_path=KEY_SET_CACHE_PATH,
-        auto_parallelize=True
+        auto_parallelize=True,
     )
     if isinstance(expected_result, int):
         assert engine.run(*args) == expected_result

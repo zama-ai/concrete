@@ -18,9 +18,7 @@ def test_eint_tensor(shape):
         register_dialects(ctx)
         eint = fhe.EncryptedIntegerType.get(ctx, 3)
         tensor = RankedTensorType.get(shape, eint)
-        assert (
-            tensor.__str__() == f"tensor<{'x'.join(map(str, shape))}x!FHE.eint<{3}>>"
-        )
+        assert tensor.__str__() == f"tensor<{'x'.join(map(str, shape))}x!FHE.eint<{3}>>"
 
 
 @pytest.mark.parametrize("width", [0])

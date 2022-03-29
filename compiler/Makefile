@@ -251,6 +251,11 @@ generate_conv_op:
 	python -m mlir.dialects.linalg.opdsl.dump_oplib ops.core_named_ops > ops/LinalgNamedStructuredOps.yaml
 	$(BUILD_DIR)/bin/mlir-linalg-ods-yaml-gen ops/LinalgNamedStructuredOps.yaml --o-impl=ops/LinalgOps.cpp --o-ods-decl=ops/LinalgNamedStructuredOps.yamlgen.td
 
+check_python_format:
+	black --check tests/python/ lib/Bindings/Python/concrete/
+
+python_format:
+	black tests/python/ lib/Bindings/Python/concrete/
 
 .PHONY: build-initialized \
 	build-end-to-end-jit \
@@ -277,4 +282,6 @@ generate_conv_op:
 	uninstall\
 	install_runtime_lib \
 	uninstall_runtime_lib \
-	generate_conv_op
+	generate_conv_op \
+	python_format \
+	check_python_format

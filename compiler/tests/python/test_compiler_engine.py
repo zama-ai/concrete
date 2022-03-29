@@ -8,7 +8,7 @@ from concrete.compiler import JITCompilerSupport, LibraryCompilerSupport
 from concrete.compiler import ClientSupport
 from concrete.compiler import KeySetCache
 
-KEY_SET_CACHE_PATH = os.path.join(tempfile.gettempdir(), 'KeySetCache')
+KEY_SET_CACHE_PATH = os.path.join(tempfile.gettempdir(), "KeySetCache")
 
 keySetCacheTest = KeySetCache(KEY_SET_CACHE_PATH)
 
@@ -18,8 +18,7 @@ def compile_and_run(engine, mlir_input, args, expected_result):
     # Client
     client_parameters = engine.load_client_parameters(compilation_result)
     key_set = ClientSupport.key_set(client_parameters, keySetCacheTest)
-    public_arguments = ClientSupport.encrypt_arguments(
-        client_parameters, key_set, args)
+    public_arguments = ClientSupport.encrypt_arguments(client_parameters, key_set, args)
     # Server
     server_lambda = engine.load_server_lambda(compilation_result)
     public_result = engine.server_call(server_lambda, public_arguments)
@@ -199,8 +198,7 @@ end_to_end_fixture = [
             """,
         (
             np.array(
-                [[31, 6, 12, 9], [31, 6, 12, 9], [
-                    31, 6, 12, 9], [31, 6, 12, 9]],
+                [[31, 6, 12, 9], [31, 6, 12, 9], [31, 6, 12, 9], [31, 6, 12, 9]],
                 dtype=np.uint8,
             ),
             np.array(
@@ -245,28 +243,19 @@ end_to_end_fixture = [
 ]
 
 
-@pytest.mark.parametrize(
-    "mlir_input, args, expected_result",
-    end_to_end_fixture
-)
+@pytest.mark.parametrize("mlir_input, args, expected_result", end_to_end_fixture)
 def test_jit_compile_and_run(mlir_input, args, expected_result):
     engine = JITCompilerSupport()
     compile_and_run(engine, mlir_input, args, expected_result)
 
 
-@pytest.mark.parametrize(
-    "mlir_input, args, expected_result",
-    end_to_end_fixture
-)
+@pytest.mark.parametrize("mlir_input, args, expected_result", end_to_end_fixture)
 def test_lib_compile_and_run(mlir_input, args, expected_result):
     engine = LibraryCompilerSupport("py_test_lib_compile_and_run")
     compile_and_run(engine, mlir_input, args, expected_result)
 
 
-@pytest.mark.parametrize(
-    "mlir_input, args, expected_result",
-    end_to_end_fixture
-)
+@pytest.mark.parametrize("mlir_input, args, expected_result", end_to_end_fixture)
 def test_lib_compile_reload_and_run(mlir_input, args, expected_result):
     engine = LibraryCompilerSupport("test_lib_compile_reload_and_run")
     # Here don't save compilation result, reload
@@ -275,8 +264,7 @@ def test_lib_compile_reload_and_run(mlir_input, args, expected_result):
     # Client
     client_parameters = engine.load_client_parameters(compilation_result)
     key_set = ClientSupport.key_set(client_parameters, keySetCacheTest)
-    public_arguments = ClientSupport.encrypt_arguments(
-        client_parameters, key_set, args)
+    public_arguments = ClientSupport.encrypt_arguments(client_parameters, key_set, args)
     # Server
     server_lambda = engine.load_server_lambda(compilation_result)
     public_result = engine.server_call(server_lambda, public_arguments)
@@ -290,7 +278,7 @@ def test_lib_compile_reload_and_run(mlir_input, args, expected_result):
         assert np.all(result == expected_result)
 
 
-@ pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "mlir_input, args",
     [
         pytest.param(
@@ -307,13 +295,14 @@ def test_lib_compile_reload_and_run(mlir_input, args, expected_result):
 )
 def test_compile_and_run_invalid_arg_number(mlir_input, args):
     engine = CompilerEngine()
-    engine.compile_fhe(
-        mlir_input, unsecure_key_set_cache_path=KEY_SET_CACHE_PATH)
-    with pytest.raises(RuntimeError, match=r"function has arity 2 but is applied to too many arguments"):
+    engine.compile_fhe(mlir_input, unsecure_key_set_cache_path=KEY_SET_CACHE_PATH)
+    with pytest.raises(
+        RuntimeError, match=r"function has arity 2 but is applied to too many arguments"
+    ):
         engine.run(*args)
 
 
-@ pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "mlir_input, args, expected_result, tab_size",
     [
         pytest.param(
@@ -333,12 +322,11 @@ def test_compile_and_run_invalid_arg_number(mlir_input, args):
 )
 def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
     engine = CompilerEngine()
-    engine.compile_fhe(
-        mlir_input, unsecure_key_set_cache_path=KEY_SET_CACHE_PATH)
+    engine.compile_fhe(mlir_input, unsecure_key_set_cache_path=KEY_SET_CACHE_PATH)
     assert abs(engine.run(*args) - expected_result) / tab_size < 0.1
 
 
-@ pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "mlir_input",
     [
         pytest.param(
@@ -356,6 +344,7 @@ def test_compile_and_run_tlu(mlir_input, args, expected_result, tab_size):
 )
 def test_compile_invalid(mlir_input):
     engine = CompilerEngine()
-    with pytest.raises(RuntimeError, match=r"cannot find the function for generate client parameters"):
-        engine.compile_fhe(
-            mlir_input, unsecure_key_set_cache_path=KEY_SET_CACHE_PATH)
+    with pytest.raises(
+        RuntimeError, match=r"cannot find the function for generate client parameters"
+    ):
+        engine.compile_fhe(mlir_input, unsecure_key_set_cache_path=KEY_SET_CACHE_PATH)
