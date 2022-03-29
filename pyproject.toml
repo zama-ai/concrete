@@ -45,7 +45,7 @@ pygraphviz = { version = "^1.7", optional = true }
 Pillow = "^9.0.0"
 loguru = "^0.5.3"
 setuptools = "*"
-concrete-compiler = "^0.4.0"
+concrete-compiler = "^0.5.0"
 torch = "^1.10.2"
 
 [tool.poetry.extras]
@@ -55,6 +55,8 @@ extras = ["pygraphviz"]
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
 black = "^21.12b0"
+# pinning click due to: https://github.com/psf/black/issues/2964
+click = "8.0.4"
 pylint = "2.11.1"
 pytest = "^6.2.5"
 pytest-cov = "^3.0.0"

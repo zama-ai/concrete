@@ -52,13 +52,10 @@ def value_to_mlir_type(ctx: Context, value: BaseValue) -> Type:
 
     dtype = value.dtype
     if isinstance(dtype, Integer):
-        try:
-            mlir_type = integer_to_mlir_type(ctx, dtype, value.is_encrypted)
-            if isinstance(value, TensorValue):
-                if not value.is_scalar:
-                    mlir_type = RankedTensorType.get(value.shape, mlir_type)
-                return mlir_type
-        except ValueError:
-            pass  # the error below will be raised
+        mlir_type = integer_to_mlir_type(ctx, dtype, value.is_encrypted)
+        if isinstance(value, TensorValue):
+            if not value.is_scalar:
+                mlir_type = RankedTensorType.get(value.shape, mlir_type)
+            return mlir_type
 
     raise TypeError(f"{value} is not supported for MLIR conversion")
