@@ -2,10 +2,12 @@
 <html lang="en">
   <head>
     <script>
-      window.fetch('versions.json').then(function(response) { response.json().then(function(data) { window.location.href = data.latest; }); });
+      window.fetch('versions.json').then(function(response) {
+        response.json().then(function(data) { window.location.href = data.latest; })
+        .catch(function(response) {
+          window.document.body.innerHTML = '<h3>Something went wrong. No versions file found!</h3>';
+        })
+      });
     </script>
   </head>
-  <body>
-    <h3>Something went wrong. No versions file found!</h3>
-  </body>
 </html>
