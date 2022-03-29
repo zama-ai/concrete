@@ -1985,7 +1985,9 @@ def test_compile_and_run_negative_lut_correctness(
     )
 
     offset = 2 ** (bit_width - 1)
-    for value in range(-offset, offset):
+    values = [-offset, -offset // 2, 0, offset // 2, offset - 1]
+    values.extend([random.randint(-offset, offset - 1) for _ in range(5)])
+    for value in values:
         assert table[value] == function(value + offset)
         check_is_good_execution(circuit, function, [value + offset])
 
