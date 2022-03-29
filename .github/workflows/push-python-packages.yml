@@ -5,6 +5,7 @@ on:
     inputs:
       internal_pypi:
         description: 'Whether to push to internal pypi'
+        default: 'false'
         required: true
         type: boolean
       public_pypi:
