@@ -25,8 +25,19 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Format with clang-format
+      - name: Format with clang-format (Cpp)
         run: sudo apt install moreutils && .github/workflows/scripts/format_cpp.sh
+      - name: Format with black (Python)
+        run: |
+          cd compiler
+          pip install -r lib/Bindings/Python/requirements_dev.txt
+          make check_python_format
+      - name: Lint with pylint (Python)
+        run: |
+          cd compiler
+          # compiler requirements to lint
+          pip install numpy
+          make python_lint
 
   CheckLicense:
     runs-on: ubuntu-latest
@@ -426,20 +437,20 @@ jobs:
       - name: Build Parallel Python Package
         id: build-wheel-linux
         run: |
-            set -e
-            export HPX=${{ github.workspace }}/hpx
-            export HPX_INSTALL_DIR=$HPX/build
-            export CONCRETE_PROJECT=${{ github.workspace }}/concrete
-            sudo apt install -y ninja-build
-            pip install numpy pybind11==2.6.2 wheel auditwheel patchelf
-            cd compiler
-            mkdir build
-            make PARALLEL_EXECUTION_ENABLED=ON python-bindings
-            pip wheel --no-deps -w ./wheels .
-            auditwheel repair ./wheels/*.whl --plat linux_x86_64  -w ./wheels/
-            echo "::set-output name=ASSET_NAME::`find ./wheels/ -name *linux_x86_64*.whl | rev |cut -d "/" -f 1 |rev `"
-            # used later for python package test
-            echo "::set-output name=ASSET_NAME_PY`echo ${{ matrix.python }} |tr -d '.'`::`find ./wheels/ -name *linux_x86_64*.whl | rev |cut -d "/" -f 1 |rev `"
+          set -e
+          export HPX=${{ github.workspace }}/hpx
+          export HPX_INSTALL_DIR=$HPX/build
+          export CONCRETE_PROJECT=${{ github.workspace }}/concrete
+          sudo apt install -y ninja-build
+          pip install numpy pybind11==2.6.2 wheel auditwheel patchelf
+          cd compiler
+          mkdir build
+          make PARALLEL_EXECUTION_ENABLED=ON python-bindings
+          pip wheel --no-deps -w ./wheels .
+          auditwheel repair ./wheels/*.whl --plat linux_x86_64  -w ./wheels/
+          echo "::set-output name=ASSET_NAME::`find ./wheels/ -name *linux_x86_64*.whl | rev |cut -d "/" -f 1 |rev `"
+          # used later for python package test
+          echo "::set-output name=ASSET_NAME_PY`echo ${{ matrix.python }} |tr -d '.'`::`find ./wheels/ -name *linux_x86_64*.whl | rev |cut -d "/" -f 1 |rev `"
 
       - name: Upload Python Package
         uses: actions/upload-release-asset@v1
