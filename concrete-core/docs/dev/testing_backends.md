@@ -1,4 +1,4 @@
-# Tutorial: how to test your backend?
+# Tutorial: How to test your backend.
 
 Once you've implemented your backend, the first thing you need to do is to test it.
 The `concrete-core-test` crate has been developed for this purpose. It relies on
@@ -11,11 +11,11 @@ However, for more complex engines like the keyswitch, the bootstrap, etc., we ne
 the amount of noise introduced by the operation corresponds to what's expected, i.e. that
 it matches the noise formula implemented in the `concrete-npe` crate. For the sake of this tutorial,
 let us continue with the simple conversion engines that copy data back and forth between the CPU and
-the GPU, and implement this verification.
+the GPU, and then implement this verification.
 
 For this, we're going to use the available fixture for LWE ciphertext vector conversion. The only
 thing we need to implement in `concrete-core-fixture` is the synthesis stage, where data will be
-copied to the GPU, and back. Then we'll use the existing fixture for LWE ciphertext vector
+copied to the GPU, and back again. Then we'll use the existing fixture for LWE ciphertext vector
 conversion to execute the test.
 
 ## Add the GPU backend in the fixtures
@@ -168,7 +168,7 @@ test! {
 ```
 
 Actually this is a bit complex to just test the 32 bits implementation, but it is very easy to add
-the 64 bits precision in this implementation once you have the 64 bits engines. Finally, let's run
+the 64 bits precision in this implementation once you have 64 bits engines. Finally, let's run
 our test!
 
 ## Execute the test
@@ -185,7 +185,7 @@ You can filter it to execute a specific engine only:
 cargo test -p concrete-core-test --features=backend_gpu --release -- --test conversion
 ```
 
-You should get as output:
+You should get as the output:
 
 ```
      Running unittests (target/release/deps/concrete_core_test-c662f8b6b8aa1434)
@@ -201,4 +201,4 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
-Next step is to benchmark your backend, for this head to the [benchmarks tutorial](benchmarking_backends.md)!
+The next step is to benchmark your backend. For this, head to the [benchmarks tutorial](benchmarking_backends.md)!
