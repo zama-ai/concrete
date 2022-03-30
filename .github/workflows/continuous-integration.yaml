@@ -372,7 +372,7 @@ jobs:
 
       - name: Stop EC2 runner python 38
         uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
-        if: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           label: ${{ needs.start-runner-linux.outputs.label-38 }}
@@ -381,7 +381,7 @@ jobs:
 
       - name: Stop EC2 runner python 39
         uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
-        if: ${{ needs.start-runner-linux.outputs.ec2-instance-id-39 }}
+        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-39 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           label: ${{ needs.start-runner-linux.outputs.label-39 }}
