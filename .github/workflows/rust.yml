@@ -11,7 +11,7 @@ jobs:
   all:
     runs-on: ubuntu-20.04
     env:
-      CARGO_ARGS: --release
+      RUSTFLAGS: -D warnings
     steps:
       - name: Code checkout
         uses: actions/checkout@v2
@@ -21,39 +21,24 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Download cargo cache
+        uses: Swatinem/rust-cache@v1
+
       # A SSH private key is required as some dependencies are from private repos
       - uses: webfactory/ssh-agent@v0.5.2
         with:
           ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - name: cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: ${{ env.CARGO_ARGS }}
+      - name: Formatting
+        run: cargo fmt --check
 
-      - name: cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -- --check
+      # For some reason doing the build explicitely before make it available for both clippy and test
+      # But clippy and test alone do not share the build
+      - name: Build
+        run: cargo build --all-targets
 
-      - name: cargo build
-        uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: -D warnings
-        with:
-          command: build
-          args: ${{ env.CARGO_ARGS }} --lib --examples --tests
+      - name: Lint
+        run: cargo clippy --all-targets
 
-      - name: cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: ${{ env.CARGO_ARGS }} -- -D warnings
-
-      - name: cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: ${{ env.CARGO_ARGS }} --no-fail-fast --all-targets
+      - name: Tests
+        run: cargo test --no-fail-fast --all-targets

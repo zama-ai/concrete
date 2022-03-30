@@ -158,6 +158,6 @@ mod tests {
 
         let expected_output = std::fs::read_to_string(REF_FILE).expect("Can't read reference file");
 
-        text_diff::assert_diff(&expected_output, &actual_output, CMP_LINES, EXACT_EQUALITY);
+        text_diff::assert_diff(&expected_output, actual_output, CMP_LINES, EXACT_EQUALITY);
     }
 }
