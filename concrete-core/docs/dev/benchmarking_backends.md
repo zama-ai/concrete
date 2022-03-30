@@ -1,11 +1,11 @@
-# Tutorial: how to benchmark your backend?
+# Tutorial: How to benchmark your backend.
 
 Once you've implemented and tested your backend, you're ready to start benchmarking it.
 The `concrete-benchmark` crate has been developed for this purpose. Unfortunately, it does not rely
-on the `concrete-core-fixture` crate yet, but would in the future so this tutorial will be even
+on the `concrete-core-fixture` crate yet, but it will in the future, so this tutorial will be even
 simpler once you've followed the test tutorial.
 
-Let's first add the GPU backend as a feature for the benchmark crate: edit the `Cargo.toml` file
+Let's first add the GPU backend as a feature for the benchmark crate. Edit the `Cargo.toml` file
 of `concrete-benchmark` to add the following lines in the dependencies and features sections:
 
 ```
@@ -18,7 +18,7 @@ backend_cuda = ["concrete-core/backend_gpu", "fhe_gpu"]
 
 ## Create a new module alongside the core one
 
-Let's start by editing the `main.rs` file of `concrete-benchmark`, to have:
+Let's start by editing the `main.rs` file of `concrete-benchmark` to have:
 
 ```
 # [cfg(feature = "backend_core")]
