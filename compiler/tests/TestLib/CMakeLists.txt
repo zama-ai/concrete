@@ -17,6 +17,7 @@ target_link_libraries(
   testlib_unit_test
   ConcretelangRuntime
   ConcretelangSupport
+  DFRuntime
   gtest_main
 )
 

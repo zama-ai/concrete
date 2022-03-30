@@ -131,17 +131,25 @@ inline llvm::Expected<
     mlir::concretelang::ClientServer<mlir::concretelang::JitLambdaSupport>>
 internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false,
-                   bool autoParallelize = false) {
+                   bool dataflowParallelize = false,
+                   bool loopParallelize = false) {
 
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
   if (useDefaultFHEConstraints)
     options.v0FHEConstraints = defaultV0Constraints;
+
+  // Allow loop parallelism in all cases
+  options.loopParallelize = loopParallelize;
+#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
 #ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
-  options.autoParallelize = true;
+  options.dataflowParallelize = true;
+  options.loopParallelize = true;
 #else
-  options.autoParallelize = autoParallelize;
+  options.dataflowParallelize = dataflowParallelize;
 #endif
+#endif
+
   auto lambdaOrErr =
       mlir::concretelang::ClientServer<mlir::concretelang::JitLambdaSupport>::
           create(src, options, getTestKeySetCache(),
