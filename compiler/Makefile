@@ -257,6 +257,9 @@ check_python_format:
 python_format:
 	black tests/python/ lib/Bindings/Python/concrete/
 
+python_lint:
+	pylint --rcfile=../pylintrc lib/Bindings/Python/concrete/compiler
+
 .PHONY: build-initialized \
 	build-end-to-end-jit \
 	concretecompiler \
@@ -283,5 +286,6 @@ python_format:
 	install_runtime_lib \
 	uninstall_runtime_lib \
 	generate_conv_op \
+	python_lint \
 	python_format \
 	check_python_format

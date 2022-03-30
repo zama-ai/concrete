@@ -19,7 +19,7 @@ jobs:
   # Tests and formatiing #
   ########################
 
-  Formatting:
+  FormattingAndLinting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
