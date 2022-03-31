@@ -29,9 +29,9 @@
 //! //between these two variances.
 //! //Here, we assume that ciphertexts are encoded over 64 bits.
 //! let var_out = estimate_addition_noise::<u64, _, _>(var1, var2);
-//! println!("Expect Variance (2^24) =  {}", f64::powi(2., -24));
+//! println!("Expect Variance (2^24) =  {}", 2_f64.powi(-24));
 //! println!("Output Variance {}", var_out.get_variance());
-//! assert!((f64::powi(2., -24) - var_out.get_variance()).abs() < 0.0001);
+//! assert!((2_f64.powi(-24) - var_out.get_variance()).abs() < 0.0001);
 //! ```
 
 #![allow(clippy::upper_case_acronyms)]
