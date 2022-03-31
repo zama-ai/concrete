@@ -17,9 +17,9 @@ use super::*;
 /// let var1 = Variance(2_f64.powf(-25.));
 /// let var2 = Variance(2_f64.powf(-25.));
 /// let var_out = estimate_addition_noise::<u64, _, _>(var1, var2);
-/// println!("Expect Variance (2^24) =  {}", f64::powi(2., -24));
+/// println!("Expect Variance (2^24) =  {}", 2_f64.powi(-24));
 /// println!("Output Variance {}", var_out.get_variance());
-/// assert!((f64::powi(2., -24) - var_out.get_variance()).abs() < 0.0001);
+/// assert!((2_f64.powi(-24) - var_out.get_variance()).abs() < 0.0001);
 /// ```
 pub fn estimate_addition_noise<T, D1, D2>(dispersion_ct1: D1, dispersion_ct2: D2) -> Variance
 where
@@ -44,9 +44,9 @@ where
 /// let var3 = Variance(2_f64.powf(-24.));
 /// let var_in = [var1, var2, var3];
 /// let var_out = estimate_several_additions_noise::<u64, _>(&var_in);
-/// println!("Expect Variance (2^24) =  {}", f64::powi(2., -23));
+/// println!("Expect Variance (2^24) =  {}", 2_f64.powi(-23));
 /// println!("Output Variance {}", var_out.get_variance());
-/// assert!((f64::powi(2., -23) - var_out.get_variance()).abs() < 0.0001);
+/// assert!((2_f64.powi(-23) - var_out.get_variance()).abs() < 0.0001);
 /// ```
 pub fn estimate_several_additions_noise<T, D>(dispersion_cts: &[D]) -> Variance
 where
@@ -67,7 +67,7 @@ where
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
 /// use concrete_npe::estimate_integer_plaintext_multiplication_noise;
-/// let variance = Variance(f64::powi(2., -48));
+/// let variance = Variance(2_f64.powi(-48));
 /// let n: u64 = 543;
 /// // noise computation
 /// let var_out = estimate_integer_plaintext_multiplication_noise::<u64, _>(variance, n);
@@ -89,7 +89,7 @@ where
 /// ```rust
 /// use concrete_commons::dispersion::Variance;
 /// use concrete_npe::estimate_weighted_sum_noise;
-/// let variances = vec![Variance(f64::powi(2., -30)), Variance(f64::powi(2., -32))];
+/// let variances = vec![Variance(2_f64.powi(-30)), Variance(2_f64.powi(-32))];
 /// let weights: Vec<u64> = vec![20, 10];
 /// let var_out = estimate_weighted_sum_noise(&variances, &weights);
 /// ```
@@ -114,7 +114,7 @@ where
 /// use concrete_commons::parameters::PolynomialSize;
 /// use concrete_npe::estimate_polynomial_plaintext_multiplication_noise;
 /// let polynomial_size = PolynomialSize(1024);
-/// let dispersion_rlwe = Variance(f64::powi(2., -40));
+/// let dispersion_rlwe = Variance(2_f64.powi(-40));
 /// let scalar_polynomial = vec![10, 15, 18];
 /// let var_out = estimate_polynomial_plaintext_multiplication_noise::<u64, _>(
 ///     dispersion_rlwe,
@@ -147,10 +147,10 @@ where
 /// use concrete_npe::estimate_tensor_product_noise;
 /// let dimension = GlweDimension(3);
 /// let polynomial_size = PolynomialSize(1024);
-/// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(f64::powi(2., 24));
-/// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(f64::powi(2., 24));
-/// let delta_1 = f64::powi(2., 40);
-/// let delta_2 = f64::powi(2., 42);
+/// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(2_f64.powi(24));
+/// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(2_f64.powi(24));
+/// let delta_1 = 2_f64.powi(40);
+/// let delta_2 = 2_f64.powi(42);
 /// let max_msg_1 = 15.;
 /// let max_msg_2 = 7.;
 /// let var_out = estimate_tensor_product_noise::<u64, _, _, BinaryKeyKind>(
@@ -186,7 +186,7 @@ where
     let k = rlwe_dimension.0 as f64;
     let delta = f64::min(delta_1, delta_2);
     let delta_square = square(delta);
-    let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    let q_square = 2_f64.powi((2 * T::BITS) as i32);
     // #1
     let res_1 = big_n / delta_square
         * (dispersion_glwe1.get_modular_variance::<T>() * square(delta_2) * square(max_msg_2)
@@ -251,7 +251,7 @@ where
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let polynomial_size = PolynomialSize(1024);
-/// let dispersion_rlk = Variance(f64::powi(2., -38));
+/// let dispersion_rlk = Variance(2_f64.powi(-38));
 /// let var_cmux = estimate_relinearization_noise::<u64, _, BinaryKeyKind>(
 ///     polynomial_size,
 ///     dimension,
@@ -275,8 +275,9 @@ where
     // constants
     let big_n = poly_size.0 as f64;
     let k = glwe_dimension.0 as f64;
-    let base = f64::powi(2., base_log.0 as i32);
-    let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    let base = 2_f64.powi(base_log.0 as i32);
+    let b2l = 2_f64.powi((2 * level.0) as i32);
+    let q_square = 2_f64.powi((2 * T::BITS) as i32);
 
     // first term
     let res_1 =
@@ -286,7 +287,7 @@ where
 
     // second term
     let res_2 = k * big_n / 2.
-        * (q_square / (12. * f64::powi(base, (2 * level.0) as i32)) - 1. / 12.)
+        * (q_square / (12. * b2l) - 1. / 12.)
         * ((k - 1.)
             * (K::variance_coefficient_in_polynomial_key_times_key::<T>(poly_size)
                 .get_modular_variance::<T>()
@@ -322,15 +323,15 @@ where
 /// use concrete_npe::estimate_multiplication_noise;
 /// let dimension = GlweDimension(3);
 /// let polynomial_size = PolynomialSize(1024);
-/// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(f64::powi(2., 24));
-/// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(f64::powi(2., 24));
-/// let delta_1 = f64::powi(2., 40);
-/// let delta_2 = f64::powi(2., 42);
+/// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(2_f64.powi(24));
+/// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(2_f64.powi(24));
+/// let delta_1 = 2_f64.powi(40);
+/// let delta_2 = 2_f64.powi(42);
 /// let max_msg_1 = 15.;
 /// let max_msg_2 = 7.;
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
-/// let dispersion_rlk = Variance(f64::powi(2., -38));
+/// let dispersion_rlk = Variance(2_f64.powi(-38));
 /// let var_out = estimate_multiplication_noise::<u64, _, _, _, BinaryKeyKind>(
 ///     polynomial_size,
 ///     dimension,
@@ -400,7 +401,7 @@ where
 /// use concrete_npe::estimate_modulus_switching_noise_with_binary_key;
 /// let lwe_mask_size = LweDimension(630);
 /// let number_of_most_significant_bit: usize = 4;
-/// let dispersion_input = Variance(f64::powi(2., -40));
+/// let dispersion_input = Variance(2_f64.powi(-40));
 /// let var_out = estimate_modulus_switching_noise_with_binary_key::<u64, _>(
 ///     lwe_mask_size,
 ///     number_of_most_significant_bit,
@@ -418,7 +419,7 @@ where
 {
     let w = 2_f64.powi(nb_msb as i32);
     let n = lwe_mask_size.0 as f64;
-    let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    let q_square = 2_f64.powi((2 * T::BITS) as i32);
     Variance::from_modular_variance::<T>(
         var_in.get_modular_variance::<T>() + 1. / 12. * q_square / square(w) - 1. / 12.
             + n / 24. * q_square / square(w)
@@ -439,8 +440,8 @@ where
 /// let lwe_mask_size = LweDimension(630);
 /// let l_ks = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
-/// let dispersion_lwe = Variance(f64::powi(2., -38));
-/// let dispersion_ks = Variance(f64::powi(2., -40));
+/// let dispersion_lwe = Variance(2_f64.powi(-38));
+/// let dispersion_ks = Variance(2_f64.powi(-40));
 /// let var_ks = estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<u64, _, _,
 /// BinaryKeyKind>(
 ///     lwe_mask_size,
@@ -465,14 +466,15 @@ where
 {
     let n = lwe_mask_size.0 as f64;
     let base = 2_f64.powi(base_log.0 as i32);
-    let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    let b2l = 2_f64.powi((base_log.0 * 2 * level.0) as i32);
+    let q_square = 2_f64.powi((2 * T::BITS) as i32);
 
     // res 1
     let res_1 = dispersion_lwe.get_modular_variance::<T>();
 
     // res 2
     let res_2 = n
-        * (q_square / (12. * f64::powi(base, 2 * level.0 as i32)) - 1. / 12.)
+        * (q_square / (12. * b2l) - 1. / 12.)
         * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
             + square(K::expectation_key_coefficient()));
 
@@ -499,7 +501,7 @@ where
 /// let lwe_mask_size = LweDimension(630);
 /// let l_ks = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
-/// let dispersion_ks = Variance(f64::powi(2., -40));
+/// let dispersion_ks = Variance(2_f64.powi(-40));
 /// // Compute the noise
 /// let var_ks = estimate_keyswitch_noise_lwe_to_glwe_with_non_constant_terms::<u64, _>(
 ///     lwe_mask_size,
@@ -544,7 +546,7 @@ where
     T: UnsignedInteger,
     K: KeyDispersion,
 {
-    let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    let q_square = 2_f64.powi((2 * T::BITS) as i32);
 
     Variance::from_modular_variance::<T>(
         1. / q_square
@@ -571,8 +573,8 @@ where
 /// let poly_size = PolynomialSize(1024);
 /// let mask_size = GlweDimension(2);
 /// let level = DecompositionLevelCount(4);
-/// let dispersion_rlwe = Variance(f64::powi(2., -40));
-/// let dispersion_rgsw = Variance(f64::powi(2., -40));
+/// let dispersion_rlwe = Variance(2_f64.powi(-40));
+/// let dispersion_rgsw = Variance(2_f64.powi(-40));
 /// let base_log = DecompositionBaseLog(7);
 /// let var_ks = estimate_external_product_noise_with_binary_ggsw::<u64, _, _, BinaryKeyKind>(
 ///     poly_size,
@@ -601,12 +603,13 @@ where
     let k = rlwe_mask_size.0 as f64;
     let big_n = poly_size.0 as f64;
     let b = 2_f64.powi(base_log.0 as i32);
-    let b2l = f64::powf(b, 2. * l);
+    let b2l = 2_f64.powi((base_log.0 * 2 * level.0) as i32);
+    let q_square = 2_f64.powi(2 * T::BITS as i32);
 
     let res_1 =
         l * (k + 1.) * big_n * var_ggsw.get_modular_variance::<T>() * (square(b) + 2.) / 12.;
     let res_2 = var_glwe.get_modular_variance::<T>() / 2.;
-    let res_3 = (square(f64::powi(2., T::BITS as i32)) as f64 - b2l) / (24. * b2l)
+    let res_3 = (q_square - b2l) / (24. * b2l)
         * (1.
             + k * big_n
                 * (K::variance_key_coefficient::<T>().get_modular_variance::<T>()
@@ -629,9 +632,9 @@ where
 /// let l_gadget = DecompositionLevelCount(4);
 /// let base_log = DecompositionBaseLog(7);
 /// let polynomial_size = PolynomialSize(1024);
-/// let dispersion_rgsw = Variance::from_modular_variance::<u64>(f64::powi(2., 26));
-/// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(f64::powi(2., 25));
-/// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(f64::powi(2., 25));
+/// let dispersion_rgsw = Variance::from_modular_variance::<u64>(2_f64.powi(26));
+/// let dispersion_rlwe_0 = Variance::from_modular_variance::<u64>(2_f64.powi(25));
+/// let dispersion_rlwe_1 = Variance::from_modular_variance::<u64>(2_f64.powi(25));
 /// // Compute the noise
 /// let var_cmux = estimate_cmux_noise_with_binary_ggsw::<u64, _, _, _, BinaryKeyKind>(
 ///     dimension,
@@ -684,7 +687,7 @@ where
 /// let mask_size = LweDimension(2);
 /// let rlwe_mask_size = GlweDimension(2);
 /// let level = DecompositionLevelCount(4);
-/// let dispersion_rgsw = Variance(f64::powi(2., -40));
+/// let dispersion_rgsw = Variance(2_f64.powi(-40));
 /// let base_log = DecompositionBaseLog(7);
 /// let var_ks = estimate_pbs_noise::<u64, _, BinaryKeyKind>(
 ///     mask_size,
@@ -711,10 +714,10 @@ where
     let n = lwe_mask_size.0 as f64;
     let k = rlwe_mask_size.0 as f64;
     let b = 2_f64.powi(base_log.0 as i32);
+    let b2l = 2_f64.powi((base_log.0 * 2 * level.0) as i32);
     let l = level.0 as f64;
-    let b2l = f64::powf(b, 2. * l) as f64;
     let big_n = poly_size.0 as f64;
-    let q_square = f64::powi(2., (2 * T::BITS) as i32);
+    let q_square = 2_f64.powi(2 * T::BITS as i32);
 
     let res_1 = n * l * (k + 1.) * big_n * (square(b) + 2.) / 12.
         * dispersion_bsk.get_modular_variance::<T>();
