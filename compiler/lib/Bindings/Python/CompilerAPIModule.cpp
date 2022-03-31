@@ -44,16 +44,16 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, bool b) {
              options.verifyDiagnostics = b;
            })
-      .def("auto_parallelize", [](CompilationOptions &options,
-                                  bool b) { options.autoParallelize = b; })
-      .def("loop_parallelize", [](CompilationOptions &options,
-                                  bool b) { options.loopParallelize = b; })
-      .def("dataflow_parallelize", [](CompilationOptions &options, bool b) {
+      .def("set_auto_parallelize", [](CompilationOptions &options,
+                                      bool b) { options.autoParallelize = b; })
+      .def("set_loop_parallelize", [](CompilationOptions &options,
+                                      bool b) { options.loopParallelize = b; })
+      .def("set_dataflow_parallelize", [](CompilationOptions &options, bool b) {
         options.dataflowParallelize = b;
       });
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
-      m, "JitCompilationResult");
+      m, "JITCompilationResult");
   pybind11::class_<mlir::concretelang::JITLambda,
                    std::shared_ptr<mlir::concretelang::JITLambda>>(m,
                                                                    "JITLambda");

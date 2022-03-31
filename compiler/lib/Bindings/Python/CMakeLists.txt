@@ -26,7 +26,23 @@ declare_mlir_python_extension(ConcretelangBindingsPythonExtension.Core
 declare_mlir_python_sources(ConcretelangBindingsPythonSources
   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
   SOURCES
-    concrete/compiler.py
+    concrete/compiler/__init__.py
+    concrete/compiler/client_parameters.py
+    concrete/compiler/client_support.py
+    concrete/compiler/compilation_options.py
+    concrete/compiler/jit_compilation_result.py
+    concrete/compiler/jit_lambda_support.py
+    concrete/compiler/jit_lambda.py
+    concrete/compiler/key_set_cache.py
+    concrete/compiler/key_set.py
+    concrete/compiler/lambda_argument.py
+    concrete/compiler/library_compilation_result.py
+    concrete/compiler/library_lambda_support.py
+    concrete/compiler/library_lambda.py
+    concrete/compiler/public_arguments.py
+    concrete/compiler/public_result.py
+    concrete/compiler/utils.py
+    concrete/compiler/wrapper.py
     concrete/__init__.py
     concrete/lang/__init__.py
     concrete/lang/dialects/__init__.py
