@@ -49,6 +49,15 @@ impl Error for CoreError {}
 pub(crate) struct FourierBufferKey(pub PolynomialSize, pub GlweSize);
 
 /// The main engine exposed by the core backend.
+// We attach Fourier buffers to the Core Engine:
+// each time a bootstrap key is created, a check
+// is made to see whether those buffers exist for
+// the required polynomial and GLWE sizes.
+// If the buffers already exist, they are simply
+// used when it comes to computing FFTs.
+// If they don't exist already, they are allocated.
+// In this way we avoid re-allocating those buffers
+// every time an FFT or iFFT is performed.
 pub struct CoreEngine {
     secret_generator: ImplSecretRandomGenerator,
     encryption_generator: ImplEncryptionRandomGenerator,

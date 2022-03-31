@@ -15,8 +15,7 @@ engine_error! {
 ///
 /// # Formal Definition
 ///
-/// A trivial encryption uses a zero mask and no noise.
-/// It is absolutely not secure, as the body contains a direct copy of the plaintext
+/// see [here](../engines/trait.GlweCiphertextTrivialEncryptionEngine.html)
 pub trait GlweCiphertextVectorTrivialDecryptionEngine<CiphertextVector, PlaintextVector>:
     AbstractEngine
 where
