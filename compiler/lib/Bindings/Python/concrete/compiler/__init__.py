@@ -21,8 +21,8 @@ from .public_arguments import PublicArguments
 from .jit_compilation_result import JITCompilationResult
 from .jit_lambda import JITLambda
 from .client_support import ClientSupport
-from .jit_lambda_support import JITLambdaSupport
-from .library_lambda_support import LibraryLambdaSupport
+from .jit_support import JITSupport
+from .library_support import LibrarySupport
 
 
 # Terminate parallelization in the compiler (if init) during cleanup

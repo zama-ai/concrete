@@ -1,7 +1,7 @@
 #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 #  See https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt for license information.
 
-"""JITLambdaSupport.
+"""JITSupport.
 
 Just-in-time compilation provide a way to compile and execute an MLIR program while keeping the executable
 code in memory.
@@ -11,7 +11,7 @@ from typing import Optional
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
-    JITLambdaSupport as _JITLambdaSupport,
+    JITSupport as _JITSupport,
 )
 
 # pylint: enable=no-name-in-module,import-error
@@ -25,28 +25,28 @@ from .public_result import PublicResult
 from .wrapper import WrapperCpp
 
 
-class JITLambdaSupport(WrapperCpp):
+class JITSupport(WrapperCpp):
     """Support class for JIT compilation and execution."""
 
-    def __init__(self, jit_lambda_support: _JITLambdaSupport):
+    def __init__(self, jit_support: _JITSupport):
         """Wrap the native Cpp object.
 
         Args:
-            jit_lambda_support (_JITLambdaSupport): object to wrap
+            jit_support (_JITSupport): object to wrap
 
         Raises:
-            TypeError: if jit_lambda_support is not of type _JITLambdaSupport
+            TypeError: if jit_support is not of type _JITSupport
         """
-        if not isinstance(jit_lambda_support, _JITLambdaSupport):
+        if not isinstance(jit_support, _JITSupport):
             raise TypeError(
-                f"jit_lambda_support must be of type _JITLambdaSupport not{type(jit_lambda_support)}"
+                f"jit_support must be of type _JITSupport not{type(jit_support)}"
             )
-        super().__init__(jit_lambda_support)
+        super().__init__(jit_support)
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(runtime_lib_path: Optional[str] = None) -> "JITLambdaSupport":
-        """Build a JITLambdaSupport.
+    def new(runtime_lib_path: Optional[str] = None) -> "JITSupport":
+        """Build a JITSupport.
 
         Args:
             runtime_lib_path (Optional[str]): path to the runtime library. Defaults to None.
@@ -55,7 +55,7 @@ class JITLambdaSupport(WrapperCpp):
             TypeError: if runtime_lib_path is not of type str or None
 
         Returns:
-            JITLambdaSupport
+            JITSupport
         """
         if runtime_lib_path is None:
             runtime_lib_path = lookup_runtime_lib()
@@ -64,7 +64,7 @@ class JITLambdaSupport(WrapperCpp):
                 raise TypeError(
                     f"runtime_lib_path must be of type str, not {type(runtime_lib_path)}"
                 )
-        return JITLambdaSupport.wrap(_JITLambdaSupport(runtime_lib_path))
+        return JITSupport.wrap(_JITSupport(runtime_lib_path))
 
     # pylint: enable=arguments-differ
 

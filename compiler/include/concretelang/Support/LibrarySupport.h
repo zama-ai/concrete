@@ -3,8 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
-#ifndef CONCRETELANG_SUPPORT_LIBRARY_LAMBDA_SUPPORT
-#define CONCRETELANG_SUPPORT_LIBRARY_LAMBDA_SUPPORT
+#ifndef CONCRETELANG_SUPPORT_LIBRARY_SUPPORT
+#define CONCRETELANG_SUPPORT_LIBRARY_SUPPORT
 
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
@@ -29,11 +29,11 @@ struct LibraryCompilationResult {
   std::string funcName;
 };
 
-class LibraryLambdaSupport
+class LibrarySupport
     : public LambdaSupport<serverlib::ServerLambda, LibraryCompilationResult> {
 
 public:
-  LibraryLambdaSupport(std::string outputPath) : outputPath(outputPath) {}
+  LibrarySupport(std::string outputPath) : outputPath(outputPath) {}
 
   llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override {

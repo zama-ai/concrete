@@ -13,10 +13,10 @@ from .wrapper import WrapperCpp
 
 
 class JITLambda(WrapperCpp):
-    """JITLambda contains an in-memory executable code and can be ran using JITLambdaSupport.
+    """JITLambda contains an in-memory executable code and can be ran using JITSupport.
 
     It's an artifact of JIT compilation, which stays in memory and can be executed with the help of
-    JITLambdaSupport.
+    JITSupport.
     """
 
     def __init__(self, jit_lambda: _JITLambda):

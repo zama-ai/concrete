@@ -1,16 +1,16 @@
 #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 #  See https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt for license information.
 
-"""LibraryCompilerSupport.
+"""LibrarySupport.
 
-Library compilation provides a way to compile an MLIR program into a library that can be later loaded
+Library support provides a way to compile an MLIR program into a library that can be later loaded
 to execute the compiled code.
 """
 import os
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
-    LibraryLambdaSupport as _LibraryLambdaSupport,
+    LibrarySupport as _LibrarySupport,
 )
 
 # pylint: enable=no-name-in-module,import-error
@@ -29,24 +29,24 @@ DEFAULT_OUTPUT_PATH = os.path.abspath(
 )
 
 
-class LibraryLambdaSupport(WrapperCpp):
+class LibrarySupport(WrapperCpp):
     """Support class for library compilation and execution."""
 
-    def __init__(self, library_lambda_support: _LibraryLambdaSupport):
+    def __init__(self, library_support: _LibrarySupport):
         """Wrap the native Cpp object.
 
         Args:
-            library_lambda_support (_LibraryLambdaSupport): object to wrap
+            library_support (_LibrarySupport): object to wrap
 
         Raises:
-            TypeError: if library_lambda_support is not of type _LibraryLambdaSupport
+            TypeError: if library_support is not of type _LibrarySupport
         """
-        if not isinstance(library_lambda_support, _LibraryLambdaSupport):
+        if not isinstance(library_support, _LibrarySupport):
             raise TypeError(
-                f"library_lambda_support must be of type _LibraryLambdaSupport, not "
-                f"{type(library_lambda_support)}"
+                f"library_support must be of type _LibrarySupport, not "
+                f"{type(library_support)}"
             )
-        super().__init__(library_lambda_support)
+        super().__init__(library_support)
         self.library_path = DEFAULT_OUTPUT_PATH
 
     @property
@@ -62,8 +62,8 @@ class LibraryLambdaSupport(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(output_path: str = DEFAULT_OUTPUT_PATH) -> "LibraryLambdaSupport":
-        """Build a LibraryLambdaSupport.
+    def new(output_path: str = DEFAULT_OUTPUT_PATH) -> "LibrarySupport":
+        """Build a LibrarySupport.
 
         Args:
             output_path (str, optional): path where to store compiled libraries.
@@ -73,15 +73,13 @@ class LibraryLambdaSupport(WrapperCpp):
             TypeError: if output_path is not of type str
 
         Returns:
-            LibraryLambdaSupport
+            LibrarySupport
         """
         if not isinstance(output_path, str):
             raise TypeError(f"output_path must be of type str, not {type(output_path)}")
-        library_lambda_support = LibraryLambdaSupport.wrap(
-            _LibraryLambdaSupport(output_path)
-        )
-        library_lambda_support.library_path = output_path
-        return library_lambda_support
+        library_support = LibrarySupport.wrap(_LibrarySupport(output_path))
+        library_support.library_path = output_path
+        return library_support
 
     def compile(
         self,

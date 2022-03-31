@@ -4,8 +4,8 @@
 #include <type_traits>
 
 #include "EndToEndFixture.h"
-#include "concretelang/Support/JitLambdaSupport.h"
-#include "concretelang/Support/LibraryLambdaSupport.h"
+#include "concretelang/Support/JITSupport.h"
+#include "concretelang/Support/LibrarySupport.h"
 
 template <typename LambdaSupport>
 void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
@@ -91,10 +91,9 @@ void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
-    JitTest, mlir::concretelang::JitLambdaSupport())
+    JitTest, mlir::concretelang::JITSupport())
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(
-    LibraryTest,
-    mlir::concretelang::LibraryLambdaSupport("/tmp/end_to_end_test_" +
-                                             desc.description))
+    LibraryTest, mlir::concretelang::LibrarySupport("/tmp/end_to_end_test_" +
+                                                    desc.description))

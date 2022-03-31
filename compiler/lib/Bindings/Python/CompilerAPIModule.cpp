@@ -6,8 +6,8 @@
 #include "CompilerAPIModule.h"
 #include "concretelang-c/Support/CompilerEngine.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
+#include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
-#include "concretelang/Support/JitLambdaSupport.h"
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
@@ -20,7 +20,7 @@
 #include <string>
 
 using mlir::concretelang::CompilationOptions;
-using mlir::concretelang::JitLambdaSupport;
+using mlir::concretelang::JITSupport;
 using mlir::concretelang::LambdaArgument;
 
 /// Populate the compiler API python module.
@@ -57,29 +57,29 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   pybind11::class_<mlir::concretelang::JITLambda,
                    std::shared_ptr<mlir::concretelang::JITLambda>>(m,
                                                                    "JITLambda");
-  pybind11::class_<JITLambdaSupport_C>(m, "JITLambdaSupport")
+  pybind11::class_<JITSupport_C>(m, "JITSupport")
       .def(pybind11::init([](std::string runtimeLibPath) {
-        return jit_lambda_support(runtimeLibPath);
+        return jit_support(runtimeLibPath);
       }))
       .def("compile",
-           [](JITLambdaSupport_C &support, std::string mlir_program,
+           [](JITSupport_C &support, std::string mlir_program,
               CompilationOptions options) {
              return jit_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
-           [](JITLambdaSupport_C &support,
+           [](JITSupport_C &support,
               mlir::concretelang::JitCompilationResult &result) {
              return jit_load_client_parameters(support, result);
            })
       .def(
           "load_server_lambda",
-          [](JITLambdaSupport_C &support,
+          [](JITSupport_C &support,
              mlir::concretelang::JitCompilationResult &result) {
             return jit_load_server_lambda(support, result);
           },
           pybind11::return_value_policy::reference)
       .def("server_call",
-           [](JITLambdaSupport_C &support, concretelang::JITLambda &lambda,
+           [](JITSupport_C &support, concretelang::JITLambda &lambda,
               clientlib::PublicArguments &publicArguments) {
              return jit_server_call(support, lambda, publicArguments);
            });
@@ -93,29 +93,29 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
         };
       }));
   pybind11::class_<concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
-  pybind11::class_<LibraryLambdaSupport_C>(m, "LibraryLambdaSupport")
+  pybind11::class_<LibrarySupport_C>(m, "LibrarySupport")
       .def(pybind11::init([](std::string outputPath) {
-        return library_lambda_support(outputPath.c_str());
+        return library_support(outputPath.c_str());
       }))
       .def("compile",
-           [](LibraryLambdaSupport_C &support, std::string mlir_program,
+           [](LibrarySupport_C &support, std::string mlir_program,
               mlir::concretelang::CompilationOptions options) {
              return library_compile(support, mlir_program.c_str(), options);
            })
       .def("load_client_parameters",
-           [](LibraryLambdaSupport_C &support,
+           [](LibrarySupport_C &support,
               mlir::concretelang::LibraryCompilationResult &result) {
              return library_load_client_parameters(support, result);
            })
       .def(
           "load_server_lambda",
-          [](LibraryLambdaSupport_C &support,
+          [](LibrarySupport_C &support,
              mlir::concretelang::LibraryCompilationResult &result) {
             return library_load_server_lambda(support, result);
           },
           pybind11::return_value_policy::reference)
       .def("server_call",
-           [](LibraryLambdaSupport_C &support, serverlib::ServerLambda lambda,
+           [](LibrarySupport_C &support, serverlib::ServerLambda lambda,
               clientlib::PublicArguments &publicArguments) {
              return library_server_call(support, lambda, publicArguments);
            });

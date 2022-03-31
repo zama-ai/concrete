@@ -3,8 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
-#ifndef CONCRETELANG_SUPPORT_JITLAMBDA_SUPPORT
-#define CONCRETELANG_SUPPORT_JITLAMBDA_SUPPORT
+#ifndef CONCRETELANG_SUPPORT_JIT_SUPPORT
+#define CONCRETELANG_SUPPORT_JIT_SUPPORT
 
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
@@ -27,13 +27,13 @@ struct JitCompilationResult {
   clientlib::ClientParameters clientParameters;
 };
 
-/// JitLambdaSupport is the instantiated LambdaSupport for the Jit Compilation.
-class JitLambdaSupport
+/// JITSupport is the instantiated LambdaSupport for the Jit Compilation.
+class JITSupport
     : public LambdaSupport<std::shared_ptr<concretelang::JITLambda>,
                            JitCompilationResult> {
 
 public:
-  JitLambdaSupport(llvm::Optional<std::string> runtimeLibPath = llvm::None);
+  JITSupport(llvm::Optional<std::string> runtimeLibPath = llvm::None);
 
   llvm::Expected<std::unique_ptr<JitCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override;

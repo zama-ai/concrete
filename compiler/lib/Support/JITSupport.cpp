@@ -3,19 +3,18 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/master/LICENSE.txt
 // for license information.
 
-#include <concretelang/Support/JitLambdaSupport.h>
+#include <concretelang/Support/JITSupport.h>
 #include <llvm/Support/TargetSelect.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
 namespace mlir {
 namespace concretelang {
 
-JitLambdaSupport::JitLambdaSupport(llvm::Optional<std::string> runtimeLibPath)
+JITSupport::JITSupport(llvm::Optional<std::string> runtimeLibPath)
     : runtimeLibPath(runtimeLibPath) {}
 
 llvm::Expected<std::unique_ptr<JitCompilationResult>>
-JitLambdaSupport::compile(llvm::SourceMgr &program,
-                          CompilationOptions options) {
+JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
   // Setup the compiler engine
   auto context = std::make_shared<CompilationContext>();
   concretelang::CompilerEngine engine(context);

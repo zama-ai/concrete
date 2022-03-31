@@ -17,7 +17,7 @@ from .wrapper import WrapperCpp
 class JITCompilationResult(WrapperCpp):
     """JITCompilationResult holds the result of a JIT compilation.
 
-    It can be instrumented using the JITLambdaSupport to load client parameters and execute the compiled
+    It can be instrumented using the JITSupport to load client parameters and execute the compiled
     code.
     """
 

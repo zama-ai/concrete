@@ -13,7 +13,7 @@ from .wrapper import WrapperCpp
 
 
 class LibraryLambda(WrapperCpp):
-    """LibraryLambda reference a compiled library and can be ran using LibraryLambdaSupport."""
+    """LibraryLambda reference a compiled library and can be ran using LibrarySupport."""
 
     def __init__(self, library_lambda: _LibraryLambda):
         """Wrap the native Cpp object.

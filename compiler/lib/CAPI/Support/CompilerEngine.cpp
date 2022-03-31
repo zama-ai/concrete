@@ -9,8 +9,8 @@
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Runtime/runtime_api.h"
 #include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
-#include "concretelang/Support/JitLambdaSupport.h"
 
 #define GET_OR_THROW_LLVM_EXPECTED(VARNAME, EXPECTED)                          \
   auto VARNAME = EXPECTED;                                                     \
@@ -20,16 +20,15 @@
 
 // JIT Support bindings ///////////////////////////////////////////////////////
 
-MLIR_CAPI_EXPORTED JITLambdaSupport_C
-jit_lambda_support(std::string runtimeLibPath) {
+MLIR_CAPI_EXPORTED JITSupport_C jit_support(std::string runtimeLibPath) {
   auto opt = runtimeLibPath.empty()
                  ? llvm::None
                  : llvm::Optional<std::string>(runtimeLibPath);
-  return JITLambdaSupport_C{mlir::concretelang::JitLambdaSupport(opt)};
+  return JITSupport_C{mlir::concretelang::JITSupport(opt)};
 }
 
 std::unique_ptr<mlir::concretelang::JitCompilationResult>
-jit_compile(JITLambdaSupport_C support, const char *module,
+jit_compile(JITSupport_C support, const char *module,
             mlir::concretelang::CompilationOptions options) {
 #ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   if (options.autoParallelize || options.loopParallelize ||
@@ -44,7 +43,7 @@ jit_compile(JITLambdaSupport_C support, const char *module,
 }
 
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
-jit_load_client_parameters(JITLambdaSupport_C support,
+jit_load_client_parameters(JITSupport_C support,
                            mlir::concretelang::JitCompilationResult &result) {
   GET_OR_THROW_LLVM_EXPECTED(clientParameters,
                              support.support.loadClientParameters(result));
@@ -52,7 +51,7 @@ jit_load_client_parameters(JITLambdaSupport_C support,
 }
 
 MLIR_CAPI_EXPORTED std::shared_ptr<mlir::concretelang::JITLambda>
-jit_load_server_lambda(JITLambdaSupport_C support,
+jit_load_server_lambda(JITSupport_C support,
                        mlir::concretelang::JitCompilationResult &result) {
   GET_OR_THROW_LLVM_EXPECTED(serverLambda,
                              support.support.loadServerLambda(result));
@@ -60,22 +59,19 @@ jit_load_server_lambda(JITLambdaSupport_C support,
 }
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
-jit_server_call(JITLambdaSupport_C support,
-                mlir::concretelang::JITLambda &lambda,
+jit_server_call(JITSupport_C support, mlir::concretelang::JITLambda &lambda,
                 concretelang::clientlib::PublicArguments &args) {
   GET_OR_THROW_LLVM_EXPECTED(publicResult, lambda.call(args));
   return std::move(*publicResult);
 }
 
 // Library Support bindings ///////////////////////////////////////////////////
-MLIR_CAPI_EXPORTED LibraryLambdaSupport_C
-library_lambda_support(const char *outputPath) {
-  return LibraryLambdaSupport_C{
-      mlir::concretelang::LibraryLambdaSupport(outputPath)};
+MLIR_CAPI_EXPORTED LibrarySupport_C library_support(const char *outputPath) {
+  return LibrarySupport_C{mlir::concretelang::LibrarySupport(outputPath)};
 }
 
 std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
-library_compile(LibraryLambdaSupport_C support, const char *module,
+library_compile(LibrarySupport_C support, const char *module,
                 mlir::concretelang::CompilationOptions options) {
 #ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   if (options.autoParallelize || options.loopParallelize ||
@@ -91,7 +87,7 @@ library_compile(LibraryLambdaSupport_C support, const char *module,
 
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
 library_load_client_parameters(
-    LibraryLambdaSupport_C support,
+    LibrarySupport_C support,
     mlir::concretelang::LibraryCompilationResult &result) {
   GET_OR_THROW_LLVM_EXPECTED(clientParameters,
                              support.support.loadClientParameters(result));
@@ -100,7 +96,7 @@ library_load_client_parameters(
 
 MLIR_CAPI_EXPORTED concretelang::serverlib::ServerLambda
 library_load_server_lambda(
-    LibraryLambdaSupport_C support,
+    LibrarySupport_C support,
     mlir::concretelang::LibraryCompilationResult &result) {
   GET_OR_THROW_LLVM_EXPECTED(serverLambda,
                              support.support.loadServerLambda(result));
@@ -108,7 +104,7 @@ library_load_server_lambda(
 }
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
-library_server_call(LibraryLambdaSupport_C support,
+library_server_call(LibrarySupport_C support,
                     concretelang::serverlib::ServerLambda lambda,
                     concretelang::clientlib::PublicArguments &args) {
   GET_OR_THROW_LLVM_EXPECTED(publicResult,

@@ -5,7 +5,7 @@
 
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/Support/JitLambdaSupport.h"
+#include "concretelang/Support/JITSupport.h"
 #include "llvm/Support/Path.h"
 
 #include "globals.h"
@@ -128,7 +128,7 @@ getTestKeySetCachePtr() {
 // returns the corresponding lambda. Any compilation errors are caught
 // and reult in abnormal termination.
 inline llvm::Expected<
-    mlir::concretelang::ClientServer<mlir::concretelang::JitLambdaSupport>>
+    mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>>
 internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
                    bool useDefaultFHEConstraints = false,
                    bool dataflowParallelize = false,
@@ -151,9 +151,8 @@ internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
 #endif
 
   auto lambdaOrErr =
-      mlir::concretelang::ClientServer<mlir::concretelang::JitLambdaSupport>::
-          create(src, options, getTestKeySetCache(),
-                 mlir::concretelang::JitLambdaSupport());
+      mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::create(
+          src, options, getTestKeySetCache(), mlir::concretelang::JITSupport());
 
   return lambdaOrErr;
 }

@@ -7,9 +7,9 @@
 #define CONCRETELANG_C_SUPPORT_COMPILER_ENGINE_H
 
 #include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
-#include "concretelang/Support/JitLambdaSupport.h"
-#include "concretelang/Support/LibraryLambdaSupport.h"
+#include "concretelang/Support/LibrarySupport.h"
 #include "mlir-c/IR.h"
 #include "mlir-c/Registration.h"
 
@@ -32,55 +32,52 @@ typedef struct executionArguments executionArguments;
 
 // JIT Support bindings ///////////////////////////////////////////////////////
 
-struct JITLambdaSupport_C {
-  mlir::concretelang::JitLambdaSupport support;
+struct JITSupport_C {
+  mlir::concretelang::JITSupport support;
 };
-typedef struct JITLambdaSupport_C JITLambdaSupport_C;
+typedef struct JITSupport_C JITSupport_C;
 
-MLIR_CAPI_EXPORTED JITLambdaSupport_C
-jit_lambda_support(std::string runtimeLibPath);
+MLIR_CAPI_EXPORTED JITSupport_C jit_support(std::string runtimeLibPath);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::JitCompilationResult>
-jit_compile(JITLambdaSupport_C support, const char *module,
+jit_compile(JITSupport_C support, const char *module,
             mlir::concretelang::CompilationOptions options);
 
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
-jit_load_client_parameters(JITLambdaSupport_C support,
+jit_load_client_parameters(JITSupport_C support,
                            mlir::concretelang::JitCompilationResult &);
 
 MLIR_CAPI_EXPORTED std::shared_ptr<mlir::concretelang::JITLambda>
-jit_load_server_lambda(JITLambdaSupport_C support,
+jit_load_server_lambda(JITSupport_C support,
                        mlir::concretelang::JitCompilationResult &);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
-jit_server_call(JITLambdaSupport_C support,
-                mlir::concretelang::JITLambda &lambda,
+jit_server_call(JITSupport_C support, mlir::concretelang::JITLambda &lambda,
                 concretelang::clientlib::PublicArguments &args);
 
 // Library Support bindings ///////////////////////////////////////////////////
 
-struct LibraryLambdaSupport_C {
-  mlir::concretelang::LibraryLambdaSupport support;
+struct LibrarySupport_C {
+  mlir::concretelang::LibrarySupport support;
 };
-typedef struct LibraryLambdaSupport_C LibraryLambdaSupport_C;
+typedef struct LibrarySupport_C LibrarySupport_C;
 
-MLIR_CAPI_EXPORTED LibraryLambdaSupport_C
-library_lambda_support(const char *outputPath);
+MLIR_CAPI_EXPORTED LibrarySupport_C library_support(const char *outputPath);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
-library_compile(LibraryLambdaSupport_C support, const char *module,
+library_compile(LibrarySupport_C support, const char *module,
                 mlir::concretelang::CompilationOptions options);
 
 MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
-library_load_client_parameters(LibraryLambdaSupport_C support,
+library_load_client_parameters(LibrarySupport_C support,
                                mlir::concretelang::LibraryCompilationResult &);
 
 MLIR_CAPI_EXPORTED concretelang::serverlib::ServerLambda
-library_load_server_lambda(LibraryLambdaSupport_C support,
+library_load_server_lambda(LibrarySupport_C support,
                            mlir::concretelang::LibraryCompilationResult &);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
-library_server_call(LibraryLambdaSupport_C support,
+library_server_call(LibrarySupport_C support,
                     concretelang::serverlib::ServerLambda lambda,
                     concretelang::clientlib::PublicArguments &args);
 

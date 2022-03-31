@@ -33,7 +33,7 @@
 #include "concretelang/Runtime/runtime_api.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
-#include "concretelang/Support/JitLambdaSupport.h"
+#include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/LLVMEmitFile.h"
 #include "concretelang/Support/Pipeline.h"
 #include "concretelang/Support/logging.h"
@@ -292,9 +292,9 @@ mlir::LogicalResult processInputBuffer(
 
   if (action == Action::JIT_INVOKE) {
     auto lambdaOrErr =
-        mlir::concretelang::ClientServer<mlir::concretelang::JitLambdaSupport>::
+        mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::
             create(buffer->getBuffer(), options, keySetCache,
-                   mlir::concretelang::JitLambdaSupport());
+                   mlir::concretelang::JITSupport());
 
     llvm::Expected<uint64_t> resOrErr = (*lambdaOrErr)(jitArgs);
 

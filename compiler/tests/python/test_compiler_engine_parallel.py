@@ -4,10 +4,7 @@ import tempfile
 import pytest
 import numpy as np
 
-from concrete.compiler.client_support import ClientSupport
-from concrete.compiler.compilation_options import CompilationOptions
-from concrete.compiler.jit_lambda_support import JITLambdaSupport
-from concrete.compiler.key_set_cache import KeySetCache
+from concrete.compiler import ClientSupport, CompilationOptions, JITSupport, KeySetCache
 
 KEY_SET_CACHE_PATH = os.path.join(tempfile.gettempdir(), "KeySetCache")
 
@@ -69,5 +66,5 @@ def compile_and_run(engine, mlir_input, args, expected_result):
     ],
 )
 def test_compile_and_run_parallel(mlir_input, args, expected_result):
-    engine = JITLambdaSupport.new()
+    engine = JITSupport.new()
     compile_and_run(engine, mlir_input, args, expected_result)
