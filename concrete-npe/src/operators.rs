@@ -416,7 +416,7 @@ where
     T: UnsignedInteger,
     D: DispersionParameter,
 {
-    let w = (1 << nb_msb) as f64;
+    let w = 2_f64.powi(nb_msb as i32);
     let n = lwe_mask_size.0 as f64;
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
     Variance::from_modular_variance::<T>(
@@ -464,7 +464,7 @@ where
     K: KeyDispersion,
 {
     let n = lwe_mask_size.0 as f64;
-    let base = (1 << base_log.0) as f64;
+    let base = 2_f64.powi(base_log.0 as i32);
     let q_square = f64::powi(2., (2 * T::BITS) as i32);
 
     // res 1
@@ -519,10 +519,10 @@ where
     D: DispersionParameter,
 {
     let n = lwe_mask_size.0 as f64;
-    let base = (1 << base_log.0) as f64;
+    let square_base = 2_f64.powi(2 * base_log.0 as i32);
 
     let res =
-        n * (level.0 as f64) * dispersion_ksk.get_modular_variance::<T>() * (square(base) + 2.)
+        n * (level.0 as f64) * dispersion_ksk.get_modular_variance::<T>() * (square_base + 2.)
             / 12.;
 
     Variance::from_modular_variance::<T>(res)
@@ -600,7 +600,7 @@ where
     let l = level.0 as f64;
     let k = rlwe_mask_size.0 as f64;
     let big_n = poly_size.0 as f64;
-    let b = (1 << base_log.0) as f64;
+    let b = 2_f64.powi(base_log.0 as i32);
     let b2l = f64::powf(b, 2. * l);
 
     let res_1 =
@@ -710,7 +710,7 @@ where
 {
     let n = lwe_mask_size.0 as f64;
     let k = rlwe_mask_size.0 as f64;
-    let b = (1 << base_log.0) as f64;
+    let b = 2_f64.powi(base_log.0 as i32);
     let l = level.0 as f64;
     let b2l = f64::powf(b, 2. * l) as f64;
     let big_n = poly_size.0 as f64;
