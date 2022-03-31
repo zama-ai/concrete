@@ -37,7 +37,9 @@ impl<EngineError: std::error::Error> GlweCiphertextVectorTrivialEncryptionError<
 /// # Formal Definition
 ///
 /// A trivial encryption uses a zero mask and no noise.
-/// It is absolutely not secure, as the body contains a direct copy of the plaintext
+/// It is absolutely not secure, as the body contains a direct copy of the plaintext.
+/// However, it is useful for some FHE algorithms taking public information as input. For
+/// example, a trivial GLWE encryption of a public lookup table is used in the bootstrap.
 pub trait GlweCiphertextVectorTrivialEncryptionEngine<PlaintextVector, CiphertextVector>:
     AbstractEngine
 where

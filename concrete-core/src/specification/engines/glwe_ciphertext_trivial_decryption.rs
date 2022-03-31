@@ -14,6 +14,8 @@ engine_error! {
 /// trivial decryption of the `input` ciphertext.
 ///
 /// # Formal Definition
+///
+/// see [here](../engines/trait.GlweCiphertextTrivialEncryptionEngine.html)
 pub trait GlweCiphertextTrivialDecryptionEngine<Ciphertext, PlaintextVector>:
     AbstractEngine
 where
