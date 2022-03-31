@@ -79,7 +79,7 @@ jobs:
             chmod -R ugo+rwx /tmp/KeySetCache
 
       - name: Upload KeySetCache
-        if: ${{ matrix.compiler == 'gcc7' }} && github.ref == 'refs/heads/master'
+        if: ${{ matrix.compiler == 'gcc7' && github.ref == 'refs/heads/master' }}
         uses: actions/upload-artifact@v3
         with:
           name: KeySetCache
@@ -88,7 +88,7 @@ jobs:
 
       - name: Cleanup Old KeySetCache
         uses: Remagpie/gha-remove-artifact@v1
-        if: ${{ matrix.compiler == 'gcc7' }} && github.ref == 'refs/heads/master'
+        if: ${{ matrix.compiler == 'gcc7' && github.ref == 'refs/heads/master' }}
         with:
           only-name: KeySetCache
           max-count: 1
