@@ -17,6 +17,7 @@ ln -s ../../../../compiler/build/tools/concretelang/python_packages/concretelang
 
 # Create directories needed for symlinks
 mkdir -p concrete/lang/dialects
+mkdir -p concrete/compiler
 cd concrete
 # Consider concrete as a package, as it's not detecting it as a namespace
 touch __init__.py
