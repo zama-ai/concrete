@@ -12,6 +12,8 @@
    framework currently used, from the code generation side.
  */
 
+#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+
 #include <hpx/future.hpp>
 #include <hpx/hpx_start.hpp>
 #include <hpx/hpx_suspend.hpp>
@@ -364,3 +366,10 @@ void _dfr_debug_print_task(const char *name, int inputs, int outputs) {
 void _dfr_print_debug(size_t val) {
   hpx::cout << "_dfr_print_debug : " << val << "\n" << std::flush;
 }
+
+#else // CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+
+#include <concretelang/Runtime/runtime_api.h>
+
+void _dfr_terminate() {}
+#endif

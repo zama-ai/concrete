@@ -7,49 +7,23 @@ get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
 
 add_dependencies(concretecompiler mlir-headers)
 
-if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
-  target_link_libraries(concretecompiler
-    PRIVATE
-    ${dialect_libs}
-    ${conversion_libs}
+target_link_libraries(concretecompiler
+  PRIVATE
+  ${dialect_libs}
+  ${conversion_libs}
 
-    MLIRTransforms
-    BConcreteDialect
-    ConcreteDialect
-    TFHEDialect
-    FHEDialect
+  MLIRTransforms
+  BConcreteDialect
+  ConcreteDialect
+  TFHEDialect
+  FHEDialect
 
-    MLIRIR
-    MLIRLLVMIR
-    MLIRLLVMToLLVMIRTranslation
-    RTDialect
+  MLIRIR
+  MLIRLLVMIR
+  MLIRLLVMToLLVMIRTranslation
+  RTDialect
 
-    ConcretelangSupport
-
-    -Wl,-rpath,${CMAKE_BINARY_DIR}/lib/Runtime
-    -Wl,-rpath,${HPX_DIR}/../../
-    -Wl,--no-as-needed
-    DFRuntime
-    omp
-    )
-else()
-  target_link_libraries(concretecompiler
-    PRIVATE
-    ${dialect_libs}
-    ${conversion_libs}
-
-    MLIRTransforms
-    BConcreteDialect
-    ConcreteDialect
-    TFHEDialect
-    FHEDialect
-
-    MLIRIR
-    MLIRLLVMIR
-    MLIRLLVMToLLVMIRTranslation
-
-    ConcretelangSupport
-    )
-endif()
+  ConcretelangSupport
+  )
 
 mlir_check_all_link_libraries(concretecompiler)
