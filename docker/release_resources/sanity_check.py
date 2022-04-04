@@ -5,7 +5,7 @@ import pygraphviz
 
 print("Extras import check OK")
 
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 
 
 def main():
@@ -14,14 +14,14 @@ def main():
 
     n_bits = 3
 
-    compiler = hnp.NPFHECompiler(
+    compiler = cnp.Compiler(
         function_to_compile,
         {"x": "encrypted"},
     )
 
     print("Compiling...")
 
-    engine = compiler.compile_on_inputset(range(2 ** n_bits))
+    engine = compiler.compile(range(2 ** n_bits))
 
     inputs = []
     labels = []
