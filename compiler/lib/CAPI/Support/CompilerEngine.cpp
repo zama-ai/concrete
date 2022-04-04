@@ -30,13 +30,6 @@ MLIR_CAPI_EXPORTED JITSupport_C jit_support(std::string runtimeLibPath) {
 std::unique_ptr<mlir::concretelang::JitCompilationResult>
 jit_compile(JITSupport_C support, const char *module,
             mlir::concretelang::CompilationOptions options) {
-#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
-  if (options.autoParallelize || options.loopParallelize ||
-      options.dataflowParallelize) {
-    throw std::runtime_error(
-        "This package was built without parallelization support");
-  }
-#endif
   GET_OR_THROW_LLVM_EXPECTED(compilationResult,
                              support.support.compile(module, options));
   return std::move(*compilationResult);
@@ -75,13 +68,6 @@ library_support(const char *outputPath, const char *runtimeLibraryPath) {
 std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
 library_compile(LibrarySupport_C support, const char *module,
                 mlir::concretelang::CompilationOptions options) {
-#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
-  if (options.autoParallelize || options.loopParallelize ||
-      options.dataflowParallelize) {
-    throw std::runtime_error(
-        "This package was built without parallelization support");
-  }
-#endif
   GET_OR_THROW_LLVM_EXPECTED(compilationResult,
                              support.support.compile(module, options));
   return std::move(*compilationResult);
