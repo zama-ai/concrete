@@ -19,7 +19,11 @@ def lookup_runtime_lib() -> str:
     """
     # Go up to site-packages level
     cwd = os.path.abspath(__file__)
+    # to compiler
     cwd = os.path.abspath(os.path.join(cwd, os.pardir))
+    # to concrete
+    cwd = os.path.abspath(os.path.join(cwd, os.pardir))
+    # to site-packages
     cwd = os.path.abspath(os.path.join(cwd, os.pardir))
     package_name = "concrete_compiler"
     libs_path = os.path.join(cwd, f"{package_name}.libs")
