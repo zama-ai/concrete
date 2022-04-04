@@ -7,9 +7,9 @@ In this tutorial, we are going to go over the ways to perform direct table looku
 **Concrete Numpy** provides a special class to allow direct table lookups. Here is how to use it:
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 
-table = hnp.LookupTable([2, 1, 3, 0])
+table = cnp.LookupTable([2, 1, 3, 0])
 
 def f(x):
     return table[x]
@@ -47,12 +47,12 @@ Sometimes you may want to apply a different lookup table to each value in a tens
 
 <!--pytest-codeblocks:skip-->
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 
-squared = hnp.LookupTable([i ** 2 for i in range(4)])
-cubed = hnp.LookupTable([i ** 3 for i in range(4)])
+squared = cnp.LookupTable([i ** 2 for i in range(4)])
+cubed = cnp.LookupTable([i ** 3 for i in range(4)])
 
-table = hnp.MultiLookupTable([
+table = cnp.MultiLookupTable([
     [squared, cubed],
     [squared, cubed],
     [squared, cubed],
@@ -118,7 +118,7 @@ Internally, it uses the following lookup table
 
 <!--pytest-codeblocks:skip-->
 ```python
-table = hnp.LookupTable([50, 92, 95, 57, 12, 2, 36, 82])
+table = cnp.LookupTable([50, 92, 95, 57, 12, 2, 36, 82])
 ```
 
 which is calculated by:

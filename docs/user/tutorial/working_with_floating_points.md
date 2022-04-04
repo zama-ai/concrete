@@ -3,17 +3,16 @@
 ## An example
 
 ```python
+import concrete.numpy as cnp
 import numpy as np
-import concrete.numpy as hnp
 
 # Function using floating points values converted back to integers at the end
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return np.fabs(50 * (2 * np.sin(x) * np.cos(x))).astype(np.uint32)
     # astype is to go back to the integer world
 
-# Compiling with x encrypted
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-circuit = compiler.compile_on_inputset(range(64))
+circuit = f.compile(range(64))
 
 print(circuit.encrypt_run_decrypt(3) == f(3))
 print(circuit.encrypt_run_decrypt(0) == f(0))

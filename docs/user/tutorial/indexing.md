@@ -9,16 +9,15 @@ Here are some examples of constant indexing:
 ### Extracting a single element
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import numpy as np
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return x[1]
 
 inputset = [np.random.randint(0, 2 ** 3, size=(3,), dtype=np.uint8) for _ in range(10)]
-
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-circuit = compiler.compile_on_inputset(inputset)
+circuit = f.compile(inputset)
 
 test_input = np.array([4, 2, 6], dtype=np.uint8)
 expected_output = 2
@@ -29,16 +28,15 @@ assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 You can use negative indexing.
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import numpy as np
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return x[-1]
 
 inputset = [np.random.randint(0, 2 ** 3, size=(3,), dtype=np.uint8) for _ in range(10)]
-
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-circuit = compiler.compile_on_inputset(inputset)
+circuit = f.compile(inputset)
 
 test_input = np.array([4, 2, 6], dtype=np.uint8)
 expected_output = 6
@@ -49,16 +47,15 @@ assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 You can use multidimensional indexing as well.
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import numpy as np
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return x[-1, 1]
 
 inputset = [np.random.randint(0, 2 ** 3, size=(3, 2), dtype=np.uint8) for _ in range(10)]
-
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-circuit = compiler.compile_on_inputset(inputset)
+circuit = f.compile(inputset)
 
 test_input = np.array([[4, 2], [1, 5], [7, 6]], dtype=np.uint8)
 expected_output = 6
@@ -69,16 +66,15 @@ assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 ### Extracting a slice
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import numpy as np
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return x[1:4]
 
 inputset = [np.random.randint(0, 2 ** 3, size=(5,), dtype=np.uint8) for _ in range(10)]
-
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-circuit = compiler.compile_on_inputset(inputset)
+circuit = f.compile(inputset)
 
 test_input = np.array([4, 2, 6, 1, 7], dtype=np.uint8)
 expected_output = np.array([2, 6, 1], dtype=np.uint8)

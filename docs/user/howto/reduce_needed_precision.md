@@ -9,13 +9,13 @@ You get a compilation error. Here is an example:
 
 <!--pytest-codeblocks:skip-->
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return 42 * x
 
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
-circuit = compiler.compile_on_inputset(range(2 ** 3))
+circuit = f.compile(range(2 ** 3))
 ```
 
 results in

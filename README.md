@@ -45,16 +45,16 @@ You can find more detailed installation instructions in [installing.md](docs/use
 ## A simple example: numpy addition in FHE
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 
+@cnp.compiler({"x": "encrypted", "y": "encrypted"})
 def add(x, y):
     return x + y
 
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
-compiler = hnp.NPFHECompiler(add, {"x": "encrypted", "y": "encrypted"})
 
 print(f"Compiling...")
-circuit = compiler.compile_on_inputset(inputset)
+circuit = add.compile(inputset)
 
 examples = [(3, 4), (1, 2), (7, 7), (0, 0)]
 for example in examples:

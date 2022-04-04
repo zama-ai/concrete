@@ -2,64 +2,38 @@
 
 In this section, we list the operations which are supported currently in **Concrete Numpy**. Please have a look to numpy [documentation](https://numpy.org/doc/stable/user/index.html) to know what these operations are about.
 
-## Unary operations
-
 <!--- gen_supported_ufuncs.py: inject supported operations [BEGIN] -->
 <!--- do not edit, auto generated part by `python3 gen_supported_ufuncs.py` in docker -->
-List of supported unary functions:
+List of supported functions:
 - absolute
+- add
 - arccos
 - arccosh
 - arcsin
 - arcsinh
 - arctan
+- arctan2
 - arctanh
+- bitwise_and
+- bitwise_or
+- bitwise_xor
 - cbrt
 - ceil
+- clip
+- concatenate
+- copysign
 - cos
 - cosh
 - deg2rad
 - degrees
+- dot
+- equal
 - exp
 - exp2
 - expm1
 - fabs
-- floor
-- isfinite
-- isinf
-- isnan
-- log
-- log10
-- log1p
-- log2
-- logical_not
-- negative
-- positive
-- rad2deg
-- radians
-- reciprocal
-- rint
-- sign
-- signbit
-- sin
-- sinh
-- spacing
-- sqrt
-- square
-- tan
-- tanh
-- trunc
-
-## Binary operations
-
-List of supported binary functions if one of the two operators is a constant scalar:
-- arctan2
-- bitwise_and
-- bitwise_or
-- bitwise_xor
-- copysign
-- equal
 - float_power
+- floor
 - floor_divide
 - fmax
 - fmin
@@ -69,24 +43,54 @@ List of supported binary functions if one of the two operators is a constant sca
 - greater_equal
 - heaviside
 - hypot
+- invert
+- isfinite
+- isinf
+- isnan
 - lcm
 - ldexp
 - left_shift
 - less
 - less_equal
+- log
+- log10
+- log1p
+- log2
 - logaddexp
 - logaddexp2
 - logical_and
+- logical_not
 - logical_or
 - logical_xor
+- matmul
 - maximum
 - minimum
+- multiply
+- negative
 - nextafter
 - not_equal
+- positive
 - power
+- rad2deg
+- radians
+- reciprocal
 - remainder
+- reshape
 - right_shift
+- rint
+- sign
+- signbit
+- sin
+- sinh
+- spacing
+- sqrt
+- square
+- subtract
+- sum
+- tan
+- tanh
 - true_divide
+- trunc
 <!--- gen_supported_ufuncs.py: inject supported operations [END] -->
 
 # Shapes

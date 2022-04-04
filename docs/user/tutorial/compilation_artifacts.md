@@ -115,17 +115,17 @@ return %1
 Manual exports are mostly used for visualization. Nonetheless, they can be very useful for demonstrations. Here is how to do it:
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import numpy as np
 import pathlib
 
+artifacts = cnp.CompilationArtifacts("/tmp/custom/export/path")
+
+@cnp.compiler({"x": "encrypted"}, artifacts=artifacts)
 def f(x):
     return 127 - (50 * (np.sin(x) + 1)).astype(np.uint32)
 
-artifacts = hnp.CompilationArtifacts(pathlib.Path("/tmp/custom/export/path"))
-
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"}, compilation_artifacts=artifacts)
-compiler.compile_on_inputset(range(2 ** 3))
+f.compile(range(2 ** 3))
 
 artifacts.export()
 ```

@@ -5,7 +5,7 @@
 Everything you need to compile and execute homomorphic functions is included in a single module. You can import it like so:
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 ```
 
 ## Defining a function to compile
@@ -41,22 +41,11 @@ Finally, we can compile our function to its homomorphic equivalent.
 
 <!--pytest-codeblocks:cont-->
 ```python
-compiler = hnp.NPFHECompiler(
-    f, {"x": x, "y": y},
-)
-circuit = compiler.compile_on_inputset(inputset)
+compiler = cnp.Compiler(f, {"x": x, "y": y})
+circuit = compiler.compile(inputset)
 
-# If you want, you can separate tracing and compilation steps like so:
-
-# You can either evaluate in one go:
-compiler.eval_on_inputset(inputset)
-
-# Or progressively:
-for input_values in inputset:
-    compiler(*input_values)
-
-# You can print the traced graph:
-print(str(compiler))
+# You can print the compiled circuit:
+print(circuit)
 
 # Outputs
 
@@ -66,29 +55,26 @@ print(str(compiler))
 # return %2
 
 # Or draw it
-compiler.draw_graph(show=True)
-
-circuit = compiler.get_compiled_fhe_circuit()
-
+circuit.draw(show=True)
 ```
 
-Here is the graph from the previous code block drawn with `draw_graph`:
+Here is the graph from the previous code block drawn with `draw`:
 
 ![Drawn graph of previous code block](../../_static/howto/compiling_and_executing_example_graph.png)
 
 ## Performing homomorphic evaluation
 
-You can use `.encrypt_run_decrypt(...)` method of `FHECircuit` returned by `hnp.compile_numpy_function(...)` to perform fully homomorphic evaluation. Here are some examples:
+You can use `.run(...)` method of `Circuit` to perform fully homomorphic evaluation. Here are some examples:
 
 <!--pytest-codeblocks:cont-->
 ```python
-circuit.encrypt_run_decrypt(3, 4)
+circuit.run(3, 4)
 # 7
-circuit.encrypt_run_decrypt(1, 2)
+circuit.run(1, 2)
 # 3
-circuit.encrypt_run_decrypt(7, 7)
+circuit.run(7, 7)
 # 14
-circuit.encrypt_run_decrypt(0, 0)
+circuit.run(0, 0)
 # 0
 ```
 
@@ -97,20 +83,11 @@ Be careful about the inputs, though.
 If you were to run with values outside the range of the inputset, the result might not be correct.
 ```
 
-While `.encrypt_run_decrypt(...)` is a good start for prototyping examples, more advanced usages require control over the different steps that are happening behind the scene, mainly key generation, encryption, execution, and decryption. The different steps can of course be called separately as in the example below:
-
-<!--pytest-codeblocks:cont-->
-```python
-# generate keys required for encrypted computation
-circuit.keygen()
-# this will encrypt arguments that require encryption and pack all arguments
-# as well as public materials (public keys)
-public_args = circuit.encrypt(3, 4)
-# this will run the encrypted computation using public materials and inputs provided
-encrypted_result = circuit.run(public_args)
-# the execution returns the encrypted result which can later be decrypted
-decrypted_result = circuit.decrypt(encrypted_result)
-```
+Today, we cannot simulate a client / server API in python, but it is for very soon. Then, we will have:
+    - a `keygen` API, which is used to generate both public and private keys
+    - an `encrypt` API, which happens on the user's device, and is using private keys
+    - a `run_inference` API, which happens on the untrusted server and only uses public material
+    - a `encrypt` API, which happens on the user's device to get final clear result, and is using private keys
 
 ## Further reading
 

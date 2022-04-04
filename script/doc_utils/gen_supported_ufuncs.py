@@ -1,17 +1,13 @@
 """Update list of supported functions in the doc."""
+
 import argparse
 
-from concrete.numpy import tracing
+from concrete.numpy.tracing import Tracer
 
 
 def main(file_to_update):
     """Update list of supported functions in file_to_update"""
-    supported_unary_ufunc = sorted(
-        f.__name__ for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 1
-    )
-    supported_binary_ufunc = sorted(
-        f.__name__ for f in tracing.NPTracer.LIST_OF_SUPPORTED_UFUNC if f.nin == 2
-    )
+    supported_func = sorted(f.__name__ for f in Tracer.SUPPORTED_NUMPY_OPERATORS)
 
     with open(file_to_update, "r", encoding="utf-8") as file:
         lines = file.readlines()
@@ -40,20 +36,9 @@ def main(file_to_update):
             keep_line = True
 
             # Inject the supported functions
-            newlines.append("List of supported unary functions:\n")
+            newlines.append("List of supported functions:\n")
 
-            newlines.extend(f"- {f}\n" for f in supported_unary_ufunc)
-
-            newlines.append("\n")
-            newlines.append("## Binary operations\n")
-            newlines.append("\n")
-
-            newlines.append(
-                "List of supported binary functions if one of the "
-                "two operators is a constant scalar:\n"
-            )
-
-            newlines.extend(f"- {f}\n" for f in supported_binary_ufunc)
+            newlines.extend(f"- {f}\n" for f in supported_func)
 
             newlines.append(line)
         else:

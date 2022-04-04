@@ -21,7 +21,7 @@ def quantized_sin(x):
 
 This function `quantized_sin` is not strictly supported as is by the compiler as there are floating point intermediate values. However, when looking at the function globally we can see we have a single integer input and a single integer output. As we know the input range we can compute a table to represent the whole computation for each input value, which can later be lowered to a PBS in the FHE world.
 
-Any computation where there is a single variable integer input and a single integer output can be replaced by an equivalent table look-up.
+Any computation where there is a single variable integer input and a single integer output can be replaced by an equivalent table lookup.
 
 The `quantized_sin` graph of operations:
 
