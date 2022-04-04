@@ -452,7 +452,7 @@ const std::string CompilerEngine::Library::LINKER = "ld";
 #ifdef __APPLE__
 // ld in Mac can't find some symbols without specifying these libs
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT =
-    " -dylib -lConcretelangRuntime -lc -o ";
+    " -dylib -lc -o ";
 const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".dylib";
 #else // Linux
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";

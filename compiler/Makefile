@@ -112,16 +112,6 @@ keysetcache_populated: keysetcache.zip
 	du -sh ${KEYSETCACHEDEV}
 	rm keysetcache.zip
 
-install: install_runtime_lib
-
-uninstall: uninstall_runtime_lib
-
-install_runtime_lib: concretecompiler
-	cp $(BUILD_DIR)/lib/libConcretelangRuntime* /usr/local/lib
-
-uninstall_runtime_lib:
-	-rm /usr/local/lib/libConcretelangRuntime*
-
 # unit-test
 
 clientlib-unit-test: build-clientlib-unit-test
@@ -281,10 +271,6 @@ python_lint:
 	package_py310 \
 	release_tarballs \
 	update_python_version \
-	install \
-	uninstall\
-	install_runtime_lib \
-	uninstall_runtime_lib \
 	generate_conv_op \
 	python_lint \
 	python_format \
