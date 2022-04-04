@@ -94,8 +94,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       }));
   pybind11::class_<concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
   pybind11::class_<LibrarySupport_C>(m, "LibrarySupport")
-      .def(pybind11::init([](std::string outputPath) {
-        return library_support(outputPath.c_str());
+      .def(pybind11::init([](std::string outputPath,
+                             std::string runtimeLibraryPath) {
+        return library_support(outputPath.c_str(), runtimeLibraryPath.c_str());
       }))
       .def("compile",
            [](LibrarySupport_C &support, std::string mlir_program,

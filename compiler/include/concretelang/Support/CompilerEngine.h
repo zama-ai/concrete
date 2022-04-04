@@ -83,14 +83,19 @@ public:
     std::string libraryPath;
     std::vector<std::string> objectsPath;
     std::vector<mlir::concretelang::ClientParameters> clientParametersList;
+    /** Path to the runtime library. Will be linked to the output library if set
+     */
+    std::string runtimeLibraryPath;
     bool cleanUp;
 
   public:
     /** Create a library instance on which you can add compilation results.
      * Then you can emit a library file with the given path.
      * cleanUp at false keeps intermediate .obj files for later use. */
-    Library(std::string libraryPath, bool cleanUp = true)
-        : libraryPath(libraryPath), cleanUp(cleanUp) {}
+    Library(std::string libraryPath, std::string runtimeLibraryPath = "",
+            bool cleanUp = true)
+        : libraryPath(libraryPath), runtimeLibraryPath(runtimeLibraryPath),
+          cleanUp(cleanUp) {}
     /** Add a compilation result to the library */
     llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
     /** Emit the library artifacts with the previously added compilation result
@@ -193,12 +198,14 @@ public:
           llvm::Optional<std::shared_ptr<Library>> lib = {});
 
   llvm::Expected<CompilerEngine::Library>
-  compile(std::vector<std::string> inputs, std::string libraryPath);
+  compile(std::vector<std::string> inputs, std::string libraryPath,
+          std::string runtimeLibraryPath = "");
 
   /// Compile and emit artifact to the given libraryPath from an LLVM source
   /// manager.
-  llvm::Expected<CompilerEngine::Library> compile(llvm::SourceMgr &sm,
-                                                  std::string libraryPath);
+  llvm::Expected<CompilerEngine::Library>
+  compile(llvm::SourceMgr &sm, std::string libraryPath,
+          std::string runtimeLibraryPath = "");
 
   void setCompilationOptions(CompilationOptions &options) {
     if (options.v0FHEConstraints.hasValue()) {

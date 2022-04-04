@@ -391,9 +391,10 @@ CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
 
 llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(std::vector<std::string> inputs,
-                        std::string libraryPath) {
+                        std::string libraryPath,
+                        std::string runtimeLibraryPath) {
   using Library = mlir::concretelang::CompilerEngine::Library;
-  auto outputLib = std::make_shared<Library>(libraryPath);
+  auto outputLib = std::make_shared<Library>(libraryPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
   for (auto input : inputs) {
     auto compilation = compile(input, target, outputLib);
@@ -410,9 +411,10 @@ CompilerEngine::compile(std::vector<std::string> inputs,
 }
 
 llvm::Expected<CompilerEngine::Library>
-CompilerEngine::compile(llvm::SourceMgr &sm, std::string libraryPath) {
+CompilerEngine::compile(llvm::SourceMgr &sm, std::string libraryPath,
+                        std::string runtimeLibraryPath) {
   using Library = mlir::concretelang::CompilerEngine::Library;
-  auto outputLib = std::make_shared<Library>(libraryPath);
+  auto outputLib = std::make_shared<Library>(libraryPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
 
   auto compilation = compile(sm, target, outputLib);
@@ -608,7 +610,12 @@ std::string ensureLibDotExt(std::string path, std::string dotExt) {
 llvm::Expected<std::string> CompilerEngine::Library::emit(std::string dotExt,
                                                           std::string linker) {
   auto pathDotExt = ensureLibDotExt(libraryPath, dotExt);
-  auto error = mlir::concretelang::emitLibrary(objectsPath, pathDotExt, linker);
+  auto objectsPathWithRuntimeLib = objectsPath;
+  if (!runtimeLibraryPath.empty()) {
+    objectsPathWithRuntimeLib.push_back(runtimeLibraryPath);
+  }
+  auto error = mlir::concretelang::emitLibrary(objectsPathWithRuntimeLib,
+                                               pathDotExt, linker);
   if (error) {
     return std::move(error);
   }

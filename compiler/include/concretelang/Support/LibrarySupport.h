@@ -33,7 +33,8 @@ class LibrarySupport
     : public LambdaSupport<serverlib::ServerLambda, LibraryCompilationResult> {
 
 public:
-  LibrarySupport(std::string outputPath) : outputPath(outputPath) {}
+  LibrarySupport(std::string outputPath, std::string runtimeLibraryPath = "")
+      : outputPath(outputPath), runtimeLibraryPath(runtimeLibraryPath) {}
 
   llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override {
@@ -43,7 +44,7 @@ public:
     engine.setCompilationOptions(options);
 
     // Compile to a library
-    auto library = engine.compile(program, outputPath);
+    auto library = engine.compile(program, outputPath, runtimeLibraryPath);
     if (auto err = library.takeError()) {
       return std::move(err);
     }
@@ -98,6 +99,7 @@ public:
 
 private:
   std::string outputPath;
+  std::string runtimeLibraryPath;
 };
 
 } // namespace concretelang

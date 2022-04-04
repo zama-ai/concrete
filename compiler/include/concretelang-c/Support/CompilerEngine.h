@@ -62,7 +62,8 @@ struct LibrarySupport_C {
 };
 typedef struct LibrarySupport_C LibrarySupport_C;
 
-MLIR_CAPI_EXPORTED LibrarySupport_C library_support(const char *outputPath);
+MLIR_CAPI_EXPORTED LibrarySupport_C
+library_support(const char *outputPath, const char *runtimeLibraryPath);
 
 MLIR_CAPI_EXPORTED std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
 library_compile(LibrarySupport_C support, const char *module,

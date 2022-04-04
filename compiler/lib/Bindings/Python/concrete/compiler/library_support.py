@@ -7,6 +7,7 @@ Library support provides a way to compile an MLIR program into a library that ca
 to execute the compiled code.
 """
 import os
+from typing import Optional
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
@@ -21,6 +22,7 @@ from .library_lambda import LibraryLambda
 from .public_result import PublicResult
 from .client_parameters import ClientParameters
 from .wrapper import WrapperCpp
+from .utils import lookup_runtime_lib
 
 
 # Default output path for compiled libraries
@@ -62,22 +64,35 @@ class LibrarySupport(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(output_path: str = DEFAULT_OUTPUT_PATH) -> "LibrarySupport":
+    def new(
+        output_path: str = DEFAULT_OUTPUT_PATH,
+        runtime_library_path: Optional[str] = None,
+    ) -> "LibrarySupport":
         """Build a LibrarySupport.
 
         Args:
             output_path (str, optional): path where to store compiled libraries.
                 Defaults to DEFAULT_OUTPUT_PATH.
+            runtime_library_path (Optional[str], optional): path to the runtime library. Defaults to None.
 
         Raises:
             TypeError: if output_path is not of type str
+            TypeError: if runtime_library_path is not of type str
 
         Returns:
             LibrarySupport
         """
+        if runtime_library_path is None:
+            runtime_library_path = lookup_runtime_lib()
         if not isinstance(output_path, str):
             raise TypeError(f"output_path must be of type str, not {type(output_path)}")
-        library_support = LibrarySupport.wrap(_LibrarySupport(output_path))
+        if not isinstance(runtime_library_path, str):
+            raise TypeError(
+                f"runtime_library_path must be of type str, not {type(runtime_library_path)}"
+            )
+        library_support = LibrarySupport.wrap(
+            _LibrarySupport(output_path, runtime_library_path)
+        )
         library_support.library_path = output_path
         return library_support
 
