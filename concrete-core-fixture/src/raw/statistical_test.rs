@@ -57,11 +57,18 @@ where
         sdk_variance /= (sdk_samples.len() - 1) as f64;
 
         // compute the standard deviation
-        let sdk_std_log2 = f64::log2(f64::sqrt(sdk_variance)).round();
-        let th_std_log2 = f64::log2(std_dev).round();
+        let sdk_std_log2 = f64::log2(f64::sqrt(sdk_variance));
+        let th_std_log2 = f64::log2(std_dev);
 
         // test if theoretical_std_dev > sdk_std_dev
-        sdk_std_log2 <= th_std_log2
+        if sdk_std_log2 > th_std_log2 {
+            println!("sdk std {:?}, th std {:?}", sdk_std_log2, th_std_log2);
+        }
+        // Here due to rounding issues we give a 0.5 "slack" to the comparison
+        // The 0.5 value itself is arbitrary (we chose it to correspond to a rounding)
+        // and may be changed. Actually we plan to re-work the statistical test
+        // which we hope will remove the need for this.
+        sdk_std_log2 <= th_std_log2 + 0.5
     }
 }
 
