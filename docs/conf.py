@@ -65,7 +65,6 @@ nbsphinx_codecell_lexer = 'ipython3'
 # a list of builtin themes.
 #
 html_theme = 'sphinx_zama_theme'
-html_logo = '_static/CN_logo.png'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
