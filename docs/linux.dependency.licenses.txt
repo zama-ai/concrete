@@ -5,7 +5,6 @@
  cycler             0.11.0    BSD License
  fonttools          4.31.2    MIT License
  kiwisolver         1.4.2     BSD License
- loguru             0.5.3     MIT License
  matplotlib         3.5.1     Python Software Foundation License
  networkx           2.7.1     BSD License
  numpy              1.22.3    BSD License

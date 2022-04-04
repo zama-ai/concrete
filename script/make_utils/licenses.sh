@@ -3,7 +3,7 @@
 set -e
 
 BASENAME="licenses"
-LICENSE_DIRECTORY="deps_licenses"
+LICENSE_DIRECTORY="docs"
 CHECK=0
 DIFF_TOOL="diff --ignore-all-space --ignore-tab-expansion --ignore-space-change --ignore-all-space --ignore-blank-lines --strip-trailing-cr"
 TMP_VENV_PATH="/tmp/tmp_venv"
@@ -47,7 +47,7 @@ then
     #Licenses for user (install in a temporary venv)
     echo "Doing licenses for user"
 
-    FILENAME="${BASENAME}_${OS}_user.txt"
+    FILENAME="${OS}.dependency.${BASENAME}.txt"
     LICENSES_FILENAME="${LICENSE_DIRECTORY}/${FILENAME}"
     NEW_LICENSES_FILENAME="${OUTPUT_DIRECTORY}/${FILENAME}"
 
