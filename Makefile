@@ -179,7 +179,7 @@ open_docs:
 .PHONY: pydocstyle # Launch syntax checker on source code documentation
 pydocstyle:
 	@# From http://www.pydocstyle.org/en/stable/error_codes.html
-	poetry run pydocstyle $(SRC_DIR) --convention google --add-ignore=D1,D202 --add-select=D401
+	poetry run pydocstyle $(SRC_DIR) --convention google --add-ignore=D1,D200,D202,D212,D402,D417 --add-select=D401
 
 .PHONY: finalize_nb # Sanitize notebooks
 finalize_nb:
