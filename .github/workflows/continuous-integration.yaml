@@ -319,7 +319,7 @@ jobs:
         id: coverage
         if: ${{ always() && fromJSON(env.IS_REF_BUILD) && steps.pytest.outcome != 'skipped' && !cancelled() }}
         run: |
-          ./script/actions_utils/coverage.sh global-coverage-infos.json
+          ./script/actions_utils/coverage.sh .global-coverage.json
 
       - name: Comment with coverage
         uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443

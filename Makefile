@@ -85,7 +85,7 @@ pcc_internal: $(PCC_DEPS)
 .PHONY: pytest # Run pytest
 pytest:
 	poetry run pytest -svv \
-	--global-coverage-infos-json=global-coverage-infos.json \
+	--global-coverage=.global-coverage.json \
 	-n $$(./script/make_utils/ncpus.sh) \
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--randomly-dont-reorganize \

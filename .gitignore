@@ -52,7 +52,7 @@ diff-coverage.txt
 *.py,cover
 .hypothesis/
 .pytest_cache/
-global-coverage-infos.json
+.global-coverage.json
 
 # Translations
 *.mo
@@ -133,5 +133,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# concrete compilation artifacts
+# Compilation Artifacts
 .artifacts
