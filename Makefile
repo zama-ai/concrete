@@ -28,12 +28,12 @@ sync_env:
 .PHONY: python_format # Apply python formatting
 python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script
+	--dir $(SRC_DIR) --dir tests --dir script
 
 .PHONY: check_python_format # Check python format
 check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --check
+	--dir $(SRC_DIR) --dir tests --dir script --check
 
 .PHONY: check_finalize_nb # Sanitize notebooks
 check_finalize_nb:
@@ -41,7 +41,7 @@ check_finalize_nb:
 
 .PHONY: pylint # Run pylint
 pylint:
-	$(MAKE) --keep-going pylint_src pylint_tests pylint_benchmarks pylint_script
+	$(MAKE) --keep-going pylint_src pylint_tests pylint_script
 
 .PHONY: pylint_src # Run pylint on sources
 pylint_src:
@@ -53,12 +53,6 @@ pylint_tests:
 	@# Disable unnecessary lambda (W0108) for tests
 	find ./tests/ -type f -name "*.py" | xargs poetry run pylint --disable=R0801,W0108 --rcfile=pylintrc
 
-.PHONY: pylint_benchmarks # Run pylint on benchmarks
-pylint_benchmarks:
-	@# Disable duplicate code detection, docstring requirement, too many locals/statements
-	find ./benchmarks/ -type f -name "*.py" | xargs poetry run pylint \
-	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116,C0302,W0108 --rcfile=pylintrc
-
 .PHONY: pylint_script # Run pylint on scripts
 pylint_script:
 	find ./script/ -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
@@ -66,7 +60,7 @@ pylint_script:
 .PHONY: flake8 # Run flake8
 flake8:
 	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" \
-	$(SRC_DIR)/ tests/ benchmarks/ script/
+	$(SRC_DIR)/ tests/ script/
 
 .PHONY: python_linting # Run python linters
 python_linting: pylint flake8
@@ -112,9 +106,6 @@ mypy_ns:
 mypy_test:
 	find ./tests/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 
-.PHONY: mypy_benchmark # Run mypy on benchmark files
-	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
-
 .PHONY: mypy_script # Run mypy on scripts
 mypy_script:
 	find ./script/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
@@ -124,7 +115,7 @@ mypy_script:
 # cache which can cause issues.
 .PHONY: mypy_ci # Run all mypy checks for CI
 mypy_ci:
-	$(MAKE) --keep-going mypy mypy_test mypy_benchmark mypy_script
+	$(MAKE) --keep-going mypy mypy_test mypy_script
 
 .PHONY: docker_build # Build dev docker
 docker_build:
@@ -169,14 +160,6 @@ docker_clean_volumes:
 .PHONY: docker_cv # Docker clean volumes
 docker_cv: docker_clean_volumes
 
-.PHONY: docker_publish_measurements # Run benchmarks in docker and publish results
-docker_publish_measurements: docker_rebuild
-	docker run --rm --volume /"$$(pwd)":/src \
-	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
-	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
-	$(DEV_DOCKER_IMG) \
-	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
-
 .PHONY: docs # Build docs
 docs: clean_docs supported_functions
 	@# Generate the auto summary of documentations
@@ -207,13 +190,6 @@ finalize_nb:
 .PHONY: pytest_nb # Launch notebook tests
 pytest_nb:
 	find docs -name "*.ipynb" | grep -v _build | grep -v .ipynb_checkpoints | xargs poetry run pytest -Wignore --nbmake
-
-.PHONY: benchmark # Launch concrete benchmarks
-benchmark:
-	rm -rf progress.json && \
-	for script in benchmarks/*.py; do \
-	  poetry run python $$script; \
-	done
 
 .PHONY: jupyter # Launch jupyter notebook
 jupyter:

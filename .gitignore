@@ -133,8 +133,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Benchmark Artifacts
-progress.json
-
 # concrete compilation artifacts
 .artifacts

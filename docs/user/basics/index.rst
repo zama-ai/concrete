@@ -7,4 +7,3 @@ Getting Started
    intro.md
    installing.md
    compiling_and_executing.md
-   benchmarks.md
