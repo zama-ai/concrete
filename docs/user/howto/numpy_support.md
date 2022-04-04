@@ -89,6 +89,7 @@ List of supported functions:
 - sum
 - tan
 - tanh
+- transpose
 - true_divide
 - trunc
 <!--- gen_supported_ufuncs.py: inject supported operations [END] -->

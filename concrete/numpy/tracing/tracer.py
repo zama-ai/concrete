@@ -4,7 +4,7 @@ Declaration of `Tracer` class.
 
 import inspect
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -230,6 +230,7 @@ class Tracer:
         np.sum,
         np.tan,
         np.tanh,
+        np.transpose,
         np.true_divide,
         np.trunc,
     }
@@ -345,6 +346,10 @@ class Tracer:
             sanitized_args = [self._sanitize(args[0])]
             if len(args) > 1:
                 kwargs["newshape"] = args[1]
+        elif func is np.transpose:
+            sanitized_args = [self._sanitize(args[0])]
+            if len(args) > 1:
+                kwargs["axes"] = args[1]
         else:
             sanitized_args = [self._sanitize(arg) for arg in args]
 
@@ -516,6 +521,16 @@ class Tracer:
 
         return Tracer._trace_numpy_operation(np.reshape, self, newshape=newshape)
 
+    def transpose(self, axes: Optional[Tuple[int, ...]] = None) -> "Tracer":
+        """
+        Trace numpy.ndarray.transpose().
+        """
+
+        if axes is None:
+            return Tracer._trace_numpy_operation(np.transpose, self)
+
+        return Tracer._trace_numpy_operation(np.transpose, self, axes=axes)
+
     def __getitem__(
         self,
         index: Union[int, np.integer, slice, Tuple[Union[int, np.integer, slice], ...]],
@@ -583,3 +598,11 @@ class Tracer:
         """
 
         return self.output.size
+
+    @property
+    def T(self) -> "Tracer":  # pylint: disable=invalid-name
+        """
+        Trace numpy.ndarray.T.
+        """
+
+        return Tracer._trace_numpy_operation(np.transpose, self)

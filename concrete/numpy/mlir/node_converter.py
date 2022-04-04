@@ -166,6 +166,9 @@ class NodeConverter:
             elif name == "sum":
                 result = self.convert_sum()
 
+            elif name == "transpose":
+                result = self.convert_transpose()
+
             else:
                 result = self.convert_tlu()
 
@@ -798,3 +801,17 @@ class NodeConverter:
             result = fhe.ApplyLookupTableEintOp(resulting_type, pred, lut).result
 
         return result
+
+    def convert_transpose(self) -> OpResult:
+        """
+        Convert "transpose" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
+        preds = self.preds
+
+        return fhelinalg.TransposeOp(resulting_type, *preds).result

@@ -313,4 +313,5 @@ class Node:
             "reshape",
             "subtract",
             "sum",
+            "transpose",
         ]

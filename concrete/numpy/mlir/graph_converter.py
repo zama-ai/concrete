@@ -45,7 +45,7 @@ class GraphConverter:
                 None if node is convertible to MLIR, the reason for inconvertibility otherwise
         """
 
-        # pylint: disable=too-many-branches,too-many-return-statements
+        # pylint: disable=too-many-branches,too-many-return-statements,too-many-statements
 
         inputs = node.inputs
         output = node.output
@@ -121,6 +121,11 @@ class GraphConverter:
                 if not inputs[0].is_encrypted:
                     return "only encrypted sum is supported"
 
+            elif name == "transpose":
+                assert_that(len(inputs) == 1)
+                if not inputs[0].is_encrypted:
+                    return "only encrypted transpose is supported"
+
             else:
                 variable_input_indices = [
                     idx
@@ -135,7 +140,7 @@ class GraphConverter:
 
         return None
 
-        # pylint: enable=too-many-branches,too-many-return-statements
+        # pylint: enable=too-many-branches,too-many-return-statements,too-many-statements
 
     @staticmethod
     def _check_graph_convertibility(graph: Graph):

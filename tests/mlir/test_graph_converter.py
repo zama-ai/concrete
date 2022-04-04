@@ -311,6 +311,22 @@ return %2
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: np.transpose(x),
+            {"x": "clear"},
+            [np.random.randint(0, 2, size=(3, 2)) for _ in range(100)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x                    # ClearTensor<uint1, shape=(3, 2)>
+%1 = transpose(%0)        # ClearTensor<uint1, shape=(2, 3)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted transpose is supported
+return %1
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_graph_converter_bad_convert(
