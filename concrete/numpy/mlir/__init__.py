@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy.mlir` namespace.
+Provide `computation graph` to `mlir` functionality.
 """
 
 from .graph_converter import GraphConverter

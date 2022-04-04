@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy.extensions` namespace.
+Provide additional features that are not present in numpy.
 """
 
 from .convolution import conv2d

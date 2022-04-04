@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy.values` namespace.
+Define the available values and their semantics.
 """
 
 from .scalar import ClearScalar, EncryptedScalar

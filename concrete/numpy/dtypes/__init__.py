@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy.dtypes` namespace.
+Define available data types and their semantics.
 """
 
 from .base import BaseDataType

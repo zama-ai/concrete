@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy.compilation` namespace.
+Glue the compilation process together.
 """
 
 from .artifacts import CompilationArtifacts

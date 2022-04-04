@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy.representation` namespace.
+Define structures used to represent computation.
 """
 
 from .graph import Graph

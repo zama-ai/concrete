@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy` namespace.
+Export everything that users might need.
 """
 
 from .compilation import (

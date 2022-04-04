@@ -1,5 +1,5 @@
 """
-Declaration of `concrete.numpy.tracing` namespace.
+Provide `function` to `computation graph` functionality.
 """
 
 from .tracer import Tracer
