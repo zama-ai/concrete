@@ -450,9 +450,12 @@ const std::string CompilerEngine::Library::CLIENT_PARAMETERS_EXT =
     ".concrete.params.json";
 const std::string CompilerEngine::Library::LINKER = "ld";
 #ifdef __APPLE__
-// ld in Mac can't find some symbols without specifying these libs
+// We need to tell the linker that some symbols will be missing during linking,
+// this symbols should be available during runtime however. This is the case
+// when JIT compiling, the JIT should either link to the runtime library that
+// has the missing symbols, or it would have been loaded even prior to that
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT =
-    " -dylib -lc -o ";
+    " -dylib -undefined dynamic_lookup -o ";
 const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".dylib";
 #else // Linux
 const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";
