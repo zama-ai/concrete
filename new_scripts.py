@@ -1,28 +1,34 @@
 from estimator_new import *
 from math import log2
 
-def old_models(security_level, n):
+def old_models(security_level, sd, logq = 32):
     """
     Use the old model as a starting point for the data gathering step
     TODO: update this and integrate a flag for it
     """
 
+    def evaluate_model(sd, a, b):
+        return (sd - b)/a
+
     models = dict()
 
-    models["80"] = 0
-    models["96"] = 0
-    models["112"] = 0
-    models["128"] = 0
-    models["144"] = 0
-    models["160"] = 0
-    models["176"] = 0
-    models["192"] = 0
-    models["208"] = 0
-    models["224"] = 0
-    models["240"] = 0
-    models["256"] = 0
+    models["80"] = (-0.04049295502947623, 1.1288318226557081 + logq)
+    models["96"] = (-0.03416314056943681, 1.4704806061716345 + logq)
+    models["112"] = (-0.02970984362676178, 1.7848907787798667 + logq)
+    models["128"] = (-0.026361288425133814, 2.0014671315214696 + logq)
+    models["144"] = (-0.023744534465622812, 2.1710601038230712 + logq)
+    models["160"] = (-0.021667220727651954, 2.3565507936475476 + logq)
+    models["176"] = (-0.019947662046189942, 2.5109588704235803 + logq)
+    models["192"] = (-0.018552804646747204, 2.7168913723130816 + logq)
+    models["208"] = (-0.017291091126923574, 2.7956961446214326 + logq)
+    models["224"] = (-0.016257546811508806, 2.9582401000615226 + logq)
+    models["240"] = (-0.015329741032015766, 3.0744579055889782 + logq)
+    models["256"] = (-0.014530554319171845, 3.2094375376751745 + logq)
 
-    return 0
+    (a, b) = models["{}".format(security_level)]
+    n_est = evaluate_model(sd, a, b)
+
+    return round(n_est)
 
 
 def estimate(params):
@@ -74,10 +80,18 @@ def automated_param_select_n(params, target_security=128):
     """
 
     # get an initial estimate
-    costs = estimate(params)
-    security_level = get_security_level(costs, 2)
+    # costs = estimate(params)
+    # security_level = get_security_level(costs, 2)
     # determine if we are above or below the target security level
+    # z = inequality(security_level, target_security)
+
+    # get an estimate based on the prev. model
+    n_start = old_models(target_security, log2(params.Xe.stddev))
+    params = params.updated(n=n_start)
+    costs2 = estimate(params)
+    security_level = get_security_level(costs2, 2)
     z = inequality(security_level, target_security)
+
 
     # we keep n > 2 * target_security as a rough baseline for mitm security (on binary key guessing)
     while z * security_level < z * target_security and params.n > 2 * target_security:
@@ -145,7 +159,7 @@ def test_it():
     # print(y)
     #z1 = automated_param_select_n(schemes.TFHE630.updated(n=786), 128)
     #print(z1)
-    # sd_range = [1,4]
+    sd_range = [1,4]
     z3 = generate_parameter_matrix(schemes.TFHE630, sd_range=[17,19], target_security_levels=[128, 192, 256])
     print(z3)
 
