@@ -69,8 +69,18 @@ pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Range {
-    pub start: u16,
-    pub end: u16,
+    pub start: u64,
+    pub end: u64,
+}
+
+impl IntoIterator for &Range {
+    type Item = u64;
+
+    type IntoIter = std::ops::Range<u64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.start..self.end
+    }
 }
 
 #[must_use]

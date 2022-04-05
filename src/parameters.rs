@@ -2,16 +2,16 @@ pub use grouped::*;
 pub use individual::*;
 
 mod individual {
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
     pub struct KsDecompositionParameters<LogBase, Level> {
-        pub log2_base: LogBase,
         pub level: Level,
+        pub log2_base: LogBase,
     }
 
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
     pub struct PbsDecompositionParameters<LogBase, Level> {
-        pub log2_base: LogBase,
         pub level: Level,
+        pub log2_base: LogBase,
     }
 
     #[derive(Clone, Copy, PartialEq, Debug)]
