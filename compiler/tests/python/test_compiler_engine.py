@@ -248,13 +248,13 @@ def test_jit_compile_and_run(mlir_input, args, expected_result):
 
 @pytest.mark.parametrize("mlir_input, args, expected_result", end_to_end_fixture)
 def test_lib_compile_and_run(mlir_input, args, expected_result):
-    engine = LibrarySupport.new("py_test_lib_compile_and_run")
+    engine = LibrarySupport.new("./py_test_lib_compile_and_run")
     compile_and_run(engine, mlir_input, args, expected_result)
 
 
 @pytest.mark.parametrize("mlir_input, args, expected_result", end_to_end_fixture)
 def test_lib_compile_reload_and_run(mlir_input, args, expected_result):
-    engine = LibrarySupport.new("test_lib_compile_reload_and_run")
+    engine = LibrarySupport.new("./test_lib_compile_reload_and_run")
     # Here don't save compilation result, reload
     engine.compile(mlir_input)
     compilation_result = engine.reload()
