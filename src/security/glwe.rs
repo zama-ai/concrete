@@ -10,9 +10,10 @@ pub fn minimal_variance(
 ) -> Variance {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/security.py
     // ensure to have a minimal on std deviation covering the 2 lowest bits on modular scale
-    if security_level != 128 {
-        panic!("Only 128 bits of security is supported")
-    }
+    assert!(
+        security_level == 128,
+        "Only 128 bits of security is supported"
+    );
     let espsilon_log2_std_modular = 2.0;
     let espsilon_log2_std = espsilon_log2_std_modular - (ciphertext_modulus_log as f64);
     let equiv_lwe_dimension = (glwe_dimension * glwe_polynomial_size) as f64;
@@ -34,7 +35,7 @@ mod tests {
         let log_poly_size = 14;
         let glwe_dimension = 10;
         let integer_size = 64;
-        let golden_std_dev = 0.312_008_988_392_6036;
+        let golden_std_dev = 0.312_008_988_392_603_6;
         let security_level = 128;
         let actual = minimal_variance(log_poly_size, glwe_dimension, integer_size, security_level);
         approx::assert_relative_eq!(

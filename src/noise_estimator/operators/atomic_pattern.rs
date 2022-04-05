@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn golden_python_prototype_security_variance_keyswitch_1() {
-        let golden_modular_variance = 3.260702274017557e+68;
+        let golden_modular_variance = 3.260_702_274_017_557e68;
         let input_lwe_dimension = 4096;
         let internal_ks_output_lwe_dimension = 1024;
         let ks_decomposition_level_count = 9;
@@ -257,7 +257,7 @@ mod tests {
     fn golden_python_prototype_security_variance_keyswitch_2() {
         // let golden_modular_variance = 8.580795457940938e+66;
         // the full npe implements a part of the full estimation
-        let golden_modular_variance = 3.941898681369209e+48; // full estimation
+        let golden_modular_variance = 3.941_898_681_369_209e48; // full estimation
         let input_lwe_dimension = 2048;
         let internal_ks_output_lwe_dimension = 512;
         let ks_decomposition_level_count = 2;
@@ -282,7 +282,7 @@ mod tests {
     #[test]
     fn golden_python_prototype_security_variance_bootstrap_1() {
         // golden value include fft correction
-        let golden_modular_variance = 6.283575623979502e+30;
+        let golden_modular_variance = 6.283_575_623_979_502e30;
         let internal_ks_output_lwe_dimension = 2048;
         let glwe_polynomial_size = 4096;
         let glwe_dimension = 10;
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn golden_python_prototype_security_variance_bootstrap_2() {
         // golden value include fft correction
-        let golden_modular_variance = 1.3077694369436019e+56;
+        let golden_modular_variance = 1.307_769_436_943_601_9e56;
         let internal_ks_output_lwe_dimension = 1024;
         let glwe_polynomial_size = 4096;
         let glwe_dimension = 16;
