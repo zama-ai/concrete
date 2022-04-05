@@ -11,8 +11,10 @@ namespace concretelang {
 
 llvm::Error emitObject(llvm::Module &module, std::string objectPath);
 
-llvm::Error emitLibrary(std::vector<std::string> objectsPath,
-                        std::string libraryPath, std::string linker);
+llvm::Error
+emitLibrary(std::vector<std::string> objectsPath, std::string libraryPath,
+            std::string linker,
+            llvm::Optional<std::vector<std::string>> extraArgs = {});
 
 } // namespace concretelang
 } // namespace mlir

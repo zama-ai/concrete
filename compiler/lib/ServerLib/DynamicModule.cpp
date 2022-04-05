@@ -37,7 +37,7 @@ DynamicModule::loadSharedLibrary(std::string path) {
   libraryHandle = dlopen(
       CompilerEngine::Library::getSharedLibraryPath(path).c_str(), RTLD_LAZY);
   if (!libraryHandle) {
-    return StringError("Cannot open shared library") << dlerror();
+    return StringError("Cannot open shared library ") << dlerror();
   }
   return outcome::success();
 }

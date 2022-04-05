@@ -120,7 +120,9 @@ public:
         LINKER_SHARED_OPT, AR, AR_STATIC_OPT, DOT_STATIC_LIB_EXT,
         DOT_SHARED_LIB_EXT;
     void addExtraObjectFilePath(std::string objectFilePath);
-    llvm::Expected<std::string> emit(std::string dotExt, std::string linker);
+    llvm::Expected<std::string>
+    emit(std::string dotExt, std::string linker,
+         llvm::Optional<std::vector<std::string>> extraArgs = {});
     ~Library();
 
   private:

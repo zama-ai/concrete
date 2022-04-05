@@ -69,11 +69,16 @@ llvm::Error emitObject(llvm::Module &module, string objectPath) {
   return llvm::Error::success();
 }
 
-string linkerCmd(vector<string> objectsPath, string libraryPath,
-                 string linker) {
+string linkerCmd(vector<string> objectsPath, string libraryPath, string linker,
+                 llvm::Optional<vector<string>> extraArgs) {
   string cmd = linker + libraryPath;
   for (auto objectPath : objectsPath) {
     cmd += " " + objectPath;
+  }
+  if (extraArgs.hasValue()) {
+    for (auto extraArg : extraArgs.getValue()) {
+      cmd += " " + extraArg;
+    }
   }
   cmd += " 2>&1"; // to keep stderr with popen
   return cmd;
@@ -105,8 +110,9 @@ llvm::Error callCmd(string cmd) {
 }
 
 llvm::Error emitLibrary(vector<string> objectsPath, string libraryPath,
-                        string linker) {
-  auto cmd = linkerCmd(objectsPath, libraryPath, linker);
+                        string linker,
+                        llvm::Optional<vector<string>> extraArgs) {
+  auto cmd = linkerCmd(objectsPath, libraryPath, linker, extraArgs);
   return callCmd(cmd);
 }
 

@@ -607,15 +607,12 @@ std::string ensureLibDotExt(std::string path, std::string dotExt) {
   return path + dotExt;
 }
 
-llvm::Expected<std::string> CompilerEngine::Library::emit(std::string dotExt,
-                                                          std::string linker) {
+llvm::Expected<std::string> CompilerEngine::Library::emit(
+    std::string dotExt, std::string linker,
+    llvm::Optional<std::vector<std::string>> extraArgs) {
   auto pathDotExt = ensureLibDotExt(libraryPath, dotExt);
-  auto objectsPathWithRuntimeLib = objectsPath;
-  if (!runtimeLibraryPath.empty()) {
-    objectsPathWithRuntimeLib.push_back(runtimeLibraryPath);
-  }
-  auto error = mlir::concretelang::emitLibrary(objectsPathWithRuntimeLib,
-                                               pathDotExt, linker);
+  auto error = mlir::concretelang::emitLibrary(objectsPath, pathDotExt, linker,
+                                               extraArgs);
   if (error) {
     return std::move(error);
   }
@@ -623,7 +620,21 @@ llvm::Expected<std::string> CompilerEngine::Library::emit(std::string dotExt,
 }
 
 llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
-  auto path = emit(DOT_SHARED_LIB_EXT, LINKER + LINKER_SHARED_OPT);
+  std::vector<std::string> extraArgs;
+  if (!runtimeLibraryPath.empty()) {
+    extraArgs.push_back(runtimeLibraryPath);
+#ifndef __APPLE__ // LINUX
+    // Getting the parent dir should work on Linux and Mac
+    std::size_t rpathLastPos = runtimeLibraryPath.find_last_of("/");
+    if (rpathLastPos != std::string::npos) {
+      std::string rpath = runtimeLibraryPath.substr(0, rpathLastPos);
+      extraArgs.push_back("-rpath=" + rpath);
+      // Use RPATH instead of RUNPATH for transitive dependencies
+      extraArgs.push_back("--disable-new-dtags");
+    }
+#endif
+  }
+  auto path = emit(DOT_SHARED_LIB_EXT, LINKER + LINKER_SHARED_OPT, extraArgs);
   if (path) {
     sharedLibraryPath = path.get();
   }
