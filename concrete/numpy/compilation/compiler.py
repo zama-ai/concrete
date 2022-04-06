@@ -9,7 +9,6 @@ from enum import Enum, unique
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import CompilerEngine
 
 from ..mlir import GraphConverter
 from ..representation import Graph
@@ -322,17 +321,7 @@ class Compiler:
 
                     print()
 
-            engine = CompilerEngine()
-
-            if self.configuration.use_insecure_key_cache:
-                assert self.configuration.enable_unsafe_features
-                location = CompilationConfiguration.insecure_key_cache_location()
-                engine.compile_fhe(mlir, unsecure_key_set_cache_path=location)
-            else:
-                # this branch is not covered because all tests use key cache to speed up tests
-                engine.compile_fhe(mlir)  # pragma: no cover
-
-            return Circuit(self.graph, engine)
+            return Circuit(self.graph, mlir, self.configuration)
 
         except Exception:  # pragma: no cover
 

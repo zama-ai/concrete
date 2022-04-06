@@ -104,6 +104,9 @@ class Helpers:
             dump_artifacts_on_unexpected_failures=False,
             enable_unsafe_features=True,
             use_insecure_key_cache=True,
+            loop_parallelize=True,
+            dataflow_parallelize=False,
+            auto_parallelize=False,
         )
 
     @staticmethod

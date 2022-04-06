@@ -83,11 +83,20 @@ Be careful about the inputs, though.
 If you were to run with values outside the range of the inputset, the result might not be correct.
 ```
 
-Today, we cannot simulate a client / server API in python, but it is for very soon. Then, we will have:
-    - a `keygen` API, which is used to generate both public and private keys
-    - an `encrypt` API, which happens on the user's device, and is using private keys
-    - a `run_inference` API, which happens on the untrusted server and only uses public material
-    - a `encrypt` API, which happens on the user's device to get final clear result, and is using private keys
+While `.encrypt_run_decrypt(...)` is a good start for prototyping examples, more advanced usages require control over the different steps that are happening behind the scene, mainly key generation, encryption, execution, and decryption. The different steps can of course be called separately as in the example below:
+
+<!--pytest-codeblocks:cont-->
+```python
+# generate keys required for encrypted computation
+circuit.keygen()
+# this will encrypt arguments that require encryption and pack all arguments
+# as well as public materials (public keys)
+public_args = circuit.encrypt(3, 4)
+# this will run the encrypted computation using public materials and inputs provided
+encrypted_result = circuit.run(public_args)
+# the execution returns the encrypted result which can later be decrypted
+decrypted_result = circuit.decrypt(encrypted_result)
+```
 
 ## Further reading
 

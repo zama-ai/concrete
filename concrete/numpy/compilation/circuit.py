@@ -6,12 +6,24 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
-from concrete.compiler import CompilerEngine
+from concrete.compiler import (
+    ClientParameters,
+    ClientSupport,
+    CompilationOptions,
+    JITCompilationResult,
+    JITLambda,
+    JITSupport,
+    KeySet,
+    KeySetCache,
+    PublicArguments,
+    PublicResult,
+)
 
 from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Graph
 from ..values import Value
+from .configuration import CompilationConfiguration
 
 
 class Circuit:
@@ -20,11 +32,41 @@ class Circuit:
     """
 
     graph: Graph
-    engine: CompilerEngine
+    mlir: str
 
-    def __init__(self, graph: Graph, engine: CompilerEngine):
+    _jit_support: JITSupport
+    _compilation_result: JITCompilationResult
+
+    _client_parameters: ClientParameters
+
+    _keyset_cache: KeySetCache
+    _keyset: KeySet
+
+    _server_lambda: JITLambda
+
+    def __init__(self, graph: Graph, mlir: str, configuration: CompilationConfiguration):
         self.graph = graph
-        self.engine = engine
+        self.mlir = mlir
+
+        options = CompilationOptions.new("main")
+
+        options.set_loop_parallelize(configuration.loop_parallelize)
+        options.set_dataflow_parallelize(configuration.dataflow_parallelize)
+        options.set_auto_parallelize(configuration.auto_parallelize)
+
+        self._jit_support = JITSupport.new()
+        self._compilation_result = self._jit_support.compile(mlir, options)
+
+        self._client_parameters = self._jit_support.load_client_parameters(self._compilation_result)
+
+        self._keyset_cache = None
+        if configuration.use_insecure_key_cache:
+            assert_that(configuration.enable_unsafe_features)
+            location = CompilationConfiguration.insecure_key_cache_location()
+            self._keyset_cache = KeySetCache.new(str(location))
+        self._keyset = None
+
+        self._server_lambda = self._jit_support.load_server_lambda(self._compilation_result)
 
     def __str__(self):
         return self.graph.format()
@@ -36,7 +78,7 @@ class Circuit:
         save_to: Optional[Union[Path, str]] = None,
     ) -> Path:
         """
-        Draw the `self.graph` and optionally save/show the drawing.
+        Draw `self.graph` and optionally save/show the drawing.
 
         note that this function requires the python `pygraphviz` package
         which itself requires the installation of `graphviz` packages
@@ -60,27 +102,35 @@ class Circuit:
 
         return self.graph.draw(show, horizontal, save_to)
 
-    def encrypt_run_decrypt(
-        self,
-        *args: Union[int, np.ndarray],
-    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+    def keygen(self, force: bool = False):
         """
-        Encrypt inputs, run the circuit, and decrypt the outputs in one go.
+        Generate keys required for homomorphic evaluation.
+
+        Args:
+            force (bool, default = False):
+                whether to generate new keys even if keys are already generated
+        """
+
+        if self._keyset is None or force:
+            self._keyset = ClientSupport.key_set(self._client_parameters, self._keyset_cache)
+
+    def encrypt(self, *args: Union[int, np.ndarray]) -> PublicArguments:
+        """
+        Prepare inputs to be run on the circuit.
 
         Args:
             *args (Union[int, numpy.ndarray]):
-                inputs to the engine
+                inputs to the circuit
 
         Returns:
-            Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
-                result of the homomorphic evaluation
+            PublicArguments:
+                encrypted and plain arguments as well as public keys
         """
 
         if len(args) != len(self.graph.input_nodes):
             raise ValueError(f"Expected {len(self.graph.input_nodes)} inputs but got {len(args)}")
 
         sanitized_args = {}
-
         for index, node in self.graph.input_nodes.items():
             arg = args[index]
             is_valid = isinstance(arg, (int, np.integer)) or (
@@ -116,7 +166,45 @@ class Circuit:
                     f"Expected argument {index} to be {expected_value} but it's {actual_value}"
                 )
 
-        results = self.engine.run(*[sanitized_args[i] for i in range(len(sanitized_args))])
+        self.keygen(force=False)
+        return ClientSupport.encrypt_arguments(
+            self._client_parameters,
+            self._keyset,
+            [sanitized_args[i] for i in range(len(sanitized_args))],
+        )
+
+    def run(self, args: PublicArguments) -> PublicResult:
+        """
+        Evaluate circuit using encrypted arguments.
+
+        Args:
+            args (PublicArguments):
+                arguments to the circuit (can be obtained with `encrypt` method of `Circuit`)
+
+        Returns:
+            PublicResult:
+                encrypted result of homomorphic evaluaton
+        """
+
+        return self._jit_support.server_call(self._server_lambda, args)
+
+    def decrypt(
+        self,
+        result: PublicResult,
+    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+        """
+        Decrypt result of homomorphic evaluaton.
+
+        Args:
+            result (PublicResult):
+                encrypted result of homomorphic evaluaton
+
+        Returns:
+            Union[int, numpy.ndarray]:
+                clear result of homomorphic evaluaton
+        """
+
+        results = ClientSupport.decrypt_result(self._keyset, result)
         if not isinstance(results, tuple):
             results = (results,)
 
@@ -144,3 +232,21 @@ class Circuit:
                 )
 
         return sanitized_results[0] if len(sanitized_results) == 1 else tuple(sanitized_results)
+
+    def encrypt_run_decrypt(
+        self,
+        *args: Union[int, np.ndarray],
+    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+        """
+        Encrypt inputs, run the circuit, and decrypt the outputs in one go.
+
+        Args:
+            *args (Union[int, numpy.ndarray]):
+                inputs to the circuit
+
+        Returns:
+            Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+                clear result of homomorphic evaluation
+        """
+
+        return self.decrypt(self.run(self.encrypt(*args)))
