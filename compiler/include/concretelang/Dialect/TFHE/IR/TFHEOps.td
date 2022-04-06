@@ -88,23 +88,37 @@ def MulGLWEIntOp : TFHE_Op<"mul_glwe_int"> {
     }];
 }
 
+def KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe"> {
+    let summary = "Change the encryption parameters of a glwe ciphertext by applying a keyswitch";
 
+    let arguments = (ins
+        GLWECipherTextType:$ciphertext,
+        I32Attr:$level,
+        I32Attr:$baseLog
+    );
 
-def ApplyLookupTable : TFHE_Op<"apply_lookup_table"> {
-    let summary = "Applies a lookup table to a GLWE ciphertext";
+    let results = (outs GLWECipherTextType:$result);
+}
 
-    
-    let arguments = (ins GLWECipherTextType:$ct,
-        TensorOf<[AnyInteger]>:$l_cst,
-        I32Attr:$glweDimension, I32Attr:$polynomialSize,
-        I32Attr:$levelKS, I32Attr:$baseLogKS,
-        I32Attr:$levelBS, I32Attr:$baseLogBS,
-        I32Attr:$outputSizeKS);
-    let results = (outs GLWECipherTextType);
+def GLWEFromTableOp : TFHE_Op<"glwe_from_table"> {
+    let summary = "Creates a GLWE ciphertext which is the trivial encrytion of a the input table interpreted as a polynomial (to use later in a bootstrap)";
 
-    let verifier = [{
-        return ::mlir::concretelang::TFHE::verifyApplyLookupTable(*this);
-    }];
+    let arguments = (ins 1DTensorOf<[I64]>:$table);
+    let results = (outs GLWECipherTextType:$result);
+}
+
+def BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
+    let summary = "Programmable bootstraping of a GLWE ciphertext with a lookup table";
+
+    let arguments = (ins
+        GLWECipherTextType:$ciphertext,
+        GLWECipherTextType:$lookup_table,
+        I32Attr:$glweDimension,
+        I32Attr:$polynomialSize,
+        I32Attr:$level,
+        I32Attr:$baseLog
+    );
+    let results = (outs GLWECipherTextType: $result);
 }
 
 #endif

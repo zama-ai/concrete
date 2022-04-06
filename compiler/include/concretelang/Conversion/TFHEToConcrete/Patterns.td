@@ -42,10 +42,4 @@ def NegGLWEPattern : Pat<
     (NegGLWEOp:$result $arg0),
     (createNegLweOp $arg0, $result)>;
 
-def createPBS : NativeCodeCall<"mlir::concretelang::createPBS($_builder, $_loc, $0, $1, $2, $3, $4, $5, $6, $7, $8, $9)">;
-
-def ApplyLookupTableGLWEPattern : Pat<
-    (ApplyLookupTable:$result $ct, $table, $glweDimension, $polynomialSize, $levelKS, $baseLogKS, $levelBS, $baseLogBS, $outputDimensionKS),
-    (createPBS $ct, $table, $glweDimension, $polynomialSize, $levelKS, $baseLogKS, $levelBS, $baseLogBS, $outputDimensionKS, $result)>;
-
 #endif

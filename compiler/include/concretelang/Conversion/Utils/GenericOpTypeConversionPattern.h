@@ -68,8 +68,8 @@ struct GenericTypeAndOpConverterPattern : public mlir::OpRewritePattern<OldOp> {
         resultTypes[i] = converter.convertType(result.getType());
       }
     }
-    rewriter.replaceOpWithNewOp<NewOp>(oldOp, resultTypes,
-                                       oldOp->getOperands());
+    rewriter.replaceOpWithNewOp<NewOp>(oldOp, resultTypes, oldOp->getOperands(),
+                                       oldOp->getAttrs());
     return mlir::success();
   }
 

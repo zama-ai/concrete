@@ -41,10 +41,4 @@ def MulEintIntPattern : Pat<
     (MulEintIntOp:$result $arg0, $arg1),
     (createMulGLWEIntOp $arg0, $arg1, $result)>;
 
-def createApplyLookupTableGLWEOp : NativeCodeCall<"mlir::concretelang::createApplyLookupTableGLWEOpFromFHE($_builder, $_loc, $0, $1, $2)">;
-
-def ApplyLookupTableEintPattern : Pat<
-    (ApplyLookupTableEintOp:$result $arg0, $arg1),
-    (createApplyLookupTableGLWEOp $arg0, $arg1, $result)>;
-
 #endif

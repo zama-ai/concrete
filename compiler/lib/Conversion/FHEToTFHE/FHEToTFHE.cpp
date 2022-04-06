@@ -18,6 +18,9 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 
+namespace FHE = mlir::concretelang::FHE;
+namespace TFHE = mlir::concretelang::TFHE;
+
 namespace {
 struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
   void runOnOperation() final;
@@ -53,6 +56,58 @@ public:
   }
 };
 
+// This rewrite pattern transforms any instance of `FHE.apply_lookup_table`
+// operators.
+//
+// Example:
+//
+// ```mlir
+// %0 = "FHE.apply_lookup_table"(%ct, %lut): (!FHE.eint<2>, tensor<4xi64>)
+//        ->(!FHE.eint<2>)
+// ```
+//
+// becomes:
+//
+// ```mlir
+//  %glwe_lut = "TFHE.glwe_from_table"(%lut)
+//                : (tensor<4xi64>) -> !TFHE.glwe<{_,_,_}{2}>
+//  %glwe_ks = "TFHE.keyswitch_glwe"(%ct)
+//               {baseLog = -1 : i32, level = -1 : i32}
+//               : (!TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
+//  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
+//         {baseLog = -1 : i32, glweDimension = -1 : i32, level = -1 : i32,
+//           polynomialSize = -1 : i32}
+//         : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) ->
+//         !TFHE.glwe<{_,_,_}{2}>
+// ```
+struct ApplyLookupTableEintOpPattern
+    : public mlir::OpRewritePattern<FHE::ApplyLookupTableEintOp> {
+  ApplyLookupTableEintOpPattern(mlir::MLIRContext *context,
+                                mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<FHE::ApplyLookupTableEintOp>(context,
+                                                              benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(FHE::ApplyLookupTableEintOp lutOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    FHEToTFHETypeConverter converter;
+    auto inputTy = converter.convertType(lutOp.a().getType())
+                       .cast<TFHE::GLWECipherTextType>();
+    auto resultTy = converter.convertType(lutOp.getType());
+    //  %glwe_lut = "TFHE.glwe_from_table"(%lut)
+    auto glweLut = rewriter.create<TFHE::GLWEFromTableOp>(lutOp.getLoc(),
+                                                          inputTy, lutOp.lut());
+    //  %glwe_ks = "TFHE.keyswitch_glwe"(%ct)
+    auto glweKs = rewriter.create<TFHE::KeySwitchGLWEOp>(
+        lutOp.getLoc(), inputTy, lutOp.a(), -1, -1);
+    //  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
+    rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(lutOp, resultTy, glweKs,
+                                                       glweLut, -1, -1, -1, -1);
+
+    return ::mlir::success();
+  };
+};
+
 void FHEToTFHEPass::runOnOperation() {
   auto op = this->getOperation();
 
@@ -85,6 +140,7 @@ void FHEToTFHEPass::runOnOperation() {
   mlir::OwningRewritePatternList patterns(&getContext());
 
   populateWithGeneratedFHEToTFHE(patterns);
+  patterns.add<ApplyLookupTableEintOpPattern>(&getContext());
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
                                             FHEToTFHETypeConverter>>(
       &getContext(), converter);

@@ -66,36 +66,6 @@ mlir::Value createGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
   return op.getODSResults(0).front();
 }
 
-mlir::Value createApplyLookupTableGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
-                                                mlir::Location loc,
-                                                mlir::Value arg0,
-                                                mlir::Value arg1,
-                                                mlir::OpResult result) {
-  mlir::SmallVector<mlir::Value, 2> args{arg0, arg1};
-
-  auto context = rewriter.getContext();
-  auto unset = mlir::IntegerAttr::get(IntegerType::get(context, 32), -1);
-  mlir::SmallVector<mlir::NamedAttribute, 6> attrs{
-      mlir::NamedAttribute(mlir::Identifier::get("glweDimension", context),
-                           unset),
-      mlir::NamedAttribute(mlir::Identifier::get("polynomialSize", context),
-                           unset),
-      mlir::NamedAttribute(mlir::Identifier::get("levelKS", context), unset),
-      mlir::NamedAttribute(mlir::Identifier::get("baseLogKS", context), unset),
-      mlir::NamedAttribute(mlir::Identifier::get("levelBS", context), unset),
-      mlir::NamedAttribute(mlir::Identifier::get("baseLogBS", context), unset),
-      mlir::NamedAttribute(mlir::Identifier::get("outputSizeKS", context),
-                           unset),
-  };
-  auto eint =
-      result.getType().cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  mlir::SmallVector<mlir::Type, 1> resTypes{
-      convertTypeEncryptedIntegerToGLWE(rewriter.getContext(), eint)};
-  auto op = rewriter.create<concretelang::TFHE::ApplyLookupTable>(loc, resTypes,
-                                                                  args, attrs);
-  return op.getODSResults(0).front();
-}
-
 } // namespace concretelang
 } // namespace mlir
 

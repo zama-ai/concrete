@@ -62,9 +62,7 @@ def GlweFromTable : Concrete_Op<"glwe_from_table"> {
 def BootstrapLweOp : Concrete_Op<"bootstrap_lwe"> {
     let summary = "Bootstraps a LWE ciphertext with a GLWE trivial encryption of the lookup table";
 
-
     let arguments = (ins 
-        // LweBootstrapKeyType:$bootstrap_key,
         LweCiphertextType:$input_ciphertext,
         GlweCiphertextType:$accumulator,
         I32Attr:$glweDimension,
@@ -79,7 +77,6 @@ def KeySwitchLweOp : Concrete_Op<"keyswitch_lwe"> {
     let summary = "Keyswitches a LWE ciphertext";
 
     let arguments = (ins
-        // LweKeySwitchKeyType:$keyswitch_key,
         LweCiphertextType:$ciphertext,
         I32Attr:$level,
         I32Attr:$baseLog

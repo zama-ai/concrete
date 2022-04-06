@@ -15,6 +15,8 @@
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 #include "concretelang/Support/Constants.h"
 
+namespace TFHE = mlir::concretelang::TFHE;
+
 namespace {
 struct TFHEGlobalParametrizationPass
     : public TFHEGlobalParametrizationBase<TFHEGlobalParametrizationPass> {
@@ -89,91 +91,114 @@ private:
   mlir::TypeConverter &typeConverter;
 };
 
-struct TFHEApplyLookupTableParametrizationPattern
-    : public mlir::OpRewritePattern<
-          mlir::concretelang::TFHE::ApplyLookupTable> {
-  TFHEApplyLookupTableParametrizationPattern(
-      mlir::MLIRContext *context, mlir::TypeConverter &typeConverter,
-      mlir::concretelang::V0Parameter &v0Parameter,
-      mlir::PatternBenefit benefit =
-          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::concretelang::TFHE::ApplyLookupTable>(
-            context, benefit),
-        typeConverter(typeConverter), v0Parameter(v0Parameter) {}
+struct KeySwitchGLWEOpPattern
+    : public mlir::OpRewritePattern<TFHE::KeySwitchGLWEOp> {
+  KeySwitchGLWEOpPattern(mlir::MLIRContext *context,
+                         mlir::TypeConverter &converter,
+                         mlir::concretelang::V0FHEContext &fheContext,
+                         mlir::PatternBenefit benefit =
+                             mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<TFHE::KeySwitchGLWEOp>(context, benefit),
+        converter(converter), fheContext(fheContext) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::concretelang::TFHE::ApplyLookupTable op,
+  matchAndRewrite(TFHE::KeySwitchGLWEOp ksOp,
                   mlir::PatternRewriter &rewriter) const override {
     mlir::SmallVector<mlir::Type, 1> newResultTypes;
-    if (typeConverter.convertTypes(op->getResultTypes(), newResultTypes)
-            .failed()) {
-      return mlir::failure();
-    }
-
-    mlir::SmallVector<mlir::NamedAttribute, 6> newAttributes{
-        mlir::NamedAttribute(
-            rewriter.getIdentifier("glweDimension"),
-            rewriter.getI32IntegerAttr(v0Parameter.glweDimension)),
-        mlir::NamedAttribute(
-            rewriter.getIdentifier("polynomialSize"),
-            // TODO remove the shift when we have true polynomial size
-            rewriter.getI32IntegerAttr(1 << v0Parameter.logPolynomialSize)),
-        mlir::NamedAttribute(rewriter.getIdentifier("levelKS"),
-                             rewriter.getI32IntegerAttr(v0Parameter.ksLevel)),
-        mlir::NamedAttribute(rewriter.getIdentifier("baseLogKS"),
-                             rewriter.getI32IntegerAttr(v0Parameter.ksLogBase)),
-        mlir::NamedAttribute(rewriter.getIdentifier("levelBS"),
-                             rewriter.getI32IntegerAttr(v0Parameter.brLevel)),
-        mlir::NamedAttribute(rewriter.getIdentifier("baseLogBS"),
-                             rewriter.getI32IntegerAttr(v0Parameter.brLogBase)),
-        mlir::NamedAttribute(rewriter.getIdentifier("outputSizeKS"),
-                             rewriter.getI32IntegerAttr(v0Parameter.nSmall)),
-    };
-
-    rewriter.replaceOpWithNewOp<mlir::concretelang::TFHE::ApplyLookupTable>(
-        op, newResultTypes, op->getOperands(), newAttributes);
-
+    auto inputTy = ksOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
+    auto outputTy = rewriter.getType<TFHE::GLWECipherTextType>(
+        fheContext.parameter.glweDimension, fheContext.parameter.nSmall, 64,
+        inputTy.getP());
+    rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
+        ksOp, outputTy, ksOp.ciphertext(), fheContext.parameter.ksLevel,
+        fheContext.parameter.ksLogBase);
     return mlir::success();
   };
 
 private:
-  mlir::TypeConverter &typeConverter;
-  mlir::concretelang::V0Parameter &v0Parameter;
+  mlir::TypeConverter &converter;
+  mlir::concretelang::V0FHEContext &fheContext;
 };
 
-struct TFHEApplyLookupTablePaddingPattern
-    : public mlir::OpRewritePattern<
-          mlir::concretelang::TFHE::ApplyLookupTable> {
-  TFHEApplyLookupTablePaddingPattern(
-      mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit =
-          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<mlir::concretelang::TFHE::ApplyLookupTable>(
-            context, benefit) {}
+struct BootstrapGLWEOpPattern
+    : public mlir::OpRewritePattern<TFHE::BootstrapGLWEOp> {
+  BootstrapGLWEOpPattern(mlir::MLIRContext *context,
+                         mlir::TypeConverter &converter,
+                         mlir::concretelang::V0FHEContext &fheContext,
+                         mlir::PatternBenefit benefit =
+                             mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<TFHE::BootstrapGLWEOp>(context, benefit),
+        converter(converter), fheContext(fheContext) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::concretelang::TFHE::ApplyLookupTable op,
+  matchAndRewrite(TFHE::BootstrapGLWEOp bsOp,
                   mlir::PatternRewriter &rewriter) const override {
-    auto glweInType = op.getOperandTypes()[0]
-                          .cast<mlir::concretelang::TFHE::GLWECipherTextType>();
-    auto tabulatedLambdaType =
-        op.l_cst().getType().cast<mlir::RankedTensorType>();
+    rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
+        bsOp, converter.convertType(bsOp.result().getType()), bsOp.ciphertext(),
+        bsOp.lookup_table(), fheContext.parameter.glweDimension,
+        1 << fheContext.parameter.logPolynomialSize,
+        fheContext.parameter.brLevel, fheContext.parameter.brLogBase);
+    return mlir::success();
+  };
 
-    auto expectedSize = 1 << glweInType.getP();
-    if (tabulatedLambdaType.getShape()[0] < expectedSize) {
+private:
+  mlir::TypeConverter &converter;
+  mlir::concretelang::V0FHEContext &fheContext;
+};
+
+// This rewrite pattern transforms any instance of `TFHE.glwe_from_table` by
+// parametrize GLWE return type and pad the table if the precision has been
+// changed.
+//
+// Example:
+//
+// ```mlir
+// %lut = arith.constant dense<[0, 1, 2, 3]> : tensor<4xi64>
+// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<4xi64>) ->
+// !TFHE.glwe<{_,_,_}{2}>
+// ```
+//
+// becomes:
+//
+// ```mlir
+// %lut = arith.constant dense<[0, 1, 2, 3, 0, 1, 2, 3]> : tensor<8xi64>
+// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<8xi64>) ->
+// !TFHE.glwe<{_,_,_}{3}>
+// ```
+struct GLWEFromTablePattern
+    : public mlir::OpRewritePattern<TFHE::GLWEFromTableOp> {
+  GLWEFromTablePattern(mlir::MLIRContext *context,
+                       mlir::TypeConverter &converter,
+                       mlir::concretelang::V0FHEContext &fheContext,
+                       mlir::PatternBenefit benefit =
+                           mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<TFHE::GLWEFromTableOp>(context, benefit),
+        converter(converter), fheContext(fheContext) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(TFHE::GLWEFromTableOp glweOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto newTy = converter.convertType(glweOp.getType())
+                     .cast<TFHE::GLWECipherTextType>();
+
+    auto lutOp = glweOp.table();
+    auto tableTy = lutOp.getType().cast<mlir::RankedTensorType>();
+
+    auto expectedSize = 1 << newTy.getP();
+    if (tableTy.getShape()[0] < expectedSize) {
+      // Create a new padded lookup table
       auto constantOp = mlir::dyn_cast_or_null<mlir::arith::ConstantOp>(
-          op.l_cst().getDefiningOp());
+          lutOp.getDefiningOp());
       if (constantOp == nullptr) {
-        op.emitError() << "padding for non-constant operator is NYI";
+        glweOp.emitError() << "padding for non-constant operator is NYI";
         return mlir::failure();
       }
       mlir::DenseIntElementsAttr denseVals =
           constantOp->getAttrOfType<mlir::DenseIntElementsAttr>("value");
       if (denseVals == nullptr) {
-        op.emitError() << "value should be dense";
+        constantOp.emitError() << "value should be dense";
         return mlir::failure();
       }
-      // Create the new constant dense op with padding
       auto integerSize = 64;
       llvm::SmallVector<llvm::APInt> rawNewDenseVals(
           expectedSize, llvm::APInt(integerSize, 0));
@@ -187,19 +212,17 @@ struct TFHEApplyLookupTablePaddingPattern
           {expectedSize}, rewriter.getIntegerType(integerSize));
       auto newDenseVals =
           mlir::DenseIntElementsAttr::get(newDenseValsType, rawNewDenseVals);
-      auto newConstantOp = rewriter.create<mlir::arith::ConstantOp>(
-          constantOp.getLoc(), newDenseVals);
-      // Replace the apply_lookup_table with the new constant
-      mlir::SmallVector<mlir::Type> newResultTypes{op.getType()};
-      llvm::SmallVector<mlir::Value> newOperands{op.ct(), newConstantOp};
-      llvm::ArrayRef<mlir::NamedAttribute> newAttrs = op->getAttrs();
-      rewriter.replaceOpWithNewOp<mlir::concretelang::TFHE::ApplyLookupTable>(
-          op, newResultTypes, newOperands, newAttrs);
-      return mlir::success();
+      // Replace the lutOp by the new padded lookup table
+      lutOp = rewriter.create<mlir::arith::ConstantOp>(constantOp.getLoc(),
+                                                       newDenseVals);
     }
-
+    rewriter.replaceOpWithNewOp<TFHE::GLWEFromTableOp>(glweOp, newTy, lutOp);
     return mlir::success();
   };
+
+private:
+  mlir::TypeConverter &converter;
+  mlir::concretelang::V0FHEContext &fheContext;
 };
 
 template <typename Op>
@@ -210,44 +233,6 @@ void populateWithTFHEOpTypeConversionPattern(
                                                 typeConverter);
   target.addDynamicallyLegalOp<Op>(
       [&](Op op) { return typeConverter.isLegal(op->getResultTypes()); });
-}
-
-void populateWithTFHEApplyLookupTableParametrizationPattern(
-    mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target,
-    mlir::TypeConverter &typeConverter,
-    mlir::concretelang::V0Parameter &v0Parameter) {
-  patterns.add<TFHEApplyLookupTableParametrizationPattern>(
-      patterns.getContext(), typeConverter, v0Parameter);
-  target.addDynamicallyLegalOp<mlir::concretelang::TFHE::ApplyLookupTable>(
-      [&](mlir::concretelang::TFHE::ApplyLookupTable op) {
-        if (op.glweDimension() != v0Parameter.glweDimension ||
-            // TODO remove the shift when we have true polynomial size
-            op.polynomialSize() !=
-                ((uint32_t)1 << v0Parameter.logPolynomialSize) ||
-            op.levelKS() != v0Parameter.ksLevel ||
-            op.baseLogKS() != v0Parameter.ksLogBase ||
-            op.levelBS() != v0Parameter.brLevel ||
-            op.baseLogBS() != v0Parameter.brLogBase) {
-          return false;
-        }
-        return typeConverter.isLegal(op->getResultTypes());
-      });
-}
-
-void populateWithTFHEApplyLookupTablePaddingPattern(
-    mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target) {
-  patterns.add<TFHEApplyLookupTablePaddingPattern>(patterns.getContext());
-  target.addLegalOp<mlir::arith::ConstantOp>();
-  target.addDynamicallyLegalOp<mlir::concretelang::TFHE::ApplyLookupTable>(
-      [&](mlir::concretelang::TFHE::ApplyLookupTable op) {
-        auto glweInType =
-            op.getOperandTypes()[0]
-                .cast<mlir::concretelang::TFHE::GLWECipherTextType>();
-        auto tabulatedLambdaType =
-            op.getOperandTypes()[1].cast<mlir::RankedTensorType>();
-
-        return tabulatedLambdaType.getShape()[0] == 1 << glweInType.getP();
-      });
 }
 
 /// Populate the RewritePatternSet with all patterns that rewrite Concrete
@@ -271,8 +256,6 @@ void populateWithTFHEOpTypeConversionPatterns(
       patterns, target, typeConverter);
   populateWithTFHEOpTypeConversionPattern<
       mlir::concretelang::TFHE::MulGLWEIntOp>(patterns, target, typeConverter);
-  populateWithTFHEApplyLookupTableParametrizationPattern(
-      patterns, target, typeConverter, v0Parameter);
 }
 
 void TFHEGlobalParametrizationPass::runOnOperation() {
@@ -291,6 +274,24 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
              converter.isLegal(&funcOp.getBody());
     });
     mlir::populateFuncOpTypeConversionPattern(patterns, converter);
+
+    // Parametrize keyswitch bootstrap
+    patterns.add<GLWEFromTablePattern>(&getContext(), converter, fheContext);
+    target.addDynamicallyLegalOp<TFHE::GLWEFromTableOp>(
+        [&](TFHE::GLWEFromTableOp op) {
+          return converter.isLegal(op->getResultTypes());
+        });
+    target.addLegalOp<mlir::arith::ConstantOp>();
+    patterns.add<KeySwitchGLWEOpPattern>(&getContext(), converter, fheContext);
+    target.addDynamicallyLegalOp<TFHE::KeySwitchGLWEOp>(
+        [&](TFHE::KeySwitchGLWEOp op) {
+          return op.level() != (uint32_t)-1 && op.baseLog() != (uint32_t)-1;
+        });
+    patterns.add<BootstrapGLWEOpPattern>(&getContext(), converter, fheContext);
+    target.addDynamicallyLegalOp<TFHE::BootstrapGLWEOp>(
+        [&](TFHE::BootstrapGLWEOp op) {
+          return converter.isLegal(op->getResultTypes());
+        });
 
     // Add all patterns to convert TFHE types
     populateWithTFHEOpTypeConversionPatterns(patterns, target, converter,
@@ -313,20 +314,6 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
                                                  converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::concretelang::RT::DataflowTaskOp>(target, converter);
-
-    // Apply conversion
-    if (mlir::applyPartialConversion(op, target, std::move(patterns))
-            .failed()) {
-      this->signalPassFailure();
-    }
-  }
-
-  // Pad lookup table
-  {
-    mlir::ConversionTarget target(getContext());
-    mlir::OwningRewritePatternList patterns(&getContext());
-
-    populateWithTFHEApplyLookupTablePaddingPattern(patterns, target);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

@@ -18,6 +18,9 @@
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
 #include "concretelang/Dialect/TFHE/IR/TFHETypes.h"
 
+namespace TFHE = mlir::concretelang::TFHE;
+namespace Concrete = mlir::concretelang::Concrete;
+
 namespace {
 struct TFHEToConcretePass : public TFHEToConcreteBase<TFHEToConcretePass> {
   void runOnOperation() final;
@@ -48,6 +51,26 @@ public:
       return r;
     });
   }
+};
+
+struct GLWEFromTableOpPattern
+    : public mlir::OpRewritePattern<TFHE::GLWEFromTableOp> {
+  GLWEFromTableOpPattern(mlir::MLIRContext *context,
+                         mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<TFHE::GLWEFromTableOp>(context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::GLWEFromTableOp glweOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto oldTy = glweOp.getType().cast<TFHE::GLWECipherTextType>();
+    auto newTy = rewriter.getType<Concrete::GlweCiphertextType>(
+        oldTy.getDimension(), oldTy.getPolynomialSize(), oldTy.getP());
+
+    rewriter.replaceOpWithNewOp<Concrete::GlweFromTable>(glweOp, newTy,
+                                                         glweOp.table());
+
+    return ::mlir::success();
+  };
 };
 
 void TFHEToConcretePass::runOnOperation() {
@@ -84,6 +107,13 @@ void TFHEToConcretePass::runOnOperation() {
   patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
       mlir::concretelang::TFHE::ZeroTensorGLWEOp,
       mlir::concretelang::Concrete::ZeroTensorLWEOp>>(&getContext(), converter);
+  patterns.add<GLWEFromTableOpPattern>(&getContext());
+  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+      TFHE::BootstrapGLWEOp, Concrete::BootstrapLweOp>>(&getContext(),
+                                                        converter);
+  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+      TFHE::KeySwitchGLWEOp, Concrete::KeySwitchLweOp>>(&getContext(),
+                                                        converter);
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
                                             TFHEToConcreteTypeConverter>>(
       &getContext(), converter);

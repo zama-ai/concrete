@@ -141,28 +141,6 @@ mlir::LogicalResult verifyUnaryGLWEOperator(Operator &op) {
   return mlir::success();
 }
 
-/// verifyApplyLookupTable verify the GLWE parameters follow the rules:
-/// - The l_cst argument must be a memref of one dimension of size 2^p
-/// - The lookup table contains integer values of the same width of the output
-mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTable &op) {
-  auto ct = op.ct().getType().cast<GLWECipherTextType>();
-  auto l_cst = op.l_cst().getType().cast<RankedTensorType>();
-
-  // Check the shape of l_cst argument
-  auto width = ct.getP();
-  auto expectedSize = 1 << width;
-  mlir::SmallVector<int64_t, 1> expectedShape{expectedSize};
-  if (!l_cst.hasStaticShape(expectedShape)) {
-    FHE::emitErrorBadLutSize(op, "l_cst", "ct", expectedSize, width);
-    return mlir::failure();
-  }
-  if (!l_cst.getElementType().isInteger(64)) {
-    op.emitOpError() << "should have the i64 constant";
-    return mlir::failure();
-  }
-  return mlir::success();
-}
-
 } // namespace TFHE
 } // namespace concretelang
 } // namespace mlir
