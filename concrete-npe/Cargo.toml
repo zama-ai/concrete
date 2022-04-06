@@ -1,6 +1,6 @@
 [package]
 name = "concrete-npe"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2018"
 authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
 license = "BSD-3-Clause-Clear"

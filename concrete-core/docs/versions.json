@@ -1,8 +1,10 @@
 {
   "all": [
+    "1.0.0-beta"
   ],
   "menu": [
-    "main"
+    "main",
+    "1.0.0-beta"
   ],
-  "latest": "main"
+  "latest": "1.0.0-beta"
 }
