@@ -477,10 +477,16 @@ class Tracer:
         """
 
         normalized_dtype = np.dtype(dtype)
-        output_dtype = Value.of(normalized_dtype.type(0)).dtype
+        if normalized_dtype != np.int64:
+            print(
+                "Warning: when using `value.astype(newtype)`, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            )
 
         output_value = deepcopy(self.output)
-        output_value.dtype = output_dtype
+        output_value.dtype = Value.of(normalized_dtype.type(0)).dtype
 
         computation = Node.generic(
             "astype",
