@@ -39,7 +39,7 @@ class JITSupport(WrapperCpp):
         """
         if not isinstance(jit_support, _JITSupport):
             raise TypeError(
-                f"jit_support must be of type _JITSupport not{type(jit_support)}"
+                f"jit_support must be of type _JITSupport, not {type(jit_support)}"
             )
         super().__init__(jit_support)
 

@@ -40,7 +40,7 @@ class ClientSupport(WrapperCpp):
         """
         if not isinstance(client_support, _ClientSupport):
             raise TypeError(
-                f"client_support must be of type _ClientSupport not {type(client_support)}"
+                f"client_support must be of type _ClientSupport, not {type(client_support)}"
             )
         super().__init__(client_support)
 
