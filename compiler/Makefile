@@ -5,8 +5,6 @@ PARALLEL_EXECUTION_ENABLED=OFF
 CC_COMPILER=
 CXX_COMPILER=
 
-EXTERNAL_HEADERS=include/boost-single-header/outcome.hpp
-
 KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI=../KeySetCache
 
@@ -62,9 +60,6 @@ $(BUILD_DIR)/configured.stamp:
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE}
 	touch $@
-
-include/boost-single-header/outcome.hpp:
-	wget https://github.com/ned14/outcome/raw/master/single-header/outcome.hpp -O $@
 
 build-initialized: $(EXTERNAL_HEADERS) $(BUILD_DIR)/configured.stamp
 
