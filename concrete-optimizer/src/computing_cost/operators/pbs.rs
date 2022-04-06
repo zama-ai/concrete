@@ -1,15 +1,12 @@
 use super::super::complexity::Complexity;
 use super::cmux;
+use crate::parameters::PbsParameters;
 
 pub trait PbsComplexity {
     fn complexity(
         &self,
-        lwe_dimension: u64,                //n
-        glwe_polynomial_size: u64,         //N
-        glwe_dimension: u64,               //k
-        br_decomposition_level_count: u64, //l(BR)
-        br_decomposition_base_log: u64,    //b(BR)
-        ciphertext_modulus_log: u64,       // log2_q
+        params: PbsParameters,
+        ciphertext_modulus_log: u64, // log2_q
     ) -> Complexity;
 }
 
@@ -18,24 +15,12 @@ pub struct CmuxProportional<CMUX: cmux::CmuxComplexity> {
 }
 
 impl<CMUX: cmux::CmuxComplexity> PbsComplexity for CmuxProportional<CMUX> {
-    fn complexity(
-        &self,
-        lwe_dimension: u64,                //n
-        glwe_polynomial_size: u64,         //N
-        glwe_dimension: u64,               //k
-        br_decomposition_level_count: u64, //l(BR)
-        br_decomposition_base_log: u64,    //b(BR)
-        ciphertext_modulus_log: u64,       //log2_q
-    ) -> Complexity {
+    fn complexity(&self, params: PbsParameters, ciphertext_modulus_log: u64) -> Complexity {
         // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L163
-        let cmux_cost = self.cmux.complexity(
-            glwe_polynomial_size,
-            glwe_dimension,
-            br_decomposition_level_count,
-            br_decomposition_base_log,
-            ciphertext_modulus_log,
-        );
-        (lwe_dimension as f64) * cmux_cost
+        let cmux_cost = self
+            .cmux
+            .complexity(params.cmux_parameters(), ciphertext_modulus_log);
+        (params.internal_lwe_dimension.0 as f64) * cmux_cost
     }
 }
 
@@ -47,6 +32,10 @@ pub const DEFAULT: Default = CmuxProportional {
 
 #[cfg(test)]
 pub mod tests {
+
+    use crate::computing_cost::operators::pbs::PbsParameters;
+    use crate::parameters::{BrDecompositionParameters, GlweParameters, LweDimension};
+
     use super::super::cmux;
     use super::{CmuxProportional, Default, PbsComplexity, DEFAULT};
 
@@ -58,15 +47,40 @@ pub mod tests {
     fn golden_python_prototype() {
         let ignored = 0;
         let golden = 8.0;
-        let actual = DEFAULT.complexity(1, 1, 1, 1, ignored, 32);
+
+        let pbs_param1 = PbsParameters {
+            internal_lwe_dimension: LweDimension(1),
+            br_decomposition_parameter: BrDecompositionParameters {
+                level: 1,
+                log2_base: ignored,
+            },
+            output_glwe_params: GlweParameters {
+                log2_polynomial_size: 0,
+                glwe_dimension: 1,
+            },
+        };
+
+        let pbs_param2 = PbsParameters {
+            internal_lwe_dimension: LweDimension(1024),
+            br_decomposition_parameter: BrDecompositionParameters {
+                level: 56,
+                log2_base: ignored,
+            },
+            output_glwe_params: GlweParameters {
+                log2_polynomial_size: 12,
+                glwe_dimension: 1024,
+            },
+        };
+
+        let actual = DEFAULT.complexity(pbs_param1, 32);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
         let golden = 249957554585600.0;
-        let actual = DEFAULT.complexity(1024, 4096, 1024, 56, ignored, 64);
+        let actual = DEFAULT.complexity(pbs_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
         let golden = 208532086206064.16;
-        let actual = COST_AWS.complexity(1024, 4096, 1024, 56, ignored, 64);
+        let actual = COST_AWS.complexity(pbs_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
     }
 }

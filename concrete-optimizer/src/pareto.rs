@@ -1,6 +1,7 @@
 use crate::noise_estimator::operators::atomic_pattern::{variance_bootstrap, variance_keyswitch};
 use crate::parameters::{
-    BrDecompositionParameters, GlweParameterRanges, KsDecompositionParameters,
+    BrDecompositionParameters, GlweParameterRanges, GlweParameters, KeyswitchParameters,
+    KsDecompositionParameters, LweDimension, PbsParameters,
 };
 use crate::security::glwe::minimal_variance;
 use concrete_commons::dispersion::Variance;
@@ -16,14 +17,13 @@ pub fn extract_br_pareto(
 
     for glwe_dimension in &output_glwe_range.glwe_dimension {
         for log2_polynomial_size in &output_glwe_range.log2_polynomial_size {
-            let polynomial_size = 1 << log2_polynomial_size;
-
-            let variance_bsk = minimal_variance(
-                polynomial_size,
+            let glwe_params = GlweParameters {
+                log2_polynomial_size,
                 glwe_dimension,
-                ciphertext_modulus_log,
-                security_level,
-            );
+            };
+
+            let variance_bsk =
+                minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
 
             for input_lwe_dimension in &input_lwe_range.lwe_dimension {
                 let mut min_variance = Variance(f64::INFINITY);
@@ -37,12 +37,20 @@ pub fn extract_br_pareto(
                     let mut log_base_arg_min = None;
 
                     for log2_base in 1..=(MAX_DECOMPOSITION_DEPTH / level) {
+                        let pbs_parameters = PbsParameters {
+                            internal_lwe_dimension: LweDimension(input_lwe_dimension),
+                            br_decomposition_parameter: BrDecompositionParameters {
+                                level,
+                                log2_base,
+                            },
+                            output_glwe_params: GlweParameters {
+                                log2_polynomial_size,
+                                glwe_dimension,
+                            },
+                        };
+
                         let variance = variance_bootstrap::<u64>(
-                            input_lwe_dimension,
-                            polynomial_size,
-                            glwe_dimension,
-                            level,
-                            log2_base,
+                            pbs_parameters,
                             ciphertext_modulus_log,
                             variance_bsk,
                         );
@@ -85,8 +93,10 @@ pub fn extract_ks_pareto(
 
     for output_lwe_dimension in &output_lwe_range.lwe_dimension {
         let variance_ksk = minimal_variance(
-            1,
-            output_lwe_dimension,
+            GlweParameters {
+                log2_polynomial_size: 0,
+                glwe_dimension: output_lwe_dimension,
+            },
             ciphertext_modulus_log,
             security_level,
         );
@@ -103,10 +113,17 @@ pub fn extract_ks_pareto(
                     let mut log2_base_arg_min = None;
 
                     for log2_base in 1..=(ciphertext_modulus_log / level) {
+                        let keyswitch_parameters = KeyswitchParameters {
+                            input_lwe_dimension: LweDimension(input_lwe_dimension),
+                            output_lwe_dimension: LweDimension(output_lwe_dimension),
+                            ks_decomposition_parameter: KsDecompositionParameters {
+                                level,
+                                log2_base,
+                            },
+                        };
+
                         let variance = variance_keyswitch::<u64>(
-                            input_lwe_dimension,
-                            level,
-                            log2_base,
+                            keyswitch_parameters,
                             ciphertext_modulus_log,
                             variance_ksk,
                         );

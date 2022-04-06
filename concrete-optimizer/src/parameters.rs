@@ -23,13 +23,11 @@ mod individual {
     }
 
     #[derive(Clone, Copy)]
-    pub struct LweDimension {
-        pub lwe_dimension: u32,
-    }
+    pub struct LweDimension(pub u64);
 
     #[derive(Copy, Clone)]
     pub struct InputParameter {
-        pub lwe_dimension: u32,
+        pub lwe_dimension: u64,
     }
 
     #[derive(Copy, Clone)]
@@ -39,6 +37,53 @@ mod individual {
         pub internal_lwe_dimension: LweDimension,
         pub br_decomposition_parameter: BrDecompositionParameters,
         pub output_glwe_params: GlweParameters,
+    }
+
+    impl AtomicPatternParameters {
+        pub fn pbs_parameters(self) -> PbsParameters {
+            PbsParameters {
+                internal_lwe_dimension: self.internal_lwe_dimension,
+                br_decomposition_parameter: self.br_decomposition_parameter,
+                output_glwe_params: self.output_glwe_params,
+            }
+        }
+
+        pub fn ks_parameters(self) -> KeyswitchParameters {
+            KeyswitchParameters {
+                input_lwe_dimension: self.input_lwe_dimension,
+                output_lwe_dimension: self.internal_lwe_dimension,
+                ks_decomposition_parameter: self.ks_decomposition_parameter,
+            }
+        }
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct PbsParameters {
+        pub internal_lwe_dimension: LweDimension,
+        pub br_decomposition_parameter: BrDecompositionParameters,
+        pub output_glwe_params: GlweParameters,
+    }
+
+    impl PbsParameters {
+        pub fn cmux_parameters(self) -> CmuxParameters {
+            CmuxParameters {
+                br_decomposition_parameter: self.br_decomposition_parameter,
+                output_glwe_params: self.output_glwe_params,
+            }
+        }
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct CmuxParameters {
+        pub br_decomposition_parameter: BrDecompositionParameters,
+        pub output_glwe_params: GlweParameters,
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct KeyswitchParameters {
+        pub input_lwe_dimension: LweDimension,  //n_big
+        pub output_lwe_dimension: LweDimension, //n_small
+        pub ks_decomposition_parameter: KsDecompositionParameters,
     }
 }
 

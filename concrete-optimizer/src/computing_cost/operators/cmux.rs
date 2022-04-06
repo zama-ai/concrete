@@ -1,17 +1,12 @@
+use crate::parameters::CmuxParameters;
+
 use super::super::complexity::Complexity;
 use super::super::fft;
 use fft::FftComplexity;
 
 pub trait CmuxComplexity {
     #[allow(non_snake_case)]
-    fn complexity(
-        &self,
-        glwe_polynomial_size: u64,         //N
-        glwe_dimension: u64,               //k
-        br_decomposition_level_count: u64, //l(BR)
-        br_decomposition_base_log: u64,    //b(BR)
-        ciphertext_modulus_log: u64,       //log2_q
-    ) -> Complexity;
+    fn complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u64) -> Complexity;
 }
 
 #[allow(non_snake_case)]
@@ -33,17 +28,12 @@ fn final_additional_linear_fft_factor(factor: Option<f64>, integer_size: u64) ->
 impl<FFT: FftComplexity> CmuxComplexity for SimpleWithFactors<FFT> {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L145
     #[allow(non_snake_case)]
-    fn complexity(
-        &self,
-        glwe_polynomial_size: u64,         //N
-        glwe_dimension: u64,               //k
-        br_decomposition_level_count: u64, //l(BR)
-        _br_decomposition_base_log: u64,   //b(BR)
-        ciphertext_modulus_log: u64,       //log2_q
-    ) -> Complexity {
+    fn complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u64) -> Complexity {
+        let glwe_polynomial_size = 1 << params.output_glwe_params.log2_polynomial_size;
         let f_glwe_polynomial_size = glwe_polynomial_size as f64;
-        let f_glwe_size = (glwe_dimension + 1) as f64;
-        let br_decomposition_level_count = br_decomposition_level_count as f64;
+
+        let f_glwe_size = (params.output_glwe_params.glwe_dimension + 1) as f64;
+        let br_decomposition_level_count = params.br_decomposition_parameter.level as f64;
         let f_square_glwe_size = f_glwe_size * f_glwe_size;
 
         let additional_linear_fft_factor =
@@ -79,6 +69,8 @@ pub const DEFAULT: Default = SimpleWithFactors {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::parameters::{BrDecompositionParameters, GlweParameters};
+
     use super::*;
 
     pub const COST_AWS: Default = SimpleWithFactors {
@@ -94,23 +86,57 @@ pub mod tests {
     fn golden_python_prototype() {
         let ignored = 0;
         let golden = 8.0;
-        let actual = DEFAULT.complexity(1, 1, 1, ignored, 0);
+
+        let cmux_param1 = CmuxParameters {
+            br_decomposition_parameter: BrDecompositionParameters {
+                level: 1,
+                log2_base: ignored,
+            },
+            output_glwe_params: GlweParameters {
+                log2_polynomial_size: 0,
+                glwe_dimension: 1,
+            },
+        };
+
+        let cmux_param2 = CmuxParameters {
+            br_decomposition_parameter: BrDecompositionParameters {
+                level: 300,
+                log2_base: ignored,
+            },
+            output_glwe_params: GlweParameters {
+                log2_polynomial_size: 0,
+                glwe_dimension: 20,
+            },
+        };
+
+        let cmux_param3 = CmuxParameters {
+            br_decomposition_parameter: BrDecompositionParameters {
+                level: 56,
+                log2_base: ignored,
+            },
+            output_glwe_params: GlweParameters {
+                log2_polynomial_size: 10,
+                glwe_dimension: 10,
+            },
+        };
+
+        let actual = DEFAULT.complexity(cmux_param1, 0);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
         let golden = 138621.0;
-        let actual = DEFAULT.complexity(1, 20, 300, ignored, 64);
+        let actual = DEFAULT.complexity(cmux_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
         let golden = 927.1215428435396;
-        let actual = COST_AWS.complexity(1, 1, 1, ignored, 0);
+        let actual = COST_AWS.complexity(cmux_param1, 0);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
         let golden = 117019.72048983313;
-        let actual = COST_AWS.complexity(1, 20, 300, ignored, 64);
+        let actual = COST_AWS.complexity(cmux_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
         let golden = 7651844.24194206;
-        let actual = COST_AWS.complexity(1024, 10, 56, ignored, 64);
+        let actual = COST_AWS.complexity(cmux_param3, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
     }
 }
