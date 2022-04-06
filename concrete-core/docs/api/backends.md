@@ -4,7 +4,7 @@
 
 ![core_architecture](../_static/core.png)
 
-- The [`specification`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/index.html)
+- The [`specification`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/index.html)
 module contains a blueprint (in the form of Rust Traits) of the FHE scheme exposed
 in `concrete-core`.
 
@@ -20,13 +20,13 @@ associated `backend_*` feature flag.
 The `specification` module describes two kinds of objects which can be implemented in a backend.
 
 All the traits appearing in the
-[`specification::entities`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/entities/index.html)
+[`specification::entities`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/entities/index.html)
 module represent the _datatypes_ manipulated in the library (we call _entities_ all these datatypes
 we use in the library). To mention a few of them, we have:
 
-+ [`PlaintextEntity`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/entities/trait.PlaintextEntity.html)
-+ [`LweSecretKeyEntity`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/entities/trait.LweSecretKeyEntity.html)
-+ [`LweCipertextEntity`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/entities/trait.LweCiphertextEntity.html)
++ [`PlaintextEntity`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/entities/trait.PlaintextEntity.html)
++ [`LweSecretKeyEntity`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/entities/trait.LweSecretKeyEntity.html)
++ [`LweCipertextEntity`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/entities/trait.LweCiphertextEntity.html)
 + and more
 
 Only _one_ of the `*Entity` traits can be implemented at once, by a type exported by a backend. If a
@@ -34,14 +34,14 @@ structure implements `PlaintextEntity`, it can not be `LweCiphertextEntity` at t
 instance.
 
 All the traits appearing in the
-[`specification::engines`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/index.html)
+[`specification::engines`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/index.html)
 module represent the _operators_ which can be used to manipulate entities in the library (we call _
 engines_
 all these operators we use in the library). For instance, we have:
 
-+ [`LweSecretKeyCreationEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweSecretKeyCreationEngine.html)
-+ [`LweCiphertextEncryptionEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextEncryptionEngine.html)
-+ [`LweCiphertextDecryptionEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextDescryptionEngine.html)
++ [`LweSecretKeyCreationEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweSecretKeyCreationEngine.html)
++ [`LweCiphertextEncryptionEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextEncryptionEngine.html)
++ [`LweCiphertextDecryptionEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextDescryptionEngine.html)
 + and more
 
 If you read between the lines, the fact that we use traits to represent operators, means that we
@@ -58,30 +58,30 @@ practice, we tend to expose very few engines in a given backend.
 Let's go through an example of a backend implementation to illustrate the concepts.
 
 The `core` backend, contains Zama's own cpu based implementation of the scheme. It is located at
-[`backends::core`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/index.html)
+[`backends::core`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/backends/core/index.html)
 . The associated feature flag is the `backend_core`, but since it is the most prominent backend for
 now, we include it automatically (it is part of the `default` flag).
 
 In this core backend, you will find the same structure as in the `specification`:
 
-+ One [`engines`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/engines/index.html)
++ One [`engines`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/backends/core/engines/index.html)
 module containing the engines exported by the `core` backend
 
-+ One [`entities`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/entities/index.html)
++ One [`entities`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/backends/core/entities/index.html)
 module containing the entities exported by the `core` backend
 
 In the `entities` module, among other types, we find the
-[`LweCiphertext64`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/entities/struct.LweCiphertext64.html)
+[`LweCiphertext64`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/backends/core/entities/struct.LweCiphertext64.html)
 type. It is an _entity_, which implements the
-[`LweCiphertextEntity`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/entities/trait.LweCiphertextEntity.html)
+[`LweCiphertextEntity`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/entities/trait.LweCiphertextEntity.html)
 trait (this type is actually listed in the implementors of the type).
 
 In the `engines` module, we find a single type, which is
-[`CoreEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/engines/struct.CoreEngine.html)
+[`CoreEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/backends/core/engines/struct.CoreEngine.html)
 . It is an _engine_ which implements many `*Engine` traits, among which the
-[`LweCiphertextEncryptionEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextEncryptionEngine.html)
+[`LweCiphertextEncryptionEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextEncryptionEngine.html)
 trait, or the
-[`LweSecretKeyCreationEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweSecretKeyCreationEngine.html)
+[`LweSecretKeyCreationEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweSecretKeyCreationEngine.html)
 trait, both of which are implemented for 32 and 64 bits precisions.
 
 ## Operator semantics
@@ -97,8 +97,8 @@ though they may have side effects on the engine). These engine traits do not hav
 prefixes in their names. When non-pure variants of the operator exist, the pure variant tend to
 require more resources, because of the allocations it does. Example of such engine traits include:
 
-+ [`LweCiphertextEncryptionEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextEncryptionEngine.html)
-+ [`LweBootstrapKeyCreationEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweBootstrapKeyCreationEngine.html)
++ [`LweCiphertextEncryptionEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextEncryptionEngine.html)
++ [`LweBootstrapKeyCreationEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweBootstrapKeyCreationEngine.html)
 
 ### Discarding operators
 
@@ -108,8 +108,8 @@ discard the data which exist in the output argument and replace it with somethin
 traits following this semantics contain the `Discarding` word in their names. Examples of such
 engines traits include:
 
-+ [`LweCiphertextDiscardingAdditionEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextDiscardingAdditionEngine.html)
-+ [`LweCiphertextDiscardingKeyswitchEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextDiscardingKeyswitchEngine.html)
++ [`LweCiphertextDiscardingAdditionEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextDiscardingAdditionEngine.html)
++ [`LweCiphertextDiscardingKeyswitchEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextDiscardingKeyswitchEngine.html)
 
 ### Fusing operators
 
@@ -119,8 +119,8 @@ input arguments into the output argument, which is used in the process (as oppos
 The engine traits which follow this semantics contain the `Fusing` word in their names. Examples of
 such engines include:
 
-+ [`LweCiphertextFusingAdditionEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextFusingAdditionEngine.html)
-+ [`LweCiphertextCleartextFusingMultiplicationEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.LweCiphertextCleartextFusingMultiplicationEngine.html)
++ [`LweCiphertextFusingAdditionEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextFusingAdditionEngine.html)
++ [`LweCiphertextCleartextFusingMultiplicationEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.LweCiphertextCleartextFusingMultiplicationEngine.html)
 
 ## Key distributions
 
@@ -158,7 +158,7 @@ type system.
 The `backends::core::entities::LweSecretKey64` type implements `LweSecretKeyEntity` with
 the `KeyDistribution`
 type equal to `BinaryKeyDistribution` (see
-[this line of the doc](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/entities/struct.LweSecretKey64.html#associatedtype.KeyDistribution))
+[this line of the doc](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/backends/core/entities/struct.LweSecretKey64.html#associatedtype.KeyDistribution))
 . This means that it represents binary lwe secret keys.
 
 Now, if we have a look at the definition of the `LweCiphertextEntity` trait:
@@ -175,7 +175,7 @@ key was used when encrypting the ciphertext.
 
 The `backends::core::entities::LweCiphertext64` type implements `LweCiphertextEntity` with the
 `KeyDistribution` type also equals to `BinaryKeyDistribution` (see
-[this line of the doc](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/backends/core/entities/struct.LweCiphertext64.html#associatedtype.KeyDistribution))
+[this line of the doc](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/backends/core/entities/struct.LweCiphertext64.html#associatedtype.KeyDistribution))
 . This means that it represents an lwe ciphertext encoded with a binary key.
 
 Most importantly, the definition of `LweCiphertextEncryptionEngine` looks like this:
@@ -265,7 +265,7 @@ manual_
 memory management. Allocation is usually done with pure entry points, like in the case of
 `LweCiphertextEncryptionEngine`, which returns a fresh `LweCiphertextEntity`. For deallocation, the
 engines which allocates entities should provide an implementation of the
-[`DestructionEngine`](https://docs.rs/concrete-core/1.0.0-alpha/concrete_core/specification/engines/trait.DestructionEngine.html)
+[`DestructionEngine`](https://docs.rs/concrete-core/1.0.0-beta/concrete_core/specification/engines/trait.DestructionEngine.html)
 trait to deallocate the entity.
 
 This choice is very unconventional in Rust, but it has its reasons. The first reason is that some
