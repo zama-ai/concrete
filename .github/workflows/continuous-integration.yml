@@ -536,7 +536,7 @@ jobs:
         run: |
           cd compiler
           pip install pytest
-          pytest -vs -m "not parallel" --ignore=tests/python/test_compiler_file_output/ tests/python
+          pytest -vs -m "not parallel" tests/python
 
   TestPythonPackageMacOS:
     runs-on: macos-10.15
@@ -577,7 +577,7 @@ jobs:
         run: |
           cd compiler
           pip install pytest
-          pytest -vs -m "not parallel" --ignore=tests/python/test_compiler_file_output/ tests/python
+          pytest -vs -m "not parallel" tests/python
 
   #################
   # Docker Images #
