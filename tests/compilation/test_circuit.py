@@ -78,7 +78,7 @@ def test_circuit_bad_run(helpers):
     # ---------------
 
     with pytest.raises(ValueError) as excinfo:
-        circuit.run(1)
+        circuit.encrypt_run_decrypt(1)
 
     assert str(excinfo.value) == "Expected 2 inputs but got 1"
 
@@ -86,7 +86,7 @@ def test_circuit_bad_run(helpers):
     # ----------------
 
     with pytest.raises(ValueError) as excinfo:
-        circuit.run(1, 2, 3)
+        circuit.encrypt_run_decrypt(1, 2, 3)
 
     assert str(excinfo.value) == "Expected 2 inputs but got 3"
 
@@ -94,7 +94,7 @@ def test_circuit_bad_run(helpers):
     # ------------------------
 
     with pytest.raises(ValueError) as excinfo:
-        circuit.run(-1, 11)
+        circuit.encrypt_run_decrypt(-1, 11)
 
     assert str(excinfo.value) == (
         "Expected argument 0 to be EncryptedScalar<uint4> but it's EncryptedScalar<int1>"
@@ -104,7 +104,7 @@ def test_circuit_bad_run(helpers):
     # ------------------------
 
     with pytest.raises(ValueError) as excinfo:
-        circuit.run(1, -11)
+        circuit.encrypt_run_decrypt(1, -11)
 
     assert str(excinfo.value) == (
         "Expected argument 1 to be EncryptedScalar<uint5> but it's EncryptedScalar<int5>"
@@ -114,7 +114,7 @@ def test_circuit_bad_run(helpers):
     # ---------------------
 
     with pytest.raises(ValueError) as excinfo:
-        circuit.run(100, 10)
+        circuit.encrypt_run_decrypt(100, 10)
 
     assert str(excinfo.value) == (
         "Expected argument 0 to be EncryptedScalar<uint4> but it's EncryptedScalar<uint7>"
@@ -124,7 +124,7 @@ def test_circuit_bad_run(helpers):
     # ---------------------
 
     with pytest.raises(ValueError) as excinfo:
-        circuit.run(1, 100)
+        circuit.encrypt_run_decrypt(1, 100)
 
     assert str(excinfo.value) == (
         "Expected argument 1 to be EncryptedScalar<uint5> but it's EncryptedScalar<uint7>"

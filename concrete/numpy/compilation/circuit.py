@@ -60,15 +60,15 @@ class Circuit:
 
         return self.graph.draw(show, horizontal, save_to)
 
-    def run(
+    def encrypt_run_decrypt(
         self,
         *args: Union[int, np.ndarray],
     ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
         """
-        Encrypt inputs, evaluate the circuit, and decrypt the outputs in one go.
+        Encrypt inputs, run the circuit, and decrypt the outputs in one go.
 
         Args:
-            *args (List[Union[int, numpy.ndarray]]):
+            *args (Union[int, numpy.ndarray]):
                 inputs to the engine
 
         Returns:

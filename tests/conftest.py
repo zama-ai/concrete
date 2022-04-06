@@ -236,7 +236,7 @@ class Helpers:
 
         for i in range(retries):
             expected = function(*sample)
-            actual = circuit.run(*sample)
+            actual = circuit.encrypt_run_decrypt(*sample)
 
             if not isinstance(expected, tuple):
                 expected = (expected,)

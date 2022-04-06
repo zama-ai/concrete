@@ -64,17 +64,17 @@ Here is the graph from the previous code block drawn with `draw`:
 
 ## Performing homomorphic evaluation
 
-You can use `.run(...)` method of `Circuit` to perform fully homomorphic evaluation. Here are some examples:
+You can use `.encrypt_run_decrypt(...)` method of `Circuit` to perform fully homomorphic evaluation. Here are some examples:
 
 <!--pytest-codeblocks:cont-->
 ```python
-circuit.run(3, 4)
+circuit.encrypt_run_decrypt(3, 4)
 # 7
-circuit.run(1, 2)
+circuit.encrypt_run_decrypt(1, 2)
 # 3
-circuit.run(7, 7)
+circuit.encrypt_run_decrypt(7, 7)
 # 14
-circuit.run(0, 0)
+circuit.encrypt_run_decrypt(0, 0)
 # 0
 ```
 

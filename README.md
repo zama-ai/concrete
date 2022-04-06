@@ -58,7 +58,7 @@ circuit = add.compile(inputset)
 
 examples = [(3, 4), (1, 2), (7, 7), (0, 0)]
 for example in examples:
-    result = circuit.run(*example)
+    result = circuit.encrypt_run_decrypt(*example)
     print(f"Evaluation of {' + '.join(map(str, example))} homomorphically = {result}")
 ```
 
