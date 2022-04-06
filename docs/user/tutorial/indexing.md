@@ -23,7 +23,7 @@ circuit = compiler.compile_on_inputset(inputset)
 test_input = np.array([4, 2, 6], dtype=np.uint8)
 expected_output = 2
 
-assert np.array_equal(circuit.run(test_input), expected_output)
+assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 ```
 
 You can use negative indexing.
@@ -43,7 +43,7 @@ circuit = compiler.compile_on_inputset(inputset)
 test_input = np.array([4, 2, 6], dtype=np.uint8)
 expected_output = 6
 
-assert np.array_equal(circuit.run(test_input), expected_output)
+assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 ```
 
 You can use multidimensional indexing as well.
@@ -63,7 +63,7 @@ circuit = compiler.compile_on_inputset(inputset)
 test_input = np.array([[4, 2], [1, 5], [7, 6]], dtype=np.uint8)
 expected_output = 6
 
-assert np.array_equal(circuit.run(test_input), expected_output)
+assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 ```
 
 ### Extracting a slice
@@ -83,7 +83,7 @@ circuit = compiler.compile_on_inputset(inputset)
 test_input = np.array([4, 2, 6, 1, 7], dtype=np.uint8)
 expected_output = np.array([2, 6, 1], dtype=np.uint8)
 
-assert np.array_equal(circuit.run(test_input), expected_output)
+assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 ```
 
 You can use multidimensional slicing as well.

@@ -23,10 +23,10 @@ results in
 
 <!--pytest-codeblocks:skip-->
 ```python
-circuit.run(0) == 2
-circuit.run(1) == 1
-circuit.run(2) == 3
-circuit.run(3) == 0
+circuit.encrypt_run_decrypt(0) == 2
+circuit.encrypt_run_decrypt(1) == 1
+circuit.encrypt_run_decrypt(2) == 3
+circuit.encrypt_run_decrypt(3) == 0
 ```
 
 Moreover, direct lookup tables can be used with tensors where the same table lookup is applied to each value in the tensor, so
@@ -38,7 +38,7 @@ results in
 <!--pytest-codeblocks:skip-->
 ```python
 input = np.array([[0, 1, 3], [2, 3, 1]], dtype=np.uint8)
-circuit.run(input) == [[2, 1, 0], [3, 0, 1]]
+circuit.encrypt_run_decrypt(input) == [[2, 1, 0], [3, 0, 1]]
 ```
 
 ## Direct Multi Table Lookup
@@ -71,7 +71,7 @@ results in
 <!--pytest-codeblocks:skip-->
 ```python
 input = np.array([[2, 3], [1, 2], [3, 0]], dtype=np.uint8)
-circuit.run(input) == [[4, 27], [1, 8], [9, 0]]
+circuit.encrypt_run_decrypt(input) == [[4, 27], [1, 8], [9, 0]]
 ```
 
 Basically, we applied `squared` table to the first column and `cubed` to the second one.
@@ -96,14 +96,14 @@ results in
 
 <!--pytest-codeblocks:skip-->
 ```python
-circuit.run(0) == 77
-circuit.run(1) == 35
-circuit.run(2) == 32
-circuit.run(3) == 70
-circuit.run(4) == 115
-circuit.run(5) == 125
-circuit.run(6) == 91
-circuit.run(7) == 45
+circuit.encrypt_run_decrypt(0) == 77
+circuit.encrypt_run_decrypt(1) == 35
+circuit.encrypt_run_decrypt(2) == 32
+circuit.encrypt_run_decrypt(3) == 70
+circuit.encrypt_run_decrypt(4) == 115
+circuit.encrypt_run_decrypt(5) == 125
+circuit.encrypt_run_decrypt(6) == 91
+circuit.encrypt_run_decrypt(7) == 45
 ```
 
 Initially, the function is converted to this operation graph

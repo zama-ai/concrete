@@ -25,7 +25,7 @@ inputset = [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)]
 circuit = compiler.compile_on_inputset(inputset)
 
 # Make homomorphic inference
-circuit.run(1, 0)
+circuit.encrypt_run_decrypt(1, 0)
 ```
 
 ## Overview of the numpy compilation process
