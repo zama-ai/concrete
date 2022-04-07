@@ -5,3 +5,10 @@ add_subdirectory(FHETensorOpsToLinalg)
 add_subdirectory(ConcreteToBConcrete)
 add_subdirectory(BConcreteToBConcreteCAPI)
 add_subdirectory(MLIRLowerableDialectsToLLVM)
+
+add_mlir_library(ConcretelangConversion
+  Tools.cpp
+
+  LINK_LIBS PUBLIC
+  MLIRIR
+)

@@ -6,6 +6,7 @@
 #include "concretelang/Runtime/wrappers.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 void memref_expand_lut_in_trivial_glwe_ct_u64(
     uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
@@ -95,4 +96,21 @@ void memref_bootstrap_lwe_u64(
   bootstrap_lwe_u64(get_engine(context), get_bootstrap_key_u64(context),
                     out_aligned + out_offset, ct0_aligned + ct0_offset,
                     glwe_ct_aligned + glwe_ct_offset);
+}
+
+void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
+                          uint64_t src_offset, uint64_t src_size,
+                          uint64_t src_stride, uint64_t *dst_allocated,
+                          uint64_t *dst_aligned, uint64_t dst_offset,
+                          uint64_t dst_size, uint64_t dst_stride) {
+  assert(src_size == dst_size && "memref_copy_one_rank size differs");
+  if (src_stride == dst_stride) {
+    memcpy(dst_aligned + dst_offset, src_aligned + src_offset,
+           src_size * sizeof(uint64_t));
+    return;
+  }
+  for (size_t i = 0; i < src_size; i++) {
+    dst_aligned[dst_offset + i * dst_stride] =
+        src_aligned[src_offset + i * src_stride];
+  }
 }

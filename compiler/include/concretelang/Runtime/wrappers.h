@@ -57,6 +57,12 @@ void memref_bootstrap_lwe_u64(
     uint64_t ct0_stride, uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
     uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
     mlir::concretelang::RuntimeContext *context);
+
+void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
+                          uint64_t src_offset, uint64_t src_size,
+                          uint64_t src_stride, uint64_t *dst_allocated,
+                          uint64_t *dst_aligned, uint64_t dst_offset,
+                          uint64_t dst_size, uint64_t dst_stride);
 }
 
 #endif

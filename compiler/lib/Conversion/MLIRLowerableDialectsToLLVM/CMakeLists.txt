@@ -12,6 +12,7 @@ add_mlir_dialect_library(MLIRLowerableDialectsToLLVM
   LINK_LIBS PUBLIC
   ${dialect_libs}
   ${conversion_libs}
+  ConcretelangConversion
   MLIRIR
   MLIRTransforms
   MLIRLLVMIR

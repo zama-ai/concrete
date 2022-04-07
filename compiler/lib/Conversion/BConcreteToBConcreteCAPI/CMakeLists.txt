@@ -9,6 +9,7 @@ add_mlir_dialect_library(BConcreteToBConcreteCAPI
   mlir-headers
 
   LINK_LIBS PUBLIC
+  ConcretelangConversion
   MLIRIR
   MLIRTransforms
 )
