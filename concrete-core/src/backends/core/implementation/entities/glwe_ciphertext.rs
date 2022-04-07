@@ -96,3 +96,116 @@ impl GlweCiphertextEntity for FourierGlweCiphertext64 {
         self.0.polynomial_size()
     }
 }
+
+// GlweCiphertextViews are just GlweCiphertext entities that do not own their memory, they use a
+// slice as a container as opposed to Vec for the standard GlweCiphertext
+
+/// A structure representing a GLWE ciphertext view, with 32 bits of precision.
+///
+/// By _view_ here, we mean that the entity does not own the data, but immutably borrows it.
+///
+/// Notes:
+/// ------
+/// This view is not Clone as Clone for a slice is not defined. It is not Deserialize either,
+/// as Deserialize of a slice is not defined. Immutable variant.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize))]
+#[derive(Debug, PartialEq)]
+pub struct GlweCiphertextView32<'a>(pub(crate) ImplGlweCiphertext<&'a [u32]>);
+impl AbstractEntity for GlweCiphertextView32<'_> {
+    type Kind = GlweCiphertextKind;
+}
+
+impl GlweCiphertextEntity for GlweCiphertextView32<'_> {
+    type KeyDistribution = BinaryKeyDistribution;
+
+    fn glwe_dimension(&self) -> GlweDimension {
+        self.0.size().to_glwe_dimension()
+    }
+
+    fn polynomial_size(&self) -> PolynomialSize {
+        self.0.polynomial_size()
+    }
+}
+
+/// A structure representing a GLWE ciphertext view, with 32 bits of precision.
+///
+/// By _view_ here, we mean that the entity does not own the data, but mutably borrows it.
+///
+/// Notes:
+/// ------
+/// This view is not Clone as Clone for a slice is not defined. It is not Deserialize either,
+/// as Deserialize of a slice is not defined. Mutable variant.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize))]
+#[derive(Debug, PartialEq)]
+pub struct GlweCiphertextMutView32<'a>(pub(crate) ImplGlweCiphertext<&'a mut [u32]>);
+impl AbstractEntity for GlweCiphertextMutView32<'_> {
+    type Kind = GlweCiphertextKind;
+}
+
+impl GlweCiphertextEntity for GlweCiphertextMutView32<'_> {
+    type KeyDistribution = BinaryKeyDistribution;
+
+    fn glwe_dimension(&self) -> GlweDimension {
+        self.0.size().to_glwe_dimension()
+    }
+
+    fn polynomial_size(&self) -> PolynomialSize {
+        self.0.polynomial_size()
+    }
+}
+
+/// A structure representing a GLWE ciphertext view, with 32 bits of precision.
+///
+/// By _view_ here, we mean that the entity does not own the data, but immutably borrows it.
+///
+/// Notes:
+/// ------
+/// This view is not Clone as Clone for a slice is not defined. It is not Deserialize either,
+/// as Deserialize of a slice is not defined. Immutable variant.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize))]
+#[derive(Debug, PartialEq)]
+pub struct GlweCiphertextView64<'a>(pub(crate) ImplGlweCiphertext<&'a [u64]>);
+
+impl AbstractEntity for GlweCiphertextView64<'_> {
+    type Kind = GlweCiphertextKind;
+}
+
+impl GlweCiphertextEntity for GlweCiphertextView64<'_> {
+    type KeyDistribution = BinaryKeyDistribution;
+
+    fn glwe_dimension(&self) -> GlweDimension {
+        self.0.size().to_glwe_dimension()
+    }
+
+    fn polynomial_size(&self) -> PolynomialSize {
+        self.0.polynomial_size()
+    }
+}
+
+/// A structure representing a GLWE ciphertext view, with 64 bits of precision.
+///
+/// By _view_ here, we mean that the entity does not own the data, but mutably borrows it.
+///
+/// Notes:
+/// ------
+/// This view is not Clone as Clone for a slice is not defined. It is not Deserialize either,
+/// as Deserialize of a slice is not defined. Mutable variant.
+#[cfg_attr(feature = "serde_serialize", derive(Serialize))]
+#[derive(Debug, PartialEq)]
+pub struct GlweCiphertextMutView64<'a>(pub(crate) ImplGlweCiphertext<&'a mut [u64]>);
+
+impl AbstractEntity for GlweCiphertextMutView64<'_> {
+    type Kind = GlweCiphertextKind;
+}
+
+impl GlweCiphertextEntity for GlweCiphertextMutView64<'_> {
+    type KeyDistribution = BinaryKeyDistribution;
+
+    fn glwe_dimension(&self) -> GlweDimension {
+        self.0.size().to_glwe_dimension()
+    }
+
+    fn polynomial_size(&self) -> PolynomialSize {
+        self.0.polynomial_size()
+    }
+}
