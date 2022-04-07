@@ -168,28 +168,6 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128])
     return results
 
 
-
-def test_it():
-
-    D = nd.NoiseDistribution.DiscreteGaussian
-    DEFAULT_PARAMETERS = LWE.Parameters(n=1024, q=2**64, Xs=D(0.50, -0.50), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
-
-
-    # x = estimate(params)
-    # y = get_security_level(x, 2)
-    # print(y)
-    #z1 = automated_param_select_n(schemes.TFHE630.updated(n=786), 128)
-    #print(z1)
-    sd_range = [1,4]
-    print("working...")
-    z3 = generate_parameter_matrix(DEFAULT_PARAMETERS, sd_range=[5, 6], target_security_levels=[128, 192, 256])
-    # TODO: in this function call the initial guess for n is way off (security is ~60-bits instead of close to 128).
-    print(z3)
-    save(z3, "123.sobj")
-
-    return z3
-
-
 def generate_zama_curves64(sd_range=[2, 60], target_security_levels=[128, 192, 256]):
 
     D = ND.DiscreteGaussian
@@ -197,6 +175,5 @@ def generate_zama_curves64(sd_range=[2, 60], target_security_levels=[128, 192, 2
     raw_data = generate_parameter_matrix(init_params, sd_range=sd_range, target_security_levels=target_security_levels)
 
     return raw_data
-
 
 generate_zama_curves64()
