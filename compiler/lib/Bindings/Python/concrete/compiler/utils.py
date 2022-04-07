@@ -17,6 +17,24 @@ def lookup_runtime_lib() -> str:
     Returns:
         str: absolute path to the runtime library, or empty str if unsuccessful.
     """
+    # Linux and MacOS store the runtime lib at two different locations
+    lib_dir = _lookup_runtime_lib_dir_linux()
+    if not os.path.exists(lib_dir):
+        lib_dir = _lookup_runtime_lib_dir_macos()
+
+    # Can be because it's not a properly installed package
+    if not os.path.exists(lib_dir):
+        return ""
+    runtime_library_paths = [
+        filename
+        for filename in os.listdir(lib_dir)
+        if filename.startswith("libConcretelangRuntime")
+    ]
+    assert len(runtime_library_paths) == 1, "should be one and only one runtime library"
+    return os.path.join(lib_dir, runtime_library_paths[0])
+
+
+def _lookup_runtime_lib_dir_linux() -> str:
     # Go up to site-packages level
     cwd = os.path.abspath(__file__)
     # to compiler
@@ -26,14 +44,14 @@ def lookup_runtime_lib() -> str:
     # to site-packages
     cwd = os.path.abspath(os.path.join(cwd, os.pardir))
     package_name = "concrete_compiler"
-    libs_path = os.path.join(cwd, f"{package_name}.libs")
-    # Can be because it's not a properly installed package
-    if not os.path.exists(libs_path):
-        return ""
-    runtime_library_paths = [
-        filename
-        for filename in os.listdir(libs_path)
-        if filename.startswith("libConcretelangRuntime")
-    ]
-    assert len(runtime_library_paths) == 1, "should be one and only one runtime library"
-    return os.path.join(libs_path, runtime_library_paths[0])
+    return os.path.join(cwd, f"{package_name}.libs")
+
+
+def _lookup_runtime_lib_dir_macos() -> str:
+    # Go up to the concrete package level
+    cwd = os.path.abspath(__file__)
+    # to compiler
+    cwd = os.path.abspath(os.path.join(cwd, os.pardir))
+    # to concrete
+    cwd = os.path.abspath(os.path.join(cwd, os.pardir))
+    return os.path.join(cwd, ".dylibs")
