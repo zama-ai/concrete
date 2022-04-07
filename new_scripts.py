@@ -1,10 +1,13 @@
 from estimator_new import *
+from sage.all import oo, save
 from math import log2
 
 def old_models(security_level, sd, logq = 32):
     """
     Use the old model as a starting point for the data gathering step
-    TODO: update this and integrate a flag for it
+    :param security_level: the security level under consideration
+    :param sd            : the standard deviation of the LWE error distribution Xe
+    :param logq          : the (base 2 log) value of the LWE modulus q
     """
 
     def evaluate_model(sd, a, b):
@@ -12,6 +15,7 @@ def old_models(security_level, sd, logq = 32):
 
     models = dict()
 
+    # TODO: figure out a way to import these from a datafile, for future version
     models["80"] = (-0.04049295502947623, 1.1288318226557081 + logq)
     models["96"] = (-0.03416314056943681, 1.4704806061716345 + logq)
     models["112"] = (-0.02970984362676178, 1.7848907787798667 + logq)
@@ -31,13 +35,13 @@ def old_models(security_level, sd, logq = 32):
     return round(n_est)
 
 
-def estimate(params):
+def estimate(params, red_cost_model = RC.BDGL16):
     """
     Retrieve an estimate using the Lattice Estimator, for a given set of input parameters
     :param params: the input LWE parameters
     """
 
-    est = LWE.estimate(params, deny_list=("arora-gb", "bkw"))
+    est = LWE.estimate(params, deny_list=("arora-gb", "bkw"), red_cost_model=red_cost_model)
     return est
 
 
@@ -86,15 +90,27 @@ def automated_param_select_n(params, target_security=128):
     # z = inequality(security_level, target_security)
 
     # get an estimate based on the prev. model
-    n_start = old_models(target_security, log2(params.Xe.stddev))
+    print("n = {}".format(params.n))
+    n_start = old_models(target_security, log2(params.Xe.stddev), log2(params.q))
+    # TODO -- is this how we want to deal with the small n issue? Shouldn't the model have this baked in?
+    # we want to start no lower than n = 450
+    n_start = max(n_start, 450)
+    print("n_start = {}".format(n_start))
     params = params.updated(n=n_start)
+    print(params)
     costs2 = estimate(params)
     security_level = get_security_level(costs2, 2)
     z = inequality(security_level, target_security)
 
 
     # we keep n > 2 * target_security as a rough baseline for mitm security (on binary key guessing)
-    while z * security_level < z * target_security and params.n > 2 * target_security:
+    while z * security_level < z * target_security:
+        # if params.n > 1024:
+        # we only need to consider powers-of-two in this case
+        # TODO: fill in this case! For n > 1024 we only need to consider every 256
+
+
+
         params = params.updated(n = params.n + z * 8)
         costs = estimate(params)
         security_level = get_security_level(costs, 2)
@@ -105,6 +121,10 @@ def automated_param_select_n(params, target_security=128):
 
     # final estimate (we went too far in the above loop)
     if security_level < target_security:
+        # TODO: we should somehow keep the previous estimate stored so that we don't need to compute it twice
+        # if we do this we need to make sure that it works for both sides (i.e. if (i-1) is above or below the
+        # security level
+
         params = params.updated(n = params.n - z * 8)
         costs = estimate(params)
         security_level = get_security_level(costs, 2)
@@ -138,7 +158,6 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128])
     # grab min and max value/s of n
     (sd_min, sd_max) = sd_range
 
-    n = params_in.n
     for lam in target_security_levels:
         results["{}".format(lam)] = []
         for sd in range(sd_min, sd_max + 1):
@@ -152,7 +171,9 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128])
 
 def test_it():
 
-    params = Kyber512
+    D = nd.NoiseDistribution.DiscreteGaussian
+    DEFAULT_PARAMETERS = LWE.Parameters(n=1024, q=2**64, Xs=D(0.50, -0.50), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
+
 
     # x = estimate(params)
     # y = get_security_level(x, 2)
@@ -160,14 +181,22 @@ def test_it():
     #z1 = automated_param_select_n(schemes.TFHE630.updated(n=786), 128)
     #print(z1)
     sd_range = [1,4]
-    z3 = generate_parameter_matrix(schemes.TFHE630, sd_range=[17,19], target_security_levels=[128, 192, 256])
+    print("working...")
+    z3 = generate_parameter_matrix(DEFAULT_PARAMETERS, sd_range=[5, 6], target_security_levels=[128, 192, 256])
+    # TODO: in this function call the initial guess for n is way off (security is ~60-bits instead of close to 128).
     print(z3)
+    save(z3, "123.sobj")
 
-    return 0
-
-
-def generate_zama_curves64():
-    return 0
+    return z3
 
 
-test_it()
+def generate_zama_curves64(sd_range=[2, 60], target_security_levels=[128, 192, 256]):
+
+    D = ND.DiscreteGaussian
+    init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
+    raw_data = generate_parameter_matrix(init_params, sd_range=sd_range, target_security_levels=target_security_levels)
+
+    return raw_data
+
+
+generate_zama_curves64()
