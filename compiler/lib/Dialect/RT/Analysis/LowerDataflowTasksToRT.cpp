@@ -158,8 +158,9 @@ getSizeInBytes(Value val, Location loc, OpBuilder builder) {
     // elementAttr |= _DFR_TASK_ARG_MEMREF;
     uint64_t elementAttr = 0;
     size_t element_size = dataLayout.getTypeSize(elementType);
-    elementAttr = _dfr_set_arg_type(elementAttr, _DFR_TASK_ARG_MEMREF);
-    elementAttr = _dfr_set_memref_element_size(elementAttr, element_size);
+    elementAttr =
+        dfr::_dfr_set_arg_type(elementAttr, dfr::_DFR_TASK_ARG_MEMREF);
+    elementAttr = dfr::_dfr_set_memref_element_size(elementAttr, element_size);
     Value arg_type = builder.create<arith::ConstantOp>(
         loc, builder.getI64IntegerAttr(elementAttr));
     return std::pair<mlir::Value, mlir::Value>(typeSize, arg_type);
@@ -169,14 +170,14 @@ getSizeInBytes(Value val, Location loc, OpBuilder builder) {
   // bytes.
   if (type.isa<mlir::UnrankedMemRefType>()) {
     Value arg_type = builder.create<arith::ConstantOp>(
-        loc, builder.getI64IntegerAttr(_DFR_TASK_ARG_UNRANKED_MEMREF));
+        loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_UNRANKED_MEMREF));
     Value result =
         builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(16));
     return std::pair<mlir::Value, mlir::Value>(result, arg_type);
   }
 
   Value arg_type = builder.create<arith::ConstantOp>(
-      loc, builder.getI64IntegerAttr(_DFR_TASK_ARG_BASE));
+      loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_BASE));
 
   // FHE types are converted to pointers, so we take their size as 8
   // bytes until we can get the actual size of the actual types.
@@ -191,7 +192,7 @@ getSizeInBytes(Value val, Location loc, OpBuilder builder) {
     return std::pair<mlir::Value, mlir::Value>(result, arg_type);
   } else if (type.isa<mlir::concretelang::Concrete::ContextType>()) {
     Value arg_type = builder.create<arith::ConstantOp>(
-        loc, builder.getI64IntegerAttr(_DFR_TASK_ARG_CONTEXT));
+        loc, builder.getI64IntegerAttr(dfr::_DFR_TASK_ARG_CONTEXT));
     Value result =
         builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
     return std::pair<mlir::Value, mlir::Value>(result, arg_type);
@@ -364,7 +365,7 @@ struct LowerDataflowTasksPass
       // we do not need to do any computation, only register all work
       // functions with the runtime system
       if (!outliningMap.empty()) {
-        if (!_dfr_is_root_node()) {
+        if (!dfr::_dfr_is_root_node()) {
           // auto regFunc = builder.create<FuncOp>(func.getLoc(),
           // func.getName(), func.getType());
 

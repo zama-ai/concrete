@@ -16,9 +16,14 @@
 
 #include "concretelang/Runtime/DFRuntime.hpp"
 
-extern void *dl_handle;
+namespace mlir {
+namespace concretelang {
+namespace dfr {
+
 struct WorkFunctionRegistry;
-extern WorkFunctionRegistry *_dfr_node_level_work_function_registry;
+namespace {
+static WorkFunctionRegistry *_dfr_node_level_work_function_registry;
+}
 
 struct WorkFunctionRegistry {
   WorkFunctionRegistry() { _dfr_node_level_work_function_registry = this; }
@@ -89,4 +94,7 @@ private:
   std::map<std::string, const void *> name_to_ptr_registry;
 };
 
+} // namespace dfr
+} // namespace concretelang
+} // namespace mlir
 #endif

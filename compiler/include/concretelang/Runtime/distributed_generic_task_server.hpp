@@ -35,12 +35,13 @@
 #include "concretelang/Runtime/runtime_api.h"
 #include "concretelang/Runtime/workfunction_registry.hpp"
 
-extern WorkFunctionRegistry *_dfr_node_level_work_function_registry;
-extern std::list<void *> new_allocated;
-
 using namespace hpx::naming;
 using namespace hpx::components;
 using namespace hpx::collectives;
+
+namespace mlir {
+namespace concretelang {
+namespace dfr {
 
 static inline size_t _dfr_get_memref_rank(size_t size) {
   return (size - 2 * sizeof(char *) /*allocated_ptr & aligned_ptr*/
@@ -619,15 +620,26 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
   HPX_DEFINE_COMPONENT_ACTION(GenericComputeServer, execute_task);
 };
 
-HPX_REGISTER_ACTION_DECLARATION(GenericComputeServer::execute_task_action,
-                                GenericComputeServer_execute_task_action)
+} // namespace dfr
+} // namespace concretelang
+} // namespace mlir
+
+HPX_REGISTER_ACTION_DECLARATION(
+    mlir::concretelang::dfr::GenericComputeServer::execute_task_action,
+    GenericComputeServer_execute_task_action)
 
 HPX_REGISTER_COMPONENT_MODULE()
-HPX_REGISTER_COMPONENT(hpx::components::component<GenericComputeServer>,
-                       GenericComputeServer)
+HPX_REGISTER_COMPONENT(
+    hpx::components::component<mlir::concretelang::dfr::GenericComputeServer>,
+    GenericComputeServer)
 
-HPX_REGISTER_ACTION(GenericComputeServer::execute_task_action,
-                    GenericComputeServer_execute_task_action)
+HPX_REGISTER_ACTION(
+    mlir::concretelang::dfr::GenericComputeServer::execute_task_action,
+    GenericComputeServer_execute_task_action)
+
+namespace mlir {
+namespace concretelang {
+namespace dfr {
 
 struct GenericComputeClient
     : client_base<GenericComputeClient, GenericComputeServer> {
@@ -642,4 +654,7 @@ struct GenericComputeClient
   }
 };
 
+} // namespace dfr
+} // namespace concretelang
+} // namespace mlir
 #endif

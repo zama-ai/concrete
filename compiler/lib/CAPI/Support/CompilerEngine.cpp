@@ -8,7 +8,7 @@
 #include "concretelang-c/Support/CompilerEngine.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/ClientLib/Serializers.h"
-#include "concretelang/Runtime/runtime_api.h"
+#include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"

@@ -20,11 +20,20 @@ extern "C" {
 #include "concrete-ffi.h"
 }
 
-extern std::list<void *> new_allocated;
+namespace mlir {
+namespace concretelang {
+namespace dfr {
 
 template <typename T> struct KeyManager;
-extern KeyManager<LweBootstrapKey_u64> *_dfr_node_level_bsk_manager;
-extern KeyManager<LweKeyswitchKey_u64> *_dfr_node_level_ksk_manager;
+namespace {
+static void *dl_handle;
+static KeyManager<LweBootstrapKey_u64> *_dfr_node_level_bsk_manager;
+static KeyManager<LweKeyswitchKey_u64> *_dfr_node_level_ksk_manager;
+static std::list<void *> new_allocated;
+static std::list<void *> fut_allocated;
+static std::list<void *> m_allocated;
+} // namespace
+
 void _dfr_register_bsk(LweBootstrapKey_u64 *key, uint64_t key_id);
 void _dfr_register_ksk(LweKeyswitchKey_u64 *key, uint64_t key_id);
 
@@ -84,11 +93,6 @@ void KeyWrapper<LweKeyswitchKey_u64>::load(Archive &ar,
   key = deserialize_lwe_keyswitching_key_u64(buffer);
 }
 
-KeyWrapper<LweKeyswitchKey_u64> _dfr_fetch_ksk(uint64_t);
-HPX_PLAIN_ACTION(_dfr_fetch_ksk, _dfr_fetch_ksk_action)
-KeyWrapper<LweBootstrapKey_u64> _dfr_fetch_bsk(uint64_t);
-HPX_PLAIN_ACTION(_dfr_fetch_bsk, _dfr_fetch_bsk_action)
-
 template <typename LweKeyType> struct KeyManager {
   KeyManager() {}
   LweKeyType *get_key(hpx::naming::id_type loc, const uint64_t key_id);
@@ -130,6 +134,25 @@ private:
   std::mutex keystore_guard;
   std::map<uint64_t, KeyWrapper<LweKeyType>> keystore;
 };
+
+KeyWrapper<LweBootstrapKey_u64> _dfr_fetch_bsk(uint64_t key_id) {
+  return _dfr_node_level_bsk_manager->fetch_key(key_id);
+}
+
+KeyWrapper<LweKeyswitchKey_u64> _dfr_fetch_ksk(uint64_t key_id) {
+  return _dfr_node_level_ksk_manager->fetch_key(key_id);
+}
+
+} // namespace dfr
+} // namespace concretelang
+} // namespace mlir
+
+HPX_PLAIN_ACTION(mlir::concretelang::dfr::_dfr_fetch_ksk, _dfr_fetch_ksk_action)
+HPX_PLAIN_ACTION(mlir::concretelang::dfr::_dfr_fetch_bsk, _dfr_fetch_bsk_action)
+
+namespace mlir {
+namespace concretelang {
+namespace dfr {
 
 template <> KeyManager<LweBootstrapKey_u64>::KeyManager() {
   _dfr_node_level_bsk_manager = this;
@@ -183,14 +206,6 @@ KeyManager<LweKeyswitchKey_u64>::get_key(hpx::naming::id_type loc,
   return keyit->second.key;
 }
 
-KeyWrapper<LweBootstrapKey_u64> _dfr_fetch_bsk(uint64_t key_id) {
-  return _dfr_node_level_bsk_manager->fetch_key(key_id);
-}
-
-KeyWrapper<LweKeyswitchKey_u64> _dfr_fetch_ksk(uint64_t key_id) {
-  return _dfr_node_level_ksk_manager->fetch_key(key_id);
-}
-
 /************************/
 /* Key management API.  */
 /************************/
@@ -209,4 +224,7 @@ LweKeyswitchKey_u64 *_dfr_get_ksk(hpx::naming::id_type loc, uint64_t key_id) {
   return _dfr_node_level_ksk_manager->get_key(loc, key_id);
 }
 
+} // namespace dfr
+} // namespace concretelang
+} // namespace mlir
 #endif

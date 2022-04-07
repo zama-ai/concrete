@@ -14,11 +14,14 @@
 
 #include "concretelang/Runtime/runtime_api.h"
 
-bool _dfr_set_required(bool);
+namespace mlir {
+namespace concretelang {
+namespace dfr {
+
+void _dfr_set_required(bool);
 void _dfr_set_jit(bool);
 bool _dfr_is_jit();
 bool _dfr_is_root_node();
-void _dfr_terminate();
 
 typedef enum _dfr_task_arg_type {
   _DFR_TASK_ARG_BASE = 0,
@@ -42,4 +45,7 @@ static inline uint64_t _dfr_set_memref_element_size(uint64_t val, size_t size) {
   return (val & 0xFF) | (((uint64_t)size) << 8);
 }
 
+} // namespace dfr
+} // namespace concretelang
+} // namespace mlir
 #endif

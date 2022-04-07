@@ -59,7 +59,7 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
 )XXX",
              "main", false, true, false);
 
-  if (_dfr_is_root_node()) {
+  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     llvm::Expected<uint64_t> res_1 = lambda(1_u64, 2_u64, 3_u64, 4_u64);
     llvm::Expected<uint64_t> res_2 = lambda(4_u64, 5_u64, 6_u64, 7_u64);
     llvm::Expected<uint64_t> res_3 = lambda(1_u64, 1_u64, 1_u64, 1_u64);
@@ -112,7 +112,7 @@ TEST(ParallelizeAndRunFHE, nn_small_parallel) {
       mlir::concretelang::IntLambdaArgument<uint8_t>>
       arg(input, shape2D);
 
-  if (_dfr_is_root_node()) {
+  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     llvm::Expected<std::vector<uint64_t>> res =
         lambda.operator()<std::vector<uint64_t>>({&arg});
     ASSERT_EXPECTED_SUCCESS(res);
@@ -154,7 +154,7 @@ TEST(ParallelizeAndRunFHE, nn_small_sequential) {
       arg(input, shape2D);
 
   // This is sequential: only execute on root node.
-  if (_dfr_is_root_node()) {
+  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     llvm::Expected<std::vector<uint64_t>> res =
         lambda.operator()<std::vector<uint64_t>>({&arg});
     ASSERT_EXPECTED_SUCCESS(res);
