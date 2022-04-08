@@ -52,6 +52,20 @@ jobs:
       matrix:
         compiler: [gcc7, latest]
     steps:
+      # Free 4Gb of workspace
+      - name: Freeing space
+        run: |
+          df -h
+          for image in ubuntu:{16,18}.04 \
+              node:{12,14,16}{-alpine,} \
+              buildpack-deps:{stretch,buster,bullseye} \
+              debian:{9,10,11} alpine:3.{12,13,14} \
+              moby/buildkit:latest docker:20.10
+          do
+            docker image rm $image || echo Please clean remove it from this step
+          done
+          df -h
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
