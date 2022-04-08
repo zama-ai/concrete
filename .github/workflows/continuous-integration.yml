@@ -266,7 +266,7 @@ jobs:
             echo "Debug: ccache statistics (prior to the build):"
             ccache -s
             cd /compiler
-            pip install pytest
+            pip install pytest pytest-forked
             rm -rf /build
             export PYTHONPATH=""
             make PARALLEL_EXECUTION_ENABLED=ON CCACHE=ON BUILD_DIR=/build test test-dataflow

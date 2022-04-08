@@ -193,6 +193,8 @@ def test_lib_compile_reload_and_run(mlir_input, args, expected_result, keyset_ca
         pytest.param(LibrarySupport, id="Library"),
     ],
 )
+# TODO: #505
+@pytest.mark.forked
 def test_compile_and_run_auto_parallelize(
     mlir_input, args, expected_result, keyset_cache, EngineClass
 ):
