@@ -15,14 +15,14 @@ def fusable_with_bigger_search(x, y):
 
     x = x + 1
 
-    x_1 = x.astype(np.int32)
+    x_1 = x.astype(np.int64)
     x_1 = x_1 + 1.5
 
-    x_2 = x.astype(np.int32)
+    x_2 = x.astype(np.int64)
     x_2 = x_2 + 3.4
 
     add = x_1 + x_2
-    add_int = add.astype(np.int32)
+    add_int = add.astype(np.int64)
 
     return add_int + y
 
@@ -36,17 +36,17 @@ def fusable_with_bigger_search_needs_second_iteration(x, y):
     x = x + 0.5
     x = np.cos(x)
 
-    x_1 = x.astype(np.int32)
+    x_1 = x.astype(np.int64)
     x_1 = x_1 + 1.5
 
     x_p = x + 1
     x_p2 = x_p + 1
 
-    x_2 = (x_p + x_p2).astype(np.int32)
+    x_2 = (x_p + x_p2).astype(np.int64)
     x_2 = x_2 + 3.4
 
     add = x_1 + x_2
-    add_int = add.astype(np.int32)
+    add_int = add.astype(np.int64)
 
     return add_int + y
 
@@ -70,7 +70,7 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
         t8 = np.add(t7, t2)
         t9 = np.rint(t8)
         t10 = np.clip(t9, t0, t1)
-        t11 = t10.astype(np.int32)
+        t11 = t10.astype(np.int64)
         return t11
 
     def subgraph_24(x):
@@ -133,7 +133,7 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
         t38 = np.add(t37, t2)
         t39 = np.rint(t38)
         t40 = np.clip(t39, t0, t1)
-        t41 = t40.astype(np.int32)
+        t41 = t40.astype(np.int64)
         return t41
 
     return function
@@ -159,18 +159,18 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
             id="127 // x",
         ),
         pytest.param(
-            lambda x: (x / 3).astype(np.uint8),
+            lambda x: (x / 3).astype(np.int64),
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
-            id="(x / 3).astype(np.uint8)",
+            id="(x / 3).astype(np.int64)",
         ),
         pytest.param(
-            lambda x: (127 / x).astype(np.uint8),
+            lambda x: (127 / x).astype(np.int64),
             {
                 "x": {"status": "encrypted", "range": [1, 127]},
             },
-            id="(127 / x).astype(np.uint8)",
+            id="(127 / x).astype(np.int64)",
         ),
         pytest.param(
             lambda x: x ** 2,
@@ -383,18 +383,18 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
             id="x.clip(5, 10)",
         ),
         pytest.param(
-            lambda x: (60 * np.sin(x)).astype(np.int8) + 60,
+            lambda x: (60 * np.sin(x)).astype(np.int64) + 60,
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
-            id="(60 * np.sin(x)).astype(np.int8) + 60",
+            id="(60 * np.sin(x)).astype(np.int64) + 60",
         ),
         pytest.param(
-            lambda x: ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.uint8),
+            lambda x: ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.int64),
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
-            id="((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.uint8)",
+            id="((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.int64)",
         ),
         pytest.param(
             lambda x: np.maximum(x, [[10, 20], [30, 40], [50, 60]]),
@@ -485,7 +485,7 @@ def test_others_bad_fusing(helpers):
 
     @cnp.compiler({"x": "encrypted", "y": "clear"}, configuration=configuration)
     def function1(x, y):
-        return (10 * (np.sin(x) ** 2) + 10 * (np.cos(y) ** 2)).astype(np.uint8)
+        return (10 * (np.sin(x) ** 2) + 10 * (np.cos(y) ** 2)).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
         inputset = [(i, i) for i in range(100)]
@@ -497,27 +497,27 @@ def test_others_bad_fusing(helpers):
 
 Function you are trying to compile cannot be converted to MLIR
 
- %0 = 10                              # ClearScalar<uint4>
- %1 = 10                              # ClearScalar<uint4>
- %2 = 2                               # ClearScalar<uint2>
- %3 = 2                               # ClearScalar<uint2>
- %4 = x                               # EncryptedScalar<uint7>
- %5 = y                               # ClearScalar<uint7>
- %6 = sin(%4)                         # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
- %7 = cos(%5)                         # ClearScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
- %8 = power(%6, %2)                   # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
- %9 = power(%7, %3)                   # ClearScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
-%10 = multiply(%0, %8)                # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
-%11 = multiply(%1, %9)                # ClearScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
-%12 = add(%10, %11)                   # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
-%13 = astype(%12, dtype=ubyte)        # EncryptedScalar<uint4>
+ %0 = 10                             # ClearScalar<uint4>
+ %1 = 10                             # ClearScalar<uint4>
+ %2 = 2                              # ClearScalar<uint2>
+ %3 = 2                              # ClearScalar<uint2>
+ %4 = x                              # EncryptedScalar<uint7>
+ %5 = y                              # ClearScalar<uint7>
+ %6 = sin(%4)                        # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+ %7 = cos(%5)                        # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+ %8 = power(%6, %2)                  # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+ %9 = power(%7, %3)                  # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+%10 = multiply(%0, %8)               # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+%11 = multiply(%1, %9)               # ClearScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+%12 = add(%10, %11)                  # EncryptedScalar<float64>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
+%13 = astype(%12, dtype=int_)        # EncryptedScalar<uint4>
 return %13
 
         """,  # noqa: E501
@@ -530,7 +530,7 @@ return %13
 
     @cnp.compiler({"x": "encrypted"}, configuration=configuration)
     def function2(x):
-        return (np.sin(x) * [[1, 2], [3, 4]]).astype(np.int8)
+        return (np.sin(x) * [[1, 2], [3, 4]]).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
         inputset = range(100)
@@ -548,7 +548,7 @@ Function you are trying to compile cannot be converted to MLIR
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
 %3 = multiply(%2, %0)              # EncryptedTensor<float64, shape=(2, 2)>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
-%4 = astype(%3, dtype=byte)        # EncryptedTensor<int3, shape=(2, 2)>
+%4 = astype(%3, dtype=int_)        # EncryptedTensor<int3, shape=(2, 2)>
 return %4
 
         """,  # noqa: E501
@@ -561,7 +561,7 @@ return %4
 
     @cnp.compiler({"x": "encrypted"}, configuration=configuration)
     def function3(x):
-        return np.abs(np.sin(x)).reshape((2, 3)).astype(np.uint8)
+        return np.abs(np.sin(x)).reshape((2, 3)).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
         inputset = [np.random.randint(0, 2 ** 7, size=(3, 2)) for _ in range(100)]
@@ -580,7 +580,7 @@ Function you are trying to compile cannot be converted to MLIR
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
 %3 = reshape(%2, newshape=(2, 3))        # EncryptedTensor<float64, shape=(2, 3)>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer operations are supported
-%4 = astype(%3, dtype=ubyte)             # EncryptedTensor<uint1, shape=(2, 3)>
+%4 = astype(%3, dtype=int_)              # EncryptedTensor<uint1, shape=(2, 3)>
 return %4
 
         """,  # noqa: E501

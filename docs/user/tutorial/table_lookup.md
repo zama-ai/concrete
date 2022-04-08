@@ -85,7 +85,7 @@ Here is an example function that results in fused table lookup:
 <!--pytest-codeblocks:skip-->
 ```python
 def f(x):
-    return 127 - (50 * (np.sin(x) + 1)).astype(np.uint32) # astype is to go back to integer world
+    return 127 - (50 * (np.sin(x) + 1)).astype(np.int64) # astype is to go back to integer world
 ```
 
 where
@@ -125,5 +125,5 @@ which is calculated by:
 
 <!--pytest-codeblocks:skip-->
 ```python
-[(50 * (np.sin(x) + 1)).astype(np.uint32) for x in range(2 ** 3)]
+[(50 * (np.sin(x) + 1)).astype(np.int64) for x in range(2 ** 3)]
 ```

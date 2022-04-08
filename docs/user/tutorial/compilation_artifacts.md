@@ -123,7 +123,7 @@ artifacts = cnp.CompilationArtifacts("/tmp/custom/export/path")
 
 @cnp.compiler({"x": "encrypted"}, artifacts=artifacts)
 def f(x):
-    return 127 - (50 * (np.sin(x) + 1)).astype(np.uint32)
+    return 127 - (50 * (np.sin(x) + 1)).astype(np.int64)
 
 f.compile(range(2 ** 3))
 

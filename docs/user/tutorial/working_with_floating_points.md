@@ -9,7 +9,7 @@ import numpy as np
 # Function using floating points values converted back to integers at the end
 @cnp.compiler({"x": "encrypted"})
 def f(x):
-    return np.fabs(50 * (2 * np.sin(x) * np.cos(x))).astype(np.uint32)
+    return np.fabs(50 * (2 * np.sin(x) * np.cos(x))).astype(np.int64)
     # astype is to go back to the integer world
 
 circuit = f.compile(range(64))

@@ -477,9 +477,10 @@ class Tracer:
         """
 
         normalized_dtype = np.dtype(dtype)
-        if normalized_dtype != np.int64:
+        if np.issubdtype(normalized_dtype, np.integer) and normalized_dtype != np.int64:
             print(
-                "Warning: when using `value.astype(newtype)`, "
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
                 "only use `np.int64` as the newtype "
                 "to avoid unexpected overflows "
                 "during inputset evaluation"

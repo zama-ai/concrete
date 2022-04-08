@@ -54,3 +54,96 @@ def test_tracer_bad_trace(function, parameters, expected_error, expected_message
         Tracer.trace(function, parameters)
 
     assert str(excinfo.value) == expected_message
+
+
+@pytest.mark.parametrize(
+    "function,parameters,expected_message",
+    [
+        pytest.param(
+            lambda x: x.astype(np.int8),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            (
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            ),
+        ),
+        pytest.param(
+            lambda x: x.astype(np.int16),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            (
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            ),
+        ),
+        pytest.param(
+            lambda x: x.astype(np.int32),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            (
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            ),
+        ),
+        pytest.param(
+            lambda x: x.astype(np.uint8),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            (
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            ),
+        ),
+        pytest.param(
+            lambda x: x.astype(np.uint16),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            (
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            ),
+        ),
+        pytest.param(
+            lambda x: x.astype(np.uint32),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            (
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            ),
+        ),
+        pytest.param(
+            lambda x: x.astype(np.uint64),
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            (
+                "Warning: When using `value.astype(newtype)` "
+                "with an integer newtype, "
+                "only use `np.int64` as the newtype "
+                "to avoid unexpected overflows "
+                "during inputset evaluation"
+            ),
+        ),
+    ],
+)
+def test_tracer_warning_trace(function, parameters, expected_message, capsys):
+    """
+    Test `trace` function of `Tracer` class with parameters that result in a warning.
+    """
+
+    Tracer.trace(function, parameters)
+
+    captured = capsys.readouterr()
+    assert captured.out.strip() == expected_message

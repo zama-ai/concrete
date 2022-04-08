@@ -14,7 +14,7 @@ def quantized_sin(x):
     # from a 7 bit unsigned integer x, compute z in the [0; 2 * pi] range
     z = 2 * numpy.pi * x * (1 / 127)
     # quantize over 6 bits and offset to be >= 0, round and convert to integers in range [0; 63]
-    quantized_sin = numpy.rint(31 * numpy.sin(z) + 31).astype(numpy.int32)
+    quantized_sin = numpy.rint(31 * numpy.sin(z) + 31).astype(numpy.int64)
     # output quantized_sin and a further offset result
     return quantized_sin, quantized_sin + 32
 ```
@@ -48,12 +48,12 @@ Here is an example benefiting from the expanded search:
 def fusable_with_bigger_search(x, y):
     """fusable with bigger search"""
     x = x + 1
-    x_1 = x.astype(numpy.int32)
+    x_1 = x.astype(numpy.int64)
     x_1 = x_1 + 1.5
-    x_2 = x.astype(numpy.int32)
+    x_2 = x.astype(numpy.int64)
     x_2 = x_2 + 3.4
     add = x_1 + x_2
-    add_int = add.astype(numpy.int32)
+    add_int = add.astype(numpy.int64)
     return add_int + y
 ```
 
@@ -79,7 +79,7 @@ def non_fusable(x, y):
     x_1 = x + 1.5 # x_1 is now float
     y_1 = y + 3.4 # y_1 is now float
     add = x_1 + y_1
-    add_int = add.astype(numpy.int32)
+    add_int = add.astype(numpy.int64)
     return add_int
 ```
 
