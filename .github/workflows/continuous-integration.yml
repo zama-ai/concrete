@@ -204,12 +204,6 @@ jobs:
         id: tmpdir-path
         run: echo "::set-output name=TMPDIR_PATH::`echo $TMPDIR`"
 
-      - name: Download KeySetCache
-        continue-on-error: true
-        run: |
-          cd compiler
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
-
       # We do run test-check as part of the build, as they aren't that costly
       # and will at least give minimum confidence that the compiler works in PRs
       - name: Build
@@ -221,6 +215,13 @@ jobs:
           make python-bindings build-tests test-check
           echo "Debug: ccache statistics (after the build):"
           ccache -s
+          
+      - name: Download KeySetCache
+        continue-on-error: true
+        if: github.event_name == 'push'
+        run: |
+          cd compiler
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
       - name: Test
         if: github.event_name == 'push'
