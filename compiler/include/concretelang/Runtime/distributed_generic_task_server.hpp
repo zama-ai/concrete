@@ -88,7 +88,7 @@ struct OpaqueInputData {
         break;
       case _DFR_TASK_ARG_MEMREF: {
         size_t rank = _dfr_get_memref_rank(param_sizes[p]);
-        UnrankedMemRefType<char> umref = {rank, params[p]};
+        UnrankedMemRefType<char> umref = {(int64_t)rank, params[p]};
         DynamicMemRefType<char> mref(umref);
         size_t elementSize = _dfr_get_memref_element_size(param_types[p]);
         size_t size = 1;
@@ -140,7 +140,7 @@ struct OpaqueInputData {
         break;
       case _DFR_TASK_ARG_MEMREF: {
         size_t rank = _dfr_get_memref_rank(param_sizes[p]);
-        UnrankedMemRefType<char> umref = {rank, params[p]};
+        UnrankedMemRefType<char> umref = {(int64_t)rank, params[p]};
         DynamicMemRefType<char> mref(umref);
         size_t elementSize = _dfr_get_memref_element_size(param_types[p]);
         size_t size = 1;
@@ -210,7 +210,7 @@ struct OpaqueOutputData {
         break;
       case _DFR_TASK_ARG_MEMREF: {
         size_t rank = _dfr_get_memref_rank(output_sizes[p]);
-        UnrankedMemRefType<char> umref = {rank, outputs[p]};
+        UnrankedMemRefType<char> umref = {(int64_t)rank, outputs[p]};
         DynamicMemRefType<char> mref(umref);
         size_t elementSize = _dfr_get_memref_element_size(output_types[p]);
         size_t size = 1;
@@ -247,7 +247,7 @@ struct OpaqueOutputData {
         break;
       case _DFR_TASK_ARG_MEMREF: {
         size_t rank = _dfr_get_memref_rank(output_sizes[p]);
-        UnrankedMemRefType<char> umref = {rank, outputs[p]};
+        UnrankedMemRefType<char> umref = {(int64_t)rank, outputs[p]};
         DynamicMemRefType<char> mref(umref);
         size_t elementSize = _dfr_get_memref_element_size(output_types[p]);
         size_t size = 1;
