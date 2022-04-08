@@ -29,3 +29,4 @@ RUN make BUILD_DIR=/build CCACHE=ON concretecompiler python-bindings && \
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"
 ENV PATH "$PATH:/build/bin"
 ENV RT_LIB "/build/lib/libConcretelangRuntime.so"
+RUN ccache -z

@@ -39,3 +39,4 @@ RUN make PARALLEL_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"
 ENV PATH "$PATH:/build/bin"
 ENV RT_LIB "/build/lib/libConcretelangRuntime.so"
+RUN ccache -z

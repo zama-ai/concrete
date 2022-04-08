@@ -28,3 +28,4 @@ WORKDIR /compiler
 RUN mkdir -p /build
 RUN make -e CXX_COMPILER=$CXX CC_COMPILER=$CC BUILD_DIR=/build Python3_EXECUTABLE=/opt/python/${python_tag}/bin/python CCACHE=ON python-bindings concretecompiler
 ENV PATH "$PATH:/build/bin"
+RUN ccache -z
