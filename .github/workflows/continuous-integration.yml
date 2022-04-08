@@ -77,6 +77,11 @@ jobs:
           cd compiler
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
+      - name: Mark KeySetCache
+        if: ${{ matrix.compiler == 'gcc7' }}
+        run: |
+          touch keysetcache.timestamp
+
       - name: Build and test compiler
         if: ${{ matrix.compiler == 'gcc7' }}
         uses: addnab/docker-run-action@v3
@@ -99,6 +104,18 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
             chmod -R ugo+rwx /tmp/KeySetCache
+
+      - name: Prune KeySetCache
+        if: ${{ matrix.compiler == 'gcc7' }}
+        run: |
+          TO_CLEAN=$(find KeySetCache/* -maxdepth 1 -mindepth 1 -not -newer keysetcache.timestamp -type d)
+          if [ -n "$TO_CLEAN" ]
+          then
+            echo Cleaning $TO_CLEAN
+            rm -rf $TO_CLEAN
+          else
+            echo Nothing to clean
+          fi
 
       - name: Upload KeySetCache
         if: ${{ matrix.compiler == 'gcc7' && github.ref == 'refs/heads/master' }}
