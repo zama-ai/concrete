@@ -282,7 +282,7 @@ struct LowerDataflowTasksPass
     auto module = getOperation();
 
     module.walk([&](mlir::FuncOp func) {
-      int wfn_id = 0;
+      static int wfn_id = 0;
 
       // TODO: For now do not attempt to use nested parallelism.
       if (func->getAttr("_dfr_work_function_attribute"))
