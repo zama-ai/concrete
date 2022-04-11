@@ -2,6 +2,7 @@ from estimator_new import *
 from sage.all import oo, save
 from math import log2
 
+
 def old_models(security_level, sd, logq = 32):
     """
     Use the old model as a starting point for the data gathering step
@@ -142,7 +143,7 @@ def automated_param_select_n(params, target_security=128):
 
     return params
 
-def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128]):
+def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128], name="v0.sobj"):
     """
     :param sd_range: a tuple (sd_min, sd_max) giving the values of sd for which to generate parameters
     :param params: the standard deviation of the LWE error
@@ -164,16 +165,26 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128])
             Xe_new = nd.NoiseDistribution.DiscreteGaussian(2**sd)
             params_out = automated_param_select_n(params_in.updated(Xe=Xe_new), target_security=lam)
             results["{}".format(lam)].append((params_out.n, params_out.q, params_out.Xe.stddev))
+            save(results, "{}.sobj".format(name))
 
     return results
 
 
-def generate_zama_curves64(sd_range=[2, 60], target_security_levels=[128, 192, 256]):
+def generate_zama_curves64(sd_range=[2, 60], target_security_levels=[256], name="v0256.sobj"):
 
     D = ND.DiscreteGaussian
     init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
-    raw_data = generate_parameter_matrix(init_params, sd_range=sd_range, target_security_levels=target_security_levels)
+    raw_data = generate_parameter_matrix(init_params, sd_range=sd_range, target_security_levels=target_security_levels, name=name)
 
     return raw_data
 
-generate_zama_curves64()
+def plota_curve(raw_data, security_level):
+
+    data = raw_data["{}".format(security_level)]
+
+import sys
+a = int(sys.argv[1])
+print(a)
+
+generate_zama_curves64(target_security_levels=[a])
+
