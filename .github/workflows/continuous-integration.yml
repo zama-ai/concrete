@@ -86,7 +86,7 @@ jobs:
           make concrete-optimizer-lib
 
       - name: Download KeySetCache
-        if: ${{ matrix.compiler == 'gcc7' }}
+        if: ${{ matrix.compiler == 'gcc7' && !contains(github.head_ref, 'newkeysetcache') }}
         continue-on-error: true
         run: |
           cd compiler
@@ -273,7 +273,7 @@ jobs:
 
       - name: Download KeySetCache
         continue-on-error: true
-        if: github.event_name == 'push'
+        if: ${{ github.event_name == 'push' && !contains(github.head_ref, 'newkeysetcache') }}
         run: |
           cd compiler
           KEYSETCACHECI="$TMPDIR/KeySetCache" GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
@@ -315,6 +315,7 @@ jobs:
           make concrete-optimizer-lib
 
       - name: Download KeySetCache
+        if: ${{ !contains(github.head_ref, 'newkeysetcache') }}
         continue-on-error: true
         run: |
           cd compiler
