@@ -186,5 +186,5 @@ import sys
 a = int(sys.argv[1])
 print(a)
 
-generate_zama_curves64(target_security_levels=[a])
+generate_zama_curves64(target_security_levels=[a], name="{}".format(a))
 
