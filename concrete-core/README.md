@@ -55,10 +55,23 @@ let output_cleartext = encoder.decode(output_plaintext);
 assert_eq!((output_cleartext.0 - 50.).abs() < 0.01);
 ```
 
+## Backends
+
+Two backend are currently implemented. 
+
+### `core` backend
+
+This is the default backend, using the FFTW library for the Fourier transforms.
+
+### `optalysys` backend
+
+This backend is designed to use the Optalysys optical technology for the Fourier transforms. It currently makes use of the Optalysys simulator, and will be updated to use the optical hardware as soon as it is publicly available.
+
 ## Links
 
 - [TFHE](https://eprint.iacr.org/2018/421.pdf)
 - [concrete-core-1.0.0-alpha release](https://community.zama.ai/t/concrete-core-v1-0-0-alpha/120)
+- [Optalysys](https://optalysys.com/)
 
 ## License
 
