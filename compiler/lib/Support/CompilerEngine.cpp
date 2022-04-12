@@ -624,13 +624,39 @@ llvm::Expected<std::string> CompilerEngine::Library::emit(
 
 llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
   std::vector<std::string> extraArgs;
+  std::string fullRuntimeLibraryName = "";
+#ifdef __APPLE__
+  // to issue the command for fixing the runtime dependency of the generated lib
+  bool fixRuntimeDep = false;
+#endif
   if (!runtimeLibraryPath.empty()) {
-    extraArgs.push_back(runtimeLibraryPath);
-#ifndef __APPLE__ // LINUX
     // Getting the parent dir should work on Linux and Mac
     std::size_t rpathLastPos = runtimeLibraryPath.find_last_of("/");
+    std::string rpath = "";
+    std::string runtimeLibraryName = "";
     if (rpathLastPos != std::string::npos) {
-      std::string rpath = runtimeLibraryPath.substr(0, rpathLastPos);
+      rpath = runtimeLibraryPath.substr(0, rpathLastPos);
+      fullRuntimeLibraryName = runtimeLibraryPath.substr(
+          rpathLastPos + 1, runtimeLibraryPath.length());
+      // runtimeLibraryName is part of fullRuntimeLibraryName =
+      // lib(runtimeLibraryName).dylib
+      runtimeLibraryName =
+          removeDotExt(fullRuntimeLibraryName, DOT_SHARED_LIB_EXT);
+      if (runtimeLibraryName.rfind("lib", 0) == 0) { // starts with lib
+        runtimeLibraryName =
+            runtimeLibraryName.substr(3, runtimeLibraryName.length());
+      }
+    }
+#ifdef __APPLE__
+    if (!rpath.empty() && !runtimeLibraryName.empty()) {
+      fixRuntimeDep = true;
+      extraArgs.push_back("-l" + runtimeLibraryName);
+      extraArgs.push_back("-L" + rpath);
+      extraArgs.push_back("-rpath " + rpath);
+    }
+#else // Linux
+    extraArgs.push_back(runtimeLibraryPath);
+    if (!rpath.empty()) {
       extraArgs.push_back("-rpath=" + rpath);
       // Use RPATH instead of RUNPATH for transitive dependencies
       extraArgs.push_back("--disable-new-dtags");
@@ -640,7 +666,28 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
   auto path = emit(DOT_SHARED_LIB_EXT, LINKER + LINKER_SHARED_OPT, extraArgs);
   if (path) {
     sharedLibraryPath = path.get();
+#ifdef __APPLE__
+    // when dellocate is used to include dependencies in python wheels, the
+    // runtime library will have an id that is prefixed with /DLC, and that path
+    // doesn't exist. So when generated libraries won't be able to find it
+    // during load time. To solve this, we change the dep in the generated
+    // library to be relative to the rpath which should be set correctly during
+    // linking. This shouldn't have an impact when /DLC/concrete/.dylibs/* isn't
+    // a dependecy in the first place (when not using python).
+    if (fixRuntimeDep) {
+      std::string fixRuntimeDepCmd = "install_name_tool -change "
+                                     "/DLC/concrete/.dylibs/" +
+                                     fullRuntimeLibraryName + " @rpath/" +
+                                     fullRuntimeLibraryName + " " +
+                                     sharedLibraryPath;
+      auto error = mlir::concretelang::callCmd(fixRuntimeDepCmd);
+      if (error) {
+        return std::move(error);
+      }
+    }
+#endif
   }
+
   return path;
 }
 

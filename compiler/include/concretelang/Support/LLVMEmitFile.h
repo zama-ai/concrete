@@ -11,6 +11,8 @@ namespace concretelang {
 
 llvm::Error emitObject(llvm::Module &module, std::string objectPath);
 
+llvm::Error callCmd(std::string cmd);
+
 llvm::Error
 emitLibrary(std::vector<std::string> objectsPath, std::string libraryPath,
             std::string linker,
