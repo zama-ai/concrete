@@ -8,7 +8,7 @@ members = [
     "concrete-commons",
     "concrete-tasks",
     "concrete-boolean",
-    "concrete-benchmark",
+    "concrete-core-bench",
     "concrete-core-fixture",
     "concrete-core-test"
 ]
