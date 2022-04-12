@@ -166,7 +166,7 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128],
             gc.collect()
     return results
 
-def generate_zama_curves64(sd_range=[25, 26], target_security_levels=[256], name="v0256.sobj"):
+def generate_zama_curves64(sd_range=[2, 56], target_security_levels=[256], name="v0256.sobj"):
 
     D = ND.DiscreteGaussian
     init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
