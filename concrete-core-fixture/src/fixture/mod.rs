@@ -34,6 +34,7 @@
 use crate::generation::{IntegerPrecision, Maker};
 use crate::{Repetitions, SampleSize};
 use concrete_core::prelude::AbstractEngine;
+use std::fmt::Debug;
 use std::ops::BitAnd;
 
 /// A trait for types implementing a fixture for a particular engine trait.
@@ -42,7 +43,7 @@ use std::ops::BitAnd;
 /// `stress` and `stress_all` use the associated types and methods.
 pub trait Fixture<Precision: IntegerPrecision, Engine: AbstractEngine, RelatedEntities> {
     /// A type containing the parameters needed to generate the execution context.
-    type Parameters;
+    type Parameters: Debug;
 
     /// A type containing the input prototypes generated at the level of the repetition (reused).
     type RepetitionPrototypes;
