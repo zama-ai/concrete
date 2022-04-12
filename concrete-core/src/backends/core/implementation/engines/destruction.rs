@@ -13,340 +13,351 @@ use crate::backends::core::private::math::tensor::AsMutTensor;
 use crate::specification::engines::{DestructionEngine, DestructionError};
 
 impl DestructionEngine<Cleartext32> for CoreEngine {
-    fn destroy(&mut self, entity: Cleartext32) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+    fn destroy(
+        &mut self,
+        mut entity: Cleartext32,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: Cleartext32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut Cleartext32) {}
 }
 
 impl DestructionEngine<Cleartext64> for CoreEngine {
-    fn destroy(&mut self, entity: Cleartext64) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+    fn destroy(
+        &mut self,
+        mut entity: Cleartext64,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: Cleartext64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut Cleartext64) {}
 }
 
 impl DestructionEngine<CleartextVector32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: CleartextVector32,
+        mut entity: CleartextVector32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: CleartextVector32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut CleartextVector32) {}
 }
 
 impl DestructionEngine<CleartextVector64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: CleartextVector64,
+        mut entity: CleartextVector64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: CleartextVector64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut CleartextVector64) {}
 }
 
 impl DestructionEngine<Plaintext32> for CoreEngine {
-    fn destroy(&mut self, entity: Plaintext32) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+    fn destroy(
+        &mut self,
+        mut entity: Plaintext32,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: Plaintext32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut Plaintext32) {}
 }
 
 impl DestructionEngine<Plaintext64> for CoreEngine {
-    fn destroy(&mut self, entity: Plaintext64) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+    fn destroy(
+        &mut self,
+        mut entity: Plaintext64,
+    ) -> Result<(), DestructionError<Self::EngineError>> {
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: Plaintext64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut Plaintext64) {}
 }
 
 impl DestructionEngine<PlaintextVector32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: PlaintextVector32,
+        mut entity: PlaintextVector32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: PlaintextVector32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut PlaintextVector32) {}
 }
 
 impl DestructionEngine<PlaintextVector64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: PlaintextVector64,
+        mut entity: PlaintextVector64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: PlaintextVector64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut PlaintextVector64) {}
 }
 
 impl DestructionEngine<LweCiphertext32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweCiphertext32,
+        mut entity: LweCiphertext32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweCiphertext32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweCiphertext32) {}
 }
 
 impl DestructionEngine<LweCiphertext64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweCiphertext64,
+        mut entity: LweCiphertext64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweCiphertext64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweCiphertext64) {}
 }
 
 impl DestructionEngine<LweCiphertextVector32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweCiphertextVector32,
+        mut entity: LweCiphertextVector32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweCiphertextVector32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweCiphertextVector32) {}
 }
 
 impl DestructionEngine<LweCiphertextVector64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweCiphertextVector64,
+        mut entity: LweCiphertextVector64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweCiphertextVector64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweCiphertextVector64) {}
 }
 
 impl DestructionEngine<GlweCiphertext32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GlweCiphertext32,
+        mut entity: GlweCiphertext32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: GlweCiphertext32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut GlweCiphertext32) {}
 }
 
 impl DestructionEngine<GlweCiphertext64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GlweCiphertext64,
+        mut entity: GlweCiphertext64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: GlweCiphertext64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut GlweCiphertext64) {}
 }
 
 impl DestructionEngine<FourierGlweCiphertext32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: FourierGlweCiphertext32,
+        mut entity: FourierGlweCiphertext32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: FourierGlweCiphertext32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut FourierGlweCiphertext32) {}
 }
 
 impl DestructionEngine<FourierGlweCiphertext64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: FourierGlweCiphertext64,
+        mut entity: FourierGlweCiphertext64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: FourierGlweCiphertext64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut FourierGlweCiphertext64) {}
 }
 
 impl DestructionEngine<GlweCiphertextVector32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GlweCiphertextVector32,
+        mut entity: GlweCiphertextVector32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: GlweCiphertextVector32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut GlweCiphertextVector32) {}
 }
 
 impl DestructionEngine<GlweCiphertextVector64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GlweCiphertextVector64,
+        mut entity: GlweCiphertextVector64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: GlweCiphertextVector64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut GlweCiphertextVector64) {}
 }
 
 impl DestructionEngine<GgswCiphertext32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GgswCiphertext32,
+        mut entity: GgswCiphertext32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: GgswCiphertext32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut GgswCiphertext32) {}
 }
 
 impl DestructionEngine<GgswCiphertext64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GgswCiphertext64,
+        mut entity: GgswCiphertext64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: GgswCiphertext64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut GgswCiphertext64) {}
 }
 
 impl DestructionEngine<FourierGgswCiphertext32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: FourierGgswCiphertext32,
+        mut entity: FourierGgswCiphertext32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: FourierGgswCiphertext32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut FourierGgswCiphertext32) {}
 }
 
 impl DestructionEngine<FourierGgswCiphertext64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: FourierGgswCiphertext64,
+        mut entity: FourierGgswCiphertext64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: FourierGgswCiphertext64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut FourierGgswCiphertext64) {}
 }
 
 impl DestructionEngine<LweBootstrapKey32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweBootstrapKey32,
+        mut entity: LweBootstrapKey32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweBootstrapKey32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweBootstrapKey32) {}
 }
 
 impl DestructionEngine<LweBootstrapKey64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweBootstrapKey64,
+        mut entity: LweBootstrapKey64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweBootstrapKey64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweBootstrapKey64) {}
 }
 
 impl DestructionEngine<FourierLweBootstrapKey32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: FourierLweBootstrapKey32,
+        mut entity: FourierLweBootstrapKey32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: FourierLweBootstrapKey32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut FourierLweBootstrapKey32) {}
 }
 
 impl DestructionEngine<FourierLweBootstrapKey64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: FourierLweBootstrapKey64,
+        mut entity: FourierLweBootstrapKey64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: FourierLweBootstrapKey64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut FourierLweBootstrapKey64) {}
 }
 
 impl DestructionEngine<LweKeyswitchKey32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweKeyswitchKey32,
+        mut entity: LweKeyswitchKey32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweKeyswitchKey32) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweKeyswitchKey32) {}
 }
 
 impl DestructionEngine<LweKeyswitchKey64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweKeyswitchKey64,
+        mut entity: LweKeyswitchKey64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: LweKeyswitchKey64) {}
+    unsafe fn destroy_unchecked(&mut self, _entity: &mut LweKeyswitchKey64) {}
 }
 
 impl DestructionEngine<LweSecretKey32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweSecretKey32,
+        mut entity: LweSecretKey32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, entity: LweSecretKey32) {
-        let mut entity = entity;
+    unsafe fn destroy_unchecked(&mut self, entity: &mut LweSecretKey32) {
         entity.0.as_mut_tensor().fill_with_element(0u32);
     }
 }
@@ -354,14 +365,13 @@ impl DestructionEngine<LweSecretKey32> for CoreEngine {
 impl DestructionEngine<LweSecretKey64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: LweSecretKey64,
+        mut entity: LweSecretKey64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, entity: LweSecretKey64) {
-        let mut entity = entity;
+    unsafe fn destroy_unchecked(&mut self, entity: &mut LweSecretKey64) {
         entity.0.as_mut_tensor().fill_with_element(0u64);
     }
 }
@@ -369,14 +379,13 @@ impl DestructionEngine<LweSecretKey64> for CoreEngine {
 impl DestructionEngine<GlweSecretKey32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GlweSecretKey32,
+        mut entity: GlweSecretKey32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, entity: GlweSecretKey32) {
-        let mut entity = entity;
+    unsafe fn destroy_unchecked(&mut self, entity: &mut GlweSecretKey32) {
         entity.0.as_mut_tensor().fill_with_element(0u32);
     }
 }
@@ -384,14 +393,13 @@ impl DestructionEngine<GlweSecretKey32> for CoreEngine {
 impl DestructionEngine<GlweSecretKey64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: GlweSecretKey64,
+        mut entity: GlweSecretKey64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, entity: GlweSecretKey64) {
-        let mut entity = entity;
+    unsafe fn destroy_unchecked(&mut self, entity: &mut GlweSecretKey64) {
         entity.0.as_mut_tensor().fill_with_element(0u64);
     }
 }
@@ -399,23 +407,27 @@ impl DestructionEngine<GlweSecretKey64> for CoreEngine {
 impl DestructionEngine<PackingKeyswitchKey32> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: PackingKeyswitchKey32,
+        mut entity: PackingKeyswitchKey32,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: PackingKeyswitchKey32) {}
+    unsafe fn destroy_unchecked(&mut self, entity: &mut PackingKeyswitchKey32) {
+        entity.0.as_mut_tensor().fill_with_element(0u32);
+    }
 }
 
 impl DestructionEngine<PackingKeyswitchKey64> for CoreEngine {
     fn destroy(
         &mut self,
-        entity: PackingKeyswitchKey64,
+        mut entity: PackingKeyswitchKey64,
     ) -> Result<(), DestructionError<Self::EngineError>> {
-        unsafe { self.destroy_unchecked(entity) };
+        unsafe { self.destroy_unchecked(&mut entity) };
         Ok(())
     }
 
-    unsafe fn destroy_unchecked(&mut self, _entity: PackingKeyswitchKey64) {}
+    unsafe fn destroy_unchecked(&mut self, entity: &mut PackingKeyswitchKey64) {
+        entity.0.as_mut_tensor().fill_with_element(0u64);
+    }
 }

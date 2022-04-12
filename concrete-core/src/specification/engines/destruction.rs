@@ -34,5 +34,7 @@ where
     /// For the _general_ safety concerns regarding this operation, refer to the different variants
     /// of [`DestructionError`]. For safety concerns _specific_ to an
     /// engine, refer to the implementer safety section.
-    unsafe fn destroy_unchecked(&mut self, entity: Entity);
+    /// As a general notice, beware that for certain implementations (not pure Rust), calling
+    /// the destroy_unchecked twice could cause a double free.
+    unsafe fn destroy_unchecked(&mut self, entity: &mut Entity);
 }
