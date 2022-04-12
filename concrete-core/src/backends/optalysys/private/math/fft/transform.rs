@@ -21,7 +21,7 @@ use crate::backends::core::private::math::tensor::{
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::zip;
 
-use pseudo_graphec::prelude::{FourierEngine, OFTSimulator1 as Simulator};
+use proto_graphec::prelude::{FourierEngine, OFTSimulator2 as Simulator};
 use std::cell::RefCell;
 
 use crate::backends::core::private::math::fft::{Complex64, Correctors, FourierPolynomial};
