@@ -95,6 +95,13 @@ def automated_param_select_n(params, target_security=128):
     # TODO -- is this how we want to deal with the small n issue? Shouldn't the model have this baked in?
     # we want to start no lower than n = 450
     n_start = max(n_start, 450)
+
+    #if n_start > 1024:
+        # we only consider powers-of-two for now, in this range
+        # n_log = log2(n_start)
+        # n_start = 2**round(n_log)
+
+
     print("n_start = {}".format(n_start))
     params = params.updated(n=n_start)
     print(params)
@@ -119,6 +126,7 @@ def automated_param_select_n(params, target_security=128):
     # final estimate (we went too far in the above loop)
     if security_level < target_security:
         # we make n larger
+        print("we make n larger")
         params = params.updated(n = params.n + 8)
         costs = estimate(params)
         security_level = get_security_level(costs, 2)
