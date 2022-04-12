@@ -1,6 +1,9 @@
+import gc
+
 from estimator_new import *
 from sage.all import oo, save
 from math import log2
+import gc
 
 
 def old_models(security_level, sd, logq = 32):
@@ -35,7 +38,6 @@ def old_models(security_level, sd, logq = 32):
 
     return round(n_est)
 
-
 def estimate(params, red_cost_model = RC.BDGL16):
     """
     Retrieve an estimate using the Lattice Estimator, for a given set of input parameters
@@ -44,7 +46,6 @@ def estimate(params, red_cost_model = RC.BDGL16):
 
     est = LWE.estimate(params, deny_list=("arora-gb", "bkw"), red_cost_model=red_cost_model)
     return est
-
 
 def get_security_level(est, dp = 2):
     """
@@ -59,7 +60,6 @@ def get_security_level(est, dp = 2):
     security_level = round(log2(min(attack_costs)), dp)
     return security_level
 
-
 def inequality(x, y):
     """ A utility function which compresses the conditions x < y and x > y into a single condition via a multiplier
     :param x: the LHS of the inequality
@@ -70,7 +70,6 @@ def inequality(x, y):
 
     if x > y:
         return -1
-
 
 def automated_param_select_n(params, target_security=128):
     """ A function used to generate the smallest value of n which allows for
@@ -109,9 +108,6 @@ def automated_param_select_n(params, target_security=128):
         # if params.n > 1024:
         # we only need to consider powers-of-two in this case
         # TODO: fill in this case! For n > 1024 we only need to consider every 256
-
-
-
         params = params.updated(n = params.n + z * 8)
         costs = estimate(params)
         security_level = get_security_level(costs, 2)
@@ -136,6 +132,10 @@ def automated_param_select_n(params, target_security=128):
     # or security_level == oo:
     if security_level < target_security:
         params.updated(n=None)
+
+    del(costs)
+    del(costs2)
+    gc.collect()
 
     return params
 
@@ -162,11 +162,11 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128],
             params_out = automated_param_select_n(params_in.updated(Xe=Xe_new), target_security=lam)
             results["{}".format(lam)].append((params_out.n, params_out.q, params_out.Xe.stddev))
             save(results, "{}.sobj".format(name))
-
+            del(params_out)
+            gc.collect()
     return results
 
-
-def generate_zama_curves64(sd_range=[2, 60], target_security_levels=[256], name="v0256.sobj"):
+def generate_zama_curves64(sd_range=[25, 26], target_security_levels=[256], name="v0256.sobj"):
 
     D = ND.DiscreteGaussian
     init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
@@ -182,5 +182,10 @@ import sys
 a = int(sys.argv[1])
 print(a)
 
+D = ND.DiscreteGaussian
+init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=ND.UniformMod(2), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
+
 generate_zama_curves64(target_security_levels=[a], name="{}".format(a))
+
+
 
