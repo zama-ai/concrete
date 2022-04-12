@@ -1,16 +1,15 @@
 use crate::backends::core::entities::{
     GlweCiphertext32, GlweCiphertext64, LweCiphertext32, LweCiphertext64,
 };
-use crate::backends::optalysys::implementation::engines::OptalysysEngine;
-use crate::backends::optalysys::implementation::entities::{
+use crate::backends::optalysys::entities::{
     OptalysysFourierLweBootstrapKey32, OptalysysFourierLweBootstrapKey64,
 };
+use crate::backends::optalysys::implementation::engines::OptalysysEngine;
+use crate::prelude::{FourierLweBootstrapKey32, FourierLweBootstrapKey64};
 use crate::specification::engines::{
     LweCiphertextDiscardingBootstrapEngine, LweCiphertextDiscardingBootstrapError,
 };
-use crate::specification::entities::{
-    GlweCiphertextEntity, LweBootstrapKeyEntity, LweCiphertextEntity,
-};
+use crate::specification::entities::{LweBootstrapKeyEntity, LweCiphertextEntity};
 
 /// # Description:
 /// Implementation of [`LweCiphertextDiscardingBootstrapEngine`] for [`OptalysysEngine`] that
@@ -51,7 +50,7 @@ impl
     /// let mut core_engine = CoreEngine::new()?;
     /// let lwe_sk: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey32 = core_engine.create_glwe_secret_key(glwe_dim, poly_size)?;
-    /// let bsk: OptalysysFourierLweBootstrapKey32 =
+    /// let bsk: LweBootstrapKey32 =
     ///     engine.create_lwe_bootstrap_key(&lwe_sk, &glwe_sk, dec_bl, dec_lc, noise)?;
     /// let lwe_sk_output: LweSecretKey32 = core_engine.create_lwe_secret_key(lwe_dim_output)?;
     /// let plaintext = core_engine.create_plaintext(&input)?;
@@ -60,19 +59,21 @@ impl
     /// let input = core_engine.encrypt_lwe_ciphertext(&lwe_sk, &plaintext, noise)?;
     /// let mut output = core_engine.zero_encrypt_lwe_ciphertext(&lwe_sk_output, noise)?;
     ///
-    /// engine.discard_bootstrap_lwe_ciphertext(&mut output, &input, &acc, &bsk)?;
+    /// let optalysys_bsk = engine.convert_lwe_bootstrap_key(&bsk)?;
+    /// engine.discard_bootstrap_lwe_ciphertext(&mut output, &input, &acc, &optalysys_bsk)?;
     /// #
     /// assert_eq!(output.lwe_dimension(), lwe_dim_output);
     ///
     /// core_engine.destroy(lwe_sk)?;
     /// core_engine.destroy(glwe_sk)?;
-    /// engine.destroy(bsk)?;
+    /// core_engine.destroy(bsk)?;
     /// core_engine.destroy(lwe_sk_output)?;
     /// core_engine.destroy(plaintext)?;
     /// core_engine.destroy(plaintext_vector)?;
     /// core_engine.destroy(acc)?;
     /// core_engine.destroy(input)?;
     /// core_engine.destroy(output)?;
+    /// engine.destroy(optalysys_bsk)?;
     /// #
     /// # Ok(())
     /// # }
@@ -84,18 +85,7 @@ impl
         acc: &GlweCiphertext32,
         bsk: &OptalysysFourierLweBootstrapKey32,
     ) -> Result<(), LweCiphertextDiscardingBootstrapError<Self::EngineError>> {
-        if input.lwe_dimension() != bsk.input_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::InputLweDimensionMismatch);
-        }
-        if acc.polynomial_size() != bsk.polynomial_size() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorPolynomialSizeMismatch);
-        }
-        if acc.glwe_dimension() != bsk.glwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorGlweDimensionMismatch);
-        }
-        if output.lwe_dimension() != bsk.output_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::OutputLweDimensionMismatch);
-        }
+        LweCiphertextDiscardingBootstrapError::perform_generic_checks(output, input, acc, bsk)?;
         unsafe { self.discard_bootstrap_lwe_ciphertext_unchecked(output, input, acc, bsk) };
         Ok(())
     }
@@ -130,18 +120,7 @@ impl
         acc: &GlweCiphertext64,
         bsk: &OptalysysFourierLweBootstrapKey64,
     ) -> Result<(), LweCiphertextDiscardingBootstrapError<Self::EngineError>> {
-        if input.lwe_dimension() != bsk.input_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::InputLweDimensionMismatch);
-        }
-        if acc.polynomial_size() != bsk.polynomial_size() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorPolynomialSizeMismatch);
-        }
-        if acc.glwe_dimension() != bsk.glwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::AccumulatorGlweDimensionMismatch);
-        }
-        if output.lwe_dimension() != bsk.output_lwe_dimension() {
-            return Err(LweCiphertextDiscardingBootstrapError::OutputLweDimensionMismatch);
-        }
+        LweCiphertextDiscardingBootstrapError::perform_generic_checks(output, input, acc, bsk)?;
         unsafe { self.discard_bootstrap_lwe_ciphertext_unchecked(output, input, acc, bsk) };
         Ok(())
     }

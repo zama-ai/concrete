@@ -88,6 +88,11 @@ fn default_engine() -> CoreEngine {
     CoreEngine::new().unwrap()
 }
 
+/// generate an optalysys engine
+fn optalysys_engine() -> OptalysysEngine {
+    OptalysysEngine::new().unwrap()
+}
+
 /// Generate a couple of client and server keys with the default cryptographic parameters:
 /// `DEFAULT_PARAMETERS`.
 /// The client is the one generating both keys.

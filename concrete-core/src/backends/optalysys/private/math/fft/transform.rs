@@ -1,10 +1,9 @@
-/* WARNING: Using the functions ft_inplace_stable_from_other_type and 
+/* WARNING: Using the functions ft_inplace_stable_from_other_type and
  * ift_inplace_stable_ns_from_other_type is unsafe.
  *
  * TO DO: replace them by ft_inplace_stable and ift_inplace_stable_ns
  * TO DO: replace the `unwrap`s by proper error handling
  */
-
 
 use std::slice;
 
@@ -14,8 +13,7 @@ use concrete_fftw::types::c64;
 use concrete_commons::numeric::{CastInto, SignedInteger, UnsignedInteger};
 use concrete_commons::parameters::PolynomialSize;
 
-use crate::backends::core::private::math::fft::twiddles::{BackwardCorrector,
-                                                                ForwardCorrector};
+use crate::backends::core::private::math::fft::twiddles::{BackwardCorrector, ForwardCorrector};
 use crate::backends::core::private::math::polynomial::Polynomial;
 use crate::backends::core::private::math::tensor::{
     ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor,
@@ -23,12 +21,10 @@ use crate::backends::core::private::math::tensor::{
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::zip;
 
-use proto_graphec::prelude::{OFTSimulator1 as Simulator, FourierEngine};
+use pseudo_graphec::prelude::{FourierEngine, OFTSimulator1 as Simulator};
 use std::cell::RefCell;
 
-use crate::backends::core::private::math::fft::{
-    FourierPolynomial, Complex64, Correctors,
-};
+use crate::backends::core::private::math::fft::{Complex64, Correctors, FourierPolynomial};
 
 // Number of bits of accuracy for the OFT simulator.
 const ACCURACY: usize = 40;
@@ -466,10 +462,12 @@ impl Fft {
         );
 
         // We perform the forward fft
-        self.plans.ft_inplace_stable_from_other_type(
-            self.buffer.borrow().as_tensor().as_slice(),
-            fourier_poly.as_mut_tensor().as_mut_slice(),
-        ).unwrap();
+        self.plans
+            .ft_inplace_stable_from_other_type(
+                self.buffer.borrow().as_tensor().as_slice(),
+                fourier_poly.as_mut_tensor().as_mut_slice(),
+            )
+            .unwrap();
     }
 
     pub(super) fn forward_two<InCont1, InCont2, OutCont1, OutCont2, Coef>(
@@ -505,10 +503,12 @@ impl Fft {
         );
 
         // We perform the forward on the first fourier polynomial.
-        self.plans.ft_inplace_stable_from_other_type(
-            self.buffer.borrow().as_tensor().as_slice(),
-            fourier_poly_1.as_mut_tensor().as_mut_slice(),
-        ).unwrap();
+        self.plans
+            .ft_inplace_stable_from_other_type(
+                self.buffer.borrow().as_tensor().as_slice(),
+                fourier_poly_1.as_mut_tensor().as_mut_slice(),
+            )
+            .unwrap();
 
         // We replicate the coefficients on the second fourier polynomial.
         replicate_coefficients(
@@ -539,10 +539,12 @@ impl Fft {
         }
 
         // We perform the backward fft
-        self.plans.ift_inplace_stable_ns_from_other_type(
-            fourier_poly.as_tensor().as_slice(),
-            self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
-        ).unwrap();
+        self.plans
+            .ift_inplace_stable_ns_from_other_type(
+                fourier_poly.as_tensor().as_slice(),
+                self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
+            )
+            .unwrap();
 
         // We fill the polynomial with the conversion function
         convert_function(poly, &*self.buffer.borrow(), &self.correctors.backward)
@@ -594,10 +596,12 @@ impl Fft {
         }
 
         // We perform the backward fft
-        self.plans.ift_inplace_stable_ns_from_other_type(
-            fourier_poly_1.as_tensor().as_slice(),
-            self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
-        ).unwrap();
+        self.plans
+            .ift_inplace_stable_ns_from_other_type(
+                fourier_poly_1.as_tensor().as_slice(),
+                self.buffer.borrow_mut().as_mut_tensor().as_mut_slice(),
+            )
+            .unwrap();
 
         convert_function(
             poly_1,

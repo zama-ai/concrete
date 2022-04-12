@@ -19,14 +19,14 @@ pub struct FftBuffers {
 }
 
 #[derive(Debug, Clone)]
-pub struct FourierBskBuffers<Scalar> {
+pub struct FourierBuffers<Scalar> {
     // Those buffers are also used to store the lut and the rounded input during the bootstrap.
     pub lut_buffer: GlweCiphertext<Vec<Scalar>>,
     pub rounded_buffer: GlweCiphertext<Vec<Scalar>>,
     pub fft_buffers: FftBuffers,
 }
 
-impl<Scalar> FourierBskBuffers<Scalar>
+impl<Scalar> FourierBuffers<Scalar>
 where
     Scalar: UnsignedTorus,
 {

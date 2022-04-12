@@ -11,6 +11,7 @@ mod tests;
 use crate::ciphertext::Ciphertext;
 use crate::client_key::ClientKey;
 use crate::{PLAINTEXT_FALSE, PLAINTEXT_TRUE};
+use concrete_core::backends::optalysys::entities::OptalysysFourierLweBootstrapKey32;
 use concrete_core::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
@@ -26,9 +27,11 @@ use std::fmt::{Debug, Formatter};
 #[derive(Serialize, Deserialize)]
 pub struct ServerKey {
     pub(crate) key_switching_key: LweKeyswitchKey32,
-    pub(crate) bootstrapping_key: FourierLweBootstrapKey32,
+    pub(crate) bootstrapping_key: OptalysysFourierLweBootstrapKey32,
     #[serde(skip, default = "crate::default_engine")]
     pub(crate) engine: CoreEngine,
+    #[serde(skip, default = "crate::optalysys_engine")]
+    pub(crate) optalysys_engine: OptalysysEngine,
     pub(crate) accumulator: GlweCiphertext32,
     pub(crate) buffer_lwe_before_pbs: LweCiphertext32,
     pub(crate) buffer_lwe_after_pbs: LweCiphertext32,
@@ -77,6 +80,7 @@ impl Clone for ServerKey {
             buffer_lwe_before_pbs: self.buffer_lwe_before_pbs.clone(),
             buffer_lwe_after_pbs: self.buffer_lwe_after_pbs.clone(),
             engine: crate::default_engine(),
+            optalysys_engine: crate::optalysys_engine(),
         };
         sks_clone
     }
@@ -102,11 +106,14 @@ impl ServerKey {
         // creation of a core-engine
         let mut engine = super::default_engine();
 
+        // creation of a optalysys-engine
+        let mut optalysys_engine = super::optalysys_engine();
+
         // convert into a variance for rlwe context
         let var_rlwe = Variance(cks.parameters.glwe_modular_std_dev.get_variance());
 
         // creation of the bootstrapping key in the Fourier domain
-        let fourier_bsk: FourierLweBootstrapKey32 = engine
+        let fourier_bsk: LweBootstrapKey32 = engine
             .create_lwe_bootstrap_key(
                 &cks.lwe_secret_key,
                 &cks.glwe_secret_key,
@@ -114,6 +121,9 @@ impl ServerKey {
                 cks.parameters.pbs_level,
                 var_rlwe,
             )
+            .unwrap();
+        let optalysys_bsk = optalysys_engine
+            .convert_lwe_bootstrap_key(&fourier_bsk)
             .unwrap();
 
         // Convert the GLWE secret key into an LWE secret key:
@@ -167,8 +177,9 @@ impl ServerKey {
         // Pack the keys in the server key set:
         let sks: ServerKey = ServerKey {
             key_switching_key: ksk,
-            bootstrapping_key: fourier_bsk,
+            bootstrapping_key: optalysys_bsk,
             engine,
+            optalysys_engine,
             accumulator,
             buffer_lwe_before_pbs,
             buffer_lwe_after_pbs,
@@ -179,7 +190,7 @@ impl ServerKey {
     /// function that computes a bootstrap and a keys witch
     fn bootstrap_keyswitch(&mut self) -> Ciphertext {
         // Compute the programmable bootstrapping with fixed test polynomial
-        self.engine
+        self.optalysys_engine
             .discard_bootstrap_lwe_ciphertext(
                 &mut self.buffer_lwe_after_pbs,
                 &self.buffer_lwe_before_pbs,
@@ -295,7 +306,7 @@ impl ServerKey {
 
         // Compute the linear combination for second AND: - ct_condition + ct_else + (0,...,0,-1/8)
         let mut ct_temp_2 = ct_condition.0.clone(); // ct_condition
-        self.engine.fuse_neg_lwe_ciphertext(&mut ct_temp_2).unwrap(); // compute the negation
+        self.engine.fuse_opp_lwe_ciphertext(&mut ct_temp_2).unwrap(); // compute the oppation
         self.engine
             .fuse_add_lwe_ciphertext(&mut ct_temp_2, &ct_else.0)
             .unwrap(); // + ct_else
@@ -306,7 +317,7 @@ impl ServerKey {
                        // - 1/8
 
         // Compute the first programmable bootstrapping with fixed test polynomial:
-        self.engine
+        self.optalysys_engine
             .discard_bootstrap_lwe_ciphertext(
                 &mut self.buffer_lwe_after_pbs,
                 &self.buffer_lwe_before_pbs,
@@ -319,7 +330,7 @@ impl ServerKey {
         let mut ct_pbs_2 = self.buffer_lwe_after_pbs.clone();
 
         // Compute the second programmable bootstrapping with fixed test polynomial:
-        self.engine
+        self.optalysys_engine
             .discard_bootstrap_lwe_ciphertext(
                 &mut ct_pbs_2,
                 &ct_temp_2,
@@ -390,8 +401,8 @@ impl ServerKey {
             .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
             .unwrap(); // ct_left + ct_right
         self.engine
-            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
-            .unwrap(); // compute the negation
+            .fuse_opp_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+            .unwrap(); // compute the oppation
         let cst = self.engine.create_plaintext(&PLAINTEXT_TRUE).unwrap();
         self.engine
             .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
@@ -429,8 +440,8 @@ impl ServerKey {
             .discard_add_lwe_ciphertext(&mut self.buffer_lwe_before_pbs, &ct_left.0, &ct_right.0)
             .unwrap(); // ct_left + ct_right
         self.engine
-            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
-            .unwrap(); // compute the negation
+            .fuse_opp_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+            .unwrap(); // compute the oppation
         let cst = self.engine.create_plaintext(&PLAINTEXT_FALSE).unwrap();
         self.engine
             .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst)
@@ -465,7 +476,7 @@ impl ServerKey {
     pub fn not(&mut self, ct: &Ciphertext) -> Ciphertext {
         // Compute the linear combination for NOT: -ct
         let mut ct_res = ct.0.clone();
-        self.engine.fuse_neg_lwe_ciphertext(&mut ct_res).unwrap(); // compute the negation
+        self.engine.fuse_opp_lwe_ciphertext(&mut ct_res).unwrap(); // compute the oppation
 
         // Output the result:
         Ciphertext(ct_res)
@@ -540,8 +551,8 @@ impl ServerKey {
             .fuse_add_lwe_ciphertext_plaintext(&mut self.buffer_lwe_before_pbs, &cst_add)
             .unwrap(); // + 1/8
         self.engine
-            .fuse_neg_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
-            .unwrap(); // compute the negation
+            .fuse_opp_lwe_ciphertext(&mut self.buffer_lwe_before_pbs)
+            .unwrap(); // compute the oppation
         let cst_mul = self.engine.create_cleartext(&2u32).unwrap();
         self.engine
             .fuse_mul_lwe_ciphertext_cleartext(&mut self.buffer_lwe_before_pbs, &cst_mul)

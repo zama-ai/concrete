@@ -8,4 +8,4 @@ pub mod private;
 
 pub(crate) mod implementation;
 
-pub use implementation::engines;
+pub use implementation::{engines, entities};

@@ -15,6 +15,7 @@ use crate::backends::core::private::crypto::ggsw::StandardGgswCiphertext as Ggsw
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::math::decomposition::SignedDecomposer;
+use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
 use crate::backends::core::private::math::polynomial::{Polynomial, PolynomialList};
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
@@ -22,8 +23,7 @@ use crate::backends::core::private::math::tensor::{
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use crate::backends::core::private::utils::{zip, zip_args};
 use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FftBuffers;
-use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FourierBskBuffers;
-use crate::backends::core::private::math::fft::{Complex64, FourierPolynomial};
+use crate::backends::optalysys::private::crypto::bootstrap::fourier::buffers::FourierBuffers;
 
 pub(crate) mod buffers;
 #[cfg(test)]
@@ -158,7 +158,7 @@ where
     pub fn fill_with_forward_fourier<InputCont>(
         &mut self,
         coef_bsk: &StandardBootstrapKey<InputCont>,
-        buffers: &mut FourierBskBuffers<Scalar>,
+        buffers: &mut FourierBuffers<Scalar>,
     ) where
         Cont: AsMutSlice<Element = Complex64>,
         StandardBootstrapKey<InputCont>: AsRefTensor<Element = Scalar>,
@@ -633,7 +633,7 @@ where
         self.external_product(ct0, ggsw, ct1, fft_buffers, rounded_buffer);
     }
 
-    fn blind_rotate<C2>(&self, buffers: &mut FourierBskBuffers<Scalar>, lwe: &LweCiphertext<C2>)
+    fn blind_rotate<C2>(&self, buffers: &mut FourierBuffers<Scalar>, lwe: &LweCiphertext<C2>)
     where
         LweCiphertext<C2>: AsRefTensor<Element = Scalar>,
         GlweCiphertext<Vec<Scalar>>: AsMutTensor<Element = Scalar>,
@@ -738,7 +738,7 @@ where
         lwe_out: &mut LweCiphertext<C1>,
         lwe_in: &LweCiphertext<C2>,
         accumulator: &GlweCiphertext<C3>,
-        buffers: &mut FourierBskBuffers<Scalar>,
+        buffers: &mut FourierBuffers<Scalar>,
     ) where
         LweCiphertext<C1>: AsMutTensor<Element = Scalar>,
         LweCiphertext<C2>: AsRefTensor<Element = Scalar>,
