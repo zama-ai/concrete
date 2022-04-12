@@ -1,10 +1,11 @@
 use std::collections::HashSet;
 
 use crate::graph::operator::{Operator, OperatorIndex};
+use crate::graph::parameter_indexed::{AtomicPatternParametersIndexed, InputParameterIndexed};
 use crate::graph::{parameter_indexed, range_parametrized, unparametrized};
 use crate::parameters::{
-    AtomicPatternParameters, GlweParameters, InputParameter, KsDecompositionParameters,
-    PbsDecompositionParameters,
+    GlweParameterRanges, GlweParameters, KsDecompositionParameterRanges, KsDecompositionParameters,
+    PbsDecompositionParameterRanges, PbsDecompositionParameters,
 };
 
 #[derive(Clone)]
@@ -24,50 +25,50 @@ pub struct ParameterCount {
 
 #[derive(Clone)]
 pub struct ParameterRanges {
-    pub glwe: Vec<GlweParameters<Range, Range>>,
-    pub pbs_decomposition: Vec<PbsDecompositionParameters<Range, Range>>, // 0 => lpetit , 1 => l plus grand
-    pub ks_decomposition: Vec<KsDecompositionParameters<Range, Range>>,
+    pub glwe: Vec<GlweParameterRanges>,
+    pub pbs_decomposition: Vec<PbsDecompositionParameterRanges>, // 0 => lpetit , 1 => l plus grand
+    pub ks_decomposition: Vec<KsDecompositionParameterRanges>,
 }
 
 pub struct ParameterValues {
-    pub glwe: Vec<GlweParameters<u16, u16>>,
-    pub pbs_decomposition: Vec<PbsDecompositionParameters<u16, u16>>,
-    pub ks_decomposition: Vec<KsDecompositionParameters<u16, u16>>,
+    pub glwe: Vec<GlweParameters>,
+    pub pbs_decomposition: Vec<PbsDecompositionParameters>,
+    pub ks_decomposition: Vec<KsDecompositionParameters>,
 }
 
 #[derive(Clone, Copy)]
 pub struct ParameterDomains {
     // move next comment to pareto ranges definition
     // TODO: verify if pareto optimal parameters depends on precisions
-    pub glwe_pbs_constrained: GlweParameters<Range, Range>,
-    pub free_glwe: GlweParameters<Range, Range>,
-    pub pbs_decomposition: PbsDecompositionParameters<Range, Range>,
-    pub ks_decomposition: KsDecompositionParameters<Range, Range>,
+    pub glwe_pbs_constrained: GlweParameterRanges,
+    pub free_glwe: GlweParameterRanges,
+    pub pbs_decomposition: PbsDecompositionParameterRanges,
+    pub ks_decomposition: KsDecompositionParameterRanges,
 }
 
 pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
-    glwe_pbs_constrained: GlweParameters {
+    glwe_pbs_constrained: GlweParameterRanges {
         log2_polynomial_size: Range { start: 8, end: 15 },
         glwe_dimension: Range { start: 1, end: 2 },
     },
-    free_glwe: GlweParameters {
+    free_glwe: GlweParameterRanges {
         log2_polynomial_size: Range { start: 0, end: 1 },
         glwe_dimension: Range {
             start: 512,
             end: 1025,
         },
     },
-    pbs_decomposition: PbsDecompositionParameters {
+    pbs_decomposition: PbsDecompositionParameterRanges {
         log2_base: Range { start: 1, end: 65 },
         level: Range { start: 1, end: 65 },
     },
-    ks_decomposition: KsDecompositionParameters {
+    ks_decomposition: KsDecompositionParameterRanges {
         log2_base: Range { start: 1, end: 65 },
         level: Range { start: 1, end: 65 },
     },
 };
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Range {
     pub start: u64,
     pub end: u64,
@@ -97,7 +98,7 @@ pub fn minimal_unify(_g: unparametrized::AtomicPatternDag) -> parameter_indexed:
 
 fn convert_maximal(
     op: Operator<(), ()>,
-) -> Operator<InputParameter<usize>, AtomicPatternParameters<usize, usize, usize, usize, usize>> {
+) -> Operator<InputParameterIndexed, AtomicPatternParametersIndexed> {
     let external_glwe_index = 0;
     let internal_lwe_index = 1;
     let pbs_decomposition_index = 0;
@@ -105,8 +106,8 @@ fn convert_maximal(
     match op {
         Operator::Input { out_precision, .. } => Operator::Input {
             out_precision,
-            extra_data: InputParameter {
-                lwe_dimension: external_glwe_index,
+            extra_data: InputParameterIndexed {
+                lwe_dimension_index: external_glwe_index,
             },
         },
         Operator::AtomicPattern {
@@ -118,12 +119,12 @@ fn convert_maximal(
             in_precision,
             out_precision,
             multisum_inputs,
-            extra_data: AtomicPatternParameters {
-                input_lwe_dimension: external_glwe_index,
-                ks_decomposition_parameter: ks_decomposition_index,
-                internal_lwe_dimension: internal_lwe_index,
-                pbs_decomposition_parameter: pbs_decomposition_index,
-                output_glwe_params: external_glwe_index,
+            extra_data: AtomicPatternParametersIndexed {
+                input_lwe_dimensionlwe_dimension_index: external_glwe_index,
+                ks_decomposition_parameter_index: ks_decomposition_index,
+                internal_lwe_dimension_index: internal_lwe_index,
+                pbs_decomposition_parameter_index: pbs_decomposition_index,
+                output_glwe_params_index: external_glwe_index,
             },
         },
     }
@@ -178,7 +179,7 @@ pub fn domains_to_ranges(
     let mut constrained_glwe_parameter_indexes = HashSet::new();
     for op in &operators {
         if let Operator::AtomicPattern { extra_data, .. } = op {
-            let _ = constrained_glwe_parameter_indexes.insert(extra_data.output_glwe_params);
+            let _ = constrained_glwe_parameter_indexes.insert(extra_data.output_glwe_params_index);
         }
     }
 
@@ -290,7 +291,7 @@ mod tests {
         } = domains_to_ranges(graph_params, DEFAUT_DOMAINS);
 
         let input_1_lwe_params = match &operators[input1.0] {
-            Operator::Input { extra_data, .. } => extra_data.lwe_dimension,
+            Operator::Input { extra_data, .. } => extra_data.lwe_dimension_index,
             _ => unreachable!(),
         };
 
@@ -320,7 +321,7 @@ mod tests {
         } = domains_to_ranges(graph_params, DEFAUT_DOMAINS);
 
         let input_1_lwe_params = match &operators[input1.0] {
-            Operator::Input { extra_data, .. } => extra_data.lwe_dimension,
+            Operator::Input { extra_data, .. } => extra_data.lwe_dimension_index,
             _ => unreachable!(),
         };
         assert_eq!(
@@ -329,7 +330,7 @@ mod tests {
         );
 
         let atomic_pattern1_out_glwe_params = match &operators[atomic_pattern1.0] {
-            Operator::AtomicPattern { extra_data, .. } => extra_data.output_glwe_params,
+            Operator::AtomicPattern { extra_data, .. } => extra_data.output_glwe_params_index,
             _ => unreachable!(),
         };
         assert_eq!(
@@ -338,7 +339,7 @@ mod tests {
         );
 
         let atomic_pattern1_internal_glwe_params = match &operators[atomic_pattern1.0] {
-            Operator::AtomicPattern { extra_data, .. } => extra_data.internal_lwe_dimension,
+            Operator::AtomicPattern { extra_data, .. } => extra_data.internal_lwe_dimension_index,
             _ => unreachable!(),
         };
         assert_eq!(

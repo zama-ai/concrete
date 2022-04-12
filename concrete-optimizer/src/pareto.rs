@@ -1,16 +1,17 @@
-use crate::global_parameters::Range;
 use crate::noise_estimator::operators::atomic_pattern::{variance_bootstrap, variance_keyswitch};
-use crate::parameters::{GlweParameters, KsDecompositionParameters, PbsDecompositionParameters};
+use crate::parameters::{
+    GlweParameterRanges, KsDecompositionParameters, PbsDecompositionParameters,
+};
 use crate::security::glwe::minimal_variance;
 use concrete_commons::dispersion::Variance;
 use std::collections::HashSet;
 
 pub fn extract_br_pareto(
     security_level: u64,
-    output_glwe_range: &GlweParameters<Range, Range>,
-    input_lwe_range: &crate::parameters::LweDimension<Range>,
+    output_glwe_range: &GlweParameterRanges,
+    input_lwe_range: &crate::parameters::LweDimensionRange,
     ciphertext_modulus_log: u64,
-) -> Vec<PbsDecompositionParameters<u64, u64>> {
+) -> Vec<PbsDecompositionParameters> {
     let mut paretos = HashSet::new();
 
     for glwe_dimension in &output_glwe_range.glwe_dimension {
@@ -76,10 +77,10 @@ pub fn extract_br_pareto(
 // (i.e. is the product of a glwe_dimension and a polynomial_size)
 pub fn extract_ks_pareto(
     security_level: u64,
-    input_glwe_range: &GlweParameters<Range, Range>,
-    output_lwe_range: &crate::parameters::LweDimension<Range>,
+    input_glwe_range: &GlweParameterRanges,
+    output_lwe_range: &crate::parameters::LweDimensionRange,
     ciphertext_modulus_log: u64,
-) -> Vec<KsDecompositionParameters<u64, u64>> {
+) -> Vec<KsDecompositionParameters> {
     let mut paretos = HashSet::new();
 
     for output_lwe_dimension in &output_lwe_range.lwe_dimension {
@@ -137,9 +138,10 @@ pub fn extract_ks_pareto(
 
 #[cfg(test)]
 mod tests {
-    use std::time::Instant;
-
     use super::*;
+    use crate::global_parameters::Range;
+    use crate::parameters::GlweParameterRanges;
+    use std::time::Instant;
 
     // when this test fails remove function fix_1xerror and fix_2xerror
     #[test]
@@ -149,11 +151,11 @@ mod tests {
         assert_eq!(
             extract_br_pareto(
                 128,
-                &GlweParameters {
+                &GlweParameterRanges {
                     log2_polynomial_size: Range { start: 9, end: 15 },
                     glwe_dimension: Range { start: 1, end: 3 }
                 },
-                &crate::parameters::LweDimension {
+                &crate::parameters::LweDimensionRange {
                     lwe_dimension: Range {
                         start: 450,
                         end: 1024
@@ -177,11 +179,11 @@ mod tests {
         assert_eq!(
             extract_ks_pareto(
                 128,
-                &GlweParameters {
+                &GlweParameterRanges {
                     log2_polynomial_size: Range { start: 9, end: 15 },
                     glwe_dimension: Range { start: 1, end: 3 }
                 },
-                &crate::parameters::LweDimension {
+                &crate::parameters::LweDimensionRange {
                     lwe_dimension: Range {
                         start: 450,
                         end: 1024

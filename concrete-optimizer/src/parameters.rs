@@ -1,48 +1,72 @@
 pub use grouped::*;
 pub use individual::*;
+pub use range::*;
 
 mod individual {
+
     #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
-    pub struct KsDecompositionParameters<LogBase, Level> {
-        pub level: Level,
-        pub log2_base: LogBase,
+    pub struct KsDecompositionParameters {
+        pub level: u64,
+        pub log2_base: u64,
     }
 
     #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
-    pub struct PbsDecompositionParameters<LogBase, Level> {
-        pub level: Level,
-        pub log2_base: LogBase,
+    pub struct PbsDecompositionParameters {
+        pub level: u64,
+        pub log2_base: u64,
     }
 
     #[derive(Clone, Copy, PartialEq, Debug)]
-    pub struct GlweParameters<LogPolynomialSize, GlweDimension> {
-        pub log2_polynomial_size: LogPolynomialSize,
-        pub glwe_dimension: GlweDimension,
+    pub struct GlweParameters {
+        pub log2_polynomial_size: u64,
+        pub glwe_dimension: u64,
     }
 
     #[derive(Clone, Copy)]
-    pub struct LweDimension<LweDimension2> {
-        pub lwe_dimension: LweDimension2,
+    pub struct LweDimension {
+        pub lwe_dimension: u32,
     }
 
     #[derive(Copy, Clone)]
-    pub struct InputParameter<LweDimension> {
-        pub lwe_dimension: LweDimension,
+    pub struct InputParameter {
+        pub lwe_dimension: u32,
     }
 
     #[derive(Copy, Clone)]
-    pub struct AtomicPatternParameters<
-        InputLweDimension,
-        KsDecompositionParameter,
-        InternalLweDimension,
-        PbsDecompositionParameter,
-        GlweDimensionAndPolynomialSize,
-    > {
-        pub input_lwe_dimension: InputLweDimension,
-        pub ks_decomposition_parameter: KsDecompositionParameter,
-        pub internal_lwe_dimension: InternalLweDimension,
-        pub pbs_decomposition_parameter: PbsDecompositionParameter,
-        pub output_glwe_params: GlweDimensionAndPolynomialSize,
+    pub struct AtomicPatternParameters {
+        pub input_lwe_dimension: LweDimension,
+        pub ks_decomposition_parameter: KsDecompositionParameters,
+        pub internal_lwe_dimension: LweDimension,
+        pub pbs_decomposition_parameter: PbsDecompositionParameters,
+        pub output_glwe_params: GlweParameters,
+    }
+}
+
+mod range {
+
+    use crate::global_parameters::Range;
+
+    #[derive(Clone, Copy)]
+    pub struct KsDecompositionParameterRanges {
+        pub level: Range,
+        pub log2_base: Range,
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct LweDimensionRange {
+        pub lwe_dimension: Range,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct GlweParameterRanges {
+        pub log2_polynomial_size: Range,
+        pub glwe_dimension: Range,
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct PbsDecompositionParameterRanges {
+        pub level: Range,
+        pub log2_base: Range,
     }
 }
 
@@ -52,19 +76,10 @@ mod grouped {
     };
 
     #[derive(Clone)]
-    pub struct Parameters<
-        LweDimension2,
-        KsLogBase,
-        KsLevel,
-        PbsLogBase,
-        PbsLevel,
-        LogPolynomialSize,
-        GlweDimension,
-    > {
-        pub lwe_dimension: Vec<LweDimension<LweDimension2>>,
-        pub glwe_dimension_and_polynomial_size:
-            Vec<GlweParameters<LogPolynomialSize, GlweDimension>>,
-        pub pbs_decomposition_parameters: Vec<PbsDecompositionParameters<PbsLogBase, PbsLevel>>,
-        pub ks_decomposition_parameters: Vec<KsDecompositionParameters<KsLogBase, KsLevel>>,
+    pub struct Parameters {
+        pub lwe_dimension: Vec<LweDimension>,
+        pub glwe_dimension_and_polynomial_size: Vec<GlweParameters>,
+        pub pbs_decomposition_parameters: Vec<PbsDecompositionParameters>,
+        pub ks_decomposition_parameters: Vec<KsDecompositionParameters>,
     }
 }

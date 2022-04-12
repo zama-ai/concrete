@@ -1,13 +1,19 @@
 use crate::global_parameters::{ParameterCount, ParameterToOperation};
-use crate::parameters::{AtomicPatternParameters, InputParameter};
 
 use super::operator::Operator;
 
-type Index = usize;
+pub struct InputParameterIndexed {
+    pub lwe_dimension_index: usize,
+}
 
-type InputParameterIndexed = InputParameter<Index>;
-
-type AtomicPatternParametersIndexed = AtomicPatternParameters<Index, Index, Index, Index, Index>;
+#[derive(Copy, Clone)]
+pub struct AtomicPatternParametersIndexed {
+    pub input_lwe_dimensionlwe_dimension_index: usize,
+    pub ks_decomposition_parameter_index: usize,
+    pub internal_lwe_dimension_index: usize,
+    pub pbs_decomposition_parameter_index: usize,
+    pub output_glwe_params_index: usize,
+}
 
 pub(crate) type OperatorParameterIndexed =
     Operator<InputParameterIndexed, AtomicPatternParametersIndexed>;
