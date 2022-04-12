@@ -118,8 +118,9 @@ def automated_param_select_n(params, target_security=128):
 
     # final estimate (we went too far in the above loop)
     if security_level < target_security:
-        # we go back
-        params = params.updated(n = params.n - z * 8)
+        # we make n larger
+        params = params.updated(n = params.n + 8)
+        costs = estimate(params)
         security_level = get_security_level(costs, 2)
 
     print("the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(params.n,
