@@ -11,7 +11,7 @@ pub struct AtomicPatternParametersIndexed {
     pub input_lwe_dimensionlwe_dimension_index: usize,
     pub ks_decomposition_parameter_index: usize,
     pub internal_lwe_dimension_index: usize,
-    pub pbs_decomposition_parameter_index: usize,
+    pub br_decomposition_parameter_index: usize,
     pub output_glwe_params_index: usize,
 }
 

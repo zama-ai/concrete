@@ -4,14 +4,14 @@ use crate::graph::operator::{Operator, OperatorIndex};
 use crate::graph::parameter_indexed::{AtomicPatternParametersIndexed, InputParameterIndexed};
 use crate::graph::{parameter_indexed, range_parametrized, unparametrized};
 use crate::parameters::{
-    GlweParameterRanges, GlweParameters, KsDecompositionParameterRanges, KsDecompositionParameters,
-    PbsDecompositionParameterRanges, PbsDecompositionParameters,
+    BrDecompositionParameterRanges, BrDecompositionParameters, GlweParameterRanges, GlweParameters,
+    KsDecompositionParameterRanges, KsDecompositionParameters,
 };
 
 #[derive(Clone)]
 pub(crate) struct ParameterToOperation {
     pub glwe: Vec<Vec<OperatorIndex>>,
-    pub pbs_decomposition: Vec<Vec<OperatorIndex>>,
+    pub br_decomposition: Vec<Vec<OperatorIndex>>,
     pub ks_decomposition: Vec<Vec<OperatorIndex>>,
 }
 
@@ -19,20 +19,20 @@ pub(crate) struct ParameterToOperation {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct ParameterCount {
     pub glwe: usize,
-    pub pbs_decomposition: usize,
+    pub br_decomposition: usize,
     pub ks_decomposition: usize,
 }
 
 #[derive(Clone)]
 pub struct ParameterRanges {
     pub glwe: Vec<GlweParameterRanges>,
-    pub pbs_decomposition: Vec<PbsDecompositionParameterRanges>, // 0 => lpetit , 1 => l plus grand
+    pub br_decomposition: Vec<BrDecompositionParameterRanges>, // 0 => lpetit , 1 => l plus grand
     pub ks_decomposition: Vec<KsDecompositionParameterRanges>,
 }
 
 pub struct ParameterValues {
     pub glwe: Vec<GlweParameters>,
-    pub pbs_decomposition: Vec<PbsDecompositionParameters>,
+    pub br_decomposition: Vec<BrDecompositionParameters>,
     pub ks_decomposition: Vec<KsDecompositionParameters>,
 }
 
@@ -42,7 +42,7 @@ pub struct ParameterDomains {
     // TODO: verify if pareto optimal parameters depends on precisions
     pub glwe_pbs_constrained: GlweParameterRanges,
     pub free_glwe: GlweParameterRanges,
-    pub pbs_decomposition: PbsDecompositionParameterRanges,
+    pub br_decomposition: BrDecompositionParameterRanges,
     pub ks_decomposition: KsDecompositionParameterRanges,
 }
 
@@ -58,7 +58,7 @@ pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
             end: 1025,
         },
     },
-    pbs_decomposition: PbsDecompositionParameterRanges {
+    br_decomposition: BrDecompositionParameterRanges {
         log2_base: Range { start: 1, end: 65 },
         level: Range { start: 1, end: 65 },
     },
@@ -101,7 +101,7 @@ fn convert_maximal(
 ) -> Operator<InputParameterIndexed, AtomicPatternParametersIndexed> {
     let external_glwe_index = 0;
     let internal_lwe_index = 1;
-    let pbs_decomposition_index = 0;
+    let br_decomposition_index = 0;
     let ks_decomposition_index = 0;
     match op {
         Operator::Input { out_precision, .. } => Operator::Input {
@@ -123,7 +123,7 @@ fn convert_maximal(
                 input_lwe_dimensionlwe_dimension_index: external_glwe_index,
                 ks_decomposition_parameter_index: ks_decomposition_index,
                 internal_lwe_dimension_index: internal_lwe_index,
-                pbs_decomposition_parameter_index: pbs_decomposition_index,
+                br_decomposition_parameter_index: br_decomposition_index,
                 output_glwe_params_index: external_glwe_index,
             },
         },
@@ -136,13 +136,13 @@ pub fn maximal_unify(g: unparametrized::AtomicPatternDag) -> parameter_indexed::
 
     let parameters = ParameterCount {
         glwe: 2,
-        pbs_decomposition: 1,
+        br_decomposition: 1,
         ks_decomposition: 1,
     };
 
     let mut reverse_map = ParameterToOperation {
         glwe: vec![vec![], vec![]],
-        pbs_decomposition: vec![vec![]],
+        br_decomposition: vec![vec![]],
         ks_decomposition: vec![vec![]],
     };
 
@@ -154,7 +154,7 @@ pub fn maximal_unify(g: unparametrized::AtomicPatternDag) -> parameter_indexed::
             Operator::AtomicPattern { .. } => {
                 reverse_map.glwe[0].push(OperatorIndex(i));
                 reverse_map.glwe[1].push(OperatorIndex(i));
-                reverse_map.pbs_decomposition[0].push(OperatorIndex(i));
+                reverse_map.br_decomposition[0].push(OperatorIndex(i));
                 reverse_map.ks_decomposition[0].push(OperatorIndex(i));
             }
         }
@@ -195,9 +195,9 @@ pub fn domains_to_ranges(
 
     let parameter_ranges = ParameterRanges {
         glwe,
-        pbs_decomposition: vec![
-            domains.pbs_decomposition;
-            parameters_count.pbs_decomposition as usize
+        br_decomposition: vec![
+            domains.br_decomposition;
+            parameters_count.br_decomposition as usize
         ],
         ks_decomposition: vec![domains.ks_decomposition; parameters_count.ks_decomposition],
     };
@@ -242,7 +242,7 @@ mod tests {
             graph_params.parameters_count,
             ParameterCount {
                 glwe: 2,
-                pbs_decomposition: 1,
+                br_decomposition: 1,
                 ks_decomposition: 1,
             }
         );
@@ -261,7 +261,7 @@ mod tests {
         );
 
         assert_eq!(
-            graph_params.reverse_map.pbs_decomposition,
+            graph_params.reverse_map.br_decomposition,
             vec![vec![OperatorIndex(2), OperatorIndex(3)]]
         );
 

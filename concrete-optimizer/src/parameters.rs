@@ -11,7 +11,7 @@ mod individual {
     }
 
     #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
-    pub struct PbsDecompositionParameters {
+    pub struct BrDecompositionParameters {
         pub level: u64,
         pub log2_base: u64,
     }
@@ -37,7 +37,7 @@ mod individual {
         pub input_lwe_dimension: LweDimension,
         pub ks_decomposition_parameter: KsDecompositionParameters,
         pub internal_lwe_dimension: LweDimension,
-        pub pbs_decomposition_parameter: PbsDecompositionParameters,
+        pub br_decomposition_parameter: BrDecompositionParameters,
         pub output_glwe_params: GlweParameters,
     }
 }
@@ -64,7 +64,7 @@ mod range {
     }
 
     #[derive(Clone, Copy)]
-    pub struct PbsDecompositionParameterRanges {
+    pub struct BrDecompositionParameterRanges {
         pub level: Range,
         pub log2_base: Range,
     }
@@ -72,14 +72,14 @@ mod range {
 
 mod grouped {
     use super::{
-        GlweParameters, KsDecompositionParameters, LweDimension, PbsDecompositionParameters,
+        BrDecompositionParameters, GlweParameters, KsDecompositionParameters, LweDimension,
     };
 
     #[derive(Clone)]
     pub struct Parameters {
         pub lwe_dimension: Vec<LweDimension>,
         pub glwe_dimension_and_polynomial_size: Vec<GlweParameters>,
-        pub pbs_decomposition_parameters: Vec<PbsDecompositionParameters>,
+        pub br_decomposition_parameters: Vec<BrDecompositionParameters>,
         pub ks_decomposition_parameters: Vec<KsDecompositionParameters>,
     }
 }

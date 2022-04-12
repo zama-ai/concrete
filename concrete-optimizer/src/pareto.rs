@@ -1,6 +1,6 @@
 use crate::noise_estimator::operators::atomic_pattern::{variance_bootstrap, variance_keyswitch};
 use crate::parameters::{
-    GlweParameterRanges, KsDecompositionParameters, PbsDecompositionParameters,
+    BrDecompositionParameters, GlweParameterRanges, KsDecompositionParameters,
 };
 use crate::security::glwe::minimal_variance;
 use concrete_commons::dispersion::Variance;
@@ -11,7 +11,7 @@ pub fn extract_br_pareto(
     output_glwe_range: &GlweParameterRanges,
     input_lwe_range: &crate::parameters::LweDimensionRange,
     ciphertext_modulus_log: u64,
-) -> Vec<PbsDecompositionParameters> {
+) -> Vec<BrDecompositionParameters> {
     let mut paretos = HashSet::new();
 
     for glwe_dimension in &output_glwe_range.glwe_dimension {
@@ -55,7 +55,7 @@ pub fn extract_br_pareto(
                         }
                     }
                     if let Some(log2_base_arg_min) = log_base_arg_min {
-                        let _ = paretos.insert(PbsDecompositionParameters {
+                        let _ = paretos.insert(BrDecompositionParameters {
                             level,
                             log2_base: log2_base_arg_min,
                         });
