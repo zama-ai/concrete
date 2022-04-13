@@ -285,6 +285,12 @@ pub use lwe_ciphertext_cleartext_discarding_multiplication::*;
 mod lwe_ciphertext_cleartext_fusing_multiplication;
 pub use lwe_ciphertext_cleartext_fusing_multiplication::*;
 
+mod lwe_ciphertext_consuming_retrieval;
+pub use lwe_ciphertext_consuming_retrieval::*;
+
+mod lwe_ciphertext_creation;
+pub use lwe_ciphertext_creation::*;
+
 mod lwe_ciphertext_vector_discarding_affine_transformation;
 pub use lwe_ciphertext_vector_discarding_affine_transformation::*;
 

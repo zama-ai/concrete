@@ -9,6 +9,7 @@ use concrete_commons::dispersion::Variance;
 use concrete_commons::parameters::LweDimension;
 use concrete_core::prelude::markers::{BinaryKeyDistribution, KeyDistributionMarker};
 use concrete_core::prelude::{
+    LweCiphertextConsumingRetrievalEngine, LweCiphertextCreationEngine,
     LweCiphertextDecryptionEngine, LweCiphertextEncryptionEngine,
     LweCiphertextTrivialDecryptionEngine, LweCiphertextTrivialEncryptionEngine,
     PlaintextCreationEngine,
@@ -48,6 +49,14 @@ pub trait PrototypesLweCiphertext<
         &mut self,
         ciphertext: &Self::LweCiphertextProto,
     ) -> Self::PlaintextProto;
+    fn transform_raw_vec_to_ciphertext(
+        &mut self,
+        raw: &[Precision::Raw],
+    ) -> Self::LweCiphertextProto;
+    fn transform_ciphertext_to_raw_vec(
+        &mut self,
+        ciphertext_view: &Self::LweCiphertextProto,
+    ) -> Vec<Precision::Raw>;
 }
 
 impl PrototypesLweCiphertext<Precision32, BinaryKeyDistribution> for Maker {
@@ -112,6 +121,24 @@ impl PrototypesLweCiphertext<Precision32, BinaryKeyDistribution> for Maker {
                 .unwrap(),
         )
     }
+
+    fn transform_raw_vec_to_ciphertext(&mut self, raw: &[u32]) -> Self::LweCiphertextProto {
+        ProtoBinaryLweCiphertext32(
+            self.core_engine
+                .create_lwe_ciphertext(raw.to_owned())
+                .unwrap(),
+        )
+    }
+
+    fn transform_ciphertext_to_raw_vec(
+        &mut self,
+        ciphertext: &Self::LweCiphertextProto,
+    ) -> Vec<u32> {
+        let ciphertext = ciphertext.0.to_owned();
+        self.core_engine
+            .consume_retrieve_lwe_ciphertext(ciphertext)
+            .unwrap()
+    }
 }
 
 impl PrototypesLweCiphertext<Precision64, BinaryKeyDistribution> for Maker {
@@ -175,5 +202,23 @@ impl PrototypesLweCiphertext<Precision64, BinaryKeyDistribution> for Maker {
                 .trivially_decrypt_lwe_ciphertext(&ciphertext.0)
                 .unwrap(),
         )
+    }
+
+    fn transform_raw_vec_to_ciphertext(&mut self, raw: &[u64]) -> Self::LweCiphertextProto {
+        ProtoBinaryLweCiphertext64(
+            self.core_engine
+                .create_lwe_ciphertext(raw.to_owned())
+                .unwrap(),
+        )
+    }
+
+    fn transform_ciphertext_to_raw_vec(
+        &mut self,
+        ciphertext: &Self::LweCiphertextProto,
+    ) -> Vec<u64> {
+        let ciphertext = ciphertext.0.to_owned();
+        self.core_engine
+            .consume_retrieve_lwe_ciphertext(ciphertext)
+            .unwrap()
     }
 }

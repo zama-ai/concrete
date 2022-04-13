@@ -36,6 +36,14 @@ macro_rules! test {
     };
 }
 
+// Helper aliases for view fixtures which require knowing what the container type is
+type Vec32 = Vec<u32>;
+type Vec64 = Vec<u64>;
+type Slice32 = &'static [u32];
+type Slice64 = &'static [u64];
+type MutSlice32 = &'static mut [u32];
+type MutSlice64 = &'static mut [u64];
+
 test! {
     (CleartextCreationFixture, (Cleartext)),
     (CleartextRetrievalFixture, (Cleartext)),
@@ -98,6 +106,12 @@ test! {
     (LweCiphertextDiscardingExtractionFixture, (GlweCiphertext, LweCiphertext)),
     (LweCiphertextVectorGlweCiphertextDiscardingPackingKeyswitchFixture, (LweCiphertextVector,
         PackingKeyswitchKey, GlweCiphertext)),
+    (LweCiphertextCreationFixture, (LweCiphertext, Vec)),
+    (LweCiphertextCreationFixture, (LweCiphertextView, Slice)),
+    (LweCiphertextCreationFixture, (LweCiphertextMutView, MutSlice)),
+    (LweCiphertextConsumingRetrievalFixture, (LweCiphertext, Vec)),
+    (LweCiphertextConsumingRetrievalFixture, (LweCiphertextView, Slice)),
+    (LweCiphertextConsumingRetrievalFixture, (LweCiphertextMutView, MutSlice)),
     (PlaintextCreationFixture, (Plaintext)),
     (PlaintextDiscardingRetrievalFixture, (Plaintext)),
     (PlaintextRetrievalFixture, (Plaintext)),
