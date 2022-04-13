@@ -8,10 +8,10 @@ Let's continue with our GPU backend example. We now have a `GpuEngine` that impl
 engine for LWE ciphertext vectors from the CPU to the GPU, and back. For this engine, we can easily
 check that the ciphertext copied back from the GPU is identical to the original one on the CPU.
 However, for more complex engines like the keyswitch, the bootstrap, etc., we need to make sure that
-the amount of noise introduced by the operation corresponds to what's expected, i.e. that
-it matches the noise formula implemented in the `concrete-npe` crate. For the sake of this tutorial,
-let us continue with the simple conversion engines that copy data back and forth between the CPU and
-the GPU, and then implement this verification.
+the amount of noise introduced by the operation corresponds to what's expected, i.e. that it matches
+the noise formula implemented in the `concrete-npe` crate. For the sake of this tutorial, let us
+continue with the simple conversion engines that copy data back and forth between the CPU and the
+GPU, and then implement this verification.
 
 For this, we're going to use the available fixture for LWE ciphertext vector conversion. The only
 thing we need to implement in `concrete-core-fixture` is the synthesis stage, where data will be
@@ -24,11 +24,8 @@ Let's first add the GPU backend as a feature for the fixtures: edit the `Cargo.t
 of `concrete-core-fixture` to add the following lines in the dependencies and features sections:
 
 ```
-[dependencies]
-fhe_gpu = { version="0.0.1", optional = true }
-
 [features]
-backend_cuda = ["concrete-core/backend_gpu", "fhe_gpu"]
+backend_gpu = ["concrete-core/backend_gpu"]
 ```
 
 Then, we need to add the `GpuEngine` to the `Maker` structure that's defined
@@ -129,60 +126,37 @@ use crate::{REPETITIONS, SAMPLE_SIZE};
 use concrete_core::prelude::*;
 use concrete_core_fixture::fixture::*;
 use concrete_core_fixture::generation::{Maker, Precision32};
-use paste::paste;
 
-macro_rules! test {
-    ($fixture: ident, $precision: ident, ($($types:ident),+)) => {
-        paste!{
-            #[test]
-            fn [< test_ $fixture:snake _ $precision:snake _ $($types:snake)_+ >]() {
-                let mut maker = Maker::default();
-                let mut engine = CudaEngine::new().unwrap();
-                let test_result =
-                    <$fixture as Fixture<
-                        $precision,
-                        CudaEngine,
-                        ($($types,)+),
-                    >>::stress_all_parameters(&mut maker, &mut engine, REPETITIONS, SAMPLE_SIZE);
-                assert!(test_result);
-            }
-        }
-    };
-    ($(($fixture: ident, $precision: ident, ($($types:ident),+))),+) => {
-        $(
-            test!{$fixture, $precision, ($($types),+)}
-        )+
-    };
-    ($(($fixture: ident, ($($types:ident),+))),+) => {
-        $(
-            paste!{
-                test!{$fixture, Precision32, ($([< $types 32 >]),+)}
-            }
-        )+
-    };
-}
-
-test! {
-    (LweCiphertextVectorConversionFixture, (CudaLweCiphertextVector,)),
+pub fn test_lwe_ciphertext_vector_conversion_32() {
+    let mut criterion = Criterion::default().configure_from_args();
+    let mut maker = Maker::default();
+    let mut engine = GpuEngine::new().unwrap();
+    let test_result = <LweCiphertextVectorConversionFixture as Fixture<Precision32, GpuEngine, (
+        GpuLweCiphertextVector, LweCiphertextVector),
+    >>::stress_all_parameters(
+        &mut maker,
+        engine,
+        REPETITIONS,
+        SAMPLE_SIZE,
+    );
+    assert!(test_result);
 }
 ```
 
-Actually this is a bit complex to just test the 32 bits implementation, but it is very easy to add
-the 64 bits precision in this implementation once you have 64 bits engines. Finally, let's run
-our test!
+Finally, let's run our test!
 
 ## Execute the test
 
 The command to run the tests for the GPU backend is:
 
 ```
-cargo test -p concrete-core-test --features=backend_gpu --release
+cargo test -p concrete-core-test --features=backend_gpu,backend_core --release
 ```
 
 You can filter it to execute a specific engine only:
 
 ```
-cargo test -p concrete-core-test --features=backend_gpu --release -- --test conversion
+cargo test -p concrete-core-test --features=backend_gpu,backend_core --release -- --test conversion
 ```
 
 You should get as the output:
@@ -201,4 +175,6 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
-The next step is to benchmark your backend. For this, head to the [benchmarks tutorial](benchmarking_backends.md)!
+
+The next step is to benchmark your backend. For this, head to
+the [benchmarks tutorial](benchmarking_backends.md)!

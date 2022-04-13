@@ -21,30 +21,30 @@ pub struct LweCiphertextVectorConversionParameters {
     pub lwe_ciphertext_count: LweCiphertextCount,
 }
 
-impl<Precision, Engine, CudaCiphertextVector, CiphertextVector>
-    Fixture<Precision, Engine, (CudaCiphertextVector, CiphertextVector)>
+impl<Precision, Engine, InputCiphertextVector, OutputCiphertextVector>
+    Fixture<Precision, Engine, (InputCiphertextVector, OutputCiphertextVector)>
     for LweCiphertextVectorConversionFixture
 where
     Precision: IntegerPrecision,
-    Engine: LweCiphertextVectorConversionEngine<CudaCiphertextVector, CiphertextVector>,
-    CudaCiphertextVector: LweCiphertextVectorEntity,
-    CiphertextVector:
-        LweCiphertextVectorEntity<KeyDistribution = CudaCiphertextVector::KeyDistribution>,
-    Maker: SynthesizesLweCiphertextVector<Precision, CudaCiphertextVector>,
+    Engine: LweCiphertextVectorConversionEngine<InputCiphertextVector, OutputCiphertextVector>,
+    InputCiphertextVector: LweCiphertextVectorEntity,
+    OutputCiphertextVector:
+        LweCiphertextVectorEntity<KeyDistribution = InputCiphertextVector::KeyDistribution>,
+    Maker: SynthesizesLweCiphertextVector<Precision, InputCiphertextVector>
+        + SynthesizesLweCiphertextVector<Precision, OutputCiphertextVector>,
 {
     type Parameters = LweCiphertextVectorConversionParameters;
     type RepetitionPrototypes = (
-        <Maker as PrototypesLweSecretKey<Precision, CiphertextVector::KeyDistribution>>::LweSecretKeyProto,
+        <Maker as PrototypesLweSecretKey<Precision, InputCiphertextVector::KeyDistribution>>::LweSecretKeyProto,
     );
-    type SamplePrototypes =
-        (
-            <Maker as PrototypesLweCiphertextVector<
-                Precision,
-                CiphertextVector::KeyDistribution,
-            >>::LweCiphertextVectorProto,
-        );
-    type PreExecutionContext = (CudaCiphertextVector,);
-    type PostExecutionContext = (CudaCiphertextVector,);
+    type SamplePrototypes = (
+        <Maker as PrototypesLweCiphertextVector<
+            Precision,
+            InputCiphertextVector::KeyDistribution,
+        >>::LweCiphertextVectorProto,
+    );
+    type PreExecutionContext = (InputCiphertextVector,);
+    type PostExecutionContext = (InputCiphertextVector, OutputCiphertextVector);
     type Criteria = (Variance,);
     type Outcome = (Vec<Precision::Raw>, Vec<Precision::Raw>);
 
@@ -123,16 +123,24 @@ where
         sample_proto: &Self::SamplePrototypes,
     ) -> Self::PreExecutionContext {
         let (proto_ciphertext_vector,) = sample_proto;
-        (maker.synthesize_lwe_ciphertext_vector(proto_ciphertext_vector),)
+        (<Maker as SynthesizesLweCiphertextVector<
+            Precision,
+            InputCiphertextVector,
+        >>::synthesize_lwe_ciphertext_vector(
+            maker,
+            proto_ciphertext_vector,
+        ),)
     }
 
     fn execute_engine(
         _parameters: &Self::Parameters,
-        _engine: &mut Engine,
+        engine: &mut Engine,
         context: Self::PreExecutionContext,
     ) -> Self::PostExecutionContext {
-        let (ciphertext_vector,) = context;
-        (ciphertext_vector,)
+        let (input_ciphertext_vector,) = context;
+        let output_ciphertext_vector =
+            unsafe { engine.convert_lwe_ciphertext_vector_unchecked(&input_ciphertext_vector) };
+        (input_ciphertext_vector, output_ciphertext_vector)
     }
 
     fn process_context(
@@ -144,20 +152,21 @@ where
     ) -> Self::Outcome {
         let (key,) = repetition_proto;
         let (proto_ciphertext_vector,) = sample_proto;
-        let (output_ciphertext_vector,) = context;
+        let (output_ciphertext_vector, input_ciphertext_vector) = context;
         let proto_output_ciphertext_vector =
             maker.unsynthesize_lwe_ciphertext_vector(&output_ciphertext_vector);
         let proto_plaintext_vector =
             maker.decrypt_lwe_ciphertext_vector_to_plaintext_vector(key, proto_ciphertext_vector);
         let proto_output_plaintext_vector = <Maker as PrototypesLweCiphertextVector<
             Precision,
-            CiphertextVector::KeyDistribution,
+            InputCiphertextVector::KeyDistribution,
         >>::decrypt_lwe_ciphertext_vector_to_plaintext_vector(
             maker,
             key,
             &proto_output_ciphertext_vector,
         );
         maker.destroy_lwe_ciphertext_vector(output_ciphertext_vector);
+        maker.destroy_lwe_ciphertext_vector(input_ciphertext_vector);
         (
             maker.transform_plaintext_vector_to_raw_vec(&proto_plaintext_vector),
             maker.transform_plaintext_vector_to_raw_vec(&proto_output_plaintext_vector),
