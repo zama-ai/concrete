@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import concrete.numpy as cnp
+import concrete.onnx as connx
 
 
 @pytest.mark.parametrize(
@@ -56,7 +57,7 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
 
     @cnp.compiler({"x": "encrypted"}, configuration=configuration)
     def function(x):
-        return cnp.conv2d(x, weight, bias, strides=strides, dilations=dilations)
+        return connx.conv2d(x, weight, bias, strides=strides, dilations=dilations)
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     circuit = function.compile(inputset)
@@ -177,7 +178,7 @@ def test_bad_conv2d_tracing(
 
     @cnp.compiler({"x": "encrypted"}, configuration=configuration)
     def function(x):
-        return cnp.conv2d(x, weight, bias, pads, strides, dilations, auto_pad)
+        return connx.conv2d(x, weight, bias, pads, strides, dilations, auto_pad)
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     with pytest.raises(expected_error) as excinfo:
@@ -194,13 +195,13 @@ def test_bad_conv2d_evaluation():
     x = np.random.randint(0, 4, size=(1, 1, 4, 4))
 
     with pytest.raises(ValueError) as excinfo:
-        cnp.conv2d(x, "abc")
+        connx.conv2d(x, "abc")
 
     assert str(excinfo.value) == "Weight should be of type np.ndarray for evaluation"
 
     weight = np.random.randint(0, 4, size=(1, 1, 2, 2))
 
     with pytest.raises(ValueError) as excinfo:
-        cnp.conv2d(x, weight, "abc")
+        connx.conv2d(x, weight, "abc")
 
     assert str(excinfo.value) == "Bias should be of type np.ndarray for evaluation"

@@ -8,9 +8,9 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from ..representation import Node
-from ..tracing import Tracer
-from ..values import EncryptedTensor
+from ..numpy.representation import Node
+from ..numpy.tracing import Tracer
+from ..numpy.values import EncryptedTensor
 
 SUPPORTED_AUTO_PAD = {
     "NOTSET",

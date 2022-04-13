@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import concrete.numpy as cnp
+import concrete.onnx as connx
 
 # pylint: disable=line-too-long
 
@@ -91,7 +92,7 @@ return %2
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x, w: cnp.conv2d(x, w),
+            lambda x, w: connx.conv2d(x, w),
             {"x": "encrypted", "w": "encrypted"},
             [
                 (
