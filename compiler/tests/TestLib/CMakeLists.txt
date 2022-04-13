@@ -2,6 +2,13 @@ enable_testing()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  link_libraries(
+    # usefull for old gcc versions
+    -Wl,--allow-multiple-definition  # static concrete-optimizer and concrete shares some code
+  )
+endif()
+
 add_executable(
   testlib_unit_test
   testlib_unit_test.cpp

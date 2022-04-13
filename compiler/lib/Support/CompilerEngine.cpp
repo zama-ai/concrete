@@ -163,8 +163,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   if (!fheConstraintOrErr.get().hasValue()) {
     return llvm::Error::success();
   }
-  const mlir::concretelang::V0Parameter *fheParams =
-      getV0Parameter(fheConstraintOrErr.get().getValue());
+  auto fheParams = getV0Parameter(fheConstraintOrErr.get().getValue());
 
   if (!fheParams) {
     return StreamStringError()
@@ -173,7 +172,7 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
            << (*fheConstraintOrErr)->p;
   }
   res.fheContext.emplace(mlir::concretelang::V0FHEContext{
-      (*fheConstraintOrErr).getValue(), *fheParams});
+      (*fheConstraintOrErr).getValue(), fheParams.getValue()});
 
   return llvm::Error::success();
 }

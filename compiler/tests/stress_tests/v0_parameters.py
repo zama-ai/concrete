@@ -38,13 +38,5 @@ def read_CPP_decl(name, cpp_filepath):
     # print(f'{name} = {value}', decl.group())
     return value
 
-LOG2_MANP_MAX = int(read_CPP_decl('NORM2_MAX', V0Parameters_PATH))
-P_MAX = int(read_CPP_decl('P_MAX', V0Parameters_PATH))
-
-try:
-    parameters_cpp = read_CPP_decl('parameters', V0Parameters_PATH)
-except (FileNotFoundError, NameError) as exc:
-    print(exc)
-    assert False
-
-v0_parameters = eval(parameters_cpp.replace('{', '[').replace('}', ']'))
+LOG2_MANP_MAX = 31
+P_MAX = 8

@@ -12,10 +12,7 @@ from stress_tests.experiment import (
 )
 from stress_tests import read_mlir
 from stress_tests.utils import CONCRETECOMPILER, run
-from stress_tests.v0_parameters import (
-    LOG2_MANP_MAX, P_MAX,
-    v0_parameter
-)
+from stress_tests.v0_parameters import P_MAX, LOG2_MANP_MAX
 
 POSSIBLE_BITWIDTH = range(1, P_MAX+1)
 POSSIBLE_SIZE = range(1, 128)
@@ -121,10 +118,6 @@ def basic_setup(bitwidth, size, const, retry=10):
         # Read various value from compiler
         log_manp_max = read_mlir.log_manp_max(path)
         params = read_mlir.v0_param(path)
-        # From CPP source
-        expected_params = v0_parameter(log_manp_max, bitwidth)
-        expected_log_poly_size = expected_params.logPolynomialSize
-        expected_glwe_dim = expected_params.glweDimension
 
         conditions_details = []
         def msg(m, append_here=None, space=' '):
@@ -136,10 +129,6 @@ def basic_setup(bitwidth, size, const, retry=10):
             msg('HIGH-MANP', conditions_details)
         if 2 ** bitwidth <= expected:
             msg(f'OVERFLOW', conditions_details)
-        if params.log_poly_size != expected_log_poly_size:
-            msg(f'BAD_LOGPOLYSIZE({params.log_poly_size} vs {expected_log_poly_size})', conditions_details)
-        if params.glwe_dim != expected_glwe_dim:
-            msg(f'BAD_GLWEDIM ({params.glwe_dim} vs {expected_glwe_dim})', conditions_details)
 
         cmd = (CONCRETECOMPILER, path) + JIT_INVOKE_MAIN + jit_args(*args)
         compilers_calls = [executor.submit(run, *cmd) for _ in range(retry)]

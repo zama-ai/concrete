@@ -16,7 +16,7 @@ env:
 
 jobs:
   ########################
-  # Tests and formatiing #
+  # Tests and formating  #
   ########################
 
   FormattingAndLinting:
@@ -66,9 +66,24 @@ jobs:
           done
           df -h
 
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Concrete-Optimizer
+        run: |
+          cd compiler
+          make concrete-optimizer-lib
 
       - name: Download KeySetCache
         if: ${{ matrix.compiler == 'gcc7' }}
@@ -181,6 +196,11 @@ jobs:
   BuildAndTestMacOS:
     runs-on: macos-10.15
     steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
@@ -202,9 +222,14 @@ jobs:
           path: ${{ github.workspace }}/concrete/target
           key: ${{ runner.os }}-concrete-lib-${{ steps.concretelib-hash.outputs.COMMIT_SHA }}
 
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
       - name: Install Deps
         run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          # curl https://sh.rustup.rs -sSf | sh -s -- -y  # TODO check actions-rs/toolchain@v1
           brew install ninja ccache
           pip3 install numpy pybind11==2.6.2 wheel delocate
           pip3 install pytest
@@ -245,7 +270,7 @@ jobs:
           make python-bindings build-tests test-check
           echo "Debug: ccache statistics (after the build):"
           ccache -s
-          
+
       - name: Download KeySetCache
         continue-on-error: true
         if: github.event_name == 'push'
@@ -270,9 +295,24 @@ jobs:
   BuildAndTestDF:
     runs-on: ubuntu-latest
     steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Concrete-Optimizer
+        run: |
+          cd compiler
+          make concrete-optimizer-lib
 
       - name: Download KeySetCache
         continue-on-error: true
@@ -387,6 +427,11 @@ jobs:
       python-package-name-linux-py310: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY310 }}
     needs: CreateRelease
     steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
@@ -417,6 +462,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: CreateRelease
     steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
@@ -453,6 +503,11 @@ jobs:
       python-package-name-macos-py39: ${{ steps.build-wheel-macos.outputs.ASSET_NAME_PY39 }}
       python-package-name-macos-py310: ${{ steps.build-wheel-macos.outputs.ASSET_NAME_PY310 }}
     steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
@@ -687,6 +742,11 @@ jobs:
       IMAGE: ghcr.io/zama-ai/gcc7
 
     steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -694,6 +754,16 @@ jobs:
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v2.0.0
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Concrete-Optimizer
+        run: |
+          cd compiler
+          make concrete-optimizer-lib
 
       - name: Login
         if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env')

@@ -1,3 +1,7 @@
+link_directories(${CONCRETE_OPTIMIZER_DIR}/target)
+include_directories(${CONCRETE_OPTIMIZER_DIR}/target/include)
+link_libraries(concrete_optimizer.a)
+
 add_mlir_library(ConcretelangSupport
   Pipeline.cpp
   Jit.cpp

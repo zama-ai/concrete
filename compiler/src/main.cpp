@@ -203,8 +203,7 @@ llvm::Expected<mlir::concretelang::V0FHEContext> buildFHEContext(
       overrideMaxEintPrecision.hasValue() ? overrideMaxEintPrecision.getValue()
                                           : autoFHEConstraints.getValue().p};
 
-  const mlir::concretelang::V0Parameter *parameter =
-      getV0Parameter(fheConstraints);
+  auto parameter = getV0Parameter(fheConstraints);
 
   if (!parameter) {
     return mlir::concretelang::StreamStringError()
@@ -212,7 +211,7 @@ llvm::Expected<mlir::concretelang::V0FHEContext> buildFHEContext(
            << fheConstraints.norm2 << " and p of " << fheConstraints.p;
   }
 
-  return mlir::concretelang::V0FHEContext{fheConstraints, *parameter};
+  return mlir::concretelang::V0FHEContext{fheConstraints, parameter.getValue()};
 }
 
 namespace llvm {

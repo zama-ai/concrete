@@ -6,13 +6,14 @@
 #ifndef CONCRETELANG_SUPPORT_V0Parameter_H_
 #define CONCRETELANG_SUPPORT_V0Parameter_H_
 
+#include "llvm/ADT/Optional.h"
+
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
-#include <cstddef>
 
 namespace mlir {
 namespace concretelang {
 
-const V0Parameter *getV0Parameter(V0FHEConstraint constraint);
+llvm::Optional<V0Parameter> getV0Parameter(V0FHEConstraint constraint);
 
 } // namespace concretelang
 } // namespace mlir
