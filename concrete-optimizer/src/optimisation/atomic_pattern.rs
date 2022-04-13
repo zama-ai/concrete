@@ -11,6 +11,7 @@ use crate::parameters::{
 };
 use crate::security;
 use complexity_atomic_pattern::AtomicPatternComplexity;
+use complexity_atomic_pattern::DEFAULT as DEFAULT_COMPLEXITY;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
 
@@ -111,7 +112,7 @@ fn blind_rotate_quantities<W: UnsignedInteger>(
             output_glwe_params: glwe_params,
         };
 
-        let complexity_pbs = complexity_atomic_pattern::DEFAULT
+        let complexity_pbs = DEFAULT_COMPLEXITY
             .pbs
             .complexity(pbs_parameters, ciphertext_modulus_log);
 
@@ -180,7 +181,7 @@ fn keyswitch_quantities<W: UnsignedInteger>(
             ks_decomposition_parameter,
         };
 
-        let complexity_keyswitch = complexity_atomic_pattern::DEFAULT
+        let complexity_keyswitch = DEFAULT_COMPLEXITY
             .ks_lwe
             .complexity(keyswitch_parameter, ciphertext_modulus_log);
         if cut_complexity < complexity_keyswitch && CUTS {
@@ -410,7 +411,7 @@ fn assert_checks<W: UnsignedInteger>(
     );
     let noise_in_ = base_noise_.get_variance() * square(consts.noise_factor);
 
-    let complexity_pbs_ = complexity_atomic_pattern::DEFAULT
+    let complexity_pbs_ = DEFAULT_COMPLEXITY
         .pbs
         .complexity(pbs_parameters, ciphertext_modulus_log);
     assert!(complexity_pbs == complexity_pbs_);
@@ -430,7 +431,7 @@ fn assert_checks<W: UnsignedInteger>(
         variance_ksk,
     )
     .get_variance();
-    let complexity_keyswitch_ = complexity_atomic_pattern::DEFAULT
+    let complexity_keyswitch_ = DEFAULT_COMPLEXITY
         .ks_lwe
         .complexity(keyswitch_parameters, ciphertext_modulus_log);
     assert!(complexity_keyswitch == complexity_keyswitch_);
@@ -452,7 +453,7 @@ fn assert_checks<W: UnsignedInteger>(
     )
     .get_variance();
     assert!(f64::abs(noise_max - check_max_noise) / check_max_noise < 0.00000000001);
-    let check_complexity = complexity_atomic_pattern::DEFAULT.complexity(
+    let check_complexity = DEFAULT_COMPLEXITY.complexity(
         consts.sum_size,
         atomic_pattern_parameters,
         ciphertext_modulus_log,
