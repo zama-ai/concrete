@@ -754,7 +754,7 @@ bool _dfr_is_root_node() { return mlir::concretelang::dfr::is_root_node_p; }
 
 void _dfr_register_work_function(wfnptr wfn) {
   mlir::concretelang::dfr::_dfr_node_level_work_function_registry
-      ->registerAnonymousWorkFunction((void *)wfn);
+      ->getWorkFunctionName((void *)wfn);
 }
 
 /************************************/

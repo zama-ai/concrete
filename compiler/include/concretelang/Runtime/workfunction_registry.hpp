@@ -29,7 +29,7 @@ struct WorkFunctionRegistry {
   WorkFunctionRegistry() { _dfr_node_level_work_function_registry = this; }
 
   wfnptr getWorkFunctionPointer(const std::string &name) {
-    std::lock_guard<std::recursive_mutex> guard(registry_guard);
+    std::lock_guard<std::mutex> guard(registry_guard);
 
     auto fnptrit = name_to_ptr_registry.find(name);
     if (fnptrit != name_to_ptr_registry.end())
@@ -46,7 +46,7 @@ struct WorkFunctionRegistry {
   }
 
   std::string getWorkFunctionName(const void *fn) {
-    std::lock_guard<std::recursive_mutex> guard(registry_guard);
+    std::lock_guard<std::mutex> guard(registry_guard);
 
     auto fnnameit = ptr_to_name_registry.find(fn);
     if (fnnameit != ptr_to_name_registry.end())
@@ -66,8 +66,8 @@ struct WorkFunctionRegistry {
     return ret;
   }
 
+private:
   void registerWorkFunction(const void *fn, std::string name) {
-    std::lock_guard<std::recursive_mutex> guard(registry_guard);
 
     auto fnnameit = ptr_to_name_registry.find(fn);
     if (fnnameit == ptr_to_name_registry.end())
@@ -81,7 +81,6 @@ struct WorkFunctionRegistry {
   }
 
   std::string registerAnonymousWorkFunction(const void *fn) {
-    std::lock_guard<std::recursive_mutex> guard(registry_guard);
     static std::atomic<unsigned int> fnid{0};
     std::string name = "_dfr_jit_wfnname_" + std::to_string(fnid++);
     registerWorkFunction(fn, name);
@@ -89,7 +88,7 @@ struct WorkFunctionRegistry {
   }
 
 private:
-  std::recursive_mutex registry_guard;
+  std::mutex registry_guard;
   std::map<const void *, std::string> ptr_to_name_registry;
   std::map<std::string, const void *> name_to_ptr_registry;
 };
