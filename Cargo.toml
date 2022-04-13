@@ -3,5 +3,6 @@
 members = [
     "concrete-optimizer",
     "v0-parameters",
+    "concrete-optimizer-cpp"
 ]
 

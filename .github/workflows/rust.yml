@@ -32,8 +32,6 @@ jobs:
       - name: Formatting
         run: cargo fmt --check
 
-      # For some reason doing the build explicitely before make it available for both clippy and test
-      # But clippy and test alone do not share the build
       - name: Build
         run: cargo build --all-targets
 
@@ -41,4 +39,6 @@ jobs:
         run: cargo clippy --all-targets
 
       - name: Tests
-        run: cargo test --no-fail-fast --all-targets
+        run: |
+          cargo test --no-fail-fast --all-targets
+          make -C concrete-optimizer-cpp test-ci
