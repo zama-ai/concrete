@@ -1,39 +1,31 @@
-//! A module implementing an `aes128-counter` random number generator, using `aesni` instructions.
-//!
-//! This module implements a cryptographically secure pseudorandom number generator
-//! (CS-PRNG), using a fast streamcipher: aes128 in counter-mode (CTR). The implementation
-//! is based on the [intel aesni white paper 323641-001 revision 3.0](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf).
-use crate::counter::{AesBatchedGenerator, AesIndex, AesKey};
+use crate::generators::aes_ctr::{AesBlockCipher, AesIndex, AesKey, BYTES_PER_BATCH};
 use std::arch::x86_64::{
     __m128i, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_aeskeygenassist_si128, _mm_load_si128,
     _mm_shuffle_epi32, _mm_slli_si128, _mm_store_si128, _mm_xor_si128,
 };
 use std::mem::transmute;
 
+/// An aes block cipher implementation which uses `aesni` instructions.
 #[derive(Clone)]
-pub struct Generator {
+pub struct AesniBlockCipher {
     // The set of round keys used for the aes encryption
     round_keys: [__m128i; 11],
 }
 
-impl AesBatchedGenerator for Generator {
-    fn new(key: Option<AesKey>) -> Generator {
+impl AesBlockCipher for AesniBlockCipher {
+    fn new(key: AesKey) -> AesniBlockCipher {
         if is_x86_feature_detected!("aes")
             && is_x86_feature_detected!("rdseed")
             && is_x86_feature_detected!("sse2")
         {
-            let round_keys =
-                generate_round_keys(key.unwrap_or_else(generate_initialization_vector));
-            Generator { round_keys }
+            let round_keys = generate_round_keys(key);
+            AesniBlockCipher { round_keys }
         } else {
-            panic!(
-                "One of the `aes`, `rdseed`, or `sse2` instructions set was not fount. It is \
-                 currently mandatory to use `concrete-csprng`."
-            )
+            panic!("One of the `aes`, `rdseed`, or `sse2` instructions set was not found")
         }
     }
 
-    fn generate_batch(&mut self, AesIndex(aes_ctr): AesIndex) -> [u8; 128] {
+    fn generate_batch(&mut self, AesIndex(aes_ctr): AesIndex) -> [u8; BYTES_PER_BATCH] {
         si128arr_to_u8arr(aes_encrypt_many(
             &u128_to_si128(aes_ctr),
             &u128_to_si128(aes_ctr + 1),
@@ -48,38 +40,12 @@ impl AesBatchedGenerator for Generator {
     }
 }
 
-fn generate_initialization_vector() -> AesKey {
-    // The initialization vector is a random value from rdseed
-    AesKey(si128_to_u128(rdseed_random_m128()))
-}
-
 fn generate_round_keys(key: AesKey) -> [__m128i; 11] {
     // The secret key is a random value from rdseed.
     let key = u128_to_si128(key.0);
     let mut keys: [__m128i; 11] = [u128_to_si128(0); 11];
     aes_128_key_expansion(key, &mut keys);
     keys
-}
-
-// Generates a random 128 bits value from rdseed
-fn rdseed_random_m128() -> __m128i {
-    let mut rand1: u64 = 0;
-    let mut rand2: u64 = 0;
-    unsafe {
-        loop {
-            if core::arch::x86_64::_rdseed64_step(&mut rand1) == 1 {
-                break;
-            }
-        }
-        loop {
-            if core::arch::x86_64::_rdseed64_step(&mut rand2) == 1 {
-                break;
-            }
-        }
-        #[repr(C)]
-        struct _tuple(u64, u64);
-        std::mem::transmute::<_tuple, __m128i>(_tuple(rand1, rand2))
-    }
 }
 
 // Uses aes to encrypt many values at once. This allows a substantial speedup (around 30%)
@@ -198,21 +164,16 @@ fn u128_to_si128(input: u128) -> __m128i {
     unsafe { transmute(input) }
 }
 
+#[allow(unused)] // to please clippy when tests are not activated
 fn si128_to_u128(input: __m128i) -> u128 {
     unsafe { transmute(input) }
 }
 
-fn si128arr_to_u8arr(input: [__m128i; 8]) -> [u8; 128] {
+fn si128arr_to_u8arr(input: [__m128i; 8]) -> [u8; BYTES_PER_BATCH] {
     unsafe { transmute(input) }
 }
 
-#[cfg(all(
-    test,
-    target_arch = "x86_64",
-    target_feature = "aes",
-    target_feature = "sse2",
-    target_feature = "rdseed"
-))]
+#[cfg(test)]
 mod test {
     use super::*;
 
@@ -258,25 +219,5 @@ mod test {
         for ct in &ciphertexts {
             assert_eq!(CIPHERTEXT, si128_to_u128(*ct));
         }
-    }
-
-    #[test]
-    fn test_uniformity() {
-        // Checks that the PRNG generates uniform numbers
-        let precision = 10f64.powi(-4);
-        let n_samples = 10_000_000_usize;
-        let mut generator = Generator::new(None);
-        let mut counts = [0usize; 256];
-        let expected_prob: f64 = 1. / 256.;
-        for counter in 0..n_samples {
-            let generated = generator.generate_batch(AesIndex(counter as u128));
-            for i in 0..128 {
-                counts[generated[i] as usize] += 1;
-            }
-        }
-        counts
-            .iter()
-            .map(|a| (*a as f64) / ((n_samples * 128) as f64))
-            .for_each(|a| assert!((a - expected_prob) < precision))
     }
 }
