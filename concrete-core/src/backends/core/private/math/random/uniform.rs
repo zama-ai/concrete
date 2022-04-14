@@ -9,7 +9,10 @@ macro_rules! implement_uniform {
     ($T:ty, $bytes:literal) => {
         impl RandomGenerable<Uniform> for $T {
             #[allow(unused)]
-            fn generate_one(generator: &mut RandomGenerator, distribution: Uniform) -> Self {
+            fn generate_one<G: PrngRandomGenerator>(
+                generator: &mut RandomGenerator<G>,
+                distribution: Uniform,
+            ) -> Self {
                 let mut buf = [0; $bytes];
                 buf.iter_mut().for_each(|a| *a = generator.generate_next());
                 unsafe { *(buf.as_ptr() as *const $T) }

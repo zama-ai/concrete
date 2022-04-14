@@ -1,9 +1,8 @@
 use concrete_commons::dispersion::LogStandardDev;
 
-use crate::backends::core::private::math::random::RandomGenerator;
 use crate::backends::core::private::math::tensor::Tensor;
 use crate::backends::core::private::math::torus::UnsignedTorus;
-use crate::backends::core::private::test_tools::assert_noise_distribution;
+use crate::backends::core::private::test_tools::*;
 
 fn test_normal_random<T: UnsignedTorus>() {
     //! test if the normal random generation with std_dev is below 3*std_dev (99.7%)
@@ -12,7 +11,7 @@ fn test_normal_random<T: UnsignedTorus>() {
     let std_dev: f64 = f64::powi(2., -20);
     let mean: f64 = 0.;
     let k = 1_000_000;
-    let mut generator = RandomGenerator::new(None);
+    let mut generator = new_random_generator();
 
     // generates normal random
     let mut samples_int = Tensor::allocate(T::ZERO, k);
@@ -64,7 +63,7 @@ fn test_distribution<T: UnsignedTorus>() {
     let std_dev: f64 = f64::powi(2., -5);
     let mean: f64 = 0.;
     let k = 1_000_000;
-    let mut generator = RandomGenerator::new(None);
+    let mut generator = new_random_generator();
 
     // generates normal random
     let first = Tensor::allocate(T::ZERO, k);

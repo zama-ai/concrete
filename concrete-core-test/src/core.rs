@@ -2,6 +2,7 @@ use crate::{REPETITIONS, SAMPLE_SIZE};
 use concrete_core::prelude::*;
 use concrete_core_fixture::fixture::*;
 use concrete_core_fixture::generation::{Maker, Precision32, Precision64};
+use concrete_csprng::seeders::UnixSeeder;
 use paste::paste;
 
 macro_rules! test {
@@ -10,7 +11,7 @@ macro_rules! test {
             #[test]
             fn [< test_ $fixture:snake _ $precision:snake _ $($types:snake)_+ >]() {
                 let mut maker = Maker::default();
-                let mut engine = CoreEngine::new(()).unwrap();
+                let mut engine = CoreEngine::new(Box::new(UnixSeeder::new(0))).unwrap();
                 let test_result =
                     <$fixture as Fixture<
                         $precision,

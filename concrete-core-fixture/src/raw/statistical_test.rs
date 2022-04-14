@@ -1,7 +1,6 @@
 //! A module containing statistical testing entry points for raw integers
-use crate::raw::generation::RawUnsignedIntegers;
+use crate::raw::generation::{RawUnsignedIntegers, GENERATOR};
 use concrete_commons::dispersion::{DispersionParameter, Variance};
-use concrete_core::backends::core::private::math::random::RandomGenerator;
 use kolmogorov_smirnov;
 
 /// A function performing a Kolmogorov Smirnov statistical test.
@@ -22,54 +21,59 @@ where
     let std_dev = expected_variance.get_standard_dev();
     let confidence = 0.95;
     let n_slots = expected_means.len();
-    let mut generator = RandomGenerator::new(None);
 
-    // allocate 2 slices: one for the error samples obtained, the second for fresh samples
-    // according to the std_dev computed
-    let mut sdk_samples = vec![0.0_f64; n_slots];
+    GENERATOR.with(|g| {
+        let mut generator = g.borrow_mut();
 
-    // recover the errors from each ciphertexts
-    sdk_samples
-        .iter_mut()
-        .zip(expected_means.iter())
-        .zip(tested.iter())
-        .for_each(|((sample, first), second)| *sample = torus_modular_distance(*first, *second));
+        // allocate 2 slices: one for the error samples obtained, the second for fresh samples
+        // according to the std_dev computed
+        let mut sdk_samples = vec![0.0_f64; n_slots];
 
-    // fill the theoretical sample vector according to std_dev
-    let theoretical_samples = generator
-        .random_gaussian_tensor(n_slots, 0., std_dev)
-        .into_container();
+        // recover the errors from each ciphertexts
+        sdk_samples
+            .iter_mut()
+            .zip(expected_means.iter())
+            .zip(tested.iter())
+            .for_each(|((sample, first), second)| {
+                *sample = torus_modular_distance(*first, *second)
+            });
 
-    // compute the Kolmogorov Smirnov test
-    let result = kolmogorov_smirnov::test_f64(
-        sdk_samples.as_slice(),
-        theoretical_samples.as_slice(),
-        confidence,
-    );
+        // fill the theoretical sample vector according to std_dev
+        let theoretical_samples = generator
+            .random_gaussian_tensor(n_slots, 0., std_dev)
+            .into_container();
 
-    !result.is_rejected | {
-        // compute the mean of our errors
-        let mut mean: f64 = sdk_samples.iter().sum();
-        mean /= sdk_samples.len() as f64;
+        // compute the Kolmogorov Smirnov test
+        let result = kolmogorov_smirnov::test_f64(
+            sdk_samples.as_slice(),
+            theoretical_samples.as_slice(),
+            confidence,
+        );
 
-        // compute the variance of the errors
-        let mut sdk_variance: f64 = sdk_samples.iter().map(|x| f64::powi(x - mean, 2)).sum();
-        sdk_variance /= (sdk_samples.len() - 1) as f64;
+        !result.is_rejected | {
+            // compute the mean of our errors
+            let mut mean: f64 = sdk_samples.iter().sum();
+            mean /= sdk_samples.len() as f64;
 
-        // compute the standard deviation
-        let sdk_std_log2 = f64::log2(f64::sqrt(sdk_variance));
-        let th_std_log2 = f64::log2(std_dev);
+            // compute the variance of the errors
+            let mut sdk_variance: f64 = sdk_samples.iter().map(|x| f64::powi(x - mean, 2)).sum();
+            sdk_variance /= (sdk_samples.len() - 1) as f64;
 
-        // test if theoretical_std_dev > sdk_std_dev
-        if sdk_std_log2 > th_std_log2 {
-            println!("sdk std {:?}, th std {:?}", sdk_std_log2, th_std_log2);
+            // compute the standard deviation
+            let sdk_std_log2 = f64::log2(f64::sqrt(sdk_variance));
+            let th_std_log2 = f64::log2(std_dev);
+
+            // test if theoretical_std_dev > sdk_std_dev
+            if sdk_std_log2 > th_std_log2 {
+                println!("sdk std {:?}, th std {:?}", sdk_std_log2, th_std_log2);
+            }
+            // Here due to rounding issues we give a 0.5 "slack" to the comparison
+            // The 0.5 value itself is arbitrary (we chose it to correspond to a rounding)
+            // and may be changed. Actually we plan to re-work the statistical test
+            // which we hope will remove the need for this.
+            sdk_std_log2 <= th_std_log2 + 0.5
         }
-        // Here due to rounding issues we give a 0.5 "slack" to the comparison
-        // The 0.5 value itself is arbitrary (we chose it to correspond to a rounding)
-        // and may be changed. Actually we plan to re-work the statistical test
-        // which we hope will remove the need for this.
-        sdk_std_log2 <= th_std_log2 + 0.5
-    }
+    })
 }
 
 pub fn assert_delta_std_dev<Raw>(

@@ -2,7 +2,9 @@ use crate::benchmark::BenchmarkFixture;
 use concrete_core::prelude::*;
 use concrete_core_fixture::fixture::*;
 use concrete_core_fixture::generation::{Maker, Precision32, Precision64};
+use concrete_csprng::seeders::UnixSeeder;
 use criterion::Criterion;
+
 use paste::paste;
 
 macro_rules! bench {
@@ -20,7 +22,7 @@ macro_rules! bench {
         pub fn bench() {
             let mut criterion = Criterion::default().configure_from_args();
             let mut maker = Maker::default();
-            let mut engine = CoreEngine::new(()).unwrap();
+            let mut engine = CoreEngine::new(Box::new(UnixSeeder::new(0))).unwrap();
             $(
                 paste!{
                     bench!{$fixture, Precision32, ($([< $types 32 >]),+), maker, engine, criterion}

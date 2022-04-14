@@ -1,8 +1,17 @@
 //! A module containing sampling entry points for raw integers
 use concrete_commons::numeric::{CastInto, UnsignedInteger};
 use concrete_core::backends::core::private::math::random::RandomGenerator;
+use concrete_csprng::generators::SoftwareRandomGenerator;
+use concrete_csprng::seeders::{Seeder, UnixSeeder};
+use std::cell::RefCell;
 use std::fmt::Debug;
 use std::ops::Range;
+
+thread_local! {
+    pub static GENERATOR: RefCell<RandomGenerator<SoftwareRandomGenerator>> = RefCell::new(
+        RandomGenerator::new(UnixSeeder::new(0).seed())
+        );
+}
 
 /// A trait to generate raw unsigned integer values.
 pub trait RawUnsignedIntegers: UnsignedInteger + CastInto<f64> + CastInto<i64> + Debug {
@@ -47,55 +56,71 @@ impl RawUnsignedIntegers for u32 {
     }
 
     fn pick(array: &[Self]) -> Self {
-        let mut generator = RandomGenerator::new(None);
-        let index: u16 = generator.random_uniform();
-        let index = index % array.len() as u16;
-        array[index as usize]
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let index: u16 = generator.random_uniform();
+            let index = index % array.len() as u16;
+            array[index as usize]
+        })
     }
 
     fn pick_vec(array: &[Self], size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        (0..size)
-            .map(|_| {
-                let index: u16 = generator.random_uniform();
-                let index = index % array.len() as u16;
-                array[index as usize]
-            })
-            .collect()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            (0..size)
+                .map(|_| {
+                    let index: u16 = generator.random_uniform();
+                    let index = index % array.len() as u16;
+                    array[index as usize]
+                })
+                .collect()
+        })
     }
 
     fn uniform() -> Self {
-        let mut generator = RandomGenerator::new(None);
-        generator.random_uniform()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator.random_uniform()
+        })
     }
     fn uniform_vec(size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        generator.random_uniform_tensor(size).into_container()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator.random_uniform_tensor(size).into_container()
+        })
     }
     fn uniform_n_msb(n: usize) -> Self {
-        let mut generator = RandomGenerator::new(None);
-        generator.random_uniform_n_msb(n)
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator.random_uniform_n_msb(n)
+        })
     }
     fn uniform_n_msb_vec(n: usize, size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        generator
-            .random_uniform_n_msb_tensor(size, n)
-            .into_container()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator
+                .random_uniform_n_msb_tensor(size, n)
+                .into_container()
+        })
     }
 
     fn uniform_between(range: Range<usize>) -> Self {
-        let mut generator = RandomGenerator::new(None);
-        let val: u32 = generator.random_uniform();
-        val % ((range.end as u32) - (range.start as u32)) + (range.start as u32)
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let val: u32 = generator.random_uniform();
+            val % ((range.end as u32) - (range.start as u32)) + (range.start as u32)
+        })
     }
 
     fn uniform_between_vec(range: Range<usize>, size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        let mut output = generator.random_uniform_tensor(size).into_container();
-        output.iter_mut().for_each(|val| {
-            *val %= ((range.end as u32) - (range.start as u32)) + (range.start as u32)
-        });
-        output
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let mut output = generator.random_uniform_tensor(size).into_container();
+            output.iter_mut().for_each(|val| {
+                *val %= ((range.end as u32) - (range.start as u32)) + (range.start as u32)
+            });
+            output
+        })
     }
 
     fn uniform_zero_centered(width: usize) -> Self {
@@ -106,15 +131,17 @@ impl RawUnsignedIntegers for u32 {
         val as u32
     }
     fn uniform_zero_centered_vec(width: usize, size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        let mut output = generator.random_uniform_tensor(size).into_container();
-        output.iter_mut().for_each(|val| {
-            let v = *val % (width as u32);
-            let v: i32 = v as i32;
-            let v = v - ((width / 2) as i32);
-            *val = v as u32;
-        });
-        output
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let mut output = generator.random_uniform_tensor(size).into_container();
+            output.iter_mut().for_each(|val| {
+                let v = *val % (width as u32);
+                let v: i32 = v as i32;
+                let v = v - ((width / 2) as i32);
+                *val = v as u32;
+            });
+            output
+        })
     }
 }
 
@@ -131,6 +158,7 @@ impl RawUnsignedIntegers for u64 {
     fn zero_vec(size: usize) -> Vec<Self> {
         vec![0u64; size]
     }
+
     fn power_of_two(pow: usize) -> Self {
         2u64.pow(pow as u32)
     }
@@ -140,54 +168,71 @@ impl RawUnsignedIntegers for u64 {
     }
 
     fn pick(array: &[Self]) -> Self {
-        let mut generator = RandomGenerator::new(None);
-        let index: u16 = generator.random_uniform();
-        let index = index % array.len() as u16;
-        array[index as usize]
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let index: u16 = generator.random_uniform();
+            let index = index % array.len() as u16;
+            array[index as usize]
+        })
     }
 
     fn pick_vec(array: &[Self], size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        (0..size)
-            .map(|_| {
-                let index: u16 = generator.random_uniform();
-                let index = index % array.len() as u16;
-                array[index as usize]
-            })
-            .collect()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            (0..size)
+                .map(|_| {
+                    let index: u16 = generator.random_uniform();
+                    let index = index % array.len() as u16;
+                    array[index as usize]
+                })
+                .collect()
+        })
     }
+
     fn uniform() -> Self {
-        let mut generator = RandomGenerator::new(None);
-        generator.random_uniform()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator.random_uniform()
+        })
     }
     fn uniform_vec(size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        generator.random_uniform_tensor(size).into_container()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator.random_uniform_tensor(size).into_container()
+        })
     }
     fn uniform_n_msb(n: usize) -> Self {
-        let mut generator = RandomGenerator::new(None);
-        generator.random_uniform_n_msb(n)
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator.random_uniform_n_msb(n)
+        })
     }
     fn uniform_n_msb_vec(n: usize, size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        generator
-            .random_uniform_n_msb_tensor(size, n)
-            .into_container()
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            generator
+                .random_uniform_n_msb_tensor(size, n)
+                .into_container()
+        })
     }
 
     fn uniform_between(range: Range<usize>) -> Self {
-        let mut generator = RandomGenerator::new(None);
-        let val: u64 = generator.random_uniform();
-        val % ((range.end as u64) - (range.start as u64)) + (range.start as u64)
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let val: u64 = generator.random_uniform();
+            val % ((range.end as u64) - (range.start as u64)) + (range.start as u64)
+        })
     }
 
     fn uniform_between_vec(range: Range<usize>, size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        let mut output = generator.random_uniform_tensor(size).into_container();
-        output.iter_mut().for_each(|val| {
-            *val %= ((range.end as u64) - (range.start as u64)) + (range.start as u64)
-        });
-        output
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let mut output = generator.random_uniform_tensor(size).into_container();
+            output.iter_mut().for_each(|val| {
+                *val %= ((range.end as u64) - (range.start as u64)) + (range.start as u64)
+            });
+            output
+        })
     }
 
     fn uniform_zero_centered(width: usize) -> Self {
@@ -198,14 +243,16 @@ impl RawUnsignedIntegers for u64 {
         val as u64
     }
     fn uniform_zero_centered_vec(width: usize, size: usize) -> Vec<Self> {
-        let mut generator = RandomGenerator::new(None);
-        let mut output = generator.random_uniform_tensor(size).into_container();
-        output.iter_mut().for_each(|val| {
-            let v = *val % (width as u64);
-            let v: i64 = v as i64;
-            let v = v - ((width / 2) as i64);
-            *val = v as u64;
-        });
-        output
+        GENERATOR.with(|g| {
+            let mut generator = g.borrow_mut();
+            let mut output = generator.random_uniform_tensor(size).into_container();
+            output.iter_mut().for_each(|val| {
+                let v = *val % (width as u64);
+                let v: i64 = v as i64;
+                let v = v - ((width / 2) as i64);
+                *val = v as u64;
+            });
+            output
+        })
     }
 }

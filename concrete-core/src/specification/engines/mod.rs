@@ -77,7 +77,7 @@ pub trait AbstractEngine: sealed::AbstractEngineSeal {
     /// The error associated to the engine.
     type EngineError: std::error::Error;
 
-    /// The engine constructor parameter type.
+    /// The constructor parameters type.
     type Parameters;
 
     /// A constructor for the engine.

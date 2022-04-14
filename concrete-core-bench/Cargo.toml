@@ -6,6 +6,7 @@ license = "BSD-3-Clause-Clear"
 
 [dependencies]
 concrete-core = { path="../concrete-core" }
+concrete-csprng = { path = "../concrete-csprng"}
 concrete-core-fixture = { path="../concrete-core-fixture" }
 paste = "1.0"
 criterion = "0.3.5"

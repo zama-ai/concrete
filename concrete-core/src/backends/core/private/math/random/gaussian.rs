@@ -17,8 +17,8 @@ pub struct Gaussian<T: FloatingPoint> {
 macro_rules! implement_gaussian {
     ($T:ty, $S:ty) => {
         impl RandomGenerable<Gaussian<$T>> for ($T, $T) {
-            fn generate_one(
-                generator: &mut RandomGenerator,
+            fn generate_one<G: PrngRandomGenerator>(
+                generator: &mut RandomGenerator<G>,
                 Gaussian { std, mean }: Gaussian<$T>,
             ) -> Self {
                 let output: ($T, $T);
@@ -59,7 +59,10 @@ impl<Torus> RandomGenerable<Gaussian<f64>> for (Torus, Torus)
 where
     Torus: UnsignedTorus,
 {
-    fn generate_one(generator: &mut RandomGenerator, distribution: Gaussian<f64>) -> Self {
+    fn generate_one<G: PrngRandomGenerator>(
+        generator: &mut RandomGenerator<G>,
+        distribution: Gaussian<f64>,
+    ) -> Self {
         let (s1, s2) = <(f64, f64)>::generate_one(generator, distribution);
         (
             <Torus as FromTorus<f64>>::from_torus(s1),
@@ -72,7 +75,10 @@ impl<Torus> RandomGenerable<Gaussian<f64>> for Torus
 where
     Torus: UnsignedTorus,
 {
-    fn generate_one(generator: &mut RandomGenerator, distribution: Gaussian<f64>) -> Self {
+    fn generate_one<G: PrngRandomGenerator>(
+        generator: &mut RandomGenerator<G>,
+        distribution: Gaussian<f64>,
+    ) -> Self {
         let (s1, _) = <(f64, f64)>::generate_one(generator, distribution);
         <Torus as FromTorus<f64>>::from_torus(s1)
     }

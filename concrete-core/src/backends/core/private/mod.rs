@@ -45,6 +45,9 @@ pub mod utils;
 pub mod test_tools {
     use rand::Rng;
 
+    use crate::backends::core::private::crypto::secret::generators::{
+        EncryptionRandomGenerator, SecretRandomGenerator,
+    };
     use crate::backends::core::private::math::random::{RandomGenerable, RandomGenerator, Uniform};
     use crate::backends::core::private::math::tensor::{AsRefSlice, AsRefTensor};
     use crate::backends::core::private::math::torus::UnsignedTorus;
@@ -54,6 +57,8 @@ pub mod test_tools {
         CiphertextCount, DecompositionBaseLog, DecompositionLevelCount, GlweDimension,
         LweDimension, PlaintextCount, PolynomialSize,
     };
+    use concrete_csprng::generators::SoftwareRandomGenerator;
+    use concrete_csprng::seeders::{Seed, Seeder};
 
     fn modular_distance<T: UnsignedInteger>(first: T, other: T) -> T {
         let d0 = first.wrapping_sub(other);
@@ -70,6 +75,30 @@ pub mod test_tools {
         } else {
             let d: f64 = d1.cast_into();
             -d / 2_f64.powi(T::BITS as i32)
+        }
+    }
+
+    pub fn new_random_generator() -> RandomGenerator<SoftwareRandomGenerator> {
+        RandomGenerator::new(random_seed())
+    }
+
+    pub fn new_secret_random_generator() -> SecretRandomGenerator<SoftwareRandomGenerator> {
+        SecretRandomGenerator::new(random_seed())
+    }
+
+    pub fn new_encryption_random_generator() -> EncryptionRandomGenerator<SoftwareRandomGenerator> {
+        EncryptionRandomGenerator::new(random_seed(), &mut UnsafeRandSeeder)
+    }
+
+    pub fn random_seed() -> Seed {
+        Seed(rand::thread_rng().gen())
+    }
+
+    pub struct UnsafeRandSeeder;
+
+    impl Seeder for UnsafeRandSeeder {
+        fn seed(&mut self) -> Seed {
+            Seed(rand::thread_rng().gen())
         }
     }
 
@@ -110,7 +139,7 @@ pub mod test_tools {
         let std_dev = dist.get_standard_dev();
         let confidence = 0.95;
         let n_slots = first.as_tensor().len();
-        let mut generator = RandomGenerator::new(None);
+        let mut generator = new_random_generator();
 
         // allocate 2 slices: one for the error samples obtained, the second for fresh samples
         // according to the std_dev computed
@@ -227,13 +256,13 @@ pub mod test_tools {
     pub fn random_uint_between<T: UnsignedInteger + RandomGenerable<Uniform>>(
         range: std::ops::Range<T>,
     ) -> T {
-        let mut generator = RandomGenerator::new(None);
+        let mut generator = new_random_generator();
         let val: T = generator.random_uniform();
         val % (range.end - range.start) + range.start
     }
 
     pub fn any_uint<T: UnsignedInteger + RandomGenerable<Uniform>>() -> T {
-        let mut generator = RandomGenerator::new(None);
+        let mut generator = new_random_generator();
         generator.random_uniform()
     }
 }

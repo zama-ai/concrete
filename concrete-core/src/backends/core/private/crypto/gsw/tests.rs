@@ -1,14 +1,10 @@
 use crate::backends::core::private::crypto::encoding::Plaintext;
 use crate::backends::core::private::crypto::gsw::GswCiphertext;
 use crate::backends::core::private::crypto::lwe::LweCiphertext;
-use crate::backends::core::private::crypto::secret::generators::{
-    EncryptionRandomGenerator, SecretRandomGenerator,
-};
 use crate::backends::core::private::crypto::secret::LweSecretKey;
-use crate::backends::core::private::math::random::RandomGenerator;
 use crate::backends::core::private::math::tensor::{AsMutSlice, Tensor};
 use crate::backends::core::private::math::torus::UnsignedTorus;
-use crate::backends::core::private::test_tools::assert_noise_distribution;
+use crate::backends::core::private::test_tools::*;
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_commons::parameters::{
@@ -30,9 +26,9 @@ fn test_external_product_gsw<T: UnsignedTorus>() {
     let std_dev = LogStandardDev(-20.);
     for i in 0..n_tests {
         // We instantiate the random generators.
-        let mut random_generator = RandomGenerator::new(None);
-        let mut secret_generator = SecretRandomGenerator::new(None);
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
+        let mut random_generator = new_random_generator();
+        let mut secret_generator = new_secret_random_generator();
+        let mut encryption_generator = new_encryption_random_generator();
 
         // generate the lwe secret key
         let lwe_sk = LweSecretKey::generate_binary(dimension, &mut secret_generator);
@@ -108,9 +104,9 @@ fn test_cmux_0_gsw<T: UnsignedTorus>() {
     let base_log = DecompositionBaseLog(7);
     let std_dev = LogStandardDev(-25.);
     for i in 0..n_tests {
-        let mut random_generator = RandomGenerator::new(None);
-        let mut secret_generator = SecretRandomGenerator::new(None);
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
+        let mut random_generator = new_random_generator();
+        let mut secret_generator = new_secret_random_generator();
+        let mut encryption_generator = new_encryption_random_generator();
 
         // generate the secret key
         let lwe_sk = LweSecretKey::generate_binary(dimension, &mut secret_generator);
@@ -175,9 +171,9 @@ fn test_cmux_1_gsw<T: UnsignedTorus>() {
     let base_log = DecompositionBaseLog(7);
     let std_dev = LogStandardDev(-25.);
     for i in 0..n_tests {
-        let mut random_generator = RandomGenerator::new(None);
-        let mut secret_generator = SecretRandomGenerator::new(None);
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
+        let mut random_generator = new_random_generator();
+        let mut secret_generator = new_secret_random_generator();
+        let mut encryption_generator = new_encryption_random_generator();
 
         // generate the secret key
         let lwe_sk = LweSecretKey::generate_binary(dimension, &mut secret_generator);

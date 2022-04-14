@@ -1,14 +1,16 @@
-use crate::backends::core::private::math::random::{Gaussian, RandomGenerable, RandomGenerator};
+use crate::backends::core::private::math::random::{
+    Gaussian, PrngRandomGenerator, RandomGenerable, RandomGenerator, Seed,
+};
 use crate::backends::core::private::math::tensor::Tensor;
 use crate::backends::core::private::math::torus::UnsignedTorus;
 use concrete_commons::dispersion::DispersionParameter;
 
 /// A random number generator which can be used to generate secret keys.
-pub struct SecretRandomGenerator(RandomGenerator);
+pub struct SecretRandomGenerator<G: PrngRandomGenerator>(RandomGenerator<G>);
 
-impl SecretRandomGenerator {
+impl<G: PrngRandomGenerator> SecretRandomGenerator<G> {
     /// Creates a new generator, optionally seeding it with the given value.
-    pub fn new(seed: Option<u128>) -> SecretRandomGenerator {
+    pub fn new(seed: Seed) -> SecretRandomGenerator<G> {
         SecretRandomGenerator(RandomGenerator::new(seed))
     }
 

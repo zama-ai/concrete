@@ -8,7 +8,10 @@ macro_rules! implement_uniform_ternary {
     ($T:ty) => {
         impl RandomGenerable<UniformTernary> for $T {
             #[allow(unused)]
-            fn generate_one(generator: &mut RandomGenerator, distribution: UniformTernary) -> Self {
+            fn generate_one<G: PrngRandomGenerator>(
+                generator: &mut RandomGenerator<G>,
+                distribution: UniformTernary,
+            ) -> Self {
                 loop {
                     match generator.generate_next() & 3 {
                         0 => return 0,

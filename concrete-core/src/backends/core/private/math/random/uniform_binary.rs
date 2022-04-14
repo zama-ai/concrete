@@ -8,7 +8,10 @@ macro_rules! implement_uniform_binary {
     ($T:ty) => {
         impl RandomGenerable<UniformBinary> for $T {
             #[allow(unused)]
-            fn generate_one(generator: &mut RandomGenerator, distribution: UniformBinary) -> Self {
+            fn generate_one<G: PrngRandomGenerator>(
+                generator: &mut RandomGenerator<G>,
+                distribution: UniformBinary,
+            ) -> Self {
                 if generator.generate_next() & 1 == 1 {
                     1
                 } else {

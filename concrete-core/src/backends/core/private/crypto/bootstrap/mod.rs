@@ -12,15 +12,18 @@ mod standard;
 #[cfg(all(test, feature = "multithread"))]
 mod test {
     use crate::backends::core::private::crypto::bootstrap::StandardBootstrapKey;
-    use crate::backends::core::private::crypto::secret::generators::{
-        EncryptionRandomGenerator, SecretRandomGenerator,
-    };
+    use crate::backends::core::private::crypto::secret::generators::EncryptionRandomGenerator;
     use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
     use crate::backends::core::private::math::torus::UnsignedTorus;
+    use crate::backends::core::private::test_tools::{
+        new_secret_random_generator, UnsafeRandSeeder,
+    };
     use concrete_commons::dispersion::StandardDev;
     use concrete_commons::parameters::{
         DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
     };
+    use concrete_csprng::generators::SoftwareRandomGenerator;
+    use concrete_csprng::seeders::Seed;
 
     fn test_bsk_gen_equivalence<T: UnsignedTorus + Send + Sync>() {
         for _ in 0..10 {
@@ -42,7 +45,7 @@ mod test {
             let mask_seed = crate::backends::core::private::test_tools::any_usize() as u128;
             let noise_seed = crate::backends::core::private::test_tools::any_usize() as u128;
 
-            let mut secret_generator = SecretRandomGenerator::new(None);
+            let mut secret_generator = new_secret_random_generator();
             let lwe_sk = LweSecretKey::generate_binary(lwe_dim, &mut secret_generator);
             let glwe_sk =
                 GlweSecretKey::generate_binary(glwe_dim, poly_size, &mut secret_generator);
@@ -55,8 +58,12 @@ mod test {
                 base_log,
                 lwe_dim,
             );
-            let mut encryption_generator = EncryptionRandomGenerator::new(Some(mask_seed));
-            encryption_generator.seed_noise_generator(noise_seed);
+            let mut encryption_generator =
+                EncryptionRandomGenerator::<SoftwareRandomGenerator>::new(
+                    Seed(mask_seed),
+                    &mut UnsafeRandSeeder,
+                );
+            encryption_generator.seed_noise_generator(Seed(noise_seed));
             mono_bsk.fill_with_new_key(
                 &lwe_sk,
                 &glwe_sk,
@@ -72,8 +79,12 @@ mod test {
                 base_log,
                 lwe_dim,
             );
-            let mut encryption_generator = EncryptionRandomGenerator::new(Some(mask_seed));
-            encryption_generator.seed_noise_generator(noise_seed);
+            let mut encryption_generator =
+                EncryptionRandomGenerator::<SoftwareRandomGenerator>::new(
+                    Seed(mask_seed),
+                    &mut UnsafeRandSeeder,
+                );
+            encryption_generator.seed_noise_generator(Seed(noise_seed));
             multi_bsk.par_fill_with_new_key(
                 &lwe_sk,
                 &glwe_sk,

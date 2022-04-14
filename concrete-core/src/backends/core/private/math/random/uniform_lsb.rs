@@ -11,7 +11,10 @@ pub struct UniformLsb {
 macro_rules! implement_uniform_some_lsb {
     ($T:ty) => {
         impl RandomGenerable<UniformLsb> for $T {
-            fn generate_one(generator: &mut RandomGenerator, UniformLsb { n }: UniformLsb) -> Self {
+            fn generate_one<G: PrngRandomGenerator>(
+                generator: &mut RandomGenerator<G>,
+                UniformLsb { n }: UniformLsb,
+            ) -> Self {
                 <$T>::generate_one(generator, Uniform) >> (<$T as Numeric>::BITS - n)
             }
         }

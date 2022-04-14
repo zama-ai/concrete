@@ -14,8 +14,8 @@ macro_rules! implement_uniform_with_zeros {
     ($T:ty, $bits:literal) => {
         impl RandomGenerable<UniformWithZeros> for $T {
             #[allow(unused)]
-            fn generate_one(
-                generator: &mut RandomGenerator,
+            fn generate_one<G: PrngRandomGenerator>(
+                generator: &mut RandomGenerator<G>,
                 UniformWithZeros { prob_zero }: UniformWithZeros,
             ) -> Self {
                 let uniform_u32: u32 = u32::generate_one(generator, Uniform);

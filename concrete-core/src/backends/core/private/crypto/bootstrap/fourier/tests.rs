@@ -11,14 +11,10 @@ use crate::backends::core::private::crypto::bootstrap::{
 };
 use crate::backends::core::private::crypto::encoding::PlaintextList;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
-use crate::backends::core::private::crypto::secret::generators::{
-    EncryptionRandomGenerator, SecretRandomGenerator,
-};
 use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::backends::core::private::math::fft::Complex64;
-use crate::backends::core::private::math::random::RandomGenerator;
 use crate::backends::core::private::math::torus::UnsignedTorus;
-use crate::backends::core::private::test_tools::assert_noise_distribution;
+use crate::backends::core::private::test_tools::*;
 
 fn test_cmux_0<T: UnsignedTorus>() {
     // fix different polynomial degrees
@@ -32,9 +28,9 @@ fn test_cmux_0<T: UnsignedTorus>() {
         let std_dev_bsk = LogStandardDev(-20.);
         let std_dev_rlwe = LogStandardDev(-25.);
 
-        let mut random_generator = RandomGenerator::new(None);
-        let mut secret_generator = SecretRandomGenerator::new(None);
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
+        let mut random_generator = new_random_generator();
+        let mut secret_generator = new_secret_random_generator();
+        let mut encryption_generator = new_encryption_random_generator();
 
         // generate the secret keys
         let rlwe_sk = GlweSecretKey::generate_binary(
@@ -143,9 +139,9 @@ fn test_cmux_1<T: UnsignedTorus>() {
         let base_log = DecompositionBaseLog(7);
         let std_dev_bsk = LogStandardDev(-20.);
         let std_dev_rlwe = LogStandardDev(-25.);
-        let mut random_generator = RandomGenerator::new(None);
-        let mut secret_generator = SecretRandomGenerator::new(None);
-        let mut encryption_generator = EncryptionRandomGenerator::new(None);
+        let mut random_generator = new_random_generator();
+        let mut secret_generator = new_secret_random_generator();
+        let mut encryption_generator = new_encryption_random_generator();
 
         // generate the secret keys
         let rlwe_sk = GlweSecretKey::generate_binary(

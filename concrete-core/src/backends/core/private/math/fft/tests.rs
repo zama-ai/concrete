@@ -3,8 +3,8 @@ use crate::backends::core::private::math::fft::{
     Complex64, Fft, FourierPolynomial, ALLOWED_POLY_SIZE,
 };
 use crate::backends::core::private::math::polynomial::Polynomial;
-use crate::backends::core::private::math::random::RandomGenerator;
 use crate::backends::core::private::math::tensor::{AsMutTensor, AsRefTensor};
+use crate::backends::core::private::test_tools::*;
 use concrete_commons::numeric::Numeric;
 use concrete_commons::parameters::PolynomialSize;
 use concrete_fftw::array::AlignedVec;
@@ -37,7 +37,7 @@ fn test_single_forward_backward() {
             *output = (input * corrector).re;
         }
     }
-    let mut generator = RandomGenerator::new(None);
+    let mut generator = new_random_generator();
     for _ in 0..100 {
         for size in &ALLOWED_POLY_SIZE {
             let fft = Fft::new(PolynomialSize(*size));
@@ -90,7 +90,7 @@ fn test_two_forward_backward() {
             *output2 = interm.im;
         }
     }
-    let mut generator = RandomGenerator::new(None);
+    let mut generator = new_random_generator();
     for _ in 0..100 {
         for size in &ALLOWED_POLY_SIZE {
             let fft = Fft::new(PolynomialSize(*size));

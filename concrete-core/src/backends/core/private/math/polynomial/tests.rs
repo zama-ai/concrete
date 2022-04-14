@@ -3,13 +3,13 @@ use rand::Rng;
 use concrete_commons::parameters::{MonomialDegree, PolynomialSize};
 
 use crate::backends::core::private::math::polynomial::Polynomial;
-use crate::backends::core::private::math::random::RandomGenerator;
 use crate::backends::core::private::math::torus::UnsignedTorus;
+use crate::backends::core::private::test_tools::*;
 
 fn test_multiply_divide_unit_monomial<T: UnsignedTorus>() {
     //! tests if multiply_by_monomial and divide_by_monomial cancel each other
     let mut rng = rand::thread_rng();
-    let mut generator = RandomGenerator::new(None);
+    let mut generator = new_random_generator();
 
     // settings
     let polynomial_size = (rng.gen::<usize>() % 2048) + 1;
@@ -65,7 +65,7 @@ fn test_multiply_karatsuba<T: UnsignedTorus>() {
         // random settings settings
         let polynomial_log = (rng.gen::<usize>() % 7) + 6;
         let polynomial_size = PolynomialSize(1 << polynomial_log);
-        let mut generator = RandomGenerator::new(None);
+        let mut generator = new_random_generator();
 
         // generates two random Torus polynomials
         let poly_1 = Polynomial::from_container(

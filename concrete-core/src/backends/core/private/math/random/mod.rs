@@ -15,6 +15,7 @@
 //! [`RandomGenerator`] instead.
 use crate::backends::core::private::math::tensor::{AsMutTensor, Tensor};
 use concrete_commons::numeric::FloatingPoint;
+
 pub use gaussian::*;
 pub use generator::*;
 pub use uniform::*;
@@ -40,9 +41,12 @@ pub trait RandomGenerable<D: Distribution>
 where
     Self: Sized,
 {
-    fn generate_one(generator: &mut RandomGenerator, distribution: D) -> Self;
-    fn generate_tensor(
-        generator: &mut RandomGenerator,
+    fn generate_one<G: PrngRandomGenerator>(
+        generator: &mut RandomGenerator<G>,
+        distribution: D,
+    ) -> Self;
+    fn generate_tensor<G: PrngRandomGenerator>(
+        generator: &mut RandomGenerator<G>,
         distribution: D,
         size: usize,
     ) -> Tensor<Vec<Self>> {
@@ -50,8 +54,11 @@ where
             .map(|_| Self::generate_one(generator, distribution))
             .collect()
     }
-    fn fill_tensor<Tens>(generator: &mut RandomGenerator, distribution: D, tensor: &mut Tens)
-    where
+    fn fill_tensor<Tens, G: PrngRandomGenerator>(
+        generator: &mut RandomGenerator<G>,
+        distribution: D,
+        tensor: &mut Tens,
+    ) where
         Tens: AsMutTensor<Element = Self>,
     {
         tensor.as_mut_tensor().iter_mut().for_each(|s| {

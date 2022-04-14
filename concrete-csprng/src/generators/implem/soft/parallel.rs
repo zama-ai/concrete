@@ -1,9 +1,9 @@
 use super::*;
 use crate::generators::aes_ctr::{AesCtrGenerator, ParallelChildrenIterator};
+use crate::generators::implem::soft::block_cipher::SoftwareBlockCipher;
 use crate::generators::{BytesPerChild, ChildrenCount, ForkError, ParallelRandomGenerator};
 use rayon::iter::plumbing::{Consumer, ProducerCallback, UnindexedConsumer};
 use rayon::prelude::*;
-use crate::generators::implem::soft::block_cipher::SoftwareBlockCipher;
 
 /// The parallel children iterator used by [`SoftwareRandomGenerator`].
 ///

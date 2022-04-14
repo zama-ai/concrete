@@ -6,6 +6,7 @@ license = "BSD-3-Clause-Clear"
 
 [dependencies]
 concrete-core = { path="../concrete-core" }
+concrete-csprng = { path = "../concrete-csprng", features = ["seeder_unix", "generator_soft"]}
 concrete-commons = { path="../concrete-commons" }
 concrete-npe = { path="../concrete-npe" }
 kolmogorov_smirnov = "1.1.0"

@@ -54,7 +54,7 @@ impl Error for ForkError {}
 /// A trait for cryptographically secure pseudo-random generators.
 ///
 /// See the [crate-level](#crate) documentation for details.
-pub trait RandomGenerator: Iterator<Item = u8> {
+pub trait RandomGenerator: Iterator<Item = u8> + Send {
     /// The iterator over children generators, returned by `try_fork` in case of success.
     type ChildrenIter: Iterator<Item = Self>;
 

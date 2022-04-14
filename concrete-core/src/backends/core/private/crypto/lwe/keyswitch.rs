@@ -13,6 +13,7 @@ use crate::backends::core::private::crypto::secret::LweSecretKey;
 use crate::backends::core::private::math::decomposition::{
     DecompositionLevel, DecompositionTerm, SignedDecomposer,
 };
+use crate::backends::core::private::math::random::PrngRandomGenerator;
 use crate::backends::core::private::math::tensor::{
     ck_dim_div, ck_dim_eq, tensor_traits, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
 };
@@ -328,17 +329,18 @@ impl<Cont> LweKeyswitchKey<Cont> {
     ///
     /// assert!(!ksk.as_tensor().iter().all(|a| *a == 0));
     /// ```
-    pub fn fill_with_keyswitch_key<InKeyCont, OutKeyCont, Scalar>(
+    pub fn fill_with_keyswitch_key<InKeyCont, OutKeyCont, Scalar, Gen>(
         &mut self,
         before_key: &LweSecretKey<BinaryKeyKind, InKeyCont>,
         after_key: &LweSecretKey<BinaryKeyKind, OutKeyCont>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut EncryptionRandomGenerator,
+        generator: &mut EncryptionRandomGenerator<Gen>,
     ) where
         Self: AsMutTensor<Element = Scalar>,
         LweSecretKey<BinaryKeyKind, InKeyCont>: AsRefTensor<Element = Scalar>,
         LweSecretKey<BinaryKeyKind, OutKeyCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
+        Gen: PrngRandomGenerator,
     {
         // We instantiate a buffer
         let mut messages = PlaintextList::from_container(vec![

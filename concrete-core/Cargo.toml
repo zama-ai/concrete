@@ -23,7 +23,7 @@ serde_test = "1.0.125"
 [dependencies]
 concrete-fftw = { version = "=0.1.2" }
 concrete-commons = "=0.2.0"
-concrete-csprng = "=0.1.7"
+concrete-csprng = {version = "0.2", features = []}
 serde = { version = "1.0", optional = true }
 lazy_static = "1.4.0"
 rayon = { version = "1.5.0", optional = true }
@@ -35,9 +35,13 @@ bench = false
 [features]
 default = ["backend_core"]
 doc = []
-backend_core = []
-slow-csprng = ["concrete-csprng/slow"]
-multithread = ["rayon", "concrete-csprng/multithread"]
+backend_core = [
+    "concrete-csprng/generator_x86_64_aesni",
+    "concrete-csprng/seeder_x86_64_rdseed",
+    "concrete-csprng/seeder_unix"
+]
+#slow-csprng = ["concrete-csprng/slow"]
+multithread = ["rayon", "concrete-csprng/parallel"]
 serde_serialize = ["serde", "serde/derive", "concrete-commons/serde_serialize",
     "concrete-fftw/serialize"]
 

@@ -18,7 +18,9 @@ use crate::backends::core::private::crypto::lwe::{LweCiphertext, LweList};
 use crate::backends::core::private::crypto::secret::generators::{
     EncryptionRandomGenerator, SecretRandomGenerator,
 };
-use crate::backends::core::private::math::random::{Gaussian, RandomGenerable};
+use crate::backends::core::private::math::random::{
+    Gaussian, PrngParallelRandomGenerator, PrngRandomGenerator, RandomGenerable,
+};
 use crate::backends::core::private::math::tensor::{
     ck_dim_eq, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, IntoTensor, Tensor,
 };
@@ -54,7 +56,10 @@ where
     ///     LweSecretKey::generate_binary(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
-    pub fn generate_binary(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
+    pub fn generate_binary<Gen: PrngRandomGenerator>(
+        size: LweDimension,
+        generator: &mut SecretRandomGenerator<Gen>,
+    ) -> Self {
         LweSecretKey {
             tensor: generator.random_binary_tensor(size.0),
             kind: PhantomData,
@@ -81,7 +86,10 @@ where
     ///     LweSecretKey::generate_ternary(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
-    pub fn generate_ternary(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
+    pub fn generate_ternary<Gen: PrngRandomGenerator>(
+        size: LweDimension,
+        generator: &mut SecretRandomGenerator<Gen>,
+    ) -> Self {
         LweSecretKey {
             tensor: generator.random_ternary_tensor(size.0),
             kind: PhantomData,
@@ -109,7 +117,10 @@ where
     ///     LweSecretKey::generate_gaussian(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
-    pub fn generate_gaussian(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
+    pub fn generate_gaussian<Gen: PrngRandomGenerator>(
+        size: LweDimension,
+        generator: &mut SecretRandomGenerator<Gen>,
+    ) -> Self {
         LweSecretKey {
             tensor: generator.random_gaussian_tensor(size.0),
             kind: PhantomData,
@@ -136,7 +147,10 @@ where
     ///     LweSecretKey::generate_uniform(LweDimension(256), &mut generator);
     /// assert_eq!(secret_key.key_size(), LweDimension(256));
     /// ```
-    pub fn generate_uniform(size: LweDimension, generator: &mut SecretRandomGenerator) -> Self {
+    pub fn generate_uniform<Gen: PrngRandomGenerator>(
+        size: LweDimension,
+        generator: &mut SecretRandomGenerator<Gen>,
+    ) -> Self {
         LweSecretKey {
             tensor: generator.random_uniform_tensor(size.0),
             kind: PhantomData,
@@ -317,16 +331,17 @@ where
     ///
     /// assert!((decoded.0 - clear.0).abs() < 0.1);
     /// ```
-    pub fn encrypt_lwe<OutputCont, Scalar>(
+    pub fn encrypt_lwe<OutputCont, Scalar, Gen>(
         &self,
         output: &mut LweCiphertext<OutputCont>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut EncryptionRandomGenerator,
+        generator: &mut EncryptionRandomGenerator<Gen>,
     ) where
         Self: AsRefTensor<Element = Scalar>,
         LweCiphertext<OutputCont>: AsMutTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
+        Gen: PrngRandomGenerator,
     {
         let (output_body, mut output_masks) = output.get_mut_body_and_mask();
 
@@ -393,17 +408,18 @@ where
     ///     assert!((clear.0 - decoded.0).abs() < 0.1);
     /// }
     /// ```
-    pub fn encrypt_lwe_list<OutputCont, InputCont, Scalar>(
+    pub fn encrypt_lwe_list<OutputCont, InputCont, Scalar, Gen>(
         &self,
         output: &mut LweList<OutputCont>,
         encoded: &PlaintextList<InputCont>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut EncryptionRandomGenerator,
+        generator: &mut EncryptionRandomGenerator<Gen>,
     ) where
         Self: AsRefTensor<Element = Scalar>,
         LweList<OutputCont>: AsMutTensor<Element = Scalar>,
         PlaintextList<InputCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
+        Gen: PrngRandomGenerator,
     {
         debug_assert!(
             output.count().0 == encoded.count().0,
@@ -491,17 +507,18 @@ where
     ///     &mut secret_generator,
     /// );
     /// ```
-    pub fn encrypt_constant_gsw<OutputCont, Scalar>(
+    pub fn encrypt_constant_gsw<OutputCont, Scalar, Gen>(
         &self,
         encrypted: &mut GswCiphertext<OutputCont, Scalar>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut EncryptionRandomGenerator,
+        generator: &mut EncryptionRandomGenerator<Gen>,
     ) where
         Self: AsRefTensor<Element = Scalar>,
         GswCiphertext<OutputCont, Scalar>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus,
+        Gen: PrngRandomGenerator,
     {
         ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
         let gen_iter = generator
@@ -584,18 +601,19 @@ where
     /// );
     /// ```
     #[cfg(feature = "multithread")]
-    pub fn par_encrypt_constant_gsw<OutputCont, Scalar>(
+    pub fn par_encrypt_constant_gsw<OutputCont, Scalar, Gen>(
         &self,
         encrypted: &mut GswCiphertext<OutputCont, Scalar>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter + Send + Sync,
-        generator: &mut EncryptionRandomGenerator,
+        generator: &mut EncryptionRandomGenerator<Gen>,
     ) where
         Self: AsRefTensor<Element = Scalar>,
         GswCiphertext<OutputCont, Scalar>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus + Send + Sync,
         Cont: Sync,
+        Gen: PrngParallelRandomGenerator,
     {
         ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
         let generators = generator
@@ -678,17 +696,18 @@ where
     ///     &mut encryption_generator,
     /// );
     /// ```
-    pub fn trivial_encrypt_constant_gsw<OutputCont, Scalar>(
+    pub fn trivial_encrypt_constant_gsw<OutputCont, Scalar, Gen>(
         &self,
         encrypted: &mut GswCiphertext<OutputCont, Scalar>,
         encoded: &Plaintext<Scalar>,
         noise_parameters: impl DispersionParameter,
-        generator: &mut EncryptionRandomGenerator,
+        generator: &mut EncryptionRandomGenerator<Gen>,
     ) where
         Self: AsRefTensor<Element = Scalar>,
         GswCiphertext<OutputCont, Scalar>: AsMutTensor<Element = Scalar>,
         OutputCont: AsMutSlice<Element = Scalar>,
         Scalar: UnsignedTorus,
+        Gen: PrngRandomGenerator,
     {
         ck_dim_eq!(self.key_size() => encrypted.lwe_size().to_lwe_dimension());
         // We fill the gsw with trivial lwe encryptions of zero:

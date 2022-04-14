@@ -5,6 +5,8 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 use concrete_commons::parameters::{GlweSize, PolynomialSize};
+use concrete_csprng::generators::AesniRandomGenerator;
+use concrete_csprng::seeders::Seeder;
 
 use crate::backends::core::private::crypto::bootstrap::FourierBuffers;
 use crate::backends::core::private::crypto::secret::generators::{
@@ -59,8 +61,8 @@ pub(crate) struct FourierBufferKey(pub PolynomialSize, pub GlweSize);
 // In this way we avoid re-allocating those buffers
 // every time an FFT or iFFT is performed.
 pub struct CoreEngine {
-    secret_generator: ImplSecretRandomGenerator,
-    encryption_generator: ImplEncryptionRandomGenerator,
+    secret_generator: ImplSecretRandomGenerator<AesniRandomGenerator>,
+    encryption_generator: ImplEncryptionRandomGenerator<AesniRandomGenerator>,
     fourier_buffers_u32: BTreeMap<FourierBufferKey, FourierBuffers<u32>>,
     fourier_buffers_u64: BTreeMap<FourierBufferKey, FourierBuffers<u64>>,
 }
@@ -94,12 +96,15 @@ impl AbstractEngineSeal for CoreEngine {}
 impl AbstractEngine for CoreEngine {
     type EngineError = CoreError;
 
-    type Parameters = ();
+    type Parameters = Box<dyn Seeder>;
 
-    fn new(_parameters: Self::Parameters) -> Result<Self, Self::EngineError> {
+    fn new(mut parameters: Self::Parameters) -> Result<Self, Self::EngineError> {
         Ok(CoreEngine {
-            secret_generator: ImplSecretRandomGenerator::new(None),
-            encryption_generator: ImplEncryptionRandomGenerator::new(None),
+            secret_generator: ImplSecretRandomGenerator::new(parameters.seed()),
+            encryption_generator: ImplEncryptionRandomGenerator::new(
+                parameters.seed(),
+                parameters.as_mut(),
+            ),
             fourier_buffers_u32: Default::default(),
             fourier_buffers_u64: Default::default(),
         })

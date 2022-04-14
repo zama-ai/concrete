@@ -1,9 +1,9 @@
 use super::*;
 use crate::generators::aes_ctr::{AesCtrGenerator, ParallelChildrenIterator};
+use crate::generators::implem::aesni::block_cipher::AesniBlockCipher;
 use crate::generators::{BytesPerChild, ChildrenCount, ForkError, ParallelRandomGenerator};
 use rayon::iter::plumbing::{Consumer, ProducerCallback, UnindexedConsumer};
 use rayon::prelude::*;
-use crate::generators::implem::aesni::block_cipher::AesniBlockCipher;
 
 /// The parallel children iterator used by [`AesniRandomGenerator`].
 ///

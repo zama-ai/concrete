@@ -21,6 +21,7 @@
 //! [`Maker`] instance and the `Synthesizes*` traits, which contains functions to destroy data.
 use crate::raw::generation::RawUnsignedIntegers;
 use concrete_core::prelude::AbstractEngine;
+use concrete_csprng::seeders::UnixSeeder;
 
 pub mod prototypes;
 pub mod prototyping;
@@ -58,7 +59,10 @@ pub struct Maker {
 impl Default for Maker {
     fn default() -> Self {
         Maker {
-            core_engine: concrete_core::backends::core::engines::CoreEngine::new(()).unwrap(),
+            core_engine: concrete_core::backends::core::engines::CoreEngine::new(Box::new(
+                UnixSeeder::new(0),
+            ))
+            .unwrap(),
         }
     }
 }

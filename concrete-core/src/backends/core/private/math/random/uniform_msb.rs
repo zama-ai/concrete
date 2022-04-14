@@ -12,7 +12,10 @@ pub struct UniformMsb {
 macro_rules! implement_uniform_some_msb {
     ($T:ty) => {
         impl RandomGenerable<UniformMsb> for $T {
-            fn generate_one(generator: &mut RandomGenerator, UniformMsb { n }: UniformMsb) -> Self {
+            fn generate_one<G: PrngRandomGenerator>(
+                generator: &mut RandomGenerator<G>,
+                UniformMsb { n }: UniformMsb,
+            ) -> Self {
                 <$T>::generate_one(generator, Uniform) << (<$T as Numeric>::BITS - n)
             }
         }
