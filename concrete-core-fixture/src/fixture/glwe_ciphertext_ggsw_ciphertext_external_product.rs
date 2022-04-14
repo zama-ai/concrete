@@ -30,6 +30,7 @@ pub struct GlweCiphertextGgswCiphertextExternalProductParameters {
     pub ggsw_noise: Variance,
     pub glwe_noise: Variance,
     pub glwe_dimension: GlweDimension,
+    pub ggsw_encrypted_value: usize,
     pub polynomial_size: PolynomialSize,
     pub decomposition_base_log: DecompositionBaseLog,
     pub decomposition_level_count: DecompositionLevelCount,
@@ -70,6 +71,7 @@ where
                     ggsw_noise: Variance(LogStandardDev(-25.).get_variance()),
                     glwe_noise: Variance(LogStandardDev(-20.).get_variance()),
                     glwe_dimension: GlweDimension(2),
+                    ggsw_encrypted_value: 0,
                     polynomial_size: PolynomialSize(512),
                     decomposition_base_log: DecompositionBaseLog(6),
                     decomposition_level_count: DecompositionLevelCount(4),
@@ -78,6 +80,7 @@ where
                     ggsw_noise: Variance(LogStandardDev(-25.).get_variance()),
                     glwe_noise: Variance(LogStandardDev(-20.).get_variance()),
                     glwe_dimension: GlweDimension(2),
+                    ggsw_encrypted_value: 1,
                     polynomial_size: PolynomialSize(1024),
                     decomposition_base_log: DecompositionBaseLog(6),
                     decomposition_level_count: DecompositionLevelCount(4),
@@ -86,6 +89,7 @@ where
                     ggsw_noise: Variance(LogStandardDev(-25.).get_variance()),
                     glwe_noise: Variance(LogStandardDev(-20.).get_variance()),
                     glwe_dimension: GlweDimension(2),
+                    ggsw_encrypted_value: 2,
                     polynomial_size: PolynomialSize(2048),
                     decomposition_base_log: DecompositionBaseLog(6),
                     decomposition_level_count: DecompositionLevelCount(4),
@@ -101,11 +105,13 @@ where
     ) -> Self::RepetitionPrototypes {
         let proto_secret_key =
             maker.new_glwe_secret_key(parameters.glwe_dimension, parameters.polynomial_size);
-        let raw_plaintext = Precision::Raw::pick(&[
-            Precision::Raw::zero(),
-            Precision::Raw::one(),
-            Precision::Raw::power_of_two(1),
-        ]);
+        let raw_plaintext = match parameters.ggsw_encrypted_value {
+            0 => Precision::Raw::zero(),
+            1 => Precision::Raw::one(),
+            2 => Precision::Raw::power_of_two(1),
+            _ => Precision::Raw::zero(),
+        };
+
         let proto_plaintext = maker.transform_raw_to_plaintext(&raw_plaintext);
         let proto_ggsw = maker.encrypt_plaintext_to_ggsw_ciphertext(
             &proto_secret_key,
