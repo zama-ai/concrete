@@ -38,6 +38,8 @@ public:
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
   call(clientlib::PublicArguments &args);
 
+  void setUseDataflow(bool option) { this->useDataflow = option; }
+
 private:
   /// invokeRaw execute the jit lambda with a list of Argument, the last one is
   /// used to store the result of the computation.
@@ -52,6 +54,10 @@ private:
   mlir::LLVM::LLVMFunctionType type;
   std::string name;
   std::unique_ptr<mlir::ExecutionEngine> engine;
+  // Tell if the DF parallelization was on or during compilation. This will be
+  // useful to abort execution if the runtime doesn't support dataflow
+  // execution, instead of having undefined symbol issues
+  bool useDataflow = false;
 };
 
 } // namespace concretelang

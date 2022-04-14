@@ -77,6 +77,13 @@ uint64_t numArgOfRankedMemrefCallingConvention(uint64_t rank) {
 
 llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
 JITLambda::call(clientlib::PublicArguments &args) {
+#ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
+  if (this->useDataflow) {
+    return StreamStringError(
+        "call: current runtime doesn't support dataflow execution, while "
+        "compilation used dataflow parallelization");
+  }
+#endif
   // invokeRaw needs to have pointers on arguments and a pointers on the result
   // as last argument.
   // Prepare the outputs vector to store the output value of the lambda.

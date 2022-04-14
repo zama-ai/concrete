@@ -45,6 +45,9 @@ JITSupport::compile(llvm::SourceMgr &program, CompilationOptions options) {
   }
   auto result = std::make_unique<JitCompilationResult>();
   result->lambda = std::shared_ptr<concretelang::JITLambda>(std::move(*lambda));
+  // Mark the lambda as compiled using DF parallelization
+  result->lambda->setUseDataflow(options.dataflowParallelize ||
+                                 options.autoParallelize);
   result->clientParameters =
       compilationResult.get().clientParameters.getValue();
   return std::move(result);
