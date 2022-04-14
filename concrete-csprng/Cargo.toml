@@ -20,13 +20,19 @@ rand = "0.8.3"
 criterion = "0.3"
 
 [features]
-slow = []
-multithread = ["rayon"]
+parallel = ["rayon"]
+seeder_x86_64_rdseed = []
+seeder_unix = []
+generator_x86_64_aesni = []
+generator_soft = []
 
 [[bench]]
 name = "benchmark"
+path = "benches/benchmark.rs"
 harness = false
+required-features = ["seeder_x86_64_rdseed", "generator_x86_64_aesni"]
 
 [[bin]]
-name = "generate_random"
-path = "src/generate_random.rs"
+name = "generate"
+path = "src/main.rs"
+required-features = ["seeder_x86_64_rdseed", "generator_x86_64_aesni"]

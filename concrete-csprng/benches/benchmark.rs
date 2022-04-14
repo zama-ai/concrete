@@ -1,34 +1,53 @@
-use concrete_csprng::RandomGenerator;
-use criterion::{criterion_group, criterion_main, Criterion};
+use concrete_csprng::generators::{
+    AesniRandomGenerator, BytesPerChild, ChildrenCount, RandomGenerator,
+};
+use concrete_csprng::seeders::{RdseedSeeder, Seeder};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 const N_GEN: usize = 1_000_000;
 
-fn unbounded_benchmark(c: &mut Criterion) {
-    let mut generator = RandomGenerator::new_hardware(None).unwrap();
-    c.bench_function("unbounded", |b| {
+fn parent_generate(c: &mut Criterion) {
+    let mut seeder = RdseedSeeder;
+    let mut generator = AesniRandomGenerator::new(seeder.seed());
+    c.bench_function("parent_generate", |b| {
         b.iter(|| {
             (0..N_GEN).for_each(|_| {
-                generator.generate_next();
+                generator.next();
             })
         })
     });
 }
 
-fn bounded_benchmark(c: &mut Criterion) {
-    let mut generator = RandomGenerator::new_hardware(None).unwrap();
+fn child_generate(c: &mut Criterion) {
+    let mut seeder = RdseedSeeder;
+    let mut generator = AesniRandomGenerator::new(seeder.seed());
     let mut generator = generator
-        .try_fork(1, N_GEN * 10_000)
+        .try_fork(ChildrenCount(1), BytesPerChild(N_GEN * 10_000))
         .unwrap()
         .next()
         .unwrap();
-    c.bench_function("bounded", |b| {
+    c.bench_function("child_generate", |b| {
         b.iter(|| {
             (0..N_GEN).for_each(|_| {
-                generator.generate_next();
+                generator.next();
             })
         })
     });
 }
 
-criterion_group!(benches, unbounded_benchmark, bounded_benchmark);
+fn fork(c: &mut Criterion) {
+    let mut seeder = RdseedSeeder;
+    let mut generator = AesniRandomGenerator::new(seeder.seed());
+    c.bench_function("fork", |b| {
+        b.iter(|| {
+            black_box(
+                generator
+                    .try_fork(ChildrenCount(2048), BytesPerChild(2048))
+                    .unwrap(),
+            )
+        })
+    });
+}
+
+criterion_group!(benches, parent_generate, child_generate, fork);
 criterion_main!(benches);
