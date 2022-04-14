@@ -13,3 +13,19 @@ def pytest_configure(config):
 @pytest.fixture(scope="session")
 def keyset_cache():
     return KeySetCache.new(KEY_SET_CACHE_PATH)
+
+
+@pytest.fixture(scope="session")
+def no_parallel(request):
+    """Check if parallel tests have been selected."""
+    session = request.node
+    found_parallel = False
+    for item in session.items:
+        for marker in item.iter_markers():
+            if marker.name == "parallel":
+                found_parallel = True
+                break
+        if found_parallel:
+            break
+    print("no_parallel = ", not found_parallel)
+    return not found_parallel

@@ -121,6 +121,44 @@ end_to_end_fixture = [
     ),
 ]
 
+end_to_end_parallel_fixture = [
+    pytest.param(
+        """
+            func @main(%x: tensor<3x4x!FHE.eint<7>>, %y: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+                %c = arith.constant dense<[[1, 2], [3, 4], [5, 0], [1, 2]]> : tensor<4x2xi8>
+                %0 = "FHELinalg.matmul_eint_int"(%x, %c): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
+                %1 = "FHELinalg.matmul_eint_int"(%y, %c): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
+                %2 = "FHELinalg.add_eint"(%0, %1): (tensor<3x2x!FHE.eint<7>>, tensor<3x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>>
+                return %2 : tensor<3x2x!FHE.eint<7>>
+            }
+            """,
+        (
+            np.array([[1, 2, 3, 4], [4, 2, 1, 0], [2, 3, 1, 5]], dtype=np.uint8),
+            np.array([[1, 2, 3, 4], [4, 2, 1, 1], [2, 3, 1, 5]], dtype=np.uint8),
+        ),
+        np.array([[52, 36], [31, 34], [42, 52]]),
+        id="matmul_eint_int_uint8",
+    ),
+    pytest.param(
+        """
+            func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>, %a2: tensor<4x!FHE.eint<6>>, %a3: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+                %1 = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
+                %2 = "FHELinalg.add_eint_int"(%a2, %a3) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
+                %res = "FHELinalg.add_eint"(%1, %2) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
+                return %res : tensor<4x!FHE.eint<6>>
+            }
+            """,
+        (
+            np.array([1, 2, 3, 4], dtype=np.uint8),
+            np.array([9, 8, 6, 5], dtype=np.uint8),
+            np.array([3, 2, 7, 0], dtype=np.uint8),
+            np.array([1, 4, 2, 11], dtype=np.uint8),
+        ),
+        np.array([14, 16, 18, 20]),
+        id="add_eint_int_1D",
+    ),
+]
+
 
 @pytest.mark.parametrize("mlir_input, args, expected_result", end_to_end_fixture)
 def test_jit_compile_and_run(mlir_input, args, expected_result, keyset_cache):
@@ -147,44 +185,7 @@ def test_lib_compile_reload_and_run(mlir_input, args, expected_result, keyset_ca
 
 @pytest.mark.parallel
 @pytest.mark.parametrize(
-    "mlir_input, args, expected_result",
-    [
-        pytest.param(
-            """
-            func @main(%x: tensor<3x4x!FHE.eint<7>>, %y: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
-                %c = arith.constant dense<[[1, 2], [3, 4], [5, 0], [1, 2]]> : tensor<4x2xi8>
-                %0 = "FHELinalg.matmul_eint_int"(%x, %c): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
-                %1 = "FHELinalg.matmul_eint_int"(%y, %c): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
-                %2 = "FHELinalg.add_eint"(%0, %1): (tensor<3x2x!FHE.eint<7>>, tensor<3x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>>
-                return %2 : tensor<3x2x!FHE.eint<7>>
-            }
-            """,
-            (
-                np.array([[1, 2, 3, 4], [4, 2, 1, 0], [2, 3, 1, 5]], dtype=np.uint8),
-                np.array([[1, 2, 3, 4], [4, 2, 1, 1], [2, 3, 1, 5]], dtype=np.uint8),
-            ),
-            np.array([[52, 36], [31, 34], [42, 52]]),
-            id="matmul_eint_int_uint8",
-        ),
-        pytest.param(
-            """
-            func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>, %a2: tensor<4x!FHE.eint<6>>, %a3: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
-                %1 = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
-                %2 = "FHELinalg.add_eint_int"(%a2, %a3) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
-                %res = "FHELinalg.add_eint"(%1, %2) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
-                return %res : tensor<4x!FHE.eint<6>>
-            }
-            """,
-            (
-                np.array([1, 2, 3, 4], dtype=np.uint8),
-                np.array([9, 8, 6, 5], dtype=np.uint8),
-                np.array([3, 2, 7, 0], dtype=np.uint8),
-                np.array([1, 4, 2, 11], dtype=np.uint8),
-            ),
-            np.array([14, 16, 18, 20]),
-            id="add_eint_int_1D",
-        ),
-    ],
+    "mlir_input, args, expected_result", end_to_end_parallel_fixture
 )
 @pytest.mark.parametrize(
     "EngineClass",
@@ -202,6 +203,25 @@ def test_compile_and_run_auto_parallelize(
     compile_run_assert(
         engine, mlir_input, args, expected_result, keyset_cache, options=options
     )
+
+
+@pytest.mark.parametrize(
+    "mlir_input, args, expected_result", end_to_end_parallel_fixture
+)
+def test_compile_dataflow_and_fail_run(
+    mlir_input, args, expected_result, keyset_cache, no_parallel
+):
+    if no_parallel:
+        engine = JITSupport.new()
+        options = CompilationOptions.new("main")
+        options.set_auto_parallelize(True)
+        with pytest.raises(
+            RuntimeError,
+            match="call: current runtime doesn't support dataflow execution",
+        ):
+            compile_run_assert(
+                engine, mlir_input, args, expected_result, keyset_cache, options=options
+            )
 
 
 @pytest.mark.parametrize(
