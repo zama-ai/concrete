@@ -119,7 +119,7 @@ PublicArguments::unserializeArgs(std::istream &istream) {
   return outcome::success();
 }
 
-outcome::checked<std::shared_ptr<PublicArguments>, StringError>
+outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 PublicArguments::unserialize(ClientParameters &clientParameters,
                              std::istream &istream) {
   RuntimeContext runtimeContext;
@@ -129,7 +129,7 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
   }
   std::vector<void *> empty;
   std::vector<TensorData> emptyBuffers;
-  auto sArguments = std::make_shared<PublicArguments>(
+  auto sArguments = std::make_unique<PublicArguments>(
       clientParameters, runtimeContext, true, std::move(empty),
       std::move(emptyBuffers));
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));

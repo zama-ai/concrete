@@ -44,7 +44,7 @@ public:
   PublicArguments(PublicArguments &other) = delete;
   PublicArguments(PublicArguments &&other) = delete;
 
-  static outcome::checked<std::shared_ptr<PublicArguments>, StringError>
+  static outcome::checked<std::unique_ptr<PublicArguments>, StringError>
   unserialize(ClientParameters &expectedParams, std::istream &istream);
 
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
