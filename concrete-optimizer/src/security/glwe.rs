@@ -11,8 +11,8 @@ pub fn minimal_variance(
 ) -> Variance {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/security.py
     // ensure to have a minimal on std deviation covering the 2 lowest bits on modular scale
-    assert!(
-        security_level == 128,
+    assert_eq!(
+        security_level, 128,
         "Only 128 bits of security is supported"
     );
     let espsilon_log2_std_modular = 2.0;

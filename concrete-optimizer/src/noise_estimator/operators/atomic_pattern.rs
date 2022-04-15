@@ -16,7 +16,7 @@ pub fn variance_keyswitch<W: UnsignedInteger>(
     ciphertext_modulus_log: u64,
     variance_ksk: Variance,
 ) -> Variance {
-    assert!(ciphertext_modulus_log == W::BITS as u64);
+    assert_eq!(ciphertext_modulus_log, W::BITS as u64);
     concrete_npe::estimate_keyswitch_noise_lwe_to_glwe_with_constant_terms::<
         W,
         Variance,
@@ -69,7 +69,7 @@ pub fn variance_bootstrap<W: UnsignedInteger>(
     ciphertext_modulus_log: u64,
     variance_bsk: Variance,
 ) -> Variance {
-    assert!(ciphertext_modulus_log == W::BITS as u64);
+    assert_eq!(ciphertext_modulus_log, W::BITS as u64);
     let out_variance_pbs = concrete_npe::estimate_pbs_noise::<W, Variance, BinaryKeyKind>(
         LweDimension(param.internal_lwe_dimension.0 as usize),
         PolynomialSize(param.output_glwe_params.polynomial_size() as usize),
@@ -115,7 +115,7 @@ where
     D: DispersionParameter,
     W: UnsignedInteger,
 {
-    assert!(ciphertext_modulus_log == W::BITS as u64);
+    assert_eq!(ciphertext_modulus_log, W::BITS as u64);
     let v_keyswitch = variance_keyswitch::<W>(
         param.ks_parameters(),
         ciphertext_modulus_log,
@@ -149,7 +149,7 @@ where
     D: DispersionParameter,
     W: UnsignedInteger,
 {
-    assert!(ciphertext_modulus_log == W::BITS as u64);
+    assert_eq!(ciphertext_modulus_log, W::BITS as u64);
     let v_out_multi_sum = if dispersions.is_empty() {
         let mut weights = vec![];
         for (weight, _) in weights_tuples.iter() {

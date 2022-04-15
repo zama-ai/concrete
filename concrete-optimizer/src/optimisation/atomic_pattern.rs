@@ -413,8 +413,9 @@ fn assert_checks<W: UnsignedInteger>(
     let complexity_pbs_ = DEFAULT_COMPLEXITY
         .pbs
         .complexity(pbs_parameters, ciphertext_modulus_log);
-    assert!(complexity_pbs == complexity_pbs_);
-    assert!(noise_in == noise_in_);
+
+    assert_eq!(complexity_pbs, complexity_pbs_);
+    assert_eq!(noise_in, noise_in_);
     let variance_ksk =
         noise_atomic_pattern::variance_ksk(internal_dim, ciphertext_modulus_log, security_level);
 
@@ -433,8 +434,8 @@ fn assert_checks<W: UnsignedInteger>(
     let complexity_keyswitch_ = DEFAULT_COMPLEXITY
         .ks_lwe
         .complexity(keyswitch_parameters, ciphertext_modulus_log);
-    assert!(complexity_keyswitch == complexity_keyswitch_);
-    assert!(noise_keyswitch == noise_keyswitch_);
+    assert_eq!(complexity_keyswitch, complexity_keyswitch_);
+    assert_eq!(noise_keyswitch, noise_keyswitch_);
 
     let atomic_pattern_parameters = AtomicPatternParameters {
         input_lwe_dimension: LweDimension(input_lwe_dimension),
@@ -484,7 +485,7 @@ pub fn optimise_one<W: UnsignedInteger>(
     restart_at: Option<Solution>,
 ) -> OptimizationState {
     assert!(0 < precision && precision <= 16);
-    assert!(security_level == 128);
+    assert_eq!(security_level, 128);
     assert!(1.0 <= noise_factor);
     assert!(0.0 < maximum_acceptable_error_probability);
     assert!(maximum_acceptable_error_probability < 1.0);
