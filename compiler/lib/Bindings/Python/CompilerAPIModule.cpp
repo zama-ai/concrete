@@ -155,7 +155,17 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   pybind11::class_<mlir::concretelang::ClientParameters>(m, "ClientParameters");
 
   pybind11::class_<clientlib::KeySet>(m, "KeySet");
-  pybind11::class_<clientlib::PublicArguments>(m, "PublicArguments");
+  pybind11::class_<clientlib::PublicArguments,
+                   std::unique_ptr<clientlib::PublicArguments>>(
+      m, "PublicArguments")
+      .def_static("unserialize",
+                  [](mlir::concretelang::ClientParameters &clientParameters,
+                     const pybind11::bytes &buffer) {
+                    return publicArgumentsUnserialize(clientParameters, buffer);
+                  })
+      .def("serialize", [](clientlib::PublicArguments &publicArgument) {
+        return pybind11::bytes(publicArgumentsSerialize(publicArgument));
+      });
   pybind11::class_<clientlib::PublicResult>(m, "PublicResult");
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")

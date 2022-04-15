@@ -97,6 +97,16 @@ MLIR_CAPI_EXPORTED lambdaArgument
 decrypt_result(concretelang::clientlib::KeySet &keySet,
                concretelang::clientlib::PublicResult &publicResult);
 
+// Serialization ////////////////////////////////////////////////////////////
+
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
+publicArgumentsUnserialize(
+    mlir::concretelang::ClientParameters &clientParameters,
+    const std::string &buffer);
+
+MLIR_CAPI_EXPORTED std::string publicArgumentsSerialize(
+    concretelang::clientlib::PublicArguments &publicArguments);
+
 // Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 

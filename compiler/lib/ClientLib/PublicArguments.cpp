@@ -133,7 +133,7 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
       clientParameters, runtimeContext, true, std::move(empty),
       std::move(emptyBuffers));
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));
-  return sArguments;
+  return std::move(sArguments);
 }
 
 void next_coord_index(size_t index[], size_t sizes[], size_t rank) {

@@ -133,6 +133,30 @@ decrypt_result(concretelang::clientlib::KeySet &keySet,
   return std::move(result_);
 }
 
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
+publicArgumentsUnserialize(
+    mlir::concretelang::ClientParameters &clientParameters,
+    const std::string &buffer) {
+  std::stringstream istream(buffer);
+  auto argsOrError = concretelang::clientlib::PublicArguments::unserialize(
+      clientParameters, istream);
+  if (!argsOrError) {
+    throw std::runtime_error(argsOrError.error().mesg);
+  }
+  return std::move(argsOrError.value());
+}
+
+MLIR_CAPI_EXPORTED std::string publicArgumentsSerialize(
+    concretelang::clientlib::PublicArguments &publicArguments) {
+
+  std::ostringstream buffer(std::ios::binary);
+  auto voidOrError = publicArguments.serialize(buffer);
+  if (!voidOrError) {
+    throw std::runtime_error(voidOrError.error().mesg);
+  }
+  return buffer.str();
+}
+
 void terminateParallelization() {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   _dfr_terminate();

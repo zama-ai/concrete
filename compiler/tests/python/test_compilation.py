@@ -1,4 +1,3 @@
-from typing import Union
 import pytest
 import numpy as np
 from concrete.compiler import (

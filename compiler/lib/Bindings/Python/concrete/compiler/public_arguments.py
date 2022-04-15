@@ -9,6 +9,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 )
 
 # pylint: enable=no-name-in-module,import-error
+from .client_parameters import ClientParameters
 from .wrapper import WrapperCpp
 
 
@@ -33,3 +34,38 @@ class PublicArguments(WrapperCpp):
                 f"public_arguments must be of type _PublicArguments, not {type(public_arguments)}"
             )
         super().__init__(public_arguments)
+
+    def serialize(self) -> bytes:
+        """Serialize the PublicArguments into a buffer.
+
+        Returns:
+            bytes: serialized object
+        """
+        return self.cpp().serialize()
+
+    @staticmethod
+    def unserialize(
+        client_parameters: ClientParameters, buffer: bytes
+    ) -> "PublicArguments":
+        """Unserialize PublicArguments from a buffer.
+
+        Args:
+            client_parameters (ClientParameters): client parameters of the compiled circuit
+            buffer (bytes): previously serialized PublicArguments
+
+        Raises:
+            TypeError: if client_parameters is not of type ClientParameters
+            TypeError: if buffer is not of type bytes
+
+        Returns:
+            PublicArguments: unserialized object
+        """
+        if not isinstance(client_parameters, ClientParameters):
+            raise TypeError(
+                f"client_parameters must be of type ClientParameters, not {type(client_parameters)}"
+            )
+        if not isinstance(buffer, bytes):
+            raise TypeError(f"buffer must be of type bytes, not {type(buffer)}")
+        return PublicArguments.wrap(
+            _PublicArguments.unserialize(client_parameters.cpp(), buffer)
+        )
