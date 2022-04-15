@@ -18,7 +18,7 @@ pub fn minimal_variance(
     let espsilon_log2_std_modular = 2.0;
     let espsilon_log2_std = espsilon_log2_std_modular - (ciphertext_modulus_log as f64);
     let equiv_lwe_dimension = (glwe_params.glwe_dimension * glwe_params.polynomial_size()) as f64;
-    let secure_log2_std = -0.026374888765705498 * equiv_lwe_dimension + 2.012143923330495;
+    let secure_log2_std = -0.026_374_888_765_705_498 * equiv_lwe_dimension + 2.012_143_923_330_495;
     // TODO: could be added instead
     let log2_std = f64::max(secure_log2_std, espsilon_log2_std);
     let log2_var = 2.0 * log2_std;
@@ -34,7 +34,7 @@ mod tests {
     fn golden_python_prototype_security_security_glwe_variance_low() {
         // python securityFunc(10,14,64)= 0.3120089883926036
         let integer_size = 64;
-        let golden_std_dev = 2.168404344971009e-19;
+        let golden_std_dev = 2.168_404_344_971_009e-19;
         let security_level = 128;
         let glwe_params = GlweParameters {
             log2_polynomial_size: 14,
@@ -52,7 +52,7 @@ mod tests {
     fn golden_python_prototype_security_security_glwe_variance_high() {
         // python securityFunc(3,8,32)= 2.6011445832514504
         let integer_size = 32;
-        let golden_std_dev = 3.2216458741669603e-6;
+        let golden_std_dev = 3.221_645_874_166_960_3e-6;
         let security_level = 128;
         let glwe_params = GlweParameters {
             log2_polynomial_size: 8,

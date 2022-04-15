@@ -76,10 +76,10 @@ pub mod tests {
     pub const COST_AWS: Default = SimpleWithFactors {
         /* https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L145 */
         fft: fft::tests::COST_AWS,
-        linear_fft_factor: Some(0.011647955063264166),
-        linear_ifft_factor: Some(0.018836852582634938),
-        blind_rotate_factor: 0.8418306429189878,
-        constant_cost: 923.7542202718637,
+        linear_fft_factor: Some(0.011_647_955_063_264_166),
+        linear_ifft_factor: Some(0.018_836_852_582_634_938),
+        blind_rotate_factor: 0.841_830_642_918_987_8,
+        constant_cost: 923.754_220_271_863_7,
     };
 
     #[test]
@@ -123,19 +123,19 @@ pub mod tests {
         let actual = DEFAULT.complexity(cmux_param1, 0);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
-        let golden = 138621.0;
+        let golden = 138_621.0;
         let actual = DEFAULT.complexity(cmux_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
-        let golden = 927.1215428435396;
+        let golden = 927.121_542_843_539_6;
         let actual = COST_AWS.complexity(cmux_param1, 0);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
-        let golden = 117019.72048983313;
+        let golden = 117_019.720_489_833_13;
         let actual = COST_AWS.complexity(cmux_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
-        let golden = 7651844.24194206;
+        let golden = 7_651_844.241_942_06;
         let actual = COST_AWS.complexity(cmux_param3, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
     }

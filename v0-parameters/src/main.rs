@@ -1,8 +1,14 @@
-use clap::Parser;
-use rayon_cond::CondIterator;
+#![warn(clippy::nursery)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::style)]
+#![allow(clippy::cast_precision_loss)] // u64 to f64
+#![allow(clippy::cast_possible_truncation)] // u64 to usize
+#![allow(clippy::cast_sign_loss)]
 
+use clap::Parser;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimisation::atomic_pattern as optimize_atomic_pattern;
+use rayon_cond::CondIterator;
 
 const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
 const MIN_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS
@@ -61,9 +67,10 @@ fn main() {
     let sum_size = args.sum_size;
     let p_error = args.p_error;
     let security_level = args.security_level;
-    if security_level != 128 {
-        panic!("Only 128bits of security is supported")
-    }
+    assert!(
+        security_level == 128,
+        "Only 128bits of security is supported"
+    );
 
     let glwe_log_polynomial_sizes: Vec<_> =
         (args.min_log_poly_size..=args.max_log_poly_size).collect();
@@ -115,20 +122,23 @@ fn main() {
         println!("{{ /* precision {:2} */", precision);
         for (manp_i, manp) in manps.clone().enumerate() {
             let solution = all_results[precision_i][manp_i].best_solution;
-            if let Some(solution) = solution {
-                println!("    /* {:2} */ V0Parameter({:2}, {:2}, {:4}, {:2}, {:2}, {:2}, {:2}), \t\t // {:4} mops, {:1.1e} errors",
-                    manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
-                    solution.internal_ks_output_lwe_dimension,
-                    solution.br_decomposition_level_count, solution.br_decomposition_base_log,
-                    solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
-                    (solution.complexity / (1024.0 * 1024.0)) as u64,
-                    solution.p_error
-                )
-            } else {
-                println!(
-                    "    /* {:2} : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),",
-                    manp
-                );
+            match solution {
+                Some(solution) => {
+                    println!("    /* {:2} */ V0Parameter({:2}, {:2}, {:4}, {:2}, {:2}, {:2}, {:2}), \t\t // {:4} mops, {:1.1e} errors",
+                        manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
+                        solution.internal_ks_output_lwe_dimension,
+                        solution.br_decomposition_level_count, solution.br_decomposition_base_log,
+                        solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
+                        (solution.complexity / (1024.0 * 1024.0)) as u64,
+                        solution.p_error
+                    );
+                }
+                None => {
+                    println!(
+                        "    /* {:2} : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),",
+                        manp
+                    );
+                }
             }
         }
         println!("  }},");

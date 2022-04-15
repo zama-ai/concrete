@@ -10,8 +10,7 @@ use crate::parameters::{
     KsDecompositionParameters, LweDimension, PbsParameters,
 };
 use crate::security;
-use complexity_atomic_pattern::AtomicPatternComplexity;
-use complexity_atomic_pattern::DEFAULT as DEFAULT_COMPLEXITY;
+use complexity_atomic_pattern::{AtomicPatternComplexity, DEFAULT as DEFAULT_COMPLEXITY};
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
 
@@ -452,7 +451,7 @@ fn assert_checks<W: UnsignedInteger>(
         security_level,
     )
     .get_variance();
-    assert!(f64::abs(noise_max - check_max_noise) / check_max_noise < 0.00000000001);
+    assert!(f64::abs(noise_max - check_max_noise) / check_max_noise < 0.000_000_000_01);
     let check_complexity = DEFAULT_COMPLEXITY.complexity(
         consts.sum_size,
         atomic_pattern_parameters,

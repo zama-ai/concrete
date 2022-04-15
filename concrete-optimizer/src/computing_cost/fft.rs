@@ -41,17 +41,17 @@ pub mod tests {
     /** Standard fft complexity with X factors*/
     pub const COST_AWS: AsymptoticWithFactors = AsymptoticWithFactors {
         // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L150
-        factor_fft: 0.20292695115308917,
-        factor_ifft: 0.407795078512891,
+        factor_fft: 0.202_926_951_153_089_17,
+        factor_ifft: 0.407_795_078_512_891,
     };
 
     #[test]
     fn golden_python_prototype() {
-        let golden_fft = 664.3856189774724;
+        let golden_fft = 664.385_618_977_472_4;
         let actual_fft = fft::DEFAULT.fft_complexity(100);
         approx::assert_relative_eq!(golden_fft, actual_fft, epsilon = f64::EPSILON);
 
-        let golden_ifft = 664.3856189774724;
+        let golden_ifft = 664.385_618_977_472_4;
         let actual_ifft = fft::DEFAULT.ifft_complexity(100);
         approx::assert_relative_eq!(golden_ifft, actual_ifft, epsilon = f64::EPSILON);
     }

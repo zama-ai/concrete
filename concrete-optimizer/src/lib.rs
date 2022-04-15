@@ -10,7 +10,6 @@
 #![allow(clippy::similar_names)]
 #![allow(clippy::suboptimal_flops)]
 #![allow(clippy::too_many_arguments)]
-#![allow(clippy::unreadable_literal)]
 #![allow(clippy::match_wildcard_for_single_variants)]
 #![allow(clippy::cast_lossless)]
 #![warn(unused_results)]

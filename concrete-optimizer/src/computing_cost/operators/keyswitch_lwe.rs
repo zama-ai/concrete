@@ -46,13 +46,13 @@ mod tests {
 
     use super::*;
     pub const COST_AWS: SimpleProductWithFactor = SimpleProductWithFactor {
-        factor: 0.12547239853890443,
+        factor: 0.125_472_398_538_904_43,
     };
 
     #[test]
     fn golden_python_prototype() {
         let ignored = 0;
-        let golden = 134313984.0;
+        let golden = 134_313_984.0;
 
         let ks_params = KeyswitchParameters {
             input_lwe_dimension: LweDimension(1024),
@@ -66,7 +66,7 @@ mod tests {
         let actual = DEFAULT.complexity(ks_params, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
-        let golden = 538899848.2752727;
+        let golden = 538_899_848.275_272_7;
         let actual = COST_AWS.complexity(ks_params, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
     }

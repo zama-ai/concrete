@@ -75,11 +75,11 @@ pub mod tests {
         let actual = DEFAULT.complexity(pbs_param1, 32);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
-        let golden = 249957554585600.0;
+        let golden = 249_957_554_585_600.0;
         let actual = DEFAULT.complexity(pbs_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
 
-        let golden = 208532086206064.16;
+        let golden = 208_532_086_206_064.16;
         let actual = COST_AWS.complexity(pbs_param2, 64);
         approx::assert_relative_eq!(golden, actual, epsilon = f64::EPSILON);
     }
