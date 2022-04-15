@@ -113,7 +113,7 @@ impl ServerKey {
         let var_rlwe = Variance(cks.parameters.glwe_modular_std_dev.get_variance());
 
         // creation of the bootstrapping key in the Fourier domain
-        let fourier_bsk: LweBootstrapKey32 = engine
+        let bsk: LweBootstrapKey32 = engine
             .create_lwe_bootstrap_key(
                 &cks.lwe_secret_key,
                 &cks.glwe_secret_key,
@@ -122,9 +122,7 @@ impl ServerKey {
                 var_rlwe,
             )
             .unwrap();
-        let optalysys_bsk = optalysys_engine
-            .convert_lwe_bootstrap_key(&fourier_bsk)
-            .unwrap();
+        let optalysys_bsk = optalysys_engine.convert_lwe_bootstrap_key(&bsk).unwrap();
 
         // Convert the GLWE secret key into an LWE secret key:
         let big_lwe_secret_key = engine
