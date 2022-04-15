@@ -27,5 +27,4 @@ def no_parallel(request):
                 break
         if found_parallel:
             break
-    print("no_parallel = ", not found_parallel)
     return not found_parallel
