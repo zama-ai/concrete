@@ -295,9 +295,13 @@ mlir::LogicalResult processInputBuffer(
         mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::
             create(buffer->getBuffer(), options, keySetCache,
                    mlir::concretelang::JITSupport());
-
+    if (!lambdaOrErr) {
+      mlir::concretelang::log_error()
+          << "Failed to get JIT-lambda " << funcName << " "
+          << llvm::toString(lambdaOrErr.takeError());
+      return mlir::failure();
+    }
     llvm::Expected<uint64_t> resOrErr = (*lambdaOrErr)(jitArgs);
-
     if (!resOrErr) {
       mlir::concretelang::log_error()
           << "Failed to JIT-invoke " << funcName << " with arguments "
