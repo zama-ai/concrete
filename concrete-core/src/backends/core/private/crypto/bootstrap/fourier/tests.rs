@@ -1,27 +1,24 @@
 use concrete_commons::dispersion::{DispersionParameter, LogStandardDev, Variance};
 use concrete_commons::key_kinds::BinaryKeyKind;
 use concrete_commons::parameters::{
-    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, LweSize,
-    PlaintextCount, PolynomialSize,
+    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PlaintextCount,
+    PolynomialSize,
 };
 use concrete_npe as npe;
 
-use crate::backends::core::private::crypto::bootstrap::fourier::constant_sample_extract;
 use crate::backends::core::private::crypto::bootstrap::{
     FourierBootstrapKey, FourierBuffers, StandardBootstrapKey,
 };
-use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList};
+use crate::backends::core::private::crypto::encoding::PlaintextList;
 use crate::backends::core::private::crypto::glwe::GlweCiphertext;
-use crate::backends::core::private::crypto::lwe::LweCiphertext;
 use crate::backends::core::private::crypto::secret::generators::{
     EncryptionRandomGenerator, SecretRandomGenerator,
 };
 use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::backends::core::private::math::fft::Complex64;
 use crate::backends::core::private::math::random::RandomGenerator;
-use crate::backends::core::private::math::tensor::{AsRefTensor, IntoTensor, Tensor};
 use crate::backends::core::private::math::torus::UnsignedTorus;
-use crate::backends::core::private::test_tools::{assert_delta_std_dev, assert_noise_distribution};
+use crate::backends::core::private::test_tools::assert_noise_distribution;
 
 fn test_cmux_0<T: UnsignedTorus>() {
     // fix different polynomial degrees
@@ -246,68 +243,6 @@ fn test_cmux_1<T: UnsignedTorus>() {
     }
 }
 
-fn test_sample_extract<T: UnsignedTorus>() {
-    let n_tests = 10;
-    // fix different polynomial degrees
-    let degrees = vec![512, 1024, 2048];
-    let mut random_generator = RandomGenerator::new(None);
-    let mut secret_generator = SecretRandomGenerator::new(None);
-    let mut encryption_generator = EncryptionRandomGenerator::new(None);
-
-    for polynomial_size in degrees {
-        // fixa set of parameters
-        let mut sdk_samples = Tensor::from_container(vec![T::ZERO; n_tests]);
-        let mut groundtruth_samples = Tensor::from_container(vec![T::ZERO; n_tests]);
-        let std_dev = LogStandardDev(-20.);
-        let dimension = GlweDimension(1);
-
-        // compute length of the lwe secret key
-        for i in 0..n_tests {
-            let rlwe_sk = GlweSecretKey::generate_binary(
-                dimension,
-                PolynomialSize(polynomial_size),
-                &mut secret_generator,
-            );
-
-            // allocate and draw a random polynomial
-            let mut messages = PlaintextList::allocate(T::ZERO, PlaintextCount(polynomial_size));
-            random_generator.fill_tensor_with_random_uniform(&mut messages);
-
-            // allocate RLWE ciphertext
-            let mut rlwe_ct = GlweCiphertext::allocate(
-                T::ZERO,
-                PolynomialSize(polynomial_size),
-                dimension.to_glwe_size(),
-            );
-            rlwe_sk.encrypt_glwe(&mut rlwe_ct, &messages, std_dev, &mut encryption_generator);
-
-            // allocate LWE ciphertext
-            let mut lwe_ct =
-                LweCiphertext::allocate(T::ZERO, LweSize(dimension.0 * polynomial_size + 1));
-
-            // allocate space of the decrypted message (after sample extract)
-            let mut new_message = Plaintext(T::ZERO);
-
-            // perform sample extract
-            constant_sample_extract(&mut lwe_ct, &rlwe_ct);
-
-            // decrypt resulting lwe ciphertext
-            let lwe_sk =
-                LweSecretKey::binary_from_container(rlwe_sk.into_tensor().into_container());
-            lwe_sk.decrypt_lwe(&mut new_message, &lwe_ct);
-            *groundtruth_samples.get_element_mut(i) = *messages.as_tensor().get_element(0);
-            *sdk_samples.get_element_mut(i) = new_message.0;
-        }
-
-        // test
-        if n_tests < 7 {
-            assert_delta_std_dev(&groundtruth_samples, &sdk_samples, std_dev);
-        } else {
-            assert_noise_distribution(&groundtruth_samples, &sdk_samples, std_dev);
-        }
-    }
-}
-
 #[test]
 pub fn test_cmux0_u32() {
     test_cmux_0::<u32>();
@@ -326,14 +261,4 @@ pub fn test_cmux_1_u32() {
 #[test]
 pub fn test_cmux_1_u64() {
     test_cmux_1::<u64>();
-}
-
-#[test]
-pub fn test_sample_extract_u32() {
-    test_sample_extract::<u32>();
-}
-
-#[test]
-pub fn test_sample_extract_u64() {
-    test_sample_extract::<u64>();
 }
