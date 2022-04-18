@@ -41,7 +41,36 @@ input = np.array([[0, 1, 3], [2, 3, 1]], dtype=np.uint8)
 circuit.encrypt_run_decrypt(input) == [[2, 1, 0], [3, 0, 1]]
 ```
 
-## Direct Multi Table Lookup
+Direct table lookups behaves like array indexing in python.
+Which means, if the lookup variable is negative, table is looked up from the back.
+
+```python
+import concrete.numpy as cnp
+
+table = cnp.LookupTable([2, 1, 3, 0])
+
+def f(x):
+    return table[-x]
+```
+
+where
+
+- `x = "encrypted"` scalar
+
+results in
+
+<!--pytest-codeblocks:skip-->
+```python
+circuit.encrypt_run_decrypt(0) == 2
+circuit.encrypt_run_decrypt(1) == 0
+circuit.encrypt_run_decrypt(2) == 3
+circuit.encrypt_run_decrypt(3) == 1
+circuit.encrypt_run_decrypt(4) == 2
+```
+
+Lastly, a `LookupTable` can have any number of elements, let's call it **N**, as long as the lookup variable is in range [-**N**, **N**). Note that, number of elements in the lookup table doesn't affect the performance in any way.
+
+## Direct multi table lookup
 
 Sometimes you may want to apply a different lookup table to each value in a tensor. That's where direct multi lookup table becomes handy. Here is how to use it:
 
