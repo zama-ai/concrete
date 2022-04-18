@@ -52,7 +52,7 @@ import concrete.numpy as cnp
 squared = cnp.LookupTable([i ** 2 for i in range(4)])
 cubed = cnp.LookupTable([i ** 3 for i in range(4)])
 
-table = cnp.MultiLookupTable([
+table = cnp.LookupTable([
     [squared, cubed],
     [squared, cubed],
     [squared, cubed],
