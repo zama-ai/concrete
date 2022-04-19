@@ -55,7 +55,7 @@ pub fn fft_noise<W: UnsignedInteger>(
     let n = internal_ks_output_lwe_dimension as f64;
     let b = 2_f64.powi(br_decomposition_parameter.log2_base as i32);
     let l = br_decomposition_parameter.level as f64;
-    let big_n = (1 << glwe_params.log2_polynomial_size) as f64;
+    let big_n = glwe_params.polynomial_size() as f64;
     // 22 = 2 x 11, 11 = 64 -53
     let scale_margin = (1_u64 << 22) as f64;
     let res = n * 0.1 * scale_margin * l * b * b * big_n.powf(2.0);
@@ -72,7 +72,7 @@ pub fn variance_bootstrap<W: UnsignedInteger>(
     assert!(ciphertext_modulus_log == W::BITS as u64);
     let out_variance_pbs = concrete_npe::estimate_pbs_noise::<W, Variance, BinaryKeyKind>(
         LweDimension(param.internal_lwe_dimension.0 as usize),
-        PolynomialSize(1 << param.output_glwe_params.log2_polynomial_size as usize),
+        PolynomialSize(param.output_glwe_params.polynomial_size() as usize),
         GlweDimension(param.output_glwe_params.glwe_dimension as usize),
         DecompositionBaseLog(param.br_decomposition_parameter.log2_base as usize),
         DecompositionLevelCount(param.br_decomposition_parameter.level as usize),
@@ -127,7 +127,7 @@ where
     );
     let v_modulus_switch = estimate_modulus_switching_noise_with_binary_key::<W>(
         param.internal_lwe_dimension.0,
-        1 << param.output_glwe_params.log2_polynomial_size,
+        param.output_glwe_params.polynomial_size(),
     );
     Variance(
         input_variance.get_variance()

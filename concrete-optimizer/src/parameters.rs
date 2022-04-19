@@ -22,6 +22,12 @@ mod individual {
         pub glwe_dimension: u64,
     }
 
+    impl GlweParameters {
+        pub fn polynomial_size(self) -> u64 {
+            1 << self.log2_polynomial_size
+        }
+    }
+
     #[derive(Clone, Copy)]
     pub struct LweDimension(pub u64);
 

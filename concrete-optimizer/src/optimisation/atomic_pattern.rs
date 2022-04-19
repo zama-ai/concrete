@@ -236,7 +236,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
     internal_dim: u64,
     glwe_params: GlweParameters,
 ) {
-    let glwe_poly_size = 1 << glwe_params.log2_polynomial_size;
+    let glwe_poly_size = glwe_params.polynomial_size();
     let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
     let noise_modulus_switching =
         noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key::<W>(
@@ -356,7 +356,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     internal_ks_output_lwe_dimension: internal_dim,
                     ks_decomposition_level_count: ks_l,
                     ks_decomposition_base_log: ks_b,
-                    glwe_polynomial_size: 1 << glwe_params.log2_polynomial_size,
+                    glwe_polynomial_size: glwe_params.polynomial_size(),
                     glwe_dimension: glwe_params.glwe_dimension,
                     br_decomposition_level_count: br_l,
                     br_decomposition_base_log: br_b,

@@ -29,7 +29,7 @@ impl<FFT: FftComplexity> CmuxComplexity for SimpleWithFactors<FFT> {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L145
     #[allow(non_snake_case)]
     fn complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u64) -> Complexity {
-        let glwe_polynomial_size = 1 << params.output_glwe_params.log2_polynomial_size;
+        let glwe_polynomial_size = params.output_glwe_params.polynomial_size();
         let f_glwe_polynomial_size = glwe_polynomial_size as f64;
 
         let f_glwe_size = (params.output_glwe_params.glwe_dimension + 1) as f64;

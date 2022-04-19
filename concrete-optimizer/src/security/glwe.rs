@@ -17,8 +17,7 @@ pub fn minimal_variance(
     );
     let espsilon_log2_std_modular = 2.0;
     let espsilon_log2_std = espsilon_log2_std_modular - (ciphertext_modulus_log as f64);
-    let equiv_lwe_dimension =
-        (glwe_params.glwe_dimension * (1 << glwe_params.log2_polynomial_size)) as f64;
+    let equiv_lwe_dimension = (glwe_params.glwe_dimension * glwe_params.polynomial_size()) as f64;
     let secure_log2_std = -0.026374888765705498 * equiv_lwe_dimension + 2.012143923330495;
     // TODO: could be added instead
     let log2_std = f64::max(secure_log2_std, espsilon_log2_std);
