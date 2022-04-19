@@ -192,21 +192,10 @@ where
         StandardBootstrapKey<InputCont>: AsRefTensor<Element = Scalar>,
         Scalar: UnsignedTorus,
     {
-        // We retrieve a buffer for the fft.
-        let fft_buffer = &mut buffers.fft_buffers.first_buffer;
-        let fft = &mut buffers.fft_buffers.fft;
-
-        // We move every polynomials to the fourier domain.
-        let iterator = self
-            .tensor
-            .subtensor_iter_mut(self.poly_size.0)
-            .map(|t| FourierPolynomial::from_container(t.into_container()))
-            .zip(coef_bsk.poly_iter());
-        for (mut fourier_poly, coef_poly) in iterator {
-            fft.forward_as_torus(fft_buffer, &coef_poly);
-            fourier_poly
-                .as_mut_tensor()
-                .fill_with_one((fft_buffer).as_tensor(), |a| *a);
+        // We move every GGSW to the fourier domain.
+        let iterator = self.ggsw_iter_mut().zip(coef_bsk.ggsw_iter());
+        for (mut fourier_ggsw, coef_ggsw) in iterator {
+            fourier_ggsw.fill_with_forward_fourier(&coef_ggsw, buffers);
         }
     }
 
