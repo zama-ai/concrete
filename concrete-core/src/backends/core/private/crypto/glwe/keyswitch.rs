@@ -13,10 +13,10 @@ use crate::backends::core::private::crypto::lwe::{LweCiphertext, LweList};
 use crate::backends::core::private::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::backends::core::private::crypto::secret::{GlweSecretKey, LweSecretKey};
 use crate::backends::core::private::math::decomposition::{
-    torus_small_sign_decompose, DecompositionLevel, DecompositionTerm, SignedDecomposer,
+    DecompositionLevel, DecompositionTerm, SignedDecomposer,
 };
 use crate::backends::core::private::math::tensor::{
-    ck_dim_div, ck_dim_eq, tensor_traits, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
+    ck_dim_div, ck_dim_eq, tensor_traits, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
 
@@ -561,20 +561,19 @@ impl<Cont> PackingKeyswitchKey<Cont> {
         // We copy the body
         *after.get_mut_body().tensor.as_mut_tensor().first_mut() = before.get_body().0;
 
-        // We allocate a buffer to hold the decomposition.
-        let mut decomp = Tensor::allocate(Scalar::ZERO, self.decomp_level_count.0);
-
         // We instantiate a decomposer
         let decomposer = SignedDecomposer::new(self.decomp_base_log, self.decomp_level_count);
 
+        // Loop over the number of levels:
+        // We compute the multiplication of a ciphertext from the keyswitching key with a
+        // piece of the decomposition and subtract it to the buffer
         for (block, input_lwe_mask) in self
             .bit_decomp_iter()
             .zip(before.get_mask().mask_element_iter())
         {
             // We decompose
             let mask_rounded = decomposer.closest_representable(*input_lwe_mask);
-
-            torus_small_sign_decompose(decomp.as_mut_slice(), mask_rounded, self.decomp_base_log.0);
+            let decomp = decomposer.decompose(mask_rounded);
 
             // Loop over the number of levels:
             // We compute the multiplication of a ciphertext from the keyswitching key with a
@@ -582,11 +581,12 @@ impl<Cont> PackingKeyswitchKey<Cont> {
             for (level_key_cipher, decomposed) in block
                 .as_tensor()
                 .subtensor_iter(self.output_glwe_size.0 * self.output_polynomial_size.0)
-                .zip(decomp.iter())
+                .rev()
+                .zip(decomp)
             {
                 after
                     .as_mut_tensor()
-                    .update_with_wrapping_sub_element_mul(&level_key_cipher, *decomposed);
+                    .update_with_wrapping_sub_element_mul(&level_key_cipher, decomposed.value());
             }
         }
     }
