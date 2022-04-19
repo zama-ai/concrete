@@ -11,10 +11,10 @@ use crate::backends::core::private::crypto::encoding::{Plaintext, PlaintextList}
 use crate::backends::core::private::crypto::secret::generators::EncryptionRandomGenerator;
 use crate::backends::core::private::crypto::secret::LweSecretKey;
 use crate::backends::core::private::math::decomposition::{
-    torus_small_sign_decompose, DecompositionLevel, DecompositionTerm, SignedDecomposer,
+    DecompositionLevel, DecompositionTerm, SignedDecomposer,
 };
 use crate::backends::core::private::math::tensor::{
-    ck_dim_div, ck_dim_eq, tensor_traits, AsMutSlice, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
+    ck_dim_div, ck_dim_eq, tensor_traits, AsMutTensor, AsRefSlice, AsRefTensor, Tensor,
 };
 use crate::backends::core::private::math::torus::UnsignedTorus;
 
@@ -529,10 +529,6 @@ impl<Cont> LweKeyswitchKey<Cont> {
 
         // We copy the body
         *after.get_mut_body() = *before.get_body();
-
-        // We allocate a boffer to hold the decomposition.
-        let mut decomp = Tensor::allocate(Scalar::ZERO, self.decomp_level_count.0);
-
         // We instantiate a decomposer
         let decomposer = SignedDecomposer::new(self.decomp_base_log, self.decomp_level_count);
 
@@ -541,18 +537,17 @@ impl<Cont> LweKeyswitchKey<Cont> {
             .zip(before.get_mask().mask_element_iter())
         {
             let mask_rounded = decomposer.closest_representable(*before_mask);
-
-            torus_small_sign_decompose(decomp.as_mut_slice(), mask_rounded, self.decomp_base_log.0);
-
+            let decomp = decomposer.decompose(mask_rounded);
             // loop over the number of levels
             for (level_key_cipher, decomposed) in block
                 .as_tensor()
                 .subtensor_iter(self.after_key_size().0 + 1)
-                .zip(decomp.iter())
+                .rev()
+                .zip(decomp)
             {
                 after
                     .as_mut_tensor()
-                    .update_with_wrapping_sub_element_mul(&level_key_cipher, *decomposed);
+                    .update_with_wrapping_sub_element_mul(&level_key_cipher, decomposed.value());
             }
         }
     }
