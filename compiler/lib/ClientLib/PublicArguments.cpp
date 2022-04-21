@@ -136,6 +136,38 @@ PublicArguments::unserialize(ClientParameters &clientParameters,
   return std::move(sArguments);
 }
 
+outcome::checked<void, StringError>
+PublicResult::unserialize(std::istream &istream) {
+  for (auto gate : clientParameters.outputs) {
+    if (!gate.encryption.hasValue()) {
+      return StringError("Clear values are not handled");
+    }
+    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
+    std::vector<int64_t> sizes = gate.shape.dimensions;
+    sizes.push_back(lweSize);
+    buffers.push_back(unserializeTensorData(sizes, istream));
+    if (istream.fail()) {
+      return StringError("Cannot read tensor data");
+    }
+  }
+  return outcome::success();
+}
+
+outcome::checked<void, StringError>
+PublicResult::serialize(std::ostream &ostream) {
+  if (incorrectMode(ostream)) {
+    return StringError(
+        "PublicResult::serialize: ostream should be in binary mode");
+  }
+  for (auto tensorData : buffers) {
+    serializeTensorData(tensorData, ostream);
+    if (ostream.fail()) {
+      return StringError("Cannot write tensor data");
+    }
+  }
+  return outcome::success();
+}
+
 void next_coord_index(size_t index[], size_t sizes[], size_t rank) {
   // increase multi dim index
   for (int r = rank - 1; r >= 0; r--) {

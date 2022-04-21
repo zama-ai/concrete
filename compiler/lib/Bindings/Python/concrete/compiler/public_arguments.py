@@ -36,7 +36,7 @@ class PublicArguments(WrapperCpp):
         super().__init__(public_arguments)
 
     def serialize(self) -> bytes:
-        """Serialize the PublicArguments into a buffer.
+        """Serialize the PublicArguments.
 
         Returns:
             bytes: serialized object
@@ -45,17 +45,17 @@ class PublicArguments(WrapperCpp):
 
     @staticmethod
     def unserialize(
-        client_parameters: ClientParameters, buffer: bytes
+        client_parameters: ClientParameters, serialized_args: bytes
     ) -> "PublicArguments":
-        """Unserialize PublicArguments from a buffer.
+        """Unserialize PublicArguments from bytes of serialized_args.
 
         Args:
             client_parameters (ClientParameters): client parameters of the compiled circuit
-            buffer (bytes): previously serialized PublicArguments
+            serialized_args (bytes): previously serialized PublicArguments
 
         Raises:
             TypeError: if client_parameters is not of type ClientParameters
-            TypeError: if buffer is not of type bytes
+            TypeError: if serialized_args is not of type bytes
 
         Returns:
             PublicArguments: unserialized object
@@ -64,8 +64,10 @@ class PublicArguments(WrapperCpp):
             raise TypeError(
                 f"client_parameters must be of type ClientParameters, not {type(client_parameters)}"
             )
-        if not isinstance(buffer, bytes):
-            raise TypeError(f"buffer must be of type bytes, not {type(buffer)}")
+        if not isinstance(serialized_args, bytes):
+            raise TypeError(
+                f"serialized_args must be of type bytes, not {type(serialized_args)}"
+            )
         return PublicArguments.wrap(
-            _PublicArguments.unserialize(client_parameters.cpp(), buffer)
+            _PublicArguments.unserialize(client_parameters.cpp(), serialized_args)
         )

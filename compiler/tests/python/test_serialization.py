@@ -7,6 +7,7 @@ from concrete.compiler import (
     CompilationOptions,
     PublicArguments,
 )
+from concrete.compiler.public_result import PublicResult
 
 
 def assert_result(result, expected_result):
@@ -21,7 +22,6 @@ def assert_result(result, expected_result):
         assert np.all(result == expected_result)
 
 
-# TODO(#541): add result serialization
 def run_with_serialization(
     engine,
     args,
@@ -43,7 +43,10 @@ def run_with_serialization(
     del public_arguments_buffer
     server_lambda = engine.load_server_lambda(compilation_result)
     public_result = engine.server_call(server_lambda, public_arguments)
+    public_result_buffer = public_result.serialize()
     # Client
+    public_result = PublicResult.unserialize(client_parameters, public_result_buffer)
+    del public_result_buffer
     result = ClientSupport.decrypt_result(key_set, public_result)
     return result
 

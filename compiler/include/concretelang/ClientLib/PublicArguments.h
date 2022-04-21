@@ -82,9 +82,15 @@ struct PublicResult {
     return std::make_unique<PublicResult>(clientParameters, buffers);
   }
 
-  /// Unserialize from a input stream.
+  /// Unserialize from an input stream inplace.
   outcome::checked<void, StringError> unserialize(std::istream &istream);
-
+  /// Unserialize from an input stream returning a new PublicResult.
+  static outcome::checked<std::unique_ptr<PublicResult>, StringError>
+  unserialize(ClientParameters &expectedParams, std::istream &istream) {
+    auto publicResult = std::make_unique<PublicResult>(expectedParams);
+    OUTCOME_TRYV(publicResult->unserialize(istream));
+    return std::move(publicResult);
+  }
   /// Serialize into an output stream.
   outcome::checked<void, StringError> serialize(std::ostream &ostream);
 

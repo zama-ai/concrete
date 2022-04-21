@@ -157,6 +157,28 @@ MLIR_CAPI_EXPORTED std::string publicArgumentsSerialize(
   return buffer.str();
 }
 
+MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
+publicResultUnserialize(mlir::concretelang::ClientParameters &clientParameters,
+                        const std::string &buffer) {
+  std::stringstream istream(buffer);
+  auto publicResultOrError = concretelang::clientlib::PublicResult::unserialize(
+      clientParameters, istream);
+  if (!publicResultOrError) {
+    throw std::runtime_error(publicResultOrError.error().mesg);
+  }
+  return std::move(publicResultOrError.value());
+}
+
+MLIR_CAPI_EXPORTED std::string
+publicResultSerialize(concretelang::clientlib::PublicResult &publicResult) {
+  std::ostringstream buffer(std::ios::binary);
+  auto voidOrError = publicResult.serialize(buffer);
+  if (!voidOrError) {
+    throw std::runtime_error(voidOrError.error().mesg);
+  }
+  return buffer.str();
+}
+
 void terminateParallelization() {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   _dfr_terminate();

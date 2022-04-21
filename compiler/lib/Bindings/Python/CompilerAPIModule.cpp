@@ -166,7 +166,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("serialize", [](clientlib::PublicArguments &publicArgument) {
         return pybind11::bytes(publicArgumentsSerialize(publicArgument));
       });
-  pybind11::class_<clientlib::PublicResult>(m, "PublicResult");
+  pybind11::class_<clientlib::PublicResult>(m, "PublicResult")
+      .def_static("unserialize",
+                  [](mlir::concretelang::ClientParameters &clientParameters,
+                     const pybind11::bytes &buffer) {
+                    return publicResultUnserialize(clientParameters, buffer);
+                  })
+      .def("serialize", [](clientlib::PublicResult &publicResult) {
+        return pybind11::bytes(publicResultSerialize(publicResult));
+      });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")
       .def_static("from_tensor",
