@@ -304,7 +304,9 @@ class Node:
         return self.operation == Operation.Generic and self.properties["name"] not in [
             "add",
             "concatenate",
+            "conv1d",
             "conv2d",
+            "conv3d",
             "dot",
             "index.static",
             "matmul",

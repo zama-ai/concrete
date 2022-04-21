@@ -7,6 +7,8 @@ import pytest
 
 import concrete.numpy as cnp
 import concrete.onnx as connx
+from concrete.numpy.representation.node import Node
+from concrete.numpy.tracing.tracer import Tracer
 
 
 @pytest.mark.parametrize(
@@ -57,7 +59,7 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
 
     @cnp.compiler({"x": "encrypted"}, configuration=configuration)
     def function(x):
-        return connx.conv2d(x, weight, bias, strides=strides, dilations=dilations)
+        return connx.conv(x, weight, bias, strides=strides, dilations=dilations)
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     circuit = function.compile(inputset)
@@ -67,7 +69,7 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
 
 
 @pytest.mark.parametrize(
-    "input_shape,weight_shape,bias_shape,pads,strides,dilations,auto_pad,"
+    "input_shape,weight_shape,bias_shape,pads,strides,dilations,kernel_shape,group,auto_pad,"
     "expected_error,expected_message",
     [
         pytest.param(
@@ -77,9 +79,52 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             (0, 0, 0, 0),
             (1, 1),
             (1, 1),
+            None,
+            1,
             "VALID",
             ValueError,
-            "Auto pad should be in {'NOTSET'} but it's 'VALID'",
+            "auto_pad should be in {'NOTSET'}, but got 'VALID'",
+        ),
+        pytest.param(
+            (1, 1, 4),
+            (1, 1, 2),
+            (1,),
+            (),
+            (1,),
+            (1,),
+            None,
+            1,
+            "NOTSET",
+            ValueError,
+            "pads should be of form (D_begin_pad, D_end_pad) when performing 1D convolution, "
+            "but it's ()",
+        ),
+        pytest.param(
+            (1, 1, 4),
+            (1, 1, 2),
+            (1,),
+            (0, 0),
+            (),
+            (1,),
+            None,
+            1,
+            "NOTSET",
+            ValueError,
+            "strides should be of form (D_stride,) when performing 1D " "convolution, but it's ()",
+        ),
+        pytest.param(
+            (1, 1, 4),
+            (1, 1, 2),
+            (1,),
+            (0, 0),
+            (1,),
+            (),
+            None,
+            1,
+            "NOTSET",
+            ValueError,
+            "dilations should be of form (D_dilation,) when performing 1D "
+            "convolution, but it's ()",
         ),
         pytest.param(
             (1, 1, 4, 4),
@@ -88,10 +133,12 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             (),
             (1, 1),
             (1, 1),
+            None,
+            1,
             "NOTSET",
             ValueError,
-            "Pads should be of form "
-            "(height_begin_pad, width_begin_pad, height_end_pad, width_end_pad) "
+            "pads should be of form (height_begin_pad, width_begin_pad, "
+            "height_end_pad, width_end_pad) when performing 2D convolution, "
             "but it's ()",
         ),
         pytest.param(
@@ -101,9 +148,12 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             (0, 0, 0, 0),
             (),
             (1, 1),
+            None,
+            1,
             "NOTSET",
             ValueError,
-            "Strides should be of form (height_stride, width_stride) but it's ()",
+            "strides should be of form (height_stride, width_stride) when performing 2D "
+            "convolution, but it's ()",
         ),
         pytest.param(
             (1, 1, 4, 4),
@@ -112,9 +162,55 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             (0, 0, 0, 0),
             (1, 1),
             (),
+            None,
+            1,
             "NOTSET",
             ValueError,
-            "Dilations should be of form (height_dilation, width_dilation) but it's ()",
+            "dilations should be of form (height_dilation, width_dilation) when performing 2D "
+            "convolution, but it's ()",
+        ),
+        pytest.param(
+            (1, 1, 4, 4, 4),
+            (1, 1, 2, 2, 4),
+            (1,),
+            (),
+            (1, 1, 1),
+            (1, 1, 1),
+            None,
+            1,
+            "NOTSET",
+            ValueError,
+            "pads should be of form (D_begin_pad, height_begin_pad, width_begin_pad, "
+            "D_end_pad, height_end_pad, width_end_pad) when performing 3D convolution, "
+            "but it's ()",
+        ),
+        pytest.param(
+            (1, 1, 4, 4, 4),
+            (1, 1, 2, 2, 2),
+            (1,),
+            (0, 0, 0, 0, 0, 0),
+            (),
+            (1, 1, 1),
+            None,
+            1,
+            "NOTSET",
+            ValueError,
+            "strides should be of form (D_stride, height_stride, width_stride) when performing 3D "
+            "convolution, but it's ()",
+        ),
+        pytest.param(
+            (1, 1, 4, 4, 4),
+            (1, 1, 2, 2, 2),
+            (1,),
+            (0, 0, 0, 0, 0, 0),
+            (1, 1, 1),
+            (),
+            None,
+            1,
+            "NOTSET",
+            ValueError,
+            "dilations should be of form (D_dilation, height_dilation, width_dilation) when "
+            "performing 3D convolution, but it's ()",
         ),
         pytest.param(
             (),
@@ -123,9 +219,11 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             (0, 0, 0, 0),
             (1, 1),
             (1, 1),
+            None,
+            1,
             "NOTSET",
             ValueError,
-            "Input should be of shape (N, C, H, W) but it's of shape ()",
+            "expected input x to have at least 3 dimensions (N, C, D1, ...), but got 0",
         ),
         pytest.param(
             (1, 1, 4, 4),
@@ -134,9 +232,11 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             (0, 0, 0, 0),
             (1, 1),
             (1, 1),
+            None,
+            1,
             "NOTSET",
             ValueError,
-            "Weight should be of shape (F, C, H, W) but it's of shape ()",
+            "expected weight to have at least 3 dimensions (F, C / group, K1, ...), but got 0",
         ),
         pytest.param(
             (1, 1, 4, 4),
@@ -145,26 +245,123 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
             (0, 0, 0, 0),
             (1, 1),
             (1, 1),
+            None,
+            1,
             "NOTSET",
             ValueError,
-            "Bias should be of shape (F,) but it's of shape ()",
+            "expected bias to have a single dimension (F,), but got 0",
+        ),
+        pytest.param(
+            (1, 1, 4, 4),
+            (1, 1, 2, 2),
+            (1,),
+            (0, 0, 0, 0),
+            (1, 1),
+            (1, 1),
+            (1, 2),
+            1,
+            "NOTSET",
+            ValueError,
+            "expected kernel_shape to be (1, 1, 2, 2), but got (1, 2)",
+        ),
+        pytest.param(
+            (1, 1, 4, 4),
+            (1, 1, 2, 2),
+            (1,),
+            (0, 0, 0, 0),
+            (1, 1),
+            (1, 1),
+            None,
+            None,
+            "NOTSET",
+            ValueError,
+            "expected group to be an integer > 0, but got None",
+        ),
+        pytest.param(
+            (1, 1, 4, 4),
+            (1, 2, 2, 2),
+            (1,),
+            (0, 0, 0, 0),
+            (1, 1),
+            (1, 1),
+            None,
+            1,
+            "NOTSET",
+            ValueError,
+            "expected number of channel in weight to be 1.0 (C / group), but got 2",
+        ),
+        pytest.param(
+            (1, 1, 4),
+            (1, 1, 2),
+            (1,),
+            (0, 0),
+            (1,),
+            (1,),
+            None,
+            1,
+            "NOTSET",
+            NotImplementedError,
+            "conv1d conversion to MLIR is not yet implemented",
+        ),
+        pytest.param(
+            (1, 1, 4, 4, 4),
+            (1, 1, 2, 2, 2),
+            (1,),
+            (0, 0, 0, 0, 0, 0),
+            (1, 1, 1),
+            (1, 1, 1),
+            None,
+            1,
+            "NOTSET",
+            NotImplementedError,
+            "conv3d conversion to MLIR is not yet implemented",
+        ),
+        pytest.param(
+            (1, 1, 4, 4, 4, 4),
+            (1, 1, 2, 2, 2, 2),
+            (1,),
+            (0, 0, 0, 0, 0, 0, 0, 0),
+            (1, 1, 1, 1),
+            (1, 1, 1, 1),
+            None,
+            1,
+            "NOTSET",
+            NotImplementedError,
+            "only 1D, 2D, and 3D convolutions are supported",
+        ),
+        pytest.param(
+            (1, 1, 4, 4),
+            (1, 1, 2, 2),
+            (1,),
+            (0, 0, 0, 0),
+            (1, 1),
+            (1, 1),
+            None,
+            2,
+            "NOTSET",
+            NotImplementedError,
+            "only group == 1 is currently supported",
         ),
     ],
 )
-def test_bad_conv2d_tracing(
+# pylint: disable=too-many-arguments
+def test_bad_conv_compilation(
     input_shape,
     weight_shape,
     bias_shape,
     pads,
     strides,
     dilations,
+    kernel_shape,
+    group,
     auto_pad,
     expected_error,
     expected_message,
     helpers,
 ):
+    # pylint: enable=too-many-arguments
     """
-    Test conv2d with bad parameters.
+    Test conv with bad parameters.
     """
 
     configuration = helpers.configuration()
@@ -178,7 +375,17 @@ def test_bad_conv2d_tracing(
 
     @cnp.compiler({"x": "encrypted"}, configuration=configuration)
     def function(x):
-        return connx.conv2d(x, weight, bias, pads, strides, dilations, auto_pad)
+        return connx.conv(
+            x,
+            weight,
+            bias=bias,
+            pads=pads,
+            strides=strides,
+            dilations=dilations,
+            kernel_shape=kernel_shape,
+            group=group,
+            auto_pad=auto_pad,
+        )
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     with pytest.raises(expected_error) as excinfo:
@@ -187,21 +394,83 @@ def test_bad_conv2d_tracing(
     assert str(excinfo.value) == expected_message
 
 
-def test_bad_conv2d_evaluation():
+@pytest.mark.parametrize(
+    "conv_func_name",
+    [
+        "conv",
+        223,
+        None,
+    ],
+)
+@pytest.mark.parametrize(
+    "func",
+    [
+        # pylint: disable=protected-access
+        connx.convolution._evaluate_conv,
+        connx.convolution._trace_conv,
+        # pylint: enable=protected-access
+    ],
+)
+def test_bad_conv_func_name(conv_func_name, func):
     """
-    Test conv2d evaluation with bad parameters.
+    Test invalid conv function name.
     """
+    with pytest.raises(AssertionError) as excinfo:
+        func(None, None, None, None, None, None, None, conv_func_name)
+    assert (
+        str(excinfo.value) == f"expected conv_func to be one of ['conv1d', 'conv2d', 'conv3d'], "
+        f"but got {conv_func_name}"
+    )
 
-    x = np.random.randint(0, 4, size=(1, 1, 4, 4))
 
-    with pytest.raises(ValueError) as excinfo:
-        connx.conv2d(x, "abc")
+@pytest.mark.parametrize(
+    "x,weight,bias,expected_error,expected_message",
+    [
+        pytest.param(
+            np.array([1, 2, 3]),
+            "not same type as x",
+            None,
+            TypeError,
+            "expected weight to be of same type as x",
+        ),
+        pytest.param(
+            np.array([1, 2, 3]),
+            np.array([1, 2, 3]),
+            "not same type as x",
+            TypeError,
+            "expected bias to be of same type as x",
+        ),
+        pytest.param(
+            Tracer(Node.constant(np.array([1, 2, 3])), []),
+            "not same type as x",
+            None,
+            TypeError,
+            "expected weight to be of type Tracer or ndarray",
+        ),
+        pytest.param(
+            Tracer(Node.constant(np.array([1, 2, 3])), []),
+            np.array([1, 2, 3]),
+            "not same type as x",
+            TypeError,
+            "expected bias to be of type Tracer or ndarray",
+        ),
+    ],
+)
+def test_inconsistent_input_types(
+    x,
+    weight,
+    bias,
+    expected_error,
+    expected_message,
+):
+    """
+    Test conv with inconsistent input types.
+    """
+    with pytest.raises(expected_error) as excinfo:
+        connx.conv(
+            x,
+            weight,
+            bias=bias,
+        )
 
-    assert str(excinfo.value) == "Weight should be of type np.ndarray for evaluation"
-
-    weight = np.random.randint(0, 4, size=(1, 1, 2, 2))
-
-    with pytest.raises(ValueError) as excinfo:
-        connx.conv2d(x, weight, "abc")
-
-    assert str(excinfo.value) == "Bias should be of type np.ndarray for evaluation"
+    assert str(excinfo.value) == expected_message

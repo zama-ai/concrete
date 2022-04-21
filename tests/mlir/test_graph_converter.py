@@ -92,7 +92,30 @@ return %2
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x, w: connx.conv2d(x, w),
+            lambda x, w: connx.conv(x, w),
+            {"x": "encrypted", "w": "encrypted"},
+            [
+                (
+                    np.random.randint(0, 2, size=(1, 1, 4)),
+                    np.random.randint(0, 2, size=(1, 1, 1)),
+                )
+                for _ in range(100)
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x                                                                              # EncryptedTensor<uint1, shape=(1, 1, 4)>
+%1 = w                                                                              # EncryptedTensor<uint1, shape=(1, 1, 1)>
+%2 = conv1d(%0, %1, [0], pads=(0, 0), strides=(1,), dilations=(1,), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv1d with encrypted input and clear weight is supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, w: connx.conv(x, w),
             {"x": "encrypted", "w": "encrypted"},
             [
                 (
@@ -106,10 +129,33 @@ return %2
 
 Function you are trying to compile cannot be converted to MLIR
 
-%0 = x                                                                               # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>
-%1 = w                                                                               # EncryptedTensor<uint1, shape=(1, 1, 1, 1)>
-%2 = conv2d(%0, %1, [0], pads=(0, 0, 0, 0), strides=(1, 1), dilations=(1, 1))        # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv2d with encrypted input and clear weight is supported
+%0 = x                                                                                        # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>
+%1 = w                                                                                        # EncryptedTensor<uint1, shape=(1, 1, 1, 1)>
+%2 = conv2d(%0, %1, [0], pads=(0, 0, 0, 0), strides=(1, 1), dilations=(1, 1), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4, 4)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv2d with encrypted input and clear weight is supported
+return %2
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, w: connx.conv(x, w),
+            {"x": "encrypted", "w": "encrypted"},
+            [
+                (
+                    np.random.randint(0, 2, size=(1, 1, 4, 4, 4)),
+                    np.random.randint(0, 2, size=(1, 1, 1, 1, 1)),
+                )
+                for _ in range(100)
+            ],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x                                                                                                    # EncryptedTensor<uint1, shape=(1, 1, 4, 4, 4)>
+%1 = w                                                                                                    # EncryptedTensor<uint1, shape=(1, 1, 1, 1, 1)>
+%2 = conv3d(%0, %1, [0], pads=(0, 0, 0, 0, 0, 0), strides=(1, 1, 1), dilations=(1, 1, 1), group=1)        # EncryptedTensor<uint1, shape=(1, 1, 4, 4, 4)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only conv3d with encrypted input and clear weight is supported
 return %2
 
             """,  # noqa: E501

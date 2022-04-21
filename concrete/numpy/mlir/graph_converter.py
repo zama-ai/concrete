@@ -76,10 +76,10 @@ class GraphConverter:
                 if not all(input.is_encrypted for input in inputs):
                     return "only all encrypted concatenate is supported"
 
-            elif name == "conv2d":
+            elif name in ["conv1d", "conv2d", "conv3d"]:
                 assert_that(len(inputs) == 2 or len(inputs) == 3)
                 if not (inputs[0].is_encrypted and inputs[1].is_clear):
-                    return "only conv2d with encrypted input and clear weight is supported"
+                    return f"only {name} with encrypted input and clear weight is supported"
 
             elif name == "dot":
                 assert_that(len(inputs) == 2)

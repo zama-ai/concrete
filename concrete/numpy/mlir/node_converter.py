@@ -139,8 +139,14 @@ class NodeConverter:
             elif name == "concatenate":
                 result = self.convert_concat()
 
+            elif name == "conv1d":
+                result = self.convert_conv1d()
+
             elif name == "conv2d":
                 result = self.convert_conv2d()
+
+            elif name == "conv3d":
+                result = self.convert_conv3d()
 
             elif name == "dot":
                 result = self.convert_dot()
@@ -302,6 +308,17 @@ class NodeConverter:
 
         return arith.ConstantOp(resulting_type, attr).result
 
+    def convert_conv1d(self) -> OpResult:
+        """
+        Convert "conv1d" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        raise NotImplementedError("conv1d conversion to MLIR is not yet implemented")
+
     def convert_conv2d(self) -> OpResult:
         """
         Convert "conv2d" node to its corresponding MLIR representation.
@@ -337,6 +354,17 @@ class NodeConverter:
             preds.append(None)
 
         return fhelinalg.Conv2dOp(resulting_type, *preds, pads, strides, dilations).result
+
+    def convert_conv3d(self) -> OpResult:
+        """
+        Convert "conv3d" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        raise NotImplementedError("conv3d conversion to MLIR is not yet implemented")
 
     def convert_dot(self) -> OpResult:
         """
