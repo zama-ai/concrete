@@ -18,6 +18,7 @@ use concrete_fftw::array::AlignedVec;
 #[cfg(feature = "multithread")]
 use rayon::{iter::IndexedParallelIterator, prelude::*};
 
+use crate::backends::core::private::crypto::bootstrap::fourier::FftBuffers;
 #[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
@@ -513,7 +514,8 @@ impl<Cont, Scalar> FourierGgswCiphertext<Cont, Scalar> {
         &self,
         output: &mut GlweCiphertext<C1>,
         glwe: &GlweCiphertext<C2>,
-        buffers: &mut FourierBuffers<Scalar>,
+        fft_buffers: &mut FftBuffers,
+        rounded_buffer: &mut GlweCiphertext<Vec<Scalar>>,
     ) where
         Self: AsRefTensor<Element = Complex64>,
         GlweCiphertext<C1>: AsMutTensor<Element = Scalar>,
@@ -532,9 +534,6 @@ impl<Cont, Scalar> FourierGgswCiphertext<Cont, Scalar> {
             glwe.size(),
             output.size()
         );
-
-        let fft_buffers = &mut buffers.fft_buffers;
-        let rounded_buffer = &mut buffers.rounded_buffer;
 
         // "alias" buffers to save some typing
         let fft = &mut fft_buffers.fft;
