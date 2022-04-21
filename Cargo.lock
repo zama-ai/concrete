@@ -218,6 +218,7 @@ version = "0.1.1"
 dependencies = [
  "concrete-core 1.0.0-beta",
  "criterion",
+ "proto_graphec",
  "rand 0.8.5",
  "serde",
 ]
