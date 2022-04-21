@@ -122,7 +122,8 @@ impl ServerKey {
                 var_rlwe,
             )
             .unwrap();
-        let optalysys_bsk = optalysys_engine.convert_lwe_bootstrap_key(&bsk).unwrap();
+        let fourier_bsk: OptalysysFourierLweBootstrapKey32
+            = optalysys_engine.convert_lwe_bootstrap_key(&bsk).unwrap();
 
         // Convert the GLWE secret key into an LWE secret key:
         let big_lwe_secret_key = engine
@@ -175,7 +176,7 @@ impl ServerKey {
         // Pack the keys in the server key set:
         let sks: ServerKey = ServerKey {
             key_switching_key: ksk,
-            bootstrapping_key: optalysys_bsk,
+            bootstrapping_key: fourier_bsk,
             engine,
             optalysys_engine,
             accumulator,
