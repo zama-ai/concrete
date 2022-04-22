@@ -1,5 +1,5 @@
 use super::engine_error;
-use crate::prelude::CleartextEntity;
+use crate::prelude::ScalingFactor;
 use crate::specification::engines::AbstractEngine;
 use crate::specification::entities::GlweCiphertextEntity;
 
@@ -51,19 +51,17 @@ pub trait GlweCiphertextDiscardingTensorProductEngine<
     InputCiphertext1,
     InputCiphertext2,
     OutputCiphertext,
-    Cleartext,
 >: AbstractEngine where
     InputCiphertext1: GlweCiphertextEntity,
     InputCiphertext2: GlweCiphertextEntity<KeyDistribution = InputCiphertext1::KeyDistribution>,
     OutputCiphertext: GlweCiphertextEntity<KeyDistribution = InputCiphertext1::KeyDistribution>,
-    Cleartext: CleartextEntity,
 {
     fn discard_tensor_product_glwe_ciphertext(
         &mut self,
         input1: &InputCiphertext1,
         input2: &InputCiphertext2,
         output: &mut OutputCiphertext,
-        scale: &Cleartext,
+        scale: ScalingFactor,
     ) -> Result<(), GlweCiphertextDiscardingTensorProductError<Self::EngineError>>;
 
     /// Unsafely performs a discarding tensor product of two GLWE ciphertexts.
@@ -78,6 +76,6 @@ pub trait GlweCiphertextDiscardingTensorProductEngine<
         input1: &InputCiphertext1,
         input2: &InputCiphertext2,
         output: &mut OutputCiphertext,
-        scale: &Cleartext,
+        scale: ScalingFactor,
     );
 }

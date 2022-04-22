@@ -1,5 +1,5 @@
 use super::engine_error;
-use crate::prelude::CleartextEntity;
+use crate::prelude::ScalingFactor;
 use crate::specification::engines::AbstractEngine;
 use crate::specification::entities::GlweCiphertextEntity;
 
@@ -36,22 +36,18 @@ impl<EngineError: std::error::Error> GlweCiphertextTensorProductError<EngineErro
 /// the tensor product of the `input` GLWE ciphertexts.
 ///
 /// # Formal Definition
-pub trait GlweCiphertextTensorProductEngine<
-    InputCiphertext1,
-    InputCiphertext2,
-    OutputCiphertext,
-    Cleartext,
->: AbstractEngine where
+pub trait GlweCiphertextTensorProductEngine<InputCiphertext1, InputCiphertext2, OutputCiphertext>:
+    AbstractEngine
+where
     InputCiphertext1: GlweCiphertextEntity,
     InputCiphertext2: GlweCiphertextEntity<KeyDistribution = InputCiphertext1::KeyDistribution>,
     OutputCiphertext: GlweCiphertextEntity<KeyDistribution = InputCiphertext1::KeyDistribution>,
-    Cleartext: CleartextEntity,
 {
     fn tensor_product_glwe_ciphertext(
         &mut self,
         input1: &InputCiphertext1,
         input2: &InputCiphertext2,
-        scale: &Cleartext,
+        scale: ScalingFactor,
     ) -> Result<OutputCiphertext, GlweCiphertextTensorProductError<Self::EngineError>>;
 
     /// Unsafely performs a tesnro product of two GLWE ciphertexts.
@@ -65,6 +61,6 @@ pub trait GlweCiphertextTensorProductEngine<
         &mut self,
         input1: &InputCiphertext1,
         input2: &InputCiphertext2,
-        scale: &Cleartext,
+        scale: ScalingFactor,
     ) -> OutputCiphertext;
 }
