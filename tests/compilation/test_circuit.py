@@ -129,3 +129,38 @@ def test_circuit_bad_run(helpers):
     assert str(excinfo.value) == (
         "Expected argument 1 to be EncryptedScalar<uint5> but it's EncryptedScalar<uint7>"
     )
+
+
+def test_circuit_virtual_explicit_api(helpers):
+    """
+    Test `keygen`, `encrypt`, `run`, and `decrypt` methods of `Circuit` class with virtual circuit.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted", "y": "encrypted"}, configuration=configuration)
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2 ** 4), np.random.randint(0, 2 ** 5)) for _ in range(100)]
+    circuit = f.compile(inputset, virtual=True)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        circuit.keygen()
+
+    assert str(excinfo.value) == "Virtual circuits cannot use `keygen` method"
+
+    with pytest.raises(RuntimeError) as excinfo:
+        circuit.encrypt(1, 2)
+
+    assert str(excinfo.value) == "Virtual circuits cannot use `encrypt` method"
+
+    with pytest.raises(RuntimeError) as excinfo:
+        circuit.run(None)
+
+    assert str(excinfo.value) == "Virtual circuits cannot use `run` method"
+
+    with pytest.raises(RuntimeError) as excinfo:
+        circuit.decrypt(None)
+
+    assert str(excinfo.value) == "Virtual circuits cannot use `decrypt` method"

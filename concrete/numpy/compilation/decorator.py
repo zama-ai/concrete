@@ -79,6 +79,7 @@ def compiler(
                 inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
                 show_graph: bool = False,
                 show_mlir: bool = False,
+                virtual: bool = False,
             ) -> Circuit:
                 """
                 Compile the function into a circuit.
@@ -93,12 +94,15 @@ def compiler(
                     show_mlir (bool, default = False):
                         whether to print the compiled mlir
 
+                    virtual (bool, default = False):
+                        whether to simulate the computation to allow large bit-widths
+
                 Returns:
                     Circuit:
                         compiled circuit
                 """
 
-                return self.compiler.compile(inputset, show_graph, show_mlir)
+                return self.compiler.compile(inputset, show_graph, show_mlir, virtual)
 
         return Compilable(function)
 

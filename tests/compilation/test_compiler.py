@@ -120,3 +120,25 @@ def test_compiler_bad_compile(helpers):
         compiler.compile()
 
     assert str(excinfo.value) == "Compiling function 'f' without an inputset is not supported"
+
+
+def test_compiler_virtual_compile(helpers, capsys):
+    """
+    Test `compile` method of `Compiler` class with virtual=True.
+    """
+
+    configuration = helpers.configuration()
+
+    def f(x):
+        return x + 400
+
+    compiler = Compiler(f, {"x": "encrypted"}, configuration=configuration)
+    circuit = compiler.compile(inputset=range(400), virtual=True)
+
+    captured = capsys.readouterr()
+    assert captured.out.strip() == (
+        "Warning: You are using virtual compilation, "
+        "which means the evaluation will not be homomorphic."
+    )
+
+    assert circuit.encrypt_run_decrypt(200) == 600

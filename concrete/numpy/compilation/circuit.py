@@ -3,7 +3,7 @@ Declaration of `Circuit` class.
 """
 
 from pathlib import Path
-from typing import List, Optional, Tuple, Union, cast
+from typing import Any, List, Optional, Tuple, Union, cast
 
 import numpy as np
 from concrete.compiler import (
@@ -33,6 +33,7 @@ class Circuit:
 
     graph: Graph
     mlir: str
+    virtual: bool
 
     _jit_support: JITSupport
     _compilation_result: JITCompilationResult
@@ -44,9 +45,25 @@ class Circuit:
 
     _server_lambda: JITLambda
 
-    def __init__(self, graph: Graph, mlir: str, configuration: CompilationConfiguration):
+    def __init__(
+        self,
+        graph: Graph,
+        mlir: str,
+        configuration: Optional[CompilationConfiguration] = None,
+        virtual: bool = False,
+    ):
+        configuration = configuration if configuration is not None else CompilationConfiguration()
+
         self.graph = graph
         self.mlir = mlir
+
+        self.virtual = virtual
+        if self.virtual:
+            print(
+                "Warning: You are using virtual compilation, "
+                "which means the evaluation will not be homomorphic."
+            )
+            return
 
         options = CompilationOptions.new("main")
 
@@ -111,6 +128,9 @@ class Circuit:
                 whether to generate new keys even if keys are already generated
         """
 
+        if self.virtual:
+            raise RuntimeError("Virtual circuits cannot use `keygen` method")
+
         if self._keyset is None or force:
             self._keyset = ClientSupport.key_set(self._client_parameters, self._keyset_cache)
 
@@ -126,6 +146,9 @@ class Circuit:
             PublicArguments:
                 encrypted and plain arguments as well as public keys
         """
+
+        if self.virtual:
+            raise RuntimeError("Virtual circuits cannot use `encrypt` method")
 
         if len(args) != len(self.graph.input_nodes):
             raise ValueError(f"Expected {len(self.graph.input_nodes)} inputs but got {len(args)}")
@@ -186,6 +209,9 @@ class Circuit:
                 encrypted result of homomorphic evaluaton
         """
 
+        if self.virtual:
+            raise RuntimeError("Virtual circuits cannot use `run` method")
+
         return self._jit_support.server_call(self._server_lambda, args)
 
     def decrypt(
@@ -203,6 +229,9 @@ class Circuit:
             Union[int, numpy.ndarray]:
                 clear result of homomorphic evaluaton
         """
+
+        if self.virtual:
+            raise RuntimeError("Virtual circuits cannot use `decrypt` method")
 
         results = ClientSupport.decrypt_result(self._keyset, result)
         if not isinstance(results, tuple):
@@ -233,10 +262,7 @@ class Circuit:
 
         return sanitized_results[0] if len(sanitized_results) == 1 else tuple(sanitized_results)
 
-    def encrypt_run_decrypt(
-        self,
-        *args: Union[int, np.ndarray],
-    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+    def encrypt_run_decrypt(self, *args: Any) -> Any:
         """
         Encrypt inputs, run the circuit, and decrypt the outputs in one go.
 
@@ -248,5 +274,8 @@ class Circuit:
             Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
                 clear result of homomorphic evaluation
         """
+
+        if self.virtual:
+            return self.graph(*args)
 
         return self.decrypt(self.run(self.encrypt(*args)))

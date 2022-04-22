@@ -218,7 +218,7 @@ class Compiler:
                         columns = min(longest_line, 80)
                     else:
                         columns = min(longest_line, columns)
-                except OSError:
+                except OSError:  # pragma: no cover
                     columns = min(longest_line, 80)
 
                 print()
@@ -254,6 +254,7 @@ class Compiler:
         inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
         show_graph: bool = False,
         show_mlir: bool = False,
+        virtual: bool = False,
     ) -> Circuit:
         """
         Compile the function using an inputset.
@@ -268,6 +269,9 @@ class Compiler:
             show_mlir (bool, default = False):
                 whether to print the compiled mlir
 
+            virtual (bool, default = False):
+                whether to simulate the computation to allow large bit-widths
+
         Returns:
             Circuit:
                 compiled circuit
@@ -277,7 +281,7 @@ class Compiler:
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
-            mlir = GraphConverter.convert(self.graph)
+            mlir = GraphConverter.convert(self.graph, virtual=virtual)
             self.artifacts.add_mlir_to_compile(mlir)
 
             if show_graph or show_mlir:
@@ -298,7 +302,7 @@ class Compiler:
                         columns = min(longest_line, 80)
                     else:
                         columns = min(longest_line, columns)
-                except OSError:
+                except OSError:  # pragma: no cover
                     columns = min(longest_line, 80)
 
                 if show_graph:
@@ -321,7 +325,7 @@ class Compiler:
 
                     print()
 
-            return Circuit(self.graph, mlir, self.configuration)
+            return Circuit(self.graph, mlir, self.configuration, virtual=virtual)
 
         except Exception:  # pragma: no cover
 

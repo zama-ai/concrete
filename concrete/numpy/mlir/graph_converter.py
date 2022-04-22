@@ -277,13 +277,16 @@ class GraphConverter:
                 nx_graph.add_edge(add_offset, node, input_idx=variable_input_index)
 
     @staticmethod
-    def convert(graph: Graph) -> str:
+    def convert(graph: Graph, virtual: bool = False) -> str:
         """
         Convert a computation graph to its corresponding MLIR representation.
 
         Args:
             graph (Graph):
                 computation graph to be converted
+
+            virtual  (bool, default = False):
+                whether to circuit will be virtual
 
         Returns:
             str:
@@ -293,6 +296,9 @@ class GraphConverter:
         graph = deepcopy(graph)
 
         GraphConverter._check_graph_convertibility(graph)
+        if virtual:
+            return "Virtual circuits doesn't have MLIR."
+
         GraphConverter._update_bit_widths(graph)
         GraphConverter._offset_negative_lookup_table_inputs(graph)
 
