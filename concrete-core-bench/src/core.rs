@@ -42,6 +42,7 @@ bench! {
     (GlweCiphertextDecryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
     (GlweCiphertextDiscardingDecryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
     (GlweCiphertextDiscardingEncryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
+    (GlweCiphertextTensorProductFixture, (GlweCiphertext, GlweCiphertext, GlweCiphertext)),
     (GlweCiphertextEncryptionFixture, (PlaintextVector, GlweSecretKey, GlweCiphertext)),
     (GlweCiphertextTrivialEncryptionFixture, (PlaintextVector, GlweCiphertext)),
     (GlweCiphertextZeroEncryptionFixture, (GlweSecretKey, GlweCiphertext)),

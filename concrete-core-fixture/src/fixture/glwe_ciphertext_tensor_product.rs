@@ -1,10 +1,9 @@
 use crate::fixture::Fixture;
 use crate::generation::prototyping::{
-    PrototypesFloatCleartext, PrototypesGlweCiphertext, PrototypesGlweSecretKey,
-    PrototypesPlaintextVector,
+    PrototypesGlweCiphertext, PrototypesGlweSecretKey, PrototypesPlaintextVector,
 };
-use crate::generation::synthesizing::{SynthesizesFloatCleartext, SynthesizesGlweCiphertext};
-use crate::generation::{IntegerPrecision, Maker, PrecisionF64};
+use crate::generation::synthesizing::SynthesizesGlweCiphertext;
+use crate::generation::{IntegerPrecision, Maker};
 use crate::raw::generation::RawUnsignedIntegers;
 use crate::raw::statistical_test::assert_noise_distribution;
 use concrete_commons::dispersion::Variance;
@@ -12,10 +11,10 @@ use concrete_commons::parameters::{GlweDimension, PolynomialSize};
 use concrete_core::prelude::markers::{
     BinaryKeyDistribution, GaussianKeyDistribution, KeyDistributionMarker, TernaryKeyDistribution,
 };
-use concrete_core::prelude::numeric::{UnsignedInteger, CastInto};
+use concrete_core::prelude::numeric::{CastInto, UnsignedInteger};
 use concrete_core::prelude::{
-    BinaryKeyKind, CleartextEntity, DispersionParameter, GaussianKeyKind, GlweCiphertextEntity,
-    GlweCiphertextTensorProductEngine, TernaryKeyKind,
+    BinaryKeyKind, DispersionParameter, GaussianKeyKind, GlweCiphertextEntity,
+    GlweCiphertextTensorProductEngine, ScalingFactor, TernaryKeyKind,
 };
 use std::any::TypeId;
 
@@ -28,20 +27,18 @@ pub struct GlweCiphertextTensorProductParameters {
     pub glwe_dimension: GlweDimension,
     pub noise_glwe_1: Variance,
     pub noise_glwe_2: Variance,
-    pub delta_1: f64,
-    pub delta_2: f64,
+    pub scaling_factor_1: ScalingFactor,
+    pub scaling_factor_2: ScalingFactor,
     pub msg_bound_1: f64,
     pub msg_bound_2: f64,
 }
 
-impl<Precision, Engine, CiphertextIn1, CiphertextIn2, CiphertextOut, Cleartext>
-    Fixture<Precision, Engine, (CiphertextIn1, CiphertextIn2, CiphertextOut, Cleartext)>
+impl<Precision, Engine, CiphertextIn1, CiphertextIn2, CiphertextOut>
+    Fixture<Precision, Engine, (CiphertextIn1, CiphertextIn2, CiphertextOut)>
     for GlweCiphertextTensorProductFixture
 where
     Precision: IntegerPrecision,
-    Cleartext: CleartextEntity,
-    Engine:
-        GlweCiphertextTensorProductEngine<CiphertextIn1, CiphertextIn2, CiphertextOut, Cleartext>,
+    Engine: GlweCiphertextTensorProductEngine<CiphertextIn1, CiphertextIn2, CiphertextOut>,
     CiphertextIn1: GlweCiphertextEntity,
     CiphertextIn2: GlweCiphertextEntity<KeyDistribution = CiphertextIn1::KeyDistribution>,
     CiphertextOut: GlweCiphertextEntity<KeyDistribution = CiphertextIn1::KeyDistribution>,
@@ -54,7 +51,6 @@ where
         <Maker as PrototypesPlaintextVector<Precision>>::PlaintextVectorProto,
         <Maker as PrototypesPlaintextVector<Precision>>::PlaintextVectorProto,
         <Maker as PrototypesGlweSecretKey<Precision, CiphertextIn1::KeyDistribution>>::GlweSecretKeyProto,
-        <Maker as PrototypesFloatCleartext<PrecisionF64>>::CleartextProto,
     );
     type SamplePrototypes =
     (<Maker as PrototypesGlweCiphertext<Precision, CiphertextIn1::KeyDistribution>>::GlweCiphertextProto,
@@ -62,8 +58,8 @@ where
          CiphertextIn1::KeyDistribution>>::GlweCiphertextProto,
     );
 
-    type PreExecutionContext = (CiphertextIn1, CiphertextIn2, Cleartext);
-    type PostExecutionContext = (CiphertextIn1, CiphertextIn2, CiphertextOut, Cleartext);
+    type PreExecutionContext = (CiphertextIn1, CiphertextIn2);
+    type PostExecutionContext = (CiphertextIn1, CiphertextIn2, CiphertextOut);
     type Criteria = (Variance,);
     type Outcome = (Vec<Precision::Raw>, Vec<Precision::Raw>);
 
@@ -73,8 +69,8 @@ where
                 GlweCiphertextTensorProductParameters {
                     noise_glwe_1: Variance(0.00000001),
                     noise_glwe_2: Variance(0.00000001),
-                    delta_1: 16_f64,
-                    delta_2: 16_f64,
+                    scaling_factor_1: ScalingFactor(16_u64),
+                    scaling_factor_2: ScalingFactor(16_u64),
                     msg_bound_1: 4_f64,
                     msg_bound_2: 4_f64,
                     glwe_dimension: GlweDimension(200),
@@ -83,8 +79,8 @@ where
                 GlweCiphertextTensorProductParameters {
                     noise_glwe_1: Variance(0.00000001),
                     noise_glwe_2: Variance(0.00000001),
-                    delta_1: 16_f64,
-                    delta_2: 16_f64,
+                    scaling_factor_1: ScalingFactor(16_u64),
+                    scaling_factor_2: ScalingFactor(16_u64),
                     msg_bound_1: 4_f64,
                     msg_bound_2: 4_f64,
                     glwe_dimension: GlweDimension(1),
@@ -110,15 +106,10 @@ where
             Precision::Raw::uniform_n_msb_vec(5, parameters.polynomial_size.0);
         let proto_plaintext_vector2 =
             maker.transform_raw_vec_to_plaintext_vector(raw_plaintext_vector.as_slice());
-        let s = 1_f64;
-        let scale = <Maker as PrototypesFloatCleartext<PrecisionF64>>::transform_raw_to_cleartext(
-            maker, &s,
-        );
         (
             proto_plaintext_vector1,
             proto_plaintext_vector2,
             proto_secret_key,
-            scale,
         )
     }
 
@@ -127,8 +118,7 @@ where
         maker: &mut Maker,
         repetition_proto: &Self::RepetitionPrototypes,
     ) -> Self::SamplePrototypes {
-        let (proto_plaintext_vector1, proto_plaintext_vector2, proto_secret_key, _) =
-            repetition_proto;
+        let (proto_plaintext_vector1, proto_plaintext_vector2, proto_secret_key) = repetition_proto;
         let proto_ciphertext1 = maker.encrypt_plaintext_vector_to_glwe_ciphertext(
             proto_secret_key,
             &proto_plaintext_vector1,
@@ -146,42 +136,31 @@ where
         _parameters: &Self::Parameters,
         maker: &mut Maker,
         // clippy convention: this variable will not be used (_varname)
-        repetition_proto: &Self::RepetitionPrototypes,
+        _repetition_proto: &Self::RepetitionPrototypes,
         sample_proto: &Self::SamplePrototypes,
     ) -> Self::PreExecutionContext {
-        let (_, _, _, proto_scale) = repetition_proto;
         let (proto_ciphertext1, proto_ciphertext2) = sample_proto;
         let ciphertext1 = maker.synthesize_glwe_ciphertext(proto_ciphertext1);
         let ciphertext2 = maker.synthesize_glwe_ciphertext(proto_ciphertext2);
-        let scale =
-            <Maker as SynthesizesFloatCleartext<PrecisionF64, Cleartext>>::synthesize_cleartext(
-                maker,
-                proto_scale,
-            );
 
         // TODO: we need to update scale to use the correct value
-        (ciphertext1, ciphertext2, scale)
+        (ciphertext1, ciphertext2)
     }
 
     fn execute_engine(
-        _parameters: &Self::Parameters,
+        parameters: &Self::Parameters,
         engine: &mut Engine,
         context: Self::PreExecutionContext,
     ) -> Self::PostExecutionContext {
-        let (proto_ciphertext1, proto_ciphertext2, scale) = context;
+        let (proto_ciphertext1, proto_ciphertext2) = context;
         let output_ciphertext = unsafe {
             engine.tensor_product_glwe_ciphertext_unchecked(
                 &proto_ciphertext1,
                 &proto_ciphertext2,
-                &scale,
+                std::cmp::min(parameters.scaling_factor_1, parameters.scaling_factor_2),
             )
         };
-        (
-            proto_ciphertext1,
-            proto_ciphertext2,
-            output_ciphertext,
-            scale,
-        )
+        (proto_ciphertext1, proto_ciphertext2, output_ciphertext)
     }
 
     fn process_context(
@@ -191,71 +170,45 @@ where
         _sample_proto: &Self::SamplePrototypes,
         context: Self::PostExecutionContext,
     ) -> Self::Outcome {
-        let (proto_plaintext_vector1, proto_plaintext_vector2, proto_secret_key, proto_scale) =
-            repetition_proto;
-        let (input_ciphertext_1, input_ciphertext_2, output_ciphertext, scale) = context;
+        let (proto_plaintext_vector1, proto_plaintext_vector2, proto_secret_key) = repetition_proto;
+        let (input_ciphertext_1, input_ciphertext_2, output_ciphertext) = context;
 
         let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(&output_ciphertext);
 
         maker.destroy_glwe_ciphertext(input_ciphertext_1);
         maker.destroy_glwe_ciphertext(input_ciphertext_2);
         maker.destroy_glwe_ciphertext(output_ciphertext);
-        <Maker as SynthesizesFloatCleartext<PrecisionF64, Cleartext>>::destroy_cleartext(
-            maker, scale,
-        );
-
         let proto_output_plaintext_vector = maker.decrypt_glwe_ciphertext_to_plaintext_vector(
             proto_secret_key,
             &proto_output_ciphertext,
         );
 
-        let _raw_input_plaintext_vector1 =
+        let scale = std::cmp::min(parameters.scaling_factor_1, parameters.scaling_factor_2);
+        let raw_input_plaintext_vector1 =
             maker.transform_plaintext_vector_to_raw_vec(proto_plaintext_vector1);
-        let _raw_input_plaintext_vector2 =
+        let raw_input_plaintext_vector2 =
             maker.transform_plaintext_vector_to_raw_vec(proto_plaintext_vector2);
-        let _raw_scale =
-            <Maker as PrototypesFloatCleartext<PrecisionF64>>::transform_cleartext_to_raw(
-                maker,
-                &proto_scale,
-            );
 
         // we are checking noise vals
         // we need to compute the values in the plaintext domain
         // make a tensor product between two plaintext vectors in 163-167 to compute this
         // change to tensor prod size
 
-        // how to deal with scale?
         // command to run fixture is in notion useful commands
         // need to add test first
-        let raw_output_plaintext_vector: Vec<Precision::Raw>  = _raw_input_plaintext_vector1
+        let raw_output_plaintext_vector: Vec<Precision::Raw> = raw_input_plaintext_vector1
             .iter()
-            .zip(_raw_input_plaintext_vector2.iter())
-            //a,b 32s or 64s
-            // how to deal with scale?
-            .map(|(&a, &b)| <f64 as CastInto<Precision::Raw>>::cast_into(
-                <Precision::Raw as CastInto<f64>>::cast_into(a)
-                * <Precision::Raw as CastInto<f64>>::cast_into(b)))
+            .zip(raw_input_plaintext_vector2.iter())
+            .map(|(&a, &b)| {
+                <f64 as CastInto<Precision::Raw>>::cast_into(
+                    <Precision::Raw as CastInto<f64>>::cast_into(a)
+                        * <Precision::Raw as CastInto<f64>>::cast_into(b)
+                        / scale.0 as f64,
+                )
+            })
             .collect();
 
-        //let predicted_output = raw_plaintext_vector1
-        //    .iter()
-        //    .zip(raw_plaintext_vector2.iter())
-        //    .map(|(&a, &b)| a.wrapping_sub(b))
-        //    .collect();
-
-            // (a,b) (a in 1, b in 2)
-            // store in result
-            // cast into float
-
-
-
-        //maker
-        //.transform_plaintext_vector_to_raw_vec(proto_input_plaintext_vector1)
-        //.into_iter()
-        //.map(|v| v * raw_input_plaintext_vector1)
-        //.collect();
         (
-            //correct
             raw_output_plaintext_vector,
             maker.transform_plaintext_vector_to_raw_vec(&proto_output_plaintext_vector),
         )
@@ -276,8 +229,8 @@ where
             parameters.glwe_dimension,
             parameters.noise_glwe_1,
             parameters.noise_glwe_2,
-            parameters.delta_1,
-            parameters.delta_2,
+            parameters.scaling_factor_1.0 as f64,
+            parameters.scaling_factor_2.0 as f64,
             parameters.msg_bound_1,
             parameters.msg_bound_2,
         );
