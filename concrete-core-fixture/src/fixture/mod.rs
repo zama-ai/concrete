@@ -222,6 +222,9 @@ pub use cleartext_vector_discarding_retrieval::*;
 mod cleartext_vector_retrieval;
 pub use cleartext_vector_retrieval::*;
 
+mod glwe_ciphertext_creation;
+pub use glwe_ciphertext_creation::*;
+
 mod glwe_ciphertext_trivial_decryption;
 pub use glwe_ciphertext_trivial_decryption::*;
 
@@ -383,6 +386,9 @@ pub use glwe_ciphertext_ggsw_ciphertext_discarding_external_product::*;
 
 mod glwe_ciphertext_ggsw_ciphertext_external_product;
 pub use glwe_ciphertext_ggsw_ciphertext_external_product::*;
+
+mod glwe_ciphertext_consuming_retrieval;
+pub use glwe_ciphertext_consuming_retrieval::*;
 
 mod plaintext_discarding_retrieval;
 pub use plaintext_discarding_retrieval::*;
