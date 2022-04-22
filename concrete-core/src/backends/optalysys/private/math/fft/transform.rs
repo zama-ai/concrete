@@ -86,6 +86,16 @@ impl Fft {
         PolynomialSize(self.plans.get_ft_size())
     }
 
+    /// Returns the runtime on the optical device (in s)
+    pub fn runtime_opt(&self) -> f64 {
+        self.plans.get_runtime_s()
+    }
+    
+    /// Returns the energy cost on the optical device (in J)
+    pub fn energy_opt(&self) -> f64 {
+        self.plans.get_energy_cost_j()
+    }
+
     /// Performs the forward fourier transform of the `poly` polynomial, viewed as a polynomial of
     /// torus coefficients, and stores the result in `fourier_poly`.
     ///

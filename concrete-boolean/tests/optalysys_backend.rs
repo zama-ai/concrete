@@ -1,5 +1,5 @@
 use concrete_boolean::*;
-use proto_graphec::prelude::N_FT_SIMULATOR_2 as N_OPT_FT;
+use proto_graphec::simulator_2::N_FT_FROM_OTHER_TYPE as N_OPT_FT;
 
 // check that the optical Fourier transform (or the optical simulator) is used when evaluationg a
 // CMUX gate
