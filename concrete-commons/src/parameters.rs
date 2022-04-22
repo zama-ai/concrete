@@ -1,4 +1,5 @@
 #![allow(deprecated)]
+
 #[cfg(feature = "serde_serialize")]
 use serde::{Deserialize, Serialize};
 
@@ -182,3 +183,12 @@ pub struct LutCountLog(pub usize);
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
 pub struct ModulusSwitchOffset(pub usize);
+
+/// The scaling factor is used to shift the message towards MSB of the ciphertext
+///
+/// It is a u64 integer because when using 64-bits modulus the scaling factor
+/// may have to take values above the max for u32. Thus, using a usize for the type
+/// is not adapted, and a u64 is used instead.
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Ord, PartialOrd)]
+#[cfg_attr(feature = "serde_serialize", derive(Serialize, Deserialize))]
+pub struct ScalingFactor(pub u64);
