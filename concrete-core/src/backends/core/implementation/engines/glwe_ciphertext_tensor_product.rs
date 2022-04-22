@@ -10,28 +10,24 @@ use crate::backends::core::private::crypto::glwe::{
 };
 use crate::backends::core::private::math::fft::Complex64;
 use crate::prelude::{
-    CleartextF64, GlweCiphertextTensorProductEngine, GlweCiphertextTensorProductError,
+    GlweCiphertextTensorProductEngine, GlweCiphertextTensorProductError, ScalingFactor,
 };
 use crate::specification::entities::GlweCiphertextEntity;
 
 /// # Description:
 /// Implementation of [`GlweTensorProductEngine`] for [`CoreEngine`] that operates on 32-bit
 /// integer Glwe Ciphertexts.
-impl
-    GlweCiphertextTensorProductEngine<
-        GlweCiphertext32,
-        GlweCiphertext32,
-        GlweCiphertext32,
-        CleartextF64,
-    > for CoreEngine
+impl GlweCiphertextTensorProductEngine<GlweCiphertext32, GlweCiphertext32, GlweCiphertext32>
+    for CoreEngine
 {
     fn tensor_product_glwe_ciphertext(
         &mut self,
         input1: &GlweCiphertext32,
         input2: &GlweCiphertext32,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> Result<GlweCiphertext32, GlweCiphertextTensorProductError<Self::EngineError>> {
         GlweCiphertextTensorProductError::perform_generic_checks(input1, input2)?;
+        // TODO check the scale is lower or equal to MAX U32
         Ok(unsafe { self.tensor_product_glwe_ciphertext_unchecked(input1, input2, scale) })
     }
 
@@ -39,7 +35,7 @@ impl
         &mut self,
         input1: &GlweCiphertext32,
         input2: &GlweCiphertext32,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> GlweCiphertext32 {
         let mut ciphertext = ImplGlweCiphertext::allocate(
             0u32,
@@ -78,7 +74,7 @@ impl
         fourier_2.fill_with_forward_fourier(&input2.0, &mut buffers2);
 
         // perform the tensor product (in the fourier domain)
-        fourier_1.tensor_product(&fourier_2, scale.0);
+        fourier_1.tensor_product(&fourier_2, scale);
 
         // convert the result back to the coefficient domain
         fourier_1.fill_with_backward_fourier(&mut ciphertext, &mut buffers3);
@@ -91,19 +87,14 @@ impl
 /// # Description:
 /// Implementation of [`GlweTensorProductEngine`] for [`CoreEngine`] that operates on 64-bit
 /// integer Glwe Ciphertexts.
-impl
-    GlweCiphertextTensorProductEngine<
-        GlweCiphertext64,
-        GlweCiphertext64,
-        GlweCiphertext64,
-        CleartextF64,
-    > for CoreEngine
+impl GlweCiphertextTensorProductEngine<GlweCiphertext64, GlweCiphertext64, GlweCiphertext64>
+    for CoreEngine
 {
     fn tensor_product_glwe_ciphertext(
         &mut self,
         input1: &GlweCiphertext64,
         input2: &GlweCiphertext64,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> Result<GlweCiphertext64, GlweCiphertextTensorProductError<Self::EngineError>> {
         GlweCiphertextTensorProductError::perform_generic_checks(input1, input2)?;
         Ok(unsafe { self.tensor_product_glwe_ciphertext_unchecked(input1, input2, scale) })
@@ -113,7 +104,7 @@ impl
         &mut self,
         input1: &GlweCiphertext64,
         input2: &GlweCiphertext64,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> GlweCiphertext64 {
         let mut ciphertext = ImplGlweCiphertext::allocate(
             0u64,
@@ -152,7 +143,7 @@ impl
         fourier_2.fill_with_forward_fourier(&input2.0, &mut buffers2);
 
         // perform the tensor product (in the fourier domain)
-        fourier_1.tensor_product(&fourier_2, scale.0);
+        fourier_1.tensor_product(&fourier_2, scale);
 
         // convert the result back to the coefficient domain
         fourier_1.fill_with_backward_fourier(&mut ciphertext, &mut buffers3);
@@ -170,16 +161,16 @@ impl
         FourierGlweCiphertext32,
         FourierGlweCiphertext32,
         FourierGlweCiphertext32,
-        CleartextF64,
     > for CoreEngine
 {
     fn tensor_product_glwe_ciphertext(
         &mut self,
         input1: &FourierGlweCiphertext32,
         input2: &FourierGlweCiphertext32,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> Result<FourierGlweCiphertext32, GlweCiphertextTensorProductError<Self::EngineError>> {
         GlweCiphertextTensorProductError::perform_generic_checks(input1, input2)?;
+        // TODO check that scale is <= MAX U32
         Ok(unsafe { self.tensor_product_glwe_ciphertext_unchecked(input1, input2, scale) })
     }
 
@@ -187,10 +178,10 @@ impl
         &mut self,
         input1: &FourierGlweCiphertext32,
         input2: &FourierGlweCiphertext32,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> FourierGlweCiphertext32 {
         // perform the tensor product (in the fourier domain)
-        FourierGlweCiphertext32(input1.0.tensor_product(&input2.0, scale.0))
+        FourierGlweCiphertext32(input1.0.tensor_product(&input2.0, scale))
     }
 }
 
@@ -202,14 +193,13 @@ impl
         FourierGlweCiphertext64,
         FourierGlweCiphertext64,
         FourierGlweCiphertext64,
-        CleartextF64,
     > for CoreEngine
 {
     fn tensor_product_glwe_ciphertext(
         &mut self,
         input1: &FourierGlweCiphertext64,
         input2: &FourierGlweCiphertext64,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> Result<FourierGlweCiphertext64, GlweCiphertextTensorProductError<Self::EngineError>> {
         GlweCiphertextTensorProductError::perform_generic_checks(input1, input2)?;
         Ok(unsafe { self.tensor_product_glwe_ciphertext_unchecked(input1, input2, scale) })
@@ -219,9 +209,9 @@ impl
         &mut self,
         input1: &FourierGlweCiphertext64,
         input2: &FourierGlweCiphertext64,
-        scale: &CleartextF64,
+        scale: ScalingFactor,
     ) -> FourierGlweCiphertext64 {
         // perform the tensor product (in the fourier domain)
-        FourierGlweCiphertext64(input1.0.tensor_product(&input2.0, scale.0))
+        FourierGlweCiphertext64(input1.0.tensor_product(&input2.0, scale))
     }
 }
