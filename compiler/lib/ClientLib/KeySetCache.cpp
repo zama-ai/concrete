@@ -237,6 +237,7 @@ KeySetCache::loadOrGenerateSave(ClientParameters &params, uint64_t seed_msb,
     return loadKeys(params, seed_msb, seed_lsb, std::string(folderPath));
   }
 
+  std::cerr << "KeySetCache: miss, regenerating \n";
   OUTCOME_TRY(auto key_set, KeySet::generate(params, seed_msb, seed_lsb));
 
   OUTCOME_TRYV(saveKeys(*key_set, folderPath));

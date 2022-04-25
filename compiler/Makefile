@@ -9,7 +9,7 @@ CONCRETE_OPTIMIZER_DIR ?= .dependencies/concrete-optimizer
 CONCRETE_OPTIMIZER_BRANCH ?= master
 
 KEYSETCACHEDEV=/tmp/KeySetCache
-KEYSETCACHECI=../KeySetCache
+KEYSETCACHECI ?= ../KeySetCache
 
 export PATH := $(BUILD_DIR)/bin:$(PATH)
 

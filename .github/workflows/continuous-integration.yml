@@ -276,7 +276,7 @@ jobs:
         if: github.event_name == 'push'
         run: |
           cd compiler
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
+          KEYSETCACHECI="$TMPDIR/KeySetCache" GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make keysetcache_ci_populated
 
       - name: Test
         if: github.event_name == 'push'

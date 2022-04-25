@@ -114,6 +114,9 @@ getTestKeySetCache() {
   llvm::sys::path::append(cachePath, "KeySetCache");
 
   auto cachePathStr = std::string(cachePath);
+
+  std::cout << "Using KeySetCache dir: " << cachePathStr << "\n";
+
   return llvm::Optional<concretelang::clientlib::KeySetCache>(
       concretelang::clientlib::KeySetCache(cachePathStr));
 }
