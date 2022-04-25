@@ -217,6 +217,8 @@ jobs:
         with:
           path: /Users/runner/Library/Caches/ccache
           key: ${{ runner.os }}-compilation-cache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-compilation-cache-
 
       - name: Cache compilation (pull_request)
         if: github.event_name == 'pull_request'
@@ -224,6 +226,8 @@ jobs:
         with:
           path: /Users/runner/Library/Caches/ccache
           key: ${{ runner.os }}-compilation-cache-${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            ${{ runner.os }}-compilation-cache-
 
       - name: Get tmpdir path
         if: github.event_name == 'push'
