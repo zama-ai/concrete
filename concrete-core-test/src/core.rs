@@ -10,7 +10,7 @@ macro_rules! test {
             #[test]
             fn [< test_ $fixture:snake _ $precision:snake _ $($types:snake)_+ >]() {
                 let mut maker = Maker::default();
-                let mut engine = CoreEngine::new().unwrap();
+                let mut engine = CoreEngine::new(()).unwrap();
                 let test_result =
                     <$fixture as Fixture<
                         $precision,
