@@ -178,7 +178,7 @@ where
         let (output_ciphertext, ciphertext_vector, weights, bias) = context;
         let (proto_secret_key, prototype_cleartext_vector, prototype_plaintext) = repetition_proto;
         let (_, proto_plaintext_vector, _) = sample_proto;
-        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(&output_ciphertext);
+        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(output_ciphertext);
         let proto_output_plaintext =
             maker.decrypt_lwe_ciphertext_to_plaintext(proto_secret_key, &proto_output_ciphertext);
         let raw_plaintext_vector =
@@ -190,7 +190,6 @@ where
             .iter()
             .zip(raw_cleartext_vector.iter())
             .fold(raw_bias, |a, (c, w)| a.wrapping_add(c.wrapping_mul(*w)));
-        maker.destroy_lwe_ciphertext(output_ciphertext);
         maker.destroy_lwe_ciphertext_vector(ciphertext_vector);
         maker.destroy_cleartext_vector(weights);
         maker.destroy_plaintext(bias);

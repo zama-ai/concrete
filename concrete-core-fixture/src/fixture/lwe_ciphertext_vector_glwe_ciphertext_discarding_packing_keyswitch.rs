@@ -231,7 +231,7 @@ where
         let (output_ciphertext, input_ciphertext, keyswitch_key) = context;
         let (_, _, proto_output_secret_key) = repetition_proto;
         let (proto_plaintext, ..) = sample_proto;
-        let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(&output_ciphertext);
+        let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(output_ciphertext);
         let proto_output_plaintext = <Maker as PrototypesGlweCiphertext<
             Precision,
             OutputCiphertext::KeyDistribution,
@@ -241,7 +241,6 @@ where
             &proto_output_ciphertext,
         );
         maker.destroy_lwe_ciphertext_vector(input_ciphertext);
-        maker.destroy_glwe_ciphertext(output_ciphertext);
         maker.destroy_packing_keyswitch_key(keyswitch_key);
         (
             maker.transform_plaintext_vector_to_raw_vec(proto_plaintext),

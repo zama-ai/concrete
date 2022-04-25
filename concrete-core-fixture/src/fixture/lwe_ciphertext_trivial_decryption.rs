@@ -118,9 +118,8 @@ where
     ) -> Self::Outcome {
         let (plaintext, ciphertext) = context;
         let (_, raw_plaintext) = sample_proto;
-        let proto_plaintext = maker.unsynthesize_plaintext(&plaintext);
+        let proto_plaintext = maker.unsynthesize_plaintext(plaintext);
         maker.destroy_lwe_ciphertext(ciphertext);
-        maker.destroy_plaintext(plaintext);
         (
             *raw_plaintext,
             maker.transform_plaintext_to_raw(&proto_plaintext),

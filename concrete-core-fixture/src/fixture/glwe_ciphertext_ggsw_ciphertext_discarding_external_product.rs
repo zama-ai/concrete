@@ -194,10 +194,9 @@ where
         let (proto_plaintext, proto_secret_key, _) = repetition_proto;
         let (proto_input_plaintext_vector, ..) = sample_proto;
         let proto_output_glwe_ciphertext =
-            maker.unsynthesize_glwe_ciphertext(&output_glwe_ciphertext);
-        maker.destroy_glwe_ciphertext(glwe_ciphertext);
+            maker.unsynthesize_glwe_ciphertext(output_glwe_ciphertext);
         maker.destroy_ggsw_ciphertext(ggsw_ciphertext);
-        maker.destroy_glwe_ciphertext(output_glwe_ciphertext);
+        maker.destroy_glwe_ciphertext(glwe_ciphertext);
         let proto_output_plaintext_vector = maker.decrypt_glwe_ciphertext_to_plaintext_vector(
             proto_secret_key,
             &proto_output_glwe_ciphertext,

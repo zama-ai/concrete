@@ -14,7 +14,7 @@ where
     ) -> CleartextVector;
     fn unsynthesize_cleartext_vector(
         &mut self,
-        entity: &CleartextVector,
+        entity: CleartextVector,
     ) -> Self::CleartextVectorProto;
     fn destroy_cleartext_vector(&mut self, entity: CleartextVector);
 }
@@ -36,10 +36,11 @@ mod backend_core {
 
         fn unsynthesize_cleartext_vector(
             &mut self,
-            entity: &CleartextVector32,
+            entity: CleartextVector32,
         ) -> Self::CleartextVectorProto {
-            ProtoCleartextVector32(entity.to_owned())
+            ProtoCleartextVector32(entity)
         }
+
         fn destroy_cleartext_vector(&mut self, entity: CleartextVector32) {
             self.core_engine.destroy(entity).unwrap();
         }
@@ -55,10 +56,11 @@ mod backend_core {
 
         fn unsynthesize_cleartext_vector(
             &mut self,
-            entity: &CleartextVector64,
+            entity: CleartextVector64,
         ) -> Self::CleartextVectorProto {
-            ProtoCleartextVector64(entity.to_owned())
+            ProtoCleartextVector64(entity)
         }
+
         fn destroy_cleartext_vector(&mut self, entity: CleartextVector64) {
             self.core_engine.destroy(entity).unwrap();
         }

@@ -85,8 +85,7 @@ where
         context: Self::PostExecutionContext,
     ) -> Self::Outcome {
         let (plaintext, raw_output) = context;
-        let proto_output_plaintext = maker.unsynthesize_plaintext(&plaintext);
-        maker.destroy_plaintext(plaintext);
+        let proto_output_plaintext = maker.unsynthesize_plaintext(plaintext);
         (
             maker.transform_plaintext_to_raw(&proto_output_plaintext),
             raw_output,

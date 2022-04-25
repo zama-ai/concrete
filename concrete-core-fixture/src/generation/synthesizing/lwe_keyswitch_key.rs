@@ -17,7 +17,7 @@ where
     ) -> LweKeyswitchKey;
     fn unsynthesize_lwe_keyswitch_key(
         &mut self,
-        entity: &LweKeyswitchKey,
+        entity: LweKeyswitchKey,
     ) -> Self::LweKeyswitchKeyProto;
     fn destroy_lwe_keyswitch_key(&mut self, entity: LweKeyswitchKey);
 }
@@ -41,9 +41,9 @@ mod backend_core {
 
         fn unsynthesize_lwe_keyswitch_key(
             &mut self,
-            entity: &LweKeyswitchKey32,
+            entity: LweKeyswitchKey32,
         ) -> Self::LweKeyswitchKeyProto {
-            ProtoBinaryBinaryLweKeyswitchKey32(entity.to_owned())
+            ProtoBinaryBinaryLweKeyswitchKey32(entity)
         }
 
         fn destroy_lwe_keyswitch_key(&mut self, entity: LweKeyswitchKey32) {
@@ -61,9 +61,9 @@ mod backend_core {
 
         fn unsynthesize_lwe_keyswitch_key(
             &mut self,
-            entity: &LweKeyswitchKey64,
+            entity: LweKeyswitchKey64,
         ) -> Self::LweKeyswitchKeyProto {
-            ProtoBinaryBinaryLweKeyswitchKey64(entity.to_owned())
+            ProtoBinaryBinaryLweKeyswitchKey64(entity)
         }
 
         fn destroy_lwe_keyswitch_key(&mut self, entity: LweKeyswitchKey64) {

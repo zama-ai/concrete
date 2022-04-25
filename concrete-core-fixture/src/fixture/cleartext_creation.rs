@@ -75,8 +75,7 @@ where
         context: Self::PostExecutionContext,
     ) -> Self::Outcome {
         let (cleartext,) = context;
-        let proto_output_cleartext = maker.unsynthesize_cleartext(&cleartext);
-        maker.destroy_cleartext(cleartext);
+        let proto_output_cleartext = maker.unsynthesize_cleartext(cleartext);
         (
             sample_proto.0,
             maker.transform_cleartext_to_raw(&proto_output_cleartext),

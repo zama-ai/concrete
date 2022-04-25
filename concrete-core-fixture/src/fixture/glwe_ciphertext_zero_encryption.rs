@@ -106,13 +106,12 @@ where
     ) -> Self::Outcome {
         let (proto_secret_key,) = repetition_proto;
         let (secret_key, ciphertext) = context;
-        let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(&ciphertext);
+        let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(ciphertext);
         let proto_output_plaintext_vector = maker.decrypt_glwe_ciphertext_to_plaintext_vector(
             proto_secret_key,
             &proto_output_ciphertext,
         );
         maker.destroy_glwe_secret_key(secret_key);
-        maker.destroy_glwe_ciphertext(ciphertext);
         (
             Precision::Raw::zero_vec(parameters.polynomial_size.0),
             maker.transform_plaintext_vector_to_raw_vec(&proto_output_plaintext_vector),

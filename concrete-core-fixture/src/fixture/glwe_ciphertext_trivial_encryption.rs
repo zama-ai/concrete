@@ -106,11 +106,10 @@ where
     ) -> Self::Outcome {
         let (proto_plaintext_vector,) = sample_proto;
         let (plaintext_vector, ciphertext) = context;
-        let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(&ciphertext);
+        let proto_output_ciphertext = maker.unsynthesize_glwe_ciphertext(ciphertext);
         let proto_output_plaintext_vector =
             maker.trivially_decrypt_glwe_ciphertext(&proto_output_ciphertext);
         maker.destroy_plaintext_vector(plaintext_vector);
-        maker.destroy_glwe_ciphertext(ciphertext);
         (
             maker.transform_plaintext_vector_to_raw_vec(proto_plaintext_vector),
             maker.transform_plaintext_vector_to_raw_vec(&proto_output_plaintext_vector),
