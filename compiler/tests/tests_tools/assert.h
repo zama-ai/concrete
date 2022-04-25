@@ -32,6 +32,10 @@ static bool assert_expected_success(llvm::Expected<T> &&val) {
 template <typename T>
 static bool assert_expected_failure(llvm::Expected<T> &&val) {
   if (!((bool)val)) {
+    if (!mlir::concretelang::dfr::_dfr_is_root_node()) {
+      llvm::toString(val.takeError());
+      return true;
+    }
     // We need to consume the error, so let's do it here
     llvm::errs() << "assert_expected_failure: "
                  << llvm::toString(val.takeError()) << "\n";

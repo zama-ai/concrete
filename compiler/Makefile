@@ -173,9 +173,11 @@ build-end-to-end-jit-lambda: build-initialized
 
 build-end-to-end-dataflow-tests: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_auto_parallelization
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_distributed
 
 run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
 
 # benchmark
 
