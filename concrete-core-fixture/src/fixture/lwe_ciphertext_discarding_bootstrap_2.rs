@@ -214,7 +214,7 @@ where
         let (bootstrap_key, accumulator, output_ciphertext, input_ciphertext) = context;
         let (_, _, proto_glwe_secret_key, _) = repetition_proto;
         let (proto_plaintext, ..) = sample_proto;
-        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(&output_ciphertext);
+        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(output_ciphertext);
         let proto_output_lwe_secret_key =
             maker.transmute_glwe_secret_key_to_lwe_secret_key(proto_glwe_secret_key);
         let proto_output_plaintext = <Maker as PrototypesLweCiphertext<
@@ -226,7 +226,6 @@ where
             &proto_output_ciphertext,
         );
         maker.destroy_lwe_ciphertext(input_ciphertext);
-        maker.destroy_lwe_ciphertext(output_ciphertext);
         maker.destroy_lwe_bootstrap_key(bootstrap_key);
         maker.destroy_glwe_ciphertext(accumulator);
         (

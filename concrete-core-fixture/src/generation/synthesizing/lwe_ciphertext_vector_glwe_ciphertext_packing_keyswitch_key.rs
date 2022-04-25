@@ -17,12 +17,12 @@ where
     ) -> PackingKeyswitchKey;
     fn unsynthesize_packing_keyswitch_key(
         &mut self,
-        entity: &PackingKeyswitchKey,
+        entity: PackingKeyswitchKey,
     ) -> Self::PackingKeyswitchKeyProto;
     fn destroy_packing_keyswitch_key(&mut self, entity: PackingKeyswitchKey);
 }
 
-// #[cfg(feature = "backend_core")]
+#[cfg(feature = "backend_core")]
 mod backend_core {
     use crate::generation::prototypes::{
         ProtoBinaryBinaryPackingKeyswitchKey32, ProtoBinaryBinaryPackingKeyswitchKey64,
@@ -41,9 +41,9 @@ mod backend_core {
 
         fn unsynthesize_packing_keyswitch_key(
             &mut self,
-            entity: &PackingKeyswitchKey32,
+            entity: PackingKeyswitchKey32,
         ) -> Self::PackingKeyswitchKeyProto {
-            ProtoBinaryBinaryPackingKeyswitchKey32(entity.to_owned())
+            ProtoBinaryBinaryPackingKeyswitchKey32(entity)
         }
 
         fn destroy_packing_keyswitch_key(&mut self, entity: PackingKeyswitchKey32) {
@@ -61,9 +61,9 @@ mod backend_core {
 
         fn unsynthesize_packing_keyswitch_key(
             &mut self,
-            entity: &PackingKeyswitchKey64,
+            entity: PackingKeyswitchKey64,
         ) -> Self::PackingKeyswitchKeyProto {
-            ProtoBinaryBinaryPackingKeyswitchKey64(entity.to_owned())
+            ProtoBinaryBinaryPackingKeyswitchKey64(entity)
         }
 
         fn destroy_packing_keyswitch_key(&mut self, entity: PackingKeyswitchKey64) {

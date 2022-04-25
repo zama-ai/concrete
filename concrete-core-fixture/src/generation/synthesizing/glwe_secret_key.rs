@@ -10,7 +10,7 @@ where
 {
     fn synthesize_glwe_secret_key(&mut self, prototype: &Self::GlweSecretKeyProto)
         -> GlweSecretKey;
-    fn unsynthesize_glwe_secret_key(&mut self, entity: &GlweSecretKey) -> Self::GlweSecretKeyProto;
+    fn unsynthesize_glwe_secret_key(&mut self, entity: GlweSecretKey) -> Self::GlweSecretKeyProto;
     fn destroy_glwe_secret_key(&mut self, entity: GlweSecretKey);
 }
 
@@ -31,9 +31,9 @@ mod backend_core {
 
         fn unsynthesize_glwe_secret_key(
             &mut self,
-            entity: &GlweSecretKey32,
+            entity: GlweSecretKey32,
         ) -> Self::GlweSecretKeyProto {
-            ProtoBinaryGlweSecretKey32(entity.to_owned())
+            ProtoBinaryGlweSecretKey32(entity)
         }
 
         fn destroy_glwe_secret_key(&mut self, entity: GlweSecretKey32) {
@@ -51,9 +51,9 @@ mod backend_core {
 
         fn unsynthesize_glwe_secret_key(
             &mut self,
-            entity: &GlweSecretKey64,
+            entity: GlweSecretKey64,
         ) -> Self::GlweSecretKeyProto {
-            ProtoBinaryGlweSecretKey64(entity.to_owned())
+            ProtoBinaryGlweSecretKey64(entity)
         }
 
         fn destroy_glwe_secret_key(&mut self, entity: GlweSecretKey64) {

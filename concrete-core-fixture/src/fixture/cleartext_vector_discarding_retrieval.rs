@@ -99,8 +99,7 @@ where
         context: Self::PostExecutionContext,
     ) -> Self::Outcome {
         let (cleartext_vector, raw_output_vector) = context;
-        let proto_output_cleartext_vector = maker.unsynthesize_cleartext_vector(&cleartext_vector);
-        maker.destroy_cleartext_vector(cleartext_vector);
+        let proto_output_cleartext_vector = maker.unsynthesize_cleartext_vector(cleartext_vector);
         (
             maker.transform_cleartext_vector_to_raw_vec(&proto_output_cleartext_vector),
             raw_output_vector,

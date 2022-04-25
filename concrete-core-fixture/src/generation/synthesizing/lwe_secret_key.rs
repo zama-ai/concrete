@@ -9,7 +9,7 @@ where
     LweSecretKey: LweSecretKeyEntity,
 {
     fn synthesize_lwe_secret_key(&mut self, prototype: &Self::LweSecretKeyProto) -> LweSecretKey;
-    fn unsynthesize_lwe_secret_key(&mut self, entity: &LweSecretKey) -> Self::LweSecretKeyProto;
+    fn unsynthesize_lwe_secret_key(&mut self, entity: LweSecretKey) -> Self::LweSecretKeyProto;
     fn destroy_lwe_secret_key(&mut self, entity: LweSecretKey);
 }
 
@@ -30,10 +30,11 @@ mod backend_core {
 
         fn unsynthesize_lwe_secret_key(
             &mut self,
-            entity: &LweSecretKey32,
+            entity: LweSecretKey32,
         ) -> Self::LweSecretKeyProto {
-            ProtoBinaryLweSecretKey32(entity.to_owned())
+            ProtoBinaryLweSecretKey32(entity)
         }
+
         fn destroy_lwe_secret_key(&mut self, entity: LweSecretKey32) {
             self.core_engine.destroy(entity).unwrap();
         }
@@ -49,9 +50,9 @@ mod backend_core {
 
         fn unsynthesize_lwe_secret_key(
             &mut self,
-            entity: &LweSecretKey64,
+            entity: LweSecretKey64,
         ) -> Self::LweSecretKeyProto {
-            ProtoBinaryLweSecretKey64(entity.to_owned())
+            ProtoBinaryLweSecretKey64(entity)
         }
 
         fn destroy_lwe_secret_key(&mut self, entity: LweSecretKey64) {

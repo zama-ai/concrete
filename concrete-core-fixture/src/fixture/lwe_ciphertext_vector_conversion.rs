@@ -154,7 +154,7 @@ where
         let (proto_ciphertext_vector,) = sample_proto;
         let (output_ciphertext_vector, input_ciphertext_vector) = context;
         let proto_output_ciphertext_vector =
-            maker.unsynthesize_lwe_ciphertext_vector(&output_ciphertext_vector);
+            maker.unsynthesize_lwe_ciphertext_vector(output_ciphertext_vector);
         let proto_plaintext_vector =
             maker.decrypt_lwe_ciphertext_vector_to_plaintext_vector(key, proto_ciphertext_vector);
         let proto_output_plaintext_vector = <Maker as PrototypesLweCiphertextVector<
@@ -165,7 +165,6 @@ where
             key,
             &proto_output_ciphertext_vector,
         );
-        maker.destroy_lwe_ciphertext_vector(output_ciphertext_vector);
         maker.destroy_lwe_ciphertext_vector(input_ciphertext_vector);
         (
             maker.transform_plaintext_vector_to_raw_vec(&proto_plaintext_vector),

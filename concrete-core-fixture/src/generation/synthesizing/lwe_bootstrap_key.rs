@@ -18,7 +18,7 @@ where
     ) -> LweBootstrapKey;
     fn unsynthesize_lwe_bootstrap_key(
         &mut self,
-        entity: &LweBootstrapKey,
+        entity: LweBootstrapKey,
     ) -> Self::LweBootstrapKeyProto;
     fn destroy_lwe_bootstrap_key(&mut self, entity: LweBootstrapKey);
 }
@@ -45,9 +45,9 @@ mod backend_core {
 
         fn unsynthesize_lwe_bootstrap_key(
             &mut self,
-            entity: &LweBootstrapKey32,
+            entity: LweBootstrapKey32,
         ) -> Self::LweBootstrapKeyProto {
-            ProtoBinaryBinaryLweBootstrapKey32(entity.to_owned())
+            ProtoBinaryBinaryLweBootstrapKey32(entity)
         }
 
         fn destroy_lwe_bootstrap_key(&mut self, entity: LweBootstrapKey32) {
@@ -65,9 +65,9 @@ mod backend_core {
 
         fn unsynthesize_lwe_bootstrap_key(
             &mut self,
-            entity: &LweBootstrapKey64,
+            entity: LweBootstrapKey64,
         ) -> Self::LweBootstrapKeyProto {
-            ProtoBinaryBinaryLweBootstrapKey64(entity.to_owned())
+            ProtoBinaryBinaryLweBootstrapKey64(entity)
         }
 
         fn destroy_lwe_bootstrap_key(&mut self, entity: LweBootstrapKey64) {
@@ -87,7 +87,7 @@ mod backend_core {
 
         fn unsynthesize_lwe_bootstrap_key(
             &mut self,
-            _entity: &FourierLweBootstrapKey32,
+            _entity: FourierLweBootstrapKey32,
         ) -> Self::LweBootstrapKeyProto {
             todo!()
         }
@@ -109,7 +109,7 @@ mod backend_core {
 
         fn unsynthesize_lwe_bootstrap_key(
             &mut self,
-            _entity: &FourierLweBootstrapKey64,
+            _entity: FourierLweBootstrapKey64,
         ) -> Self::LweBootstrapKeyProto {
             todo!()
         }

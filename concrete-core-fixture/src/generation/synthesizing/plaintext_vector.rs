@@ -14,7 +14,7 @@ where
     ) -> PlaintextVector;
     fn unsynthesize_plaintext_vector(
         &mut self,
-        entity: &PlaintextVector,
+        entity: PlaintextVector,
     ) -> Self::PlaintextVectorProto;
     fn destroy_plaintext_vector(&mut self, entity: PlaintextVector);
 }
@@ -36,9 +36,9 @@ mod backend_core {
 
         fn unsynthesize_plaintext_vector(
             &mut self,
-            entity: &PlaintextVector32,
+            entity: PlaintextVector32,
         ) -> Self::PlaintextVectorProto {
-            ProtoPlaintextVector32(entity.to_owned())
+            ProtoPlaintextVector32(entity)
         }
 
         fn destroy_plaintext_vector(&mut self, entity: PlaintextVector32) {
@@ -56,9 +56,9 @@ mod backend_core {
 
         fn unsynthesize_plaintext_vector(
             &mut self,
-            entity: &PlaintextVector64,
+            entity: PlaintextVector64,
         ) -> Self::PlaintextVectorProto {
-            ProtoPlaintextVector64(entity.to_owned())
+            ProtoPlaintextVector64(entity)
         }
 
         fn destroy_plaintext_vector(&mut self, entity: PlaintextVector64) {

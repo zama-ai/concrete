@@ -122,11 +122,10 @@ where
         let (proto_secret_key,) = repetition_proto;
         let raw_plaintext = maker.transform_plaintext_to_raw(proto_plaintext);
         let expected_mean = raw_plaintext.wrapping_neg();
-        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(&output_ciphertext);
+        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(output_ciphertext);
         let proto_output_plaintext =
             maker.decrypt_lwe_ciphertext_to_plaintext(proto_secret_key, &proto_output_ciphertext);
         maker.destroy_lwe_ciphertext(input_ciphertext);
-        maker.destroy_lwe_ciphertext(output_ciphertext);
         (
             expected_mean,
             maker.transform_plaintext_to_raw(&proto_output_plaintext),

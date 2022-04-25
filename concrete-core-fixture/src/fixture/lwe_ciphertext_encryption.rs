@@ -132,8 +132,7 @@ where
         let (plaintext, secret_key, ciphertext) = context;
         let (proto_secret_key,) = repetition_proto;
         let (_, raw_plaintext) = sample_proto;
-        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(&ciphertext);
-        maker.destroy_lwe_ciphertext(ciphertext);
+        let proto_output_ciphertext = maker.unsynthesize_lwe_ciphertext(ciphertext);
         maker.destroy_plaintext(plaintext);
         maker.destroy_lwe_secret_key(secret_key);
         let proto_plaintext =
