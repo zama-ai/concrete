@@ -29,7 +29,7 @@ impl LweCiphertextVectorZeroEncryptionEngine<LweSecretKey32, LweCiphertextVector
     /// let ciphertext_count = LweCiphertextCount(3);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
     ///
     /// let ciphertext_vector =
@@ -94,7 +94,7 @@ impl LweCiphertextVectorZeroEncryptionEngine<LweSecretKey64, LweCiphertextVector
     /// let ciphertext_count = LweCiphertextCount(3);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
     ///
     /// let ciphertext_vector =

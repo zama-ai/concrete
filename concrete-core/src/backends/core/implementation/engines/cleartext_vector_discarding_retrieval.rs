@@ -19,7 +19,7 @@ impl CleartextVectorDiscardingRetrievalEngine<CleartextVector32, u32> for CoreEn
     /// let input = vec![3_u32; 100];
     /// let mut retrieved = vec![0_u32; 100];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext_vector: CleartextVector32 = engine.create_cleartext_vector(&input)?;
     /// engine.discard_retrieve_cleartext_vector(retrieved.as_mut_slice(), &cleartext_vector)?;
     ///
@@ -62,7 +62,7 @@ impl CleartextVectorDiscardingRetrievalEngine<CleartextVector64, u64> for CoreEn
     /// let input = vec![3_u64; 100];
     /// let mut retrieved = vec![0_u64; 100];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext_vector: CleartextVector64 = engine.create_cleartext_vector(&input)?;
     /// engine.discard_retrieve_cleartext_vector(retrieved.as_mut_slice(), &cleartext_vector)?;
     ///

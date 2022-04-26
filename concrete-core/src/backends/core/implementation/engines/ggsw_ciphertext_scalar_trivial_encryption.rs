@@ -34,7 +34,7 @@ impl GgswCiphertextScalarTrivialEncryptionEngine<Plaintext32, GgswCiphertext32> 
     /// let base_log = DecompositionBaseLog(4);
     /// let input = 3_u32 << 20;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext: Plaintext32 = engine.create_plaintext(&input)?;
     /// let ciphertext: GgswCiphertext32 = engine.trivially_encrypt_scalar_ggsw_ciphertext(
     ///     polynomial_size,
@@ -116,7 +116,7 @@ impl GgswCiphertextScalarTrivialEncryptionEngine<Plaintext64, GgswCiphertext64> 
     /// let base_log = DecompositionBaseLog(4);
     /// let input = 3_u64 << 20;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext: Plaintext64 = engine.create_plaintext(&input)?;
     /// let ciphertext: GgswCiphertext64 = engine.trivially_encrypt_scalar_ggsw_ciphertext(
     ///     polynomial_size,

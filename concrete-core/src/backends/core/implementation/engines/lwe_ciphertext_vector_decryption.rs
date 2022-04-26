@@ -31,7 +31,7 @@ impl LweCiphertextVectorDecryptionEngine<LweSecretKey32, LweCiphertextVector32, 
     /// let input = vec![3_u32 << 20; 18];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let plaintext_vector: PlaintextVector32 = engine.create_plaintext_vector(&input)?;
     /// let ciphertext_vector: LweCiphertextVector32 =
@@ -94,7 +94,7 @@ impl LweCiphertextVectorDecryptionEngine<LweSecretKey64, LweCiphertextVector64, 
     /// let input = vec![3_u64 << 50; 18];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let plaintext_vector: PlaintextVector64 = engine.create_plaintext_vector(&input)?;
     /// let ciphertext_vector: LweCiphertextVector64 =

@@ -32,7 +32,7 @@ impl
     /// let cleartext_input = 12_u32;
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext: Cleartext32 = engine.create_cleartext(&cleartext_input)?;
     /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let plaintext = engine.create_plaintext(&input)?;
@@ -100,7 +100,7 @@ impl
     /// let cleartext_input = 12_u64;
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext: Cleartext64 = engine.create_cleartext(&cleartext_input)?;
     /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let plaintext = engine.create_plaintext(&input)?;

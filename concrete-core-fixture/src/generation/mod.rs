@@ -58,7 +58,7 @@ pub struct Maker {
 impl Default for Maker {
     fn default() -> Self {
         Maker {
-            core_engine: concrete_core::backends::core::engines::CoreEngine::new().unwrap(),
+            core_engine: concrete_core::backends::core::engines::CoreEngine::new(()).unwrap(),
         }
     }
 }

@@ -94,7 +94,9 @@ impl AbstractEngineSeal for CoreEngine {}
 impl AbstractEngine for CoreEngine {
     type EngineError = CoreError;
 
-    fn new() -> Result<Self, Self::EngineError> {
+    type Parameters = ();
+
+    fn new(_parameters: Self::Parameters) -> Result<Self, Self::EngineError> {
         Ok(CoreEngine {
             secret_generator: ImplSecretRandomGenerator::new(None),
             encryption_generator: ImplEncryptionRandomGenerator::new(None),

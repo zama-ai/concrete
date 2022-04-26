@@ -17,7 +17,7 @@ impl CleartextDiscardingRetrievalEngine<Cleartext32, u32> for CoreEngine {
     /// let input: u32 = 3;
     /// let mut output: u32 = 0;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext: Cleartext32 = engine.create_cleartext(&input)?;
     /// engine.discard_retrieve_cleartext(&mut output, &cleartext)?;
     ///
@@ -58,7 +58,7 @@ impl CleartextDiscardingRetrievalEngine<Cleartext64, u64> for CoreEngine {
     /// let input: u64 = 3;
     /// let mut output: u64 = 0;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext: Cleartext64 = engine.create_cleartext(&input)?;
     /// engine.discard_retrieve_cleartext(&mut output, &cleartext)?;
     ///

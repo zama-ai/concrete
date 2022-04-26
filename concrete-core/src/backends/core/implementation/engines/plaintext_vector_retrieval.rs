@@ -19,7 +19,7 @@ impl PlaintextVectorRetrievalEngine<PlaintextVector32, u32> for CoreEngine {
     /// // Here a hard-set encoding is applied (shift by 20 bits)
     /// let input = vec![3_u32 << 20; 3];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext_vector: PlaintextVector32 = engine.create_plaintext_vector(&input)?;
     /// let output: Vec<u32> = engine.retrieve_plaintext_vector(&plaintext_vector)?;
     /// #
@@ -58,7 +58,7 @@ impl PlaintextVectorRetrievalEngine<PlaintextVector64, u64> for CoreEngine {
     /// // Here a hard-set encoding is applied (shift by 20 bits)
     /// let input = vec![3_u64 << 20; 3];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext_vector: PlaintextVector64 = engine.create_plaintext_vector(&input)?;
     /// let output: Vec<u64> = engine.retrieve_plaintext_vector(&plaintext_vector)?;
     /// #

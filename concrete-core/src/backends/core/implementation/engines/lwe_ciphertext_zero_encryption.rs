@@ -27,7 +27,7 @@ impl LweCiphertextZeroEncryptionEngine<LweSecretKey32, LweCiphertext32> for Core
     /// let lwe_dimension = LweDimension(2);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
     ///
     /// let ciphertext = engine.zero_encrypt_lwe_ciphertext(&key, noise)?;
@@ -80,7 +80,7 @@ impl LweCiphertextZeroEncryptionEngine<LweSecretKey64, LweCiphertext64> for Core
     /// let lwe_dimension = LweDimension(2);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
     ///
     /// let ciphertext = engine.zero_encrypt_lwe_ciphertext(&key, noise)?;

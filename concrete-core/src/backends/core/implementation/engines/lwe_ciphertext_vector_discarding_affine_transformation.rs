@@ -35,7 +35,7 @@ impl
     /// let bias_input = 8_u32 << 20;
     /// let noise = Variance::from_variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let weights: CleartextVector32 = engine.create_cleartext_vector(&input_vector)?;
     /// let bias: Plaintext32 = engine.create_plaintext(&bias_input)?;
@@ -120,7 +120,7 @@ impl
     /// let bias_input = 8_u64 << 50;
     /// let noise = Variance::from_variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let weights: CleartextVector64 = engine.create_cleartext_vector(&input_vector)?;
     /// let bias: Plaintext64 = engine.create_plaintext(&bias_input)?;

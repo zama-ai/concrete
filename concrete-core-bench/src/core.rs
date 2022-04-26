@@ -20,7 +20,7 @@ macro_rules! bench {
         pub fn bench() {
             let mut criterion = Criterion::default().configure_from_args();
             let mut maker = Maker::default();
-            let mut engine = CoreEngine::new().unwrap();
+            let mut engine = CoreEngine::new(()).unwrap();
             $(
                 paste!{
                     bench!{$fixture, Precision32, ($([< $types 32 >]),+), maker, engine, criterion}

@@ -32,7 +32,7 @@ impl GgswCiphertextDiscardingConversionEngine<GgswCiphertext32, FourierGgswCiphe
     /// let input = 3_u32 << 20;
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key_1: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     ///
@@ -113,7 +113,7 @@ impl GgswCiphertextDiscardingConversionEngine<GgswCiphertext64, FourierGgswCiphe
     /// let input = 3_u64 << 50;
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key_1: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     ///

@@ -28,7 +28,7 @@ impl GlweCiphertextDiscardingDecryptionEngine<GlweSecretKey32, GlweCiphertext32,
     /// let mut input = vec![3_u32 << 20; polynomial_size.0];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let mut plaintext_vector = engine.create_plaintext_vector(&input)?;
     /// let ciphertext = engine.encrypt_glwe_ciphertext(&key, &plaintext_vector, noise)?;
@@ -86,7 +86,7 @@ impl GlweCiphertextDiscardingDecryptionEngine<GlweSecretKey64, GlweCiphertext64,
     /// let mut input = vec![3_u64 << 50; polynomial_size.0];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let mut plaintext_vector = engine.create_plaintext_vector(&input)?;
     /// let ciphertext = engine.encrypt_glwe_ciphertext(&key, &plaintext_vector, noise)?;

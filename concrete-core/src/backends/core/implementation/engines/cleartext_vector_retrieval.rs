@@ -18,7 +18,7 @@ impl CleartextVectorRetrievalEngine<CleartextVector32, u32> for CoreEngine {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let input = vec![3_u32; 100];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext_vector: CleartextVector32 = engine.create_cleartext_vector(&input)?;
     /// let retrieved: Vec<u32> = engine.retrieve_cleartext_vector(&cleartext_vector)?;
     ///
@@ -56,7 +56,7 @@ impl CleartextVectorRetrievalEngine<CleartextVector64, u64> for CoreEngine {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let input = vec![3_u64; 100];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext_vector: CleartextVector64 = engine.create_cleartext_vector(&input)?;
     /// let retrieved: Vec<u64> = engine.retrieve_cleartext_vector(&cleartext_vector)?;
     ///
