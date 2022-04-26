@@ -80,7 +80,8 @@ class Circuit:
         if configuration.use_insecure_key_cache:
             assert_that(configuration.enable_unsafe_features)
             location = CompilationConfiguration.insecure_key_cache_location()
-            self._keyset_cache = KeySetCache.new(str(location))
+            if location is not None:
+                self._keyset_cache = KeySetCache.new(str(location))
         self._keyset = None
 
         self._server_lambda = self._jit_support.load_server_lambda(self._compilation_result)
