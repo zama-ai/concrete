@@ -19,7 +19,7 @@ impl LweSecretKeyCreationEngine<LweSecretKey32> for CoreEngine {
     /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
     /// let lwe_dimension = LweDimension(6);
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_secret_key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// #
     /// assert_eq!(lwe_secret_key.lwe_dimension(), lwe_dimension);
@@ -61,7 +61,7 @@ impl LweSecretKeyCreationEngine<LweSecretKey64> for CoreEngine {
     /// // DISCLAIMER: the parameters used here are only for test purpose, and are not secure.
     /// let lwe_dimension = LweDimension(6);
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_secret_key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// #
     /// assert_eq!(lwe_secret_key.lwe_dimension(), lwe_dimension);

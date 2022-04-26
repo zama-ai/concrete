@@ -16,7 +16,7 @@ impl CleartextVectorCreationEngine<u32, CleartextVector32> for CoreEngine {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let input = vec![3_u32; 100];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext_vector: CleartextVector32 = engine.create_cleartext_vector(&input)?;
     /// #
     /// assert_eq!(cleartext_vector.cleartext_count(), CleartextCount(100));
@@ -51,7 +51,7 @@ impl CleartextVectorCreationEngine<u64, CleartextVector64> for CoreEngine {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let input = vec![3_u64; 100];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext_vector: CleartextVector64 = engine.create_cleartext_vector(&input)?;
     /// #
     /// assert_eq!(cleartext_vector.cleartext_count(), CleartextCount(100));

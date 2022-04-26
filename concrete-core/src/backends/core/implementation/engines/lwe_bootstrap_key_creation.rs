@@ -35,7 +35,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, LweBootstrap
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_sk: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///
@@ -126,7 +126,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, LweBootstrap
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_sk: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///
@@ -217,7 +217,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey32, GlweSecretKey32, FourierLweBo
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_sk: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///
@@ -323,7 +323,7 @@ impl LweBootstrapKeyCreationEngine<LweSecretKey64, GlweSecretKey64, FourierLweBo
     /// let (dec_lc, dec_bl) = (DecompositionLevelCount(3), DecompositionBaseLog(5));
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_sk: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     ///

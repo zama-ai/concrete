@@ -50,7 +50,7 @@ impl
     /// let lut = vec![8_u32 << 20; poly_size.0];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_sk: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     /// let bsk: FourierLweBootstrapKey32 =
@@ -145,7 +145,7 @@ impl
     /// let lut = vec![8_u64 << 50; poly_size.0];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let lwe_sk: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dim)?;
     /// let glwe_sk: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dim, poly_size)?;
     /// let bsk: FourierLweBootstrapKey64 =

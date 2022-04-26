@@ -35,7 +35,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext32, LweCiphertext32> 
     /// let input = vec![3_u32 << 20; polynomial_size.0];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let glwe_key: GlweSecretKey32 =
     ///     engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let lwe_key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
@@ -112,7 +112,7 @@ impl LweCiphertextDiscardingExtractionEngine<GlweCiphertext64, LweCiphertext64> 
     /// let input = vec![3_u64 << 50; polynomial_size.0];
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let glwe_key: GlweSecretKey64 =
     ///     engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let lwe_key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;

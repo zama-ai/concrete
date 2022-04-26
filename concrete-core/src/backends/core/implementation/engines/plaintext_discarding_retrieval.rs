@@ -18,7 +18,7 @@ impl PlaintextDiscardingRetrievalEngine<Plaintext32, u32> for CoreEngine {
     /// let input = 3_u32 << 20;
     /// let mut output = 0_u32;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext: Plaintext32 = engine.create_plaintext(&input)?;
     /// engine.discard_retrieve_plaintext(&mut output, &plaintext)?;
     ///
@@ -57,7 +57,7 @@ impl PlaintextDiscardingRetrievalEngine<Plaintext64, u64> for CoreEngine {
     /// let input = 3_u64 << 20;
     /// let mut output = 0_u64;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext: Plaintext64 = engine.create_plaintext(&input)?;
     /// engine.discard_retrieve_plaintext(&mut output, &plaintext)?;
     ///

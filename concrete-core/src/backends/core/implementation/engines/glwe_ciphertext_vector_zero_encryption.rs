@@ -31,7 +31,7 @@ impl GlweCiphertextVectorZeroEncryptionEngine<GlweSecretKey32, GlweCiphertextVec
     /// let ciphertext_count = GlweCiphertextCount(3);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     ///
     /// let ciphertext_vector =
@@ -99,7 +99,7 @@ impl GlweCiphertextVectorZeroEncryptionEngine<GlweSecretKey64, GlweCiphertextVec
     /// let ciphertext_count = GlweCiphertextCount(3);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     ///
     /// let ciphertext_vector =

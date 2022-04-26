@@ -15,7 +15,7 @@ impl CleartextCreationEngine<u32, Cleartext32> for CoreEngine {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let input: u32 = 3;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext: Cleartext32 = engine.create_cleartext(&input)?;
     /// engine.destroy(cleartext)?;
     /// #
@@ -46,7 +46,7 @@ impl CleartextCreationEngine<u64, Cleartext64> for CoreEngine {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let input: u64 = 3;
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let cleartext: Cleartext64 = engine.create_cleartext(&input)?;
     /// engine.destroy(cleartext)?;
     /// #

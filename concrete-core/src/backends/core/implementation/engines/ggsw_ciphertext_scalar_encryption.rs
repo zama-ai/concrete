@@ -36,7 +36,7 @@ impl GgswCiphertextScalarEncryptionEngine<GlweSecretKey32, Plaintext32, GgswCiph
     /// let input = 3_u32 << 20;
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     ///
@@ -122,7 +122,7 @@ impl GgswCiphertextScalarEncryptionEngine<GlweSecretKey64, Plaintext64, GgswCiph
     /// let input = 3_u64 << 50;
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     /// let plaintext = engine.create_plaintext(&input)?;
     ///

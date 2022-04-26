@@ -27,7 +27,7 @@ impl GlweCiphertextZeroEncryptionEngine<GlweSecretKey32, GlweCiphertext32> for C
     /// let polynomial_size = PolynomialSize(1024);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey32 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     ///
     /// let ciphertext = engine.zero_encrypt_glwe_ciphertext(&key, noise)?;
@@ -82,7 +82,7 @@ impl GlweCiphertextZeroEncryptionEngine<GlweSecretKey64, GlweCiphertext64> for C
     /// let polynomial_size = PolynomialSize(1024);
     /// let noise = Variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: GlweSecretKey64 = engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
     ///
     /// let ciphertext = engine.zero_encrypt_glwe_ciphertext(&key, noise)?;

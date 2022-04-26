@@ -17,7 +17,7 @@ impl PlaintextVectorCreationEngine<u32, PlaintextVector32> for CoreEngine {
     /// // Here a hard-set encoding is applied (shift by 20 bits)
     /// let input = vec![3_u32 << 20; 3];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext_vector: PlaintextVector32 = engine.create_plaintext_vector(&input)?;
     /// #
     /// assert_eq!(plaintext_vector.plaintext_count(), PlaintextCount(3));
@@ -55,7 +55,7 @@ impl PlaintextVectorCreationEngine<u64, PlaintextVector64> for CoreEngine {
     /// // Here a hard-set encoding is applied (shift by 50 bits)
     /// let input = vec![3_u64 << 50; 3];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext_vector: PlaintextVector64 = engine.create_plaintext_vector(&input)?;
     /// #
     /// assert_eq!(plaintext_vector.plaintext_count(), PlaintextCount(3));

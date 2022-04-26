@@ -18,7 +18,7 @@ impl GlweToLweSecretKeyTransmutationEngine<GlweSecretKey32, LweSecretKey32> for 
     /// let glwe_dimension = GlweDimension(2);
     /// let polynomial_size = PolynomialSize(4);
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     ///
     /// let glwe_secret_key: GlweSecretKey32 =
     ///     engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;
@@ -58,7 +58,7 @@ impl GlweToLweSecretKeyTransmutationEngine<GlweSecretKey64, LweSecretKey64> for 
     /// let glwe_dimension = GlweDimension(2);
     /// let polynomial_size = PolynomialSize(4);
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     ///
     /// let glwe_secret_key: GlweSecretKey64 =
     ///     engine.create_glwe_secret_key(glwe_dimension, polynomial_size)?;

@@ -26,7 +26,7 @@ impl LweCiphertextVectorFusingAdditionEngine<LweCiphertextVector32, LweCiphertex
     /// let input_vector = vec![3_u32 << 20; 8];
     /// let noise = Variance::from_variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey32 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let plaintext_vector: PlaintextVector32 = engine.create_plaintext_vector(&input_vector)?;
     /// let ciphertext_vector = engine.encrypt_lwe_ciphertext_vector(&key, &plaintext_vector, noise)?;
@@ -90,7 +90,7 @@ impl LweCiphertextVectorFusingAdditionEngine<LweCiphertextVector64, LweCiphertex
     /// let input_vector = vec![3_u64 << 50; 8];
     /// let noise = Variance::from_variance(2_f64.powf(-25.));
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let key: LweSecretKey64 = engine.create_lwe_secret_key(lwe_dimension)?;
     /// let plaintext_vector: PlaintextVector64 = engine.create_plaintext_vector(&input_vector)?;
     /// let ciphertext_vector = engine.encrypt_lwe_ciphertext_vector(&key, &plaintext_vector, noise)?;

@@ -20,7 +20,7 @@ impl GlweCiphertextTrivialDecryptionEngine<GlweCiphertext32, PlaintextVector32> 
     /// let polynomial_size = PolynomialSize(4);
     /// let input = vec![3_u32 << 20; polynomial_size.0];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext_vector: PlaintextVector32 = engine.create_plaintext_vector(&input)?;
     /// // DISCLAIMER: trivial encryption is NOT secure, and DOES NOT hide the message at all.
     /// let ciphertext: GlweCiphertext32 = engine
@@ -68,7 +68,7 @@ impl GlweCiphertextTrivialDecryptionEngine<GlweCiphertext64, PlaintextVector64> 
     /// let polynomial_size = PolynomialSize(4);
     /// let input = vec![3_u64 << 20; polynomial_size.0];
     ///
-    /// let mut engine = CoreEngine::new()?;
+    /// let mut engine = CoreEngine::new(())?;
     /// let plaintext_vector: PlaintextVector64 = engine.create_plaintext_vector(&input)?;
     /// // DISCLAIMER: trivial encryption is NOT secure, and DOES NOT hide the message at all.
     /// let ciphertext: GlweCiphertext64 = engine
