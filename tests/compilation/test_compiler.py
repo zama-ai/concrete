@@ -121,8 +121,18 @@ def test_compiler_bad_compile(helpers):
 
     assert str(excinfo.value) == "Compiling function 'f' without an inputset is not supported"
 
+    configuration.enable_unsafe_features = False
 
-def test_compiler_virtual_compile(helpers, capsys):
+    with pytest.raises(RuntimeError) as excinfo:
+        compiler = Compiler(lambda x: x, {"x": "encrypted"}, configuration=configuration)
+        compiler.compile(virtual=True)
+
+    assert str(excinfo.value) == (
+        "Virtual compilation is not allowed without enabling unsafe features"
+    )
+
+
+def test_compiler_virtual_compile(helpers):
     """
     Test `compile` method of `Compiler` class with virtual=True.
     """
@@ -134,11 +144,5 @@ def test_compiler_virtual_compile(helpers, capsys):
 
     compiler = Compiler(f, {"x": "encrypted"}, configuration=configuration)
     circuit = compiler.compile(inputset=range(400), virtual=True)
-
-    captured = capsys.readouterr()
-    assert captured.out.strip() == (
-        "Warning: You are using virtual compilation, "
-        "which means the evaluation will not be homomorphic."
-    )
 
     assert circuit.encrypt_run_decrypt(200) == 600

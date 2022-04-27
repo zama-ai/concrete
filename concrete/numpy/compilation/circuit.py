@@ -59,10 +59,6 @@ class Circuit:
 
         self.virtual = virtual
         if self.virtual:
-            print(
-                "Warning: You are using virtual compilation, "
-                "which means the evaluation will not be homomorphic."
-            )
             return
 
         options = CompilationOptions.new("main")

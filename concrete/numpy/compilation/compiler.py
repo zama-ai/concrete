@@ -278,6 +278,11 @@ class Compiler:
         """
 
         try:
+            if virtual and not self.configuration.enable_unsafe_features:
+                raise RuntimeError(
+                    "Virtual compilation is not allowed without enabling unsafe features"
+                )
+
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
