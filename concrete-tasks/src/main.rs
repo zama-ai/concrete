@@ -72,14 +72,6 @@ fn main() -> Result<(), std::io::Error> {
         .subcommand(App::new("build").about("Builds the crates in all available mode"))
         .subcommand(App::new("check").about("Performs all the available checks"))
         .subcommand(App::new("test_toplevel").about("Tests the `concrete` crate in native mode"))
-        .subcommand(
-            App::new("test_commons").about("Tests the `concrete-commons` crate in native mode"),
-        )
-        .subcommand(App::new("test_core").about("Tests the `concrete-core` crate in native mode"))
-        .subcommand(
-            App::new("test_csprng").about("Tests the `concrete-csprng` crate in native mode"),
-        )
-        .subcommand(App::new("test_npe").about("Tests the `concrete-npe` crate in native mode"))
         .subcommand(App::new("test_crates").about("Tests all the crates in native mode"))
         .subcommand(
             App::new("test_and_cov_crates")
@@ -144,18 +136,6 @@ fn main() -> Result<(), std::io::Error> {
     }
     if matches.subcommand_matches("test_toplevel").is_some() {
         test::toplevel()?;
-    }
-    if matches.subcommand_matches("test_commons").is_some() {
-        test::commons()?;
-    }
-    if matches.subcommand_matches("test_core").is_some() {
-        test::core()?;
-    }
-    if matches.subcommand_matches("test_csprng").is_some() {
-        test::csprng()?;
-    }
-    if matches.subcommand_matches("test_npe").is_some() {
-        test::npe()?;
     }
     if matches.subcommand_matches("test_crates").is_some() {
         test::crates()?;

@@ -2,24 +2,9 @@
 
 members = [
     "concrete",
-    "concrete-npe",
-    "concrete-core",
-    "concrete-csprng",
-    "concrete-commons",
     "concrete-tasks",
     "concrete-boolean",
-    "concrete-core-bench",
-    "concrete-core-fixture",
-    "concrete-core-test"
 ]
-
-[patch.crates-io]
-concrete = {path="concrete"}
-concrete-npe = {path="concrete-npe"}
-concrete-core = {path="concrete-core"}
-concrete-csprng = {path="concrete-csprng"}
-concrete-commons = {path="concrete-commons"}
-concrete-boolean = {path="concrete-boolean"}
 
 [profile.bench]
 lto = "fat"
