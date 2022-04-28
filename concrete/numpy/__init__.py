@@ -4,9 +4,9 @@ Export everything that users might need.
 
 from .compilation import (
     Circuit,
-    DebugArtifacts,
-    Configuration,
     Compiler,
+    Configuration,
+    DebugArtifacts,
     EncryptionStatus,
     compiler,
 )

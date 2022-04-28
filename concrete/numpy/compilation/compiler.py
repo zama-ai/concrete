@@ -82,9 +82,7 @@ class Compiler:
             for param, status in parameter_encryption_statuses.items()
         }
 
-        self.configuration = (
-            configuration if configuration is not None else Configuration()
-        )
+        self.configuration = configuration if configuration is not None else Configuration()
         self.artifacts = artifacts if artifacts is not None else DebugArtifacts()
 
         self.inputset = []

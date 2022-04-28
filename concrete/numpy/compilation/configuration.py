@@ -2,7 +2,8 @@
 Declaration of `Configuration` class.
 """
 
-from typing import Optional
+from copy import deepcopy
+from typing import Optional, get_type_hints
 
 _INSECURE_KEY_CACHE_LOCATION: Optional[str] = None
 
@@ -49,3 +50,34 @@ class Configuration:
         """
 
         return _INSECURE_KEY_CACHE_LOCATION
+
+    def fork(self, **kwargs) -> "Configuration":
+        """
+        Get a new configuration from another one specified changes.
+
+        Args:
+            **kwargs:
+                changes to make
+
+        Returns:
+            Configuration:
+                configuration that is forked from self and updated using kwargs
+        """
+
+        result = deepcopy(self)
+
+        hints = get_type_hints(Configuration)
+        for name, value in kwargs.items():
+            if name not in hints:
+                raise TypeError(f"Unexpected keyword argument '{name}'")
+
+            hint = hints[name]
+            if not isinstance(value, hint):  # type: ignore
+                raise TypeError(
+                    f"Unexpected type for keyword argument '{name}' "
+                    f"(expected '{hint.__name__}', got '{type(value).__name__}')"
+                )
+
+            setattr(result, name, value)
+
+        return result
