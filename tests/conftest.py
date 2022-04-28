@@ -91,16 +91,16 @@ class Helpers:
     """
 
     @staticmethod
-    def configuration() -> cnp.CompilationConfiguration:
+    def configuration() -> cnp.Configuration:
         """
         Get the test configuration to use during testing.
 
         Returns:
-            cnp.CompilationConfiguration:
+            cnp.Configuration:
                 test configuration
         """
 
-        return cnp.CompilationConfiguration(
+        return cnp.Configuration(
             dump_artifacts_on_unexpected_failures=False,
             enable_unsafe_features=True,
             use_insecure_key_cache=True,

@@ -1,5 +1,5 @@
 """
-Declaration of `CompilationConfiguration` class.
+Declaration of `Configuration` class.
 """
 
 from typing import Optional
@@ -7,9 +7,9 @@ from typing import Optional
 _INSECURE_KEY_CACHE_LOCATION: Optional[str] = None
 
 
-class CompilationConfiguration:
+class Configuration:
     """
-    CompilationConfiguration class, to allow the compilation process to be customized.
+    Configuration class, to allow the compilation process to be customized.
     """
 
     dump_artifacts_on_unexpected_failures: bool

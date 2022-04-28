@@ -23,7 +23,7 @@ from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Graph
 from ..values import Value
-from .configuration import CompilationConfiguration
+from .configuration import Configuration
 
 
 class Circuit:
@@ -49,10 +49,10 @@ class Circuit:
         self,
         graph: Graph,
         mlir: str,
-        configuration: Optional[CompilationConfiguration] = None,
+        configuration: Optional[Configuration] = None,
         virtual: bool = False,
     ):
-        configuration = configuration if configuration is not None else CompilationConfiguration()
+        configuration = configuration if configuration is not None else Configuration()
 
         self.graph = graph
         self.mlir = mlir
@@ -75,7 +75,7 @@ class Circuit:
         self._keyset_cache = None
         if configuration.use_insecure_key_cache:
             assert_that(configuration.enable_unsafe_features)
-            location = CompilationConfiguration.insecure_key_cache_location()
+            location = Configuration.insecure_key_cache_location()
             if location is not None:
                 self._keyset_cache = KeySetCache.new(str(location))
         self._keyset = None

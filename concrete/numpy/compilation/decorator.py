@@ -8,12 +8,12 @@ from ..representation import Graph
 from .artifacts import CompilationArtifacts
 from .circuit import Circuit
 from .compiler import Compiler, EncryptionStatus
-from .configuration import CompilationConfiguration
+from .configuration import Configuration
 
 
 def compiler(
     parameters: Mapping[str, EncryptionStatus],
-    configuration: Optional[CompilationConfiguration] = None,
+    configuration: Optional[Configuration] = None,
     artifacts: Optional[CompilationArtifacts] = None,
 ):
     """
@@ -23,7 +23,7 @@ def compiler(
         parameters (Dict[str, EncryptionStatus]):
             encryption statuses of the parameters of the function to compile
 
-        configuration(Optional[CompilationConfiguration], default = None):
+        configuration(Optional[Configuration], default = None):
             configuration to use for compilation
 
         artifacts (Optional[CompilationArtifacts], default = None):

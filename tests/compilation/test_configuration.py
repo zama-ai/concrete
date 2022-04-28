@@ -1,10 +1,10 @@
 """
-Tests of `CompilationConfiguration` class.
+Tests of `Configuration` class.
 """
 
 import pytest
 
-from concrete.numpy.compilation import CompilationConfiguration
+from concrete.numpy.compilation import Configuration
 
 
 @pytest.mark.parametrize(
@@ -19,10 +19,10 @@ from concrete.numpy.compilation import CompilationConfiguration
 )
 def test_configuration_bad_init(kwargs, expected_error, expected_message):
     """
-    Test `__init__` method of `CompilationConfiguration` class with bad parameters.
+    Test `__init__` method of `Configuration` class with bad parameters.
     """
 
     with pytest.raises(expected_error) as excinfo:
-        CompilationConfiguration(**kwargs)
+        Configuration(**kwargs)
 
     assert str(excinfo.value) == expected_message

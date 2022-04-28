@@ -16,7 +16,7 @@ from ..tracing import Tracer
 from ..values import Value
 from .artifacts import CompilationArtifacts
 from .circuit import Circuit
-from .configuration import CompilationConfiguration
+from .configuration import Configuration
 from .utils import fuse
 
 
@@ -38,7 +38,7 @@ class Compiler:
     function: Callable
     parameter_encryption_statuses: Dict[str, EncryptionStatus]
 
-    configuration: CompilationConfiguration
+    configuration: Configuration
     artifacts: CompilationArtifacts
 
     inputset: List[Any]
@@ -48,7 +48,7 @@ class Compiler:
         self,
         function: Callable,
         parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]],
-        configuration: Optional[CompilationConfiguration] = None,
+        configuration: Optional[Configuration] = None,
         artifacts: Optional[CompilationArtifacts] = None,
     ):
         signature = inspect.signature(function)
@@ -83,7 +83,7 @@ class Compiler:
         }
 
         self.configuration = (
-            configuration if configuration is not None else CompilationConfiguration()
+            configuration if configuration is not None else Configuration()
         )
         self.artifacts = artifacts if artifacts is not None else CompilationArtifacts()
 
