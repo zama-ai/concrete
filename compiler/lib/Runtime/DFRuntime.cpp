@@ -791,12 +791,21 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
     if (nCores < 1)
       nCores = 1;
 
+    // We do not directly handle this, but we should take into account
+    // the choices made by the OpenMP runtime if we would be mixing
+    // loop & dataflow parallelism.
     char *env = getenv("OMP_NUM_THREADS");
     if (env != nullptr)
       nOMPThreads = strtoul(env, NULL, 10);
     else
       nOMPThreads = nCores;
 
+    // Unless specified, we will consider that within each node loop
+    // parallelism is the priority, so we would allocate either
+    // ncores/OMP_NUM_THREADS or ncores-OMP_NUM_THREADS+1.  Both make
+    // sense depending on whether we have very regular computation or
+    // not - the latter being more conservative in that we will
+    // exploit all cores, but we may oversubscribe.
     env = getenv("DFR_NUM_THREADS");
     if (env != nullptr)
       nHPXThreads = strtoul(env, NULL, 10);
@@ -805,7 +814,16 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
     if (nHPXThreads < 1)
       nHPXThreads = 1;
 
+    // If the user does not provide their own config file, one is by
+    // default located at the root of the concrete-compiler directory.
     env = getenv("HPX_CONFIG_FILE");
+    // If no file is provided, try and check that the default is
+    // available - otherwise use a basic default configuration.
+#ifdef HPX_DEFAULT_CONFIG_FILE
+    if (env == nullptr)
+      if (access(HPX_DEFAULT_CONFIG_FILE, F_OK) == 0)
+        env = const_cast<char *>(HPX_DEFAULT_CONFIG_FILE);
+#endif
     if (env != nullptr) {
       int _argc = 3;
       char *_argv[3] = {const_cast<char *>("__dummy_dfr_HPX_program_name__"),
@@ -813,6 +831,11 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
                         const_cast<char *>(env)};
       hpx::start(nullptr, _argc, _argv);
     } else {
+      // Last resort configuration in case no config file could be
+      // identified, provide some default values that make (some)
+      // sense for homomorphic computations (stacks need to reflect
+      // the size of ciphertexts rather than simple cleartext
+      // scalars).
       std::string numHPXThreads = std::to_string(nHPXThreads);
       int _argc = 7;
       char *_argv[7] = {
