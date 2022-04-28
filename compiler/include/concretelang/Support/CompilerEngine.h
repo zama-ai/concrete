@@ -102,7 +102,8 @@ public:
     llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
     /** Emit the library artifacts with the previously added compilation result
      */
-    llvm::Error emitArtifacts();
+    llvm::Error emitArtifacts(bool sharedLib, bool staticLib,
+                              bool clientParameters, bool cppHeader);
     /** After a shared library has been emitted, its path is here */
     std::string sharedLibraryPath;
     /** After a static library has been emitted, its path is here */
@@ -202,13 +203,17 @@ public:
 
   llvm::Expected<CompilerEngine::Library>
   compile(std::vector<std::string> inputs, std::string libraryPath,
-          std::string runtimeLibraryPath = "");
+          std::string runtimeLibraryPath = "", bool generateSharedLib = true,
+          bool generateStaticLib = true, bool generateClientParameters = true,
+          bool generateCppHeader = true);
 
   /// Compile and emit artifact to the given libraryPath from an LLVM source
   /// manager.
   llvm::Expected<CompilerEngine::Library>
   compile(llvm::SourceMgr &sm, std::string libraryPath,
-          std::string runtimeLibraryPath = "");
+          std::string runtimeLibraryPath = "", bool generateSharedLib = true,
+          bool generateStaticLib = true, bool generateClientParameters = true,
+          bool generateCppHeader = true);
 
   void setCompilationOptions(CompilationOptions &options) {
     compilerOptions = options;

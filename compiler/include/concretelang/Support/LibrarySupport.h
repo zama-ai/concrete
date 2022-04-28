@@ -33,8 +33,15 @@ class LibrarySupport
     : public LambdaSupport<serverlib::ServerLambda, LibraryCompilationResult> {
 
 public:
-  LibrarySupport(std::string outputPath, std::string runtimeLibraryPath = "")
-      : outputPath(outputPath), runtimeLibraryPath(runtimeLibraryPath) {}
+  LibrarySupport(std::string outputPath, std::string runtimeLibraryPath = "",
+                 bool generateSharedLib = true, bool generateStaticLib = true,
+                 bool generateClientParameters = true,
+                 bool generateCppHeader = true)
+      : outputPath(outputPath), runtimeLibraryPath(runtimeLibraryPath),
+        generateSharedLib(generateSharedLib),
+        generateStaticLib(generateStaticLib),
+        generateClientParameters(generateClientParameters),
+        generateCppHeader(generateCppHeader) {}
 
   llvm::Expected<std::unique_ptr<LibraryCompilationResult>>
   compile(llvm::SourceMgr &program, CompilationOptions options) override {
@@ -44,7 +51,9 @@ public:
     engine.setCompilationOptions(options);
 
     // Compile to a library
-    auto library = engine.compile(program, outputPath, runtimeLibraryPath);
+    auto library = engine.compile(program, outputPath, runtimeLibraryPath,
+                                  generateSharedLib, generateStaticLib,
+                                  generateClientParameters, generateCppHeader);
     if (auto err = library.takeError()) {
       return std::move(err);
     }
@@ -100,6 +109,11 @@ public:
 private:
   std::string outputPath;
   std::string runtimeLibraryPath;
+  // Flags to select generated artifacts
+  bool generateSharedLib;
+  bool generateStaticLib;
+  bool generateClientParameters;
+  bool generateCppHeader;
 };
 
 } // namespace concretelang

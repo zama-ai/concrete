@@ -458,7 +458,9 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   }
 
   if (cmdline::action == Action::COMPILE) {
-    auto err = outputLib->emitArtifacts();
+    auto err =
+        outputLib->emitArtifacts(/*sharedLib=*/true, /*staticLib=*/true,
+                                 /*clientParameters=*/true, /*cppHeader=*/true);
     if (err) {
       return mlir::failure();
     }

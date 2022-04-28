@@ -372,8 +372,9 @@ CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
 
 llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(std::vector<std::string> inputs,
-                        std::string libraryPath,
-                        std::string runtimeLibraryPath) {
+                        std::string libraryPath, std::string runtimeLibraryPath,
+                        bool generateSharedLib, bool generateStaticLib,
+                        bool generateClientParameters, bool generateCppHeader) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(libraryPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
@@ -384,7 +385,9 @@ CompilerEngine::compile(std::vector<std::string> inputs,
              << llvm::toString(compilation.takeError());
     }
   }
-  if (auto err = outputLib->emitArtifacts()) {
+  if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,
+                                          generateClientParameters,
+                                          generateCppHeader)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -393,7 +396,9 @@ CompilerEngine::compile(std::vector<std::string> inputs,
 
 llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(llvm::SourceMgr &sm, std::string libraryPath,
-                        std::string runtimeLibraryPath) {
+                        std::string runtimeLibraryPath, bool generateSharedLib,
+                        bool generateStaticLib, bool generateClientParameters,
+                        bool generateCppHeader) {
   using Library = mlir::concretelang::CompilerEngine::Library;
   auto outputLib = std::make_shared<Library>(libraryPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
@@ -404,7 +409,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, std::string libraryPath,
            << llvm::toString(compilation.takeError());
   }
 
-  if (auto err = outputLib->emitArtifacts()) {
+  if (auto err = outputLib->emitArtifacts(generateSharedLib, generateStaticLib,
+                                          generateClientParameters,
+                                          generateCppHeader)) {
     return StreamStringError("Can't emit artifacts: ")
            << llvm::toString(std::move(err));
   }
@@ -680,18 +687,29 @@ llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
   return path;
 }
 
-llvm::Error CompilerEngine::Library::emitArtifacts() {
-  if (auto err = emitShared().takeError()) {
-    return err;
+llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
+                                                   bool staticLib,
+                                                   bool clientParameters,
+                                                   bool cppHeader) {
+  if (sharedLib) {
+    if (auto err = emitShared().takeError()) {
+      return err;
+    }
   }
-  if (auto err = emitStatic().takeError()) {
-    return err;
+  if (staticLib) {
+    if (auto err = emitStatic().takeError()) {
+      return err;
+    }
   }
-  if (auto err = emitClientParametersJSON().takeError()) {
-    return err;
+  if (clientParameters) {
+    if (auto err = emitClientParametersJSON().takeError()) {
+      return err;
+    }
   }
-  if (auto err = emitCppHeader().takeError()) {
-    return err;
+  if (cppHeader) {
+    if (auto err = emitCppHeader().takeError()) {
+      return err;
+    }
   }
   return llvm::Error::success();
 }

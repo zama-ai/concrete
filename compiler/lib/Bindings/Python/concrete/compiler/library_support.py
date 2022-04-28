@@ -67,6 +67,10 @@ class LibrarySupport(WrapperCpp):
     def new(
         output_path: str = DEFAULT_OUTPUT_PATH,
         runtime_library_path: Optional[str] = None,
+        generateSharedLib: bool = True,
+        generateStaticLib: bool = False,
+        generateClientParameters: bool = True,
+        generateCppHeader: bool = False,
     ) -> "LibrarySupport":
         """Build a LibrarySupport.
 
@@ -74,10 +78,15 @@ class LibrarySupport(WrapperCpp):
             output_path (str, optional): path where to store compiled libraries.
                 Defaults to DEFAULT_OUTPUT_PATH.
             runtime_library_path (Optional[str], optional): path to the runtime library. Defaults to None.
+            generateSharedLib (bool): whether to emit shared library or not. Default to True.
+            generateStaticLib (bool): whether to emit static library or not. Default to False.
+            generateClientParameters (bool): whether to emit client parameters or not. Default to True.
+            generateCppHeader (bool): whether to emit cpp header or not. Default to False.
 
         Raises:
             TypeError: if output_path is not of type str
             TypeError: if runtime_library_path is not of type str
+            TypeError: if one of the generation flags is not of type bool
 
         Returns:
             LibrarySupport
@@ -90,8 +99,23 @@ class LibrarySupport(WrapperCpp):
             raise TypeError(
                 f"runtime_library_path must be of type str, not {type(runtime_library_path)}"
             )
+        for name, value in [
+            ("generateSharedLib", generateSharedLib),
+            ("generateStaticLib", generateStaticLib),
+            ("generateClientParameters", generateClientParameters),
+            ("generateCppHeader", generateCppHeader),
+        ]:
+            if not isinstance(value, bool):
+                raise TypeError(f"{name} must be of type bool, not {type(value)}")
         library_support = LibrarySupport.wrap(
-            _LibrarySupport(output_path, runtime_library_path)
+            _LibrarySupport(
+                output_path,
+                runtime_library_path,
+                generateSharedLib,
+                generateStaticLib,
+                generateClientParameters,
+                generateCppHeader,
+            )
         )
         library_support.library_path = output_path
         return library_support

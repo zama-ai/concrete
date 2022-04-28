@@ -60,9 +60,12 @@ jit_server_call(JITSupport_C support, mlir::concretelang::JITLambda &lambda,
 
 // Library Support bindings ///////////////////////////////////////////////////
 MLIR_CAPI_EXPORTED LibrarySupport_C
-library_support(const char *outputPath, const char *runtimeLibraryPath) {
-  return LibrarySupport_C{
-      mlir::concretelang::LibrarySupport(outputPath, runtimeLibraryPath)};
+library_support(const char *outputPath, const char *runtimeLibraryPath,
+                bool generateSharedLib, bool generateStaticLib,
+                bool generateClientParameters, bool generateCppHeader) {
+  return LibrarySupport_C{mlir::concretelang::LibrarySupport(
+      outputPath, runtimeLibraryPath, generateSharedLib, generateStaticLib,
+      generateClientParameters, generateCppHeader)};
 }
 
 std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
