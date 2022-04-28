@@ -154,10 +154,10 @@ def test_static_indexing(shape, function, helpers):
     """
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2 ** 5, size=shape) for _ in range(100)]
-    circuit = compiler.compile(inputset)
+    circuit = compiler.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2 ** 5, size=shape, dtype=np.uint8)
     helpers.check_execution(circuit, function, sample)
@@ -173,21 +173,21 @@ def test_bad_static_indexing(helpers):
     # with float
     # ----------
 
-    compiler = cnp.Compiler(lambda x: x[1.5], {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(lambda x: x[1.5], {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2 ** 3, size=(3,)) for _ in range(100)]
     with pytest.raises(ValueError) as excinfo:
-        compiler.compile(inputset)
+        compiler.compile(inputset, configuration)
 
     assert str(excinfo.value) == "Indexing with '1.5' is not supported"
 
     # with bad slice
     # --------------
 
-    compiler = cnp.Compiler(lambda x: x[slice(1.5, 2.5, None)], {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(lambda x: x[slice(1.5, 2.5, None)], {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2 ** 3, size=(3,)) for _ in range(100)]
     with pytest.raises(ValueError) as excinfo:
-        compiler.compile(inputset)
+        compiler.compile(inputset, configuration)
 
     assert str(excinfo.value) == "Indexing with '1.5:2.5' is not supported"

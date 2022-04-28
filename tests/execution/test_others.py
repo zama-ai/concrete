@@ -447,10 +447,10 @@ def test_others(function, parameters, helpers):
         parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
         configuration = helpers.configuration()
 
-        compiler = cnp.Compiler(function, parameter_encryption_statuses, configuration)
+        compiler = cnp.Compiler(function, parameter_encryption_statuses)
 
         inputset = helpers.generate_inputset(parameters)
-        circuit = compiler.compile(inputset)
+        circuit = compiler.compile(inputset, configuration)
 
         sample = helpers.generate_sample(parameters)
         helpers.check_execution(circuit, function, sample, retries=10)
@@ -464,10 +464,10 @@ def test_others(function, parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, parameter_encryption_statuses, configuration)
+    compiler = cnp.Compiler(function, parameter_encryption_statuses)
 
     inputset = helpers.generate_inputset(parameters)
-    circuit = compiler.compile(inputset)
+    circuit = compiler.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
     helpers.check_execution(circuit, function, sample, retries=10)
@@ -483,13 +483,13 @@ def test_others_bad_fusing(helpers):
     # two variable inputs
     # -------------------
 
-    @cnp.compiler({"x": "encrypted", "y": "clear"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted", "y": "clear"})
     def function1(x, y):
         return (10 * (np.sin(x) ** 2) + 10 * (np.cos(y) ** 2)).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
         inputset = [(i, i) for i in range(100)]
-        function1.compile(inputset)
+        function1.compile(inputset, configuration)
 
     helpers.check_str(
         # pylint: disable=line-too-long
@@ -528,13 +528,13 @@ return %13
     # big intermediate constants
     # --------------------------
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def function2(x):
         return (np.sin(x) * [[1, 2], [3, 4]]).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
         inputset = range(100)
-        function2.compile(inputset)
+        function2.compile(inputset, configuration)
 
     helpers.check_str(
         # pylint: disable=line-too-long
@@ -559,13 +559,13 @@ return %4
     # intermediates with different shape
     # ----------------------------------
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def function3(x):
         return np.abs(np.sin(x)).reshape((2, 3)).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
         inputset = [np.random.randint(0, 2 ** 7, size=(3, 2)) for _ in range(100)]
-        function3.compile(inputset)
+        function3.compile(inputset, configuration)
 
     helpers.check_str(
         # pylint: disable=line-too-long

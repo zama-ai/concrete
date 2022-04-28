@@ -5,6 +5,7 @@ Declaration of `Compiler` class.
 import inspect
 import os
 import traceback
+from copy import deepcopy
 from enum import Enum, unique
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -48,8 +49,6 @@ class Compiler:
         self,
         function: Callable,
         parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]],
-        configuration: Optional[Configuration] = None,
-        artifacts: Optional[DebugArtifacts] = None,
     ):
         signature = inspect.signature(function)
 
@@ -82,15 +81,11 @@ class Compiler:
             for param, status in parameter_encryption_statuses.items()
         }
 
-        self.configuration = configuration if configuration is not None else Configuration()
-        self.artifacts = artifacts if artifacts is not None else DebugArtifacts()
+        self.configuration = Configuration()
+        self.artifacts = DebugArtifacts()
 
         self.inputset = []
         self.graph = None
-
-        self.artifacts.add_source_code(function)
-        for param, encryption_status in parameter_encryption_statuses.items():
-            self.artifacts.add_parameter_encryption_status(param, encryption_status)
 
     def __call__(
         self,
@@ -125,6 +120,10 @@ class Compiler:
             sample (Union[Any, Tuple[Any, ...]]):
                 sample to use for tracing
         """
+
+        self.artifacts.add_source_code(self.function)
+        for param, encryption_status in self.parameter_encryption_statuses.items():
+            self.artifacts.add_parameter_encryption_status(param, encryption_status)
 
         parameters = {
             param: Value.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
@@ -180,7 +179,9 @@ class Compiler:
     def trace(
         self,
         inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
-        show_graph: bool = False,
+        configuration: Optional[Configuration] = None,
+        artifacts: Optional[DebugArtifacts] = None,
+        **kwargs,
     ) -> Graph:
         """
         Trace the function using an inputset.
@@ -189,19 +190,37 @@ class Compiler:
             inputset (Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]):
                 optional inputset to extend accumulated inputset before bounds measurement
 
-            show_graph (bool, default = False):
-                whether to print the computation graph
+            configuration(Optional[Configuration], default = None):
+                configuration to use
+
+            artifacts (Optional[DebugArtifacts], default = None):
+                artifacts to store information about the process
+
+            kwargs (Dict[str, Any]):
+                configuration options to overwrite
 
         Returns:
             Graph:
                 computation graph representing the function prior to MLIR conversion
         """
 
+        old_configuration = deepcopy(self.configuration)
+        old_artifacts = deepcopy(self.artifacts)
+
+        if configuration is not None:
+            self.configuration = configuration
+        if artifacts is not None:
+            self.artifacts = artifacts
+
+        if len(kwargs) != 0:
+            self.configuration = self.configuration.fork(**kwargs)
+
         try:
+
             self._evaluate("Tracing", inputset)
             assert self.graph is not None
 
-            if show_graph:
+            if self.configuration.verbose or self.configuration.show_graph:
                 graph = self.graph.format()
                 longest_line = max([len(line) for line in graph.split("\n")])
 
@@ -247,12 +266,19 @@ class Compiler:
 
             raise
 
+        finally:
+
+            self.configuration = old_configuration
+            self.artifacts = old_artifacts
+
+    # pylint: disable=too-many-branches,too-many-statements
+
     def compile(
         self,
         inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
-        show_graph: bool = False,
-        show_mlir: bool = False,
-        virtual: bool = False,
+        configuration: Optional[Configuration] = None,
+        artifacts: Optional[DebugArtifacts] = None,
+        **kwargs,
     ) -> Circuit:
         """
         Compile the function using an inputset.
@@ -261,34 +287,50 @@ class Compiler:
             inputset (Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]):
                 optional inputset to extend accumulated inputset before bounds measurement
 
-            show_graph (bool, default = False):
-                whether to print the computation graph
+            configuration(Optional[Configuration], default = None):
+                configuration to use
 
-            show_mlir (bool, default = False):
-                whether to print the compiled mlir
+            artifacts (Optional[DebugArtifacts], default = None):
+                artifacts to store information about the process
 
-            virtual (bool, default = False):
-                whether to simulate the computation to allow large bit-widths
+            kwargs (Dict[str, Any]):
+                configuration options to overwrite
 
         Returns:
             Circuit:
                 compiled circuit
         """
 
+        old_configuration = deepcopy(self.configuration)
+        old_artifacts = deepcopy(self.artifacts)
+
+        if configuration is not None:
+            self.configuration = configuration
+        if artifacts is not None:
+            self.artifacts = artifacts
+
+        if len(kwargs) != 0:
+            self.configuration = self.configuration.fork(**kwargs)
+
         try:
-            if virtual and not self.configuration.enable_unsafe_features:
-                raise RuntimeError(
-                    "Virtual compilation is not allowed without enabling unsafe features"
-                )
 
             self._evaluate("Compiling", inputset)
             assert self.graph is not None
 
-            mlir = GraphConverter.convert(self.graph, virtual=virtual)
+            mlir = GraphConverter.convert(self.graph, virtual=self.configuration.virtual)
             self.artifacts.add_mlir_to_compile(mlir)
 
-            if show_graph or show_mlir:
-                graph = self.graph.format() if show_graph else ""
+            if (
+                self.configuration.verbose
+                or self.configuration.show_graph
+                or self.configuration.show_mlir
+            ):
+
+                graph = (
+                    self.graph.format()
+                    if self.configuration.verbose or self.configuration.show_graph
+                    else ""
+                )
 
                 longest_graph_line = max([len(line) for line in graph.split("\n")])
                 longest_mlir_line = max([len(line) for line in mlir.split("\n")])
@@ -308,7 +350,7 @@ class Compiler:
                 except OSError:  # pragma: no cover
                     columns = min(longest_line, 80)
 
-                if show_graph:
+                if self.configuration.verbose or self.configuration.show_graph:
                     print()
 
                     print("Computation Graph")
@@ -318,8 +360,13 @@ class Compiler:
 
                     print()
 
-                if show_mlir:
-                    print("\n" if not show_graph else "", end="")
+                if self.configuration.verbose or self.configuration.show_mlir:
+                    print(
+                        "\n"
+                        if not (self.configuration.verbose or self.configuration.show_graph)
+                        else "",
+                        end="",
+                    )
 
                     print("MLIR")
                     print("-" * columns)
@@ -328,7 +375,7 @@ class Compiler:
 
                     print()
 
-            return Circuit(self.graph, mlir, self.configuration, virtual=virtual)
+            return Circuit(self.graph, mlir, self.configuration)
 
         except Exception:  # pragma: no cover
 
@@ -346,3 +393,10 @@ class Compiler:
                     f.write(traceback.format_exc())
 
             raise
+
+        finally:
+
+            self.configuration = old_configuration
+            self.artifacts = old_artifacts
+
+    # pylint: enable=too-many-branches,too-many-statements

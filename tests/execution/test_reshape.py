@@ -116,18 +116,18 @@ def test_reshape(shape, newshape, helpers):
 
     configuration = helpers.configuration()
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def function(x):
         return np.reshape(x, newshape)
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def method(x):
         return x.reshape(newshape)
 
     inputset = [np.random.randint(0, 2 ** 5, size=shape) for i in range(100)]
 
-    function_circuit = function.compile(inputset)
-    method_circuit = method.compile(inputset)
+    function_circuit = function.compile(inputset, configuration)
+    method_circuit = method.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2 ** 5, size=shape, dtype=np.uint8)
 
@@ -159,12 +159,12 @@ def test_flatten(shape, helpers):
 
     configuration = helpers.configuration()
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def function(x):
         return x.flatten()
 
     inputset = [np.random.randint(0, 2 ** 5, size=shape) for i in range(100)]
-    circuit = function.compile(inputset)
+    circuit = function.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2 ** 5, size=shape, dtype=np.uint8)
     helpers.check_execution(circuit, function, sample)

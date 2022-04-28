@@ -19,12 +19,12 @@ def test_artifacts_export(helpers):
         configuration = helpers.configuration()
         artifacts = DebugArtifacts(tmpdir)
 
-        @compiler({"x": "encrypted"}, configuration=configuration, artifacts=artifacts)
+        @compiler({"x": "encrypted"})
         def f(x):
             return x + 10
 
         inputset = range(100)
-        f.compile(inputset)
+        f.compile(inputset, configuration, artifacts)
 
         artifacts.export()
 

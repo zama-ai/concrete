@@ -22,23 +22,23 @@ def test_dot(size, helpers):
     bound = int(np.floor(np.sqrt(127 / size)))
     cst = np.random.randint(0, bound, size=(size,))
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def left_function(x):
         return np.dot(x, cst)
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def right_function(x):
         return np.dot(cst, x)
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def method(x):
         return x.dot(cst)
 
     inputset = [np.random.randint(0, bound, size=(size,)) for i in range(100)]
 
-    left_function_circuit = left_function.compile(inputset)
-    right_function_circuit = right_function.compile(inputset)
-    method_circuit = method.compile(inputset)
+    left_function_circuit = left_function.compile(inputset, configuration)
+    right_function_circuit = right_function.compile(inputset, configuration)
+    method_circuit = method.compile(inputset, configuration)
 
     sample = np.random.randint(0, bound, size=(size,), dtype=np.uint8)
 

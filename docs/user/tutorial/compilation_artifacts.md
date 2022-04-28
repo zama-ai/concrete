@@ -121,11 +121,11 @@ import pathlib
 
 artifacts = cnp.DebugArtifacts("/tmp/custom/export/path")
 
-@cnp.compiler({"x": "encrypted"}, artifacts=artifacts)
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return 127 - (50 * (np.sin(x) + 1)).astype(np.int64)
 
-f.compile(range(2 ** 3))
+f.compile(range(2 ** 3), artifacts=artifacts)
 
 artifacts.export()
 ```

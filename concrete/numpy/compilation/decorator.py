@@ -11,23 +11,13 @@ from .compiler import Compiler, EncryptionStatus
 from .configuration import Configuration
 
 
-def compiler(
-    parameters: Mapping[str, EncryptionStatus],
-    configuration: Optional[Configuration] = None,
-    artifacts: Optional[DebugArtifacts] = None,
-):
+def compiler(parameters: Mapping[str, EncryptionStatus]):
     """
     Provide an easy interface for compilation.
 
     Args:
         parameters (Dict[str, EncryptionStatus]):
             encryption statuses of the parameters of the function to compile
-
-        configuration(Optional[Configuration], default = None):
-            configuration to use for compilation
-
-        artifacts (Optional[DebugArtifacts], default = None):
-            artifacts to store information about compilation
     """
 
     def decoration(function: Callable):
@@ -41,12 +31,7 @@ def compiler(
 
             def __init__(self, function: Callable):
                 self.function = function  # type: ignore
-                self.compiler = Compiler(
-                    self.function,
-                    dict(parameters),
-                    configuration,
-                    artifacts,
-                )
+                self.compiler = Compiler(self.function, dict(parameters))
 
             def __call__(self, *args, **kwargs) -> Any:
                 self.compiler(*args, **kwargs)
@@ -55,7 +40,9 @@ def compiler(
             def trace(
                 self,
                 inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
-                show_graph: bool = False,
+                configuration: Optional[Configuration] = None,
+                artifacts: Optional[DebugArtifacts] = None,
+                **kwargs,
             ) -> Graph:
                 """
                 Trace the function into computation graph.
@@ -64,22 +51,28 @@ def compiler(
                     inputset (Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]):
                         optional inputset to extend accumulated inputset before bounds measurement
 
-                    show_graph (bool, default = False):
-                        whether to print the computation graph
+                    configuration(Optional[Configuration], default = None):
+                        configuration to use
+
+                    artifacts (Optional[DebugArtifacts], default = None):
+                        artifacts to store information about the process
+
+                    kwargs (Dict[str, Any]):
+                        configuration options to overwrite
 
                 Returns:
                     Graph:
                         computation graph representing the function prior to MLIR conversion
                 """
 
-                return self.compiler.trace(inputset, show_graph)
+                return self.compiler.trace(inputset, configuration, artifacts, **kwargs)
 
             def compile(
                 self,
                 inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
-                show_graph: bool = False,
-                show_mlir: bool = False,
-                virtual: bool = False,
+                configuration: Optional[Configuration] = None,
+                artifacts: Optional[DebugArtifacts] = None,
+                **kwargs,
             ) -> Circuit:
                 """
                 Compile the function into a circuit.
@@ -88,21 +81,21 @@ def compiler(
                     inputset (Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]):
                         optional inputset to extend accumulated inputset before bounds measurement
 
-                    show_graph (bool, default = False):
-                        whether to print the computation graph
+                    configuration(Optional[Configuration], default = None):
+                        configuration to use
 
-                    show_mlir (bool, default = False):
-                        whether to print the compiled mlir
+                    artifacts (Optional[DebugArtifacts], default = None):
+                        artifacts to store information about the process
 
-                    virtual (bool, default = False):
-                        whether to simulate the computation to allow large bit-widths
+                    kwargs (Dict[str, Any]):
+                        configuration options to overwrite
 
                 Returns:
                     Circuit:
                         compiled circuit
                 """
 
-                return self.compiler.compile(inputset, show_graph, show_mlir, virtual)
+                return self.compiler.compile(inputset, configuration, artifacts, **kwargs)
 
         return Compilable(function)
 

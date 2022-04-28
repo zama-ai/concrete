@@ -50,14 +50,13 @@ class Circuit:
         graph: Graph,
         mlir: str,
         configuration: Optional[Configuration] = None,
-        virtual: bool = False,
     ):
         configuration = configuration if configuration is not None else Configuration()
 
         self.graph = graph
         self.mlir = mlir
 
-        self.virtual = virtual
+        self.virtual = configuration.virtual
         if self.virtual:
             return
 

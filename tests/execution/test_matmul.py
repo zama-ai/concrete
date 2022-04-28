@@ -125,29 +125,29 @@ def test_matmul(lhs_shape, rhs_shape, bounds, helpers):
     lhs_cst = list(np.random.randint(minimum, maximum, size=lhs_shape))
     rhs_cst = list(np.random.randint(minimum, maximum, size=rhs_shape))
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def lhs_operator(x):
         return x @ rhs_cst
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def rhs_operator(x):
         return lhs_cst @ x
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def lhs_function(x):
         return np.matmul(x, rhs_cst)
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def rhs_function(x):
         return np.matmul(lhs_cst, x)
 
     lhs_inputset = [np.random.randint(minimum, maximum, size=lhs_shape) for i in range(100)]
     rhs_inputset = [np.random.randint(minimum, maximum, size=rhs_shape) for i in range(100)]
 
-    lhs_operator_circuit = lhs_operator.compile(lhs_inputset)
-    rhs_operator_circuit = rhs_operator.compile(rhs_inputset)
-    lhs_function_circuit = lhs_function.compile(lhs_inputset)
-    rhs_function_circuit = rhs_function.compile(rhs_inputset)
+    lhs_operator_circuit = lhs_operator.compile(lhs_inputset, configuration)
+    rhs_operator_circuit = rhs_operator.compile(rhs_inputset, configuration)
+    lhs_function_circuit = lhs_function.compile(lhs_inputset, configuration)
+    rhs_function_circuit = rhs_function.compile(rhs_inputset, configuration)
 
     lhs_sample = np.random.randint(minimum, maximum, size=lhs_shape, dtype=np.uint8)
     rhs_sample = np.random.randint(minimum, maximum, size=rhs_shape, dtype=np.uint8)

@@ -39,8 +39,8 @@ def test_graph_maximum_integer_bit_width(function, inputset, expected_result, he
 
     configuration = helpers.configuration()
 
-    compiler = cnp.Compiler(function, {"x": "encrypted"}, configuration=configuration)
-    graph = compiler.trace(inputset)
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    graph = compiler.trace(inputset, configuration)
 
     print(graph.format())
 

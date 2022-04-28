@@ -57,12 +57,12 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
     else:
         bias = None
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def function(x):
         return connx.conv(x, weight, bias, strides=strides, dilations=dilations)
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
-    circuit = function.compile(inputset)
+    circuit = function.compile(inputset, configuration)
 
     sample = np.random.randint(0, 4, size=input_shape, dtype=np.uint8)
     helpers.check_execution(circuit, function, sample)
@@ -373,7 +373,7 @@ def test_bad_conv_compilation(
     else:
         bias = None
 
-    @cnp.compiler({"x": "encrypted"}, configuration=configuration)
+    @cnp.compiler({"x": "encrypted"})
     def function(x):
         return connx.conv(
             x,
@@ -389,7 +389,7 @@ def test_bad_conv_compilation(
 
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     with pytest.raises(expected_error) as excinfo:
-        function.compile(inputset)
+        function.compile(inputset, configuration)
 
     assert str(excinfo.value) == expected_message
 

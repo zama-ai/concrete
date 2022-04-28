@@ -389,10 +389,10 @@ def test_graph_converter_bad_convert(
     """
 
     configuration = helpers.configuration()
-    compiler = cnp.Compiler(function, encryption_statuses, configuration)
+    compiler = cnp.Compiler(function, encryption_statuses)
 
     with pytest.raises(expected_error) as excinfo:
-        compiler.compile(inputset)
+        compiler.compile(inputset, configuration)
 
     helpers.check_str(expected_message, str(excinfo.value))
 

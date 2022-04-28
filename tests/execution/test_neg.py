@@ -27,18 +27,18 @@ def test_neg(parameters, helpers):
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
 
-    @cnp.compiler(parameter_encryption_statuses, configuration=configuration)
+    @cnp.compiler(parameter_encryption_statuses)
     def operator(x):
         return -x
 
-    @cnp.compiler(parameter_encryption_statuses, configuration=configuration)
+    @cnp.compiler(parameter_encryption_statuses)
     def function(x):
         return np.negative(x)
 
     inputset = helpers.generate_inputset(parameters)
 
-    operator_circuit = operator.compile(inputset)
-    function_circuit = function.compile(inputset)
+    operator_circuit = operator.compile(inputset, configuration)
+    function_circuit = function.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
 

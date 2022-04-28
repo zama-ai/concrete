@@ -166,10 +166,10 @@ def test_direct_table_lookup(bits, function, helpers):
     # scalar
     # ------
 
-    compiler = cnp.Compiler(function, {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
 
     inputset = range(2 ** bits)
-    circuit = compiler.compile(inputset)
+    circuit = compiler.compile(inputset, configuration)
 
     sample = int(np.random.randint(0, 2 ** bits))
     helpers.check_execution(circuit, function, sample, retries=10)
@@ -177,10 +177,10 @@ def test_direct_table_lookup(bits, function, helpers):
     # tensor
     # ------
 
-    compiler = cnp.Compiler(function, {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2 ** bits, size=(3, 2), dtype=np.uint8) for _ in range(100)]
-    circuit = compiler.compile(inputset)
+    circuit = compiler.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2 ** bits, size=(3, 2), dtype=np.uint8)
     helpers.check_execution(circuit, function, sample, retries=10)
@@ -207,10 +207,10 @@ def test_direct_multi_table_lookup(helpers):
     def function(x):
         return table[x]
 
-    compiler = cnp.Compiler(function, {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2 ** 2, size=(3, 2), dtype=np.uint8) for _ in range(100)]
-    circuit = compiler.compile(inputset)
+    circuit = compiler.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2 ** 2, size=(3, 2), dtype=np.uint8)
     helpers.check_execution(circuit, function, sample, retries=10)
@@ -277,22 +277,22 @@ def test_bad_direct_table_lookup(helpers):
     # compilation with float value
     # ----------------------------
 
-    compiler = cnp.Compiler(random_table_lookup_3b, {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(random_table_lookup_3b, {"x": "encrypted"})
 
     inputset = [1.5]
     with pytest.raises(ValueError) as excinfo:
-        compiler.compile(inputset)
+        compiler.compile(inputset, configuration)
 
     assert str(excinfo.value) == "LookupTable cannot be looked up with EncryptedScalar<float64>"
 
     # compilation with invalid shape
     # ------------------------------
 
-    compiler = cnp.Compiler(lambda x: table[x], {"x": "encrypted"}, configuration)
+    compiler = cnp.Compiler(lambda x: table[x], {"x": "encrypted"})
 
     inputset = [10, 5, 6, 2]
     with pytest.raises(ValueError) as excinfo:
-        compiler.compile(inputset)
+        compiler.compile(inputset, configuration)
 
     assert str(excinfo.value) == (
         "LookupTable of shape (3, 2) cannot be looked up with EncryptedScalar<uint4>"

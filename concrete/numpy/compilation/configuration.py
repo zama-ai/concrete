@@ -13,31 +13,63 @@ class Configuration:
     Configuration class, to allow the compilation process to be customized.
     """
 
+    verbose: bool
+    show_graph: bool
+    show_mlir: bool
     dump_artifacts_on_unexpected_failures: bool
     enable_unsafe_features: bool
+    virtual: bool
     use_insecure_key_cache: bool
     loop_parallelize: bool
     dataflow_parallelize: bool
     auto_parallelize: bool
 
+    def _validate(self):
+        """
+        Validate configuration.
+        """
+
+        if not self.enable_unsafe_features:
+
+            if self.use_insecure_key_cache:
+                raise RuntimeError(
+                    "Insecure key cache cannot be used without enabling unsafe features"
+                )
+
+            if self.virtual:
+                raise RuntimeError(
+                    "Virtual compilation is not allowed without enabling unsafe features"
+                )
+
+    # pylint: disable=too-many-arguments
+
     def __init__(
         self,
+        verbose: bool = False,
+        show_graph: bool = False,
+        show_mlir: bool = False,
         dump_artifacts_on_unexpected_failures: bool = True,
         enable_unsafe_features: bool = False,
+        virtual: bool = False,
         use_insecure_key_cache: bool = False,
         loop_parallelize: bool = True,
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
     ):
+        self.verbose = verbose
+        self.show_graph = show_graph
+        self.show_mlir = show_mlir
         self.dump_artifacts_on_unexpected_failures = dump_artifacts_on_unexpected_failures
         self.enable_unsafe_features = enable_unsafe_features
+        self.virtual = virtual
         self.use_insecure_key_cache = use_insecure_key_cache
         self.loop_parallelize = loop_parallelize
         self.dataflow_parallelize = dataflow_parallelize
         self.auto_parallelize = auto_parallelize
 
-        if not enable_unsafe_features and use_insecure_key_cache:
-            raise RuntimeError("Insecure key cache cannot be used without enabling unsafe features")
+        self._validate()
+
+    # pylint: enable=too-many-arguments
 
     @staticmethod
     def insecure_key_cache_location() -> Optional[str]:
@@ -79,5 +111,9 @@ class Configuration:
                 )
 
             setattr(result, name, value)
+
+        # pylint: disable=protected-access
+        result._validate()
+        # pylint: enable=protected-access
 
         return result

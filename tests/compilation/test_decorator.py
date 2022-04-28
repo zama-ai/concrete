@@ -12,14 +12,14 @@ def test_call_compile(helpers):
 
     configuration = helpers.configuration()
 
-    @compiler({"x": "encrypted"}, configuration=configuration)
+    @compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
     for i in range(10):
         function(i)
 
-    circuit = function.compile()
+    circuit = function.compile(configuration=configuration)
 
     sample = 5
     helpers.check_execution(circuit, function, sample)
@@ -33,12 +33,12 @@ def test_compiler_verbose_trace(helpers, capsys):
     configuration = helpers.configuration()
     artifacts = DebugArtifacts()
 
-    @compiler({"x": "encrypted"}, configuration=configuration, artifacts=artifacts)
+    @compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
     inputset = range(10)
-    function.trace(inputset, show_graph=True)
+    function.trace(inputset, configuration, artifacts, show_graph=True)
 
     captured = capsys.readouterr()
     assert captured.out.strip() == (
@@ -61,12 +61,12 @@ def test_compiler_verbose_compile(helpers, capsys):
     configuration = helpers.configuration()
     artifacts = DebugArtifacts()
 
-    @compiler({"x": "encrypted"}, configuration=configuration, artifacts=artifacts)
+    @compiler({"x": "encrypted"})
     def function(x):
         return x + 42
 
     inputset = range(10)
-    function.compile(inputset, show_graph=True, show_mlir=True)
+    function.compile(inputset, configuration, artifacts, show_graph=True, show_mlir=True)
 
     captured = capsys.readouterr()
     assert captured.out.strip() == (
