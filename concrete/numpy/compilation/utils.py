@@ -9,10 +9,10 @@ import networkx as nx
 
 from ..dtypes import Float, Integer
 from ..representation import Graph, Node, Operation
-from .artifacts import CompilationArtifacts
+from .artifacts import DebugArtifacts
 
 
-def fuse(graph: Graph, artifacts: Optional[CompilationArtifacts] = None):
+def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
     """
     Fuse appropriate subgraphs in a graph to a single Operation.Generic node.
 
@@ -20,7 +20,7 @@ def fuse(graph: Graph, artifacts: Optional[CompilationArtifacts] = None):
         graph (Graph):
             graph to search and update
 
-        artifacts (Optional[CompilationArtifacts], default = None):
+        artifacts (Optional[DebugArtifacts], default = None):
             compilation artifacts to store information about the fusing process
     """
 

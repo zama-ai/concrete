@@ -14,7 +14,7 @@ from ..mlir import GraphConverter
 from ..representation import Graph
 from ..tracing import Tracer
 from ..values import Value
-from .artifacts import CompilationArtifacts
+from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .configuration import Configuration
 from .utils import fuse
@@ -39,7 +39,7 @@ class Compiler:
     parameter_encryption_statuses: Dict[str, EncryptionStatus]
 
     configuration: Configuration
-    artifacts: CompilationArtifacts
+    artifacts: DebugArtifacts
 
     inputset: List[Any]
     graph: Optional[Graph]
@@ -49,7 +49,7 @@ class Compiler:
         function: Callable,
         parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]],
         configuration: Optional[Configuration] = None,
-        artifacts: Optional[CompilationArtifacts] = None,
+        artifacts: Optional[DebugArtifacts] = None,
     ):
         signature = inspect.signature(function)
 
@@ -85,7 +85,7 @@ class Compiler:
         self.configuration = (
             configuration if configuration is not None else Configuration()
         )
-        self.artifacts = artifacts if artifacts is not None else CompilationArtifacts()
+        self.artifacts = artifacts if artifacts is not None else DebugArtifacts()
 
         self.inputset = []
         self.graph = None

@@ -1,5 +1,5 @@
 """
-Declaration of `CompilationArtifacts` class.
+Declaration of `DebugArtifacts` class.
 """
 
 import inspect
@@ -16,9 +16,9 @@ from ..representation import Graph, Node
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
 
 
-class CompilationArtifacts:
+class DebugArtifacts:
     """
-    CompilationArtifacts class, to export information about the compilation process.
+    DebugArtifacts class, to export information about the compilation process.
     """
 
     output_directory: Path

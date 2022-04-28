@@ -2,7 +2,7 @@
 Tests of `compiler` decorator.
 """
 
-from concrete.numpy.compilation import CompilationArtifacts, compiler
+from concrete.numpy.compilation import DebugArtifacts, compiler
 
 
 def test_call_compile(helpers):
@@ -31,7 +31,7 @@ def test_compiler_verbose_trace(helpers, capsys):
     """
 
     configuration = helpers.configuration()
-    artifacts = CompilationArtifacts()
+    artifacts = DebugArtifacts()
 
     @compiler({"x": "encrypted"}, configuration=configuration, artifacts=artifacts)
     def function(x):
@@ -59,7 +59,7 @@ def test_compiler_verbose_compile(helpers, capsys):
     """
 
     configuration = helpers.configuration()
-    artifacts = CompilationArtifacts()
+    artifacts = DebugArtifacts()
 
     @compiler({"x": "encrypted"}, configuration=configuration, artifacts=artifacts)
     def function(x):

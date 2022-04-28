@@ -119,7 +119,7 @@ import concrete.numpy as cnp
 import numpy as np
 import pathlib
 
-artifacts = cnp.CompilationArtifacts("/tmp/custom/export/path")
+artifacts = cnp.DebugArtifacts("/tmp/custom/export/path")
 
 @cnp.compiler({"x": "encrypted"}, artifacts=artifacts)
 def f(x):

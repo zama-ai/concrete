@@ -1,23 +1,23 @@
 """
-Tests of `CompilationArtifacts` class.
+Tests of `DebugArtifacts` class.
 """
 
 import tempfile
 from pathlib import Path
 
-from concrete.numpy.compilation import CompilationArtifacts, compiler
+from concrete.numpy.compilation import DebugArtifacts, compiler
 
 
 def test_artifacts_export(helpers):
     """
-    Test `export` method of `Compilation` class.
+    Test `export` method of `DebugArtifacts` class.
     """
 
     with tempfile.TemporaryDirectory() as path:
         tmpdir = Path(path)
 
         configuration = helpers.configuration()
-        artifacts = CompilationArtifacts(tmpdir)
+        artifacts = DebugArtifacts(tmpdir)
 
         @compiler({"x": "encrypted"}, configuration=configuration, artifacts=artifacts)
         def f(x):

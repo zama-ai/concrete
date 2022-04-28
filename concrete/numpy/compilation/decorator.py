@@ -5,7 +5,7 @@ Declaration of `compiler` decorator.
 from typing import Any, Callable, Iterable, Mapping, Optional, Tuple, Union
 
 from ..representation import Graph
-from .artifacts import CompilationArtifacts
+from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .compiler import Compiler, EncryptionStatus
 from .configuration import Configuration
@@ -14,7 +14,7 @@ from .configuration import Configuration
 def compiler(
     parameters: Mapping[str, EncryptionStatus],
     configuration: Optional[Configuration] = None,
-    artifacts: Optional[CompilationArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
 ):
     """
     Provide an easy interface for compilation.
@@ -26,7 +26,7 @@ def compiler(
         configuration(Optional[Configuration], default = None):
             configuration to use for compilation
 
-        artifacts (Optional[CompilationArtifacts], default = None):
+        artifacts (Optional[DebugArtifacts], default = None):
             artifacts to store information about compilation
     """
 
