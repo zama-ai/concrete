@@ -34,3 +34,30 @@ class ClientParameters(WrapperCpp):
                 f"client_parameters must be of type _ClientParameters, not {type(client_parameters)}"
             )
         super().__init__(client_parameters)
+
+    def serialize(self) -> bytes:
+        """Serialize the ClientParameters.
+
+        Returns:
+            bytes: serialized object
+        """
+        return self.cpp().serialize()
+
+    @staticmethod
+    def unserialize(serialized_params: bytes) -> "ClientParameters":
+        """Unserialize ClientParameters from bytes of serialized_params.
+
+        Args:
+            serialized_params (bytes): previously serialized ClientParameters
+
+        Raises:
+            TypeError: if serialized_params is not of type bytes
+
+        Returns:
+            ClientParameters: unserialized object
+        """
+        if not isinstance(serialized_params, bytes):
+            raise TypeError(
+                f"serialized_params must be of type bytes, not {type(serialized_params)}"
+            )
+        return ClientParameters.wrap(_ClientParameters.unserialize(serialized_params))

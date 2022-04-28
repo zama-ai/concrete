@@ -207,6 +207,11 @@ static inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
   return OS << llvm::formatv("{0:2}", toJSON(cp));
 }
 
+static inline llvm::raw_ostream &operator<<(llvm::raw_string_ostream &OS,
+                                            ClientParameters cp) {
+  return OS << llvm::formatv("{0:2}", toJSON(cp));
+}
+
 } // namespace clientlib
 } // namespace concretelang
 

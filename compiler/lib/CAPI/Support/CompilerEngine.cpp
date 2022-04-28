@@ -179,6 +179,23 @@ publicResultSerialize(concretelang::clientlib::PublicResult &publicResult) {
   return buffer.str();
 }
 
+MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
+clientParametersUnserialize(const std::string &json) {
+  GET_OR_THROW_LLVM_EXPECTED(
+      clientParams,
+      llvm::json::parse<mlir::concretelang::ClientParameters>(json));
+  return clientParams.get();
+}
+
+MLIR_CAPI_EXPORTED std::string
+clientParametersSerialize(mlir::concretelang::ClientParameters &params) {
+  llvm::json::Value value(params);
+  std::string jsonParams;
+  llvm::raw_string_ostream buffer(jsonParams);
+  buffer << value;
+  return jsonParams;
+}
+
 void terminateParallelization() {
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   _dfr_terminate();

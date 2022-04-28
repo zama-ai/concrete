@@ -99,6 +99,12 @@ decrypt_result(concretelang::clientlib::KeySet &keySet,
 
 // Serialization ////////////////////////////////////////////////////////////
 
+MLIR_CAPI_EXPORTED mlir::concretelang::ClientParameters
+clientParametersUnserialize(const std::string &json);
+
+MLIR_CAPI_EXPORTED std::string
+clientParametersSerialize(mlir::concretelang::ClientParameters &params);
+
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicArguments>
 publicArgumentsUnserialize(
     mlir::concretelang::ClientParameters &clientParameters,

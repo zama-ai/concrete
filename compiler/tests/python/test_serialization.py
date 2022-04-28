@@ -7,6 +7,7 @@ from concrete.compiler import (
     CompilationOptions,
     PublicArguments,
 )
+from concrete.compiler.client_parameters import ClientParameters
 from concrete.compiler.public_result import PublicResult
 
 
@@ -33,6 +34,8 @@ def run_with_serialization(
     Perform required loading, encryption, execution, and decryption."""
     # Client
     client_parameters = engine.load_client_parameters(compilation_result)
+    serialized_client_parameters = client_parameters.serialize()
+    client_parameters = ClientParameters.unserialize(serialized_client_parameters)
     key_set = ClientSupport.key_set(client_parameters, keyset_cache)
     public_arguments = ClientSupport.encrypt_arguments(client_parameters, key_set, args)
     public_arguments_buffer = public_arguments.serialize()
