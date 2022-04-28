@@ -16,11 +16,7 @@ statrs = "0.15.0"
 approx = "0.5"
 pretty_assertions = "1.2.1"
 
-[build-dependencies]
-cbindgen = "0.23.0"
-
 [lib]
 crate-type= [
-    "staticlib",    # concretecompiler
-    "lib",          # rust
+    "lib",       # rust
 ]

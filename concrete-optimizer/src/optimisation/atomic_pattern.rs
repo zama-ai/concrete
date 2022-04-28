@@ -28,7 +28,6 @@ const PARETO_CUTS: bool = true; // 75ms
 const CROSS_PARETO_CUTS: bool = PARETO_CUTS && true; // 70ms
 
 #[derive(Debug, Clone, Copy)]
-#[repr(C)]
 pub struct Solution {
     pub input_lwe_dimension: u64,              //n_big
     pub internal_ks_output_lwe_dimension: u64, //n_small
