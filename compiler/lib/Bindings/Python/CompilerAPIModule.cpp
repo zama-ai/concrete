@@ -48,9 +48,19 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                                       bool b) { options.autoParallelize = b; })
       .def("set_loop_parallelize", [](CompilationOptions &options,
                                       bool b) { options.loopParallelize = b; })
-      .def("set_dataflow_parallelize", [](CompilationOptions &options, bool b) {
-        options.dataflowParallelize = b;
-      });
+      .def("set_dataflow_parallelize",
+           [](CompilationOptions &options, bool b) {
+             options.dataflowParallelize = b;
+           })
+      .def("set_p_error",
+           [](CompilationOptions &options, double p_error) {
+             options.optimizerConfig.p_error = p_error;
+           })
+      .def("set_display_optimizer_choice",
+           [](CompilationOptions &options, bool display) {
+             options.optimizerConfig.display = display;
+           });
+  ;
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(
       m, "JITCompilationResult");

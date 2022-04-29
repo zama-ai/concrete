@@ -49,15 +49,17 @@ struct CompilationOptions {
 
   llvm::Optional<std::string> clientParametersFuncName;
 
+  optimizer::Config optimizerConfig;
+
   CompilationOptions()
       : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false),
-        dataflowParallelize(false), clientParametersFuncName(llvm::None){};
+        dataflowParallelize(false), clientParametersFuncName(llvm::None),
+        optimizerConfig(optimizer::DEFAULT_CONFIG){};
 
-  CompilationOptions(std::string funcname)
-      : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
-        autoParallelize(false), loopParallelize(false),
-        dataflowParallelize(false), clientParametersFuncName(funcname){};
+  CompilationOptions(std::string funcname) : CompilationOptions() {
+    clientParametersFuncName = funcname;
+  }
 };
 
 class CompilerEngine {
@@ -180,10 +182,9 @@ public:
   };
 
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
-      : overrideMaxEintPrecision(), overrideMaxMANP(),
-        clientParametersFuncName(), verifyDiagnostics(false),
-        autoParallelize(false), loopParallelize(false),
-        dataflowParallelize(false), generateClientParameters(false),
+      : overrideMaxEintPrecision(), overrideMaxMANP(), compilerOptions(),
+        generateClientParameters(
+            compilerOptions.clientParametersFuncName.hasValue()),
         enablePass([](mlir::Pass *pass) { return true; }),
         compilationContext(compilationContext) {}
 
@@ -210,48 +211,26 @@ public:
           std::string runtimeLibraryPath = "");
 
   void setCompilationOptions(CompilationOptions &options) {
+    compilerOptions = options;
     if (options.v0FHEConstraints.hasValue()) {
       setFHEConstraints(*options.v0FHEConstraints);
     }
 
-    setVerifyDiagnostics(options.verifyDiagnostics);
-
-    setAutoParallelize(options.autoParallelize);
-    setLoopParallelize(options.loopParallelize);
-    setDataflowParallelize(options.dataflowParallelize);
-
     if (options.clientParametersFuncName.hasValue()) {
       setGenerateClientParameters(true);
-      setClientParametersFuncName(*options.clientParametersFuncName);
-    }
-
-    if (options.fhelinalgTileSizes.hasValue()) {
-      setFHELinalgTileSizes(*options.fhelinalgTileSizes);
     }
   }
 
   void setFHEConstraints(const mlir::concretelang::V0FHEConstraint &c);
   void setMaxEintPrecision(size_t v);
   void setMaxMANP(size_t v);
-  void setVerifyDiagnostics(bool v);
-  void setAutoParallelize(bool v);
-  void setLoopParallelize(bool v);
-  void setDataflowParallelize(bool v);
   void setGenerateClientParameters(bool v);
-  void setClientParametersFuncName(const llvm::StringRef &name);
-  void setFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes);
   void setEnablePass(std::function<bool(mlir::Pass *)> enablePass);
 
 protected:
   llvm::Optional<size_t> overrideMaxEintPrecision;
   llvm::Optional<size_t> overrideMaxMANP;
-  llvm::Optional<std::string> clientParametersFuncName;
-  llvm::Optional<std::vector<int64_t>> fhelinalgTileSizes;
-
-  bool verifyDiagnostics;
-  bool autoParallelize;
-  bool loopParallelize;
-  bool dataflowParallelize;
+  CompilationOptions compilerOptions;
   bool generateClientParameters;
   std::function<bool(mlir::Pass *)> enablePass;
 

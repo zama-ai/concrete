@@ -120,3 +120,34 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(funcname, str):
             raise TypeError("can't set the option to a non-str value")
         self.cpp().set_funcname(funcname)
+
+    def set_p_error(self, p_error: float):
+        """Set global error probability for each pbs.
+
+        Args:
+            p_error (float): probability of error for each lut
+
+        Raises:
+            TypeError: if the value to set is not float
+            ValueError: if the value to set is not in interval ]0; 1[
+        """
+        if not isinstance(p_error, float):
+            raise TypeError("can't set p_error to a non-float value")
+        if p_error in (0.0, 1.0):
+            raise ValueError("p_error cannot be 0 or 1")
+        if not 0.0 <= p_error <= 1.0:
+            raise ValueError("p_error should be a probability in ]0; 1[")
+        self.cpp().set_p_error(p_error)
+
+    def set_display_optimizer_choice(self, display: bool):
+        """Set display flag of optimizer choices.
+
+        Args:
+            display (bool): if true the compiler display optimizer choices
+
+        Raises:
+            TypeError: if the value is not a bool
+        """
+        if not isinstance(display, bool):
+            raise TypeError("display should be a bool")
+        self.cpp().set_display_optimizer_choice(display)

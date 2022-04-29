@@ -13,7 +13,17 @@
 namespace mlir {
 namespace concretelang {
 
-llvm::Optional<V0Parameter> getV0Parameter(V0FHEConstraint constraint);
+namespace optimizer {
+constexpr double P_ERROR_4_SIGMA = 1.0 - 0.999936657516;
+struct Config {
+  double p_error;
+  bool display;
+};
+constexpr Config DEFAULT_CONFIG = {P_ERROR_4_SIGMA, false};
+} // namespace optimizer
+
+llvm::Optional<V0Parameter> getV0Parameter(V0FHEConstraint constraint,
+                                           optimizer::Config optimizerConfig);
 
 } // namespace concretelang
 } // namespace mlir

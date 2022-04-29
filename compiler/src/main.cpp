@@ -36,6 +36,7 @@
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/LLVMEmitFile.h"
 #include "concretelang/Support/Pipeline.h"
+#include "concretelang/Support/V0Parameters.h"
 #include "concretelang/Support/logging.h"
 #include "mlir/IR/BuiltinOps.h"
 
@@ -178,41 +179,22 @@ llvm::cl::opt<llvm::Optional<size_t>, false, OptionalSizeTParser> assumeMaxMANP(
     llvm::cl::desc(
         "Assume a maximum for the Minimum Arithmetic Noise Padding"));
 
+llvm::cl::opt<double> pbsErrorProbability(
+    "pbs-error-probability",
+    llvm::cl::desc("Change the default probability of error for all pbs"),
+    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.p_error));
+
+llvm::cl::opt<bool> displayOptimizerChoice(
+    "display-optimizer-choice",
+    llvm::cl::desc("Display the information returned by the optimizer"),
+    llvm::cl::init(false));
+
 llvm::cl::list<int64_t> fhelinalgTileSizes(
     "fhelinalg-tile-sizes",
     llvm::cl::desc(
         "Force tiling of FHELinalg operation with the given tile sizes"),
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 } // namespace cmdline
-
-llvm::Expected<mlir::concretelang::V0FHEContext> buildFHEContext(
-    llvm::Optional<mlir::concretelang::V0FHEConstraint> autoFHEConstraints,
-    llvm::Optional<size_t> overrideMaxEintPrecision,
-    llvm::Optional<size_t> overrideMaxMANP) {
-  if (!autoFHEConstraints.hasValue() &&
-      (!overrideMaxMANP.hasValue() || !overrideMaxEintPrecision.hasValue())) {
-    return mlir::concretelang::StreamStringError(
-        "Maximum encrypted integer precision and maximum for the Minimal"
-        "Arithmetic Noise Passing are required, but were neither specified"
-        "explicitly nor determined automatically");
-  }
-
-  mlir::concretelang::V0FHEConstraint fheConstraints{
-      overrideMaxMANP.hasValue() ? overrideMaxMANP.getValue()
-                                 : autoFHEConstraints.getValue().norm2,
-      overrideMaxEintPrecision.hasValue() ? overrideMaxEintPrecision.getValue()
-                                          : autoFHEConstraints.getValue().p};
-
-  auto parameter = getV0Parameter(fheConstraints);
-
-  if (!parameter) {
-    return mlir::concretelang::StreamStringError()
-           << "Could not determine V0 parameters for 2-norm of "
-           << fheConstraints.norm2 << " and p of " << fheConstraints.p;
-  }
-
-  return mlir::concretelang::V0FHEContext{fheConstraints, parameter.getValue()};
-}
 
 namespace llvm {
 // This needs to be wrapped into the llvm namespace for proper
@@ -230,6 +212,36 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &os,
   return os;
 }
 } // namespace llvm
+
+mlir::concretelang::CompilationOptions cmdlineCompilationOptions() {
+  mlir::concretelang::CompilationOptions options;
+
+  options.verifyDiagnostics = cmdline::verifyDiagnostics;
+  options.autoParallelize = cmdline::autoParallelize;
+  options.loopParallelize = cmdline::loopParallelize;
+  options.dataflowParallelize = cmdline::dataflowParallelize;
+
+  if (cmdline::assumeMaxEintPrecision.hasValue() &&
+      cmdline::assumeMaxMANP.hasValue()) {
+    options.v0FHEConstraints = mlir::concretelang::V0FHEConstraint{
+        cmdline::assumeMaxMANP.getValue().getValue(),
+        cmdline::assumeMaxEintPrecision.getValue().getValue(),
+    };
+  }
+
+  if (!cmdline::funcName.empty()) {
+    options.clientParametersFuncName = cmdline::funcName;
+  }
+
+  // Convert tile sizes to `Optional`
+  if (!cmdline::fhelinalgTileSizes.empty())
+    options.fhelinalgTileSizes.emplace(cmdline::fhelinalgTileSizes);
+
+  options.optimizerConfig.p_error = cmdline::pbsErrorProbability;
+  options.optimizerConfig.display = cmdline::displayOptimizerChoice;
+
+  return options;
+}
 
 // Process a single source buffer
 //
@@ -259,36 +271,14 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &os,
 // Compilation output is written to the stream specified by `os`.
 mlir::LogicalResult processInputBuffer(
     std::unique_ptr<llvm::MemoryBuffer> buffer, std::string sourceFileName,
-    enum Action action, const std::string &funcName,
+    mlir::concretelang::CompilationOptions &options, enum Action action,
     llvm::ArrayRef<uint64_t> jitArgs,
-    llvm::Optional<size_t> overrideMaxEintPrecision,
-    llvm::Optional<size_t> overrideMaxMANP, bool verifyDiagnostics,
-    llvm::Optional<llvm::ArrayRef<int64_t>> fhelinalgTileSizes,
-    bool autoParallelize, bool loopParallelize, bool dataflowParallelize,
     llvm::Optional<clientlib::KeySetCache> keySetCache, llvm::raw_ostream &os,
     std::shared_ptr<mlir::concretelang::CompilerEngine::Library> outputLib) {
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
 
-  mlir::concretelang::CompilationOptions options;
-
-  options.verifyDiagnostics = verifyDiagnostics;
-  options.autoParallelize = autoParallelize;
-  options.loopParallelize = loopParallelize;
-  options.dataflowParallelize = dataflowParallelize;
-
-  if (overrideMaxEintPrecision.hasValue() && overrideMaxMANP.hasValue())
-    options.v0FHEConstraints = {
-        overrideMaxMANP.hasValue(),
-        overrideMaxEintPrecision.hasValue(),
-    };
-
-  if (!funcName.empty())
-    options.clientParametersFuncName = funcName;
-
-  if (fhelinalgTileSizes.hasValue())
-    options.fhelinalgTileSizes = *fhelinalgTileSizes;
-
+  std::string funcName = options.clientParametersFuncName.getValueOr("");
   if (action == Action::JIT_INVOKE) {
     auto lambdaOrErr =
         mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::
@@ -373,7 +363,7 @@ mlir::LogicalResult processInputBuffer(
       retOrErr->llvmModule->setModuleIdentifier(sourceFileName);
     }
 
-    if (verifyDiagnostics) {
+    if (options.verifyDiagnostics) {
       return mlir::success();
     } else if (action == Action::DUMP_LLVM_IR ||
                action == Action::DUMP_OPTIMIZED_LLVM_IR) {
@@ -412,11 +402,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
     }
   }
 
-  // Convert tile sizes to `Optional`
-  llvm::Optional<llvm::ArrayRef<int64_t>> fhelinalgTileSizes;
-
-  if (!cmdline::fhelinalgTileSizes.empty())
-    fhelinalgTileSizes.emplace(cmdline::fhelinalgTileSizes);
+  auto compilerOptions = cmdlineCompilationOptions();
 
   llvm::Optional<clientlib::KeySetCache> jitKeySetCache;
   if (!cmdline::jitKeySetCachePath.empty()) {
@@ -454,12 +440,8 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
     auto process = [&](std::unique_ptr<llvm::MemoryBuffer> inputBuffer,
                        llvm::raw_ostream &os) {
       return processInputBuffer(
-          std::move(inputBuffer), fileName, cmdline::action, cmdline::funcName,
-          cmdline::jitArgs, cmdline::assumeMaxEintPrecision,
-          cmdline::assumeMaxMANP, cmdline::verifyDiagnostics,
-          fhelinalgTileSizes, cmdline::autoParallelize,
-          cmdline::loopParallelize, cmdline::dataflowParallelize,
-          jitKeySetCache, os, outputLib);
+          std::move(inputBuffer), fileName, compilerOptions, cmdline::action,
+          cmdline::jitArgs, jitKeySetCache, os, outputLib);
     };
     auto &os = output->os();
     auto res = mlir::failure();

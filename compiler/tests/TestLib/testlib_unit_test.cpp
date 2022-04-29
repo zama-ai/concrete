@@ -36,7 +36,8 @@ compile(std::string outputLib, std::string source,
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
   mlir::concretelang::CompilerEngine ce{ccx};
-  ce.setClientParametersFuncName(funcname);
+  mlir::concretelang::CompilationOptions options(funcname);
+  ce.setCompilationOptions(options);
   auto result = ce.compile(sources, outputLib);
   if (!result) {
     llvm::errs() << result.takeError();

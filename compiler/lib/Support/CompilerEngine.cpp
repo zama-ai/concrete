@@ -96,18 +96,6 @@ void CompilerEngine::setFHEConstraints(
   this->overrideMaxMANP = c.norm2;
 }
 
-void CompilerEngine::setVerifyDiagnostics(bool v) {
-  this->verifyDiagnostics = v;
-}
-
-void CompilerEngine::setAutoParallelize(bool v) { this->autoParallelize = v; }
-
-void CompilerEngine::setLoopParallelize(bool v) { this->loopParallelize = v; }
-
-void CompilerEngine::setDataflowParallelize(bool v) {
-  this->dataflowParallelize = v;
-}
-
 void CompilerEngine::setGenerateClientParameters(bool v) {
   this->generateClientParameters = v;
 }
@@ -117,14 +105,6 @@ void CompilerEngine::setMaxEintPrecision(size_t v) {
 }
 
 void CompilerEngine::setMaxMANP(size_t v) { this->overrideMaxMANP = v; }
-
-void CompilerEngine::setClientParametersFuncName(const llvm::StringRef &name) {
-  this->clientParametersFuncName = name.str();
-}
-
-void CompilerEngine::setFHELinalgTileSizes(llvm::ArrayRef<int64_t> sizes) {
-  this->fhelinalgTileSizes = sizes.vec();
-}
 
 void CompilerEngine::setEnablePass(
     std::function<bool(mlir::Pass *)> enablePass) {
@@ -163,7 +143,8 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   if (!fheConstraintOrErr.get().hasValue()) {
     return llvm::Error::success();
   }
-  auto fheParams = getV0Parameter(fheConstraintOrErr.get().getValue());
+  auto fheParams = getV0Parameter(fheConstraintOrErr.get().getValue(),
+                                  this->compilerOptions.optimizerConfig);
 
   if (!fheParams) {
     return StreamStringError()
@@ -202,7 +183,10 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   mlir::OwningModuleRef mlirModuleRef =
       mlir::parseSourceFile<mlir::ModuleOp>(sm, &mlirContext);
 
-  if (this->verifyDiagnostics) {
+  CompilationOptions &options = this->compilerOptions;
+  bool parallelizeLoops =
+      options.autoParallelize || options.dataflowParallelize;
+  if (options.verifyDiagnostics) {
     if (smHandler.verify().failed())
       return StreamStringError("Verification of diagnostics failed");
     else
@@ -224,9 +208,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return std::move(err);
 
   // FHELinalg tiling
-  if (this->fhelinalgTileSizes) {
+  if (options.fhelinalgTileSizes) {
     if (mlir::concretelang::pipeline::markFHELinalgForTiling(
-            mlirContext, module, *this->fhelinalgTileSizes, enablePass)
+            mlirContext, module, *options.fhelinalgTileSizes, enablePass)
             .failed())
       return errorDiag("Marking of FHELinalg operations for tiling failed");
   }
@@ -238,7 +222,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   // Dataflow parallelization
-  if ((this->autoParallelize || this->dataflowParallelize) &&
+  if (parallelizeLoops &&
       mlir::concretelang::pipeline::autopar(mlirContext, module, enablePass)
           .failed()) {
     return StreamStringError("Dataflow parallelization failed");
@@ -267,7 +251,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Generate client parameters if requested
   if (this->generateClientParameters) {
-    if (!this->clientParametersFuncName.hasValue()) {
+    if (!options.clientParametersFuncName.hasValue()) {
       return StreamStringError(
           "Generation of client parameters requested, but no function name "
           "specified");
@@ -278,7 +262,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     }
   }
   // Generate client parameters if requested
-  auto funcName = this->clientParametersFuncName.getValueOr("main");
+  auto funcName = options.clientParametersFuncName.getValueOr("main");
   if (this->generateClientParameters || target == Target::LIBRARY) {
     if (!res.fheContext.hasValue()) {
       // Some tests involve call a to non encrypted functions
@@ -298,8 +282,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Concrete -> BConcrete
   if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
-          mlirContext, module, this->enablePass,
-          this->loopParallelize || this->autoParallelize)
+          mlirContext, module, this->enablePass, parallelizeLoops)
           .failed()) {
     return StreamStringError(
         "Lowering from Concrete to Bufferized Concrete failed");
@@ -321,8 +304,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // MLIR canonical dialects -> LLVM Dialect
   if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(
-          mlirContext, module, enablePass,
-          this->loopParallelize || this->autoParallelize)
+          mlirContext, module, enablePass, parallelizeLoops)
           .failed()) {
     return errorDiag("Failed to lower to LLVM dialect");
   }
