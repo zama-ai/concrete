@@ -43,7 +43,9 @@ public:
   load(std::string funcName, std::string outputLib, uint64_t seed_msb = 0,
        uint64_t seed_lsb = 0,
        std::shared_ptr<KeySetCache> unsecure_cache = nullptr) {
-    std::string jsonPath = ClientParameters::getClientParametersPath(outputLib);
+    std::string jsonPath =
+        mlir::concretelang::CompilerEngine::Library::getClientParametersPath(
+            outputLib);
     OUTCOME_TRY(auto cLambda, ClientLambda::load(funcName, jsonPath));
     OUTCOME_TRY(auto sLambda, ServerLambda::load(funcName, outputLib));
     OUTCOME_TRY(std::shared_ptr<KeySet> keySet,

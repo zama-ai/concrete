@@ -82,7 +82,7 @@ public:
   };
 
   class Library {
-    std::string libraryPath;
+    std::string outputDirPath;
     std::vector<std::string> objectsPath;
     std::vector<mlir::concretelang::ClientParameters> clientParametersList;
     /** Path to the runtime library. Will be linked to the output library if set
@@ -94,9 +94,9 @@ public:
     /** Create a library instance on which you can add compilation results.
      * Then you can emit a library file with the given path.
      * cleanUp at false keeps intermediate .obj files for later use. */
-    Library(std::string libraryPath, std::string runtimeLibraryPath = "",
+    Library(std::string outputDirPath, std::string runtimeLibraryPath = "",
             bool cleanUp = true)
-        : libraryPath(libraryPath), runtimeLibraryPath(runtimeLibraryPath),
+        : outputDirPath(outputDirPath), runtimeLibraryPath(runtimeLibraryPath),
           cleanUp(cleanUp) {}
     /** Add a compilation result to the library */
     llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
@@ -110,21 +110,20 @@ public:
     std::string staticLibraryPath;
 
     /** Returns the path of the shared library */
-    static std::string getSharedLibraryPath(std::string path);
+    static std::string getSharedLibraryPath(std::string outputDirPath);
 
     /** Returns the path of the static library */
-    static std::string getStaticLibraryPath(std::string path);
+    static std::string getStaticLibraryPath(std::string outputDirPath);
 
     /** Returns the path of the static library */
-    static std::string getClientParametersPath(std::string path);
+    static std::string getClientParametersPath(std::string outputDirPath);
 
     // For advanced use
-    const static std::string OBJECT_EXT, CLIENT_PARAMETERS_EXT, LINKER,
-        LINKER_SHARED_OPT, AR, AR_STATIC_OPT, DOT_STATIC_LIB_EXT,
-        DOT_SHARED_LIB_EXT;
+    const static std::string OBJECT_EXT, LINKER, LINKER_SHARED_OPT, AR,
+        AR_STATIC_OPT, DOT_STATIC_LIB_EXT, DOT_SHARED_LIB_EXT;
     void addExtraObjectFilePath(std::string objectFilePath);
     llvm::Expected<std::string>
-    emit(std::string dotExt, std::string linker,
+    emit(std::string path, std::string dotExt, std::string linker,
          llvm::Optional<std::vector<std::string>> extraArgs = {});
     ~Library();
 
@@ -202,15 +201,15 @@ public:
           llvm::Optional<std::shared_ptr<Library>> lib = {});
 
   llvm::Expected<CompilerEngine::Library>
-  compile(std::vector<std::string> inputs, std::string libraryPath,
+  compile(std::vector<std::string> inputs, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
           bool generateCppHeader = true);
 
-  /// Compile and emit artifact to the given libraryPath from an LLVM source
+  /// Compile and emit artifact to the given outputDirPath from an LLVM source
   /// manager.
   llvm::Expected<CompilerEngine::Library>
-  compile(llvm::SourceMgr &sm, std::string libraryPath,
+  compile(llvm::SourceMgr &sm, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
           bool generateCppHeader = true);

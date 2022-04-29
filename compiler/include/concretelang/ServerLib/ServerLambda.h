@@ -28,10 +28,10 @@ using concretelang::clientlib::TensorData;
 class ServerLambda {
 
 public:
-  /// Load the symbol `funcName` of the compilation result located at the path
-  /// `outputLib`.
+  /// Load the symbol `funcName` from the shared lib in the artifacts folder
+  /// located in `outputPath`
   static outcome::checked<ServerLambda, concretelang::error::StringError>
-  load(std::string funcName, std::string outputLib);
+  load(std::string funcName, std::string outputPath);
 
   /// Load the symbol `funcName` of the dynamic loaded library
   static outcome::checked<ServerLambda, concretelang::error::StringError>

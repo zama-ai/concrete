@@ -70,7 +70,7 @@ func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   using MyLambda = clientlib::TypedClientLambda<scalar_out, scalar_in>;
   std::string outputLib = outputLibFromThis(this->test_info_);
   auto compiled = compile(outputLib, source);
-  std::string jsonPath = ClientParameters::getClientParametersPath(outputLib);
+  std::string jsonPath = compiled.getClientParametersPath(outputLib);
   auto maybeLambda = MyLambda::load("main", jsonPath);
   ASSERT_TRUE(maybeLambda.has_value());
   auto lambda = maybeLambda.value();
@@ -344,9 +344,9 @@ func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !
 }
 )";
   std::string outputLib = outputLibFromThis(this->test_info_);
-  namespace extract = call_2t_1s_with_header::client::extract;
+  namespace extract = fhecircuit::client::extract;
   auto compiled = compile(outputLib, source, extract::name);
-  std::string jsonPath = ClientParameters::getClientParametersPath(outputLib);
+  std::string jsonPath = compiled.getClientParametersPath(outputLib);
   auto cLambda_ = extract::load(jsonPath);
   ASSERT_TRUE(cLambda_);
   tensor1_in ta{1, 2, 3};
@@ -366,7 +366,8 @@ func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !
 
   EXPECT_EQ(fileContent(THIS_TEST_DIRECTORY +
                         "/call_2t_1s_with_header-client.h.generated"),
-            fileContent(OUT_DIRECTORY + "/call_2t_1s_with_header-client.h"));
+            fileContent(OUT_DIRECTORY +
+                        "/call_2t_1s_with_header/fhecircuit-client.h"));
 }
 
 TEST(DISABLED_CompiledModule, call_2s_1s_lookup_table) {

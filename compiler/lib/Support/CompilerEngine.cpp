@@ -5,7 +5,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <regex>
 #include <stdio.h>
 #include <string>
 
@@ -372,11 +371,12 @@ CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
 
 llvm::Expected<CompilerEngine::Library>
 CompilerEngine::compile(std::vector<std::string> inputs,
-                        std::string libraryPath, std::string runtimeLibraryPath,
-                        bool generateSharedLib, bool generateStaticLib,
-                        bool generateClientParameters, bool generateCppHeader) {
+                        std::string outputDirPath,
+                        std::string runtimeLibraryPath, bool generateSharedLib,
+                        bool generateStaticLib, bool generateClientParameters,
+                        bool generateCppHeader) {
   using Library = mlir::concretelang::CompilerEngine::Library;
-  auto outputLib = std::make_shared<Library>(libraryPath, runtimeLibraryPath);
+  auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
   for (auto input : inputs) {
     auto compilation = compile(input, target, outputLib);
@@ -395,12 +395,12 @@ CompilerEngine::compile(std::vector<std::string> inputs,
 }
 
 llvm::Expected<CompilerEngine::Library>
-CompilerEngine::compile(llvm::SourceMgr &sm, std::string libraryPath,
+CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
                         bool generateCppHeader) {
   using Library = mlir::concretelang::CompilerEngine::Library;
-  auto outputLib = std::make_shared<Library>(libraryPath, runtimeLibraryPath);
+  auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
   auto target = CompilerEngine::Target::LIBRARY;
 
   auto compilation = compile(sm, target, outputLib);
@@ -419,23 +419,32 @@ CompilerEngine::compile(llvm::SourceMgr &sm, std::string libraryPath,
 }
 
 /** Returns the path of the shared library */
-std::string CompilerEngine::Library::getSharedLibraryPath(std::string path) {
-  return path + DOT_SHARED_LIB_EXT;
+std::string
+CompilerEngine::Library::getSharedLibraryPath(std::string outputDirPath) {
+  llvm::SmallString<0> sharedLibraryPath(outputDirPath);
+  llvm::sys::path::append(sharedLibraryPath, "sharedlib" + DOT_SHARED_LIB_EXT);
+  return sharedLibraryPath.str().str();
 }
 
 /** Returns the path of the static library */
-std::string CompilerEngine::Library::getStaticLibraryPath(std::string path) {
-  return path + DOT_STATIC_LIB_EXT;
+std::string
+CompilerEngine::Library::getStaticLibraryPath(std::string outputDirPath) {
+  llvm::SmallString<0> staticLibraryPath(outputDirPath);
+  llvm::sys::path::append(staticLibraryPath, "staticlib" + DOT_STATIC_LIB_EXT);
+  return staticLibraryPath.str().str();
 }
 
 /** Returns the path of the static library */
-std::string CompilerEngine::Library::getClientParametersPath(std::string path) {
-  return ClientParameters::getClientParametersPath(path);
+std::string
+CompilerEngine::Library::getClientParametersPath(std::string outputDirPath) {
+  llvm::SmallString<0> clientParametersPath(outputDirPath);
+  llvm::sys::path::append(
+      clientParametersPath,
+      ClientParameters::getClientParametersPath("client_parameters"));
+  return clientParametersPath.str().str();
 }
 
 const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
-const std::string CompilerEngine::Library::CLIENT_PARAMETERS_EXT =
-    ".concrete.params.json";
 const std::string CompilerEngine::Library::LINKER = "ld";
 #ifdef __APPLE__
 // We need to tell the linker that some symbols will be missing during linking,
@@ -459,7 +468,7 @@ void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
 
 llvm::Expected<std::string>
 CompilerEngine::Library::emitClientParametersJSON() {
-  auto clientParamsPath = getClientParametersPath(libraryPath);
+  auto clientParamsPath = getClientParametersPath(outputDirPath);
   llvm::json::Value value(clientParametersList);
   std::error_code error;
   llvm::raw_fd_ostream out(clientParamsPath, error);
@@ -502,10 +511,10 @@ static std::string cppArgsType(std::vector<CircuitGate> inputs) {
 }
 
 llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
-  auto libraryName = llvm::sys::path::filename(libraryPath).str();
+  std::string libraryName = "fhecircuit";
   auto headerName = libraryName + "-client.h";
-  auto headerPath = std::regex_replace(
-      libraryPath, std::regex(libraryName + "$"), headerName);
+  llvm::SmallString<0> headerPath(outputDirPath);
+  llvm::sys::path::append(headerPath, headerName);
 
   std::error_code error;
   llvm::raw_fd_ostream out(headerPath, error);
@@ -559,7 +568,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitCppHeader() {
 
   out.close();
 
-  return headerPath;
+  return headerPath.str().str();
 }
 
 llvm::Expected<std::string>
@@ -567,7 +576,7 @@ CompilerEngine::Library::addCompilation(CompilationResult &compilation) {
   llvm::Module *module = compilation.llvmModule.get();
   auto sourceName = module->getSourceFileName();
   if (sourceName == "" || sourceName == "LLVMDialectModule") {
-    sourceName = this->libraryPath + ".module-" +
+    sourceName = this->outputDirPath + ".module-" +
                  std::to_string(objectsPath.size()) + ".mlir";
   }
   auto objectPath = sourceName + OBJECT_EXT;
@@ -599,9 +608,9 @@ std::string ensureLibDotExt(std::string path, std::string dotExt) {
 }
 
 llvm::Expected<std::string> CompilerEngine::Library::emit(
-    std::string dotExt, std::string linker,
+    std::string path, std::string dotExt, std::string linker,
     llvm::Optional<std::vector<std::string>> extraArgs) {
-  auto pathDotExt = ensureLibDotExt(libraryPath, dotExt);
+  auto pathDotExt = ensureLibDotExt(path, dotExt);
   auto error = mlir::concretelang::emitLibrary(objectsPath, pathDotExt, linker,
                                                extraArgs);
   if (error) {
@@ -651,7 +660,8 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
     }
 #endif
   }
-  auto path = emit(DOT_SHARED_LIB_EXT, LINKER + LINKER_SHARED_OPT, extraArgs);
+  auto path = emit(getSharedLibraryPath(outputDirPath), DOT_SHARED_LIB_EXT,
+                   LINKER + LINKER_SHARED_OPT, extraArgs);
   if (path) {
     sharedLibraryPath = path.get();
 #ifdef __APPLE__
@@ -680,7 +690,8 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
 }
 
 llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
-  auto path = emit(DOT_STATIC_LIB_EXT, AR + AR_STATIC_OPT);
+  auto path = emit(getStaticLibraryPath(outputDirPath), DOT_STATIC_LIB_EXT,
+                   AR + AR_STATIC_OPT);
   if (path) {
     staticLibraryPath = path.get();
   }
@@ -691,6 +702,8 @@ llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
                                                    bool staticLib,
                                                    bool clientParameters,
                                                    bool cppHeader) {
+  // Create output directory if doesn't exist
+  llvm::sys::fs::create_directory(outputDirPath);
   if (sharedLib) {
     if (auto err = emitShared().takeError()) {
       return err;

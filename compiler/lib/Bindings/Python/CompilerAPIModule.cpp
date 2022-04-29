@@ -96,9 +96,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   pybind11::class_<mlir::concretelang::LibraryCompilationResult>(
       m, "LibraryCompilationResult")
-      .def(pybind11::init([](std::string libraryPath, std::string funcname) {
+      .def(pybind11::init([](std::string outputDirPath, std::string funcname) {
         return mlir::concretelang::LibraryCompilationResult{
-            libraryPath,
+            outputDirPath,
             funcname,
         };
       }));

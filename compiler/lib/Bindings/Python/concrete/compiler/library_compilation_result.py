@@ -33,28 +33,28 @@ class LibraryCompilationResult(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(library_path: str, func_name: str) -> "LibraryCompilationResult":
-        """Build a LibraryCompilationResult at library_path, with func_name as entrypoint.
+    def new(output_dir_path: str, func_name: str) -> "LibraryCompilationResult":
+        """Build a LibraryCompilationResult at output_dir_path, with func_name as entrypoint.
 
         Args:
-            library_path (str): path to the library
+            output_dir_path (str): path to the compilation artifacts
             func_name (str): entrypoint function name
 
         Raises:
-            TypeError: if library_path is not of type str
+            TypeError: if output_dir_path is not of type str
             TypeError: if func_name is not of type str
 
         Returns:
             LibraryCompilationResult
         """
-        if not isinstance(library_path, str):
+        if not isinstance(output_dir_path, str):
             raise TypeError(
-                f"library_path must be of type str, not {type(library_path)}"
+                f"output_dir_path must be of type str, not {type(output_dir_path)}"
             )
         if not isinstance(func_name, str):
             raise TypeError(f"func_name must be of type str, not {type(func_name)}")
         return LibraryCompilationResult.wrap(
-            _LibraryCompilationResult(library_path, func_name)
+            _LibraryCompilationResult(output_dir_path, func_name)
         )
 
     # pylint: enable=arguments-differ

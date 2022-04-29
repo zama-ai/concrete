@@ -7,10 +7,10 @@
 #include <fstream>
 
 #include "boost/outcome.h"
-
 #include "concretelang/ServerLib/DynamicModule.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
+#include <llvm/Support/Path.h>
 
 namespace concretelang {
 namespace serverlib {
@@ -25,17 +25,18 @@ DynamicModule::~DynamicModule() {
 }
 
 outcome::checked<std::shared_ptr<DynamicModule>, StringError>
-DynamicModule::open(std::string libPath) {
+DynamicModule::open(std::string outputPath) {
   std::shared_ptr<DynamicModule> module = std::make_shared<DynamicModule>();
-  OUTCOME_TRYV(module->loadClientParametersJSON(libPath));
-  OUTCOME_TRYV(module->loadSharedLibrary(libPath));
+  OUTCOME_TRYV(module->loadClientParametersJSON(outputPath));
+  OUTCOME_TRYV(module->loadSharedLibrary(outputPath));
   return module;
 }
 
 outcome::checked<void, StringError>
-DynamicModule::loadSharedLibrary(std::string path) {
-  libraryHandle = dlopen(
-      CompilerEngine::Library::getSharedLibraryPath(path).c_str(), RTLD_LAZY);
+DynamicModule::loadSharedLibrary(std::string outputPath) {
+  libraryHandle =
+      dlopen(CompilerEngine::Library::getSharedLibraryPath(outputPath).c_str(),
+             RTLD_LAZY);
   if (!libraryHandle) {
     return StringError("Cannot open shared library ") << dlerror();
   }
@@ -43,8 +44,8 @@ DynamicModule::loadSharedLibrary(std::string path) {
 }
 
 outcome::checked<void, StringError>
-DynamicModule::loadClientParametersJSON(std::string libPath) {
-  auto jsonPath = CompilerEngine::Library::getClientParametersPath(libPath);
+DynamicModule::loadClientParametersJSON(std::string outputPath) {
+  auto jsonPath = CompilerEngine::Library::getClientParametersPath(outputPath);
   OUTCOME_TRY(auto clientParams, ClientParameters::load(jsonPath));
   this->clientParametersList = clientParams;
   return outcome::success();

@@ -62,8 +62,8 @@ ServerLambda::loadFromModule(std::shared_ptr<DynamicModule> module,
 }
 
 outcome::checked<ServerLambda, StringError>
-ServerLambda::load(std::string funcName, std::string outputLib) {
-  OUTCOME_TRY(auto module, DynamicModule::open(outputLib));
+ServerLambda::load(std::string funcName, std::string outputPath) {
+  OUTCOME_TRY(auto module, DynamicModule::open(outputPath));
   return ServerLambda::loadFromModule(module, funcName);
 }
 

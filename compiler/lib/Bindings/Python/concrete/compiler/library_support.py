@@ -25,9 +25,9 @@ from .wrapper import WrapperCpp
 from .utils import lookup_runtime_lib
 
 
-# Default output path for compiled libraries
+# Default output path for compilation artifacts
 DEFAULT_OUTPUT_PATH = os.path.abspath(
-    os.path.join(os.path.curdir, "concrete-compiler_output_lib")
+    os.path.join(os.path.curdir, "concrete-compiler_compilation_artifacts")
 )
 
 
@@ -49,18 +49,18 @@ class LibrarySupport(WrapperCpp):
                 f"{type(library_support)}"
             )
         super().__init__(library_support)
-        self.library_path = DEFAULT_OUTPUT_PATH
+        self.output_dir_path = DEFAULT_OUTPUT_PATH
 
     @property
-    def library_path(self) -> str:
-        """Path where to store compiled libraries."""
-        return self._library_path
+    def output_dir_path(self) -> str:
+        """Path where to store compilation artifacts."""
+        return self._output_dir_path
 
-    @library_path.setter
-    def library_path(self, path: str):
+    @output_dir_path.setter
+    def output_dir_path(self, path: str):
         if not isinstance(path, str):
             raise TypeError(f"path must be of type str, not {type(path)}")
-        self._library_path = path
+        self._output_dir_path = path
 
     @staticmethod
     # pylint: disable=arguments-differ
@@ -75,7 +75,7 @@ class LibrarySupport(WrapperCpp):
         """Build a LibrarySupport.
 
         Args:
-            output_path (str, optional): path where to store compiled libraries.
+            output_path (str, optional): path where to store compilation artifacts.
                 Defaults to DEFAULT_OUTPUT_PATH.
             runtime_library_path (Optional[str], optional): path to the runtime library. Defaults to None.
             generateSharedLib (bool): whether to emit shared library or not. Default to True.
@@ -117,7 +117,7 @@ class LibrarySupport(WrapperCpp):
                 generateCppHeader,
             )
         )
-        library_support.library_path = output_path
+        library_support.output_dir_path = output_path
         return library_support
 
     def compile(
@@ -151,7 +151,7 @@ class LibrarySupport(WrapperCpp):
         )
 
     def reload(self, func_name: str = "main") -> LibraryCompilationResult:
-        """Reload the library compilation result from the library_path.
+        """Reload the library compilation result from the output_dir_path.
 
         Args:
             func_name: entrypoint function name
@@ -161,7 +161,7 @@ class LibrarySupport(WrapperCpp):
         """
         if not isinstance(func_name, str):
             raise TypeError(f"func_name must be of type str, not {type(func_name)}")
-        return LibraryCompilationResult.new(self.library_path, func_name)
+        return LibraryCompilationResult.new(self.output_dir_path, func_name)
 
     def load_client_parameters(
         self, library_compilation_result: LibraryCompilationResult

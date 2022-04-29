@@ -4,7 +4,7 @@
 #include "concretelang/ClientLib/Types.h"
 #include "concretelang/Common/Error.h"
 
-namespace call_2t_1s_with_header {
+namespace fhecircuit {
 namespace client {
 
 namespace extract {
@@ -19,4 +19,4 @@ namespace extract {
 } // namespace extract
 
 } // namespace client
-} // namespace call_2t_1s_with_header
+} // namespace fhecircuit

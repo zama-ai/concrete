@@ -24,8 +24,9 @@ namespace serverlib = ::concretelang::serverlib;
 
 /// LibraryCompilationResult is the result of a compilation to a library.
 struct LibraryCompilationResult {
-  /// The output path where the compilation artifact has been generated.
-  std::string libraryPath;
+  /// The output directory path where the compilation artifacts have been
+  /// generated.
+  std::string outputDirPath;
   std::string funcName;
 };
 
@@ -63,7 +64,7 @@ public:
     }
 
     auto result = std::make_unique<LibraryCompilationResult>();
-    result->libraryPath = outputPath;
+    result->outputDirPath = outputPath;
     result->funcName = *options.clientParametersFuncName;
     return std::move(result);
   }
@@ -73,7 +74,7 @@ public:
   llvm::Expected<serverlib::ServerLambda>
   loadServerLambda(LibraryCompilationResult &result) override {
     auto lambda =
-        serverlib::ServerLambda::load(result.funcName, result.libraryPath);
+        serverlib::ServerLambda::load(result.funcName, result.outputDirPath);
     if (lambda.has_error()) {
       return StreamStringError(lambda.error().mesg);
     }
@@ -83,7 +84,8 @@ public:
   /// Load the client parameters from the compilation result.
   llvm::Expected<clientlib::ClientParameters>
   loadClientParameters(LibraryCompilationResult &result) override {
-    auto path = ClientParameters::getClientParametersPath(result.libraryPath);
+    auto path =
+        CompilerEngine::Library::getClientParametersPath(result.outputDirPath);
     auto params = ClientParameters::load(path);
     if (params.has_error()) {
       return StreamStringError(params.error().mesg);

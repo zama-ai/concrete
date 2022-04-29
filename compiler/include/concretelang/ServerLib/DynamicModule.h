@@ -22,13 +22,13 @@ public:
   ~DynamicModule();
 
   static outcome::checked<std::shared_ptr<DynamicModule>, StringError>
-  open(std::string libraryPath);
+  open(std::string outputPath);
 
 private:
   outcome::checked<void, StringError>
-  loadClientParametersJSON(std::string path);
+  loadClientParametersJSON(std::string outputPath);
 
-  outcome::checked<void, StringError> loadSharedLibrary(std::string path);
+  outcome::checked<void, StringError> loadSharedLibrary(std::string outputPath);
 
 private:
   std::vector<ClientParameters> clientParametersList;
