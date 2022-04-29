@@ -20,8 +20,10 @@ namespace dfr {
 
 void _dfr_set_required(bool);
 void _dfr_set_jit(bool);
+void _dfr_set_use_omp(bool);
 bool _dfr_is_jit();
 bool _dfr_is_root_node();
+bool _dfr_use_omp();
 
 typedef enum _dfr_task_arg_type {
   _DFR_TASK_ARG_BASE = 0,

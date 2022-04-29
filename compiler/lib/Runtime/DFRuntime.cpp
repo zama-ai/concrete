@@ -737,6 +737,7 @@ namespace {
 static bool dfr_required_p = false;
 static bool is_jit_p = false;
 static bool is_root_node_p = true;
+static bool use_omp_p = false;
 } // namespace
 
 void _dfr_set_required(bool is_required) {
@@ -746,8 +747,12 @@ void _dfr_set_required(bool is_required) {
   }
 }
 void _dfr_set_jit(bool is_jit) { mlir::concretelang::dfr::is_jit_p = is_jit; }
+void _dfr_set_use_omp(bool use_omp) {
+  mlir::concretelang::dfr::use_omp_p = use_omp;
+}
 bool _dfr_is_jit() { return mlir::concretelang::dfr::is_jit_p; }
 bool _dfr_is_root_node() { return mlir::concretelang::dfr::is_root_node_p; }
+bool _dfr_use_omp() { return mlir::concretelang::dfr::use_omp_p; }
 } // namespace dfr
 } // namespace concretelang
 } // namespace mlir
@@ -781,6 +786,11 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
   mlir::concretelang::dfr::dl_handle = dlopen(nullptr, RTLD_NOW);
   if (argc == 0) {
     int nCores, nOMPThreads, nHPXThreads;
+    std::string hpxThreadNum;
+
+    std::vector<char *> parameters;
+    parameters.push_back(const_cast<char *>("__dummy_dfr_HPX_program_name__"));
+
     hwloc_topology_t topology;
     hwloc_topology_init(&topology);
     hwloc_topology_set_all_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_NONE);
@@ -795,21 +805,28 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
     // the choices made by the OpenMP runtime if we would be mixing
     // loop & dataflow parallelism.
     char *env = getenv("OMP_NUM_THREADS");
-    if (env != nullptr)
+    if (mlir::concretelang::dfr::_dfr_use_omp() && env != nullptr)
       nOMPThreads = strtoul(env, NULL, 10);
-    else
+    else if (mlir::concretelang::dfr::_dfr_use_omp())
       nOMPThreads = nCores;
+    else
+      nOMPThreads = 1;
 
     // Unless specified, we will consider that within each node loop
     // parallelism is the priority, so we would allocate either
     // ncores/OMP_NUM_THREADS or ncores-OMP_NUM_THREADS+1.  Both make
     // sense depending on whether we have very regular computation or
     // not - the latter being more conservative in that we will
-    // exploit all cores, but we may oversubscribe.
+    // exploit all cores, at the risk of oversubscribing.  Ideally the
+    // distribution of hardware resources to the runtime systems
+    // should be explicitly defined by the user.
     env = getenv("DFR_NUM_THREADS");
-    if (env != nullptr)
+    if (env != nullptr) {
       nHPXThreads = strtoul(env, NULL, 10);
-    else
+      parameters.push_back(const_cast<char *>("--hpx:threads"));
+      hpxThreadNum = std::to_string(nHPXThreads);
+      parameters.push_back(const_cast<char *>(hpxThreadNum.c_str()));
+    } else
       nHPXThreads = nCores + 1 - nOMPThreads;
     if (nHPXThreads < 1)
       nHPXThreads = 1;
@@ -825,28 +842,30 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
         env = const_cast<char *>(HPX_DEFAULT_CONFIG_FILE);
 #endif
     if (env != nullptr) {
-      int _argc = 3;
-      char *_argv[3] = {const_cast<char *>("__dummy_dfr_HPX_program_name__"),
-                        const_cast<char *>("--hpx:config"),
-                        const_cast<char *>(env)};
-      hpx::start(nullptr, _argc, _argv);
+      parameters.push_back(const_cast<char *>("--hpx:config"));
+      parameters.push_back(const_cast<char *>(env));
+      hpx::start(nullptr, parameters.size(), parameters.data());
     } else {
       // Last resort configuration in case no config file could be
       // identified, provide some default values that make (some)
       // sense for homomorphic computations (stacks need to reflect
       // the size of ciphertexts rather than simple cleartext
       // scalars).
-      std::string numHPXThreads = std::to_string(nHPXThreads);
-      int _argc = 7;
-      char *_argv[7] = {
-          const_cast<char *>("__dummy_dfr_HPX_program_name__"),
-          const_cast<char *>("--hpx:threads"),
-          const_cast<char *>(numHPXThreads.c_str()),
-          const_cast<char *>("--hpx:ini=hpx.stacks.small_size=0x8000000"),
-          const_cast<char *>("--hpx:ini=hpx.stacks.medium_size=0x10000000"),
-          const_cast<char *>("--hpx:ini=hpx.stacks.large_size=0x20000000"),
-          const_cast<char *>("--hpx:ini=hpx.stacks.huge_size=0x40000000")};
-      hpx::start(nullptr, _argc, _argv);
+      if (std::find(parameters.begin(), parameters.end(), "--hpx:threads") ==
+          parameters.end()) {
+        parameters.push_back(const_cast<char *>("--hpx:threads"));
+        hpxThreadNum = std::to_string(nHPXThreads);
+        parameters.push_back(const_cast<char *>(hpxThreadNum.c_str()));
+      }
+      parameters.push_back(
+          const_cast<char *>("--hpx:ini=hpx.stacks.small_size=0x8000000"));
+      parameters.push_back(
+          const_cast<char *>("--hpx:ini=hpx.stacks.medium_size=0x10000000"));
+      parameters.push_back(
+          const_cast<char *>("--hpx:ini=hpx.stacks.large_size=0x20000000"));
+      parameters.push_back(
+          const_cast<char *>("--hpx:ini=hpx.stacks.huge_size=0x40000000"));
+      hpx::start(nullptr, parameters.size(), parameters.data());
     }
   } else {
     hpx::start(nullptr, argc, argv);
@@ -1040,12 +1059,15 @@ namespace concretelang {
 namespace dfr {
 namespace {
 static bool is_jit_p = false;
+static bool use_omp_p = false;
 } // namespace
 
 void _dfr_set_required(bool is_required) {}
 void _dfr_set_jit(bool p) { is_jit_p = p; }
+void _dfr_set_use_omp(bool use_omp) { use_omp_p = use_omp; }
 bool _dfr_is_jit() { return is_jit_p; }
 bool _dfr_is_root_node() { return true; }
+bool _dfr_use_omp() { return use_omp_p; }
 } // namespace dfr
 } // namespace concretelang
 } // namespace mlir
