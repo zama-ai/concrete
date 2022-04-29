@@ -66,23 +66,19 @@ if you have a function object that you cannot decorate, you can use the explicit
 ```python
 import concrete.numpy as cnp
 
-def adder(constant):
-    def add(x):
-        return x + constant
-    return add
+def add(x, y):
+    return x + y
 
-add_42 = adder(42)
-
-compiler = cnp.Compiler(add_42, {"x": "encrypted"})
-inputset = range(10)
+compiler = cnp.Compiler(add, {"x": "encrypted", "y": "encrypted"})
+inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
 
 print(f"Compiling...")
 circuit = compiler.compile(inputset)
 
-examples = [4, 2, 5, 9, 0]
+examples = [(3, 4), (1, 2), (7, 7), (0, 0)]
 for example in examples:
-    result = circuit.encrypt_run_decrypt(example)
-    print(f"Evaluation of {example} + 42 homomorphically = {result}")
+    result = circuit.encrypt_run_decrypt(*example)
+    print(f"Evaluation of {' + '.join(map(str, example))} homomorphically = {result}")
 ```
 
 # For developers
