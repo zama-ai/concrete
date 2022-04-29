@@ -134,7 +134,14 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](LibrarySupport_C &support, serverlib::ServerLambda lambda,
               clientlib::PublicArguments &publicArguments) {
              return library_server_call(support, lambda, publicArguments);
-           });
+           })
+      .def("get_shared_lib_path",
+           [](LibrarySupport_C &support) {
+             return library_get_shared_lib_path(support);
+           })
+      .def("get_client_parameters_path", [](LibrarySupport_C &support) {
+        return library_get_client_parameters_path(support);
+      });
 
   class ClientSupport {};
   pybind11::class_<ClientSupport>(m, "ClientSupport")

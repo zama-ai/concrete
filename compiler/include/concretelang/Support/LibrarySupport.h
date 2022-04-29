@@ -108,6 +108,16 @@ public:
     return lambda.call(args);
   }
 
+  /// Get path to shared library
+  std::string getSharedLibPath() {
+    return CompilerEngine::Library::getSharedLibraryPath(outputPath);
+  }
+
+  /// Get path to client parameters file
+  std::string getClientParametersPath() {
+    return CompilerEngine::Library::getClientParametersPath(outputPath);
+  }
+
 private:
   std::string outputPath;
   std::string runtimeLibraryPath;

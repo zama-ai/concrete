@@ -237,3 +237,19 @@ class LibrarySupport(WrapperCpp):
         return PublicResult.wrap(
             self.cpp().server_call(library_lambda.cpp(), public_arguments.cpp())
         )
+
+    def get_shared_lib_path(self) -> str:
+        """Get the path where the shared library is expected to be.
+
+        Returns:
+            str: path to the shared library
+        """
+        return self.cpp().get_shared_lib_path()
+
+    def get_client_parameters_path(self) -> str:
+        """Get the path where the client parameters file is expected to be.
+
+        Returns:
+            str: path to the client parameters file
+        """
+        return self.cpp().get_client_parameters_path()

@@ -84,6 +84,12 @@ library_server_call(LibrarySupport_C support,
                     concretelang::serverlib::ServerLambda lambda,
                     concretelang::clientlib::PublicArguments &args);
 
+MLIR_CAPI_EXPORTED std::string
+library_get_shared_lib_path(LibrarySupport_C support);
+
+MLIR_CAPI_EXPORTED std::string
+library_get_client_parameters_path(LibrarySupport_C support);
+
 // Client Support bindings ///////////////////////////////////////////////////
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>

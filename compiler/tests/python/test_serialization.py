@@ -1,4 +1,5 @@
 import pytest
+import shutil
 import numpy as np
 from concrete.compiler import (
     JITSupport,
@@ -143,7 +144,9 @@ def test_jit_compile_and_run_with_serialization(
 def test_lib_compile_and_run_with_serialization(
     mlir_input, args, expected_result, keyset_cache
 ):
-    engine = LibrarySupport.new("./py_test_lib_compile_and_run")
+    artifact_dir = "./py_test_lib_compile_and_run"
+    engine = LibrarySupport.new(artifact_dir)
     compile_run_assert_with_serialization(
         engine, mlir_input, args, expected_result, keyset_cache
     )
+    shutil.rmtree(artifact_dir)

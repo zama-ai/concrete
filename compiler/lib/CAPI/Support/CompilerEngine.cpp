@@ -103,6 +103,16 @@ library_server_call(LibrarySupport_C support,
   return std::move(*publicResult);
 }
 
+MLIR_CAPI_EXPORTED std::string
+library_get_shared_lib_path(LibrarySupport_C support) {
+  return support.support.getSharedLibPath();
+}
+
+MLIR_CAPI_EXPORTED std::string
+library_get_client_parameters_path(LibrarySupport_C support) {
+  return support.support.getClientParametersPath();
+}
+
 // Client Support bindings ///////////////////////////////////////////////////
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::KeySet>
