@@ -25,7 +25,7 @@ PUSH_TO_MAIN_CONF = {"os": PUSH_TO_MAIN_OSES, "python": PUSH_TO_MAIN_PYTHON_VERS
 
 WEEKLY_OSES = {
     LINUX: "ubuntu-20.04",
-    MACOS: "macos-10.15",
+    MACOS: "macos-11",
 }
 WEEKLY_PYTHON_VERSIONS = ["3.8", "3.9"]
 WEEKLY_CONF = {"os": WEEKLY_OSES, "python": WEEKLY_PYTHON_VERSIONS}

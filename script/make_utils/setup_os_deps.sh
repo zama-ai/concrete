@@ -74,7 +74,13 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     pip install --no-cache-dir poetry"
     eval "${SETUP_CMD}"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
-    brew install curl git graphviz jq make pandoc shellcheck
+    # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it
+    # but not fail if it is not there, so use 'cat' as a hack to be sure that, even if set -x is
+    # activated later in this script, the status is still 0 == success
+    brew unlink git@2.35.1 | cat
+    brew install git
+
+    brew install curl graphviz jq make pandoc shellcheck
     python3 -m pip install -U pip
     python3 -m pip install poetry
 
