@@ -1,4 +1,3 @@
-
 # What is **Concrete Numpy**?
 
 ## Introduction
@@ -30,8 +29,3 @@ Basically, we have divided our documentation into several parts:
 ```{note}
 Concrete is a work in progress, and is currently limited to a certain number of operators and features. In the future, there will be improvements as described in this [section](../explanation/future_features.md).
 ```
-
-The main _current_ limits are:
-- **Concrete** only supports unsigned integers
-- **Concrete** needs integers to fit in a maximum of 7 bits
-- **Concrete** computations are exact (except a very small probability) for computations on 6 bits or less, and exact at a probability close to 90% for 7 bits computations
