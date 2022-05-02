@@ -688,9 +688,24 @@ jobs:
             dockerfile: builders/Dockerfile.concrete-compiler-df-env
 
     steps:
+      # A SSH private key is required as some dependencies are from private repos
+      - uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Concrete-Optimizer
+        run: |
+          cd compiler
+          make concrete-optimizer-lib
 
       - name: Login to Registry
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
