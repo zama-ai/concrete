@@ -1,8 +1,6 @@
-<div align="center">
-  <h1>Concrete Numpy</h1>
-  An open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists.
-</div>
-<br>
+# Concrete Numpy
+
+An open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists.
 
 With Concrete Numpy, data scientists can implement machine learning models using a subset of numpy that compiles to FHE. They will be able to train models with popular machine learning libraries and then convert the prediction functions of these models to FHE with concrete-numpy.
 
