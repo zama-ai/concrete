@@ -389,7 +389,7 @@ def subgraph_can_be_fused(
 
     non_constant_nodes = (node for node in all_nodes if node.operation != Operation.Constant)
     for node in non_constant_nodes:
-        if node.output.shape != variable_input_node.output.shape:
+        if not node.is_fusable or node.output.shape != variable_input_node.output.shape:
             return False
 
     return True

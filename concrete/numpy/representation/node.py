@@ -317,3 +317,21 @@ class Node:
             "sum",
             "transpose",
         ]
+
+    @property
+    def is_fusable(self) -> bool:
+        """
+        Get whether the node is can be fused into a table lookup.
+
+        Returns:
+            bool:
+                True if the node can be fused into a table lookup, False otherwise
+        """
+
+        if self.operation != Operation.Generic:
+            return True
+
+        if self.converted_to_table_lookup:
+            return True
+
+        return self.properties["name"] in ["add", "multiply", "negative", "subtract"]
