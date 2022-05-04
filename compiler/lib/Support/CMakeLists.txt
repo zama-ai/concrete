@@ -1,6 +1,5 @@
-link_directories(${CONCRETE_OPTIMIZER_DIR}/target)
-include_directories(${CONCRETE_OPTIMIZER_DIR}/target/include)
-link_libraries(concrete_optimizer.a)
+# not working in ADDITIONAL_HEADER_DIRS
+include_directories(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp)
 
 add_mlir_library(ConcretelangSupport
   Pipeline.cpp
@@ -30,6 +29,7 @@ add_mlir_library(ConcretelangSupport
   FHEDialectAnalysis
   RTDialectAnalysis
   ConcretelangTransforms
+  concrete_optimizer
 
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}

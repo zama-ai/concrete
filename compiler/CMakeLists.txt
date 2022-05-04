@@ -118,14 +118,6 @@ endif()
 option(CONCRETELANG_UNIT_TESTS "Enables the build of unittests" ON)
 
 #-------------------------------------------------------------------------------
-# Adding rust dependencies, already compiled
-#-------------------------------------------------------------------------------
-
-link_directories(${CONCRETE_OPTIMIZER_DIR}/target)
-include_directories(${CONCRETE_OPTIMIZER_DIR}/target/include)
-
-
-#-------------------------------------------------------------------------------
 # Handling sub dirs
 #-------------------------------------------------------------------------------
 
@@ -133,3 +125,5 @@ add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(tests)
+
+add_subdirectory(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/cmake-utils)

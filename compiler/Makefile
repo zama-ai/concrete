@@ -5,7 +5,7 @@ PARALLEL_EXECUTION_ENABLED=OFF
 CC_COMPILER=
 CXX_COMPILER=
 
-CONCRETE_OPTIMIZER_DIR ?= .dependencies/concrete-optimizer
+CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/.dependencies/concrete-optimizer
 CONCRETE_OPTIMIZER_BRANCH ?= master
 
 KEYSETCACHEDEV=/tmp/KeySetCache
@@ -68,21 +68,20 @@ $(BUILD_DIR)/configured.stamp:
 
 build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
 
+CONCRETE_OPTIMIZER_SRC = $(shell find $(CONCRETE_OPTIMIZER_DIR)/* -not -path '$(CONCRETE_OPTIMIZER_DIR)/target*')
+
+LIB_CONCRETE_OPTIMIZER_CPP = $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer_cpp.a
 # Fetch concrete-optimizer
 $(CONCRETE_OPTIMIZER_DIR):
 	export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"  # for CI
-	# change to master on merge
 	mkdir -p $(shell dirname ${CONCRETE_OPTIMIZER_DIR})
 	git clone --branch $(CONCRETE_OPTIMIZER_BRANCH) git@github.com:zama-ai/concrete-optimizer.git $@
 
-CONCRETE_OPTIMIZER_SRC := $(shell find $(CONCRETE_OPTIMIZER_DIR) -not -path '$(CONCRETE_OPTIMIZER_DIR)/target*')
+# we need CONCRETE_OPTIMIZER_DIR here to ensure it is present before computing CONCRETE_OPTIMIZER_SRC
+$(LIB_CONCRETE_OPTIMIZER_CPP): $(CONCRETE_OPTIMIZER_DIR) $(CONCRETE_OPTIMIZER_SRC)
+	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $@
 
-# Build concrete-optimizer
-$(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer.a: $(CONCRETE_OPTIMIZER_DIR) $(CONCRETE_OPTIMIZER_SRC)
-	cd $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer && cargo build --release
-	cp $(CONCRETE_OPTIMIZER_DIR)/target/release/$(shell basename $@) $@
-
-concrete-optimizer-lib: $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer.a
+concrete-optimizer-lib: $(LIB_CONCRETE_OPTIMIZER_CPP)
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
@@ -294,4 +293,5 @@ python_lint:
 	generate_conv_op \
 	python_lint \
 	python_format \
-	check_python_format
+	check_python_format \
+	concrete-optimizer-lib

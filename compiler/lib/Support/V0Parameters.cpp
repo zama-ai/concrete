@@ -15,7 +15,7 @@
 
 #include "llvm/Support/raw_ostream.h"
 
-#include "concrete-optimizer.h"
+#include "concrete-optimizer.hpp"
 #include "concretelang/Support/V0Parameters.h"
 
 namespace mlir {
