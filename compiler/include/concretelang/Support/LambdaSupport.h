@@ -249,7 +249,7 @@ public:
   /// Compile the mlir program and produces a compilation result if succeed.
   llvm::Expected<std::unique_ptr<CompilationResult>> virtual compile(
       llvm::SourceMgr &program,
-      CompilationOptions options = CompilationOptions("main"));
+      CompilationOptions options = CompilationOptions("main")) = 0;
 
   llvm::Expected<std::unique_ptr<CompilationResult>>
   compile(llvm::StringRef program,
@@ -266,15 +266,16 @@ public:
   }
 
   /// Load the server lambda from the compilation result.
-  llvm::Expected<Lambda> virtual loadServerLambda(CompilationResult &result);
+  llvm::Expected<Lambda> virtual loadServerLambda(
+      CompilationResult &result) = 0;
 
   /// Load the client parameters from the compilation result.
   llvm::Expected<clientlib::ClientParameters> virtual loadClientParameters(
-      CompilationResult &result);
+      CompilationResult &result) = 0;
 
   /// Call the lambda with the public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>> virtual serverCall(
-      Lambda lambda, clientlib::PublicArguments &args);
+      Lambda lambda, clientlib::PublicArguments &args) = 0;
 
   /// Build the client KeySet from the client parameters.
   static llvm::Expected<std::unique_ptr<clientlib::KeySet>>
