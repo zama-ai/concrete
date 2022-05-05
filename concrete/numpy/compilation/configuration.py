@@ -13,6 +13,8 @@ class Configuration:
     Configuration class, to allow the compilation process to be customized.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     verbose: bool
     show_graph: bool
     show_mlir: bool
@@ -23,6 +25,9 @@ class Configuration:
     loop_parallelize: bool
     dataflow_parallelize: bool
     auto_parallelize: bool
+    jit: bool
+
+    # pylint: enable=too-many-instance-attributes
 
     def _validate(self):
         """
@@ -55,6 +60,7 @@ class Configuration:
         loop_parallelize: bool = True,
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
+        jit: bool = False,
     ):
         self.verbose = verbose
         self.show_graph = show_graph
@@ -66,6 +72,7 @@ class Configuration:
         self.loop_parallelize = loop_parallelize
         self.dataflow_parallelize = dataflow_parallelize
         self.auto_parallelize = auto_parallelize
+        self.jit = jit
 
         self._validate()
 

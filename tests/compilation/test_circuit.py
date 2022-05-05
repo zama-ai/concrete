@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from concrete.numpy import Circuit
 from concrete.numpy.compilation import compiler
 
 
@@ -164,3 +165,86 @@ def test_circuit_virtual_explicit_api(helpers):
         circuit.decrypt(None)
 
     assert str(excinfo.value) == "Virtual circuits cannot use `decrypt` method"
+
+
+def test_circuit_bad_save(helpers):
+    """
+    Test `save` method of `Circuit` class with bad parameters.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted"})
+    def function(x):
+        return x + 42
+
+    inputset = range(10)
+    circuit = function.compile(inputset, configuration)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        circuit.save("circuit.zip")
+
+    assert str(excinfo.value) == "JIT Circuits cannot be saved"
+
+
+@pytest.mark.parametrize(
+    "virtual",
+    [False, True],
+)
+def test_circuit_save_load(virtual, helpers):
+    """
+    Test `save`, `load`, and `cleanup` methods of `Circuit` class.
+    """
+
+    configuration = helpers.configuration().fork(jit=False, virtual=virtual)
+
+    def save(base):
+        @compiler({"x": "encrypted"})
+        def function(x):
+            return x + 42
+
+        inputset = range(10)
+        circuit = function.compile(inputset, configuration)
+
+        circuit.save(base / "circuit.zip")
+        circuit.cleanup()
+
+    def load(base):
+        circuit = Circuit.load(base / "circuit.zip")
+
+        helpers.check_str(
+            """
+
+%0 = x                  # EncryptedScalar<uint4>
+%1 = 42                 # ClearScalar<uint6>
+%2 = add(%0, %1)        # EncryptedScalar<uint6>
+return %2
+
+            """,
+            str(circuit),
+        )
+        if virtual:
+            helpers.check_str("Virtual circuits doesn't have MLIR.", circuit.mlir)
+        else:
+            helpers.check_str(
+                """
+
+module  {
+  func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+    %c42_i7 = arith.constant 42 : i7
+    %0 = "FHE.add_eint_int"(%arg0, %c42_i7) : (!FHE.eint<6>, i7) -> !FHE.eint<6>
+    return %0 : !FHE.eint<6>
+  }
+}
+
+                """,
+                circuit.mlir,
+            )
+        helpers.check_execution(circuit, lambda x: x + 42, 4)
+
+        circuit.cleanup()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp)
+        save(path)
+        load(path)

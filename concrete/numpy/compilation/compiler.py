@@ -375,7 +375,7 @@ class Compiler:
 
                     print()
 
-            return Circuit(self.graph, mlir, self.configuration)
+            return Circuit.create(self.graph, mlir, self.configuration)
 
         except Exception:  # pragma: no cover
 

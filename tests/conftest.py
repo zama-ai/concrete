@@ -107,6 +107,7 @@ class Helpers:
             loop_parallelize=True,
             dataflow_parallelize=False,
             auto_parallelize=False,
+            jit=True,
         )
 
     @staticmethod
