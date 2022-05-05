@@ -1,19 +1,19 @@
  Name               Version   License
  Pillow             9.1.0     Historical Permission Notice and Disclaimer (HPND)
  PyYAML             6.0       MIT License
- concrete-compiler  0.6.0     BSD-3
+ concrete-compiler  0.7.0     BSD-3
  cycler             0.11.0    BSD License
- fonttools          4.31.2    MIT License
+ fonttools          4.33.3    MIT License
  kiwisolver         1.4.2     BSD License
- matplotlib         3.5.1     Python Software Foundation License
- networkx           2.7.1     BSD License
+ matplotlib         3.5.2     Python Software Foundation License
+ networkx           2.8       BSD License
  numpy              1.22.3    BSD License
  packaging          21.3      Apache Software License; BSD License
  pygraphviz         1.9       BSD License
- pyparsing          3.0.7     MIT License
+ pyparsing          3.0.8     MIT License
  python-dateutil    2.8.2     Apache Software License; BSD License
  setuptools-scm     6.4.2     MIT License
  six                1.16.0    MIT License
  tomli              1.2.3     MIT License
  torch              1.11.0    BSD License
- typing-extensions  4.1.1     Python Software Foundation License
+ typing-extensions  4.2.0     Python Software Foundation License
