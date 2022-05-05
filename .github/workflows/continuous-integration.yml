@@ -136,7 +136,7 @@ jobs:
         if: ${{ matrix.compiler == 'gcc7' && github.ref == 'refs/heads/master' }}
         uses: actions/upload-artifact@v3
         with:
-          name: KeySetCache
+          name: KeySetCacheV1
           path: KeySetCache
           retention-days: 90
 
@@ -144,7 +144,7 @@ jobs:
         uses: Remagpie/gha-remove-artifact@v1
         if: ${{ matrix.compiler == 'gcc7' && github.ref == 'refs/heads/master' }}
         with:
-          only-name: KeySetCache
+          only-name: KeySetCacheV1
           max-count: 1
 
       - name: Build compiler

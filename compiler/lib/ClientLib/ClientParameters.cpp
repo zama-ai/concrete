@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "boost/outcome.h"
+#include "llvm/ADT/Hashing.h"
 
 #include "concretelang/ClientLib/ClientParameters.h"
 
@@ -20,20 +21,22 @@ template <typename T, typename... Rest>
 static inline void hash_(std::size_t &seed, const T &v, Rest... rest) {
   // See https://softwareengineering.stackexchange.com/a/402543
   const auto GOLDEN_RATIO = 0x9e3779b97f4a7c15; // pseudo random bits
-  const std::hash<T> hasher;
-  seed ^= hasher(v) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+  seed ^= llvm::hash_value(v) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
   hash_(seed, rest...);
 }
+
+static long double_to_bits(double &v) { return *reinterpret_cast<long *>(&v); }
 
 void LweSecretKeyParam::hash(size_t &seed) { hash_(seed, dimension); }
 
 void BootstrapKeyParam::hash(size_t &seed) {
   hash_(seed, inputSecretKeyID, outputSecretKeyID, level, baseLog,
-        glweDimension, variance);
+        glweDimension, double_to_bits(variance));
 }
 
 void KeyswitchKeyParam::hash(size_t &seed) {
-  hash_(seed, inputSecretKeyID, outputSecretKeyID, level, baseLog, variance);
+  hash_(seed, inputSecretKeyID, outputSecretKeyID, level, baseLog,
+        double_to_bits(variance));
 }
 
 std::size_t ClientParameters::hash() {

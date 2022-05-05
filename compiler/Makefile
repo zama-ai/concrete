@@ -10,6 +10,7 @@ CONCRETE_OPTIMIZER_BRANCH ?= master
 
 KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
+KEYSETCACHENAME ?= KeySetCacheV1
 
 export PATH := $(BUILD_DIR)/bin:$(PATH)
 
@@ -115,7 +116,7 @@ test-dataflow: test-end-to-end-jit-dfr test-end-to-end-jit-auto-parallelization
 GITHUB_URL=https://api.github.com/repos/zama-ai/concrete-compiler-internal
 GITHUB_URL_LIST_ARTIFACTS="${GITHUB_URL}/actions/artifacts"
 CURL=curl -H"Accept: application/vnd.github.v3+json" -H"authorization: Bearer ${GITHUB_TOKEN}"
-keysetcache.zip: REDIRECT_URL = $(shell ${CURL} -s ${GITHUB_URL_LIST_ARTIFACTS} | grep -A 10 KeySetCache | grep archive_download_url | head -n 1 | grep -o 'http[^"]\+')
+keysetcache.zip: REDIRECT_URL = $(shell ${CURL} -s ${GITHUB_URL_LIST_ARTIFACTS} | grep -A 10 ${KEYSETCACHENAME} | grep archive_download_url | head -n 1 | grep -o 'http[^"]\+')
 keysetcache.zip:
 	${CURL} --location -o keysetcache.zip ${REDIRECT_URL}
 	du -h keysetcache.zip
