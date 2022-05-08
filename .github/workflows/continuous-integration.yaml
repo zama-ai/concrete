@@ -686,7 +686,7 @@ jobs:
           cp "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl ./pkg
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
         with:
           registry: ghcr.io
           username: ${{ secrets.BOT_USERNAME }}
@@ -694,7 +694,7 @@ jobs:
 
       - name: Login to DockerHub
         if: ${{ env.IS_PRERELEASE == 'false' }}
-        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
