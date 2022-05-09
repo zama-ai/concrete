@@ -329,10 +329,12 @@ class Node:
                 True if the node can be fused into a table lookup, False otherwise
         """
 
-        if self.operation != Operation.Generic:
-            return True
-
         if self.converted_to_table_lookup:
             return True
 
-        return self.properties["name"] in ["add", "multiply", "negative", "subtract"]
+        return self.operation != Operation.Generic or self.properties["name"] in [
+            "add",
+            "multiply",
+            "negative",
+            "subtract",
+        ]
