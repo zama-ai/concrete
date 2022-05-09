@@ -17,7 +17,7 @@ import concrete.onnx as connx
         pytest.param(
             lambda x, y: (x - y, x + y),
             {"x": "encrypted", "y": "clear"},
-            [(np.random.randint(0, 2 ** 3), np.random.randint(0, 2 ** 3)) for _ in range(100)],
+            [(np.random.randint(0, 2**3), np.random.randint(0, 2**3)) for _ in range(100)],
             RuntimeError,
             """
 
@@ -73,8 +73,8 @@ return %1
             {"x": "encrypted", "y": "clear"},
             [
                 (
-                    np.random.randint(0, 2 ** 3, size=(3, 2)),
-                    np.random.randint(0, 2 ** 3, size=(3, 2)),
+                    np.random.randint(0, 2**3, size=(3, 2)),
+                    np.random.randint(0, 2**3, size=(3, 2)),
                 )
                 for _ in range(100)
             ],
@@ -165,8 +165,8 @@ return %2
             {"x": "encrypted", "y": "encrypted"},
             [
                 (
-                    np.random.randint(0, 2 ** 2, size=(1,)),
-                    np.random.randint(0, 2 ** 2, size=(1,)),
+                    np.random.randint(0, 2**2, size=(1,)),
+                    np.random.randint(0, 2**2, size=(1,)),
                 )
                 for _ in range(100)
             ],
@@ -186,7 +186,7 @@ return %2
         pytest.param(
             lambda x: x[0],
             {"x": "clear"},
-            [np.random.randint(0, 2 ** 3, size=(4,)) for _ in range(100)],
+            [np.random.randint(0, 2**3, size=(4,)) for _ in range(100)],
             RuntimeError,
             """
 
@@ -204,8 +204,8 @@ return %1
             {"x": "encrypted", "y": "encrypted"},
             [
                 (
-                    np.random.randint(0, 2 ** 2, size=(1, 1)),
-                    np.random.randint(0, 2 ** 2, size=(1, 1)),
+                    np.random.randint(0, 2**2, size=(1, 1)),
+                    np.random.randint(0, 2**2, size=(1, 1)),
                 )
                 for _ in range(100)
             ],
@@ -225,7 +225,7 @@ return %2
         pytest.param(
             lambda x, y: x * y,
             {"x": "encrypted", "y": "encrypted"},
-            [(np.random.randint(0, 2 ** 3), np.random.randint(0, 2 ** 3)) for _ in range(100)],
+            [(np.random.randint(0, 2**3), np.random.randint(0, 2**3)) for _ in range(100)],
             RuntimeError,
             """
 
@@ -242,7 +242,7 @@ return %2
         pytest.param(
             lambda x: -x,
             {"x": "clear"},
-            [np.random.randint(0, 2 ** 3) for _ in range(100)],
+            [np.random.randint(0, 2**3) for _ in range(100)],
             RuntimeError,
             """
 
@@ -258,7 +258,7 @@ return %1
         pytest.param(
             lambda x: x.reshape((3, 2)),
             {"x": "clear"},
-            [np.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(100)],
+            [np.random.randint(0, 2**3, size=(2, 3)) for _ in range(100)],
             RuntimeError,
             """
 
@@ -274,7 +274,7 @@ return %1
         pytest.param(
             lambda x: x - 1,
             {"x": "clear"},
-            [np.random.randint(0, 2 ** 3, size=(2, 3)) for _ in range(100)],
+            [np.random.randint(0, 2**3, size=(2, 3)) for _ in range(100)],
             RuntimeError,
             """
 

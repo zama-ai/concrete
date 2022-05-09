@@ -173,14 +173,14 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
             id="(127 / x).astype(np.int64)",
         ),
         pytest.param(
-            lambda x: x ** 2,
+            lambda x: x**2,
             {
                 "x": {"status": "encrypted", "range": [0, 11]},
             },
             id="x ** 2",
         ),
         pytest.param(
-            lambda x: 2 ** x,
+            lambda x: 2**x,
             {
                 "x": {"status": "encrypted", "range": [0, 6]},
             },
@@ -571,7 +571,7 @@ return %4
         return np.abs(np.sin(x)).reshape((2, 3)).astype(np.int64)
 
     with pytest.raises(RuntimeError) as excinfo:
-        inputset = [np.random.randint(0, 2 ** 7, size=(3, 2)) for _ in range(100)]
+        inputset = [np.random.randint(0, 2**7, size=(3, 2)) for _ in range(100)]
         function3.compile(inputset, configuration)
 
     helpers.check_str(

@@ -124,12 +124,12 @@ def test_reshape(shape, newshape, helpers):
     def method(x):
         return x.reshape(newshape)
 
-    inputset = [np.random.randint(0, 2 ** 5, size=shape) for i in range(100)]
+    inputset = [np.random.randint(0, 2**5, size=shape) for i in range(100)]
 
     function_circuit = function.compile(inputset, configuration)
     method_circuit = method.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 2 ** 5, size=shape, dtype=np.uint8)
+    sample = np.random.randint(0, 2**5, size=shape, dtype=np.uint8)
 
     helpers.check_execution(function_circuit, function, sample)
     helpers.check_execution(method_circuit, method, sample)
@@ -163,8 +163,8 @@ def test_flatten(shape, helpers):
     def function(x):
         return x.flatten()
 
-    inputset = [np.random.randint(0, 2 ** 5, size=shape) for i in range(100)]
+    inputset = [np.random.randint(0, 2**5, size=shape) for i in range(100)]
     circuit = function.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 2 ** 5, size=shape, dtype=np.uint8)
+    sample = np.random.randint(0, 2**5, size=shape, dtype=np.uint8)
     helpers.check_execution(circuit, function, sample)

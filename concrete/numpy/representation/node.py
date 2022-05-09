@@ -178,7 +178,7 @@ class Node:
 
         result = self.evaluator(*args)
 
-        if isinstance(result, int) and -(2 ** 63) < result < (2 ** 63) - 1:
+        if isinstance(result, int) and -(2**63) < result < (2**63) - 1:
             result = np.int64(result)
         if isinstance(result, float):
             result = np.float64(result)

@@ -13,7 +13,7 @@ def identity_table_lookup_generator(n):
     Get identity table lookup function.
     """
 
-    return lambda x: cnp.LookupTable(range(2 ** n))[x]
+    return lambda x: cnp.LookupTable(range(2**n))[x]
 
 
 def random_table_lookup_1b(x):
@@ -128,7 +128,7 @@ def negative_identity_table_lookup_generator(n):
     Get negative identity table lookup function.
     """
 
-    return lambda x: cnp.LookupTable([-i for i in range(2 ** n)])[x]
+    return lambda x: cnp.LookupTable([-i for i in range(2**n)])[x]
 
 
 @pytest.mark.parametrize(
@@ -168,10 +168,10 @@ def test_direct_table_lookup(bits, function, helpers):
 
     compiler = cnp.Compiler(function, {"x": "encrypted"})
 
-    inputset = range(2 ** bits)
+    inputset = range(2**bits)
     circuit = compiler.compile(inputset, configuration)
 
-    sample = int(np.random.randint(0, 2 ** bits))
+    sample = int(np.random.randint(0, 2**bits))
     helpers.check_execution(circuit, function, sample, retries=10)
 
     # tensor
@@ -179,10 +179,10 @@ def test_direct_table_lookup(bits, function, helpers):
 
     compiler = cnp.Compiler(function, {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2 ** bits, size=(3, 2), dtype=np.uint8) for _ in range(100)]
+    inputset = [np.random.randint(0, 2**bits, size=(3, 2), dtype=np.uint8) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 2 ** bits, size=(3, 2), dtype=np.uint8)
+    sample = np.random.randint(0, 2**bits, size=(3, 2), dtype=np.uint8)
     helpers.check_execution(circuit, function, sample, retries=10)
 
 
@@ -209,10 +209,10 @@ def test_direct_multi_table_lookup(helpers):
 
     compiler = cnp.Compiler(function, {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2 ** 2, size=(3, 2), dtype=np.uint8) for _ in range(100)]
+    inputset = [np.random.randint(0, 2**2, size=(3, 2), dtype=np.uint8) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 2 ** 2, size=(3, 2), dtype=np.uint8)
+    sample = np.random.randint(0, 2**2, size=(3, 2), dtype=np.uint8)
     helpers.check_execution(circuit, function, sample, retries=10)
 
 

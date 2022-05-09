@@ -53,9 +53,7 @@ extras = ["pygraphviz"]
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
-black = "^21.12b0"
-# pinning click due to: https://github.com/psf/black/issues/2964
-click = "8.0.4"
+black = "^22.3.0"
 pylint = "2.11.1"
 pytest = "^6.2.5"
 pytest-cov = "^3.0.0"

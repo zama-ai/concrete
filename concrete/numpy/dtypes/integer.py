@@ -129,7 +129,7 @@ class Integer(BaseDataType):
                 maximum value that can be represented by the `Integer`
         """
 
-        return (2 ** self.bit_width) - 1 if not self.is_signed else (2 ** (self.bit_width - 1)) - 1
+        return (2**self.bit_width) - 1 if not self.is_signed else (2 ** (self.bit_width - 1)) - 1
 
     def can_represent(self, value: int) -> bool:
         """

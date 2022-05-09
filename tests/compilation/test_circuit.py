@@ -23,7 +23,7 @@ def test_circuit_str(helpers):
     def f(x, y):
         return x + y
 
-    inputset = [(np.random.randint(0, 2 ** 4), np.random.randint(0, 2 ** 5)) for _ in range(100)]
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
     circuit = f.compile(inputset, configuration)
 
     assert str(circuit) == (
@@ -49,7 +49,7 @@ def test_circuit_draw(helpers):
     def f(x, y):
         return x + y
 
-    inputset = [(np.random.randint(0, 2 ** 4), np.random.randint(0, 2 ** 5)) for _ in range(100)]
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
     circuit = f.compile(inputset, configuration)
 
     with tempfile.TemporaryDirectory() as path:
@@ -72,7 +72,7 @@ def test_circuit_bad_run(helpers):
     def f(x, y):
         return x + y
 
-    inputset = [(np.random.randint(0, 2 ** 4), np.random.randint(0, 2 ** 5)) for _ in range(100)]
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
     circuit = f.compile(inputset, configuration)
 
     # with 1 argument
@@ -143,7 +143,7 @@ def test_circuit_virtual_explicit_api(helpers):
     def f(x, y):
         return x + y
 
-    inputset = [(np.random.randint(0, 2 ** 4), np.random.randint(0, 2 ** 5)) for _ in range(100)]
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
     circuit = f.compile(inputset, configuration, virtual=True)
 
     with pytest.raises(RuntimeError) as excinfo:
