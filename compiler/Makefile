@@ -75,7 +75,7 @@ $(CONCRETE_OPTIMIZER_DIR):
 	mkdir -p $(shell dirname ${CONCRETE_OPTIMIZER_DIR})
 	git clone --branch $(CONCRETE_OPTIMIZER_BRANCH) git@github.com:zama-ai/concrete-optimizer.git $@
 
-CONCRETE_OPTIMIZER_SRC := $(shell find $(CONCRETE_OPTIMIZER_DIR) -name '*.rs')
+CONCRETE_OPTIMIZER_SRC := $(shell find $(CONCRETE_OPTIMIZER_DIR) -not -path '$(CONCRETE_OPTIMIZER_DIR)/target*')
 
 # Build concrete-optimizer
 $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer.a: $(CONCRETE_OPTIMIZER_DIR) $(CONCRETE_OPTIMIZER_SRC)
