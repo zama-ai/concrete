@@ -42,6 +42,7 @@ def test_artifacts_export(helpers):
 
         assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()
+        assert (tmpdir / "client_parameters.json").exists()
 
         artifacts.export()
 
@@ -59,3 +60,4 @@ def test_artifacts_export(helpers):
 
         assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()
+        assert (tmpdir / "client_parameters.json").exists()

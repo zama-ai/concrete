@@ -34,6 +34,8 @@ class DebugArtifacts:
 
     mlir_to_compile: Optional[str]
 
+    client_parameters: Optional[bytes]
+
     def __init__(self, output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY):
         self.output_directory = Path(output_directory)
 
@@ -47,6 +49,8 @@ class DebugArtifacts:
         self.bounds_of_the_final_graph = None
 
         self.mlir_to_compile = None
+
+        self.client_parameters = None
 
     def add_source_code(self, function: Union[str, Callable]):
         """
@@ -127,6 +131,16 @@ class DebugArtifacts:
 
         self.mlir_to_compile = mlir
 
+    def add_client_parameters(self, client_parameters: bytes):
+        """
+        Add client parameters used.
+
+        Args:
+            client_parameters (bytes): client parameters
+        """
+
+        self.client_parameters = client_parameters
+
     def export(self):
         """
         Export the collected information to `self.output_directory`.
@@ -205,3 +219,7 @@ class DebugArtifacts:
             assert self.final_graph is not None
             with open(output_directory.joinpath("mlir.txt"), "w", encoding="utf-8") as f:
                 f.write(f"{self.mlir_to_compile}\n")
+
+        if self.client_parameters is not None:
+            with open(output_directory.joinpath("client_parameters.json"), "wb") as f:
+                f.write(self.client_parameters)

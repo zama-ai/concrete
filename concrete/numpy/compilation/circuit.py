@@ -43,6 +43,7 @@ class Circuit:
 
     graph: Graph
     mlir: str
+    client_parameters: Optional[ClientParameters]
 
     _support: Union[JITSupport, LibrarySupport]
     _compilation_result: Union[JITCompilationResult, LibraryCompilationResult]
@@ -50,7 +51,6 @@ class Circuit:
 
     _output_dir: Optional[tempfile.TemporaryDirectory]
 
-    _client_parameters: ClientParameters
     _keyset: KeySet
     _keyset_cache: KeySetCache
 
@@ -71,6 +71,7 @@ class Circuit:
 
         self.graph = graph
         self.mlir = mlir
+        self.client_parameters = None
 
         if configuration.virtual:
             assert_that(configuration.enable_unsafe_features)
@@ -102,7 +103,7 @@ class Circuit:
             assert output_dir is not None
             assert_that(support.library_path == str(output_dir.name) + "/out")
 
-        client_parameters = support.load_client_parameters(compilation_result)
+        self.client_parameters = support.load_client_parameters(compilation_result)
         keyset = None
         keyset_cache = None
 
@@ -112,7 +113,6 @@ class Circuit:
             if location is not None:
                 keyset_cache = KeySetCache.new(str(location))
 
-        self._client_parameters = client_parameters
         self._keyset = keyset
         self._keyset_cache = keyset_cache
 
@@ -306,7 +306,7 @@ class Circuit:
             raise RuntimeError("Virtual circuits cannot use `keygen` method")
 
         if self._keyset is None or force:
-            self._keyset = ClientSupport.key_set(self._client_parameters, self._keyset_cache)
+            self._keyset = ClientSupport.key_set(self.client_parameters, self._keyset_cache)
 
     def encrypt(self, *args: Union[int, np.ndarray]) -> PublicArguments:
         """
@@ -365,7 +365,7 @@ class Circuit:
 
         self.keygen(force=False)
         return ClientSupport.encrypt_arguments(
-            self._client_parameters,
+            self.client_parameters,
             self._keyset,
             [sanitized_args[i] for i in range(len(sanitized_args))],
         )
@@ -420,14 +420,14 @@ class Circuit:
             expected_dtype = cast(Integer, expected_value.dtype)
             n = expected_dtype.bit_width
 
-            result = results[index] % (2 ** n)
+            result = results[index] % (2**n)
             if expected_dtype.is_signed:
                 if isinstance(result, int):
-                    sanititzed_result = result if result < (2 ** (n - 1)) else result - (2 ** n)
+                    sanititzed_result = result if result < (2 ** (n - 1)) else result - (2**n)
                     sanitized_results.append(sanititzed_result)
                 else:
                     result = result.astype(np.longlong)  # to prevent overflows in numpy
-                    sanititzed_result = np.where(result < (2 ** (n - 1)), result, result - (2 ** n))
+                    sanititzed_result = np.where(result < (2 ** (n - 1)), result, result - (2**n))
                     sanitized_results.append(sanititzed_result.astype(np.int8))
             else:
                 sanitized_results.append(
