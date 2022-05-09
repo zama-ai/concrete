@@ -63,6 +63,7 @@ mod ffi {
         ) -> Solution;
     }
 
+    #[namespace = "concrete_optimizer"]
     #[derive(Debug, Clone, Copy, Default)]
     pub struct Solution {
         pub input_lwe_dimension: u64,              //n_big
