@@ -471,6 +471,7 @@ fn assert_checks<W: UnsignedInteger>(
 
 const BITS_CARRY: u64 = 1;
 const BITS_PADDING_WITHOUT_NOISE: u64 = 1;
+const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
 #[allow(clippy::too_many_lines)]
 pub fn optimise_one<W: UnsignedInteger>(
@@ -580,6 +581,11 @@ pub fn optimise_one<W: UnsignedInteger>(
                 );
             }
         }
+    }
+
+    if let Some(sol) = state.best_solution {
+        assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);
+        assert!(sol.p_error <= maximum_acceptable_error_probability * REL_EPSILON_PROBA);
     }
 
     state
