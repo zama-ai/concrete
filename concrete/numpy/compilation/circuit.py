@@ -101,7 +101,7 @@ class Circuit:
         self._output_dir = output_dir
         if isinstance(support, LibrarySupport):
             assert output_dir is not None
-            assert_that(support.library_path == str(output_dir.name) + "/out")
+            assert_that(support.output_dir_path == str(output_dir.name))
 
         self.client_parameters = support.load_client_parameters(compilation_result)
         keyset = None
@@ -161,7 +161,9 @@ class Circuit:
             output_dir_path = Path(output_dir.name)
             # pylint: enable=consider-using-with
 
-            support = LibrarySupport.new(str(output_dir_path / "out"))
+            support = LibrarySupport.new(
+                str(output_dir_path), generateCppHeader=False, generateStaticLib=False
+            )
             compilation_result = support.compile(mlir, options)
             server_lambda = support.load_server_lambda(compilation_result)
 
@@ -245,7 +247,9 @@ class Circuit:
             output_dir.cleanup()
             return Circuit(configuration, graph, mlir)
 
-        support = LibrarySupport.new(str(output_dir_path / "out"))
+        support = LibrarySupport.new(
+            str(output_dir_path), generateCppHeader=False, generateStaticLib=False
+        )
         compilation_result = support.reload("main")
         server_lambda = support.load_server_lambda(compilation_result)
 

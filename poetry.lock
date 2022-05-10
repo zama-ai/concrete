@@ -245,7 +245,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "concrete-compiler"
-version = "0.7.0"
+version = "0.8.0"
 description = "Concrete Compiler"
 category = "main"
 optional = false
@@ -1476,7 +1476,7 @@ typing-extensions = {version = ">=3.10.0", markers = "python_version < \"3.10\""
 
 [[package]]
 name = "pyparsing"
-version = "3.0.8"
+version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
 category = "main"
 optional = false
@@ -2126,14 +2126,14 @@ telegram = ["requests"]
 
 [[package]]
 name = "traitlets"
-version = "5.1.1"
+version = "5.2.0"
 description = "Traitlets Python configuration system"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 
 [package.extras]
-test = ["pytest"]
+test = ["pytest", "pre-commit"]
 
 [[package]]
 name = "twine"
@@ -2246,7 +2246,7 @@ full = ["pygraphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "9cc6d8d2d79bcdcf129e3986cd5b4864f979f5cd5bfba14ebea0de39ad5ce6ef"
+content-hash = "0b72c6ee27a47513818eb2de129687c93f2d47fd8486f8fba1b1cebe6abb6de9"
 
 [metadata.files]
 alabaster = [
@@ -2418,12 +2418,12 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 concrete-compiler = [
-    {file = "concrete_compiler-0.7.0-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:caf8071778809243a9747cbeff4465d830162a614a757a7be9fdccf6daf0e5f6"},
-    {file = "concrete_compiler-0.7.0-cp310-cp310-manylinux_2_24_x86_64.whl", hash = "sha256:ac613847aece93bdf5648cb34a2c843237517e18d6b8d8bacb04237cee0643fe"},
-    {file = "concrete_compiler-0.7.0-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:d8048f038656bf2a8bf3187510879086a3d0884996578b2109267964ecd0cf7b"},
-    {file = "concrete_compiler-0.7.0-cp38-cp38-manylinux_2_24_x86_64.whl", hash = "sha256:dc49e018f42172037f7199888e7f9ea0e0a1ed1ef723acbe8cc1f8c357d11a7e"},
-    {file = "concrete_compiler-0.7.0-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:b1e9d5b6658daa12fda8d44cd910a441e1b68792d01859128a78b3e7fb3fee2c"},
-    {file = "concrete_compiler-0.7.0-cp39-cp39-manylinux_2_24_x86_64.whl", hash = "sha256:0b5bbad08fa16ec0e80c6c89f7eadb839160215d0a61ed43ee0c3f669a95ef2a"},
+    {file = "concrete_compiler-0.8.0-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:336f4c7439a49c7b1de4d499a1a5bd88a1022b524c103e0882260a9fbb2234d6"},
+    {file = "concrete_compiler-0.8.0-cp310-cp310-manylinux_2_24_x86_64.whl", hash = "sha256:b145938b2ccd5df2d7a89d71c8bfce1838ffff61e82edec2cc06f681ca750559"},
+    {file = "concrete_compiler-0.8.0-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:2f95fd0e2603b05d5a0b4033d2a6bd06a3b9e29fe9fa474165958db5ec318642"},
+    {file = "concrete_compiler-0.8.0-cp38-cp38-manylinux_2_24_x86_64.whl", hash = "sha256:8ab99d46b8a83f0eb02bb80badfe48f63fe7ba99c500a3a31fc3e97b0dd3203f"},
+    {file = "concrete_compiler-0.8.0-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:aeda8487714c79989f4a165fe47b550894737fcec2de51c72111a8a97cc0abb5"},
+    {file = "concrete_compiler-0.8.0-cp39-cp39-manylinux_2_24_x86_64.whl", hash = "sha256:aca9f0deb4158e433b16ef3f1745999eb6a0ba8691991f2458b3d7842f11665c"},
 ]
 coverage = [
     {file = "coverage-6.3.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:9b27d894748475fa858f9597c0ee1d4829f44683f3813633aaf94b19cb5453cf"},
@@ -3195,8 +3195,8 @@ pylint = [
     {file = "pylint-2.11.1.tar.gz", hash = "sha256:2c9843fff1a88ca0ad98a256806c82c5a8f86086e7ccbdb93297d86c3f90c436"},
 ]
 pyparsing = [
-    {file = "pyparsing-3.0.8-py3-none-any.whl", hash = "sha256:ef7b523f6356f763771559412c0d7134753f037822dad1b16945b7b846f7ad06"},
-    {file = "pyparsing-3.0.8.tar.gz", hash = "sha256:7bf433498c016c4314268d95df76c81b842a4cb2b276fa3312cfb1e1d85f6954"},
+    {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
+    {file = "pyparsing-3.0.9.tar.gz", hash = "sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb"},
 ]
 pyrsistent = [
     {file = "pyrsistent-0.18.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:df46c854f490f81210870e509818b729db4488e1f30f2a1ce1698b2295a878d1"},
@@ -3564,8 +3564,8 @@ tqdm = [
     {file = "tqdm-4.64.0.tar.gz", hash = "sha256:40be55d30e200777a307a7585aee69e4eabb46b4ec6a4b4a5f2d9f11e7d5408d"},
 ]
 traitlets = [
-    {file = "traitlets-5.1.1-py3-none-any.whl", hash = "sha256:2d313cc50a42cd6c277e7d7dc8d4d7fedd06a2c215f78766ae7b1a66277e0033"},
-    {file = "traitlets-5.1.1.tar.gz", hash = "sha256:059f456c5a7c1c82b98c2e8c799f39c9b8128f6d0d46941ee118daace9eb70c7"},
+    {file = "traitlets-5.2.0-py3-none-any.whl", hash = "sha256:9dd4025123fbe018a2092b2ad6984792f53ea3362c698f37473258b1fa97b0bc"},
+    {file = "traitlets-5.2.0.tar.gz", hash = "sha256:60474f39bf1d39a11e0233090b99af3acee93bbc2281777e61dd8c87da8a0014"},
 ]
 twine = [
     {file = "twine-3.8.0-py3-none-any.whl", hash = "sha256:d0550fca9dc19f3d5e8eadfce0c227294df0a2a951251a4385797c8a6198b7c8"},
