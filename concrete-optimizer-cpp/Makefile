@@ -47,4 +47,4 @@ test-ci:
 	# force regeneration of sources
 	rm -rf $(INTERFACE_HEADER) $(INTERFACE_CPP) $(INTERFACE_HEADER_ORIG) $(INTERFACE_CPP_ORIG)
 	$(MAKE) CARGO_PROFILE=dev PROFILE_SUBDIR=debug test
-	git diff --check src/cpp || echo Please commit the new version of generated files
+	git diff --exit-code src/cpp || (echo Please commit the new version of generated files && exit 1)
