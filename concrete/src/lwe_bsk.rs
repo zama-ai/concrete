@@ -261,19 +261,18 @@ impl LWEBSK {
 impl fmt::Display for LWEBSK {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let n = 2;
-        let mut to_be_print: String = "".to_string();
 
-        to_be_print += " LWEBSK {\n         -> samples = [";
+        write!(f, "LWEBSK {{\n         -> samples = [")?;
 
         if self.ciphertexts.as_tensor().len() <= 2 * n {
             for elt in self.ciphertexts.as_tensor().iter() {
-                to_be_print += &format!("{}, ", *elt);
+                write!(f, "{}, ", *elt)?;
             }
         } else {
             for elt in self.ciphertexts.as_tensor().get_sub(0..n).iter() {
-                to_be_print += &format!("{}, ", *elt);
+                write!(f, "{}, ", *elt)?;
             }
-            to_be_print += "...";
+            write!(f, "...")?;
 
             for elt in self
                 .ciphertexts
@@ -281,18 +280,15 @@ impl fmt::Display for LWEBSK {
                 .get_sub(self.ciphertexts.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print += &format!("{}, ", *elt);
+                write!(f, "{}, ", *elt)?;
             }
         }
-        to_be_print += "]\n";
-
-        to_be_print += &format!("         -> variance = {}\n", self.variance);
-        to_be_print += &format!("         -> dimension = {}\n", self.dimension);
-        to_be_print =
-            to_be_print + &format!("         -> polynomial_size = {}\n", self.polynomial_size);
-        to_be_print += &format!("         -> base_log = {}\n", self.base_log);
-        to_be_print += &format!("         -> level = {}\n", self.level);
-        to_be_print += "       }";
-        writeln!(f, "{}", to_be_print)
+        writeln!(f, "]")?;
+        writeln!(f, "         -> variance = {}", self.variance)?;
+        writeln!(f, "         -> dimension = {}", self.dimension)?;
+        writeln!(f, "         -> polynomial_size = {}", self.polynomial_size)?;
+        writeln!(f, "         -> base_log = {}", self.base_log)?;
+        writeln!(f, "         -> level = {}", self.level)?;
+        writeln!(f, "}}")
     }
 }

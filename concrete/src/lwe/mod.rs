@@ -2051,19 +2051,18 @@ impl LWE {
 impl fmt::Display for LWE {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let n = 2;
-        let mut to_be_print: String = "".to_string();
 
-        to_be_print += " LWE {\n         -> samples = [";
+        writeln!(f, "LWE {{         -> samples = [")?;
 
         if self.ciphertext.as_tensor().len() <= 2 * n {
             for elt in self.ciphertext.as_tensor().iter() {
-                to_be_print = to_be_print + &format!("{}, ", *elt);
+                write!(f, "{}, ", *elt)?;
             }
         } else {
             for elt in self.ciphertext.as_tensor().get_sub(0..n).iter() {
-                to_be_print = to_be_print + &format!("{}, ", *elt);
+                write!(f, "{}, ", *elt)?;
             }
-            to_be_print += "...";
+            write!(f, "...")?;
 
             for elt in self
                 .ciphertext
@@ -2071,14 +2070,13 @@ impl fmt::Display for LWE {
                 .get_sub(self.ciphertext.as_tensor().len() - n..)
                 .iter()
             {
-                to_be_print = to_be_print + &format!("{}, ", *elt);
+                write!(f, "{}, ", *elt)?;
             }
         }
-        to_be_print += "]\n";
+        writeln!(f, "]")?;
 
-        to_be_print += &format!("         -> variance = {}\n", self.variance);
-        to_be_print = to_be_print + &format!("         -> dimension = {}\n", self.dimension);
-        to_be_print += "       }";
-        writeln!(f, "{}", to_be_print)
+        writeln!(f, "         -> variance = {}", self.variance)?;
+        writeln!(f, "         -> dimension = {}", self.dimension)?;
+        writeln!(f, "       }}")
     }
 }
