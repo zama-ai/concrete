@@ -1,7 +1,10 @@
 use std::collections::HashSet;
 
 use crate::graph::operator::{Operator, OperatorIndex};
-use crate::graph::parameter_indexed::{AtomicPatternParametersIndexed, InputParameterIndexed};
+use crate::graph::parameter_indexed::{
+    InputParameterIndexed, LutParametersIndexed, OperatorParameterIndexed,
+};
+use crate::graph::unparametrized::UnparameterizedOperator;
 use crate::graph::{parameter_indexed, range_parametrized, unparametrized};
 use crate::parameters::{
     BrDecompositionParameterRanges, BrDecompositionParameters, GlweParameterRanges, GlweParameters,
@@ -92,46 +95,65 @@ impl Range {
 
 #[must_use]
 #[allow(clippy::needless_pass_by_value)]
-pub fn minimal_unify(_g: unparametrized::AtomicPatternDag) -> parameter_indexed::AtomicPatternDag {
+pub fn minimal_unify(_g: unparametrized::OperationDag) -> parameter_indexed::OperationDag {
     todo!()
 }
 
-fn convert_maximal(
-    op: Operator<(), ()>,
-) -> Operator<InputParameterIndexed, AtomicPatternParametersIndexed> {
+fn convert_maximal(op: UnparameterizedOperator) -> OperatorParameterIndexed {
     let external_glwe_index = 0;
     let internal_lwe_index = 1;
     let br_decomposition_index = 0;
     let ks_decomposition_index = 0;
     match op {
-        Operator::Input { out_precision, .. } => Operator::Input {
+        Operator::Input {
             out_precision,
+            out_shape,
+            ..
+        } => Operator::Input {
+            out_precision,
+            out_shape,
             extra_data: InputParameterIndexed {
                 lwe_dimension_index: external_glwe_index,
             },
         },
-        Operator::AtomicPattern {
-            in_precision,
-            out_precision,
-            multisum_inputs,
-            ..
-        } => Operator::AtomicPattern {
-            in_precision,
-            out_precision,
-            multisum_inputs,
-            extra_data: AtomicPatternParametersIndexed {
-                input_lwe_dimensionlwe_dimension_index: external_glwe_index,
+        Operator::Lut { input, table, .. } => Operator::Lut {
+            input,
+            table,
+            extra_data: LutParametersIndexed {
+                input_lwe_dimension_index: external_glwe_index,
                 ks_decomposition_parameter_index: ks_decomposition_index,
                 internal_lwe_dimension_index: internal_lwe_index,
                 br_decomposition_parameter_index: br_decomposition_index,
                 output_glwe_params_index: external_glwe_index,
             },
         },
+        Operator::Dot {
+            inputs, weights, ..
+        } => Operator::Dot {
+            inputs,
+            weights,
+            extra_data: (),
+        },
+        Operator::LevelledOp {
+            inputs,
+            complexity,
+            manp,
+            out_shape,
+            comment,
+            ..
+        } => Operator::LevelledOp {
+            inputs,
+            complexity,
+            manp,
+            comment,
+            out_shape,
+            extra_data: (),
+        },
     }
 }
 
 #[must_use]
-pub fn maximal_unify(g: unparametrized::AtomicPatternDag) -> parameter_indexed::AtomicPatternDag {
+pub fn maximal_unify(g: unparametrized::OperationDag) -> parameter_indexed::OperationDag {
     let operators: Vec<_> = g.operators.into_iter().map(convert_maximal).collect();
 
     let parameters = ParameterCount {
@@ -147,20 +169,25 @@ pub fn maximal_unify(g: unparametrized::AtomicPatternDag) -> parameter_indexed::
     };
 
     for (i, op) in operators.iter().enumerate() {
+        let index = OperatorIndex { i };
         match op {
             Operator::Input { .. } => {
-                reverse_map.glwe[0].push(OperatorIndex(i));
+                reverse_map.glwe[0].push(index);
             }
-            Operator::AtomicPattern { .. } => {
-                reverse_map.glwe[0].push(OperatorIndex(i));
-                reverse_map.glwe[1].push(OperatorIndex(i));
-                reverse_map.br_decomposition[0].push(OperatorIndex(i));
-                reverse_map.ks_decomposition[0].push(OperatorIndex(i));
+            Operator::Lut { .. } => {
+                reverse_map.glwe[0].push(index);
+                reverse_map.glwe[1].push(index);
+                reverse_map.br_decomposition[0].push(index);
+                reverse_map.ks_decomposition[0].push(index);
+            }
+            Operator::Dot { .. } | Operator::LevelledOp { .. } => {
+                reverse_map.glwe[0].push(index);
+                reverse_map.glwe[1].push(index);
             }
         }
     }
 
-    parameter_indexed::AtomicPatternDag {
+    parameter_indexed::OperationDag {
         operators,
         parameters_count: parameters,
         reverse_map,
@@ -169,16 +196,16 @@ pub fn maximal_unify(g: unparametrized::AtomicPatternDag) -> parameter_indexed::
 
 #[must_use]
 pub fn domains_to_ranges(
-    parameter_indexed::AtomicPatternDag {
+    parameter_indexed::OperationDag {
         operators,
         parameters_count,
         reverse_map,
-    }: parameter_indexed::AtomicPatternDag,
+    }: parameter_indexed::OperationDag,
     domains: ParameterDomains,
-) -> range_parametrized::AtomicPatternDag {
+) -> range_parametrized::OperationDag {
     let mut constrained_glwe_parameter_indexes = HashSet::new();
     for op in &operators {
-        if let Operator::AtomicPattern { extra_data, .. } = op {
+        if let Operator::Lut { extra_data, .. } = op {
             let _ = constrained_glwe_parameter_indexes.insert(extra_data.output_glwe_params_index);
         }
     }
@@ -202,7 +229,7 @@ pub fn domains_to_ranges(
         ks_decomposition: vec![domains.ks_decomposition; parameters_count.ks_decomposition],
     };
 
-    range_parametrized::AtomicPatternDag {
+    range_parametrized::OperationDag {
         operators,
         parameter_ranges,
         reverse_map,
@@ -217,24 +244,27 @@ pub fn domains_to_ranges(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::weight::Weight;
+    use crate::graph::operator::{FunctionTable, LevelledComplexity, Shape, Weights};
 
     #[test]
     fn test_maximal_unify() {
-        let mut graph = unparametrized::AtomicPatternDag::new();
+        let mut graph = unparametrized::OperationDag::new();
 
-        let input1 = graph.add_input(1);
+        let input1 = graph.add_input(1, Shape::number());
 
-        let input2 = graph.add_input(2);
+        let input2 = graph.add_input(2, Shape::number());
 
-        let atomic_pattern1 =
-            graph.add_atomic_pattern(3, 3, vec![(Weight(1), input1), (Weight(2), input2)]);
+        let cpx_add = LevelledComplexity::ADDITION;
+        let sum1 = graph.add_levelled_op(&[input1, input2], cpx_add, 1.0, Shape::number(), "sum");
 
-        let _atomic_pattern2 = graph.add_atomic_pattern(
-            4,
-            4,
-            vec![(Weight(1), atomic_pattern1), (Weight(2), input2)],
-        );
+        let lut1 = graph.add_lut(sum1, FunctionTable::UNKWOWN);
+
+        let concat =
+            graph.add_levelled_op(&[input1, lut1], cpx_add, 1.0, Shape::number(), "concat");
+
+        let dot = graph.add_dot(&[concat], &Weights::vector(&[1, 2]));
+
+        let lut2 = graph.add_lut(dot, FunctionTable::UNKWOWN);
 
         let graph_params = maximal_unify(graph);
 
@@ -250,24 +280,19 @@ mod tests {
         assert_eq!(
             graph_params.reverse_map.glwe,
             vec![
-                vec![
-                    OperatorIndex(0),
-                    OperatorIndex(1),
-                    OperatorIndex(2),
-                    OperatorIndex(3)
-                ],
-                vec![OperatorIndex(2), OperatorIndex(3)]
+                vec![input1, input2, sum1, lut1, concat, dot, lut2],
+                vec![sum1, lut1, concat, dot, lut2]
             ]
         );
 
         assert_eq!(
             graph_params.reverse_map.br_decomposition,
-            vec![vec![OperatorIndex(2), OperatorIndex(3)]]
+            vec![vec![lut1, lut2]]
         );
 
         assert_eq!(
             graph_params.reverse_map.ks_decomposition,
-            vec![vec![OperatorIndex(2), OperatorIndex(3)]]
+            vec![vec![lut1, lut2]]
         );
         // collectes l'ensemble des parametres
         // unify structurellement les parametres identiques
@@ -278,19 +303,19 @@ mod tests {
 
     #[test]
     fn test_simple_lwe() {
-        let mut graph = unparametrized::AtomicPatternDag::new();
-        let input1 = graph.add_input(1);
-        let _input2 = graph.add_input(2);
+        let mut graph = unparametrized::OperationDag::new();
+        let input1 = graph.add_input(1, Shape::number());
+        let _input2 = graph.add_input(2, Shape::number());
 
         let graph_params = maximal_unify(graph);
 
-        let range_parametrized::AtomicPatternDag {
+        let range_parametrized::OperationDag {
             operators,
             parameter_ranges,
             reverse_map: _,
         } = domains_to_ranges(graph_params, DEFAUT_DOMAINS);
 
-        let input_1_lwe_params = match &operators[input1.0] {
+        let input_1_lwe_params = match &operators[input1.i] {
             Operator::Input { extra_data, .. } => extra_data.lwe_dimension_index,
             _ => unreachable!(),
         };
@@ -305,22 +330,25 @@ mod tests {
 
     #[test]
     fn test_simple_lwe2() {
-        let mut graph = unparametrized::AtomicPatternDag::new();
-        let input1 = graph.add_input(1);
-        let input2 = graph.add_input(2);
+        let mut graph = unparametrized::OperationDag::new();
+        let input1 = graph.add_input(1, Shape::number());
+        let input2 = graph.add_input(2, Shape::number());
 
-        let atomic_pattern1 =
-            graph.add_atomic_pattern(3, 3, vec![(Weight(1), input1), (Weight(2), input2)]);
+        let cpx_add = LevelledComplexity::ADDITION;
+        let concat =
+            graph.add_levelled_op(&[input1, input2], cpx_add, 1.0, Shape::vector(2), "concat");
+
+        let lut1 = graph.add_lut(concat, FunctionTable::UNKWOWN);
 
         let graph_params = maximal_unify(graph);
 
-        let range_parametrized::AtomicPatternDag {
+        let range_parametrized::OperationDag {
             operators,
             parameter_ranges,
             reverse_map: _,
         } = domains_to_ranges(graph_params, DEFAUT_DOMAINS);
 
-        let input_1_lwe_params = match &operators[input1.0] {
+        let input_1_lwe_params = match &operators[input1.i] {
             Operator::Input { extra_data, .. } => extra_data.lwe_dimension_index,
             _ => unreachable!(),
         };
@@ -329,22 +357,22 @@ mod tests {
             parameter_ranges.glwe[input_1_lwe_params]
         );
 
-        let atomic_pattern1_out_glwe_params = match &operators[atomic_pattern1.0] {
-            Operator::AtomicPattern { extra_data, .. } => extra_data.output_glwe_params_index,
+        let lut1_out_glwe_params = match &operators[lut1.i] {
+            Operator::Lut { extra_data, .. } => extra_data.output_glwe_params_index,
             _ => unreachable!(),
         };
         assert_eq!(
             DEFAUT_DOMAINS.glwe_pbs_constrained,
-            parameter_ranges.glwe[atomic_pattern1_out_glwe_params]
+            parameter_ranges.glwe[lut1_out_glwe_params]
         );
 
-        let atomic_pattern1_internal_glwe_params = match &operators[atomic_pattern1.0] {
-            Operator::AtomicPattern { extra_data, .. } => extra_data.internal_lwe_dimension_index,
+        let lut1_internal_glwe_params = match &operators[lut1.i] {
+            Operator::Lut { extra_data, .. } => extra_data.internal_lwe_dimension_index,
             _ => unreachable!(),
         };
         assert_eq!(
             DEFAUT_DOMAINS.free_glwe,
-            parameter_ranges.glwe[atomic_pattern1_internal_glwe_params]
+            parameter_ranges.glwe[lut1_internal_glwe_params]
         );
     }
 }

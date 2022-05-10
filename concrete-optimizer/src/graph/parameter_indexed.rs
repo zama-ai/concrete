@@ -7,8 +7,8 @@ pub struct InputParameterIndexed {
 }
 
 #[derive(Copy, Clone)]
-pub struct AtomicPatternParametersIndexed {
-    pub input_lwe_dimensionlwe_dimension_index: usize,
+pub struct LutParametersIndexed {
+    pub input_lwe_dimension_index: usize,
     pub ks_decomposition_parameter_index: usize,
     pub internal_lwe_dimension_index: usize,
     pub br_decomposition_parameter_index: usize,
@@ -16,9 +16,9 @@ pub struct AtomicPatternParametersIndexed {
 }
 
 pub(crate) type OperatorParameterIndexed =
-    Operator<InputParameterIndexed, AtomicPatternParametersIndexed>;
+    Operator<InputParameterIndexed, LutParametersIndexed, (), ()>;
 
-pub struct AtomicPatternDag {
+pub struct OperationDag {
     pub(crate) operators: Vec<OperatorParameterIndexed>,
     pub(crate) parameters_count: ParameterCount,
     pub(crate) reverse_map: ParameterToOperation,

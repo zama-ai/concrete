@@ -3,6 +3,7 @@
 #![warn(clippy::style)]
 #![allow(clippy::cast_precision_loss)] // u64 to f64
 #![allow(clippy::cast_possible_truncation)] // u64 to usize
+#![allow(clippy::inline_always)] // needed by delegate
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_const_for_fn)]
 #![allow(clippy::module_name_repetitions)]
