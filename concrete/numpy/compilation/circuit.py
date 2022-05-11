@@ -145,6 +145,7 @@ class Circuit:
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
+        options.set_p_error(configuration.p_error)
 
         if configuration.jit:
 

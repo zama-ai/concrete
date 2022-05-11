@@ -26,6 +26,7 @@ class Configuration:
     dataflow_parallelize: bool
     auto_parallelize: bool
     jit: bool
+    p_error: float
 
     # pylint: enable=too-many-instance-attributes
 
@@ -61,6 +62,7 @@ class Configuration:
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
         jit: bool = False,
+        p_error: float = 6.3342483999973e-05,
     ):
         self.verbose = verbose
         self.show_graph = show_graph
@@ -73,6 +75,7 @@ class Configuration:
         self.dataflow_parallelize = dataflow_parallelize
         self.auto_parallelize = auto_parallelize
         self.jit = jit
+        self.p_error = p_error
 
         self._validate()
 
