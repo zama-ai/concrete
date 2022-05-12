@@ -51,7 +51,7 @@ pub struct ParameterDomains {
 
 pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
     glwe_pbs_constrained: GlweParameterRanges {
-        log2_polynomial_size: Range { start: 8, end: 15 },
+        log2_polynomial_size: Range { start: 10, end: 15 },
         glwe_dimension: Range { start: 1, end: 2 },
     },
     free_glwe: GlweParameterRanges {

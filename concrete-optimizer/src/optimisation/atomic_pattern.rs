@@ -9,27 +9,11 @@ use crate::parameters::{
     AtomicPatternParameters, BrDecompositionParameters, GlweParameters, KeyswitchParameters,
     KsDecompositionParameters, LweDimension, PbsParameters,
 };
+use crate::pareto;
 use crate::security;
 use complexity_atomic_pattern::{AtomicPatternComplexity, DEFAULT as DEFAULT_COMPLEXITY};
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
-
-#[rustfmt::skip]
-const BR_BL: &[(u64, u64); 35] = &[
-    (12, 1), (23, 1), (8, 2), (15, 2), (16, 2), (3, 3), (6, 3), (12, 3), (2, 4),
-    (5, 4), (9, 4), (4, 5), (8, 5), (7, 6), (3, 7), (6, 7), (1, 8), (5, 8), (1, 9),
-    (5, 9), (2, 10), (4, 10), (2, 11), (4, 11), (3, 14), (3, 15), (1, 21), (2, 21), (1, 22),
-    (2, 22), (2, 23), (1, 43), (1, 44), (1, 45), (1, 46)
-];
-
-#[rustfmt::skip]
-const KS_BL: &[(u64, u64); 46] = &[
-    (5, 1), (12, 1), (26, 1), (31, 1), (4, 2), (8, 2), (17, 2), (21, 2), (3, 3),
-    (6, 3), (13, 3), (15, 3), (2, 4), (5, 4), (10, 4), (12, 4), (2, 5), (4, 5),
-    (9, 5), (10, 5), (4, 6), (8, 6), (3, 7), (7, 7), (3, 8), (6, 8), (1, 9), (5, 9), (1, 10),
-    (5, 10), (2, 11), (2, 12), (4, 12), (4, 13), (3, 16), (3, 17), (1, 22), (1, 23), (2, 24),
-    (2, 25), (2, 26), (1, 48), (1, 49), (1, 50), (1, 51), (1, 52)
-];
 
 fn square(v: f64) -> f64 {
     v * v
@@ -513,10 +497,10 @@ pub fn optimise_one<W: UnsignedInteger>(
         security_level,
         noise_factor,
         ciphertext_modulus_log,
-        keyswitch_decompositions: KS_BL
+        keyswitch_decompositions: pareto::KS_BL
             .map(|(log2_base, level)| KsDecompositionParameters { level, log2_base })
             .to_vec(),
-        blind_rotate_decompositions: BR_BL
+        blind_rotate_decompositions: pareto::BR_BL
             .map(|(log2_base, level)| BrDecompositionParameters { level, log2_base })
             .to_vec(),
         variance_max: variance_max.get_variance(),
@@ -527,8 +511,8 @@ pub fn optimise_one<W: UnsignedInteger>(
         count_domain: glwe_dimensions.len()
             * glwe_log_polynomial_sizes.len()
             * internal_lwe_dimensions.len()
-            * KS_BL.len()
-            * BR_BL.len(),
+            * consts.keyswitch_decompositions.len()
+            * consts.blind_rotate_decompositions.len(),
     };
 
     // cut only on glwe_poly_size based of modulus switching noise

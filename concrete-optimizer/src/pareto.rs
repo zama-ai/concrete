@@ -153,36 +153,70 @@ pub fn extract_ks_pareto(
     res
 }
 
+#[rustfmt::skip]
+pub const BR_BL: &[(u64, u64); 34] = &[
+    (12, 1),(22, 1),(23, 1),
+    (8, 2),(15, 2),(16, 2),(6, 3),(11, 3),(12, 3),
+    (5, 4),(9, 4),
+    (4, 5),(8, 5),
+    (7, 6),
+    (3, 7),(6, 7),
+    (5, 8),
+    (5, 9),
+    (2, 10),(4, 10),
+    (2, 11),(4, 11),
+    (3, 14),
+    (3, 15),
+    (1, 21),(2, 21),
+    (1, 22),(2, 22),
+    (2, 23),
+    (1, 42),(1, 43),(1, 44),(1, 45),(1, 46)
+];
+
+#[rustfmt::skip]
+pub const KS_BL: &[(u64, u64); 50] = &[
+    (5, 1),(6, 1),(7, 1),(8, 1),(9, 1),(10, 1),(11, 1),(12, 1),
+    (4, 2),(5, 2),(6, 2),(7, 2),(8, 2),
+    (3, 3),(4, 3),(5, 3),(6, 3),
+    (2, 4),(3, 4),(4, 4),(5, 4),
+    (2, 5),(3, 5),(4, 5),
+    (2, 6),(3, 6),(4, 6),
+    (2, 7),(3, 7),
+    (2, 8),(3, 8),
+    (1, 9),(2, 9),
+    (1, 10),(2, 10),
+    (1, 11),(2, 11),
+    (1, 12),(2, 12),
+    (1, 13),(1, 14),(1, 15),(1, 16),(1, 17),(1, 18),(1, 19),(1, 20),(1, 21),(1, 22),(1, 23)
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::global_parameters::Range;
-    use crate::parameters::GlweParameterRanges;
+    use crate::global_parameters::DEFAUT_DOMAINS;
+    use pretty_assertions::assert_eq;
     use std::time::Instant;
 
-    // when this test fails remove function fix_1xerror and fix_2xerror
     #[test]
     fn extract_br_pareto2() {
         let start = Instant::now();
-
-        assert_eq!(
-            extract_br_pareto(
-                128,
-                &GlweParameterRanges {
-                    log2_polynomial_size: Range { start: 9, end: 15 },
-                    glwe_dimension: Range { start: 1, end: 3 }
-                },
-                &crate::parameters::LweDimensionRange {
-                    lwe_dimension: Range {
-                        start: 450,
-                        end: 1024
-                    }
-                },
-                64
-            )
-            .len(),
-            44
+        let pareto = extract_br_pareto(
+            128,
+            &DEFAUT_DOMAINS.glwe_pbs_constrained,
+            &DEFAUT_DOMAINS.free_glwe.into(),
+            64,
         );
+
+        let decomp_couple = |v: &BrDecompositionParameters| (v.log2_base, v.level);
+        let br_bl: Vec<_> = pareto.iter().map(decomp_couple).collect();
+        if br_bl != BR_BL {
+            println!("---- Copy past to BR_BL");
+            for (log2_base, level) in &br_bl {
+                print!("({}, {}),", log2_base, level);
+            }
+            println!("\n---- End");
+            assert_eq!(BR_BL, br_bl.as_slice());
+        }
 
         let duration = start.elapsed();
 
@@ -192,25 +226,23 @@ mod tests {
     #[test]
     fn extract_ks_pareto2() {
         let start = Instant::now();
-
-        assert_eq!(
-            extract_ks_pareto(
-                128,
-                &GlweParameterRanges {
-                    log2_polynomial_size: Range { start: 9, end: 15 },
-                    glwe_dimension: Range { start: 1, end: 3 }
-                },
-                &crate::parameters::LweDimensionRange {
-                    lwe_dimension: Range {
-                        start: 450,
-                        end: 1024
-                    }
-                },
-                64
-            )
-            .len(),
-            54
+        let pareto = extract_ks_pareto(
+            128,
+            &DEFAUT_DOMAINS.glwe_pbs_constrained,
+            &DEFAUT_DOMAINS.free_glwe.into(),
+            64,
         );
+
+        let decomp_couple = |v: &KsDecompositionParameters| (v.log2_base, v.level);
+        let ks_bl: Vec<_> = pareto.iter().map(decomp_couple).collect();
+        if ks_bl != KS_BL {
+            println!("---- Copy past to KS_BL");
+            for (log2_base, level) in &ks_bl {
+                print!("({}, {}),", log2_base, level);
+            }
+            println!("\n---- End");
+            assert_eq!(KS_BL, ks_bl.as_slice());
+        }
 
         let duration = start.elapsed();
 

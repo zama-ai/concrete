@@ -114,6 +114,17 @@ mod range {
         pub glwe_dimension: Range,
     }
 
+    impl From<GlweParameterRanges> for LweDimensionRange {
+        fn from(p: GlweParameterRanges) -> Self {
+            Self {
+                lwe_dimension: Range {
+                    start: (1u64 << p.log2_polynomial_size.start) * p.glwe_dimension.start,
+                    end: (1u64 << (p.log2_polynomial_size.end - 1)) * p.glwe_dimension.end,
+                },
+            }
+        }
+    }
+
     #[derive(Clone, Copy)]
     pub struct BrDecompositionParameterRanges {
         pub level: Range,

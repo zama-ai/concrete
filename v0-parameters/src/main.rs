@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_reference_output() {
-        const REF_FILE: &str = "src/v0_parameters.ref-23-03-2022";
+        const REF_FILE: &str = "src/v0_parameters.ref-12-05-2022";
         const V0_PARAMETERS_EXE: &str = "../target/debug/v0-parameters";
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
