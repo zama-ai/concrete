@@ -1,3 +1,8 @@
+use concrete_optimizer::graph::operator::{
+    self, FunctionTable, LevelledComplexity, OperatorIndex, Shape,
+};
+use concrete_optimizer::graph::unparametrized;
+
 fn no_solution() -> ffi::Solution {
     ffi::Solution {
         p_error: 1.0, // error probability to signal an impossible solution
@@ -5,7 +10,7 @@ fn no_solution() -> ffi::Solution {
     }
 }
 
-fn optimise_bootstrap(
+fn optimize_bootstrap(
     precision: u64,
     security_level: u64,
     noise_factor: f64,
@@ -51,19 +56,141 @@ impl From<concrete_optimizer::optimisation::atomic_pattern::Solution> for ffi::S
     }
 }
 
+pub struct OperationDag(unparametrized::OperationDag);
+
+fn empty() -> Box<OperationDag> {
+    Box::new(OperationDag(unparametrized::OperationDag::new()))
+}
+
+impl OperationDag {
+    fn add_input(&mut self, out_precision: u8, out_shape: &[u64]) -> ffi::OperatorIndex {
+        let out_shape = Shape {
+            dimensions_size: out_shape.to_owned(),
+        };
+
+        self.0.add_input(out_precision, out_shape).into()
+    }
+
+    fn add_lut(&mut self, input: ffi::OperatorIndex, table: &[u64]) -> ffi::OperatorIndex {
+        let table = FunctionTable {
+            values: table.to_owned(),
+        };
+
+        self.0.add_lut(input.into(), table).into()
+    }
+
+    #[allow(clippy::boxed_local)]
+    fn add_dot(
+        &mut self,
+        inputs: &[ffi::OperatorIndex],
+        weights: Box<Weights>,
+    ) -> ffi::OperatorIndex {
+        let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
+
+        self.0.add_dot(&inputs, &weights.0).into()
+    }
+
+    fn add_levelled_op(
+        &mut self,
+        inputs: &[ffi::OperatorIndex],
+        lwe_dim_cost_factor: f64,
+        fixed_cost: f64,
+        manp: f64,
+        out_shape: &[u64],
+        comment: &str,
+    ) -> ffi::OperatorIndex {
+        let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
+
+        let out_shape = Shape {
+            dimensions_size: out_shape.to_owned(),
+        };
+
+        let complexity = LevelledComplexity {
+            lwe_dim_cost_factor,
+            fixed_cost,
+        };
+
+        self.0
+            .add_levelled_op(&inputs, complexity, manp, out_shape, comment)
+            .into()
+    }
+}
+
+pub struct Weights(operator::Weights);
+
+fn vector(weights: &[u64]) -> Box<Weights> {
+    Box::new(Weights(operator::Weights::vector(weights)))
+}
+
+impl From<OperatorIndex> for ffi::OperatorIndex {
+    fn from(oi: OperatorIndex) -> Self {
+        Self { index: oi.i }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<OperatorIndex> for ffi::OperatorIndex {
+    fn into(self) -> OperatorIndex {
+        OperatorIndex { i: self.index }
+    }
+}
+
 #[cxx::bridge]
 mod ffi {
+
     #[namespace = "concrete_optimizer"]
     extern "Rust" {
-        fn optimise_bootstrap(
+
+        #[namespace = "concrete_optimizer::v0"]
+        fn optimize_bootstrap(
             precision: u64,
             security_level: u64,
             noise_factor: f64,
             maximum_acceptable_error_probability: f64,
         ) -> Solution;
+
+        type OperationDag;
+
+        #[namespace = "concrete_optimizer::dag"]
+        fn empty() -> Box<OperationDag>;
+
+        fn add_input(
+            self: &mut OperationDag,
+            out_precision: u8,
+            out_shape: &[u64],
+        ) -> OperatorIndex;
+
+        fn add_lut(self: &mut OperationDag, input: OperatorIndex, table: &[u64]) -> OperatorIndex;
+
+        fn add_dot(
+            self: &mut OperationDag,
+            inputs: &[OperatorIndex],
+            weights: Box<Weights>,
+        ) -> OperatorIndex;
+
+        fn add_levelled_op(
+            self: &mut OperationDag,
+            inputs: &[OperatorIndex],
+            lwe_dim_cost_factor: f64,
+            fixed_cost: f64,
+            manp: f64,
+            out_shape: &[u64],
+            comment: &str,
+        ) -> OperatorIndex;
+
+        type Weights;
+
+        #[namespace = "concrete_optimizer::weights"]
+        fn vector(weights: &[u64]) -> Box<Weights>;
     }
 
-    #[namespace = "concrete_optimizer"]
+    #[derive(Clone, Copy)]
+    #[namespace = "concrete_optimizer::dag"]
+    struct OperatorIndex {
+        index: usize,
+    }
+
+    #[namespace = "concrete_optimizer::v0"]
     #[derive(Debug, Clone, Copy, Default)]
     pub struct Solution {
         pub input_lwe_dimension: u64,              //n_big

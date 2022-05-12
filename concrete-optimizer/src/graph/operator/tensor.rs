@@ -1,7 +1,7 @@
 use delegate::delegate;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Shape {
-    dimensions_size: Vec<u64>,
+    pub dimensions_size: Vec<u64>,
 }
 
 impl Shape {
