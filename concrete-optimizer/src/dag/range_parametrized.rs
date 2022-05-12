@@ -1,5 +1,5 @@
+use crate::dag::parameter_indexed::OperatorParameterIndexed;
 use crate::global_parameters::{ParameterRanges, ParameterToOperation};
-use crate::graph::parameter_indexed::OperatorParameterIndexed;
 
 #[allow(dead_code)]
 pub struct OperationDag {

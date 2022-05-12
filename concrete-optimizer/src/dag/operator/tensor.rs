@@ -1,10 +1,17 @@
 use delegate::delegate;
+
+use crate::utils::square_ref;
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Shape {
     pub dimensions_size: Vec<u64>,
 }
 
 impl Shape {
+    pub fn first_dim_size(&self) -> u64 {
+        self.dimensions_size[0]
+    }
+
     pub fn rank(&self) -> usize {
         self.dimensions_size.len()
     }
@@ -43,17 +50,18 @@ impl Shape {
         dimensions_size.extend_from_slice(&other.dimensions_size);
         Self { dimensions_size }
     }
+
+    pub fn erase_first_dim(&self) -> Self {
+        Self {
+            dimensions_size: self.dimensions_size[1..].to_vec(),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ClearTensor {
     pub shape: Shape,
     pub values: Vec<u64>,
-}
-
-#[allow(clippy::trivially_copy_pass_by_ref)]
-fn square(v: &u64) -> u64 {
-    v * v
 }
 
 impl ClearTensor {
@@ -64,10 +72,11 @@ impl ClearTensor {
         }
     }
 
-    pub fn vector(values: &[u64]) -> Self {
+    pub fn vector(values: impl Into<Vec<u64>>) -> Self {
+        let values = values.into();
         Self {
             shape: Shape::vector(values.len() as u64),
-            values: values.to_vec(),
+            values,
         }
     }
 
@@ -81,6 +90,27 @@ impl ClearTensor {
     }
 
     pub fn square_norm2(&self) -> u64 {
-        self.values.iter().map(square).sum()
+        self.values.iter().map(square_ref).sum()
+    }
+}
+
+// helps using shared shapes
+impl From<&Self> for Shape {
+    fn from(item: &Self) -> Self {
+        item.clone()
+    }
+}
+
+// helps using shared weights
+impl From<&Self> for ClearTensor {
+    fn from(item: &Self) -> Self {
+        item.clone()
+    }
+}
+
+// helps using array as weights
+impl<const N: usize> From<[u64; N]> for ClearTensor {
+    fn from(item: [u64; N]) -> Self {
+        Self::vector(item)
     }
 }

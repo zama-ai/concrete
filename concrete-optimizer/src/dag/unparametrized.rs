@@ -1,5 +1,5 @@
-use crate::graph::operator::{
-    FunctionTable, LevelledComplexity, Operator, OperatorIndex, Shape, Weights,
+use crate::dag::operator::{
+    FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision, Shape, Weights,
 };
 
 pub(crate) type UnparameterizedOperator = Operator<(), (), (), ()>;
@@ -21,7 +21,12 @@ impl OperationDag {
         OperatorIndex { i }
     }
 
-    pub fn add_input(&mut self, out_precision: u8, out_shape: Shape) -> OperatorIndex {
+    pub fn add_input(
+        &mut self,
+        out_precision: Precision,
+        out_shape: impl Into<Shape>,
+    ) -> OperatorIndex {
+        let out_shape = out_shape.into();
         self.add_operator(Operator::Input {
             out_precision,
             out_shape,
@@ -37,23 +42,30 @@ impl OperationDag {
         })
     }
 
-    pub fn add_dot(&mut self, inputs: &[OperatorIndex], weights: &Weights) -> OperatorIndex {
+    pub fn add_dot(
+        &mut self,
+        inputs: impl Into<Vec<OperatorIndex>>,
+        weights: impl Into<Weights>,
+    ) -> OperatorIndex {
+        let inputs = inputs.into();
+        let weights = weights.into();
         self.add_operator(Operator::Dot {
-            inputs: inputs.to_vec(),
-            weights: weights.clone(),
+            inputs,
+            weights,
             extra_data: (),
         })
     }
 
     pub fn add_levelled_op(
         &mut self,
-        inputs: &[OperatorIndex],
+        inputs: impl Into<Vec<OperatorIndex>>,
         complexity: LevelledComplexity,
         manp: f64,
-        out_shape: Shape,
+        out_shape: impl Into<Shape>,
         comment: &str,
     ) -> OperatorIndex {
-        let inputs = inputs.to_vec();
+        let inputs = inputs.into();
+        let out_shape = out_shape.into();
         let comment = comment.to_string();
         let op = Operator::LevelledOp {
             inputs,
@@ -75,7 +87,7 @@ impl OperationDag {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::operator::Shape;
+    use crate::dag::operator::Shape;
 
     #[test]
     fn graph_creation() {
@@ -86,14 +98,14 @@ mod tests {
         let input2 = graph.add_input(2, Shape::number());
 
         let cpx_add = LevelledComplexity::ADDITION;
-        let sum1 = graph.add_levelled_op(&[input1, input2], cpx_add, 1.0, Shape::number(), "sum");
+        let sum1 = graph.add_levelled_op([input1, input2], cpx_add, 1.0, Shape::number(), "sum");
 
         let lut1 = graph.add_lut(sum1, FunctionTable::UNKWOWN);
 
         let concat =
-            graph.add_levelled_op(&[input1, lut1], cpx_add, 1.0, Shape::vector(2), "concat");
+            graph.add_levelled_op([input1, lut1], cpx_add, 1.0, Shape::vector(2), "concat");
 
-        let dot = graph.add_dot(&[concat], &Weights::vector(&[1, 2]));
+        let dot = graph.add_dot([concat], [1, 2]);
 
         let lut2 = graph.add_lut(dot, FunctionTable::UNKWOWN);
 

@@ -1,7 +1,7 @@
-use concrete_optimizer::graph::operator::{
-    self, FunctionTable, LevelledComplexity, OperatorIndex, Shape,
+use concrete_optimizer::dag::operator::{
+    self, FunctionTable, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
-use concrete_optimizer::graph::unparametrized;
+use concrete_optimizer::dag::unparametrized;
 
 fn no_solution() -> ffi::Solution {
     ffi::Solution {
@@ -63,7 +63,7 @@ fn empty() -> Box<OperationDag> {
 }
 
 impl OperationDag {
-    fn add_input(&mut self, out_precision: u8, out_shape: &[u64]) -> ffi::OperatorIndex {
+    fn add_input(&mut self, out_precision: Precision, out_shape: &[u64]) -> ffi::OperatorIndex {
         let out_shape = Shape {
             dimensions_size: out_shape.to_owned(),
         };
@@ -87,7 +87,7 @@ impl OperationDag {
     ) -> ffi::OperatorIndex {
         let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
 
-        self.0.add_dot(&inputs, &weights.0).into()
+        self.0.add_dot(inputs, weights.0).into()
     }
 
     fn add_levelled_op(
@@ -111,7 +111,7 @@ impl OperationDag {
         };
 
         self.0
-            .add_levelled_op(&inputs, complexity, manp, out_shape, comment)
+            .add_levelled_op(inputs, complexity, manp, out_shape, comment)
             .into()
     }
 }

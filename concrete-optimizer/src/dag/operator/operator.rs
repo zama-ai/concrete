@@ -1,4 +1,4 @@
-use crate::graph::operator::tensor::{ClearTensor, Shape};
+use crate::dag::operator::tensor::{ClearTensor, Shape};
 use derive_more::{Add, AddAssign};
 
 pub type Weights = ClearTensor;
@@ -50,11 +50,13 @@ impl std::ops::Mul<u64> for LevelledComplexity {
         }
     }
 }
+pub type Precision = u8;
+pub const MIN_PRECISION: Precision = 1;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Operator<InputExtraData, LutExtraData, DotExtraData, LevelledOpExtraData> {
     Input {
-        out_precision: u8,
+        out_precision: Precision,
         out_shape: Shape,
         extra_data: InputExtraData,
     },

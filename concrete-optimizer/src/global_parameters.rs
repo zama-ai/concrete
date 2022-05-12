@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
-use crate::graph::operator::{Operator, OperatorIndex};
-use crate::graph::parameter_indexed::{
+use crate::dag::operator::{Operator, OperatorIndex};
+use crate::dag::parameter_indexed::{
     InputParameterIndexed, LutParametersIndexed, OperatorParameterIndexed,
 };
-use crate::graph::unparametrized::UnparameterizedOperator;
-use crate::graph::{parameter_indexed, range_parametrized, unparametrized};
+use crate::dag::unparametrized::UnparameterizedOperator;
+use crate::dag::{parameter_indexed, range_parametrized, unparametrized};
 use crate::parameters::{
     BrDecompositionParameterRanges, BrDecompositionParameters, GlweParameterRanges, GlweParameters,
     KsDecompositionParameterRanges, KsDecompositionParameters,
@@ -244,7 +244,7 @@ pub fn domains_to_ranges(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::operator::{FunctionTable, LevelledComplexity, Shape, Weights};
+    use crate::dag::operator::{FunctionTable, LevelledComplexity, Shape};
 
     #[test]
     fn test_maximal_unify() {
@@ -255,14 +255,13 @@ mod tests {
         let input2 = graph.add_input(2, Shape::number());
 
         let cpx_add = LevelledComplexity::ADDITION;
-        let sum1 = graph.add_levelled_op(&[input1, input2], cpx_add, 1.0, Shape::number(), "sum");
+        let sum1 = graph.add_levelled_op([input1, input2], cpx_add, 1.0, Shape::number(), "sum");
 
         let lut1 = graph.add_lut(sum1, FunctionTable::UNKWOWN);
 
-        let concat =
-            graph.add_levelled_op(&[input1, lut1], cpx_add, 1.0, Shape::number(), "concat");
+        let concat = graph.add_levelled_op([input1, lut1], cpx_add, 1.0, Shape::number(), "concat");
 
-        let dot = graph.add_dot(&[concat], &Weights::vector(&[1, 2]));
+        let dot = graph.add_dot([concat], [1, 2]);
 
         let lut2 = graph.add_lut(dot, FunctionTable::UNKWOWN);
 
@@ -336,7 +335,7 @@ mod tests {
 
         let cpx_add = LevelledComplexity::ADDITION;
         let concat =
-            graph.add_levelled_op(&[input1, input2], cpx_add, 1.0, Shape::vector(2), "concat");
+            graph.add_levelled_op([input1, input2], cpx_add, 1.0, Shape::vector(2), "concat");
 
         let lut1 = graph.add_lut(concat, FunctionTable::UNKWOWN);
 
