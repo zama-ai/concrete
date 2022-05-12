@@ -4,10 +4,13 @@ Export everything that users might need.
 
 from .compilation import (
     Circuit,
+    Client,
+    ClientSpecs,
     Compiler,
     Configuration,
     DebugArtifacts,
     EncryptionStatus,
+    Server,
     compiler,
 )
 from .extensions import LookupTable

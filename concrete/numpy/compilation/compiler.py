@@ -375,10 +375,12 @@ class Compiler:
 
                     print()
 
-            circuit = Circuit.create(self.graph, mlir, self.configuration)
+            circuit = Circuit(self.graph, mlir, self.configuration)
             if not self.configuration.virtual:
-                assert circuit.client_parameters is not None
-                self.artifacts.add_client_parameters(circuit.client_parameters.serialize())
+                assert circuit.client.specs.client_parameters is not None
+                self.artifacts.add_client_parameters(
+                    circuit.client.specs.client_parameters.serialize()
+                )
             return circuit
 
         except Exception:  # pragma: no cover

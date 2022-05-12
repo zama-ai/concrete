@@ -7,8 +7,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from concrete.compiler import PublicArguments, PublicResult
 
-from concrete.numpy import Circuit
+from concrete.numpy import Client, ClientSpecs, Configuration, Server
 from concrete.numpy.compilation import compiler
 
 
@@ -98,7 +99,7 @@ def test_circuit_bad_run(helpers):
         circuit.encrypt_run_decrypt(-1, 11)
 
     assert str(excinfo.value) == (
-        "Expected argument 0 to be EncryptedScalar<uint4> but it's EncryptedScalar<int1>"
+        "Expected argument 0 to be EncryptedScalar<uint6> but it's EncryptedScalar<int1>"
     )
 
     # with negative argument 1
@@ -108,7 +109,7 @@ def test_circuit_bad_run(helpers):
         circuit.encrypt_run_decrypt(1, -11)
 
     assert str(excinfo.value) == (
-        "Expected argument 1 to be EncryptedScalar<uint5> but it's EncryptedScalar<int5>"
+        "Expected argument 1 to be EncryptedScalar<uint6> but it's EncryptedScalar<int5>"
     )
 
     # with large argument 0
@@ -118,7 +119,7 @@ def test_circuit_bad_run(helpers):
         circuit.encrypt_run_decrypt(100, 10)
 
     assert str(excinfo.value) == (
-        "Expected argument 0 to be EncryptedScalar<uint4> but it's EncryptedScalar<uint7>"
+        "Expected argument 0 to be EncryptedScalar<uint6> but it's EncryptedScalar<uint7>"
     )
 
     # with large argument 1
@@ -128,7 +129,7 @@ def test_circuit_bad_run(helpers):
         circuit.encrypt_run_decrypt(1, 100)
 
     assert str(excinfo.value) == (
-        "Expected argument 1 to be EncryptedScalar<uint5> but it's EncryptedScalar<uint7>"
+        "Expected argument 1 to be EncryptedScalar<uint6> but it's EncryptedScalar<uint7>"
     )
 
 
@@ -167,9 +168,69 @@ def test_circuit_virtual_explicit_api(helpers):
     assert str(excinfo.value) == "Virtual circuits cannot use `decrypt` method"
 
 
-def test_circuit_bad_save(helpers):
+def test_client_server_api(helpers):
     """
-    Test `save` method of `Circuit` class with bad parameters.
+    Test client/server API.
+    """
+
+    configuration = helpers.configuration()
+
+    @compiler({"x": "encrypted"})
+    def function(x):
+        return x + 42
+
+    inputset = range(10)
+    circuit = function.compile(inputset, configuration.fork(jit=False))
+
+    # for coverage
+    circuit.keygen()
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_dir_path = Path(tmp_dir)
+
+        server_path = tmp_dir_path / "server.zip"
+        circuit.server.save(server_path)
+
+        client_path = tmp_dir_path / "client.zip"
+        circuit.client.save(client_path)
+
+        circuit.cleanup()
+
+        server = Server.load(server_path)
+
+        serialized_client_specs = server.client_specs.serialize()
+        client_specs = ClientSpecs.unserialize(serialized_client_specs)
+
+        clients = [
+            Client(client_specs, Configuration.insecure_key_cache_location()),
+            Client.load(client_path, Configuration.insecure_key_cache_location()),
+        ]
+
+        for client in clients:
+            raw_input = client.encrypt(4)
+            serialized_input = raw_input.serialize()
+
+            unserialized_input = PublicArguments.unserialize(
+                server.client_specs.client_parameters,
+                serialized_input,
+            )
+            evaluation = server.run(unserialized_input)
+            serialized_evaluation = evaluation.serialize()
+
+            unserialized_evaluation = PublicResult.unserialize(
+                client.specs.client_parameters,
+                serialized_evaluation,
+            )
+            output = client.decrypt(unserialized_evaluation)
+
+            assert output == 46
+
+        server.cleanup()
+
+
+def test_bad_server_save(helpers):
+    """
+    Test `save` method of `Server` class with bad parameters.
     """
 
     configuration = helpers.configuration()
@@ -182,69 +243,6 @@ def test_circuit_bad_save(helpers):
     circuit = function.compile(inputset, configuration)
 
     with pytest.raises(RuntimeError) as excinfo:
-        circuit.save("circuit.zip")
+        circuit.server.save("test.zip")
 
-    assert str(excinfo.value) == "JIT Circuits cannot be saved"
-
-
-@pytest.mark.parametrize(
-    "virtual",
-    [False, True],
-)
-def test_circuit_save_load(virtual, helpers):
-    """
-    Test `save`, `load`, and `cleanup` methods of `Circuit` class.
-    """
-
-    configuration = helpers.configuration().fork(jit=False, virtual=virtual)
-
-    def save(base):
-        @compiler({"x": "encrypted"})
-        def function(x):
-            return x + 42
-
-        inputset = range(10)
-        circuit = function.compile(inputset, configuration)
-
-        circuit.save(base / "circuit.zip")
-        circuit.cleanup()
-
-    def load(base):
-        circuit = Circuit.load(base / "circuit.zip")
-
-        helpers.check_str(
-            """
-
-%0 = x                  # EncryptedScalar<uint4>
-%1 = 42                 # ClearScalar<uint6>
-%2 = add(%0, %1)        # EncryptedScalar<uint6>
-return %2
-
-            """,
-            str(circuit),
-        )
-        if virtual:
-            helpers.check_str("Virtual circuits doesn't have MLIR.", circuit.mlir)
-        else:
-            helpers.check_str(
-                """
-
-module  {
-  func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
-    %c42_i7 = arith.constant 42 : i7
-    %0 = "FHE.add_eint_int"(%arg0, %c42_i7) : (!FHE.eint<6>, i7) -> !FHE.eint<6>
-    return %0 : !FHE.eint<6>
-  }
-}
-
-                """,
-                circuit.mlir,
-            )
-        helpers.check_execution(circuit, lambda x: x + 42, 4)
-
-        circuit.cleanup()
-
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp)
-        save(path)
-        load(path)
+    assert str(excinfo.value) == "Just-in-Time compilation cannot be saved"
