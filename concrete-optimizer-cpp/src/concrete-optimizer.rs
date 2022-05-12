@@ -24,7 +24,7 @@ fn optimize_bootstrap(
         .as_vec();
     let glwe_dimensions = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
     let internal_lwe_dimensions = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-    let result = concrete_optimizer::optimisation::atomic_pattern::optimise_one::<u64>(
+    let result = concrete_optimizer::optimization::atomic_pattern::optimize_one::<u64>(
         sum_size,
         precision,
         security_level,
@@ -38,8 +38,8 @@ fn optimize_bootstrap(
     result.best_solution.map_or_else(no_solution, |a| a.into())
 }
 
-impl From<concrete_optimizer::optimisation::atomic_pattern::Solution> for ffi::Solution {
-    fn from(a: concrete_optimizer::optimisation::atomic_pattern::Solution) -> Self {
+impl From<concrete_optimizer::optimization::atomic_pattern::Solution> for ffi::Solution {
+    fn from(a: concrete_optimizer::optimization::atomic_pattern::Solution) -> Self {
         Self {
             input_lwe_dimension: a.input_lwe_dimension,
             internal_ks_output_lwe_dimension: a.internal_ks_output_lwe_dimension,

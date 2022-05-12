@@ -20,7 +20,7 @@ pub mod computing_cost;
 pub mod global_parameters;
 pub mod graph;
 pub mod noise_estimator;
-pub mod optimisation;
+pub mod optimization;
 pub mod parameters;
 pub mod pareto;
 pub mod security;

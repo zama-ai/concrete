@@ -7,7 +7,7 @@
 
 use clap::Parser;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
-use concrete_optimizer::optimisation::atomic_pattern as optimize_atomic_pattern;
+use concrete_optimizer::optimization::atomic_pattern as optimize_atomic_pattern;
 use rayon_cond::CondIterator;
 
 const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
@@ -90,7 +90,7 @@ fn main() {
         let mut last_solution = None;
         manps.clone().map(|manp| {
             let noise_scale = 2_f64.powi(manp);
-            let result = optimize_atomic_pattern::optimise_one::<u64>(
+            let result = optimize_atomic_pattern::optimize_one::<u64>(
                 sum_size,
                 precision,
                 security_level,

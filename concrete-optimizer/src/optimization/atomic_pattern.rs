@@ -42,7 +42,7 @@ pub struct Solution {
     pub p_error: f64, // error probability
 }
 
-// Constants during optimisation of decompositions
+// Constants during optimization of decompositions
 struct OptimizationDecompositionsConsts {
     kappa: f64,
     sum_size: u64,
@@ -351,7 +351,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
     } // br ks
 }
 
-// This function provides reference values with unoptimised code, until we have non regeression tests
+// This function provides reference values with unoptimized code, until we have non regeression tests
 #[allow(clippy::float_cmp)]
 #[allow(clippy::too_many_lines)]
 fn assert_checks<W: UnsignedInteger>(
@@ -457,7 +457,7 @@ const BITS_PADDING_WITHOUT_NOISE: u64 = 1;
 const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
 #[allow(clippy::too_many_lines)]
-pub fn optimise_one<W: UnsignedInteger>(
+pub fn optimize_one<W: UnsignedInteger>(
     sum_size: u64,
     precision: u64,
     security_level: u64,
