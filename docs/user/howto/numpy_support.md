@@ -92,6 +92,7 @@ List of supported functions:
 - transpose
 - true_divide
 - trunc
+- where
 <!--- gen_supported_ufuncs.py: inject supported operations [END] -->
 
 # Shapes

@@ -440,6 +440,13 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
             },
             id="(100 * np.sin(x.transpose())).astype(np.int64)",
         ),
+        pytest.param(
+            lambda x: np.where(x < 5, x * 3, x),
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="np.where(x < 5, x * 3, x)",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):

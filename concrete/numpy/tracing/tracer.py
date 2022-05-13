@@ -233,6 +233,7 @@ class Tracer:
         np.transpose,
         np.true_divide,
         np.trunc,
+        np.where,
     }
 
     SUPPORTED_KWARGS: Dict[Any, Set[str]] = {

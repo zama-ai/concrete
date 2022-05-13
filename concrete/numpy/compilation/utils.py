@@ -27,15 +27,28 @@ def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
     nx_graph = graph.graph
     processed_terminal_nodes: Set[Node] = set()
 
+    fusing_floats = True
     while True:
-        float_subgraph_to_fuse = find_float_subgraph_with_unique_terminal_node(
-            nx_graph,
-            processed_terminal_nodes,
+        subgraph_to_fuse = (
+            find_float_subgraph_with_unique_terminal_node(
+                nx_graph,
+                processed_terminal_nodes,
+            )
+            if fusing_floats
+            else find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_ancestor(
+                nx_graph,
+                processed_terminal_nodes,
+            )
         )
-        if float_subgraph_to_fuse is None:
+
+        if subgraph_to_fuse is None:
+            if fusing_floats:
+                fusing_floats = False
+                processed_terminal_nodes.clear()
+                continue
             break
 
-        all_nodes, start_nodes, terminal_node = float_subgraph_to_fuse
+        all_nodes, start_nodes, terminal_node = subgraph_to_fuse
         processed_terminal_nodes.add(terminal_node)
 
         subgraph_conversion_result = convert_subgraph_to_subgraph_node(
@@ -72,7 +85,7 @@ def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
 
         graph.prune_useless_nodes()
         if artifacts is not None:
-            artifacts.add_graph("after-fusing-float-operations", graph)
+            artifacts.add_graph("after-fusing", graph)
 
 
 def find_float_subgraph_with_unique_terminal_node(
@@ -146,6 +159,8 @@ def find_float_subgraph_with_unique_terminal_node(
         lca = variable_start_nodes.pop()
         while len(variable_start_nodes) > 0 and lca is not None:
             node_to_find_new_lca = variable_start_nodes.pop()
+            if lca == node_to_find_new_lca:
+                continue
 
             ancestors_of_lca = nx.ancestors(
                 equivalent_subgraph_without_constants,
@@ -160,6 +175,13 @@ def find_float_subgraph_with_unique_terminal_node(
             node_to_find_new_lca_is_ancestor_of_lca = node_to_find_new_lca in ancestors_of_lca
 
             if lca_is_ancestor_of_node_to_find_new_lca or node_to_find_new_lca_is_ancestor_of_lca:
+                variable_start_nodes += list(
+                    pred
+                    for pred in nx_graph.predecessors(
+                        node_to_find_new_lca if lca_is_ancestor_of_node_to_find_new_lca else lca
+                    )
+                    if pred.operation != Operation.Constant
+                )
                 lca = lca if lca_is_ancestor_of_node_to_find_new_lca else node_to_find_new_lca
                 continue
 
@@ -183,6 +205,129 @@ def find_float_subgraph_with_unique_terminal_node(
         # otherwise, push a little further
         # (e.g., if there is a node just before, which has an integer output)
         start_single_int_output_nodes_search_from = lca
+
+    return all_nodes, start_nodes, terminal_node
+
+
+def find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_ancestor(
+    nx_graph: nx.MultiDiGraph,
+    processed_terminal_nodes: Set[Node],
+) -> Optional[Tuple[Dict[Node, None], Dict[Node, None], Node]]:
+    """
+    Find a subgraph with a tlu computation that has multiple variable inputs \
+    where all variable inputs share a common ancestor.
+
+    Args:
+        nx_graph (nx.MultiDiGraph):
+            graph to search
+
+        processed_terminal_nodes (Set[Node]):
+            set of terminal nodes which have already been searched for tlu subgraphs
+
+    Returns:
+        Optional[Tuple[Dict[Node, None], Dict[Node, None], Node]]:
+            None if there are no such subgraphs,
+            tuple containing all nodes in the subgraph, start nodes of the subgraph,
+            and terminal node of the subgraph otherwise
+    """
+
+    terminal_nodes = (
+        node
+        for node in nx_graph.nodes()
+        if (
+            node not in processed_terminal_nodes
+            and node.converted_to_table_lookup
+            and all(isinstance(input.dtype, Integer) for input in node.inputs)
+            and isinstance(node.output.dtype, Integer)
+            and len(
+                [
+                    pred
+                    for pred in nx_graph.predecessors(node)
+                    if pred.operation != Operation.Constant
+                ]
+            )
+            > 1
+        )
+    )
+    try:
+        terminal_node = next(terminal_nodes)
+    except StopIteration:
+        return None
+
+    # networkx does not implement lowest common ancestor search for multidigraph, but we only care
+    # about parent relationship here and not the meaning of edges, so we can convert our
+    # multidigraph to a digraph and use the lca search algorithm (if needed), we create the
+    # equivalent digraph here as it will avoid recreating it in a loop. Constant nodes could cause
+    # issues in our search, so we remove them.
+    equivalent_subgraph_without_constants = nx.DiGraph(nx_graph)
+    constant_nodes = [
+        node
+        for node in equivalent_subgraph_without_constants.nodes()
+        if node.operation == Operation.Constant
+    ]
+    equivalent_subgraph_without_constants.remove_nodes_from(constant_nodes)
+
+    all_nodes: Dict[Node, None] = {}
+
+    while True:
+        variable_start_nodes = list(nx_graph.predecessors(terminal_node))
+
+        # find a common ancestor as we need a single variable input node
+        # lca == lowest common ancestor
+        # lca search only works for node pairs in networkx, so we progressively find the ancestors
+        # setting the lca by default to one of the nodes we are searching the lca for
+        lca = variable_start_nodes.pop()
+        while len(variable_start_nodes) > 0 and lca is not None:
+            node_to_find_new_lca = variable_start_nodes.pop()
+            if lca == node_to_find_new_lca:
+                continue
+
+            ancestors_of_lca = nx.ancestors(
+                equivalent_subgraph_without_constants,
+                lca,
+            )
+            ancestors_of_node_to_find_new_lca = nx.ancestors(
+                equivalent_subgraph_without_constants,
+                node_to_find_new_lca,
+            )
+
+            lca_is_ancestor_of_node_to_find_new_lca = lca in ancestors_of_node_to_find_new_lca
+            node_to_find_new_lca_is_ancestor_of_lca = node_to_find_new_lca in ancestors_of_lca
+
+            if lca_is_ancestor_of_node_to_find_new_lca or node_to_find_new_lca_is_ancestor_of_lca:
+                variable_start_nodes += list(
+                    pred
+                    for pred in nx_graph.predecessors(
+                        node_to_find_new_lca if lca_is_ancestor_of_node_to_find_new_lca else lca
+                    )
+                    if pred.operation != Operation.Constant
+                )
+                lca = lca if lca_is_ancestor_of_node_to_find_new_lca else node_to_find_new_lca
+                continue
+
+            lca = nx.algorithms.lowest_common_ancestors.lowest_common_ancestor(
+                equivalent_subgraph_without_constants, lca, node_to_find_new_lca, default=None
+            )
+
+        # if subgraph cannot be fused because there is no way to find a common ancestor, break
+        if lca is None:
+            start_nodes = {}
+            break
+
+        # add the nodes from the `start_nodes` to `lca`, to `all_nodes`
+        all_nodes = add_nodes_from_to(
+            nx_graph,
+            list(nx_graph.predecessors(terminal_node)),
+            {lca: None},
+            all_nodes,
+        )
+        all_nodes[terminal_node] = None
+
+        # if `lca` is a valid starting node for fusing break
+        if isinstance(lca.output.dtype, Integer):
+            # `lca` is the new start node
+            start_nodes = {lca: None}
+            break
 
     return all_nodes, start_nodes, terminal_node
 
