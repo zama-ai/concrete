@@ -1,0 +1,6 @@
+root: ./concrete-boolean
+
+structure:
+    readme: README.md
+    summary: docs/SUMMARY.md
+
