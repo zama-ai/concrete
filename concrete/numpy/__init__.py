@@ -2,6 +2,8 @@
 Export everything that users might need.
 """
 
+from concrete.compiler import PublicArguments, PublicResult
+
 from .compilation import (
     Circuit,
     Client,

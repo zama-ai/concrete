@@ -173,6 +173,22 @@ class Server:
 
         return self._support.server_call(self._server_lambda, args)
 
+    def unserialize_and_run(self, args: bytes) -> PublicResult:
+        """
+        Evaluate using serialized encrypted arguments.
+
+        Args:
+            args (bytes):
+                serialized encrypted arguments of the computation
+
+        Returns:
+            PublicResult:
+                encrypted result of the computation
+        """
+
+        unserialized_args = self.client_specs.unserialize_public_args(args)
+        return self.run(unserialized_args)
+
     def cleanup(self):
         """
         Cleanup the temporary library output directory.

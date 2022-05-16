@@ -5,7 +5,7 @@ Declaration of `ClientSpecs` class.
 import json
 from typing import List
 
-from concrete.compiler import ClientParameters
+from concrete.compiler import ClientParameters, PublicArguments, PublicResult
 
 
 class ClientSpecs:
@@ -57,3 +57,63 @@ class ClientSpecs:
         client_parameters = ClientParameters.unserialize(client_parameters_bytes)
 
         return ClientSpecs(client_parameters, raw_specs["output_signs"])
+
+    def serialize_public_args(self, args: PublicArguments) -> bytes:  # pylint: disable=no-self-use
+        """
+        Serialize public arguments to bytes.
+
+        Args:
+            args (PublicArguments):
+                public arguments to serialize
+
+        Returns:
+            bytes:
+                serialized public arguments
+        """
+
+        return args.serialize()
+
+    def unserialize_public_args(self, serialized_args: bytes) -> PublicArguments:
+        """
+        Unserialize public arguments from bytes.
+
+        Args:
+            serialized_args (bytes):
+                serialized public arguments
+
+        Returns:
+            PublicArguments:
+                unserialized public arguments
+        """
+
+        return PublicArguments.unserialize(self.client_parameters, serialized_args)
+
+    def serialize_public_result(self, result: PublicResult) -> bytes:  # pylint: disable=no-self-use
+        """
+        Serialize public result to bytes.
+
+        Args:
+            result (PublicResult):
+                public result to serialize
+
+        Returns:
+            bytes:
+                serialized public result
+        """
+
+        return result.serialize()
+
+    def unserialize_public_result(self, serialized_result: bytes) -> PublicResult:
+        """
+        Unserialize public result from bytes.
+
+        Args:
+            serialized_result (bytes):
+                serialized public result
+
+        Returns:
+            PublicResult:
+                unserialized public result
+        """
+
+        return PublicResult.unserialize(self.client_parameters, serialized_result)

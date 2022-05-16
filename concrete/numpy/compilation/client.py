@@ -208,3 +208,22 @@ class Client:
                 )
 
         return sanitized_results[0] if len(sanitized_results) == 1 else tuple(sanitized_results)
+
+    def unserialize_and_decrypt(
+        self,
+        result: bytes,
+    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+        """
+        Decrypt serialized result of homomorphic evaluaton.
+
+        Args:
+            result (bytes):
+                serialized encrypted result of homomorphic evaluaton
+
+        Returns:
+            Union[int, numpy.ndarray]:
+                clear result of homomorphic evaluaton
+        """
+
+        unserialized_result = self.specs.unserialize_public_result(result)
+        return self.decrypt(unserialized_result)
