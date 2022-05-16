@@ -3,9 +3,8 @@ Declaration of `Configuration` class.
 """
 
 from copy import deepcopy
-from typing import Optional, get_type_hints
-
-_INSECURE_KEY_CACHE_LOCATION: Optional[str] = None
+from pathlib import Path
+from typing import Optional, Union, get_type_hints
 
 
 class Configuration:
@@ -27,6 +26,7 @@ class Configuration:
     auto_parallelize: bool
     jit: bool
     p_error: float
+    insecure_keycache_location: Optional[str]
 
     # pylint: enable=too-many-instance-attributes
 
@@ -47,6 +47,11 @@ class Configuration:
                     "Virtual compilation is not allowed without enabling unsafe features"
                 )
 
+        if self.use_insecure_key_cache and self.insecure_keycache_location is None:
+            raise RuntimeError(
+                "Insecure key cache cannot be enabled without specifying its location"
+            )
+
     # pylint: disable=too-many-arguments
 
     def __init__(
@@ -58,6 +63,7 @@ class Configuration:
         enable_unsafe_features: bool = False,
         virtual: bool = False,
         use_insecure_key_cache: bool = False,
+        insecure_keycache_location: Optional[Union[Path, str]] = None,
         loop_parallelize: bool = True,
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
@@ -71,6 +77,9 @@ class Configuration:
         self.enable_unsafe_features = enable_unsafe_features
         self.virtual = virtual
         self.use_insecure_key_cache = use_insecure_key_cache
+        self.insecure_keycache_location = (
+            str(insecure_keycache_location) if insecure_keycache_location is not None else None
+        )
         self.loop_parallelize = loop_parallelize
         self.dataflow_parallelize = dataflow_parallelize
         self.auto_parallelize = auto_parallelize
@@ -80,18 +89,6 @@ class Configuration:
         self._validate()
 
     # pylint: enable=too-many-arguments
-
-    @staticmethod
-    def insecure_key_cache_location() -> Optional[str]:
-        """
-        Get insecure key cache location.
-
-        Returns:
-            Optional[str]:
-                insecure key cache location if configured, None otherwise
-        """
-
-        return _INSECURE_KEY_CACHE_LOCATION
 
     def fork(self, **kwargs) -> "Configuration":
         """

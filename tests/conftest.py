@@ -11,7 +11,8 @@ import numpy as np
 import pytest
 
 import concrete.numpy as cnp
-from concrete.numpy.compilation import configuration as configuration_
+
+INSECURE_KEY_CACHE_LOCATION = None
 
 
 def pytest_addoption(parser):
@@ -39,6 +40,9 @@ def pytest_sessionstart(session):
     """
     Initialize insecure key cache.
     """
+    # pylint: disable=global-statement
+    global INSECURE_KEY_CACHE_LOCATION
+    # pylint: enable=global-statement
 
     key_cache_location = session.config.getoption("--key-cache", default=None)
     if key_cache_location is not None:
@@ -53,9 +57,7 @@ def pytest_sessionstart(session):
         key_cache_location.mkdir(parents=True, exist_ok=True)
         print(f"INSECURE_KEY_CACHE_LOCATION={str(key_cache_location)}")
 
-        # pylint: disable=protected-access
-        configuration_._INSECURE_KEY_CACHE_LOCATION = str(key_cache_location)
-        # pylint: enable=protected-access
+        INSECURE_KEY_CACHE_LOCATION = str(key_cache_location)
 
 
 def pytest_sessionfinish(session, exitstatus):  # pylint: disable=unused-argument
@@ -108,6 +110,7 @@ class Helpers:
             dataflow_parallelize=False,
             auto_parallelize=False,
             jit=True,
+            insecure_keycache_location=INSECURE_KEY_CACHE_LOCATION,
         )
 
     @staticmethod

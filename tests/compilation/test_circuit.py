@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from concrete.numpy import Client, ClientSpecs, Configuration, Server
+from concrete.numpy import Client, ClientSpecs, Server
 from concrete.numpy.compilation import compiler
 
 
@@ -201,8 +201,8 @@ def test_client_server_api(helpers):
         client_specs = ClientSpecs.unserialize(serialized_client_specs)
 
         clients = [
-            Client(client_specs, Configuration.insecure_key_cache_location()),
-            Client.load(client_path, Configuration.insecure_key_cache_location()),
+            Client(client_specs, configuration.insecure_keycache_location),
+            Client.load(client_path, configuration.insecure_keycache_location),
         ]
 
         for client in clients:

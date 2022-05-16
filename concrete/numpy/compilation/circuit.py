@@ -48,14 +48,13 @@ class Circuit:
 
         self.server = Server.create(mlir, output_signs, self.configuration)
 
-        keyset_cache = None
+        keyset_cache_directory = None
         if self.configuration.use_insecure_key_cache:
             assert_that(self.configuration.enable_unsafe_features)
-            location = Configuration.insecure_key_cache_location()
-            if location is not None:
-                keyset_cache = str(location)
+            assert_that(self.configuration.insecure_keycache_location is not None)
+            keyset_cache_directory = self.configuration.insecure_keycache_location
 
-        self.client = Client(self.server.client_specs, keyset_cache)
+        self.client = Client(self.server.client_specs, keyset_cache_directory)
 
     def __str__(self):
         return self.graph.format()

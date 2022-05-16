@@ -15,6 +15,15 @@ from concrete.numpy.compilation import Configuration
             RuntimeError,
             "Insecure key cache cannot be used without enabling unsafe features",
         ),
+        pytest.param(
+            {
+                "enable_unsafe_features": True,
+                "use_insecure_key_cache": True,
+                "insecure_keycache_location": None,
+            },
+            RuntimeError,
+            "Insecure key cache cannot be enabled without specifying its location",
+        ),
     ],
 )
 def test_configuration_bad_init(kwargs, expected_error, expected_message):
