@@ -23,7 +23,7 @@ namespace concretelang {
 
 static void display(V0FHEConstraint constraint,
                     optimizer::Config optimizerConfig,
-                    concrete_optimizer::Solution sol,
+                    concrete_optimizer::v0::Solution sol,
                     std::chrono::milliseconds duration) {
   if (!optimizerConfig.display) {
     return;
@@ -65,8 +65,8 @@ llvm::Optional<V0Parameter> getV0Parameter(V0FHEConstraint constraint,
   // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/V0Parameters/tabulation.py#L58
   double p_error = optimizerConfig.p_error;
   auto start = chrono::high_resolution_clock::now();
-  auto sol = concrete_optimizer::optimise_bootstrap(constraint.p, security,
-                                                    noise_factor, p_error);
+  auto sol = concrete_optimizer::v0::optimize_bootstrap(constraint.p, security,
+                                                        noise_factor, p_error);
   auto stop = chrono::high_resolution_clock::now();
   if (sol.p_error == 1.0) {
     // The optimizer return a p_error = 1 if there is no solution

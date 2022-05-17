@@ -6,7 +6,7 @@ CC_COMPILER=
 CXX_COMPILER=
 
 CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/.dependencies/concrete-optimizer
-CONCRETE_OPTIMIZER_BRANCH ?= compat
+CONCRETE_OPTIMIZER_BRANCH ?= master
 
 KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
