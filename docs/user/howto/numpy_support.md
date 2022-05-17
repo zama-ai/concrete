@@ -69,6 +69,7 @@ List of supported functions:
 - negative
 - nextafter
 - not_equal
+- ones_like
 - positive
 - power
 - rad2deg
@@ -93,6 +94,7 @@ List of supported functions:
 - true_divide
 - trunc
 - where
+- zeros_like
 <!--- gen_supported_ufuncs.py: inject supported operations [END] -->
 
 # Shapes

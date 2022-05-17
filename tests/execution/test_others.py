@@ -447,6 +447,20 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
             },
             id="np.where(x < 5, x * 3, x)",
         ),
+        pytest.param(
+            lambda x: x + np.ones_like(x),
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="x + np.ones_like(x)",
+        ),
+        pytest.param(
+            lambda x: x + np.zeros_like(x),
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="x + np.zeros_like(x)",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):

@@ -210,6 +210,7 @@ class Tracer:
         np.negative,
         np.nextafter,
         np.not_equal,
+        np.ones_like,
         np.positive,
         np.power,
         np.rad2deg,
@@ -234,11 +235,15 @@ class Tracer:
         np.true_divide,
         np.trunc,
         np.where,
+        np.zeros_like,
     }
 
     SUPPORTED_KWARGS: Dict[Any, Set[str]] = {
         np.concatenate: {
             "axis",
+        },
+        np.ones_like: {
+            "dtype",
         },
         np.reshape: {
             "newshape",
@@ -246,6 +251,9 @@ class Tracer:
         np.sum: {
             "axis",
             "keepdims",
+        },
+        np.zeros_like: {
+            "dtype",
         },
     }
 
@@ -278,6 +286,14 @@ class Tracer:
                 raise RuntimeError(
                     f"Function 'np.{operation.__name__}' is not supported with kwarg '{kwarg}'"
                 )
+
+        if operation == np.ones_like:  # pylint: disable=comparison-with-callable
+            dtype = kwargs.get("dtype", np.int64)
+            return Tracer(Node.constant(np.ones(args[0].shape, dtype=dtype)), [])
+
+        if operation == np.zeros_like:  # pylint: disable=comparison-with-callable
+            dtype = kwargs.get("dtype", np.int64)
+            return Tracer(Node.constant(np.zeros(args[0].shape, dtype=dtype)), [])
 
         def sampler(arg: Any) -> Any:
             if isinstance(arg, tuple):
