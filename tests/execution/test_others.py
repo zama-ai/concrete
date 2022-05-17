@@ -141,6 +141,20 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
     # pylint: enable=invalid-name,too-many-locals,too-many-statements
 
 
+def deterministic_unary_function(x):
+    """
+    An example deterministic unary function.
+    """
+
+    def per_element(element):
+        result = 0
+        for i in range(element):
+            result += i
+        return result
+
+    return np.vectorize(per_element)(x)
+
+
 @pytest.mark.parametrize(
     "function,parameters",
     [
@@ -461,6 +475,13 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
             },
             id="x + np.zeros_like(x)",
         ),
+        pytest.param(
+            lambda x: cnp.univariate(deterministic_unary_function)(x),
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="cnp.univariate(deterministic_unary_function)(x)",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):
@@ -613,5 +634,29 @@ return %4
 
         """,  # noqa: E501
         # pylint: enable=line-too-long
+        str(excinfo.value),
+    )
+
+
+def test_others_bad_univariate(helpers):
+    """
+    Test univariate with bad function.
+    """
+
+    configuration = helpers.configuration()
+
+    def bad_univariate(x):
+        return np.array([x, x, x])
+
+    @cnp.compiler({"x": "encrypted"})
+    def f(x):
+        return cnp.univariate(bad_univariate)(x)
+
+    with pytest.raises(ValueError) as excinfo:
+        inputset = range(10)
+        f.compile(inputset, configuration)
+
+    helpers.check_str(
+        "Function bad_univariate cannot be used with cnp.univariate",
         str(excinfo.value),
     )
