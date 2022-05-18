@@ -84,6 +84,8 @@ def AddEintIntOp : FHE_Op<"add_eint_int"> {
     let verifier = [{
         return ::mlir::concretelang::FHE::verifyAddEintIntOp(*this);
     }];
+
+    let hasFolder = 1;
 }
 
 def AddEintOp : FHE_Op<"add_eint"> {
@@ -151,6 +153,8 @@ def SubIntEintOp : FHE_Op<"sub_int_eint"> {
     let verifier = [{
         return ::mlir::concretelang::FHE::verifySubIntEintOp(*this);
     }];
+
+    let hasFolder = 1;
 }
 
 def NegEintOp : FHE_Op<"neg_eint"> {
@@ -217,6 +221,8 @@ def MulEintIntOp : FHE_Op<"mul_eint_int"> {
     let verifier = [{
         return ::mlir::concretelang::FHE::verifyMulEintIntOp(*this);
     }];
+
+    let hasFolder = 1;
 }
 
 def ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table"> {

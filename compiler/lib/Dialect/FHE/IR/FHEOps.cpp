@@ -126,6 +126,45 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
   return mlir::success();
 }
 
+// Avoid addition with constant 0
+OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
+  assert(operands.size() == 2);
+  auto toAdd = operands[1].dyn_cast_or_null<mlir::IntegerAttr>();
+  if (toAdd != nullptr) {
+    auto intToAdd = toAdd.getInt();
+    if (intToAdd == 0) {
+      return getOperand(0);
+    }
+  }
+  return nullptr;
+}
+
+// Avoid subtraction with constant 0
+OpFoldResult SubIntEintOp::fold(ArrayRef<Attribute> operands) {
+  assert(operands.size() == 2);
+  auto toSub = operands[0].dyn_cast_or_null<mlir::IntegerAttr>();
+  if (toSub != nullptr) {
+    auto intToSub = toSub.getInt();
+    if (intToSub == 0) {
+      return getOperand(1);
+    }
+  }
+  return nullptr;
+}
+
+// Avoid multiplication with constant 1
+OpFoldResult MulEintIntOp::fold(ArrayRef<Attribute> operands) {
+  assert(operands.size() == 2);
+  auto toMul = operands[1].dyn_cast_or_null<mlir::IntegerAttr>();
+  if (toMul != nullptr) {
+    auto intToMul = toMul.getInt();
+    if (intToMul == 1) {
+      return getOperand(0);
+    }
+  }
+  return nullptr;
+}
+
 } // namespace FHE
 } // namespace concretelang
 } // namespace mlir
