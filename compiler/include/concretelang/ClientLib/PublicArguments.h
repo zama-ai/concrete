@@ -37,7 +37,6 @@ class PublicArguments {
   /// arguments and public keys.
 public:
   PublicArguments(const ClientParameters &clientParameters,
-                  RuntimeContext runtimeContext, bool clearRuntimeContext,
                   std::vector<void *> &&preparedArgs,
                   std::vector<TensorData> &&ciphertextBuffers);
   ~PublicArguments();
@@ -56,13 +55,9 @@ private:
   outcome::checked<void, StringError> unserializeArgs(std::istream &istream);
 
   ClientParameters clientParameters;
-  RuntimeContext runtimeContext;
   std::vector<void *> preparedArgs;
   // Store buffers of ciphertexts
   std::vector<TensorData> ciphertextBuffers;
-
-  // Indicates if this public argument own the runtime keys.
-  bool clearRuntimeContext;
 };
 
 struct PublicResult {

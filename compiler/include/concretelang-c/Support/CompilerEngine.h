@@ -53,7 +53,8 @@ jit_load_server_lambda(JITSupport_C support,
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
 jit_server_call(JITSupport_C support, mlir::concretelang::JITLambda &lambda,
-                concretelang::clientlib::PublicArguments &args);
+                concretelang::clientlib::PublicArguments &args,
+                concretelang::clientlib::EvaluationKeys &evaluationKeys);
 
 // Library Support bindings ///////////////////////////////////////////////////
 
@@ -82,7 +83,8 @@ library_load_server_lambda(LibrarySupport_C support,
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
 library_server_call(LibrarySupport_C support,
                     concretelang::serverlib::ServerLambda lambda,
-                    concretelang::clientlib::PublicArguments &args);
+                    concretelang::clientlib::PublicArguments &args,
+                    concretelang::clientlib::EvaluationKeys &evaluationKeys);
 
 MLIR_CAPI_EXPORTED std::string
 library_get_shared_lib_path(LibrarySupport_C support);
@@ -127,6 +129,12 @@ publicResultUnserialize(mlir::concretelang::ClientParameters &clientParameters,
 
 MLIR_CAPI_EXPORTED std::string
 publicResultSerialize(concretelang::clientlib::PublicResult &publicResult);
+
+MLIR_CAPI_EXPORTED concretelang::clientlib::EvaluationKeys
+evaluationKeysUnserialize(const std::string &buffer);
+
+MLIR_CAPI_EXPORTED std::string evaluationKeysSerialize(
+    concretelang::clientlib::EvaluationKeys &evaluationKeys);
 
 // Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);

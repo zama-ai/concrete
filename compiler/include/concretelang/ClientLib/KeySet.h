@@ -16,6 +16,7 @@ extern "C" {
 #include "concretelang/Runtime/context.h"
 
 #include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Common/Error.h"
 
@@ -77,15 +78,16 @@ public:
   CircuitGate inputGate(size_t pos) { return std::get<0>(inputs[pos]); }
   CircuitGate outputGate(size_t pos) { return std::get<0>(outputs[pos]); }
 
-  void setRuntimeContext(RuntimeContext &context) {
-    context.ksk = std::get<1>(this->keyswitchKeys["ksk_v0"]);
-    context.bsk = std::get<1>(this->bootstrapKeys.at("bsk_v0"));
-  }
-
   RuntimeContext runtimeContext() {
     RuntimeContext context;
-    this->setRuntimeContext(context);
+    context.evaluationKeys = this->evaluationKeys();
     return context;
+  }
+
+  EvaluationKeys evaluationKeys() {
+    auto sharedKsk = std::get<1>(this->keyswitchKeys.at("ksk_v0"));
+    auto sharedBsk = std::get<1>(this->bootstrapKeys.at("bsk_v0"));
+    return EvaluationKeys(sharedKsk, sharedBsk);
   }
 
   const std::map<LweSecretKeyID,
@@ -93,12 +95,12 @@ public:
   getSecretKeys();
 
   const std::map<LweSecretKeyID,
-                 std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>> &
-  getBootstrapKeys();
+                 std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
+      &getBootstrapKeys();
 
   const std::map<LweSecretKeyID,
-                 std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>> &
-  getKeyswitchKeys();
+                 std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
+      &getKeyswitchKeys();
 
 protected:
   outcome::checked<void, StringError>
@@ -124,9 +126,11 @@ private:
   Engine *engine;
   std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
       secretKeys;
-  std::map<LweSecretKeyID, std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>>
+  std::map<LweSecretKeyID,
+           std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
       bootstrapKeys;
-  std::map<LweSecretKeyID, std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>>
+  std::map<LweSecretKeyID,
+           std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
       keyswitchKeys;
   std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *>>
       inputs;
@@ -137,10 +141,10 @@ private:
       std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
           secretKeys,
       std::map<LweSecretKeyID,
-               std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>>
+               std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
           bootstrapKeys,
       std::map<LweSecretKeyID,
-               std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>>
+               std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
           keyswitchKeys);
 };
 

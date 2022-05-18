@@ -275,7 +275,8 @@ public:
 
   /// Call the lambda with the public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>> virtual serverCall(
-      Lambda lambda, clientlib::PublicArguments &args) = 0;
+      Lambda lambda, clientlib::PublicArguments &args,
+      clientlib::EvaluationKeys &evaluationKeys) = 0;
 
   /// Build the client KeySet from the client parameters.
   static llvm::Expected<std::unique_ptr<clientlib::KeySet>>
@@ -302,11 +303,12 @@ public:
   }
 
   template <typename ResT>
-  static llvm::Expected<ResT>
-  call(Lambda lambda, clientlib::PublicArguments &publicArguments) {
+  static llvm::Expected<ResT> call(Lambda lambda,
+                                   clientlib::PublicArguments &publicArguments,
+                                   clientlib::EvaluationKeys &evaluationKeys) {
     // Call the lambda
     auto publicResult = LambdaSupport<Lambda, CompilationResult>().serverCall(
-        lambda, publicArguments);
+        lambda, publicArguments, evaluationKeys);
     if (auto err = publicResult.takeError()) {
       return std::move(err);
     }
@@ -357,7 +359,9 @@ public:
       return std::move(err);
     }
 
-    auto publicResult = support.serverCall(lambda, **publicArguments);
+    auto evaluationKeys = this->keySet->evaluationKeys();
+    auto publicResult =
+        support.serverCall(lambda, **publicArguments, evaluationKeys);
     if (auto err = publicResult.takeError()) {
       return std::move(err);
     }
@@ -375,7 +379,9 @@ public:
     if (!publicArguments.has_value()) {
       return StreamStringError(publicArguments.error().mesg);
     }
-    auto publicResult = support.serverCall(lambda, *publicArguments.value());
+    auto evaluationKeys = keySet->evaluationKeys();
+    auto publicResult =
+        support.serverCall(lambda, *publicArguments.value(), evaluationKeys);
     if (auto err = publicResult.takeError()) {
       return std::move(err);
     }
@@ -394,7 +400,9 @@ public:
     if (publicArguments.has_error()) {
       return StreamStringError(publicArguments.error().mesg);
     }
-    auto publicResult = support.serverCall(lambda, *publicArguments.value());
+    auto evaluationKeys = keySet->evaluationKeys();
+    auto publicResult =
+        support.serverCall(lambda, *publicArguments.value(), evaluationKeys);
     if (auto err = publicResult.takeError()) {
       return std::move(err);
     }

@@ -20,28 +20,14 @@ using concretelang::error::StringError;
 
 // TODO: optimize the move
 PublicArguments::PublicArguments(const ClientParameters &clientParameters,
-                                 RuntimeContext runtimeContext,
-                                 bool clearRuntimeContext,
                                  std::vector<void *> &&preparedArgs_,
                                  std::vector<TensorData> &&ciphertextBuffers_)
-    : clientParameters(clientParameters), runtimeContext(runtimeContext),
-      clearRuntimeContext(clearRuntimeContext) {
+    : clientParameters(clientParameters) {
   preparedArgs = std::move(preparedArgs_);
   ciphertextBuffers = std::move(ciphertextBuffers_);
 }
 
-PublicArguments::~PublicArguments() {
-  if (!clearRuntimeContext) {
-    return;
-  }
-  if (runtimeContext.bsk != nullptr) {
-    free_lwe_bootstrap_key_u64(runtimeContext.bsk);
-  }
-  if (runtimeContext.ksk != nullptr) {
-    free_lwe_keyswitch_key_u64(runtimeContext.ksk);
-    runtimeContext.ksk = nullptr;
-  }
-}
+PublicArguments::~PublicArguments() {}
 
 outcome::checked<void, StringError>
 PublicArguments::serialize(std::ostream &ostream) {
@@ -49,7 +35,6 @@ PublicArguments::serialize(std::ostream &ostream) {
     return StringError(
         "PublicArguments::serialize: ostream should be in binary mode");
   }
-  ostream << runtimeContext;
   size_t iPreparedArgs = 0;
   int iGate = -1;
   for (auto gate : clientParameters.inputs) {
@@ -122,16 +107,10 @@ PublicArguments::unserializeArgs(std::istream &istream) {
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 PublicArguments::unserialize(ClientParameters &clientParameters,
                              std::istream &istream) {
-  RuntimeContext runtimeContext;
-  istream >> runtimeContext;
-  if (istream.fail()) {
-    return StringError("Cannot read runtime context");
-  }
   std::vector<void *> empty;
   std::vector<TensorData> emptyBuffers;
   auto sArguments = std::make_unique<PublicArguments>(
-      clientParameters, runtimeContext, true, std::move(empty),
-      std::move(emptyBuffers));
+      clientParameters, std::move(empty), std::move(emptyBuffers));
   OUTCOME_TRYV(sArguments->unserializeArgs(istream));
   return std::move(sArguments);
 }

@@ -103,9 +103,9 @@ public:
 
   /// Call the lambda with the public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
-  serverCall(serverlib::ServerLambda lambda,
-             clientlib::PublicArguments &args) override {
-    return lambda.call(args);
+  serverCall(serverlib::ServerLambda lambda, clientlib::PublicArguments &args,
+             clientlib::EvaluationKeys &evaluationKeys) override {
+    return lambda.call(args, evaluationKeys);
   }
 
   /// Get path to shared library

@@ -25,11 +25,8 @@ size_t bitWidthAsWord(size_t exactBitWidth) {
 outcome::checked<std::unique_ptr<PublicArguments>, StringError>
 EncryptedArguments::exportPublicArguments(ClientParameters clientParameters,
                                           RuntimeContext runtimeContext) {
-  // On client side the runtimeContext is hold by the KeySet
-  bool clearContext = false;
   return std::make_unique<PublicArguments>(
-      clientParameters, runtimeContext, clearContext, std::move(preparedArgs),
-      std::move(ciphertextBuffers));
+      clientParameters, std::move(preparedArgs), std::move(ciphertextBuffers));
 }
 
 outcome::checked<void, StringError>

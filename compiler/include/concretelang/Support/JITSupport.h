@@ -51,8 +51,9 @@ public:
 
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
   serverCall(std::shared_ptr<concretelang::JITLambda> lambda,
-             clientlib::PublicArguments &args) override {
-    return lambda->call(args);
+             clientlib::PublicArguments &args,
+             clientlib::EvaluationKeys &evaluationKeys) override {
+    return lambda->call(args, evaluationKeys);
   }
 
 private:

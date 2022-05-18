@@ -7,6 +7,7 @@
 
 #include "concretelang-c/Support/CompilerEngine.h"
 #include "concretelang/ClientLib/KeySetCache.h"
+#include "concretelang/ClientLib/Serializers.h"
 #include "concretelang/Runtime/runtime_api.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/JITSupport.h"
@@ -53,8 +54,9 @@ jit_load_server_lambda(JITSupport_C support,
 
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
 jit_server_call(JITSupport_C support, mlir::concretelang::JITLambda &lambda,
-                concretelang::clientlib::PublicArguments &args) {
-  GET_OR_THROW_LLVM_EXPECTED(publicResult, lambda.call(args));
+                concretelang::clientlib::PublicArguments &args,
+                concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+  GET_OR_THROW_LLVM_EXPECTED(publicResult, lambda.call(args, evaluationKeys));
   return std::move(*publicResult);
 }
 
@@ -97,9 +99,10 @@ library_load_server_lambda(
 MLIR_CAPI_EXPORTED std::unique_ptr<concretelang::clientlib::PublicResult>
 library_server_call(LibrarySupport_C support,
                     concretelang::serverlib::ServerLambda lambda,
-                    concretelang::clientlib::PublicArguments &args) {
-  GET_OR_THROW_LLVM_EXPECTED(publicResult,
-                             support.support.serverCall(lambda, args));
+                    concretelang::clientlib::PublicArguments &args,
+                    concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+  GET_OR_THROW_LLVM_EXPECTED(
+      publicResult, support.support.serverCall(lambda, args, evaluationKeys));
   return std::move(*publicResult);
 }
 
@@ -189,6 +192,27 @@ publicResultSerialize(concretelang::clientlib::PublicResult &publicResult) {
   if (!voidOrError) {
     throw std::runtime_error(voidOrError.error().mesg);
   }
+  return buffer.str();
+}
+
+MLIR_CAPI_EXPORTED concretelang::clientlib::EvaluationKeys
+evaluationKeysUnserialize(const std::string &buffer) {
+  std::stringstream istream(buffer);
+
+  concretelang::clientlib::EvaluationKeys evaluationKeys;
+  concretelang::clientlib::operator>>(istream, evaluationKeys);
+
+  if (istream.fail()) {
+    throw std::runtime_error("Cannot read evaluation keys");
+  }
+
+  return evaluationKeys;
+}
+
+MLIR_CAPI_EXPORTED std::string evaluationKeysSerialize(
+    concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+  std::ostringstream buffer(std::ios::binary);
+  concretelang::clientlib::operator<<(buffer, evaluationKeys);
   return buffer.str();
 }
 

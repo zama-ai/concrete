@@ -76,7 +76,8 @@ uint64_t numArgOfRankedMemrefCallingConvention(uint64_t rank) {
 }
 
 llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
-JITLambda::call(clientlib::PublicArguments &args) {
+JITLambda::call(clientlib::PublicArguments &args,
+                clientlib::EvaluationKeys &evaluationKeys) {
 #ifndef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
   if (this->useDataflow) {
     return StreamStringError(
@@ -116,9 +117,12 @@ JITLambda::call(clientlib::PublicArguments &args) {
   for (auto &arg : args.preparedArgs) {
     rawArgs[i++] = &arg;
   }
+
+  RuntimeContext runtimeContext;
+  runtimeContext.evaluationKeys = evaluationKeys;
   // Pointer on runtime context, the rawArgs take pointer on actual value that
   // is passed to the compiled function.
-  auto rtCtxPtr = &args.runtimeContext;
+  auto rtCtxPtr = &runtimeContext;
   rawArgs[i++] = &rtCtxPtr;
   // Pointers on outputs
   for (auto &out : outputs) {

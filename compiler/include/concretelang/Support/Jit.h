@@ -36,7 +36,8 @@ public:
 
   /// Call the JIT lambda with the public arguments.
   llvm::Expected<std::unique_ptr<clientlib::PublicResult>>
-  call(clientlib::PublicArguments &args);
+  call(clientlib::PublicArguments &args,
+       clientlib::EvaluationKeys &evaluationKeys);
 
   void setUseDataflow(bool option) { this->useDataflow = option; }
 

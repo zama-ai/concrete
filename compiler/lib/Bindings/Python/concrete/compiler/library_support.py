@@ -23,6 +23,7 @@ from .public_result import PublicResult
 from .client_parameters import ClientParameters
 from .wrapper import WrapperCpp
 from .utils import lookup_runtime_lib
+from .evaluation_keys import EvaluationKeys
 
 
 # Default output path for compilation artifacts
@@ -211,17 +212,22 @@ class LibrarySupport(WrapperCpp):
         )
 
     def server_call(
-        self, library_lambda: LibraryLambda, public_arguments: PublicArguments
+        self,
+        library_lambda: LibraryLambda,
+        public_arguments: PublicArguments,
+        evaluation_keys: EvaluationKeys,
     ) -> PublicResult:
         """Call the library with public_arguments.
 
         Args:
             library_lambda (LibraryLambda): reference to the compiled library
             public_arguments (PublicArguments): arguments to use for execution
+            evaluation_keys (EvaluationKeys): evaluation keys to use for execution
 
         Raises:
             TypeError: if library_lambda is not of type LibraryLambda
             TypeError: if public_arguments is not of type PublicArguments
+            TypeError: if evaluation_keys is not of type EvaluationKeys
 
         Returns:
             PublicResult: result of the execution
@@ -234,8 +240,16 @@ class LibrarySupport(WrapperCpp):
             raise TypeError(
                 f"public_arguments must be of type PublicArguments, not {type(public_arguments)}"
             )
+        if not isinstance(evaluation_keys, EvaluationKeys):
+            raise TypeError(
+                f"evaluation_keys must be of type EvaluationKeys, not {type(evaluation_keys)}"
+            )
         return PublicResult.wrap(
-            self.cpp().server_call(library_lambda.cpp(), public_arguments.cpp())
+            self.cpp().server_call(
+                library_lambda.cpp(),
+                public_arguments.cpp(),
+                evaluation_keys.cpp(),
+            )
         )
 
     def get_shared_lib_path(self) -> str:

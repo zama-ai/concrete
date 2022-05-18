@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "concretelang/ClientLib/ClientParameters.h"
+#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/Types.h"
 #include "concretelang/Runtime/context.h"
 
@@ -66,6 +67,18 @@ TensorData unserializeTensorData(
     std::vector<int64_t> &expectedSizes, // includes unsigned to
                                          // accomodate non static sizes
     std::istream &istream);
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const LweKeyswitchKey &wrappedKsk);
+std::istream &operator>>(std::istream &istream, LweKeyswitchKey &wrappedKsk);
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const LweBootstrapKey &wrappedBsk);
+std::istream &operator>>(std::istream &istream, LweBootstrapKey &wrappedBsk);
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const EvaluationKeys &evaluationKeys);
+std::istream &operator>>(std::istream &istream, EvaluationKeys &evaluationKeys);
 
 } // namespace clientlib
 } // namespace concretelang

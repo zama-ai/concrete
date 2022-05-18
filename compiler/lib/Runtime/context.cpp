@@ -9,12 +9,12 @@
 
 LweKeyswitchKey_u64 *
 get_keyswitch_key_u64(mlir::concretelang::RuntimeContext *context) {
-  return context->ksk;
+  return context->evaluationKeys.getKsk();
 }
 
 LweBootstrapKey_u64 *
 get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context) {
-  return context->bsk;
+  return context->evaluationKeys.getBsk();
 }
 
 // Instantiate one engine per thread on demand

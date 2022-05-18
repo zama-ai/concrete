@@ -21,6 +21,8 @@ void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
   auto keySet = support.keySet(*clientParameters, getTestKeySetCache());
   ASSERT_EXPECTED_SUCCESS(keySet);
 
+  auto evaluationKeys = (*keySet)->evaluationKeys();
+
   /* 3 - Load the server lambda */
   auto serverLambda = support.loadServerLambda(**compilationResult);
   ASSERT_EXPECTED_SUCCESS(serverLambda);
@@ -41,7 +43,8 @@ void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
     ASSERT_EXPECTED_SUCCESS(publicArguments);
 
     /* 5 - Call the server lambda */
-    auto publicResult = support.serverCall(*serverLambda, **publicArguments);
+    auto publicResult =
+        support.serverCall(*serverLambda, **publicArguments, evaluationKeys);
     ASSERT_EXPECTED_SUCCESS(publicResult);
 
     /* 6 - Decrypt the public result */

@@ -23,6 +23,7 @@ from .jit_lambda import JITLambda
 from .public_arguments import PublicArguments
 from .public_result import PublicResult
 from .wrapper import WrapperCpp
+from .evaluation_keys import EvaluationKeys
 
 
 class JITSupport(WrapperCpp):
@@ -139,17 +140,22 @@ class JITSupport(WrapperCpp):
         return JITLambda.wrap(self.cpp().load_server_lambda(compilation_result.cpp()))
 
     def server_call(
-        self, jit_lambda: JITLambda, public_arguments: PublicArguments
+        self,
+        jit_lambda: JITLambda,
+        public_arguments: PublicArguments,
+        evaluation_keys: EvaluationKeys,
     ) -> PublicResult:
         """Call the JITLambda with public_arguments.
 
         Args:
             jit_lambda (JITLambda): A server lambda to call.
             public_arguments (PublicArguments): The arguments of the call.
+            evaluation_keys (EvaluationKeys): Evalutation keys of the call.
 
         Raises:
             TypeError: if jit_lambda is not of type JITLambda
             TypeError: if public_arguments is not of type PublicArguments
+            TypeError: if evaluation_keys is not of type EvaluationKeys
 
         Returns:
             PublicResult: the result of the call of the server lambda.
@@ -162,6 +168,12 @@ class JITSupport(WrapperCpp):
             raise TypeError(
                 f"public_arguments must be of type PublicArguments, not {type(public_arguments)}"
             )
+        if not isinstance(evaluation_keys, EvaluationKeys):
+            raise TypeError(
+                f"evaluation_keys must be of type EvaluationKeys, not {type(evaluation_keys)}"
+            )
         return PublicResult.wrap(
-            self.cpp().server_call(jit_lambda.cpp(), public_arguments.cpp())
+            self.cpp().server_call(
+                jit_lambda.cpp(), public_arguments.cpp(), evaluation_keys.cpp()
+            )
         )

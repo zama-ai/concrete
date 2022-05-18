@@ -26,6 +26,7 @@ from .library_lambda import LibraryLambda
 from .client_support import ClientSupport
 from .jit_support import JITSupport
 from .library_support import LibrarySupport
+from .evaluation_keys import EvaluationKeys
 
 
 # Terminate parallelization in the compiler (if init) during cleanup

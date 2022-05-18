@@ -10,6 +10,8 @@
 #include <mutex>
 #include <pthread.h>
 
+#include "concretelang/ClientLib/EvaluationKeys.h"
+
 extern "C" {
 #include "concrete-ffi.h"
 }
@@ -18,16 +20,18 @@ namespace mlir {
 namespace concretelang {
 
 typedef struct RuntimeContext {
-  LweKeyswitchKey_u64 *ksk;
-  LweBootstrapKey_u64 *bsk;
+  ::concretelang::clientlib::EvaluationKeys evaluationKeys;
   std::map<pthread_t, Engine *> engines;
   std::mutex engines_map_guard;
 
   RuntimeContext() {}
+
   // Ensure that the engines map is not copied
-  RuntimeContext(const RuntimeContext &ctx) : ksk(ctx.ksk), bsk(ctx.bsk) {}
+  RuntimeContext(const RuntimeContext &ctx)
+      : evaluationKeys(ctx.evaluationKeys) {}
   RuntimeContext(const RuntimeContext &&other)
-      : ksk(other.ksk), bsk(other.bsk) {}
+      : evaluationKeys(other.evaluationKeys) {}
+
   ~RuntimeContext() {
     for (const auto &key : engines) {
       free_engine(key.second);
@@ -35,8 +39,7 @@ typedef struct RuntimeContext {
   }
 
   RuntimeContext &operator=(const RuntimeContext &rhs) {
-    ksk = rhs.ksk;
-    bsk = rhs.bsk;
+    this->evaluationKeys = rhs.evaluationKeys;
     return *this;
   }
 } RuntimeContext;

@@ -39,7 +39,8 @@ public:
 
   /// Call the ServerLambda with public arguments.
   std::unique_ptr<clientlib::PublicResult>
-  call(clientlib::PublicArguments &args);
+  call(clientlib::PublicArguments &args,
+       clientlib::EvaluationKeys &evaluationKeys);
 
 protected:
   ClientParameters clientParameters;

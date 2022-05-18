@@ -21,7 +21,9 @@ namespace serverlib {
 
 using concretelang::clientlib::CircuitGate;
 using concretelang::clientlib::CircuitGateShape;
+using concretelang::clientlib::EvaluationKeys;
 using concretelang::clientlib::PublicArguments;
+using concretelang::clientlib::RuntimeContext;
 using concretelang::error::StringError;
 
 outcome::checked<ServerLambda, StringError>
@@ -74,10 +76,14 @@ TensorData dynamicCall(void *(*func)(void *...),
 }
 
 std::unique_ptr<clientlib::PublicResult>
-ServerLambda::call(PublicArguments &args) {
+ServerLambda::call(PublicArguments &args, EvaluationKeys &evaluationKeys) {
   std::vector<void *> preparedArgs(args.preparedArgs.begin(),
                                    args.preparedArgs.end());
-  preparedArgs.push_back((void *)&args.runtimeContext);
+
+  RuntimeContext runtimeContext;
+  runtimeContext.evaluationKeys = evaluationKeys;
+  preparedArgs.push_back((void *)&runtimeContext);
+
   return clientlib::PublicResult::fromBuffers(
       clientParameters,
       {dynamicCall(this->func, preparedArgs, clientParameters.outputs[0])});

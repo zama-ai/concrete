@@ -89,7 +89,8 @@ public:
     //                                      serverInput));
 
     // server function call
-    auto publicResult = serverLambda.call(*publicArgument);
+    auto evaluationKeys = keySet->evaluationKeys();
+    auto publicResult = serverLambda.call(*publicArgument, evaluationKeys);
 
     // client result decryption
     return this->decryptResult(*keySet, *publicResult);

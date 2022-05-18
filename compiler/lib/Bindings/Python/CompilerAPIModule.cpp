@@ -90,8 +90,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           pybind11::return_value_policy::reference)
       .def("server_call",
            [](JITSupport_C &support, concretelang::JITLambda &lambda,
-              clientlib::PublicArguments &publicArguments) {
-             return jit_server_call(support, lambda, publicArguments);
+              clientlib::PublicArguments &publicArguments,
+              clientlib::EvaluationKeys &evaluationKeys) {
+             return jit_server_call(support, lambda, publicArguments,
+                                    evaluationKeys);
            });
 
   pybind11::class_<mlir::concretelang::LibraryCompilationResult>(
@@ -132,8 +134,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           pybind11::return_value_policy::reference)
       .def("server_call",
            [](LibrarySupport_C &support, serverlib::ServerLambda lambda,
-              clientlib::PublicArguments &publicArguments) {
-             return library_server_call(support, lambda, publicArguments);
+              clientlib::PublicArguments &publicArguments,
+              clientlib::EvaluationKeys &evaluationKeys) {
+             return library_server_call(support, lambda, publicArguments,
+                                        evaluationKeys);
            })
       .def("get_shared_lib_path",
            [](LibrarySupport_C &support) {
@@ -185,7 +189,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                  clientParametersSerialize(clientParameters));
            });
 
-  pybind11::class_<clientlib::KeySet>(m, "KeySet");
+  pybind11::class_<clientlib::KeySet>(m, "KeySet")
+      .def("get_evaluation_keys",
+           [](clientlib::KeySet &keySet) { return keySet.evaluationKeys(); });
+
   pybind11::class_<clientlib::PublicArguments,
                    std::unique_ptr<clientlib::PublicArguments>>(
       m, "PublicArguments")
@@ -205,6 +212,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                   })
       .def("serialize", [](clientlib::PublicResult &publicResult) {
         return pybind11::bytes(publicResultSerialize(publicResult));
+      });
+
+  pybind11::class_<clientlib::EvaluationKeys>(m, "EvaluationKeys")
+      .def_static("unserialize",
+                  [](const pybind11::bytes &buffer) {
+                    return evaluationKeysUnserialize(buffer);
+                  })
+      .def("serialize", [](clientlib::EvaluationKeys &evaluationKeys) {
+        return pybind11::bytes(evaluationKeysSerialize(evaluationKeys));
       });
 
   pybind11::class_<lambdaArgument>(m, "LambdaArgument")

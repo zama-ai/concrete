@@ -24,12 +24,6 @@ KeySet::~KeySet() {
   for (auto it : secretKeys) {
     free_lwe_secret_key_u64(it.second.second);
   }
-  for (auto it : bootstrapKeys) {
-    free_lwe_bootstrap_key_u64(it.second.second);
-  }
-  for (auto it : keyswitchKeys) {
-    free_lwe_keyswitch_key_u64(it.second.second);
-  }
   free_engine(engine);
 }
 
@@ -115,10 +109,10 @@ void KeySet::setKeys(
     std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
         secretKeys,
     std::map<LweSecretKeyID,
-             std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>>
+             std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
         bootstrapKeys,
     std::map<LweSecretKeyID,
-             std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>>
+             std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
         keyswitchKeys) {
   this->secretKeys = secretKeys;
   this->bootstrapKeys = bootstrapKeys;
@@ -160,7 +154,7 @@ KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param) {
       param.level, param.variance, param.glweDimension, polynomialSize);
 
   // Store the bootstrap key
-  bootstrapKeys[id] = {param, bsk};
+  bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(bsk)};
 
   return outcome::success();
 }
@@ -184,7 +178,7 @@ KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param) {
                                        param.baseLog, param.variance);
 
   // Store the keyswitch key
-  keyswitchKeys[id] = {param, ksk};
+  keyswitchKeys[id] = {param, std::make_shared<LweKeyswitchKey>(ksk)};
 
   return outcome::success();
 }
@@ -253,13 +247,13 @@ const std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
 }
 
 const std::map<LweSecretKeyID,
-               std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>> &
+               std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>> &
 KeySet::getBootstrapKeys() {
   return bootstrapKeys;
 }
 
 const std::map<LweSecretKeyID,
-               std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>> &
+               std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>> &
 KeySet::getKeyswitchKeys() {
   return keyswitchKeys;
 }

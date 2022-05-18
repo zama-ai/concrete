@@ -41,6 +41,7 @@ declare_mlir_python_sources(ConcretelangBindingsPythonSources
     concrete/compiler/library_lambda.py
     concrete/compiler/public_arguments.py
     concrete/compiler/public_result.py
+    concrete/compiler/evaluation_keys.py
     concrete/compiler/utils.py
     concrete/compiler/wrapper.py
     concrete/__init__.py

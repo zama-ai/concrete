@@ -14,6 +14,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 
 # pylint: enable=no-name-in-module,import-error
 from .wrapper import WrapperCpp
+from .evaluation_keys import EvaluationKeys
 
 
 class KeySet(WrapperCpp):
@@ -34,3 +35,13 @@ class KeySet(WrapperCpp):
         if not isinstance(keyset, _KeySet):
             raise TypeError(f"keyset must be of type _KeySet, not {type(keyset)}")
         super().__init__(keyset)
+
+    def get_evaluation_keys(self) -> EvaluationKeys:
+        """
+        Get evaluation keys for execution.
+
+        Returns:
+            EvaluationKeys:
+                evaluation keys for execution
+        """
+        return EvaluationKeys(self.cpp().get_evaluation_keys())

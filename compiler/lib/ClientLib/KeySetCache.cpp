@@ -5,6 +5,7 @@
 
 #include "boost/outcome.h"
 
+#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/FileSystem.h"
@@ -96,9 +97,11 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
 
   std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
       secretKeys;
-  std::map<LweSecretKeyID, std::pair<BootstrapKeyParam, LweBootstrapKey_u64 *>>
+  std::map<LweSecretKeyID,
+           std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
       bootstrapKeys;
-  std::map<LweSecretKeyID, std::pair<KeyswitchKeyParam, LweKeyswitchKey_u64 *>>
+  std::map<LweSecretKeyID,
+           std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
       keyswitchKeys;
 
   // Load LWE secret keys
@@ -117,7 +120,7 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "pbsKey_" + id);
     OUTCOME_TRY(LweBootstrapKey_u64 * bsk, loadBootstrapKey(path));
-    bootstrapKeys[id] = {param, bsk};
+    bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(bsk)};
   }
   // Load keyswitch keys
   for (auto keyswitchParam : params.keyswitchKeys) {
@@ -126,7 +129,7 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "ksKey_" + id);
     OUTCOME_TRY(LweKeyswitchKey_u64 * ksk, loadKeyswitchKey(path));
-    keyswitchKeys[id] = {param, ksk};
+    keyswitchKeys[id] = {param, std::make_shared<LweKeyswitchKey>(ksk)};
   }
 
   key_set->setKeys(secretKeys, bootstrapKeys, keyswitchKeys);
@@ -162,7 +165,7 @@ outcome::checked<void, StringError> saveKeys(KeySet &key_set,
     auto key = bootstrapKeyParam.second.second;
     llvm::SmallString<0> path = folderIncompletePath;
     llvm::sys::path::append(path, "pbsKey_" + id);
-    saveBootstrapKey(path, key);
+    saveBootstrapKey(path, key->get());
   }
   // Save keyswitch keys
   for (auto keyswitchParam : key_set.getKeyswitchKeys()) {
@@ -170,7 +173,7 @@ outcome::checked<void, StringError> saveKeys(KeySet &key_set,
     auto key = keyswitchParam.second.second;
     llvm::SmallString<0> path = folderIncompletePath;
     llvm::sys::path::append(path, "ksKey_" + id);
-    saveKeyswitchKey(path, key);
+    saveKeyswitchKey(path, key->get());
   }
 
   err = llvm::sys::fs::rename(folderIncompletePath, folderPath);

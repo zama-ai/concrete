@@ -67,16 +67,14 @@ std::istream &operator>>(std::istream &istream, LweBootstrapKey_u64 *&key) {
 
 std::istream &operator>>(std::istream &istream,
                          RuntimeContext &runtimeContext) {
-  istream >> runtimeContext.ksk;
-  istream >> runtimeContext.bsk;
+  istream >> runtimeContext.evaluationKeys;
   assert(istream.good());
   return istream;
 }
 
 std::ostream &operator<<(std::ostream &ostream,
                          const RuntimeContext &runtimeContext) {
-  ostream << runtimeContext.ksk;
-  ostream << runtimeContext.bsk;
+  ostream << runtimeContext.evaluationKeys;
   assert(ostream.good());
   return ostream;
 }
@@ -145,6 +143,55 @@ TensorData unserializeTensorData(
     readWord(istream, value);
   }
   return result;
+}
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const LweKeyswitchKey &wrappedKsk) {
+  ostream << wrappedKsk.ksk;
+  assert(ostream.good());
+  return ostream;
+}
+std::istream &operator>>(std::istream &istream, LweKeyswitchKey &wrappedKsk) {
+  istream >> wrappedKsk.ksk;
+  assert(istream.good());
+  return istream;
+}
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const LweBootstrapKey &wrappedBsk) {
+  ostream << wrappedBsk.bsk;
+  assert(ostream.good());
+  return ostream;
+}
+std::istream &operator>>(std::istream &istream, LweBootstrapKey &wrappedBsk) {
+  istream >> wrappedBsk.bsk;
+  assert(istream.good());
+  return istream;
+}
+
+std::ostream &operator<<(std::ostream &ostream,
+                         const EvaluationKeys &evaluationKeys) {
+  ostream << *evaluationKeys.sharedKsk;
+  ostream << *evaluationKeys.sharedBsk;
+  assert(ostream.good());
+  return ostream;
+}
+
+std::istream &operator>>(std::istream &istream,
+                         EvaluationKeys &evaluationKeys) {
+  auto sharedKsk = LweKeyswitchKey(nullptr);
+  auto sharedBsk = LweBootstrapKey(nullptr);
+
+  istream >> sharedKsk;
+  istream >> sharedBsk;
+
+  evaluationKeys.sharedKsk =
+      std::make_shared<LweKeyswitchKey>(std::move(sharedKsk));
+  evaluationKeys.sharedBsk =
+      std::make_shared<LweBootstrapKey>(std::move(sharedBsk));
+
+  assert(istream.good());
+  return istream;
 }
 
 } // namespace clientlib
