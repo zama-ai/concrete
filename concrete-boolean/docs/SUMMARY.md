@@ -14,5 +14,9 @@
 
 ## Advanced Topics
 
-* [Generate Keys](user/advanced_topics/generate_keys.md)
-* [Save / Load](user/advanced_topics/save_load.md)
+* [Generate Keys](advanced_topics/generate_keys.md)
+* [Save / Load](advanced_topics/save_load.md)
+
+## API
+
+* [API on docs.rs](https://docs.rs/concrete-boolean/)
