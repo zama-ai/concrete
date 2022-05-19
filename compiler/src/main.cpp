@@ -91,6 +91,12 @@ llvm::cl::opt<std::string> output("o",
 llvm::cl::opt<bool> verbose("verbose", llvm::cl::desc("verbose logs"),
                             llvm::cl::init<bool>(false));
 
+llvm::cl::opt<bool>
+    optimizeConcrete("optimize-concrete",
+                     llvm::cl::desc("enable/disable optimizations of concrete "
+                                    "dialects. (Enabled by default)"),
+                     llvm::cl::init<bool>(true));
+
 llvm::cl::list<std::string> passes(
     "passes",
     llvm::cl::desc("Specify the passes to run (use only for compiler tests)"),
@@ -220,6 +226,7 @@ mlir::concretelang::CompilationOptions cmdlineCompilationOptions() {
   options.autoParallelize = cmdline::autoParallelize;
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
+  options.optimizeConcrete = cmdline::optimizeConcrete;
 
   if (cmdline::assumeMaxEintPrecision.hasValue() &&
       cmdline::assumeMaxMANP.hasValue()) {

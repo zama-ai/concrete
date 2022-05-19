@@ -108,6 +108,19 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("can't set the option to a non-boolean value")
         self.cpp().set_dataflow_parallelize(dataflow_parallelize)
 
+    def set_optimize_concrete(self, optimize: bool):
+        """Set flag to enable/disable optimization of concrete intermediate representation.
+
+        Args:
+            optimize (bool): whether to turn it on or off
+
+        Raises:
+            TypeError: if the value to set is not boolean
+        """
+        if not isinstance(optimize, bool):
+            raise TypeError("can't set the option to a non-boolean value")
+        self.cpp().set_optimize_concrete(optimize)
+
     def set_funcname(self, funcname: str):
         """Set entrypoint function name.
 

@@ -248,7 +248,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   // Optimizing Concrete
-  if (mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
+  if (this->compilerOptions.optimizeConcrete &&
+      mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
                                                      this->enablePass)
           .failed()) {
     return errorDiag("Optimizing Concrete failed");
@@ -286,13 +287,6 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
       res.clientParameters = clientParametersOrErr.get();
     }
-  }
-
-  // Optimize Concrete
-  if (mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
-                                                     this->enablePass)
-          .failed()) {
-    return StreamStringError("Optimizing Concrete failed");
   }
 
   // Concrete -> BConcrete
