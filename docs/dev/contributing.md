@@ -1,11 +1,11 @@
 
 # Contributing
 
-```{important}
+{% hint style='info' %}
 There are two ways to contribute to **concrete-numpy** or to **Concrete** tools in general:
 - you can open issues to report bugs and typos and to suggest ideas
 - you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
-```
+{% endhint %}
 
 Let's go over some other important things that you need to be careful about.
 
@@ -70,9 +70,9 @@ To learn more about conventional commits, check [this](https://www.conventionalc
 
 ## Before creating pull request
 
-```{important}
+{% hint style='tip' %}
 We remind that only official contributors can send pull requests. To become such an official contributor, please email hello@zama.ai.
-```
+{% endhint %}
 
 You should rebase on top of `main` branch before you create your pull request. We don't allow merge commits, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if some conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
 

@@ -230,12 +230,6 @@ jobs:
         run: |
           make pcc
 
-      - name: Build docs
-        id: cbd
-        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
-        run: |
-          make docs
-
       - name: Generate release changelog
         id: changelog
         if: ${{ fromJSON(env.IS_RELEASE) && steps.install-deps.outcome == 'success' && !cancelled() }}
@@ -252,27 +246,12 @@ jobs:
         id: conformance
         if: ${{ always() && !cancelled() }}
         env:
-          CONFORMANCE_STATUS: ${{ steps.commit-conformance.outcome == 'success' && steps.cs.outcome == 'success' && steps.cbd.outcome == 'success' }}
+          CONFORMANCE_STATUS: ${{ steps.commit-conformance.outcome == 'success' && steps.cs.outcome == 'success' }}
         run: |
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
             echo "Conformance failed, check logs"
             exit 1
           fi
-
-      # Taring the docs allows for much faster upload speed (from ~3min worst case to ~2s best case)
-      - name: Tar docs artifacts
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          cd docs/_build/html
-          tar -cvf docs.tar ./*
-
-      # Only upload docs once from reference build
-      - name: Archive docs artifacts
-        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
-        with:
-          name: html-docs
-          path: docs/_build/html/docs.tar
 
       - name: Upload changelog artifacts
         if: ${{ fromJSON(env.IS_REF_BUILD) && steps.changelog.outcome == 'success' && !cancelled() }}
@@ -473,93 +452,6 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-  publish-docs:
-    needs: [build-linux]
-
-    outputs:
-      report: ${{ steps.report.outputs.report || 'Did not run.' }}
-
-    runs-on: ubuntu-20.04
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-
-    steps:
-      - name: Prepare docs push
-        id: docs-push-infos
-        run: |
-          if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
-             [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]]; then
-            REF_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///g')
-            echo "::set-output name=has-preprod::true"
-            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
-            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
-            echo "::set-output name=dest-dir::concrete-numpy/${REF_NAME}"
-          else
-            echo "::set-output name=has-preprod::false"
-          fi
-
-      - name: Download Documentation
-        if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
-        id: download
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
-        with:
-          name: html-docs
-
-      - name: Untar docs artifacts
-        id: untar
-        if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
-        run: |
-          tar -xvf docs.tar
-          rm docs.tar
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Publish Documentation to S3
-        id: publish
-        if: ${{ steps.untar.outcome == 'success' && !cancelled() }}
-        env:
-          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
-          SOURCE_DIR: '.'
-          DEST_DIR: ${{ steps.docs-push-infos.outputs.dest-dir }}
-        run: |
-          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
-
-      - name: Invalidate CloudFront Cache
-        if: ${{ steps.publish.outcome == 'success' }}
-        env:
-          SOURCE_PATH: "/${{ steps.docs-push-infos.outputs.dest-dir }}/*"
-          DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
-        run: |
-          aws cloudfront create-invalidation \
-          --distribution-id "${DISTRIBUTION_ID}" \
-          --paths "${SOURCE_PATH}"
-
-      - name: Set notification report
-        id: report
-        if: ${{ always() }}
-        run: |
-          REPORT="Publishing documentation finished with status ${{ job.status }}. \
-          Pushed to preprod: ${{ steps.docs-push-infos.outputs.has-preprod }}"
-          echo "${REPORT}"
-          echo "::set-output name=report::${REPORT}"
-          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
-
-      - name: Slack Notification
-        if: ${{ always() && !success() }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
-        env:
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
-          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
   package-release:
     needs: [build-linux]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
@@ -649,21 +541,6 @@ jobs:
           mkdir -p "${ARTIFACTS_PACKAGED_DIR}"
           echo "ARTIFACTS_PACKAGED_DIR=${ARTIFACTS_PACKAGED_DIR}" >> "$GITHUB_ENV"
 
-      - name: Download Documentation
-        if: ${{ success() && !cancelled() }}
-        id: download-docs
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
-        with:
-          name: html-docs
-          path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
-
-      - name: Untar docs artifacts
-        if: ${{ success() && !cancelled() }}
-        run: |
-          cd ${{ steps.download-docs.outputs.download-path }}
-          tar -xvf docs.tar
-          rm docs.tar
-
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog
@@ -717,70 +594,11 @@ jobs:
           docker run --rm -v "$(pwd)"/docker/release_resources:/data \
           "${PRIVATE_RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
 
-      - name: Prepare docs push
-        id: docs-push-infos
-        run: |
-          if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
-             [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]] && \
-             [[ "${IS_PRERELEASE}" == "true" ]]; then
-            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
-            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
-          else
-            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}"
-            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}"
-          fi
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Update versions.json for docs
-        if: ${{ success() && !cancelled() }}
-        env:
-          RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
-        run: |
-          DOWNLOADED_VERSIONS_JSON_FILE=$(mktemp --suffix=.json)
-          OUTPUT_VERSIONS_JSON_FILE=$(mktemp --suffix=.json)
-          OPTS=""
-          if [[ $IS_LATEST = "true" ]]; then
-              OPTS="${OPTS} --latest "
-          fi
-          if [[ $IS_PRERELEASE = "true" ]]; then
-              OPTS="${OPTS} --prerelease "
-          fi
-
-          aws s3api get-object \
-          --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
-          --key concrete-numpy/versions.json "${DOWNLOADED_VERSIONS_JSON_FILE}"
-
-          # shellcheck disable=SC2086
-          poetry run python ./script/actions_utils/generate_versions_json.py \
-          --add-version "${PROJECT_VERSION}" \
-          --versions-json-file "${DOWNLOADED_VERSIONS_JSON_FILE}" \
-          --output-json "${OUTPUT_VERSIONS_JSON_FILE}" \
-          $OPTS
-
-
-          echo "OUTPUT_VERSIONS_JSON_FILE=${OUTPUT_VERSIONS_JSON_FILE}" >> "$GITHUB_ENV"
-
-          # Copy to docs to keep a version in docs artifacts
-          cp "${OUTPUT_VERSIONS_JSON_FILE}" "${RAW_DOCS_DIR}"/versions.json
-
       - name: Create ready to upload/packaged artifacts and release body
         if: ${{ success() && !cancelled() }}
         env:
-          RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
           RAW_CHANGELOG_DIR: ${{ steps.download-changelog.outputs.download-path }}
         run: |
-          pushd "${RAW_DOCS_DIR}"
-          zip -r "${ARTIFACTS_PACKAGED_DIR}/html-docs.zip" ./*
-          tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
-          # Remove the versions.json to avoid pushing it to S3 but have it in release artifacts
-          rm versions.json
-          popd
           cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
           ls -a "${ARTIFACTS_PACKAGED_DIR}"
 
@@ -791,7 +609,6 @@ jobs:
           {
             echo "Docker Image: ${PRIVATE_RELEASE_IMG_GIT_TAG}";
             echo "PyPI: https://pypi.org/project/concrete-numpy/${PROJECT_VERSION}";
-            echo "Documentation: https://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/${PROJECT_VERSION}";
             echo "";
           } >> "${RELEASE_BODY_FILE}"
           cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
@@ -818,34 +635,6 @@ jobs:
           -u "${{ secrets.INTERNAL_PYPI_BOT_USERNAME }}" -p "${{ secrets.INTERNAL_PYPI_BOT_PASSWORD }}" \
           --repository-url "${{ secrets.INTERNAL_PYPI_URL }}" "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
 
-      - name: Push release documentation
-        if: ${{ success() && !cancelled() }}
-        env:
-          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
-          SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
-          DEST_DIR: 'concrete-numpy/${{ env.PROJECT_VERSION }}'
-        run: |
-          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
-
-      - name: Push release documentation as stable
-        if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
-        env:
-          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
-          SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
-          DEST_DIR: 'concrete-numpy/stable'
-        run: |
-          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
-
-      - name: Invalidate CloudFront Cache for stable
-        if: ${{ success() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
-        env:
-          SOURCE_PATH: "/concrete-numpy/stable/*"
-          DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
-        run: |
-          aws cloudfront create-invalidation \
-          --distribution-id "${DISTRIBUTION_ID}" \
-          --paths "${SOURCE_PATH}"
-
       - name: Create GitHub release
         if: ${{ success() && !cancelled() }}
         id: create-release
@@ -858,17 +647,6 @@ jobs:
           tag_name: ${{ env.GIT_TAG }}
           fail_on_unmatched_files: true
           token: ${{ secrets.BOT_TOKEN }}
-
-      - name: Push updated versions.json
-        if: ${{ success() }}
-        run: |
-          aws s3 cp "${OUTPUT_VERSIONS_JSON_FILE}" \
-          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-numpy/versions.json \
-          --acl public-read
-
-          aws cloudfront create-invalidation \
-          --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
-          --paths /concrete-numpy/versions.json
 
       - name: Set notification report
         id: report
@@ -901,7 +679,6 @@ jobs:
         build-linux,
         stop-runner-linux,
         build-macos,
-        publish-docs,
         package-release,
       ]
 
@@ -936,7 +713,6 @@ jobs:
             - build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
             - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}\n\n\
             - build-macos: ${{ needs.build-macos.result || 'Did not run.' }}\n\n\
-            - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
             - package-release: ${{ needs.package-release.outputs.report || 'Did not run.' }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

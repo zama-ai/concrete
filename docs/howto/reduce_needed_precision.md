@@ -67,9 +67,9 @@ Quantization and binarization increase inference speed, reduce model byte-size a
 
 The end result has a granularity/imprecision linked to the data types used and for the Quantized Logistic Regression to the lattice used to evaluate the logistic model.
 
-## Limitations for FHE friendly neural network 
+## Limitations for FHE friendly neural network
 
-Recent quantization literature often takes a few shortcuts to reach performance similar to those achieved by floating point models. A common one is that the input is left in floating point. This is also true for the first and last layers which have more impact on the resulting model accuracy than hidden layers. 
+Recent quantization literature often takes a few shortcuts to reach performance similar to those achieved by floating point models. A common one is that the input is left in floating point. This is also true for the first and last layers which have more impact on the resulting model accuracy than hidden layers.
 
 But, in **Concrete Numpy**, the inputs, weights and the accumulator must remain on a maximum of 7 bits.
 
@@ -77,14 +77,14 @@ Thus, in **Concrete Numpy**, we also quantize the input data and network output 
 
 The core operation in neural networks is essentially matrix multiplications (matmul). This operation must be done such that the maximum value of its result requires at most 7 bits of precision.
 
-For example, if you quantize your input and weights with $ n_{\mathsf{weights}} $, $ n_{\mathsf{inputs}} $  bits of precision, one can compute the maximum dimensionality of the input and weights before the matmul **can** exceed the 7 bits as such:
+For example, if you quantize your input and weights with $$ n_{\mathsf{weights}} $$, $$ n_{\mathsf{inputs}} $$  bits of precision, one can compute the maximum dimensionality of the input and weights before the matmul **can** exceed the 7 bits as such:
 
 $$ \Omega = \mathsf{floor} \left( \frac{2^{n_{\mathsf{max}}} - 1}{(2^{n_{\mathsf{weights}}} - 1)(2^{n_{\mathsf{inputs}}} - 1)} \right) $$
 
-where $ n_{\mathsf{max}} = 7 $ is the maximum precision allowed. For example, if we set $ n_{\mathsf{weights}} = 2$ and $ n_{\mathsf{inputs}} = 2$ with $ n_{\mathsf{max}} = 7$ then we have the $ \Omega = 14 $ different inputs/weights allowed in the matmul. 
+where $$ n_{\mathsf{max}} = 7 $$ is the maximum precision allowed. For example, if we set $$ n_{\mathsf{weights}} = 2$$ and $$ n_{\mathsf{inputs}} = 2$$ with $$ n_{\mathsf{max}} = 7$$ then we have the $$ \Omega = 14 $$ different inputs/weights allowed in the matmul.
 
-Above $ \Omega $ dimensions in the input and weights, the risk of overflow increases quickly. It may happen that for some distributions of weights and values the computation does not overflow, but the risk increases rapidly with the number of dimensions.
+Above $$ \Omega $$ dimensions in the input and weights, the risk of overflow increases quickly. It may happen that for some distributions of weights and values the computation does not overflow, but the risk increases rapidly with the number of dimensions.
 
 Currently, **Concrete Numpy** pre-computes the number of bits needed for the computation depending on the input set calibration data and does not allow the overflow[^1] to happen.
 
-[^1]: [Integer overflow](https://en.wikipedia.org/wiki/Integer_overflow) 
+[^1]: [Integer overflow](https://en.wikipedia.org/wiki/Integer_overflow)

@@ -25,15 +25,15 @@ Any computation where there is a single variable integer input and a single inte
 
 The `quantized_sin` graph of operations:
 
-![](../../_static/float_fusing_example/before.png)
+![](../_static/float_fusing_example/before.png)
 
 The float subgraph that was detected:
 
-![](../../_static/float_fusing_example/subgraph.png)
+![](../_static/float_fusing_example/subgraph.png)
 
 The simplified graph of operations with the float subgraph condensed in a `GenericFunction` node:
 
-![](../../_static/float_fusing_example/after.png)
+![](../_static/float_fusing_example/after.png)
 
 ## How is it done in **Concrete Numpy**?
 
@@ -59,15 +59,15 @@ def fusable_with_bigger_search(x, y):
 
 The `fusable_with_bigger_search` graph of operations:
 
-![](../../_static/float_fusing_example/before_bigger_search.png)
+![](../_static/float_fusing_example/before_bigger_search.png)
 
 The float subgraph that was detected:
 
-![](../../_static/float_fusing_example/subgraph_bigger_search.png)
+![](../_static/float_fusing_example/subgraph_bigger_search.png)
 
 The simplified graph of operations with the float subgraph condensed in a `GenericFunction` node:
 
-![](../../_static/float_fusing_example/after_bigger_search.png)
+![](../_static/float_fusing_example/after_bigger_search.png)
 
 An example of a non fusable computation with that technique is:
 
@@ -83,4 +83,4 @@ def non_fusable(x, y):
     return add_int
 ```
 
-From `add_int` you will find two `Add` nodes going from int to float (`x_1` and `y_1`) which we cannot represent with a single input table look-up. Kolmogorov–Arnold representation theorem states that every multivariate continuous function can be represented as a superposition of continuous functions of one variable ([from Wikipedia](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Arnold_representation_theorem)), so the above case could be handled in future versions of **Concrete** tools.
+From `add_int` you will find two `Add` nodes going from int to float (`x_1` and `y_1`) which we cannot represent with a single input table look-up. Kolmogorov–Arnold representation theorem states that every multivariate continuous function can be represented as a superposition of continuous functions of one variable ([from Wikipedia](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Arnold\_representation\_theorem)), so the above case could be handled in future versions of **Concrete** tools.

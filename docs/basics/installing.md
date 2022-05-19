@@ -8,18 +8,18 @@ To install **Concrete Numpy** from PyPi, run the following:
 pip install concrete-numpy
 ```
 
-```{note}
+{% hint style='info' %}
 Note that **concrete-numpy** has `pygraphviz` as an optional dependency to draw graphs.
-```
+{% endhint %}
 
-```{WARNING}
+{% hint style='info' %}
 `pygraphviz` requires `graphviz` packages being installed on your OS, see <a href="https://pygraphviz.github.io/documentation/stable/install.html">https://pygraphviz.github.io/documentation/stable/install.html</a>
-```
+{% endhint %}
 
-```{DANGER}
+{% hint style='tip' %}
 `graphviz` packages are binary packages that won't automatically be installed by pip.
 Do check <a href="https://pygraphviz.github.io/documentation/stable/install.html">https://pygraphviz.github.io/documentation/stable/install.html</a> for instructions on how to install `graphviz` for `pygraphviz`.
-```
+{% endhint %}
 
 You can install the extra python dependencies for drawing with:
 
@@ -44,10 +44,12 @@ The image can be used with docker volumes, [see the docker documentation here](h
 You can then use this image with the following command:
 
 ```shell
-# Without local volume:
 docker run --rm -it -p 8888:8888 zamafhe/concrete-numpy:v0.2.0
+```
 
-# With local volume to save notebooks on host:
+or with local volume to save notebooks on host:
+
+```
 docker run --rm -it -p 8888:8888 -v /host/path:/data zamafhe/concrete-numpy:v0.2.0
 ```
 

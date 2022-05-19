@@ -84,9 +84,9 @@ assert np.array_equal(circuit.encrypt_run_decrypt(test_input), expected_output)
 
 You can use multidimensional slicing as well.
 
-#### Note
-
+{% hint style='tip' %}
 There are certain limitations of slicing due to MLIR. So if you stumple into `RuntimeError: Compilation failed: Failed to lower to LLVM dialect`, know that we are aware of it, and we are trying to make such cases compilable.
+{% endhint %}
 
 ## Dynamic Indexing
 

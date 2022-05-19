@@ -106,6 +106,7 @@ We determine the shapes of the inputs from the inputset, and we infer the shapes
 
 You can access the shape of a tensor by accessing the `shape` property, just like in numpy.
 Here is an example:
+
 ```python
 def function_to_compile(x):
     return x.reshape((x.shape[0], -1))

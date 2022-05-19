@@ -8,7 +8,7 @@ FHE is a powerful cryptographic tool, which allows servers to perform computatio
 
 FHE is also a killer feature regarding data breaches: as anything done on the server is done over encrypted data, even if the server is compromised, there is in the end no leak of useful data.
 
-With **Concrete Numpy**, data scientists can implement machine learning models using a [subset of numpy](../howto/numpy_support.md) that compile to FHE. They will be able to train models with popular machine learning libraries and then convert the prediction functions of these models, that they write in numpy, to FHE.
+With **Concrete Numpy**, data scientists can implement machine learning models using a [subset of numpy](basics/numpy_support.md) that compile to FHE. They will be able to train models with popular machine learning libraries and then convert the prediction functions of these models, that they write in numpy, to FHE.
 
 **Concrete Numpy** is made of several parts:
 - an entry API, which is the main function of the so-called **Concrete frontend**, which takes programs made from a subset of numpy, and converts them to an FHE program
@@ -26,6 +26,6 @@ Basically, we have divided our documentation into several parts:
 
 ## A work in progress
 
-```{note}
-Concrete is a work in progress, and is currently limited to a certain number of operators and features. In the future, there will be improvements as described in this [section](../explanation/future_features.md).
-```
+{% hint style='info' %}
+Concrete is a work in progress, and is currently limited to a certain number of operators and features. In the future, there will be improvements as described in this [section](explanation/future_features.md).
+{% endhint %}

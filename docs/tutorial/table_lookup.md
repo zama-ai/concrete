@@ -1,6 +1,6 @@
-# Table Lookup
+# Table lookup
 
-In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Numpy**. Please read [Compiling and Executing](../basics/compiling_and_executing.md) before reading further to see how you can compile the functions below.
+In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Numpy**. Please read [Compiling and Executing](../basics/compiling\_and\_executing.md) before reading further to see how you can compile the functions below.
 
 ## Direct table lookup
 
@@ -17,7 +17,7 @@ def f(x):
 
 where
 
-- `x = "encrypted"` scalar
+* `x = "encrypted"` scalar
 
 results in
 
@@ -31,7 +31,7 @@ circuit.encrypt_run_decrypt(3) == 0
 
 Moreover, direct lookup tables can be used with tensors where the same table lookup is applied to each value in the tensor, so
 
-- `x = "encrypted"` tensor of shape `(2, 3)`
+* `x = "encrypted"` tensor of shape `(2, 3)`
 
 results in
 
@@ -41,8 +41,7 @@ input = np.array([[0, 1, 3], [2, 3, 1]], dtype=np.uint8)
 circuit.encrypt_run_decrypt(input) == [[2, 1, 0], [3, 0, 1]]
 ```
 
-Direct table lookups behaves like array indexing in python.
-Which means, if the lookup variable is negative, table is looked up from the back.
+Direct table lookups behaves like array indexing in python. Which means, if the lookup variable is negative, table is looked up from the back.
 
 ```python
 import concrete.numpy as cnp
@@ -55,7 +54,7 @@ def f(x):
 
 where
 
-- `x = "encrypted"` scalar
+* `x = "encrypted"` scalar
 
 results in
 
@@ -68,7 +67,7 @@ circuit.encrypt_run_decrypt(3) == 1
 circuit.encrypt_run_decrypt(4) == 2
 ```
 
-Lastly, a `LookupTable` can have any number of elements, let's call it **N**, as long as the lookup variable is in range [-**N**, **N**). If you go out of bounds of this range, you will get the following error:
+Lastly, a `LookupTable` can have any number of elements, let's call it **N**, as long as the lookup variable is in range \[-**N**, **N**). If you go out of bounds of this range, you will get the following error:
 
 ```
 IndexError: index 10 is out of bounds for axis 0 with size 6
@@ -99,7 +98,7 @@ def f(x):
 
 where
 
-- `x = "encrypted"` tensor of shape `(3, 2)`
+* `x = "encrypted"` tensor of shape `(3, 2)`
 
 results in
 
@@ -113,7 +112,7 @@ Basically, we applied `squared` table to the first column and `cubed` to the sec
 
 ## Fused table lookup
 
-Direct tables are tedious to prepare by hand. When possible, **Concrete Numpy** fuses the floating point operations into table lookups automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](./working_with_floating_points.md).
+Direct tables are tedious to prepare by hand. When possible, **Concrete Numpy** fuses the floating point operations into table lookups automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](working\_with\_floating\_points.md).
 
 Here is an example function that results in fused table lookup:
 
@@ -125,7 +124,7 @@ def f(x):
 
 where
 
-- `x = "encrypted"` scalar
+* `x = "encrypted"` scalar
 
 results in
 
@@ -143,11 +142,11 @@ circuit.encrypt_run_decrypt(7) == 45
 
 Initially, the function is converted to this operation graph
 
-![](../../_static/tutorials/table-lookup/1.initial.graph.png)
+![](../\_static/tutorials/table-lookup/1.initial.graph.png)
 
 and after floating point operations are fused, we get the following operation graph
 
-![](../../_static/tutorials/table-lookup/3.final.graph.png)
+![](../\_static/tutorials/table-lookup/3.final.graph.png)
 
 Internally, it uses the following lookup table
 

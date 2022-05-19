@@ -1,10 +1,10 @@
 # Project Setup
 
-```{note}  
+{% hint style='info' %}
 It is strongly recommended to use the development docker (see the [docker](./docker.md) guide). However you can setup the project on bare macOS and Linux provided you install the required dependencies (check Dockerfile.env for the required binary packages like make).
 
 The project targets Python 3.8 through 3.9 inclusive.
-```
+{% endhint %}
 
 ## Installing Python
 
@@ -18,11 +18,11 @@ You can follow [this](https://realpython.com/installing-python/) guide to instal
 
 You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
-```{WARNING}
+{% hint style='danger' %}
 As there is no `concrete-compiler` package for Windows, only the dev dependencies can be installed. This requires poetry >= 1.2.
 
 At the time of writing (January 2022), there is only an alpha version of poetry 1.2 that you can install. In the meantime we recommend following [this link to setup the docker environment](./docker.md) on Windows.
-```
+{% endhint %}
 
 ## Installing make
 
@@ -45,9 +45,9 @@ It is possible to install `gmake` as `make`, check this [StackOverflow post](htt
 
 On Windows check [this GitHub gist](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
-```{hint}
+{% hint style='tip' %}
 In the following sections, be sure to use the proper `make` tool for your system: `make`, `gmake`, or other.
-```
+{% endhint %}
 
 ## Cloning repository
 
@@ -59,9 +59,9 @@ Clone the code repository using the link for your favourite communication protoc
 
 We are going to make use of virtual environments. This helps to keep the project isolated from other `Python` projects in the system. The following commands will create a new virtual environment under the project directory and install dependencies to it.
 
-```{DANGER}
+{% hint style='danger' %}
 The following command will not work on Windows if you don't have poetry >= 1.2. As poetry 1.2 is still in alpha we recommend following [this link to setup the docker environment](./docker.md) instead.
-```
+{% endhint %}
 
 ```shell
 cd concrete-numpy

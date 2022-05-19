@@ -74,7 +74,7 @@ pcc:
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_supported_functions check_licenses
+PCC_DEPS += check_supported_functions check_licenses
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -160,22 +160,6 @@ docker_clean_volumes:
 .PHONY: docker_cv # Docker clean volumes
 docker_cv: docker_clean_volumes
 
-.PHONY: docs # Build docs
-docs: clean_docs supported_functions
-	@# Generate the auto summary of documentations
-	poetry run sphinx-apidoc -o docs/_apidoc $(SRC_DIR)
-	@# Docs
-	cd docs && poetry run $(MAKE) html SPHINXOPTS='-W --keep-going'
-
-.PHONY: clean_docs # Clean docs build directory
-clean_docs:
-	rm -rf docs/_apidoc docs/_build
-
-.PHONY: open_docs # Launch docs in a browser (macOS only)
-open_docs:
-	@# This is macOS only. On other systems, one would use `start` or `xdg-open`
-	open docs/_build/html/index.html
-
 .PHONY: pydocstyle # Launch syntax checker on source code documentation
 pydocstyle:
 	@# From http://www.pydocstyle.org/en/stable/error_codes.html
@@ -247,18 +231,14 @@ set_version:
 		git stash pop; \
 	fi
 
-.PHONY: check_version_coherence # Check that all files containing version have the same value
-check_version_coherence:
-	poetry run python ./script/make_utils/version_utils.py check-version
-
 .PHONY: changelog # Generate a changelog
-changelog: check_version_coherence
+changelog:
 	PROJECT_VER=($$(poetry version)) && \
 	PROJECT_VER="$${PROJECT_VER[1]}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
 .PHONY: release # Create a new release
-release: check_version_coherence
+release:
 	@PROJECT_VER=($$(poetry version)) && \
 	PROJECT_VER="$${PROJECT_VER[1]}" && \
 	TAG_NAME="v$${PROJECT_VER}" && \
@@ -287,11 +267,11 @@ todo:
 
 .PHONY: supported_functions # Update docs with supported functions
 supported_functions:
-	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/howto/numpy_support.md
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/basics/numpy_support.md
 
 .PHONY: check_supported_functions # Check supported functions (for the doc)
 check_supported_functions:
-	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/user/howto/numpy_support.md --check
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/basics/numpy_support.md --check
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:

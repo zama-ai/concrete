@@ -1,4 +1,4 @@
-# Printing and Drawing a FHE circuit
+# Printing and drawing
 
 Sometimes, it can be useful to print or draw fhe circuits, we provide methods to just do that. Please read [Compiling and Executing](../basics/compiling_and_executing.md) before reading further to see how you can compile your function into an fhe circuit.
 
@@ -13,10 +13,10 @@ print(circuit)
 
 ## Drawing
 
-```{WARNING}
+{% hint style="danger" %}
 The draw function requires the installation of the package's extra dependencies.
 
-The drawing package required is `pygraphviz` which needs `graphviz` packages installed on your OS, see <a href="https://pygraphviz.github.io/documentation/stable/install.html">https://pygraphviz.github.io/documentation/stable/install.html</a>
+The drawing package required is `pygraphviz` which needs `graphviz` packages installed on your OS, see [https://pygraphviz.github.io/documentation/stable/install.html](https://pygraphviz.github.io/documentation/stable/install.html)
 
 To install the required drawing packages once you have `graphviz` installed run:
 
@@ -25,7 +25,7 @@ To install the required drawing packages once you have `graphviz` installed run:
 You may need to force reinstallation
 
 `pip install --force-reinstall concrete-numpy[full]`
-```
+{% endhint %}
 
 To draw your circuit, you can do the following:
 

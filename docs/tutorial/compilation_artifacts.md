@@ -1,6 +1,6 @@
-# Compilation Artifacts
+# Compilation artifacts
 
-In this tutorial, we are going to go over the artifact system, which is designed to inspect/debug the compilation process easily. 
+In this tutorial, we are going to go over the artifact system, which is designed to inspect/debug the compilation process easily.
 
 ## Automatic export
 
@@ -68,7 +68,7 @@ return %1
 
 This file contains the visual representation of the initial computation graph right after tracing.
 
-![](../../_static/tutorials/artifacts/auto/1.initial.graph.png)
+![](../_static/tutorials/artifacts/auto/1.initial.graph.png)
 
 ### 2.final.graph.txt
 
@@ -84,7 +84,7 @@ return %1
 
 This file contains the visual representation of the final computation graph right before MLIR conversion.
 
-![](../../_static/tutorials/artifacts/auto/2.final.graph.png)
+![](../_static/tutorials/artifacts/auto/2.final.graph.png)
 
 ### traceback.txt
 
@@ -151,7 +151,7 @@ return %8
 
 This file contains the visual representation of the initial computation graph right after tracing.
 
-![](../../_static/tutorials/artifacts/manual/1.initial.graph.png)
+![](../_static/tutorials/artifacts/manual/1.initial.graph.png)
 
 ### 2.after-float-fuse-0.graph.txt
 
@@ -182,7 +182,7 @@ Subgraphs:
 
 This file contains the visual representation of the intermediate computation graph after fusing.
 
-![](../../_static/tutorials/artifacts/manual/2.after-float-fuse-0.graph.png)
+![](../_static/tutorials/artifacts/manual/2.after-float-fuse-0.graph.png)
 
 ### 3.final.graph.txt
 
@@ -213,7 +213,7 @@ Subgraphs:
 
 This file contains the visual representation of the final computation graph right before MLIR conversion.
 
-![](../../_static/tutorials/artifacts/manual/3.final.graph.png)
+![](../_static/tutorials/artifacts/manual/3.final.graph.png)
 
 ### bounds.txt
 
@@ -242,7 +242,6 @@ module  {
     return %1 : !FHE.eint<7>
   }
 }
-
 ```
 
 You can learn more about MLIR [here](../../dev/explanation/mlir.md).

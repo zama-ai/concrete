@@ -1,4 +1,4 @@
-# Working With Floating Points
+# Working with floating points
 
 ## An example
 
@@ -23,8 +23,7 @@ print(circuit.encrypt_run_decrypt(60) == f(60))
 print("All good!")
 ```
 
-One can look to [numpy supported functions](../howto/numpy_support.md) for information about possible float operations.
-
+You can look to [numpy supported functions](../howto/numpy\_support.md) for information about possible float operations.
 
 ## Limitations
 
@@ -34,4 +33,4 @@ This biggest one is that, because floating point operations are fused into table
 
 To give a precise example, `100 - np.fabs(50 * (np.sin(x) + np.sin(y)))` cannot be compiled because the floating point part depends on both `x` and `y` (i.e., it cannot be rewritten in the form `100 - table[z]` for a `z` that could be computed easily from `x` and `y`).
 
-To dive into implementation details, you may refer to [Fusing Floating Point Operations](../../dev/explanation/float-fusing.md) document.
+To dive into implementation details, you may refer to [Fusing Floating Point Operations](../../developer/float-fusing.md) document.

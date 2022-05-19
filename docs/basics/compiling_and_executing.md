@@ -1,4 +1,4 @@
-# Compiling and Executing a Numpy Function
+# Compiling and Executing your first function
 
 ## Importing necessary components
 
@@ -10,7 +10,7 @@ import concrete.numpy as cnp
 
 ## Defining a function to compile
 
-You need to have a python function that follows the [limits](../explanation/fhe_and_framework_limits.md) of **Concrete Numpy**. Here is a simple example:
+You need to have a python function that follows the [limits](../explanation/fhe\_and\_framework_limits.md) of **Concrete Numpy**. Here is a simple example:
 
 <!--pytest-codeblocks:cont-->
 ```python
@@ -60,7 +60,7 @@ circuit.draw(show=True)
 
 Here is the graph from the previous code block drawn with `draw`:
 
-![Drawn graph of previous code block](../../_static/howto/compiling_and_executing_example_graph.png)
+![Drawn graph of previous code block](../\_static/basics/compiling\_and\_executing\_example\_graph.png)
 
 ## Performing homomorphic evaluation
 
@@ -78,10 +78,9 @@ circuit.encrypt_run_decrypt(0, 0)
 # 0
 ```
 
-```{caution}
-Be careful about the inputs, though.
-If you were to run with values outside the range of the inputset, the result might not be correct.
-```
+{% hint style="warning" %}
+Be careful about the inputs, though. If you were to run with values outside the range of the inputset, the result might not be correct.
+{% endhint %}
 
 While `.encrypt_run_decrypt(...)` is a good start for prototyping examples, more advanced usages require control over the different steps that are happening behind the scene, mainly key generation, encryption, execution, and decryption. The different steps can of course be called separately as in the example below:
 
@@ -100,5 +99,5 @@ decrypted_result = circuit.decrypt(encrypted_result)
 
 ## Further reading
 
-- [Working With Floating Points Tutorial](../tutorial/working_with_floating_points.md)
-- [Table Lookup Tutorial](../tutorial/table_lookup.md)
+* [Working With Floating Points Tutorial](../tutorial/working\_with\_floating\_points.md)
+* [Table Lookup Tutorial](../tutorial/table\_lookup.md)
