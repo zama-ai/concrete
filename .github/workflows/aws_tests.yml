@@ -35,7 +35,7 @@ jobs:
           ec2-instance-type: m5n.2xlarge
           subnet-id: subnet-da319dd4
           security-group-id: sg-064a7184f24469c76
-          
+
   run-tests-linux:
     concurrency:
       group: ${{ github.head_ref }}
@@ -54,7 +54,7 @@ jobs:
     - name: Set up home
       if: ${{ !cancelled() }}
       run: |
-        echo "HOME=/home/ubuntu" >> ${GITHUB_ENV}
+        echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
     - name: Install Rust
       if: ${{ !cancelled() }}
       uses: actions-rs/toolchain@v1
@@ -71,7 +71,7 @@ jobs:
       - start-runner
       - run-tests-linux
     runs-on: ubuntu-20.04
-    if: ${{ always() }} 
+    if: ${{ always() && (needs.start-runner.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -95,7 +95,6 @@ jobs:
       - stop-runner
     if: ${{ always() }}
     steps:
-      - uses: actions/checkout@v2
       - uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: aws_test
