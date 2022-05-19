@@ -51,8 +51,8 @@ class Circuit:
         keyset_cache_directory = None
         if self.configuration.use_insecure_key_cache:
             assert_that(self.configuration.enable_unsafe_features)
-            assert_that(self.configuration.insecure_keycache_location is not None)
-            keyset_cache_directory = self.configuration.insecure_keycache_location
+            assert_that(self.configuration.insecure_key_cache_location is not None)
+            keyset_cache_directory = self.configuration.insecure_key_cache_location
 
         self.client = Client(self.server.client_specs, keyset_cache_directory)
 

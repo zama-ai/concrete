@@ -19,7 +19,7 @@ from concrete.numpy.compilation import Configuration
             {
                 "enable_unsafe_features": True,
                 "use_insecure_key_cache": True,
-                "insecure_keycache_location": None,
+                "insecure_key_cache_location": None,
             },
             RuntimeError,
             "Insecure key cache cannot be enabled without specifying its location",

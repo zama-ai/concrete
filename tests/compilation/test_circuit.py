@@ -201,8 +201,8 @@ def test_client_server_api(helpers):
         client_specs = ClientSpecs.unserialize(serialized_client_specs)
 
         clients = [
-            Client(client_specs, configuration.insecure_keycache_location),
-            Client.load(client_path, configuration.insecure_keycache_location),
+            Client(client_specs, configuration.insecure_key_cache_location),
+            Client.load(client_path, configuration.insecure_key_cache_location),
         ]
 
         for client in clients:
