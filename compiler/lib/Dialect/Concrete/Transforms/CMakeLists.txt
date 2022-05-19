@@ -1,0 +1,14 @@
+add_mlir_library(ConcreteDialectTransforms
+  Optimization.cpp
+
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/Concrete
+
+  DEPENDS
+  ConcreteDialect
+  mlir-headers
+  
+  LINK_LIBS PUBLIC
+  MLIRIR
+  ConcreteDialect
+)

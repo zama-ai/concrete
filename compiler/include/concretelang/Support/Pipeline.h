@@ -48,6 +48,10 @@ lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          bool parallelizeLoops);
 
 mlir::LogicalResult
+optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 

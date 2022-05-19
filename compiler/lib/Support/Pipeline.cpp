@@ -20,6 +20,7 @@
 #include <mlir/Transforms/Passes.h>
 
 #include <concretelang/Conversion/Passes.h>
+#include <concretelang/Dialect/Concrete/Transforms/Optimization.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
 #include <concretelang/Dialect/RT/Analysis/Autopar.h>
@@ -182,6 +183,17 @@ lowerTFHEToConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertTFHEToConcretePass(), enablePass);
+
+  return pm.run(module.getOperation());
+}
+
+mlir::LogicalResult
+optimizeConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("ConcreteOptimization", pm, context);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createConcreteOptimizationPass(), enablePass);
 
   return pm.run(module.getOperation());
 }

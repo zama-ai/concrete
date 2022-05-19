@@ -246,6 +246,14 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
           .failed()) {
     return errorDiag("Lowering from TFHE to Concrete failed");
   }
+
+  // Optimizing Concrete
+  if (mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
+                                                     this->enablePass)
+          .failed()) {
+    return errorDiag("Optimizing Concrete failed");
+  }
+
   if (target == Target::CONCRETE)
     return std::move(res);
 
@@ -278,6 +286,13 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
       res.clientParameters = clientParametersOrErr.get();
     }
+  }
+
+  // Optimize Concrete
+  if (mlir::concretelang::pipeline::optimizeConcrete(mlirContext, module,
+                                                     this->enablePass)
+          .failed()) {
+    return StreamStringError("Optimizing Concrete failed");
   }
 
   // Concrete -> BConcrete
