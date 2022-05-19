@@ -217,6 +217,12 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       return std::move(res);
   }
 
+  if (loopParallelize)
+    mlir::concretelang::dfr::_dfr_set_use_omp(true);
+
+  if (dataflowParallelize)
+    mlir::concretelang::dfr::_dfr_set_required(true);
+
   if (!mlirModuleRef) {
     return errorDiag("Could not parse source");
   }
