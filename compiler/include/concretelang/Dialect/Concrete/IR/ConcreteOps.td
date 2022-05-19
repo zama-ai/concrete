@@ -91,7 +91,7 @@ def EncodeIntOp : Concrete_Op<"encode_int"> {
     let results = (outs PlaintextType:$plaintext);
 }
 
-def IntToCleartextOp : Concrete_Op<"int_to_cleartext"> {
+def IntToCleartextOp : Concrete_Op<"int_to_cleartext", [NoSideEffect]> {
     let summary = "Keyswitches a LWE ciphertext";
 
     let arguments = (ins AnyInteger:$i);
