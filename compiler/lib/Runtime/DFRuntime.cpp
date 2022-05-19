@@ -11,6 +11,7 @@
 
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
 
+#include <assert.h>
 #include <hpx/barrier.hpp>
 #include <hpx/future.hpp>
 #include <hpx/hpx_start.hpp>
@@ -28,6 +29,7 @@ namespace {
 static std::vector<GenericComputeClient> gcc;
 static hpx::lcos::barrier *_dfr_jit_workfunction_registration_barrier;
 static hpx::lcos::barrier *_dfr_jit_phase_barrier;
+static size_t num_nodes = 0;
 } // namespace
 } // namespace dfr
 } // namespace concretelang
@@ -59,12 +61,11 @@ void _dfr_deallocate_future(void *in) {
 // Determine where new task should run.  For now just round-robin
 // distribution - TODO: optimise.
 static inline size_t _dfr_find_next_execution_locality() {
-  static size_t num_nodes = hpx::get_num_localities().get();
   static std::atomic<std::size_t> next_locality{0};
 
   size_t next_loc = ++next_locality;
 
-  return next_loc % num_nodes;
+  return next_loc % mlir::concretelang::dfr::num_nodes;
 }
 
 /// Runtime generic async_task.  Each first NUM_PARAMS pairs of
@@ -770,7 +771,10 @@ namespace concretelang {
 namespace dfr {
 namespace {
 static std::atomic<uint64_t> init_guard = {0};
-}
+static uint64_t uninitialised = 0;
+static uint64_t active = 1;
+static uint64_t terminated = 2;
+} // namespace
 } // namespace dfr
 } // namespace concretelang
 } // namespace mlir
@@ -874,24 +878,27 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
   // Instantiate and initialise on each node
   mlir::concretelang::dfr::is_root_node_p =
       (hpx::find_here() == hpx::find_root_locality());
+  mlir::concretelang::dfr::num_nodes = hpx::get_num_localities().get();
+
   new mlir::concretelang::dfr::KeyManager<LweBootstrapKey_u64>();
   new mlir::concretelang::dfr::KeyManager<LweKeyswitchKey_u64>();
   new mlir::concretelang::dfr::WorkFunctionRegistry();
   mlir::concretelang::dfr::_dfr_jit_workfunction_registration_barrier =
       new hpx::lcos::barrier("wait_register_remote_work_functions",
-                             hpx::get_num_localities().get(),
+                             mlir::concretelang::dfr::num_nodes,
                              hpx::get_locality_id());
   mlir::concretelang::dfr::_dfr_jit_phase_barrier = new hpx::lcos::barrier(
-      "phase_barrier", hpx::get_num_localities().get(), hpx::get_locality_id());
+      "phase_barrier", mlir::concretelang::dfr::num_nodes,
+      hpx::get_locality_id());
 
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     // Create compute server components on each node - from the root
     // node only - and the corresponding compute client on the root
     // node.
-    auto num_nodes = hpx::get_num_localities().get();
     mlir::concretelang::dfr::gcc =
         hpx::new_<mlir::concretelang::dfr::GenericComputeClient[]>(
-            hpx::default_layout(hpx::find_all_localities()), num_nodes)
+            hpx::default_layout(hpx::find_all_localities()),
+            mlir::concretelang::dfr::num_nodes)
             .get();
   }
 }
@@ -903,15 +910,18 @@ void _dfr_start() {
   // The first invocation will initialise the runtime. As each call to
   // _dfr_start is matched with _dfr_stop, if this is not hte first,
   // we need to resume the HPX runtime.
-  uint64_t uninitialised = 0;
-  uint64_t active = 1;
-  uint64_t suspended = 2;
-  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(uninitialised,
-                                                                  active))
+  assert(
+      mlir::concretelang::dfr::init_guard !=
+          mlir::concretelang::dfr::terminated &&
+      "DFR runtime: attempting to start runtime after it has been terminated");
+  uint64_t expected = mlir::concretelang::dfr::uninitialised;
+  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(
+          expected, mlir::concretelang::dfr::active))
     _dfr_start_impl(0, nullptr);
-  else if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(
-               suspended, active))
-    hpx::resume();
+
+  assert(mlir::concretelang::dfr::init_guard ==
+             mlir::concretelang::dfr::active &&
+         "DFR runtime failed to initialise");
 
   // If this is not the root node in a non-JIT execution, then this
   // node should only run the scheduler for any incoming work until
@@ -957,15 +967,6 @@ void _dfr_stop() {
     mlir::concretelang::dfr::_dfr_jit_phase_barrier->wait();
   }
 
-  // TODO: this can be removed along with the matching hpx::resume if
-  // their overhead is larger than the benefit of pausing worker
-  // threads outside of parallel regions - to be tested.
-  uint64_t active = 1;
-  uint64_t suspended = 2;
-  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(active,
-                                                                  suspended))
-    hpx::suspend();
-
   // TODO: until we have better unique identifiers for keys it is
   // safer to drop them in-between phases.
   mlir::concretelang::dfr::_dfr_node_level_bsk_manager->clear_keys();
@@ -989,25 +990,28 @@ void _dfr_stop() {
 
 void _dfr_try_initialize() {
   // Initialize and immediately suspend the HPX runtime if not yet done.
-  uint64_t uninitialised = 0;
-  uint64_t suspended = 2;
-  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(uninitialised,
-                                                                  suspended)) {
+  uint64_t expected = mlir::concretelang::dfr::uninitialised;
+  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(
+          expected, mlir::concretelang::dfr::active)) {
     _dfr_start_impl(0, nullptr);
-    hpx::suspend();
   }
+
+  assert(mlir::concretelang::dfr::init_guard ==
+             mlir::concretelang::dfr::active &&
+         "DFR runtime failed to initialise");
 }
 
 void _dfr_terminate() {
-  uint64_t active = 1;
-  uint64_t suspended = 2;
-  uint64_t terminated = 3;
-  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(suspended,
-                                                                  active))
-    hpx::resume();
-  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(active,
-                                                                  terminated))
+  uint64_t expected = mlir::concretelang::dfr::active;
+  if (mlir::concretelang::dfr::init_guard.compare_exchange_strong(
+          expected, mlir::concretelang::dfr::terminated))
     _dfr_stop_impl();
+
+  assert((mlir::concretelang::dfr::init_guard ==
+              mlir::concretelang::dfr::terminated ||
+          mlir::concretelang::dfr::init_guard ==
+              mlir::concretelang::dfr::uninitialised) &&
+         "DFR runtime failed to terminate");
 }
 
 /*******************/
