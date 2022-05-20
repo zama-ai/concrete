@@ -72,6 +72,7 @@ getFHEConstraintsFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
   mlir::PassManager pm(&context);
 
   pipelinePrinting("ComputeFHEConstraintOnFHE", pm, context);
+  addPotentiallyNestedPass(pm, mlir::createCanonicalizerPass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::concretelang::createMANPPass(),
                            enablePass);
   addPotentiallyNestedPass(
