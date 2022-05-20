@@ -183,7 +183,7 @@ static llvm::APInt APIntUMax(const llvm::APInt &lhs, const llvm::APInt &rhs) {
 // Calculates the square of `i`. The bit width `i` is extended in
 // order to guarantee that the product fits into the resulting
 // `APInt`.
-static llvm::APInt APIntWidthExtendUSq(const llvm::APInt &i) {
+static llvm::APInt APIntWidthExtendUnsignedSq(const llvm::APInt &i) {
   // Make sure the required number of bits can be represented by the
   // `unsigned` argument of `zext`.
   assert(i.getBitWidth() < std::numeric_limits<unsigned>::max() / 2 &&
@@ -194,12 +194,22 @@ static llvm::APInt APIntWidthExtendUSq(const llvm::APInt &i) {
   return ie * ie;
 }
 
+// Calculates the square of the absolute value of `i`.
+static llvm::APInt APIntWidthExtendSqForConstant(const llvm::APInt &i) {
+  // Make sure the required number of bits can be represented by the
+  // `unsigned` argument of `zext`.
+  assert(i.getBitWidth() < 32 &&
+         "Square of the constant cannot be represented on 64 bits");
+  return llvm::APInt(2 * i.getBitWidth(),
+                     i.abs().getZExtValue() * i.abs().getZExtValue());
+}
+
 // Calculates the square root of `i` and rounds it to the next highest
 // integer value (i.e., the square of the result is guaranteed to be
 // greater or equal to `i`).
 static llvm::APInt APIntCeilSqrt(const llvm::APInt &i) {
   llvm::APInt res = i.sqrt();
-  llvm::APInt resSq = APIntWidthExtendUSq(res);
+  llvm::APInt resSq = APIntWidthExtendUnsignedSq(res);
 
   if (APIntWidthExtendULT(resSq, i))
     return APIntWidthExtendUAdd(res, llvm::APInt{1, 1, false});
@@ -234,7 +244,7 @@ static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp,
   llvm::APInt accu{1, 0, false};
 
   for (llvm::APInt val : denseVals.getValues<llvm::APInt>()) {
-    llvm::APInt valSqNorm = APIntWidthExtendUSq(val);
+    llvm::APInt valSqNorm = APIntWidthExtendSqForConstant(val);
     llvm::APInt mulSqNorm = APIntWidthExtendUMul(valSqNorm, eNorm);
     accu = APIntWidthExtendUAdd(accu, mulSqNorm);
   }
@@ -258,8 +268,9 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy,
 
   unsigned elWidth = tTy.getElementTypeBitWidth();
 
-  llvm::APInt maxVal = APInt::getMaxValue(elWidth);
-  llvm::APInt maxValSq = APIntWidthExtendUSq(maxVal);
+  llvm::APInt maxVal = APInt::getSignedMaxValue(elWidth);
+  llvm::APInt maxValSq = APIntWidthExtendUnsignedSq(maxVal);
+
   llvm::APInt maxMulSqNorm = APIntWidthExtendUMul(maxValSq, eNorm);
 
   // Calculate number of bits for APInt to store number of elements
@@ -270,6 +281,30 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy,
   llvm::APInt nEltsAP{nEltsBits, nElts, false};
 
   return APIntWidthExtendUMul(maxMulSqNorm, nEltsAP);
+}
+
+// Returns the squared 2-norm of the maximum value of the dense values.
+static llvm::APInt maxIntNorm2Sq(mlir::DenseIntElementsAttr denseVals) {
+  // For a constant operand use actual constant to calculate 2-norm
+  llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
+  for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
+    llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
+    if (maxCst.ult(iCst)) {
+      maxCst = iCst;
+    }
+  }
+  return APIntWidthExtendSqForConstant(maxCst);
+}
+
+// Returns the squared 2-norm for a dynamic integer by conservatively
+// assuming that the integer's value is the maximum for the integer
+// width.
+static llvm::APInt conservativeIntNorm2Sq(mlir::Type t) {
+  assert(t.isSignlessInteger() && "Type must be a signless integer type");
+  assert(std::numeric_limits<unsigned>::max() - t.getIntOrFloatBitWidth() > 1);
+
+  llvm::APInt maxVal = APInt::getSignedMaxValue(t.getIntOrFloatBitWidth());
+  return APIntWidthExtendUnsignedSq(maxVal);
 }
 
 // Calculates the squared Minimal Arithmetic Noise Padding of an
@@ -306,18 +341,6 @@ static llvm::APInt getSqMANP(
   }
 }
 
-// Returns the squared 2-norm for a dynamic integer by conservatively
-// assuming that the integer's value is the maximum for the integer
-// width.
-static llvm::APInt conservativeIntNorm2Sq(mlir::Type t) {
-  assert(t.isSignlessInteger() && "Type must be a signless integer type");
-  assert(std::numeric_limits<unsigned>::max() - t.getIntOrFloatBitWidth() > 1);
-
-  llvm::APInt maxVal{t.getIntOrFloatBitWidth() + 1, 1, false};
-  maxVal <<= t.getIntOrFloatBitWidth();
-  return APIntWidthExtendUSq(maxVal);
-}
-
 // Calculates the squared Minimal Arithmetic Noise Padding of an
 // `FHE.add_eint_int` operation.
 static llvm::APInt getSqMANP(
@@ -343,7 +366,7 @@ static llvm::APInt getSqMANP(
   if (cstOp) {
     // For a constant operand use actual constant to calculate 2-norm
     mlir::IntegerAttr attr = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
-    sqNorm = APIntWidthExtendUSq(attr.getValue());
+    sqNorm = APIntWidthExtendSqForConstant(attr.getValue());
   } else {
     // For a dynamic operand conservatively assume that the value is
     // the maximum for the integer width
@@ -395,7 +418,7 @@ static llvm::APInt getSqMANP(
   if (cstOp) {
     // For constant plaintext operands simply use the constant value
     mlir::IntegerAttr attr = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
-    sqNorm = APIntWidthExtendUSq(attr.getValue());
+    sqNorm = APIntWidthExtendSqForConstant(attr.getValue());
   } else {
     // For dynamic plaintext operands conservatively assume that the integer has
     // its maximum possible value
@@ -445,7 +468,7 @@ static llvm::APInt getSqMANP(
   if (cstOp) {
     // For a constant operand use actual constant to calculate 2-norm
     mlir::IntegerAttr attr = cstOp->getAttrOfType<mlir::IntegerAttr>("value");
-    sqNorm = APIntWidthExtendUSq(attr.getValue());
+    sqNorm = APIntWidthExtendSqForConstant(attr.getValue());
   } else {
     // For a dynamic operand conservatively assume that the value is
     // the maximum for the integer width
@@ -486,14 +509,7 @@ static llvm::APInt getSqMANP(
 
   if (denseVals) {
     // For a constant operand use actual constant to calculate 2-norm
-    llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
-    for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
-      llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
-      if (maxCst.ult(iCst)) {
-        maxCst = iCst;
-      }
-    }
-    sqNorm = APIntWidthExtendUSq(maxCst);
+    sqNorm = maxIntNorm2Sq(denseVals);
   } else {
     // For a dynamic operand conservatively assume that the value is
     // the maximum for the integer width
@@ -548,15 +564,7 @@ static llvm::APInt getSqMANP(
             : nullptr;
 
   if (denseVals) {
-    // For a constant operand use actual constant to calculate 2-norm
-    llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
-    for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
-      llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
-      if (maxCst.ult(iCst)) {
-        maxCst = iCst;
-      }
-    }
-    sqNorm = APIntWidthExtendUSq(maxCst);
+    sqNorm = maxIntNorm2Sq(denseVals);
   } else {
     // For dynamic plaintext operands conservatively assume that the integer has
     // its maximum possible value
@@ -612,14 +620,7 @@ static llvm::APInt getSqMANP(
 
   if (denseVals) {
     // For a constant operand use actual constant to calculate 2-norm
-    llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
-    for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
-      llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
-      if (maxCst.ult(iCst)) {
-        maxCst = iCst;
-      }
-    }
-    sqNorm = APIntWidthExtendUSq(maxCst);
+    sqNorm = maxIntNorm2Sq(denseVals);
   } else {
     // For a dynamic operand conservatively assume that the value is
     // the maximum for the integer width
@@ -639,7 +640,7 @@ static llvm::APInt computeVectorNorm(
     elementSelector[axis] = i;
 
     llvm::APInt weight = denseValues.getValue<llvm::APInt>(elementSelector);
-    llvm::APInt weightNorm = APIntWidthExtendUSq(weight);
+    llvm::APInt weightNorm = APIntWidthExtendSqForConstant(weight);
 
     llvm::APInt multiplicationNorm =
         APIntWidthExtendUMul(encryptedOperandNorm, weightNorm);
@@ -749,7 +750,7 @@ static llvm::APInt getSqMANP(
           for (int64_t n = 0; n < N; n++) {
             llvm::APInt cst =
                 denseVals.getValue<llvm::APInt>({(uint64_t)n, (uint64_t)p});
-            llvm::APInt rhsNorm = APIntWidthExtendUSq(cst);
+            llvm::APInt rhsNorm = APIntWidthExtendSqForConstant(cst);
             llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
             tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
           }
@@ -765,7 +766,7 @@ static llvm::APInt getSqMANP(
 
       for (int64_t i = 0; i < N; i++) {
         llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(i);
-        llvm::APInt rhsNorm = APIntWidthExtendUSq(cst);
+        llvm::APInt rhsNorm = APIntWidthExtendSqForConstant(cst);
         llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
         accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
       }
@@ -849,7 +850,7 @@ static llvm::APInt getSqMANP(
           for (int64_t n = 0; n < N; n++) {
             llvm::APInt cst =
                 denseVals.getValue<llvm::APInt>({(uint64_t)m, (uint64_t)n});
-            llvm::APInt lhsNorm = APIntWidthExtendUSq(cst);
+            llvm::APInt lhsNorm = APIntWidthExtendSqForConstant(cst);
             llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
             tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
           }
@@ -865,7 +866,7 @@ static llvm::APInt getSqMANP(
 
       for (int64_t i = 0; i < N; i++) {
         llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(i);
-        llvm::APInt lhsNorm = APIntWidthExtendUSq(cst);
+        llvm::APInt lhsNorm = APIntWidthExtendSqForConstant(cst);
         llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
         accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
       }
@@ -1106,14 +1107,14 @@ static llvm::APInt getSqMANP(
       // If there is a bias, start accumulating from its norm
       if (hasBias && biasDenseVals) {
         llvm::APInt cst = biasDenseVals.getFlatValue<llvm::APInt>(f);
-        tmpNorm = APIntWidthExtendUSq(cst);
+        tmpNorm = APIntWidthExtendSqForConstant(cst);
       }
       for (uint64_t c = 0; c < C; c++) {
         for (uint64_t h = 0; h < H; h++) {
           for (uint64_t w = 0; w < W; w++) {
             llvm::APInt cst =
                 weightDenseVals.getValue<llvm::APInt>({f, c, h, w});
-            llvm::APInt weightNorm = APIntWidthExtendUSq(cst);
+            llvm::APInt weightNorm = APIntWidthExtendSqForConstant(cst);
             llvm::APInt mulNorm = APIntWidthExtendUMul(inputNorm, weightNorm);
             tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
           }
@@ -1138,7 +1139,7 @@ static llvm::APInt getSqMANP(
       llvm::APInt maxNorm = tmpNorm;
       for (uint64_t f = 0; f < F; f++) {
         llvm::APInt cst = biasDenseVals.getFlatValue<llvm::APInt>(f);
-        llvm::APInt currentNorm = APIntWidthExtendUSq(cst);
+        llvm::APInt currentNorm = APIntWidthExtendSqForConstant(cst);
         currentNorm = APIntWidthExtendUAdd(currentNorm, tmpNorm);
         maxNorm = APIntUMax(currentNorm, maxNorm);
       }
