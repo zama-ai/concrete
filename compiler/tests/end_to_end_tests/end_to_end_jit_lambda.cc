@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "end_to_end_jit_test.h"
+#include "tests_tools/GtestEnvironment.h"
 
 TEST(Lambda_check_param, int_to_void_missing_param) {
   checkedJit(lambda, R"XXX(

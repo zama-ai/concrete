@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include "end_to_end_jit_test.h"
+#include "tests_tools/GtestEnvironment.h"
 
 TEST(CompileAndRunClear, add_u64) {
   checkedJit(lambda, R"XXX(

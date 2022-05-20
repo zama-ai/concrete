@@ -1,4 +1,5 @@
 #include "end_to_end_jit_test.h"
+#include "tests_tools/GtestEnvironment.h"
 
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice_parametric_2x2) {
   checkedJit(lambda, R"XXX(

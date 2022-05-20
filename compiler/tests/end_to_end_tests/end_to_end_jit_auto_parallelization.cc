@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "end_to_end_jit_test.h"
+#include "tests_tools/GtestEnvironment.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Auto-parallelize independent FHE ops /////////////////////////////////////
@@ -73,10 +74,10 @@ func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %
     ASSERT_EXPECTED_VALUE(res_3, 60);
     ASSERT_EXPECTED_VALUE(res_4, 28);
   } else {
-    ASSERT_EXPECTED_FAILURE(lambda(1_u64, 2_u64, 3_u64, 4_u64));
-    ASSERT_EXPECTED_FAILURE(lambda(4_u64, 5_u64, 6_u64, 7_u64));
-    ASSERT_EXPECTED_FAILURE(lambda(1_u64, 1_u64, 1_u64, 1_u64));
-    ASSERT_EXPECTED_FAILURE(lambda(5_u64, 7_u64, 11_u64, 13_u64));
+    ASSERT_EXPECTED_FAILURE(lambda());
+    ASSERT_EXPECTED_FAILURE(lambda());
+    ASSERT_EXPECTED_FAILURE(lambda());
+    ASSERT_EXPECTED_FAILURE(lambda());
   }
 }
 
@@ -119,12 +120,13 @@ TEST(ParallelizeAndRunFHE, nn_small_parallel) {
     ASSERT_EQ(res->size(), dim0 * dim2);
     parallel_results = *res;
   } else {
-    ASSERT_EXPECTED_FAILURE(lambda.operator()<std::vector<uint64_t>>({&arg}));
+    ASSERT_EXPECTED_FAILURE(lambda.operator()<std::vector<uint64_t>>());
   }
 }
 
 TEST(ParallelizeAndRunFHE, nn_small_sequential) {
-  checkedJit(lambda, R"XXX(
+  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
+    checkedJit(lambda, R"XXX(
   func @main(%arg0: tensor<4x5x!FHE.eint<5>>) -> tensor<4x7x!FHE.eint<5>> {
     %cst = arith.constant dense<[[0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 1, 0, 0], [1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1]]> : tensor<4x7xi6>
     %cst_0 = arith.constant dense<[[1, 0, 1, 1, 0, 1, 1], [0, 1, 0, 0, 0, 0, 1], [0, 1, 1, 1, 1, 0, 0], [0, 1, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0, 1]]> : tensor<5x7xi6>
@@ -135,30 +137,32 @@ TEST(ParallelizeAndRunFHE, nn_small_sequential) {
     return %2 : tensor<4x7x!FHE.eint<5>>
   }
 )XXX",
-             "main", false, false, false);
+               "main", false, false, false);
 
-  const size_t numDim = 2;
-  const size_t dim0 = 4;
-  const size_t dim1 = 5;
-  const size_t dim2 = 7;
-  const int64_t dims[numDim]{dim0, dim1};
-  const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
-  std::vector<uint8_t> input;
-  input.reserve(dim0 * dim1);
+    const size_t numDim = 2;
+    const size_t dim0 = 4;
+    const size_t dim1 = 5;
+    const size_t dim2 = 7;
+    const int64_t dims[numDim]{dim0, dim1};
+    const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
+    std::vector<uint8_t> input;
+    input.reserve(dim0 * dim1);
 
-  for (int i = 0; i < dim0 * dim1; ++i)
-    input.push_back(i % 17 % 4);
+    for (int i = 0; i < dim0 * dim1; ++i)
+      input.push_back(i % 17 % 4);
 
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg(input, shape2D);
+    mlir::concretelang::TensorLambdaArgument<
+        mlir::concretelang::IntLambdaArgument<uint8_t>>
+        arg(input, shape2D);
 
-  // This is sequential: only execute on root node.
-  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-    llvm::Expected<std::vector<uint64_t>> res =
-        lambda.operator()<std::vector<uint64_t>>({&arg});
-    ASSERT_EXPECTED_SUCCESS(res);
-    for (size_t i = 0; i < dim0 * dim2; i++)
-      EXPECT_EQ(parallel_results[i], (*res)[i]) << "result differ at pos " << i;
+    // This is sequential: only execute on root node.
+    if (mlir::concretelang::dfr::_dfr_is_root_node()) {
+      llvm::Expected<std::vector<uint64_t>> res =
+          lambda.operator()<std::vector<uint64_t>>({&arg});
+      ASSERT_EXPECTED_SUCCESS(res);
+      for (size_t i = 0; i < dim0 * dim2; i++)
+        EXPECT_EQ(parallel_results[i], (*res)[i])
+            << "result differ at pos " << i;
+    }
   }
 }

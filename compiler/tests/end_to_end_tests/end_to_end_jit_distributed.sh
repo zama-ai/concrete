@@ -4,7 +4,7 @@
 #SBATCH --mail-user=antoniu.pop@zama.ai
 #SBATCH --nodes=4
 #SBATCH --cpus-per-task=8
-#SBATCH --time=00:20:00
+#SBATCH --time=00:45:00
 #SBATCH --output=end_to_end_jit_distributed_%j.log
 
 echo "Date              = $(date)"

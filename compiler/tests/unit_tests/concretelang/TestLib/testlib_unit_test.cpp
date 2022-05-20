@@ -11,10 +11,14 @@
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/TestLib/TestTypedLambda.h"
 
+#include "tests_tools/GtestEnvironment.h"
 #include "tests_tools/assert.h"
 #include "tests_tools/keySetCache.h"
 
 #include "call_2t_1s_with_header-client.h.generated"
+
+testing::Environment *const dfr_env =
+    testing::AddGlobalTestEnvironment(new DFREnvironment);
 
 const std::string FUNCNAME = "main";
 

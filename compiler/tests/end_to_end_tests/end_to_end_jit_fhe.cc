@@ -7,6 +7,7 @@
 #include "concretelang/Support/LibrarySupport.h"
 #include "end_to_end_fixture/EndToEndFixture.h"
 #include "end_to_end_jit_test.h"
+#include "tests_tools/GtestEnvironment.h"
 #include "tests_tools/keySetCache.h"
 
 template <typename LambdaSupport>
