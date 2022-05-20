@@ -183,8 +183,9 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
       mlir::parseSourceFile<mlir::ModuleOp>(sm, &mlirContext);
 
   CompilationOptions &options = this->compilerOptions;
-  bool parallelizeLoops =
+  auto dataflowParallelize =
       options.autoParallelize || options.dataflowParallelize;
+  auto loopParallelize = options.autoParallelize || options.loopParallelize;
   if (options.verifyDiagnostics) {
     if (smHandler.verify().failed())
       return StreamStringError("Verification of diagnostics failed");
@@ -221,7 +222,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   }
 
   // Dataflow parallelization
-  if (parallelizeLoops &&
+  if (dataflowParallelize &&
       mlir::concretelang::pipeline::autopar(mlirContext, module, enablePass)
           .failed()) {
     return StreamStringError("Dataflow parallelization failed");
@@ -281,7 +282,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // Concrete -> BConcrete
   if (mlir::concretelang::pipeline::lowerConcreteToBConcrete(
-          mlirContext, module, this->enablePass, parallelizeLoops)
+          mlirContext, module, this->enablePass, loopParallelize)
           .failed()) {
     return StreamStringError(
         "Lowering from Concrete to Bufferized Concrete failed");
@@ -303,7 +304,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // MLIR canonical dialects -> LLVM Dialect
   if (mlir::concretelang::pipeline::lowerStdToLLVMDialect(
-          mlirContext, module, enablePass, parallelizeLoops)
+          mlirContext, module, enablePass, loopParallelize)
           .failed()) {
     return errorDiag("Failed to lower to LLVM dialect");
   }
