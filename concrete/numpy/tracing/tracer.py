@@ -153,6 +153,7 @@ class Tracer:
         np.arctan,
         np.arctan2,
         np.arctanh,
+        np.around,
         np.bitwise_and,
         np.bitwise_or,
         np.bitwise_xor,
@@ -220,6 +221,7 @@ class Tracer:
         np.reshape,
         np.right_shift,
         np.rint,
+        np.round_,
         np.sign,
         np.signbit,
         np.sin,
@@ -239,6 +241,9 @@ class Tracer:
     }
 
     SUPPORTED_KWARGS: Dict[Any, Set[str]] = {
+        np.around: {
+            "decimals",
+        },
         np.concatenate: {
             "axis",
         },
@@ -247,6 +252,9 @@ class Tracer:
         },
         np.reshape: {
             "newshape",
+        },
+        np.round_: {
+            "decimals",
         },
         np.sum: {
             "axis",
@@ -428,6 +436,12 @@ class Tracer:
 
     def __abs__(self):
         return Tracer._trace_numpy_operation(np.absolute, self)
+
+    def __round__(self, ndigits=None):
+        if ndigits is None:
+            return Tracer._trace_numpy_operation(np.around, self).astype(np.int64)
+
+        return Tracer._trace_numpy_operation(np.around, self, decimals=ndigits)
 
     def __invert__(self):
         return Tracer._trace_numpy_operation(np.invert, self)

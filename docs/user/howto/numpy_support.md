@@ -14,6 +14,7 @@ List of supported functions:
 - arctan
 - arctan2
 - arctanh
+- around
 - bitwise_and
 - bitwise_or
 - bitwise_xor
@@ -79,6 +80,7 @@ List of supported functions:
 - reshape
 - right_shift
 - rint
+- round_
 - sign
 - signbit
 - sin

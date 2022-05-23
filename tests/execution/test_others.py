@@ -482,6 +482,20 @@ def deterministic_unary_function(x):
             },
             id="cnp.univariate(deterministic_unary_function)(x)",
         ),
+        pytest.param(
+            lambda x: round(np.sqrt(x)),
+            {
+                "x": {"status": "encrypted", "range": [0, 100], "shape": ()},
+            },
+            id="round(np.sqrt(x))",
+        ),
+        pytest.param(
+            lambda x: (2.5 * round(np.sqrt(x), ndigits=4)).astype(np.int64),
+            {
+                "x": {"status": "encrypted", "range": [0, 100], "shape": ()},
+            },
+            id="(2.5 * round(np.sqrt(x), decimals=4)).astype(np.int64)",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):
@@ -492,7 +506,7 @@ def test_others(function, parameters, helpers):
     # scalar
     # ------
 
-    if "shape" not in parameters["x"]:
+    if "shape" not in parameters["x"] or parameters["x"]["shape"] == ():
         parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
         configuration = helpers.configuration()
 
@@ -509,6 +523,9 @@ def test_others(function, parameters, helpers):
 
     if "shape" not in parameters["x"]:
         parameters["x"]["shape"] = (3, 2)
+
+    if parameters["x"]["shape"] == ():
+        return
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
     configuration = helpers.configuration()
