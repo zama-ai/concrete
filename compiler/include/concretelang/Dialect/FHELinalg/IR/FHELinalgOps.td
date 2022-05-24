@@ -73,6 +73,8 @@ def AddEintIntOp : FHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, Tensor
          build($_builder, $_state, rhs.getType(), rhs, lhs);
         }]>
     ];
+
+    let hasFolder = 1;
 }
 
 def AddEintOp : FHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
@@ -178,6 +180,8 @@ def SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, Tensor
          build($_builder, $_state, lhs.getType(), rhs, lhs);
         }]>
     ];
+
+    let hasFolder = 1;
 }
 
 def NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
@@ -257,6 +261,8 @@ def MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, Tensor
     );
 
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+
+    let hasFolder = 1;
 }
 
 def ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
