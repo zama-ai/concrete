@@ -3,7 +3,10 @@ use crate::dag::operator::{
     dot_kind, DotKind, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
 use crate::dag::unparametrized;
+use crate::noise_estimator::error;
+use crate::optimization::config::NoiseBoundConfig;
 use crate::utils::square;
+use std::collections::HashSet;
 
 // private short convention
 use DotKind as DK;
@@ -58,8 +61,8 @@ fn assert_valid_variances(dag: &OperationDag) {
     for &out_variance in &dag.out_variances {
         assert!(
             SymbolicVariance::ZERO == out_variance // Special case of multiply by 0
-            || 1.0 <= out_variance.input_vf
-            || 1.0 <= out_variance.lut_vf
+            || 1.0 <= out_variance.input_coeff
+            || 1.0 <= out_variance.lut_coeff
         );
     }
 }
@@ -95,27 +98,48 @@ pub struct OperationDag {
     pub nb_luts: u64,
     // The full dag levelled complexity
     pub levelled_complexity: LevelledComplexity,
-    // Global summaries of worst noise cases
-    pub noise_summary: NoiseSummary,
+    // Dominating variances and bounds per precision
+    pub constraints_by_precisions: Vec<VariancesAndBound>,
 }
 
 #[derive(Clone, Debug)]
-pub struct NoiseSummary {
+pub struct VariancesAndBound {
+    pub precision: Precision,
+    pub safe_variance_bound: f64,
+    pub nb_luts: u64,
     // All final variance factor not entering a lut (usually final levelledOp)
-    pub pareto_vfs_final: Vec<SymbolicVariance>,
+    pub pareto_output: Vec<SymbolicVariance>,
     // All variance factor entering a lut
-    pub pareto_vfs_in_lut: Vec<SymbolicVariance>,
+    pub pareto_in_lut: Vec<SymbolicVariance>,
 }
 
 impl OperationDag {
-    pub fn peek_variance(
+    pub fn peek_p_error(
         &self,
         input_noise_out: f64,
         blind_rotate_noise_out: f64,
         noise_keyswitch: f64,
         noise_modulus_switching: f64,
-    ) -> f64 {
-        peek_variance(
+        kappa: f64,
+    ) -> (f64, f64) {
+        peak_p_error(
+            self,
+            input_noise_out,
+            blind_rotate_noise_out,
+            noise_keyswitch,
+            noise_modulus_switching,
+            kappa,
+        )
+    }
+
+    pub fn feasible(
+        &self,
+        input_noise_out: f64,
+        blind_rotate_noise_out: f64,
+        noise_keyswitch: f64,
+        noise_modulus_switching: f64,
+    ) -> bool {
+        feasible(
             self,
             input_noise_out,
             blind_rotate_noise_out,
@@ -263,14 +287,15 @@ fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> 
 
 fn extra_final_variances(
     dag: &unparametrized::OperationDag,
+    out_precisions: &[Precision],
     out_variances: &[SymbolicVariance],
-) -> Vec<SymbolicVariance> {
+) -> Vec<(Precision, SymbolicVariance)> {
     extra_final_values_to_check(dag)
         .iter()
         .enumerate()
         .filter_map(|(i, &is_final)| {
             if is_final {
-                Some(out_variances[i])
+                Some((out_precisions[i], out_variances[i]))
             } else {
                 None
             }
@@ -280,11 +305,12 @@ fn extra_final_variances(
 
 fn in_luts_variance(
     dag: &unparametrized::OperationDag,
+    out_precisions: &[Precision],
     out_variances: &[SymbolicVariance],
-) -> Vec<SymbolicVariance> {
+) -> Vec<(Precision, SymbolicVariance)> {
     let only_luts = |op| {
         if let &Op::Lut { input, .. } = op {
-            Some(out_variances[input.i])
+            Some((out_precisions[input.i], out_variances[input.i]))
         } else {
             None
         }
@@ -324,34 +350,85 @@ fn levelled_complexity(
     levelled_complexity
 }
 
-fn max_update(current: &mut f64, candidate: f64) {
-    if candidate > *current {
-        *current = candidate;
-    }
+fn safe_noise_bound(precision: Precision, noise_config: &NoiseBoundConfig) -> f64 {
+    error::safe_variance_bound(
+        precision as u64,
+        noise_config.ciphertext_modulus_log,
+        noise_config.maximum_acceptable_error_probability,
+    )
 }
 
-fn noise_summary(
-    final_variances: Vec<SymbolicVariance>,
-    in_luts_variance: Vec<SymbolicVariance>,
-) -> NoiseSummary {
-    let pareto_vfs_final = SymbolicVariance::reduce_to_pareto_front(final_variances);
+fn constraints_by_precisions(
+    out_precisions: &[Precision],
+    final_variances: &[(Precision, SymbolicVariance)],
+    in_luts_variance: &[(Precision, SymbolicVariance)],
+    noise_config: &NoiseBoundConfig,
+) -> Vec<VariancesAndBound> {
+    let precisions: HashSet<Precision> = out_precisions.iter().copied().collect();
+    let mut precisions: Vec<Precision> = precisions.iter().copied().collect();
+    let to_noise_summary = |precision: &Precision| {
+        constraint_for_one_precision(
+            *precision as Precision,
+            final_variances,
+            in_luts_variance,
+            safe_noise_bound(*precision as Precision, noise_config),
+        )
+    };
+    // High precision first
+    precisions.sort_unstable();
+    precisions.iter().rev().map(to_noise_summary).collect()
+}
+
+fn select_precision<T: Copy>(target_precision: Precision, v: &[(Precision, T)]) -> Vec<T> {
+    v.iter()
+        .filter_map(|(p, t)| {
+            if *p == target_precision {
+                Some(*t)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+fn constraint_for_one_precision(
+    target_precision: Precision,
+    extra_final_variances: &[(Precision, SymbolicVariance)],
+    in_luts_variance: &[(Precision, SymbolicVariance)],
+    safe_noise_bound: f64,
+) -> VariancesAndBound {
+    let extra_final_variances = select_precision(target_precision, extra_final_variances);
+    let in_luts_variance = select_precision(target_precision, in_luts_variance);
+    let nb_luts = in_luts_variance.len() as u64;
+    let pareto_vfs_final = SymbolicVariance::reduce_to_pareto_front(extra_final_variances);
     let pareto_vfs_in_lut = SymbolicVariance::reduce_to_pareto_front(in_luts_variance);
-    NoiseSummary {
-        pareto_vfs_final,
-        pareto_vfs_in_lut,
+    VariancesAndBound {
+        precision: target_precision,
+        safe_variance_bound: safe_noise_bound,
+        nb_luts,
+        pareto_output: pareto_vfs_final,
+        pareto_in_lut: pareto_vfs_in_lut,
     }
 }
 
-pub fn analyze(dag: &unparametrized::OperationDag) -> OperationDag {
+pub fn analyze(
+    dag: &unparametrized::OperationDag,
+    noise_config: &NoiseBoundConfig,
+) -> OperationDag {
     assert_dag_correctness(dag);
     let out_shapes = out_shapes(dag);
     let out_precisions = out_precisions(dag);
     let out_variances = out_variances(dag, &out_shapes);
-    let in_luts_variance = in_luts_variance(dag, &out_variances);
+    let in_luts_variance = in_luts_variance(dag, &out_precisions, &out_variances);
     let nb_luts = in_luts_variance.len() as u64;
-    let extra_final_variances = extra_final_variances(dag, &out_variances);
+    let extra_final_variances = extra_final_variances(dag, &out_precisions, &out_variances);
     let levelled_complexity = levelled_complexity(dag, &out_shapes);
-    let noise_summary = noise_summary(extra_final_variances, in_luts_variance);
+    let constraints_by_precisions = constraints_by_precisions(
+        &out_precisions,
+        &extra_final_variances,
+        &in_luts_variance,
+        noise_config,
+    );
     let result = OperationDag {
         operators: dag.operators.clone(),
         out_shapes,
@@ -359,39 +436,122 @@ pub fn analyze(dag: &unparametrized::OperationDag) -> OperationDag {
         out_variances,
         nb_luts,
         levelled_complexity,
-        noise_summary,
+        constraints_by_precisions,
     };
     assert_properties_correctness(&result);
     result
 }
 
+fn max_update(current: &mut f64, candidate: f64) {
+    if candidate > *current {
+        *current = candidate;
+    }
+}
+
 // Compute the maximum attained variance for the full dag
 // TODO take a noise summary => peek_error or global error
-fn peek_variance(
-    dag: &OperationDag,
+fn peak_variance_per_constraint(
+    constraint: &VariancesAndBound,
     input_noise_out: f64,
     blind_rotate_noise_out: f64,
     noise_keyswitch: f64,
     noise_modulus_switching: f64,
 ) -> f64 {
-    assert!(input_noise_out < blind_rotate_noise_out);
-    let mut variance_peek_final = 0.0; // updated by the loop
-    for vf in &dag.noise_summary.pareto_vfs_final {
+    assert!(input_noise_out < blind_rotate_noise_out || blind_rotate_noise_out == 0.0);
+    // the maximal variance encountered as an output that can be decrypted
+    let mut variance_output = 0.0;
+    for vf in &constraint.pareto_output {
         max_update(
-            &mut variance_peek_final,
+            &mut variance_output,
             vf.eval(input_noise_out, blind_rotate_noise_out),
         );
     }
+    if constraint.pareto_in_lut.is_empty() {
+        return variance_output;
+    }
+    // the maximal variance encountered during a lut computation
+    let mut variance_in_lut = 0.0;
+    for vf in &constraint.pareto_in_lut {
+        max_update(
+            &mut variance_in_lut,
+            vf.eval(input_noise_out, blind_rotate_noise_out),
+        );
+    }
+    let peek_in_lut = variance_in_lut + noise_keyswitch + noise_modulus_switching;
+    peek_in_lut.max(variance_output)
+}
 
-    let mut variance_peek_in_lut = 0.0; // updated by the loop
-    for vf in &dag.noise_summary.pareto_vfs_in_lut {
-        max_update(
-            &mut variance_peek_in_lut,
-            vf.eval(input_noise_out, blind_rotate_noise_out),
+// Compute the maximum attained relative variance for the full dag
+fn peak_relative_variance(
+    dag: &OperationDag,
+    input_noise_out: f64,
+    blind_rotate_noise_out: f64,
+    noise_keyswitch: f64,
+    noise_modulus_switching: f64,
+) -> (f64, f64) {
+    assert!(!dag.constraints_by_precisions.is_empty());
+    assert!(input_noise_out <= blind_rotate_noise_out);
+    let mut max_relative_var = 0.0;
+    let mut safe_noise = 0.0;
+    for ns in &dag.constraints_by_precisions {
+        let variance_max = peak_variance_per_constraint(
+            ns,
+            input_noise_out,
+            blind_rotate_noise_out,
+            noise_keyswitch,
+            noise_modulus_switching,
         );
+        let relative_var = variance_max / ns.safe_variance_bound;
+        if max_relative_var < relative_var {
+            max_relative_var = relative_var;
+            safe_noise = ns.safe_variance_bound;
+        }
     }
-    let peek_in_lut = variance_peek_in_lut + noise_keyswitch + noise_modulus_switching;
-    peek_in_lut.max(variance_peek_final)
+    (max_relative_var, safe_noise)
+}
+
+fn peak_p_error(
+    dag: &OperationDag,
+    input_noise_out: f64,
+    blind_rotate_noise_out: f64,
+    noise_keyswitch: f64,
+    noise_modulus_switching: f64,
+    kappa: f64,
+) -> (f64, f64) {
+    let (relative_var, variance_bound) = peak_relative_variance(
+        dag,
+        input_noise_out,
+        blind_rotate_noise_out,
+        noise_keyswitch,
+        noise_modulus_switching,
+    );
+    let sigma_scale = kappa / relative_var.sqrt();
+    (
+        error::error_probability_of_sigma_scale(sigma_scale),
+        relative_var * variance_bound,
+    )
+}
+
+fn feasible(
+    dag: &OperationDag,
+    input_noise_out: f64,
+    blind_rotate_noise_out: f64,
+    noise_keyswitch: f64,
+    noise_modulus_switching: f64,
+) -> bool {
+    for ns in &dag.constraints_by_precisions {
+        if peak_variance_per_constraint(
+            ns,
+            input_noise_out,
+            blind_rotate_noise_out,
+            noise_keyswitch,
+            noise_modulus_switching,
+        ) > ns.safe_variance_bound
+        {
+            return false;
+        }
+    }
+    true
 }
 
 #[cfg(test)]
@@ -404,6 +564,26 @@ mod tests {
 
     fn assert_f64_eq(v: f64, expected: f64) {
         approx::assert_relative_eq!(v, expected, epsilon = f64::EPSILON);
+    }
+
+    impl OperationDag {
+        pub fn constraint(&self) -> VariancesAndBound {
+            assert!(!self.constraints_by_precisions.is_empty());
+            assert_eq!(self.constraints_by_precisions.len(), 1);
+            self.constraints_by_precisions[0].clone()
+        }
+    }
+
+    const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
+
+    const CONFIG: NoiseBoundConfig = NoiseBoundConfig {
+        security_level: 128,
+        ciphertext_modulus_log: 64,
+        maximum_acceptable_error_probability: _4_SIGMA,
+    };
+
+    fn analyze(dag: &unparametrized::OperationDag) -> super::OperationDag {
+        super::analyze(dag, &CONFIG)
     }
 
     #[test]
@@ -421,11 +601,11 @@ mod tests {
         assert_eq!(analysis.out_precisions[input1.i], 1);
         assert_f64_eq(complexity_cost, 0.0);
         assert!(analysis.nb_luts == 0);
-        let summary = analysis.noise_summary;
-        assert!(summary.pareto_vfs_final.len() == 1);
-        assert_f64_eq(summary.pareto_vfs_final[0].input_vf, 1.0);
-        assert_f64_eq(summary.pareto_vfs_final[0].lut_vf, 0.0);
-        assert!(summary.pareto_vfs_in_lut.is_empty());
+        let constraint = analysis.constraint();
+        assert!(constraint.pareto_output.len() == 1);
+        assert_f64_eq(constraint.pareto_output[0].input_coeff, 1.0);
+        assert_f64_eq(constraint.pareto_output[0].lut_coeff, 0.0);
+        assert!(constraint.pareto_in_lut.is_empty());
     }
 
     #[test]
@@ -443,13 +623,13 @@ mod tests {
         assert!(analysis.levelled_complexity == LevelledComplexity::ZERO);
         assert_eq!(analysis.out_precisions[lut1.i], 8);
         assert_f64_eq(one_lut_cost, complexity_cost);
-        let summary = analysis.noise_summary;
-        assert!(summary.pareto_vfs_final.len() == 1);
-        assert!(summary.pareto_vfs_in_lut.len() == 1);
-        assert_f64_eq(summary.pareto_vfs_final[0].input_vf, 0.0);
-        assert_f64_eq(summary.pareto_vfs_final[0].lut_vf, 1.0);
-        assert_f64_eq(summary.pareto_vfs_in_lut[0].input_vf, 1.0);
-        assert_f64_eq(summary.pareto_vfs_in_lut[0].lut_vf, 0.0);
+        let constraint = analysis.constraint();
+        assert!(constraint.pareto_output.len() == 1);
+        assert!(constraint.pareto_in_lut.len() == 1);
+        assert_f64_eq(constraint.pareto_output[0].input_coeff, 0.0);
+        assert_f64_eq(constraint.pareto_output[0].lut_coeff, 1.0);
+        assert_f64_eq(constraint.pareto_in_lut[0].input_coeff, 1.0);
+        assert_f64_eq(constraint.pareto_in_lut[0].lut_coeff, 0.0);
     }
 
     #[test]
@@ -465,8 +645,8 @@ mod tests {
         let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
 
         let expected_var = SymbolicVariance {
-            input_vf: norm2,
-            lut_vf: 0.0,
+            input_coeff: norm2,
+            lut_coeff: 0.0,
         };
         assert!(analysis.out_variances[dot.i] == expected_var);
         assert!(analysis.out_shapes[dot.i] == Shape::number());
@@ -474,11 +654,11 @@ mod tests {
         assert_eq!(analysis.out_precisions[dot.i], 1);
         let expected_dot_cost = (2 * lwe_dim) as f64;
         assert_f64_eq(expected_dot_cost, complexity_cost);
-        let summary = analysis.noise_summary;
-        assert!(summary.pareto_vfs_in_lut.is_empty());
-        assert!(summary.pareto_vfs_final.len() == 1);
-        assert_f64_eq(summary.pareto_vfs_final[0].input_vf, 5.0);
-        assert_f64_eq(summary.pareto_vfs_final[0].lut_vf, 0.0);
+        let constraint = analysis.constraint();
+        assert!(constraint.pareto_in_lut.is_empty());
+        assert!(constraint.pareto_output.len() == 1);
+        assert_f64_eq(constraint.pareto_output[0].input_coeff, 5.0);
+        assert_f64_eq(constraint.pareto_output[0].lut_coeff, 0.0);
     }
 
     #[test]
@@ -497,16 +677,16 @@ mod tests {
         assert!(analysis.out_variances[dot.i].origin() == VO::Input);
         assert_eq!(analysis.out_precisions[dot.i], 3);
         let expected_square_norm2 = weights.square_norm2() as f64;
-        let actual_square_norm2 = analysis.out_variances[dot.i].input_vf;
+        let actual_square_norm2 = analysis.out_variances[dot.i].input_coeff;
         // Due to call on log2() to compute manp the result is not exact
         assert_f64_eq(actual_square_norm2, expected_square_norm2);
         assert!(analysis.levelled_complexity == LevelledComplexity::ADDITION);
         assert_f64_eq(lwe_dim as f64, complexity_cost);
-        let summary = analysis.noise_summary;
-        assert!(summary.pareto_vfs_in_lut.is_empty());
-        assert!(summary.pareto_vfs_final.len() == 1);
-        assert_eq!(summary.pareto_vfs_final[0].origin(), VO::Input);
-        assert_f64_eq(summary.pareto_vfs_final[0].input_vf, 5.0);
+        let constraint = analysis.constraint();
+        assert!(constraint.pareto_in_lut.is_empty());
+        assert!(constraint.pareto_output.len() == 1);
+        assert_eq!(constraint.pareto_output[0].origin(), VO::Input);
+        assert_f64_eq(constraint.pareto_output[0].input_coeff, 5.0);
     }
 
     #[test]
@@ -524,20 +704,20 @@ mod tests {
         let complexity_cost = analysis.complexity_cost(lwe_dim, one_lut_cost);
 
         let expected_var_dot1 = SymbolicVariance {
-            input_vf: weights.square_norm2() as f64,
-            lut_vf: 0.0,
+            input_coeff: weights.square_norm2() as f64,
+            lut_coeff: 0.0,
         };
         let expected_var_lut1 = SymbolicVariance {
-            input_vf: 0.0,
-            lut_vf: 1.0,
+            input_coeff: 0.0,
+            lut_coeff: 1.0,
         };
         let expected_var_dot2 = SymbolicVariance {
-            input_vf: 0.0,
-            lut_vf: weights.square_norm2() as f64,
+            input_coeff: 0.0,
+            lut_coeff: weights.square_norm2() as f64,
         };
         let expected_var_lut2 = SymbolicVariance {
-            input_vf: 0.0,
-            lut_vf: 1.0,
+            input_coeff: 0.0,
+            lut_coeff: 1.0,
         };
         assert!(analysis.out_variances[dot1.i] == expected_var_dot1);
         assert!(analysis.out_variances[lut1.i] == expected_var_lut1);
@@ -546,14 +726,14 @@ mod tests {
         assert!(analysis.levelled_complexity == LevelledComplexity::ADDITION * 4);
         let expected_cost = (lwe_dim * 4) as f64 + 2.0 * one_lut_cost;
         assert_f64_eq(expected_cost, complexity_cost);
-        let summary = analysis.noise_summary;
-        assert_eq!(summary.pareto_vfs_final.len(), 1);
-        assert_eq!(summary.pareto_vfs_final[0].origin(), VO::Lut);
-        assert_f64_eq(summary.pareto_vfs_final[0].lut_vf, 1.0);
-        assert_eq!(summary.pareto_vfs_in_lut.len(), 1);
-        assert_eq!(summary.pareto_vfs_in_lut[0].origin(), VO::Lut);
+        let constraint = analysis.constraint();
+        assert_eq!(constraint.pareto_output.len(), 1);
+        assert_eq!(constraint.pareto_output[0].origin(), VO::Lut);
+        assert_f64_eq(constraint.pareto_output[0].lut_coeff, 1.0);
+        assert_eq!(constraint.pareto_in_lut.len(), 1);
+        assert_eq!(constraint.pareto_in_lut[0].origin(), VO::Lut);
         assert_f64_eq(
-            summary.pareto_vfs_in_lut[0].lut_vf,
+            constraint.pareto_in_lut[0].lut_coeff,
             weights.square_norm2() as f64,
         );
     }
@@ -574,14 +754,56 @@ mod tests {
         let expected_cost = (2 * lwe_dim) as f64 + 2.0 * one_lut_cost;
         assert_f64_eq(expected_cost, complexity_cost);
         let expected_mixed = SymbolicVariance {
-            input_vf: square(weights.values[0] as f64),
-            lut_vf: square(weights.values[1] as f64),
+            input_coeff: square(weights.values[0] as f64),
+            lut_coeff: square(weights.values[1] as f64),
         };
-        let summary = analysis.noise_summary;
-        assert_eq!(summary.pareto_vfs_final.len(), 1);
-        assert_eq!(summary.pareto_vfs_final[0], SymbolicVariance::LUT);
-        assert_eq!(summary.pareto_vfs_in_lut.len(), 1);
-        assert_eq!(summary.pareto_vfs_in_lut[0].origin(), VO::Mixed);
-        assert_eq!(summary.pareto_vfs_in_lut[0], expected_mixed);
+        let constraint = analysis.constraint();
+        assert_eq!(constraint.pareto_output.len(), 1);
+        assert_eq!(constraint.pareto_output[0], SymbolicVariance::LUT);
+        assert_eq!(constraint.pareto_in_lut.len(), 1);
+        assert_eq!(constraint.pareto_in_lut[0].origin(), VO::Mixed);
+        assert_eq!(constraint.pareto_in_lut[0], expected_mixed);
+    }
+
+    #[test]
+    fn test_multi_precision_input() {
+        let mut graph = unparametrized::OperationDag::new();
+        let max_precision = 5_usize;
+        for i in 1..=max_precision {
+            let _ = graph.add_input(i as u8, Shape::number());
+        }
+        let analysis = analyze(&graph);
+        assert!(analysis.constraints_by_precisions.len() == max_precision);
+        let mut prev_safe_noise_bound = 0.0;
+        for (i, ns) in analysis.constraints_by_precisions.iter().enumerate() {
+            assert_eq!(ns.precision, (max_precision - i) as u8);
+            assert_f64_eq(ns.pareto_output[0].input_coeff, 1.0);
+            assert!(prev_safe_noise_bound < ns.safe_variance_bound);
+            prev_safe_noise_bound = ns.safe_variance_bound;
+        }
+    }
+
+    #[test]
+    fn test_multi_precision_lut() {
+        let mut graph = unparametrized::OperationDag::new();
+        let max_precision = 5_usize;
+        for i in 1..=max_precision {
+            let input = graph.add_input(i as u8, Shape::number());
+            let _lut = graph.add_lut(input, FunctionTable::UNKWOWN);
+        }
+        let analysis = analyze(&graph);
+        assert!(analysis.constraints_by_precisions.len() == max_precision);
+        let mut prev_safe_noise_bound = 0.0;
+        for (i, ns) in analysis.constraints_by_precisions.iter().enumerate() {
+            assert_eq!(ns.precision, (max_precision - i) as u8);
+            assert_eq!(ns.pareto_output.len(), 1);
+            assert_eq!(ns.pareto_in_lut.len(), 1);
+            assert_f64_eq(ns.pareto_output[0].input_coeff, 0.0);
+            assert_f64_eq(ns.pareto_output[0].lut_coeff, 1.0);
+            assert_f64_eq(ns.pareto_in_lut[0].input_coeff, 1.0);
+            assert_f64_eq(ns.pareto_in_lut[0].lut_coeff, 0.0);
+            assert!(prev_safe_noise_bound < ns.safe_variance_bound);
+            prev_safe_noise_bound = ns.safe_variance_bound;
+        }
     }
 }

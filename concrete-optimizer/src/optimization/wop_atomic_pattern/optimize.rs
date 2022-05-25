@@ -533,7 +533,6 @@ pub fn optimize_one<W: UnsignedInteger>(
         br_decomposition_level_count: sol.br_decomposition_level_count,
         br_decomposition_base_log: sol.br_decomposition_base_log,
         complexity: sol.complexity,
-        lut_complexity: sol.complexity,
         noise_max: sol.noise_max,
         p_error: sol.p_error,
     });

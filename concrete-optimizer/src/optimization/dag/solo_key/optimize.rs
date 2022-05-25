@@ -1,10 +1,9 @@
-use concrete_commons::dispersion::{DispersionParameter, Variance};
+use concrete_commons::dispersion::DispersionParameter;
 use concrete_commons::numeric::UnsignedInteger;
 
 use crate::dag::operator::LevelledComplexity;
 use crate::dag::unparametrized;
 use crate::noise_estimator::error;
-use crate::noise_estimator::error::error_probability_of_sigma_scale;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 
 use crate::optimization::atomic_pattern::{
@@ -12,6 +11,7 @@ use crate::optimization::atomic_pattern::{
     Solution,
 };
 
+use crate::optimization::config::NoiseBoundConfig;
 use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositionParameters};
 use crate::pareto;
 use crate::security::glwe::minimal_variance;
@@ -37,10 +37,8 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
     let input_lwe_dimension = glwe_params.glwe_dimension * glwe_poly_size;
 
     let mut best_complexity = state.best_solution.map_or(f64::INFINITY, |s| s.complexity);
-    let mut best_lut_complexity = state
-        .best_solution
-        .map_or(f64::INFINITY, |s| s.lut_complexity);
     let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
+    let mut best_p_error = state.best_solution.map_or(f64::INFINITY, |s| s.p_error);
 
     let mut cut_complexity =
         (best_complexity - dag.complexity_cost(input_lwe_dimension, 0.0)) / (dag.nb_luts as f64);
@@ -87,17 +85,17 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
 
     for br_quantity in br_pareto {
         // increasing complexity, decreasing variance
-        let peek_variance = dag.peek_variance(
+        let not_feasible = !dag.feasible(
             input_noise_out,
             br_quantity.noise,
             0.0,
             noise_modulus_switching,
         );
-        if peek_variance > safe_variance && CUTS {
+        if not_feasible && CUTS {
             continue;
         }
-        let one_pbs_cost = br_quantity.complexity;
-        let complexity = dag.complexity_cost(input_lwe_dimension, one_pbs_cost);
+        let one_lut_cost = br_quantity.complexity;
+        let complexity = dag.complexity_cost(input_lwe_dimension, one_lut_cost);
         if complexity > best_complexity {
             // As best can evolves it is complementary to blind_rotate_quantities cuts.
             if PARETO_CUTS {
@@ -109,14 +107,14 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
         for i_ks_pareto in (0..=i_current_max_ks).rev() {
             // increasing variance, decreasing complexity
             let ks_quantity = ks_pareto[i_ks_pareto];
-            let peek_variance = dag.peek_variance(
+            let not_feasible = !dag.feasible(
                 input_noise_out,
                 br_quantity.noise,
                 ks_quantity.noise,
                 noise_modulus_switching,
             );
             // let noise_max = br_quantity.noise * dag.lut_base_noise_worst_lut + ks_quantity.noise + noise_modulus_switching;
-            if peek_variance > safe_variance {
+            if not_feasible {
                 if CROSS_PARETO_CUTS {
                     // the pareto of 2 added pareto is scanned linearly
                     // but with all cuts, pre-computing => no gain
@@ -129,28 +127,39 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
                 }
                 continue;
             }
+
             let one_lut_cost = ks_quantity.complexity + br_quantity.complexity;
             let complexity = dag.complexity_cost(input_lwe_dimension, one_lut_cost);
-
-            let better_complexity = complexity < best_complexity;
-            #[allow(clippy::float_cmp)]
-            let same_complexity_with_less_errors =
-                complexity == best_complexity && peek_variance < best_variance;
-            if better_complexity || same_complexity_with_less_errors {
-                best_lut_complexity = one_lut_cost;
-                best_complexity = complexity;
-                best_variance = peek_variance;
-                best_br_i = br_quantity.index;
-                best_ks_i = ks_quantity.index;
-                update_best_solution = true;
+            let worse_complexity = complexity > best_complexity;
+            if worse_complexity {
+                continue;
             }
+
+            let (peek_p_error, variance) = dag.peek_p_error(
+                input_noise_out,
+                br_quantity.noise,
+                ks_quantity.noise,
+                noise_modulus_switching,
+                consts.kappa,
+            );
+            #[allow(clippy::float_cmp)]
+            let same_comlexity_no_few_errors =
+                complexity == best_complexity && peek_p_error >= best_p_error;
+            if same_comlexity_no_few_errors {
+                continue;
+            }
+
+            // The complexity is either better or equivalent with less errors
+            update_best_solution = true;
+            best_complexity = complexity;
+            best_p_error = peek_p_error;
+            best_variance = variance;
+            best_br_i = br_quantity.index;
+            best_ks_i = ks_quantity.index;
         }
     } // br ks
 
     if update_best_solution {
-        let sigma = Variance(safe_variance).get_standard_dev() * consts.kappa;
-        let sigma_scale = sigma / Variance(best_variance).get_standard_dev();
-        let p_error = error_probability_of_sigma_scale(sigma_scale);
         let BrDecompositionParameters {
             level: br_l,
             log2_base: br_b,
@@ -159,6 +168,7 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
             level: ks_l,
             log2_base: ks_b,
         } = consts.keyswitch_decompositions[best_ks_i];
+
         state.best_solution = Some(Solution {
             input_lwe_dimension,
             internal_ks_output_lwe_dimension: internal_dim,
@@ -168,10 +178,9 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
             glwe_dimension: glwe_params.glwe_dimension,
             br_decomposition_level_count: br_l,
             br_decomposition_base_log: br_b,
-            noise_max: best_variance,
             complexity: best_complexity,
-            lut_complexity: best_lut_complexity,
-            p_error,
+            p_error: best_p_error,
+            noise_max: best_variance,
         });
     }
 }
@@ -188,12 +197,17 @@ pub fn optimize<W: UnsignedInteger>(
     internal_lwe_dimensions: &[u64],
 ) -> OptimizationState {
     let ciphertext_modulus_log = W::BITS as u64;
-    let dag = analyze::analyze(dag);
+    let noise_config = NoiseBoundConfig {
+        security_level,
+        maximum_acceptable_error_probability,
+        ciphertext_modulus_log,
+    };
+    let dag = analyze::analyze(dag, &noise_config);
 
-    let &max_precision = dag.out_precisions.iter().max().unwrap();
+    let &min_precision = dag.out_precisions.iter().min().unwrap();
 
-    let safe_variance = error::variance_max(
-        max_precision as u64,
+    let safe_variance = error::safe_variance_bound(
+        min_precision as u64,
         ciphertext_modulus_log,
         maximum_acceptable_error_probability,
     );
@@ -230,6 +244,8 @@ pub fn optimize<W: UnsignedInteger>(
         )
         .get_variance()
     };
+    let not_feasible =
+        |noise_modulus_switching| !dag.feasible(0.0, 0.0, 0.0, noise_modulus_switching);
 
     for &glwe_dim in glwe_dimensions {
         for &glwe_log_poly_size in glwe_log_polynomial_sizes {
@@ -240,7 +256,7 @@ pub fn optimize<W: UnsignedInteger>(
             };
             for &internal_dim in internal_lwe_dimensions {
                 let noise_modulus_switching = noise_modulus_switching(glwe_poly_size, internal_dim);
-                if CUTS && noise_modulus_switching > consts.safe_variance {
+                if CUTS && not_feasible(noise_modulus_switching) {
                     // assume this noise is increasing with internal_dim
                     break;
                 }
@@ -310,7 +326,6 @@ mod tests {
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::global_parameters::DEFAUT_DOMAINS;
     use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
-    use crate::utils::square;
 
     use super::*;
     use crate::optimization::atomic_pattern;
@@ -320,7 +335,7 @@ mod tests {
     }
 
     impl Solution {
-        fn same(&self, other: Self) -> bool {
+        fn assert_same(&self, other: Self) -> bool {
             let mut other = other;
             if small_relative_diff(self.noise_max, other.noise_max)
                 && small_relative_diff(self.p_error, other.p_error)
@@ -328,11 +343,37 @@ mod tests {
                 other.noise_max = self.noise_max;
                 other.p_error = self.p_error;
             }
+            assert_eq!(self, &other);
             self == &other
         }
     }
 
     const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
+
+    const CONFIG: NoiseBoundConfig = NoiseBoundConfig {
+        security_level: 128,
+        ciphertext_modulus_log: 64,
+        maximum_acceptable_error_probability: _4_SIGMA,
+    };
+
+    fn optimize(dag: &unparametrized::OperationDag) -> OptimizationState {
+        let security_level = 128;
+        let maximum_acceptable_error_probability = _4_SIGMA;
+        let glwe_log_polynomial_sizes: Vec<u64> = DEFAUT_DOMAINS
+            .glwe_pbs_constrained
+            .log2_polynomial_size
+            .as_vec();
+        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
+        let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
+        super::optimize::<u64>(
+            dag,
+            security_level,
+            maximum_acceptable_error_probability,
+            &glwe_log_polynomial_sizes,
+            &glwe_dimensions,
+            &internal_lwe_dimensions,
+        )
+    }
 
     struct Times {
         worst_time: u128,
@@ -367,15 +408,14 @@ mod tests {
         let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
         let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
         let sum_size = 1;
-        let maximum_acceptable_error_probability = _4_SIGMA;
 
         let chrono = Instant::now();
         let state = optimize_v0::<u64>(
             sum_size,
             precision,
-            security_level,
+            CONFIG.security_level,
             weight as f64,
-            maximum_acceptable_error_probability,
+            CONFIG.maximum_acceptable_error_probability,
             &glwe_log_polynomial_sizes,
             &glwe_dimensions,
             &internal_lwe_dimensions,
@@ -387,7 +427,7 @@ mod tests {
             precision,
             security_level,
             weight as f64,
-            maximum_acceptable_error_probability,
+            CONFIG.maximum_acceptable_error_probability,
             &glwe_log_polynomial_sizes,
             &glwe_dimensions,
             &internal_lwe_dimensions,
@@ -403,7 +443,7 @@ mod tests {
         }
         let sol = state.best_solution.unwrap();
         let sol_ref = state_ref.best_solution.unwrap();
-        assert!(sol.same(sol_ref));
+        assert!(sol.assert_same(sol_ref));
     }
 
     #[test]
@@ -426,15 +466,15 @@ mod tests {
             let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN);
         }
         {
-            let dag2 = analyze::analyze(&dag);
-            let summary = dag2.noise_summary;
-            assert_eq!(summary.pareto_vfs_final.len(), 1);
-            assert_eq!(summary.pareto_vfs_in_lut.len(), 1);
-            assert_eq!(summary.pareto_vfs_final[0].origin(), VarianceOrigin::Lut);
-            assert_f64_eq(1.0, summary.pareto_vfs_final[0].lut_vf);
-            assert!(summary.pareto_vfs_in_lut.len() == 1);
-            assert_eq!(summary.pareto_vfs_in_lut[0].origin(), VarianceOrigin::Lut);
-            assert_f64_eq(square(weight) as f64, summary.pareto_vfs_in_lut[0].lut_vf);
+            let dag2 = analyze::analyze(&dag, &CONFIG);
+            let constraint = dag2.constraint();
+            assert_eq!(constraint.pareto_output.len(), 1);
+            assert_eq!(constraint.pareto_in_lut.len(), 1);
+            assert_eq!(constraint.pareto_output[0].origin(), VarianceOrigin::Lut);
+            assert_f64_eq(1.0, constraint.pareto_output[0].lut_coeff);
+            assert!(constraint.pareto_in_lut.len() == 1);
+            assert_eq!(constraint.pareto_in_lut[0].origin(), VarianceOrigin::Lut);
+            assert_f64_eq(square(weight) as f64, constraint.pareto_in_lut[0].lut_coeff);
         }
 
         let security_level = 128;
@@ -445,14 +485,7 @@ mod tests {
             .as_vec();
         let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
         let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-        let state = optimize::<u64>(
-            &dag,
-            security_level,
-            maximum_acceptable_error_probability,
-            &glwe_log_polynomial_sizes,
-            &glwe_dimensions,
-            &internal_lwe_dimensions,
-        );
+        let state = optimize(&dag);
         let state_ref = atomic_pattern::optimize_one::<u64>(
             1,
             precision,
@@ -474,7 +507,7 @@ mod tests {
         let sol = state.best_solution.unwrap();
         let mut sol_ref = state_ref.best_solution.unwrap();
         sol_ref.complexity *= 2.0 /* number of luts */;
-        assert!(sol.same(sol_ref));
+        assert!(sol.assert_same(sol_ref));
     }
 
     fn no_lut_vs_lut(precision: u64) {
@@ -485,28 +518,8 @@ mod tests {
         let mut dag_no_lut = unparametrized::OperationDag::new();
         let _input2 = dag_no_lut.add_input(precision as u8, Shape::number());
 
-        let security_level = 128;
-        let maximum_acceptable_error_probability = _4_SIGMA;
-        let glwe_log_polynomial_sizes: Vec<u64> = DEFAUT_DOMAINS
-            .glwe_pbs_constrained
-            .log2_polynomial_size
-            .as_vec();
-        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-        let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-
-        let opt = |dag: &unparametrized::OperationDag| {
-            optimize::<u64>(
-                dag,
-                security_level,
-                maximum_acceptable_error_probability,
-                &glwe_log_polynomial_sizes,
-                &glwe_dimensions,
-                &internal_lwe_dimensions,
-            )
-        };
-
-        let state_no_lut = opt(&dag_no_lut);
-        let state_lut = opt(&dag_lut);
+        let state_no_lut = optimize(&dag_no_lut);
+        let state_lut = optimize(&dag_lut);
         assert_eq!(
             state_no_lut.best_solution.is_some(),
             state_lut.best_solution.is_some()
@@ -546,28 +559,8 @@ mod tests {
             let _lut2 = dag_2.add_lut(scaled_lut1, FunctionTable::UNKWOWN);
         }
 
-        let security_level = 128;
-        let maximum_acceptable_error_probability = _4_SIGMA;
-        let glwe_log_polynomial_sizes: Vec<u64> = DEFAUT_DOMAINS
-            .glwe_pbs_constrained
-            .log2_polynomial_size
-            .as_vec();
-        let glwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
-        let internal_lwe_dimensions: Vec<u64> = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
-
-        let opt = |dag: &unparametrized::OperationDag| {
-            optimize::<u64>(
-                dag,
-                security_level,
-                maximum_acceptable_error_probability,
-                &glwe_log_polynomial_sizes,
-                &glwe_dimensions,
-                &internal_lwe_dimensions,
-            )
-        };
-
-        let state_1 = opt(&dag_1);
-        let state_2 = opt(&dag_2);
+        let state_1 = optimize(&dag_1);
+        let state_2 = optimize(&dag_2);
 
         if state_1.best_solution.is_none() {
             assert!(state_2.best_solution.is_none());
@@ -585,6 +578,65 @@ mod tests {
             for precision in 5..=9 {
                 lut_with_input_base_noise_better_than_lut_with_lut_base_noise(precision, weight);
             }
+        }
+    }
+
+    fn circuit(dag: &mut unparametrized::OperationDag, precision: u8, weight: u64) {
+        let input = dag.add_input(precision, Shape::number());
+        let dot1 = dag.add_dot([input], [weight]);
+        let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN);
+        let dot2 = dag.add_dot([lut1], [weight]);
+        let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN);
+    }
+
+    fn assert_multi_precision_dominate_single(weight: u64) -> Option<bool> {
+        let low_precision = 4u8;
+        let high_precision = 5u8;
+        let mut dag_low = unparametrized::OperationDag::new();
+        let mut dag_high = unparametrized::OperationDag::new();
+        let mut dag_multi = unparametrized::OperationDag::new();
+
+        {
+            circuit(&mut dag_low, low_precision, weight);
+            circuit(&mut dag_high, high_precision, 1);
+            circuit(&mut dag_multi, low_precision, weight);
+            circuit(&mut dag_multi, high_precision, 1);
+        }
+        let state_multi = optimize(&dag_multi);
+        #[allow(clippy::question_mark)] // question mark doesn't work here
+        if state_multi.best_solution.is_none() {
+            return None;
+        }
+        let state_low = optimize(&dag_low);
+        let state_high = optimize(&dag_high);
+
+        let sol_low = state_low.best_solution.unwrap();
+        let sol_high = state_high.best_solution.unwrap();
+        let mut sol_multi = state_multi.best_solution.unwrap();
+        sol_multi.complexity /= 2.0;
+        if sol_low.complexity < sol_high.complexity {
+            assert!(sol_high.assert_same(sol_multi));
+            Some(true)
+        } else {
+            assert!(sol_low.complexity < sol_multi.complexity || sol_low.assert_same(sol_multi));
+            Some(false)
+        }
+    }
+
+    #[test]
+    fn test_multi_precision_dominate_single() {
+        let mut prev = Some(true); // true -> ... -> true -> false -> ... -> false
+        for log2_weight in 0..29 {
+            let weight = 1 << log2_weight;
+            let current = assert_multi_precision_dominate_single(weight);
+            #[allow(clippy::match_like_matches_macro)] // less readable
+            let authorized = match (prev, current) {
+                (Some(false), Some(true)) => false,
+                (None, Some(_)) => false,
+                _ => true,
+            };
+            assert!(authorized);
+            prev = current;
         }
     }
 }

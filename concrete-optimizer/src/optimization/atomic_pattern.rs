@@ -34,7 +34,6 @@ pub struct Solution {
     pub br_decomposition_level_count: u64,     //l(BR)
     pub br_decomposition_base_log: u64,        //b(BR)
     pub complexity: f64,
-    pub lut_complexity: f64,
     pub noise_max: f64,
     pub p_error: f64, // error probability
 }
@@ -342,7 +341,6 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     br_decomposition_base_log: br_b,
                     noise_max,
                     complexity,
-                    lut_complexity: complexity_keyswitch + complexity_pbs,
                     p_error,
                 });
             }
@@ -476,7 +474,7 @@ pub fn optimize_one<W: UnsignedInteger>(
     // the blind rotate decomposition
 
     let ciphertext_modulus_log = W::BITS as u64;
-    let safe_variance = error::variance_max(
+    let safe_variance = error::safe_variance_bound(
         precision,
         ciphertext_modulus_log,
         maximum_acceptable_error_probability,

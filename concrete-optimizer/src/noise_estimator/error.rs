@@ -23,7 +23,7 @@ pub fn fatal_noise_limit(precision: u64, ciphertext_modulus_log: u64) -> f64 {
     2_f64.powi(noise_bits as i32)
 }
 
-pub fn variance_max(
+pub fn safe_variance_bound(
     precision: u64,
     ciphertext_modulus_log: u64,
     maximum_acceptable_error_probability: f64,

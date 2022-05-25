@@ -3,7 +3,6 @@ use derive_more::{Add, AddAssign, Sum};
  * A variance that is represented as a linear combination of base variances.
  * Only the linear coefficient are known.
  * The base variances are unknown.
- * Each linear coefficients is a variance factor.
  *
  * Only 2 base variances are possible in the solo key setup:
  *  - from input,
@@ -15,11 +14,11 @@ use derive_more::{Add, AddAssign, Sum};
  */
 #[derive(Clone, Copy, Add, AddAssign, Sum, Debug, PartialEq, PartialOrd)]
 pub struct SymbolicVariance {
-    pub lut_vf: f64,
-    pub input_vf: f64,
-    // variance = vf.lut_vf * lut_out_noise
-    //          + vf.input_vf * input_out_noise
-    // E.g. variance(dot([lut, input], [3, 4])) = VariancesFactors {lut_vf:9, input_vf: 16}
+    pub lut_coeff: f64,
+    pub input_coeff: f64,
+    // variance = vf.lut_coeff * lut_out_noise
+    //          + vf.input_coeff * input_out_noise
+    // E.g. variance(dot([lut, input], [3, 4])) = VariancesFactors {lut_coeff:9, input_coeff: 16}
 
     // NOTE: lut_base_noise is the first field since it has higher impact,
     // see pareto sorting and dominate_or_equal
@@ -36,8 +35,8 @@ impl std::ops::Mul<f64> for SymbolicVariance {
     type Output = Self;
     fn mul(self, sq_weight: f64) -> Self {
         Self {
-            input_vf: self.input_vf * sq_weight,
-            lut_vf: self.lut_vf * sq_weight,
+            input_coeff: self.input_coeff * sq_weight,
+            lut_coeff: self.lut_coeff * sq_weight,
         }
     }
 }
@@ -51,22 +50,22 @@ impl std::ops::Mul<u64> for SymbolicVariance {
 
 impl SymbolicVariance {
     pub const ZERO: Self = Self {
-        input_vf: 0.0,
-        lut_vf: 0.0,
+        input_coeff: 0.0,
+        lut_coeff: 0.0,
     };
     pub const INPUT: Self = Self {
-        input_vf: 1.0,
-        lut_vf: 0.0,
+        input_coeff: 1.0,
+        lut_coeff: 0.0,
     };
     pub const LUT: Self = Self {
-        input_vf: 0.0,
-        lut_vf: 1.0,
+        input_coeff: 0.0,
+        lut_coeff: 1.0,
     };
 
     pub fn origin(&self) -> VarianceOrigin {
-        if self.lut_vf == 0.0 {
+        if self.lut_coeff == 0.0 {
             VarianceOrigin::Input
-        } else if self.input_vf == 0.0 {
+        } else if self.input_coeff == 0.0 {
             VarianceOrigin::Lut
         } else {
             VarianceOrigin::Mixed
@@ -78,12 +77,12 @@ impl SymbolicVariance {
     }
 
     pub fn dominate_or_equal(&self, other: &Self) -> bool {
-        let extra_other_minimal_base_noise = 0.0_f64.max(other.input_vf - self.input_vf);
-        other.lut_vf + extra_other_minimal_base_noise <= self.lut_vf
+        let extra_other_minimal_base_noise = 0.0_f64.max(other.input_coeff - self.input_coeff);
+        other.lut_coeff + extra_other_minimal_base_noise <= self.lut_coeff
     }
 
     pub fn eval(&self, minimal_base_noise: f64, lut_base_noise: f64) -> f64 {
-        minimal_base_noise * self.input_vf + lut_base_noise * self.lut_vf
+        minimal_base_noise * self.input_coeff + lut_base_noise * self.lut_coeff
     }
 
     pub fn reduce_to_pareto_front(mut vfs: Vec<Self>) -> Vec<Self> {
