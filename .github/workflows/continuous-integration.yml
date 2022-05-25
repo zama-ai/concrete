@@ -51,6 +51,11 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc7, latest]
+    # We want to always run the tests, but after the docker image build job.
+    # If there is no new build then we use the old image, else we use the new image.
+    # The latest compiler job isn't using the built image, so it suffers the dependance of the gcc7 job.
+    if: ${{ always() }}
+    needs: [BuildAndPushDockerImages]
     steps:
       # Free 4Gb of workspace
       - name: Freeing space
@@ -294,6 +299,10 @@ jobs:
 
   BuildAndTestDF:
     runs-on: ubuntu-latest
+    # We want to always run the tests, but after the docker image build job.
+    # If there is no new build then we use the old image, else we use the new image.
+    if: ${{ always() }}
+    needs: [BuildAndPushDockerImages]
     steps:
       # A SSH private key is required as some dependencies are from private repos
       - uses: webfactory/ssh-agent@v0.5.2
@@ -700,8 +709,8 @@ jobs:
   #################
 
   BuildAndPushDockerImages:
-    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') }}
-    needs: [BuildAndTest]
+    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') || needs.BuildAndPublishHPXDockerImage.outputs.image_built == 'true' || needs.BuildAndPublishGCC7DockerImage.outputs.image_built == 'true' }}
+    needs: [BuildAndPublishHPXDockerImage, BuildAndPublishGCC7DockerImage]
     name: Build & Publish Docker Images
     runs-on: ubuntu-latest
     strategy:
@@ -761,6 +770,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/zama-ai/hpx
+    outputs:
+      image_built: ${{ steps.is-built.outputs.IMAGE_BUILT }}
 
     steps:
       - uses: actions/checkout@v2
@@ -781,11 +792,17 @@ jobs:
           docker build -t $IMAGE -f builders/Dockerfile.hpx-env .
           docker push $IMAGE:latest
 
+      - name: Is Image Built
+        id: is-built
+        run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env') }}"
+
   BuildAndPublishGCC7DockerImage:
     name: Build & Publish GCC7 Docker Image
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/zama-ai/gcc7
+    outputs:
+      image_built: ${{ steps.is-built.outputs.IMAGE_BUILT }}
 
     steps:
       # A SSH private key is required as some dependencies are from private repos
@@ -820,3 +837,7 @@ jobs:
         run: |
           docker build -t $IMAGE -f builders/Dockerfile.gcc7-env .
           docker push $IMAGE:latest
+
+      - name: Is Image Built
+        id: is-built
+        run: echo "::set-output name=IMAGE_BUILT::${{ contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env') }}"
