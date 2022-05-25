@@ -783,11 +783,12 @@ jobs:
         uses: tj-actions/changed-files@v2.0.0
 
       - name: Login
+        id: login
         if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env')
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build Tag and Publish
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.hpx-env')
+        if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
           docker build -t $IMAGE -f builders/Dockerfile.hpx-env .
           docker push $IMAGE:latest
@@ -818,22 +819,25 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v2.0.0
 
+      - name: Login
+        id: login
+        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env')
+        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
+
       - name: Install rust
+        if: ${{ steps.login.conclusion != 'skipped' }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
 
       - name: Concrete-Optimizer
+        if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
           cd compiler
           make concrete-optimizer-lib
 
-      - name: Login
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env')
-        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
-
       - name: Build Tag and Publish
-        if: contains(steps.changed-files.outputs.modified_files, 'builders/Dockerfile.gcc7-env')
+        if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
           docker build -t $IMAGE -f builders/Dockerfile.gcc7-env .
           docker push $IMAGE:latest
