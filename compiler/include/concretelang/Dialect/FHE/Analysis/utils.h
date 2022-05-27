@@ -3,20 +3,21 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#ifndef CONCRETELANG_DIALECT_FHE_ANALYSIS_MANP_H
-#define CONCRETELANG_DIALECT_FHE_ANALYSIS_MANP_H
+#ifndef CONCRETELANG_DIALECT_FHE_ANALYSIS_UTILS_H
+#define CONCRETELANG_DIALECT_FHE_ANALYSIS_UTILS_H
 
-#include <functional>
-#include <mlir/Pass/Pass.h>
+#include <mlir/IR/BuiltinOps.h>
 
 namespace mlir {
 namespace concretelang {
+namespace fhe {
+namespace utils {
+
 bool isEncryptedValue(mlir::Value value);
 unsigned int getEintPrecision(mlir::Value value);
-std::unique_ptr<mlir::Pass> createMANPPass(bool debug = false);
 
-std::unique_ptr<mlir::Pass>
-createMaxMANPPass(std::function<void(const llvm::APInt &, unsigned)> setMax);
+} // namespace utils
+} // namespace fhe
 } // namespace concretelang
 } // namespace mlir
 

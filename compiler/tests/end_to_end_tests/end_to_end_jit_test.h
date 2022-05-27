@@ -23,8 +23,10 @@ internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
 
   auto options =
       mlir::concretelang::CompilationOptions(std::string(func.data()));
-  if (useDefaultFHEConstraints)
+  if (useDefaultFHEConstraints) {
     options.v0FHEConstraints = defaultV0Constraints;
+    options.optimizerConfig.strategy_v0 = true;
+  }
 
   // Allow loop parallelism in all cases
   options.loopParallelize = loopParallelize;

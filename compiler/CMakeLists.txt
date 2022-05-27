@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Wouldn't be able to compile LLVM without this on Mac (using either Clang or AppleClang)
 if (APPLE)
-  add_definitions("-Wno-narrowing")
+  add_definitions("-Wno-narrowing -Wno-dollar-in-identifier-extension")
 endif()
 
 # If we are trying to build the compiler with LLVM/MLIR as libraries
@@ -116,6 +116,7 @@ option(CONCRETELANG_BENCHMARK "Enables the build of benchmarks" ON)
 #-------------------------------------------------------------------------------
 # Handling sub dirs
 #-------------------------------------------------------------------------------
+include_directories(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp)
 
 add_subdirectory(include)
 add_subdirectory(lib)

@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes tfhe-global-parametrization --action=dump-std --v0-parameter=2,10,750,1,23,3,4 -v0-constraint=4,0 %s 2>&1| FileCheck %s
+// RUN: concretecompiler --passes tfhe-global-parametrization --action=dump-std --optimizer-v0 --v0-parameter=2,10,750,1,23,3,4 --v0-constraint=4,0 %s 2>&1| FileCheck %s
 
 //CHECK: func.func @main(%[[A0:.*]]: !TFHE.glwe<{2048,1,64}{4}>) -> !TFHE.glwe<{2048,1,64}{4}> {
 //CHECK:   %cst = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]> : tensor<16xi64>

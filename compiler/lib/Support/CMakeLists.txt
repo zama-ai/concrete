@@ -1,6 +1,3 @@
-# not working in ADDITIONAL_HEADER_DIRS
-include_directories(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp)
-
 add_mlir_library(ConcretelangSupport
   Pipeline.cpp
   Jit.cpp
