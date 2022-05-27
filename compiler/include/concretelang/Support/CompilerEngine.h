@@ -243,8 +243,8 @@ protected:
   std::shared_ptr<CompilationContext> compilationContext;
 
 private:
-  llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
-  getV0FHEConstraint(CompilationResult &res);
+  llvm::Expected<llvm::Optional<optimizer::Description>>
+  getConcreteOptimizerDescription(CompilationResult &res);
   llvm::Error determineFHEParameters(CompilationResult &res);
 };
 

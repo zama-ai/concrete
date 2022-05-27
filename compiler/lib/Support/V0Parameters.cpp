@@ -17,15 +17,30 @@
 
 #include "concrete-optimizer.hpp"
 #include "concretelang/Support/V0Parameters.h"
+#include <concretelang/Support/logging.h>
 
 namespace mlir {
 namespace concretelang {
 
+optimizer::Solution getV0Parameter(V0FHEConstraint constraint,
+                                   optimizer::Config config) {
+  // the norm2 0 is equivalent to a maximum noise_factor of 2.0
+  // norm2 = 0  ==>  1.0 =< noise_factor < 2.0
+  // norm2 = k  ==>  2^norm2 =< noise_factor < 2.0^norm2 + 1
+  double noise_factor = std::exp2(constraint.norm2 + 1);
+  return concrete_optimizer::v0::optimize_bootstrap(
+      constraint.p, config.security, noise_factor, config.p_error);
+}
+
+optimizer::Solution getV1Parameter(optimizer::Dag &dag,
+                                   optimizer::Config config) {
+  return dag->optimize_v0(config.security, config.p_error);
+}
+
 static void display(V0FHEConstraint constraint,
-                    optimizer::Config optimizerConfig,
-                    concrete_optimizer::v0::Solution sol,
+                    optimizer::Config optimizerConfig, optimizer::Solution sol,
                     std::chrono::milliseconds duration) {
-  if (!optimizerConfig.display) {
+  if (!optimizerConfig.display && !mlir::concretelang::isVerbose()) {
     return;
   }
   auto o = llvm::outs;
@@ -54,19 +69,15 @@ static void display(V0FHEConstraint constraint,
       << "---\n";
 }
 
-llvm::Optional<V0Parameter> getV0Parameter(V0FHEConstraint constraint,
-                                           optimizer::Config optimizerConfig) {
+llvm::Optional<V0Parameter> getParameter(optimizer::Description &descr,
+                                         optimizer::Config config) {
   namespace chrono = std::chrono;
-  int security = 128;
-  // the norm2 0 is equivalent to a maximum noise_factor of 2.0
-  // norm2 = 0  ==>  1.0 =< noise_factor < 2.0
-  // norm2 = k  ==>  2^norm2 =< noise_factor < 2.0^norm2 + 1
-  double noise_factor = std::exp2(constraint.norm2 + 1);
-  // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/V0Parameters/tabulation.py#L58
-  double p_error = optimizerConfig.p_error;
   auto start = chrono::high_resolution_clock::now();
-  auto sol = concrete_optimizer::v0::optimize_bootstrap(constraint.p, security,
-                                                        noise_factor, p_error);
+
+  auto sol = (!descr.dag || config.strategy_v0)
+                 ? getV0Parameter(descr.constraint, config)
+                 : getV1Parameter(descr.dag.getValue(), config);
+
   auto stop = chrono::high_resolution_clock::now();
   if (sol.p_error == 1.0) {
     // The optimizer return a p_error = 1 if there is no solution
@@ -78,7 +89,7 @@ llvm::Optional<V0Parameter> getV0Parameter(V0FHEConstraint constraint,
     llvm::errs() << "concrete-optimizer time: " << duration_s.count() << "s\n";
   }
 
-  display(constraint, optimizerConfig, sol, duration);
+  display(descr.constraint, config, sol, duration);
 
   return mlir::concretelang::V0Parameter{
       sol.glwe_dimension,

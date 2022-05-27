@@ -186,6 +186,11 @@ llvm::cl::opt<bool> displayOptimizerChoice(
     llvm::cl::desc("Display the information returned by the optimizer"),
     llvm::cl::init(false));
 
+llvm::cl::opt<bool>
+    optimizerV0("optimizer-v0",
+                llvm::cl::desc("Select the v0 parameters strategy"),
+                llvm::cl::init(false));
+
 llvm::cl::list<int64_t> fhelinalgTileSizes(
     "fhelinalg-tile-sizes",
     llvm::cl::desc(
@@ -265,8 +270,15 @@ cmdlineCompilationOptions() {
         cmdline::v0Parameter[6]);
   }
 
+  if (!cmdline::v0Constraint.empty() && !cmdline::optimizerV0) {
+    return llvm::make_error<llvm::StringError>(
+        "You must use --v0-constraint with --optimizer-v0-strategy",
+        llvm::inconvertibleErrorCode());
+  }
+
   options.optimizerConfig.p_error = cmdline::pbsErrorProbability;
   options.optimizerConfig.display = cmdline::displayOptimizerChoice;
+  options.optimizerConfig.strategy_v0 = cmdline::optimizerV0;
 
   return options;
 }

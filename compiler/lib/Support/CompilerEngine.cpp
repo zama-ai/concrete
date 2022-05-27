@@ -21,6 +21,7 @@
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser/Parser.h>
 
+#include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include <concretelang/ClientLib/ClientParameters.h>
 #include <concretelang/Dialect/BConcrete/IR/BConcreteDialect.h>
 #include <concretelang/Dialect/BConcrete/Transforms/BufferizableOpInterfaceImpl.h>
@@ -112,63 +113,81 @@ void CompilerEngine::setEnablePass(
   this->enablePass = enablePass;
 }
 
-/// Returns the overwritten V0FHEConstraint or try to compute them from FHE
-llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
-CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
+/// Returns the optimizer::Description
+llvm::Expected<llvm::Optional<optimizer::Description>>
+CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
   mlir::ModuleOp module = res.mlirModuleRef->get();
   // If the values has been overwritten returns
   if (this->overrideMaxEintPrecision.hasValue() &&
       this->overrideMaxMANP.hasValue()) {
-    return mlir::concretelang::V0FHEConstraint{
+    auto constraint = mlir::concretelang::V0FHEConstraint{
         this->overrideMaxMANP.getValue(),
         this->overrideMaxEintPrecision.getValue()};
+    return optimizer::Description{constraint, llvm::None};
   }
-  // Else compute constraint from FHE
-  llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
-      fheConstraintsOrErr =
-          mlir::concretelang::pipeline::getFHEConstraintsFromFHE(
-              mlirContext, module, enablePass);
-
-  if (auto err = fheConstraintsOrErr.takeError())
+  auto config = this->compilerOptions.optimizerConfig;
+  auto descriptions = mlir::concretelang::pipeline::getFHEContextFromFHE(
+      mlirContext, module, config, enablePass);
+  if (auto err = descriptions.takeError()) {
     return std::move(err);
-
-  return fheConstraintsOrErr.get();
+  }
+  if (descriptions->empty()) { // The pass has not been run
+    return llvm::None;
+  }
+  if (this->compilerOptions.clientParametersFuncName.hasValue()) {
+    auto name = this->compilerOptions.clientParametersFuncName.getValue();
+    auto description = descriptions->find(name);
+    if (description == descriptions->end()) {
+      std::string names;
+      for (auto &entry : *descriptions) {
+        names += "'" + entry.first + "' ";
+      }
+      return StreamStringError()
+             << "Could not find existing crypto parameters for function '"
+             << name << "' (known functions: " << names << ")";
+    }
+    return std::move(description->second);
+  }
+  if (descriptions->size() != 1) {
+    llvm::errs() << "Several crypto parameters exists: the function need to be "
+                    "specified, taking the first one";
+  }
+  return std::move(descriptions->begin()->second);
 }
 
 /// set the fheContext field if the v0Constraint can be computed
 llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
-  auto fheConstraintOrErr = getV0FHEConstraint(res);
-  if (auto err = fheConstraintOrErr.takeError())
+  auto descrOrErr = getConcreteOptimizerDescription(res);
+  if (auto err = descrOrErr.takeError()) {
     return err;
-  if (!fheConstraintOrErr.get().hasValue()) {
+  }
+  // The function is non-crypto and without constraint override
+  if (!descrOrErr.get().hasValue()) {
     return llvm::Error::success();
   }
-  llvm::Optional<V0Parameter> v0Params;
-  if (compilerOptions.v0Parameter.hasValue()) {
-    v0Params = compilerOptions.v0Parameter;
-  } else {
-    v0Params = getV0Parameter(fheConstraintOrErr.get().getValue(),
-                              this->compilerOptions.optimizerConfig);
+  auto descr = std::move(descrOrErr.get().getValue());
+  auto config = this->compilerOptions.optimizerConfig;
 
-    if (!v0Params) {
-      return StreamStringError()
-             << "Could not determine V0 parameters for 2-norm of "
-             << (*fheConstraintOrErr)->norm2 << " and p of "
-             << (*fheConstraintOrErr)->p;
-    }
+  auto fheParams = (compilerOptions.v0Parameter.hasValue())
+                       ? compilerOptions.v0Parameter
+                       : getParameter(descr, config);
+  if (!fheParams) {
+    return StreamStringError()
+           << "Could not determine V0 parameters for 2-norm of "
+           << (*descrOrErr)->constraint.norm2 << " and p of "
+           << (*descrOrErr)->constraint.p;
   }
-  res.fheContext.emplace(mlir::concretelang::V0FHEContext{
-      (*fheConstraintOrErr).getValue(), v0Params.getValue()});
-
+  res.fheContext.emplace(
+      mlir::concretelang::V0FHEContext{descr.constraint, fheParams.getValue()});
   return llvm::Error::success();
 }
 
 using OptionalLib = llvm::Optional<std::shared_ptr<CompilerEngine::Library>>;
-/// Compile the sources managed by the source manager `sm` to the
-/// target dialect `target`. If successful, the result can be retrieved
-/// using `getModule()` and `getLLVMModule()`, respectively depending
-/// on the target dialect.
+// Compile the sources managed by the source manager `sm` to the
+// target dialect `target`. If successful, the result can be retrieved
+// using `getModule()` and `getLLVMModule()`, respectively depending
+// on the target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   std::unique_ptr<mlir::SourceMgrDiagnosticVerifierHandler> smHandler;
@@ -281,7 +300,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     }
     if (!res.fheContext.hasValue()) {
       return StreamStringError(
-          "Cannot generate client parameters, the fhe context is empty");
+          "Cannot generate client parameters, the fhe context is empty for " +
+          options.clientParametersFuncName.getValue());
     }
   }
   // Generate client parameters if requested

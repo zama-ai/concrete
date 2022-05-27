@@ -1,4 +1,6 @@
 add_mlir_library(FHEDialectAnalysis
+  utils.cpp
+  ConcreteOptimizer.cpp
   MANP.cpp
 
   ADDITIONAL_HEADER_DIRS
