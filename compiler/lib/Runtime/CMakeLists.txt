@@ -10,6 +10,10 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     PRIVATE
     HPX::hpx HPX::iostreams_component
   )
+  set_source_files_properties(
+    DFRuntime.cpp
+    PROPERTIES COMPILE_FLAGS "-fopenmp"
+  )
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

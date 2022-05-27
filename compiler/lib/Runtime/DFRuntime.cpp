@@ -17,6 +17,7 @@
 #include <hpx/hpx_start.hpp>
 #include <hpx/hpx_suspend.hpp>
 #include <hwloc.h>
+#include <omp.h>
 
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/distributed_generic_task_server.hpp"
@@ -788,12 +789,25 @@ static inline void _dfr_stop_impl() {
 
 static inline void _dfr_start_impl(int argc, char *argv[]) {
   mlir::concretelang::dfr::dl_handle = dlopen(nullptr, RTLD_NOW);
+
+  // If OpenMP is to be used, we need to force its initialization
+  // before thread binding occurs. Otherwise OMP threads will be bound
+  // to the core of the thread initializing the OMP runtime.
+  if (mlir::concretelang::dfr::_dfr_use_omp()) {
+#pragma omp parallel shared(mlir::concretelang::dfr::use_omp_p)
+    {
+#pragma omp critical
+      mlir::concretelang::dfr::use_omp_p = true;
+    }
+  }
+
   if (argc == 0) {
     int nCores, nOMPThreads, nHPXThreads;
     std::string hpxThreadNum;
 
     std::vector<char *> parameters;
     parameters.push_back(const_cast<char *>("__dummy_dfr_HPX_program_name__"));
+    parameters.push_back(const_cast<char *>("--hpx:print-bind"));
 
     hwloc_topology_t topology;
     hwloc_topology_init(&topology);
