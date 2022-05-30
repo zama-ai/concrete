@@ -9,7 +9,14 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import ClientSupport, KeySet, KeySetCache, PublicArguments, PublicResult
+from concrete.compiler import (
+    ClientSupport,
+    EvaluationKeys,
+    KeySet,
+    KeySetCache,
+    PublicArguments,
+    PublicResult,
+)
 
 from ..dtypes.integer import SignedInteger, UnsignedInteger
 from ..internal.utils import assert_that
@@ -209,21 +216,17 @@ class Client:
 
         return sanitized_results[0] if len(sanitized_results) == 1 else tuple(sanitized_results)
 
-    def unserialize_and_decrypt(
-        self,
-        result: bytes,
-    ) -> Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]]:
+    @property
+    def evaluation_keys(self) -> EvaluationKeys:
         """
-        Decrypt serialized result of homomorphic evaluaton.
-
-        Args:
-            result (bytes):
-                serialized encrypted result of homomorphic evaluaton
+        Get evaluation keys for encrypted computation.
 
         Returns:
-            Union[int, numpy.ndarray]:
-                clear result of homomorphic evaluaton
+            EvaluationKeys
+                evaluation keys for encrypted computation
         """
 
-        unserialized_result = self.specs.unserialize_public_result(result)
-        return self.decrypt(unserialized_result)
+        self.keygen(force=False)
+
+        assert self._keyset is not None
+        return self._keyset.get_evaluation_keys()

@@ -2,7 +2,7 @@
 Export everything that users might need.
 """
 
-from concrete.compiler import PublicArguments, PublicResult
+from concrete.compiler import EvaluationKeys, PublicArguments, PublicResult
 
 from .compilation import (
     Circuit,

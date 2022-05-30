@@ -9,6 +9,7 @@ from typing import List, Optional, Union
 
 from concrete.compiler import (
     CompilationOptions,
+    EvaluationKeys,
     JITCompilationResult,
     JITLambda,
     JITSupport,
@@ -158,7 +159,7 @@ class Server:
 
         return Server(client_specs, output_dir, support, compilation_result, server_lambda)
 
-    def run(self, args: PublicArguments) -> PublicResult:
+    def run(self, args: PublicArguments, evaluation_keys: EvaluationKeys) -> PublicResult:
         """
         Evaluate using encrypted arguments.
 
@@ -166,28 +167,15 @@ class Server:
             args (PublicArguments):
                 encrypted arguments of the computation
 
-        Returns:
-            PublicResult:
-                encrypted result of the computation
-        """
-
-        return self._support.server_call(self._server_lambda, args)
-
-    def unserialize_and_run(self, args: bytes) -> PublicResult:
-        """
-        Evaluate using serialized encrypted arguments.
-
-        Args:
-            args (bytes):
-                serialized encrypted arguments of the computation
+            evaluation_keys (EvaluationKeys):
+                evaluation keys for encrypted computation
 
         Returns:
             PublicResult:
                 encrypted result of the computation
         """
 
-        unserialized_args = self.client_specs.unserialize_public_args(args)
-        return self.run(unserialized_args)
+        return self._support.server_call(self._server_lambda, args, evaluation_keys)
 
     def cleanup(self):
         """

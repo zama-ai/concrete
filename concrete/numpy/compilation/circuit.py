@@ -138,7 +138,8 @@ class Circuit:
         if self.configuration.virtual:
             raise RuntimeError("Virtual circuits cannot use `run` method")
 
-        return self.server.run(args)
+        self.keygen(force=False)
+        return self.server.run(args, self.client.evaluation_keys)
 
     def decrypt(
         self,

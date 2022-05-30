@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from concrete.numpy import Client, ClientSpecs, Server
+from concrete.numpy import Client, ClientSpecs, EvaluationKeys, Server
 from concrete.numpy.compilation import compiler
 
 
@@ -207,12 +207,19 @@ def test_client_server_api(helpers):
 
         for client in clients:
             args = client.encrypt(4)
-            serialized_args = client.specs.serialize_public_args(args)
 
-            result = server.unserialize_and_run(serialized_args)
+            serialized_args = client.specs.serialize_public_args(args)
+            serialized_evaluation_keys = client.evaluation_keys.serialize()
+
+            unserialized_args = server.client_specs.unserialize_public_args(serialized_args)
+            unserialized_evaluation_keys = EvaluationKeys.unserialize(serialized_evaluation_keys)
+
+            result = server.run(unserialized_args, unserialized_evaluation_keys)
             serialized_result = server.client_specs.serialize_public_result(result)
 
-            output = client.unserialize_and_decrypt(serialized_result)
+            unserialized_result = client.specs.unserialize_public_result(serialized_result)
+            output = client.decrypt(unserialized_result)
+
             assert output == 46
 
         server.cleanup()
