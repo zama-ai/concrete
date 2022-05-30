@@ -1,3 +1,6 @@
-[submodule "compiler/llvm-project"]
+[submodule "llvm-project"]
 	path = llvm-project
 	url = git@github.com:llvm/llvm-project.git
+[submodule "compiler/concrete-optimizer"]
+	path = compiler/concrete-optimizer
+	url = git@github.com:zama-ai/concrete-optimizer.git

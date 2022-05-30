@@ -5,8 +5,7 @@ PARALLEL_EXECUTION_ENABLED=OFF
 CC_COMPILER=
 CXX_COMPILER=
 
-CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/.dependencies/concrete-optimizer
-CONCRETE_OPTIMIZER_BRANCH ?= master
+CONCRETE_OPTIMIZER_DIR ?= $(shell pwd)/concrete-optimizer
 
 KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
@@ -21,9 +20,9 @@ else
 endif
 
 ifeq ($(CCACHE),ON)
-        CMAKE_CCACHE_OPTIONS=-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+		CMAKE_CCACHE_OPTIONS=-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 else
-        CMAKE_CCACHE_OPTIONS=
+		CMAKE_CCACHE_OPTIONS=
 endif
 
 ifneq ($(CC_COMPILER),)
@@ -71,14 +70,9 @@ build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
 CONCRETE_OPTIMIZER_SRC = $(shell find $(CONCRETE_OPTIMIZER_DIR)/* -not -path '$(CONCRETE_OPTIMIZER_DIR)/target*')
 
 LIB_CONCRETE_OPTIMIZER_CPP = $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer_cpp.a
-# Fetch concrete-optimizer
-$(CONCRETE_OPTIMIZER_DIR):
-	export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"  # for CI
-	mkdir -p $(shell dirname ${CONCRETE_OPTIMIZER_DIR})
-	git clone --branch $(CONCRETE_OPTIMIZER_BRANCH) git@github.com:zama-ai/concrete-optimizer.git $@
 
 # we need CONCRETE_OPTIMIZER_DIR here to ensure it is present before computing CONCRETE_OPTIMIZER_SRC
-$(LIB_CONCRETE_OPTIMIZER_CPP): $(CONCRETE_OPTIMIZER_DIR) $(CONCRETE_OPTIMIZER_SRC)
+$(LIB_CONCRETE_OPTIMIZER_CPP): $(CONCRETE_OPTIMIZER_SRC)
 	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $@
 
 concrete-optimizer-lib: $(LIB_CONCRETE_OPTIMIZER_CPP)
@@ -239,17 +233,16 @@ define build_image_and_copy_wheels
 	docker container run --rm -v ${PWD}/../wheels:/wheels_volume concrete-compiler-manylinux:$(1) cp -r /wheels/. /wheels_volume/.
 endef
 
-# we add CONCRETE_OPTIMIZER_DIR as sub target to upload concrete-optimizer source in compiler directory
-package_py38: $(CONCRETE_OPTIMIZER_DIR) update_python_version
+package_py38: update_python_version
 	$(call build_image_and_copy_wheels,cp38-cp38)
 
-package_py39: $(CONCRETE_OPTIMIZER_DIR) update_python_version
+package_py39: update_python_version
 	$(call build_image_and_copy_wheels,cp39-cp39)
 
-package_py310: $(CONCRETE_OPTIMIZER_DIR) update_python_version
+package_py310: update_python_version
 	$(call build_image_and_copy_wheels,cp310-cp310)
 
-release_tarballs: $(CONCRETE_OPTIMIZER_DIR)
+release_tarballs:
 	docker image build -t concrete-compiler-manylinux:linux_x86_64_tarball -f ../builders/Dockerfile.release_tarball_linux_x86_64 ..
 	docker container run --rm -v ${PWD}/../tarballs:/tarballs_volume concrete-compiler-manylinux:linux_x86_64_tarball cp -r /tarballs/. /tarballs_volume/.
 
