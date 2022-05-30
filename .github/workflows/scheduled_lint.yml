@@ -1,24 +1,13 @@
-# Check formatting using rustfmt
-# and lint with clippy
+# Scheduled clipy check event that does not have a pinned version
+# of rust, and so will serve as a way to know when new lints are
+# available and that we trigger them.
 name: Rustfmt and Clippy check
-on:
-  push:
-jobs:
-  formatting:
-    name: rustfmt
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          components: rustfmt
-          override: true
-      - name: Run rustfmt
-        run: cargo xtask check_fmt
 
+on:
+  schedule:
+    - cron: '0 9 * * MON' # Every Monday at 9
+
+jobs:
   clippy-check:
     name: clippy
     runs-on: ubuntu-latest
@@ -28,7 +17,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.61
+          toolchain: stable
           components: clippy
           override: true
       - uses: actions-rs/clippy-check@v1
