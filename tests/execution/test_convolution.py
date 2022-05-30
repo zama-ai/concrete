@@ -64,7 +64,7 @@ def test_conv2d(input_shape, weight_shape, strides, dilations, has_bias, helpers
     inputset = [np.random.randint(0, 4, size=input_shape) for i in range(100)]
     circuit = function.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 4, size=input_shape, dtype=np.uint8)
+    sample = np.random.randint(0, 4, size=input_shape)
     helpers.check_execution(circuit, function, sample)
 
 

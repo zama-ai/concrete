@@ -159,7 +159,7 @@ def test_static_indexing(shape, function, helpers):
     inputset = [np.random.randint(0, 2**5, size=shape) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 2**5, size=shape, dtype=np.uint8)
+    sample = np.random.randint(0, 2**5, size=shape)
     helpers.check_execution(circuit, function, sample)
 
 

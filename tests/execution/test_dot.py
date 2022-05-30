@@ -40,7 +40,7 @@ def test_dot(size, helpers):
     right_function_circuit = right_function.compile(inputset, configuration)
     method_circuit = method.compile(inputset, configuration)
 
-    sample = np.random.randint(0, bound, size=(size,), dtype=np.uint8)
+    sample = np.random.randint(0, bound, size=(size,))
 
     helpers.check_execution(left_function_circuit, left_function, sample)
     helpers.check_execution(right_function_circuit, right_function, sample)
