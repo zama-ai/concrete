@@ -448,11 +448,11 @@ def deterministic_unary_function(x):
             id="x + shape[0] + x.ndim + x.size",
         ),
         pytest.param(
-            lambda x: (100 * np.sin(x.transpose())).astype(np.int64),
+            lambda x: (50 * np.sin(x.transpose())).astype(np.int64),
             {
                 "x": {"status": "encrypted", "range": [0, 15], "shape": (3, 2)},
             },
-            id="(100 * np.sin(x.transpose())).astype(np.int64)",
+            id="(50 * np.sin(x.transpose())).astype(np.int64)",
         ),
         pytest.param(
             lambda x: np.where(x < 5, x * 3, x),
