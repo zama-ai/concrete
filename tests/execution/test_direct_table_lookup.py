@@ -179,10 +179,34 @@ def test_direct_table_lookup(bits, function, helpers):
 
     compiler = cnp.Compiler(function, {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**bits, size=(3, 2), dtype=np.uint8) for _ in range(100)]
+    inputset = [np.random.randint(0, 2**bits, size=(3, 2)) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 2**bits, size=(3, 2), dtype=np.uint8)
+    sample = np.random.randint(0, 2**bits, size=(3, 2))
+    helpers.check_execution(circuit, function, sample, retries=10)
+
+    # negative scalar
+    # ---------------
+
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
+
+    inputset = range(-(2 ** (bits - 1)), 2 ** (bits - 1))
+    circuit = compiler.compile(inputset, configuration)
+
+    sample = int(np.random.randint(-(2 ** (bits - 1)), 2 ** (bits - 1)))
+    helpers.check_execution(circuit, function, sample, retries=10)
+
+    # negative tensor
+    # ---------------
+
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
+
+    inputset = [
+        np.random.randint(-(2 ** (bits - 1)), 2 ** (bits - 1), size=(3, 2)) for _ in range(100)
+    ]
+    circuit = compiler.compile(inputset, configuration)
+
+    sample = np.random.randint(-(2 ** (bits - 1)), 2 ** (bits - 1), size=(3, 2))
     helpers.check_execution(circuit, function, sample, retries=10)
 
 
@@ -209,10 +233,10 @@ def test_direct_multi_table_lookup(helpers):
 
     compiler = cnp.Compiler(function, {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**2, size=(3, 2), dtype=np.uint8) for _ in range(100)]
+    inputset = [np.random.randint(0, 2**2, size=(3, 2)) for _ in range(100)]
     circuit = compiler.compile(inputset, configuration)
 
-    sample = np.random.randint(0, 2**2, size=(3, 2), dtype=np.uint8)
+    sample = np.random.randint(0, 2**2, size=(3, 2))
     helpers.check_execution(circuit, function, sample, retries=10)
 
 

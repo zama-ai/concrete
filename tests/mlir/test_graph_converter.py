@@ -43,7 +43,7 @@ return (%2, %3)
 Function you are trying to compile cannot be converted to MLIR
 
 %0 = x                       # EncryptedScalar<float64>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only unsigned integer inputs are supported
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer inputs are supported
 %1 = 1.5                     # ClearScalar<float64>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only integer constants are supported
 %2 = multiply(%0, %1)        # EncryptedScalar<float64>

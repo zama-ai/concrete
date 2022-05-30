@@ -203,9 +203,6 @@ class Helpers:
         for description in parameters.values():
             minimum, maximum = description.get("range", [0, 127])
 
-            assert minimum >= 0
-            assert maximum <= 127
-
             if "shape" in description:
                 shape = description["shape"]
                 sample.append(np.random.randint(minimum, maximum + 1, size=shape, dtype=np.int64))

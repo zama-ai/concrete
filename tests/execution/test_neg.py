@@ -17,6 +17,12 @@ import concrete.numpy as cnp
         {
             "x": {"range": [0, 64], "status": "encrypted", "shape": (3, 2)},
         },
+        {
+            "x": {"range": [-63, 0], "status": "encrypted"},
+        },
+        {
+            "x": {"range": [-63, 0], "status": "encrypted", "shape": (3, 2)},
+        },
     ],
 )
 def test_neg(parameters, helpers):

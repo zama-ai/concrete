@@ -6,7 +6,7 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from concrete.compiler import (
@@ -125,7 +125,7 @@ class Client:
         if len(args) != len(input_specs):
             raise ValueError(f"Expected {len(input_specs)} inputs but got {len(args)}")
 
-        sanitized_args = {}
+        sanitized_args: Dict[int, Union[int, np.ndarray]] = {}
         for index, spec in enumerate(input_specs):
             arg = args[index]
             is_valid = isinstance(arg, (int, np.integer)) or (
@@ -136,7 +136,9 @@ class Client:
             shape = tuple(spec["shape"]["dimensions"])
             is_encrypted = spec["encryption"] is not None
 
-            expected_dtype = UnsignedInteger(width)
+            expected_dtype = (
+                SignedInteger(width) if self.specs.input_signs[index] else UnsignedInteger(width)
+            )
             expected_value = Value(expected_dtype, shape, is_encrypted)
             if is_valid:
                 expected_min = expected_dtype.min()
@@ -153,7 +155,14 @@ class Client:
                 )
 
                 if is_valid:
-                    sanitized_args[index] = arg if isinstance(arg, int) else arg.astype(np.uint8)
+                    if isinstance(arg, int) and arg < 0:
+                        sanitized_args[index] = 2 * (expected_max + 1) + arg
+                    else:
+                        sanitized_args[index] = np.where(
+                            arg >= 0,
+                            arg,
+                            2 * (expected_max + 1) + arg,
+                        ).astype(np.uint8)
 
             if not is_valid:
                 actual_value = Value.of(arg, is_encrypted=is_encrypted)
