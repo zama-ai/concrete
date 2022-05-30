@@ -128,7 +128,7 @@ struct ZeroOpPattern : public mlir::OpRewritePattern<ZeroOp> {
                             mlir::ValueRange blockArgs) {
       // %c0 = 0 : i64
       auto cstOp = nestedBuilder.create<mlir::arith::ConstantOp>(
-          nestedLoc, nestedBuilder.getI64IntegerAttr(1));
+          nestedLoc, nestedBuilder.getI64IntegerAttr(0));
       // tensor.yield %z : !FHE.eint<p>
       nestedBuilder.create<mlir::tensor::YieldOp>(nestedLoc, cstOp.getResult());
     };
