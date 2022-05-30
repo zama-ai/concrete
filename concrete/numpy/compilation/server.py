@@ -58,13 +58,21 @@ class Server:
         )
 
     @staticmethod
-    def create(mlir: str, output_signs: List[bool], configuration: Configuration) -> "Server":
+    def create(
+        mlir: str,
+        input_signs: List[bool],
+        output_signs: List[bool],
+        configuration: Configuration,
+    ) -> "Server":
         """
         Create a server using MLIR and output sign information.
 
         Args:
             mlir (str):
                 mlir to compile
+
+            input_signs (List[bool]):
+                sign status of the inputs
 
             output_signs (List[bool]):
                 sign status of the outputs
@@ -101,7 +109,8 @@ class Server:
             compilation_result = support.compile(mlir, options)
             server_lambda = support.load_server_lambda(compilation_result)
 
-        client_specs = ClientSpecs(support.load_client_parameters(compilation_result), output_signs)
+        client_parameters = support.load_client_parameters(compilation_result)
+        client_specs = ClientSpecs(input_signs, client_parameters, output_signs)
         return Server(client_specs, output_dir, support, compilation_result, server_lambda)
 
     def save(self, path: Union[str, Path]):

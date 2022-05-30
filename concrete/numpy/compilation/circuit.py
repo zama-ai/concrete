@@ -39,6 +39,13 @@ class Circuit:
             assert_that(self.configuration.enable_unsafe_features)
             return
 
+        input_signs = []
+        for i in range(len(graph.input_nodes)):  # pylint: disable=consider-using-enumerate
+            input_value = graph.input_nodes[i].output
+            assert_that(isinstance(input_value.dtype, Integer))
+            input_dtype = cast(Integer, input_value.dtype)
+            input_signs.append(input_dtype.is_signed)
+
         output_signs = []
         for i in range(len(graph.output_nodes)):  # pylint: disable=consider-using-enumerate
             output_value = graph.output_nodes[i].output
@@ -46,7 +53,7 @@ class Circuit:
             output_dtype = cast(Integer, output_value.dtype)
             output_signs.append(output_dtype.is_signed)
 
-        self.server = Server.create(mlir, output_signs, self.configuration)
+        self.server = Server.create(mlir, input_signs, output_signs, self.configuration)
 
         keyset_cache_directory = None
         if self.configuration.use_insecure_key_cache:
