@@ -18,6 +18,7 @@ const MIN_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS
     .start as u64;
 const MAX_LOG_POLY_SIZE: u64 =
     DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end as u64 - 1;
+const MAX_GLWE_DIM: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.end - 1;
 const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start as u64;
 const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end as u64 - 1;
 
@@ -46,8 +47,7 @@ struct Args {
     #[clap(long, default_value_t = 1, help = "EXPERIMENTAL")]
     min_glwe_dim: u64,
 
-    #[clap(long, default_value_t = 1, help = "EXPERIMENTAL")]
-    // only usefull for very low precision, some parts are not correcte if used with k > 1
+    #[clap(long, default_value_t = MAX_GLWE_DIM, help = "EXPERIMENTAL")]
     max_glwe_dim: u64,
 
     #[clap(long, default_value_t = MIN_LWE_DIM)]
@@ -168,7 +168,7 @@ fn main() {
 mod tests {
     #[test]
     fn test_reference_output() {
-        const REF_FILE: &str = "src/v0_parameters.ref-12-05-2022";
+        const REF_FILE: &str = "src/v0_parameters.ref-20-06-2022";
         const V0_PARAMETERS_EXE: &str = "../target/debug/v0-parameters";
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn test_reference_wop_output() {
-        const REF_FILE: &str = "src/wop_parameters.ref-15-06-2022";
+        const REF_FILE: &str = "src/wop_parameters.ref-20-06-2022";
         const V0_PARAMETERS_EXE: &str = "../target/release/v0-parameters";
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
@@ -213,7 +213,6 @@ mod tests {
                 "--max-precision", "16",
                 "--min-log-poly-size", "10",
                 "--max-log-poly-size", "11",
-                "--max-glwe-dim", "2",
                 "--"
                 ])
             .output().expect("Failed")

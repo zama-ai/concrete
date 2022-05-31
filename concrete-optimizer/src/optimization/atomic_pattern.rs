@@ -526,9 +526,6 @@ pub fn optimize_one<W: UnsignedInteger>(
     };
 
     for &glwe_dim in glwe_dimensions {
-        assert!(1 <= glwe_dim);
-        assert!(glwe_dim < 4);
-
         for &glwe_log_poly_size in glwe_log_polynomial_sizes {
             assert!(8 <= glwe_log_poly_size);
             assert!(glwe_log_poly_size < 18);
