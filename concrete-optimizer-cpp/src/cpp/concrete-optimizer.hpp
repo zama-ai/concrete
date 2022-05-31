@@ -20,17 +20,84 @@ template <typename Exception>
 void panic [[noreturn]] (const char *msg);
 #endif // CXXBRIDGE1_PANIC
 
+struct unsafe_bitcopy_t;
+
 namespace {
 template <typename T>
 class impl;
 } // namespace
 
-class String;
-
 template <typename T>
 ::std::size_t size_of();
 template <typename T>
 ::std::size_t align_of();
+
+#ifndef CXXBRIDGE1_RUST_STRING
+#define CXXBRIDGE1_RUST_STRING
+class String final {
+public:
+  String() noexcept;
+  String(const String &) noexcept;
+  String(String &&) noexcept;
+  ~String() noexcept;
+
+  String(const std::string &);
+  String(const char *);
+  String(const char *, std::size_t);
+  String(const char16_t *);
+  String(const char16_t *, std::size_t);
+
+  static String lossy(const std::string &) noexcept;
+  static String lossy(const char *) noexcept;
+  static String lossy(const char *, std::size_t) noexcept;
+  static String lossy(const char16_t *) noexcept;
+  static String lossy(const char16_t *, std::size_t) noexcept;
+
+  String &operator=(const String &) &noexcept;
+  String &operator=(String &&) &noexcept;
+
+  explicit operator std::string() const;
+
+  const char *data() const noexcept;
+  std::size_t size() const noexcept;
+  std::size_t length() const noexcept;
+  bool empty() const noexcept;
+
+  const char *c_str() noexcept;
+
+  std::size_t capacity() const noexcept;
+  void reserve(size_t new_cap) noexcept;
+
+  using iterator = char *;
+  iterator begin() noexcept;
+  iterator end() noexcept;
+
+  using const_iterator = const char *;
+  const_iterator begin() const noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+
+  bool operator==(const String &) const noexcept;
+  bool operator!=(const String &) const noexcept;
+  bool operator<(const String &) const noexcept;
+  bool operator<=(const String &) const noexcept;
+  bool operator>(const String &) const noexcept;
+  bool operator>=(const String &) const noexcept;
+
+  void swap(String &) noexcept;
+
+  String(unsafe_bitcopy_t, const String &) noexcept;
+
+private:
+  struct lossy_t;
+  String(lossy_t, const char *, std::size_t) noexcept;
+  String(lossy_t, const char16_t *, std::size_t) noexcept;
+  friend void swap(String &lhs, String &rhs) noexcept { lhs.swap(rhs); }
+
+  std::array<std::uintptr_t, 3> repr;
+};
+#endif // CXXBRIDGE1_RUST_STRING
 
 #ifndef CXXBRIDGE1_RUST_STR
 #define CXXBRIDGE1_RUST_STR
@@ -624,6 +691,8 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<const ::std::uint64_t> table, ::std::uint8_t out_precision) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<const ::std::uint64_t> out_shape, ::rust::Str comment) noexcept;
+  ::concrete_optimizer::v0::Solution optimize_v0(::std::uint64_t security_level, double maximum_acceptable_error_probability) const noexcept;
+  ::rust::String dump() const noexcept;
   ~OperationDag() = delete;
 
 private:

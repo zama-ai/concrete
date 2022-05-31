@@ -1,10 +1,12 @@
+use std::fmt::Write;
+
 use crate::dag::operator::{
     FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision, Shape, Weights,
 };
 
 pub(crate) type UnparameterizedOperator = Operator<(), (), (), ()>;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 #[must_use]
 pub struct OperationDag {
     pub(crate) operators: Vec<UnparameterizedOperator>,
@@ -87,6 +89,16 @@ impl OperationDag {
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.operators.len()
+    }
+
+    pub fn dump(&self) -> String {
+        let mut acc = String::new();
+        let err_msg = "Optimizer: Can't dump OperationDag";
+        writeln!(acc, "Dag:").expect(err_msg);
+        for (i, op) in self.operators.iter().enumerate() {
+            writeln!(acc, "%{i} <- {op:?}").expect(err_msg);
+        }
+        acc
     }
 }
 

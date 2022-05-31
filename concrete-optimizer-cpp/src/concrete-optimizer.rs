@@ -119,6 +119,35 @@ impl OperationDag {
             .add_levelled_op(inputs, complexity, manp, out_shape, comment)
             .into()
     }
+
+    fn optimize_v0(
+        &self,
+        security_level: u64,
+        maximum_acceptable_error_probability: f64,
+    ) -> ffi::Solution {
+        use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
+        let glwe_log_polynomial_sizes = DEFAUT_DOMAINS
+            .glwe_pbs_constrained
+            .log2_polynomial_size
+            .as_vec();
+        let glwe_dimensions = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.as_vec();
+        let internal_lwe_dimensions = DEFAUT_DOMAINS.free_glwe.glwe_dimension.as_vec();
+        let result = concrete_optimizer::optimization::dag::solo_key::optimize::optimize::<u64>(
+            &self.0,
+            security_level,
+            maximum_acceptable_error_probability,
+            &glwe_log_polynomial_sizes,
+            &glwe_dimensions,
+            &internal_lwe_dimensions,
+        );
+        result
+            .best_solution
+            .map_or_else(no_solution, |solution| solution.into())
+    }
+
+    fn dump(&self) -> String {
+        self.0.dump()
+    }
 }
 
 pub struct Weights(operator::Weights);
@@ -187,6 +216,14 @@ mod ffi {
             out_shape: &[u64],
             comment: &str,
         ) -> OperatorIndex;
+
+        fn optimize_v0(
+            self: &OperationDag,
+            security_level: u64,
+            maximum_acceptable_error_probability: f64,
+        ) -> Solution;
+
+        fn dump(self: &OperationDag) -> String;
 
         type Weights;
 
