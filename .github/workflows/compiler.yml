@@ -47,7 +47,7 @@ jobs:
       - name: Override optimizer for compiler
         uses: actions/checkout@v3
         with:
-          path: compiler/.dependencies/concrete-optimizer
+          path: compiler/concrete-optimizer
 
       - name: Install rust
         uses: actions-rs/toolchain@v1
