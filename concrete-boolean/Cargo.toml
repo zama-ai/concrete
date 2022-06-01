@@ -17,10 +17,10 @@ keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 concrete-core = { version = "1.0.0-beta", features = ["multithread", "serde_serialize",
     "backend_optalysys"] }
 serde = { version = "1.0", features = ["derive"] }
+rand = "0.8.4"
 
 [dev-dependencies]
 criterion = "0.3.4"
-rand = "0.8.4"
 proto_graphec = { path = "../../optalysys/proto_graphec", features = ["show_n_ft"] }
 
 [[bench]]

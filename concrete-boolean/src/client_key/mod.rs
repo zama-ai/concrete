@@ -24,7 +24,7 @@ pub struct ClientKey {
     pub(crate) glwe_secret_key: GlweSecretKey32,
     pub(crate) parameters: BooleanParameters,
     #[serde(skip, default = "crate::default_engine")]
-    pub(crate) engine: CoreEngine,
+    pub(crate) engine: DefaultEngine,
 }
 
 impl PartialEq for ClientKey {
@@ -41,7 +41,7 @@ impl Debug for ClientKey {
         write!(f, "lwe_secret_key: {:?}, ", self.lwe_secret_key)?;
         write!(f, "glwe_secret_key: {:?}, ", self.glwe_secret_key)?;
         write!(f, "parameters: {:?}, ", self.parameters)?;
-        write!(f, "engine: CoreEngine, ")?;
+        write!(f, "engine: DefaultEngine, ")?;
         write!(f, "}}")?;
         Ok(())
     }

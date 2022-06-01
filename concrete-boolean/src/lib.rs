@@ -43,7 +43,6 @@ use crate::client_key::ClientKey;
 use crate::parameters::DEFAULT_PARAMETERS;
 use crate::server_key::ServerKey;
 use concrete_core::prelude::*;
-#[cfg(test)]
 use rand::Rng;
 
 pub mod ciphertext;
@@ -83,14 +82,22 @@ pub(crate) fn random_integer() -> u32 {
     rng.gen::<u32>()
 }
 
-/// generate a default core engine
-fn default_engine() -> CoreEngine {
-    CoreEngine::new().unwrap()
+/// generate a default engine using a random seed
+///
+/// WARNING: The seed is generated using `rand::thread_rng()`. While it is supposed to be
+/// cryptographically secure (it implements the `rand::CryptoRng` trait), I am not sure what the
+/// actual security guarantees are (in particular, implementing the `rand::CryptoRng` trait does
+/// not seem to ensure irreversibility). This may need to be replaced by an RNG with more security
+/// guarantees.
+fn default_engine() -> DefaultEngine {
+    let mut rng = rand::thread_rng();
+    let seed: u128 = rng.gen();
+    DefaultEngine::new(Box::new(UnixSeeder::new(seed))).unwrap()
 }
 
 /// generate an optalysys engine
 fn optalysys_engine() -> OptalysysEngine {
-    OptalysysEngine::new().unwrap()
+    OptalysysEngine::new(()).unwrap()
 }
 
 /// Generate a couple of client and server keys with the default cryptographic parameters:

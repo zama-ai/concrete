@@ -29,7 +29,7 @@ pub struct ServerKey {
     pub(crate) key_switching_key: LweKeyswitchKey32,
     pub(crate) bootstrapping_key: OptalysysFourierLweBootstrapKey32,
     #[serde(skip, default = "crate::default_engine")]
-    pub(crate) engine: CoreEngine,
+    pub(crate) engine: DefaultEngine,
     #[serde(skip, default = "crate::optalysys_engine")]
     pub(crate) optalysys_engine: OptalysysEngine,
     pub(crate) accumulator: GlweCiphertext32,
@@ -58,7 +58,7 @@ impl Debug for ServerKey {
         write!(f, "ServerKey {{ ")?;
         write!(f, "key_switching_key: {:?}, ", self.key_switching_key)?;
         write!(f, "bootstrapping_key: {:?}, ", self.bootstrapping_key)?;
-        write!(f, "engine: CoreEngine, ")?;
+        write!(f, "engine: DefaultEngine, ")?;
         write!(f, "accumulator: {:?}, ", self.accumulator)?;
         write!(
             f,
