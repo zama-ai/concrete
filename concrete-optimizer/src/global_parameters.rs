@@ -116,9 +116,15 @@ fn convert_maximal(op: UnparameterizedOperator) -> OperatorParameterIndexed {
                 lwe_dimension_index: external_glwe_index,
             },
         },
-        Operator::Lut { input, table, .. } => Operator::Lut {
+        Operator::Lut {
             input,
             table,
+            out_precision,
+            ..
+        } => Operator::Lut {
+            input,
+            table,
+            out_precision,
             extra_data: LutParametersIndexed {
                 input_lwe_dimension_index: external_glwe_index,
                 ks_decomposition_parameter_index: ks_decomposition_index,
@@ -257,13 +263,13 @@ mod tests {
         let cpx_add = LevelledComplexity::ADDITION;
         let sum1 = graph.add_levelled_op([input1, input2], cpx_add, 1.0, Shape::number(), "sum");
 
-        let lut1 = graph.add_lut(sum1, FunctionTable::UNKWOWN);
+        let lut1 = graph.add_lut(sum1, FunctionTable::UNKWOWN, 2);
 
         let concat = graph.add_levelled_op([input1, lut1], cpx_add, 1.0, Shape::number(), "concat");
 
         let dot = graph.add_dot([concat], [1, 2]);
 
-        let lut2 = graph.add_lut(dot, FunctionTable::UNKWOWN);
+        let lut2 = graph.add_lut(dot, FunctionTable::UNKWOWN, 2);
 
         let graph_params = maximal_unify(graph);
 
@@ -337,7 +343,7 @@ mod tests {
         let concat =
             graph.add_levelled_op([input1, input2], cpx_add, 1.0, Shape::vector(2), "concat");
 
-        let lut1 = graph.add_lut(concat, FunctionTable::UNKWOWN);
+        let lut1 = graph.add_lut(concat, FunctionTable::UNKWOWN, 2);
 
         let graph_params = maximal_unify(graph);
 

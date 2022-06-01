@@ -71,12 +71,17 @@ impl OperationDag {
         self.0.add_input(out_precision, out_shape).into()
     }
 
-    fn add_lut(&mut self, input: ffi::OperatorIndex, table: &[u64]) -> ffi::OperatorIndex {
+    fn add_lut(
+        &mut self,
+        input: ffi::OperatorIndex,
+        table: &[u64],
+        out_precision: Precision,
+    ) -> ffi::OperatorIndex {
         let table = FunctionTable {
             values: table.to_owned(),
         };
 
-        self.0.add_lut(input.into(), table).into()
+        self.0.add_lut(input.into(), table, out_precision).into()
     }
 
     #[allow(clippy::boxed_local)]
@@ -160,7 +165,12 @@ mod ffi {
             out_shape: &[u64],
         ) -> OperatorIndex;
 
-        fn add_lut(self: &mut OperationDag, input: OperatorIndex, table: &[u64]) -> OperatorIndex;
+        fn add_lut(
+            self: &mut OperationDag,
+            input: OperatorIndex,
+            table: &[u64],
+            out_precision: u8,
+        ) -> OperatorIndex;
 
         fn add_dot(
             self: &mut OperationDag,

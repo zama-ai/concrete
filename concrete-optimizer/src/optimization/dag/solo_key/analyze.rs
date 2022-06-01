@@ -189,11 +189,10 @@ fn out_shapes(dag: &unparametrized::OperationDag) -> Vec<Shape> {
 
 fn out_precision(
     op: &unparametrized::UnparameterizedOperator,
-    out_precisions: &mut [Precision],
+    out_precisions: &[Precision],
 ) -> Precision {
     match op {
-        Op::Input { out_precision, .. } => *out_precision,
-        Op::Lut { input, .. } => out_precisions[input.i],
+        Op::Input { out_precision, .. } | Op::Lut { out_precision, .. } => *out_precision,
         Op::Dot { inputs, .. } | Op::LevelledOp { inputs, .. } => out_precisions[inputs[0].i],
     }
 }
@@ -202,7 +201,7 @@ fn out_precisions(dag: &unparametrized::OperationDag) -> Vec<Precision> {
     let nb_ops = dag.operators.len();
     let mut out_precisions = Vec::<Precision>::with_capacity(nb_ops);
     for op in &dag.operators {
-        let precision = out_precision(op, &mut out_precisions);
+        let precision = out_precision(op, &out_precisions);
         out_precisions.push(precision);
     }
     out_precisions
@@ -612,7 +611,7 @@ mod tests {
     fn test_1_lut() {
         let mut graph = unparametrized::OperationDag::new();
         let input1 = graph.add_input(8, Shape::number());
-        let lut1 = graph.add_lut(input1, FunctionTable::UNKWOWN);
+        let lut1 = graph.add_lut(input1, FunctionTable::UNKWOWN, 8);
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -695,9 +694,9 @@ mod tests {
         let input1 = graph.add_input(1, Shape::vector(2));
         let weights = &Weights::vector([1, 2]);
         let dot1 = graph.add_dot([input1], weights);
-        let lut1 = graph.add_lut(dot1, FunctionTable::UNKWOWN);
+        let lut1 = graph.add_lut(dot1, FunctionTable::UNKWOWN, 1);
         let dot2 = graph.add_dot([lut1, lut1], weights);
-        let lut2 = graph.add_lut(dot2, FunctionTable::UNKWOWN);
+        let lut2 = graph.add_lut(dot2, FunctionTable::UNKWOWN, 1);
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -742,10 +741,10 @@ mod tests {
     fn test_lut_dot_mixed_lut() {
         let mut graph = unparametrized::OperationDag::new();
         let input1 = graph.add_input(1, Shape::number());
-        let lut1 = graph.add_lut(input1, FunctionTable::UNKWOWN);
+        let lut1 = graph.add_lut(input1, FunctionTable::UNKWOWN, 1);
         let weights = &Weights::vector([2, 3]);
         let dot1 = graph.add_dot([input1, lut1], weights);
-        let _lut2 = graph.add_lut(dot1, FunctionTable::UNKWOWN);
+        let _lut2 = graph.add_lut(dot1, FunctionTable::UNKWOWN, 1);
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
@@ -768,15 +767,16 @@ mod tests {
     #[test]
     fn test_multi_precision_input() {
         let mut graph = unparametrized::OperationDag::new();
-        let max_precision = 5_usize;
+        let max_precision: Precision = 5;
         for i in 1..=max_precision {
             let _ = graph.add_input(i as u8, Shape::number());
         }
         let analysis = analyze(&graph);
-        assert!(analysis.constraints_by_precisions.len() == max_precision);
+        assert!(analysis.constraints_by_precisions.len() == max_precision as usize);
         let mut prev_safe_noise_bound = 0.0;
         for (i, ns) in analysis.constraints_by_precisions.iter().enumerate() {
-            assert_eq!(ns.precision, (max_precision - i) as u8);
+            let i_prec = i as Precision;
+            assert_eq!(ns.precision, max_precision - i_prec);
             assert_f64_eq(ns.pareto_output[0].input_coeff, 1.0);
             assert!(prev_safe_noise_bound < ns.safe_variance_bound);
             prev_safe_noise_bound = ns.safe_variance_bound;
@@ -786,16 +786,17 @@ mod tests {
     #[test]
     fn test_multi_precision_lut() {
         let mut graph = unparametrized::OperationDag::new();
-        let max_precision = 5_usize;
-        for i in 1..=max_precision {
-            let input = graph.add_input(i as u8, Shape::number());
-            let _lut = graph.add_lut(input, FunctionTable::UNKWOWN);
+        let max_precision: Precision = 5;
+        for p in 1..=max_precision {
+            let input = graph.add_input(p, Shape::number());
+            let _lut = graph.add_lut(input, FunctionTable::UNKWOWN, p);
         }
         let analysis = analyze(&graph);
-        assert!(analysis.constraints_by_precisions.len() == max_precision);
+        assert!(analysis.constraints_by_precisions.len() == max_precision as usize);
         let mut prev_safe_noise_bound = 0.0;
         for (i, ns) in analysis.constraints_by_precisions.iter().enumerate() {
-            assert_eq!(ns.precision, (max_precision - i) as u8);
+            let i_prec = i as Precision;
+            assert_eq!(ns.precision, max_precision - i_prec);
             assert_eq!(ns.pareto_output.len(), 1);
             assert_eq!(ns.pareto_in_lut.len(), 1);
             assert_f64_eq(ns.pareto_output[0].input_coeff, 0.0);

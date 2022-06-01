@@ -63,7 +63,7 @@ pub enum Operator<InputExtraData, LutExtraData, DotExtraData, LevelledOpExtraDat
     Lut {
         input: OperatorIndex,
         table: FunctionTable,
-        //reduced_precision: u64
+        out_precision: Precision,
         extra_data: LutExtraData,
     },
     Dot {

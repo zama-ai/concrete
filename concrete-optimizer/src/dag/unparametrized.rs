@@ -34,10 +34,16 @@ impl OperationDag {
         })
     }
 
-    pub fn add_lut(&mut self, input: OperatorIndex, table: FunctionTable) -> OperatorIndex {
+    pub fn add_lut(
+        &mut self,
+        input: OperatorIndex,
+        table: FunctionTable,
+        out_precision: Precision,
+    ) -> OperatorIndex {
         self.add_operator(Operator::Lut {
             input,
             table,
+            out_precision,
             extra_data: (),
         })
     }
@@ -100,14 +106,14 @@ mod tests {
         let cpx_add = LevelledComplexity::ADDITION;
         let sum1 = graph.add_levelled_op([input1, input2], cpx_add, 1.0, Shape::number(), "sum");
 
-        let lut1 = graph.add_lut(sum1, FunctionTable::UNKWOWN);
+        let lut1 = graph.add_lut(sum1, FunctionTable::UNKWOWN, 1);
 
         let concat =
             graph.add_levelled_op([input1, lut1], cpx_add, 1.0, Shape::vector(2), "concat");
 
         let dot = graph.add_dot([concat], [1, 2]);
 
-        let lut2 = graph.add_lut(dot, FunctionTable::UNKWOWN);
+        let lut2 = graph.add_lut(dot, FunctionTable::UNKWOWN, 2);
 
         let ops_index = [input1, input2, sum1, lut1, concat, dot, lut2];
         for (expected_i, op_index) in ops_index.iter().enumerate() {
@@ -138,6 +144,7 @@ mod tests {
                 Operator::Lut {
                     input: sum1,
                     table: FunctionTable::UNKWOWN,
+                    out_precision: 1,
                     extra_data: ()
                 },
                 Operator::LevelledOp {
@@ -159,6 +166,7 @@ mod tests {
                 Operator::Lut {
                     input: dot,
                     table: FunctionTable::UNKWOWN,
+                    out_precision: 2,
                     extra_data: ()
                 }
             ]

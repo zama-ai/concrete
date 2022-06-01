@@ -1,7 +1,7 @@
 use concrete_commons::dispersion::DispersionParameter;
 use concrete_commons::numeric::UnsignedInteger;
 
-use crate::dag::operator::LevelledComplexity;
+use crate::dag::operator::{LevelledComplexity, Precision};
 use crate::dag::unparametrized;
 use crate::noise_estimator::error;
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
@@ -300,11 +300,12 @@ pub fn optimize_v0<W: UnsignedInteger>(
     let complexity = LevelledComplexity::ADDITION * sum_size;
     let comment = "dot";
     let mut dag = unparametrized::OperationDag::new();
-    let input1 = dag.add_input(precision as u8, out_shape);
+    let precision = precision as Precision;
+    let input1 = dag.add_input(precision, out_shape);
     let dot1 = dag.add_levelled_op([input1], complexity, same_scale_manp, out_shape, comment);
-    let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN);
+    let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
     let dot2 = dag.add_levelled_op([lut1], complexity, manp, out_shape, comment);
-    let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN);
+    let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
     let mut state = optimize::<u64>(
         &dag,
         security_level,
@@ -456,14 +457,14 @@ mod tests {
         }
     }
 
-    fn v0_parameter_ref_with_dot(precision: u64, weight: u64) {
+    fn v0_parameter_ref_with_dot(precision: Precision, weight: u64) {
         let mut dag = unparametrized::OperationDag::new();
         {
-            let input1 = dag.add_input(precision as u8, Shape::number());
+            let input1 = dag.add_input(precision, Shape::number());
             let dot1 = dag.add_dot([input1], [1]);
-            let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN);
+            let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
             let dot2 = dag.add_dot([lut1], [weight]);
-            let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN);
+            let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
         }
         {
             let dag2 = analyze::analyze(&dag, &CONFIG);
@@ -488,7 +489,7 @@ mod tests {
         let state = optimize(&dag);
         let state_ref = atomic_pattern::optimize_one::<u64>(
             1,
-            precision,
+            precision as u64,
             security_level,
             weight as f64,
             maximum_acceptable_error_probability,
@@ -510,10 +511,10 @@ mod tests {
         assert!(sol.assert_same(sol_ref));
     }
 
-    fn no_lut_vs_lut(precision: u64) {
+    fn no_lut_vs_lut(precision: Precision) {
         let mut dag_lut = unparametrized::OperationDag::new();
         let input1 = dag_lut.add_input(precision as u8, Shape::number());
-        let _lut1 = dag_lut.add_lut(input1, FunctionTable::UNKWOWN);
+        let _lut1 = dag_lut.add_lut(input1, FunctionTable::UNKWOWN, precision);
 
         let mut dag_no_lut = unparametrized::OperationDag::new();
         let _input2 = dag_no_lut.add_input(precision as u8, Shape::number());
@@ -540,23 +541,26 @@ mod tests {
         }
     }
 
-    fn lut_with_input_base_noise_better_than_lut_with_lut_base_noise(precision: u64, weight: u64) {
+    fn lut_with_input_base_noise_better_than_lut_with_lut_base_noise(
+        precision: Precision,
+        weight: u64,
+    ) {
         let weight = &Weights::number(weight);
 
         let mut dag_1 = unparametrized::OperationDag::new();
         {
             let input1 = dag_1.add_input(precision as u8, Shape::number());
             let scaled_input1 = dag_1.add_dot([input1], weight);
-            let lut1 = dag_1.add_lut(scaled_input1, FunctionTable::UNKWOWN);
-            let _lut2 = dag_1.add_lut(lut1, FunctionTable::UNKWOWN);
+            let lut1 = dag_1.add_lut(scaled_input1, FunctionTable::UNKWOWN, precision);
+            let _lut2 = dag_1.add_lut(lut1, FunctionTable::UNKWOWN, precision);
         }
 
         let mut dag_2 = unparametrized::OperationDag::new();
         {
             let input1 = dag_2.add_input(precision as u8, Shape::number());
-            let lut1 = dag_2.add_lut(input1, FunctionTable::UNKWOWN);
+            let lut1 = dag_2.add_lut(input1, FunctionTable::UNKWOWN, precision);
             let scaled_lut1 = dag_2.add_dot([lut1], weight);
-            let _lut2 = dag_2.add_lut(scaled_lut1, FunctionTable::UNKWOWN);
+            let _lut2 = dag_2.add_lut(scaled_lut1, FunctionTable::UNKWOWN, precision);
         }
 
         let state_1 = optimize(&dag_1);
@@ -581,12 +585,12 @@ mod tests {
         }
     }
 
-    fn circuit(dag: &mut unparametrized::OperationDag, precision: u8, weight: u64) {
+    fn circuit(dag: &mut unparametrized::OperationDag, precision: Precision, weight: u64) {
         let input = dag.add_input(precision, Shape::number());
         let dot1 = dag.add_dot([input], [weight]);
-        let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN);
+        let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
         let dot2 = dag.add_dot([lut1], [weight]);
-        let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN);
+        let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
     }
 
     fn assert_multi_precision_dominate_single(weight: u64) -> Option<bool> {
