@@ -578,6 +578,14 @@ def deterministic_unary_function(x):
             },
             id="(2.5 * round(np.sqrt(x), decimals=4)).astype(np.int64)",
         ),
+        pytest.param(
+            lambda x, y: cnp.LookupTable(list(range(32)))[x + y],
+            {
+                "x": {"status": "encrypted", "range": [-10, 10]},
+                "y": {"status": "encrypted", "range": [-10, 10]},
+            },
+            id="cnp.LookupTable(list(range(32)))[x + y]",
+        ),
     ],
 )
 def test_others(function, parameters, helpers):

@@ -34,6 +34,21 @@ return (%2, %3)
             """,  # noqa: E501
         ),
         pytest.param(
+            lambda x: x,
+            {"x": "clear"},
+            range(-10, 10),
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x        # ClearScalar<int5>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted signed integer inputs are supported
+return %0
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
             lambda x: x * 1.5,
             {"x": "encrypted"},
             [2.5 * x for x in range(100)],

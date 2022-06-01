@@ -69,6 +69,8 @@ class GraphConverter:
             assert_that(inputs[0] == output)
             if not isinstance(output.dtype, Integer):
                 return "only integer inputs are supported"
+            if output.dtype.is_signed and output.is_clear:
+                return "only encrypted signed integer inputs are supported"
 
         else:
             assert_that(node.operation == Operation.Generic)
@@ -345,6 +347,8 @@ class GraphConverter:
             input_dtype = cast(Integer, input_value.dtype)
 
             if input_dtype.is_signed:
+                assert_that(input_value.is_encrypted)
+
                 n = input_dtype.bit_width
                 lut_range = np.arange(2**n)
 
