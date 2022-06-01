@@ -7,7 +7,11 @@ from concrete.numpy.tracing import Tracer
 
 def main(file_to_update):
     """Update list of supported functions in file_to_update"""
-    supported_func = sorted(f.__name__ for f in Tracer.SUPPORTED_NUMPY_OPERATORS)
+    f_names = sorted(f.__name__.replace("_", "\\_") for f in Tracer.SUPPORTED_NUMPY_OPERATORS)
+    supported_func = [
+        f"[np.{f}](https://numpy.org/doc/stable/reference/generated/numpy.{f}.html)"
+        for f in f_names
+    ]
 
     with open(file_to_update, "r", encoding="utf-8") as file:
         lines = file.readlines()
@@ -36,9 +40,7 @@ def main(file_to_update):
             keep_line = True
 
             # Inject the supported functions
-            newlines.append("List of supported functions:\n")
-
-            newlines.extend(f"- {f}\n" for f in supported_func)
+            newlines.extend(f"* {f}\n" for f in supported_func)
 
             newlines.append(line)
         else:

@@ -1,87 +1,108 @@
-# Table lookup
+# Table Lookups
 
-In this tutorial, we are going to go over the ways to perform direct table lookups in **Concrete Numpy**. Please read [Compiling and Executing](../basics/compiling\_and\_executing.md) before reading further to see how you can compile the functions below.
+In this tutorial, we will review the ways to perform direct table lookups in **Concrete Numpy**.
 
 ## Direct table lookup
 
-**Concrete Numpy** provides a special class to allow direct table lookups. Here is how to use it:
+**Concrete Numpy** provides a `LookupTable` class for you to create your own tables and apply them in your circuits.
+
+{% hint style="info" %}
+`LookupTable`s can have any number of elements. Let's call them **N**. As long as the lookup variable is in range \[-**N**, **N**), table lookup is valid.
+
+If you go out of bounds of this range, you will get the following error:
+
+```
+IndexError: index 10 is out of bounds for axis 0 with size 6
+```
+{% endhint %}
+
+{% hint style="info" %}
+The number of elements in the lookup table doesn't affect performance in any way.
+{% endhint %}
+
+### With scalars.
+
+You can create the lookup table using a list of integers and apply it using indexing:
 
 ```python
 import concrete.numpy as cnp
 
 table = cnp.LookupTable([2, -1, 3, 0])
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return table[x]
+
+inputset = range(4)
+circuit = f.compile(inputset)
+
+assert circuit.encrypt_run_decrypt(0) == table[0] == 2
+assert circuit.encrypt_run_decrypt(1) == table[1] == -1
+assert circuit.encrypt_run_decrypt(2) == table[2] == 3
+assert circuit.encrypt_run_decrypt(3) == table[3] == 0
 ```
 
-where
+### With tensors.
 
-* `x = "encrypted"` scalar
+When you apply the table lookup to a tensor, you apply the scalar table lookup to each element of the tensor:
 
-results in
-
-<!--pytest-codeblocks:skip-->
 ```python
-circuit.encrypt_run_decrypt(0) == 2
-circuit.encrypt_run_decrypt(1) == -1
-circuit.encrypt_run_decrypt(2) == 3
-circuit.encrypt_run_decrypt(3) == 0
+import concrete.numpy as cnp
+import numpy as np
+
+table = cnp.LookupTable([2, -1, 3, 0])
+
+@cnp.compiler({"x": "encrypted"})
+def f(x):
+    return table[x]
+
+inputset = [np.random.randint(0, 4, size=(2, 3)) for _ in range(10)]
+circuit = f.compile(inputset)
+
+sample = [
+    [0, 1, 3],
+    [2, 3, 1],
+]
+expected_output = [
+    [2, -1, 0],
+    [3, 0, -1],
+]
+actual_output = circuit.encrypt_run_decrypt(np.array(sample))
+
+for i in range(2):
+    for j in range(3):
+        assert actual_output[i][j] == expected_output[i][j] == table[sample[i][j]]
 ```
 
-Moreover, direct lookup tables can be used with tensors where the same table lookup is applied to each value in the tensor, so
+### With negative values.
 
-* `x = "encrypted"` tensor of shape `(2, 3)`
-
-results in
-
-<!--pytest-codeblocks:skip-->
-```python
-input = np.array([[0, 1, 3], [2, 3, 1]], dtype=np.uint8)
-circuit.encrypt_run_decrypt(input) == [[2, 1, 0], [3, 0, 1]]
-```
-
-Direct table lookups behaves like array indexing in python. Which means, if the lookup variable is negative, table is looked up from the back.
+`LookupTable` mimics array indexing in Python, which means if the lookup variable is negative, the table is looked up from the back:
 
 ```python
 import concrete.numpy as cnp
 
-table = cnp.LookupTable([2, 1, 3, 0])
+table = cnp.LookupTable([2, -1, 3, 0])
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return table[-x]
+
+inputset = range(1, 5)
+circuit = f.compile(inputset)
+
+assert circuit.encrypt_run_decrypt(1) == table[-1] == 0
+assert circuit.encrypt_run_decrypt(2) == table[-2] == 3
+assert circuit.encrypt_run_decrypt(3) == table[-3] == -1
+assert circuit.encrypt_run_decrypt(4) == table[-4] == 2
 ```
-
-where
-
-* `x = "encrypted"` scalar
-
-results in
-
-<!--pytest-codeblocks:skip-->
-```python
-circuit.encrypt_run_decrypt(0) == 2
-circuit.encrypt_run_decrypt(1) == 0
-circuit.encrypt_run_decrypt(2) == 3
-circuit.encrypt_run_decrypt(3) == 1
-circuit.encrypt_run_decrypt(4) == 2
-```
-
-Lastly, a `LookupTable` can have any number of elements, let's call it **N**, as long as the lookup variable is in range \[-**N**, **N**). If you go out of bounds of this range, you will get the following error:
-
-```
-IndexError: index 10 is out of bounds for axis 0 with size 6
-```
-
-Note that, number of elements in the lookup table doesn't affect the performance in any way.
 
 ## Direct multi table lookup
 
-Sometimes you may want to apply a different lookup table to each value in a tensor. That's where direct multi lookup table becomes handy. Here is how to use it:
+In case you want to apply a different lookup table to each element of a tensor, you can have a `LookupTable` of `LookupTable`s:
 
-<!--pytest-codeblocks:skip-->
 ```python
 import concrete.numpy as cnp
+import numpy as np
 
 squared = cnp.LookupTable([i ** 2 for i in range(4)])
 cubed = cnp.LookupTable([i ** 3 for i in range(4)])
@@ -92,72 +113,66 @@ table = cnp.LookupTable([
     [squared, cubed],
 ])
 
+@cnp.compiler({"x": "encrypted"})
 def f(x):
     return table[x]
+
+inputset = [np.random.randint(0, 4, size=(3, 2)) for _ in range(10)]
+circuit = f.compile(inputset)
+
+sample = [
+    [0, 1],
+    [2, 3],
+    [3, 0],
+]
+expected_output = [
+    [0, 1],
+    [4, 27],
+    [9, 0]
+]
+actual_output = circuit.encrypt_run_decrypt(np.array(sample))
+
+for i in range(3):
+    for j in range(2):
+        if j == 0:
+            assert actual_output[i][j] == expected_output[i][j] == squared[sample[i][j]]
+        else:
+            assert actual_output[i][j] == expected_output[i][j] == cubed[sample[i][j]]
 ```
 
-where
-
-* `x = "encrypted"` tensor of shape `(3, 2)`
-
-results in
-
-<!--pytest-codeblocks:skip-->
-```python
-input = np.array([[2, 3], [1, 2], [3, 0]], dtype=np.uint8)
-circuit.encrypt_run_decrypt(input) == [[4, 27], [1, 8], [9, 0]]
-```
-
-Basically, we applied `squared` table to the first column and `cubed` to the second one.
+In this example, we applied a `squared` table to the first column and a `cubed` table to the second one.
 
 ## Fused table lookup
 
-Direct tables are tedious to prepare by hand. When possible, **Concrete Numpy** fuses the floating point operations into table lookups automatically. There are some limitations on fusing operations, which you can learn more about on the next tutorial, [Working With Floating Points](working\_with\_floating\_points.md).
+**Concrete Numpy** tries to fuse some operations into table lookups automatically, so you don't need to create the lookup tables manually:
 
-Here is an example function that results in fused table lookup:
-
-<!--pytest-codeblocks:skip-->
 ```python
+import concrete.numpy as cnp
+import numpy as np
+
+@cnp.compiler({"x": "encrypted"})
 def f(x):
-    return 127 - (50 * (np.sin(x) + 1)).astype(np.int64) # astype is to go back to integer world
+    return (42 * np.sin(x)).astype(np.int64) // 10
+
+inputset = range(8)
+circuit = f.compile(inputset)
+
+for x in range(8):
+    assert circuit.encrypt_run_decrypt(x) == f(x)
 ```
 
-where
+{% hint style="info" %}
+All lookup tables need to be from integers to integers. So, without `.astype(np.int64)`, **Concrete Numpy** will not be able to fuse.
+{% endhint %}
 
-* `x = "encrypted"` scalar
-
-results in
-
-<!--pytest-codeblocks:skip-->
-```python
-circuit.encrypt_run_decrypt(0) == 77
-circuit.encrypt_run_decrypt(1) == 35
-circuit.encrypt_run_decrypt(2) == 32
-circuit.encrypt_run_decrypt(3) == 70
-circuit.encrypt_run_decrypt(4) == 115
-circuit.encrypt_run_decrypt(5) == 125
-circuit.encrypt_run_decrypt(6) == 91
-circuit.encrypt_run_decrypt(7) == 45
-```
-
-Initially, the function is converted to this operation graph
+The function is first traced into:
 
 ![](../\_static/tutorials/table-lookup/1.initial.graph.png)
 
-and after floating point operations are fused, we get the following operation graph
+Then, **Concrete Numpy** fuses appropriate nodes:
 
 ![](../\_static/tutorials/table-lookup/3.final.graph.png)
 
-Internally, it uses the following lookup table
-
-<!--pytest-codeblocks:skip-->
-```python
-table = cnp.LookupTable([50, 92, 95, 57, 12, 2, 36, 82])
-```
-
-which is calculated by:
-
-<!--pytest-codeblocks:skip-->
-```python
-[(50 * (np.sin(x) + 1)).astype(np.int64) for x in range(2 ** 3)]
-```
+{% hint style="info" %}
+Fusing makes the code more readable and easier to modify. So try to utilize it over manual `LookupTable`s as much as possible.
+{% endhint %}

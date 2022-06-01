@@ -1,54 +1,45 @@
-# Docker
+# Docker Setup
 
-## Setting up docker and X forwarding
+## Installation
 
-Before you start this section, go ahead and install docker. You can follow [this](https://docs.docker.com/engine/install/) official guide for that.
+Before you start this section, go ahead and install Docker. You can follow [this](https://docs.docker.com/engine/install/) official guide if you need help.
 
-### Linux
+## X forwarding
+
+### Linux.
+
+You can use xhost command:
 
 ```shell
 xhost +localhost
 ```
 
-### Mac OS
+### macOS.
 
-To be able to use X forwarding on Mac OS:
-- Install XQuartz
-- Open XQuartz.app application, make sure in the application parameters that `authorize network connections` are set (currently in the Security settings)
-- Open a new terminal within XQuartz.app and type:
+To use X forwarding on Mac OS:
+
+* Install XQuartz
+* Open XQuartz.app application, make sure in the application parameters that `authorize network connections` are set (currently in the Security settings)
+* Open a new terminal within XQuartz.app and type:
 
 ```shell
 xhost +127.0.0.1
 ```
 
-and now, the X server should be all set in docker (in the regular terminal).
+X server should be all set for Docker in the regular terminal.
 
-### Windows
+## Building
 
-Install Xming and use Xlaunch:
-- Multiple Windows, Display number: 0
-- `Start no client`
-- **IMPORTANT**: Check `No Access Control`
-- You can save this configuration to re-launch easily, then click finish.
-
-## Logging in and building the image
-
-Docker image of **Concrete-Numpy** is based on another docker image provided by the compiler team. Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
-
-Upon joining to the team, you need to log in using the following command:
+You can use the dedicated target in the Makefile to build the docker image:
 
 ```shell
-docker login ghcr.io
+make docker_build
 ```
 
-This command will ask for a username and a password. For username, just enter your GitHub username. For password, you should create a personal access token from [here](https://github.com/settings/tokens) selecting `read:packages` permission. Just paste the generated access token as your password, and you are good to go.
+## Starting
 
-Once you do that, you can get inside the docker environment using the following command:
+You can use the dedicated target in the Makefile to start the docker session:
 
 ```shell
-make docker_build_and_start
-# or equivalently but shorter
-make docker_bas
+make docker_start
 ```
-
-After you finish your work, you can leave the docker by using the `exit` command or by pressing `CTRL + D`.

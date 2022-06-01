@@ -1,64 +1,60 @@
+# Contribute
 
-# Contributing
+{% hint style="info" %}
+There are two ways to contribute to **Concrete Numpy** or to **Concrete** tools in general:
 
-{% hint style='info' %}
-There are two ways to contribute to **concrete-numpy** or to **Concrete** tools in general:
-- you can open issues to report bugs and typos and to suggest ideas
-- you can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
+* You can open issues to report bugs and typos and to suggest ideas.
+* You can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests, so please make sure to get in touch before you do!
 {% endhint %}
 
-Let's go over some other important things that you need to be careful about.
+Now, let's go over some other important items that you need to know.
 
 ## Creating a new branch
 
-We are using a consistent branch naming scheme, and you are expected to follow it as well. Here is the format and some examples.
+We are using a consistent branch naming scheme, and you are expected to follow it as well. Here is the format:
 
 ```shell
-git checkout -b {feat|fix|refactor|test|benchmark|doc|style|chore}/short-description_$issue_id
+git checkout -b {feat|fix|refactor|test|benchmark|doc|style|chore}/short-description
 ```
 
-e.g.
+...and some examples:
 
 ```shell
-git checkout -b feat/explicit-tlu_11
-git checkout -b fix/tracing_indexing_42
+git checkout -b feat/direct-tlu
+git checkout -b fix/tracing-indexing
 ```
 
 ## Before committing
 
-### Conformance
+### Conformance.
 
-Each commit to **concrete-numpy**  should conform to the standards decided by the team. Conformance can be checked using the following command.
+Each commit to **Concrete Numpy** should conform to the standards decided by the team. Conformance can be checked using the following command:
 
 ```shell
 make pcc
 ```
 
-### pytest
+### Testing.
 
-Of course, tests must pass as well.
+On top of conformance, all tests must pass with 100% code coverage across the codebase:
 
 ```shell
 make pytest
 ```
 
-### Coverage
+{% hint style="info" %}
+There may be cases where covering 100% of the code is not possible (e.g., exceptions that cannot be triggered in normal execution circumstances). In those cases, you may be allowed to disable coverage for some specific lines. This should be the exception rather than the rule. Reviewers may ask why some lines are not covered and, if it appears they can be covered, then the PR won't be accepted in that state.
+{% endhint %}
 
-The last requirement is to make sure you get 100 percent code coverage. The `make pytest` command checks that by default and will fail with a coverage report at the end should some lines of your code not be executed during testing.
+## Committing
 
-If your coverage is below 100 percent, you should write more tests and then create the pull request. If you ignore this warning and create the PR, GitHub actions will fail and your PR will not be merged anyway.
-
-There may be cases where covering you code is not possible (exception that cannot be triggered in normal execution circumstances), in those cases you may be allowed to disable coverage for some specific lines. This should be the exception rather than the rule and reviewers will ask why some lines are not covered and if it appears they can be covered then the PR won't be accepted in that state.
-
-## Commiting
-
-We are using a consistent commit naming scheme, and you are expected to follow it as well (the CI will make sure you do). The accepted format can be printed to your terminal by running:
+We are using a consistent commit naming scheme, and you are expected to follow it as well. Again, here is the accepted format:
 
 ```shell
 make show_scope
 ```
 
-e.g.
+...and some examples:
 
 ```shell
 git commit -m "feat: implement bounds checking"
@@ -66,15 +62,15 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 ```
 
-To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step, and rejected if they don't follow the rules.
+To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
 
-## Before creating pull request
+## Before creating a pull request
 
-{% hint style='tip' %}
-We remind that only official contributors can send pull requests. To become such an official contributor, please email hello@zama.ai.
+{% hint style="info" %}
+We remind you that only official contributors can send pull requests. To become an official contributor, please email hello@zama.ai.
 {% endhint %}
 
-You should rebase on top of `main` branch before you create your pull request. We don't allow merge commits, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if some conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
+You should rebase on top of the `main` branch before you create your pull request. We don't allow merge commits, so rebasing on `main` before pushing gives you the best chance of avoiding rewriting parts of your PR later if conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
 
 ```shell
 # fetch the list of active remote branches

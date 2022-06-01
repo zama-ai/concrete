@@ -1,9 +1,17 @@
-# Creating A Release On GitHub
+# Release process
 
-## Release Candidate cycle
+## Release candidate cycle
 
-Before settling for a final release, we go through a Release Candidate (RC) cycle. The idea is that once the code base and documentations look ready for a release you create an RC Release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-numpy-internal/issues/new?assignees=&labels=&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
+Throughout the quarter, many release candidatess are relesed. Those candidates are released in a private package repository. At the end of the quarter, we take the latest release candidate, and release it in PyPI without `rcX` tag.
 
-## Proper release
+## Release flow
 
-Once the last RC is deemed ready, open an issue with the release template using the last RC version from which you remove the `rc?` part (i.e. `v12.67.19` if your last RC version was `v12.67.19-rc4`) on [github](https://github.com/zama-ai/concrete-numpy-internal/issues/new?assignees=&labels=&template=release.md).
+* Checkout to the commit that you want to include in the release (everything before this commit and this commit will be in the release)
+* Run `make release`
+* Wait for CI to complete
+* Checkout to `chore/version` branch
+* Run `VERSION=a.b.c-rcX make set_version` with appropriate version
+* Push the branch to origin
+* Create a PR to merge it to main
+* Wait for CI to finish and get approval in the meantime
+* Merge the version update to main

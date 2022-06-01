@@ -27,7 +27,7 @@ from .specs import ClientSpecs
 
 class Server:
     """
-    Client class, which can be used to perform homomorphic computation.
+    Server class, which can be used to perform homomorphic computation.
     """
 
     client_specs: ClientSpecs
