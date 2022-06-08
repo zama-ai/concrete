@@ -23,6 +23,8 @@ std::unique_ptr<mlir::Pass> createLowerDataflowTasksPass(bool debug = false);
 std::unique_ptr<mlir::Pass>
 createBufferizeDataflowTaskOpsPass(bool debug = false);
 std::unique_ptr<mlir::Pass> createFixupDataflowTaskOpsPass(bool debug = false);
+std::unique_ptr<mlir::Pass>
+createFixupBufferDeallocationPass(bool debug = false);
 void populateRTToLLVMConversionPatterns(mlir::LLVMTypeConverter &converter,
                                         mlir::RewritePatternSet &patterns);
 void populateRTBufferizePatterns(mlir::BufferizeTypeConverter &typeConverter,

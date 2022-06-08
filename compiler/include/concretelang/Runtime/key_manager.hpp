@@ -15,6 +15,7 @@
 #include <hpx/modules/serialization.hpp>
 
 #include "concretelang/Runtime/DFRuntime.hpp"
+#include "concretelang/Runtime/context.h"
 
 extern "C" {
 #include "concrete-ffi.h"
@@ -25,13 +26,12 @@ namespace concretelang {
 namespace dfr {
 
 template <typename T> struct KeyManager;
+struct RuntimeContextManager;
 namespace {
 static void *dl_handle;
 static KeyManager<LweBootstrapKey_u64> *_dfr_node_level_bsk_manager;
 static KeyManager<LweKeyswitchKey_u64> *_dfr_node_level_ksk_manager;
-static std::list<void *> new_allocated;
-static std::list<void *> fut_allocated;
-static std::list<void *> m_allocated;
+static RuntimeContextManager *_dfr_node_level_runtime_context_manager;
 } // namespace
 
 void _dfr_register_bsk(LweBootstrapKey_u64 *key, uint64_t key_id);
@@ -66,7 +66,6 @@ void KeyWrapper<LweBootstrapKey_u64>::load(Archive &ar,
   size_t length;
   ar >> length;
   uint8_t *pointer = new uint8_t[length];
-  new_allocated.push_back((void *)pointer);
   ar >> hpx::serialization::make_array(pointer, length);
   BufferView buffer = {(const uint8_t *)pointer, length};
   key = deserialize_lwe_bootstrap_key_u64(buffer);
@@ -87,7 +86,6 @@ void KeyWrapper<LweKeyswitchKey_u64>::load(Archive &ar,
   size_t length;
   ar >> length;
   uint8_t *pointer = new uint8_t[length];
-  new_allocated.push_back((void *)pointer);
   ar >> hpx::serialization::make_array(pointer, length);
   BufferView buffer = {(const uint8_t *)pointer, length};
   key = deserialize_lwe_keyswitching_key_u64(buffer);
@@ -223,6 +221,68 @@ LweBootstrapKey_u64 *_dfr_get_bsk(hpx::naming::id_type loc, uint64_t key_id) {
 LweKeyswitchKey_u64 *_dfr_get_ksk(hpx::naming::id_type loc, uint64_t key_id) {
   return _dfr_node_level_ksk_manager->get_key(loc, key_id);
 }
+
+/************************/
+/* Context management.  */
+/************************/
+
+struct RuntimeContextManager {
+  // TODO: this is only ok so long as we don't change keys. Once we
+  // use multiple keys, should have a map.
+  RuntimeContext *context;
+  std::mutex context_guard;
+  uint64_t ksk_id;
+  uint64_t bsk_id;
+
+  RuntimeContextManager() {
+    ksk_id = 0;
+    bsk_id = 0;
+    context = nullptr;
+    _dfr_node_level_runtime_context_manager = this;
+  }
+
+  RuntimeContext *getContext(uint64_t ksk, uint64_t bsk,
+                             hpx::naming::id_type source_locality) {
+    std::cout << "GetContext on node " << hpx::get_locality_id()
+              << " with context " << context << " " << bsk_id << " " << ksk_id
+              << "\n"
+              << std::flush;
+    if (context != nullptr) {
+      std::cout << "simil " << ksk_id << " " << ksk << " " << bsk_id << " "
+                << bsk << "\n"
+                << std::flush;
+      assert(ksk == ksk_id && bsk == bsk_id &&
+             "Context manager can only used with single keys for now.");
+    } else {
+      assert(ksk_id == 0 && bsk_id == 0 &&
+             "Context empty but context manager has key ids.");
+      LweKeyswitchKey_u64 *keySwitchKey = _dfr_get_ksk(source_locality, ksk);
+      LweBootstrapKey_u64 *bootstrapKey = _dfr_get_bsk(source_locality, bsk);
+      std::lock_guard<std::mutex> guard(context_guard);
+      if (context == nullptr) {
+        auto ctx = new RuntimeContext();
+        ctx->evaluationKeys = ::concretelang::clientlib::EvaluationKeys(
+            std::shared_ptr<::concretelang::clientlib::LweKeyswitchKey>(
+                new ::concretelang::clientlib::LweKeyswitchKey(keySwitchKey)),
+            std::shared_ptr<::concretelang::clientlib::LweBootstrapKey>(
+                new ::concretelang::clientlib::LweBootstrapKey(bootstrapKey)));
+        ksk_id = ksk;
+        bsk_id = bsk;
+        context = ctx;
+        std::cout << "Fetching Key ids " << ksk_id << " " << bsk_id << "\n"
+                  << std::flush;
+      } else {
+        std::cout << " GOT context after LOCK on node "
+                  << hpx::get_locality_id() << " with context " << context
+                  << " " << bsk_id << " " << ksk_id << "\n"
+                  << std::flush;
+      }
+    }
+    return context;
+  }
+
+  RuntimeContext **getContextAddress() { return &context; }
+};
 
 } // namespace dfr
 } // namespace concretelang

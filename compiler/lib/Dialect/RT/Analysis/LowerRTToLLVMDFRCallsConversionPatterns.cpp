@@ -125,8 +125,9 @@ struct MakeReadyFutureOpInterfaceLowering
         results[0]);
     rewriter.create<LLVM::StoreOp>(mrfOp.getLoc(),
                                    adaptor.getOperands().front(), allocatedPtr);
-    rewriter.replaceOpWithNewOp<LLVM::CallOp>(mrfOp, mrfFuncOp, allocatedPtr);
-
+    SmallVector<Value, 4> mrfOperands = {adaptor.getOperands()};
+    mrfOperands[0] = allocatedPtr;
+    rewriter.replaceOpWithNewOp<LLVM::CallOp>(mrfOp, mrfFuncOp, mrfOperands);
     return mlir::success();
   }
 };
@@ -178,16 +179,14 @@ struct RegisterTaskWorkFunctionOpInterfaceLowering
 
   mlir::LogicalResult
   matchAndRewrite(RT::RegisterTaskWorkFunctionOp rtwfOp,
-                  ArrayRef<Value> operands,
+                  RT::RegisterTaskWorkFunctionOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::RegisterTaskWorkFunctionOp::Adaptor transformed(operands);
-
     auto rtwfFuncType =
         LLVM::LLVMFunctionType::get(getVoidType(), {}, /*isVariadic=*/true);
     auto rtwfFuncOp = getOrInsertFuncOpDecl(
         rtwfOp, "_dfr_register_work_function", rtwfFuncType, rewriter);
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(rtwfOp, rtwfFuncOp,
-                                              transformed.getOperands());
+                                              adaptor.getOperands());
     return success();
   }
 };

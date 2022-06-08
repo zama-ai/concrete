@@ -278,6 +278,11 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm, mlir::concretelang::createFixupDataflowTaskOpsPass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createLowerDataflowTasksPass(), enablePass);
+  // Use the buffer deallocation interface to insert future deallocation calls
+  addPotentiallyNestedPass(
+      pm, mlir::bufferization::createBufferDeallocationPass(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createFixupBufferDeallocationPass(), enablePass);
 
   // Convert to MLIR LLVM Dialect
   addPotentiallyNestedPass(

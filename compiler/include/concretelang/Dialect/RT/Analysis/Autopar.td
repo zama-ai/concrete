@@ -82,6 +82,15 @@ def LowerDataflowTasks : Pass<"LowerDataflowTasks", "mlir::ModuleOp"> {
   }];
 }
 
+def FixupBufferDeallocation : Pass<"FixupBufferDeallocation", "mlir::ModuleOp"> {
+  let summary =
+      "Prevent deallocation of buffers returned as futures by tasks.";
 
+  let description = [{ This pass removes buffer deallocation calls on
+      buffers being used for dataflow communication between
+      tasks. These buffers cannot be deallocated directly without
+      synchronization as they can be needed by asynchronous
+      computation. Instead, these will be deallocated by the runtime
+      when no longer needed.}]; }
 
 #endif

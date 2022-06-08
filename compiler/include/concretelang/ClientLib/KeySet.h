@@ -19,7 +19,6 @@ extern "C" {
 #include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/ClientLib/KeySetCache.h"
 #include "concretelang/Common/Error.h"
-#include <concretelang/Runtime/DFRuntime.hpp>
 
 namespace concretelang {
 namespace clientlib {
@@ -86,9 +85,15 @@ public:
   }
 
   EvaluationKeys evaluationKeys() {
-    auto sharedKsk = std::get<1>(this->keyswitchKeys.at("ksk_v0"));
-    auto sharedBsk = std::get<1>(this->bootstrapKeys.at("bsk_v0"));
-    return EvaluationKeys(sharedKsk, sharedBsk);
+    auto kskIt = this->keyswitchKeys.find("ksk_v0");
+    auto bskIt = this->bootstrapKeys.find("bsk_v0");
+    if (kskIt != this->keyswitchKeys.end() &&
+        bskIt != this->bootstrapKeys.end()) {
+      auto sharedKsk = std::get<1>(kskIt->second);
+      auto sharedBsk = std::get<1>(bskIt->second);
+      return EvaluationKeys(sharedKsk, sharedBsk);
+    }
+    return EvaluationKeys();
   }
 
   const std::map<LweSecretKeyID,

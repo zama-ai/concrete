@@ -8,6 +8,7 @@
 
 #include <cstdarg>
 #include <cstdlib>
+#include <malloc.h>
 #include <string>
 
 #include <hpx/async_colocated/get_colocation_id.hpp>
@@ -28,6 +29,7 @@
 
 #include <mlir/ExecutionEngine/CRunnerUtils.h>
 
+#include "concretelang/ClientLib/EvaluationKeys.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/context.h"
 #include "concretelang/Runtime/dfr_debug_interface.h"
@@ -49,6 +51,17 @@ static inline size_t _dfr_get_memref_rank(size_t size) {
          (2 * sizeof(int64_t) /*size&stride/rank*/);
 }
 
+static inline void _dfr_checked_aligned_alloc(void **out, size_t align,
+                                              size_t size) {
+  int res = posix_memalign(out, align, size);
+  if (res == ENOMEM)
+    HPX_THROW_EXCEPTION(hpx::no_success, "DFR: memory allocation failed",
+                        "Error: insufficient memory available.");
+  if (res == EINVAL)
+    HPX_THROW_EXCEPTION(hpx::no_success, "DFR: memory allocation failed",
+                        "Error: invalid memory alignment.");
+}
+
 struct OpaqueInputData {
   OpaqueInputData() = default;
 
@@ -62,7 +75,7 @@ struct OpaqueInputData {
         param_types(std::move(_param_types)),
         output_sizes(std::move(_output_sizes)),
         output_types(std::move(_output_types)), alloc_p(_alloc_p),
-        source_locality(hpx::find_here()) {}
+        source_locality(hpx::find_here()), ksk_id(0), bsk_id(0) {}
 
   OpaqueInputData(const OpaqueInputData &oid)
       : wfn_name(std::move(oid.wfn_name)), params(std::move(oid.params)),
@@ -70,16 +83,18 @@ struct OpaqueInputData {
         param_types(std::move(oid.param_types)),
         output_sizes(std::move(oid.output_sizes)),
         output_types(std::move(oid.output_types)), alloc_p(oid.alloc_p),
-        source_locality(oid.source_locality) {}
+        source_locality(oid.source_locality), ksk_id(oid.ksk_id),
+        bsk_id(oid.bsk_id) {}
 
   friend class hpx::serialization::access;
   template <class Archive> void load(Archive &ar, const unsigned int version) {
     ar >> wfn_name;
     ar >> param_sizes >> param_types;
     ar >> output_sizes >> output_types;
+    ar >> source_locality;
     for (size_t p = 0; p < param_sizes.size(); ++p) {
-      char *param = new char[param_sizes[p]];
-      new_allocated.push_back((void *)param);
+      char *param;
+      _dfr_checked_aligned_alloc((void **)&param, 64, param_sizes[p]);
       ar >> hpx::serialization::make_array(param, param_sizes[p]);
       params.push_back((void *)param);
 
@@ -95,28 +110,23 @@ struct OpaqueInputData {
         for (size_t r = 0; r < rank; ++r)
           size *= mref.sizes[r];
         size_t alloc_size = (size + mref.offset) * elementSize;
-        char *data = new char[alloc_size];
-        new_allocated.push_back((void *)data);
+        char *data;
+        _dfr_checked_aligned_alloc((void **)&data, 512, alloc_size);
         ar >> hpx::serialization::make_array(data + mref.offset * elementSize,
                                              size * elementSize);
         static_cast<StridedMemRefType<char, 1> *>(params[p])->basePtr = nullptr;
         static_cast<StridedMemRefType<char, 1> *>(params[p])->data = data;
       } break;
       case _DFR_TASK_ARG_CONTEXT: {
-        uint64_t bsk_id, ksk_id;
-        ar >> bsk_id >> ksk_id >> source_locality;
+        ar >> bsk_id >> ksk_id;
 
-        mlir::concretelang::RuntimeContext *context =
-            new mlir::concretelang::RuntimeContext;
-        new_allocated.push_back((void *)context);
-        mlir::concretelang::RuntimeContext **_context =
-            new mlir::concretelang::RuntimeContext *[1];
-        new_allocated.push_back((void *)_context);
-        _context[0] = context;
-
-        context->bsk = (LweBootstrapKey_u64 *)bsk_id;
-        context->ksk = (LweKeyswitchKey_u64 *)ksk_id;
-        params[p] = (void *)_context;
+        delete ((char *)params[p]);
+        // TODO: this might be relaxed with newer versions of HPX.
+        // Do not set the context here as remote operations are
+        // unstable when initiated within a HPX helper thread.
+        params[p] =
+            (void *)
+                _dfr_node_level_runtime_context_manager->getContextAddress();
       } break;
       case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
@@ -131,6 +141,7 @@ struct OpaqueInputData {
     ar << wfn_name;
     ar << param_sizes << param_types;
     ar << output_sizes << output_types;
+    ar << source_locality;
     for (size_t p = 0; p < params.size(); ++p) {
       // Save the first level of the data structure - if the parameter
       // is a tensor/memref, there is a second level.
@@ -152,18 +163,16 @@ struct OpaqueInputData {
       case _DFR_TASK_ARG_CONTEXT: {
         mlir::concretelang::RuntimeContext *context =
             *static_cast<mlir::concretelang::RuntimeContext **>(params[p]);
-        LweKeyswitchKey_u64 *ksk = context->ksk;
-        LweBootstrapKey_u64 *bsk = context->bsk;
-
-        // TODO: find better unique identifiers.  This is not a
-        // correctness issue, but performance.
-        uint64_t bsk_id = (uint64_t)bsk;
-        uint64_t ksk_id = (uint64_t)ksk;
+        LweKeyswitchKey_u64 *ksk = get_keyswitch_key_u64(context);
+        LweBootstrapKey_u64 *bsk = get_bootstrap_key_u64(context);
 
         assert(bsk != nullptr && ksk != nullptr && "Missing context keys");
-        _dfr_register_bsk(bsk, bsk_id);
-        _dfr_register_ksk(ksk, ksk_id);
-        ar << bsk_id << ksk_id << source_locality;
+        std::cout << "Registering Key ids " << (uint64_t)ksk << " "
+                  << (uint64_t)bsk << "\n"
+                  << std::flush;
+        _dfr_register_bsk(bsk, (uint64_t)bsk);
+        _dfr_register_ksk(ksk, (uint64_t)ksk);
+        ar << (uint64_t)bsk << (uint64_t)ksk;
       } break;
       case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
@@ -182,6 +191,8 @@ struct OpaqueInputData {
   std::vector<uint64_t> output_types;
   bool alloc_p = false;
   hpx::naming::id_type source_locality;
+  uint64_t ksk_id;
+  uint64_t bsk_id;
 };
 
 struct OpaqueOutputData {
@@ -200,8 +211,9 @@ struct OpaqueOutputData {
   template <class Archive> void load(Archive &ar, const unsigned int version) {
     ar >> output_sizes >> output_types;
     for (size_t p = 0; p < output_sizes.size(); ++p) {
-      char *output = new char[output_sizes[p]];
-      new_allocated.push_back((void *)output);
+      char *output;
+      _dfr_checked_aligned_alloc((void **)&output, 64, (output_sizes[p]));
+
       ar >> hpx::serialization::make_array(output, output_sizes[p]);
       outputs.push_back((void *)output);
 
@@ -217,8 +229,8 @@ struct OpaqueOutputData {
         for (size_t r = 0; r < rank; ++r)
           size *= mref.sizes[r];
         size_t alloc_size = (size + mref.offset) * elementSize;
-        char *data = new char[alloc_size];
-        new_allocated.push_back((void *)data);
+        char *data;
+        _dfr_checked_aligned_alloc((void **)&data, 512, alloc_size);
         ar >> hpx::serialization::make_array(data + mref.offset * elementSize,
                                              size * elementSize);
         static_cast<StridedMemRefType<char, 1> *>(outputs[p])->basePtr =
@@ -283,23 +295,20 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
         inputs.wfn_name);
     std::vector<void *> outputs;
 
-    if (!_dfr_is_root_node()) {
-      for (size_t p = 0; p < inputs.params.size(); ++p) {
-        if (_dfr_get_arg_type(inputs.param_types[p] == _DFR_TASK_ARG_CONTEXT)) {
-          mlir::concretelang::RuntimeContext *ctx =
-              (*(mlir::concretelang::RuntimeContext **)inputs.params[p]);
-          ctx->ksk = _dfr_get_ksk(inputs.source_locality, (uint64_t)ctx->ksk);
-          ctx->bsk = _dfr_get_bsk(inputs.source_locality, (uint64_t)ctx->bsk);
-          break;
-        }
-      }
+    if (inputs.source_locality != hpx::find_here() &&
+        (inputs.ksk_id || inputs.bsk_id)) {
+      _dfr_node_level_runtime_context_manager->getContext(
+          inputs.ksk_id, inputs.bsk_id, inputs.source_locality);
     }
+
     _dfr_debug_print_task(inputs.wfn_name.c_str(), inputs.params.size(),
                           inputs.output_sizes.size());
     hpx::cout << std::flush;
+
     switch (inputs.output_sizes.size()) {
     case 1: {
-      void *output = (void *)(new char[inputs.output_sizes[0]]);
+      void *output;
+      _dfr_checked_aligned_alloc(&output, 512, inputs.output_sizes[0]);
       switch (inputs.params.size()) {
       case 0:
         wfn(output);
@@ -387,18 +396,52 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
             inputs.params[12], inputs.params[13], inputs.params[14],
             inputs.params[15], output);
         break;
+      case 17:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], output);
+        break;
+      case 18:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17], output);
+        break;
+      case 19:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17],
+            inputs.params[18], output);
+        break;
+      case 20:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17],
+            inputs.params[18], inputs.params[19], output);
+        break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
                             "GenericComputeServer::execute_task",
                             "Error: number of task parameters not supported.");
       }
       outputs = {output};
-      new_allocated.push_back(output);
       break;
     }
     case 2: {
-      void *output1 = (void *)(new char[inputs.output_sizes[0]]);
-      void *output2 = (void *)(new char[inputs.output_sizes[1]]);
+      void *output1, *output2;
+      _dfr_checked_aligned_alloc(&output1, 512, inputs.output_sizes[0]);
+      _dfr_checked_aligned_alloc(&output2, 512, inputs.output_sizes[1]);
       switch (inputs.params.size()) {
       case 0:
         wfn(output1, output2);
@@ -491,20 +534,54 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
             inputs.params[12], inputs.params[13], inputs.params[14],
             inputs.params[15], output1, output2);
         break;
+      case 17:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], output1, output2);
+        break;
+      case 18:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17], output1,
+            output2);
+        break;
+      case 19:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17],
+            inputs.params[18], output1, output2);
+        break;
+      case 20:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17],
+            inputs.params[18], inputs.params[19], output1, output2);
+        break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
                             "GenericComputeServer::execute_task",
                             "Error: number of task parameters not supported.");
       }
       outputs = {output1, output2};
-      new_allocated.push_back(output1);
-      new_allocated.push_back(output2);
       break;
     }
     case 3: {
-      void *output1 = (void *)(new char[inputs.output_sizes[0]]);
-      void *output2 = (void *)(new char[inputs.output_sizes[1]]);
-      void *output3 = (void *)(new char[inputs.output_sizes[2]]);
+      void *output1, *output2, *output3;
+      _dfr_checked_aligned_alloc(&output1, 512, inputs.output_sizes[0]);
+      _dfr_checked_aligned_alloc(&output2, 512, inputs.output_sizes[1]);
+      _dfr_checked_aligned_alloc(&output2, 512, inputs.output_sizes[2]);
       switch (inputs.params.size()) {
       case 0:
         wfn(output1, output2, output3);
@@ -597,20 +674,64 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
             inputs.params[12], inputs.params[13], inputs.params[14],
             inputs.params[15], output1, output2, output3);
         break;
+      case 17:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], output1, output2, output3);
+        break;
+      case 18:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17], output1,
+            output2, output3);
+        break;
+      case 19:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17],
+            inputs.params[18], output1, output2, output3);
+        break;
+      case 20:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], inputs.params[8],
+            inputs.params[9], inputs.params[10], inputs.params[11],
+            inputs.params[12], inputs.params[13], inputs.params[14],
+            inputs.params[15], inputs.params[16], inputs.params[17],
+            inputs.params[18], inputs.params[19], output1, output2, output3);
+        break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
                             "GenericComputeServer::execute_task",
                             "Error: number of task parameters not supported.");
       }
       outputs = {output1, output2, output3};
-      new_allocated.push_back(output1);
-      new_allocated.push_back(output2);
-      new_allocated.push_back(output3);
       break;
     }
     default:
       HPX_THROW_EXCEPTION(hpx::no_success, "GenericComputeServer::execute_task",
                           "Error: number of task outputs not supported.");
+    }
+
+    // Deallocate input data buffers from OID deserialization (load)
+    if (!_dfr_is_root_node()) {
+      for (size_t p = 0; p < inputs.param_sizes.size(); ++p) {
+        if (_dfr_get_arg_type(inputs.param_types[p]) != _DFR_TASK_ARG_CONTEXT) {
+          if (_dfr_get_arg_type(inputs.param_types[p]) == _DFR_TASK_ARG_MEMREF)
+            delete (static_cast<StridedMemRefType<char, 1> *>(inputs.params[p])
+                        ->data);
+          delete ((char *)inputs.params[p]);
+        }
+      }
     }
 
     return OpaqueOutputData(std::move(outputs), std::move(inputs.output_sizes),

@@ -38,33 +38,50 @@ static size_t num_nodes = 0;
 
 using namespace hpx;
 
-void *_dfr_make_ready_future(void *in) {
-  void *future = static_cast<void *>(
-      new hpx::shared_future<void *>(hpx::make_ready_future(in)));
-  mlir::concretelang::dfr::m_allocated.push_back(in);
-  mlir::concretelang::dfr::fut_allocated.push_back(future);
-  return future;
+typedef struct dfr_refcounted_future {
+  hpx::shared_future<void *> *future;
+  std::atomic<std::size_t> count;
+  bool cloned_memref_p;
+  dfr_refcounted_future(hpx::shared_future<void *> *f, size_t c, bool clone_p)
+      : future(f), count(c), cloned_memref_p(clone_p) {}
+} dfr_refcounted_future_t, *dfr_refcounted_future_p;
+
+// Ready futures are only used as inputs to tasks (never passed to
+// await_future), so we only need to track the references in task
+// creation.
+void *_dfr_make_ready_future(void *in, size_t memref_clone_p) {
+  return (void *)new dfr_refcounted_future_t(
+      new hpx::shared_future<void *>(hpx::make_ready_future(in)), 1,
+      memref_clone_p);
 }
 
 void *_dfr_await_future(void *in) {
-  return static_cast<hpx::shared_future<void *> *>(in)->get();
-}
-
-void _dfr_deallocate_future_data(void *in) {
-  delete[] static_cast<char *>(
-      static_cast<hpx::shared_future<void *> *>(in)->get());
+  return static_cast<dfr_refcounted_future_p>(in)->future->get();
 }
 
 void _dfr_deallocate_future(void *in) {
-  delete (static_cast<hpx::shared_future<void *> *>(in));
+  auto drf = static_cast<dfr_refcounted_future_p>(in);
+  size_t prev_count = drf->count.fetch_sub(1);
+  if (prev_count == 1) {
+    // If this was a memref for which a clone was needed, deallocate first.
+    if (drf->cloned_memref_p)
+      free(
+          (void *)(static_cast<StridedMemRefType<char, 1> *>(drf->future->get())
+                       ->data));
+    free(drf->future->get());
+    delete (drf->future);
+    delete drf;
+  }
 }
+
+void _dfr_deallocate_future_data(void *in) {}
 
 // Determine where new task should run.  For now just round-robin
 // distribution - TODO: optimise.
 static inline size_t _dfr_find_next_execution_locality() {
-  static std::atomic<std::size_t> next_locality{0};
+  static std::atomic<std::size_t> next_locality{1};
 
-  size_t next_loc = ++next_locality;
+  size_t next_loc = next_locality.fetch_add(1);
 
   return next_loc % mlir::concretelang::dfr::num_nodes;
 }
@@ -76,7 +93,8 @@ static inline size_t _dfr_find_next_execution_locality() {
 /// the returns.
 void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
                             ...) {
-  std::vector<void *> params;
+  // std::vector<void *> params;
+  std::vector<void *> refcounted_futures;
   std::vector<size_t> param_sizes;
   std::vector<uint64_t> param_types;
   std::vector<void *> outputs;
@@ -86,7 +104,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   va_list args;
   va_start(args, num_outputs);
   for (size_t i = 0; i < num_params; ++i) {
-    params.push_back(va_arg(args, void *));
+    refcounted_futures.push_back(va_arg(args, void *));
     param_sizes.push_back(va_arg(args, uint64_t));
     param_types.push_back(va_arg(args, uint64_t));
   }
@@ -97,13 +115,9 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
   }
   va_end(args);
 
-  for (size_t i = 0; i < num_params; ++i) {
-    if (mlir::concretelang::dfr::_dfr_get_arg_type(
-            param_types[i] == mlir::concretelang::dfr::_DFR_TASK_ARG_MEMREF)) {
-      mlir::concretelang::dfr::m_allocated.push_back(
-          (void *)static_cast<StridedMemRefType<char, 1> *>(params[i])->data);
-    }
-  }
+  // Take a reference on each future argument
+  for (auto rcf : refcounted_futures)
+    ((dfr_refcounted_future_p)rcf)->count.fetch_add(1);
 
   // We pass functions by name - which is not strictly necessary in
   // shared memory as pointers suffice, but is needed in the
@@ -147,7 +161,7 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future));
     break;
 
   case 2:
@@ -164,8 +178,8 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future));
     break;
 
   case 3:
@@ -184,9 +198,9 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future));
     break;
 
   case 4:
@@ -206,10 +220,10 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future));
     break;
 
   case 5:
@@ -231,11 +245,11 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future));
     break;
 
   case 6:
@@ -258,12 +272,12 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future));
     break;
 
   case 7:
@@ -287,13 +301,13 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future));
     break;
 
   case 8:
@@ -318,14 +332,14 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future));
     break;
 
   case 9:
@@ -352,15 +366,15 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future));
     break;
 
   case 10:
@@ -388,16 +402,16 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8],
-        *(hpx::shared_future<void *> *)params[9]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future));
     break;
 
   case 11:
@@ -426,17 +440,17 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8],
-        *(hpx::shared_future<void *> *)params[9],
-        *(hpx::shared_future<void *> *)params[10]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future));
     break;
 
   case 12:
@@ -466,18 +480,18 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8],
-        *(hpx::shared_future<void *> *)params[9],
-        *(hpx::shared_future<void *> *)params[10],
-        *(hpx::shared_future<void *> *)params[11]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future));
     break;
 
   case 13:
@@ -509,19 +523,19 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8],
-        *(hpx::shared_future<void *> *)params[9],
-        *(hpx::shared_future<void *> *)params[10],
-        *(hpx::shared_future<void *> *)params[11],
-        *(hpx::shared_future<void *> *)params[12]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future));
     break;
 
   case 14:
@@ -554,20 +568,20 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8],
-        *(hpx::shared_future<void *> *)params[9],
-        *(hpx::shared_future<void *> *)params[10],
-        *(hpx::shared_future<void *> *)params[11],
-        *(hpx::shared_future<void *> *)params[12],
-        *(hpx::shared_future<void *> *)params[13]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[13])->future));
     break;
 
   case 15:
@@ -601,21 +615,21 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8],
-        *(hpx::shared_future<void *> *)params[9],
-        *(hpx::shared_future<void *> *)params[10],
-        *(hpx::shared_future<void *> *)params[11],
-        *(hpx::shared_future<void *> *)params[12],
-        *(hpx::shared_future<void *> *)params[13],
-        *(hpx::shared_future<void *> *)params[14]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[13])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[14])->future));
     break;
 
   case 16:
@@ -650,22 +664,246 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
               [_dfr_find_next_execution_locality()]
                   .execute_task(oid);
         },
-        *(hpx::shared_future<void *> *)params[0],
-        *(hpx::shared_future<void *> *)params[1],
-        *(hpx::shared_future<void *> *)params[2],
-        *(hpx::shared_future<void *> *)params[3],
-        *(hpx::shared_future<void *> *)params[4],
-        *(hpx::shared_future<void *> *)params[5],
-        *(hpx::shared_future<void *> *)params[6],
-        *(hpx::shared_future<void *> *)params[7],
-        *(hpx::shared_future<void *> *)params[8],
-        *(hpx::shared_future<void *> *)params[9],
-        *(hpx::shared_future<void *> *)params[10],
-        *(hpx::shared_future<void *> *)params[11],
-        *(hpx::shared_future<void *> *)params[12],
-        *(hpx::shared_future<void *> *)params[13],
-        *(hpx::shared_future<void *> *)params[14],
-        *(hpx::shared_future<void *> *)params[15]));
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[13])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[14])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[15])->future));
+    break;
+
+  case 17:
+    oodf = std::move(hpx::dataflow(
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12,
+                       hpx::shared_future<void *> param13,
+                       hpx::shared_future<void *> param14,
+                       hpx::shared_future<void *> param15,
+                       hpx::shared_future<void *> param16)
+            -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
+          std::vector<void *> params = {
+              param0.get(),  param1.get(),  param2.get(),  param3.get(),
+              param4.get(),  param5.get(),  param6.get(),  param7.get(),
+              param8.get(),  param9.get(),  param10.get(), param11.get(),
+              param12.get(), param13.get(), param14.get(), param15.get(),
+              param16.get()};
+          mlir::concretelang::dfr::OpaqueInputData oid(
+              wfnname, params, param_sizes, param_types, output_sizes,
+              output_types);
+          return mlir::concretelang::dfr::gcc
+              [_dfr_find_next_execution_locality()]
+                  .execute_task(oid);
+        },
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[13])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[14])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[15])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[16])->future));
+    break;
+
+  case 18:
+    oodf = std::move(hpx::dataflow(
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12,
+                       hpx::shared_future<void *> param13,
+                       hpx::shared_future<void *> param14,
+                       hpx::shared_future<void *> param15,
+                       hpx::shared_future<void *> param16,
+                       hpx::shared_future<void *> param17)
+            -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
+          std::vector<void *> params = {
+              param0.get(),  param1.get(),  param2.get(),  param3.get(),
+              param4.get(),  param5.get(),  param6.get(),  param7.get(),
+              param8.get(),  param9.get(),  param10.get(), param11.get(),
+              param12.get(), param13.get(), param14.get(), param15.get(),
+              param16.get(), param17.get()};
+          mlir::concretelang::dfr::OpaqueInputData oid(
+              wfnname, params, param_sizes, param_types, output_sizes,
+              output_types);
+          return mlir::concretelang::dfr::gcc
+              [_dfr_find_next_execution_locality()]
+                  .execute_task(oid);
+        },
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[13])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[14])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[15])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[16])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[17])->future));
+    break;
+
+  case 19:
+    oodf = std::move(hpx::dataflow(
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12,
+                       hpx::shared_future<void *> param13,
+                       hpx::shared_future<void *> param14,
+                       hpx::shared_future<void *> param15,
+                       hpx::shared_future<void *> param16,
+                       hpx::shared_future<void *> param17,
+                       hpx::shared_future<void *> param18)
+            -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
+          std::vector<void *> params = {
+              param0.get(),  param1.get(),  param2.get(),  param3.get(),
+              param4.get(),  param5.get(),  param6.get(),  param7.get(),
+              param8.get(),  param9.get(),  param10.get(), param11.get(),
+              param12.get(), param13.get(), param14.get(), param15.get(),
+              param16.get(), param17.get(), param18.get()};
+          mlir::concretelang::dfr::OpaqueInputData oid(
+              wfnname, params, param_sizes, param_types, output_sizes,
+              output_types);
+          return mlir::concretelang::dfr::gcc
+              [_dfr_find_next_execution_locality()]
+                  .execute_task(oid);
+        },
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[13])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[14])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[15])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[16])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[17])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[18])->future));
+    break;
+
+  case 20:
+    oodf = std::move(hpx::dataflow(
+        [wfnname, param_sizes, param_types, output_sizes,
+         output_types](hpx::shared_future<void *> param0,
+                       hpx::shared_future<void *> param1,
+                       hpx::shared_future<void *> param2,
+                       hpx::shared_future<void *> param3,
+                       hpx::shared_future<void *> param4,
+                       hpx::shared_future<void *> param5,
+                       hpx::shared_future<void *> param6,
+                       hpx::shared_future<void *> param7,
+                       hpx::shared_future<void *> param8,
+                       hpx::shared_future<void *> param9,
+                       hpx::shared_future<void *> param10,
+                       hpx::shared_future<void *> param11,
+                       hpx::shared_future<void *> param12,
+                       hpx::shared_future<void *> param13,
+                       hpx::shared_future<void *> param14,
+                       hpx::shared_future<void *> param15,
+                       hpx::shared_future<void *> param16,
+                       hpx::shared_future<void *> param17,
+                       hpx::shared_future<void *> param18,
+                       hpx::shared_future<void *> param19)
+            -> hpx::future<mlir::concretelang::dfr::OpaqueOutputData> {
+          std::vector<void *> params = {
+              param0.get(),  param1.get(),  param2.get(),  param3.get(),
+              param4.get(),  param5.get(),  param6.get(),  param7.get(),
+              param8.get(),  param9.get(),  param10.get(), param11.get(),
+              param12.get(), param13.get(), param14.get(), param15.get(),
+              param16.get(), param17.get(), param18.get(), param19.get()};
+          mlir::concretelang::dfr::OpaqueInputData oid(
+              wfnname, params, param_sizes, param_types, output_sizes,
+              output_types);
+          return mlir::concretelang::dfr::gcc
+              [_dfr_find_next_execution_locality()]
+                  .execute_task(oid);
+        },
+        *((dfr_refcounted_future_p)refcounted_futures[0])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[1])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[2])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[3])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[4])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[5])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[6])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[7])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[8])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[9])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[10])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[11])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[12])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[13])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[14])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[15])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[16])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[17])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[18])->future,
+        *((dfr_refcounted_future_p)refcounted_futures[19])->future));
     break;
 
   default:
@@ -675,53 +913,67 @@ void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
 
   switch (num_outputs) {
   case 1:
-    *((void **)outputs[0]) = new hpx::shared_future<void *>(hpx::dataflow(
-        [](hpx::future<mlir::concretelang::dfr::OpaqueOutputData> oodf_in)
-            -> void * { return oodf_in.get().outputs[0]; },
-        oodf));
-    mlir::concretelang::dfr::fut_allocated.push_back(*((void **)outputs[0]));
+    *((void **)outputs[0]) = (void *)new dfr_refcounted_future_t(
+        new hpx::shared_future<void *>(hpx::dataflow(
+            [refcounted_futures](
+                hpx::future<mlir::concretelang::dfr::OpaqueOutputData> oodf_in)
+                -> void * {
+              void *ret = oodf_in.get().outputs[0];
+              for (auto rcf : refcounted_futures)
+                _dfr_deallocate_future(rcf);
+              return ret;
+            },
+            oodf)),
+        1, output_types[0] == mlir::concretelang::dfr::_DFR_TASK_ARG_MEMREF);
     break;
 
   case 2: {
     hpx::future<hpx::tuple<void *, void *>> &&ft = hpx::dataflow(
-        [](hpx::future<mlir::concretelang::dfr::OpaqueOutputData> oodf_in)
+        [refcounted_futures](
+            hpx::future<mlir::concretelang::dfr::OpaqueOutputData> oodf_in)
             -> hpx::tuple<void *, void *> {
           std::vector<void *> outputs = std::move(oodf_in.get().outputs);
+          for (auto rcf : refcounted_futures)
+            _dfr_deallocate_future(rcf);
           return hpx::make_tuple<>(outputs[0], outputs[1]);
         },
         oodf);
     hpx::tuple<hpx::future<void *>, hpx::future<void *>> &&tf =
         hpx::split_future(std::move(ft));
-    *((void **)outputs[0]) =
-        (void *)new hpx::shared_future<void *>(std::move(hpx::get<0>(tf)));
-    *((void **)outputs[1]) =
-        (void *)new hpx::shared_future<void *>(std::move(hpx::get<1>(tf)));
-    mlir::concretelang::dfr::fut_allocated.push_back(*((void **)outputs[0]));
-    mlir::concretelang::dfr::fut_allocated.push_back(*((void **)outputs[1]));
+    *((void **)outputs[0]) = (void *)new dfr_refcounted_future_t(
+        new hpx::shared_future<void *>(std::move(hpx::get<0>(tf))), 1,
+        output_types[0] == mlir::concretelang::dfr::_DFR_TASK_ARG_MEMREF);
+    *((void **)outputs[1]) = (void *)new dfr_refcounted_future_t(
+        new hpx::shared_future<void *>(std::move(hpx::get<1>(tf))), 1,
+        output_types[1] == mlir::concretelang::dfr::_DFR_TASK_ARG_MEMREF);
     break;
   }
 
   case 3: {
     hpx::future<hpx::tuple<void *, void *, void *>> &&ft = hpx::dataflow(
-        [](hpx::future<mlir::concretelang::dfr::OpaqueOutputData> oodf_in)
+        [refcounted_futures](
+            hpx::future<mlir::concretelang::dfr::OpaqueOutputData> oodf_in)
             -> hpx::tuple<void *, void *, void *> {
           std::vector<void *> outputs = std::move(oodf_in.get().outputs);
+          for (auto rcf : refcounted_futures)
+            _dfr_deallocate_future(rcf);
           return hpx::make_tuple<>(outputs[0], outputs[1], outputs[2]);
         },
         oodf);
     hpx::tuple<hpx::future<void *>, hpx::future<void *>, hpx::future<void *>>
         &&tf = hpx::split_future(std::move(ft));
-    *((void **)outputs[0]) =
-        (void *)new hpx::shared_future<void *>(std::move(hpx::get<0>(tf)));
-    *((void **)outputs[1]) =
-        (void *)new hpx::shared_future<void *>(std::move(hpx::get<1>(tf)));
-    *((void **)outputs[2]) =
-        (void *)new hpx::shared_future<void *>(std::move(hpx::get<2>(tf)));
-    mlir::concretelang::dfr::fut_allocated.push_back(*((void **)outputs[0]));
-    mlir::concretelang::dfr::fut_allocated.push_back(*((void **)outputs[1]));
-    mlir::concretelang::dfr::fut_allocated.push_back(*((void **)outputs[2]));
+    *((void **)outputs[0]) = (void *)new dfr_refcounted_future_t(
+        new hpx::shared_future<void *>(std::move(hpx::get<0>(tf))), 1,
+        output_types[0] == mlir::concretelang::dfr::_DFR_TASK_ARG_MEMREF);
+    *((void **)outputs[1]) = (void *)new dfr_refcounted_future_t(
+        new hpx::shared_future<void *>(std::move(hpx::get<1>(tf))), 1,
+        output_types[1] == mlir::concretelang::dfr::_DFR_TASK_ARG_MEMREF);
+    *((void **)outputs[2]) = (void *)new dfr_refcounted_future_t(
+        new hpx::shared_future<void *>(std::move(hpx::get<2>(tf))), 1,
+        output_types[2] == mlir::concretelang::dfr::_DFR_TASK_ARG_MEMREF);
     break;
   }
+
   default:
     HPX_THROW_EXCEPTION(hpx::no_success, "_dfr_create_async_task",
                         "Error: number of task outputs not supported.");
@@ -896,6 +1148,7 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
 
   new mlir::concretelang::dfr::KeyManager<LweBootstrapKey_u64>();
   new mlir::concretelang::dfr::KeyManager<LweKeyswitchKey_u64>();
+  new mlir::concretelang::dfr::RuntimeContextManager();
   new mlir::concretelang::dfr::WorkFunctionRegistry();
   mlir::concretelang::dfr::_dfr_jit_workfunction_registration_barrier =
       new hpx::lcos::barrier("wait_register_remote_work_functions",
@@ -985,21 +1238,8 @@ void _dfr_stop() {
   // safer to drop them in-between phases.
   mlir::concretelang::dfr::_dfr_node_level_bsk_manager->clear_keys();
   mlir::concretelang::dfr::_dfr_node_level_ksk_manager->clear_keys();
-
-  while (!mlir::concretelang::dfr::new_allocated.empty()) {
-    delete[] static_cast<char *>(
-        mlir::concretelang::dfr::new_allocated.front());
-    mlir::concretelang::dfr::new_allocated.pop_front();
-  }
-  while (!mlir::concretelang::dfr::fut_allocated.empty()) {
-    delete static_cast<hpx::shared_future<void *> *>(
-        mlir::concretelang::dfr::fut_allocated.front());
-    mlir::concretelang::dfr::fut_allocated.pop_front();
-  }
-  while (!mlir::concretelang::dfr::m_allocated.empty()) {
-    free(mlir::concretelang::dfr::m_allocated.front());
-    mlir::concretelang::dfr::m_allocated.pop_front();
-  }
+  mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
+      ->clearContext();
 }
 
 void _dfr_try_initialize() {

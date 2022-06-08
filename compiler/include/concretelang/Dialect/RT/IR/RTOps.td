@@ -1,9 +1,10 @@
 #ifndef CONCRETELANG_DIALECT_RT_IR_RT_OPS
 #define CONCRETELANG_DIALECT_RT_IR_RT_OPS
 
+include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.td"
 include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.td"
-include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/IR/SymbolInterfaces.td"
 include "mlir/Interfaces/DataLayoutInterfaces.td"
 
@@ -15,9 +16,13 @@ class RT_Op<string mnemonic, list<Trait> traits = []> :
 
 def RT_DataflowTaskOp : RT_Op<"dataflow_task", [
     DeclareOpInterfaceMethods<RegionBranchOpInterface>,
-    SingleBlockImplicitTerminator<"DataflowYieldOp">]> {
+    DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
+     DeclareOpInterfaceMethods<AllocationOpInterface,
+       ["buildDealloc", "buildClone"]>,
+    SingleBlockImplicitTerminator<"DataflowYieldOp">,
+    AutomaticAllocationScope] > {
     let arguments = (ins Variadic<AnyType>: $inputs);
-    let results = (outs Variadic<AnyType>:$outputs);
+    let results = (outs Variadic<AnyType>: $outputs);
 
     let regions = (region AnyRegion:$body);
 
@@ -85,8 +90,12 @@ Example:
   }];
 }
 
-def RT_MakeReadyFutureOp : RT_Op<"make_ready_future"> {
-    let arguments = (ins AnyType: $input);
+def RT_MakeReadyFutureOp : RT_Op<"make_ready_future", [
+    		      DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
+    		      DeclareOpInterfaceMethods<AllocationOpInterface,
+       		      ["buildDealloc", "buildClone"]>]> {
+    let arguments = (ins AnyType: $input,
+			 AnyType: $memrefCloned);
     let results = (outs RT_Future: $output);
     let summary = "Build a ready future.";
     let description = [{
@@ -115,14 +124,27 @@ def RT_CreateAsyncTaskOp : RT_Op<"create_async_task"> {
     let summary = "Create a dataflow task.";
 }
 
-def RegisterTaskWorkFunctionOp : RT_Op<"register_task_work_function"> {
+def RT_RegisterTaskWorkFunctionOp : RT_Op<"register_task_work_function"> {
     let arguments = (ins Variadic<AnyType>:$list);
     let results = (outs );
     let summary = "Register the task work-function with the runtime system.";
 }
 
-def DeallocateFutureOp : RT_Op<"deallocate_future"> {
+def RT_CloneFutureOp : RT_Op<"clone_future",
+     [DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
+      DeclareOpInterfaceMethods<AllocationOpInterface,
+       ["buildDealloc", "buildClone"]>] > {
+    let builders = [
+      OpBuilder<(ins "Value": $input), [{
+      return build($_builder, $_state, input.getType(), input);
+    }]>];
+
     let arguments = (ins RT_Future: $input);
+    let results = (outs RT_Future: $output);
+}
+
+def RT_DeallocateFutureOp : RT_Op<"deallocate_future"> {
+    let arguments = (ins AnyType: $input);
     let results = (outs );
 }
 
