@@ -139,19 +139,6 @@ OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
   return nullptr;
 }
 
-// Avoid subtraction with constant 0
-OpFoldResult SubIntEintOp::fold(ArrayRef<Attribute> operands) {
-  assert(operands.size() == 2);
-  auto toSub = operands[0].dyn_cast_or_null<mlir::IntegerAttr>();
-  if (toSub != nullptr) {
-    auto intToSub = toSub.getInt();
-    if (intToSub == 0) {
-      return getOperand(1);
-    }
-  }
-  return nullptr;
-}
-
 // Avoid multiplication with constant 1
 OpFoldResult MulEintIntOp::fold(ArrayRef<Attribute> operands) {
   assert(operands.size() == 2);

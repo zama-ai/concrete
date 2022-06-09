@@ -1655,20 +1655,6 @@ OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
   return getOperand(0);
 }
 
-// Avoid subtraction with constant tensor of 0s
-OpFoldResult SubIntEintOp::fold(ArrayRef<Attribute> operands) {
-  assert(operands.size() == 2);
-  auto toSub = operands[0].dyn_cast_or_null<mlir::DenseIntElementsAttr>();
-  if (toSub == nullptr)
-    return nullptr;
-  for (int64_t i = 0; i < toSub.size(); i++) {
-    llvm::APInt cst = toSub.getFlatValue<llvm::APInt>(i);
-    if (cst != 0)
-      return nullptr;
-  }
-  return getOperand(1);
-}
-
 // Avoid multiplication with constant tensor of 1s
 OpFoldResult MulEintIntOp::fold(ArrayRef<Attribute> operands) {
   assert(operands.size() == 2);

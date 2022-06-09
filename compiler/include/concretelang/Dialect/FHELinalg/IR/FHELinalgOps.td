@@ -180,8 +180,6 @@ def SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, Tensor
          build($_builder, $_state, lhs.getType(), rhs, lhs);
         }]>
     ];
-
-    let hasFolder = 1;
 }
 
 def NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {

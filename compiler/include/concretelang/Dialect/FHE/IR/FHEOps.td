@@ -153,8 +153,6 @@ def SubIntEintOp : FHE_Op<"sub_int_eint"> {
     let verifier = [{
         return ::mlir::concretelang::FHE::verifySubIntEintOp(*this);
     }];
-
-    let hasFolder = 1;
 }
 
 def NegEintOp : FHE_Op<"neg_eint"> {
