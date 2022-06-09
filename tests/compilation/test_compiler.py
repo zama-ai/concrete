@@ -45,12 +45,63 @@ def test_compiler_bad_init():
         "Encryption status of parameter 'x' of function 'f' is not provided"
     )
 
-    # additional p
+    # additional a, b, c
+    # ------------------
+    with pytest.raises(ValueError) as excinfo:
+        Compiler(
+            f,
+            {
+                "x": "encrypted",
+                "y": "encrypted",
+                "z": "encrypted",
+                "a": "encrypted",
+                "b": "encrypted",
+                "c": "encrypted",
+            },
+        )
+
+    assert str(excinfo.value) == (
+        "Encryption statuses of 'a', 'b' and 'c' are provided "
+        "but they are not a parameter of function 'f'"
+    )
+
+    # additional a and b
+    # ------------------
+
+    with pytest.raises(ValueError) as excinfo:
+        Compiler(
+            f,
+            {
+                "x": "encrypted",
+                "y": "encrypted",
+                "z": "encrypted",
+                "a": "encrypted",
+                "b": "encrypted",
+            },
+        )
+
+    assert str(excinfo.value) == (
+        "Encryption statuses of 'a' and 'b' are provided "
+        "but they are not a parameter of function 'f'"
+    )
+
+    # additional a
     # ------------
 
-    # this is fine and `p` is just ignored
+    with pytest.raises(ValueError) as excinfo:
+        Compiler(
+            f,
+            {
+                "x": "encrypted",
+                "y": "encrypted",
+                "z": "encrypted",
+                "a": "encrypted",
+            },
+        )
 
-    Compiler(f, {"x": "encrypted", "y": "encrypted", "z": "clear", "p": "clear"})
+    assert str(excinfo.value) == (
+        "Encryption status of 'a' is provided but it is not a parameter of function 'f'"
+    )
 
 
 def test_compiler_bad_call():
@@ -98,6 +149,9 @@ def test_compiler_bad_compile(helpers):
     def f(x, y, z):
         return x + y + z
 
+    # without inputset
+    # ----------------
+
     with pytest.raises(RuntimeError) as excinfo:
         compiler = Compiler(
             f,
@@ -106,6 +160,41 @@ def test_compiler_bad_compile(helpers):
         compiler.compile(configuration=configuration)
 
     assert str(excinfo.value) == "Compiling function 'f' without an inputset is not supported"
+
+    # with bad inputset at the first input
+    # ------------------------------------
+
+    with pytest.raises(ValueError) as excinfo:
+        compiler = Compiler(
+            f,
+            {"x": "encrypted", "y": "encrypted", "z": "clear"},
+        )
+        inputset = [1]
+        compiler.compile(inputset, configuration=configuration)
+
+    assert str(excinfo.value) == (
+        "Input #0 of your inputset is not well formed "
+        "(expected a tuple of 3 values got a single value)"
+    )
+
+    # with bad inputset at the second input
+    # -------------------------------------
+
+    with pytest.raises(ValueError) as excinfo:
+        compiler = Compiler(
+            f,
+            {"x": "encrypted", "y": "encrypted", "z": "clear"},
+        )
+        inputset = [(1, 2, 3), (1, 2)]
+        compiler.compile(inputset, configuration=configuration)
+
+    assert str(excinfo.value) == (
+        "Input #1 of your inputset is not well formed "
+        "(expected a tuple of 3 values got a tuple of 2 values)"
+    )
+
+    # with bad configuration
+    # ----------------------
 
     with pytest.raises(RuntimeError) as excinfo:
         compiler = Compiler(lambda x: x, {"x": "encrypted"})

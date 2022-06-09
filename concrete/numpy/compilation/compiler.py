@@ -71,9 +71,24 @@ class Compiler:
                 f"{'are' if len(missing_args) > 1 else 'is'} not provided"
             )
 
-        additional_args = parameter_encryption_statuses.keys() - signature.parameters.keys()
-        for arg in additional_args:
-            del parameter_encryption_statuses[arg]
+        additional_args = list(parameter_encryption_statuses)
+        for arg in signature.parameters.keys():
+            if arg in parameter_encryption_statuses:
+                additional_args.remove(arg)
+
+        if len(additional_args) != 0:
+            parameter_str = repr(additional_args[0])
+            for arg in additional_args[1:-1]:
+                parameter_str += f", {repr(arg)}"
+            if len(additional_args) != 1:
+                parameter_str += f" and {repr(additional_args[-1])}"
+
+            raise ValueError(
+                f"Encryption status{'es' if len(additional_args) > 1 else ''} "
+                f"of {parameter_str} {'are' if len(additional_args) > 1 else 'is'} provided but "
+                f"{'they are' if len(additional_args) > 1 else 'it is'} not a parameter "
+                f"of function '{function.__name__}'"
+            )
 
         self.function = function  # type: ignore
         self.parameter_encryption_statuses = {
@@ -155,6 +170,25 @@ class Compiler:
         """
 
         if inputset is not None:
+            for index, sample in enumerate(iter(inputset)):
+                if not isinstance(sample, tuple):
+                    sample = (sample,)
+
+                if len(sample) != len(self.parameter_encryption_statuses):
+                    expected = (
+                        "a single value"
+                        if len(self.parameter_encryption_statuses) == 1
+                        else f"a tuple of {len(self.parameter_encryption_statuses)} values"
+                    )
+                    actual = (
+                        "a single value" if len(sample) == 1 else f"a tuple of {len(sample)} values"
+                    )
+
+                    raise ValueError(
+                        f"Input #{index} of your inputset is not well formed "
+                        f"(expected {expected} got {actual})"
+                    )
+
             for input_ in inputset:
                 self.inputset.append(input_)
 
