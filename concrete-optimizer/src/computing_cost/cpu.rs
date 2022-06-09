@@ -10,14 +10,14 @@ pub struct CpuComplexity {
 }
 
 impl ComplexityModel for CpuComplexity {
-    fn pbs_complexity(&self, params: PbsParameters, ciphertext_modulus_log: u64) -> Complexity {
+    fn pbs_complexity(&self, params: PbsParameters, ciphertext_modulus_log: u32) -> Complexity {
         self.pbs.complexity(params, ciphertext_modulus_log)
     }
 
     fn ks_complexity(
         &self,
         params: KeyswitchParameters,
-        ciphertext_modulus_log: u64,
+        ciphertext_modulus_log: u32,
     ) -> Complexity {
         self.ks_lwe.complexity(params, ciphertext_modulus_log)
     }
@@ -26,7 +26,7 @@ impl ComplexityModel for CpuComplexity {
         &self,
         sum_size: u64,
         lwe_dimension: LweDimension,
-        _ciphertext_modulus_log: u64,
+        _ciphertext_modulus_log: u32,
     ) -> Complexity {
         sum_size as f64 * lwe_dimension.0 as f64
     }

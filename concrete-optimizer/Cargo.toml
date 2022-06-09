@@ -8,10 +8,11 @@ edition = "2021"
 [dependencies]
 delegate = "0.7.0"
 derive_more = "0.99.17"
-concrete-commons = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
-concrete-npe = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
-statrs = "0.15.0"
+statrs = "0.16.0"
 lazy_static = "1.4.0"
+concrete-commons = { git = "ssh://git@github.com/zama-ai/concrete-core.git", rev = "715d4a18a59d13a5a51fee14bc1f6578de665c20" }
+concrete-npe = { git = "ssh://git@github.com/zama-ai/concrete-core.git", rev = "715d4a18a59d13a5a51fee14bc1f6578de665c20" }
+
 
 [dev-dependencies]
 approx = "0.5"

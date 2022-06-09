@@ -111,7 +111,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                 .map(|&manp| {
                     let noise_scale = 2_f64.powi(manp);
                     let result = if args.wop_pbs {
-                        optimize_wop_atomic_pattern::optimize_one_compat::<u64>(
+                        optimize_wop_atomic_pattern::optimize_one_compat(
                             sum_size,
                             precision,
                             config,
@@ -119,7 +119,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                             &search_space,
                         )
                     } else {
-                        optimize_atomic_pattern::optimize_one::<u64>(
+                        optimize_atomic_pattern::optimize_one(
                             sum_size,
                             precision,
                             config,

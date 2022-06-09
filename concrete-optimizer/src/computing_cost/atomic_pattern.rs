@@ -6,7 +6,7 @@ pub fn atomic_pattern_complexity(
     complexity_model: &dyn ComplexityModel,
     sum_size: u64,
     params: AtomicPatternParameters,
-    ciphertext_modulus_log: u64,
+    ciphertext_modulus_log: u32,
 ) -> Complexity {
     let multisum_complexity = complexity_model.levelled_complexity(
         sum_size,

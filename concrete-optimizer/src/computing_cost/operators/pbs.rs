@@ -8,7 +8,7 @@ pub struct PbsComplexity {
 }
 
 impl PbsComplexity {
-    pub fn complexity(&self, params: PbsParameters, ciphertext_modulus_log: u64) -> Complexity {
+    pub fn complexity(&self, params: PbsParameters, ciphertext_modulus_log: u32) -> Complexity {
         // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L163
 
         let cmux_cost = self

@@ -13,7 +13,7 @@ impl SimpleWithFactors {
     pub fn fft_complexity(
         &self,
         glwe_polynomial_size: f64,
-        _ciphertext_modulus_log: u64,
+        _ciphertext_modulus_log: u32,
     ) -> Complexity {
         self.fft.fft_complexity(glwe_polynomial_size) + glwe_polynomial_size
     }
@@ -21,13 +21,13 @@ impl SimpleWithFactors {
     fn ifft_complexity(
         &self,
         glwe_polynomial_size: f64,
-        _ciphertext_modulus_log: u64,
+        _ciphertext_modulus_log: u32,
     ) -> Complexity {
         self.fft.ifft_complexity(glwe_polynomial_size) + glwe_polynomial_size
     }
 
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L145
-    pub fn complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u64) -> Complexity {
+    pub fn complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u32) -> Complexity {
         let glwe_polynomial_size = params.output_glwe_params.polynomial_size() as f64;
 
         let f_glwe_size = (params.output_glwe_params.glwe_dimension + 1) as f64;

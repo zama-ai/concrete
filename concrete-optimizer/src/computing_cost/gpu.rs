@@ -58,7 +58,7 @@ pub struct GpuComplexity {
 
 impl ComplexityModel for GpuComplexity {
     #[allow(clippy::let_and_return, non_snake_case)]
-    fn pbs_complexity(&self, params: PbsParameters, _ciphertext_modulus_log: u64) -> Complexity {
+    fn pbs_complexity(&self, params: PbsParameters, _ciphertext_modulus_log: u32) -> Complexity {
         let GpuPbsComplexity {
             w1,
             w2,
@@ -91,7 +91,7 @@ impl ComplexityModel for GpuComplexity {
     fn ks_complexity(
         &self,
         params: KeyswitchParameters,
-        ciphertext_modulus_log: u64,
+        ciphertext_modulus_log: u32,
     ) -> Complexity {
         let GpuKsComplexity {
             w1,
@@ -129,7 +129,7 @@ impl ComplexityModel for GpuComplexity {
         &self,
         _sum_size: u64,
         _lwe_dimension: LweDimension,
-        _ciphertext_modulus_log: u64,
+        _ciphertext_modulus_log: u32,
     ) -> Complexity {
         0.
     }

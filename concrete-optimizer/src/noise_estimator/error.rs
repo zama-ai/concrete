@@ -1,6 +1,5 @@
-use concrete_commons::dispersion::DispersionParameter;
+use concrete_commons::dispersion::{DispersionParameter, Variance};
 
-use super::utils;
 use crate::utils::square;
 
 pub fn sigma_scale_of_error_probability(p_error: f64) -> f64 {
@@ -21,15 +20,15 @@ pub fn error_probability_of_sigma_scale(sigma_scale: f64) -> f64 {
 const LEFT_PADDING_BITS: u64 = 1;
 const RIGHT_PADDING_BITS: u64 = 1;
 
-pub fn fatal_variance_limit(padding_bits: u64, precision: u64, ciphertext_modulus_log: u64) -> f64 {
+pub fn fatal_variance_limit(padding_bits: u64, precision: u64, ciphertext_modulus_log: u32) -> f64 {
     let no_noise_bits = padding_bits + precision;
-    let noise_bits = ciphertext_modulus_log - no_noise_bits;
+    let noise_bits = ciphertext_modulus_log as u64 - no_noise_bits;
     2_f64.powi(noise_bits as i32)
 }
 
 fn safe_variance_bound_from_p_error(
     fatal_noise_limit: f64,
-    ciphertext_modulus_log: u64,
+    ciphertext_modulus_log: u32,
     maximum_acceptable_error_probability: f64,
 ) -> f64 {
     // We want safe_sigma such that:
@@ -39,12 +38,13 @@ fn safe_variance_bound_from_p_error(
     let kappa = sigma_scale_of_error_probability(maximum_acceptable_error_probability);
     let safe_sigma = fatal_noise_limit / kappa;
     let modular_variance = square(safe_sigma);
-    utils::from_modular_variance(modular_variance, ciphertext_modulus_log).get_variance()
+
+    Variance::from_modular_variance(modular_variance, ciphertext_modulus_log).get_variance()
 }
 
 pub fn safe_variance_bound_2padbits(
     precision: u64,
-    ciphertext_modulus_log: u64,
+    ciphertext_modulus_log: u32,
     maximum_acceptable_error_probability: f64,
 ) -> f64 {
     let padding_bits = LEFT_PADDING_BITS + RIGHT_PADDING_BITS;
@@ -57,7 +57,7 @@ pub fn safe_variance_bound_2padbits(
 }
 
 pub fn safe_variance_bound_1bit_1padbit(
-    ciphertext_modulus_log: u64,
+    ciphertext_modulus_log: u32,
     maximum_acceptable_error_probability: f64,
 ) -> f64 {
     // This is hardcoded and only valid for 16bit wop pbs

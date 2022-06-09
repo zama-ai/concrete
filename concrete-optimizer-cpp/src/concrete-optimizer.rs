@@ -37,7 +37,7 @@ fn optimize_bootstrap(
 
     let search_space = SearchSpace::default();
 
-    let result = concrete_optimizer::optimization::atomic_pattern::optimize_one::<u64>(
+    let result = concrete_optimizer::optimization::atomic_pattern::optimize_one(
         sum_size,
         precision,
         config,
@@ -216,7 +216,7 @@ impl OperationDag {
 
         let search_space = SearchSpace::default();
 
-        let result = concrete_optimizer::optimization::dag::solo_key::optimize::optimize::<u64>(
+        let result = concrete_optimizer::optimization::dag::solo_key::optimize::optimize(
             &self.0,
             config,
             &search_space,
@@ -241,9 +241,12 @@ impl OperationDag {
 
         let search_space = SearchSpace::default();
 
-        let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize::<
-            u64,
-        >(&self.0, config, &search_space, default_log_norm2_woppbs);
+        let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
+            &self.0,
+            config,
+            &search_space,
+            default_log_norm2_woppbs,
+        );
         result.map_or_else(no_dag_solution, |solution| solution.into())
     }
 

@@ -5,7 +5,6 @@ use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::dag::solo_key::{analyze, optimize};
 use crate::optimization::wop_atomic_pattern::optimize::optimize_one as wop_optimize;
 use crate::optimization::wop_atomic_pattern::Solution as WopSolution;
-use concrete_commons::numeric::UnsignedInteger;
 use std::ops::RangeInclusive;
 
 const MINIMAL_WOP_PRECISION: Precision = 9;
@@ -42,7 +41,7 @@ fn updated_global_p_error(nb_luts: u64, sol: WopSolution) -> WopSolution {
     }
 }
 
-pub fn optimize<W: UnsignedInteger>(
+pub fn optimize(
     dag: &OperationDag,
     config: Config,
     search_space: &SearchSpace,
@@ -58,10 +57,10 @@ pub fn optimize<W: UnsignedInteger>(
         let worst_log_norm = analyze::worst_log_norm(dag);
         let log_norm = default_log_norm.min(worst_log_norm);
         let opt_sol =
-            wop_optimize::<W>(fallback_16b_precision, config, log_norm, search_space).best_solution;
+            wop_optimize(fallback_16b_precision, config, log_norm, search_space).best_solution;
         opt_sol.map(|sol| Solution::WopSolution(updated_global_p_error(nb_luts, sol)))
     } else {
-        let opt_sol = optimize::optimize::<W>(dag, config, search_space).best_solution;
+        let opt_sol = optimize::optimize(dag, config, search_space).best_solution;
         opt_sol.map(Solution::WpSolution)
     }
 }

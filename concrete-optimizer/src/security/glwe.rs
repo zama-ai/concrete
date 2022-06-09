@@ -5,7 +5,7 @@ use concrete_commons::dispersion::Variance;
 /// Noise ensuring security
 pub fn minimal_variance(
     glwe_params: GlweParameters,
-    ciphertext_modulus_log: u64,
+    ciphertext_modulus_log: u32,
     security_level: u64,
 ) -> Variance {
     let equiv_lwe_dimension = glwe_params.glwe_dimension * glwe_params.polynomial_size();

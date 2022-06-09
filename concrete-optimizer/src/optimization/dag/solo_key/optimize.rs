@@ -12,14 +12,13 @@ use crate::parameters::{BrDecompositionParameters, GlweParameters, KsDecompositi
 use crate::pareto;
 use crate::security::glwe::minimal_variance;
 use concrete_commons::dispersion::DispersionParameter;
-use concrete_commons::numeric::UnsignedInteger;
 
 const CUTS: bool = true;
 const PARETO_CUTS: bool = true;
 const CROSS_PARETO_CUTS: bool = PARETO_CUTS && true;
 
 #[allow(clippy::too_many_lines)]
-fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
+fn update_best_solution_with_best_decompositions(
     state: &mut OptimizationState,
     consts: &OptimizationDecompositionsConsts,
     dag: &analyze::OperationDag,
@@ -68,13 +67,14 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
     };
     let br_cut_complexity = cut_complexity;
 
-    let br_pareto = pareto_blind_rotate::<W>(
+    let br_pareto = pareto_blind_rotate(
         consts,
         internal_dim,
         glwe_params,
         br_cut_complexity,
         br_cut_noise,
     );
+
     if br_pareto.is_empty() {
         return;
     }
@@ -87,7 +87,7 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
     let ks_cut_noise = cut_noise - worst_input_ks_noise;
     let ks_cut_complexity = cut_complexity - br_pareto[0].complexity;
 
-    let ks_pareto = pareto_keyswitch::<W>(
+    let ks_pareto = pareto_keyswitch(
         consts,
         input_lwe_dimension,
         internal_dim,
@@ -220,12 +220,12 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
 
 const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
-pub fn optimize<W: UnsignedInteger>(
+pub fn optimize(
     dag: &unparametrized::OperationDag,
     config: Config,
     search_space: &SearchSpace,
 ) -> OptimizationState {
-    let ciphertext_modulus_log = W::BITS as u64;
+    let ciphertext_modulus_log = config.ciphertext_modulus_log;
     let noise_config = NoiseBoundConfig {
         security_level: config.security_level,
         maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
@@ -267,9 +267,10 @@ pub fn optimize<W: UnsignedInteger>(
     };
 
     let noise_modulus_switching = |glwe_poly_size, internal_lwe_dimensions| {
-        noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key::<W>(
+        noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key(
             internal_lwe_dimensions,
             glwe_poly_size,
+            ciphertext_modulus_log,
         )
         .get_variance()
     };
@@ -289,7 +290,7 @@ pub fn optimize<W: UnsignedInteger>(
                     // assume this noise is increasing with internal_dim
                     break;
                 }
-                update_best_solution_with_best_decompositions::<W>(
+                update_best_solution_with_best_decompositions(
                     &mut state,
                     &consts,
                     &dag,
@@ -314,7 +315,7 @@ pub fn optimize<W: UnsignedInteger>(
     state
 }
 
-pub fn optimize_v0<W: UnsignedInteger>(
+pub fn optimize_v0(
     sum_size: u64,
     precision: u64,
     config: Config,
@@ -334,7 +335,7 @@ pub fn optimize_v0<W: UnsignedInteger>(
     let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
     let dot2 = dag.add_levelled_op([lut1], complexity, manp, out_shape, comment);
     let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
-    let mut state = optimize::<u64>(&dag, config, search_space);
+    let mut state = optimize(&dag, config, search_space);
     if let Some(sol) = &mut state.best_solution {
         sol.complexity /= 2.0;
     }
@@ -384,7 +385,7 @@ mod tests {
 
         let search_space = SearchSpace::default();
 
-        super::optimize::<u64>(dag, config, &search_space)
+        super::optimize(dag, config, &search_space)
     }
 
     struct Times {
@@ -424,11 +425,11 @@ mod tests {
         };
 
         let chrono = Instant::now();
-        let state = optimize_v0::<u64>(sum_size, precision, config, weight as f64, &search_space);
+        let state = optimize_v0(sum_size, precision, config, weight as f64, &search_space);
 
         times.dag_time += chrono.elapsed().as_nanos();
         let chrono = Instant::now();
-        let state_ref = atomic_pattern::optimize_one::<u64>(
+        let state_ref = atomic_pattern::optimize_one(
             sum_size,
             precision,
             config,
@@ -500,7 +501,7 @@ mod tests {
         };
 
         let state = optimize(&dag);
-        let state_ref = atomic_pattern::optimize_one::<u64>(
+        let state_ref = atomic_pattern::optimize_one(
             1,
             precision as u64,
             config,

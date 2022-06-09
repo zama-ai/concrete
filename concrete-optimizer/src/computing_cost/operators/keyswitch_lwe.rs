@@ -7,7 +7,7 @@ impl KsComplexity {
     pub fn complexity(
         &self,
         params: KeyswitchParameters,
-        _ciphertext_modulus_log: u64,
+        _ciphertext_modulus_log: u32,
     ) -> Complexity {
         let _ = self;
         // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/keyswitch.py#L91

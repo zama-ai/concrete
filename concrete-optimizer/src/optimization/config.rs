@@ -5,14 +5,14 @@ use crate::global_parameters::DEFAUT_DOMAINS;
 pub struct NoiseBoundConfig {
     pub security_level: u64,
     pub maximum_acceptable_error_probability: f64,
-    pub ciphertext_modulus_log: u64,
+    pub ciphertext_modulus_log: u32,
 }
 
 #[derive(Clone, Copy)]
 pub struct Config<'a> {
     pub security_level: u64,
     pub maximum_acceptable_error_probability: f64,
-    pub ciphertext_modulus_log: u64,
+    pub ciphertext_modulus_log: u32,
     pub complexity_model: &'a dyn ComplexityModel,
 }
 

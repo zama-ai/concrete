@@ -11,7 +11,7 @@ pub fn extract_br_pareto(
     security_level: u64,
     output_glwe_range: &GlweParameterRanges,
     input_lwe_range: &crate::parameters::LweDimensionRange,
-    ciphertext_modulus_log: u64,
+    ciphertext_modulus_log: u32,
 ) -> Vec<BrDecompositionParameters> {
     let mut paretos = HashSet::new();
 
@@ -28,7 +28,7 @@ pub fn extract_br_pareto(
             for input_lwe_dimension in &input_lwe_range.lwe_dimension {
                 let mut min_variance = Variance(f64::INFINITY);
 
-                for level in 1..=ciphertext_modulus_log {
+                for level in 1..=(ciphertext_modulus_log as u64) {
                     // To compute the PBS, Concrete switches from u32/u64 to f64 to represent the ciphertext
                     // which only keeps the 53 MSB of each u32/u64 (53 is the mantissa size).
                     // There is no need to decompose more bits than 53 as those ones will be erased by the conversion between u32/u64 and f64.
@@ -49,7 +49,7 @@ pub fn extract_br_pareto(
                             },
                         };
 
-                        let variance = variance_bootstrap::<u64>(
+                        let variance = variance_bootstrap(
                             pbs_parameters,
                             ciphertext_modulus_log,
                             variance_bsk,
@@ -87,7 +87,7 @@ pub fn extract_ks_pareto(
     security_level: u64,
     input_glwe_range: &GlweParameterRanges,
     output_lwe_range: &crate::parameters::LweDimensionRange,
-    ciphertext_modulus_log: u64,
+    ciphertext_modulus_log: u32,
 ) -> Vec<KsDecompositionParameters> {
     let mut paretos = HashSet::new();
 
@@ -109,10 +109,10 @@ pub fn extract_ks_pareto(
 
                 let mut min_variance = Variance(f64::INFINITY);
 
-                for level in 1..=ciphertext_modulus_log {
+                for level in 1..=ciphertext_modulus_log as u64 {
                     let mut log2_base_arg_min = None;
 
-                    for log2_base in 1..=(ciphertext_modulus_log / level) {
+                    for log2_base in 1..=(ciphertext_modulus_log as u64 / level) {
                         let keyswitch_parameters = KeyswitchParameters {
                             input_lwe_dimension: LweDimension(input_lwe_dimension),
                             output_lwe_dimension: LweDimension(output_lwe_dimension),
@@ -122,7 +122,7 @@ pub fn extract_ks_pareto(
                             },
                         };
 
-                        let variance = variance_keyswitch::<u64>(
+                        let variance = variance_keyswitch(
                             keyswitch_parameters,
                             ciphertext_modulus_log,
                             variance_ksk,
