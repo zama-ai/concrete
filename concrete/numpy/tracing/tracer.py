@@ -65,11 +65,28 @@ class Tracer:
             input_indices[node] = index
 
         Tracer._is_tracing = True
-        output_tracers = function(**arguments)
+        output_tracers: Any = function(**arguments)
         Tracer._is_tracing = False
 
-        if isinstance(output_tracers, Tracer):
+        if not isinstance(output_tracers, tuple):
             output_tracers = (output_tracers,)
+
+        sanitized_tracers = []
+        for tracer in output_tracers:
+            if isinstance(tracer, Tracer):
+                sanitized_tracers.append(tracer)
+                continue
+
+            try:
+                sanitized_tracers.append(Tracer._sanitize(tracer))
+            except Exception as error:
+                raise ValueError(
+                    f"Function '{function.__name__}' "
+                    f"returned '{tracer}', "
+                    f"which is not supported"
+                ) from error
+
+        output_tracers = tuple(sanitized_tracers)
 
         def create_graph_from_output_tracers(output_tracers: Tuple[Tracer, ...]) -> nx.MultiDiGraph:
             graph = nx.MultiDiGraph()

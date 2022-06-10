@@ -2,6 +2,7 @@
 Tests of `Compiler` class.
 """
 
+import numpy as np
 import pytest
 
 from concrete.numpy.compilation import Compiler
@@ -126,6 +127,9 @@ def test_compiler_bad_trace(helpers):
 
     configuration = helpers.configuration()
 
+    # without inputset
+    # ----------------
+
     def f(x, y, z):
         return x + y + z
 
@@ -137,6 +141,18 @@ def test_compiler_bad_trace(helpers):
         compiler.trace(configuration=configuration)
 
     assert str(excinfo.value) == "Tracing function 'f' without an inputset is not supported"
+
+    # bad return
+    # ----------
+
+    def g():
+        return np.array([{}, ()], dtype=object)
+
+    with pytest.raises(ValueError) as excinfo:
+        compiler = Compiler(g, {})
+        compiler.trace(inputset=[()], configuration=configuration)
+
+    assert str(excinfo.value) == "Function 'g' returned '[{} ()]', which is not supported"
 
 
 def test_compiler_bad_compile(helpers):
