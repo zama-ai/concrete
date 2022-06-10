@@ -46,7 +46,7 @@ def test_compiler_verbose_trace(helpers, capsys):
 
 Computation Graph
 ------------------------------------------------
-{str(list(artifacts.textual_representations_of_graphs.values())[-1])}
+{str(list(artifacts.textual_representations_of_graphs.values())[-1][-1])}
 ------------------------------------------------
 
         """.strip()
@@ -74,7 +74,7 @@ def test_compiler_verbose_compile(helpers, capsys):
 
 Computation Graph
 --------------------------------------------------------------------------------
-{list(artifacts.textual_representations_of_graphs.values())[-1]}
+{list(artifacts.textual_representations_of_graphs.values())[-1][-1]}
 --------------------------------------------------------------------------------
 
 MLIR

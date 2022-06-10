@@ -5,6 +5,8 @@ Tests of `DebugArtifacts` class.
 import tempfile
 from pathlib import Path
 
+import numpy as np
+
 from concrete.numpy.compilation import DebugArtifacts, compiler
 
 
@@ -21,9 +23,11 @@ def test_artifacts_export(helpers):
 
         @compiler({"x": "encrypted"})
         def f(x):
-            return x + 10
+            a = ((np.sin(x) ** 2) + (np.cos(x) ** 2)).astype(np.int64)
+            b = np.where(x < 5, x * 10, x + 10)
+            return a + b
 
-        inputset = range(100)
+        inputset = range(10)
         f.compile(inputset, configuration, artifacts)
 
         artifacts.export()
@@ -37,8 +41,14 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "1.initial.graph.txt").exists()
         assert (tmpdir / "1.initial.graph.png").exists()
 
-        assert (tmpdir / "2.final.graph.txt").exists()
-        assert (tmpdir / "2.final.graph.png").exists()
+        assert (tmpdir / "2.after-fusing.graph.txt").exists()
+        assert (tmpdir / "2.after-fusing.graph.png").exists()
+
+        assert (tmpdir / "3.after-fusing.graph.txt").exists()
+        assert (tmpdir / "3.after-fusing.graph.png").exists()
+
+        assert (tmpdir / "4.final.graph.txt").exists()
+        assert (tmpdir / "4.final.graph.png").exists()
 
         assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()
@@ -55,8 +65,14 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "1.initial.graph.txt").exists()
         assert (tmpdir / "1.initial.graph.png").exists()
 
-        assert (tmpdir / "2.final.graph.txt").exists()
-        assert (tmpdir / "2.final.graph.png").exists()
+        assert (tmpdir / "2.after-fusing.graph.txt").exists()
+        assert (tmpdir / "2.after-fusing.graph.png").exists()
+
+        assert (tmpdir / "3.after-fusing.graph.txt").exists()
+        assert (tmpdir / "3.after-fusing.graph.png").exists()
+
+        assert (tmpdir / "4.final.graph.txt").exists()
+        assert (tmpdir / "4.final.graph.png").exists()
 
         assert (tmpdir / "bounds.txt").exists()
         assert (tmpdir / "mlir.txt").exists()
