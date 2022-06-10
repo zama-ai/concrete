@@ -106,6 +106,9 @@ class GraphConverter:
                 if not inputs[0].is_encrypted:
                     return "only encrypted negation is supported"
 
+            elif name == "ones":
+                assert_that(len(inputs) == 0)
+
             elif name == "reshape":
                 assert_that(len(inputs) == 1)
                 if not inputs[0].is_encrypted:
@@ -126,7 +129,11 @@ class GraphConverter:
                 if not inputs[0].is_encrypted:
                     return "only encrypted transpose is supported"
 
+            elif name == "zeros":
+                assert_that(len(inputs) == 0)
+
             else:
+                assert_that(node.converted_to_table_lookup)
                 variable_input_indices = [
                     idx
                     for idx, pred in enumerate(graph.ordered_preds_of(node))
@@ -135,7 +142,7 @@ class GraphConverter:
                 if len(variable_input_indices) != 1:
                     return "only single input table lookups are supported"
 
-            if all(input.is_clear for input in inputs):
+            if len(inputs) > 0 and all(input.is_clear for input in inputs):
                 return "one of the operands must be encrypted"
 
         return None

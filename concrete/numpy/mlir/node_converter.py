@@ -124,7 +124,7 @@ class NodeConverter:
                 in-memory MLIR representation corresponding to `self.node`
         """
 
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
 
         if self.node.operation == Operation.Constant:
             result = self.convert_constant()
@@ -163,6 +163,9 @@ class NodeConverter:
             elif name == "negative":
                 result = self.convert_neg()
 
+            elif name == "ones":
+                result = self.convert_ones()
+
             elif name == "reshape":
                 result = self.convert_reshape()
 
@@ -175,7 +178,11 @@ class NodeConverter:
             elif name == "transpose":
                 result = self.convert_transpose()
 
+            elif name == "zeros":
+                result = self.convert_zeros()
+
             else:
+                assert_that(self.node.converted_to_table_lookup)
                 result = self.convert_tlu()
 
         mlir_name = str(result).replace("Value(", "").split("=", maxsplit=1)[0].strip()
@@ -455,6 +462,49 @@ class NodeConverter:
             result = fhelinalg.NegEintOp(resulting_type, pred).result
         else:
             result = fhe.NegEintOp(resulting_type, pred).result
+
+        return result
+
+    def convert_ones(self) -> OpResult:
+        """
+        Convert "ones" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
+
+        assert isinstance(self.node.output.dtype, Integer)
+        bit_width = self.node.output.dtype.bit_width
+
+        if self.node.output.is_scalar:
+            constant_value = Value(
+                Integer(is_signed=False, bit_width=bit_width + 1),
+                shape=(),
+                is_encrypted=False,
+            )
+            constant_type = NodeConverter.value_to_mlir_type(self.ctx, constant_value)
+            constant_attr = IntegerAttr.get(constant_type, 1)
+
+            zero = fhe.ZeroEintOp(resulting_type).result
+            one = arith.ConstantOp(constant_type, constant_attr).result
+
+            result = fhe.AddEintIntOp(resulting_type, zero, one).result
+        else:
+            constant_value = Value(
+                Integer(is_signed=False, bit_width=bit_width + 1),
+                shape=(1,),
+                is_encrypted=False,
+            )
+            constant_type = NodeConverter.value_to_mlir_type(self.ctx, constant_value)
+            constant_attr = Attribute.parse(f"dense<[1]> : {constant_type}")
+
+            zeros = fhe.ZeroTensorOp(resulting_type).result
+            ones = arith.ConstantOp(constant_type, constant_attr).result
+
+            result = fhelinalg.AddEintIntOp(resulting_type, zeros, ones).result
 
         return result
 
@@ -843,3 +893,21 @@ class NodeConverter:
         preds = self.preds
 
         return fhelinalg.TransposeOp(resulting_type, *preds).result
+
+    def convert_zeros(self) -> OpResult:
+        """
+        Convert "zeros" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
+
+        if self.node.output.is_scalar:
+            result = fhe.ZeroEintOp(resulting_type).result
+        else:
+            result = fhe.ZeroTensorOp(resulting_type).result
+
+        return result

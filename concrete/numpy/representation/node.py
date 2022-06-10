@@ -313,10 +313,12 @@ class Node:
             "matmul",
             "multiply",
             "negative",
+            "ones",
             "reshape",
             "subtract",
             "sum",
             "transpose",
+            "zeros",
         ]
 
     @property
@@ -336,5 +338,7 @@ class Node:
             "add",
             "multiply",
             "negative",
+            "ones",
             "subtract",
+            "zeros",
         ]
