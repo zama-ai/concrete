@@ -150,8 +150,8 @@ mlir::LogicalResult AddGLWEOp::verify() {
   return ::mlir::concretelang::TFHE::verifyBinaryGLWEOperator<AddGLWEOp>(*this);
 }
 
-mlir::LogicalResult SubIntGLWEOp::verify() {
-  return ::mlir::concretelang::TFHE::verifyIntegerGLWEOperator<SubIntGLWEOp>(
+mlir::LogicalResult SubGLWEIntOp::verify() {
+  return ::mlir::concretelang::TFHE::verifyIntegerGLWEOperator<SubGLWEIntOp>(
       *this);
 }
 

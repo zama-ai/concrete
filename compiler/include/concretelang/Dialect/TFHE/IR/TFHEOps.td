@@ -51,7 +51,7 @@ def AddGLWEOp : TFHE_Op<"add_glwe"> {
   let hasVerifier = 1;
 }
 
-def SubIntGLWEOp : TFHE_Op<"sub_int_glwe"> {
+def SubGLWEIntOp : TFHE_Op<"sub_int_glwe"> {
   let summary = "Substracts an integer and a GLWE ciphertext";
 
   let arguments = (ins AnyInteger : $a, GLWECipherTextType : $b);

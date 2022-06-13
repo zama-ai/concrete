@@ -24,11 +24,11 @@ def AddEintPattern : Pat<
     (AddEintOp:$result $arg0, $arg1),
     (createAddGLWEOp $arg0, $arg1, $result)>;
 
-def createSubIntGLWEOp : NativeCodeCall<"mlir::concretelang::createGLWEOpFromFHE<mlir::concretelang::TFHE::SubIntGLWEOp>($_builder, $_loc, $0, $1, $2)">;
+def createSubGLWEIntOp : NativeCodeCall<"mlir::concretelang::createGLWEOpFromFHE<mlir::concretelang::TFHE::SubGLWEIntOp>($_builder, $_loc, $0, $1, $2)">;
 
 def SubIntEintPattern : Pat<
     (SubIntEintOp:$result $arg0, $arg1),
-    (createSubIntGLWEOp $arg0, $arg1, $result)>;
+    (createSubGLWEIntOp $arg0, $arg1, $result)>;
 
 def createNegGLWEOp : NativeCodeCall<"mlir::concretelang::createGLWEOpFromFHE<mlir::concretelang::TFHE::NegGLWEOp>($_builder, $_loc, $0, $1)">;
 

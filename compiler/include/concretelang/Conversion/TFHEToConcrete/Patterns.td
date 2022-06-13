@@ -32,8 +32,8 @@ def MulGLWEIntPattern : Pat<
 
 def createSubIntLweOp : NativeCodeCall<"mlir::concretelang::createSubIntLweCiphertext($_builder, $_loc, $0, $1, $2)">;
 
-def SubIntGLWEPattern : Pat<
-    (SubIntGLWEOp:$result $arg0, $arg1),
+def SubGLWEIntPattern : Pat<
+    (SubGLWEIntOp:$result $arg0, $arg1),
     (createSubIntLweOp $arg0, $arg1, $result)>;
 
 def createNegLweOp : NativeCodeCall<"mlir::concretelang::createNegLweCiphertext($_builder, $_loc, $0, $1)">;
