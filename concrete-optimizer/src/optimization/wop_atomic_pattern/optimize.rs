@@ -224,6 +224,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
     }
 
     let mut best_complexity = state.best_solution.map_or(f64::INFINITY, |s| s.complexity);
+    let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
 
     // BlindRotate dans Circuit BS
     for (br_dp_index, &br_decomposition_parameter) in BR_BL_FOR_CB.iter().enumerate() {
@@ -247,7 +248,8 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
             (n_inputs * (precision - 1)) as f64 * complexity_bit_extract_pbs;
 
         if complexity_bit_extract_wo_ks > best_complexity {
-            continue;
+            // next br_decomp are at least as costly
+            break;
         }
 
         // private packing keyswitch, <=> FP-KS (Circuit Boostrap)
@@ -306,7 +308,8 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
             let complexity_circuit_bs = complexity_all_pbs + complexity_all_ppks;
 
             if complexity_bit_extract_wo_ks + complexity_circuit_bs > best_complexity {
-                continue;
+                // next circuit_pbs_decomposition_parameter are at least as costly
+                break;
             }
 
             let noise_ggsw = base_noise_private_packing_ks + base_noise / 2.;
@@ -359,34 +362,33 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     // next ks.level will be even more costly
                     break;
                 }
-
-                if complexity < best_complexity {
-                    let kappa = consts.kappa;
-                    best_complexity = complexity;
-                    let p_error = find_p_error(kappa, variance_max, noise_max);
-                    let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
-                    let glwe_polynomial_size = glwe_params.polynomial_size();
-                    let glwe_dimension = glwe_params.glwe_dimension;
-                    state.best_solution = Some(Solution {
-                        input_lwe_dimension,
-                        internal_ks_output_lwe_dimension: internal_dim,
-                        ks_decomposition_level_count: ks_decomposition_parameter.level,
-                        ks_decomposition_base_log: ks_decomposition_parameter.log2_base,
-                        glwe_polynomial_size,
-                        glwe_dimension,
-                        br_decomposition_level_count: br_decomposition_parameter.level,
-                        br_decomposition_base_log: br_decomposition_parameter.log2_base,
-                        noise_max,
-                        complexity,
-                        p_error,
-                        cb_decomposition_level_count: Some(
-                            circuit_pbs_decomposition_parameter.level,
-                        ),
-                        cb_decomposition_base_log: Some(
-                            circuit_pbs_decomposition_parameter.log2_base,
-                        ),
-                    });
+                #[allow(clippy::float_cmp)]
+                if complexity == best_complexity && noise_max > best_variance {
+                    continue;
                 }
+
+                let kappa = consts.kappa;
+                best_complexity = complexity;
+                best_variance = noise_max;
+                let p_error = find_p_error(kappa, variance_max, noise_max);
+                let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
+                let glwe_polynomial_size = glwe_params.polynomial_size();
+                let glwe_dimension = glwe_params.glwe_dimension;
+                state.best_solution = Some(Solution {
+                    input_lwe_dimension,
+                    internal_ks_output_lwe_dimension: internal_dim,
+                    ks_decomposition_level_count: ks_decomposition_parameter.level,
+                    ks_decomposition_base_log: ks_decomposition_parameter.log2_base,
+                    glwe_polynomial_size,
+                    glwe_dimension,
+                    br_decomposition_level_count: br_decomposition_parameter.level,
+                    br_decomposition_base_log: br_decomposition_parameter.log2_base,
+                    noise_max,
+                    complexity,
+                    p_error,
+                    cb_decomposition_level_count: Some(circuit_pbs_decomposition_parameter.level),
+                    cb_decomposition_base_log: Some(circuit_pbs_decomposition_parameter.log2_base),
+                });
             }
         }
     }
@@ -437,8 +439,8 @@ pub fn optimise_one<W: UnsignedInteger>(
         security_level,
         noise_factor: log_norm.exp2(),
         ciphertext_modulus_log,
-        keyswitch_decompositions: vec![],    // to be used later
-        blind_rotate_decompositions: vec![], // to be used later
+        keyswitch_decompositions: vec![],
+        blind_rotate_decompositions: vec![],
         safe_variance: variance_max,
     };
 
