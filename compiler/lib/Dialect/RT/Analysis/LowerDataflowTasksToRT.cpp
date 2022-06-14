@@ -166,11 +166,7 @@ static mlir::Value getSizeInBytes(Value val, Location loc, OpBuilder builder) {
   // bytes until we can get the actual size of the actual types.
   if (type.isa<mlir::concretelang::Concrete::ContextType>() ||
       type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::LweKeySwitchKeyType>() ||
-      type.isa<mlir::concretelang::Concrete::LweBootstrapKeyType>() ||
-      type.isa<mlir::concretelang::Concrete::ForeignPlaintextListType>() ||
-      type.isa<mlir::concretelang::Concrete::PlaintextListType>())
+      type.isa<mlir::concretelang::Concrete::GlweCiphertextType>())
     return builder.create<arith::ConstantOp>(loc, builder.getI64IntegerAttr(8));
 
   // For all other types, get type size.

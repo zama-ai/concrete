@@ -11,7 +11,6 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SCF/SCF.h"
 
-#include "concretelang/Conversion/BConcreteToBConcreteCAPI/Pass.h"
 #include "concretelang/Conversion/ConcreteToBConcrete/Pass.h"
 #include "concretelang/Conversion/FHETensorOpsToLinalg/Pass.h"
 #include "concretelang/Conversion/FHEToTFHE/Pass.h"

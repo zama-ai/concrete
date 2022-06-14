@@ -154,11 +154,7 @@ llvm::Optional<mlir::Type>
 MLIRLowerableDialectsToLLVMPass::convertTypes(mlir::Type type) {
   if (type.isa<mlir::concretelang::Concrete::LweCiphertextType>() ||
       type.isa<mlir::concretelang::Concrete::GlweCiphertextType>() ||
-      type.isa<mlir::concretelang::Concrete::LweKeySwitchKeyType>() ||
-      type.isa<mlir::concretelang::Concrete::LweBootstrapKeyType>() ||
       type.isa<mlir::concretelang::Concrete::ContextType>() ||
-      type.isa<mlir::concretelang::Concrete::ForeignPlaintextListType>() ||
-      type.isa<mlir::concretelang::Concrete::PlaintextListType>() ||
       type.isa<mlir::concretelang::RT::FutureType>()) {
     return mlir::LLVM::LLVMPointerType::get(
         mlir::IntegerType::get(type.getContext(), 64));
