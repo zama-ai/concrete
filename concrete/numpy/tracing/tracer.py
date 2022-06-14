@@ -576,6 +576,13 @@ class Tracer:
 
         return Tracer._trace_numpy_operation(np.reshape, self, newshape=newshape)
 
+    def round(self, decimals: int = 0) -> "Tracer":
+        """
+        Trace numpy.ndarray.round().
+        """
+
+        return Tracer._trace_numpy_operation(np.around, self, decimals=decimals)
+
     def transpose(self, axes: Optional[Tuple[int, ...]] = None) -> "Tracer":
         """
         Trace numpy.ndarray.transpose().

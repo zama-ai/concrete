@@ -490,6 +490,13 @@ def deterministic_unary_function(x):
             id="round(np.sqrt(x))",
         ),
         pytest.param(
+            lambda x: np.sqrt(x).round().astype(np.int64),
+            {
+                "x": {"status": "encrypted", "range": [0, 100]},
+            },
+            id="np.sqrt(x).round().astype(np.int64)",
+        ),
+        pytest.param(
             lambda x: (2.5 * round(np.sqrt(x), ndigits=4)).astype(np.int64),
             {
                 "x": {"status": "encrypted", "range": [0, 100], "shape": ()},
