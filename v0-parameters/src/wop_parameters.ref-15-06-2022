@@ -1,0 +1,11 @@
+{ /* 6.3e-5 errors */
+{ /* precision 16 */
+    /*  0 */ V0Parameter( 1, 11,  482,  2, 16,  9,  1), 		 // 8041 mops, 6.3e-5 errors
+    /*  2 */ V0Parameter( 1, 11,  491,  2, 15,  9,  1), 		 // 10343 mops, 6.0e-5 errors
+    /*  4 */ V0Parameter( 1, 11,  491,  3, 12,  9,  1), 		 // 11155 mops, 6.3e-5 errors
+    /*  6 */ V0Parameter( 1, 11,  520,  3, 12, 10,  1), 		 // 14850 mops, 6.0e-5 errors
+    /*  8 */ V0Parameter( 1, 11,  486,  4,  9,  9,  1), 		 // 25684 mops, 6.0e-5 errors
+    /* 10 */ V0Parameter( 1, 11,  503,  5,  8, 10,  1), 		 // 32012 mops, 5.6e-5 errors
+    /* 12 */ V0Parameter( 1, 11,  503,  7,  6, 10,  1), 		 // 49916 mops, 5.7e-5 errors
+  },
+}

@@ -8,6 +8,7 @@
 use clap::Parser;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern as optimize_atomic_pattern;
+use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 use rayon_cond::CondIterator;
 
 const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
@@ -60,6 +61,9 @@ struct Args {
 
     #[clap(long)]
     no_parallelize: bool,
+
+    #[clap(long)]
+    wop_pbs: bool,
 }
 
 fn main() {
@@ -79,7 +83,11 @@ fn main() {
         (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect();
 
     let precisions = args.min_precision..=args.max_precision;
-    let manps = 0..=31;
+    let manps = if args.wop_pbs {
+        vec![0, 2, 4, 6, 8, 10, 12]
+    } else {
+        (0..=31).collect()
+    };
 
     // let guard = pprof::ProfilerGuard::new(100).unwrap();
 
@@ -88,19 +96,34 @@ fn main() {
     #[rustfmt::skip]
     let all_results = precisions_iter.map(|precision| {
         let mut last_solution = None;
-        manps.clone().map(|manp| {
+        let mut memo = None;
+        manps.iter().map(|&manp| {
             let noise_scale = 2_f64.powi(manp);
-            let result = optimize_atomic_pattern::optimize_one::<u64>(
-                sum_size,
-                precision,
-                security_level,
-                noise_scale,
-                p_error,
-                &glwe_log_polynomial_sizes,
-                &glwe_dimensions,
-                &internal_lwe_dimensions,
-                last_solution, // 33% gains
-            );
+            let result = if args.wop_pbs {
+                optimize_wop_atomic_pattern::optimize_one::<u64>(
+                    sum_size,
+                    precision,
+                    security_level,
+                    noise_scale,
+                    p_error,
+                    &glwe_log_polynomial_sizes,
+                    &glwe_dimensions,
+                    &internal_lwe_dimensions,
+                    &mut memo,
+                )
+            } else {
+                optimize_atomic_pattern::optimize_one::<u64>(
+                    sum_size,
+                    precision,
+                    security_level,
+                    noise_scale,
+                    p_error,
+                    &glwe_log_polynomial_sizes,
+                    &glwe_dimensions,
+                    &internal_lwe_dimensions,
+                    last_solution, // 33% gains
+                )
+            };
             last_solution = result.best_solution;
             result
         })
@@ -120,7 +143,7 @@ fn main() {
     println!("{{ /* {:1.1e} errors */", p_error);
     for (precision_i, precision) in precisions.enumerate() {
         println!("{{ /* precision {:2} */", precision);
-        for (manp_i, manp) in manps.clone().enumerate() {
+        for (manp_i, manp) in manps.clone().iter().enumerate() {
             let solution = all_results[precision_i][manp_i].best_solution;
             match solution {
                 Some(solution) => {
@@ -162,6 +185,38 @@ mod tests {
         assert!(std::path::Path::new(V0_PARAMETERS_EXE).exists());
 
         let actual_output = std::process::Command::new(V0_PARAMETERS_EXE)
+            .output()
+            .expect("failed to execute process");
+        let actual_output = std::str::from_utf8(&actual_output.stdout).expect("Bad content");
+
+        let expected_output = std::fs::read_to_string(REF_FILE).expect("Can't read reference file");
+
+        text_diff::assert_diff(&expected_output, actual_output, CMP_LINES, EXACT_EQUALITY);
+    }
+
+    #[test]
+    fn test_reference_wop_output() {
+        const REF_FILE: &str = "src/wop_parameters.ref-15-06-2022";
+        const V0_PARAMETERS_EXE: &str = "../target/release/v0-parameters";
+        const CMP_LINES: &str = "\n";
+        const EXACT_EQUALITY: i32 = 0;
+        let _ = std::process::Command::new("cargo")
+            .args(["build", "--release", "-q"])
+            .status()
+            .expect("Can't build");
+        assert!(std::path::Path::new(V0_PARAMETERS_EXE).exists());
+
+        #[rustfmt::skip]
+        let actual_output = std::process::Command::new(V0_PARAMETERS_EXE)
+            .args([
+                "--wop-pbs",
+                "--min-intern-lwe-dim", "257",
+                "--min-precision", "16",
+                "--max-precision", "16",
+                "--min-log-poly-size", "10",
+                "--max-log-poly-size", "12",
+                "--"
+                ])
             .output()
             .expect("failed to execute process");
         let actual_output = std::str::from_utf8(&actual_output.stdout).expect("Bad content");
