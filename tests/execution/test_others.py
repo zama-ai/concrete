@@ -141,6 +141,53 @@ def fusable_with_one_of_the_start_nodes_is_lca_generator():
     # pylint: enable=invalid-name,too-many-locals,too-many-statements
 
 
+def fusable_with_hard_to_find_lca(x):
+    """
+    Fusable function that requires harder lca search.
+    """
+
+    a = x * 3
+    b = x // 3
+    c = a + b
+    return ((np.sin(a) ** 2) + (np.cos(c) ** 2)).round().astype(np.int64)
+
+
+def fusable_with_hard_to_find_lca_used_twice(x):
+    """
+    Fusable function that uses `fusable_with_hard_to_find_lca` twice.
+    """
+
+    a = x @ np.array([[3, 1], [4, 2]])
+    b = x @ np.array([[1, 2], [3, 4]])
+
+    a = fusable_with_hard_to_find_lca(a)
+    b = fusable_with_hard_to_find_lca(b)
+
+    return a + b
+
+
+def fusable_additional_1(x):
+    """
+    Another fusable function for additional safety.
+    """
+
+    a = x.astype(np.float64) * 3.0
+    b = x + 1
+    c = a.astype(np.int64)
+    return (a + b + c).astype(np.int64)
+
+
+def fusable_additional_2(x):
+    """
+    Another fusable function for additional safety.
+    """
+
+    a = x.astype(np.float64) / 3.0
+    b = x + 1
+    c = a * a
+    return (a + b + c).astype(np.int64)
+
+
 def deterministic_unary_function(x):
     """
     An example deterministic unary function.
@@ -439,6 +486,34 @@ def deterministic_unary_function(x):
                 "x": {"status": "encrypted", "range": [0, 4], "shape": (1, 10)},
             },
             id="fusable_with_one_of_the_start_nodes_is_lca",
+        ),
+        pytest.param(
+            fusable_with_hard_to_find_lca,
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="fusable_with_hard_to_find_lca",
+        ),
+        pytest.param(
+            fusable_with_hard_to_find_lca_used_twice,
+            {
+                "x": {"status": "encrypted", "range": [0, 4], "shape": (2, 2)},
+            },
+            id="fusable_with_hard_to_find_lca_used_twice",
+        ),
+        pytest.param(
+            fusable_additional_1,
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="fusable_additional_1",
+        ),
+        pytest.param(
+            fusable_additional_2,
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            id="fusable_additional_2",
         ),
         pytest.param(
             lambda x: x + x.shape[0] + x.ndim + x.size,
