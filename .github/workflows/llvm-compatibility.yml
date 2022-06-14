@@ -29,7 +29,7 @@ jobs:
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build
-        run: docker image build --no-cache -t compiler-latest-llvm -f builders/Dockerfile.concretelang-env .
+        run: docker image build --no-cache -t compiler-latest-llvm -f builders/Dockerfile.concrete-compiler-env .
 
       - name: Test compiler with latest LLVM
         uses: addnab/docker-run-action@v3
