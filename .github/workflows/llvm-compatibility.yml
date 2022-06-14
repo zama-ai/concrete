@@ -16,11 +16,12 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GH_TOKEN }}
 
-      - name: Update LLVM
-        id: update-llvm
+      - name: Rebase LLVM
         run: |
-          git submodule update --remote
-          echo "::set-output name=commit::$(cd llvm-project && git rev-parse --short HEAD)"
+          cd llvm-project
+          git remote add base git@github.com:llvm/llvm-project.git
+          git fetch base
+          git rebase base/main
 
       - name: Log LLVM commit
         run: echo "LLVM commit" && cd ${{ github.workspace }}/llvm-project && git log -1
@@ -39,6 +40,20 @@ jobs:
             cd /compiler
             pip install pytest
             make BUILD_DIR=/build test
+
+      - name: Update Custom LLVM
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          branch: main
+          force: true
+          repository: zama-ai/concrete-compiler-internal-llvm-project
+
+      - name: Update LLVM submodule
+        id: update-llvm
+        run: |
+          git submodule update --remote
+          echo "::set-output name=commit::$(cd llvm-project && git rev-parse --short HEAD)"
 
       - name: Commit latest LLVM version
         uses: EndBug/add-and-commit@v7
