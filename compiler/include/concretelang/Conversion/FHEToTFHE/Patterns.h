@@ -6,9 +6,10 @@
 #ifndef CONCRETELANG_CONVERSION_FHETOTFHE_PATTERNS_H_
 #define CONCRETELANG_CONVERSION_FHETOTFHE_PATTERNS_H_
 
+#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
 
@@ -21,20 +22,29 @@ using TFHE::GLWECipherTextType;
 /// Converts FHE::EncryptedInteger into TFHE::GlweCiphetext
 GLWECipherTextType
 convertTypeEncryptedIntegerToGLWE(mlir::MLIRContext *context,
-                                  EncryptedIntegerType &eint) {
+                                  EncryptedIntegerType eint) {
   return GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth());
+}
+
+/// Converts the type `t` to `TFHE::GlweCiphetext` if `t` is a
+/// `FHE::EncryptedInteger`, otherwise just returns `t`.
+mlir::Type convertTypeToGLWEIfEncryptedIntegerType(mlir::MLIRContext *context,
+                                                   mlir::Type t) {
+  if (auto eint = t.dyn_cast<EncryptedIntegerType>())
+    return convertTypeEncryptedIntegerToGLWE(context, eint);
+
+  return t;
 }
 
 mlir::Value createZeroGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
                                     mlir::Location loc, mlir::OpResult result) {
   mlir::SmallVector<mlir::Value> args{};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
-  auto eint =
-      result.getType().cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  mlir::SmallVector<mlir::Type, 1> resTypes{
-      convertTypeEncryptedIntegerToGLWE(rewriter.getContext(), eint)};
+  mlir::SmallVector<mlir::Type, 1> resTypes{result.getType()};
   TFHE::ZeroGLWEOp op =
       rewriter.create<TFHE::ZeroGLWEOp>(loc, resTypes, args, attrs);
+  convertOperandAndResultTypes(rewriter, op,
+                               convertTypeToGLWEIfEncryptedIntegerType);
   return op.getODSResults(0).front();
 }
 
@@ -44,11 +54,10 @@ mlir::Value createGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
                                 mlir::Value arg1, mlir::OpResult result) {
   mlir::SmallVector<mlir::Value, 2> args{arg0, arg1};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
-  auto eint =
-      result.getType().cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  mlir::SmallVector<mlir::Type, 1> resTypes{
-      convertTypeEncryptedIntegerToGLWE(rewriter.getContext(), eint)};
+  mlir::SmallVector<mlir::Type, 1> resTypes{result.getType()};
   Operator op = rewriter.create<Operator>(loc, resTypes, args, attrs);
+  convertOperandAndResultTypes(rewriter, op,
+                               convertTypeToGLWEIfEncryptedIntegerType);
   return op.getODSResults(0).front();
 }
 
@@ -58,11 +67,10 @@ mlir::Value createGLWEOpFromFHE(mlir::PatternRewriter &rewriter,
                                 mlir::OpResult result) {
   mlir::SmallVector<mlir::Value, 1> args{arg0};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
-  auto eint =
-      result.getType().cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  mlir::SmallVector<mlir::Type, 1> resTypes{
-      convertTypeEncryptedIntegerToGLWE(rewriter.getContext(), eint)};
+  mlir::SmallVector<mlir::Type, 1> resTypes{result.getType()};
   Operator op = rewriter.create<Operator>(loc, resTypes, args, attrs);
+  convertOperandAndResultTypes(rewriter, op,
+                               convertTypeToGLWEIfEncryptedIntegerType);
   return op.getODSResults(0).front();
 }
 

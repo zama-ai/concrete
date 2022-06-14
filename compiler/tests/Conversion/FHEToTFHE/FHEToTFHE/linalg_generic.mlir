@@ -5,7 +5,7 @@
 // CHECK-NEXT: module  {
 // CHECK-NEXT:   func @linalg_generic(%arg0: tensor<2x!TFHE.glwe<{_,_,_}{2}>>, %arg1: tensor<2xi3>, %arg2: tensor<1x!TFHE.glwe<{_,_,_}{2}>>) {
 // CHECK-NEXT:     %0 = linalg.generic {indexing_maps = [#map0, #map0, #map1], iterator_types = ["reduction"]} ins(%arg0, %arg1 : tensor<2x!TFHE.glwe<{_,_,_}{2}>>, tensor<2xi3>) outs(%arg2 : tensor<1x!TFHE.glwe<{_,_,_}{2}>>) {
-// CHECK-NEXT:     ^bb0(%arg3: !TFHE.glwe<{_,_,_}{2}>, %arg4: i3, %arg5: !TFHE.glwe<{_,_,_}{2}>):  // no predecessors
+// CHECK-NEXT:     ^bb0(%arg3: !TFHE.glwe<{_,_,_}{2}>, %arg4: i3, %arg5: !TFHE.glwe<{_,_,_}{2}>):
 // CHECK-NEXT:       %1 = "TFHE.mul_glwe_int"(%arg3, %arg4) : (!TFHE.glwe<{_,_,_}{2}>, i3) -> !TFHE.glwe<{_,_,_}{2}>
 // CHECK-NEXT:       %2 = "TFHE.add_glwe"(%1, %arg5) : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
 // CHECK-NEXT:       linalg.yield %2 : !TFHE.glwe<{_,_,_}{2}>

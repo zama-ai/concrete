@@ -12,10 +12,12 @@
 
 #include <concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h>
 #include <llvm/IR/Instructions.h>
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
+#include <mlir/Dialect/Bufferization/Transforms/Bufferize.h>
+#include <mlir/Dialect/Bufferization/Transforms/Passes.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
-#include <mlir/Transforms/Bufferize.h>
 #include <mlir/Transforms/RegionUtils.h>
 
 #define GEN_PASS_CLASSES
@@ -30,11 +32,10 @@ class BufferizeDataflowYieldOp
 public:
   using OpConversionPattern::OpConversionPattern;
   LogicalResult
-  matchAndRewrite(RT::DataflowYieldOp op, ArrayRef<Value> operands,
+  matchAndRewrite(RT::DataflowYieldOp op, RT::DataflowYieldOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::DataflowYieldOp::Adaptor transformed(operands);
     rewriter.replaceOpWithNewOp<RT::DataflowYieldOp>(op, mlir::TypeRange(),
-                                                     transformed.getOperands());
+                                                     adaptor.getOperands());
     return success();
   }
 };
@@ -45,15 +46,14 @@ class BufferizeDataflowTaskOp : public OpConversionPattern<RT::DataflowTaskOp> {
 public:
   using OpConversionPattern::OpConversionPattern;
   LogicalResult
-  matchAndRewrite(RT::DataflowTaskOp op, ArrayRef<Value> operands,
+  matchAndRewrite(RT::DataflowTaskOp op, RT::DataflowTaskOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::DataflowTaskOp::Adaptor transformed(operands);
     mlir::OpBuilder::InsertionGuard guard(rewriter);
 
     SmallVector<Type> newResults;
     (void)getTypeConverter()->convertTypes(op.getResultTypes(), newResults);
     auto newop = rewriter.create<RT::DataflowTaskOp>(op.getLoc(), newResults,
-                                                     transformed.getOperands());
+                                                     adaptor.getOperands());
     // We cannot clone here as cloned ops must be legalized (so this
     // would break on the YieldOp).  Instead use mergeBlocks which
     // moves the ops instead of cloning.
@@ -68,9 +68,9 @@ public:
       if (res.value().getType() !=
           getTypeConverter()->convertType(res.value().getType())) {
         for (auto &use : llvm::make_early_inc_range(res.value().getUses())) {
-          // ... and its uses are in `BufferCastOp`s, then we
+          // ... and its uses are in `ToMemrefOp`s, then we
           // replace further uses of the buffer cast.
-          if (isa<mlir::memref::BufferCastOp>(use.getOwner())) {
+          if (isa<mlir::bufferization::ToMemrefOp>(use.getOwner())) {
             rewriter.replaceOp(use.getOwner(), {newop.getResult(res.index())});
           }
         }
@@ -82,8 +82,9 @@ public:
 };
 } // namespace
 
-void populateRTBufferizePatterns(BufferizeTypeConverter &typeConverter,
-                                 RewritePatternSet &patterns) {
+void populateRTBufferizePatterns(
+    mlir::bufferization::BufferizeTypeConverter &typeConverter,
+    RewritePatternSet &patterns) {
   patterns.add<BufferizeDataflowYieldOp, BufferizeDataflowTaskOp>(
       typeConverter, patterns.getContext());
 }
@@ -96,7 +97,7 @@ struct BufferizeDataflowTaskOpsPass
   void runOnOperation() override {
     auto module = getOperation();
     auto *context = &getContext();
-    BufferizeTypeConverter typeConverter;
+    mlir::bufferization::BufferizeTypeConverter typeConverter;
     RewritePatternSet patterns(context);
     ConversionTarget target(*context);
 

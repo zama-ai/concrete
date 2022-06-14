@@ -90,8 +90,8 @@ func @tensor_insert_slice_1(%t0: tensor<2x10x!FHE.eint<2>>, %t1: tensor<2x2x!FHE
 // -----
 
 func @tensor_collapse_shape_1(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
-  // CHECK: linalg.tensor_collapse_shape %[[A:.*]] [[X:.*]] {MANP = 1 : ui{{[0-9]+}}}
-  %0 = linalg.tensor_collapse_shape %a [[0],[1,2]]  : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
+  // CHECK: tensor.collapse_shape %[[A:.*]] [[X:.*]] {MANP = 1 : ui{{[0-9]+}}}
+  %0 = tensor.collapse_shape %a [[0],[1,2]]  : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
   return %0 : tensor<2x8x!FHE.eint<6>>
 }
 
@@ -101,16 +101,16 @@ func @tensor_collapse_shape_2(%a: tensor<2x2x4x!FHE.eint<2>>, %b: tensor<2x2x4xi
 {
   // CHECK: "FHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 4 : ui{{[0-9]+}}}
   %0 = "FHELinalg.add_eint_int"(%a, %b) : (tensor<2x2x4x!FHE.eint<2>>, tensor<2x2x4xi3>) -> tensor<2x2x4x!FHE.eint<2>>
-  // CHECK-NEXT: linalg.tensor_collapse_shape %[[A:.*]] [[X:.*]] {MANP = 4 : ui{{[0-9]+}}}
-  %1 = linalg.tensor_collapse_shape %0 [[0],[1,2]]  : tensor<2x2x4x!FHE.eint<2>> into tensor<2x8x!FHE.eint<2>>
+  // CHECK-NEXT: tensor.collapse_shape %[[A:.*]] [[X:.*]] {MANP = 4 : ui{{[0-9]+}}}
+  %1 = tensor.collapse_shape %0 [[0],[1,2]]  : tensor<2x2x4x!FHE.eint<2>> into tensor<2x8x!FHE.eint<2>>
   return %1 : tensor<2x8x!FHE.eint<2>>
 }
 
 // -----
 
 func @tensor_expand_shape_1(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
-  // CHECK: linalg.tensor_expand_shape %[[A:.*]] [[X:.*]] {MANP = 1 : ui{{[0-9]+}}}
-  %0 = linalg.tensor_expand_shape %a [[0],[1,2]]  : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
+  // CHECK: tensor.expand_shape %[[A:.*]] [[X:.*]] {MANP = 1 : ui{{[0-9]+}}}
+  %0 = tensor.expand_shape %a [[0],[1,2]]  : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
   return %0 : tensor<2x2x4x!FHE.eint<6>>
 }
 
@@ -120,7 +120,7 @@ func @tensor_expand_shape_2(%a: tensor<2x8x!FHE.eint<2>>, %b: tensor<2x8xi3>) ->
 {
   // CHECK: "FHELinalg.add_eint_int"(%[[A:.*]], %[[B:.*]]) {MANP = 4 : ui{{[0-9]+}}}
   %0 = "FHELinalg.add_eint_int"(%a, %b) : (tensor<2x8x!FHE.eint<2>>, tensor<2x8xi3>) -> tensor<2x8x!FHE.eint<2>>
-  // CHECK-NEXT: linalg.tensor_expand_shape %[[A:.*]] [[X:.*]] {MANP = 4 : ui{{[0-9]+}}}
-  %1 = linalg.tensor_expand_shape %0 [[0],[1,2]]  : tensor<2x8x!FHE.eint<2>> into tensor<2x2x4x!FHE.eint<2>>
+  // CHECK-NEXT: tensor.expand_shape %[[A:.*]] [[X:.*]] {MANP = 4 : ui{{[0-9]+}}}
+  %1 = tensor.expand_shape %0 [[0],[1,2]]  : tensor<2x8x!FHE.eint<2>> into tensor<2x2x4x!FHE.eint<2>>
   return %1 : tensor<2x2x4x!FHE.eint<2>>
 }

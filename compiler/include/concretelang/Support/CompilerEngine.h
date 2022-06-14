@@ -74,7 +74,7 @@ public:
                           CompilationContext::createShared())
         : compilationContext(compilationContext) {}
 
-    llvm::Optional<mlir::OwningModuleRef> mlirModuleRef;
+    llvm::Optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
     llvm::Optional<mlir::concretelang::ClientParameters> clientParameters;
     std::unique_ptr<llvm::Module> llvmModule;
     llvm::Optional<mlir::concretelang::V0FHEContext> fheContext;

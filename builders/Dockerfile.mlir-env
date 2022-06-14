@@ -2,7 +2,7 @@ FROM ubuntu:latest
 
 RUN apt-get update --fix-missing
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ build-essential python3 python3-pip python3-setuptools ninja-build git
-RUN pip install numpy pybind11==2.6.2 PyYAML
+RUN pip install numpy pybind11==2.8 PyYAML
 RUN git clone --depth 1 https://github.com/llvm/llvm-project.git
 ENV LLVM_PROJECT=$PWD/llvm-project
 RUN cd ${LLVM_PROJECT} && git log -1
@@ -23,4 +23,4 @@ ENV LLVM_PROJECT=/llvm-project
 ENV PATH=${LLVM_PROJECT}/build/bin:${PATH}
 RUN apt-get update 
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y cmake g++ build-essential python3 zlib1g-dev python3-pip python3-setuptools
-RUN pip install numpy pybind11==2.6.2 PyYAML
+RUN pip install numpy pybind11==2.8 PyYAML

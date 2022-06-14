@@ -6,6 +6,7 @@
 #ifndef CONCRETELANG_DIALECT_RT_IR_RTOPS_H
 #define CONCRETELANG_DIALECT_RT_IR_RTOPS_H
 
+#include <mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/Interfaces/ControlFlowInterfaces.h>

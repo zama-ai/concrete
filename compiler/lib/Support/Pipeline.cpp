@@ -6,20 +6,28 @@
 #include <llvm/Support/TargetSelect.h>
 
 #include <llvm/Support/Error.h>
+#include <mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h>
 #include <mlir/Conversion/Passes.h>
+#include <mlir/Dialect/Func/Transforms/Passes.h>
+#include <mlir/Transforms/Passes.h>
 
+#include <mlir/Dialect/Arithmetic/Transforms/Passes.h>
+#include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
+#include <mlir/Dialect/Bufferization/Transforms/Passes.h>
 #include <mlir/Dialect/Linalg/Passes.h>
 #include <mlir/Dialect/SCF/Passes.h>
-#include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/Dialect/Tensor/Transforms/Passes.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Pass/PassManager.h>
+#include <mlir/Pass/PassOptions.h>
+#include <mlir/Support/LogicalResult.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
 
 #include <concretelang/Conversion/Passes.h>
+#include <concretelang/Dialect/BConcrete/Transforms/Passes.h>
 #include <concretelang/Dialect/Concrete/Transforms/Optimization.h>
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
 #include <concretelang/Dialect/FHELinalg/Transforms/Tiling.h>
@@ -28,6 +36,7 @@
 #include <concretelang/Support/logging.h>
 #include <concretelang/Support/math.h>
 #include <concretelang/Transforms/Bufferize.h>
+#include <concretelang/Transforms/OneShotBufferizeDPSWrapper.h>
 
 namespace mlir {
 namespace concretelang {
@@ -204,11 +213,21 @@ lowerConcreteToBConcrete(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          bool parallelizeLoops) {
   mlir::PassManager pm(&context);
   pipelinePrinting("ConcreteToBConcrete", pm, context);
+
+  std::unique_ptr<Pass> conversionPass =
+      mlir::concretelang::createConvertConcreteToBConcretePass(
+          parallelizeLoops);
+
+  bool passEnabled = enablePass(conversionPass.get());
+
   addPotentiallyNestedPass(
       pm,
-      mlir::concretelang::createConvertConcreteToBConcretePass(
+      mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
           parallelizeLoops),
-      enablePass);
+      [&](mlir::Pass *) { return passEnabled; });
+
+  addPotentiallyNestedPass(pm, std::move(conversionPass),
+                           [&](mlir::Pass *) { return passEnabled; });
 
   return pm.run(module.getOperation());
 }
@@ -218,9 +237,8 @@ lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("BConcreteToStd", pm, context);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createConvertBConcreteToBConcreteCAPIPass(),
-      enablePass);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
+                           enablePass);
   return pm.run(module.getOperation());
 }
 
@@ -232,11 +250,27 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   pipelinePrinting("StdToLLVM", pm, context);
 
   // Bufferize
-  addPotentiallyNestedPass(pm, mlir::createTensorConstantBufferizePass(),
-                           enablePass);
-  addPotentiallyNestedPass(pm, mlir::createStdBufferizePass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createTensorBufferizePass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createLinalgBufferizePass(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createOneShotBufferizeDPSWrapperPass(),
+      enablePass);
+
+  mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;
+  bufferizationOptions.allowReturnAllocs = true;
+  bufferizationOptions.printConflicts = true;
+  bufferizationOptions.fullyDynamicLayoutMaps = false;
+
+  std::unique_ptr<mlir::Pass> comprBuffPass =
+      mlir::createLinalgComprehensiveModuleBufferizePass(bufferizationOptions);
+
+  addPotentiallyNestedPass(pm, std::move(comprBuffPass), enablePass);
+  if (parallelizeLoops) {
+    addPotentiallyNestedPass(pm, mlir::concretelang::createForLoopToParallel(),
+                             enablePass);
+  }
+
+  addPotentiallyNestedPass(
+      pm, mlir::bufferization::createFinalizingBufferizePass(), enablePass);
+
   if (parallelizeLoops)
     addPotentiallyNestedPass(pm, mlir::createConvertLinalgToParallelLoopsPass(),
                              enablePass);
@@ -244,14 +278,14 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
     addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
                              enablePass);
   addPotentiallyNestedPass(pm, mlir::createSCFBufferizePass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createFuncBufferizePass(), enablePass);
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createBufferizeDataflowTaskOpsPass(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::func::createFuncBufferizePass(),
+                           enablePass);
+
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFinalizingBufferizePass(), enablePass);
 
-  addPotentiallyNestedPass(pm, mlir::createBufferDeallocationPass(),
-                           enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::bufferization::createBufferDeallocationPass(), enablePass);
 
   if (parallelizeLoops)
     addPotentiallyNestedPass(pm, mlir::createConvertSCFToOpenMPPass(),
@@ -264,7 +298,6 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm, mlir::concretelang::createFixupDataflowTaskOpsPass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createLowerDataflowTasksPass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::createLowerToCFGPass(), enablePass);
 
   // Convert to MLIR LLVM Dialect
   addPotentiallyNestedPass(

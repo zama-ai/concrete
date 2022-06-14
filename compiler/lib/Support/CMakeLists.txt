@@ -29,6 +29,8 @@ add_mlir_library(ConcretelangSupport
   FHEDialectAnalysis
   RTDialectAnalysis
   ConcretelangTransforms
+  ConcretelangBConcreteTransforms
+  LinalgExtras
   ConcreteDialectTransforms
   concrete_optimizer
 

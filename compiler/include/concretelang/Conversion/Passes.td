@@ -3,7 +3,7 @@
 
 include "mlir/Pass/PassBase.td"
 
-def FHETensorOpsToLinalg : FunctionPass<"fhe-tensor-ops-to-linalg"> {
+def FHETensorOpsToLinalg : Pass<"fhe-tensor-ops-to-linalg", "::mlir::func::FuncOp"> {
   let summary = "Lowers tensor operations of FHE dialect to linalg.generic";
   let constructor = "mlir::concretelang::createConvertFHETensorOpsToLinalg()";
   let dependentDialects = ["mlir::linalg::LinalgDialect"];
@@ -32,6 +32,14 @@ def TFHEToConcrete : Pass<"tfhe-to-concrete", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::TFHE::TFHEDialect"];
 }
 
+def LinalgGenericOpWithTensorsToLoops : Pass<"linalg-generic-op-with-tensors-to-loops", "mlir::ModuleOp"> {
+  let summary = "Converts linalg.generic ops with tensor inputs / outputs to a loop nest";
+  let description = [{ Converts linalg.generic ops with tensor inputs / outputs to a loop nest }];
+  let constructor = "mlir::createLinalgGenericOpWithTensorsToLoopsPass()";
+  let options = [];
+  let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::scf::SCFDialect"];
+}
+
 def ConcreteToBConcrete : Pass<"concrete-to-bconcrete", "mlir::ModuleOp"> {
   let summary = "Lowers operations from the Concrete dialect to Bufferized Concrete";
   let description = [{ Lowers operations from the Concrete dialect to Bufferized Concrete }];
@@ -42,13 +50,13 @@ def ConcreteToBConcrete : Pass<"concrete-to-bconcrete", "mlir::ModuleOp"> {
 def BConcreteToBConcreteCAPI : Pass<"bconcrete-to-bconcrete-c-api", "mlir::ModuleOp"> {
   let summary = "Lower operations from the Bufferized Concrete dialect to std with function call to the Bufferized Concrete C API";
   let constructor = "mlir::concretelang::createConvertBConcreteToBConcreteCAPIPass()";
-  let dependentDialects = ["mlir::concretelang::BConcrete::BConcreteDialect", "mlir::StandardOpsDialect", "mlir::memref::MemRefDialect"];
+  let dependentDialects = ["mlir::concretelang::BConcrete::BConcreteDialect", "mlir::func::FuncDialect", "mlir::memref::MemRefDialect"];
 }
 
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
   let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
   let constructor = "mlir::concretelang::createConvertMLIRLowerableDialectsToLLVMPass()";
-  let dependentDialects = ["mlir::StandardOpsDialect", "mlir::arith::ArithmeticDialect", "mlir::scf::SCFDialect", "mlir::LLVM::LLVMDialect"];
+  let dependentDialects = ["mlir::func::FuncDialect", "mlir::arith::ArithmeticDialect", "mlir::scf::SCFDialect", "mlir::LLVM::LLVMDialect"];
   let options = [];
 }
 

@@ -7,7 +7,7 @@
 //CHECK-NEXT:     %c0 = arith.constant 0 : index
 //CHECK-NEXT:     %0 = "TFHE.zero_tensor"() : () -> tensor<1x!TFHE.glwe<{_,_,_}{2}>>
 //CHECK-NEXT:     %1 = linalg.generic {indexing_maps = [#map0, #map0, #map1], iterator_types = ["reduction"]} ins(%arg0, %arg1 : tensor<2x!TFHE.glwe<{_,_,_}{2}>>, tensor<2xi3>) outs(%0 : tensor<1x!TFHE.glwe<{_,_,_}{2}>>) {
-//CHECK-NEXT:     ^bb0(%arg2: !TFHE.glwe<{_,_,_}{2}>, %arg3: i3, %arg4: !TFHE.glwe<{_,_,_}{2}>):  // no predecessors
+//CHECK-NEXT:     ^bb0(%arg2: !TFHE.glwe<{_,_,_}{2}>, %arg3: i3, %arg4: !TFHE.glwe<{_,_,_}{2}>):
 //CHECK-NEXT:       %3 = "TFHE.mul_glwe_int"(%arg2, %arg3) : (!TFHE.glwe<{_,_,_}{2}>, i3) -> !TFHE.glwe<{_,_,_}{2}>
 //CHECK-NEXT:       %4 = "TFHE.add_glwe"(%3, %arg4) : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
 //CHECK-NEXT:       linalg.yield %4 : !TFHE.glwe<{_,_,_}{2}>

@@ -1,6 +1,7 @@
 add_mlir_dialect_library(RTDialect
   RTDialect.cpp
   RTOps.cpp
+  RTTypes.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/RT

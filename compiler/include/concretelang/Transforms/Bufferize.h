@@ -6,7 +6,9 @@
 #ifndef CONCRETELANG_BUFFERIZE_PASS_H
 #define CONCRETELANG_BUFFERIZE_PASS_H
 
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/SCF/SCF.h>
 #include <mlir/Pass/Pass.h>
 
 #define GEN_PASS_CLASSES
@@ -14,7 +16,10 @@
 
 namespace mlir {
 namespace concretelang {
-std::unique_ptr<mlir::FunctionPass> createFinalizingBufferizePass();
+std::unique_ptr<mlir::OperationPass<mlir::func::FuncOp>>
+createFinalizingBufferizePass();
+
+std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>> createForLoopToParallel();
 } // namespace concretelang
 } // namespace mlir
 

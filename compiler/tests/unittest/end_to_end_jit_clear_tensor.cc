@@ -4,7 +4,7 @@
 // 1D tensor //////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(End2EndJit_ClearTensor_1D, identity) {
+TEST(End2EndJit_ClearTensor_1D, DISABLED_identity) {
   checkedJit(lambda,
              R"XXX(
 func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
@@ -183,7 +183,7 @@ const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
 
 #define TENSOR2D_GET(i, j) GET_2D(tensor2D, i, j)
 
-TEST(End2EndJit_ClearTensor_2D, identity) {
+TEST(End2EndJit_ClearTensor_2D, DISABLED_identity) {
 
   checkedJit(lambda, R"XXX(
 func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {

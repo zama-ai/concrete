@@ -30,22 +30,7 @@ def RT_Future : RT_Type<"Future"> {
     }]>
   ];
 
-  let printer = [{
-    $_printer << "future<";
-    $_printer.printType(getElementType());
-    $_printer << ">";
-  }];
-
-  let parser = [{
-    if ($_parser.parseLess())
-      return Type();
-    Type elementType;
-    if ($_parser.parseType(elementType))
-      return Type();
-    if ($_parser.parseGreater())
-      return Type();
-    return get($_ctxt, elementType);
-  }];
+  let hasCustomAssemblyFormat = 1;
 }
 
 def RT_Pointer : RT_Type<"Pointer"> {
@@ -64,22 +49,7 @@ def RT_Pointer : RT_Type<"Pointer"> {
     }]>
   ];
 
-  let printer = [{
-    $_printer << "rtptr<";
-    $_printer.printType(getElementType());
-    $_printer << ">";
-  }];
-
-  let parser = [{
-    if ($_parser.parseLess())
-      return Type();
-    Type elementType;
-    if ($_parser.parseType(elementType))
-      return Type();
-    if ($_parser.parseGreater())
-      return Type();
-    return get($_ctxt, elementType);
-  }];
+  let hasCustomAssemblyFormat = 1;
 }
 
 #endif

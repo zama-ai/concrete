@@ -113,6 +113,7 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
             -v ${{ github.workspace }}/compiler:/compiler
             -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
           shell: bash
@@ -163,7 +164,7 @@ jobs:
           image: ${{ env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/build:/build
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/llvm-project:/llvm-project -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
@@ -182,7 +183,7 @@ jobs:
           image: ${{ env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
-          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/docs:/docs -v ${{ github.workspace }}/build:/compiler/build
+          options: -v ${{ github.workspace }}/compiler:/compiler -v ${{ github.workspace }}/llvm-project:/llvm-project -v ${{ github.workspace }}/docs:/docs -v ${{ github.workspace }}/build:/compiler/build
           shell: bash
           run: |
             set -e
@@ -239,7 +240,7 @@ jobs:
         run: |
           # curl https://sh.rustup.rs -sSf | sh -s -- -y  # TODO check actions-rs/toolchain@v1
           brew install ninja ccache
-          pip3 install numpy pybind11==2.6.2 wheel delocate
+          pip3 install numpy pybind11==2.8 wheel delocate
           pip3 install pytest
           cd ${{ github.workspace }}/concrete/concrete-ffi
           RUSTFLAGS="-C target-cpu=native" cargo build --release
@@ -343,6 +344,7 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}/compiler:/compiler
+            -v ${{ github.workspace }}/llvm-project:/llvm-project
             -v ${{ github.workspace }}/KeySetCache:/tmp/KeySetCache
           shell: bash
           run: |
@@ -575,7 +577,7 @@ jobs:
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           brew install ninja
-          pip install numpy pybind11==2.6.2 wheel delocate
+          pip install numpy pybind11==2.8 wheel delocate
           cd ${{ github.workspace }}/concrete/concrete-ffi
           RUSTFLAGS="-C target-cpu=native" cargo build --release
 

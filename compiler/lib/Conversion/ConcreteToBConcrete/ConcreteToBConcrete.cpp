@@ -3,7 +3,20 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <algorithm>
 #include <iostream>
+#include <iterator>
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/Linalg/IR/Linalg.h>
+#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/Tensor/IR/Tensor.h>
+#include <mlir/IR/AffineExpr.h>
+#include <mlir/IR/AffineMap.h>
+#include <mlir/IR/BuiltinAttributes.h>
+#include <mlir/IR/BuiltinTypes.h>
+#include <mlir/IR/OpDefinition.h>
+#include <mlir/Support/LLVM.h>
 
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -19,6 +32,10 @@
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
+
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/IR/Function.h"
 
 namespace {
 struct ConcreteToBConcretePass
@@ -42,6 +59,12 @@ class ConcreteToBConcreteTypeConverter : public mlir::TypeConverter {
 public:
   ConcreteToBConcreteTypeConverter() {
     addConversion([](mlir::Type type) { return type; });
+    addConversion([&](mlir::concretelang::Concrete::PlaintextType type) {
+      return mlir::IntegerType::get(type.getContext(), 64);
+    });
+    addConversion([&](mlir::concretelang::Concrete::CleartextType type) {
+      return mlir::IntegerType::get(type.getContext(), 64);
+    });
     addConversion([&](mlir::concretelang::Concrete::LweCiphertextType type) {
       assert(type.getDimension() != -1);
       return mlir::RankedTensorType::get(
@@ -89,6 +112,47 @@ public:
       return r;
     });
   }
+};
+
+struct ConcreteEncodeIntOpPattern
+    : public mlir::OpRewritePattern<mlir::concretelang::Concrete::EncodeIntOp> {
+  ConcreteEncodeIntOpPattern(mlir::MLIRContext *context,
+                             mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::concretelang::Concrete::EncodeIntOp>(
+            context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::Concrete::EncodeIntOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    {
+      mlir::Value castedInt = rewriter.create<mlir::arith::ExtUIOp>(
+          op.getLoc(), rewriter.getIntegerType(64), op->getOperands().front());
+      mlir::Value constantShiftOp = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(), rewriter.getI64IntegerAttr(64 - op.getType().getP()));
+
+      mlir::Type resultType = rewriter.getIntegerType(64);
+      rewriter.replaceOpWithNewOp<mlir::arith::ShLIOp>(
+          op, resultType, castedInt, constantShiftOp);
+    }
+    return mlir::success();
+  };
+};
+
+struct ConcreteIntToCleartextOpPattern
+    : public mlir::OpRewritePattern<
+          mlir::concretelang::Concrete::IntToCleartextOp> {
+  ConcreteIntToCleartextOpPattern(mlir::MLIRContext *context,
+                                  mlir::PatternBenefit benefit = 1)
+      : mlir::OpRewritePattern<mlir::concretelang::Concrete::IntToCleartextOp>(
+            context, benefit) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::concretelang::Concrete::IntToCleartextOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    rewriter.replaceOpWithNewOp<mlir::arith::ExtUIOp>(
+        op, rewriter.getIntegerType(64), op->getOperands().front());
+    return mlir::success();
+  };
 };
 
 // This rewrite pattern transforms any instance of `Concrete.zero_tensor`
@@ -151,12 +215,8 @@ struct ZeroOpPattern : public mlir::OpRewritePattern<ZeroOp> {
 //
 // becomes:
 //
-//   %0 = linalg.init_tensor [dimension+1] : tensor<dimension+1, i64>
-//   "BConcreteOp"(%0, %arg0, ...) : (tensor<dimension+1, i64>>,
+//   %0 = "BConcreteOp"(%0, %arg0, ...) : (tensor<dimension+1, i64>>,
 //      tensor<dimension+1, i64>>, ..., ) -> ()
-//
-// A reference to the preallocated output is always passed as the first
-// argument.
 template <typename ConcreteOp, typename BConcreteOp>
 struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   LowToBConcrete(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
@@ -172,23 +232,29 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
     auto newResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
 
-    // %0 = linalg.init_tensor [dimension+1] : tensor<dimension+1, i64>
-    mlir::Value init = rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
-        concreteOp, newResultTy.getShape(), newResultTy.getElementType());
+    // // %0 = linalg.init_tensor [dimension+1] : tensor<dimension+1, i64>
+    // mlir::Value init =
+    // rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
+    //     concreteOp, newResultTy.getShape(), newResultTy.getElementType());
 
-    // "BConcreteOp"(%0, %arg0, ...) : (tensor<dimension+1, i64>>,
+    // "%0 = BConcreteOp"(%arg0, ...) : (tensor<dimension+1, i64>>,
     //   tensor<dimension+1, i64>>, ..., ) -> ()
-    mlir::SmallVector<mlir::Value, 3> newOperands{init};
+    // mlir::SmallVector<mlir::Value, 3> newOperands{init};
 
-    newOperands.append(concreteOp.getOperation()->getOperands().begin(),
-                       concreteOp.getOperation()->getOperands().end());
+    // newOperands.append(concreteOp.getOperation()->getOperands().begin(),
+    //                    concreteOp.getOperation()->getOperands().end());
 
     llvm::ArrayRef<::mlir::NamedAttribute> attributes =
         concreteOp.getOperation()->getAttrs();
 
-    rewriter.create<BConcreteOp>(concreteOp.getLoc(),
-                                 mlir::SmallVector<mlir::Type>{}, newOperands,
-                                 attributes);
+    BConcreteOp bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteOp>(
+        concreteOp, newResultTy, concreteOp.getOperation()->getOperands(),
+        attributes);
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, bConcreteOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
 
     return ::mlir::success();
   };
@@ -311,12 +377,18 @@ struct ExtractSliceOpPattern
     staticStrides.push_back(rewriter.getI64IntegerAttr(1));
 
     // replace tensor.extract_slice to the new one
-    rewriter.replaceOpWithNewOp<mlir::tensor::ExtractSliceOp>(
-        extractSliceOp, newResultTy, extractSliceOp.source(),
-        extractSliceOp.offsets(), extractSliceOp.sizes(),
-        extractSliceOp.strides(), rewriter.getArrayAttr(staticOffsets),
-        rewriter.getArrayAttr(staticSizes),
-        rewriter.getArrayAttr(staticStrides));
+    mlir::tensor::ExtractSliceOp extractOp =
+        rewriter.replaceOpWithNewOp<mlir::tensor::ExtractSliceOp>(
+            extractSliceOp, newResultTy, extractSliceOp.source(),
+            extractSliceOp.offsets(), extractSliceOp.sizes(),
+            extractSliceOp.strides(), rewriter.getArrayAttr(staticOffsets),
+            rewriter.getArrayAttr(staticSizes),
+            rewriter.getArrayAttr(staticStrides));
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, extractOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
 
     return ::mlir::success();
   };
@@ -404,13 +476,27 @@ struct ExtractOpPattern
         mlir::SmallVector<mlir::Value>{}, rewriter.getArrayAttr(staticOffsets),
         rewriter.getArrayAttr(staticSizes),
         rewriter.getArrayAttr(staticStrides));
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, extractedSlice, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
     mlir::ReassociationIndices reassociation;
     for (int64_t i = 0; i < extractedSliceType.getRank(); i++) {
       reassociation.push_back(i);
     }
-    rewriter.replaceOpWithNewOp<mlir::linalg::TensorCollapseShapeOp>(
-        extractOp, newResultTy, extractedSlice,
-        mlir::SmallVector<mlir::ReassociationIndices>{reassociation});
+
+    mlir::tensor::CollapseShapeOp collapseOp =
+        rewriter.replaceOpWithNewOp<mlir::tensor::CollapseShapeOp>(
+            extractOp, newResultTy, extractedSlice,
+            mlir::SmallVector<mlir::ReassociationIndices>{reassociation});
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, collapseOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
     return ::mlir::success();
   };
 };
@@ -471,12 +557,90 @@ struct InsertSliceOpPattern
     staticStrides.push_back(rewriter.getI64IntegerAttr(1));
 
     // replace tensor.insert_slice with the new one
-    rewriter.replaceOpWithNewOp<mlir::tensor::InsertSliceOp>(
+    auto newOp = rewriter.replaceOpWithNewOp<mlir::tensor::InsertSliceOp>(
         insertSliceOp, newResultTy, insertSliceOp.source(),
         insertSliceOp.dest(), insertSliceOp.offsets(), insertSliceOp.sizes(),
         insertSliceOp.strides(), rewriter.getArrayAttr(staticOffsets),
         rewriter.getArrayAttr(staticSizes),
         rewriter.getArrayAttr(staticStrides));
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, newOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
+    return ::mlir::success();
+  };
+};
+
+// This rewrite pattern transforms any instance of `tensor.insert`
+// operators that operates on an lwe ciphertexts to a
+// `tensor.insert_slice` op operating on the bufferized representation
+// of the ciphertext.
+//
+// Example:
+//
+// ```mlir
+// %0 = tensor.insert %arg1
+//        into %arg0[offsets...]
+//        : !Concrete.lwe_ciphertext<lweDimension,p> into
+//          tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
+// ```
+//
+// becomes:
+//
+// ```mlir
+// %0 = tensor.insert_slice %arg1
+//        into %arg0[offsets..., 0] [sizes..., lweDimension+1] [strides..., 1]
+//        : tensor<lweDimension+1xi64> into
+//          tensor<...xlweDimension+1xi64>
+// ```
+struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
+  InsertOpPattern(::mlir::MLIRContext *context,
+                  mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::tensor::InsertOp>(context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::tensor::InsertOp insertOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    ConcreteToBConcreteTypeConverter converter;
+    mlir::Type resultTy = insertOp.result().getType();
+    mlir::RankedTensorType newResultTy =
+        converter.convertType(resultTy).cast<mlir::RankedTensorType>();
+
+    // add 0 to static_offsets
+    mlir::SmallVector<mlir::OpFoldResult> offsets;
+    offsets.append(insertOp.indices().begin(), insertOp.indices().end());
+    // mlir::Value zeroIndex = rewriter.create<mlir::arith::ConstantOp>(
+    //     insertOp.getLoc(), rewriter.getI64IntegerAttr(0),
+    //     rewriter.getIndexType());
+    // offsets.push_back(zeroIndex);
+    offsets.push_back(rewriter.getIndexAttr(0));
+
+    // Inserting a smaller tensor into a (potentially) bigger one. Set
+    // dimensions for all leading dimensions of the target tensor not
+    // present in the source to 1.
+    mlir::SmallVector<mlir::OpFoldResult> sizes(insertOp.indices().size(),
+                                                rewriter.getI64IntegerAttr(1));
+
+    // Add size for the bufferized source element
+    sizes.push_back(rewriter.getI64IntegerAttr(
+        newResultTy.getDimSize(newResultTy.getRank() - 1)));
+
+    // Set stride of all dimensions to 1
+    mlir::SmallVector<mlir::OpFoldResult> strides(
+        newResultTy.getRank(), rewriter.getI64IntegerAttr(1));
+
+    // replace tensor.insert_slice with the new one
+    mlir::tensor::InsertSliceOp insertSliceOp =
+        rewriter.replaceOpWithNewOp<mlir::tensor::InsertSliceOp>(
+            insertOp, insertOp.getOperand(0), insertOp.dest(), offsets, sizes,
+            strides);
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, insertSliceOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
 
     return ::mlir::success();
   };
@@ -523,51 +687,101 @@ struct FromElementsOpPattern
     if (converter.isLegal(resultTy)) {
       return mlir::failure();
     }
-    auto eltResultTy =
-        resultTy.cast<mlir::RankedTensorType>()
-            .getElementType()
-            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
+
     auto newTensorResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
-    auto newMemrefResultTy = mlir::MemRefType::get(
-        newTensorResultTy.getShape(), newTensorResultTy.getElementType());
 
-    // %m = memref.alloc() : memref<NxlweDim+1xi64>
-    auto mOp = rewriter.create<mlir::memref::AllocOp>(fromElementsOp.getLoc(),
-                                                      newMemrefResultTy);
+    mlir::Value tensor = rewriter.create<mlir::linalg::InitTensorOp>(
+        fromElementsOp.getLoc(), newTensorResultTy.getShape(),
+        newTensorResultTy.getElementType());
 
-    // for i = 0 to n-1
-    // %si = memref.subview %m[i, 0][1, lweDim+1][1, 1] : memref<lweDim+1xi64>
-    // %mi = memref.buffer_cast %ei : memref<lweDim+1xi64>
-    // memref.copy %mi, si : memref<lweDim+1xi64> to memref<lweDim+1xi64>
-    auto subviewResultTy = mlir::MemRefType::get(
-        {eltResultTy.getDimension() + 1}, newMemrefResultTy.getElementType());
-    auto offset = 0;
-    for (auto eiOp : fromElementsOp.elements()) {
-      mlir::SmallVector<mlir::Attribute, 2> staticOffsets{
-          rewriter.getI64IntegerAttr(offset), rewriter.getI64IntegerAttr(0)};
-      mlir::SmallVector<mlir::Attribute, 2> staticSizes{
-          rewriter.getI64IntegerAttr(1),
-          rewriter.getI64IntegerAttr(eltResultTy.getDimension() + 1)};
-      mlir::SmallVector<mlir::Attribute, 2> staticStrides{
-          rewriter.getI64IntegerAttr(1), rewriter.getI64IntegerAttr(1)};
-      auto siOp = rewriter.create<mlir::memref::SubViewOp>(
-          fromElementsOp.getLoc(), subviewResultTy, mOp, mlir::ValueRange{},
-          mlir::ValueRange{}, mlir::ValueRange{},
-          rewriter.getArrayAttr(staticOffsets),
-          rewriter.getArrayAttr(staticSizes),
-          rewriter.getArrayAttr(staticStrides));
-      auto miOp = rewriter.create<mlir::memref::BufferCastOp>(
-          fromElementsOp.getLoc(), subviewResultTy, eiOp);
-      rewriter.create<mlir::memref::CopyOp>(fromElementsOp.getLoc(), miOp,
-                                            siOp);
-      offset++;
+    llvm::SmallVector<mlir::OpFoldResult> sizes(1,
+                                                rewriter.getI64IntegerAttr(1));
+    std::transform(newTensorResultTy.getShape().begin() + 1,
+                   newTensorResultTy.getShape().end(),
+                   std::back_inserter(sizes),
+                   [&](auto v) { return rewriter.getI64IntegerAttr(v); });
+
+    llvm::SmallVector<mlir::OpFoldResult> oneStrides(
+        newTensorResultTy.getShape().size(), rewriter.getI64IntegerAttr(1));
+
+    llvm::SmallVector<mlir::OpFoldResult> offsets(
+        newTensorResultTy.getRank(), rewriter.getI64IntegerAttr(0));
+
+    for (auto elt : llvm::enumerate(fromElementsOp.elements())) {
+      offsets[0] = rewriter.getI64IntegerAttr(elt.index());
+
+      mlir::tensor::InsertSliceOp insOp =
+          rewriter.create<mlir::tensor::InsertSliceOp>(
+              fromElementsOp.getLoc(),
+              /* src: */ elt.value(),
+              /* dst: */ tensor,
+              /* offs: */ offsets,
+              /* sizes: */ sizes,
+              /* strides: */ oneStrides);
+
+      mlir::concretelang::convertOperandAndResultTypes(
+          rewriter, insOp, [&](mlir::MLIRContext *, mlir::Type t) {
+            return converter.convertType(t);
+          });
+
+      tensor = insOp.getResult();
     }
 
-    // Go back to tensor world
-    // %0 = memref.tensor_load %m : memref<NxlweDim+1xi64>
-    rewriter.replaceOpWithNewOp<mlir::memref::TensorLoadOp>(fromElementsOp,
-                                                            mOp);
+    rewriter.replaceOp(fromElementsOp, tensor);
+
+    // auto newMemrefResultTy = mlir::MemRefType::get(
+    //     newTensorResultTy.getShape(), newTensorResultTy.getElementType());
+
+    // // %m = memref.alloc() : memref<NxlweDim+1xi64>
+    // auto mOp =
+    // rewriter.create<mlir::memref::AllocOp>(fromElementsOp.getLoc(),
+    //                                                   newMemrefResultTy);
+
+    // // for i = 0 to n-1
+    // // %si = memref.subview %m[i, 0][1, lweDim+1][1, 1] :
+    // memref<lweDim+1xi64>
+    // // %mi = memref.buffer_cast %ei : memref<lweDim+1xi64>
+    // // memref.copy %mi, si : memref<lweDim+1xi64> to memref<lweDim+1xi64,
+    // // offset: OffsetInElements*(eltResultTy.getDimension() + 1)>
+    // int64_t offset = 0;
+    // for (auto eiOp : fromElementsOp.elements()) {
+    //   auto subviewResultTy = mlir::MemRefType::get(
+    //       {eltResultTy.getDimension() + 1},
+    //       newMemrefResultTy.getElementType(),
+    //       rewriter.getSingleDimShiftAffineMap(
+    //           offset * (eltResultTy.getDimension() + 1)));
+
+    //   mlir::SmallVector<mlir::Attribute, 2> staticOffsets{
+    //       rewriter.getI64IntegerAttr(offset), rewriter.getI64IntegerAttr(0)};
+    //   mlir::SmallVector<mlir::Attribute, 2> staticSizes{
+    //       rewriter.getI64IntegerAttr(1),
+    //       rewriter.getI64IntegerAttr(eltResultTy.getDimension() + 1)};
+    //   mlir::SmallVector<mlir::Attribute, 2> staticStrides{
+    //       rewriter.getI64IntegerAttr(1), rewriter.getI64IntegerAttr(1)};
+    //   auto siOp = rewriter.create<mlir::memref::SubViewOp>(
+    //       fromElementsOp.getLoc(), subviewResultTy, mOp, mlir::ValueRange{},
+    //       mlir::ValueRange{}, mlir::ValueRange{},
+    //       rewriter.getArrayAttr(staticOffsets),
+    //       rewriter.getArrayAttr(staticSizes),
+    //       rewriter.getArrayAttr(staticStrides));
+    //   auto miOp = rewriter.create<mlir::bufferization::ToMemrefOp>(
+    //       fromElementsOp.getLoc(), subviewResultTy, eiOp);
+
+    //   mlir::concretelang::convertOperandAndResultTypes(
+    //       rewriter, miOp, [&](mlir::MLIRContext *, mlir::Type t) {
+    //         return converter.convertType(t);
+    //       });
+
+    //   rewriter.create<mlir::memref::CopyOp>(fromElementsOp.getLoc(), miOp,
+    //                                         siOp);
+    //   offset++;
+    // }
+
+    // // Go back to tensor world
+    // // %0 = memref.tensor_load %m : memref<NxlweDim+1xi64>
+    // rewriter.replaceOpWithNewOp<mlir::bufferization::ToTensorOp>(fromElementsOp,
+    //                                                              mOp);
 
     return ::mlir::success();
   };
@@ -593,7 +807,7 @@ struct FromElementsOpPattern
 //        : tensor<...xlweDimesion+1xi64> into
 //          tensor<...xlweDimesion+1xi64>
 // ```
-template <typename ShapeOp, bool inRank>
+template <typename ShapeOp, typename VecTy, bool inRank>
 struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
   TensorShapeOpPattern(::mlir::MLIRContext *context,
                        mlir::PatternBenefit benefit = 1)
@@ -606,7 +820,7 @@ struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
     auto resultTy = shapeOp.result().getType();
 
     auto newResultTy =
-        ((mlir::Type)converter.convertType(resultTy)).cast<mlir::MemRefType>();
+        ((mlir::Type)converter.convertType(resultTy)).cast<VecTy>();
 
     // add [rank] to reassociations
     auto oldReassocs = shapeOp.getReassociationIndices();
@@ -616,294 +830,140 @@ struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
     auto reassocTy =
         ((mlir::Type)converter.convertType(
              (inRank ? shapeOp.src() : shapeOp.result()).getType()))
-            .cast<mlir::MemRefType>();
+            .cast<VecTy>();
     lweAssoc.push_back(reassocTy.getRank() - 1);
     newReassocs.push_back(lweAssoc);
 
-    rewriter.replaceOpWithNewOp<ShapeOp>(shapeOp, newResultTy, shapeOp.src(),
-                                         newReassocs);
+    ShapeOp op = rewriter.replaceOpWithNewOp<ShapeOp>(
+        shapeOp, newResultTy, shapeOp.src(), newReassocs);
+
+    // fix operand types
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, op, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
     return ::mlir::success();
   };
 };
 
 // Add the instantiated TensorShapeOpPattern rewrite pattern with the `ShapeOp`
 // to the patterns set and populate the conversion target.
-template <typename ShapeOp, bool inRank>
+template <typename ShapeOp, typename VecTy, bool inRank>
 void insertTensorShapeOpPattern(mlir::MLIRContext &context,
                                 mlir::RewritePatternSet &patterns,
                                 mlir::ConversionTarget &target) {
-  patterns.insert<TensorShapeOpPattern<ShapeOp, inRank>>(&context);
-  target.addDynamicallyLegalOp<ShapeOp>([&](ShapeOp op) {
+  patterns.insert<TensorShapeOpPattern<ShapeOp, VecTy, inRank>>(&context);
+  target.addDynamicallyLegalOp<ShapeOp>([&](mlir::Operation *op) {
     ConcreteToBConcreteTypeConverter converter;
-    return converter.isLegal(op.result().getType());
+    return converter.isLegal(op->getResultTypes()) &&
+           converter.isLegal(op->getOperandTypes());
   });
 }
 
-// This template rewrite pattern transforms any instance of
-// `MemrefOp` operators that returns a memref of lwe ciphertext to the same
-// operator but which returns the bufferized lwe ciphertext.
+// Rewrites `linalg.init_tensor` ops for which the converted type in
+// BConcrete is different from the original type.
 //
 // Example:
 //
-// ```mlir
-// %0 = "MemrefOp"(...) : ... -> memref<...x!Concrete.lwe_ciphertext<lweDim,p>>
+// ```
+// linalg.init_tensor [4] : tensor<4x!Concrete.lwe_ciphertext<4096,6>>
 // ```
 //
-// becomes:
+// which has become after type conversion:
 //
-// ```mlir
-// %0 = "MemrefOp"(...) : ... -> memref<...xlweDim+1xi64>
 // ```
-template <typename MemrefOp>
-struct MemrefOpPattern : public mlir::OpRewritePattern<MemrefOp> {
-  MemrefOpPattern(mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
-      : mlir::OpRewritePattern<MemrefOp>(context, benefit) {}
+// linalg.init_tensor [4] : tensor<4x4097xi64>
+// ```
+//
+// is finally fixed:
+//
+// ```
+// linalg.init_tensor [4, 4097] : tensor<4x4097xi64>
+// ```
+struct InitTensorOpPattern
+    : public mlir::OpRewritePattern<mlir::linalg::InitTensorOp> {
+  InitTensorOpPattern(::mlir::MLIRContext *context,
+                      mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::linalg::InitTensorOp>(context, benefit) {
+  }
 
-  mlir::LogicalResult
-  matchAndRewrite(MemrefOp memrefOp,
-                  mlir::PatternRewriter &rewriter) const override {
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::linalg::InitTensorOp initTensorOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
+    mlir::RankedTensorType resultTy =
+        initTensorOp.getType().dyn_cast<mlir::RankedTensorType>();
 
-    mlir::SmallVector<mlir::Type, 1> convertedTypes;
-    if (converter.convertTypes(memrefOp->getResultTypes(), convertedTypes)
-            .failed()) {
+    if (!resultTy || !resultTy.hasStaticShape())
       return mlir::failure();
+
+    mlir::RankedTensorType newResultTy =
+        converter.convertType(resultTy).dyn_cast<mlir::RankedTensorType>();
+
+    if (resultTy.getShape().size() != newResultTy.getShape().size()) {
+      rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
+          initTensorOp, newResultTy.getShape(), newResultTy.getElementType());
     }
 
-    rewriter.replaceOpWithNewOp<MemrefOp>(memrefOp, convertedTypes,
-                                          memrefOp->getOperands(),
-                                          memrefOp->getAttrs());
     return ::mlir::success();
   };
 };
 
-template <typename MemrefOp>
-void insertMemrefOpPatternImpl(mlir::MLIRContext &context,
-                               mlir::RewritePatternSet &patterns,
-                               mlir::ConversionTarget &target) {
-  patterns.insert<MemrefOpPattern<MemrefOp>>(&context);
-  target.addDynamicallyLegalOp<MemrefOp>([&](MemrefOp op) {
+struct ForOpPattern : public mlir::OpRewritePattern<mlir::scf::ForOp> {
+  ForOpPattern(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::scf::ForOp>(context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(mlir::scf::ForOp forOp,
+                  ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
-    return converter.isLegal(op->getResultTypes());
-  });
-}
 
-// Add the instantiated MemrefOpPattern rewrite pattern with the `MemrefOp`
-// to the patterns set and populate the conversion target.
-template <typename... MemrefOp>
-void insertMemrefOpPattern(mlir::MLIRContext &context,
-                           mlir::RewritePatternSet &patterns,
-                           mlir::ConversionTarget &target) {
-  (void)std::initializer_list<int>{
-      0,
-      (insertMemrefOpPatternImpl<MemrefOp>(context, patterns, target), 0)...};
-}
+    // TODO: Check if there is a cleaner way to modify the types in
+    // place through appropriate interfaces or by reconstructing the
+    // ForOp with the right types.
+    rewriter.updateRootInPlace(forOp, [&] {
+      for (mlir::Value initArg : forOp.getInitArgs()) {
+        mlir::Type convertedType = converter.convertType(initArg.getType());
+        initArg.setType(convertedType);
+      }
 
-// cc from Loops.cpp
-static mlir::SmallVector<mlir::Value>
-makeCanonicalAffineApplies(mlir::OpBuilder &b, mlir::Location loc,
-                           mlir::AffineMap map,
-                           mlir::ArrayRef<mlir::Value> vals) {
-  if (map.isEmpty())
-    return {};
+      for (mlir::Value &blockArg : forOp.getBody()->getArguments()) {
+        mlir::Type convertedType = converter.convertType(blockArg.getType());
+        blockArg.setType(convertedType);
+      }
 
-  assert(map.getNumInputs() == vals.size());
-  mlir::SmallVector<mlir::Value> res;
-  res.reserve(map.getNumResults());
-  auto dims = map.getNumDims();
-  for (auto e : map.getResults()) {
-    auto exprMap = mlir::AffineMap::get(dims, map.getNumSymbols(), e);
-    mlir::SmallVector<mlir::Value> operands(vals.begin(), vals.end());
-    canonicalizeMapAndOperands(&exprMap, &operands);
-    res.push_back(b.create<mlir::AffineApplyOp>(loc, exprMap, operands));
-  }
-  return res;
-}
+      for (mlir::OpResult result : forOp.getResults()) {
+        mlir::Type convertedType = converter.convertType(result.getType());
+        result.setType(convertedType);
+      }
+    });
 
-static std::pair<mlir::Value, mlir::Value>
-makeOperandLoadOrSubview(mlir::OpBuilder &builder, mlir::Location loc,
-                         mlir::ArrayRef<mlir::Value> allIvs,
-                         mlir::linalg::LinalgOp linalgOp,
-                         mlir::OpOperand *operand) {
-  ConcreteToBConcreteTypeConverter converter;
-
-  mlir::Value opVal = operand->get();
-  mlir::MemRefType opTy = opVal.getType().cast<mlir::MemRefType>();
-
-  if (auto lweType =
-          opTy.getElementType()
-              .dyn_cast_or_null<
-                  mlir::concretelang::Concrete::LweCiphertextType>()) {
-    // For memref of ciphertexts operands create the inner memref
-    // subview to the ciphertext, and go back to the tensor type as BConcrete
-    // operators works with tensor.
-    // %op : memref<dim...xConcrete.lwe_ciphertext<lweDim,p>>
-    // %opInner = memref.subview %opInner[offsets...][1...][1,...]
-    //   : memref<...xConcrete.lwe_ciphertext<lweDim,p>> to
-    //     memref<Concrete.lwe_ciphertext<lweDim,p>>
-
-    auto tensorizedLweTy =
-        converter.convertType(lweType).cast<mlir::RankedTensorType>();
-    auto subviewResultTy = mlir::MemRefType::get(
-        tensorizedLweTy.getShape(), tensorizedLweTy.getElementType());
-    auto offsets = makeCanonicalAffineApplies(
-        builder, loc, linalgOp.getTiedIndexingMap(operand), allIvs);
-    mlir::SmallVector<mlir::Attribute> staticOffsets(
-        opTy.getRank(),
-        builder.getI64IntegerAttr(std::numeric_limits<int64_t>::min()));
-    mlir::SmallVector<mlir::Attribute> staticSizes(
-        opTy.getRank(), builder.getI64IntegerAttr(1));
-    mlir::SmallVector<mlir::Attribute> staticStrides(
-        opTy.getRank(), builder.getI64IntegerAttr(1));
-
-    auto subViewOp = builder.create<mlir::memref::SubViewOp>(
-        loc, subviewResultTy, opVal, offsets, mlir::ValueRange{},
-        mlir::ValueRange{}, builder.getArrayAttr(staticOffsets),
-        builder.getArrayAttr(staticSizes), builder.getArrayAttr(staticStrides));
-    return std::pair<mlir::Value, mlir::Value>(
-        subViewOp, builder.create<mlir::memref::TensorLoadOp>(loc, subViewOp));
-  } else {
-    // For memref of non ciphertexts load the value from the memref.
-    // with %op : memref<dim...xip>
-    // %opInner = memref.load %op[offsets...] : memref<dim...xip>
-    auto offsets = makeCanonicalAffineApplies(
-        builder, loc, linalgOp.getTiedIndexingMap(operand), allIvs);
-    return std::pair<mlir::Value, mlir::Value>(
-        nullptr,
-        builder.create<mlir::memref::LoadOp>(loc, operand->get(), offsets));
-  }
-}
-
-static void
-inlineRegionAndEmitTensorStore(mlir::OpBuilder &builder, mlir::Location loc,
-                               mlir::linalg::LinalgOp linalgOp,
-                               llvm::ArrayRef<mlir::Value> indexedValues,
-                               mlir::ValueRange outputBuffers) {
-  // Clone the block with the new operands
-  auto &block = linalgOp->getRegion(0).front();
-  mlir::BlockAndValueMapping map;
-  map.map(block.getArguments(), indexedValues);
-  for (auto &op : block.without_terminator()) {
-    auto *newOp = builder.clone(op, map);
-    map.map(op.getResults(), newOp->getResults());
-  }
-  // Create memref.tensor_store operation for each terminator operands
-  auto *terminator = block.getTerminator();
-  for (mlir::OpOperand &operand : terminator->getOpOperands()) {
-    mlir::Value toStore = map.lookupOrDefault(operand.get());
-    builder.create<mlir::memref::TensorStoreOp>(
-        loc, toStore, outputBuffers[operand.getOperandNumber()]);
-  }
-}
-
-template <typename LoopType>
-class LinalgRewritePattern
-    : public mlir::OpInterfaceConversionPattern<mlir::linalg::LinalgOp> {
-public:
-  using mlir::OpInterfaceConversionPattern<
-      mlir::linalg::LinalgOp>::OpInterfaceConversionPattern;
-
-  mlir::LogicalResult
-  matchAndRewrite(mlir::linalg::LinalgOp linalgOp,
-                  mlir::ArrayRef<mlir::Value> operands,
-                  mlir::ConversionPatternRewriter &rewriter) const override {
-    assert(linalgOp.hasBufferSemantics() &&
-           "expected linalg op with buffer semantics");
-
-    auto loopRanges = linalgOp.createLoopRanges(rewriter, linalgOp.getLoc());
-    auto iteratorTypes =
-        llvm::to_vector<4>(linalgOp.iterator_types().getValue());
-
-    mlir::SmallVector<mlir::Value> allIvs;
-    mlir::linalg::GenerateLoopNest<LoopType>::doit(
-        rewriter, linalgOp.getLoc(), loopRanges, linalgOp, iteratorTypes,
-        [&](mlir::OpBuilder &builder, mlir::Location loc, mlir::ValueRange ivs,
-            mlir::ValueRange operandValuesToUse) -> mlir::scf::ValueVector {
-          // Keep indexed values to replace the linalg.generic block arguments
-          // by them
-          mlir::SmallVector<mlir::Value> indexedValues;
-          indexedValues.reserve(linalgOp.getNumInputsAndOutputs());
-          assert(
-              operandValuesToUse == linalgOp->getOperands() &&
-              "expect operands are captured and not passed by loop argument");
-          allIvs.append(ivs.begin(), ivs.end());
-
-          // For all input operands create the inner operand
-          for (mlir::OpOperand *inputOperand : linalgOp.getInputOperands()) {
-            auto innerOperand = makeOperandLoadOrSubview(
-                builder, loc, allIvs, linalgOp, inputOperand);
-            indexedValues.push_back(innerOperand.second);
-          }
-
-          // For all output operands create the inner operand
-          assert(linalgOp.getOutputOperands() ==
-                     linalgOp.getOutputBufferOperands() &&
-                 "expect only memref as output operands");
-          mlir::SmallVector<mlir::Value> outputBuffers;
-          for (mlir::OpOperand *outputOperand : linalgOp.getOutputOperands()) {
-            auto innerOperand = makeOperandLoadOrSubview(
-                builder, loc, allIvs, linalgOp, outputOperand);
-            indexedValues.push_back(innerOperand.second);
-            assert(innerOperand.first != nullptr &&
-                   "Expected a memref subview as output buffer");
-            outputBuffers.push_back(innerOperand.first);
-          }
-          // Finally inline the linalgOp region
-          inlineRegionAndEmitTensorStore(builder, loc, linalgOp, indexedValues,
-                                         outputBuffers);
-
-          return mlir::scf::ValueVector{};
-        });
-    rewriter.eraseOp(linalgOp);
-    return mlir::success();
+    return ::mlir::success();
   };
 };
 
 void ConcreteToBConcretePass::runOnOperation() {
   auto op = this->getOperation();
 
-  // First of all we transform LinalgOp that work on tensor of ciphertext to
-  // work on memref.
-  {
-    mlir::ConversionTarget target(getContext());
-    mlir::BufferizeTypeConverter converter;
-
-    // Mark all Standard operations legal.
-    target
-        .addLegalDialect<mlir::arith::ArithmeticDialect, mlir::AffineDialect,
-                         mlir::memref::MemRefDialect, mlir::StandardOpsDialect,
-                         mlir::tensor::TensorDialect>();
-
-    // Mark all Linalg operations illegal as long as they work on encrypted
-    // tensors.
-    target.addDynamicallyLegalOp<mlir::linalg::GenericOp, mlir::linalg::YieldOp,
-                                 mlir::linalg::CopyOp>(
-        [&](mlir::Operation *op) { return converter.isLegal(op); });
-
-    mlir::RewritePatternSet patterns(&getContext());
-    mlir::linalg::populateLinalgBufferizePatterns(converter, patterns);
-    if (failed(applyPartialConversion(op, target, std::move(patterns)))) {
-      signalPassFailure();
-      return;
-    }
-  }
-
   // Then convert ciphertext to tensor or add a dimension to tensor of
   // ciphertext and memref of ciphertext
   {
     mlir::ConversionTarget target(getContext());
     ConcreteToBConcreteTypeConverter converter;
-    mlir::OwningRewritePatternList patterns(&getContext());
+    mlir::RewritePatternSet patterns(&getContext());
 
     // All BConcrete ops are legal after the conversion
     target.addLegalDialect<mlir::concretelang::BConcrete::BConcreteDialect>();
 
-    // Add Concrete ops are illegal after the conversion unless those which are
-    // explicitly marked as legal (more or less operators that didn't work on
-    // ciphertexts)
+    // Add Concrete ops are illegal after the conversion
     target.addIllegalDialect<mlir::concretelang::Concrete::ConcreteDialect>();
-    target.addLegalOp<mlir::concretelang::Concrete::EncodeIntOp>();
-    target.addLegalOp<mlir::concretelang::Concrete::IntToCleartextOp>();
+
+    // Add patterns to convert cleartext and plaintext to i64
+    patterns
+        .insert<ConcreteEncodeIntOpPattern, ConcreteIntToCleartextOpPattern>(
+            &getContext());
+    target.addLegalDialect<mlir::arith::ArithmeticDialect>();
 
     // Add patterns to convert the zero ops to tensor.generate
     patterns
@@ -914,7 +974,6 @@ void ConcreteToBConcretePass::runOnOperation() {
 
     // Add patterns to trivialy convert Concrete op to the equivalent
     // BConcrete op
-    target.addLegalOp<mlir::linalg::InitTensorOp>();
     patterns.insert<
         LowToBConcrete<mlir::concretelang::Concrete::AddLweCiphertextsOp,
                        mlir::concretelang::BConcrete::AddLweBuffersOp>,
@@ -937,59 +996,85 @@ void ConcreteToBConcretePass::runOnOperation() {
 
     patterns.insert<GlweFromTablePattern>(&getContext());
 
-    // Add patterns to rewrite tensor operators that works on encrypted
-    // tensors
-    patterns.insert<ExtractSliceOpPattern, ExtractOpPattern,
-                    InsertSliceOpPattern, FromElementsOpPattern>(&getContext());
-    target.addDynamicallyLegalOp<
-        mlir::tensor::ExtractSliceOp, mlir::tensor::ExtractOp,
-        mlir::tensor::InsertSliceOp, mlir::tensor::FromElementsOp>(
+    // Add patterns to rewrite tensor operators that works on encrypted tensors
+    patterns
+        .insert<ExtractSliceOpPattern, ExtractOpPattern, InsertSliceOpPattern,
+                InsertOpPattern, FromElementsOpPattern>(&getContext());
+
+    target.addDynamicallyLegalOp<mlir::tensor::ExtractSliceOp,
+                                 mlir::tensor::ExtractOp, mlir::scf::YieldOp>(
+        [&](mlir::Operation *op) {
+          return converter.isLegal(op->getResultTypes()) &&
+                 converter.isLegal(op->getOperandTypes());
+        });
+
+    patterns.insert<InitTensorOpPattern>(&getContext());
+
+    target.addDynamicallyLegalOp<mlir::tensor::InsertSliceOp,
+                                 mlir::tensor::FromElementsOp,
+                                 mlir::linalg::InitTensorOp>(
         [&](mlir::Operation *op) {
           return converter.isLegal(op->getResult(0).getType());
         });
-    target.addLegalOp<mlir::memref::CopyOp,
-                      mlir::linalg::TensorCollapseShapeOp>();
+    target.addLegalOp<mlir::memref::CopyOp>();
+
+    patterns.insert<ForOpPattern>(&getContext());
 
     // Add patterns to rewrite some of memref ops that was introduced by the
     // linalg bufferization of encrypted tensor (first conversion of this pass)
-    insertTensorShapeOpPattern<mlir::memref::ExpandShapeOp, false>(
-        getContext(), patterns, target);
-    insertTensorShapeOpPattern<mlir::memref::CollapseShapeOp, true>(
-        getContext(), patterns, target);
+    insertTensorShapeOpPattern<mlir::memref::ExpandShapeOp, mlir::MemRefType,
+                               false>(getContext(), patterns, target);
+    insertTensorShapeOpPattern<mlir::tensor::ExpandShapeOp, mlir::TensorType,
+                               false>(getContext(), patterns, target);
+    insertTensorShapeOpPattern<mlir::memref::CollapseShapeOp, mlir::MemRefType,
+                               true>(getContext(), patterns, target);
+    insertTensorShapeOpPattern<mlir::tensor::CollapseShapeOp, mlir::TensorType,
+                               true>(getContext(), patterns, target);
 
-    // Add patterns to rewrite linalg op to nested loops with views on
-    // ciphertexts
-    if (loopParallelize) {
-      patterns.insert<LinalgRewritePattern<mlir::scf::ParallelOp>>(
-          converter, &getContext());
-    } else {
-      patterns.insert<LinalgRewritePattern<mlir::scf::ForOp>>(converter,
-                                                              &getContext());
-    }
-    target.addLegalOp<mlir::arith::ConstantOp, mlir::scf::ForOp,
-                      mlir::scf::ParallelOp, mlir::scf::YieldOp,
-                      mlir::AffineApplyOp, mlir::memref::SubViewOp,
-                      mlir::memref::LoadOp, mlir::memref::TensorStoreOp>();
+    target.addDynamicallyLegalOp<
+        mlir::arith::ConstantOp, mlir::scf::ForOp, mlir::scf::ParallelOp,
+        mlir::scf::YieldOp, mlir::AffineApplyOp, mlir::memref::SubViewOp,
+        mlir::memref::LoadOp, mlir::memref::TensorStoreOp>(
+        [&](mlir::Operation *op) {
+          return converter.isLegal(op->getResultTypes()) &&
+                 converter.isLegal(op->getOperandTypes());
+        });
 
     // Add patterns to do the conversion of func
-    mlir::populateFuncOpTypeConversionPattern(patterns, converter);
-    target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
-      return converter.isSignatureLegal(funcOp.getType()) &&
-             converter.isLegal(&funcOp.getBody());
+    mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
+        patterns, converter);
+
+    target.addDynamicallyLegalOp<mlir::func::FuncOp>(
+        [&](mlir::func::FuncOp funcOp) {
+          return converter.isSignatureLegal(funcOp.getFunctionType()) &&
+                 converter.isLegal(&funcOp.getBody());
+        });
+
+    target.addDynamicallyLegalOp<mlir::scf::ForOp>([&](mlir::scf::ForOp forOp) {
+      return converter.isLegal(forOp.getInitArgs().getTypes()) &&
+             converter.isLegal(forOp.getResults().getTypes());
     });
 
-    // Add patterns to convert some memref operators that is generated by
-    // previous step
-    insertMemrefOpPattern<mlir::memref::AllocOp, mlir::memref::BufferCastOp,
-                          mlir::memref::TensorLoadOp>(getContext(), patterns,
-                                                      target);
+    // Add pattern for return op
+    target.addDynamicallyLegalOp<mlir::func::ReturnOp>(
+        [&](mlir::Operation *op) {
+          return converter.isLegal(op->getResultTypes()) &&
+                 converter.isLegal(op->getOperandTypes());
+        });
+
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
+        mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DataflowTaskOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::concretelang::RT::DataflowYieldOp>>(&getContext(), converter);
 
     // Conversion of RT Dialect Ops
-    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-        mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
-                                                 converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::concretelang::RT::DataflowTaskOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DataflowYieldOp>(target, converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

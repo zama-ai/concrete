@@ -17,8 +17,8 @@
 #include <concretelang/Support/math.h>
 #include <mlir/IR/BuiltinOps.h>
 
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
@@ -30,7 +30,6 @@
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Transforms/RegionUtils.h>
-#include <mlir/Transforms/Utils.h>
 
 #define GEN_PASS_CLASSES
 #include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>
@@ -54,7 +53,7 @@ static bool isCandidateForTask(Operation *op) {
 // Identify operations that are beneficial to sink into tasks.  These
 // operations must not have side-effects and not be `isCandidateForTask`
 static bool isSinkingBeneficiary(Operation *op) {
-  return isa<FHE::ZeroEintOp, arith::ConstantOp, memref::DimOp, SelectOp,
+  return isa<FHE::ZeroEintOp, arith::ConstantOp, memref::DimOp, arith::SelectOp,
              mlir::arith::CmpIOp>(op);
 }
 
@@ -132,7 +131,7 @@ struct BuildDataflowTaskGraphPass
   void runOnOperation() override {
     auto module = getOperation();
 
-    module.walk([&](mlir::FuncOp func) {
+    module.walk([&](mlir::func::FuncOp func) {
       if (!func->getAttr("_dfr_work_function_attribute"))
         func.walk(
             [&](mlir::Operation *childOp) { this->processOperation(childOp); });
@@ -154,7 +153,7 @@ protected:
   void processOperation(mlir::Operation *op) {
     if (isCandidateForTask(op)) {
       BlockAndValueMapping map;
-      Region &opBody = getOperation().body();
+      Region &opBody = getOperation().getBody();
       OpBuilder builder(opBody);
 
       // Create a DFTask for this operation

@@ -3,7 +3,6 @@
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
-include "mlir/Dialect/StandardOps/IR/StandardOpsBase.td"
 include "mlir/Dialect/Linalg/IR/LinalgBase.td"
 include "mlir/Dialect/Linalg/IR/LinalgInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
@@ -11,7 +10,7 @@ include "mlir/Interfaces/InferTypeOpInterface.td"
 include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.td"
 include "concretelang/Dialect/FHELinalg/IR/FHELinalgTypes.td"
 
-class FHELinalg_Op<string mnemonic, list<OpTrait> traits = []> :
+class FHELinalg_Op<string mnemonic, list<Trait> traits = []> :
     Op<FHELinalg_Dialect, mnemonic, traits>;
 
 // TensorBroadcastingRules verify that the operands and result verify the broadcasting rules
@@ -296,9 +295,7 @@ def ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
 
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
-    let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyApplyLookupTable(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", []> {
@@ -345,9 +342,7 @@ def ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", []> {
 
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
-    let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyApplyMultiLookupTable(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", []> {
@@ -401,9 +396,7 @@ def ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", []>
 
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
-    let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyApplyMappedLookupTable(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def Dot : FHELinalg_Op<"dot_eint_int"> {
@@ -426,9 +419,7 @@ def Dot : FHELinalg_Op<"dot_eint_int"> {
 
     let results = (outs EncryptedIntegerType:$out);
 
-    let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyDotEintInt(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
@@ -566,9 +557,7 @@ def MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
 
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
-    let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyMatmul<mlir::concretelang::FHELinalg::MatMulEintIntOp>(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
@@ -706,9 +695,7 @@ def MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
 
     let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
-    let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyMatmul<mlir::concretelang::FHELinalg::MatMulIntEintOp>(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
@@ -791,9 +778,7 @@ def SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
         ]>>:$out
     );
 
-    let verifier = [{
-        return mlir::concretelang::FHELinalg::verifySum(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def ConcatOp : FHELinalg_Op<"concat"> {
@@ -835,9 +820,7 @@ def ConcatOp : FHELinalg_Op<"concat"> {
         Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$out
     );
 
-    let verifier = [{
-        return mlir::concretelang::FHELinalg::verifyConcat(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
@@ -852,12 +835,10 @@ def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
     OptionalAttr<I64ElementsAttr>:$dilations
   );
   let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
-  let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyConv2d(*this);
-    }];
+  let hasVerifier = 1;
 }
 
-class LinalgStructuredBase_Op<string mnemonic, list<OpTrait> props>
+class LinalgStructuredBase_Op<string mnemonic, list<Trait> props>
   : Op<Linalg_Dialect, mnemonic, !listconcat([
        SingleBlockImplicitTerminator<"YieldOp">,
        DeclareOpInterfaceMethods<MemoryEffectsOpInterface>,
@@ -979,18 +960,15 @@ $_state.addAttribute("dilations", dilations);
   }]>
 
     ];
-    let printer = [{ return mlir::concretelang::FHELinalg::printNamedStructuredOp(p, *this); }];
-    let parser = [{
-      return mlir::concretelang::FHELinalg::parseNamedStructuredOp<FhelinalgConv2DNchwFchwOp>(parser, result);
-    }];
+    let hasCustomAssemblyFormat = 1;
     let hasFolder = 1;
 
     let extraClassDeclaration = structuredOpsBaseDecls # [{
       // Auto-generated.
       ArrayAttr iterator_types();
       ArrayAttr indexing_maps();
-      static void regionBuilder(ImplicitLocOpBuilder &b, Block &block);
-      static std::function<void(ImplicitLocOpBuilder &b, Block &)>
+      static void regionBuilder(ImplicitLocOpBuilder &b, Block &block, llvm::ArrayRef<mlir::NamedAttribute>);
+      static std::function<void(ImplicitLocOpBuilder &b, Block &, llvm::ArrayRef<mlir::NamedAttribute>)>
       getRegionBuilder() {
         return regionBuilder;
       }
@@ -1030,9 +1008,7 @@ def TransposeOp : FHELinalg_Op<"transpose", []> {
     let arguments = (ins AnyType:$tensor);
     let results = (outs AnyType);
 
-    let verifier = [{
-        return ::mlir::concretelang::FHELinalg::verifyTranspose(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 

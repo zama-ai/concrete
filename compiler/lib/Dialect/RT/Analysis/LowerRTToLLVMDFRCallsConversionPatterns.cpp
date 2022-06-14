@@ -25,12 +25,11 @@
 #include <mlir/Conversion/LLVMCommon/ConversionTarget.h>
 #include <mlir/Conversion/LLVMCommon/Pattern.h>
 #include <mlir/Conversion/LLVMCommon/VectorPattern.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/Func/Transforms/FuncConversions.h>
 #include <mlir/Dialect/LLVMIR/FunctionCallUtils.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
-#include <mlir/Dialect/StandardOps/Transforms/FuncConversions.h>
-#include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
@@ -39,11 +38,9 @@
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LLVM.h>
 #include <mlir/Support/LogicalResult.h>
-#include <mlir/Transforms/Bufferize.h>
 #include <mlir/Transforms/DialectConversion.h>
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Transforms/RegionUtils.h>
-#include <mlir/Transforms/Utils.h>
 
 #define GEN_PASS_CLASSES
 #include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>
@@ -100,10 +97,9 @@ struct MakeReadyFutureOpInterfaceLowering
   using ConvertOpToLLVMPattern<RT::MakeReadyFutureOp>::ConvertOpToLLVMPattern;
 
   mlir::LogicalResult
-  matchAndRewrite(RT::MakeReadyFutureOp mrfOp, ArrayRef<Value> operands,
+  matchAndRewrite(RT::MakeReadyFutureOp mrfOp,
+                  RT::MakeReadyFutureOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-
-    RT::MakeReadyFutureOp::Adaptor transformed(operands);
     OpBuilder::InsertionGuard guard(rewriter);
 
     // Normally this function takes a pointer as parameter
@@ -118,16 +114,16 @@ struct MakeReadyFutureOpInterfaceLowering
     auto allocFuncOp = mlir::LLVM::lookupOrCreateMallocFn(
         mrfOp->getParentOfType<ModuleOp>(), getIndexType());
     auto sizeBytes = getSizeInBytes(
-        mrfOp.getLoc(), transformed.getOperands().getTypes().front(), rewriter);
+        mrfOp.getLoc(), adaptor.getOperands().getTypes().front(), rewriter);
     auto results = mlir::LLVM::createLLVMCall(
         rewriter, mrfOp.getLoc(), allocFuncOp, {sizeBytes}, getVoidPtrType());
     Value allocatedPtr = rewriter.create<mlir::LLVM::BitcastOp>(
         mrfOp.getLoc(),
         mlir::LLVM::LLVMPointerType::get(
-            transformed.getOperands().getTypes().front()),
+            adaptor.getOperands().getTypes().front()),
         results[0]);
-    rewriter.create<LLVM::StoreOp>(
-        mrfOp.getLoc(), transformed.getOperands().front(), allocatedPtr);
+    rewriter.create<LLVM::StoreOp>(mrfOp.getLoc(),
+                                   adaptor.getOperands().front(), allocatedPtr);
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(mrfOp, mrfFuncOp, allocatedPtr);
 
     return mlir::success();
@@ -138,9 +134,8 @@ struct AwaitFutureOpInterfaceLowering
   using ConvertOpToLLVMPattern<RT::AwaitFutureOp>::ConvertOpToLLVMPattern;
 
   mlir::LogicalResult
-  matchAndRewrite(RT::AwaitFutureOp afOp, ArrayRef<Value> operands,
+  matchAndRewrite(RT::AwaitFutureOp afOp, RT::AwaitFutureOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::AwaitFutureOp::Adaptor transformed(operands);
     OpBuilder::InsertionGuard guard(rewriter);
     auto afFuncType = LLVM::LLVMFunctionType::get(
         mlir::LLVM::LLVMPointerType::get(getVoidPtrI64Type(rewriter)),
@@ -148,7 +143,7 @@ struct AwaitFutureOpInterfaceLowering
     auto afFuncOp =
         getOrInsertFuncOpDecl(afOp, "_dfr_await_future", afFuncType, rewriter);
     auto afCallOp = rewriter.create<LLVM::CallOp>(afOp.getLoc(), afFuncOp,
-                                                  transformed.getOperands());
+                                                  adaptor.getOperands());
     Value futVal = rewriter.create<mlir::LLVM::BitcastOp>(
         afOp.getLoc(),
         mlir::LLVM::LLVMPointerType::get(
@@ -163,15 +158,15 @@ struct CreateAsyncTaskOpInterfaceLowering
   using ConvertOpToLLVMPattern<RT::CreateAsyncTaskOp>::ConvertOpToLLVMPattern;
 
   mlir::LogicalResult
-  matchAndRewrite(RT::CreateAsyncTaskOp catOp, ArrayRef<Value> operands,
+  matchAndRewrite(RT::CreateAsyncTaskOp catOp,
+                  RT::CreateAsyncTaskOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::CreateAsyncTaskOp::Adaptor transformed(operands);
     auto catFuncType =
         LLVM::LLVMFunctionType::get(getVoidType(), {}, /*isVariadic=*/true);
     auto catFuncOp = getOrInsertFuncOpDecl(catOp, "_dfr_create_async_task",
                                            catFuncType, rewriter);
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(catOp, catFuncOp,
-                                              transformed.getOperands());
+                                              adaptor.getOperands());
     return success();
   }
 };
@@ -180,15 +175,15 @@ struct DeallocateFutureOpInterfaceLowering
   using ConvertOpToLLVMPattern<RT::DeallocateFutureOp>::ConvertOpToLLVMPattern;
 
   mlir::LogicalResult
-  matchAndRewrite(RT::DeallocateFutureOp dfOp, ArrayRef<Value> operands,
+  matchAndRewrite(RT::DeallocateFutureOp dfOp,
+                  RT::DeallocateFutureOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::DeallocateFutureOp::Adaptor transformed(operands);
     auto dfFuncType = LLVM::LLVMFunctionType::get(
         getVoidType(), {getVoidPtrI64Type(rewriter)});
     auto dfFuncOp = getOrInsertFuncOpDecl(dfOp, "_dfr_deallocate_future",
                                           dfFuncType, rewriter);
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(dfOp, dfFuncOp,
-                                              transformed.getOperands());
+                                              adaptor.getOperands());
     return success();
   }
 };
@@ -198,15 +193,15 @@ struct DeallocateFutureDataOpInterfaceLowering
       RT::DeallocateFutureDataOp>::ConvertOpToLLVMPattern;
 
   mlir::LogicalResult
-  matchAndRewrite(RT::DeallocateFutureDataOp dfdOp, ArrayRef<Value> operands,
+  matchAndRewrite(RT::DeallocateFutureDataOp dfdOp,
+                  RT::DeallocateFutureDataOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::DeallocateFutureDataOp::Adaptor transformed(operands);
     auto dfdFuncType = LLVM::LLVMFunctionType::get(
         getVoidType(), {getVoidPtrI64Type(rewriter)});
     auto dfdFuncOp = getOrInsertFuncOpDecl(dfdOp, "_dfr_deallocate_future_data",
                                            dfdFuncType, rewriter);
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(dfdOp, dfdFuncOp,
-                                              transformed.getOperands());
+                                              adaptor.getOperands());
     return success();
   }
 };
@@ -217,7 +212,7 @@ struct BuildReturnPtrPlaceholderOpInterfaceLowering
 
   mlir::LogicalResult
   matchAndRewrite(RT::BuildReturnPtrPlaceholderOp befOp,
-                  ArrayRef<Value> operands,
+                  RT::BuildReturnPtrPlaceholderOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     OpBuilder::InsertionGuard guard(rewriter);
 
@@ -231,10 +226,7 @@ struct BuildReturnPtrPlaceholderOpInterfaceLowering
             (*getTypeConverter()).convertType(rewriter.getIndexType()), 1));
     rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
         befOp, mlir::LLVM::LLVMPointerType::get(getVoidPtrI64Type(rewriter)),
-        one,
-        /*alignment=*/
-        rewriter.getIntegerAttr(
-            (*getTypeConverter()).convertType(rewriter.getIndexType()), 0));
+        one, 0);
     return success();
   }
 };
@@ -245,15 +237,13 @@ struct DerefReturnPtrPlaceholderOpInterfaceLowering
 
   mlir::LogicalResult
   matchAndRewrite(RT::DerefReturnPtrPlaceholderOp drppOp,
-                  ArrayRef<Value> operands,
+                  RT::DerefReturnPtrPlaceholderOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::DerefReturnPtrPlaceholderOp::Adaptor transformed(operands);
-
     // DerefReturnPtrPlaceholder is a placeholder for generating a
     // dereference operation for the pointer used to get results from
     // task.
-    rewriter.replaceOpWithNewOp<LLVM::LoadOp>(
-        drppOp, transformed.getOperands().front());
+    rewriter.replaceOpWithNewOp<LLVM::LoadOp>(drppOp,
+                                              adaptor.getOperands().front());
     return success();
   }
 };
@@ -263,19 +253,17 @@ struct DerefWorkFunctionArgumentPtrPlaceholderOpInterfaceLowering
   using ConvertOpToLLVMPattern<
       RT::DerefWorkFunctionArgumentPtrPlaceholderOp>::ConvertOpToLLVMPattern;
 
-  mlir::LogicalResult
-  matchAndRewrite(RT::DerefWorkFunctionArgumentPtrPlaceholderOp dwfappOp,
-                  ArrayRef<Value> operands,
-                  ConversionPatternRewriter &rewriter) const override {
-    RT::DerefWorkFunctionArgumentPtrPlaceholderOp::Adaptor transformed(
-        operands);
+  mlir::LogicalResult matchAndRewrite(
+      RT::DerefWorkFunctionArgumentPtrPlaceholderOp dwfappOp,
+      RT::DerefWorkFunctionArgumentPtrPlaceholderOp::Adaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
     OpBuilder::InsertionGuard guard(rewriter);
 
     // DerefWorkFunctionArgumentPtrPlaceholderOp is a placeholder for
     // generating a dereference operation for the pointer used to pass
     // arguments to the task.
-    rewriter.replaceOpWithNewOp<LLVM::LoadOp>(
-        dwfappOp, transformed.getOperands().front());
+    rewriter.replaceOpWithNewOp<LLVM::LoadOp>(dwfappOp,
+                                              adaptor.getOperands().front());
     return success();
   }
 };
@@ -285,12 +273,11 @@ struct WorkFunctionReturnOpInterfaceLowering
       RT::WorkFunctionReturnOp>::ConvertOpToLLVMPattern;
 
   mlir::LogicalResult
-  matchAndRewrite(RT::WorkFunctionReturnOp wfrOp, ArrayRef<Value> operands,
+  matchAndRewrite(RT::WorkFunctionReturnOp wfrOp,
+                  RT::WorkFunctionReturnOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    RT::WorkFunctionReturnOp::Adaptor transformed(operands);
     rewriter.replaceOpWithNewOp<LLVM::StoreOp>(
-        wfrOp, transformed.getOperands().front(),
-        transformed.getOperands().back());
+        wfrOp, adaptor.getOperands().front(), adaptor.getOperands().back());
     return success();
   }
 };

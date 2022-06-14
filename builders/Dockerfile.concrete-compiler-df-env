@@ -8,7 +8,7 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y curl cmake g++ \
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
-RUN pip install numpy pybind11==2.6.2 PyYAML
+RUN pip install numpy pybind11==2.8 PyYAML
 # Setup Concrete
 COPY --from=ghcr.io/zama-ai/concrete-compiler-api-env:latest /target/release /concrete/target/release
 ENV CONCRETE_PROJECT=/concrete

@@ -2,6 +2,7 @@
 #define CONCRETELANG_CONVERSION_FHETOTFHE_PATTERNS
 
 include "mlir/Pass/PassBase.td"
+include "mlir/IR/PatternBase.td"
 include "concretelang/Dialect/FHE/IR/FHEOps.td"
 include "concretelang/Dialect/TFHE/IR/TFHEOps.td"
 

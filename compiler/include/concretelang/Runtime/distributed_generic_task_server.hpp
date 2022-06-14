@@ -149,6 +149,28 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
       case 3:
         wfn(inputs.params[0], inputs.params[1], inputs.params[2], output);
         break;
+      case 4:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], output);
+        break;
+      case 5:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], output);
+        break;
+      case 6:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5], output);
+        break;
+      case 7:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], output);
+        break;
+      case 8:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], output);
+        break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
                             "GenericComputeServer::execute_task",
@@ -174,6 +196,29 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
       case 3:
         wfn(inputs.params[0], inputs.params[1], inputs.params[2], output1,
             output2);
+        break;
+      case 4:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], output1, output2);
+        break;
+      case 5:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], output1, output2);
+        break;
+      case 6:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5], output1,
+            output2);
+        break;
+      case 7:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], output1, output2);
+        break;
+      case 8:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], output1, output2);
         break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,
@@ -202,6 +247,29 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
       case 3:
         wfn(inputs.params[0], inputs.params[1], inputs.params[2], output1,
             output2, output3);
+        break;
+      case 4:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], output1, output2, output3);
+        break;
+      case 5:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], output1, output2, output3);
+        break;
+      case 6:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5], output1,
+            output2, output3);
+        break;
+      case 7:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], output1, output2, output3);
+        break;
+      case 8:
+        wfn(inputs.params[0], inputs.params[1], inputs.params[2],
+            inputs.params[3], inputs.params[4], inputs.params[5],
+            inputs.params[6], inputs.params[7], output1, output2, output3);
         break;
       default:
         HPX_THROW_EXCEPTION(hpx::no_success,

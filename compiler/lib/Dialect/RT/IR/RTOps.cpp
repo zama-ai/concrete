@@ -32,6 +32,4 @@ void DataflowTaskOp::build(
 
 void DataflowTaskOp::getSuccessorRegions(
     Optional<unsigned> index, ArrayRef<Attribute> operands,
-    SmallVectorImpl<RegionSuccessor> &regions) {
-  regions.push_back(RegionSuccessor(&body()));
-}
+    SmallVectorImpl<RegionSuccessor> &regions) {}

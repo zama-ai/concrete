@@ -15,7 +15,7 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "concretelang/Dialect/FHE/IR/FHEDialect.td"
 include "concretelang/Dialect/FHE/IR/FHETypes.td"
 
-class FHE_Op<string mnemonic, list<OpTrait> traits = []> :
+class FHE_Op<string mnemonic, list<Trait> traits = []> :
     Op<FHE_Dialect, mnemonic, traits>;
 
 def ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
@@ -81,10 +81,7 @@ def AddEintIntOp : FHE_Op<"add_eint_int"> {
         }]>
     ];
 
-    let verifier = [{
-        return ::mlir::concretelang::FHE::verifyAddEintIntOp(*this);
-    }];
-
+    let hasVerifier = 1;
     let hasFolder = 1;
 }
 
@@ -116,9 +113,7 @@ def AddEintOp : FHE_Op<"add_eint"> {
         }]>
     ];
 
-    let verifier = [{
-        return ::mlir::concretelang::FHE::verifyAddEintOp(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def SubIntEintOp : FHE_Op<"sub_int_eint"> {
@@ -150,9 +145,7 @@ def SubIntEintOp : FHE_Op<"sub_int_eint"> {
         }]>
     ];
 
-    let verifier = [{
-        return ::mlir::concretelang::FHE::verifySubIntEintOp(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def NegEintOp : FHE_Op<"neg_eint"> {
@@ -181,10 +174,7 @@ def NegEintOp : FHE_Op<"neg_eint"> {
          build($_builder, $_state, a.getType(), a);
         }]>
     ];
-
-    let verifier = [{
-        return ::mlir::concretelang::FHE::verifyNegEintOp(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 def MulEintIntOp : FHE_Op<"mul_eint_int"> {
@@ -216,10 +206,7 @@ def MulEintIntOp : FHE_Op<"mul_eint_int"> {
         }]>
     ];
 
-    let verifier = [{
-        return ::mlir::concretelang::FHE::verifyMulEintIntOp(*this);
-    }];
-
+    let hasVerifier = 1;
     let hasFolder = 1;
 }
 
@@ -246,10 +233,7 @@ def ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table"> {
     let arguments = (ins EncryptedIntegerType:$a,
         TensorOf<[AnyInteger]>:$lut);
     let results = (outs EncryptedIntegerType);
-
-    let verifier = [{
-        return ::mlir::concretelang::FHE::verifyApplyLookupTable(*this);
-    }];
+    let hasVerifier = 1;
 }
 
 #endif

@@ -16,49 +16,14 @@ def GlweCiphertextType : Concrete_Type<"GlweCiphertext"> {
        GLWE ciphertext.
     }];
 
+    let hasCustomAssemblyFormat = 1;
+
     let parameters = (ins
         "signed":$polynomialSize,
         "signed":$glweDimension,
         // Precision of the lwe ciphertext
         "signed":$p
     );
-
-    let printer = [{
-        $_printer << "glwe_ciphertext<";
-        if (getImpl()->polynomialSize == -1) $_printer << "_";
-        else $_printer << getImpl()->polynomialSize;
-        $_printer << ",";
-        if (getImpl()->glweDimension == -1) $_printer << "_";
-        else $_printer << getImpl()->glweDimension;
-        $_printer << ",";
-        if (getImpl()->p == -1) $_printer << "_";
-        else $_printer << getImpl()->p;
-        $_printer << ">";
-    }];
-
-    
-    let parser = [{
-        if ($_parser.parseLess())
-            return Type();
-        int polynomialSize = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(polynomialSize))
-            return Type();
-        if ($_parser.parseComma())
-            return Type();
-        int glweDimension = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(glweDimension))
-            return Type();
-        if ($_parser.parseComma())
-            return Type();
-        
-        int p = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
-            return Type();
-        if ($_parser.parseGreater())
-            return Type();
-        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
-        return getChecked(loc, loc.getContext(), polynomialSize, glweDimension, p);
-    }];
 }
 
 def LweCiphertextType : Concrete_Type<"LweCiphertext", [MemRefElementTypeInterface]> {
@@ -78,32 +43,7 @@ def LweCiphertextType : Concrete_Type<"LweCiphertext", [MemRefElementTypeInterfa
         "signed":$p
     );
 
-    let printer = [{
-        $_printer << "lwe_ciphertext<";
-        if (getImpl()->dimension == -1) $_printer << "_";
-        else $_printer << getImpl()->dimension;
-        $_printer << ",";
-        if (getImpl()->p == -1) $_printer << "_";
-        else $_printer << getImpl()->p;
-        $_printer << ">";
-    }];
-
-    let parser = [{
-        if ($_parser.parseLess())
-            return Type();
-        int dimension = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(dimension))
-            return Type();
-        if ($_parser.parseComma())
-            return Type();
-        int p = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
-            return Type();
-        if ($_parser.parseGreater())
-            return Type();
-        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
-        return getChecked(loc, loc.getContext(), dimension, p);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 def CleartextType : Concrete_Type<"Cleartext"> {
@@ -120,24 +60,7 @@ def CleartextType : Concrete_Type<"Cleartext"> {
         "signed":$p
     );
 
-    let printer = [{
-        $_printer << "cleartext<";
-        if (getImpl()->p == -1) $_printer << "_";
-        else $_printer << getImpl()->p;
-        $_printer << ">";
-    }];
-
-    let parser = [{
-        if ($_parser.parseLess())
-            return Type();
-        int p = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
-            return Type();
-        if ($_parser.parseGreater())
-            return Type();
-        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
-        return getChecked(loc, loc.getContext(), p);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 def PlaintextType : Concrete_Type<"Plaintext"> {
@@ -154,24 +77,7 @@ def PlaintextType : Concrete_Type<"Plaintext"> {
         "signed":$p
     );
 
-    let printer = [{
-        $_printer << "plaintext<";
-        if (getImpl()->p == -1) $_printer << "_";
-        else $_printer << getImpl()->p;
-        $_printer << ">";
-    }];
-
-    let parser = [{
-        if ($_parser.parseLess())
-            return Type();
-        int p = -1;
-        if ($_parser.parseOptionalKeyword("_") && $_parser.parseInteger(p))
-            return Type();
-        if ($_parser.parseGreater())
-            return Type();
-        Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
-        return getChecked(loc, loc.getContext(), p);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 def PlaintextListType : Concrete_Type<"PlaintextList"> {
@@ -183,13 +89,7 @@ def PlaintextListType : Concrete_Type<"PlaintextList"> {
        Plaintext list.
     }];
 
-    let printer = [{
-        $_printer << "plaintext_list";
-    }];
-
-    let parser = [{
-        return get($_ctxt);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 def ForeignPlaintextListType : Concrete_Type<"ForeignPlaintextList"> {
@@ -201,13 +101,7 @@ def ForeignPlaintextListType : Concrete_Type<"ForeignPlaintextList"> {
        Foreign plaintext list.
     }];
 
-    let printer = [{
-        $_printer << "foreign_plaintext_list";
-    }];
-
-    let parser = [{
-        return get($_ctxt);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 def LweKeySwitchKeyType : Concrete_Type<"LweKeySwitchKey"> {
@@ -219,13 +113,7 @@ def LweKeySwitchKeyType : Concrete_Type<"LweKeySwitchKey"> {
        Learning With Error keyswitching key.
     }];
 
-    let printer = [{
-        $_printer << "lwe_key_switch_key";
-    }];
-
-    let parser = [{
-        return get($_ctxt);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 def LweBootstrapKeyType : Concrete_Type<"LweBootstrapKey"> {
@@ -237,13 +125,7 @@ def LweBootstrapKeyType : Concrete_Type<"LweBootstrapKey"> {
        Learning With Error bootstrapping key.
     }];
 
-    let printer = [{
-        $_printer << "lwe_bootstrap_key";
-    }];
-
-    let parser = [{
-        return get($_ctxt);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 def Context : Concrete_Type<"Context"> {
@@ -255,13 +137,7 @@ def Context : Concrete_Type<"Context"> {
        An abstract runtime context to pass contextual value, like public keys, ...
     }];
 
-    let printer = [{
-        $_printer << "context";
-    }];
-
-    let parser = [{
-        return get($_ctxt);
-    }];
+    let hasCustomAssemblyFormat = 1;
 }
 
 

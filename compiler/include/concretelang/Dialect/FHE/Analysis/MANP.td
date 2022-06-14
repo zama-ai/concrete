@@ -3,7 +3,7 @@
 
 include "mlir/Pass/PassBase.td"
 
-def MANP : FunctionPass<"MANP"> {
+def MANP : Pass<"MANP", "::mlir::func::FuncOp"> {
   let summary = "FHE Minimal Arithmetic Noise Padding Pass";
   let description = [{
    This pass calculates the Minimal Arithmetic Noise Padding
@@ -95,7 +95,7 @@ def MANP : FunctionPass<"MANP"> {
   }];
 }
 
-def MaxMANP : FunctionPass<"MaxMANP"> {
+def MaxMANP : Pass<"MaxMANP", "::mlir::func::FuncOp"> {
   let summary = "Extract maximum FHE Minimal Arithmetic Noise Padding and maximum encrypted integer width";
   let description = [{
    This pass calculates the squared Minimal Arithmetic Noise Padding

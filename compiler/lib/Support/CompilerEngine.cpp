@@ -5,27 +5,30 @@
 
 #include <fstream>
 #include <iostream>
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <stdio.h>
 #include <string>
 
 #include <llvm/Support/Error.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/SMLoc.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
-#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
+#include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/OpenMP/OpenMPDialect.h>
 #include <mlir/Dialect/SCF/SCF.h>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
-#include <mlir/Parser.h>
+#include <mlir/Parser/Parser.h>
 
 #include <concretelang/ClientLib/ClientParameters.h>
 #include <concretelang/Dialect/BConcrete/IR/BConcreteDialect.h>
+#include <concretelang/Dialect/BConcrete/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
 #include <concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h>
 #include <concretelang/Dialect/RT/IR/RTDialect.h>
+#include <concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h>
 #include <concretelang/Dialect/TFHE/IR/TFHEDialect.h>
 #include <concretelang/Support/CompilerEngine.h>
 #include <concretelang/Support/Error.h>
@@ -54,24 +57,23 @@ CompilationContext::~CompilationContext() {
 // initializes a new MLIR context if necessary.
 mlir::MLIRContext *CompilationContext::getMLIRContext() {
   if (this->mlirContext == nullptr) {
+    mlir::DialectRegistry registry;
+    registry.insert<mlir::concretelang::RT::RTDialect,
+                    mlir::concretelang::FHE::FHEDialect,
+                    mlir::concretelang::TFHE::TFHEDialect,
+                    mlir::concretelang::FHELinalg::FHELinalgDialect,
+                    mlir::concretelang::Concrete::ConcreteDialect,
+                    mlir::concretelang::BConcrete::BConcreteDialect,
+                    mlir::func::FuncDialect, mlir::memref::MemRefDialect,
+                    mlir::linalg::LinalgDialect, mlir::LLVM::LLVMDialect,
+                    mlir::scf::SCFDialect, mlir::omp::OpenMPDialect,
+                    mlir::bufferization::BufferizationDialect>();
+    BConcrete::registerBufferizableOpInterfaceExternalModels(registry);
+    RT::registerBufferizableOpInterfaceExternalModels(registry);
     this->mlirContext = new mlir::MLIRContext();
-
-    this->mlirContext->getOrLoadDialect<mlir::concretelang::RT::RTDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::concretelang::FHE::FHEDialect>();
-    this->mlirContext
-        ->getOrLoadDialect<mlir::concretelang::TFHE::TFHEDialect>();
-    this->mlirContext
-        ->getOrLoadDialect<mlir::concretelang::FHELinalg::FHELinalgDialect>();
-    this->mlirContext
-        ->getOrLoadDialect<mlir::concretelang::Concrete::ConcreteDialect>();
-    this->mlirContext
-        ->getOrLoadDialect<mlir::concretelang::BConcrete::BConcreteDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::StandardOpsDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::memref::MemRefDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::linalg::LinalgDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::LLVM::LLVMDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::scf::SCFDialect>();
-    this->mlirContext->getOrLoadDialect<mlir::omp::OpenMPDialect>();
+    this->mlirContext->appendDialectRegistry(registry);
+    this->mlirContext->loadAllAvailableDialects();
+    this->mlirContext->disableMultithreading();
   }
 
   return this->mlirContext;
@@ -164,6 +166,7 @@ using OptionalLib = llvm::Optional<std::shared_ptr<CompilerEngine::Library>>;
 // on the target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
+  std::unique_ptr<mlir::SourceMgrDiagnosticVerifierHandler> smHandler;
   std::string diagnosticsMsg;
   llvm::raw_string_ostream diagnosticsOS(diagnosticsMsg);
   auto errorDiag = [&](std::string prefixMsg)
@@ -174,20 +177,26 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   CompilationResult res(this->compilationContext);
 
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
+  CompilationOptions &options = this->compilerOptions;
 
-  mlir::SourceMgrDiagnosticVerifierHandler smHandler(sm, &mlirContext,
-                                                     diagnosticsOS);
+  if (options.verifyDiagnostics) {
+    // Only build diagnostics verifier handler if diagnostics should
+    // be verified in order to avoid diagnostic messages to be
+    // consumed when they should appear on stderr.
+    smHandler = std::make_unique<mlir::SourceMgrDiagnosticVerifierHandler>(
+        sm, &mlirContext, diagnosticsOS);
+  }
+
   mlirContext.printOpOnDiagnostic(false);
 
-  mlir::OwningModuleRef mlirModuleRef =
+  mlir::OwningOpRef<mlir::ModuleOp> mlirModuleRef =
       mlir::parseSourceFile<mlir::ModuleOp>(sm, &mlirContext);
 
-  CompilationOptions &options = this->compilerOptions;
   auto dataflowParallelize =
       options.autoParallelize || options.dataflowParallelize;
   auto loopParallelize = options.autoParallelize || options.loopParallelize;
   if (options.verifyDiagnostics) {
-    if (smHandler.verify().failed())
+    if (smHandler->verify().failed())
       return StreamStringError("Verification of diagnostics failed");
     else
       return std::move(res);

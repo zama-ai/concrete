@@ -1,6 +1,7 @@
 #ifndef CONCRETELANG_DIALECT_RT_IR_RT_OPS
 #define CONCRETELANG_DIALECT_RT_IR_RT_OPS
 
+include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/SymbolInterfaces.td"
@@ -9,7 +10,7 @@ include "mlir/Interfaces/DataLayoutInterfaces.td"
 include "concretelang/Dialect/RT/IR/RTDialect.td"
 include "concretelang/Dialect/RT/IR/RTTypes.td"
 
-class RT_Op<string mnemonic, list<OpTrait> traits = []> :
+class RT_Op<string mnemonic, list<Trait> traits = []> :
     Op<RT_Dialect, mnemonic, traits>;
 
 def DataflowTaskOp : RT_Op<"dataflow_task", [

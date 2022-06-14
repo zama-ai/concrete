@@ -3,12 +3,14 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "mlir/Transforms/Bufferize.h"
 #include "concretelang/Transforms/Bufferize.h"
 
+#include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/Operation.h"
+#include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/Passes.h"
+
 using namespace mlir;
 
 namespace {
@@ -27,10 +29,10 @@ public:
 };
 } // namespace
 
-void populatePatterns(BufferizeTypeConverter &typeConverter,
+void populatePatterns(bufferization::BufferizeTypeConverter &typeConverter,
                       RewritePatternSet &patterns) {
-  mlir::populateEliminateBufferizeMaterializationsPatterns(typeConverter,
-                                                           patterns);
+  bufferization::populateEliminateBufferizeMaterializationsPatterns(
+      typeConverter, patterns);
   patterns.add<BufferizeTensorStoreOp>(typeConverter, patterns.getContext());
 }
 
@@ -40,11 +42,11 @@ struct FinalizingBufferizePass
   using FinalizingBufferizeBase<
       FinalizingBufferizePass>::FinalizingBufferizeBase;
 
-  void runOnFunction() override {
-    auto func = getFunction();
+  void runOnOperation() override {
+    auto func = getOperation();
     auto *context = &getContext();
 
-    BufferizeTypeConverter typeConverter;
+    bufferization::BufferizeTypeConverter typeConverter;
     RewritePatternSet patterns(context);
     ConversionTarget target(*context);
     populatePatterns(typeConverter, patterns);
@@ -67,7 +69,7 @@ struct FinalizingBufferizePass
 };
 } // namespace
 
-std::unique_ptr<FunctionPass>
+std::unique_ptr<OperationPass<func::FuncOp>>
 mlir::concretelang::createFinalizingBufferizePass() {
   return std::make_unique<FinalizingBufferizePass>();
 }

@@ -1,6 +1,6 @@
 // RUN: concretecompiler --action=roundtrip %s 2>&1| FileCheck %s
 
-// CHECK-LABEL: func @zero() -> !FHE.eint<2>
+// CHECK: func @zero() -> !FHE.eint<2>
 func @zero() -> !FHE.eint<2> {
   // CHECK-NEXT: %[[RET:.*]] = "FHE.zero"() : () -> !FHE.eint<2>
   // CHECK-NEXT: return %[[RET]] : !FHE.eint<2>

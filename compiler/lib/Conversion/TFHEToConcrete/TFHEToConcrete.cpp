@@ -53,6 +53,8 @@ public:
   }
 };
 
+namespace {
+
 struct GLWEFromTableOpPattern
     : public mlir::OpRewritePattern<TFHE::GLWEFromTableOp> {
   GLWEFromTableOpPattern(mlir::MLIRContext *context,
@@ -68,9 +70,43 @@ struct GLWEFromTableOpPattern
 
     rewriter.replaceOpWithNewOp<Concrete::GlweFromTable>(glweOp, newTy,
                                                          glweOp.table());
-
     return ::mlir::success();
   };
+};
+
+struct BootstrapGLWEOpPattern
+    : public mlir::OpRewritePattern<TFHE::BootstrapGLWEOp> {
+  BootstrapGLWEOpPattern(mlir::MLIRContext *context,
+                         mlir::TypeConverter &converter,
+                         mlir::PatternBenefit benefit = 100)
+      : mlir::OpRewritePattern<TFHE::BootstrapGLWEOp>(context, benefit),
+        converter(converter) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(TFHE::BootstrapGLWEOp bsOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Type resultType = converter.convertType(bsOp.getType());
+
+    auto newOp = rewriter.replaceOpWithNewOp<Concrete::BootstrapLweOp>(
+        bsOp, resultType, bsOp.ciphertext(), bsOp.lookup_table(), -1, -1,
+        bsOp.level(), bsOp.baseLog());
+
+    rewriter.startRootUpdate(newOp);
+
+    newOp.input_ciphertext().setType(
+        converter.convertType(bsOp.ciphertext().getType()));
+
+    auto oldTy = bsOp.lookup_table().getType().cast<TFHE::GLWECipherTextType>();
+    auto newTy = rewriter.getType<Concrete::GlweCiphertextType>(
+        oldTy.getDimension(), oldTy.getPolynomialSize(), oldTy.getP());
+    newOp.accumulator().setType(newTy);
+
+    rewriter.finalizeRootUpdate(newOp);
+    return ::mlir::success();
+  }
+
+private:
+  mlir::TypeConverter &converter;
 };
 
 void TFHEToConcretePass::runOnOperation() {
@@ -95,34 +131,53 @@ void TFHEToConcretePass::runOnOperation() {
       });
 
   // Make sure that func has legal signature
-  target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
-    return converter.isSignatureLegal(funcOp.getType()) &&
-           converter.isLegal(&funcOp.getBody());
-  });
+  target.addDynamicallyLegalOp<mlir::func::FuncOp>(
+      [&](mlir::func::FuncOp funcOp) {
+        return converter.isSignatureLegal(funcOp.getFunctionType()) &&
+               converter.isLegal(&funcOp.getBody());
+      });
   // Add all patterns required to lower all ops from `TFHE` to
   // `Concrete`
-  mlir::OwningRewritePatternList patterns(&getContext());
+  mlir::RewritePatternSet patterns(&getContext());
 
   populateWithGeneratedTFHEToConcrete(patterns);
+
   patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
       mlir::concretelang::TFHE::ZeroTensorGLWEOp,
       mlir::concretelang::Concrete::ZeroTensorLWEOp>>(&getContext(), converter);
   patterns.add<GLWEFromTableOpPattern>(&getContext());
-  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
-      TFHE::BootstrapGLWEOp, Concrete::BootstrapLweOp>>(&getContext(),
-                                                        converter);
+  patterns.add<BootstrapGLWEOpPattern>(&getContext(), converter);
+  target.addDynamicallyLegalOp<Concrete::BootstrapLweOp>(
+      [&](Concrete::BootstrapLweOp op) {
+        return (converter.isLegal(op->getOperandTypes()) &&
+                converter.isLegal(op->getResultTypes()));
+      });
   patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
       TFHE::KeySwitchGLWEOp, Concrete::KeySwitchLweOp>>(&getContext(),
                                                         converter);
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
                                             TFHEToConcreteTypeConverter>>(
       &getContext(), converter);
+
+  patterns.add<
+      mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>>(
+      patterns.getContext(), converter);
+
+  patterns.add<
+      mlir::concretelang::GenericTypeConverterPattern<mlir::linalg::YieldOp>>(
+      patterns.getContext(), converter);
+
+  patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
+                                            TFHEToConcreteTypeConverter>>(
+      &getContext(), converter);
+
   patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
                                             TFHEToConcreteTypeConverter>>(
       &getContext(), converter);
   mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
                                                               converter);
-  mlir::populateFuncOpTypeConversionPattern(patterns, converter);
+  mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
+      patterns, converter);
 
   // Conversion of RT Dialect Ops
   patterns.add<mlir::concretelang::GenericTypeConverterPattern<
@@ -130,12 +185,23 @@ void TFHEToConcretePass::runOnOperation() {
                                                converter);
   mlir::concretelang::addDynamicallyLegalTypeOp<
       mlir::concretelang::RT::DataflowTaskOp>(target, converter);
+  patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::RT::DataflowYieldOp>>(patterns.getContext(),
+                                                converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<
+      mlir::concretelang::RT::DataflowYieldOp>(target, converter);
+
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::func::ReturnOp>(
+      target, converter);
+  mlir::concretelang::addDynamicallyLegalTypeOp<mlir::linalg::YieldOp>(
+      target, converter);
 
   // Apply conversion
   if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {
     this->signalPassFailure();
   }
 }
+} // namespace
 
 namespace mlir {
 namespace concretelang {

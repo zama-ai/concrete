@@ -3,6 +3,8 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 #include "concretelang/Conversion/Tools.h"
 
 mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
@@ -18,8 +20,8 @@ mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
     mlir::OpBuilder::InsertionGuard guard(rewriter);
     rewriter.setInsertionPointToStart(&module->getRegion(0).front());
 
-    opFunc = rewriter.create<mlir::FuncOp>(rewriter.getUnknownLoc(), funcName,
-                                           funcType);
+    opFunc = rewriter.create<mlir::func::FuncOp>(rewriter.getUnknownLoc(),
+                                                 funcName, funcType);
     opFunc.setPrivate();
   } else {
     // Check if the `funcName` is well a private function
@@ -29,7 +31,7 @@ mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
       return mlir::failure();
     }
   }
-  assert(mlir::SymbolTable::lookupSymbolIn(module, funcName)
-             ->template hasTrait<mlir::OpTrait::FunctionLike>());
+  assert(llvm::isa<mlir::FunctionOpInterface>(
+      mlir::SymbolTable::lookupSymbolIn(module, funcName)));
   return mlir::success();
 }

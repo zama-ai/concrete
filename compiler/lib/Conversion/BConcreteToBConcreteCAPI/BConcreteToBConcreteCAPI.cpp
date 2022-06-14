@@ -3,9 +3,11 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "mlir//IR/BuiltinTypes.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR//BuiltinTypes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/SymbolTable.h"
@@ -13,12 +15,27 @@
 
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Tools.h"
+#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.h"
 #include "concretelang/Dialect/BConcrete/IR/BConcreteOps.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteDialect.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
-#include "concretelang/Support/Constants.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/Support/Debug.h"
+#include <mlir/IR/OperationSupport.h>
+#include <mlir/IR/Value.h>
+
+static mlir::Type convertTypeIfConcreteType(mlir::MLIRContext *context,
+                                            mlir::Type t) {
+  if (t.isa<mlir::concretelang::Concrete::PlaintextType>() ||
+      t.isa<mlir::concretelang::Concrete::CleartextType>()) {
+    return mlir::IntegerType::get(context, 64);
+  } else {
+    return t;
+  }
+}
 
 namespace {
 class BConcreteToBConcreteCAPITypeConverter : public mlir::TypeConverter {
@@ -27,10 +44,10 @@ public:
   BConcreteToBConcreteCAPITypeConverter() {
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](mlir::concretelang::Concrete::PlaintextType type) {
-      return mlir::IntegerType::get(type.getContext(), 64);
+      return convertTypeIfConcreteType(type.getContext(), type);
     });
     addConversion([&](mlir::concretelang::Concrete::CleartextType type) {
-      return mlir::IntegerType::get(type.getContext(), 64);
+      return convertTypeIfConcreteType(type.getContext(), type);
     });
   }
 };
@@ -43,6 +60,10 @@ public:
 
 inline mlir::Type getGenericLweBufferType(mlir::MLIRContext *context) {
   return mlir::RankedTensorType::get({-1}, mlir::IntegerType::get(context, 64));
+}
+
+inline mlir::Type getGenericLweMemrefType(mlir::MLIRContext *context) {
+  return mlir::MemRefType::get({-1}, mlir::IntegerType::get(context, 64));
 }
 
 inline mlir::Type getGenericGlweBufferType(mlir::MLIRContext *context) {
@@ -73,7 +94,7 @@ getGenericLweBootstrapKeyType(mlir::MLIRContext *context) {
 // type.
 mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
                                               mlir::IRRewriter &rewriter) {
-  auto lweBufferType = getGenericLweBufferType(rewriter.getContext());
+  auto lweBufferType = getGenericLweMemrefType(rewriter.getContext());
   auto plaintextType = getGenericPlaintextType(rewriter.getContext());
   auto cleartextType = getGenericCleartextType(rewriter.getContext());
   auto keySwitchKeyType = getGenericLweKeySwitchKeyType(rewriter.getContext());
@@ -189,48 +210,77 @@ mlir::LogicalResult insertForwardDeclarations(mlir::Operation *op,
   return mlir::success();
 }
 
-// For all operands `tensor<Axi64>` replace with
-// `%casted = tensor.cast %op : tensor<Axi64> to tensor<?xui64>`
-mlir::SmallVector<mlir::Value>
-getCastedTensor(mlir::Location loc, mlir::Operation::operand_range operands,
-                mlir::PatternRewriter &rewriter) {
-  mlir::SmallVector<mlir::Value, 4> newOperands{};
-  for (mlir::Value operand : operands) {
-    mlir::Type operandType = operand.getType();
-    if (operandType.isa<mlir::RankedTensorType>()) {
-      mlir::Value castedOp = rewriter.create<mlir::tensor::CastOp>(
-          loc, getGenericLweBufferType(rewriter.getContext()), operand);
-      newOperands.push_back(castedOp);
-    } else {
-      newOperands.push_back(operand);
-    }
+// Replaces an operand `tensor<Axi64>` with
+// ```
+// %casted_tensor = tensor.cast %op : tensor<Axi64> to tensor<?xui64>
+// %casted_memref = bufferization.to_memref %casted_tensor : memref<?xui64>
+// ```
+mlir::Value getCastedTensorOperand(mlir::PatternRewriter &rewriter,
+                                   mlir::Location loc, mlir::Value operand) {
+  mlir::Type operandType = operand.getType();
+  if (operandType.isa<mlir::RankedTensorType>()) {
+    mlir::Value castedTensor = rewriter.create<mlir::tensor::CastOp>(
+        loc, getGenericLweBufferType(rewriter.getContext()), operand);
+
+    mlir::Value castedMemRef = rewriter.create<mlir::bufferization::ToMemrefOp>(
+        loc, getGenericLweMemrefType(rewriter.getContext()), castedTensor);
+    return castedMemRef;
+  } else {
+    return operand;
   }
-  return std::move(newOperands);
 }
 
-// For all operands `tensor<Axi64>` replace with
-// `%casted = tensor.cast %op : tensor<Axi64> to tensor<?xui64>`
-template <typename Op>
 mlir::SmallVector<mlir::Value>
-getCastedTensorOperands(Op op, mlir::PatternRewriter &rewriter) {
-  return getCastedTensor(op->getLoc(), op->getOperands(), rewriter);
+getCastedTensorOperands(mlir::PatternRewriter &rewriter, mlir::Operation *op) {
+  return llvm::to_vector<3>(
+      llvm::map_range(op->getOperands(), [&](mlir::Value operand) {
+        return getCastedTensorOperand(rewriter, op->getLoc(), operand);
+      }));
 }
 
-/// BConcreteOpToConcreteCAPICallPattern<Op> match the `BConcreteOp`
-/// Operation and replace with a call to `funcName`, the funcName should be an
-/// external function that was linked later. It insert the forward declaration
-/// of the private `funcName` if it not already in the symbol table. The C
-/// signature of the function should be `void (out, args..., lweDimension)`, the
-/// pattern rewrite:
+// template <typename Op>
+// mlir::SmallVector<mlir::Value>
+// getCastedTensorOperands(Op op, mlir::PatternRewriter &rewriter) {
+//   mlir::SmallVector<mlir::Value, 4> newOperands{};
+//   for (mlir::Value operand : op->getOperands()) {
+//     mlir::Type operandType = operand.getType();
+//     if (operandType.isa<mlir::RankedTensorType>()) {
+//       mlir::Value castedTensor = rewriter.create<mlir::tensor::CastOp>(
+//           op.getLoc(), getGenericLweBufferType(rewriter.getContext()),
+//           operand);
+
+//       mlir::Value castedMemRef =
+//           rewriter.create<mlir::bufferization::ToMemrefOp>(
+//               op.getLoc(), getGenericLweBufferType(rewriter.getContext()),
+//               operand);
+//       newOperands.push_back(castedMemRef);
+//     } else {
+//       newOperands.push_back(operand);
+//     }
+//   }
+//   return std::move(newOperands);
+// }
+
+/// BConcreteOpToConcreteCAPICallPattern<Op> matches the `BConcreteOp`
+/// Operation and replaces it with a call to `funcName`, the funcName should be
+/// an external function that is linked later. It inserts the forward
+/// declaration of the private `funcName` if it not already in the symbol table.
+/// The C signature of the function should be `void (out, args...,
+/// lweDimension)`, the pattern rewrites:
 /// ```
-/// "BConcreteOp"(%out, args ...) :
-///   (tensor<sizexi64>, tensor<sizexi64>...) -> ()
+/// "%out = BConcreteOp"(args ...) :
+///   (tensor<sizexi64>...) -> tensor<sizexi64>
 /// ```
 /// to
 /// ```
-/// %out0 = tensor.cast %out : tensor<sizexi64> to tensor<?xui64>
-/// %args = tensor.cast ...
-/// call @funcName(%out, args...) : (tensor<?xi64>, tensor<?xi64>...) -> ()
+/// %args_tensor = tensor.cast ...
+/// %args_memref = bufferize.to_memref ...
+/// %out_tensor_ranked = linalg.tensor_init ...
+//  %out_tensor = tensor.cast ...
+/// %out_memref = bufferize.to_memref ...
+/// call @funcName(%out_memref, %args_memref...) :
+///         (memref<?xi64>, memref<?xi64>...) -> ()
+//  %out = bufferize.to_tensor ...
 /// ```
 template <typename BConcreteOp>
 struct ConcreteOpToConcreteCAPICallPattern
@@ -245,9 +295,36 @@ struct ConcreteOpToConcreteCAPICallPattern
   matchAndRewrite(BConcreteOp op,
                   mlir::PatternRewriter &rewriter) const override {
     BConcreteToBConcreteCAPITypeConverter typeConverter;
-    rewriter.replaceOpWithNewOp<mlir::CallOp>(
-        op, funcName, mlir::TypeRange{},
-        getCastedTensorOperands<BConcreteOp>(op, rewriter));
+
+    mlir::RankedTensorType tensorResultTy =
+        op.getResult().getType().template cast<mlir::RankedTensorType>();
+
+    mlir::Value outTensor = rewriter.create<mlir::linalg::InitTensorOp>(
+        op.getLoc(), tensorResultTy.getShape(),
+        tensorResultTy.getElementType());
+
+    mlir::Value outMemref =
+        getCastedTensorOperand(rewriter, op.getLoc(), outTensor);
+
+    mlir::SmallVector<mlir::Value> castedOperands{outMemref};
+    castedOperands.append(getCastedTensorOperands(rewriter, op));
+
+    mlir::func::CallOp callOp = rewriter.create<mlir::func::CallOp>(
+        op.getLoc(), funcName, mlir::TypeRange{}, castedOperands);
+
+    // Convert remaining, non-tensor types (e.g., plaintext values)
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, callOp, [&](mlir::MLIRContext *context, mlir::Type t) {
+          return typeConverter.convertType(t);
+        });
+
+    mlir::Value updatedOutTensor =
+        rewriter.create<mlir::bufferization::ToTensorOp>(op.getLoc(),
+                                                         outMemref);
+
+    rewriter.replaceOpWithNewOp<mlir::tensor::CastOp>(op, tensorResultTy,
+                                                      updatedOutTensor);
+
     return mlir::success();
   };
 
@@ -299,7 +376,7 @@ struct ConcreteIntToCleartextOpPattern
 mlir::Value getContextArgument(mlir::Operation *op) {
   mlir::Block *block = op->getBlock();
   while (block != nullptr) {
-    if (llvm::isa<mlir::FuncOp>(block->getParentOp())) {
+    if (llvm::isa<mlir::func::FuncOp>(block->getParentOp())) {
 
       mlir::Value context = block->getArguments().back();
 
@@ -318,19 +395,20 @@ mlir::Value getContextArgument(mlir::Operation *op) {
 
 // Rewrite pattern that rewrite every
 // ```
-// "BConcrete.keyswitch_lwe_buffer"(%out, %in) {...}:
-//   (tensor<2049xi64>, tensor<2049xi64>) -> ()
+// %out = "BConcrete.keyswitch_lwe_buffer"(%out, %in) {...}:
+//   (tensor<2049xi64>) -> (tensor<2049xi64>)
 // ```
 //
 // to
 //
 // ```
-// %ksk = call @get_keywswitch_key(%ctx) :
-//   (!Concrete.context) -> !Concrete.lwe_key_switch_key
-// %out_ = tensor.cast %out : tensor<sizexi64> to tensor<?xi64>
-// %in_ = tensor.cast %in : tensor<size'xi64> to tensor<?xi64>
-// call @memref_keyswitch_lwe_u64(%ksk, %out_, %in_) :
-//   (!Concrete.lwe_key_switch_key, tensor<?xui64>, tensor<?xui64>) -> ()
+// %out = linalg.tensor_init [B] : tensor<Bxui64>
+// %out_casted = tensor.cast %out : tensor<Axi64> to tensor<?xi64>
+// %out_memref = bufferize.to_memref %out_casted ...
+// %in_casted = tensor.cast %in : tensor<Axi64> to tensor<?xi64>
+// %in_memref = bufferize.to_memref ...
+// call @memref_keyswitch_lwe_u64(%out_memref, %in_memref) :
+//   (tensor<?xui64>, !Concrete.context) -> (tensor<?xui64>)
 // ```
 struct BConcreteKeySwitchLweOpPattern
     : public mlir::OpRewritePattern<
@@ -344,34 +422,42 @@ struct BConcreteKeySwitchLweOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::BConcrete::KeySwitchLweBufferOp op,
                   mlir::PatternRewriter &rewriter) const override {
+    // Create the output operand
+    mlir::RankedTensorType tensorResultTy =
+        op.getResult().getType().template cast<mlir::RankedTensorType>();
+    mlir::Value outTensor =
+        rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
+            op, tensorResultTy.getShape(), tensorResultTy.getElementType());
+    mlir::Value outMemref =
+        getCastedTensorOperand(rewriter, op.getLoc(), outTensor);
 
-    mlir::SmallVector<mlir::Value, 3> operands{};
-    operands.append(
-        getCastedTensorOperands<
-            mlir::concretelang::BConcrete::KeySwitchLweBufferOp>(op, rewriter));
+    mlir::SmallVector<mlir::Value> operands{outMemref};
+    operands.append(getCastedTensorOperands(rewriter, op));
     operands.push_back(getContextArgument(op));
 
-    rewriter.replaceOpWithNewOp<mlir::CallOp>(op, "memref_keyswitch_lwe_u64",
-                                              mlir::TypeRange({}), operands);
+    rewriter.create<mlir::func::CallOp>(op.getLoc(), "memref_keyswitch_lwe_u64",
+                                        mlir::TypeRange({}), operands);
     return mlir::success();
   };
 };
 
 // Rewrite pattern that rewrite every
 // ```
-// "BConcrete.bootstrap_lwe_buffer"(%out, %in, %acc) {...} :
-//   (tensor<2049xui64>, tensor<2049xui64>, !Concrete.glwe_ciphertext) -> ()
+// %out = "BConcrete.bootstrap_lwe_buffer"(%in, %acc) {...} :
+//   (tensor<Axui64>, !Concrete.glwe_ciphertext) -> (tensor<Bxui64>)
 // ```
 //
 // to
 //
 // ```
-// %bsk = call @getGlobalBootstrapKey() : () -> !Concrete.lwe_bootstrap_key
-// %out_ = tensor.cast %out : tensor<sizexi64> to tensor<?xi64>
-// %in_ = tensor.cast %in : tensor<size'xi64> to tensor<?xi64>
-// call @memref_bootstrap_lwe_u64(%bsk, %out_, %in_, %acc_) :
-//   (!Concrete.lwe_bootstrap_key, tensor<?xi64>, tensor<?xi64>,
-//   !Concrete.glwe_ciphertext) -> ()
+// %out = linalg.tensor_init [B] : tensor<Bxui64>
+// %out_casted = tensor.cast %out : tensor<Axi64> to tensor<?xi64>
+// %out_memref = bufferize.to_memref %out_casted ...
+// %in_casted = tensor.cast %in : tensor<Axi64> to tensor<?xi64>
+// %in_memref = bufferize.to_memref ...
+// call @memref_bootstrap_lwe_u64(%out_memref, %in_memref, %acc_, %ctx) :
+//   (memref<?xi64>, memref<?xi64>,
+//   !Concrete.glwe_ciphertext, !Concrete.context) -> ()
 // ```
 struct BConcreteBootstrapLweOpPattern
     : public mlir::OpRewritePattern<
@@ -385,13 +471,22 @@ struct BConcreteBootstrapLweOpPattern
   mlir::LogicalResult
   matchAndRewrite(mlir::concretelang::BConcrete::BootstrapLweBufferOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    mlir::SmallVector<mlir::Value, 4> operands{};
-    operands.append(
-        getCastedTensorOperands<
-            mlir::concretelang::BConcrete::BootstrapLweBufferOp>(op, rewriter));
+
+    // Create the output operand
+    mlir::RankedTensorType tensorResultTy =
+        op.getResult().getType().template cast<mlir::RankedTensorType>();
+    mlir::Value outTensor =
+        rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
+            op, tensorResultTy.getShape(), tensorResultTy.getElementType());
+    mlir::Value outMemref =
+        getCastedTensorOperand(rewriter, op.getLoc(), outTensor);
+
+    mlir::SmallVector<mlir::Value> operands{outMemref};
+    operands.append(getCastedTensorOperands(rewriter, op));
     operands.push_back(getContextArgument(op));
-    rewriter.replaceOpWithNewOp<mlir::CallOp>(op, "memref_bootstrap_lwe_u64",
-                                              mlir::TypeRange({}), operands);
+
+    rewriter.create<mlir::func::CallOp>(op.getLoc(), "memref_bootstrap_lwe_u64",
+                                        mlir::TypeRange({}), operands);
     return mlir::success();
   };
 };
@@ -418,10 +513,8 @@ struct BConcreteBootstrapLweOpPattern
 struct BConcreteGlweFromTableOpPattern
     : public mlir::OpRewritePattern<
           mlir::concretelang::BConcrete::FillGlweFromTable> {
-  BConcreteGlweFromTableOpPattern(
-      mlir::MLIRContext *context,
-      mlir::PatternBenefit benefit =
-          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+  BConcreteGlweFromTableOpPattern(mlir::MLIRContext *context,
+                                  mlir::PatternBenefit benefit = 1)
       : mlir::OpRewritePattern<
             mlir::concretelang::BConcrete::FillGlweFromTable>(context,
                                                               benefit) {}
@@ -434,7 +527,7 @@ struct BConcreteGlweFromTableOpPattern
     // %polySize = arith.constant 2048 : i32
     // %outPrecision = arith.constant 3 : i32
 
-    auto castedOp = getCastedTensorOperands(op, rewriter);
+    auto castedOp = getCastedTensorOperands(rewriter, op);
 
     auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getI32IntegerAttr(op.polynomialSize()));
@@ -455,7 +548,7 @@ struct BConcreteGlweFromTableOpPattern
     // %lut_) :
     //   (tensor<?xi64>, i32, i32, tensor<?xi64>) -> ()
 
-    rewriter.replaceOpWithNewOp<mlir::CallOp>(
+    rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         op, "memref_expand_lut_in_trivial_glwe_ct_u64",
         mlir::SmallVector<mlir::Type>{}, newOperands);
     return mlir::success();
@@ -485,16 +578,16 @@ void populateBConcreteToBConcreteCAPICall(mlir::RewritePatternSet &patterns) {
 }
 
 struct AddRuntimeContextToFuncOpPattern
-    : public mlir::OpRewritePattern<mlir::FuncOp> {
+    : public mlir::OpRewritePattern<mlir::func::FuncOp> {
   AddRuntimeContextToFuncOpPattern(mlir::MLIRContext *context,
                                    mlir::PatternBenefit benefit = 1)
-      : mlir::OpRewritePattern<mlir::FuncOp>(context, benefit) {}
+      : mlir::OpRewritePattern<mlir::func::FuncOp>(context, benefit) {}
 
   mlir::LogicalResult
-  matchAndRewrite(mlir::FuncOp oldFuncOp,
+  matchAndRewrite(mlir::func::FuncOp oldFuncOp,
                   mlir::PatternRewriter &rewriter) const override {
     mlir::OpBuilder::InsertionGuard guard(rewriter);
-    mlir::FunctionType oldFuncType = oldFuncOp.getType();
+    mlir::FunctionType oldFuncType = oldFuncOp.getFunctionType();
 
     // Add a Concrete.context to the function signature
     mlir::SmallVector<mlir::Type> newInputs(oldFuncType.getInputs().begin(),
@@ -504,13 +597,16 @@ struct AddRuntimeContextToFuncOpPattern
     mlir::FunctionType newFuncTy = rewriter.getType<mlir::FunctionType>(
         newInputs, oldFuncType.getResults());
     // Create the new func
-    mlir::FuncOp newFuncOp = rewriter.create<mlir::FuncOp>(
+    mlir::func::FuncOp newFuncOp = rewriter.create<mlir::func::FuncOp>(
         oldFuncOp.getLoc(), oldFuncOp.getName(), newFuncTy);
 
     // Create the arguments of the new func
-    mlir::Region &newFuncBody = newFuncOp.body();
+    mlir::Region &newFuncBody = newFuncOp.getBody();
     mlir::Block *newFuncEntryBlock = new mlir::Block();
-    newFuncEntryBlock->addArguments(newFuncTy.getInputs());
+    llvm::SmallVector<mlir::Location> locations(newFuncTy.getInputs().size(),
+                                                oldFuncOp.getLoc());
+
+    newFuncEntryBlock->addArguments(newFuncTy.getInputs(), locations);
     newFuncBody.push_back(newFuncEntryBlock);
 
     // Clone the old body to the new one
@@ -518,7 +614,7 @@ struct AddRuntimeContextToFuncOpPattern
     for (auto arg : llvm::enumerate(oldFuncOp.getArguments())) {
       map.map(arg.value(), newFuncEntryBlock->getArgument(arg.index()));
     }
-    for (auto &op : oldFuncOp.body().front()) {
+    for (auto &op : oldFuncOp.getBody().front()) {
       newFuncEntryBlock->push_back(op.clone(map));
     }
     rewriter.eraseOp(oldFuncOp);
@@ -527,7 +623,7 @@ struct AddRuntimeContextToFuncOpPattern
 
   // Legal function are one that are private or has a Concrete.context as last
   // arguments.
-  static bool isLegal(mlir::FuncOp funcOp) {
+  static bool isLegal(mlir::func::FuncOp funcOp) {
     if (!funcOp.isPublic()) {
       return true;
     }
@@ -543,8 +639,8 @@ struct AddRuntimeContextToFuncOpPattern
     //     })) {
     //   return true;
     // }
-    return funcOp.getType().getNumInputs() >= 1 &&
-           funcOp.getType()
+    return funcOp.getFunctionType().getNumInputs() >= 1 &&
+           funcOp.getFunctionType()
                .getInputs()
                .back()
                .isa<mlir::concretelang::Concrete::ContextType>();
@@ -567,9 +663,10 @@ void BConcreteToBConcreteCAPIPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
 
-    target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
-      return AddRuntimeContextToFuncOpPattern::isLegal(funcOp);
-    });
+    target.addDynamicallyLegalOp<mlir::func::FuncOp>(
+        [&](mlir::func::FuncOp funcOp) {
+          return AddRuntimeContextToFuncOpPattern::isLegal(funcOp);
+        });
 
     patterns.add<AddRuntimeContextToFuncOpPattern>(patterns.getContext());
 
@@ -593,9 +690,13 @@ void BConcreteToBConcreteCAPIPass::runOnOperation() {
 
     target.addIllegalDialect<mlir::concretelang::BConcrete::BConcreteDialect>();
 
-    target.addLegalDialect<mlir::BuiltinDialect, mlir::StandardOpsDialect,
+    target.addLegalDialect<mlir::BuiltinDialect, mlir::func::FuncDialect,
                            mlir::tensor::TensorDialect,
                            mlir::arith::ArithmeticDialect>();
+
+    target.addLegalOp<mlir::linalg::InitTensorOp>();
+    target.addLegalOp<mlir::bufferization::ToMemrefOp>();
+    target.addLegalOp<mlir::bufferization::ToTensorOp>();
 
     populateBConcreteToBConcreteCAPICall(patterns);
 

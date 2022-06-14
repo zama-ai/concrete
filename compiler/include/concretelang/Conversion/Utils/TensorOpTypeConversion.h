@@ -6,7 +6,7 @@
 #ifndef CONCRETELANG_CONVERSION_TENSOROPTYPECONVERSIONPATTERN_H_
 #define CONCRETELANG_CONVERSION_TENSOROPTYPECONVERSIONPATTERN_H_
 
-#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -39,16 +39,14 @@ populateWithTensorTypeConverterPatterns(mlir::RewritePatternSet &patterns,
   addDynamicallyLegalTypeOp<mlir::tensor::FromElementsOp>(target,
                                                           typeConverter);
   // TensorCollapseShapeOp
-  patterns
-      .add<GenericTypeConverterPattern<mlir::linalg::TensorCollapseShapeOp>>(
-          patterns.getContext(), typeConverter);
-  addDynamicallyLegalTypeOp<mlir::linalg::TensorCollapseShapeOp>(target,
-                                                                 typeConverter);
-  // TensorExpandShapeOp
-  patterns.add<GenericTypeConverterPattern<mlir::linalg::TensorExpandShapeOp>>(
+  patterns.add<GenericTypeConverterPattern<mlir::tensor::CollapseShapeOp>>(
       patterns.getContext(), typeConverter);
-  addDynamicallyLegalTypeOp<mlir::linalg::TensorExpandShapeOp>(target,
-                                                               typeConverter);
+  addDynamicallyLegalTypeOp<mlir::tensor::CollapseShapeOp>(target,
+                                                           typeConverter);
+  // TensorExpandShapeOp
+  patterns.add<GenericTypeConverterPattern<mlir::tensor::ExpandShapeOp>>(
+      patterns.getContext(), typeConverter);
+  addDynamicallyLegalTypeOp<mlir::tensor::ExpandShapeOp>(target, typeConverter);
 }
 } // namespace concretelang
 } // namespace mlir

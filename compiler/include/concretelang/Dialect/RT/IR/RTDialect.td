@@ -10,6 +10,11 @@ def RT_Dialect : Dialect {
     A dialect for representation the abstraction needed for the runtime.
   }];
   let cppNamespace = "::mlir::concretelang::RT";
+  let useDefaultTypePrinterParser = 0;
+  let extraClassDeclaration = [{
+    ::mlir::Type parseType(::mlir::DialectAsmParser &parser) const override;
+    void printType(::mlir::Type type, ::mlir::DialectAsmPrinter &printer) const override;
+  }];
 }
 
 #endif

@@ -9,7 +9,7 @@
 // Auto-parallelize independent FHE ops /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(ParallelizeAndRunFHE, add_eint_tree) {
+TEST(ParallelizeAndRunFHE, DISABLED_add_eint_tree) {
   checkedJit(lambda, R"XXX(
 func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %arg3: !FHE.eint<7>) -> !FHE.eint<7> {
   %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)

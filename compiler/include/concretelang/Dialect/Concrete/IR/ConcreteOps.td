@@ -7,7 +7,7 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "concretelang/Dialect/Concrete/IR/ConcreteDialect.td"
 include "concretelang/Dialect/Concrete/IR/ConcreteTypes.td"
 
-class Concrete_Op<string mnemonic, list<OpTrait> traits = []> :
+class Concrete_Op<string mnemonic, list<Trait> traits = []> :
     Op<Concrete_Dialect, mnemonic, traits>;
 
 def ZeroLWEOp : Concrete_Op<"zero"> {

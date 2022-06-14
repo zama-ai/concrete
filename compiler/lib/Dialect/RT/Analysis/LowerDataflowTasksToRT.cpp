@@ -24,12 +24,13 @@
 #include <mlir/Conversion/LLVMCommon/ConversionTarget.h>
 #include <mlir/Conversion/LLVMCommon/Pattern.h>
 #include <mlir/Conversion/LLVMCommon/VectorPattern.h>
+#include <mlir/Dialect/Bufferization/Transforms/Passes.h>
+#include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/Func/Transforms/FuncConversions.h>
 #include <mlir/Dialect/LLVMIR/FunctionCallUtils.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
-#include <mlir/Dialect/StandardOps/Transforms/FuncConversions.h>
-#include <mlir/Dialect/StandardOps/Transforms/Passes.h>
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
@@ -38,11 +39,9 @@
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LLVM.h>
 #include <mlir/Support/LogicalResult.h>
-#include <mlir/Transforms/Bufferize.h>
 #include <mlir/Transforms/DialectConversion.h>
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Transforms/RegionUtils.h>
-#include <mlir/Transforms/Utils.h>
 
 #define GEN_PASS_CLASSES
 #include <concretelang/Dialect/RT/Analysis/Autopar.h.inc>
@@ -52,8 +51,8 @@ namespace concretelang {
 
 namespace {
 
-static FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
-                                  StringRef workFunctionName) {
+static func::FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
+                                        StringRef workFunctionName) {
   Location loc = DFTOp.getLoc();
   OpBuilder builder(DFTOp.getContext());
   Region &DFTOpBody = DFTOp.body();
@@ -70,11 +69,12 @@ static FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
     operandTypes.push_back(RT::PointerType::get(res.getType()));
 
   FunctionType type = FunctionType::get(DFTOp.getContext(), operandTypes, {});
-  auto outlinedFunc = builder.create<FuncOp>(loc, workFunctionName, type);
+  auto outlinedFunc = builder.create<func::FuncOp>(loc, workFunctionName, type);
   outlinedFunc->setAttr("_dfr_work_function_attribute", builder.getUnitAttr());
-  Region &outlinedFuncBody = outlinedFunc.body();
+  Region &outlinedFuncBody = outlinedFunc.getBody();
   Block *outlinedEntryBlock = new Block;
-  outlinedEntryBlock->addArguments(type.getInputs());
+  SmallVector<Location> locations(type.getInputs().size(), loc);
+  outlinedEntryBlock->addArguments(type.getInputs(), locations);
   outlinedFuncBody.push_back(outlinedEntryBlock);
 
   BlockAndValueMapping map;
@@ -93,7 +93,7 @@ static FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
   Block &DFTOpEntry = DFTOpBody.front();
   Block *clonedDFTOpEntry = map.lookup(&DFTOpEntry);
   builder.setInsertionPointToEnd(&entryBlock);
-  builder.create<BranchOp>(loc, clonedDFTOpEntry);
+  builder.create<cf::BranchOp>(loc, clonedDFTOpEntry);
 
   // TODO: we use a WorkFunctionReturnOp to tie return to the
   // corresponding argument.  This can be lowered to a copy/deref for
@@ -106,7 +106,7 @@ static FuncOp outlineWorkFunction(RT::DataflowTaskOp DFTOp,
       replacer.create<RT::WorkFunctionReturnOp>(
           op.getLoc(), ret.value(),
           outlinedFunc.getArgument(ret.index() + output_offset));
-    replacer.create<ReturnOp>(op.getLoc());
+    replacer.create<func::ReturnOp>(op.getLoc());
     op.erase();
   });
   return outlinedFunc;
@@ -178,9 +178,10 @@ static mlir::Value getSizeInBytes(Value val, Location loc, OpBuilder builder) {
       loc, builder.getI64IntegerAttr(dataLayout.getTypeSize(type)));
 }
 
-static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp, FuncOp workFunction) {
+static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
+                                func::FuncOp workFunction) {
   DataLayout dataLayout = DataLayout::closest(DFTOp);
-  Region &opBody = DFTOp->getParentOfType<FuncOp>().body();
+  Region &opBody = DFTOp->getParentOfType<func::FuncOp>().getBody();
   BlockAndValueMapping map;
   OpBuilder builder(DFTOp);
 
@@ -205,8 +206,8 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp, FuncOp workFunction) {
   SmallVector<Value, 4> catOperands;
   int size = 3 + DFTOp.getNumResults() * 2 + DFTOp.getNumOperands() * 2;
   catOperands.reserve(size);
-  auto fnptr = builder.create<mlir::ConstantOp>(
-      DFTOp.getLoc(), workFunction.getType(),
+  auto fnptr = builder.create<mlir::func::ConstantOp>(
+      DFTOp.getLoc(), workFunction.getFunctionType(),
       SymbolRefAttr::get(builder.getContext(), workFunction.getName()));
   auto numIns = builder.create<arith::ConstantOp>(
       DFTOp.getLoc(), builder.getI64IntegerAttr(DFTOp.getNumOperands()));
@@ -281,7 +282,7 @@ struct LowerDataflowTasksPass
   void runOnOperation() override {
     auto module = getOperation();
 
-    module.walk([&](mlir::FuncOp func) {
+    module.walk([&](mlir::func::FuncOp func) {
       static int wfn_id = 0;
 
       // TODO: For now do not attempt to use nested parallelism.
@@ -289,15 +290,17 @@ struct LowerDataflowTasksPass
         return;
 
       SymbolTable symbolTable = mlir::SymbolTable::getNearestSymbolTable(func);
-      std::vector<std::pair<RT::DataflowTaskOp, FuncOp>> outliningMap;
+      std::vector<std::pair<RT::DataflowTaskOp, func::FuncOp>> outliningMap;
 
       func.walk([&](RT::DataflowTaskOp op) {
-        auto workFunctionName = Twine("_dfr_DFT_work_function__") +
-                                Twine(op->getParentOfType<FuncOp>().getName()) +
-                                Twine(wfn_id++);
-        FuncOp outlinedFunc = outlineWorkFunction(op, workFunctionName.str());
+        auto workFunctionName =
+            Twine("_dfr_DFT_work_function__") +
+            Twine(op->getParentOfType<func::FuncOp>().getName()) +
+            Twine(wfn_id++);
+        func::FuncOp outlinedFunc =
+            outlineWorkFunction(op, workFunctionName.str());
         outliningMap.push_back(
-            std::pair<RT::DataflowTaskOp, FuncOp>(op, outlinedFunc));
+            std::pair<RT::DataflowTaskOp, func::FuncOp>(op, outlinedFunc));
         symbolTable.insert(outlinedFunc);
         return WalkResult::advance();
       });
@@ -308,8 +311,8 @@ struct LowerDataflowTasksPass
 
       // Issue _dfr_start/stop calls for this function
       if (!outliningMap.empty()) {
-        OpBuilder builder(func.body());
-        builder.setInsertionPointToStart(&func.body().front());
+        OpBuilder builder(func.getBody());
+        builder.setInsertionPointToStart(&func.getBody().front());
         auto dfrStartFunOp = mlir::LLVM::lookupOrCreateFn(
             func->getParentOfType<ModuleOp>(), "_dfr_start", {},
             LLVM::LLVMVoidType::get(func->getContext()));
@@ -317,7 +320,7 @@ struct LowerDataflowTasksPass
                                      mlir::ValueRange(),
                                      ArrayRef<NamedAttribute>());
 
-        builder.setInsertionPoint(func.body().back().getTerminator());
+        builder.setInsertionPoint(func.getBody().back().getTerminator());
         auto dfrStopFunOp = mlir::LLVM::lookupOrCreateFn(
             func->getParentOfType<ModuleOp>(), "_dfr_stop", {},
             LLVM::LLVMVoidType::get(func->getContext()));

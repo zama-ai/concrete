@@ -6,9 +6,10 @@
 #ifndef CONCRETELANG_CONVERSION_TFHETOCONCRETE_PATTERNS_H_
 #define CONCRETELANG_CONVERSION_TFHETOCONCRETE_PATTERNS_H_
 
+#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteOps.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEOps.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
 
@@ -33,6 +34,16 @@ LweCiphertextType convertTypeToLWE(mlir::MLIRContext *context,
   }
   assert(false && "expect glwe or lwe");
   return nullptr;
+}
+
+/// Converts the type `t` to an LWE type if `t` is a
+/// `TFHE::GLWECipherTextType`, otherwise just returns `t`.
+mlir::Type convertTypeToLWEIfTFHEType(mlir::MLIRContext *context,
+                                      mlir::Type t) {
+  if (auto eint = t.dyn_cast<TFHE::GLWECipherTextType>())
+    return convertTypeToLWE(context, eint);
+
+  return t;
 }
 
 template <typename PType>
@@ -101,10 +112,10 @@ mlir::Value createConcreteOpFromTFHE(mlir::PatternRewriter &rewriter,
                                      mlir::Value arg1, mlir::OpResult result) {
   mlir::SmallVector<mlir::Value, 2> args{arg0, arg1};
   mlir::SmallVector<mlir::NamedAttribute, 0> attrs;
-  auto glwe = result.getType().cast<GLWECipherTextType>();
-  mlir::SmallVector<mlir::Type, 1> resTypes{
-      convertTypeToLWE(rewriter.getContext(), glwe)};
+  mlir::SmallVector<mlir::Type, 1> resTypes{result.getType()};
   Operator op = rewriter.create<Operator>(loc, resTypes, args, attrs);
+  convertOperandAndResultTypes(rewriter, op, convertTypeToLWE);
+
   return op.getODSResults(0).front();
 }
 
@@ -118,14 +129,15 @@ mlir::Value createAddPlainLweCiphertextWithGlwe(
                             .create<mlir::concretelang::Concrete::EncodeIntOp>(
                                 loc, encoded_type, arg1)
                             .plaintext();
-  // convert result type
-  LweCiphertextType lwe_type =
-      convertTypeToLWE(rewriter.getContext(), result.getType());
+
   // replace op using the encoded plaintext instead of int
   auto op =
       rewriter
           .create<mlir::concretelang::Concrete::AddPlaintextLweCiphertextOp>(
-              loc, lwe_type, arg0, encoded);
+              loc, result.getType(), arg0, encoded);
+
+  convertOperandAndResultTypes(rewriter, op, convertTypeToLWEIfTFHEType);
+
   return op.getODSResults(0).front();
 }
 
@@ -137,27 +149,22 @@ mlir::Value createAddPlainLweCiphertext(mlir::PatternRewriter &rewriter,
                                              arg0.getType());
 }
 
-mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter &rewriter,
-                                      mlir::Location loc, mlir::Value arg0,
-                                      mlir::Value arg1, mlir::OpResult result) {
-  auto arg1_type = arg1.getType();
-  auto negated_arg1 =
-      rewriter
-          .create<mlir::concretelang::Concrete::NegateLweCiphertextOp>(
-              loc, convertTypeToLWE(rewriter.getContext(), arg1_type), arg1)
-          .result();
-  return createAddPlainLweCiphertextWithGlwe(rewriter, loc, negated_arg1, arg0,
-                                             result, arg1_type);
-}
-
 mlir::Value createNegLweCiphertext(mlir::PatternRewriter &rewriter,
                                    mlir::Location loc, mlir::Value arg0,
                                    mlir::OpResult result) {
-  auto arg0_type = arg0.getType();
   auto negated =
       rewriter.create<mlir::concretelang::Concrete::NegateLweCiphertextOp>(
-          loc, convertTypeToLWE(rewriter.getContext(), arg0_type), arg0);
+          loc, arg0.getType(), arg0);
+  convertOperandAndResultTypes(rewriter, negated, convertTypeToLWEIfTFHEType);
   return negated.getODSResults(0).front();
+}
+
+mlir::Value createSubIntLweCiphertext(mlir::PatternRewriter &rewriter,
+                                      mlir::Location loc, mlir::Value arg0,
+                                      mlir::Value arg1, mlir::OpResult result) {
+  auto negated_arg1 = createNegLweCiphertext(rewriter, loc, arg1, result);
+  return createAddPlainLweCiphertextWithGlwe(rewriter, loc, negated_arg1, arg0,
+                                             result, arg1.getType());
 }
 
 mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
@@ -173,14 +180,15 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
           .create<mlir::concretelang::Concrete::IntToCleartextOp>(
               loc, encoded_type, arg1)
           .cleartext();
-  // convert result type
-  auto resType = result.getType();
-  LweCiphertextType lwe_type = convertTypeToLWE(rewriter.getContext(), resType);
+
   // replace op using the encoded plaintext instead of int
   auto op =
       rewriter
           .create<mlir::concretelang::Concrete::MulCleartextLweCiphertextOp>(
-              loc, lwe_type, arg0, encoded);
+              loc, result.getType(), arg0, encoded);
+
+  convertOperandAndResultTypes(rewriter, op, convertTypeToLWEIfTFHEType);
+
   return op.getODSResults(0).front();
 }
 

@@ -141,6 +141,29 @@ mlir::LogicalResult verifyUnaryGLWEOperator(Operator &op) {
   return mlir::success();
 }
 
+mlir::LogicalResult AddGLWEIntOp::verify() {
+  return mlir::concretelang::TFHE::verifyGLWEIntegerOperator<AddGLWEIntOp>(
+      *this);
+}
+
+mlir::LogicalResult AddGLWEOp::verify() {
+  return ::mlir::concretelang::TFHE::verifyBinaryGLWEOperator<AddGLWEOp>(*this);
+}
+
+mlir::LogicalResult SubIntGLWEOp::verify() {
+  return ::mlir::concretelang::TFHE::verifyIntegerGLWEOperator<SubIntGLWEOp>(
+      *this);
+}
+
+mlir::LogicalResult NegGLWEOp::verify() {
+  return ::mlir::concretelang::TFHE::verifyUnaryGLWEOperator<NegGLWEOp>(*this);
+}
+
+mlir::LogicalResult MulGLWEIntOp::verify() {
+  return mlir::concretelang::TFHE::verifyGLWEIntegerOperator<MulGLWEIntOp>(
+      *this);
+}
+
 } // namespace TFHE
 } // namespace concretelang
 } // namespace mlir

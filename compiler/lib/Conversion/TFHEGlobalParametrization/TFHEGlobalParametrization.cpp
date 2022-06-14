@@ -7,6 +7,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "concretelang/Conversion/Passes.h"
+#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Conversion/Utils/RegionOpTypeConverterPattern.h"
 #include "concretelang/Conversion/Utils/TensorOpTypeConversion.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
@@ -67,30 +68,6 @@ public:
   }
 };
 
-template <typename Op>
-struct TFHEOpTypeConversionPattern : public mlir::OpRewritePattern<Op> {
-  TFHEOpTypeConversionPattern(mlir::MLIRContext *context,
-                              mlir::TypeConverter &typeConverter,
-                              mlir::PatternBenefit benefit =
-                                  mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
-      : mlir::OpRewritePattern<Op>(context, benefit),
-        typeConverter(typeConverter) {}
-
-  mlir::LogicalResult
-  matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
-    mlir::SmallVector<mlir::Type, 1> newResultTypes;
-    if (typeConverter.convertTypes(op->getResultTypes(), newResultTypes)
-            .failed()) {
-      return mlir::failure();
-    }
-    rewriter.replaceOpWithNewOp<Op>(op, newResultTypes, op->getOperands());
-    return mlir::success();
-  };
-
-private:
-  mlir::TypeConverter &typeConverter;
-};
-
 struct KeySwitchGLWEOpPattern
     : public mlir::OpRewritePattern<TFHE::KeySwitchGLWEOp> {
   KeySwitchGLWEOpPattern(mlir::MLIRContext *context,
@@ -108,10 +85,13 @@ struct KeySwitchGLWEOpPattern
     auto inputTy = ksOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
     auto outputTy = rewriter.getType<TFHE::GLWECipherTextType>(
         fheContext.parameter.glweDimension, fheContext.parameter.nSmall, 64,
-        inputTy.getP());
-    rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
+        fheContext.constraint.p);
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
         ksOp, outputTy, ksOp.ciphertext(), fheContext.parameter.ksLevel,
         fheContext.parameter.ksLogBase);
+    rewriter.startRootUpdate(newOp);
+    newOp.ciphertext().setType(converter.convertType(inputTy));
+    rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
 
@@ -133,11 +113,19 @@ struct BootstrapGLWEOpPattern
   mlir::LogicalResult
   matchAndRewrite(TFHE::BootstrapGLWEOp bsOp,
                   mlir::PatternRewriter &rewriter) const override {
-    rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         bsOp, converter.convertType(bsOp.result().getType()), bsOp.ciphertext(),
         bsOp.lookup_table(), fheContext.parameter.glweDimension,
         1 << fheContext.parameter.logPolynomialSize,
         fheContext.parameter.brLevel, fheContext.parameter.brLogBase);
+    rewriter.startRootUpdate(newOp);
+    auto newInputTy = rewriter.getType<TFHE::GLWECipherTextType>(
+        fheContext.parameter.glweDimension, fheContext.parameter.nSmall, 64,
+        fheContext.constraint.p);
+    newOp.ciphertext().setType(newInputTy);
+    newOp.lookup_table().setType(
+        converter.convertType(newOp.lookup_table().getType()));
+    rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
 
@@ -202,11 +190,10 @@ struct GLWEFromTablePattern
       auto integerSize = 64;
       llvm::SmallVector<llvm::APInt> rawNewDenseVals(
           expectedSize, llvm::APInt(integerSize, 0));
+      auto denseValsAP = denseVals.getValues<llvm::APInt>();
       for (auto i = 0; i < expectedSize; i++) {
         rawNewDenseVals[i] = llvm::APInt(
-            integerSize,
-            denseVals.getFlatValue<llvm::APInt>(i % denseVals.size())
-                .getZExtValue());
+            integerSize, denseValsAP[i % denseVals.size()].getZExtValue());
       }
       auto newDenseValsType = mlir::RankedTensorType::get(
           {expectedSize}, rewriter.getIntegerType(integerSize));
@@ -229,8 +216,9 @@ template <typename Op>
 void populateWithTFHEOpTypeConversionPattern(
     mlir::RewritePatternSet &patterns, mlir::ConversionTarget &target,
     mlir::TypeConverter &typeConverter) {
-  patterns.add<TFHEOpTypeConversionPattern<Op>>(patterns.getContext(),
-                                                typeConverter);
+  patterns.add<mlir::concretelang::GenericTypeConverterPattern<Op>>(
+      patterns.getContext(), typeConverter);
+
   target.addDynamicallyLegalOp<Op>(
       [&](Op op) { return typeConverter.isLegal(op->getResultTypes()); });
 }
@@ -266,14 +254,16 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
   // Parametrize
   {
     mlir::ConversionTarget target(getContext());
-    mlir::OwningRewritePatternList patterns(&getContext());
+    mlir::RewritePatternSet patterns(&getContext());
 
     // function signature
-    target.addDynamicallyLegalOp<mlir::FuncOp>([&](mlir::FuncOp funcOp) {
-      return converter.isSignatureLegal(funcOp.getType()) &&
-             converter.isLegal(&funcOp.getBody());
-    });
-    mlir::populateFuncOpTypeConversionPattern(patterns, converter);
+    target.addDynamicallyLegalOp<mlir::func::FuncOp>(
+        [&](mlir::func::FuncOp funcOp) {
+          return converter.isSignatureLegal(funcOp.getFunctionType()) &&
+                 converter.isLegal(&funcOp.getBody());
+        });
+    mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
+        patterns, converter);
 
     // Parametrize keyswitch bootstrap
     patterns.add<GLWEFromTablePattern>(&getContext(), converter, fheContext);
@@ -305,6 +295,17 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
     patterns.add<RegionOpTypeConverterPattern<
         mlir::scf::ForOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
+    patterns.add<RegionOpTypeConverterPattern<
+        mlir::func::ReturnOp, TFHEGlobalParametrizationTypeConverter>>(
+        &getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::func::ReturnOp>(
+        target, converter);
+    patterns.add<RegionOpTypeConverterPattern<
+        mlir::linalg::YieldOp, TFHEGlobalParametrizationTypeConverter>>(
+        &getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::linalg::YieldOp>(
+        target, converter);
+
     mlir::concretelang::populateWithTensorTypeConverterPatterns(
         patterns, target, converter);
 
@@ -314,6 +315,11 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
                                                  converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::concretelang::RT::DataflowTaskOp>(target, converter);
+    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+        mlir::concretelang::RT::DataflowYieldOp>>(patterns.getContext(),
+                                                  converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DataflowYieldOp>(target, converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

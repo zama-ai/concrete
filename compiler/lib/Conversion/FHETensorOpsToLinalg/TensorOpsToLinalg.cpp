@@ -5,10 +5,11 @@
 
 #include <unordered_set>
 
-#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Tensor/Utils/Utils.h"
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Matchers.h"
@@ -442,6 +443,7 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
     auto iteratorTypes = parallelIteratorType(resultShape.size());
     auto genericOp = rewriter.create<linalg::GenericOp>(
         loc, resTys, ins, outs, affineMaps, iteratorTypes, lambdaBlock);
+
     rewriter.replaceOp(mappedLookup, {genericOp.getResult(0)});
 
     return ::mlir::success();
@@ -1457,14 +1459,14 @@ getPaddedTensor(mlir::Operation *op, mlir::OpBuilder &b, mlir::Value &input,
   assert(input.getType().isa<mlir::RankedTensorType>() &&
          "input must be RankedTensorType");
   mlir::Location loc = op->getLoc();
-  mlir::Type rankedTensorType = mlir::linalg::PadTensorOp::inferResultType(
+  mlir::Type rankedTensorType = mlir::tensor::PadOp::inferResultType(
       input.getType().cast<mlir::RankedTensorType>(), lowPaddingInts,
       highPaddingInts);
   mlir::SmallVector<mlir::OpFoldResult> lowPaddings =
       getAsOpFoldResult(b, loc, lowPaddingInts);
   mlir::SmallVector<mlir::OpFoldResult> highPaddings =
       getAsOpFoldResult(b, loc, highPaddingInts);
-  mlir::Value paddedInput = mlir::linalg::PadTensorOp::createPadScalarOp(
+  mlir::Value paddedInput = mlir::tensor::createPadScalarOp(
       rankedTensorType, input, pad, /*low=*/lowPaddings, /*high=*/highPaddings,
       /*packing=*/false, loc, b);
   return paddedInput;
@@ -1578,16 +1580,15 @@ namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
 
-  void runOnFunction() final;
+  void runOnOperation() final;
 };
 
-void FHETensorOpsToLinalg::runOnFunction() {
-  mlir::FuncOp function = this->getFunction();
+void FHETensorOpsToLinalg::runOnOperation() {
+  mlir::func::FuncOp function = this->getOperation();
 
   mlir::ConversionTarget target(getContext());
 
   target.addLegalDialect<mlir::linalg::LinalgDialect>();
-  target.addLegalDialect<mlir::StandardOpsDialect>();
   target.addLegalDialect<mlir::memref::MemRefDialect>();
   target.addLegalDialect<mlir::concretelang::FHE::FHEDialect>();
   target.addLegalDialect<mlir::tensor::TensorDialect>();
@@ -1598,7 +1599,7 @@ void FHETensorOpsToLinalg::runOnFunction() {
   // for conv that works on tensors of custom types
   target.addLegalOp<mlir::concretelang::FHELinalg::FhelinalgConv2DNchwFchwOp>();
 
-  mlir::OwningRewritePatternList patterns(&getContext());
+  mlir::RewritePatternSet patterns(&getContext());
   patterns.insert<DotToLinalgGeneric>(&getContext());
   patterns.insert<
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::AddEintOp,
@@ -1649,7 +1650,8 @@ void FHETensorOpsToLinalg::runOnFunction() {
 
 namespace mlir {
 namespace concretelang {
-std::unique_ptr<mlir::FunctionPass> createConvertFHETensorOpsToLinalg() {
+std::unique_ptr<mlir::OperationPass<mlir::func::FuncOp>>
+createConvertFHETensorOpsToLinalg() {
   return std::make_unique<FHETensorOpsToLinalg>();
 }
 } // namespace concretelang

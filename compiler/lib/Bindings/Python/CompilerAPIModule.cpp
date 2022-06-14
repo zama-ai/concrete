@@ -8,10 +8,9 @@
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/Jit.h"
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
-#include <mlir/Parser.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>

@@ -5,10 +5,10 @@
 
 #include <unordered_set>
 
-#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/TypeUtilities.h"
-#include "mlir/Parser.h"
+#include "mlir/Parser/Parser.h"
 #include "llvm/Support/FormatVariadic.h"
 
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
@@ -240,53 +240,52 @@ namespace mlir {
 namespace concretelang {
 namespace FHELinalg {
 
-mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
-  auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
+mlir::LogicalResult ApplyLookupTableEintOp::verify() {
+  auto tTy = this->t().getType().cast<mlir::RankedTensorType>();
   auto tEltTy = tTy.getElementType()
                     .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  auto lutTy = op.lut().getType().cast<mlir::RankedTensorType>();
+  auto lutTy = this->lut().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
-  auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
+  auto resultTy = this->getResult().getType().cast<mlir::RankedTensorType>();
 
   // Check the shape of lut argument
   auto tEltwidth = tEltTy.getWidth();
   mlir::SmallVector<int64_t, 1> expectedShape{1 << tEltwidth};
   if (!lutTy.hasStaticShape(expectedShape) || !lutEltTy.isInteger(64)) {
-    op.emitOpError()
+    this->emitOpError()
         << "should have as operand #2 a tensor<2^pxi64>, where p is the width "
            "of the encrypted integer of the operand #1,"
         << "expect tensor <" << expectedShape[0] << "xi64>";
     return mlir::failure();
   }
   if (!resultTy.hasStaticShape(tTy.getShape())) {
-    op.emitOpError()
+    this->emitOpError()
         << " should have same shapes for operand #1 and the result";
   }
   return mlir::success();
 }
 
-mlir::LogicalResult
-verifyApplyMultiLookupTable(ApplyMultiLookupTableEintOp &op) {
-  auto tTy = op.t().getType().cast<mlir::RankedTensorType>();
+mlir::LogicalResult ApplyMultiLookupTableEintOp::verify() {
+  auto tTy = this->t().getType().cast<mlir::RankedTensorType>();
   auto tEltTy = tTy.getElementType()
                     .cast<mlir::concretelang::FHE::EncryptedIntegerType>();
-  auto lutTy = op.luts().getType().cast<mlir::RankedTensorType>();
+  auto lutTy = this->luts().getType().cast<mlir::RankedTensorType>();
   auto lutEltTy = lutTy.getElementType().cast<mlir::IntegerType>();
-  auto resultTy = op.getResult().getType().cast<mlir::RankedTensorType>();
+  auto resultTy = this->getResult().getType().cast<mlir::RankedTensorType>();
 
   // Check the shape of luts argument
   auto lut_size = lutTy.getShape()[lutTy.getShape().size() - 1];
   auto expected_lut_size = 1 << tEltTy.getWidth();
   if (lut_size != expected_lut_size || !lutEltTy.isInteger(64)) {
-    op.emitOpError() << "should have as operand #2 a "
-                        "tensor<DMx...xD1X2^pxi64>, where p is the width "
-                        "of the encrypted integer of the operand #1,"
-                     << "expect tensor <DMx...xD1X" << expected_lut_size
-                     << "xi64>";
+    this->emitOpError() << "should have as operand #2 a "
+                           "tensor<DMx...xD1X2^pxi64>, where p is the width "
+                           "of the encrypted integer of the operand #1,"
+                        << "expect tensor <DMx...xD1X" << expected_lut_size
+                        << "xi64>";
     return mlir::failure();
   }
   if (!resultTy.hasStaticShape(tTy.getShape())) {
-    op.emitOpError()
+    this->emitOpError()
         << " should have same shapes for operand #1 and the result";
   }
   return mlir::success();
@@ -347,53 +346,53 @@ mlir::LogicalResult verifyLutsSize(ApplyMappedLookupTableEintOp &op,
   return mlir::failure();
 }
 
-mlir::LogicalResult
-verifyApplyMappedLookupTable(ApplyMappedLookupTableEintOp &op) {
-  auto t = op.t();
-  auto luts = op.luts();
-  auto map = op.map();
-  auto result = op.getResult();
+mlir::LogicalResult ApplyMappedLookupTableEintOp::verify() {
+  auto t = this->t();
+  auto luts = this->luts();
+  auto map = this->map();
+  auto result = this->getResult();
 
   auto t_shape = getTensorType(t).getShape();
   if (!getTensorType(result).hasStaticShape(t_shape)) {
-    op.emitOpError()
+    this->emitOpError()
         << ": `t` (operand #1) and `map` (operand #2) must have the same shape";
     return mlir::failure();
   }
 
   if (!getTensorType(map).getElementType().isIndex()) {
-    op.emitOpError()
+    this->emitOpError()
         << ": `map` (operand #3) should contains elements of type `index`";
     return mlir::failure();
   }
 
-  return mlir::success(verifyMapHasRightShape(op, t, map).succeeded() &&
-                       verifyLutsSize(op, t, luts).succeeded());
+  return mlir::success(verifyMapHasRightShape(*this, t, map).succeeded() &&
+                       verifyLutsSize(*this, t, luts).succeeded());
 }
 
-::mlir::LogicalResult verifyDotEintInt(Dot &op) {
-  if (::mlir::failed(mlir::verifyCompatibleShape(op.lhs().getType(),
-                                                 op.rhs().getType()))) {
-    return op.emitOpError("arguments have incompatible shapes");
+::mlir::LogicalResult Dot::verify() {
+  if (::mlir::failed(mlir::verifyCompatibleShape(this->lhs().getType(),
+                                                 this->rhs().getType()))) {
+    return this->emitOpError("arguments have incompatible shapes");
   }
-  auto lhsEltType = op.lhs()
+  auto lhsEltType = this->lhs()
                         .getType()
                         .cast<mlir::TensorType>()
                         .getElementType()
                         .cast<FHE::EncryptedIntegerType>();
-  auto rhsEltType = op.rhs()
+  auto rhsEltType = this->rhs()
                         .getType()
                         .cast<mlir::TensorType>()
                         .getElementType()
                         .cast<mlir::IntegerType>();
-  auto resultType = op.getResult().getType().cast<FHE::EncryptedIntegerType>();
+  auto resultType =
+      this->getResult().getType().cast<FHE::EncryptedIntegerType>();
   if (!mlir::concretelang::FHE::
-          verifyEncryptedIntegerAndIntegerInputsConsistency(op, lhsEltType,
-                                                            rhsEltType)) {
+          verifyEncryptedIntegerAndIntegerInputsConsistency(
+              *this->getOperation(), lhsEltType, rhsEltType)) {
     return ::mlir::failure();
   }
-  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(op, lhsEltType,
-                                                            resultType)) {
+  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
+          *this->getOperation(), lhsEltType, resultType)) {
     return ::mlir::failure();
   }
   return ::mlir::success();
@@ -427,9 +426,9 @@ llvm::SmallVector<int64_t, 3> verifySumCalculateExpectedOutputShape(
   return expectedOutputShape;
 }
 
-mlir::LogicalResult verifySum(SumOp &op) {
-  mlir::Value input = op.getOperand();
-  mlir::Value output = op.getResult();
+mlir::LogicalResult SumOp::verify() {
+  mlir::Value input = this->getOperand();
+  mlir::Value output = this->getResult();
 
   auto inputType = input.getType().dyn_cast<mlir::TensorType>();
   mlir::Type outputType = output.getType();
@@ -444,15 +443,15 @@ mlir::LogicalResult verifySum(SumOp &op) {
                 .dyn_cast<FHE::EncryptedIntegerType>();
 
   if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
-          op, inputElementType, outputElementType)) {
+          *this->getOperation(), inputElementType, outputElementType)) {
     return mlir::failure();
   }
 
   llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
   int64_t inputDimensions = (int64_t)inputShape.size();
 
-  mlir::ArrayAttr axes = op.axes();
-  bool keepDims = op.keep_dims();
+  mlir::ArrayAttr axes = this->axes();
+  bool keepDims = this->keep_dims();
 
   auto axesToDestroy = std::unordered_set<int64_t>{};
   for (mlir::Attribute axisAttribute : axes) {
@@ -460,7 +459,7 @@ mlir::LogicalResult verifySum(SumOp &op) {
 
     bool axisIsValid = (0 <= axis) && (axis < inputDimensions);
     if (!axisIsValid) {
-      op.emitOpError("has invalid axes attribute");
+      this->emitOpError("has invalid axes attribute");
       return mlir::failure();
     }
 
@@ -477,7 +476,7 @@ mlir::LogicalResult verifySum(SumOp &op) {
   auto actualOutputShape = verifySumCalculateActualOutputShape(outputType);
 
   if (expectedOutputShape != actualOutputShape) {
-    auto stream = op.emitOpError();
+    auto stream = this->emitOpError();
 
     stream << "does not have the proper output shape of <";
     if (!expectedOutputShape.empty()) {
@@ -507,15 +506,15 @@ static bool sameShapeExceptAxis(llvm::ArrayRef<int64_t> shape1,
   return true;
 }
 
-mlir::LogicalResult verifyConcat(ConcatOp &op) {
-  unsigned numOperands = op.getNumOperands();
+mlir::LogicalResult ConcatOp::verify() {
+  unsigned numOperands = this->getNumOperands();
   if (numOperands < 2) {
-    op->emitOpError() << "should have at least 2 inputs";
+    this->emitOpError() << "should have at least 2 inputs";
     return mlir::failure();
   }
 
-  int64_t axis = op.axis();
-  mlir::Value out = op.out();
+  int64_t axis = this->axis();
+  mlir::Value out = this->out();
 
   auto outVectorType = out.getType().dyn_cast<mlir::TensorType>();
   auto outElementType =
@@ -525,25 +524,25 @@ mlir::LogicalResult verifyConcat(ConcatOp &op) {
   size_t outDims = outShape.size();
 
   if (axis < 0 || (size_t)axis >= outDims) {
-    op->emitOpError() << "has invalid axis attribute";
+    this->emitOpError() << "has invalid axis attribute";
     return mlir::failure();
   }
 
   int64_t expectedOutputElementsInAxis = 0;
 
   size_t index = 0;
-  for (mlir::Value in : op.ins()) {
+  for (mlir::Value in : this->ins()) {
     auto inVectorType = in.getType().dyn_cast<mlir::TensorType>();
     auto inElementType =
         inVectorType.getElementType().dyn_cast<FHE::EncryptedIntegerType>();
-    if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(op, inElementType,
-                                                              outElementType)) {
+    if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
+            *this->getOperation(), inElementType, outElementType)) {
       return ::mlir::failure();
     }
 
     llvm::ArrayRef<int64_t> inShape = inVectorType.getShape();
     if (!sameShapeExceptAxis(inShape, outShape, (size_t)axis)) {
-      auto stream = op->emitOpError();
+      auto stream = this->emitOpError();
 
       stream << "does not have the proper shape of <";
       if (axis == 0) {
@@ -569,7 +568,7 @@ mlir::LogicalResult verifyConcat(ConcatOp &op) {
   }
 
   if (outShape[axis] != expectedOutputElementsInAxis) {
-    auto stream = op->emitOpError();
+    auto stream = this->emitOpError();
 
     stream << "does not have the proper output shape of <";
     if (axis == 0) {
@@ -744,6 +743,16 @@ template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
   return mlir::success();
 }
 
+mlir::LogicalResult MatMulEintIntOp::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyMatmul<
+      mlir::concretelang::FHELinalg::MatMulEintIntOp>(*this);
+}
+
+mlir::LogicalResult MatMulIntEintOp::verify() {
+  return ::mlir::concretelang::FHELinalg::verifyMatmul<
+      mlir::concretelang::FHELinalg::MatMulIntEintOp>(*this);
+}
+
 mlir::SmallVector<int64_t, 4>
 getPaddingFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
   mlir::SmallVector<int64_t, 4> paddingInts;
@@ -801,14 +810,13 @@ getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
 }
 
 /// Verify the Conv2d shapes, attributes, and expected output dimensions
-mlir::LogicalResult
-verifyConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
+mlir::LogicalResult Conv2dOp::verify() {
   auto inputTy =
-      ((mlir::Type)convOp.input().getType()).cast<mlir::RankedTensorType>();
+      ((mlir::Type)this->input().getType()).cast<mlir::RankedTensorType>();
   auto weightTy =
-      ((mlir::Type)convOp.weight().getType()).cast<mlir::RankedTensorType>();
+      ((mlir::Type)this->weight().getType()).cast<mlir::RankedTensorType>();
   auto resultTy =
-      ((mlir::Type)convOp.getResult().getType()).cast<mlir::RankedTensorType>();
+      ((mlir::Type)this->getResult().getType()).cast<mlir::RankedTensorType>();
   auto inputShape = inputTy.getShape();
   auto weightShape = weightTy.getShape();
   auto resultShape = resultTy.getShape();
@@ -819,37 +827,37 @@ verifyConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
   auto weightElementTyWidth =
       weightTy.getElementType().cast<mlir::IntegerType>().getWidth();
   if (weightElementTyWidth != p + 1) {
-    convOp.emitOpError() << "expected weight element type to have width "
-                         << p + 1 << " but got " << weightElementTyWidth;
+    this->emitOpError() << "expected weight element type to have width "
+                        << p + 1 << " but got " << weightElementTyWidth;
     return mlir::failure();
   }
 
   // Checking dimensions
   if (inputShape.size() != 4) {
-    convOp.emitOpError() << "input should have 4 dimensions (N*C*H*W) but got "
-                         << inputShape.size();
+    this->emitOpError() << "input should have 4 dimensions (N*C*H*W) but got "
+                        << inputShape.size();
     return mlir::failure();
   }
   if (weightShape.size() != 4) {
-    convOp.emitOpError() << "weight should have 4 dimensions (F*C*H*W) but got "
-                         << weightShape.size();
+    this->emitOpError() << "weight should have 4 dimensions (F*C*H*W) but got "
+                        << weightShape.size();
     return mlir::failure();
   }
   if (resultShape.size() != 4) {
-    convOp.emitOpError() << "result should have 4 dimensions (N*C*H*W) but got "
-                         << resultShape.size();
+    this->emitOpError() << "result should have 4 dimensions (N*C*H*W) but got "
+                        << resultShape.size();
     return mlir::failure();
   }
 
   // Checking attributes
-  mlir::SmallVector<int64_t, 4> paddingInts = getPaddingFromConv2d(convOp);
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalPadding = convOp.padding();
+  mlir::SmallVector<int64_t, 4> paddingInts = getPaddingFromConv2d(*this);
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalPadding = this->padding();
   if (optionalPadding.hasValue()) {
     auto paddingAttr = optionalPadding.getValue();
     auto paddingAttrShape =
         paddingAttr.getType().cast<RankedTensorType>().getShape();
     if (paddingAttrShape.size() != 1 || paddingAttrShape[0] != 4) {
-      convOp.emitOpError()
+      this->emitOpError()
           << "padding should have a single dimension of size 4, but got shape ["
           << paddingAttrShape << "]";
       return mlir::failure();
@@ -857,56 +865,56 @@ verifyConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
     for (auto i = 0; i < 4; i++) {
       // TODO: Support padding (#427)
       if (paddingInts[i] != 0) {
-        convOp.emitOpError()
+        this->emitOpError()
             << "padding isn't yet supported, but got a non zero value ("
             << paddingInts[i] << ") at index " << i;
         return mlir::failure();
       }
 
       if (paddingInts[i] < 0) {
-        convOp.emitOpError() << "padding can't have a negative value, but got "
-                             << paddingInts[i] << " at index " << i;
+        this->emitOpError() << "padding can't have a negative value, but got "
+                            << paddingInts[i] << " at index " << i;
         return mlir::failure();
       }
     }
   }
-  mlir::SmallVector<int64_t, 2> stridesInts = getStridesFromConv2d(convOp);
-  llvm::Optional<mlir::DenseIntElementsAttr> optionalStrides = convOp.strides();
+  mlir::SmallVector<int64_t, 2> stridesInts = getStridesFromConv2d(*this);
+  llvm::Optional<mlir::DenseIntElementsAttr> optionalStrides = this->strides();
   if (optionalStrides.hasValue()) {
     auto stridesAttr = optionalStrides.getValue();
     auto stridesAttrShape =
         stridesAttr.getType().cast<RankedTensorType>().getShape();
     if (stridesAttrShape.size() != 1 || stridesAttrShape[0] != 2) {
-      convOp.emitOpError()
+      this->emitOpError()
           << "strides should have a single dimension of size 2, but got shape ["
           << stridesAttrShape << "]";
       return mlir::failure();
     }
     for (auto i = 0; i < 2; i++) {
       if (stridesInts[i] < 1) {
-        convOp.emitOpError()
+        this->emitOpError()
             << "strides can't have a value less than 1, but got "
             << stridesInts[i] << " at index " << i;
         return mlir::failure();
       }
     }
   }
-  mlir::SmallVector<int64_t, 2> dilationsInts = getDilationsFromConv2d(convOp);
+  mlir::SmallVector<int64_t, 2> dilationsInts = getDilationsFromConv2d(*this);
   llvm::Optional<mlir::DenseIntElementsAttr> optionalDilations =
-      convOp.dilations();
+      this->dilations();
   if (optionalDilations.hasValue()) {
     auto dilationsAttr = optionalDilations.getValue();
     auto dilationsAttrShape =
         dilationsAttr.getType().cast<RankedTensorType>().getShape();
     if (dilationsAttrShape.size() != 1 || dilationsAttrShape[0] != 2) {
-      convOp.emitOpError() << "dilations should have a single dimension of "
-                              "size 2, but got shape ["
-                           << dilationsAttrShape << "]";
+      this->emitOpError() << "dilations should have a single dimension of "
+                             "size 2, but got shape ["
+                          << dilationsAttrShape << "]";
       return mlir::failure();
     }
     for (auto i = 0; i < 2; i++) {
       if (dilationsInts[i] < 1) {
-        convOp.emitOpError()
+        this->emitOpError()
             << "dilations can't have a value less than 1, but got "
             << dilationsInts[i] << " at index " << i;
         return mlir::failure();
@@ -923,46 +931,46 @@ verifyConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
           resultH = resultShape[2], resultW = resultShape[3];
 
   // Bias check if specified
-  mlir::Value bias = convOp.bias();
+  mlir::Value bias = this->bias();
   if (bias) {
     auto biasTy = ((mlir::Type)bias.getType()).cast<mlir::RankedTensorType>();
     auto biasShape = biasTy.getShape();
     if (biasShape.size() != 1) {
-      convOp.emitOpError() << "bias should have 1 dimension but got "
-                           << biasShape.size();
+      this->emitOpError() << "bias should have 1 dimension but got "
+                          << biasShape.size();
       return mlir::failure();
     }
     if (biasShape[0] != weightF) {
-      convOp.emitOpError() << "expected bias vector to have size " << weightF
-                           << " but got " << biasShape[0];
+      this->emitOpError() << "expected bias vector to have size " << weightF
+                          << " but got " << biasShape[0];
       return mlir::failure();
     }
     auto biasElementTyWidth =
         biasTy.getElementType().cast<mlir::IntegerType>().getWidth();
     if (biasElementTyWidth != p + 1) {
-      convOp.emitOpError() << "expected bias element type to have width "
-                           << p + 1 << " but got " << biasElementTyWidth;
+      this->emitOpError() << "expected bias element type to have width "
+                          << p + 1 << " but got " << biasElementTyWidth;
       return mlir::failure();
     }
   }
 
   // Dimension sizes checks
   if (resultN != inputN) {
-    convOp.emitOpError()
+    this->emitOpError()
         << "expected result batch size to be equal to input batch size ("
         << inputN << ") but got " << resultN;
     return mlir::failure();
   }
   if (inputC != weightC) {
-    convOp.emitOpError() << "expected number of channels in weight to be equal "
-                            "to number of channels in input ("
-                         << inputC << ") but got " << weightC;
+    this->emitOpError() << "expected number of channels in weight to be equal "
+                           "to number of channels in input ("
+                        << inputC << ") but got " << weightC;
     return mlir::failure();
   }
   if (weightF != resultC) {
-    convOp.emitOpError() << "expected number of output channels to be equal to "
-                            "the number of filters ("
-                         << weightF << ") but got " << resultC;
+    this->emitOpError() << "expected number of output channels to be equal to "
+                           "the number of filters ("
+                        << weightF << ") but got " << resultC;
     return mlir::failure();
   }
 
@@ -978,13 +986,13 @@ verifyConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
       floor((inputW + paddingW - dilationW * (weightW - 1) - 1) / strideW) + 1;
 
   if (expectedResultH != resultH) {
-    convOp.emitOpError() << "expected height of output to be equal to "
-                         << expectedResultH << " but got " << resultH;
+    this->emitOpError() << "expected height of output to be equal to "
+                        << expectedResultH << " but got " << resultH;
     return mlir::failure();
   }
   if (expectedResultW != resultW) {
-    convOp.emitOpError() << "expected width of output to be equal to "
-                         << expectedResultW << " but got " << resultW;
+    this->emitOpError() << "expected width of output to be equal to "
+                        << expectedResultW << " but got " << resultW;
     return mlir::failure();
   }
 
@@ -1016,22 +1024,22 @@ getSymbolBindings(FhelinalgConv2DNchwFchwOp self) {
   exprs.push_back(getAffineSymbolExpr(1, context));
   exprs.push_back(getAffineSymbolExpr(2, context));
 
-  int64_t cst3 = self.strides().getValue<int64_t>({0});
+  int64_t cst3 = self.strides().getValues<int64_t>()[{0}];
   exprs.push_back(getAffineConstantExpr(cst3, context));
 
   exprs.push_back(getAffineSymbolExpr(4, context));
 
-  int64_t cst5 = self.dilations().getValue<int64_t>({0});
+  int64_t cst5 = self.dilations().getValues<int64_t>()[{0}];
   exprs.push_back(getAffineConstantExpr(cst5, context));
 
   exprs.push_back(getAffineSymbolExpr(6, context));
 
-  int64_t cst7 = self.strides().getValue<int64_t>({1});
+  int64_t cst7 = self.strides().getValues<int64_t>()[{1}];
   exprs.push_back(getAffineConstantExpr(cst7, context));
 
   exprs.push_back(getAffineSymbolExpr(8, context));
 
-  int64_t cst9 = self.dilations().getValue<int64_t>({1});
+  int64_t cst9 = self.dilations().getValues<int64_t>()[{1}];
   exprs.push_back(getAffineConstantExpr(cst9, context));
 
   exprs.push_back(getAffineSymbolExpr(10, context));
@@ -1110,6 +1118,198 @@ LogicalResult FhelinalgConv2DNchwFchwOp::verifyIndexingMapRequiredAttributes() {
   }
 
   return success();
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+using RegionBuilderFn = llvm::function_ref<void(ImplicitLocOpBuilder &, Block &,
+                                                ArrayRef<NamedAttribute>)>;
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static void printNamedStructuredOpResults(OpAsmPrinter &p,
+                                          TypeRange resultTypes) {
+  if (resultTypes.empty())
+    return;
+  p.printOptionalArrowTypeList(resultTypes);
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static void printCommonStructuredOpParts(OpAsmPrinter &p, ValueRange inputs,
+                                         ValueRange outputs) {
+  if (!inputs.empty())
+    p << " ins(" << inputs << " : " << inputs.getTypes() << ")";
+  if (!outputs.empty())
+    p << " outs(" << outputs << " : " << outputs.getTypes() << ")";
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static void printNamedStructuredOp(OpAsmPrinter &p, Operation *op,
+                                   ValueRange inputs, ValueRange outputs) {
+  p.printOptionalAttrDict(
+      op->getAttrs(),
+      /*elidedAttrs=*/{"operand_segment_sizes",
+                       // See generated code in mlir-linalg-yaml-gen.cpp
+                       "linalg.memoized_indexing_maps"});
+
+  // Printing is shared with generic ops, except for the region and
+  // attributes.
+  printCommonStructuredOpParts(p, inputs, outputs);
+
+  // Results printing.
+  printNamedStructuredOpResults(p, op->getResultTypes());
+
+  // Region is elided.
+}
+
+void FhelinalgConv2DNchwFchwOp::print(mlir::OpAsmPrinter &p) {
+  printNamedStructuredOp(p, this->getOperation(),
+                         this->getOperation()->getOperands(),
+                         this->getOperation()->getResults());
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static ParseResult
+parseCommonStructuredOpParts(OpAsmParser &parser, OperationState &result,
+                             SmallVectorImpl<Type> &inputTypes,
+                             SmallVectorImpl<Type> &outputTypes) {
+  SMLoc inputsOperandsLoc, outputsOperandsLoc;
+  SmallVector<OpAsmParser::UnresolvedOperand, 4> inputsOperands,
+      outputsOperands;
+
+  parser.parseOptionalAttrDict(result.attributes);
+
+  if (succeeded(parser.parseOptionalKeyword("ins"))) {
+    if (parser.parseLParen())
+      return failure();
+
+    inputsOperandsLoc = parser.getCurrentLocation();
+    if (parser.parseOperandList(inputsOperands) ||
+        parser.parseColonTypeList(inputTypes) || parser.parseRParen())
+      return failure();
+  }
+
+  if (succeeded(parser.parseOptionalKeyword("outs"))) {
+    outputsOperandsLoc = parser.getCurrentLocation();
+    if (parser.parseLParen() || parser.parseOperandList(outputsOperands) ||
+        parser.parseColonTypeList(outputTypes) || parser.parseRParen())
+      return failure();
+  }
+
+  if (parser.resolveOperands(inputsOperands, inputTypes, inputsOperandsLoc,
+                             result.operands) ||
+      parser.resolveOperands(outputsOperands, outputTypes, outputsOperandsLoc,
+                             result.operands))
+    return failure();
+
+  result.addAttribute("operand_segment_sizes",
+                      parser.getBuilder().getI32VectorAttr(
+                          {static_cast<int32_t>(inputsOperands.size()),
+                           static_cast<int32_t>(outputsOperands.size())}));
+  return success();
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static ParseResult
+parseNamedStructuredOpResults(OpAsmParser &parser,
+                              SmallVectorImpl<Type> &resultTypes) {
+  if (parser.parseOptionalArrowTypeList(resultTypes))
+    return failure();
+  return success();
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static void fillStructuredOpRegion(OpBuilder &opBuilder, Region &region,
+                                   TypeRange inputTypes, TypeRange outputTypes,
+                                   ArrayRef<NamedAttribute> attrs,
+                                   RegionBuilderFn regionBuilder) {
+  assert(llvm::all_of(outputTypes, [](Type t) { return t.isa<ShapedType>(); }));
+
+  // TODO: atm all operands go through getElementTypeOrSelf,
+  // reconsider when we have evidence we need to.
+  SmallVector<Type, 8> argTypes;
+  SmallVector<Location, 8> argLocs;
+  for (auto containers : {inputTypes, outputTypes}) {
+    for (auto t : containers) {
+      argTypes.push_back(getElementTypeOrSelf(t));
+
+      // TODO: Pass in a proper location here.
+      argLocs.push_back(opBuilder.getUnknownLoc());
+    }
+  }
+
+  // RAII.
+  OpBuilder::InsertionGuard guard(opBuilder);
+  Block *body =
+      opBuilder.createBlock(&region, /*insertPt=*/{}, argTypes, argLocs);
+
+  opBuilder.setInsertionPointToStart(body);
+  ImplicitLocOpBuilder b(opBuilder.getUnknownLoc(), opBuilder);
+  regionBuilder(b, *body, attrs);
+
+  // indexing_maps is an auto-generated method.
+
+  // iterator_types is an auto-generated method.
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static ParseResult parseNamedStructuredOpRegion(
+    OpAsmParser &parser, Region &region, unsigned numRegionArgs,
+    TypeRange inputTypes, TypeRange outputTypes, ArrayRef<NamedAttribute> attrs,
+    RegionBuilderFn regionBuilder) {
+  if (numRegionArgs != inputTypes.size() + outputTypes.size()) {
+    return parser.emitError(
+        parser.getCurrentLocation(),
+        llvm::formatv("[parseNamedStructuredOpRegion] ods-gen generated "
+                      "region expects {0} args, got {1}",
+                      numRegionArgs, inputTypes.size() + outputTypes.size()));
+  }
+
+  OpBuilder opBuilder(parser.getContext());
+  fillStructuredOpRegion(opBuilder, region, inputTypes, outputTypes, attrs,
+                         regionBuilder);
+  return success();
+}
+
+// Copied from LinalgOps.cpp; license is: Apache License v2.0 with
+// LLVM Exceptions
+static ParseResult parseNamedStructuredOp(OpAsmParser &parser,
+                                          OperationState &result,
+                                          unsigned numRegionArgs,
+                                          RegionBuilderFn regionBuilder) {
+  // TODO: Enable when ods-gen supports captures.
+  SmallVector<Type, 1> inputTypes, outputTypes;
+  if (parseCommonStructuredOpParts(parser, result, inputTypes, outputTypes))
+    return failure();
+
+  // TODO: consider merging results parsing into region parsing.
+  // Need to wait for declarative assembly resolution to decide.
+  SmallVector<Type, 1> outputTensorsTypes;
+  if (parseNamedStructuredOpResults(parser, outputTensorsTypes))
+    return failure();
+  result.addTypes(outputTensorsTypes);
+
+  std::unique_ptr<Region> region = std::make_unique<Region>();
+  if (parseNamedStructuredOpRegion(parser, *region, numRegionArgs, inputTypes,
+                                   outputTypes, result.attributes.getAttrs(),
+                                   regionBuilder))
+    return failure();
+  result.addRegion(std::move(region));
+
+  return success();
+}
+
+mlir::ParseResult
+FhelinalgConv2DNchwFchwOp::parse(mlir::OpAsmParser &parser,
+                                 mlir::OperationState &result) {
+  return parseNamedStructuredOp(parser, result, getNumRegionArgs(),
+                                getRegionBuilder());
 }
 
 /// Some helpers were copied from LinalgOps.cpp
@@ -1281,36 +1481,36 @@ public:
   Value applyfn__max(Value lhs, Value rhs) {
     OpBuilder builder = getBuilder();
     if (isFloatingPoint(lhs))
-      return builder.create<MaxFOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MaxFOp>(lhs.getLoc(), lhs, rhs);
     if (isInteger(lhs))
-      return builder.create<MaxSIOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MaxSIOp>(lhs.getLoc(), lhs, rhs);
     llvm_unreachable("unsupported non numeric type");
   }
 
   Value applyfn__max_unsigned(Value lhs, Value rhs) {
     OpBuilder builder = getBuilder();
     if (isFloatingPoint(lhs))
-      return builder.create<MaxFOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MaxFOp>(lhs.getLoc(), lhs, rhs);
     if (isInteger(lhs))
-      return builder.create<MaxUIOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MaxUIOp>(lhs.getLoc(), lhs, rhs);
     llvm_unreachable("unsupported non numeric type");
   }
 
   Value applyfn__min(Value lhs, Value rhs) {
     OpBuilder builder = getBuilder();
     if (isFloatingPoint(lhs))
-      return builder.create<MinFOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MinFOp>(lhs.getLoc(), lhs, rhs);
     if (isInteger(lhs))
-      return builder.create<MinSIOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MinSIOp>(lhs.getLoc(), lhs, rhs);
     llvm_unreachable("unsupported non numeric type");
   }
 
   Value applyfn__min_unsigned(Value lhs, Value rhs) {
     OpBuilder builder = getBuilder();
     if (isFloatingPoint(lhs))
-      return builder.create<MinFOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MinFOp>(lhs.getLoc(), lhs, rhs);
     if (isInteger(lhs))
-      return builder.create<MinUIOp>(lhs.getLoc(), lhs, rhs);
+      return builder.create<arith::MinUIOp>(lhs.getLoc(), lhs, rhs);
     llvm_unreachable("unsupported non numeric type");
   }
 
@@ -1387,13 +1587,17 @@ fillStructuredOpRegion(OpBuilder &opBuilder, Region &region,
   // TODO: atm all operands go through getElementTypeOrSelf,
   // reconsider when we have evidence we need to.
   SmallVector<Type, 8> argTypes;
+  SmallVector<Location, 8> argLocs;
   for (auto containers : {inputTypes, outputTypes})
-    for (auto t : containers)
+    for (auto t : containers) {
       argTypes.push_back(getElementTypeOrSelf(t));
+      argLocs.push_back(opBuilder.getUnknownLoc());
+    }
 
   // RAII.
   OpBuilder::InsertionGuard guard(opBuilder);
-  Block *body = opBuilder.createBlock(&region, /*insertPt=*/{}, argTypes);
+  Block *body =
+      opBuilder.createBlock(&region, /*insertPt=*/{}, argTypes, argLocs);
   unsigned actual = body->getNumArguments();
   unsigned expected = NamedStructuredOpType::getNumRegionArgs();
   if (expected != actual) {
@@ -1404,7 +1608,7 @@ fillStructuredOpRegion(OpBuilder &opBuilder, Region &region,
 
   opBuilder.setInsertionPointToStart(body);
   ImplicitLocOpBuilder b(opBuilder.getUnknownLoc(), opBuilder);
-  NamedStructuredOpType::regionBuilder(b, *body);
+  NamedStructuredOpType::regionBuilder(b, *body, {});
 
   // indexing_maps is an auto-generated method.
 
@@ -1445,139 +1649,11 @@ void createAndFillStructuredOpRegion(OpBuilder &opBuilder,
       });
 }
 
-static void printNamedStructuredOpResults(OpAsmPrinter &p,
-                                          TypeRange resultTypes) {
-  if (resultTypes.empty())
-    return;
-  p.printOptionalArrowTypeList(resultTypes);
-}
-
-template <typename NamedStructuredOpType>
-static void printCommonStructuredOpParts(OpAsmPrinter &p,
-                                         NamedStructuredOpType op) {
-  if (!op.inputs().empty())
-    p << " ins(" << op.inputs() << " : " << op.inputs().getTypes() << ")";
-  if (!op.outputs().empty())
-    p << " outs(" << op.outputs() << " : " << op.outputs().getTypes() << ")";
-}
-
-template <typename NamedStructuredOpType>
-static void printNamedStructuredOp(OpAsmPrinter &p, NamedStructuredOpType op) {
-  p.printOptionalAttrDict(
-      op->getAttrs(),
-      /*elidedAttrs=*/{"operand_segment_sizes",
-                       // See generated code in mlir-linalg-yaml-gen.cpp
-                       "linalg.memoized_indexing_maps"});
-
-  // Printing is shared with generic ops, except for the region and
-  // attributes.
-  printCommonStructuredOpParts(p, op);
-
-  // Results printing.
-  printNamedStructuredOpResults(p, op.result_tensors().getTypes());
-
-  // Region is elided.
-}
-
-/// Common parsing used for both named structured ops created by ods-gen and by
-/// manually defined C++ ops. Does not handle regions.
-static ParseResult
-parseCommonStructuredOpParts(OpAsmParser &parser, OperationState &result,
-                             SmallVectorImpl<Type> &inputTypes,
-                             SmallVectorImpl<Type> &outputTypes) {
-  llvm::SMLoc inputsOperandsLoc, outputsOperandsLoc;
-  SmallVector<OpAsmParser::OperandType, 4> inputsOperands, outputsOperands;
-
-  parser.parseOptionalAttrDict(result.attributes);
-
-  if (succeeded(parser.parseOptionalKeyword("ins"))) {
-    if (parser.parseLParen())
-      return failure();
-
-    inputsOperandsLoc = parser.getCurrentLocation();
-    if (parser.parseOperandList(inputsOperands) ||
-        parser.parseColonTypeList(inputTypes) || parser.parseRParen())
-      return failure();
-  }
-
-  if (succeeded(parser.parseOptionalKeyword("outs"))) {
-    outputsOperandsLoc = parser.getCurrentLocation();
-    if (parser.parseLParen() || parser.parseOperandList(outputsOperands) ||
-        parser.parseColonTypeList(outputTypes) || parser.parseRParen())
-      return failure();
-  }
-
-  if (parser.resolveOperands(inputsOperands, inputTypes, inputsOperandsLoc,
-                             result.operands) ||
-      parser.resolveOperands(outputsOperands, outputTypes, outputsOperandsLoc,
-                             result.operands))
-    return failure();
-
-  result.addAttribute("operand_segment_sizes",
-                      parser.getBuilder().getI32VectorAttr(
-                          {static_cast<int32_t>(inputsOperands.size()),
-                           static_cast<int32_t>(outputsOperands.size())}));
-  return success();
-}
-
-template <typename NamedStructuredOpType>
-static ParseResult
-parseNamedStructuredOpRegion(OpAsmParser &parser, Region &region,
-                             TypeRange inputTypes, TypeRange outputTypes) {
-  ParseResult res = success();
-  OpBuilder opBuilder(parser.getContext());
-  // Resolve `captures` into `capturedValues` at parse time so we can build the
-  // region with captures.
-  SmallVector<Value> capturedValues;
-  fillStructuredOpRegion<NamedStructuredOpType>(
-      opBuilder, region, inputTypes, outputTypes,
-      [&](unsigned expected, unsigned actual) {
-        res = parser.emitError(
-            parser.getCurrentLocation(),
-            llvm::formatv("[parseNamedStructuredOpRegion] ods-gen generated "
-                          "region expects {0} args, got {1}",
-                          expected, actual));
-        region.front().dump();
-      });
-  return res;
-}
-
-static ParseResult
-parseNamedStructuredOpResults(OpAsmParser &parser,
-                              SmallVectorImpl<Type> &resultTypes) {
-  if (parser.parseOptionalArrowTypeList(resultTypes))
-    return failure();
-  return success();
-}
-
-template <typename NamedStructuredOpType>
-static ParseResult parseNamedStructuredOp(OpAsmParser &parser,
-                                          OperationState &result) {
-  // TODO: Enable when ods-gen supports captures.
-  SmallVector<Type, 1> inputTypes, outputTypes;
-  if (parseCommonStructuredOpParts(parser, result, inputTypes, outputTypes))
-    return failure();
-
-  // TODO: consider merging results parsing into region parsing.
-  // Need to wait for declarative assembly resolution to decide.
-  SmallVector<Type, 1> outputTensorsTypes;
-  if (parseNamedStructuredOpResults(parser, outputTensorsTypes))
-    return failure();
-  result.addTypes(outputTensorsTypes);
-
-  std::unique_ptr<Region> region = std::make_unique<Region>();
-  if (parseNamedStructuredOpRegion<NamedStructuredOpType>(
-          parser, *region, inputTypes, outputTypes))
-    return failure();
-  result.addRegion(std::move(region));
-
-  return success();
-}
-
 /// END OF COPY FROM LinalgOps.cpp
 
-void FhelinalgConv2DNchwFchwOp::regionBuilder(ImplicitLocOpBuilder &b,
-                                              Block &block) {
+void FhelinalgConv2DNchwFchwOp::regionBuilder(
+    ImplicitLocOpBuilder &b, Block &block,
+    llvm::ArrayRef<mlir::NamedAttribute>) {
   assert(3 > 0 && block.getNumArguments() == 3 &&
          "FhelinalgConv2DNchwFchwOp regionBuilder expects 3 (>=0) args");
   RegionBuilderHelper helper(block.getArgument(0).getContext(), block);
@@ -1606,26 +1682,26 @@ void FhelinalgConv2DNchwFchwOp::getEffects(
 }
 
 /// Verify the transpose shapes
-mlir::LogicalResult verifyTranspose(TransposeOp &transposeOp) {
-  mlir::Type tensorTy = ((mlir::Type)transposeOp.tensor().getType());
+mlir::LogicalResult TransposeOp::verify() {
+  mlir::Type tensorTy = ((mlir::Type)this->tensor().getType());
   if (!tensorTy.isa<RankedTensorType>()) {
-    transposeOp->emitOpError() << "should have operand as tensor";
+    this->emitOpError() << "should have operand as tensor";
     return mlir::failure();
   }
-  mlir::Type resultTy = ((mlir::Type)transposeOp.getResult().getType());
+  mlir::Type resultTy = ((mlir::Type)this->getResult().getType());
   if (!resultTy.isa<RankedTensorType>()) {
-    transposeOp->emitOpError() << "should have result as tensor";
+    this->emitOpError() << "should have result as tensor";
     return mlir::failure();
   }
   auto tensorShapedTy = tensorTy.dyn_cast_or_null<mlir::ShapedType>();
   auto resultShapedTy = resultTy.dyn_cast_or_null<mlir::ShapedType>();
   if (tensorShapedTy.getShape().size() != resultShapedTy.getShape().size()) {
-    transposeOp.emitOpError()
+    this->emitOpError()
         << "input and output tensors should have the same number of dimensions";
     return mlir::failure();
   }
   if (tensorShapedTy.getElementType() != resultShapedTy.getElementType()) {
-    transposeOp.emitOpError()
+    this->emitOpError()
         << "input and output tensors should have the same element type";
     return mlir::failure();
   }
@@ -1633,7 +1709,7 @@ mlir::LogicalResult verifyTranspose(TransposeOp &transposeOp) {
   for (size_t i = 0; i < n_dims; i++) {
     if (tensorShapedTy.getDimSize(i) !=
         resultShapedTy.getDimSize(n_dims - (i + 1))) {
-      transposeOp.emitOpError()
+      this->emitOpError()
           << "output tensor should have inverted dimensions of input";
       return mlir::failure();
     }
@@ -1647,10 +1723,10 @@ OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
   auto toAdd = operands[1].dyn_cast_or_null<mlir::DenseIntElementsAttr>();
   if (toAdd == nullptr)
     return nullptr;
-  for (int64_t i = 0; i < toAdd.size(); i++) {
-    llvm::APInt cst = toAdd.getFlatValue<llvm::APInt>(i);
-    if (cst != 0)
+  for (auto it = toAdd.begin(); it != toAdd.end(); it++) {
+    if (*it != 0) {
       return nullptr;
+    }
   }
   return getOperand(0);
 }
@@ -1661,10 +1737,10 @@ OpFoldResult MulEintIntOp::fold(ArrayRef<Attribute> operands) {
   auto toMul = operands[1].dyn_cast_or_null<mlir::DenseIntElementsAttr>();
   if (toMul == nullptr)
     return nullptr;
-  for (int64_t i = 0; i < toMul.size(); i++) {
-    llvm::APInt cst = toMul.getFlatValue<llvm::APInt>(i);
-    if (cst != 1)
+  for (auto it = toMul.begin(); it != toMul.end(); it++) {
+    if (*it != 1) {
       return nullptr;
+    }
   }
   return getOperand(0);
 }

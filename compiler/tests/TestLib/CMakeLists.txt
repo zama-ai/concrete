@@ -1,6 +1,10 @@
-enable_testing()
+add_custom_target(ConcreteCompilerLibTests)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+function(add_concretecompiler_lib_test test_name)
+  add_unittest(ConcreteCompilerLibTests ${test_name} ${ARGN})
+  target_link_libraries(${test_name} PRIVATE ConcretelangSupport)
+  set_source_files_properties(${ARGN} PROPERTIES COMPILE_FLAGS "-fno-rtti")
+endfunction()
 
 if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   link_libraries(
@@ -9,22 +13,7 @@ if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   )
 endif()
 
-add_executable(
+add_concretecompiler_lib_test(
   testlib_unit_test
   testlib_unit_test.cpp
 )
-
-set_source_files_properties(
-  testlib_unit_test.cpp
-
-  PROPERTIES COMPILE_FLAGS "-fno-rtti"
-)
-
-target_link_libraries(
-  testlib_unit_test
-  gtest_main
-  ConcretelangSupport
-)
-
-include(GoogleTest)
-gtest_discover_tests(testlib_unit_test)

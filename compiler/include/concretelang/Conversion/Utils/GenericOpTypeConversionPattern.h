@@ -6,12 +6,45 @@
 #ifndef CONCRETELANG_CONVERSION_GENERICOPTYPECONVERSIONPATTERN_H_
 #define CONCRETELANG_CONVERSION_GENERICOPTYPECONVERSIONPATTERN_H_
 
-#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/IR/PatternMatch.h"
+#include <mlir/Support/LLVM.h>
 #include <mlir/Transforms/DialectConversion.h>
 
 namespace mlir {
 namespace concretelang {
+
+// Converts the type of all operands and the return type of `op` by
+// invoking `convertType`
+static inline void convertOperandAndResultTypes(
+    mlir::PatternRewriter &rewriter, mlir::Operation *op,
+    llvm::function_ref<mlir::Type(mlir::MLIRContext *, mlir::Type)>
+        convertType) {
+  rewriter.startRootUpdate(op);
+  // Rewrite arguments
+  {
+    for (unsigned i = 0; i < op->getNumOperands(); i++) {
+      auto operand = op->getOperand(i);
+      mlir::Type type = convertType(rewriter.getContext(), operand.getType());
+      if (type != mlir::Type()) {
+        operand.setType(type);
+      }
+    }
+  }
+  // Rewrite results
+  {
+    for (unsigned i = 0; i < op->getNumResults(); i++) {
+      auto result = op->getResult(i);
+      mlir::Type type = convertType(rewriter.getContext(), result.getType());
+      if (type != mlir::Type()) {
+        result.setType(type);
+      }
+    }
+  }
+
+  rewriter.finalizeRootUpdate(op);
+}
+
 template <typename Op>
 struct GenericTypeConverterPattern : public mlir::OpRewritePattern<Op> {
   GenericTypeConverterPattern(mlir::MLIRContext *context,
@@ -21,29 +54,11 @@ struct GenericTypeConverterPattern : public mlir::OpRewritePattern<Op> {
 
   mlir::LogicalResult
   matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
+    convertOperandAndResultTypes(rewriter, op,
+                                 [&](mlir::MLIRContext *, mlir::Type t) {
+                                   return converter.convertType(t);
+                                 });
 
-    rewriter.startRootUpdate(op);
-    // Rewrite arguments
-    {
-      for (unsigned i = 0; i < op->getNumOperands(); i++) {
-        auto operand = op->getOperand(i);
-        mlir::Type type = converter.convertType(operand.getType());
-        if (type != mlir::Type()) {
-          operand.setType(type);
-        }
-      }
-    }
-    // Rewrite results
-    {
-      for (unsigned i = 0; i < op->getNumResults(); i++) {
-        auto result = op->getResult(i);
-        mlir::Type type = converter.convertType(result.getType());
-        if (type != mlir::Type()) {
-          result.setType(type);
-        }
-      }
-    }
-    rewriter.finalizeRootUpdate(op);
     return mlir::success();
   }
 
@@ -68,8 +83,12 @@ struct GenericTypeAndOpConverterPattern : public mlir::OpRewritePattern<OldOp> {
         resultTypes[i] = converter.convertType(result.getType());
       }
     }
-    rewriter.replaceOpWithNewOp<NewOp>(oldOp, resultTypes, oldOp->getOperands(),
-                                       oldOp->getAttrs());
+    auto newOp = rewriter.replaceOpWithNewOp<NewOp>(
+        oldOp, resultTypes, oldOp->getOperands(), oldOp->getAttrs());
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, newOp, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
     return mlir::success();
   }
 

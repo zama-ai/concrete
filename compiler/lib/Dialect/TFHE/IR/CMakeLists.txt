@@ -1,6 +1,7 @@
 add_mlir_dialect_library(TFHEDialect
   TFHEDialect.cpp
   TFHEOps.cpp
+  TFHETypes.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/TFHE

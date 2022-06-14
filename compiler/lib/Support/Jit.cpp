@@ -46,14 +46,19 @@ JITLambda::create(llvm::StringRef name, mlir::ModuleOp &module,
   std::vector<llvm::StringRef> sharedLibPaths;
   if (runtimeLibPath.hasValue())
     sharedLibPaths.push_back(runtimeLibPath.getValue());
-  auto maybeEngine = mlir::ExecutionEngine::create(
-      module, /*llvmModuleBuilder=*/nullptr, optPipeline,
-      /*jitCodeGenOptLevel=*/llvm::None, sharedLibPaths);
+
+  mlir::ExecutionEngineOptions execOptions;
+  execOptions.transformer = optPipeline;
+  execOptions.sharedLibPaths = sharedLibPaths;
+  execOptions.jitCodeGenOptLevel = llvm::None;
+  execOptions.llvmModuleBuilder = nullptr;
+
+  auto maybeEngine = mlir::ExecutionEngine::create(module, execOptions);
   if (!maybeEngine) {
     return StreamStringError("failed to construct the MLIR ExecutionEngine");
   }
   auto &engine = maybeEngine.get();
-  auto lambda = std::make_unique<JITLambda>((*funcOp).getType(), name);
+  auto lambda = std::make_unique<JITLambda>((*funcOp).getFunctionType(), name);
   lambda->engine = std::move(engine);
 
   return std::move(lambda);

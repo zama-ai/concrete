@@ -6,13 +6,15 @@
 #ifndef CONCRETELANG_CONVERSION_FHETENSOROPSTOLINALG_PASS_H_
 #define CONCRETELANG_CONVERSION_FHETENSOROPSTOLINALG_PASS_H_
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Pass/Pass.h"
 
 namespace mlir {
 namespace concretelang {
 /// Create a pass to convert `FHE` tensor operators to linal.generic
 /// operators.
-std::unique_ptr<mlir::FunctionPass> createConvertFHETensorOpsToLinalg();
+std::unique_ptr<mlir::OperationPass<mlir::func::FuncOp>>
+createConvertFHETensorOpsToLinalg();
 } // namespace concretelang
 } // namespace mlir
 

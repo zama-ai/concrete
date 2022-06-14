@@ -6,7 +6,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 # Set the python path. Options: [cp38-cp38, cp39-cp39, cp310-cp310]
 ARG python_tag=cp38-cp38
 # Install python deps
-RUN /opt/python/${python_tag}/bin/pip install numpy pybind11==2.6.2 PyYAML
+RUN /opt/python/${python_tag}/bin/pip install numpy pybind11==2.8 PyYAML
 # Setup gcc7
 COPY --from=ghcr.io/zama-ai/gcc7:latest /gcc7 /gcc7
 ENV PATH=/gcc7/bin:$PATH

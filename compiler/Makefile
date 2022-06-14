@@ -11,7 +11,7 @@ KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
 KEYSETCACHENAME ?= KeySetCacheV1
 
-export PATH := $(BUILD_DIR)/bin:$(PATH)
+export PATH := $(abspath $(BUILD_DIR))/bin:$(PATH)
 
 ifeq ($(shell which ccache),)
 	CCACHE=OFF
@@ -45,6 +45,7 @@ else
 endif
 
 $(BUILD_DIR)/configured.stamp:
+	mkdir -p $(BUILD_DIR)
 	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
 	$(CMAKE_CCACHE_OPTIONS) \
 	$(CC_COMPILER_OPTION) \
@@ -133,13 +134,13 @@ build-clientlib-unit-test:
 	cmake --build $(BUILD_DIR) --target clientlib_unit_test
 
 testlib-unit-test: build-testlib-unit-test
-	$(BUILD_DIR)/bin/testlib_unit_test
+	$(BUILD_DIR)/tools/concretelang/tests/TestLib/testlib_unit_test
 
 build-testlib-unit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target testlib_unit_test
 
 support-unit-test: build-support-unit-test
-	$(BUILD_DIR)/bin/support_unit_test
+	$(BUILD_DIR)/tools/concretelang/tests/Support/support_unit_test
 
 build-support-unit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target support_unit_test
@@ -176,28 +177,28 @@ build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tenso
 build-tests: build-end-to-end-jit build-support-unit-test build-testlib-unit-test
 
 test-end-to-end-jit-test: build-end-to-end-jit-test
-	$(BUILD_DIR)/bin/end_to_end_jit_test
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_test
 
 test-end-to-end-jit-clear-tensor: build-end-to-end-jit-clear-tensor
-	$(BUILD_DIR)/bin/end_to_end_jit_clear_tensor
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_clear_tensor
 
 test-end-to-end-jit-fhe: build-end-to-end-jit-fhe
-	$(BUILD_DIR)/bin/end_to_end_jit_fhe
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_fhe
 
 test-end-to-end-jit-encrypted-tensor: build-end-to-end-jit-encrypted-tensor
-	$(BUILD_DIR)/bin/end_to_end_jit_encrypted_tensor
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_encrypted_tensor
 
 test-end-to-end-jit-fhelinalg: build-end-to-end-jit-fhelinalg
-	$(BUILD_DIR)/bin/end_to_end_jit_fhelinalg
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_fhelinalg
 
 test-end-to-end-jit-lambda: build-initialized build-end-to-end-jit-lambda
-	$(BUILD_DIR)/bin/end_to_end_jit_lambda
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_lambda
 
 test-end-to-end-jit-dfr: build-end-to-end-jit-dfr
-	$(BUILD_DIR)/bin/end_to_end_jit_dfr
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_dfr
 
 test-end-to-end-jit-auto-parallelization: build-end-to-end-jit-auto-parallelization
-	$(BUILD_DIR)/bin/end_to_end_jit_auto_parallelization
+	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_auto_parallelization
 
 test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-fhe test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-fhelinalg test-end-to-end-jit-lambda
 
@@ -221,9 +222,10 @@ stress-tests-fast-cache: concretecompiler
 
 all-deps: file-check not
 
-file-check:
+file-check: build-initialized
 	cmake --build $(BUILD_DIR) --target FileCheck
-not:
+
+not: build-initialized
 	cmake --build $(BUILD_DIR) --target not
 
 # Python packages

@@ -3,7 +3,7 @@
 
 include "mlir/Pass/PassBase.td"
 
-def BuildDataflowTaskGraph : Pass<"BuildDataflowTaskGraph", "mlir::ModuleOp"> {
+def BuildDataflowTaskGraph : Pass<"BuildDataflowTaskGraph", "mlir::func::FuncOp"> {
   let summary =
       "Identify profitable dataflow tasks and build DataflowTaskGraph.";
 

@@ -6,15 +6,16 @@
 #ifndef CONCRETELANG_TRANSFORMS_PASSES_H
 #define CONCRETELANG_TRANSFORMS_PASSES_H
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 
 #include "concretelang/Conversion/BConcreteToBConcreteCAPI/Pass.h"
 #include "concretelang/Conversion/ConcreteToBConcrete/Pass.h"
 #include "concretelang/Conversion/FHETensorOpsToLinalg/Pass.h"
 #include "concretelang/Conversion/FHEToTFHE/Pass.h"
+#include "concretelang/Conversion/LinalgExtras/Passes.h"
 #include "concretelang/Conversion/MLIRLowerableDialectsToLLVM/Pass.h"
 #include "concretelang/Conversion/TFHEGlobalParametrization/Pass.h"
 #include "concretelang/Conversion/TFHEToConcrete/Pass.h"

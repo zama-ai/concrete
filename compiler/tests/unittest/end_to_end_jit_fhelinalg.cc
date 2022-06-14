@@ -2279,14 +2279,14 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_dilation2) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// linalg.tensor_collapse_shape ///////////////////////////////////////////////
+// tensor.collapse_shape ///////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_Linalg, tensor_collapse_shape) {
 
   checkedJit(lambda, R"XXX(
 func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
-  %0 = linalg.tensor_collapse_shape %a [[0],[1,2]] : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
+  %0 = tensor.collapse_shape %a [[0],[1,2]] : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
   return %0 : tensor<2x8x!FHE.eint<6>>
 }
 )XXX");
@@ -2329,14 +2329,14 @@ func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// linalg.tensor_expand_shape ///////////////////////////////////////////////
+// tensor.expand_shape ///////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(End2EndJit_Linalg, tensor_expand_shape) {
 
   checkedJit(lambda, R"XXX(
 func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
-  %0 = linalg.tensor_expand_shape %a [[0],[1,2]] : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
+  %0 = tensor.expand_shape %a [[0],[1,2]] : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
   return %0 : tensor<2x2x4x!FHE.eint<6>>
 }
 )XXX");

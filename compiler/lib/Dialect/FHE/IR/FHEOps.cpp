@@ -14,7 +14,7 @@ namespace concretelang {
 namespace FHE {
 
 bool verifyEncryptedIntegerInputAndResultConsistency(
-    ::mlir::OpState &op, EncryptedIntegerType &input,
+    ::mlir::Operation &op, EncryptedIntegerType &input,
     EncryptedIntegerType &result) {
   if (input.getWidth() != result.getWidth()) {
     op.emitOpError(
@@ -24,7 +24,7 @@ bool verifyEncryptedIntegerInputAndResultConsistency(
   return true;
 }
 
-bool verifyEncryptedIntegerAndIntegerInputsConsistency(::mlir::OpState &op,
+bool verifyEncryptedIntegerAndIntegerInputsConsistency(::mlir::Operation &op,
                                                        EncryptedIntegerType &a,
                                                        IntegerType &b) {
   if (a.getWidth() + 1 != b.getWidth()) {
@@ -35,7 +35,7 @@ bool verifyEncryptedIntegerAndIntegerInputsConsistency(::mlir::OpState &op,
   return true;
 }
 
-bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
+bool verifyEncryptedIntegerInputsConsistency(::mlir::Operation &op,
                                              EncryptedIntegerType &a,
                                              EncryptedIntegerType &b) {
   if (a.getWidth() != b.getWidth()) {
@@ -45,70 +45,78 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
   return true;
 }
 
-::mlir::LogicalResult verifyAddEintIntOp(AddEintIntOp &op) {
-  auto a = op.a().getType().cast<EncryptedIntegerType>();
-  auto b = op.b().getType().cast<IntegerType>();
-  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
-  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
+::mlir::LogicalResult AddEintIntOp::verify() {
+  auto a = this->a().getType().cast<EncryptedIntegerType>();
+  auto b = this->b().getType().cast<IntegerType>();
+  auto out = this->getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
+                                                       out)) {
     return ::mlir::failure();
   }
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(op, a, b)) {
-    return ::mlir::failure();
-  }
-  return ::mlir::success();
-}
-
-::mlir::LogicalResult verifyAddEintOp(AddEintOp &op) {
-  auto a = op.a().getType().cast<EncryptedIntegerType>();
-  auto b = op.b().getType().cast<EncryptedIntegerType>();
-  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
-  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
-    return ::mlir::failure();
-  }
-  if (!verifyEncryptedIntegerInputsConsistency(op, a, b)) {
+  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
+                                                         a, b)) {
     return ::mlir::failure();
   }
   return ::mlir::success();
 }
 
-::mlir::LogicalResult verifySubIntEintOp(SubIntEintOp &op) {
-  auto a = op.a().getType().cast<IntegerType>();
-  auto b = op.b().getType().cast<EncryptedIntegerType>();
-  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
-  if (!verifyEncryptedIntegerInputAndResultConsistency(op, b, out)) {
+::mlir::LogicalResult AddEintOp::verify() {
+  auto a = this->a().getType().cast<EncryptedIntegerType>();
+  auto b = this->b().getType().cast<EncryptedIntegerType>();
+  auto out = this->getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
+                                                       out)) {
     return ::mlir::failure();
   }
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(op, b, a)) {
-    return ::mlir::failure();
-  }
-  return ::mlir::success();
-}
-
-::mlir::LogicalResult verifyNegEintOp(NegEintOp &op) {
-  auto a = op.a().getType().cast<EncryptedIntegerType>();
-  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
-  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
+  if (!verifyEncryptedIntegerInputsConsistency(*this->getOperation(), a, b)) {
     return ::mlir::failure();
   }
   return ::mlir::success();
 }
 
-::mlir::LogicalResult verifyMulEintIntOp(MulEintIntOp &op) {
-  auto a = op.a().getType().cast<EncryptedIntegerType>();
-  auto b = op.b().getType().cast<IntegerType>();
-  auto out = op.getResult().getType().cast<EncryptedIntegerType>();
-  if (!verifyEncryptedIntegerInputAndResultConsistency(op, a, out)) {
+::mlir::LogicalResult SubIntEintOp::verify() {
+  auto a = this->a().getType().cast<IntegerType>();
+  auto b = this->b().getType().cast<EncryptedIntegerType>();
+  auto out = this->getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), b,
+                                                       out)) {
     return ::mlir::failure();
   }
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(op, a, b)) {
+  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
+                                                         b, a)) {
     return ::mlir::failure();
   }
   return ::mlir::success();
 }
 
-::mlir::LogicalResult verifyApplyLookupTable(ApplyLookupTableEintOp &op) {
-  auto ct = op.a().getType().cast<EncryptedIntegerType>();
-  auto lut = op.lut().getType().cast<TensorType>();
+::mlir::LogicalResult NegEintOp::verify() {
+  auto a = this->a().getType().cast<EncryptedIntegerType>();
+  auto out = this->getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
+                                                       out)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+::mlir::LogicalResult MulEintIntOp::verify() {
+  auto a = this->a().getType().cast<EncryptedIntegerType>();
+  auto b = this->b().getType().cast<IntegerType>();
+  auto out = this->getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
+                                                       out)) {
+    return ::mlir::failure();
+  }
+  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
+                                                         a, b)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+::mlir::LogicalResult ApplyLookupTableEintOp::verify() {
+  auto ct = this->a().getType().cast<EncryptedIntegerType>();
+  auto lut = this->lut().getType().cast<TensorType>();
 
   // Check the shape of lut argument
   auto width = ct.getWidth();
@@ -116,11 +124,11 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::OpState &op,
 
   mlir::SmallVector<int64_t, 1> expectedShape{expectedSize};
   if (!lut.hasStaticShape(expectedShape)) {
-    emitErrorBadLutSize(op, "lut", "ct", expectedSize, width);
+    emitErrorBadLutSize(*this, "lut", "ct", expectedSize, width);
     return mlir::failure();
   }
   if (!lut.getElementType().isInteger(64)) {
-    op.emitOpError() << "should have the i64 constant";
+    this->emitOpError() << "should have the i64 constant";
     return mlir::failure();
   }
   return mlir::success();

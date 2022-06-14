@@ -4,22 +4,25 @@
 // for license information.
 
 #include <iostream>
+#include <mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h>
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
+#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/OpenMPToLLVM/ConvertOpenMPToLLVM.h"
-#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
-#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/OpenMP/OpenMPDialect.h"
 #include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/Sequence.h"
@@ -88,7 +91,7 @@ struct Memref1DCopyOpPattern
         copyOp.getLoc(), opType, copyOp.source());
     auto targetOp = rewriter.create<mlir::memref::CastOp>(
         copyOp.getLoc(), opType, copyOp.target());
-    rewriter.replaceOpWithNewOp<mlir::CallOp>(
+    rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         copyOp, "memref_copy_one_rank", mlir::TypeRange{},
         mlir::ValueRange{sourceOp, targetOp});
     return mlir::success();
@@ -122,10 +125,14 @@ void MLIRLowerableDialectsToLLVMPass::runOnOperation() {
   patterns.add<Memref1DCopyOpPattern>(&getContext(), 100);
   mlir::concretelang::populateRTToLLVMConversionPatterns(typeConverter,
                                                          patterns);
-  mlir::populateStdToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::populateFuncToLLVMConversionPatterns(typeConverter, patterns);
   mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
                                                           patterns);
   mlir::populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
+  mlir::populateSCFToControlFlowConversionPatterns(patterns);
+  mlir::cf::populateControlFlowToLLVMConversionPatterns(typeConverter,
+                                                        patterns);
+  target.addLegalOp<mlir::scf::YieldOp>();
   mlir::populateOpenMPToLLVMConversionPatterns(typeConverter, patterns);
 
   target.addDynamicallyLegalOp<mlir::omp::MasterOp, mlir::omp::ParallelOp,

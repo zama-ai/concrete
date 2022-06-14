@@ -6,6 +6,7 @@
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/Support/Error.h>
 
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 #include "concretelang/ClientLib/ClientParameters.h"
@@ -131,9 +132,10 @@ createClientParametersForV0(V0FHEContext fheContext,
   };
   c.functionName = (std::string)functionName;
   // Find the input function
-  auto rangeOps = module.getOps<mlir::FuncOp>();
-  auto funcOp = llvm::find_if(
-      rangeOps, [&](mlir::FuncOp op) { return op.getName() == functionName; });
+  auto rangeOps = module.getOps<mlir::func::FuncOp>();
+  auto funcOp = llvm::find_if(rangeOps, [&](mlir::func::FuncOp op) {
+    return op.getName() == functionName;
+  });
   if (funcOp == rangeOps.end()) {
     return llvm::make_error<llvm::StringError>(
         "cannot find the function for generate client parameters",
@@ -144,7 +146,7 @@ createClientParametersForV0(V0FHEContext fheContext,
   auto precision = fheContext.constraint.p;
 
   // Create input and output circuit gate parameters
-  auto funcType = (*funcOp).getType();
+  auto funcType = (*funcOp).getFunctionType();
 
   auto inputs = funcType.getInputs();
 

@@ -25,23 +25,7 @@ def EncryptedIntegerType : FHE_Type<"EncryptedInteger",
 
   let parameters = (ins "unsigned":$width);
 
-  // We define the printer inline.
-  let printer = [{
-    $_printer << "eint<" << getImpl()->width << ">";
-  }];
-
-  // The parser is defined here also.
-  let parser = [{
-    if ($_parser.parseLess())
-      return Type();
-    int width;
-    if ($_parser.parseInteger(width))
-      return Type();
-    if ($_parser.parseGreater())
-      return Type();
-    Location loc = $_parser.getEncodedSourceLoc($_parser.getNameLoc());
-    return getChecked(loc, loc.getContext(), width);
-  }];
+  let hasCustomAssemblyFormat = 1;
 
   let genVerifyDecl = true;
 }

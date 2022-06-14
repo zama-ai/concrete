@@ -7,7 +7,7 @@
 #define CONCRETELANG_DIALECT_TFHE_IR_TFHETYPES_H
 
 #include "llvm/ADT/TypeSwitch.h"
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/DialectImplementation.h>

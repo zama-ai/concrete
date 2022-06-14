@@ -17,8 +17,8 @@
 #include <llvm/ADT/SmallString.h>
 #include <mlir/Analysis/DataFlowAnalysis.h>
 #include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
-#include <mlir/Dialect/Linalg/IR/LinalgOps.h>
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BuiltinAttributes.h>
@@ -41,7 +41,7 @@ static bool isEncryptedFunctionParameter(mlir::Value value) {
   mlir::Block *block = value.cast<mlir::BlockArgument>().getOwner();
 
   if (!block || !block->getParentOp() ||
-      !llvm::isa<mlir::FuncOp>(block->getParentOp())) {
+      !llvm::isa<mlir::func::FuncOp>(block->getParentOp())) {
     return false;
   }
 
@@ -285,10 +285,12 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy,
 
 // Returns the squared 2-norm of the maximum value of the dense values.
 static llvm::APInt maxIntNorm2Sq(mlir::DenseIntElementsAttr denseVals) {
+  auto denseValsAP = denseVals.getValues<llvm::APInt>();
+
   // For a constant operand use actual constant to calculate 2-norm
-  llvm::APInt maxCst = denseVals.getFlatValue<llvm::APInt>(0);
+  llvm::APInt maxCst = denseValsAP[0];
   for (int64_t i = 0; i < denseVals.getNumElements(); i++) {
-    llvm::APInt iCst = denseVals.getFlatValue<llvm::APInt>(i);
+    llvm::APInt iCst = denseValsAP[i];
     if (maxCst.ult(iCst)) {
       maxCst = iCst;
     }
@@ -639,7 +641,8 @@ static llvm::APInt computeVectorNorm(
   for (int64_t i = 0; i < shape[axis]; i++) {
     elementSelector[axis] = i;
 
-    llvm::APInt weight = denseValues.getValue<llvm::APInt>(elementSelector);
+    auto denseValuesAP = denseValues.getValues<llvm::APInt>();
+    llvm::APInt weight = denseValuesAP[elementSelector];
     llvm::APInt weightNorm = APIntWidthExtendSqForConstant(weight);
 
     llvm::APInt multiplicationNorm =
@@ -737,9 +740,9 @@ static llvm::APInt getSqMANP(
   int64_t N = rhsDims <= 2 ? rhsShape[0] : rhsShape[rhsDims - 2];
 
   if (denseVals) {
+    auto denseValsAP = denseVals.getValues<llvm::APInt>();
 
     if (lhsDims == 2 && rhsDims == 2) {
-
       // MxN @ NxP -> MxP
 
       int64_t M = lhsShape[0];
@@ -748,8 +751,7 @@ static llvm::APInt getSqMANP(
         for (int64_t p = 0; p < P; p++) {
           llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
           for (int64_t n = 0; n < N; n++) {
-            llvm::APInt cst =
-                denseVals.getValue<llvm::APInt>({(uint64_t)n, (uint64_t)p});
+            llvm::APInt cst = denseValsAP[{(uint64_t)n, (uint64_t)p}];
             llvm::APInt rhsNorm = APIntWidthExtendSqForConstant(cst);
             llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
             tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
@@ -765,7 +767,7 @@ static llvm::APInt getSqMANP(
       // KxLxMxN @ N -> KxLxM
 
       for (int64_t i = 0; i < N; i++) {
-        llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(i);
+        llvm::APInt cst = denseValsAP[i];
         llvm::APInt rhsNorm = APIntWidthExtendSqForConstant(cst);
         llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
         accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
@@ -837,6 +839,7 @@ static llvm::APInt getSqMANP(
   int64_t N = rhsDims <= 2 ? rhsShape[0] : rhsShape[rhsDims - 2];
 
   if (denseVals) {
+    auto denseValsAP = denseVals.getValues<llvm::APInt>();
 
     if (lhsDims == 2 && rhsDims == 2) {
 
@@ -848,8 +851,7 @@ static llvm::APInt getSqMANP(
         for (int64_t p = 0; p < P; p++) {
           llvm::APInt tmpNorm = llvm::APInt{1, 1, false};
           for (int64_t n = 0; n < N; n++) {
-            llvm::APInt cst =
-                denseVals.getValue<llvm::APInt>({(uint64_t)m, (uint64_t)n});
+            llvm::APInt cst = denseValsAP[{(uint64_t)m, (uint64_t)n}];
             llvm::APInt lhsNorm = APIntWidthExtendSqForConstant(cst);
             llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
             tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
@@ -865,7 +867,7 @@ static llvm::APInt getSqMANP(
       // N @ KxLxNxP -> KxLxP
 
       for (int64_t i = 0; i < N; i++) {
-        llvm::APInt cst = denseVals.getFlatValue<llvm::APInt>(i);
+        llvm::APInt cst = denseValsAP[i];
         llvm::APInt lhsNorm = APIntWidthExtendSqForConstant(cst);
         llvm::APInt mulNorm = APIntWidthExtendUMul(lhsNorm, rhsNorm);
         accNorm = APIntWidthExtendUAdd(mulNorm, accNorm);
@@ -965,7 +967,7 @@ static llvm::APInt getSqMANP(
 }
 
 static llvm::APInt getSqMANP(
-    mlir::linalg::TensorCollapseShapeOp op,
+    mlir::tensor::CollapseShapeOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   assert(
@@ -977,7 +979,7 @@ static llvm::APInt getSqMANP(
 }
 
 static llvm::APInt getSqMANP(
-    mlir::linalg::TensorExpandShapeOp op,
+    mlir::tensor::ExpandShapeOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
   assert(
@@ -1100,20 +1102,20 @@ static llvm::APInt getSqMANP(
   uint64_t H = weightTy.getShape()[2];
   uint64_t W = weightTy.getShape()[3];
   if (weightDenseVals) {
+    auto weightDenseValsAP = weightDenseVals.getValues<llvm::APInt>();
     // For a constant weight kernel use actual constant to calculate 2-norm
     // input windows are being multiplied by a kernel and summed up
     for (uint64_t f = 0; f < F; f++) {
       llvm::APInt tmpNorm = accNorm;
       // If there is a bias, start accumulating from its norm
       if (hasBias && biasDenseVals) {
-        llvm::APInt cst = biasDenseVals.getFlatValue<llvm::APInt>(f);
+        llvm::APInt cst = biasDenseVals.getValues<llvm::APInt>()[f];
         tmpNorm = APIntWidthExtendSqForConstant(cst);
       }
       for (uint64_t c = 0; c < C; c++) {
         for (uint64_t h = 0; h < H; h++) {
           for (uint64_t w = 0; w < W; w++) {
-            llvm::APInt cst =
-                weightDenseVals.getValue<llvm::APInt>({f, c, h, w});
+            llvm::APInt cst = weightDenseValsAP[{f, c, h, w}];
             llvm::APInt weightNorm = APIntWidthExtendSqForConstant(cst);
             llvm::APInt mulNorm = APIntWidthExtendUMul(inputNorm, weightNorm);
             tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
@@ -1136,9 +1138,10 @@ static llvm::APInt getSqMANP(
       tmpNorm = APIntWidthExtendUAdd(mulNorm, tmpNorm);
     }
     if (hasBias && biasDenseVals) {
+      auto biasDenseValsAP = biasDenseVals.getValues<llvm::APInt>();
       llvm::APInt maxNorm = tmpNorm;
       for (uint64_t f = 0; f < F; f++) {
-        llvm::APInt cst = biasDenseVals.getFlatValue<llvm::APInt>(f);
+        llvm::APInt cst = biasDenseValsAP[f];
         llvm::APInt currentNorm = APIntWidthExtendSqForConstant(cst);
         currentNorm = APIntWidthExtendUAdd(currentNorm, tmpNorm);
         maxNorm = APIntUMax(currentNorm, maxNorm);
@@ -1298,7 +1301,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
     }
     // TensorCollapseShapeOp
     else if (auto reshapeOp =
-                 llvm::dyn_cast<mlir::linalg::TensorCollapseShapeOp>(op)) {
+                 llvm::dyn_cast<mlir::tensor::CollapseShapeOp>(op)) {
       if (reshapeOp.result()
               .getType()
               .cast<mlir::TensorType>()
@@ -1310,8 +1313,7 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
       }
     }
     // TensorExpandShapeOp
-    else if (auto reshapeOp =
-                 llvm::dyn_cast<mlir::linalg::TensorExpandShapeOp>(op)) {
+    else if (auto reshapeOp = llvm::dyn_cast<mlir::tensor::ExpandShapeOp>(op)) {
       if (reshapeOp.result()
               .getType()
               .cast<mlir::TensorType>()
@@ -1365,8 +1367,8 @@ private:
 namespace {
 // For documentation see MANP.td
 struct MANPPass : public MANPBase<MANPPass> {
-  void runOnFunction() override {
-    mlir::FuncOp func = getFunction();
+  void runOnOperation() override {
+    mlir::func::FuncOp func = getOperation();
 
     MANPAnalysis analysis(func->getContext(), debug);
     analysis.run(func);
@@ -1390,8 +1392,8 @@ std::unique_ptr<mlir::Pass> createMANPPass(bool debug) {
 namespace {
 // For documentation see MANP.td
 struct MaxMANPPass : public MaxMANPBase<MaxMANPPass> {
-  void runOnFunction() override {
-    mlir::FuncOp func = getFunction();
+  void runOnOperation() override {
+    mlir::func::FuncOp func = getOperation();
 
     func.walk(
         [&](mlir::Operation *childOp) { this->processOperation(childOp); });
@@ -1408,7 +1410,8 @@ protected:
 
     // Process all function arguments and use the default value of 1
     // for MANP and the declarend precision
-    if (mlir::FuncOp func = llvm::dyn_cast_or_null<mlir::FuncOp>(op)) {
+    if (mlir::func::FuncOp func =
+            llvm::dyn_cast_or_null<mlir::func::FuncOp>(op)) {
       for (mlir::BlockArgument blockArg : func.getBody().getArguments()) {
         if (isEncryptedFunctionParameter(blockArg)) {
           unsigned int width = getEintPrecision(blockArg);

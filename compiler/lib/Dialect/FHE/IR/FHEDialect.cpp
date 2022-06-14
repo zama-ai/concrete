@@ -28,29 +28,6 @@ void FHEDialect::initialize() {
       >();
 }
 
-::mlir::Type FHEDialect::parseType(::mlir::DialectAsmParser &parser) const {
-  mlir::Type type;
-
-  if (parser.parseOptionalKeyword("eint").succeeded()) {
-    generatedTypeParser(parser, "eint", type);
-    return type;
-  }
-
-  // TODO
-  // Don't have a parser for a custom type
-  // We shouldn't call the default parser
-  // but what should we do instead?
-  parser.parseType(type);
-  return type;
-}
-
-void FHEDialect::printType(::mlir::Type type,
-                           ::mlir::DialectAsmPrinter &printer) const {
-  if (generatedTypePrinter(type, printer).failed())
-    // Calling default printer if failed to print FHE type
-    printer.printType(type);
-}
-
 mlir::LogicalResult EncryptedIntegerType::verify(
     llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, unsigned p) {
   if (p == 0) {
@@ -58,4 +35,25 @@ mlir::LogicalResult EncryptedIntegerType::verify(
     return mlir::failure();
   }
   return mlir::success();
+}
+
+void EncryptedIntegerType::print(mlir::AsmPrinter &p) const {
+  p << "<" << getWidth() << ">";
+}
+
+mlir::Type EncryptedIntegerType::parse(mlir::AsmParser &p) {
+  if (p.parseLess())
+    return mlir::Type();
+
+  int width;
+
+  if (p.parseInteger(width))
+    return mlir::Type();
+
+  if (p.parseGreater())
+    return mlir::Type();
+
+  mlir::Location loc = p.getEncodedSourceLoc(p.getNameLoc());
+
+  return getChecked(loc, loc.getContext(), width);
 }

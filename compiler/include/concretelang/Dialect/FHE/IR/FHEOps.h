@@ -18,9 +18,9 @@ namespace concretelang {
 namespace FHE {
 
 bool verifyEncryptedIntegerInputAndResultConsistency(
-    OpState &op, EncryptedIntegerType &input, EncryptedIntegerType &result);
+    Operation &op, EncryptedIntegerType &input, EncryptedIntegerType &result);
 
-bool verifyEncryptedIntegerAndIntegerInputsConsistency(OpState &op,
+bool verifyEncryptedIntegerAndIntegerInputsConsistency(Operation &op,
                                                        EncryptedIntegerType &a,
                                                        IntegerType &b);
 
