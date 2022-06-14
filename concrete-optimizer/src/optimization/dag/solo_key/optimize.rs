@@ -206,7 +206,7 @@ pub fn optimize<W: UnsignedInteger>(
 
     let &min_precision = dag.out_precisions.iter().min().unwrap();
 
-    let safe_variance = error::safe_variance_bound(
+    let safe_variance = error::safe_variance_bound_2padbits(
         min_precision as u64,
         ciphertext_modulus_log,
         maximum_acceptable_error_probability,

@@ -17,18 +17,17 @@ pub fn error_probability_of_sigma_scale(sigma_scale: f64) -> f64 {
 const LEFT_PADDING_BITS: u64 = 1;
 const RIGHT_PADDING_BITS: u64 = 1;
 
-pub fn fatal_noise_limit(precision: u64, ciphertext_modulus_log: u64) -> f64 {
-    let no_noise_bits = LEFT_PADDING_BITS + precision + RIGHT_PADDING_BITS;
+pub fn fatal_variance_limit(padding_bits: u64, precision: u64, ciphertext_modulus_log: u64) -> f64 {
+    let no_noise_bits = padding_bits + precision;
     let noise_bits = ciphertext_modulus_log - no_noise_bits;
     2_f64.powi(noise_bits as i32)
 }
 
-pub fn safe_variance_bound(
-    precision: u64,
+fn safe_variance_bound_from_p_error(
+    fatal_noise_limit: f64,
     ciphertext_modulus_log: u64,
     maximum_acceptable_error_probability: f64,
 ) -> f64 {
-    let fatal_noise_limit = fatal_noise_limit(precision, ciphertext_modulus_log);
     // We want safe_sigma such that:
     // P(x not in [-+fatal_noise_limit] | σ = safe_sigma) = p_error
     // <=> P(x not in [-+fatal_noise_limit/safe_sigma] | σ = 1) = p_error
@@ -37,6 +36,35 @@ pub fn safe_variance_bound(
     let safe_sigma = fatal_noise_limit / kappa;
     let modular_variance = square(safe_sigma);
     utils::from_modular_variance(modular_variance, ciphertext_modulus_log).get_variance()
+}
+
+pub fn safe_variance_bound_2padbits(
+    precision: u64,
+    ciphertext_modulus_log: u64,
+    maximum_acceptable_error_probability: f64,
+) -> f64 {
+    let padding_bits = LEFT_PADDING_BITS + RIGHT_PADDING_BITS;
+    let fatal_noise_limit = fatal_variance_limit(padding_bits, precision, ciphertext_modulus_log);
+    safe_variance_bound_from_p_error(
+        fatal_noise_limit,
+        ciphertext_modulus_log,
+        maximum_acceptable_error_probability,
+    )
+}
+
+pub fn safe_variance_bound_1bit_1padbit(
+    ciphertext_modulus_log: u64,
+    maximum_acceptable_error_probability: f64,
+) -> f64 {
+    #[allow(clippy::identity_op)]
+    let padding_bits = 0 + RIGHT_PADDING_BITS;
+    let precision = 1;
+    let fatal_noise_limit = fatal_variance_limit(padding_bits, precision, ciphertext_modulus_log);
+    safe_variance_bound_from_p_error(
+        fatal_noise_limit,
+        ciphertext_modulus_log,
+        maximum_acceptable_error_probability,
+    )
 }
 
 #[cfg(test)]

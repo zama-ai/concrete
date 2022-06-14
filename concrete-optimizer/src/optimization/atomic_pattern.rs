@@ -50,7 +50,7 @@ pub(crate) struct OptimizationDecompositionsConsts {
     pub safe_variance: f64,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct ComplexityNoise {
     pub index: usize,
     pub complexity: f64,
@@ -65,12 +65,49 @@ impl ComplexityNoise {
     };
 }
 
+pub(crate) fn cutted_blind_rotate<W: UnsignedInteger>(
+    consts: &OptimizationDecompositionsConsts,
+    internal_dim: u64,
+    glwe_params: GlweParameters,
+    cut_complexity: f64,
+    cut_noise: f64,
+) -> Vec<ComplexityNoise> {
+    let pareto_cut = false;
+    pareto_cut_blind_rotate::<W>(
+        consts,
+        internal_dim,
+        glwe_params,
+        cut_complexity,
+        cut_noise,
+        pareto_cut,
+    )
+}
+
 pub(crate) fn pareto_blind_rotate<W: UnsignedInteger>(
     consts: &OptimizationDecompositionsConsts,
     internal_dim: u64,
     glwe_params: GlweParameters,
     cut_complexity: f64,
     cut_noise: f64,
+) -> Vec<ComplexityNoise> {
+    let pareto_cut = true;
+    pareto_cut_blind_rotate::<W>(
+        consts,
+        internal_dim,
+        glwe_params,
+        cut_complexity,
+        cut_noise,
+        pareto_cut,
+    )
+}
+
+pub(crate) fn pareto_cut_blind_rotate<W: UnsignedInteger>(
+    consts: &OptimizationDecompositionsConsts,
+    internal_dim: u64,
+    glwe_params: GlweParameters,
+    cut_complexity: f64,
+    cut_noise: f64,
+    pareto_cut: bool,
 ) -> Vec<ComplexityNoise> {
     let br_decomp_len = consts.blind_rotate_decompositions.len();
     let mut quantities = vec![ComplexityNoise::ZERO; br_decomp_len];
@@ -107,12 +144,12 @@ pub(crate) fn pareto_blind_rotate<W: UnsignedInteger>(
         if cut_noise < noise_out && CUTS {
             continue; // noise is decreasing
         }
-        if decreasing_variance < noise_out && PARETO_CUTS {
+        if decreasing_variance < noise_out && PARETO_CUTS && pareto_cut {
             // the current case is dominated
             continue;
         }
         let delta_complexity = complexity_pbs - increasing_complexity;
-        size -= if delta_complexity == 0.0 && PARETO_CUTS {
+        size -= if delta_complexity == 0.0 && PARETO_CUTS && pareto_cut {
             1 // the previous case is dominated
         } else {
             0
@@ -130,14 +167,14 @@ pub(crate) fn pareto_blind_rotate<W: UnsignedInteger>(
         decreasing_variance = noise_out;
         size += 1;
     }
-    assert!(!PARETO_CUTS || size < 64);
+    assert!(!(PARETO_CUTS && pareto_cut) || size < 64);
     quantities.truncate(size);
     quantities
 }
 
 pub(crate) fn pareto_keyswitch<W: UnsignedInteger>(
     consts: &OptimizationDecompositionsConsts,
-    in_dim: u64,
+    input_dim: u64,
     internal_dim: u64,
     cut_complexity: f64,
     cut_noise: f64,
@@ -154,7 +191,7 @@ pub(crate) fn pareto_keyswitch<W: UnsignedInteger>(
     let mut size = 0;
     for (i_ks, &ks_decomposition_parameter) in consts.keyswitch_decompositions.iter().enumerate() {
         let keyswitch_parameter = KeyswitchParameters {
-            input_lwe_dimension: LweDimension(in_dim),
+            input_lwe_dimension: LweDimension(input_dim),
             output_lwe_dimension: LweDimension(internal_dim),
             ks_decomposition_parameter,
         };
@@ -474,7 +511,7 @@ pub fn optimize_one<W: UnsignedInteger>(
     // the blind rotate decomposition
 
     let ciphertext_modulus_log = W::BITS as u64;
-    let safe_variance = error::safe_variance_bound(
+    let safe_variance = error::safe_variance_bound_2padbits(
         precision,
         ciphertext_modulus_log,
         maximum_acceptable_error_probability,

@@ -3,7 +3,8 @@ use crate::computing_cost::operators::atomic_pattern as complexity_atomic_patter
 use crate::computing_cost::operators::keyswitch_lwe::KeySwitchLWEComplexity;
 use crate::computing_cost::operators::pbs::PbsComplexity;
 use crate::noise_estimator::error::{
-    error_probability_of_sigma_scale, sigma_scale_of_error_probability,
+    error_probability_of_sigma_scale, safe_variance_bound_1bit_1padbit,
+    sigma_scale_of_error_probability,
 };
 
 use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
@@ -11,8 +12,10 @@ use crate::noise_estimator::operators::wop_atomic_pattern::estimate_packing_priv
 
 use crate::optimization::atomic_pattern;
 use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
+use crate::optimization::atomic_pattern::{cutted_blind_rotate, pareto_keyswitch, ComplexityNoise};
 use crate::optimization::wop_atomic_pattern::pareto::{
-    BR_BL, BR_BL_FOR_CB, CB_V1_BL, KS_BL, KS_BL_FOR_CB,
+    BR_CIRCUIT_BOOTSTRAP_PARETO_DECOMP, BR_PARETO_DECOMP, KS_CIRCUIT_BOOTSTRAP_PARETO_DECOMP,
+    KS_PARETO_DECOMP,
 };
 use crate::parameters::{
     GlweParameters, KeyswitchParameters, KsDecompositionParameters, LweDimension, PbsParameters,
@@ -24,8 +27,8 @@ use complexity_atomic_pattern::DEFAULT as DEFAULT_COMPLEXITY;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
 
-pub fn find_p_error(kappa: f64, variance_max: f64, current_maximum_noise: f64) -> f64 {
-    let sigma = Variance(variance_max).get_standard_dev() * kappa;
+pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64) -> f64 {
+    let sigma = Variance(variance_bound).get_standard_dev() * kappa;
     let sigma_scale = sigma / Variance(current_maximum_noise).get_standard_dev();
     error_probability_of_sigma_scale(sigma_scale)
 }
@@ -85,77 +88,69 @@ impl Solution {
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
 struct NoiseCostByMicroParam {
-    pbs: Vec<(f64, Complexity)>,
-    key_switching: Vec<(f64, Complexity)>,
+    cutted_blind_rotate: Vec<ComplexityNoise>,
+    pareto_keyswitch: Vec<ComplexityNoise>,
     pp_switching: Vec<(f64, Complexity)>,
 }
 
 #[allow(clippy::too_many_lines)]
 fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
-    security_level: u64,
+    consts: &OptimizationDecompositionsConsts,
     glwe_params: GlweParameters,
-
     internal_dim: u64,
-) -> NoiseCostByMicroParam {
-    assert!(256 < internal_dim);
+    best_complexity: f64,
+    variance_modulus_switching: f64,
+    precision: u64,
+    n_inputs: u64,
+) -> Option<NoiseCostByMicroParam> {
+    let security_level = consts.security_level;
 
-    let mut noise_cost_pbs = Vec::new();
-    let mut noise_cost_key_switching = Vec::new();
-    let mut noise_cost_pp_switching = Vec::new();
+    let variance_coeff = square(consts.noise_factor) / 2.0;
+    let complexity_coeff = (n_inputs * (2 * precision - 1)) as f64;
+    let cut_complexity = best_complexity / complexity_coeff; // saves 0%
+    let cut_variance = (consts.safe_variance - variance_modulus_switching) / variance_coeff; // saves 40%
+
+    let cutted_blind_rotate = cutted_blind_rotate::<W>(
+        consts,
+        internal_dim,
+        glwe_params,
+        cut_complexity,
+        cut_variance,
+    );
+    if cutted_blind_rotate.is_empty() {
+        return None;
+    }
+
+    let variance_coeff_br = variance_coeff;
+    let variance_coeff = 1.0;
+    let complexity_coeff = (precision * n_inputs) as f64;
+    let cut_complexity = best_complexity / complexity_coeff; // saves 0%
+    let cut_variance = (consts.safe_variance
+        - variance_modulus_switching
+        - variance_coeff_br * cutted_blind_rotate.last().unwrap().noise)
+        / variance_coeff; // saves 25%
+
+    let input_dim = glwe_params.sample_extract_lwe_dimension();
+    let pareto_keyswitch = pareto_keyswitch::<W>(
+        consts,
+        input_dim,
+        internal_dim,
+        cut_complexity,
+        cut_variance,
+    );
+    if pareto_keyswitch.is_empty() {
+        return None;
+    }
 
     let ciphertext_modulus_log = W::BITS as u64;
 
     let variance_bsk =
         security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
 
-    let variance_ksk =
-        noise_atomic_pattern::variance_ksk(internal_dim, ciphertext_modulus_log, security_level);
-
-    for &br_decomposition_parameter in BR_BL.iter() {
-        let pbs_parameters = PbsParameters {
-            internal_lwe_dimension: LweDimension(internal_dim),
-            br_decomposition_parameter,
-            output_glwe_params: glwe_params,
-        };
-
-        let complexity_pbs = DEFAULT_COMPLEXITY
-            .pbs
-            .complexity(pbs_parameters, ciphertext_modulus_log);
-
-        // let complexity_cmux =
-        //     complexity_pbs / (pbs_parameters.internal_lwe_dimension.0 as f64);
-
-        // PBS of the first layer of the CB
-        let base_noise = noise_atomic_pattern::variance_bootstrap::<W>(
-            pbs_parameters,
-            ciphertext_modulus_log,
-            variance_bsk,
-        )
-        .get_variance();
-
-        noise_cost_pbs.push((base_noise, complexity_pbs));
-    }
-
-    for &ks_decomposition_parameter in KS_BL_FOR_CB.iter() {
-        let keyswitch_parameter = KeyswitchParameters {
-            input_lwe_dimension: LweDimension(glwe_params.sample_extract_lwe_dimension()),
-            output_lwe_dimension: LweDimension(internal_dim),
-            ks_decomposition_parameter,
-        };
-        let complexity_keyswitch = DEFAULT_COMPLEXITY
-            .ks_lwe
-            .complexity(keyswitch_parameter, ciphertext_modulus_log);
-        // Keyswitch before bootstrap
-        let noise_keyswitch = noise_atomic_pattern::variance_keyswitch::<W>(
-            keyswitch_parameter,
-            ciphertext_modulus_log,
-            variance_ksk,
-        )
-        .get_variance();
-        noise_cost_key_switching.push((noise_keyswitch, complexity_keyswitch));
-    }
-
-    for &pp_ks_decomposition_parameter in BR_BL.iter() {
+    let mut variance_cost_pp_switching = vec![(f64::NAN, f64::NAN); BR_PARETO_DECOMP.len()];
+    for br in &cutted_blind_rotate {
+        // saves 0%
+        let pp_ks_decomposition_parameter = BR_PARETO_DECOMP[br.index];
         let ppks_parameter = PbsParameters {
             internal_lwe_dimension: LweDimension(
                 glwe_params.glwe_dimension * glwe_params.polynomial_size(),
@@ -163,9 +158,9 @@ fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
             br_decomposition_parameter: pp_ks_decomposition_parameter,
             output_glwe_params: glwe_params,
         };
-        // We assume the packing KS and theexternal product in a PBSto have
+        // We assume the packing KS and the external product in a PBSto have
         // the same parameters (base, level)
-        let noise_private_packing_ks =
+        let variance_private_packing_ks =
             estimate_packing_private_keyswitch::<W>(Variance(0.), variance_bsk, ppks_parameter)
                 .get_variance();
 
@@ -184,14 +179,14 @@ fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
         let complexity_ppks = DEFAULT_COMPLEXITY
             .ks_lwe
             .complexity(ppks_parameter_complexity, ciphertext_modulus_log);
-        noise_cost_pp_switching.push((noise_private_packing_ks, complexity_ppks));
+        variance_cost_pp_switching[br.index] = (variance_private_packing_ks, complexity_ppks);
     }
 
-    NoiseCostByMicroParam {
-        pbs: noise_cost_pbs,
-        key_switching: noise_cost_key_switching,
-        pp_switching: noise_cost_pp_switching,
-    }
+    Some(NoiseCostByMicroParam {
+        cutted_blind_rotate,
+        pareto_keyswitch,
+        pp_switching: variance_cost_pp_switching,
+    })
 }
 
 #[allow(clippy::too_many_lines)]
@@ -206,61 +201,81 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
 ) {
     let ciphertext_modulus_log = consts.ciphertext_modulus_log;
     let global_precision = n_inputs * precision;
-    let variance_max = consts.safe_variance;
+    let safe_variance_bound = consts.safe_variance;
     let log_norm = consts.noise_factor.log2();
 
-    let micro_tab =
-        compute_noise_cost_by_micro_param::<W>(consts.security_level, glwe_params, internal_dim);
-
-    let noise_modulus_switching =
+    let variance_modulus_switching =
         noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key::<W>(
             internal_dim,
             glwe_params.polynomial_size(),
         )
         .get_variance();
 
-    if noise_modulus_switching > consts.safe_variance {
+    if variance_modulus_switching > consts.safe_variance {
         return;
     }
 
     let mut best_complexity = state.best_solution.map_or(f64::INFINITY, |s| s.complexity);
     let mut best_variance = state.best_solution.map_or(f64::INFINITY, |s| s.noise_max);
 
+    let variance_cost_opt = compute_noise_cost_by_micro_param::<W>(
+        consts,
+        glwe_params,
+        internal_dim,
+        best_complexity,
+        variance_modulus_switching,
+        precision,
+        n_inputs,
+    );
+    let variance_cost = if let Some(variance_cost) = variance_cost_opt {
+        variance_cost
+    } else {
+        return;
+    };
+
+    // pareto keyswitch is sorted by complexity increasing and variance decreasing
+    let lower_bound_variance_keyswitch =
+        variance_cost.pareto_keyswitch[variance_cost.pareto_keyswitch.len() - 1].noise;
+    let lower_bound_complexity_all_ks =
+        (precision * n_inputs) as f64 * variance_cost.pareto_keyswitch[0].complexity;
+
     // BlindRotate dans Circuit BS
-    for (br_dp_index, &br_decomposition_parameter) in BR_BL_FOR_CB.iter().enumerate() {
+    for shared_br_decomp in &variance_cost.cutted_blind_rotate {
         // Pbs dans BitExtract et Circuit BS et FP-KS (partagés)
-        // TODO: choisir indépendemment(separate FP-KS)
+        let br_decomposition_parameter = consts.blind_rotate_decompositions[shared_br_decomp.index];
         let pbs_parameters = PbsParameters {
             internal_lwe_dimension: LweDimension(internal_dim),
             br_decomposition_parameter,
             output_glwe_params: glwe_params,
         };
 
-        let (base_noise, complexity_pbs) = micro_tab.pbs[br_dp_index];
-
-        // new pbs key for the bit extract pbs, shared
-        let bit_extract_dp_index = br_dp_index;
-
-        let (_bit_extract_base_noise, complexity_bit_extract_pbs) =
-            micro_tab.pbs[bit_extract_dp_index];
-
+        // BitExtract use this pbs
+        let complexity_bit_extract_1_pbs = shared_br_decomp.complexity;
         let complexity_bit_extract_wo_ks =
-            (n_inputs * (precision - 1)) as f64 * complexity_bit_extract_pbs;
+            (n_inputs * (precision - 1)) as f64 * complexity_bit_extract_1_pbs;
 
-        if complexity_bit_extract_wo_ks > best_complexity {
+        if complexity_bit_extract_wo_ks + lower_bound_complexity_all_ks > best_complexity {
+            // saves 0%
             // next br_decomp are at least as costly
             break;
         }
 
-        // private packing keyswitch, <=> FP-KS (Circuit Boostrap)
-        let pp_ks_dp_index = br_dp_index;
-
         // Circuit Boostrap
-        let (base_noise_private_packing_ks, complexity_ppks) =
-            micro_tab.pp_switching[pp_ks_dp_index];
+        // private packing keyswitch, <=> FP-KS
+        let pp_switching_index = shared_br_decomp.index;
+        let (base_variance_private_packing_ks, complexity_ppks) =
+            variance_cost.pp_switching[pp_switching_index];
+
+        let variance_ggsw = base_variance_private_packing_ks + shared_br_decomp.noise / 2.;
+
+        let variance_coeff_1_cmux_tree =
+            2_f64.powf(2. * log_norm as f64) // variance_coeff for the multisum
+            * (global_precision              // for hybrid packing
+            << (2 * (precision - 1))) as f64 // for left shift
+        ;
 
         // CircuitBootstrap: new parameters l,b
-        for &circuit_pbs_decomposition_parameter in CB_V1_BL.iter() {
+        for &circuit_pbs_decomposition_parameter in BR_CIRCUIT_BOOTSTRAP_PARETO_DECOMP.iter() {
             // Hybrid packing
             let nb_cmux = 1_u64;
             let cmux_tree_blind_rotate_parameters = PbsParameters {
@@ -268,6 +283,27 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                 br_decomposition_parameter: circuit_pbs_decomposition_parameter,
                 output_glwe_params: pbs_parameters.output_glwe_params,
             };
+
+            // Circuit bs: fp-ks
+            let complexity_all_ppks = ((pbs_parameters.output_glwe_params.glwe_dimension + 1)
+                * circuit_pbs_decomposition_parameter.level
+                * global_precision) as f64
+                * complexity_ppks;
+
+            // Circuit bs: pbs
+            let complexity_all_pbs = (global_precision * circuit_pbs_decomposition_parameter.level)
+                as f64
+                * shared_br_decomp.complexity;
+
+            let complexity_circuit_bs = complexity_all_pbs + complexity_all_ppks;
+
+            if complexity_bit_extract_wo_ks + lower_bound_complexity_all_ks + complexity_circuit_bs
+                > best_complexity
+            {
+                // saves 50%
+                // next circuit_pbs_decomposition_parameter are at least as costly
+                break;
+            }
 
             // Hybrid packing
             let complexity_1_cmux_hp = DEFAULT_COMPLEXITY
@@ -292,88 +328,58 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
 
             let complexity_hybrid_packing = complexity_cmux_tree + complexity_g_br;
             let complexity_multi_hybrid_packing = n_functions as f64 * complexity_hybrid_packing;
+            // Cutting on complexity here is counter-productive probably because complexity_multi_hybrid_packing is small
 
-            // Circuit bs: fp-ks
-            let complexity_all_ppks = ((pbs_parameters.output_glwe_params.glwe_dimension + 1)
-                * circuit_pbs_decomposition_parameter.level
-                * precision
-                * n_inputs) as f64
-                * complexity_ppks;
-
-            // Circuit bs: pbs
-            let complexity_all_pbs =
-                (n_inputs * precision * circuit_pbs_decomposition_parameter.level) as f64
-                    * complexity_pbs;
-
-            let complexity_circuit_bs = complexity_all_pbs + complexity_all_ppks;
-
-            if complexity_bit_extract_wo_ks + complexity_circuit_bs > best_complexity {
-                // next circuit_pbs_decomposition_parameter are at least as costly
-                break;
-            }
-
-            let noise_ggsw = base_noise_private_packing_ks + base_noise / 2.;
-
-            // Circuit Boostrap
-            let noise_hybrid_packing = noise_modulus_switching + noise_ggsw;
-            if noise_hybrid_packing > variance_max {
-                continue;
-            }
-
-            let noise_one_external_product_for_cmux_tree =
+            let variance_one_external_product_for_cmux_tree =
                 noise_atomic_pattern::variance_bootstrap::<W>(
                     cmux_tree_blind_rotate_parameters,
                     ciphertext_modulus_log,
-                    Variance::from_variance(noise_ggsw),
+                    Variance::from_variance(variance_ggsw),
                 )
                 .get_variance();
 
             // final out noise hybrid packing
-            let noise_cmux_tree_blind_rotate =
-                noise_one_external_product_for_cmux_tree * (precision * n_inputs) as f64;
+            let variance_after_1st_bit_extract =
+                variance_coeff_1_cmux_tree * variance_one_external_product_for_cmux_tree;
 
-            let noise_multisum = (2_f64.powf(2. * log_norm as f64)) * noise_cmux_tree_blind_rotate; // out noise * weights
+            let variance_wo_ks = variance_modulus_switching + variance_after_1st_bit_extract;
 
-            let noise_all_multisum = noise_multisum * (1 << (2 * (precision - 1))) as f64;
-
-            let noise_ggsw_reencoding = noise_modulus_switching + noise_all_multisum;
-            if noise_ggsw_reencoding > variance_max {
+            if variance_wo_ks + lower_bound_variance_keyswitch > safe_variance_bound {
+                // saves 40%
                 continue;
             }
 
-            let noise_max = noise_ggsw_reencoding.max(noise_hybrid_packing);
-
             // Shared by all pbs (like brs)
-            for (ks_dp_index, &ks_decomposition_parameter) in KS_BL_FOR_CB.iter().enumerate() {
-                let (noise_keyswitch, complexity_keyswitch) = micro_tab.key_switching[ks_dp_index];
-                let noise_max = noise_max + noise_keyswitch;
-                if noise_max > variance_max {
+            for ks_decomp in &variance_cost.pareto_keyswitch {
+                let variance_keyswitch = ks_decomp.noise;
+                let variance_max = variance_wo_ks + variance_keyswitch;
+                if variance_max > safe_variance_bound {
                     continue;
                 }
 
-                let complexity_all_ks = (precision * n_inputs) as f64 * complexity_keyswitch;
-                let complexity_bit_extract = complexity_bit_extract_wo_ks + complexity_all_ks;
-
-                let complexity_ggsw_reencoding = complexity_bit_extract + complexity_circuit_bs;
-
-                let complexity = complexity_ggsw_reencoding + complexity_multi_hybrid_packing;
+                let complexity_all_ks = (precision * n_inputs) as f64 * ks_decomp.complexity;
+                let complexity = complexity_bit_extract_wo_ks
+                    + complexity_circuit_bs
+                    + complexity_multi_hybrid_packing
+                    + complexity_all_ks;
 
                 if complexity > best_complexity {
                     // next ks.level will be even more costly
                     break;
                 }
                 #[allow(clippy::float_cmp)]
-                if complexity == best_complexity && noise_max > best_variance {
+                if complexity == best_complexity && variance_max > best_variance {
                     continue;
                 }
 
                 let kappa = consts.kappa;
                 best_complexity = complexity;
-                best_variance = noise_max;
-                let p_error = find_p_error(kappa, variance_max, noise_max);
+                best_variance = variance_max;
+                let p_error = find_p_error(kappa, safe_variance_bound, variance_max);
                 let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
                 let glwe_polynomial_size = glwe_params.polynomial_size();
                 let glwe_dimension = glwe_params.glwe_dimension;
+                let ks_decomposition_parameter = consts.keyswitch_decompositions[ks_decomp.index];
                 state.best_solution = Some(Solution {
                     input_lwe_dimension,
                     internal_ks_output_lwe_dimension: internal_dim,
@@ -383,7 +389,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     glwe_dimension,
                     br_decomposition_level_count: br_decomposition_parameter.level,
                     br_decomposition_base_log: br_decomposition_parameter.log2_base,
-                    noise_max,
+                    noise_max: variance_max,
                     complexity,
                     p_error,
                     cb_decomposition_level_count: Some(circuit_pbs_decomposition_parameter.level),
@@ -393,8 +399,6 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
         }
     }
 }
-
-const BITS_PADDING_WITHOUT_NOISE: u64 = 1;
 
 #[allow(clippy::expect_fun_call)]
 #[allow(clippy::identity_op)]
@@ -417,21 +421,20 @@ pub fn optimise_one<W: UnsignedInteger>(
 
     // Circuit BS bound
     // 1 bit of message only here =)
-    let no_noise_bits = 0 + 1 + BITS_PADDING_WITHOUT_NOISE;
-    let noise_bits = ciphertext_modulus_log - no_noise_bits;
-    let fatal_noise_limit = (1_u64 << noise_bits) as f64;
-    let kappa: f64 = sigma_scale_of_error_probability(maximum_acceptable_error_probability);
-    let safe_sigma = fatal_noise_limit / kappa;
     // Bound for first bit extract in BitExtract (dominate others)
-    let variance_max = Variance::from_modular_variance::<W>(square(safe_sigma)).get_variance();
+    let safe_variance_bound = safe_variance_bound_1bit_1padbit(
+        ciphertext_modulus_log,
+        maximum_acceptable_error_probability,
+    );
+    let kappa: f64 = sigma_scale_of_error_probability(maximum_acceptable_error_probability);
 
     let mut state = OptimizationState {
         best_solution: None,
         count_domain: glwe_dimensions.len()
             * glwe_log_polynomial_sizes.len()
             * internal_lwe_dimensions.len()
-            * KS_BL.len()
-            * BR_BL.len(),
+            * KS_PARETO_DECOMP.len()
+            * BR_PARETO_DECOMP.len(),
     };
     let consts = OptimizationDecompositionsConsts {
         kappa,
@@ -439,9 +442,9 @@ pub fn optimise_one<W: UnsignedInteger>(
         security_level,
         noise_factor: log_norm.exp2(),
         ciphertext_modulus_log,
-        keyswitch_decompositions: vec![],
-        blind_rotate_decompositions: vec![],
-        safe_variance: variance_max,
+        keyswitch_decompositions: KS_CIRCUIT_BOOTSTRAP_PARETO_DECOMP.to_vec(),
+        blind_rotate_decompositions: BR_PARETO_DECOMP.to_vec(),
+        safe_variance: safe_variance_bound,
     };
 
     for &glwe_dim in glwe_dimensions {

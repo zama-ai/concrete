@@ -350,7 +350,7 @@ fn levelled_complexity(
 }
 
 fn safe_noise_bound(precision: Precision, noise_config: &NoiseBoundConfig) -> f64 {
-    error::safe_variance_bound(
+    error::safe_variance_bound_2padbits(
         precision as u64,
         noise_config.ciphertext_modulus_log,
         noise_config.maximum_acceptable_error_probability,
