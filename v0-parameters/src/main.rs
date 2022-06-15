@@ -83,11 +83,7 @@ fn main() {
         (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect();
 
     let precisions = args.min_precision..=args.max_precision;
-    let manps = if args.wop_pbs {
-        vec![0, 2, 4, 6, 8, 10, 12]
-    } else {
-        (0..=31).collect()
-    };
+    let manps: Vec<_> = (0..=31).collect();
 
     // let guard = pprof::ProfilerGuard::new(100).unwrap();
 
@@ -171,7 +167,6 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-
     #[test]
     fn test_reference_output() {
         const REF_FILE: &str = "src/v0_parameters.ref-12-05-2022";
@@ -184,10 +179,13 @@ mod tests {
             .expect("Can't build");
         assert!(std::path::Path::new(V0_PARAMETERS_EXE).exists());
 
-        let actual_output = std::process::Command::new(V0_PARAMETERS_EXE)
+        let output = std::process::Command::new(V0_PARAMETERS_EXE)
             .output()
             .expect("failed to execute process");
-        let actual_output = std::str::from_utf8(&actual_output.stdout).expect("Bad content");
+
+        let actual_output = std::str::from_utf8(&output.stdout).expect("Bad content");
+        let error_output = std::str::from_utf8(&output.stderr).expect("Bad content");
+        assert_eq!(error_output, "");
 
         let expected_output = std::fs::read_to_string(REF_FILE).expect("Can't read reference file");
 
@@ -207,7 +205,7 @@ mod tests {
         assert!(std::path::Path::new(V0_PARAMETERS_EXE).exists());
 
         #[rustfmt::skip]
-        let actual_output = std::process::Command::new(V0_PARAMETERS_EXE)
+        let output = std::process::Command::new(V0_PARAMETERS_EXE)
             .args([
                 "--wop-pbs",
                 "--min-intern-lwe-dim", "257",
@@ -217,9 +215,12 @@ mod tests {
                 "--max-log-poly-size", "12",
                 "--"
                 ])
-            .output()
-            .expect("failed to execute process");
-        let actual_output = std::str::from_utf8(&actual_output.stdout).expect("Bad content");
+            .output().expect("Failed")
+            ;
+        let actual_output = std::str::from_utf8(&output.stdout).expect("Bad content");
+        let error_output = std::str::from_utf8(&output.stderr).expect("Bad content");
+
+        assert_eq!(error_output, "");
 
         let expected_output = std::fs::read_to_string(REF_FILE).expect("Can't read reference file");
 

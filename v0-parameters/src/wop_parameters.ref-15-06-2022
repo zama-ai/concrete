@@ -1,11 +1,36 @@
 { /* 6.3e-5 errors */
 { /* precision 16 */
     /*  0 */ V0Parameter( 1, 11,  482,  2, 16,  9,  1), 		 // 8041 mops, 6.3e-5 errors
+    /*  1 */ V0Parameter( 1, 11,  501,  2, 15,  5,  2), 		 // 8123 mops, 6.3e-5 errors
     /*  2 */ V0Parameter( 1, 11,  491,  2, 15,  9,  1), 		 // 10343 mops, 6.0e-5 errors
+    /*  3 */ V0Parameter( 1, 11,  483,  3, 12,  9,  1), 		 // 11021 mops, 5.3e-5 errors
     /*  4 */ V0Parameter( 1, 11,  491,  3, 12,  9,  1), 		 // 11155 mops, 6.3e-5 errors
+    /*  5 */ V0Parameter( 1, 11,  486,  3, 12,  9,  1), 		 // 14097 mops, 6.1e-5 errors
     /*  6 */ V0Parameter( 1, 11,  520,  3, 12, 10,  1), 		 // 14850 mops, 6.0e-5 errors
+    /*  7 */ V0Parameter( 1, 11,  575,  4,  9, 11,  1), 		 // 20352 mops, 6.3e-5 errors
     /*  8 */ V0Parameter( 1, 11,  486,  4,  9,  9,  1), 		 // 25684 mops, 6.0e-5 errors
+    /*  9 */ V0Parameter( 1, 11,  520,  4,  9, 10,  1), 		 // 26977 mops, 6.0e-5 errors
     /* 10 */ V0Parameter( 1, 11,  503,  5,  8, 10,  1), 		 // 32012 mops, 5.6e-5 errors
+    /* 11 */ V0Parameter( 1, 11,  498,  6,  7,  9,  1), 		 // 43048 mops, 6.0e-5 errors
     /* 12 */ V0Parameter( 1, 11,  503,  7,  6, 10,  1), 		 // 49916 mops, 5.7e-5 errors
+    /* 13 */ V0Parameter( 1, 11,  518,  9,  5, 10,  1), 		 // 64255 mops, 6.3e-5 errors
+    /* 14 */ V0Parameter( 1, 11,  506, 14,  3, 10,  1), 		 // 96029 mops, 6.3e-5 errors
+    /* 15 */ V0Parameter( 1, 11,  508, 14,  3, 10,  1), 		 // 134542 mops, 5.9e-5 errors
+    /* 16 */ V0Parameter( 1, 11,  544, 22,  2, 11,  1), 		 // 217958 mops, 6.3e-5 errors
+    /* 17 */ V0Parameter( 1, 11,  511, 44,  1, 10,  1), 		 // 647282 mops, 6.2e-5 errors
+    /* 18 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 19 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 20 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 21 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 22 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 23 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 24 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 25 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 26 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 27 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 28 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 29 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 30 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
+    /* 31 : NO SOLUTION */ V0Parameter(0,0,0,0,0,0,0),
   },
 }
