@@ -9,4 +9,3 @@ It has 3 internal MLIR dialects to manage different kinds of abstractions: [FHE]
 
 It lowers programs (usually from the FHE dialect) to binaries or libraries which can be called via the [... API](). 
 Its cryptographics primitives are provided by  the [concrete library](https://github.com/zama-ai/concrete).
-

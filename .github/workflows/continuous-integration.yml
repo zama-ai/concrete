@@ -39,6 +39,10 @@ jobs:
           # compiler requirements to lint
           pip install numpy
           make python_lint
+      - name: Linelint
+        uses: fernandrone/linelint@0.0.4
+        id: linelint
+
 
   CheckLicense:
     runs-on: ubuntu-latest

@@ -16,4 +16,3 @@ CheckOptions:
     value:           camelBack
   - key:             readability-identifier-naming.IgnoreMainLikeFunctions
     value:           1
-
