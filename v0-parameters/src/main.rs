@@ -208,11 +208,13 @@ mod tests {
         let output = std::process::Command::new(V0_PARAMETERS_EXE)
             .args([
                 "--wop-pbs",
-                "--min-intern-lwe-dim", "257",
-                "--min-precision", "16",
+                "--min-intern-lwe-dim", "450",
+                "--max-intern-lwe-dim", "600",
+                "--min-precision", "1",
                 "--max-precision", "16",
                 "--min-log-poly-size", "10",
-                "--max-log-poly-size", "12",
+                "--max-log-poly-size", "11",
+                "--max-glwe-dim", "2",
                 "--"
                 ])
             .output().expect("Failed")
