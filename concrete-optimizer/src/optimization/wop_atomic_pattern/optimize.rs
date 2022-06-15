@@ -22,7 +22,6 @@ use crate::utils::square;
 use complexity_atomic_pattern::DEFAULT as DEFAULT_COMPLEXITY;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
-use std::collections::HashMap;
 
 pub fn find_p_error(kappa: f64, variance_max: f64, current_maximum_noise: f64) -> f64 {
     let sigma = Variance(variance_max).get_standard_dev() * kappa;
@@ -84,175 +83,111 @@ impl Solution {
 
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
-pub struct Tab {
-    pbs: HashMap<(u64, u64, u64, u64, u64), (f64, Complexity)>,
-    modulus_switching: HashMap<(u64, u64), f64>,
-    key_switching: HashMap<(u64, u64, u64), Vec<(KsDecompositionParameters, (f64, Complexity))>>,
-    // NEW VALUE MEMOIZED
-    pp_switching: HashMap<(u64, u64, u64, u64), (f64, Complexity)>,
+struct NoiseCostByMicroParam {
+    pbs: Vec<(f64, Complexity)>,
+    key_switching: Vec<(f64, Complexity)>,
+    pp_switching: Vec<(f64, Complexity)>,
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn tabulate_circuit_bootstrap<W: UnsignedInteger>(
+fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
     security_level: u64,
-    maximum_acceptable_error_probability: f64,
-    glwe_log_polynomial_sizes: &[u64],
-    glwe_dimensions: &[u64],
-    internal_lwe_dimensions: &[u64],
-) -> Tab {
-    assert_eq!(security_level, 128);
-    assert!(0.0 < maximum_acceptable_error_probability);
-    assert!(maximum_acceptable_error_probability < 1.0);
+    glwe_params: GlweParameters,
+
+    internal_dim: u64,
+) -> NoiseCostByMicroParam {
+    assert!(256 < internal_dim);
+
+    let mut noise_cost_pbs = Vec::new();
+    let mut noise_cost_key_switching = Vec::new();
+    let mut noise_cost_pp_switching = Vec::new();
 
     let ciphertext_modulus_log = W::BITS as u64;
-    let mut noise_cost_pbs = HashMap::new();
-    let mut noise_cost_modulus_switching = HashMap::new();
-    let mut noise_cost_key_switching = HashMap::new();
-    let mut noise_cost_pp_switching = HashMap::new();
 
-    for &glwe_dim in glwe_dimensions {
-        for &glwe_log_poly_size in glwe_log_polynomial_sizes {
-            assert!(8 <= glwe_log_poly_size);
-            assert!(glwe_log_poly_size < 18);
-            let glwe_poly_size = 1 << glwe_log_poly_size;
+    let variance_bsk =
+        security::glwe::minimal_variance(glwe_params, ciphertext_modulus_log, security_level);
 
-            if glwe_dim * glwe_poly_size <= 1 << 13 {
-                let glwe_params = GlweParameters {
-                    log2_polynomial_size: glwe_log_poly_size,
-                    glwe_dimension: glwe_dim,
-                };
-                let variance_bsk = security::glwe::minimal_variance(
-                    glwe_params,
-                    ciphertext_modulus_log,
-                    security_level,
-                );
+    let variance_ksk =
+        noise_atomic_pattern::variance_ksk(internal_dim, ciphertext_modulus_log, security_level);
 
-                for &internal_dim in internal_lwe_dimensions {
-                    assert!(256 < internal_dim);
+    for &br_decomposition_parameter in BR_BL.iter() {
+        let pbs_parameters = PbsParameters {
+            internal_lwe_dimension: LweDimension(internal_dim),
+            br_decomposition_parameter,
+            output_glwe_params: glwe_params,
+        };
 
-                    let macro_key = (glwe_dim, glwe_poly_size, internal_dim);
+        let complexity_pbs = DEFAULT_COMPLEXITY
+            .pbs
+            .complexity(pbs_parameters, ciphertext_modulus_log);
 
-                    let variance_ksk = noise_atomic_pattern::variance_ksk(
-                        internal_dim,
-                        ciphertext_modulus_log,
-                        security_level,
-                    );
-                    let noise_modulus_switching =
-                        noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key::<W>(
-                            internal_dim,
-                            glwe_params.polynomial_size(),
-                        )
-                            .get_variance();
-                    let _ = noise_cost_modulus_switching
-                        .insert((internal_dim, glwe_poly_size), noise_modulus_switching);
+        // let complexity_cmux =
+        //     complexity_pbs / (pbs_parameters.internal_lwe_dimension.0 as f64);
 
-                    for &br_decomposition_parameter in BR_BL.iter() {
-                        let pbs_parameters = PbsParameters {
-                            internal_lwe_dimension: LweDimension(internal_dim),
-                            br_decomposition_parameter,
-                            output_glwe_params: glwe_params,
-                        };
+        // PBS of the first layer of the CB
+        let base_noise = noise_atomic_pattern::variance_bootstrap::<W>(
+            pbs_parameters,
+            ciphertext_modulus_log,
+            variance_bsk,
+        )
+        .get_variance();
 
-                        let complexity_pbs = DEFAULT_COMPLEXITY
-                            .pbs
-                            .complexity(pbs_parameters, ciphertext_modulus_log);
-
-                        // let complexity_cmux =
-                        //     complexity_pbs / (pbs_parameters.internal_lwe_dimension.0 as f64);
-
-                        // PBS of the first layer of the CB
-                        let base_noise = noise_atomic_pattern::variance_bootstrap::<W>(
-                            pbs_parameters,
-                            ciphertext_modulus_log,
-                            variance_bsk,
-                        )
-                        .get_variance();
-
-                        let _ = noise_cost_pbs.insert(
-                            (
-                                glwe_dim,
-                                glwe_poly_size,
-                                internal_dim,
-                                br_decomposition_parameter.log2_base,
-                                br_decomposition_parameter.level,
-                            ),
-                            (base_noise, complexity_pbs),
-                        );
-                    }
-
-                    let mut ks_seq = Vec::with_capacity(KS_BL_FOR_CB.len());
-                    for &ks_decomposition_parameter in KS_BL_FOR_CB.iter() {
-                        let keyswitch_parameter = KeyswitchParameters {
-                            input_lwe_dimension: LweDimension(glwe_poly_size * glwe_dim),
-                            output_lwe_dimension: LweDimension(internal_dim),
-                            ks_decomposition_parameter,
-                        };
-                        let complexity_keyswitch = DEFAULT_COMPLEXITY
-                            .ks_lwe
-                            .complexity(keyswitch_parameter, ciphertext_modulus_log);
-                        // Keyswitch before bootstrap
-                        let noise_keyswitch = noise_atomic_pattern::variance_keyswitch::<W>(
-                            keyswitch_parameter,
-                            ciphertext_modulus_log,
-                            variance_ksk,
-                        )
-                        .get_variance();
-                        ks_seq.push((
-                            ks_decomposition_parameter,
-                            (noise_keyswitch, complexity_keyswitch),
-                        ));
-                    }
-                    std::mem::drop(noise_cost_key_switching.insert(macro_key, ks_seq));
-
-                    for &pp_ks_decomposition_parameter in BR_BL.iter() {
-                        let ppks_parameter = PbsParameters {
-                            internal_lwe_dimension: LweDimension(
-                                glwe_params.glwe_dimension * glwe_params.polynomial_size(),
-                            ),
-                            br_decomposition_parameter: pp_ks_decomposition_parameter,
-                            output_glwe_params: glwe_params,
-                        };
-                        // We assume the packing KS and theexternal product in a PBSto have
-                        // the same parameters (base, level)
-                        let noise_private_packing_ks = estimate_packing_private_keyswitch::<W>(
-                            Variance(0.),
-                            variance_bsk,
-                            ppks_parameter,
-                        )
-                        .get_variance();
-
-                        let ppks_parameter_complexity = KeyswitchParameters {
-                            input_lwe_dimension: LweDimension(
-                                glwe_params.glwe_dimension * glwe_params.polynomial_size(),
-                            ),
-                            output_lwe_dimension: LweDimension(
-                                glwe_params.glwe_dimension * glwe_params.polynomial_size(),
-                            ),
-                            ks_decomposition_parameter: KsDecompositionParameters {
-                                level: pp_ks_decomposition_parameter.level,
-                                log2_base: pp_ks_decomposition_parameter.log2_base,
-                            },
-                        };
-                        let complexity_ppks = DEFAULT_COMPLEXITY
-                            .ks_lwe
-                            .complexity(ppks_parameter_complexity, ciphertext_modulus_log);
-                        let _ = noise_cost_pp_switching.insert(
-                            (
-                                glwe_dim,
-                                glwe_poly_size,
-                                pp_ks_decomposition_parameter.log2_base,
-                                pp_ks_decomposition_parameter.level,
-                            ),
-                            (noise_private_packing_ks, complexity_ppks),
-                        );
-                    }
-                }
-            }
-        }
+        noise_cost_pbs.push((base_noise, complexity_pbs));
     }
-    Tab {
+
+    for &ks_decomposition_parameter in KS_BL_FOR_CB.iter() {
+        let keyswitch_parameter = KeyswitchParameters {
+            input_lwe_dimension: LweDimension(glwe_params.sample_extract_lwe_dimension()),
+            output_lwe_dimension: LweDimension(internal_dim),
+            ks_decomposition_parameter,
+        };
+        let complexity_keyswitch = DEFAULT_COMPLEXITY
+            .ks_lwe
+            .complexity(keyswitch_parameter, ciphertext_modulus_log);
+        // Keyswitch before bootstrap
+        let noise_keyswitch = noise_atomic_pattern::variance_keyswitch::<W>(
+            keyswitch_parameter,
+            ciphertext_modulus_log,
+            variance_ksk,
+        )
+        .get_variance();
+        noise_cost_key_switching.push((noise_keyswitch, complexity_keyswitch));
+    }
+
+    for &pp_ks_decomposition_parameter in BR_BL.iter() {
+        let ppks_parameter = PbsParameters {
+            internal_lwe_dimension: LweDimension(
+                glwe_params.glwe_dimension * glwe_params.polynomial_size(),
+            ),
+            br_decomposition_parameter: pp_ks_decomposition_parameter,
+            output_glwe_params: glwe_params,
+        };
+        // We assume the packing KS and theexternal product in a PBSto have
+        // the same parameters (base, level)
+        let noise_private_packing_ks =
+            estimate_packing_private_keyswitch::<W>(Variance(0.), variance_bsk, ppks_parameter)
+                .get_variance();
+
+        let ppks_parameter_complexity = KeyswitchParameters {
+            input_lwe_dimension: LweDimension(
+                glwe_params.glwe_dimension * glwe_params.polynomial_size(),
+            ),
+            output_lwe_dimension: LweDimension(
+                glwe_params.glwe_dimension * glwe_params.polynomial_size(),
+            ),
+            ks_decomposition_parameter: KsDecompositionParameters {
+                level: pp_ks_decomposition_parameter.level,
+                log2_base: pp_ks_decomposition_parameter.log2_base,
+            },
+        };
+        let complexity_ppks = DEFAULT_COMPLEXITY
+            .ks_lwe
+            .complexity(ppks_parameter_complexity, ciphertext_modulus_log);
+        noise_cost_pp_switching.push((noise_private_packing_ks, complexity_ppks));
+    }
+
+    NoiseCostByMicroParam {
         pbs: noise_cost_pbs,
-        modulus_switching: noise_cost_modulus_switching,
         key_switching: noise_cost_key_switching,
         pp_switching: noise_cost_pp_switching,
     }
@@ -263,17 +198,16 @@ const BITS_PADDING_WITHOUT_NOISE: u64 = 1;
 #[allow(clippy::expect_fun_call)]
 #[allow(clippy::identity_op)]
 #[allow(clippy::too_many_lines)]
-pub fn optimise_one_with_memo<W: UnsignedInteger>(
+pub fn optimise_one<W: UnsignedInteger>(
     precision: u64, // max precision of a word
     log_norm: f64,  // ?? norm2 of noise multisum, complexity of multisum is neglected
-    _security_level: u64,
+    security_level: u64,
     maximum_acceptable_error_probability: f64,
     glwe_log_polynomial_sizes: &[u64],
     glwe_dimensions: &[u64],
     internal_lwe_dimensions: &[u64],
     n_functions: u64, // Many functions at the same time, stay at 1 for start
-    memo: &Tab,
-    n_inputs: u64, // Tau (nb blocks)
+    n_inputs: u64,    // Tau (nb blocks)
 ) -> OptimizationState {
     assert!(0.0 < maximum_acceptable_error_probability);
     assert!(maximum_acceptable_error_probability < 1.0);
@@ -313,25 +247,30 @@ pub fn optimise_one_with_memo<W: UnsignedInteger>(
                     glwe_dimension: glwe_dim,
                 };
 
-                let input_lwe_dimension = glwe_params.lwe_dimension();
+                let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
 
                 for &internal_dim in internal_lwe_dimensions {
-                    let &noise_modulus_switching = memo
-                        .modulus_switching
-                        .get(&(internal_dim, glwe_poly_size))
-                        .expect(&format!(
-                            "Internal_dim : {} ; glwe poly size: {}",
-                            internal_dim, glwe_poly_size
-                        ));
+                    let micro_tab = compute_noise_cost_by_micro_param::<W>(
+                        security_level,
+                        glwe_params,
+                        internal_dim,
+                    );
+
+                    let noise_modulus_switching =
+                    noise_atomic_pattern::estimate_modulus_switching_noise_with_binary_key::<W>(
+                        internal_dim,
+                        glwe_params.polynomial_size(),
+                    )
+                    .get_variance();
 
                     if noise_modulus_switching > variance_max {
                         continue;
                     }
 
-                    let macro_key = (glwe_dim, glwe_poly_size, internal_dim);
-
                     // BlindRotate dans Circuit BS
-                    for &br_decomposition_parameter in BR_BL_FOR_CB.iter() {
+                    for (br_dp_index, &br_decomposition_parameter) in
+                        BR_BL_FOR_CB.iter().enumerate()
+                    {
                         // Pbs dans BitExtract et Circuit BS et FP-KS (partagés)
                         // TODO: choisir indépendemment(separate FP-KS)
                         let pbs_parameters = PbsParameters {
@@ -340,30 +279,13 @@ pub fn optimise_one_with_memo<W: UnsignedInteger>(
                             output_glwe_params: glwe_params,
                         };
 
-                        let &(base_noise, complexity_pbs) = memo
-                            .pbs
-                            .get(&(
-                                glwe_dim,
-                                glwe_poly_size,
-                                internal_dim,
-                                br_decomposition_parameter.log2_base,
-                                br_decomposition_parameter.level,
-                            ))
-                            .unwrap();
+                        let (base_noise, complexity_pbs) = micro_tab.pbs[br_dp_index];
 
                         // new pbs key for the bit extract pbs, shared
-                        let bit_extract_decomposition_parameter = br_decomposition_parameter;
+                        let bit_extract_dp_index = br_dp_index;
 
-                        let &(_bit_extract_base_noise, complexity_bit_extract_pbs) = memo
-                            .pbs
-                            .get(&(
-                                glwe_dim,
-                                glwe_poly_size,
-                                internal_dim,
-                                bit_extract_decomposition_parameter.log2_base,
-                                bit_extract_decomposition_parameter.level,
-                            ))
-                            .unwrap();
+                        let (_bit_extract_base_noise, complexity_bit_extract_pbs) =
+                            micro_tab.pbs[bit_extract_dp_index];
 
                         let complexity_bit_extract_wo_ks =
                             (n_inputs * (precision - 1)) as f64 * complexity_bit_extract_pbs;
@@ -373,25 +295,11 @@ pub fn optimise_one_with_memo<W: UnsignedInteger>(
                         }
 
                         // private packing keyswitch, <=> FP-KS (Circuit Boostrap)
-                        let pp_ks_decomposition_parameter =
-                            pbs_parameters.br_decomposition_parameter;
+                        let pp_ks_dp_index = br_dp_index;
 
                         // Circuit Boostrap
-                        let &(base_noise_private_packing_ks, complexity_ppks) = memo
-                            .pp_switching
-                            .get(&(
-                                glwe_dim,
-                                glwe_poly_size,
-                                pp_ks_decomposition_parameter.log2_base,
-                                pp_ks_decomposition_parameter.level,
-                            ))
-                            .expect(&format!(
-                                "{}, {}, {}, {}",
-                                glwe_dim,
-                                glwe_poly_size,
-                                pp_ks_decomposition_parameter.log2_base,
-                                pp_ks_decomposition_parameter.level,
-                            ));
+                        let (base_noise_private_packing_ks, complexity_ppks) =
+                            micro_tab.pp_switching[pp_ks_dp_index];
 
                         // CircuitBootstrap: new parameters l,b
                         for &circuit_pbs_decomposition_parameter in CB_V1_BL.iter() {
@@ -489,12 +397,11 @@ pub fn optimise_one_with_memo<W: UnsignedInteger>(
                             let noise_max = noise_ggsw_reencoding.max(noise_hybrid_packing);
 
                             // Shared by all pbs (like brs)
-                            let key_switching_q = memo.key_switching.get(&macro_key).unwrap();
-                            for &(
-                                ks_decomposition_parameter,
-                                (noise_keyswitch, complexity_keyswitch),
-                            ) in key_switching_q
+                            for (ks_dp_index, &ks_decomposition_parameter) in
+                                KS_BL_FOR_CB.iter().enumerate()
                             {
+                                let (noise_keyswitch, complexity_keyswitch) =
+                                    micro_tab.key_switching[ks_dp_index];
                                 let noise_max = noise_max + noise_keyswitch;
                                 if noise_max > variance_max {
                                     continue;
@@ -588,23 +495,13 @@ pub fn optimize_one<W: UnsignedInteger>(
     glwe_log_polynomial_sizes: &[u64],
     glwe_dimensions: &[u64],
     internal_lwe_dimensions: &[u64],
-    memo_opt: &mut Option<Tab>,
 ) -> atomic_pattern::OptimizationState {
     let partitionning = default_partitionning(precision);
     let nb_words = partitionning.len() as u64;
     let max_word_precision = *partitionning.iter().max().unwrap() as u64;
     let log_norm = noise_factor.log2();
     let n_functions = 1;
-    let memo = memo_opt.get_or_insert_with(|| {
-        tabulate_circuit_bootstrap::<W>(
-            security_level,
-            maximum_acceptable_error_probability,
-            glwe_log_polynomial_sizes,
-            glwe_dimensions,
-            internal_lwe_dimensions,
-        )
-    });
-    let result = optimise_one_with_memo::<W>(
+    let result = optimise_one::<W>(
         max_word_precision,
         log_norm,
         security_level,
@@ -613,7 +510,6 @@ pub fn optimize_one<W: UnsignedInteger>(
         glwe_dimensions,
         internal_lwe_dimensions,
         n_functions,
-        memo,
         nb_words, // Tau
     );
     let best_solution = result.best_solution.map(|sol| atomic_pattern::Solution {

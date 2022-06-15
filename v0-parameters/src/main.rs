@@ -92,7 +92,6 @@ fn main() {
     #[rustfmt::skip]
     let all_results = precisions_iter.map(|precision| {
         let mut last_solution = None;
-        let mut memo = None;
         manps.iter().map(|&manp| {
             let noise_scale = 2_f64.powi(manp);
             let result = if args.wop_pbs {
@@ -105,7 +104,7 @@ fn main() {
                     &glwe_log_polynomial_sizes,
                     &glwe_dimensions,
                     &internal_lwe_dimensions,
-                    &mut memo,
+                    
                 )
             } else {
                 optimize_atomic_pattern::optimize_one::<u64>(

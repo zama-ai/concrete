@@ -26,7 +26,7 @@ mod individual {
         pub fn polynomial_size(self) -> u64 {
             1 << self.log2_polynomial_size
         }
-        pub fn lwe_dimension(self) -> u64 {
+        pub fn sample_extract_lwe_dimension(self) -> u64 {
             self.glwe_dimension << self.log2_polynomial_size
         }
     }
