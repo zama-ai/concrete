@@ -16,7 +16,7 @@ mod individual {
         pub log2_base: u64,
     }
 
-    #[derive(Clone, Copy, PartialEq, Debug)]
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     pub struct GlweParameters {
         pub log2_polynomial_size: u64,
         pub glwe_dimension: u64,

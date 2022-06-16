@@ -19,7 +19,7 @@ pub(crate) struct ParameterToOperation {
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ParameterCount {
     pub glwe: usize,
     pub br_decomposition: usize,

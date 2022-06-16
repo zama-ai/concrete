@@ -3,7 +3,7 @@ use derive_more::{Add, AddAssign};
 
 pub type Weights = ClearTensor;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct FunctionTable {
     pub values: Vec<u64>,
 }
