@@ -10,8 +10,7 @@ namespace concretelang {
 namespace TFHE {
 
 void GLWECipherTextType::print(mlir::AsmPrinter &p) const {
-  p << "glwe"
-    << "<{";
+  p << "<{";
   if (getDimension() == -1)
     p << "_";
   else

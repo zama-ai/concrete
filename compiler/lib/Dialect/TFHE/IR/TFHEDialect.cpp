@@ -28,25 +28,6 @@ void TFHEDialect::initialize() {
       >();
 }
 
-::mlir::Type TFHEDialect::parseType(::mlir::DialectAsmParser &parser) const {
-  if (parser.parseOptionalKeyword("glwe").succeeded())
-    return GLWECipherTextType::parse(parser);
-  parser.emitError(parser.getCurrentLocation(), "Unknown TFHE type");
-  return ::mlir::Type();
-}
-
-void TFHEDialect::printType(::mlir::Type type,
-                            ::mlir::DialectAsmPrinter &printer) const {
-  mlir::concretelang::TFHE::GLWECipherTextType glwe =
-      type.dyn_cast_or_null<mlir::concretelang::TFHE::GLWECipherTextType>();
-  if (glwe != nullptr) {
-    glwe.print(printer);
-    return;
-  }
-  // TODO - What should be done here?
-  printer << "unknwontype";
-}
-
 /// Verify that GLWE parameter are consistant
 /// - The bits parameter is 64 (we support only this for v0)
 ::mlir::LogicalResult GLWECipherTextType::verify(
