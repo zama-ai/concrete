@@ -35,8 +35,8 @@
 #include <concretelang/Support/Pipeline.h>
 #include <concretelang/Support/logging.h>
 #include <concretelang/Support/math.h>
-#include <concretelang/Transforms/Bufferize.h>
 #include <concretelang/Transforms/OneShotBufferizeDPSWrapper.h>
+#include <concretelang/Transforms/Passes.h>
 
 namespace mlir {
 namespace concretelang {
@@ -258,6 +258,7 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   bufferizationOptions.allowReturnAllocs = true;
   bufferizationOptions.printConflicts = true;
   bufferizationOptions.fullyDynamicLayoutMaps = false;
+  bufferizationOptions.createDeallocs = true;
 
   std::unique_ptr<mlir::Pass> comprBuffPass =
       mlir::createLinalgComprehensiveModuleBufferizePass(bufferizationOptions);
@@ -267,25 +268,6 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
     addPotentiallyNestedPass(pm, mlir::concretelang::createForLoopToParallel(),
                              enablePass);
   }
-
-  addPotentiallyNestedPass(
-      pm, mlir::bufferization::createFinalizingBufferizePass(), enablePass);
-
-  if (parallelizeLoops)
-    addPotentiallyNestedPass(pm, mlir::createConvertLinalgToParallelLoopsPass(),
-                             enablePass);
-  else
-    addPotentiallyNestedPass(pm, mlir::createConvertLinalgToLoopsPass(),
-                             enablePass);
-  addPotentiallyNestedPass(pm, mlir::createSCFBufferizePass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::func::createFuncBufferizePass(),
-                           enablePass);
-
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createFinalizingBufferizePass(), enablePass);
-
-  addPotentiallyNestedPass(
-      pm, mlir::bufferization::createBufferDeallocationPass(), enablePass);
 
   if (parallelizeLoops)
     addPotentiallyNestedPass(pm, mlir::createConvertSCFToOpenMPPass(),
