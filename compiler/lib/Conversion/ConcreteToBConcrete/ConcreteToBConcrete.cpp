@@ -215,8 +215,8 @@ struct ZeroOpPattern : public mlir::OpRewritePattern<ZeroOp> {
 //
 // becomes:
 //
-//   %0 = "BConcreteOp"(%0, %arg0, ...) : (tensor<dimension+1, i64>>,
-//      tensor<dimension+1, i64>>, ..., ) -> ()
+//   %0 = "BConcreteOp"(%arg0, ...) : (tensor<dimension+1, i64>>, ..., ) ->
+//   (tensor<dimension+1, i64>>)
 template <typename ConcreteOp, typename BConcreteOp>
 struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   LowToBConcrete(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
@@ -231,18 +231,6 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
             .cast<mlir::concretelang::Concrete::LweCiphertextType>();
     auto newResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
-
-    // // %0 = linalg.init_tensor [dimension+1] : tensor<dimension+1, i64>
-    // mlir::Value init =
-    // rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
-    //     concreteOp, newResultTy.getShape(), newResultTy.getElementType());
-
-    // "%0 = BConcreteOp"(%arg0, ...) : (tensor<dimension+1, i64>>,
-    //   tensor<dimension+1, i64>>, ..., ) -> ()
-    // mlir::SmallVector<mlir::Value, 3> newOperands{init};
-
-    // newOperands.append(concreteOp.getOperation()->getOperands().begin(),
-    //                    concreteOp.getOperation()->getOperands().end());
 
     llvm::ArrayRef<::mlir::NamedAttribute> attributes =
         concreteOp.getOperation()->getAttrs();
@@ -306,8 +294,6 @@ struct GlweFromTablePattern : public mlir::OpRewritePattern<
 
     // "BConcrete.fill_glwe_from_table" : (%0, polynomialSize, glweDimension,
     // %tlu)
-
-    // polynomialSize*(glweDimension+1)
     auto polySize = resultTy.getPolynomialSize();
     auto glweDimension = resultTy.getGlweDimension();
     auto outPrecision = resultTy.getP();
@@ -611,10 +597,6 @@ struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
     // add 0 to static_offsets
     mlir::SmallVector<mlir::OpFoldResult> offsets;
     offsets.append(insertOp.indices().begin(), insertOp.indices().end());
-    // mlir::Value zeroIndex = rewriter.create<mlir::arith::ConstantOp>(
-    //     insertOp.getLoc(), rewriter.getI64IntegerAttr(0),
-    //     rewriter.getIndexType());
-    // offsets.push_back(zeroIndex);
     offsets.push_back(rewriter.getIndexAttr(0));
 
     // Inserting a smaller tensor into a (potentially) bigger one. Set
@@ -729,60 +711,6 @@ struct FromElementsOpPattern
     }
 
     rewriter.replaceOp(fromElementsOp, tensor);
-
-    // auto newMemrefResultTy = mlir::MemRefType::get(
-    //     newTensorResultTy.getShape(), newTensorResultTy.getElementType());
-
-    // // %m = memref.alloc() : memref<NxlweDim+1xi64>
-    // auto mOp =
-    // rewriter.create<mlir::memref::AllocOp>(fromElementsOp.getLoc(),
-    //                                                   newMemrefResultTy);
-
-    // // for i = 0 to n-1
-    // // %si = memref.subview %m[i, 0][1, lweDim+1][1, 1] :
-    // memref<lweDim+1xi64>
-    // // %mi = memref.buffer_cast %ei : memref<lweDim+1xi64>
-    // // memref.copy %mi, si : memref<lweDim+1xi64> to memref<lweDim+1xi64,
-    // // offset: OffsetInElements*(eltResultTy.getDimension() + 1)>
-    // int64_t offset = 0;
-    // for (auto eiOp : fromElementsOp.elements()) {
-    //   auto subviewResultTy = mlir::MemRefType::get(
-    //       {eltResultTy.getDimension() + 1},
-    //       newMemrefResultTy.getElementType(),
-    //       rewriter.getSingleDimShiftAffineMap(
-    //           offset * (eltResultTy.getDimension() + 1)));
-
-    //   mlir::SmallVector<mlir::Attribute, 2> staticOffsets{
-    //       rewriter.getI64IntegerAttr(offset), rewriter.getI64IntegerAttr(0)};
-    //   mlir::SmallVector<mlir::Attribute, 2> staticSizes{
-    //       rewriter.getI64IntegerAttr(1),
-    //       rewriter.getI64IntegerAttr(eltResultTy.getDimension() + 1)};
-    //   mlir::SmallVector<mlir::Attribute, 2> staticStrides{
-    //       rewriter.getI64IntegerAttr(1), rewriter.getI64IntegerAttr(1)};
-    //   auto siOp = rewriter.create<mlir::memref::SubViewOp>(
-    //       fromElementsOp.getLoc(), subviewResultTy, mOp, mlir::ValueRange{},
-    //       mlir::ValueRange{}, mlir::ValueRange{},
-    //       rewriter.getArrayAttr(staticOffsets),
-    //       rewriter.getArrayAttr(staticSizes),
-    //       rewriter.getArrayAttr(staticStrides));
-    //   auto miOp = rewriter.create<mlir::bufferization::ToMemrefOp>(
-    //       fromElementsOp.getLoc(), subviewResultTy, eiOp);
-
-    //   mlir::concretelang::convertOperandAndResultTypes(
-    //       rewriter, miOp, [&](mlir::MLIRContext *, mlir::Type t) {
-    //         return converter.convertType(t);
-    //       });
-
-    //   rewriter.create<mlir::memref::CopyOp>(fromElementsOp.getLoc(), miOp,
-    //                                         siOp);
-    //   offset++;
-    // }
-
-    // // Go back to tensor world
-    // // %0 = memref.tensor_load %m : memref<NxlweDim+1xi64>
-    // rewriter.replaceOpWithNewOp<mlir::bufferization::ToTensorOp>(fromElementsOp,
-    //                                                              mOp);
-
     return ::mlir::success();
   };
 };
