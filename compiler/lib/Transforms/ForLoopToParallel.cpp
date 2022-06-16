@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang/Transforms/Bufferize.h"
+#include "concretelang/Transforms/Passes.h"
 
 #include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Dialect/SCF/SCF.h"

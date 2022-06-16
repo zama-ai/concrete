@@ -1,5 +1,5 @@
-set(LLVM_TARGET_DEFINITIONS Bufferize.td)
-mlir_tablegen(Bufferize.h.inc -gen-pass-decls -name Transforms)
+set(LLVM_TARGET_DEFINITIONS Passes.td)
+mlir_tablegen(Passes.h.inc -gen-pass-decls -name Transforms)
 add_public_tablegen_target(ConcretelangTransformsBufferizePassIncGen)
 
 set(LLVM_TARGET_DEFINITIONS OneShotBufferizeDPSWrapper.td)

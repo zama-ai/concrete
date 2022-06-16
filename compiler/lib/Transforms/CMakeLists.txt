@@ -1,5 +1,4 @@
 add_mlir_library(ConcretelangTransforms
-  Bufferize.cpp
   OneShotBufferizeDPSWrapper.cpp
   ForLoopToParallel.cpp
 
@@ -11,7 +10,7 @@ add_mlir_library(ConcretelangTransforms
   ConcretelangTransformsBufferizePassIncGen
   ConcretelangTransformsOneShotBufferizeDPSWrapperPassIncGen
   mlir-headers
-  
+
   LINK_LIBS PUBLIC
   MLIRIR
   MLIRMemRef
