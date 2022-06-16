@@ -1,17 +1,18 @@
 add_custom_target(ConcreteCompilerUnitTests)
 
 function(add_concretecompiler_unittest test_name)
-  add_unittest(ConcreteCompilerUnitTests ${test_name} ${ARGN} EndToEndFixture.cpp)
-  target_link_libraries(${test_name} PRIVATE ConcretelangSupport ${RPATH_FLAGS})
+  add_unittest(ConcreteCompilerUnitTests ${test_name} ${ARGN})
+  target_link_libraries(${test_name} PRIVATE ConcretelangSupport EndToEndFixture ${RPATH_FLAGS})
   set_source_files_properties(${ARGN} PROPERTIES COMPILE_FLAGS "-fno-rtti")
 endfunction()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   link_libraries(
+
     # usefull for old gcc versions
-    -Wl,--allow-multiple-definition  # static concrete-optimizer and concrete shares some code
+    -Wl,--allow-multiple-definition #  static concrete-optimizer and concrete shares some code
   )
 endif()
 

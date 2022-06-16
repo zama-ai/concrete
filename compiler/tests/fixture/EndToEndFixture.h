@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "end_to_end_jit_test.h"
+#include "concretelang/Support/JITSupport.h"
 
 typedef uint8_t ValueWidth;
 struct TensorDescription {
@@ -55,8 +55,7 @@ llvm::Error checkResult(ScalarDesc &desc,
 llvm::Error checkResult(ValueDescription &desc,
                         mlir::concretelang::LambdaArgument &res);
 
+/// Unserialize from the given path a list of a end to end description file.
 std::vector<EndToEndDesc> loadEndToEndDesc(std::string path);
-
-std::string printEndToEndDesc(const testing::TestParamInfo<EndToEndDesc> desc);
 
 #endif

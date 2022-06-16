@@ -6,6 +6,7 @@ ignore:
   - .git/
   - llvm-project/
   - compiler/concrete-optimizer
+  - google-benchmark
 
 rules:
   # checks if file ends in a newline character

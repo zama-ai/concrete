@@ -66,6 +66,8 @@ $(BUILD_DIR)/configured.stamp:
 	-DCONCRETE_OPTIMIZER_DIR=${CONCRETE_OPTIMIZER_DIR}
 	touch $@
 
+all: concretecompiler python-bindings build-tests doc
+
 build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
 
 CONCRETE_OPTIMIZER_SRC = $(shell find $(CONCRETE_OPTIMIZER_DIR)/* -not -path '$(CONCRETE_OPTIMIZER_DIR)/target*')
@@ -93,6 +95,9 @@ clientlib: build-initialized
 
 serverlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangServerLib
+
+build-benchmarks: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
 
 test-check: concretecompiler file-check not
 	$(BUILD_DIR)/bin/llvm-lit -v tests/

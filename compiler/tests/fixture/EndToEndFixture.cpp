@@ -145,10 +145,6 @@ llvm::Error checkResult(ValueDescription &desc,
   assert(false);
 }
 
-std::string printEndToEndDesc(const testing::TestParamInfo<EndToEndDesc> desc) {
-  return desc.param.description;
-}
-
 template <> struct llvm::yaml::MappingTraits<ValueDescription> {
   static void mapping(IO &io, ValueDescription &desc) {
     auto keys = io.keys();

@@ -4,3 +4,6 @@
 [submodule "compiler/concrete-optimizer"]
 	path = compiler/concrete-optimizer
 	url = git@github.com:zama-ai/concrete-optimizer.git
+[submodule "google-benchmark"]
+	path = google-benchmark
+	url = https://github.com/google/benchmark

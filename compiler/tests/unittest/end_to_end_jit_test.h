@@ -3,10 +3,10 @@
 
 #include <gtest/gtest.h>
 
-#include "concretelang/ClientLib/KeySetCache.h"
+#include "../tests_tools/keySetCache.h"
+
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/JITSupport.h"
-#include "llvm/Support/Path.h"
 
 #include "globals.h"
 
@@ -105,27 +105,6 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
     GTEST_FATAL_FAILURE_(msg.c_str());                                         \
   };                                                                           \
   ASSERT_EQ(val.value(), exp);
-
-static inline llvm::Optional<concretelang::clientlib::KeySetCache>
-getTestKeySetCache() {
-
-  llvm::SmallString<0> cachePath;
-  llvm::sys::path::system_temp_directory(true, cachePath);
-  llvm::sys::path::append(cachePath, "KeySetCache");
-
-  auto cachePathStr = std::string(cachePath);
-
-  std::cout << "Using KeySetCache dir: " << cachePathStr << "\n";
-
-  return llvm::Optional<concretelang::clientlib::KeySetCache>(
-      concretelang::clientlib::KeySetCache(cachePathStr));
-}
-
-static inline std::shared_ptr<concretelang::clientlib::KeySetCache>
-getTestKeySetCachePtr() {
-  return std::make_shared<concretelang::clientlib::KeySetCache>(
-      getTestKeySetCache().getValue());
-}
 
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
