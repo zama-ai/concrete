@@ -6,10 +6,6 @@
 #include <iostream>
 #include <stdlib.h>
 
-extern "C" {
-#include "concrete-ffi.h"
-}
-
 #include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/ClientLib/Serializers.h"
 

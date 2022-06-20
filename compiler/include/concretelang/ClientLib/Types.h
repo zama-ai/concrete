@@ -7,11 +7,8 @@
 #define CONCRETELANG_CLIENTLIB_TYPES_H_
 
 #include <cstdint>
+#include <stddef.h>
 #include <vector>
-
-extern "C" {
-#include "concrete-ffi.h"
-}
 
 namespace concretelang {
 namespace clientlib {

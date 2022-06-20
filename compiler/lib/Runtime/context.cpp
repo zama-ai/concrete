@@ -3,29 +3,38 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "concretelang/Runtime/context.h"
+#include "concretelang/Common/Error.h"
+#include "concretelang/Runtime/seeder.h"
 #include <assert.h>
-#include <concretelang/Runtime/context.h>
 #include <stdio.h>
 
-LweKeyswitchKey_u64 *
+LweKeyswitchKey64 *
 get_keyswitch_key_u64(mlir::concretelang::RuntimeContext *context) {
   return context->evaluationKeys.getKsk();
 }
 
-LweBootstrapKey_u64 *
+FftwFourierLweBootstrapKey64 *
 get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context) {
   return context->evaluationKeys.getBsk();
 }
 
-/// Instantiate one engine per thread on demand
-Engine *get_engine(mlir::concretelang::RuntimeContext *context) {
+DefaultEngine *get_engine(mlir::concretelang::RuntimeContext *context) {
+  return context->default_engine;
+}
+
+FftwEngine *get_fftw_engine(mlir::concretelang::RuntimeContext *context) {
   pthread_t threadId = pthread_self();
   std::lock_guard<std::mutex> guard(context->engines_map_guard);
-  auto engineIt = context->engines.find(threadId);
-  if (engineIt == context->engines.end()) {
+  auto engineIt = context->fftw_engines.find(threadId);
+  if (engineIt == context->fftw_engines.end()) {
+    FftwEngine *fftw_engine = nullptr;
+
+    CAPI_ASSERT_ERROR(new_fftw_engine(&fftw_engine));
+
     engineIt =
-        context->engines
-            .insert(std::pair<pthread_t, Engine *>(threadId, new_engine()))
+        context->fftw_engines
+            .insert(std::pair<pthread_t, FftwEngine *>(threadId, fftw_engine))
             .first;
   }
   assert(engineIt->second && "No engine available in context");

@@ -10,9 +10,7 @@
 
 #include "boost/outcome.h"
 
-extern "C" {
-#include "concrete-ffi.h"
-}
+#include "concrete-core-ffi.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/context.h"
 
@@ -102,9 +100,8 @@ public:
     return EvaluationKeys();
   }
 
-  const std::map<LweSecretKeyID,
-                 std::pair<LweSecretKeyParam, LweSecretKey_u64 *>> &
-  getSecretKeys();
+  const std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
+      &getSecretKeys();
 
   const std::map<LweSecretKeyID,
                  std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
@@ -135,8 +132,10 @@ protected:
   friend class KeySetCache;
 
 private:
-  Engine *engine;
-  std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
+  DefaultEngine *engine;
+  DefaultParallelEngine *par_engine;
+  FftwEngine *fftw_engine;
+  std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
       secretKeys;
   std::map<LweSecretKeyID,
            std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
@@ -144,13 +143,13 @@ private:
   std::map<LweSecretKeyID,
            std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
       keyswitchKeys;
-  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *>>
+  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *>>
       inputs;
-  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *>>
+  std::vector<std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *>>
       outputs;
 
   void setKeys(
-      std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
+      std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
           secretKeys,
       std::map<LweSecretKeyID,
                std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>

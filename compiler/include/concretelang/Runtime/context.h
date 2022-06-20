@@ -6,35 +6,43 @@
 #ifndef CONCRETELANG_RUNTIME_CONTEXT_H
 #define CONCRETELANG_RUNTIME_CONTEXT_H
 
+#include <assert.h>
 #include <map>
 #include <mutex>
 #include <pthread.h>
 
 #include "concretelang/ClientLib/EvaluationKeys.h"
+#include "concretelang/Runtime/seeder.h"
 
-extern "C" {
-#include "concrete-ffi.h"
-}
+#include "concrete-core-ffi.h"
+#include "concretelang/Common/Error.h"
 
 namespace mlir {
 namespace concretelang {
 
 typedef struct RuntimeContext {
   ::concretelang::clientlib::EvaluationKeys evaluationKeys;
-  std::map<pthread_t, Engine *> engines;
+  DefaultEngine *default_engine;
+  std::map<pthread_t, FftwEngine *> fftw_engines;
   std::mutex engines_map_guard;
 
-  RuntimeContext() {}
+  RuntimeContext() {
+    CAPI_ASSERT_ERROR(new_default_engine(best_seeder, &default_engine));
+  }
 
   /// Ensure that the engines map is not copied
   RuntimeContext(const RuntimeContext &ctx)
-      : evaluationKeys(ctx.evaluationKeys) {}
+      : evaluationKeys(ctx.evaluationKeys) {
+    CAPI_ASSERT_ERROR(new_default_engine(best_seeder, &default_engine));
+  }
   RuntimeContext(const RuntimeContext &&other)
-      : evaluationKeys(other.evaluationKeys) {}
+      : evaluationKeys(other.evaluationKeys),
+        default_engine(other.default_engine) {}
 
   ~RuntimeContext() {
-    for (const auto &key : engines) {
-      free_engine(key.second);
+    CAPI_ASSERT_ERROR(destroy_default_engine(default_engine));
+    for (const auto &key : fftw_engines) {
+      CAPI_ASSERT_ERROR(destroy_fftw_engine(key.second));
     }
   }
 
@@ -48,12 +56,14 @@ typedef struct RuntimeContext {
 } // namespace mlir
 
 extern "C" {
-LweKeyswitchKey_u64 *
+LweKeyswitchKey64 *
 get_keyswitch_key_u64(mlir::concretelang::RuntimeContext *context);
 
-LweBootstrapKey_u64 *
+FftwFourierLweBootstrapKey64 *
 get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context);
 
-Engine *get_engine(mlir::concretelang::RuntimeContext *context);
+DefaultEngine *get_engine(mlir::concretelang::RuntimeContext *context);
+
+FftwEngine *get_fftw_engine(mlir::concretelang::RuntimeContext *context);
 }
 #endif

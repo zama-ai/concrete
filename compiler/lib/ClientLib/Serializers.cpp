@@ -7,18 +7,19 @@
 #include <iostream>
 #include <stdlib.h>
 
-extern "C" {
-#include "concrete-ffi.h"
-}
+#include "concrete-core-ffi.h"
 
 #include "concretelang/ClientLib/PublicArguments.h"
 #include "concretelang/ClientLib/Serializers.h"
+#include "concretelang/Common/Error.h"
 
 namespace concretelang {
 namespace clientlib {
 
-template <typename Result>
-Result read_deser(std::istream &istream, Result (*deser)(BufferView)) {
+template <typename Engine, typename Result>
+Result read_deser(std::istream &istream,
+                  int (*deser)(Engine *, BufferView, Result *),
+                  Engine *engine) {
   size_t length;
   readSize(istream, length);
   // buffer is too big to be allocated on stack
@@ -26,7 +27,11 @@ Result read_deser(std::istream &istream, Result (*deser)(BufferView)) {
   std::vector<uint8_t> buffer(length);
   istream.read((char *)buffer.data(), length);
   assert(istream.good());
-  return deser({buffer.data(), length});
+  Result result;
+
+  CAPI_ASSERT_ERROR(deser(engine, {buffer.data(), length}, &result));
+
+  return result;
 }
 
 template <typename BufferLike>
@@ -37,9 +42,18 @@ std::ostream &writeBufferLike(std::ostream &ostream, BufferLike &buffer) {
   return ostream;
 }
 
-std::ostream &operator<<(std::ostream &ostream,
-                         const LweKeyswitchKey_u64 *key) {
-  Buffer b = serialize_lwe_keyswitching_key_u64(key);
+std::ostream &operator<<(std::ostream &ostream, const LweKeyswitchKey64 *key) {
+  DefaultSerializationEngine *engine;
+
+  // No Freeing as it doesn't allocate anything.
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  Buffer b;
+
+  CAPI_ASSERT_ERROR(
+      default_serialization_engine_serialize_lwe_keyswitch_key_u64(engine, key,
+                                                                   &b));
+
   writeBufferLike(ostream, b);
   free((void *)b.pointer);
   b.pointer = nullptr;
@@ -47,21 +61,47 @@ std::ostream &operator<<(std::ostream &ostream,
 }
 
 std::ostream &operator<<(std::ostream &ostream,
-                         const LweBootstrapKey_u64 *key) {
-  Buffer b = serialize_lwe_bootstrap_key_u64(key);
+                         const FftwFourierLweBootstrapKey64 *key) {
+  FftwSerializationEngine *engine;
+
+  // No Freeing as it doesn't allocate anything.
+  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+
+  Buffer b;
+
+  CAPI_ASSERT_ERROR(
+      fftw_serialization_engine_serialize_fftw_fourier_lwe_bootstrap_key_u64(
+          engine, key, &b))
+
   writeBufferLike(ostream, b);
   free((void *)b.pointer);
   b.pointer = nullptr;
   return ostream;
 }
 
-std::istream &operator>>(std::istream &istream, LweKeyswitchKey_u64 *&key) {
-  key = read_deser(istream, deserialize_lwe_keyswitching_key_u64);
+std::istream &operator>>(std::istream &istream, LweKeyswitchKey64 *&key) {
+  DefaultSerializationEngine *engine;
+
+  // No Freeing as it doesn't allocate anything.
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  key = read_deser(
+      istream, default_serialization_engine_deserialize_lwe_keyswitch_key_u64,
+      engine);
   return istream;
 }
 
-std::istream &operator>>(std::istream &istream, LweBootstrapKey_u64 *&key) {
-  key = read_deser(istream, deserialize_lwe_bootstrap_key_u64);
+std::istream &operator>>(std::istream &istream,
+                         FftwFourierLweBootstrapKey64 *&key) {
+  FftwSerializationEngine *engine;
+
+  // No Freeing as it doesn't allocate anything.
+  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+
+  key = read_deser(
+      istream,
+      fftw_serialization_engine_deserialize_fftw_fourier_lwe_bootstrap_key_u64,
+      engine);
   return istream;
 }
 

@@ -9,7 +9,6 @@
 #include "concretelang/Runtime/context.h"
 
 extern "C" {
-#include "concrete-ffi.h"
 
 void memref_expand_lut_in_trivial_glwe_ct_u64(
     uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,

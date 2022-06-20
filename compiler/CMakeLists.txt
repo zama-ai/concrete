@@ -53,7 +53,7 @@ set(CONCRETELANG_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 # -------------------------------------------------------------------------------
 include_directories(${CONCRETE_FFI_RELEASE})
 add_library(Concrete STATIC IMPORTED)
-set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEASE}/libconcrete_ffi.a)
+set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEASE}/libconcrete_core_ffi.a)
 
 # -------------------------------------------------------------------------------
 # Python Configuration

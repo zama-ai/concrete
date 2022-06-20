@@ -18,6 +18,13 @@ HPX_TARBALL=$(shell pwd)/hpx-$(HPX_VERSION).tar.gz
 HPX_LOCAL_DIR=$(shell pwd)/hpx-$(HPX_VERSION)
 HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)
 
+CONCRETE_CORE_FFI_VERSION?=0.2.0-rc.2
+ifeq ($(shell uname), Linux)
+	CONCRETE_CORE_FFI_TARBALL=concrete-core-ffi_$(CONCRETE_CORE_FFI_VERSION)_linux_amd64.tar.gz
+else
+	CONCRETE_CORE_FFI_TARBALL=concrete-core-ffi_$(CONCRETE_CORE_FFI_VERSION)_darwin_amd64.tar.gz
+endif
+
 export PATH := $(abspath $(BUILD_DIR))/bin:$(PATH)
 
 ifeq ($(shell which ccache),)
@@ -53,6 +60,46 @@ endif
 
 all: concretecompiler python-bindings build-tests build-benchmarks doc
 
+# concrete-core-ffi #######################################
+
+CONCRETE_CORE_FFI_FOLDER = $(shell pwd)/concrete-core-ffi-$(CONCRETE_CORE_FFI_VERSION)
+
+CONCRETE_CORE_FFI_ARTIFACTS=$(CONCRETE_CORE_FFI_FOLDER)/libconcrete_core_ffi.a $(CONCRETE_CORE_FFI_FOLDER)/concrete-core-ffi.h
+
+concrete-core-ffi: $(CONCRETE_CORE_FFI_ARTIFACTS)
+
+$(CONCRETE_CORE_FFI_ARTIFACTS): $(CONCRETE_CORE_FFI_FOLDER)
+
+$(CONCRETE_CORE_FFI_FOLDER): $(CONCRETE_CORE_FFI_TARBALL)
+	mkdir -p $(CONCRETE_CORE_FFI_FOLDER)
+	tar -xvzf $(CONCRETE_CORE_FFI_TARBALL) --directory $(CONCRETE_CORE_FFI_FOLDER)
+
+$(CONCRETE_CORE_FFI_TARBALL):
+	curl -L https://github.com/zama-ai/concrete-core/releases/download/concrete-core-ffi-$(CONCRETE_CORE_FFI_VERSION)/$(CONCRETE_CORE_FFI_TARBALL) -o $(CONCRETE_CORE_FFI_TARBALL)
+
+# concrete-optimizer ######################################
+
+LIB_CONCRETE_OPTIMIZER_CPP = $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer_cpp.a
+
+concrete-optimizer-lib:
+	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $(LIB_CONCRETE_OPTIMIZER_CPP)
+
+# HPX #####################################################
+
+install-hpx-from-source: $(HPX_LOCAL_DIR)
+	mkdir -p $(HPX_LOCAL_DIR)/build
+	cd $(HPX_LOCAL_DIR)/build && cmake \
+		-DHPX_WITH_FETCH_ASIO=on \
+		-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
+		-DHPX_WITH_MALLOC=system ..
+	cd $(HPX_LOCAL_DIR)/build && make -j2
+
+$(HPX_TARBALL): 
+	curl -L $(HPX_URL) -o $(HPX_TARBALL)
+
+$(HPX_LOCAL_DIR): $(HPX_TARBALL)
+	tar xzvf $(HPX_TARBALL)
+
 $(BUILD_DIR)/configured.stamp:
 	mkdir -p $(BUILD_DIR)
 	cmake -B $(BUILD_DIR) -GNinja ../llvm-project/llvm/ \
@@ -68,7 +115,7 @@ $(BUILD_DIR)/configured.stamp:
 	-DCONCRETELANG_BINDINGS_PYTHON_ENABLED=$(BINDINGS_PYTHON_ENABLED) \
 	-DCONCRETELANG_DATAFLOW_EXECUTION_ENABLED=$(DATAFLOW_EXECUTION_ENABLED) \
 	-DCONCRETELANG_TIMING_ENABLED=$(TIMING_ENABLED) \
-	-DCONCRETE_FFI_RELEASE=${CONCRETE_PROJECT}/target/release \
+	-DCONCRETE_FFI_RELEASE=$(CONCRETE_CORE_FFI_FOLDER) \
 	-DHPX_DIR=${HPX_INSTALL_DIR}/lib/cmake/HPX \
 	-DLLVM_EXTERNAL_PROJECTS=concretelang \
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
@@ -76,30 +123,7 @@ $(BUILD_DIR)/configured.stamp:
 	-DCONCRETE_OPTIMIZER_DIR=${CONCRETE_OPTIMIZER_DIR}
 	touch $@
 
-build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
-
-LIB_CONCRETE_OPTIMIZER_CPP = $(CONCRETE_OPTIMIZER_DIR)/target/libconcrete_optimizer_cpp.a
-
-# we need CONCRETE_OPTIMIZER_DIR here to ensure it is present before computing CONCRETE_OPTIMIZER_SRC
-
-concrete-optimizer-lib:
-	make -C $(CONCRETE_OPTIMIZER_DIR)/concrete-optimizer-cpp $(LIB_CONCRETE_OPTIMIZER_CPP)
-
-# HPX
-
-install-hpx-from-source: $(HPX_LOCAL_DIR)
-	mkdir -p $(HPX_LOCAL_DIR)/build
-	cd $(HPX_LOCAL_DIR)/build && cmake \
-		-DHPX_WITH_FETCH_ASIO=on \
-		-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
-		-DHPX_WITH_MALLOC=system ..
-	cd $(HPX_LOCAL_DIR)/build && make -j2
-
-$(HPX_TARBALL): 
-	curl -L $(HPX_URL) -o $(HPX_TARBALL)
-
-$(HPX_LOCAL_DIR): $(HPX_TARBALL)
-	tar xzvf $(HPX_TARBALL)
+build-initialized: concrete-optimizer-lib concrete-core-ffi $(BUILD_DIR)/configured.stamp
 
 doc: build-initialized
 	cmake --build $(BUILD_DIR) --target mlir-doc
@@ -288,6 +312,7 @@ python_lint:
 	python_format \
 	check_python_format \
 	concrete-optimizer-lib \
+	concrete-core-ffi \
 	build-tests \
 	run-tests \
 	run-check-tests \
@@ -296,4 +321,5 @@ python_lint:
 	run-python-tests \
 	build-end-to-end-tests \
 	build-end-to-end-dataflow-tests \
-	run-end-to-end-dataflow-tests
+	run-end-to-end-dataflow-tests \
+	concrete-core-ffi

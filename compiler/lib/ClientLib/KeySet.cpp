@@ -5,6 +5,8 @@
 
 #include "concretelang/ClientLib/KeySet.h"
 #include "concretelang/ClientLib/CRT.h"
+#include "concretelang/Common/Error.h"
+#include "concretelang/Runtime/seeder.h"
 #include "concretelang/Support/Error.h"
 
 #define CAPI_ERR_TO_STRINGERROR(instr, msg)                                    \
@@ -16,16 +18,49 @@
     }                                                                          \
   }
 
+int clone_transform_lwe_secret_key_to_glwe_secret_key_u64(
+    DefaultEngine *default_engine, LweSecretKey64 *output_lwe_sk,
+    size_t poly_size, GlweSecretKey64 **output_glwe_sk) {
+  LweSecretKey64 *output_lwe_sk_clone = NULL;
+  int lwe_out_sk_clone_ok =
+      clone_lwe_secret_key_u64(output_lwe_sk, &output_lwe_sk_clone);
+  if (lwe_out_sk_clone_ok != 0) {
+    return 1;
+  }
+
+  int glwe_sk_ok =
+      default_engine_transform_lwe_secret_key_to_glwe_secret_key_u64(
+          default_engine, &output_lwe_sk_clone, poly_size, output_glwe_sk);
+  if (glwe_sk_ok != 0) {
+    return 1;
+  }
+
+  if (output_lwe_sk_clone != NULL) {
+    return 1;
+  }
+
+  return 0;
+}
+
 namespace concretelang {
 namespace clientlib {
 
-KeySet::KeySet() : engine(new_engine()) {}
+KeySet::KeySet() {
+
+  CAPI_ASSERT_ERROR(new_default_engine(best_seeder, &engine));
+
+  CAPI_ASSERT_ERROR(new_default_parallel_engine(best_seeder, &par_engine));
+
+  CAPI_ASSERT_ERROR(new_fftw_engine(&fftw_engine));
+}
 
 KeySet::~KeySet() {
   for (auto it : secretKeys) {
-    free_lwe_secret_key_u64(it.second.second);
+    CAPI_ASSERT_ERROR(destroy_lwe_secret_key_u64(it.second.second));
   }
-  free_engine(engine);
+  CAPI_ASSERT_ERROR(destroy_default_engine(engine));
+  CAPI_ASSERT_ERROR(destroy_fftw_engine(fftw_engine));
+  CAPI_ASSERT_ERROR(destroy_default_parallel_engine(par_engine));
 }
 
 outcome::checked<std::unique_ptr<KeySet>, StringError>
@@ -46,7 +81,7 @@ KeySet::setupEncryptionMaterial(ClientParameters &params, uint64_t seed_msb,
   {
     for (auto param : params.inputs) {
       LweSecretKeyParam secretKeyParam = {0};
-      LweSecretKey_u64 *secretKey = nullptr;
+      LweSecretKey64 *secretKey = nullptr;
       if (param.encryption.hasValue()) {
         auto inputSk = this->secretKeys.find(param.encryption->secretKeyID);
         if (inputSk == this->secretKeys.end()) {
@@ -56,13 +91,13 @@ KeySet::setupEncryptionMaterial(ClientParameters &params, uint64_t seed_msb,
         secretKeyParam = inputSk->second.first;
         secretKey = inputSk->second.second;
       }
-      std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *> input = {
+      std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *> input = {
           param, secretKeyParam, secretKey};
       this->inputs.push_back(input);
     }
     for (auto param : params.outputs) {
       LweSecretKeyParam secretKeyParam = {0};
-      LweSecretKey_u64 *secretKey = nullptr;
+      LweSecretKey64 *secretKey = nullptr;
       if (param.encryption.hasValue()) {
         auto outputSk = this->secretKeys.find(param.encryption->secretKeyID);
         if (outputSk == this->secretKeys.end()) {
@@ -72,7 +107,7 @@ KeySet::setupEncryptionMaterial(ClientParameters &params, uint64_t seed_msb,
         secretKeyParam = outputSk->second.first;
         secretKey = outputSk->second.second;
       }
-      std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey_u64 *> output = {
+      std::tuple<CircuitGate, LweSecretKeyParam, LweSecretKey64 *> output = {
           param, secretKeyParam, secretKey};
       this->outputs.push_back(output);
     }
@@ -107,7 +142,7 @@ KeySet::generateKeysFromParams(ClientParameters &params, uint64_t seed_msb,
 }
 
 void KeySet::setKeys(
-    std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
+    std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
         secretKeys,
     std::map<LweSecretKeyID,
              std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
@@ -122,8 +157,9 @@ void KeySet::setKeys(
 
 outcome::checked<void, StringError>
 KeySet::generateSecretKey(LweSecretKeyID id, LweSecretKeyParam param) {
-  LweSecretKey_u64 *sk;
-  sk = generate_lwe_secret_key_u64(engine, param.dimension);
+  LweSecretKey64 *sk;
+  CAPI_ASSERT_ERROR(default_engine_generate_new_lwe_secret_key_u64(
+      engine, param.dimension, &sk));
 
   secretKeys[id] = {param, sk};
 
@@ -142,7 +178,7 @@ KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param) {
     return StringError("cannot find output key to generate bootstrap key");
   }
   // Allocate the bootstrap key
-  LweBootstrapKey_u64 *bsk;
+  LweBootstrapKey64 *bsk;
 
   uint64_t total_dimension = outputSk->second.first.dimension;
 
@@ -150,12 +186,27 @@ KeySet::generateBootstrapKey(BootstrapKeyID id, BootstrapKeyParam param) {
 
   uint64_t polynomialSize = total_dimension / param.glweDimension;
 
-  bsk = generate_lwe_bootstrap_key_u64(
-      engine, inputSk->second.second, outputSk->second.second, param.baseLog,
-      param.level, param.variance, param.glweDimension, polynomialSize);
+  GlweSecretKey64 *output_glwe_sk = nullptr;
+
+  // This is not part of the C FFI but rather is a C util exposed for
+  // convenience in tests.
+  CAPI_ASSERT_ERROR(clone_transform_lwe_secret_key_to_glwe_secret_key_u64(
+      engine, outputSk->second.second, polynomialSize, &output_glwe_sk));
+
+  CAPI_ASSERT_ERROR(default_parallel_engine_generate_new_lwe_bootstrap_key_u64(
+      par_engine, inputSk->second.second, output_glwe_sk, param.baseLog,
+      param.level, param.variance, &bsk));
+
+  FftwFourierLweBootstrapKey64 *fbsk;
+
+  CAPI_ASSERT_ERROR(
+      fftw_engine_convert_lwe_bootstrap_key_to_fftw_fourier_lwe_bootstrap_key_u64(
+          fftw_engine, bsk, &fbsk));
+
+  CAPI_ASSERT_ERROR(destroy_lwe_bootstrap_key_u64(bsk));
 
   // Store the bootstrap key
-  bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(bsk)};
+  bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(fbsk)};
 
   return outcome::success();
 }
@@ -172,11 +223,11 @@ KeySet::generateKeyswitchKey(KeyswitchKeyID id, KeyswitchKeyParam param) {
     return StringError("cannot find output key to generate keyswitch key");
   }
   // Allocate the keyswitch key
-  LweKeyswitchKey_u64 *ksk;
+  LweKeyswitchKey64 *ksk;
 
-  ksk = generate_lwe_keyswitch_key_u64(engine, inputSk->second.second,
-                                       outputSk->second.second, param.level,
-                                       param.baseLog, param.variance);
+  CAPI_ASSERT_ERROR(default_engine_generate_new_lwe_keyswitch_key_u64(
+      engine, inputSk->second.second, outputSk->second.second, param.level,
+      param.baseLog, param.variance, &ksk));
 
   // Store the keyswitch key
   keyswitchKeys[id] = {param, std::make_shared<LweKeyswitchKey>(ksk)};
@@ -236,8 +287,11 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
     auto product = crt::productOfModuli(crt);
     for (auto modulus : crt) {
       auto plaintext = crt::encode(input, modulus, product);
-      ::encrypt_lwe_u64(engine, lweSecretKey, ciphertext, plaintext,
-                        encryption->variance);
+      CAPI_ASSERT_ERROR(
+          default_engine_discard_encrypt_lwe_ciphertext_u64_raw_ptr_buffers(
+              engine, lweSecretKey, ciphertext, plaintext,
+              encryption->variance));
+
       ciphertext = ciphertext + lweSecretKeyParam.lweSize();
     }
     return outcome::success();
@@ -245,8 +299,10 @@ KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
   // Simple TFHE integers - 1 blocks with one padding bits
   // TODO we could check if the input value is in the right range
   uint64_t plaintext = input << (64 - (encryption->encoding.precision + 1));
-  ::encrypt_lwe_u64(engine, lweSecretKey, ciphertext, plaintext,
-                    encryption->variance);
+  CAPI_ASSERT_ERROR(
+      default_engine_discard_encrypt_lwe_ciphertext_u64_raw_ptr_buffers(
+          engine, lweSecretKey, ciphertext, plaintext, encryption->variance));
+
   return outcome::success();
 }
 
@@ -268,7 +324,11 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
     std::vector<int64_t> remainders;
     // decrypt and decode remainders
     for (auto modulus : crt) {
-      auto decrypted = ::decrypt_lwe_u64(engine, lweSecretKey, ciphertext);
+      uint64_t decrypted;
+      CAPI_ASSERT_ERROR(
+          default_engine_decrypt_lwe_ciphertext_u64_raw_ptr_buffers(
+              engine, lweSecretKey, ciphertext, &decrypted));
+
       auto plaintext = crt::decode(decrypted, modulus);
       remainders.push_back(plaintext);
       ciphertext = ciphertext + lweSecretKeyParam.lweSize();
@@ -278,7 +338,11 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
     return outcome::success();
   }
   // Simple TFHE integers - 1 blocks with one padding bits
-  uint64_t plaintext = ::decrypt_lwe_u64(engine, lweSecretKey, ciphertext);
+  uint64_t plaintext;
+
+  CAPI_ASSERT_ERROR(default_engine_decrypt_lwe_ciphertext_u64_raw_ptr_buffers(
+      engine, lweSecretKey, ciphertext, &plaintext));
+
   // Decode
   uint64_t precision = encryption->encoding.precision;
   output = plaintext >> (64 - precision - 2);
@@ -289,8 +353,8 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
   return outcome::success();
 }
 
-const std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
-    &KeySet::getSecretKeys() {
+const std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>> &
+KeySet::getSecretKeys() {
   return secretKeys;
 }
 

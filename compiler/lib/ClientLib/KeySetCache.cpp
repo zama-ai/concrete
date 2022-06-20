@@ -16,18 +16,17 @@
 #include <string>
 #include <utime.h>
 
-extern "C" {
-#include "concrete-ffi.h"
-}
+#include "concrete-core-ffi.h"
 
 namespace concretelang {
 namespace clientlib {
 
 using StringError = concretelang::error::StringError;
 
-template <class Key>
-outcome::checked<Key *, StringError> load(llvm::SmallString<0> &path,
-                                          Key *(*deser)(BufferView buffer)) {
+template <class Engine, class Key>
+outcome::checked<Key *, StringError>
+load(llvm::SmallString<0> &path,
+     int (*deser)(Engine *, BufferView buffer, Key **), Engine *engine) {
   std::ifstream in((std::string)path, std::ofstream::binary);
   if (in.fail()) {
     return StringError("Cannot access " + (std::string)path);
@@ -39,8 +38,11 @@ outcome::checked<Key *, StringError> load(llvm::SmallString<0> &path,
   }
   auto content = sbuffer.str();
   BufferView buffer = {(const uint8_t *)content.c_str(), content.length()};
-  auto result = deser(buffer);
-  if (result == nullptr) {
+  Key *result = nullptr;
+
+  int error_code = deser(engine, buffer, &result);
+
+  if (result == nullptr || error_code != 0) {
     return StringError("Cannot deserialize " + (std::string)path);
   }
   return result;
@@ -52,35 +54,81 @@ static void writeFile(llvm::SmallString<0> &path, Buffer content) {
   out.close();
 }
 
-outcome::checked<LweSecretKey_u64 *, StringError>
+outcome::checked<LweSecretKey64 *, StringError>
 loadSecretKey(llvm::SmallString<0> &path) {
-  return load(path, deserialize_lwe_secret_key_u64);
+  DefaultSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  return load(path, default_serialization_engine_deserialize_lwe_secret_key_u64,
+              engine);
 }
 
-outcome::checked<LweKeyswitchKey_u64 *, StringError>
+outcome::checked<LweKeyswitchKey64 *, StringError>
 loadKeyswitchKey(llvm::SmallString<0> &path) {
-  return load(path, deserialize_lwe_keyswitching_key_u64);
+  DefaultSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  return load(path,
+              default_serialization_engine_deserialize_lwe_keyswitch_key_u64,
+              engine);
 }
 
-outcome::checked<LweBootstrapKey_u64 *, StringError>
+outcome::checked<FftwFourierLweBootstrapKey64 *, StringError>
 loadBootstrapKey(llvm::SmallString<0> &path) {
-  return load(path, deserialize_lwe_bootstrap_key_u64);
+
+  FftwSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+
+  return load(
+      path,
+      fftw_serialization_engine_deserialize_fftw_fourier_lwe_bootstrap_key_u64,
+      engine);
 }
 
-void saveSecretKey(llvm::SmallString<0> &path, LweSecretKey_u64 *key) {
-  Buffer buffer = serialize_lwe_secret_key_u64(key);
+void saveSecretKey(llvm::SmallString<0> &path, LweSecretKey64 *key) {
+
+  DefaultSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  Buffer buffer;
+
+  CAPI_ASSERT_ERROR(default_serialization_engine_serialize_lwe_secret_key_u64(
+      engine, key, &buffer));
+
   writeFile(path, buffer);
   free(buffer.pointer);
 }
 
-void saveBootstrapKey(llvm::SmallString<0> &path, LweBootstrapKey_u64 *key) {
-  Buffer buffer = serialize_lwe_bootstrap_key_u64(key);
+void saveBootstrapKey(llvm::SmallString<0> &path,
+                      FftwFourierLweBootstrapKey64 *key) {
+  FftwSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_fftw_serialization_engine(&engine));
+
+  Buffer buffer;
+
+  CAPI_ASSERT_ERROR(
+      fftw_serialization_engine_serialize_fftw_fourier_lwe_bootstrap_key_u64(
+          engine, key, &buffer));
+
   writeFile(path, buffer);
   free(buffer.pointer);
 }
 
-void saveKeyswitchKey(llvm::SmallString<0> &path, LweKeyswitchKey_u64 *key) {
-  Buffer buffer = serialize_lwe_keyswitching_key_u64(key);
+void saveKeyswitchKey(llvm::SmallString<0> &path, LweKeyswitchKey64 *key) {
+
+  DefaultSerializationEngine *engine;
+
+  CAPI_ASSERT_ERROR(new_default_serialization_engine(&engine));
+
+  Buffer buffer;
+  CAPI_ASSERT_ERROR(
+      default_serialization_engine_serialize_lwe_keyswitch_key_u64(engine, key,
+                                                                   &buffer));
   writeFile(path, buffer);
   free(buffer.pointer);
 }
@@ -94,7 +142,7 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
   // e.g. so the CI can do some cleanup of unused keys.
   utime(folderPath.c_str(), nullptr);
 
-  std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey_u64 *>>
+  std::map<LweSecretKeyID, std::pair<LweSecretKeyParam, LweSecretKey64 *>>
       secretKeys;
   std::map<LweSecretKeyID,
            std::pair<BootstrapKeyParam, std::shared_ptr<LweBootstrapKey>>>
@@ -109,7 +157,7 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     auto param = secretKeyParam.second;
     llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "secretKey_" + id);
-    OUTCOME_TRY(LweSecretKey_u64 * sk, loadSecretKey(path));
+    OUTCOME_TRY(LweSecretKey64 * sk, loadSecretKey(path));
     secretKeys[id] = {param, sk};
   }
   // Load bootstrap keys
@@ -118,7 +166,7 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     auto param = bootstrapKeyParam.second;
     llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "pbsKey_" + id);
-    OUTCOME_TRY(LweBootstrapKey_u64 * bsk, loadBootstrapKey(path));
+    OUTCOME_TRY(FftwFourierLweBootstrapKey64 * bsk, loadBootstrapKey(path));
     bootstrapKeys[id] = {param, std::make_shared<LweBootstrapKey>(bsk)};
   }
   // Load keyswitch keys
@@ -127,7 +175,7 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
     auto param = keyswitchParam.second;
     llvm::SmallString<0> path(folderPath);
     llvm::sys::path::append(path, "ksKey_" + id);
-    OUTCOME_TRY(LweKeyswitchKey_u64 * ksk, loadKeyswitchKey(path));
+    OUTCOME_TRY(LweKeyswitchKey64 * ksk, loadKeyswitchKey(path));
     keyswitchKeys[id] = {param, std::make_shared<LweKeyswitchKey>(ksk)};
   }
 

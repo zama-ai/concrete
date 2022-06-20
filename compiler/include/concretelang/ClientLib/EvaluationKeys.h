@@ -8,19 +8,18 @@
 
 #include <memory>
 
-extern "C" {
-#include "concrete-ffi.h"
-}
+#include "concrete-core-ffi.h"
+#include "concretelang/Common/Error.h"
 
 namespace concretelang {
 namespace clientlib {
 
 // =============================================
 
-/// Wrapper for `LweKeyswitchKey_u64` so that it cleans up properly.
+/// Wrapper for `LweKeyswitchKey64` so that it cleans up properly.
 class LweKeyswitchKey {
 private:
-  LweKeyswitchKey_u64 *ksk;
+  LweKeyswitchKey64 *ksk;
 
 protected:
   friend std::ostream &operator<<(std::ostream &ostream,
@@ -29,27 +28,28 @@ protected:
                                   LweKeyswitchKey &wrappedKsk);
 
 public:
-  LweKeyswitchKey(LweKeyswitchKey_u64 *ksk) : ksk{ksk} {}
+  LweKeyswitchKey(LweKeyswitchKey64 *ksk) : ksk{ksk} {}
   LweKeyswitchKey(LweKeyswitchKey &other) = delete;
   LweKeyswitchKey(LweKeyswitchKey &&other) : ksk{other.ksk} {
     other.ksk = nullptr;
   }
   ~LweKeyswitchKey() {
     if (this->ksk != nullptr) {
-      free_lwe_keyswitch_key_u64(this->ksk);
+      CAPI_ASSERT_ERROR(destroy_lwe_keyswitch_key_u64(this->ksk));
+
       this->ksk = nullptr;
     }
   }
 
-  LweKeyswitchKey_u64 *get() { return this->ksk; }
+  LweKeyswitchKey64 *get() { return this->ksk; }
 };
 
 // =============================================
 
-/// Wrapper for `LweBootstrapKey_u64` so that it cleans up properly.
+/// Wrapper for `FftwFourierLweBootstrapKey64` so that it cleans up properly.
 class LweBootstrapKey {
 private:
-  LweBootstrapKey_u64 *bsk;
+  FftwFourierLweBootstrapKey64 *bsk;
 
 protected:
   friend std::ostream &operator<<(std::ostream &ostream,
@@ -58,19 +58,19 @@ protected:
                                   LweBootstrapKey &wrappedBsk);
 
 public:
-  LweBootstrapKey(LweBootstrapKey_u64 *bsk) : bsk{bsk} {}
+  LweBootstrapKey(FftwFourierLweBootstrapKey64 *bsk) : bsk{bsk} {}
   LweBootstrapKey(LweBootstrapKey &other) = delete;
   LweBootstrapKey(LweBootstrapKey &&other) : bsk{other.bsk} {
     other.bsk = nullptr;
   }
   ~LweBootstrapKey() {
     if (this->bsk != nullptr) {
-      free_lwe_bootstrap_key_u64(this->bsk);
+      CAPI_ASSERT_ERROR(destroy_fftw_fourier_lwe_bootstrap_key_u64(this->bsk));
       this->bsk = nullptr;
     }
   }
 
-  LweBootstrapKey_u64 *get() { return this->bsk; }
+  FftwFourierLweBootstrapKey64 *get() { return this->bsk; }
 };
 
 // =============================================
@@ -96,8 +96,8 @@ public:
                  std::shared_ptr<LweBootstrapKey> sharedBsk)
       : sharedKsk{sharedKsk}, sharedBsk{sharedBsk} {}
 
-  LweKeyswitchKey_u64 *getKsk() { return this->sharedKsk->get(); }
-  LweBootstrapKey_u64 *getBsk() { return this->sharedBsk->get(); }
+  LweKeyswitchKey64 *getKsk() { return this->sharedKsk->get(); }
+  FftwFourierLweBootstrapKey64 *getBsk() { return this->sharedBsk->get(); }
 };
 
 // =============================================

@@ -2,6 +2,7 @@ add_library(ConcretelangRuntime SHARED
   context.cpp
   wrappers.cpp
   DFRuntime.cpp
+  seeder.cpp
 )
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
