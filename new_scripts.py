@@ -1,7 +1,8 @@
 import gc
+import multiprocessing
 
 from estimator_new import *
-from sage.all import oo, save
+from sage.all import oo, save, load
 from math import log2
 import gc
 from multiprocessing import *
@@ -152,7 +153,7 @@ def automated_param_select_n(params, target_security=128):
     if security_level < target_security:
         params.updated(n=None)
 
-    return params
+    return (params, security_level)
 
 
 def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128], name="v0.sobj"):
@@ -166,123 +167,52 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128],
     sage: X
     """
 
-    results = dict()
-
     # grab min and max value/s of n
     (sd_min, sd_max) = sd_range
-
     for lam in target_security_levels:
-        results["{}".format(lam)] = []
+        print("LAM = {}".format(lam))
         for sd in range(sd_min, sd_max + 1):
             Xe_new = nd.NoiseDistribution.DiscreteGaussian(2**sd)
-            params_out = automated_param_select_n(params_in.updated(Xe=Xe_new), target_security=lam)
-            results["{}".format(lam)].append((params_out.n, params_out.q, params_out.Xe.stddev))
+            (params_out, sec) = automated_param_select_n(params_in.updated(Xe=Xe_new), target_security=lam)
+            print("PARAMS OUT = {}".format(params_out))
+
+            try:
+                results = load("{}.sobj".format(name))
+            except:
+                results = dict()
+                results["{}".format(lam)] = []
+
+            results["{}".format(lam)].append((params_out.n, params_out.q, params_out.Xe.stddev, sec))
             save(results, "{}.sobj".format(name))
+
             del(params_out)
             gc.collect()
     return results
 
 
-def generate_parameter_matrix_para(params_in, sd_range, target_security_levels=[128], name="v0.sobj"):
-    """
-    :param sd_range: a tuple (sd_min, sd_max) giving the values of sd for which to generate parameters
-    :param params: the standard deviation of the LWE error
-    :param target_security: the target number of bits of security, 128 is default
-
-    EXAMPLE:
-    sage: X = generate_parameter_matrix()
-    sage: X
-    """
-    if __name__ == "__main__":
-
-        results = dict()
-
-        def test_memory(x):
-            print("doing job...")
-            print(x)
-            y = LWE.estimate(x, deny_list=("arora-gb", "bkw"))
-            return y
-
-        # grab min and max value/s of n
-        (sd_min, sd_max) = sd_range
-        print(sd_range)
-
-        for lam in target_security_levels:
-            results["{}".format(lam)] = []
-            names = range(sd_min, sd_max + 1)
-            procs = []
-            proc = Process(target=automated_param_select_n)
-            procs.append(proc)
-            proc.start()
-            p = Pool(1)
-            for name in names:
-                proc = Process(target=test_memory, args=(name,))
-                procs.append(proc)
-                proc.start()
-                proc.join()
-                Xe_new = nd.NoiseDistribution.DiscreteGaussian(2**sd)
-                params_out = automated_param_select_n(params_in.updated(Xe=Xe_new), target_security=lam)
-                results["{}".format(lam)].append((params_out.n, params_out.q, params_out.Xe.stddev))
-                save(results, "{}.sobj".format(name))
-                params_out = None
-                del(params_out)
-                gc.collect()
-    return results
-
-# what we run
-
-def generate_zama_curves64(sd_range=[2, 56], target_security_levels=[256], name="default", pools = 1):
+def generate_zama_curves64(sd_range=range(5,9), target_security_levels=[256], name="default"):
     if __name__ == '__main__':
 
         D = ND.DiscreteGaussian
         vals = sd_range
-        p = Pool(pools)
         procs = []
-        for val in vals:
-            init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(2**55), m=oo, tag='TFHE_DEFAULT')
-            proc = Process(target=generate_parameter_matrix, args=(init_params, [val, val + 1], target_security_levels, name))
-            procs.append(proc)
-            proc.start()
+        pool = multiprocessing.Pool(2)
+        init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(2 ** 55), m=oo, tag='TFHE_DEFAULT')
+        inputs = [(init_params, (val, val+1), target_security_levels, name) for val in vals]
+        print(inputs[0])
+        res = pool.starmap(generate_parameter_matrix, inputs)
 
     return "done"
 
+def wrap(*args):
+    return generate_parameter_matrix(*args)
+
+
 import sys
 a = int(sys.argv[1])
-print("input arg is {}".format(a))
-
 D = ND.DiscreteGaussian
 init_params = LWE.Parameters(n=1024, q=2 ** 32, Xs=ND.UniformMod(2), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
-#automated_param_select_n(init_params, target_security=128)
-#automated_param_select_n(init_params, target_security=192)
-generate_zama_curves64(sd_range=[50, 53], target_security_levels=[a], name="{}".format("testing"))
-
-
-
-
-
-
-
-
-
-#if __name__ == "__main__":
-#    D = ND.DiscreteGaussian
-#    params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(2**57), m=oo, tag='TFHE_DEFAULT')
-#
-#    names = [params, params.updated(n=761), params.updated(q=2**65), params.updated(n=762)]
-#    procs = []
-#    proc = Process(target=print_func)
-#    procs.append(proc)
-#    proc.start()
-#    p = Pool(1)
-#
-#    for name in names:
-#        proc = Process(target=test_memory, args=(name,))
-#        procs.append(proc)
-#        proc.start()
-#        proc.join()
-#
-#    for proc in procs:
-#        proc.join()
+generate_zama_curves64(sd_range= range(2,60), target_security_levels=[a], name="{}".format("new_96"))
 
 
 
