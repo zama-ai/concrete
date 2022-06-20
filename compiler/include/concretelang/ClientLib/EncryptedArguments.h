@@ -23,11 +23,24 @@ using concretelang::error::StringError;
 
 class PublicArguments;
 
+inline size_t bitWidthAsWord(size_t exactBitWidth) {
+  if (exactBitWidth <= 8)
+    return 8;
+  if (exactBitWidth <= 16)
+    return 16;
+  if (exactBitWidth <= 32)
+    return 32;
+  if (exactBitWidth <= 64)
+    return 64;
+  assert(false && "Bit witdh > 64 not supported");
+}
+
 /// Temporary object used to hold and encrypt parameters before calling a
 /// ClientLambda. Use preferably TypeClientLambda and serializeCall(Args...).
 /// Otherwise convert it to a PublicArguments and use
 /// serializeCall(PublicArguments, KeySet).
 class EncryptedArguments {
+
 public:
   EncryptedArguments() : currentPos(0) {}
 
@@ -73,7 +86,10 @@ public:
 
   /// Add a vector-tensor argument.
   outcome::checked<void, StringError> pushArg(std::vector<uint8_t> arg,
-                                              KeySet &keySet);
+                                              KeySet &keySet) {
+    return pushArg((uint8_t *)arg.data(),
+                   llvm::ArrayRef<int64_t>{(int64_t)arg.size()}, keySet);
+  }
 
   /// Add a 1D tensor argument with data and size of the dimension.
   template <typename T>
@@ -82,26 +98,20 @@ public:
     return pushArg(std::vector<uint8_t>(data, data + dim1), keySet);
   }
 
-  // Add a tensor argument.
-  template <typename T>
-  outcome::checked<void, StringError>
-  pushArg(const T *data, llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
-    return pushArg(8 * sizeof(T), static_cast<const void *>(data), shape,
-                   keySet);
-  }
-
   /// Add a 1D tensor argument.
   template <size_t size>
   outcome::checked<void, StringError> pushArg(std::array<uint8_t, size> arg,
                                               KeySet &keySet) {
-    return pushArg(8, (void *)arg.data(), {size}, keySet);
+    return pushArg((uint8_t *)arg.data(), llvm::ArrayRef<int64_t>{size},
+                   keySet);
   }
 
   /// Add a 2D tensor argument.
   template <size_t size0, size_t size1>
   outcome::checked<void, StringError>
   pushArg(std::array<std::array<uint8_t, size1>, size0> arg, KeySet &keySet) {
-    return pushArg(8, (void *)arg.data(), {size0, size1}, keySet);
+    return pushArg((uint8_t *)arg.data(), llvm::ArrayRef<int64_t>{size0, size1},
+                   keySet);
   }
 
   /// Add a 3D tensor argument.
@@ -109,7 +119,8 @@ public:
   outcome::checked<void, StringError>
   pushArg(std::array<std::array<std::array<uint8_t, size2>, size1>, size0> arg,
           KeySet &keySet) {
-    return pushArg(8, (void *)arg.data(), {size0, size1, size2}, keySet);
+    return pushArg((uint8_t *)arg.data(),
+                   llvm::ArrayRef<int64_t>{size0, size1, size2}, keySet);
   }
 
   // Generalize by computing shape by template recursion
@@ -125,13 +136,94 @@ public:
   template <typename T>
   outcome::checked<void, StringError>
   pushArg(T *data, llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
-    return pushArg(8 * sizeof(T), static_cast<const void *>(data), shape,
-                   keySet);
+    return pushArg(static_cast<const T *>(data), shape, keySet);
   }
 
-  outcome::checked<void, StringError> pushArg(size_t width, const void *data,
-                                              llvm::ArrayRef<int64_t> shape,
-                                              KeySet &keySet);
+  template <typename T>
+  outcome::checked<void, StringError>
+  pushArg(const T *data, llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
+    OUTCOME_TRYV(checkPushTooManyArgs(keySet));
+    auto pos = currentPos;
+    CircuitGate input = keySet.inputGate(pos);
+    // Check the width of data
+    if (input.shape.width > 64) {
+      return StringError("argument #")
+             << pos << " width > 64 bits is not supported";
+    }
+    // Check the shape of tensor
+    if (input.shape.dimensions.empty()) {
+      return StringError("argument #") << pos << "is not a tensor";
+    }
+    if (shape.size() != input.shape.dimensions.size()) {
+      return StringError("argument #")
+             << pos << "has not the expected number of dimension, got "
+             << shape.size() << " expected " << input.shape.dimensions.size();
+    }
+    // Allocate empty
+    ciphertextBuffers.resize(ciphertextBuffers.size() + 1);
+    TensorData &values_and_sizes = ciphertextBuffers.back();
+
+    // Check shape
+    for (size_t i = 0; i < shape.size(); i++) {
+      if (shape[i] != input.shape.dimensions[i]) {
+        return StringError("argument #")
+               << pos << " has not the expected dimension #" << i << " , got "
+               << shape[i] << " expected " << input.shape.dimensions[i];
+      }
+    }
+    // Set sizes
+    values_and_sizes.sizes = keySet.clientParameters().bufferShape(input);
+
+    if (input.encryption.hasValue()) {
+      // Allocate values
+      values_and_sizes.values.resize(
+          keySet.clientParameters().bufferSize(input));
+      auto lweSize = keySet.clientParameters().lweBufferSize(input);
+      auto &values = values_and_sizes.values;
+      for (size_t i = 0, offset = 0; i < input.shape.size;
+           i++, offset += lweSize) {
+        OUTCOME_TRYV(keySet.encrypt_lwe(pos, values.data() + offset, data[i]));
+      }
+    } else {
+      // Allocate values take care of gate bitwidth
+      auto bitsPerValue = bitWidthAsWord(input.shape.width);
+      auto bytesPerValue = bitsPerValue / 8;
+      auto nbWordPerValue = 8 / bytesPerValue;
+      // ceil division
+      auto size = (input.shape.size / nbWordPerValue) +
+                  (input.shape.size % nbWordPerValue != 0);
+      size = size == 0 ? 1 : size;
+      values_and_sizes.values.resize(size);
+      auto v = (uint8_t *)values_and_sizes.values.data();
+      for (size_t i = 0; i < input.shape.size; i++) {
+        auto dst = v + i * bytesPerValue;
+        auto src = (const uint8_t *)&data[i];
+        for (size_t j = 0; j < bytesPerValue; j++) {
+          dst[j] = src[j];
+        }
+      }
+    }
+    // allocated
+    preparedArgs.push_back(nullptr);
+    // aligned
+    preparedArgs.push_back((void *)values_and_sizes.values.data());
+    // offset
+    preparedArgs.push_back((void *)0);
+    // sizes
+    for (size_t size : values_and_sizes.sizes) {
+      preparedArgs.push_back((void *)size);
+    }
+
+    // Set the stride for each dimension, equal to the product of the
+    // following dimensions.
+    int64_t stride = values_and_sizes.length();
+    for (size_t size : values_and_sizes.sizes) {
+      stride = (size == 0 ? 0 : (stride / size));
+      preparedArgs.push_back((void *)stride);
+    }
+    currentPos++;
+    return outcome::success();
+  }
 
   /// Recursive case for scalars: extract first scalar argument from
   /// parameter pack and forward rest

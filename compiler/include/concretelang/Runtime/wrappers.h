@@ -58,6 +58,24 @@ void memref_bootstrap_lwe_u64(
     uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,
     mlir::concretelang::RuntimeContext *context);
 
+uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product);
+
+// TODO(16bits): Hackish wrapper for the 16 bits quick win
+void memref_wop_pbs_crt_buffer(
+    // Output memref 2D memref
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset_0,
+    uint64_t out_offset_1, uint64_t out_size_0, uint64_t out_size_1,
+    uint64_t out_stride_0, uint64_t out_stride_1,
+    // Input memref
+    uint64_t *in_allocated, uint64_t *in_aligned, uint64_t in_offset_0,
+    uint64_t in_offset_1, uint64_t in_size_0, uint64_t in_size_1,
+    uint64_t in_stride_0, uint64_t in_stride_1,
+    // clear text lut
+    uint64_t *lut_ct_allocated, uint64_t *lut_ct_aligned,
+    uint64_t lut_ct_offset, uint64_t lut_ct_size, uint64_t lut_ct_stride,
+    // runtime context that hold evluation keys
+    mlir::concretelang::RuntimeContext *context);
+
 void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
                           uint64_t src_offset, uint64_t src_size,
                           uint64_t src_stride, uint64_t *dst_allocated,

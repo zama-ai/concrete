@@ -34,14 +34,14 @@ def Concrete_AddLweCiphertextsOp : Concrete_Op<"add_lwe_ciphertexts"> {
 def Concrete_AddPlaintextLweCiphertextOp : Concrete_Op<"add_plaintext_lwe_ciphertext"> {
     let summary = "Returns the sum of a clear integer and a lwe ciphertext";
 
-    let arguments = (ins Concrete_LweCiphertextType:$lhs, Concrete_PlaintextType:$rhs);
+    let arguments = (ins Concrete_LweCiphertextType:$lhs, AnyInteger:$rhs);
     let results = (outs Concrete_LweCiphertextType:$result);
 }
 
 def Concrete_MulCleartextLweCiphertextOp : Concrete_Op<"mul_cleartext_lwe_ciphertext"> {
     let summary = "Returns the product of a clear integer and a lwe ciphertext";
 
-    let arguments = (ins Concrete_LweCiphertextType:$lhs, Concrete_CleartextType:$rhs);
+    let arguments = (ins Concrete_LweCiphertextType:$lhs, AnyInteger:$rhs);
     let results = (outs Concrete_LweCiphertextType:$result);
 }
 
@@ -82,18 +82,30 @@ def Concrete_KeySwitchLweOp : Concrete_Op<"keyswitch_lwe"> {
     let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def Concrete_EncodeIntOp : Concrete_Op<"encode_int"> {
-    let summary = "Encodes an integer (for it to later be added to a LWE ciphertext)";
+// TODO(16bits): hack
+def Concrete_WopPBSLweOp : Concrete_Op<"wop_pbs_lwe"> {
+    let summary = "";
 
-    let arguments = (ins AnyInteger:$i);
-    let results = (outs Concrete_PlaintextType:$plaintext);
-}
-
-def Concrete_IntToCleartextOp : Concrete_Op<"int_to_cleartext", [NoSideEffect]> {
-    let summary = "Keyswitches a LWE ciphertext";
-
-    let arguments = (ins AnyInteger:$i);
-    let results = (outs Concrete_CleartextType:$cleartext);
+    let arguments = (ins
+        Concrete_LweCiphertextType:$ciphertext,
+        1DTensorOf<[I64]>:$accumulator,
+        // Bootstrap parameters
+        I32Attr : $bootstrapLevel,
+        I32Attr : $bootstrapBaseLog,
+        // Keyswitch parameters
+        I32Attr : $keyswitchLevel,
+        I32Attr : $keyswitchBaseLog,
+        // Packing keyswitch key parameters
+        I32Attr : $packingKeySwitchInputLweDimension,
+        I32Attr : $packingKeySwitchinputLweCount,
+        I32Attr : $packingKeySwitchoutputPolynomialSize,
+        I32Attr : $packingKeySwitchLevel,
+        I32Attr : $packingKeySwitchBaseLog,
+        // Circuit bootstrap parameters
+        I32Attr : $circuitBootstrapLevel,
+        I32Attr : $circuitBootstrapBaseLog
+    );
+    let results = (outs Concrete_LweCiphertextType:$result);
 }
 
 #endif

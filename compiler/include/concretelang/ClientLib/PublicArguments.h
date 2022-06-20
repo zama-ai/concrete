@@ -108,8 +108,7 @@ struct PublicResult {
     }
 
     auto buffer = buffers[pos];
-    auto lweSize = clientParameters.lweSecretKeyParam(gate).value().lweSize();
-
+    auto lweSize = clientParameters.lweBufferSize(gate);
     std::vector<T> decryptedValues(buffer.length() / lweSize);
     for (size_t i = 0; i < decryptedValues.size(); i++) {
       auto ciphertext = &buffer.values[i * lweSize];
@@ -118,6 +117,13 @@ struct PublicResult {
       decryptedValues[i] = decrypted;
     }
     return decryptedValues;
+  }
+
+  /// Return the shape of the clear tensor of a result.
+  outcome::checked<std::vector<int64_t>, StringError>
+  asClearTextShape(size_t pos) {
+    OUTCOME_TRY(auto gate, clientParameters.ouput(pos));
+    return gate.shape.dimensions;
   }
 
   // private: TODO tmp

@@ -16,29 +16,10 @@ namespace concretelang {
 
 namespace {
 
-/// Get the integer value that the cleartext was created from if it exists.
-llvm::Optional<mlir::Value>
-getIntegerFromCleartextIfExists(mlir::Value cleartext) {
-  assert(
-      cleartext.getType().isa<mlir::concretelang::Concrete::CleartextType>());
-  // Cleartext are supposed to be created from integers
-  auto intToCleartextOp = cleartext.getDefiningOp();
-  if (intToCleartextOp == nullptr)
-    return {};
-  if (llvm::isa<Concrete::IntToCleartextOp>(intToCleartextOp)) {
-    // We want to match when the integer value is constant
-    return intToCleartextOp->getOperand(0);
-  }
-  return {};
-}
-
 /// Get the constant integer that the cleartext was created from if it exists.
 llvm::Optional<IntegerAttr>
 getConstantIntFromCleartextIfExists(mlir::Value cleartext) {
-  auto cleartextInt = getIntegerFromCleartextIfExists(cleartext);
-  if (!cleartextInt.hasValue())
-    return {};
-  auto constantOp = cleartextInt.getValue().getDefiningOp();
+  auto constantOp = cleartext.getDefiningOp();
   if (constantOp == nullptr)
     return {};
   if (llvm::isa<arith::ConstantOp>(constantOp)) {

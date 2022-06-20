@@ -59,12 +59,17 @@ public:
     auto dimension = cryptoParameters.getNBigGlweDimension();
     auto polynomialSize = 1;
     auto precision = (signed)type.getP();
+    auto crtDecomposition =
+        cryptoParameters.largeInteger.hasValue()
+            ? cryptoParameters.largeInteger->crtDecomposition
+            : mlir::concretelang::CRTDecomposition{};
     if ((int)dimension == type.getDimension() &&
         (int)polynomialSize == type.getPolynomialSize()) {
       return type;
     }
     return TFHE::GLWECipherTextType::get(type.getContext(), dimension,
-                                         polynomialSize, bits, precision);
+                                         polynomialSize, bits, precision,
+                                         crtDecomposition);
   }
 
   TFHE::GLWECipherTextType glweLookupTableType(GLWECipherTextType &type) {
@@ -73,7 +78,7 @@ public:
     auto polynomialSize = cryptoParameters.getPolynomialSize();
     auto precision = (signed)type.getP();
     return TFHE::GLWECipherTextType::get(type.getContext(), dimension,
-                                         polynomialSize, bits, precision);
+                                         polynomialSize, bits, precision, {});
   }
 
   TFHE::GLWECipherTextType glweIntraPBSType(GLWECipherTextType &type) {
@@ -82,7 +87,7 @@ public:
     auto polynomialSize = 1;
     auto precision = (signed)type.getP();
     return TFHE::GLWECipherTextType::get(type.getContext(), dimension,
-                                         polynomialSize, bits, precision);
+                                         polynomialSize, bits, precision, {});
   }
 
   mlir::concretelang::V0Parameter cryptoParameters;
@@ -145,6 +150,49 @@ struct BootstrapGLWEOpPattern
     rewriter.startRootUpdate(newOp);
     newOp.ciphertext().setType(newInputTy);
     newOp.lookup_table().setType(newTableTy);
+    rewriter.finalizeRootUpdate(newOp);
+    return mlir::success();
+  };
+
+private:
+  TFHEGlobalParametrizationTypeConverter &converter;
+  mlir::concretelang::V0Parameter &cryptoParameters;
+};
+
+struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
+  WopPBSGLWEOpPattern(mlir::MLIRContext *context,
+                      TFHEGlobalParametrizationTypeConverter &converter,
+                      mlir::concretelang::V0Parameter &cryptoParameters,
+                      mlir::PatternBenefit benefit =
+                          mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
+      : mlir::OpRewritePattern<TFHE::WopPBSGLWEOp>(context, benefit),
+        converter(converter), cryptoParameters(cryptoParameters) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(TFHE::WopPBSGLWEOp wopPBSOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::WopPBSGLWEOp>(
+        wopPBSOp, converter.convertType(wopPBSOp.result().getType()),
+        wopPBSOp.ciphertext(), wopPBSOp.lookupTable(),
+        // Bootstrap parameters
+        cryptoParameters.brLevel, cryptoParameters.brLogBase,
+        // Keyswitch parameters
+        cryptoParameters.ksLevel, cryptoParameters.ksLogBase,
+        // Packing keyswitch key parameters
+        cryptoParameters.largeInteger->wopPBS.packingKeySwitch
+            .inputLweDimension,
+        cryptoParameters.largeInteger->wopPBS.packingKeySwitch.inputLweCount,
+        cryptoParameters.largeInteger->wopPBS.packingKeySwitch
+            .outputPolynomialSize,
+        cryptoParameters.largeInteger->wopPBS.packingKeySwitch.level,
+        cryptoParameters.largeInteger->wopPBS.packingKeySwitch.baseLog,
+        // Circuit bootstrap parameters
+        cryptoParameters.largeInteger->wopPBS.circuitBootstrap.level,
+        cryptoParameters.largeInteger->wopPBS.circuitBootstrap.baseLog);
+    rewriter.startRootUpdate(newOp);
+    auto ciphertextType =
+        wopPBSOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
+    newOp.ciphertext().setType(converter.glweInterPBSType(ciphertextType));
     rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
@@ -269,6 +317,16 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
     target.addDynamicallyLegalOp<TFHE::BootstrapGLWEOp>(
         [&](TFHE::BootstrapGLWEOp op) {
           return converter.isLegal(op->getResultTypes());
+        });
+
+    // Parametrize wop pbs
+    patterns.add<WopPBSGLWEOpPattern>(&getContext(), converter,
+                                      cryptoParameters);
+    target.addDynamicallyLegalOp<TFHE::WopPBSGLWEOp>(
+        [&](TFHE::WopPBSGLWEOp op) {
+          return !op.getType()
+                      .cast<TFHE::GLWECipherTextType>()
+                      .hasUnparametrizedParameters();
         });
 
     // Add all patterns to convert TFHE types

@@ -4,6 +4,7 @@
 // for license information.
 
 #include "concretelang/ClientLib/KeySet.h"
+#include "concretelang/ClientLib/CRT.h"
 #include "concretelang/Support/Error.h"
 
 #define CAPI_ERR_TO_STRINGERROR(instr, msg)                                    \
@@ -31,16 +32,16 @@ outcome::checked<std::unique_ptr<KeySet>, StringError>
 KeySet::generate(ClientParameters &params, uint64_t seed_msb,
                  uint64_t seed_lsb) {
   auto keySet = std::make_unique<KeySet>();
-
   OUTCOME_TRYV(keySet->generateKeysFromParams(params, seed_msb, seed_lsb));
   OUTCOME_TRYV(keySet->setupEncryptionMaterial(params, seed_msb, seed_lsb));
-
   return std::move(keySet);
 }
 
 outcome::checked<void, StringError>
 KeySet::setupEncryptionMaterial(ClientParameters &params, uint64_t seed_msb,
                                 uint64_t seed_lsb) {
+  _clientParameters = params;
+
   // Set inputs and outputs LWE secret keys
   {
     for (auto param : params.inputs) {
@@ -189,9 +190,16 @@ KeySet::allocate_lwe(size_t argPos, uint64_t **ciphertext, uint64_t &size) {
     return StringError("allocate_lwe position of argument is too high");
   }
   auto inputSk = inputs[argPos];
+  auto encryption = std::get<0>(inputSk).encryption;
+  if (!encryption.hasValue()) {
+    return StringError("allocate_lwe argument #")
+           << argPos << "is not encypeted";
+  }
+  auto numBlocks =
+      encryption->encoding.crt.empty() ? 1 : encryption->encoding.crt.size();
 
   size = std::get<1>(inputSk).lweSize();
-  *ciphertext = (uint64_t *)malloc(sizeof(uint64_t) * size);
+  *ciphertext = (uint64_t *)malloc(sizeof(uint64_t) * size * numBlocks);
   return outcome::success();
 }
 
@@ -205,20 +213,40 @@ bool KeySet::isOutputEncrypted(size_t argPos) {
          std::get<0>(outputs[argPos]).encryption.hasValue();
 }
 
+/// Return the number of bits to represents the given value
+uint64_t bitWidthOfValue(uint64_t value) { return std::ceil(std::log2(value)); }
+
 outcome::checked<void, StringError>
 KeySet::encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input) {
   if (argPos >= inputs.size()) {
     return StringError("encrypt_lwe position of argument is too high");
   }
   auto inputSk = inputs[argPos];
-  if (!std::get<0>(inputSk).encryption.hasValue()) {
+  auto encryption = std::get<0>(inputSk).encryption;
+  if (!encryption.hasValue()) {
     return StringError("encrypt_lwe the positional argument is not encrypted");
   }
-  // Encode - TODO we could check if the input value is in the right range
-  uint64_t plaintext =
-      input << (64 - (std::get<0>(inputSk).encryption->encoding.precision + 1));
-  ::encrypt_lwe_u64(engine, std::get<2>(inputSk), ciphertext, plaintext,
-                    std::get<0>(inputSk).encryption->variance);
+  auto encoding = encryption->encoding;
+  auto lweSecretKeyParam = std::get<1>(inputSk);
+  auto lweSecretKey = std::get<2>(inputSk);
+  // CRT encoding - N blocks with crt encoding
+  auto crt = encryption->encoding.crt;
+  if (!crt.empty()) {
+    // Put each decomposition into a new ciphertext
+    auto product = crt::productOfModuli(crt);
+    for (auto modulus : crt) {
+      auto plaintext = crt::encode(input, modulus, product);
+      ::encrypt_lwe_u64(engine, lweSecretKey, ciphertext, plaintext,
+                        encryption->variance);
+      ciphertext = ciphertext + lweSecretKeyParam.lweSize();
+    }
+    return outcome::success();
+  }
+  // Simple TFHE integers - 1 blocks with one padding bits
+  // TODO we could check if the input value is in the right range
+  uint64_t plaintext = input << (64 - (encryption->encoding.precision + 1));
+  ::encrypt_lwe_u64(engine, lweSecretKey, ciphertext, plaintext,
+                    encryption->variance);
   return outcome::success();
 }
 
@@ -228,13 +256,31 @@ KeySet::decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output) {
     return StringError("decrypt_lwe: position of argument is too high");
   }
   auto outputSk = outputs[argPos];
-  if (!std::get<0>(outputSk).encryption.hasValue()) {
+  auto lweSecretKey = std::get<2>(outputSk);
+  auto lweSecretKeyParam = std::get<1>(outputSk);
+  auto encryption = std::get<0>(outputSk).encryption;
+  if (!encryption.hasValue()) {
     return StringError("decrypt_lwe: the positional argument is not encrypted");
   }
-  uint64_t plaintext =
-      ::decrypt_lwe_u64(engine, std::get<2>(outputSk), ciphertext);
+  auto crt = encryption->encoding.crt;
+  // CRT encoding - N blocks with crt encoding
+  if (!crt.empty()) {
+    std::vector<int64_t> remainders;
+    // decrypt and decode remainders
+    for (auto modulus : crt) {
+      auto decrypted = ::decrypt_lwe_u64(engine, lweSecretKey, ciphertext);
+      auto plaintext = crt::decode(decrypted, modulus);
+      remainders.push_back(plaintext);
+      ciphertext = ciphertext + lweSecretKeyParam.lweSize();
+    }
+    // compute the inverse crt
+    output = crt::iCrt(crt, remainders);
+    return outcome::success();
+  }
+  // Simple TFHE integers - 1 blocks with one padding bits
+  uint64_t plaintext = ::decrypt_lwe_u64(engine, lweSecretKey, ciphertext);
   // Decode
-  size_t precision = std::get<0>(outputSk).encryption->encoding.precision;
+  size_t precision = encryption->encoding.precision;
   output = plaintext >> (64 - precision - 2);
   size_t carry = output % 2;
   output = ((output >> 1) + carry) % (1 << (precision + 1));

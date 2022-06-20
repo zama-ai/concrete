@@ -27,6 +27,15 @@ func.func @neg_glwe(%arg0: !TFHE.glwe<{1024,12,64}{7}>) -> !TFHE.glwe<{1024,11,6
 
 // -----
 
+// GLWE crt parameter
+func.func @neg_glwe(%arg0: !TFHE.glwe<crt=[2,3,5,7,11]{1024,12,64}{7}>) -> !TFHE.glwe<crt=[7,3,5,7,11]{1024,12,64}{7}> {
+  // expected-error @+1 {{'TFHE.neg_glwe' op should have the same GLWE 'crt' parameter}}
+  %1 = "TFHE.neg_glwe"(%arg0): (!TFHE.glwe<crt=[2,3,5,7,11]{1024,12,64}{7}>) -> (!TFHE.glwe<crt=[7,3,5,7,11]{1024,12,64}{7}>)
+  return %1: !TFHE.glwe<crt=[7,3,5,7,11]{1024,12,64}{7}>
+}
+
+// -----
+
 // integer width doesn't match GLWE parameter
 func.func @neg_glwe(%arg0: !TFHE.glwe<{1024,12,64}{7}>) -> !TFHE.glwe<{1024,11,64}{7}> {
   // expected-error @+1 {{'TFHE.neg_glwe' op should have the same GLWE 'polynomialSize' parameter}}

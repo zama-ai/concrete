@@ -69,12 +69,6 @@ ServerLambda::load(std::string funcName, std::string outputPath) {
   return ServerLambda::loadFromModule(module, funcName);
 }
 
-TensorData dynamicCall(void *(*func)(void *...),
-                       std::vector<void *> &preparedArgs, CircuitGate &output) {
-  size_t rank = output.shape.dimensions.size();
-  return multi_arity_call_dynamic_rank(func, preparedArgs, rank);
-}
-
 std::unique_ptr<clientlib::PublicResult>
 ServerLambda::call(PublicArguments &args, EvaluationKeys &evaluationKeys) {
   std::vector<void *> preparedArgs(args.preparedArgs.begin(),
@@ -84,9 +78,12 @@ ServerLambda::call(PublicArguments &args, EvaluationKeys &evaluationKeys) {
   runtimeContext.evaluationKeys = evaluationKeys;
   preparedArgs.push_back((void *)&runtimeContext);
 
-  return clientlib::PublicResult::fromBuffers(
-      clientParameters,
-      {dynamicCall(this->func, preparedArgs, clientParameters.outputs[0])});
+  assert(clientParameters.outputs.size() == 1 &&
+         "ServerLambda::call is implemented for only one output");
+  auto output = args.clientParameters.outputs[0];
+  auto rank = args.clientParameters.bufferShape(output).size();
+  auto result = multi_arity_call_dynamic_rank(func, preparedArgs, rank);
+  return clientlib::PublicResult::fromBuffers(clientParameters, {result});
   ;
 }
 

@@ -36,6 +36,7 @@ markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               llvm::Optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult

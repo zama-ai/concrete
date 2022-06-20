@@ -115,4 +115,29 @@ def TFHE_BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
   let results = (outs TFHE_GLWECipherTextType : $result);
 }
 
+def TFHE_WopPBSGLWEOp : TFHE_Op<"wop_pbs_glwe"> {
+    let summary = "";
+
+    let arguments = (ins
+        TFHE_GLWECipherTextType : $ciphertext,
+        1DTensorOf<[I64]> : $lookupTable,
+        // Bootstrap parameters
+        I32Attr : $bootstrapLevel,
+        I32Attr : $bootstrapBaseLog,
+        // Keyswitch parameters
+        I32Attr : $keyswitchLevel,
+        I32Attr : $keyswitchBaseLog,
+        // Packing keyswitch key parameters
+        I32Attr : $packingKeySwitchInputLweDimension,
+        I32Attr : $packingKeySwitchinputLweCount,
+        I32Attr : $packingKeySwitchoutputPolynomialSize,
+        I32Attr : $packingKeySwitchLevel,
+        I32Attr : $packingKeySwitchBaseLog,
+        // Circuit bootstrap parameters
+        I32Attr : $circuitBootstrapLevel,
+        I32Attr : $circuitBootstrapBaseLog
+    );
+    let results = (outs TFHE_GLWECipherTextType:$result);
+}
+
 #endif

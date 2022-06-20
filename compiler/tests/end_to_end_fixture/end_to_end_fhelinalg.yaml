@@ -1,3 +1,229 @@
+description: add_eint_int_term_to_term
+program: |
+  // Returns the term to term addition of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31, 6, 12, 9]
+      shape: [4]
+      width: 8
+    - tensor: [32, 9, 2, 3]
+      shape: [4]
+      width: 8
+    outputs:
+    - tensor: [63, 15, 14, 12]
+      shape: [4]
+---
+description: add_eint_int_term_to_term_16bits
+program: |
+  // Returns the term to term addition of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x!FHE.eint<16>>, %a1: tensor<4xi17>) -> tensor<4x!FHE.eint<16>> {
+    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> tensor<4x!FHE.eint<16>>
+    return %res : tensor<4x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [32767, 1276, 10212, 0]
+      shape: [4]
+    - tensor: [32768, 20967, 3, 0]
+      shape: [4]
+    outputs:
+    - tensor: [65535, 22243, 10215, 0]
+      shape: [4]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
+description: add_eint_term_to_term
+program: |
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31, 6, 12, 9]
+      shape: [4]
+    - tensor: [32, 9, 2, 3]
+      shape: [4]
+    outputs:
+    - tensor: [63, 15, 14, 12]
+      shape: [4]
+---
+description: add_eint_term_to_term_16bits
+program: |
+  func.func @main(%a0: tensor<4x!FHE.eint<16>>, %a1: tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>> {
+    %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x!FHE.eint<16>>, tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>>
+    return %res : tensor<4x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [32767, 1276, 10212, 0]
+      shape: [4]
+    - tensor: [32768, 20967, 3, 0]
+      shape: [4]
+    outputs:
+    - tensor: [65535, 22243, 10215, 0]
+      shape: [4]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
+description: sub_int_eint_term_to_term
+program: |
+  // Returns the term to term substraction of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi5>, tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>>
+    return %res : tensor<4x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [15, 9, 12, 9]
+      shape: [4]
+      width: 8
+    - tensor: [15, 6, 2, 3]
+      shape: [4]
+      width: 8
+    outputs:
+    - tensor: [0, 3, 10, 6]
+      shape: [4]
+---
+description: sub_int_eint_term_to_term_16bits
+program: |
+  // Returns the term to term substraction of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4xi17>, %a1: tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>> {
+    %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi17>, tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>>
+    return %res : tensor<4x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 22243, 10215, 0]
+      shape: [4]
+    - tensor: [65535, 1276, 10212, 0]
+      shape: [4]
+    outputs:
+    - tensor: [0, 20967, 3, 0]
+      shape: [4]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
+description: sub_eint_int_term_to_term
+program: |
+  func.func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> tensor<4x!FHE.eint<4>>
+    return %res : tensor<4x!FHE.eint<4>>
+  }
+tests:
+  - inputs:
+    - tensor: [15, 6, 2, 3]
+      shape: [4]
+      width: 8
+    - tensor: [15, 9, 12, 9]
+      shape: [4]
+      width: 8
+    outputs:
+    - tensor: [0, 3, 10, 6]
+      shape: [4]
+---
+description: sub_eint_int_term_to_term_16bits
+program: |
+  func.func @main(%a0: tensor<4xi17>, %a1: tensor<4x!FHE.eint<16>>) -> tensor<4x!FHE.eint<16>> {
+    %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> tensor<4x!FHE.eint<16>>
+    return %res : tensor<4x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 1276, 10212, 0]
+      shape: [4]
+    - tensor: [65535, 22243, 10215, 0]
+      shape: [4]
+    outputs:
+    - tensor: [0, 20967, 3, 0]
+      shape: [4]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
+description: sub_eint_term_to_term
+program: |
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31, 6, 12, 9]
+      shape: [4]
+      width: 8
+    - tensor: [4, 2, 9, 3]
+      shape: [4]
+      width: 8
+    outputs:
+    - tensor: [27, 4, 3, 6]
+      shape: [4]
+---
+description: sub_eint_term_to_term_16bits
+program: |
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 22243, 10215, 0]
+      shape: [4]
+    - tensor: [65535, 1276, 10212, 0]
+      shape: [4]
+    outputs:
+    - tensor: [0, 20967, 3, 0]
+      shape: [4]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
+description: mul_eint_int_term_to_term
+program: |
+  // Returns the term to term multiplication of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [31, 6, 12, 9]
+      shape: [4]
+      width: 8
+    - tensor: [2, 3, 2, 3]
+      shape: [4]
+      width: 8
+    outputs:
+    - tensor: [62, 18, 24, 27]
+      shape: [4]
+---
+description: mul_eint_int_term_to_term_16bits
+program: |
+  // Returns the term to term multiplication of `%a0` with `%a1`
+  func.func @main(%a0: tensor<4x!FHE.eint<16>>, %a1: tensor<4xi17>) -> tensor<4x!FHE.eint<16>> {
+    %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<16>>, tensor<4xi17>) -> tensor<4x!FHE.eint<16>>
+    return %res : tensor<4x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [1, 65535, 12, 0]
+      shape: [4]
+    - tensor: [65535, 1, 1987, 0]
+      shape: [4]
+    outputs:
+    - tensor: [65535, 65535, 23844, 0]
+      shape: [4]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
 description: transpose1d
 program: |
   func.func @main(%input: tensor<3x!FHE.eint<6>>) -> tensor<3x!FHE.eint<6>> {

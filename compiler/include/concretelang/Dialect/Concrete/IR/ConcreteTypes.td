@@ -40,7 +40,10 @@ def Concrete_LweCiphertextType : Concrete_Type<"LweCiphertext", [MemRefElementTy
         // The dimension of the lwe ciphertext
         "signed":$dimension,
         // Precision of the lwe ciphertext
-        "signed":$p
+        "signed":$p,
+        // CRT decomposition for large integers
+        ArrayRefParameter<"int64_t", "CRT decomposition">:$crtDecomposition
+
     );
 
     let hasCustomAssemblyFormat = 1;

@@ -16,4 +16,9 @@ def AddRuntimeContext : Pass<"add-runtime-context", "mlir::ModuleOp"> {
   let constructor = "mlir::concretelang::createAddRuntimeContext()";
 }
 
+def EliminateCRTOps : Pass<"eliminate-bconcrete-crt-ops", "mlir::func::FuncOp"> {
+  let summary = "Eliminate the crt bconcrete operators.";
+  let constructor = "mlir::concretelang::createEliminateCRTOpsPass()";
+}
+
 #endif // MLIR_DIALECT_TENSOR_TRANSFORMS_PASSES

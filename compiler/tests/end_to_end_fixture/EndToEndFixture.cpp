@@ -67,7 +67,7 @@ llvm::Error checkResult(ScalarDesc &desc,
   }
   if (desc.value != res64->getValue()) {
     return StreamStringError("unexpected result value: got ")
-           << res64->getValue() << "expected " << desc.value;
+           << res64->getValue() << " expected " << desc.value;
   }
   return llvm::Error::success();
 }
@@ -203,6 +203,12 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
       desc.v0Constraint = mlir::concretelang::V0FHEConstraint();
       desc.v0Constraint->p = v0constraint[0];
       desc.v0Constraint->norm2 = v0constraint[1];
+    }
+    mlir::concretelang::LargeIntegerParameter largeInterger;
+    io.mapOptional("large-integer-crt-decomposition",
+                   largeInterger.crtDecomposition);
+    if (!largeInterger.crtDecomposition.empty()) {
+      desc.largeIntegerParameter = largeInterger;
     }
   }
 };

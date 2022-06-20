@@ -20,6 +20,9 @@ void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
   if (desc.v0Parameter.hasValue()) {
     options.v0Parameter = *desc.v0Parameter;
   }
+  if (desc.largeIntegerParameter.hasValue()) {
+    options.largeIntegerParameter = *desc.largeIntegerParameter;
+  }
 
   /* 0 - Enable parallel testing where required */
 #ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED

@@ -14,6 +14,8 @@
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<OperationPass<ModuleOp>> createAddRuntimeContext();
+
+std::unique_ptr<OperationPass<func::FuncOp>> createEliminateCRTOps();
 } // namespace concretelang
 } // namespace mlir
 

@@ -14,7 +14,7 @@ struct TensorDescription {
   ValueWidth width;
 };
 struct ScalarDesc {
-  uint64_t value;
+  int64_t value;
   ValueWidth width;
 };
 
@@ -43,6 +43,8 @@ struct EndToEndDesc {
   std::vector<TestDescription> tests;
   llvm::Optional<mlir::concretelang::V0Parameter> v0Parameter;
   llvm::Optional<mlir::concretelang::V0FHEConstraint> v0Constraint;
+  llvm::Optional<mlir::concretelang::LargeIntegerParameter>
+      largeIntegerParameter;
 };
 
 llvm::Expected<mlir::concretelang::LambdaArgument *>

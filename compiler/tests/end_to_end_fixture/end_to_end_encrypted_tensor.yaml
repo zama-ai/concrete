@@ -1,3 +1,17 @@
+## Part of the Concrete Compiler Project, under the BSD3 License with Zama
+## Exceptions. See
+## https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+## for license information.
+##
+## This file contains programs and references to end to end test the compiler.
+## Program in this file aims to test the `tensor` dialects on encrypted integers.
+##
+## Operators:
+## - tensor.extract
+## - tensor.insert
+## - tensor.extract_slice
+## - tensor.insert_slice
+
 description: identity
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
@@ -13,6 +27,24 @@ tests:
     - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
                 0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
       shape: [2,10]
+---
+description: identity_16bits
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<2x10x!FHE.eint<16>> {
+    return %t : tensor<2x10x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    outputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: extract
 program: |
@@ -59,6 +91,157 @@ tests:
     outputs:
     - scalar: 9
 ---
+description: extract_16bits
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>, %i: index, %j: index) ->
+  !FHE.eint<16> {
+    %c = tensor.extract %t[%i, %j] : tensor<2x10x!FHE.eint<16>>
+    return %c : !FHE.eint<16>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 65535
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+    - scalar: 0
+    - scalar: 9
+    outputs:
+    - scalar: 0
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+    - scalar: 1
+    - scalar: 9
+    outputs:
+    - scalar: 9
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
+description: insert
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<6>>, %i: index, %j: index, %x: !FHE.eint<6>) -> tensor<2x10x!FHE.eint<6>> {
+    %r = tensor.insert %x into %t[%i, %j] : tensor<2x10x!FHE.eint<6>>
+    return %r : tensor<2x10x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+    - scalar: 0
+    - scalar: 0
+    - scalar: 42
+    outputs:
+    - tensor: [42, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+    - scalar: 0
+    - scalar: 1
+    - scalar: 42
+    outputs:
+    - tensor: [63, 42,  7, 43, 52,  9, 26, 34, 22,  0,
+                0,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                42,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+    - scalar: 1
+    - scalar: 0
+    - scalar: 42
+    outputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                42,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+  - inputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                42,  1,  2,  3,  4,  5,  6,  7,  8,  9]
+      shape: [2,10]
+    - scalar: 1
+    - scalar: 9
+    - scalar: 42
+    outputs:
+    - tensor: [63, 12,  7, 43, 52,  9, 26, 34, 22,  0,
+                42,  1,  2,  3,  4,  5,  6,  7,  8,  42]
+      shape: [2,10]
+---
+description: insert_16bits
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>, %i: index, %j: index, %x: !FHE.eint<16>) -> tensor<2x10x!FHE.eint<16>> {
+    %r = tensor.insert %x into %t[%i, %j] : tensor<2x10x!FHE.eint<16>>
+    return %r : tensor<2x10x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    - scalar: 0
+    - scalar: 0
+    - scalar: 42
+    outputs:
+    - tensor: [42, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    - scalar: 0
+    - scalar: 1
+    - scalar: 42
+    outputs:
+    - tensor: [65535, 42, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    - scalar: 1
+    - scalar: 0
+    - scalar: 42
+    outputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               42, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    - scalar: 1
+    - scalar: 9
+    - scalar: 42
+    outputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 42]
+      shape: [2,10]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
 description: extract_slice
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
@@ -91,6 +274,24 @@ tests:
     - tensor: [ 5,  6,  7,  8,  9]
       shape: [5]
 ---
+description: extract_slice_16bits
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<16>>) -> tensor<1x5x!FHE.eint<16>> {
+    %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<16>> to tensor<1x5x!FHE.eint<16>>
+    return %r : tensor<1x5x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    outputs:
+    - tensor: [64814, 65491, 4271, 9294, 0]
+      shape: [1,5]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
+---
 description: extract_slice_stride
 program: |
   func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
@@ -121,6 +322,24 @@ tests:
     outputs:
     - tensor: [3, 2, 1]
       shape: [3]
+---
+description: extract_slice_stride_16bits
+program: |
+  func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
+    %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
+    return %r : tensor<1x5x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    outputs:
+    - tensor: [38786, 65112, 60515, 65491, 9294]
+      shape: [1,5]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]
 ---
 description: insert_slice
 program: |
@@ -179,3 +398,25 @@ tests:
     - tensor: [0, 1, 2,
                3, 4, 5]
       shape: [2, 3]
+---
+description: insert_slice_16bits
+program: |
+  func.func @main(%t0: tensor<2x10x!FHE.eint<16>>, %t1: tensor<2x2x!FHE.eint<16>>) -> tensor<2x10x!FHE.eint<16>> {
+    %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!FHE.eint<16>> into tensor<2x10x!FHE.eint<16>>
+    return %r : tensor<2x10x!FHE.eint<16>>
+  }
+tests:
+  - inputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1726, 35063, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 64814, 65491, 4271, 9294, 0]
+      shape: [2,10]
+    - tensor: [1000, 1001,
+               1002, 1003]
+      shape: [2,2]
+    outputs:
+    - tensor: [65535, 46706, 18752, 55384, 55709, 1000, 1001, 57650, 45551, 5769,
+               38786, 36362, 65112, 5748, 60515, 1002, 1003, 4271, 9294, 0]
+      shape: [2,10]
+v0-constraint: [16, 0]
+v0-parameter: [1,11,565,1,23,5,3]
+large-integer-crt-decomposition: [7,8,9,11,13]

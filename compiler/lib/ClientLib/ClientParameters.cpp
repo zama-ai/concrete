@@ -234,6 +234,9 @@ llvm::json::Value toJSON(const Encoding &v) {
   llvm::json::Object object{
       {"precision", v.precision},
   };
+  if (!v.crt.empty()) {
+    object.insert({"crt", v.crt});
+  }
   return object;
 }
 bool fromJSON(const llvm::json::Value j, Encoding &v, llvm::json::Path p) {
@@ -248,6 +251,18 @@ bool fromJSON(const llvm::json::Value j, Encoding &v, llvm::json::Path p) {
     return false;
   }
   v.precision = precision.getValue();
+  auto crt = obj->getArray("crt");
+  if (crt != nullptr) {
+    for (auto dim : *crt) {
+      auto iDim = dim.getAsInteger();
+      if (!iDim.hasValue()) {
+        p.report("dimensions must be integer");
+        return false;
+      }
+      v.crt.push_back(iDim.getValue());
+    }
+  }
+
   return true;
 }
 

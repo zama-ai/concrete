@@ -42,6 +42,11 @@ struct CompilationOptions {
 
   llvm::Optional<mlir::concretelang::V0Parameter> v0Parameter;
 
+  /// largeIntegerParameter force the compiler engine to lower FHE.eint using
+  /// the large integers strategy with the given parameters.
+  llvm::Optional<mlir::concretelang::LargeIntegerParameter>
+      largeIntegerParameter;
+
   bool verifyDiagnostics;
 
   bool autoParallelize;

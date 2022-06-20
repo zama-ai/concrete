@@ -43,8 +43,8 @@ TensorData multi_arity_call_dynamic_rank(void *(*func)(void *...),
   constexpr auto convert = concretelang::clientlib::tensorDataFromMemRef;
   switch (rank) {""")
 
-for tensor_rank in range(0, 33):
-    memref_rank = tensor_rank + 1
+for tensor_rank in range(1, 33):
+    memref_rank = tensor_rank
     print(f"""  case {tensor_rank}: {{
     auto m = multi_arity_call(
         convert_fnptr<MemRefDescriptor<{memref_rank}> (*)(void *...)>(func), args);

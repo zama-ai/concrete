@@ -26,7 +26,8 @@ LweCiphertextType convertTypeToLWE(mlir::MLIRContext *context,
   auto glwe = type.dyn_cast_or_null<GLWECipherTextType>();
   if (glwe != nullptr) {
     assert(glwe.getPolynomialSize() == 1);
-    return LweCiphertextType::get(context, glwe.getDimension(), glwe.getP());
+    return LweCiphertextType::get(context, glwe.getDimension(), glwe.getP(),
+                                  glwe.getCrtDecomposition());
   }
   auto lwe = type.dyn_cast_or_null<LweCiphertextType>();
   if (lwe != nullptr) {
@@ -122,19 +123,10 @@ mlir::Value createConcreteOpFromTFHE(mlir::PatternRewriter &rewriter,
 mlir::Value createAddPlainLweCiphertextWithGlwe(
     mlir::PatternRewriter &rewriter, mlir::Location loc, mlir::Value arg0,
     mlir::Value arg1, mlir::OpResult result, mlir::Type encryptedType) {
-  PlaintextType encoded_type =
-      convertPlaintextTypeFromType(rewriter.getContext(), encryptedType);
-  // encode int into plaintext
-  mlir::Value encoded = rewriter
-                            .create<mlir::concretelang::Concrete::EncodeIntOp>(
-                                loc, encoded_type, arg1)
-                            .plaintext();
-
-  // replace op using the encoded plaintext instead of int
   auto op =
       rewriter
           .create<mlir::concretelang::Concrete::AddPlaintextLweCiphertextOp>(
-              loc, result.getType(), arg0, encoded);
+              loc, result.getType(), arg0, arg1);
 
   convertOperandAndResultTypes(rewriter, op, convertTypeToLWEIfTFHEType);
 
@@ -171,21 +163,11 @@ mlir::Value createMulClearLweCiphertext(mlir::PatternRewriter &rewriter,
                                         mlir::Location loc, mlir::Value arg0,
                                         mlir::Value arg1,
                                         mlir::OpResult result) {
-  auto inType = arg0.getType();
-  CleartextType encoded_type =
-      convertCleartextTypeFromType(rewriter.getContext(), inType);
-  // encode int into plaintext
-  mlir::Value encoded =
-      rewriter
-          .create<mlir::concretelang::Concrete::IntToCleartextOp>(
-              loc, encoded_type, arg1)
-          .cleartext();
-
   // replace op using the encoded plaintext instead of int
   auto op =
       rewriter
           .create<mlir::concretelang::Concrete::MulCleartextLweCiphertextOp>(
-              loc, result.getType(), arg0, encoded);
+              loc, result.getType(), arg0, arg1);
 
   convertOperandAndResultTypes(rewriter, op, convertTypeToLWEIfTFHEType);
 

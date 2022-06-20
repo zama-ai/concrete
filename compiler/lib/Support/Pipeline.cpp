@@ -182,6 +182,7 @@ markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult
 lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+               llvm::Optional<V0FHEContext> &fheContext,
                std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("FHEToTFHE", pm, context);
@@ -192,8 +193,14 @@ lowerFHEToTFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
   // to linalg.generic operations
   addPotentiallyNestedPass(pm, mlir::createLinalgGeneralizationPass(),
                            enablePass);
-  addPotentiallyNestedPass(pm, mlir::concretelang::createConvertFHEToTFHEPass(),
-                           enablePass);
+  mlir::concretelang::ApplyLookupTableLowering lowerStrategy =
+      mlir::concretelang::KeySwitchBoostrapLowering;
+  if (fheContext.hasValue() && fheContext->parameter.largeInteger.hasValue()) {
+    lowerStrategy = mlir::concretelang::WopPBSLowering;
+  }
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createConvertFHEToTFHEPass(lowerStrategy),
+      enablePass);
 
   return pm.run(module.getOperation());
 }
@@ -260,6 +267,8 @@ lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
   pipelinePrinting("BConcreteToStd", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createEliminateCRTOps(),
+                           enablePass);
   addPotentiallyNestedPass(pm, mlir::concretelang::createAddRuntimeContext(),
                            enablePass);
   return pm.run(module.getOperation());

@@ -109,6 +109,45 @@ private:
   mlir::TypeConverter &converter;
 };
 
+struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
+  WopPBSGLWEOpPattern(mlir::MLIRContext *context,
+                      mlir::TypeConverter &converter,
+                      mlir::PatternBenefit benefit = 100)
+      : mlir::OpRewritePattern<TFHE::WopPBSGLWEOp>(context, benefit),
+        converter(converter) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(TFHE::WopPBSGLWEOp wopOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Type resultType = converter.convertType(wopOp.getType());
+
+    auto newOp = rewriter.replaceOpWithNewOp<Concrete::WopPBSLweOp>(
+        wopOp, resultType, wopOp.ciphertext(), wopOp.lookupTable(),
+        // Bootstrap parameters
+        wopOp.bootstrapLevel(), wopOp.bootstrapBaseLog(),
+        // Keyswitch parameters
+        wopOp.keyswitchLevel(), wopOp.keyswitchBaseLog(),
+        // Packing keyswitch key parameters
+        wopOp.packingKeySwitchInputLweDimension(),
+        wopOp.packingKeySwitchinputLweCount(),
+        wopOp.packingKeySwitchoutputPolynomialSize(),
+        wopOp.packingKeySwitchLevel(), wopOp.packingKeySwitchBaseLog(),
+        // Circuit bootstrap parameters
+        wopOp.circuitBootstrapLevel(), wopOp.circuitBootstrapBaseLog());
+
+    rewriter.startRootUpdate(newOp);
+
+    newOp.ciphertext().setType(
+        converter.convertType(wopOp.ciphertext().getType()));
+
+    rewriter.finalizeRootUpdate(newOp);
+    return ::mlir::success();
+  }
+
+private:
+  mlir::TypeConverter &converter;
+};
+
 void TFHEToConcretePass::runOnOperation() {
   auto op = this->getOperation();
 
@@ -147,6 +186,7 @@ void TFHEToConcretePass::runOnOperation() {
       mlir::concretelang::Concrete::ZeroTensorLWEOp>>(&getContext(), converter);
   patterns.add<GLWEFromTableOpPattern>(&getContext());
   patterns.add<BootstrapGLWEOpPattern>(&getContext(), converter);
+  patterns.add<WopPBSGLWEOpPattern>(&getContext(), converter);
   target.addDynamicallyLegalOp<Concrete::BootstrapLweOp>(
       [&](Concrete::BootstrapLweOp op) {
         return (converter.isLegal(op->getOperandTypes()) &&

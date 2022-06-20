@@ -110,21 +110,13 @@ JITLambda::call(clientlib::PublicArguments &args,
   // Prepare the outputs vector to store the output value of the lambda.
   auto numOutputs = 0;
   for (auto &output : args.clientParameters.outputs) {
-    if (output.shape.dimensions.empty()) {
+    auto shape = args.clientParameters.bufferShape(output);
+    if (shape.size() == 0) {
       // scalar gate
-      if (output.encryption.hasValue()) {
-        // encrypted scalar : memref<lweSizexi64>
-        numOutputs += numArgOfRankedMemrefCallingConvention(1);
-      } else {
-        // clear scalar
-        numOutputs += 1;
-      }
+      numOutputs += 1;
     } else {
-      // memref gate : rank+1 if the output is encrypted for the lwe size
-      // dimension
-      auto rank = output.shape.dimensions.size() +
-                  (output.encryption.hasValue() ? 1 : 0);
-      numOutputs += numArgOfRankedMemrefCallingConvention(rank);
+      // buffer gate
+      numOutputs += numArgOfRankedMemrefCallingConvention(shape.size());
     }
   }
   std::vector<void *> outputs(numOutputs);
@@ -148,7 +140,6 @@ JITLambda::call(clientlib::PublicArguments &args,
   for (auto &out : outputs) {
     rawArgs[i++] = &out;
   }
-
   // Invoke
   if (auto err = invokeRaw(rawArgs)) {
     return std::move(err);
@@ -159,14 +150,14 @@ JITLambda::call(clientlib::PublicArguments &args,
   {
     size_t outputOffset = 0;
     for (auto &output : args.clientParameters.outputs) {
-      if (output.shape.dimensions.empty() && !output.encryption.hasValue()) {
-        // clear scalar
+      auto shape = args.clientParameters.bufferShape(output);
+      if (shape.size() == 0) {
+        // scalar scalar
         buffers.push_back(
             clientlib::tensorDataFromScalar((uint64_t)outputs[outputOffset++]));
       } else {
-        // encrypted scalar, and tensor gate are memref
-        auto rank = output.shape.dimensions.size() +
-                    (output.encryption.hasValue() ? 1 : 0);
+        // buffer gate
+        auto rank = shape.size();
         auto allocated = (uint64_t *)outputs[outputOffset++];
         auto aligned = (uint64_t *)outputs[outputOffset++];
         auto offset = (size_t)outputs[outputOffset++];

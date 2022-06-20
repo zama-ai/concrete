@@ -26,10 +26,11 @@ target_link_libraries(
   ConcretelangRuntime
   PUBLIC
   Concrete
+  ConcretelangClientLib
+
   pthread m dl
   $<TARGET_OBJECTS:mlir_c_runner_utils>
 )
 
 install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
 install(EXPORT ConcretelangRuntime DESTINATION "./")
-

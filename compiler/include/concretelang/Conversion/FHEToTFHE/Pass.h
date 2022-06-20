@@ -10,8 +10,17 @@
 
 namespace mlir {
 namespace concretelang {
+
+// ApplyLookupTableLowering indicates the strategy to lower an
+// FHE.apply_loopup_table ops
+enum ApplyLookupTableLowering {
+  KeySwitchBoostrapLowering,
+  WopPBSLowering,
+};
+
 /// Create a pass to convert `FHE` dialect to `TFHE` dialect.
-std::unique_ptr<OperationPass<ModuleOp>> createConvertFHEToTFHEPass();
+std::unique_ptr<OperationPass<ModuleOp>>
+createConvertFHEToTFHEPass(ApplyLookupTableLowering lower);
 } // namespace concretelang
 } // namespace mlir
 

@@ -7,6 +7,7 @@
 #define CONCRETELANG_CLIENTLIB_CLIENTPARAMETERS_H_
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,7 @@ typedef size_t DecompositionBaseLog;
 typedef size_t PolynomialSize;
 typedef size_t Precision;
 typedef double Variance;
+typedef std::vector<int64_t> CRTDecomposition;
 
 typedef uint64_t LweDimension;
 typedef uint64_t GlweDimension;
@@ -87,6 +89,7 @@ static inline bool operator==(const KeyswitchKeyParam &lhs,
 
 struct Encoding {
   Precision precision;
+  CRTDecomposition crt;
 };
 static inline bool operator==(const Encoding &lhs, const Encoding &rhs) {
   return lhs.precision == rhs.precision;
@@ -167,6 +170,52 @@ struct ClientParameters {
              << gate.encryption->secretKeyID << " in client parameters";
     }
     return secretKey->second;
+  }
+
+  /// bufferSize returns the size of the whole buffer of a gate.
+  int64_t bufferSize(CircuitGate gate) {
+    if (!gate.encryption.hasValue()) {
+      // Value is not encrypted just returns the tensor size
+      return gate.shape.size;
+    }
+    auto shapeSize = gate.shape.size == 0 ? 1 : gate.shape.size;
+    // Size of the ciphertext
+    return shapeSize * lweBufferSize(gate);
+  }
+
+  /// lweBufferSize returns the size of one ciphertext of a gate.
+  int64_t lweBufferSize(CircuitGate gate) {
+    assert(gate.encryption.hasValue());
+    auto nbBlocks = gate.encryption->encoding.crt.size();
+    nbBlocks = nbBlocks == 0 ? 1 : nbBlocks;
+
+    auto param = lweSecretKeyParam(gate);
+    assert(param.has_value());
+    return param.value().lweSize() * nbBlocks;
+  }
+
+  /// bufferShape returns the shape of the tensor for the given gate. It returns
+  /// the shape used at low-level, i.e. contains the dimensions for ciphertexts.
+  std::vector<int64_t> bufferShape(CircuitGate gate) {
+    if (!gate.encryption.hasValue()) {
+      // Value is not encrypted just returns the tensor shape
+      return gate.shape.dimensions;
+    }
+    auto lweSecreteKeyParam = lweSecretKeyParam(gate);
+    assert(lweSecreteKeyParam.has_value());
+
+    // Copy the shape
+    std::vector<int64_t> shape(gate.shape.dimensions);
+
+    auto crt = gate.encryption->encoding.crt;
+
+    // CRT case: Add one dimension equals to the number of blocks
+    if (!crt.empty()) {
+      shape.push_back(crt.size());
+    }
+    // Add one dimension for the size of ciphertext(s)
+    shape.push_back(lweSecreteKeyParam.value().lweSize());
+    return shape;
   }
 };
 

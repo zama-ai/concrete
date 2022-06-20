@@ -23,7 +23,8 @@ using TFHE::GLWECipherTextType;
 GLWECipherTextType
 convertTypeEncryptedIntegerToGLWE(mlir::MLIRContext *context,
                                   EncryptedIntegerType eint) {
-  return GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth());
+  return GLWECipherTextType::get(context, -1, -1, -1, eint.getWidth(),
+                                 llvm::ArrayRef<int64_t>());
 }
 
 /// Converts the type `t` to `TFHE::GlweCiphetext` if `t` is a

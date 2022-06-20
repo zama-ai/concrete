@@ -26,10 +26,6 @@ namespace FHE = mlir::concretelang::FHE;
 namespace TFHE = mlir::concretelang::TFHE;
 
 namespace {
-struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
-  void runOnOperation() final;
-};
-} // namespace
 
 using mlir::concretelang::FHE::EncryptedIntegerType;
 using mlir::concretelang::TFHE::GLWECipherTextType;
@@ -84,10 +80,10 @@ public:
 ///         : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) ->
 ///         !TFHE.glwe<{_,_,_}{2}>
 /// ```
-struct ApplyLookupTableEintOpPattern
+struct ApplyLookupTableEintOpToKeyswitchBootstrapPattern
     : public mlir::OpRewritePattern<FHE::ApplyLookupTableEintOp> {
-  ApplyLookupTableEintOpPattern(mlir::MLIRContext *context,
-                                mlir::PatternBenefit benefit = 1)
+  ApplyLookupTableEintOpToKeyswitchBootstrapPattern(
+      mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
       : ::mlir::OpRewritePattern<FHE::ApplyLookupTableEintOp>(context,
                                                               benefit) {}
 
@@ -111,6 +107,51 @@ struct ApplyLookupTableEintOpPattern
     //  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
     rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(lutOp, resultTy, glweKs,
                                                        glweLut, -1, -1);
+    return ::mlir::success();
+  };
+};
+
+/// This rewrite pattern transforms any instance of `FHE.apply_lookup_table`
+/// operators.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = "FHE.apply_lookup_table"(%ct, %lut): (!FHE.eint<2>, tensor<4xi64>)
+///        ->(!FHE.eint<2>)
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+///  %0 = "TFHE.wop_pbs_glwe"(%ct, %lut)
+///         : (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
+///         (!TFHE.glwe<{_,_,_}{2}>)
+/// ```
+struct ApplyLookupTableEintOpToWopPBSPattern
+    : public mlir::OpRewritePattern<FHE::ApplyLookupTableEintOp> {
+  ApplyLookupTableEintOpToWopPBSPattern(mlir::MLIRContext *context,
+                                        mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<FHE::ApplyLookupTableEintOp>(context,
+                                                              benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(FHE::ApplyLookupTableEintOp lutOp,
+                  mlir::PatternRewriter &rewriter) const override {
+    FHEToTFHETypeConverter converter;
+    auto inputTy = converter.convertType(lutOp.a().getType())
+                       .cast<TFHE::GLWECipherTextType>();
+    auto resultTy = converter.convertType(lutOp.getType());
+    //  %0 = "TFHE.wop_pbs_glwe"(%ct, %lut)
+    //         : (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
+    //         (!TFHE.glwe<{_,_,_}{2}>)
+    auto wopPBS = rewriter.replaceOpWithNewOp<TFHE::WopPBSGLWEOp>(
+        lutOp, resultTy, lutOp.a(), lutOp.lut(), -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1);
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, wopPBS, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
     return ::mlir::success();
   };
 };
@@ -194,97 +235,118 @@ struct SubEintOpPattern : public mlir::OpRewritePattern<FHE::SubEintOp> {
   };
 };
 
-void FHEToTFHEPass::runOnOperation() {
-  auto op = this->getOperation();
+struct FHEToTFHEPass : public FHEToTFHEBase<FHEToTFHEPass> {
 
-  mlir::ConversionTarget target(getContext());
-  FHEToTFHETypeConverter converter;
+  FHEToTFHEPass(mlir::concretelang::ApplyLookupTableLowering lutLowerStrategy)
+      : lutLowerStrategy(lutLowerStrategy) {}
 
-  // Mark ops from the target dialect as legal operations
-  target.addLegalDialect<mlir::concretelang::TFHE::TFHEDialect>();
-  target.addLegalDialect<mlir::arith::ArithmeticDialect>();
+  void runOnOperation() {
+    auto op = this->getOperation();
 
-  // Make sure that no ops from `FHE` remain after the lowering
-  target.addIllegalDialect<mlir::concretelang::FHE::FHEDialect>();
+    mlir::ConversionTarget target(getContext());
+    FHEToTFHETypeConverter converter;
 
-  // Make sure that no ops `linalg.generic` that have illegal types
-  target
-      .addDynamicallyLegalOp<mlir::linalg::GenericOp, mlir::tensor::GenerateOp>(
-          [&](mlir::Operation *op) {
-            return (
-                converter.isLegal(op->getOperandTypes()) &&
-                converter.isLegal(op->getResultTypes()) &&
-                converter.isLegal(op->getRegion(0).front().getArgumentTypes()));
-          });
+    // Mark ops from the target dialect as legal operations
+    target.addLegalDialect<mlir::concretelang::TFHE::TFHEDialect>();
+    target.addLegalDialect<mlir::arith::ArithmeticDialect>();
 
-  // Make sure that func has legal signature
-  target.addDynamicallyLegalOp<mlir::func::FuncOp>(
-      [&](mlir::func::FuncOp funcOp) {
-        return converter.isSignatureLegal(funcOp.getFunctionType()) &&
-               converter.isLegal(&funcOp.getBody());
-      });
+    // Make sure that no ops from `FHE` remain after the lowering
+    target.addIllegalDialect<mlir::concretelang::FHE::FHEDialect>();
 
-  // Add all patterns required to lower all ops from `FHE` to
-  // `TFHE`
-  mlir::RewritePatternSet patterns(&getContext());
+    // Make sure that no ops `linalg.generic` that have illegal types
+    target.addDynamicallyLegalOp<mlir::linalg::GenericOp,
+                                 mlir::tensor::GenerateOp>(
+        [&](mlir::Operation *op) {
+          return (
+              converter.isLegal(op->getOperandTypes()) &&
+              converter.isLegal(op->getResultTypes()) &&
+              converter.isLegal(op->getRegion(0).front().getArgumentTypes()));
+        });
 
-  populateWithGeneratedFHEToTFHE(patterns);
+    // Make sure that func has legal signature
+    target.addDynamicallyLegalOp<mlir::func::FuncOp>(
+        [&](mlir::func::FuncOp funcOp) {
+          return converter.isSignatureLegal(funcOp.getFunctionType()) &&
+                 converter.isLegal(&funcOp.getBody());
+        });
 
-  patterns.add<
-      mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>>(
-      patterns.getContext(), converter);
+    // Add all patterns required to lower all ops from `FHE` to
+    // `TFHE`
+    mlir::RewritePatternSet patterns(&getContext());
 
-  patterns.add<ApplyLookupTableEintOpPattern>(&getContext());
-  patterns.add<SubEintOpPattern>(&getContext());
-  patterns.add<SubEintIntOpPattern>(&getContext());
+    populateWithGeneratedFHEToTFHE(patterns);
 
-  patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
-                                            FHEToTFHETypeConverter>>(
-      &getContext(), converter);
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>>(
+        patterns.getContext(), converter);
 
-  patterns.add<
-      mlir::concretelang::GenericTypeConverterPattern<mlir::linalg::YieldOp>>(
-      patterns.getContext(), converter);
+    switch (lutLowerStrategy) {
+    case mlir::concretelang::KeySwitchBoostrapLowering:
+      patterns.add<ApplyLookupTableEintOpToKeyswitchBootstrapPattern>(
+          &getContext());
+      break;
+    case mlir::concretelang::WopPBSLowering:
+      patterns.add<ApplyLookupTableEintOpToWopPBSPattern>(&getContext());
+      break;
+    }
 
-  patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
-                                            FHEToTFHETypeConverter>>(
-      &getContext(), converter);
+    patterns.add<SubEintOpPattern>(&getContext());
+    patterns.add<SubEintIntOpPattern>(&getContext());
 
-  patterns.add<
-      RegionOpTypeConverterPattern<mlir::scf::ForOp, FHEToTFHETypeConverter>>(
-      &getContext(), converter);
-  patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
-      mlir::concretelang::FHE::ZeroTensorOp,
-      mlir::concretelang::TFHE::ZeroTensorGLWEOp>>(&getContext(), converter);
+    patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
+                                              FHEToTFHETypeConverter>>(
+        &getContext(), converter);
 
-  mlir::concretelang::populateWithTensorTypeConverterPatterns(patterns, target,
-                                                              converter);
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<mlir::linalg::YieldOp>>(
+        patterns.getContext(), converter);
 
-  mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
-      patterns, converter);
+    patterns.add<RegionOpTypeConverterPattern<mlir::tensor::GenerateOp,
+                                              FHEToTFHETypeConverter>>(
+        &getContext(), converter);
 
-  // Conversion of RT Dialect Ops
-  patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-      mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
-                                               converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::DataflowTaskOp>(target, converter);
-  patterns.add<mlir::concretelang::GenericTypeConverterPattern<
-      mlir::concretelang::RT::DataflowYieldOp>>(patterns.getContext(),
-                                                converter);
-  mlir::concretelang::addDynamicallyLegalTypeOp<
-      mlir::concretelang::RT::DataflowYieldOp>(target, converter);
+    patterns.add<
+        RegionOpTypeConverterPattern<mlir::scf::ForOp, FHEToTFHETypeConverter>>(
+        &getContext(), converter);
+    patterns.add<mlir::concretelang::GenericTypeAndOpConverterPattern<
+        mlir::concretelang::FHE::ZeroTensorOp,
+        mlir::concretelang::TFHE::ZeroTensorGLWEOp>>(&getContext(), converter);
 
-  // Apply conversion
-  if (mlir::applyPartialConversion(op, target, std::move(patterns)).failed()) {
-    this->signalPassFailure();
+    mlir::concretelang::populateWithTensorTypeConverterPatterns(
+        patterns, target, converter);
+
+    mlir::populateFunctionOpInterfaceTypeConversionPattern<mlir::func::FuncOp>(
+        patterns, converter);
+
+    // Conversion of RT Dialect Ops
+    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+        mlir::concretelang::RT::DataflowTaskOp>>(patterns.getContext(),
+                                                 converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DataflowTaskOp>(target, converter);
+    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+        mlir::concretelang::RT::DataflowYieldOp>>(patterns.getContext(),
+                                                  converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::concretelang::RT::DataflowYieldOp>(target, converter);
+
+    // Apply conversion
+    if (mlir::applyPartialConversion(op, target, std::move(patterns))
+            .failed()) {
+      this->signalPassFailure();
+    }
   }
-}
+
+private:
+  mlir::concretelang::ApplyLookupTableLowering lutLowerStrategy;
+};
+} // namespace
 
 namespace mlir {
 namespace concretelang {
-std::unique_ptr<OperationPass<ModuleOp>> createConvertFHEToTFHEPass() {
-  return std::make_unique<FHEToTFHEPass>();
+std::unique_ptr<OperationPass<ModuleOp>>
+createConvertFHEToTFHEPass(ApplyLookupTableLowering lower) {
+  return std::make_unique<FHEToTFHEPass>(lower);
 }
 } // namespace concretelang
 } // namespace mlir

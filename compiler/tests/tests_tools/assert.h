@@ -6,8 +6,13 @@
 #include <gtest/gtest.h>
 
 #define ASSERT_LLVM_ERROR(err)                                                 \
-  if (err) {                                                                   \
-    ASSERT_TRUE(false) << llvm::toString(err);                                 \
+  {                                                                            \
+    llvm::Error e = err;                                                       \
+    if (e) {                                                                   \
+      handleAllErrors(std::move(e), [](const llvm::ErrorInfoBase &ei) {        \
+        ASSERT_TRUE(false) << ei.message();                                    \
+      });                                                                      \
+    }                                                                          \
   }
 
 // Checks that the value `val` is not in an error state. Returns

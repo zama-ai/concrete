@@ -37,7 +37,10 @@ public:
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
   generate(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb);
 
-  /// isInputEncrypted return true if the input at the given pos is encrypted.
+  /// Returns the ClientParameters associated with the KeySet.
+  ClientParameters clientParameters() { return _clientParameters; }
+
+  // isInputEncrypted return true if the input at the given pos is encrypted.
   bool isInputEncrypted(size_t pos);
 
   /// getInputLweSecretKeyParam returns the parameters of the lwe secret key for
@@ -155,6 +158,8 @@ private:
       std::map<LweSecretKeyID,
                std::pair<KeyswitchKeyParam, std::shared_ptr<LweKeyswitchKey>>>
           keyswitchKeys);
+
+  clientlib::ClientParameters _clientParameters;
 };
 
 } // namespace clientlib

@@ -90,7 +90,6 @@ KeySetCache::loadKeys(ClientParameters &params, uint64_t seed_msb,
                       uint64_t seed_lsb, std::string folderPath) {
   // TODO: text dump of all parameter in /hash
   auto key_set = std::make_unique<KeySet>();
-
   // Mark the folder as recently use.
   // e.g. so the CI can do some cleanup of unused keys.
   utime(folderPath.c_str(), nullptr);

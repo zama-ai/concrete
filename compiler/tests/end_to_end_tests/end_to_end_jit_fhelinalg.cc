@@ -70,37 +70,6 @@ func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>) -> tensor<3x!FHE.eint<4>> {
   EXPECT_EQ((*res)[2], 6);
 }
 
-TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term) {
-
-  checkedJit(lambda, R"XXX(
-  // Returns the term to term addition of `%a0` with `%a1`
-  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
-    %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
-    return %res : tensor<4x!FHE.eint<6>>
-  }
-)XXX");
-  std::vector<uint8_t> a0{31, 6, 12, 9};
-  std::vector<uint8_t> a1{32, 9, 2, 3};
-
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg0(a0);
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg1(a1);
-
-  llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
-
-  ASSERT_EXPECTED_SUCCESS(res);
-
-  ASSERT_EQ(res->size(), (size_t)4);
-
-  for (size_t i = 0; i < 4; i++) {
-    EXPECT_EQ((*res)[i], (uint64_t)a0[i] + a1[i]);
-  }
-}
-
 // Same as add_eint_int_term_to_term test above, but returning a lambda argument
 TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
 
@@ -370,40 +339,6 @@ TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line_missing_dim) {
 ///////////////////////////////////////////////////////////////////////////////
 // FHELinalg add_eint ///////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-TEST(End2EndJit_FHELinalg, add_eint_term_to_term) {
-
-  checkedJit(lambda, R"XXX(
-  // Returns the term to term addition of `%a0` with `%a1`
-  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
-    %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
-    return %res : tensor<4x!FHE.eint<6>>
-  }
-)XXX");
-
-  std::vector<uint8_t> a0{31, 6, 12, 9};
-  std::vector<uint8_t> a1{32, 9, 2, 3};
-
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg0(a0);
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg1(a1);
-
-  llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
-
-  ASSERT_EXPECTED_SUCCESS(res);
-
-  ASSERT_EQ(res->size(), (uint64_t)4);
-
-  for (size_t i = 0; i < 4; i++) {
-    EXPECT_EQ((*res)[i], (uint64_t)a0[i] + a1[i])
-        << "result differ at pos " << i << ", expect " << a0[i] + a1[i]
-        << " got " << (*res)[i];
-  }
-}
 
 TEST(End2EndJit_FHELinalg, add_eint_term_to_term_broadcast) {
 
@@ -853,36 +788,6 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line_missing_dim) {
 ///////////////////////////////////////////////////////////////////////////////
 // FHELinalg sub_eint_int ///////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term) {
-
-  checkedJit(lambda, R"XXX(
-  func.func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
-    %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> tensor<4x!FHE.eint<4>>
-    return %res : tensor<4x!FHE.eint<4>>
-  }
-)XXX");
-  std::vector<uint8_t> a0{31, 6, 2, 3};
-  std::vector<uint8_t> a1{32, 9, 12, 9};
-
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg0(a0);
-  mlir::concretelang::TensorLambdaArgument<
-      mlir::concretelang::IntLambdaArgument<uint8_t>>
-      arg1(a1);
-
-  llvm::Expected<std::vector<uint64_t>> res =
-      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
-
-  ASSERT_EXPECTED_SUCCESS(res);
-
-  ASSERT_EQ(res->size(), (uint64_t)4);
-
-  for (size_t i = 0; i < 4; i++) {
-    EXPECT_EQ((*res)[i], (uint64_t)a1[i] - a0[i]);
-  }
-}
 
 TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term_broadcast) {
 

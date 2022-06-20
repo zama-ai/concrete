@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <llvm/ADT/Optional.h>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/Support/Error.h>
 
@@ -12,6 +13,7 @@
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
+#include "concretelang/Support/Error.h"
 #include "concretelang/Support/V0Curves.h"
 
 namespace mlir {
@@ -20,6 +22,7 @@ namespace concretelang {
 using ::concretelang::clientlib::BIG_KEY;
 using ::concretelang::clientlib::CircuitGate;
 using ::concretelang::clientlib::ClientParameters;
+using ::concretelang::clientlib::Encoding;
 using ::concretelang::clientlib::EncryptionGate;
 using ::concretelang::clientlib::LweSecretKeyID;
 using ::concretelang::clientlib::Precision;
@@ -52,23 +55,21 @@ llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
         },
     };
   }
-  if (auto lweType = type.dyn_cast_or_null<
-                     mlir::concretelang::Concrete::LweCiphertextType>()) {
-    // TODO - Get the width from the LWECiphertextType instead of global
-    // precision (could be possible after merge concrete-ciphertext-parameter)
-    size_t precision = (size_t)lweType.getP();
+  if (auto lweTy = type.dyn_cast_or_null<
+                   mlir::concretelang::Concrete::LweCiphertextType>()) {
     return CircuitGate{
         /* .encryption = */ llvm::Optional<EncryptionGate>({
             /* .secretKeyID = */ secretKeyID,
             /* .variance = */ variance,
             /* .encoding = */
             {
-                /* .precision = */ precision,
+                /* .precision = */ lweTy.getP(),
+                /* .crt = */ lweTy.getCrtDecomposition().vec(),
             },
         }),
         /*.shape = */
         {
-            /*.width = */ precision,
+            /*.width = */ lweTy.getP(),
             /*.dimensions = */ std::vector<int64_t>(),
             /*.size = */ 0,
         },
@@ -99,6 +100,7 @@ createClientParametersForV0(V0FHEContext fheContext,
   auto v0Param = fheContext.parameter;
   Variance encryptionVariance = v0Curve->getVariance(
       v0Param.glweDimension, v0Param.getPolynomialSize(), 64);
+  // Variance encryptionVariance = 0.;
   Variance keyswitchVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
   ClientParameters c;
@@ -138,10 +140,9 @@ createClientParametersForV0(V0FHEContext fheContext,
     return op.getName() == functionName;
   });
   if (funcOp == rangeOps.end()) {
-    return llvm::make_error<llvm::StringError>(
-        "cannot find the function for generate client parameters '" +
-            functionName + "'",
-        llvm::inconvertibleErrorCode());
+    return StreamStringError(
+               "cannot find the function for generate client parameters: ")
+           << functionName;
   }
 
   // Create input and output circuit gate parameters

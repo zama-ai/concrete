@@ -167,29 +167,38 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
 }
 
 /// set the fheContext field if the v0Constraint can be computed
+/// set the fheContext field if the v0Constraint can be computed
 llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
-  auto descrOrErr = getConcreteOptimizerDescription(res);
-  if (auto err = descrOrErr.takeError()) {
-    return err;
-  }
-  // The function is non-crypto and without constraint override
-  if (!descrOrErr.get().hasValue()) {
+  if (compilerOptions.v0Parameter.hasValue()) {
+    // parameters come from the compiler options
+    V0Parameter v0Params = compilerOptions.v0Parameter.value();
+    if (compilerOptions.largeIntegerParameter.hasValue()) {
+      v0Params.largeInteger = compilerOptions.largeIntegerParameter;
+    }
+    res.fheContext.emplace(mlir::concretelang::V0FHEContext{{0, 0}, v0Params});
     return llvm::Error::success();
   }
-  auto descr = std::move(descrOrErr.get().getValue());
-  auto config = this->compilerOptions.optimizerConfig;
-
-  auto fheParams = (compilerOptions.v0Parameter.hasValue())
-                       ? compilerOptions.v0Parameter
-                       : getParameter(descr, config);
-  if (!fheParams) {
-    return StreamStringError()
-           << "Could not determine V0 parameters for 2-norm of "
-           << (*descrOrErr)->constraint.norm2 << " and p of "
-           << (*descrOrErr)->constraint.p;
+  // compute parameters
+  else {
+    auto descr = getConcreteOptimizerDescription(res);
+    if (auto err = descr.takeError()) {
+      return err;
+    }
+    if (!descr.get().hasValue()) {
+      return llvm::Error::success();
+    }
+    auto optV0Params =
+        getParameter(descr.get().value(), compilerOptions.optimizerConfig);
+    if (!optV0Params) {
+      return StreamStringError()
+             << "Could not determine V0 parameters for 2-norm of "
+             << (*descr)->constraint.norm2 << " and p of "
+             << (*descr)->constraint.p;
+    }
+    res.fheContext.emplace(mlir::concretelang::V0FHEContext{
+        descr.get().value().constraint, optV0Params.getValue()});
   }
-  res.fheContext.emplace(
-      mlir::concretelang::V0FHEContext{descr.constraint, fheParams.getValue()});
+
   return llvm::Error::success();
 }
 
@@ -282,7 +291,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
 
   // FHE -> TFHE
   if (mlir::concretelang::pipeline::lowerFHEToTFHE(mlirContext, module,
-                                                   enablePass)
+                                                   res.fheContext, enablePass)
           .failed()) {
     return errorDiag("Lowering from FHE to TFHE failed");
   }

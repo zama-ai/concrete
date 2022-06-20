@@ -94,14 +94,15 @@ buildTensorLambdaResult(clientlib::KeySet &keySet,
                         clientlib::PublicResult &result) {
   llvm::Expected<std::vector<T>> tensorOrError =
       typedResult<std::vector<T>>(keySet, result);
-
   if (auto err = tensorOrError.takeError())
     return std::move(err);
-  std::vector<int64_t> tensorDim(result.buffers[0].sizes.begin(),
-                                 result.buffers[0].sizes.end() - 1);
+
+  auto tensorDim = result.asClearTextShape(0);
+  if (tensorDim.has_error())
+    return StreamStringError(tensorDim.error().mesg);
 
   return std::make_unique<TensorLambdaArgument<IntLambdaArgument<T>>>(
-      *tensorOrError, tensorDim);
+      *tensorOrError, tensorDim.value());
 }
 
 /// pecialization of `typedResult()` for a single result wrapped into

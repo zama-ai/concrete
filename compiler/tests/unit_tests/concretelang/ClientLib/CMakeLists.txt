@@ -8,6 +8,7 @@ add_unittest(
   unit_tests_concretelang_clientlib
 
   ClientParameters.cpp
+  CRT.cpp
   KeySet.cpp
 )
 

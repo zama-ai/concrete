@@ -28,6 +28,11 @@ populateWithTensorTypeConverterPatterns(mlir::RewritePatternSet &patterns,
       patterns.getContext(), typeConverter);
   addDynamicallyLegalTypeOp<mlir::tensor::ExtractSliceOp>(target,
                                                           typeConverter);
+
+  // InsertOp
+  patterns.add<GenericTypeConverterPattern<mlir::tensor::InsertOp>>(
+      patterns.getContext(), typeConverter);
+  addDynamicallyLegalTypeOp<mlir::tensor::InsertOp>(target, typeConverter);
   // InsertSliceOp
   patterns.add<GenericTypeConverterPattern<mlir::tensor::InsertSliceOp>>(
       patterns.getContext(), typeConverter);

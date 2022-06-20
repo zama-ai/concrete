@@ -6,13 +6,42 @@
 #ifndef CONCRETELANG_CONVERSION_GLOBALFHECONTEXT_H_
 #define CONCRETELANG_CONVERSION_GLOBALFHECONTEXT_H_
 #include <cstddef>
+#include <cstdint>
+#include <vector>
+
+#include "llvm/ADT/Optional.h"
 
 namespace mlir {
 namespace concretelang {
 
+typedef std::vector<int64_t> CRTDecomposition;
+
 struct V0FHEConstraint {
   size_t norm2;
   size_t p;
+};
+
+struct PackingKeySwitchParameter {
+  size_t inputLweDimension;
+  size_t inputLweCount;
+  size_t outputPolynomialSize;
+  size_t level;
+  size_t baseLog;
+};
+
+struct CitcuitBoostrapParameter {
+  size_t level;
+  size_t baseLog;
+};
+
+struct WopPBSParameter {
+  PackingKeySwitchParameter packingKeySwitch;
+  CitcuitBoostrapParameter circuitBootstrap;
+};
+
+struct LargeIntegerParameter {
+  CRTDecomposition crtDecomposition;
+  WopPBSParameter wopPBS;
 };
 
 struct V0Parameter {
@@ -23,6 +52,8 @@ struct V0Parameter {
   size_t brLogBase;
   size_t ksLevel;
   size_t ksLogBase;
+
+  llvm::Optional<LargeIntegerParameter> largeInteger;
 
   V0Parameter() = delete;
 

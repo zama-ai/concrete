@@ -3,10 +3,12 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang/Runtime/wrappers.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "concretelang/ClientLib/CRT.h"
+#include "concretelang/Runtime/wrappers.h"
 
 void memref_expand_lut_in_trivial_glwe_ct_u64(
     uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
@@ -96,6 +98,10 @@ void memref_bootstrap_lwe_u64(
   bootstrap_lwe_u64(get_engine(context), get_bootstrap_key_u64(context),
                     out_aligned + out_offset, ct0_aligned + ct0_offset,
                     glwe_ct_aligned + glwe_ct_offset);
+}
+
+uint64_t encode_crt(int64_t plaintext, uint64_t modulus, uint64_t product) {
+  return concretelang::clientlib::crt::encode(plaintext, modulus, product);
 }
 
 void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,

@@ -170,7 +170,8 @@ llvm::cl::opt<std::string>
 llvm::cl::list<uint64_t>
     jitArgs("jit-args",
             llvm::cl::desc("Value of arguments to pass to the main func"),
-            llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore);
+            llvm::cl::value_desc("argument(uint64)"), llvm::cl::ZeroOrMore,
+            llvm::cl::MiscFlags::CommaSeparated);
 
 llvm::cl::opt<std::string> jitKeySetCachePath(
     "jit-keyset-cache-path",
@@ -208,6 +209,31 @@ llvm::cl::list<int64_t> v0Parameter(
     llvm::cl::desc(
         "Force to apply the given v0 parameters [glweDimension, "
         "logPolynomialSize, nSmall, brLevel, brLobBase, ksLevel, ksLogBase]"),
+    llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
+
+llvm::cl::list<int64_t> largeIntegerCRTDecomposition(
+    "large-integer-crt-decomposition",
+    llvm::cl::desc(
+        "Use the large integer to lower FHE.eint with the given decomposition, "
+        "must be used with the other large-integers options (experimental)"),
+    llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
+
+llvm::cl::list<int64_t> largeIntegerPackingKeyswitch(
+    "large-integer-packing-keyswitch",
+    llvm::cl::desc(
+        "Use the large integer to lower FHE.eint with the given parameters for "
+        "packing keyswitch, must be used with the other large-integers options "
+        "(experimental) [inputLweDimension, inputLweCount, "
+        "outputPolynomialSize, level, baseLog]"),
+    llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
+
+llvm::cl::list<int64_t> largeIntegerCircuitBootstrap(
+    "large-integer-circuit-bootstrap",
+    llvm::cl::desc(
+        "Use the large integer to lower FHE.eint with the given parameters for "
+        "the cicuit boostrap, must be used with the other large-integers "
+        "options "
+        "(experimental) [level, baseLog]"),
     llvm::cl::ZeroOrMore, llvm::cl::MiscFlags::CommaSeparated);
 
 } // namespace cmdline
@@ -257,6 +283,7 @@ cmdlineCompilationOptions() {
   if (!cmdline::fhelinalgTileSizes.empty())
     options.fhelinalgTileSizes.emplace(cmdline::fhelinalgTileSizes);
 
+  // Setup the v0 parameter options
   if (!cmdline::v0Parameter.empty()) {
     if (cmdline::v0Parameter.size() != 7) {
       return llvm::make_error<llvm::StringError>(
@@ -270,10 +297,44 @@ cmdlineCompilationOptions() {
         cmdline::v0Parameter[6]);
   }
 
-  if (!cmdline::v0Constraint.empty() && !cmdline::optimizerV0) {
-    return llvm::make_error<llvm::StringError>(
-        "You must use --v0-constraint with --optimizer-v0-strategy",
-        llvm::inconvertibleErrorCode());
+  // Setup the large integer options
+  if (!cmdline::largeIntegerCRTDecomposition.empty() ||
+      !cmdline::largeIntegerPackingKeyswitch.empty() ||
+      !cmdline::largeIntegerPackingKeyswitch.empty()) {
+    if (cmdline::largeIntegerCRTDecomposition.empty() ||
+        cmdline::largeIntegerPackingKeyswitch.empty() ||
+        cmdline::largeIntegerPackingKeyswitch.empty()) {
+      return llvm::make_error<llvm::StringError>(
+          "The large-integers options should all be set",
+          llvm::inconvertibleErrorCode());
+    }
+    if (cmdline::largeIntegerPackingKeyswitch.size() != 5) {
+      return llvm::make_error<llvm::StringError>(
+          "The large-integers-packing-keyswitch must be a list of 5 integer",
+          llvm::inconvertibleErrorCode());
+    }
+    if (cmdline::largeIntegerCircuitBootstrap.size() != 2) {
+      return llvm::make_error<llvm::StringError>(
+          "The large-integers-packing-keyswitch must be a list of 2 integer",
+          llvm::inconvertibleErrorCode());
+    }
+    options.largeIntegerParameter = mlir::concretelang::LargeIntegerParameter();
+    options.largeIntegerParameter->crtDecomposition =
+        cmdline::largeIntegerCRTDecomposition;
+    options.largeIntegerParameter->wopPBS.packingKeySwitch.inputLweDimension =
+        cmdline::largeIntegerPackingKeyswitch[0];
+    options.largeIntegerParameter->wopPBS.packingKeySwitch.inputLweCount =
+        cmdline::largeIntegerPackingKeyswitch[1];
+    options.largeIntegerParameter->wopPBS.packingKeySwitch
+        .outputPolynomialSize = cmdline::largeIntegerPackingKeyswitch[2];
+    options.largeIntegerParameter->wopPBS.packingKeySwitch.level =
+        cmdline::largeIntegerPackingKeyswitch[3];
+    options.largeIntegerParameter->wopPBS.packingKeySwitch.baseLog =
+        cmdline::largeIntegerPackingKeyswitch[4];
+    options.largeIntegerParameter->wopPBS.circuitBootstrap.level =
+        cmdline::largeIntegerCircuitBootstrap[0];
+    options.largeIntegerParameter->wopPBS.circuitBootstrap.baseLog =
+        cmdline::largeIntegerCircuitBootstrap[1];
   }
 
   options.optimizerConfig.p_error = cmdline::pbsErrorProbability;
@@ -502,9 +563,9 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   }
 
   if (cmdline::action == Action::COMPILE) {
-    auto err =
-        outputLib->emitArtifacts(/*sharedLib=*/true, /*staticLib=*/true,
-                                 /*clientParameters=*/true, /*cppHeader=*/true);
+    auto err = outputLib->emitArtifacts(
+        /*sharedLib=*/true, /*staticLib=*/true,
+        /*clientParameters=*/true, /*cppHeader=*/true);
     if (err) {
       return mlir::failure();
     }

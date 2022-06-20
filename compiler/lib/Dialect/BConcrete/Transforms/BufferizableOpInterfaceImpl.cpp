@@ -36,23 +36,23 @@ namespace {} // namespace
 
 namespace {
 
-mlir::Type getDynamic1DMemrefWithUnknownOffset(mlir::RewriterBase &rewriter) {
+mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
+                                             size_t rank) {
   mlir::MLIRContext *ctx = rewriter.getContext();
-
-  return mlir::MemRefType::get(
-      {-1}, rewriter.getI64Type(),
-      mlir::AffineMap::get(1, 1,
-                           mlir::getAffineDimExpr(0, ctx) +
-                               mlir::getAffineSymbolExpr(0, ctx)));
+  std::vector<int64_t> shape(rank, -1);
+  return mlir::MemRefType::get(shape, rewriter.getI64Type(),
+                               rewriter.getMultiDimIdentityMap(rank));
 }
 
-/// Returns `memref.cast %0 : memref<AxT> to memref<?xT>` if %0 a 1D memref
-mlir::Value getCasted1DMemRef(mlir::RewriterBase &rewriter, mlir::Location loc,
-                              mlir::Value value) {
+// Returns `memref.cast %0 : memref<...xAxT> to memref<...x?xT>`
+mlir::Value getCastedMemRef(mlir::RewriterBase &rewriter, mlir::Location loc,
+                            mlir::Value value) {
   mlir::Type valueType = value.getType();
-  if (valueType.isa<mlir::MemRefType>()) {
+  if (auto memrefTy = valueType.dyn_cast_or_null<mlir::MemRefType>()) {
     return rewriter.create<mlir::memref::CastOp>(
-        loc, getDynamic1DMemrefWithUnknownOffset(rewriter), value);
+        loc,
+        getDynamicMemrefWithUnknownOffset(rewriter, memrefTy.getShape().size()),
+        value);
   } else {
     return value;
   }
@@ -69,10 +69,13 @@ char memref_bootstrap_lwe_u64[] = "memref_bootstrap_lwe_u64";
 char memref_expand_lut_in_trivial_glwe_ct_u64[] =
     "memref_expand_lut_in_trivial_glwe_ct_u64";
 
+char memref_wop_pbs_crt_buffer[] = "memref_wop_pbs_crt_buffer";
+
 mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     mlir::Operation *op, mlir::RewriterBase &rewriter, char const *funcName) {
 
-  auto memref1DType = getDynamic1DMemrefWithUnknownOffset(rewriter);
+  auto memref1DType = getDynamicMemrefWithUnknownOffset(rewriter, 1);
+  auto memref2DType = getDynamicMemrefWithUnknownOffset(rewriter, 2);
   auto contextType =
       mlir::concretelang::Concrete::ContextType::get(rewriter.getContext());
 
@@ -107,6 +110,15 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
                                            rewriter.getI32Type(),
                                            rewriter.getI32Type(),
                                            memref1DType,
+                                       },
+                                       {});
+  } else if (funcName == memref_wop_pbs_crt_buffer) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {
+                                           memref2DType,
+                                           memref2DType,
+                                           memref1DType,
+                                           contextType,
                                        },
                                        {});
   } else {
@@ -185,7 +197,7 @@ struct BufferizableWithCallOpInterface
 
     // The first operand is the result
     mlir::SmallVector<mlir::Value, 3> operands{
-        getCasted1DMemRef(rewriter, loc, *outMemref),
+        getCastedMemRef(rewriter, loc, *outMemref),
     };
     // For all tensor operand get the corresponding casted buffer
     for (auto &operand : op->getOpOperands()) {
@@ -194,7 +206,7 @@ struct BufferizableWithCallOpInterface
       } else {
         auto memrefOperand =
             bufferization::getBuffer(rewriter, operand.get(), options);
-        operands.push_back(getCasted1DMemRef(rewriter, loc, memrefOperand));
+        operands.push_back(getCastedMemRef(rewriter, loc, memrefOperand));
       }
     }
     // Append the context argument
@@ -264,14 +276,14 @@ struct BufferizableGlweFromTableOpInterface
     auto loc = op->getLoc();
     auto castOp = cast<BConcrete::FillGlweFromTable>(op);
 
-    auto glweOp = getCasted1DMemRef(
-        rewriter, loc,
-        bufferization::getBuffer(rewriter, castOp->getOpOperand(0).get(),
-                                 options));
-    auto lutOp = getCasted1DMemRef(
-        rewriter, loc,
-        bufferization::getBuffer(rewriter, castOp->getOpOperand(1).get(),
-                                 options));
+    auto glweOp =
+        getCastedMemRef(rewriter, loc,
+                        bufferization::getBuffer(
+                            rewriter, castOp->getOpOperand(0).get(), options));
+    auto lutOp =
+        getCastedMemRef(rewriter, loc,
+                        bufferization::getBuffer(
+                            rewriter, castOp->getOpOperand(1).get(), options));
 
     auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op->getLoc(), rewriter.getI32IntegerAttr(castOp.polynomialSize()));
@@ -326,6 +338,10 @@ void mlir::concretelang::BConcrete::
     BConcrete::BootstrapLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::BootstrapLweBufferOp,
                                         memref_bootstrap_lwe_u64, true>>(*ctx);
+    // TODO(16bits): hack
+    BConcrete::WopPBSCRTLweBufferOp::attachInterface<
+        BufferizableWithCallOpInterface<BConcrete::WopPBSCRTLweBufferOp,
+                                        memref_wop_pbs_crt_buffer, true>>(*ctx);
     BConcrete::FillGlweFromTable::attachInterface<
         BufferizableGlweFromTableOpInterface>(*ctx);
   });
