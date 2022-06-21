@@ -194,11 +194,11 @@ def generate_zama_curves64(sd_range=range(5,9), target_security_levels=[256], na
     if __name__ == '__main__':
 
         D = ND.DiscreteGaussian
-        vals = sd_range
+        vals = range(sd_range[0], sd_range[1])
         procs = []
         pool = multiprocessing.Pool(2)
         init_params = LWE.Parameters(n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(2 ** 55), m=oo, tag='TFHE_DEFAULT')
-        inputs = [(init_params, (val, val+1), target_security_levels, name) for val in vals]
+        inputs = [(init_params, (val, val), target_security_levels, name) for val in vals]
         print(inputs[0])
         res = pool.starmap(generate_parameter_matrix, inputs)
 
@@ -210,9 +210,12 @@ def wrap(*args):
 
 import sys
 a = int(sys.argv[1])
+b = int(sys.argv[2])
+c = int(sys.argv[3])
+print(b)
 D = ND.DiscreteGaussian
 init_params = LWE.Parameters(n=1024, q=2 ** 32, Xs=ND.UniformMod(2), Xe=D(131072.00), m=oo, tag='TFHE_DEFAULT')
-generate_zama_curves64(sd_range= range(2,60), target_security_levels=[a], name="{}".format("new_96"))
+generate_zama_curves64(sd_range= (b,c), target_security_levels=[a], name="{}".format(a))
 
 
 
