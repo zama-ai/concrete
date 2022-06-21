@@ -92,7 +92,7 @@ def automated_param_select_n(params, target_security=128):
     # get an estimate based on the prev. model
     print("n = {}".format(params.n))
     n_start = old_models(target_security, log2(params.Xe.stddev), log2(params.q))
-    n_start = max(n_start, 450)
+    # n_start = max(n_start, 450)
     # TODO: think about throwing an error if the required n < 450
 
     params = params.updated(n=n_start)
