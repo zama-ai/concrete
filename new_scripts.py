@@ -182,7 +182,7 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128],
                 results = dict()
                 results["{}".format(lam)] = []
 
-            results["{}".format(lam)].append((params_out.n, params_out.q, params_out.Xe.stddev, sec))
+            results["{}".format(lam)].append((params_out.n, log(params_out.q,2), log(params_out.Xe.stddev,2), sec))
             save(results, "{}.sobj".format(name))
 
             del(params_out)
