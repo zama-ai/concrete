@@ -1,8 +1,8 @@
 use super::complexity::Complexity;
 
 pub trait FftComplexity {
-    fn fft_complexity(&self, size: u64) -> Complexity;
-    fn ifft_complexity(&self, size: u64) -> Complexity;
+    fn fft_complexity(&self, size: f64) -> Complexity;
+    fn ifft_complexity(&self, size: f64) -> Complexity;
 }
 
 /** Standard fft complexity model */
@@ -15,14 +15,12 @@ impl FftComplexity for AsymptoticWithFactors {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L109
 
     #[inline] // forces to share log2 computation
-    fn fft_complexity(&self, size: u64) -> Complexity {
-        let size = size as Complexity;
+    fn fft_complexity(&self, size: f64) -> Complexity {
         size * size.log2() * self.factor_fft
     }
 
     #[inline] // forces to share log2 computation
-    fn ifft_complexity(&self, size: u64) -> Complexity {
-        let size = size as Complexity;
+    fn ifft_complexity(&self, size: f64) -> Complexity {
         size * size.log2() * self.factor_ifft
     }
 }
@@ -48,11 +46,11 @@ pub mod tests {
     #[test]
     fn golden_python_prototype() {
         let golden_fft = 664.385_618_977_472_4;
-        let actual_fft = fft::DEFAULT.fft_complexity(100);
+        let actual_fft = fft::DEFAULT.fft_complexity(100.);
         approx::assert_relative_eq!(golden_fft, actual_fft, epsilon = f64::EPSILON);
 
         let golden_ifft = 664.385_618_977_472_4;
-        let actual_ifft = fft::DEFAULT.ifft_complexity(100);
+        let actual_ifft = fft::DEFAULT.ifft_complexity(100.);
         approx::assert_relative_eq!(golden_ifft, actual_ifft, epsilon = f64::EPSILON);
     }
 }

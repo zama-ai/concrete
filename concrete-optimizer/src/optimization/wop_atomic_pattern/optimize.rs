@@ -1,7 +1,7 @@
 use crate::computing_cost::complexity::Complexity;
-use crate::computing_cost::operators::atomic_pattern as complexity_atomic_pattern;
 use crate::computing_cost::operators::keyswitch_lwe::KeySwitchLWEComplexity;
 use crate::computing_cost::operators::pbs::PbsComplexity;
+use crate::computing_cost::operators::{atomic_pattern as complexity_atomic_pattern, cmux};
 use crate::noise_estimator::error::{
     error_probability_of_sigma_scale, safe_variance_bound_1bit_1padbit,
     sigma_scale_of_error_probability,
@@ -11,8 +11,9 @@ use crate::noise_estimator::operators::atomic_pattern as noise_atomic_pattern;
 use crate::noise_estimator::operators::wop_atomic_pattern::estimate_packing_private_keyswitch;
 
 use crate::optimization::atomic_pattern;
-use crate::optimization::atomic_pattern::OptimizationDecompositionsConsts;
-use crate::optimization::atomic_pattern::{cutted_blind_rotate, pareto_keyswitch, ComplexityNoise};
+use crate::optimization::atomic_pattern::{
+    cutted_blind_rotate, pareto_keyswitch, ComplexityNoise, OptimizationDecompositionsConsts,
+};
 use crate::optimization::wop_atomic_pattern::pareto::{
     BR_CIRCUIT_BOOTSTRAP_PARETO_DECOMP, BR_PARETO_DECOMP, KS_CIRCUIT_BOOTSTRAP_PARETO_DECOMP,
     KS_PARETO_DECOMP,
@@ -319,6 +320,20 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                 0.0
             };
             let complexity_cmux_tree = cmux_group_count as f64 * complexity_1_cmux_hp;
+
+            let cmux_complexity = cmux::DEFAULT;
+
+            let f_glwe_poly_size = glwe_params.polynomial_size() as f64;
+
+            let f_glwe_size = (glwe_params.glwe_dimension + 1) as f64;
+
+            let complexity_one_ggsw_to_fft = square(f_glwe_size)
+                * circuit_pbs_decomposition_parameter.level as f64
+                * cmux_complexity.fft_complexity(f_glwe_poly_size, ciphertext_modulus_log);
+
+            let complexity_all_ggsw_to_fft =
+                (1 << global_precision) as f64 * complexity_one_ggsw_to_fft;
+
             // Hybrid packing blind rotate
             let complexity_g_br = complexity_1_cmux_hp
                 * u64::min(
@@ -327,7 +342,9 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                 ) as f64;
 
             let complexity_hybrid_packing = complexity_cmux_tree + complexity_g_br;
-            let complexity_multi_hybrid_packing = n_functions as f64 * complexity_hybrid_packing;
+
+            let complexity_multi_hybrid_packing =
+                n_functions as f64 * complexity_hybrid_packing + complexity_all_ggsw_to_fft;
             // Cutting on complexity here is counter-productive probably because complexity_multi_hybrid_packing is small
 
             let variance_one_external_product_for_cmux_tree =

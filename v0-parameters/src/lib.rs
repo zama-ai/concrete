@@ -182,7 +182,7 @@ mod tests {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
         for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
-            let ref_file: &str = &format!("ref/v0_2022-6-27_{}", security_level);
+            let ref_file: &str = &format!("ref/v0_2022-7-4_{}", security_level);
             let args: Args = Args {
                 min_precision: 1,
                 max_precision: 8,
@@ -217,7 +217,7 @@ mod tests {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
         for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
-            let ref_file: &str = &format!("ref/wop_pbs_2022-6-27_{}", security_level);
+            let ref_file: &str = &format!("ref/wop_pbs_2022-7-4_{}", security_level);
 
             let args = Args {
                 min_precision: 1,
