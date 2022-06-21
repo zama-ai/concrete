@@ -141,6 +141,7 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128],
     (sd_min, sd_max) = sd_range
     for lam in target_security_levels:
         for sd in range(sd_min, sd_max + 1):
+            print("run for {}".format(lam, sd))
             Xe_new = nd.NoiseDistribution.DiscreteGaussian(2**sd)
             (params_out, sec) = automated_param_select_n(params_in.updated(Xe=Xe_new), target_security=lam)
 
