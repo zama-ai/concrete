@@ -192,6 +192,13 @@ llvm::cl::opt<bool>
                 llvm::cl::desc("Select the v0 parameters strategy"),
                 llvm::cl::init(false));
 
+llvm::cl::opt<double> fallbackLogNormWoppbs(
+    "optimizer-fallback-log-norm-woppbs",
+    llvm::cl::desc("Select a fallback value for multisum log norm in woppbs "
+                   "when the precise value can't be computed."),
+    llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG
+                       .fallback_log_norm_woppbs));
+
 llvm::cl::list<int64_t> fhelinalgTileSizes(
     "fhelinalg-tile-sizes",
     llvm::cl::desc(

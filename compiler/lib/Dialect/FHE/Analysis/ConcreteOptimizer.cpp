@@ -295,11 +295,6 @@ struct DagPass : ConcreteOptimizerBase<DagPass> {
     mlir::func::FuncOp func = getOperation();
     auto name = std::string(func.getName());
     DEBUG("ConcreteOptimizer Dag: " << name);
-    if (config.strategy_v0) {
-      // we avoid building the dag since it's not used in this case
-      // so strategy_v0 can be used to avoid dag creation issues
-      dags.insert(optimizer::FunctionsDag::value_type(name, llvm::None));
-    }
     auto dag = FunctionToDag(func, config).build();
     if (dag) {
       dags.insert(

@@ -17,18 +17,22 @@ namespace concretelang {
 namespace optimizer {
 constexpr double P_ERROR_4_SIGMA = 1.0 - 0.999936657516;
 constexpr uint DEFAULT_SECURITY = 128;
+constexpr uint DEFAULT_FALLBACK_LOG_NORM_WOPPBS = 8;
 
 struct Config {
   double p_error;
   bool display;
   bool strategy_v0;
   std::uint64_t security;
+  double fallback_log_norm_woppbs;
 };
 constexpr Config DEFAULT_CONFIG = {P_ERROR_4_SIGMA, false, false,
-                                   DEFAULT_SECURITY};
+                                   DEFAULT_SECURITY,
+                                   DEFAULT_FALLBACK_LOG_NORM_WOPPBS};
 
 using Dag = rust::Box<concrete_optimizer::OperationDag>;
 using Solution = concrete_optimizer::v0::Solution;
+using DagSolution = concrete_optimizer::dag::DagSolution;
 
 /* Contains any circuit description usable by the concrete-optimizer */
 struct Description {
