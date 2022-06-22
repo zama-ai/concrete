@@ -286,11 +286,7 @@ class Node:
         assert_that(self.operation == Operation.Generic)
 
         name = self.properties["name"]
-
-        if name == "index.static":
-            name = self.format(["index"])
-
-        return name
+        return name if name != "index.static" else self.format(["index"])
 
     @property
     def converted_to_table_lookup(self) -> bool:

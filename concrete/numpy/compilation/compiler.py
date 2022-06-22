@@ -40,7 +40,7 @@ class Compiler:
     parameter_encryption_statuses: Dict[str, EncryptionStatus]
 
     configuration: Configuration
-    artifacts: DebugArtifacts
+    artifacts: Optional[DebugArtifacts]
 
     inputset: List[Any]
     graph: Optional[Graph]
@@ -97,7 +97,7 @@ class Compiler:
         }
 
         self.configuration = Configuration()
-        self.artifacts = DebugArtifacts()
+        self.artifacts = None
 
         self.inputset = []
         self.graph = None
@@ -136,9 +136,10 @@ class Compiler:
                 sample to use for tracing
         """
 
-        self.artifacts.add_source_code(self.function)
-        for param, encryption_status in self.parameter_encryption_statuses.items():
-            self.artifacts.add_parameter_encryption_status(param, encryption_status)
+        if self.artifacts is not None:
+            self.artifacts.add_source_code(self.function)
+            for param, encryption_status in self.parameter_encryption_statuses.items():
+                self.artifacts.add_parameter_encryption_status(param, encryption_status)
 
         parameters = {
             param: Value.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
@@ -149,7 +150,8 @@ class Compiler:
         }
 
         self.graph = Tracer.trace(self.function, parameters)
-        self.artifacts.add_graph("initial", self.graph)
+        if self.artifacts is not None:
+            self.artifacts.add_graph("initial", self.graph)
 
         fuse(self.graph, self.artifacts)
 
@@ -205,10 +207,12 @@ class Compiler:
             assert self.graph is not None
 
         bounds = self.graph.measure_bounds(self.inputset)
-        self.artifacts.add_final_graph_bounds(bounds)
+        if self.artifacts is not None:
+            self.artifacts.add_final_graph_bounds(bounds)
 
         self.graph.update_with_bounds(bounds)
-        self.artifacts.add_graph("final", self.graph)
+        if self.artifacts is not None:
+            self.artifacts.add_graph("final", self.graph)
 
     def trace(
         self,
@@ -243,11 +247,17 @@ class Compiler:
 
         if configuration is not None:
             self.configuration = configuration
-        if artifacts is not None:
-            self.artifacts = artifacts
 
         if len(kwargs) != 0:
             self.configuration = self.configuration.fork(**kwargs)
+
+        self.artifacts = (
+            artifacts
+            if artifacts is not None
+            else DebugArtifacts()
+            if self.configuration.dump_artifacts_on_unexpected_failures
+            else None
+        )
 
         try:
 
@@ -292,6 +302,7 @@ class Compiler:
             # we need to export all the information we have about the compilation
 
             if self.configuration.dump_artifacts_on_unexpected_failures:
+                assert self.artifacts is not None
                 self.artifacts.export()
 
                 traceback_path = self.artifacts.output_directory.joinpath("traceback.txt")
@@ -340,11 +351,17 @@ class Compiler:
 
         if configuration is not None:
             self.configuration = configuration
-        if artifacts is not None:
-            self.artifacts = artifacts
 
         if len(kwargs) != 0:
             self.configuration = self.configuration.fork(**kwargs)
+
+        self.artifacts = (
+            artifacts
+            if artifacts is not None
+            else DebugArtifacts()
+            if self.configuration.dump_artifacts_on_unexpected_failures
+            else None
+        )
 
         try:
 
@@ -352,7 +369,8 @@ class Compiler:
             assert self.graph is not None
 
             mlir = GraphConverter.convert(self.graph, virtual=self.configuration.virtual)
-            self.artifacts.add_mlir_to_compile(mlir)
+            if self.artifacts is not None:
+                self.artifacts.add_mlir_to_compile(mlir)
 
             if (
                 self.configuration.verbose
@@ -412,9 +430,10 @@ class Compiler:
             circuit = Circuit(self.graph, mlir, self.configuration)
             if not self.configuration.virtual:
                 assert circuit.client.specs.client_parameters is not None
-                self.artifacts.add_client_parameters(
-                    circuit.client.specs.client_parameters.serialize()
-                )
+                if self.artifacts is not None:
+                    self.artifacts.add_client_parameters(
+                        circuit.client.specs.client_parameters.serialize()
+                    )
             return circuit
 
         except Exception:  # pragma: no cover
@@ -426,6 +445,7 @@ class Compiler:
             # we need to export all the information we have about the compilation
 
             if self.configuration.dump_artifacts_on_unexpected_failures:
+                assert self.artifacts is not None
                 self.artifacts.export()
 
                 traceback_path = self.artifacts.output_directory.joinpath("traceback.txt")

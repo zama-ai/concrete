@@ -167,6 +167,17 @@ def test_node_bad_call(node, args, expected_error, expected_message):
         ),
         pytest.param(
             Node.generic(
+                name="index.static",
+                inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3,))],
+                output=EncryptedTensor(UnsignedInteger(3), shape=(3,)),
+                operation=lambda x: x[slice(None, None, -1)],
+                attributes={"index": (slice(None, None, -1),)},
+            ),
+            ["%0"],
+            "%0[::-1]",
+        ),
+        pytest.param(
+            Node.generic(
                 name="concatenate",
                 inputs=[
                     EncryptedTensor(UnsignedInteger(3), shape=(3, 2)),
