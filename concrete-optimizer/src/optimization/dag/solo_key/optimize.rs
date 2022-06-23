@@ -193,7 +193,6 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
 
 const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
-#[allow(clippy::too_many_lines)]
 pub fn optimize<W: UnsignedInteger>(
     dag: &unparametrized::OperationDag,
     config: Config,
@@ -315,7 +314,6 @@ pub fn optimize_v0<W: UnsignedInteger>(
     state
 }
 
-#[allow(clippy::unnecessary_cast)] // unecessary warning on 'as Precision'
 #[cfg(test)]
 mod tests {
     use std::time::Instant;
@@ -595,16 +593,14 @@ mod tests {
             circuit(&mut dag_multi, high_precision, 1);
         }
         let state_multi = optimize(&dag_multi);
-        #[allow(clippy::question_mark)] // question mark doesn't work here
-        if state_multi.best_solution.is_none() {
-            return None;
-        }
+
+        let mut sol_multi = state_multi.best_solution?;
+
         let state_low = optimize(&dag_low);
         let state_high = optimize(&dag_high);
 
         let sol_low = state_low.best_solution.unwrap();
         let sol_high = state_high.best_solution.unwrap();
-        let mut sol_multi = state_multi.best_solution.unwrap();
         sol_multi.complexity /= 2.0;
         if sol_low.complexity < sol_high.complexity {
             assert!(sol_high.assert_same_pbs_solution(sol_multi));

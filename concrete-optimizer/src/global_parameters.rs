@@ -18,7 +18,6 @@ pub(crate) struct ParameterToOperation {
     pub ks_decomposition: Vec<Vec<OperatorIndex>>,
 }
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ParameterCount {
     pub glwe: usize,

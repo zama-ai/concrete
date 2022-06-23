@@ -387,7 +387,6 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
 
 // This function provides reference values with unoptimised code, until we have non regeression tests
 #[allow(clippy::float_cmp)]
-#[allow(clippy::too_many_lines)]
 fn assert_checks<W: UnsignedInteger>(
     consts: &OptimizationDecompositionsConsts,
     internal_dim: u64,
@@ -492,7 +491,6 @@ fn assert_checks<W: UnsignedInteger>(
 
 const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
-#[allow(clippy::too_many_lines)]
 pub fn optimize_one<W: UnsignedInteger>(
     sum_size: u64,
     precision: u64,

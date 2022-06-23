@@ -3,7 +3,6 @@ use super::super::fft;
 use crate::parameters::CmuxParameters;
 use crate::utils::square;
 
-#[allow(non_snake_case)]
 pub struct SimpleWithFactors {
     fft: fft::AsymptoticWithFactors,
     blind_rotate_factor: f64,
@@ -28,7 +27,6 @@ impl SimpleWithFactors {
     }
 
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/bootstrap.py#L145
-    #[allow(non_snake_case)]
     pub fn complexity(&self, params: CmuxParameters, ciphertext_modulus_log: u64) -> Complexity {
         let glwe_polynomial_size = params.output_glwe_params.polynomial_size() as f64;
 

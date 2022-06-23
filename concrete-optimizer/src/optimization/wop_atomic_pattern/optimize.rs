@@ -106,7 +106,6 @@ impl From<Solution> for atomic_pattern::Solution {
     }
 }
 
-#[allow(clippy::type_complexity)]
 #[derive(Debug)]
 struct NoiseCostByMicroParam {
     cutted_blind_rotate: Vec<ComplexityNoise>,
@@ -114,7 +113,6 @@ struct NoiseCostByMicroParam {
     pp_switching: Vec<(f64, Complexity)>,
 }
 
-#[allow(clippy::too_many_lines)]
 fn compute_noise_cost_by_micro_param<W: UnsignedInteger>(
     consts: &OptimizationDecompositionsConsts,
     glwe_params: GlweParameters,
@@ -447,9 +445,6 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
     }
 }
 
-#[allow(clippy::expect_fun_call)]
-#[allow(clippy::identity_op)]
-#[allow(clippy::too_many_lines)]
 fn optimize_raw<W: UnsignedInteger>(
     max_word_precision: u64, // max precision of a word
     log_norm: f64,           // ?? norm2 of noise multisum, complexity of multisum is neglected
@@ -521,7 +516,6 @@ fn optimize_raw<W: UnsignedInteger>(
     state
 }
 
-#[allow(clippy::too_many_lines)]
 pub fn optimize_one<W: UnsignedInteger>(
     precision: u64,
     config: Config,
@@ -548,7 +542,6 @@ pub fn optimize_one<W: UnsignedInteger>(
     state
 }
 
-#[allow(clippy::too_many_lines)]
 pub fn optimize_one_compat<W: UnsignedInteger>(
     _sum_size: u64,
     precision: u64,
