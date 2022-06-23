@@ -16,6 +16,9 @@
 #![allow(clippy::too_many_arguments)]
 #![warn(unused_results)]
 
+#[macro_use]
+extern crate lazy_static;
+
 pub mod computing_cost;
 
 pub mod dag;

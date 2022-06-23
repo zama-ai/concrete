@@ -11,6 +11,7 @@ derive_more = "0.99.17"
 concrete-commons = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
 concrete-npe = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
 statrs = "0.15.0"
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 approx = "0.5"
@@ -18,8 +19,8 @@ pretty_assertions = "1.2.1"
 criterion = "0.3"
 
 [lib]
-crate-type= [
-    "lib",       # rust
+crate-type = [
+    "lib", # rust
 ]
 
 [[bench]]

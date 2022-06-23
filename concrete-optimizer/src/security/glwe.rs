@@ -1,6 +1,31 @@
-use concrete_commons::dispersion::Variance;
-
 use crate::parameters::GlweParameters;
+use concrete_commons::dispersion::Variance;
+use std::collections::HashMap;
+
+struct SecurityWeights {
+    slope: f64,
+    bias: f64,
+}
+
+impl SecurityWeights {
+    fn secure_log2_std(&self, lwe_dimension: f64, espsilon_log2_std: f64) -> f64 {
+        // TODO: could be added instead
+        f64::max(self.slope * lwe_dimension + self.bias, espsilon_log2_std)
+    }
+}
+
+const SECURITY_WEIGHTS_ARRAY: [(u64, SecurityWeights); 1] = [(
+    128,
+    SecurityWeights {
+        slope: -0.026_374_888_765_705_498,
+        bias: 2.012_143_923_330_495,
+    },
+)];
+
+lazy_static! {
+    static ref SECURITY_WEIGHTS_TABLE: HashMap<u64, SecurityWeights> =
+        HashMap::from(SECURITY_WEIGHTS_ARRAY);
+}
 
 /// Noise ensuring security
 // It was 128 bits of security on the 30th August 2021 with https://bitbucket.org/malb/lwe-estimator/commits/fb7deba98e599df10b665eeb6a26332e43fb5004
@@ -11,17 +36,14 @@ pub fn minimal_variance(
 ) -> Variance {
     // https://github.com/zama-ai/concrete-optimizer/blob/prototype/python/optimizer/noise_formulas/security.py
     // ensure to have a minimal on std deviation covering the 2 lowest bits on modular scale
-    assert_eq!(
-        security_level, 128,
-        "Only 128 bits of security is supported"
-    );
     let espsilon_log2_std_modular = 2.0;
     let espsilon_log2_std = espsilon_log2_std_modular - (ciphertext_modulus_log as f64);
     let equiv_lwe_dimension = (glwe_params.glwe_dimension * glwe_params.polynomial_size()) as f64;
-    let secure_log2_std = -0.026_374_888_765_705_498 * equiv_lwe_dimension + 2.012_143_923_330_495;
-    // TODO: could be added instead
-    let log2_std = f64::max(secure_log2_std, espsilon_log2_std);
-    let log2_var = 2.0 * log2_std;
+    let security_weights = SECURITY_WEIGHTS_TABLE
+        .get(&security_level)
+        .unwrap_or_else(|| panic!("{} bits of security is not supported", security_level));
+    let secure_log2_std = security_weights.secure_log2_std(equiv_lwe_dimension, espsilon_log2_std);
+    let log2_var = 2.0 * secure_log2_std;
     Variance(f64::exp2(log2_var))
 }
 
