@@ -792,6 +792,447 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line_missing_dim) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// FHELinalg sub_eint_int ///////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> tensor<4x!FHE.eint<4>>
+    return %res : tensor<4x!FHE.eint<4>>
+  }
+)XXX");
+  std::vector<uint8_t> a0{31, 6, 2, 3};
+  std::vector<uint8_t> a1{32, 9, 12, 9};
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(a0);
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(a1);
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)4);
+
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_EQ((*res)[i], (uint64_t)a1[i] - a0[i]);
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term_broadcast) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
+    %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<1x4x4x!FHE.eint<7>>, tensor<4x1x4xi8>) -> tensor<4x4x4x!FHE.eint<7>>
+    return %res : tensor<4x4x4x!FHE.eint<7>>
+  }
+)XXX");
+  const uint8_t a0[4][1][4]{
+      {{1, 2, 3, 4}},
+      {{5, 6, 7, 8}},
+      {{9, 10, 11, 12}},
+      {{13, 14, 15, 16}},
+  };
+  const uint8_t a1[1][4][4]{
+      {
+          {1, 2, 3, 4},
+          {5, 6, 7, 8},
+          {9, 10, 11, 12},
+          {13, 14, 15, 16},
+      },
+  };
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)4 * 4 * 4);
+
+  for (size_t i = 0; i < 4; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      for (size_t k = 0; k < 4; k++) {
+        uint8_t expected = a1[i][0][k] - a0[0][j][k];
+        EXPECT_EQ((*res)[i * 16 + j * 4 + k], (uint64_t)expected);
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_column) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) ->
+  tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+)XXX");
+  const uint8_t a0[3][3]{
+      {1, 2, 3},
+      {4, 5, 6},
+      {7, 8, 9},
+  };
+  const uint8_t a1[3][1]{
+      {1},
+      {2},
+      {3},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 3 * 1), {3, 1});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[i][0]);
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_line) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) ->
+  tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+)XXX");
+  const uint8_t a0[3][3]{
+      {1, 2, 3},
+      {4, 5, 6},
+      {7, 8, 9},
+  };
+  const uint8_t a1[1][3]{
+      {1, 2, 3},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 3 * 1), {1, 3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[0][j]);
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_line_missing_dim) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+)XXX");
+  const uint8_t a0[3][3]{
+      {1, 2, 3},
+      {4, 5, 6},
+      {7, 8, 9},
+  };
+  const uint8_t a1[1][3]{
+      {1, 2, 3},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 3 * 1), {3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[0][j]);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// FHELinalg add_eint ///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(End2EndJit_FHELinalg, sub_eint_term_to_term) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
+    return %res : tensor<4x!FHE.eint<6>>
+  }
+)XXX");
+
+  std::vector<uint8_t> a0{31, 6, 12, 9};
+  std::vector<uint8_t> a1{4, 2, 9, 3};
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(a0);
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(a1);
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)4);
+
+  for (size_t i = 0; i < 4; i++) {
+    EXPECT_EQ((*res)[i], (uint64_t)a0[i] - a1[i])
+        << "result differ at pos " << i << ", expect " << a0[i] + a1[i]
+        << " got " << (*res)[i];
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_term_to_term_broadcast) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4x!FHE.eint<5>>) -> tensor<4x4x4x!FHE.eint<5>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4x!FHE.eint<5>>) ->
+    tensor<4x4x4x!FHE.eint<5>> return %res : tensor<4x4x4x!FHE.eint<5>>
+  }
+)XXX");
+  uint8_t a0[4][1][4]{
+      {{10, 20, 30, 40}},
+      {{5, 6, 7, 8}},
+      {{9, 10, 11, 12}},
+      {{13, 14, 15, 16}},
+  };
+  uint8_t a1[1][4][4]{
+      {
+          {1, 2, 3, 4},
+          {4, 3, 2, 1},
+          {3, 1, 4, 2},
+          {2, 4, 1, 3},
+      },
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::MutableArrayRef<uint8_t>((uint8_t *)a0, 4 * 1 * 4), {4, 1, 4});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::MutableArrayRef<uint8_t>((uint8_t *)a1, 1 * 4 * 4), {1, 4, 4});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)4 * 4 * 4);
+
+  for (size_t i = 0; i < 4; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      for (size_t k = 0; k < 4; k++) {
+        EXPECT_EQ((*res)[i * 16 + j * 4 + k],
+                  (uint64_t)a0[i][0][k] - a1[0][j][k])
+            << "result differ at pos " << i << "," << j << "," << k;
+      }
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_matrix_column) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+)XXX");
+  const uint8_t a0[3][3]{
+      {1, 2, 3},
+      {4, 5, 6},
+      {7, 8, 9},
+  };
+  const uint8_t a1[3][1]{
+      {1},
+      {2},
+      {3},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3, 1});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[i][0]);
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_matrix_line) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+)XXX");
+  const uint8_t a0[3][3]{
+      {1, 2, 3},
+      {4, 5, 6},
+      {7, 8, 9},
+  };
+  const uint8_t a1[1][3]{
+      {1, 2, 3},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {1, 3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[0][j]);
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_matrix_line_missing_dim) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+    %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
+    return %res : tensor<3x3x!FHE.eint<4>>
+  }
+)XXX");
+  const uint8_t a0[3][3]{
+      {1, 2, 3},
+      {4, 5, 6},
+      {7, 8, 9},
+  };
+  const uint8_t a1[1][3]{
+      {1, 2, 3},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 3), {3, 3});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 1), {3});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 3);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      EXPECT_EQ((*res)[i * 3 + j], (uint64_t)a0[i][j] - a1[0][j]);
+    }
+  }
+}
+
+TEST(End2EndJit_FHELinalg, sub_eint_tensor_dim_equals_1) {
+
+  checkedJit(lambda, R"XXX(
+  func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
+    %1 = "FHELinalg.sub_eint"(%arg0, %arg1) : (tensor<3x1x2x!FHE.eint<5>>, tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>>
+    return %1 : tensor<3x1x2x!FHE.eint<5>>
+  }
+)XXX");
+  const uint8_t a0[3][1][2]{
+      {{8, 10}},
+      {{12, 14}},
+      {{16, 18}},
+  };
+  const uint8_t a1[3][1][2]{
+      {{1, 2}},
+      {{4, 5}},
+      {{7, 8}},
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(llvm::ArrayRef<uint8_t>((const uint8_t *)a0, 3 * 2), {3, 1, 2});
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg1(llvm::ArrayRef<uint8_t>((const uint8_t *)a1, 3 * 2), {3, 1, 2});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0, &arg1});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (uint64_t)3 * 1 * 2);
+
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 1; j++) {
+      for (size_t k = 0; k < 2; k++) {
+        EXPECT_EQ((*res)[i * 2 + j + k], (uint64_t)a0[i][j][k] - a1[i][j][k]);
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // FHELinalg mul_eint_int ///////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 

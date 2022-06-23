@@ -89,6 +89,35 @@ bool verifyEncryptedIntegerInputsConsistency(::mlir::Operation &op,
   return ::mlir::success();
 }
 
+::mlir::LogicalResult SubEintIntOp::verify() {
+  auto a = this->a().getType().cast<EncryptedIntegerType>();
+  auto b = this->b().getType().cast<IntegerType>();
+  auto out = this->getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
+                                                       out)) {
+    return ::mlir::failure();
+  }
+  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
+                                                         a, b)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
+::mlir::LogicalResult SubEintOp::verify() {
+  auto a = this->a().getType().cast<EncryptedIntegerType>();
+  auto b = this->b().getType().cast<EncryptedIntegerType>();
+  auto out = this->getResult().getType().cast<EncryptedIntegerType>();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
+                                                       out)) {
+    return ::mlir::failure();
+  }
+  if (!verifyEncryptedIntegerInputsConsistency(*this->getOperation(), a, b)) {
+    return ::mlir::failure();
+  }
+  return ::mlir::success();
+}
+
 ::mlir::LogicalResult NegEintOp::verify() {
   auto a = this->a().getType().cast<EncryptedIntegerType>();
   auto out = this->getResult().getType().cast<EncryptedIntegerType>();
@@ -141,6 +170,19 @@ OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
   if (toAdd != nullptr) {
     auto intToAdd = toAdd.getInt();
     if (intToAdd == 0) {
+      return getOperand(0);
+    }
+  }
+  return nullptr;
+}
+
+// Avoid subtraction with constant 0
+OpFoldResult SubEintIntOp::fold(ArrayRef<Attribute> operands) {
+  assert(operands.size() == 2);
+  auto toSub = operands[1].dyn_cast_or_null<mlir::IntegerAttr>();
+  if (toSub != nullptr) {
+    auto intToSub = toSub.getInt();
+    if (intToSub == 0) {
       return getOperand(0);
     }
   }

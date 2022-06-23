@@ -148,6 +148,71 @@ def SubIntEintOp : FHE_Op<"sub_int_eint"> {
     let hasVerifier = 1;
 }
 
+def SubEintIntOp : FHE_Op<"sub_eint_int"> {
+
+    let summary = "Substract a clear integer from an encrypted integer";
+
+    let description = [{
+        Substract a clear integer from an encrypted integer.
+        The clear integer must have at most one more bit than the encrypted integer
+        and the result must have the same width than the encrypted integer.
+
+        Example:
+        ```mlir
+        // ok
+        "FHE.sub_eint_int"(%i, %a) : (!FHE.eint<2>, i3) -> !FHE.eint<2>
+
+        // error
+        "FHE.sub_eint_int"(%i, %a) : (!FHE.eint<2>, i4) -> !FHE.eint<2>
+        "FHE.sub_eint_int"(%i, %a) : (!FHE.eint<2>, i3) -> !FHE.eint<3>
+        ```
+    }];
+
+    let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
+    let results = (outs EncryptedIntegerType);
+
+    let builders = [
+        OpBuilder<(ins "Value":$a, "Value":$b), [{
+            build($_builder, $_state, a.getType(), a, b);
+        }]>
+    ];
+
+    let hasVerifier = 1;
+
+    let hasFolder = 1;
+}
+
+def SubEintOp : FHE_Op<"sub_eint"> {
+
+    let summary = "Subtracts two encrypted integers";
+
+    let description = [{
+        Subtracts two encrypted integers
+        The encrypted integers and the result must have the same width.
+
+        Example:
+        ```mlir
+        // ok
+        "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
+
+        // error
+        "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<3>) -> (!FHE.eint<2>)
+        "FHE.sub_eint"(%a, %b): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<3>)
+        ```
+    }];
+
+    let arguments = (ins EncryptedIntegerType:$a, EncryptedIntegerType:$b);
+    let results = (outs EncryptedIntegerType);
+
+    let builders = [
+        OpBuilder<(ins "Value":$a, "Value":$b), [{
+            build($_builder, $_state, a.getType(), a, b);
+        }]>
+    ];
+
+    let hasVerifier = 1;
+}
+
 def NegEintOp : FHE_Op<"neg_eint"> {
 
     let summary = "Negates an encrypted integer";
@@ -224,7 +289,7 @@ def ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table"> {
         "FHE.apply_lookup_table"(%a, %lut): (!FHE.eint<2>, tensor<4xi64>) -> (!FHE.eint<2>)
         "FHE.apply_lookup_table"(%a, %lut): (!FHE.eint<2>, tensor<4xi64>) -> (!FHE.eint<3>)
         "FHE.apply_lookup_table"(%a, %lut): (!FHE.eint<3>, tensor<4xi64>) -> (!FHE.eint<2>)
-        
+
         // error
         "FHE.apply_lookup_table"(%a, %lut): (!FHE.eint<2>, tensor<8xi64>) -> (!FHE.eint<2>)
         ```

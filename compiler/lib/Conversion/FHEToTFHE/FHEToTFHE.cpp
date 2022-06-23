@@ -115,6 +115,85 @@ struct ApplyLookupTableEintOpPattern
   };
 };
 
+// This rewrite pattern transforms any instance of `FHE.sub_eint_int`
+// operators to a negation and an addition.
+struct SubEintIntOpPattern : public mlir::OpRewritePattern<FHE::SubEintIntOp> {
+  SubEintIntOpPattern(mlir::MLIRContext *context,
+                      mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<FHE::SubEintIntOp>(context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(FHE::SubEintIntOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Location location = op.getLoc();
+
+    mlir::Value lhs = op.getOperand(0);
+    mlir::Value rhs = op.getOperand(1);
+
+    mlir::Type rhsType = rhs.getType();
+    mlir::Attribute minusOneAttr = mlir::IntegerAttr::get(rhsType, -1);
+    mlir::Value minusOne =
+        rewriter.create<mlir::arith::ConstantOp>(location, minusOneAttr)
+            .getResult();
+
+    mlir::Value negative =
+        rewriter.create<mlir::arith::MulIOp>(location, rhs, minusOne)
+            .getResult();
+
+    FHEToTFHETypeConverter converter;
+    auto resultTy = converter.convertType(op.getType());
+
+    auto addition =
+        rewriter.create<TFHE::AddGLWEIntOp>(location, resultTy, lhs, negative);
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, addition, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
+    rewriter.replaceOp(op, {addition.getResult()});
+    return mlir::success();
+  };
+};
+
+// This rewrite pattern transforms any instance of `FHE.sub_eint`
+// operators to a negation and an addition.
+struct SubEintOpPattern : public mlir::OpRewritePattern<FHE::SubEintOp> {
+  SubEintOpPattern(mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<FHE::SubEintOp>(context, benefit) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(FHE::SubEintOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Location location = op.getLoc();
+
+    mlir::Value lhs = op.getOperand(0);
+    mlir::Value rhs = op.getOperand(1);
+
+    FHEToTFHETypeConverter converter;
+
+    auto rhsTy = converter.convertType(rhs.getType());
+    auto negative = rewriter.create<TFHE::NegGLWEOp>(location, rhsTy, rhs);
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, negative, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
+    auto resultTy = converter.convertType(op.getType());
+    auto addition = rewriter.create<TFHE::AddGLWEOp>(location, resultTy, lhs,
+                                                     negative.getResult());
+
+    mlir::concretelang::convertOperandAndResultTypes(
+        rewriter, addition, [&](mlir::MLIRContext *, mlir::Type t) {
+          return converter.convertType(t);
+        });
+
+    rewriter.replaceOp(op, {addition.getResult()});
+    return mlir::success();
+  };
+};
+
 void FHEToTFHEPass::runOnOperation() {
   auto op = this->getOperation();
 
@@ -123,6 +202,7 @@ void FHEToTFHEPass::runOnOperation() {
 
   // Mark ops from the target dialect as legal operations
   target.addLegalDialect<mlir::concretelang::TFHE::TFHEDialect>();
+  target.addLegalDialect<mlir::arith::ArithmeticDialect>();
 
   // Make sure that no ops from `FHE` remain after the lowering
   target.addIllegalDialect<mlir::concretelang::FHE::FHEDialect>();
@@ -155,6 +235,9 @@ void FHEToTFHEPass::runOnOperation() {
       patterns.getContext(), converter);
 
   patterns.add<ApplyLookupTableEintOpPattern>(&getContext());
+  patterns.add<SubEintOpPattern>(&getContext());
+  patterns.add<SubEintIntOpPattern>(&getContext());
+
   patterns.add<RegionOpTypeConverterPattern<mlir::linalg::GenericOp,
                                             FHEToTFHETypeConverter>>(
       &getContext(), converter);

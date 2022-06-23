@@ -1614,6 +1614,14 @@ void FHETensorOpsToLinalg::runOnOperation() {
                                  mlir::concretelang::FHE::SubIntEintOp>>(
       &getContext());
   patterns.insert<
+      FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::SubEintIntOp,
+                                 mlir::concretelang::FHE::SubEintIntOp>>(
+      &getContext());
+  patterns.insert<
+      FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::SubEintOp,
+                                 mlir::concretelang::FHE::SubEintOp>>(
+      &getContext());
+  patterns.insert<
       FHELinalgOpToLinalgGeneric<mlir::concretelang::FHELinalg::MulEintIntOp,
                                  mlir::concretelang::FHE::MulEintIntOp>>(
       &getContext());

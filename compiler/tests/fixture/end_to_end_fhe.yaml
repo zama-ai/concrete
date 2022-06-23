@@ -63,7 +63,7 @@ tests:
     outputs:
     - scalar: 3
 ---
-description: sub_eint_int_cst
+description: sub_int_eint_cst
 program: |
   func @main(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
     %0 = arith.constant 7 : i3
@@ -87,6 +87,69 @@ tests:
     - scalar: 4
     outputs:
     - scalar: 3
+---
+description: sub_eint_int_cst
+program: |
+  func @main(%arg0: !FHE.eint<5>) -> !FHE.eint<5> {
+    %0 = arith.constant 7 : i6
+    %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
+    return %1: !FHE.eint<5>
+  }
+tests:
+  - inputs:
+      - scalar: 10
+    outputs:
+      - scalar: 3
+  - inputs:
+      - scalar: 7
+    outputs:
+      - scalar: 0
+---
+description: sub_eint_int_arg
+program: |
+  func @main(%arg0: !FHE.eint<4>, %arg1: i5) -> !FHE.eint<4> {
+    %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<4>, i5) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+      - scalar: 2
+      - scalar: 2
+    outputs:
+      - scalar: 0
+  - inputs:
+      - scalar: 3
+      - scalar: 1
+    outputs:
+      - scalar: 2
+  - inputs:
+      - scalar: 7
+      - scalar: 4
+    outputs:
+      - scalar: 3
+---
+description: sub_eint
+program: |
+  func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+    %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<4>, !FHE.eint<4>) -> (!FHE.eint<4>)
+    return %1: !FHE.eint<4>
+  }
+tests:
+  - inputs:
+      - scalar: 2
+      - scalar: 2
+    outputs:
+      - scalar: 0
+  - inputs:
+      - scalar: 3
+      - scalar: 1
+    outputs:
+      - scalar: 2
+  - inputs:
+      - scalar: 7
+      - scalar: 4
+    outputs:
+      - scalar: 3
 ---
 description: sub_int_eint_arg
 program: |

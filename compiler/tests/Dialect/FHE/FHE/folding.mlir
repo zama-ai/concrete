@@ -9,6 +9,15 @@ func @add_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   return %1: !FHE.eint<2>
 }
 
+// CHECK-LABEL: func @sub_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2>
+func @sub_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
+  // CHECK-NEXT: return %arg0 : !FHE.eint<2>
+
+  %0 = arith.constant 0 : i3
+  %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
+  return %1: !FHE.eint<2>
+}
+
 // CHECK-LABEL: func @mul_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2>
 func @mul_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   // CHECK-NEXT: return %arg0 : !FHE.eint<2>
