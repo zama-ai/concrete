@@ -186,11 +186,9 @@ mod tests {
     use super::*;
     use crate::global_parameters::DEFAUT_DOMAINS;
     use pretty_assertions::assert_eq;
-    use std::time::Instant;
 
     #[test]
     fn extract_br_pareto2() {
-        let start = Instant::now();
         let pareto = extract_br_pareto(
             128,
             &DEFAUT_DOMAINS.glwe_pbs_constrained,
@@ -203,20 +201,16 @@ mod tests {
         if br_bl != BR_BL {
             println!("---- Copy past to BR_BL");
             for (log2_base, level) in &br_bl {
-                print!("({}, {}),", log2_base, level);
+                print!("({log2_base}, {level}), ");
             }
-            println!("\n---- End");
-            assert_eq!(BR_BL, br_bl.as_slice());
+            println!();
+            println!("---- End");
+            assert_eq!(br_bl, BR_BL);
         }
-
-        let duration = start.elapsed();
-
-        println!("Time elapsed in extract_br_pareto2() is: {:?}", duration);
     }
 
     #[test]
     fn extract_ks_pareto2() {
-        let start = Instant::now();
         let pareto = extract_ks_pareto(
             128,
             &DEFAUT_DOMAINS.glwe_pbs_constrained,
@@ -229,14 +223,11 @@ mod tests {
         if ks_bl != KS_BL {
             println!("---- Copy past to KS_BL");
             for (log2_base, level) in &ks_bl {
-                print!("({}, {}),", log2_base, level);
+                print!("({log2_base}, {level}), ");
             }
-            println!("\n---- End");
-            assert_eq!(KS_BL, ks_bl.as_slice());
+            println!();
+            println!("---- End");
+            assert_eq!(ks_bl, KS_BL);
         }
-
-        let duration = start.elapsed();
-
-        println!("Time elapsed in extract_ks_pareto2() is: {:?}", duration);
     }
 }

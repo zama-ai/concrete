@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-delegate = "0.6.2"
+delegate = "0.7.0"
 derive_more = "0.99.17"
 concrete-commons = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
 concrete-npe = { git = "ssh://git@github.com/zama-ai/concrete_internal.git", branch = "fix/optimizer_compat" }
@@ -15,8 +15,13 @@ statrs = "0.15.0"
 [dev-dependencies]
 approx = "0.5"
 pretty_assertions = "1.2.1"
+criterion = "0.3"
 
 [lib]
 crate-type= [
     "lib",       # rust
 ]
+
+[[bench]]
+name = "benchmark"
+harness = false
