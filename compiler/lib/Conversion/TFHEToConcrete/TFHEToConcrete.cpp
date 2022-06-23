@@ -88,8 +88,8 @@ struct BootstrapGLWEOpPattern
     mlir::Type resultType = converter.convertType(bsOp.getType());
 
     auto newOp = rewriter.replaceOpWithNewOp<Concrete::BootstrapLweOp>(
-        bsOp, resultType, bsOp.ciphertext(), bsOp.lookup_table(), -1, -1,
-        bsOp.level(), bsOp.baseLog());
+        bsOp, resultType, bsOp.ciphertext(), bsOp.lookup_table(), bsOp.level(),
+        bsOp.baseLog());
 
     rewriter.startRootUpdate(newOp);
 

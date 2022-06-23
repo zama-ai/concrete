@@ -37,20 +37,17 @@ class TFHEGlobalParametrizationTypeConverter : public mlir::TypeConverter {
 
 public:
   TFHEGlobalParametrizationTypeConverter(
-      mlir::concretelang::V0FHEContext &fheContext) {
+      mlir::concretelang::V0FHEContext &fheContext)
+      : fheContext(fheContext) {
     auto convertGLWECiphertextType =
-        [](GLWECipherTextType type,
-           mlir::concretelang::V0FHEContext &fheContext) {
-          auto glweDimension = fheContext.parameter.getNBigGlweDimension();
-          auto p = fheContext.constraint.p;
-          if (type.getDimension() == (signed)glweDimension &&
-              type.getP() == (signed)p) {
+        [&](GLWECipherTextType type,
+            mlir::concretelang::V0FHEContext &fheContext) {
+          auto newTy = this->glweInterPBSType(type.getContext(), fheContext);
+          if (newTy.getDimension() == type.getDimension() &&
+              newTy.getPolynomialSize() == type.getPolynomialSize() &&
+              newTy.getP() == type.getP())
             return type;
-          }
-          return GLWECipherTextType::get(
-              type.getContext(), glweDimension,
-              1 /*for the v0, is always lwe ciphertext*/,
-              64 /*for the v0 we handle only q=64*/, p);
+          return newTy;
         };
     addConversion([](mlir::Type type) { return type; });
     addConversion([&](GLWECipherTextType type) {
@@ -66,12 +63,33 @@ public:
       return r;
     });
   }
+
+  TFHE::GLWECipherTextType
+  glweInterPBSType(mlir::MLIRContext *context,
+                   mlir::concretelang::V0FHEContext fheContext) {
+    return TFHE::GLWECipherTextType::get(
+        context, fheContext.parameter.getNBigGlweDimension(), 1, 64,
+        fheContext.constraint.p);
+  }
+
+  TFHE::GLWECipherTextType glweLookupTableType(mlir::MLIRContext *context) {
+    return TFHE::GLWECipherTextType::get(
+        context, fheContext.parameter.glweDimension,
+        fheContext.parameter.getPolynomialSize(), 64, fheContext.constraint.p);
+  }
+
+  TFHE::GLWECipherTextType glweIntraPBSType(mlir::MLIRContext *context) {
+    return TFHE::GLWECipherTextType::get(context, fheContext.parameter.nSmall,
+                                         1, 64, fheContext.constraint.p);
+  }
+
+  mlir::concretelang::V0FHEContext fheContext;
 };
 
 struct KeySwitchGLWEOpPattern
     : public mlir::OpRewritePattern<TFHE::KeySwitchGLWEOp> {
   KeySwitchGLWEOpPattern(mlir::MLIRContext *context,
-                         mlir::TypeConverter &converter,
+                         TFHEGlobalParametrizationTypeConverter &converter,
                          mlir::concretelang::V0FHEContext &fheContext,
                          mlir::PatternBenefit benefit =
                              mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
@@ -83,9 +101,7 @@ struct KeySwitchGLWEOpPattern
                   mlir::PatternRewriter &rewriter) const override {
     mlir::SmallVector<mlir::Type, 1> newResultTypes;
     auto inputTy = ksOp.ciphertext().getType().cast<TFHE::GLWECipherTextType>();
-    auto outputTy = rewriter.getType<TFHE::GLWECipherTextType>(
-        fheContext.parameter.glweDimension, fheContext.parameter.nSmall, 64,
-        fheContext.constraint.p);
+    auto outputTy = converter.glweIntraPBSType(rewriter.getContext());
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
         ksOp, outputTy, ksOp.ciphertext(), fheContext.parameter.ksLevel,
         fheContext.parameter.ksLogBase);
@@ -96,14 +112,14 @@ struct KeySwitchGLWEOpPattern
   };
 
 private:
-  mlir::TypeConverter &converter;
+  TFHEGlobalParametrizationTypeConverter &converter;
   mlir::concretelang::V0FHEContext &fheContext;
 };
 
 struct BootstrapGLWEOpPattern
     : public mlir::OpRewritePattern<TFHE::BootstrapGLWEOp> {
   BootstrapGLWEOpPattern(mlir::MLIRContext *context,
-                         mlir::TypeConverter &converter,
+                         TFHEGlobalParametrizationTypeConverter &converter,
                          mlir::concretelang::V0FHEContext &fheContext,
                          mlir::PatternBenefit benefit =
                              mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
@@ -115,22 +131,19 @@ struct BootstrapGLWEOpPattern
                   mlir::PatternRewriter &rewriter) const override {
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         bsOp, converter.convertType(bsOp.result().getType()), bsOp.ciphertext(),
-        bsOp.lookup_table(), fheContext.parameter.glweDimension,
-        1 << fheContext.parameter.logPolynomialSize,
-        fheContext.parameter.brLevel, fheContext.parameter.brLogBase);
+        bsOp.lookup_table(), fheContext.parameter.brLevel,
+        fheContext.parameter.brLogBase);
     rewriter.startRootUpdate(newOp);
-    auto newInputTy = rewriter.getType<TFHE::GLWECipherTextType>(
-        fheContext.parameter.glweDimension, fheContext.parameter.nSmall, 64,
-        fheContext.constraint.p);
-    newOp.ciphertext().setType(newInputTy);
+    newOp.ciphertext().setType(
+        converter.glweIntraPBSType(rewriter.getContext()));
     newOp.lookup_table().setType(
-        converter.convertType(newOp.lookup_table().getType()));
+        converter.glweLookupTableType(rewriter.getContext()));
     rewriter.finalizeRootUpdate(newOp);
     return mlir::success();
   };
 
 private:
-  mlir::TypeConverter &converter;
+  TFHEGlobalParametrizationTypeConverter &converter;
   mlir::concretelang::V0FHEContext &fheContext;
 };
 
@@ -156,7 +169,7 @@ private:
 struct GLWEFromTablePattern
     : public mlir::OpRewritePattern<TFHE::GLWEFromTableOp> {
   GLWEFromTablePattern(mlir::MLIRContext *context,
-                       mlir::TypeConverter &converter,
+                       TFHEGlobalParametrizationTypeConverter &converter,
                        mlir::concretelang::V0FHEContext &fheContext,
                        mlir::PatternBenefit benefit =
                            mlir::concretelang::DEFAULT_PATTERN_BENEFIT)
@@ -166,8 +179,7 @@ struct GLWEFromTablePattern
   mlir::LogicalResult
   matchAndRewrite(TFHE::GLWEFromTableOp glweOp,
                   mlir::PatternRewriter &rewriter) const override {
-    auto newTy = converter.convertType(glweOp.getType())
-                     .cast<TFHE::GLWECipherTextType>();
+    auto newTy = converter.glweLookupTableType(glweOp.getContext());
 
     auto lutOp = glweOp.table();
     auto tableTy = lutOp.getType().cast<mlir::RankedTensorType>();
@@ -208,7 +220,7 @@ struct GLWEFromTablePattern
   };
 
 private:
-  mlir::TypeConverter &converter;
+  TFHEGlobalParametrizationTypeConverter &converter;
   mlir::concretelang::V0FHEContext &fheContext;
 };
 
@@ -269,7 +281,9 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
     patterns.add<GLWEFromTablePattern>(&getContext(), converter, fheContext);
     target.addDynamicallyLegalOp<TFHE::GLWEFromTableOp>(
         [&](TFHE::GLWEFromTableOp op) {
-          return converter.isLegal(op->getResultTypes());
+          return !op.getType()
+                      .cast<TFHE::GLWECipherTextType>()
+                      .hasUnparametrizedParameters();
         });
     target.addLegalOp<mlir::arith::ConstantOp>();
     patterns.add<KeySwitchGLWEOpPattern>(&getContext(), converter, fheContext);

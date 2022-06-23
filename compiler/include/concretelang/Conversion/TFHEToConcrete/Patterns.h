@@ -25,8 +25,8 @@ LweCiphertextType convertTypeToLWE(mlir::MLIRContext *context,
                                    mlir::Type type) {
   auto glwe = type.dyn_cast_or_null<GLWECipherTextType>();
   if (glwe != nullptr) {
-    return LweCiphertextType::get(
-        context, glwe.getDimension() * glwe.getPolynomialSize(), glwe.getP());
+    assert(glwe.getPolynomialSize() == 1);
+    return LweCiphertextType::get(context, glwe.getDimension(), glwe.getP());
   }
   auto lwe = type.dyn_cast_or_null<LweCiphertextType>();
   if (lwe != nullptr) {

@@ -82,10 +82,12 @@ def KeySwitchGLWEOp : TFHE_Op<"keyswitch_glwe"> {
   let summary = "Change the encryption parameters of a glwe ciphertext by "
                 "applying a keyswitch";
 
-  let arguments = (ins GLWECipherTextType
-                   : $ciphertext, I32Attr
-                   : $level, I32Attr
-                   : $baseLog);
+  let arguments = (ins 
+    GLWECipherTextType : $ciphertext,
+    I32Attr : $level,
+    I32Attr : $baseLog
+  );
+  
 
   let results = (outs GLWECipherTextType : $result);
 }
@@ -103,13 +105,13 @@ def BootstrapGLWEOp : TFHE_Op<"bootstrap_glwe"> {
   let summary =
       "Programmable bootstraping of a GLWE ciphertext with a lookup table";
 
-  let arguments = (ins GLWECipherTextType
-                   : $ciphertext, GLWECipherTextType
-                   : $lookup_table, I32Attr
-                   : $glweDimension, I32Attr
-                   : $polynomialSize, I32Attr
-                   : $level, I32Attr
-                   : $baseLog);
+  let arguments = (ins
+    GLWECipherTextType : $ciphertext,
+    GLWECipherTextType : $lookup_table,
+    I32Attr : $level,
+    I32Attr : $baseLog
+  );
+
   let results = (outs GLWECipherTextType : $result);
 }
 

@@ -110,7 +110,7 @@ struct ApplyLookupTableEintOpPattern
         });
     //  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
     rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(lutOp, resultTy, glweKs,
-                                                       glweLut, -1, -1, -1, -1);
+                                                       glweLut, -1, -1);
     return ::mlir::success();
   };
 };

@@ -299,7 +299,7 @@ struct GlweFromTablePattern : public mlir::OpRewritePattern<
     auto outPrecision = resultTy.getP();
 
     rewriter.create<mlir::concretelang::BConcrete::FillGlweFromTable>(
-        op.getLoc(), init, polySize, glweDimension, outPrecision, op.table());
+        op.getLoc(), init, glweDimension, polySize, outPrecision, op.table());
 
     return ::mlir::success();
   };

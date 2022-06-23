@@ -28,13 +28,13 @@ void ConcreteDialect::initialize() {
 mlir::Type GlweCiphertextType::parse(mlir::AsmParser &parser) {
   if (parser.parseLess())
     return Type();
-  int polynomialSize = -1;
-  if (parser.parseOptionalKeyword("_") && parser.parseInteger(polynomialSize))
+  int glweDimension = -1;
+  if (parser.parseOptionalKeyword("_") && parser.parseInteger(glweDimension))
     return Type();
   if (parser.parseComma())
     return Type();
-  int glweDimension = -1;
-  if (parser.parseOptionalKeyword("_") && parser.parseInteger(glweDimension))
+  int polynomialSize = -1;
+  if (parser.parseOptionalKeyword("_") && parser.parseInteger(polynomialSize))
     return Type();
   if (parser.parseComma())
     return Type();
@@ -45,20 +45,20 @@ mlir::Type GlweCiphertextType::parse(mlir::AsmParser &parser) {
   if (parser.parseGreater())
     return Type();
   Location loc = parser.getEncodedSourceLoc(parser.getNameLoc());
-  return getChecked(loc, loc.getContext(), polynomialSize, glweDimension, p);
+  return getChecked(loc, loc.getContext(), glweDimension, polynomialSize, p);
 }
 
 void GlweCiphertextType::print(mlir::AsmPrinter &p) const {
   p << "<";
-  if (getImpl()->polynomialSize == -1)
-    p << "_";
-  else
-    p << getImpl()->polynomialSize;
-  p << ",";
   if (getImpl()->glweDimension == -1)
     p << "_";
   else
     p << getImpl()->glweDimension;
+  p << ",";
+  if (getImpl()->polynomialSize == -1)
+    p << "_";
+  else
+    p << getImpl()->polynomialSize;
   p << ",";
   if (getImpl()->p == -1)
     p << "_";

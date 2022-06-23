@@ -40,6 +40,8 @@ protected:
 struct CompilationOptions {
   llvm::Optional<mlir::concretelang::V0FHEConstraint> v0FHEConstraints;
 
+  llvm::Optional<mlir::concretelang::V0Parameter> v0Parameter;
+
   bool verifyDiagnostics;
 
   bool autoParallelize;

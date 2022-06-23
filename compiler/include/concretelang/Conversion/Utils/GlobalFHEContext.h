@@ -34,9 +34,9 @@ struct V0Parameter {
         ksLevel(ksLevel), ksLogBase(ksLogBase) {}
 
   // TODO remove the shift when we have true polynomial size
-  size_t getNBigGlweDimension() {
-    return glweDimension * (1 << logPolynomialSize);
-  }
+  size_t getPolynomialSize() { return 1 << logPolynomialSize; }
+
+  size_t getNBigGlweDimension() { return glweDimension * getPolynomialSize(); }
 };
 
 struct V0FHEContext {

@@ -65,8 +65,6 @@ def BootstrapLweOp : Concrete_Op<"bootstrap_lwe"> {
     let arguments = (ins 
         LweCiphertextType:$input_ciphertext,
         GlweCiphertextType:$accumulator,
-        I32Attr:$glweDimension,
-        I32Attr:$polynomialSize,
         I32Attr:$level,
         I32Attr:$baseLog
     );

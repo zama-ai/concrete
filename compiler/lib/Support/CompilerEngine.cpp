@@ -144,17 +144,22 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   if (!fheConstraintOrErr.get().hasValue()) {
     return llvm::Error::success();
   }
-  auto fheParams = getV0Parameter(fheConstraintOrErr.get().getValue(),
-                                  this->compilerOptions.optimizerConfig);
+  llvm::Optional<V0Parameter> v0Params;
+  if (compilerOptions.v0Parameter.hasValue()) {
+    v0Params = compilerOptions.v0Parameter;
+  } else {
+    v0Params = getV0Parameter(fheConstraintOrErr.get().getValue(),
+                              this->compilerOptions.optimizerConfig);
 
-  if (!fheParams) {
-    return StreamStringError()
-           << "Could not determine V0 parameters for 2-norm of "
-           << (*fheConstraintOrErr)->norm2 << " and p of "
-           << (*fheConstraintOrErr)->p;
+    if (!v0Params) {
+      return StreamStringError()
+             << "Could not determine V0 parameters for 2-norm of "
+             << (*fheConstraintOrErr)->norm2 << " and p of "
+             << (*fheConstraintOrErr)->p;
+    }
   }
   res.fheContext.emplace(mlir::concretelang::V0FHEContext{
-      (*fheConstraintOrErr).getValue(), fheParams.getValue()});
+      (*fheConstraintOrErr).getValue(), v0Params.getValue()});
 
   return llvm::Error::success();
 }

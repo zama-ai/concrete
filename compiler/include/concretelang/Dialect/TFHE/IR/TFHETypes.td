@@ -31,6 +31,16 @@ def GLWECipherTextType : TFHE_Type<"GLWECipherText", [MemRefElementTypeInterface
     let hasCustomAssemblyFormat = 1;
 
     let genVerifyDecl = true;
+
+    let extraClassDeclaration = [{
+        // Returns true if has an unparametrized parameters
+        bool hasUnparametrizedParameters() {
+            return getDimension() ==-1 ||
+                   getPolynomialSize() == -1 ||
+                   getBits() == -1 ||
+                   getP() == -1;
+        };
+    }];
 }
 
 #endif
