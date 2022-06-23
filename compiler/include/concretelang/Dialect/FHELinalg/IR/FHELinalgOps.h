@@ -97,10 +97,6 @@ public:
 } // namespace mlir
 
 #define GET_OP_CLASSES
-// TODO: remove this when removing the custom linalg op for Conv
-// the generated code was calling functions from the mlir::linalg namespace
-using namespace mlir::linalg;
-// END TODO
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h.inc"
 
 #endif

@@ -240,10 +240,6 @@ release_tarballs:
 update_python_version:
 	echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" > lib/Bindings/Python/version.txt
 
-generate_conv_op:
-	python -m mlir.dialects.linalg.opdsl.dump_oplib ops.core_named_ops > ops/LinalgNamedStructuredOps.yaml
-	$(BUILD_DIR)/bin/mlir-linalg-ods-yaml-gen ops/LinalgNamedStructuredOps.yaml --o-impl=ops/LinalgOps.cpp --o-ods-decl=ops/LinalgNamedStructuredOps.yamlgen.td
-
 check_python_format:
 	black --check tests/python/ lib/Bindings/Python/concrete/
 
@@ -266,7 +262,6 @@ python_lint:
 	package_py310 \
 	release_tarballs \
 	update_python_version \
-	generate_conv_op \
 	python_lint \
 	python_format \
 	check_python_format \

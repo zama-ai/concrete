@@ -50,7 +50,7 @@ static bool isCandidateForTask(Operation *op) {
       FHELinalg::ApplyLookupTableEintOp, FHELinalg::ApplyMultiLookupTableEintOp,
       FHELinalg::ApplyMappedLookupTableEintOp, FHELinalg::Dot,
       FHELinalg::MatMulEintIntOp, FHELinalg::MatMulIntEintOp, FHELinalg::SumOp,
-      FHELinalg::ConcatOp, FHELinalg::FhelinalgConv2DNchwFchwOp>(op);
+      FHELinalg::ConcatOp>(op);
 }
 
 /// Identify operations that are beneficial to sink into tasks.  These
