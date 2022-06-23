@@ -1,8 +1,10 @@
 #pragma once
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <iterator>
 #include <new>
 #include <stdexcept>
@@ -592,6 +594,251 @@ template <typename T>
 Box<T>::Box(uninit) noexcept {}
 #endif // CXXBRIDGE1_RUST_BOX
 
+#ifndef CXXBRIDGE1_RUST_BITCOPY_T
+#define CXXBRIDGE1_RUST_BITCOPY_T
+struct unsafe_bitcopy_t final {
+  explicit unsafe_bitcopy_t() = default;
+};
+#endif // CXXBRIDGE1_RUST_BITCOPY_T
+
+#ifndef CXXBRIDGE1_RUST_VEC
+#define CXXBRIDGE1_RUST_VEC
+template <typename T>
+class Vec final {
+public:
+  using value_type = T;
+
+  Vec() noexcept;
+  Vec(std::initializer_list<T>);
+  Vec(const Vec &);
+  Vec(Vec &&) noexcept;
+  ~Vec() noexcept;
+
+  Vec &operator=(Vec &&) &noexcept;
+  Vec &operator=(const Vec &) &;
+
+  std::size_t size() const noexcept;
+  bool empty() const noexcept;
+  const T *data() const noexcept;
+  T *data() noexcept;
+  std::size_t capacity() const noexcept;
+
+  const T &operator[](std::size_t n) const noexcept;
+  const T &at(std::size_t n) const;
+  const T &front() const noexcept;
+  const T &back() const noexcept;
+
+  T &operator[](std::size_t n) noexcept;
+  T &at(std::size_t n);
+  T &front() noexcept;
+  T &back() noexcept;
+
+  void reserve(std::size_t new_cap);
+  void push_back(const T &value);
+  void push_back(T &&value);
+  template <typename... Args>
+  void emplace_back(Args &&...args);
+  void truncate(std::size_t len);
+  void clear();
+
+  using iterator = typename Slice<T>::iterator;
+  iterator begin() noexcept;
+  iterator end() noexcept;
+
+  using const_iterator = typename Slice<const T>::iterator;
+  const_iterator begin() const noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+
+  void swap(Vec &) noexcept;
+
+  Vec(unsafe_bitcopy_t, const Vec &) noexcept;
+
+private:
+  void reserve_total(std::size_t new_cap) noexcept;
+  void set_len(std::size_t len) noexcept;
+  void drop() noexcept;
+
+  friend void swap(Vec &lhs, Vec &rhs) noexcept { lhs.swap(rhs); }
+
+  std::array<std::uintptr_t, 3> repr;
+};
+
+template <typename T>
+Vec<T>::Vec(std::initializer_list<T> init) : Vec{} {
+  this->reserve_total(init.size());
+  std::move(init.begin(), init.end(), std::back_inserter(*this));
+}
+
+template <typename T>
+Vec<T>::Vec(const Vec &other) : Vec() {
+  this->reserve_total(other.size());
+  std::copy(other.begin(), other.end(), std::back_inserter(*this));
+}
+
+template <typename T>
+Vec<T>::Vec(Vec &&other) noexcept : repr(other.repr) {
+  new (&other) Vec();
+}
+
+template <typename T>
+Vec<T>::~Vec() noexcept {
+  this->drop();
+}
+
+template <typename T>
+Vec<T> &Vec<T>::operator=(Vec &&other) &noexcept {
+  this->drop();
+  this->repr = other.repr;
+  new (&other) Vec();
+  return *this;
+}
+
+template <typename T>
+Vec<T> &Vec<T>::operator=(const Vec &other) & {
+  if (this != &other) {
+    this->drop();
+    new (this) Vec(other);
+  }
+  return *this;
+}
+
+template <typename T>
+bool Vec<T>::empty() const noexcept {
+  return this->size() == 0;
+}
+
+template <typename T>
+T *Vec<T>::data() noexcept {
+  return const_cast<T *>(const_cast<const Vec<T> *>(this)->data());
+}
+
+template <typename T>
+const T &Vec<T>::operator[](std::size_t n) const noexcept {
+  assert(n < this->size());
+  auto data = reinterpret_cast<const char *>(this->data());
+  return *reinterpret_cast<const T *>(data + n * size_of<T>());
+}
+
+template <typename T>
+const T &Vec<T>::at(std::size_t n) const {
+  if (n >= this->size()) {
+    panic<std::out_of_range>("rust::Vec index out of range");
+  }
+  return (*this)[n];
+}
+
+template <typename T>
+const T &Vec<T>::front() const noexcept {
+  assert(!this->empty());
+  return (*this)[0];
+}
+
+template <typename T>
+const T &Vec<T>::back() const noexcept {
+  assert(!this->empty());
+  return (*this)[this->size() - 1];
+}
+
+template <typename T>
+T &Vec<T>::operator[](std::size_t n) noexcept {
+  assert(n < this->size());
+  auto data = reinterpret_cast<char *>(this->data());
+  return *reinterpret_cast<T *>(data + n * size_of<T>());
+}
+
+template <typename T>
+T &Vec<T>::at(std::size_t n) {
+  if (n >= this->size()) {
+    panic<std::out_of_range>("rust::Vec index out of range");
+  }
+  return (*this)[n];
+}
+
+template <typename T>
+T &Vec<T>::front() noexcept {
+  assert(!this->empty());
+  return (*this)[0];
+}
+
+template <typename T>
+T &Vec<T>::back() noexcept {
+  assert(!this->empty());
+  return (*this)[this->size() - 1];
+}
+
+template <typename T>
+void Vec<T>::reserve(std::size_t new_cap) {
+  this->reserve_total(new_cap);
+}
+
+template <typename T>
+void Vec<T>::push_back(const T &value) {
+  this->emplace_back(value);
+}
+
+template <typename T>
+void Vec<T>::push_back(T &&value) {
+  this->emplace_back(std::move(value));
+}
+
+template <typename T>
+template <typename... Args>
+void Vec<T>::emplace_back(Args &&...args) {
+  auto size = this->size();
+  this->reserve_total(size + 1);
+  ::new (reinterpret_cast<T *>(reinterpret_cast<char *>(this->data()) +
+                               size * size_of<T>()))
+      T(std::forward<Args>(args)...);
+  this->set_len(size + 1);
+}
+
+template <typename T>
+void Vec<T>::clear() {
+  this->truncate(0);
+}
+
+template <typename T>
+typename Vec<T>::iterator Vec<T>::begin() noexcept {
+  return Slice<T>(this->data(), this->size()).begin();
+}
+
+template <typename T>
+typename Vec<T>::iterator Vec<T>::end() noexcept {
+  return Slice<T>(this->data(), this->size()).end();
+}
+
+template <typename T>
+typename Vec<T>::const_iterator Vec<T>::begin() const noexcept {
+  return this->cbegin();
+}
+
+template <typename T>
+typename Vec<T>::const_iterator Vec<T>::end() const noexcept {
+  return this->cend();
+}
+
+template <typename T>
+typename Vec<T>::const_iterator Vec<T>::cbegin() const noexcept {
+  return Slice<const T>(this->data(), this->size()).begin();
+}
+
+template <typename T>
+typename Vec<T>::const_iterator Vec<T>::cend() const noexcept {
+  return Slice<const T>(this->data(), this->size()).end();
+}
+
+template <typename T>
+void Vec<T>::swap(Vec &rhs) noexcept {
+  using std::swap;
+  swap(this->repr, rhs.repr);
+}
+
+template <typename T>
+Vec<T>::Vec(unsafe_bitcopy_t, const Vec &bits) noexcept : repr(bits.repr) {}
+#endif // CXXBRIDGE1_RUST_VEC
+
 #ifndef CXXBRIDGE1_RUST_OPAQUE
 #define CXXBRIDGE1_RUST_OPAQUE
 class Opaque {
@@ -677,6 +924,7 @@ namespace concrete_optimizer {
   struct Weights;
   namespace dag {
     struct OperatorIndex;
+    struct DagSolution;
   }
   namespace v0 {
     struct Solution;
@@ -692,6 +940,7 @@ struct OperationDag final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<const ::concrete_optimizer::dag::OperatorIndex> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<const ::std::uint64_t> out_shape, ::rust::Str comment) noexcept;
   ::concrete_optimizer::v0::Solution optimize_v0(::std::uint64_t security_level, double maximum_acceptable_error_probability) const noexcept;
+  ::concrete_optimizer::dag::DagSolution optimize(::std::uint64_t security_level, double maximum_acceptable_error_probability, double default_log_norm2_woppbs) const noexcept;
   ::rust::String dump() const noexcept;
   ~OperationDag() = delete;
 
@@ -748,9 +997,40 @@ struct Solution final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$v0$Solution
+} // namespace v0
 
+namespace dag {
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$dag$DagSolution
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$dag$DagSolution
+struct DagSolution final {
+  ::std::uint64_t input_lwe_dimension;
+  ::std::uint64_t internal_ks_output_lwe_dimension;
+  ::std::uint64_t ks_decomposition_level_count;
+  ::std::uint64_t ks_decomposition_base_log;
+  ::std::uint64_t glwe_polynomial_size;
+  ::std::uint64_t glwe_dimension;
+  ::std::uint64_t br_decomposition_level_count;
+  ::std::uint64_t br_decomposition_base_log;
+  double complexity;
+  double noise_max;
+  double p_error;
+  bool use_wop_pbs;
+  ::std::uint64_t cb_decomposition_level_count;
+  ::std::uint64_t cb_decomposition_base_log;
+  ::rust::Vec<::std::uint64_t> crt_decomposition;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$DagSolution
+} // namespace dag
+
+namespace v0 {
 ::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, ::std::uint64_t security_level, double noise_factor, double maximum_acceptable_error_probability) noexcept;
 } // namespace v0
+
+namespace utils {
+::concrete_optimizer::dag::DagSolution convert_to_dag_solution(const ::concrete_optimizer::v0::Solution &solution) noexcept;
+} // namespace utils
 
 namespace dag {
 ::rust::Box<::concrete_optimizer::OperationDag> empty() noexcept;

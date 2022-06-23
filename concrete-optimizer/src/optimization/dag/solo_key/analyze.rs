@@ -171,7 +171,15 @@ fn out_shape(op: &unparametrized::UnparameterizedOperator, out_shapes: &mut [Sha
                 DK::Simple | DK::Tensor => Shape::number(),
                 DK::CompatibleTensor => weights.shape.clone(),
                 DK::Broadcast { .. } => Shape::vector(input_shape.first_dim_size()),
-                DK::Unsupported { .. } => panic!("Unsupported"),
+                DK::Unsupported { .. } => {
+                    let weights_shape = &weights.shape;
+                    println!();
+                    println!();
+                    println!("Error diagnostic on dot operation:");
+                    println!("Incompatible operands: <{input_shape:?}> DOT <{weights_shape:?}>");
+                    println!();
+                    panic!("Unsupported or invalid dot operation")
+                }
             }
         }
     }
@@ -418,6 +426,22 @@ fn constraint_for_one_precision(
         pareto_output: pareto_vfs_final,
         pareto_in_lut: pareto_vfs_in_lut,
     }
+}
+
+pub fn worst_log_norm(dag: &unparametrized::OperationDag) -> f64 {
+    assert_dag_correctness(dag);
+    let out_shapes = out_shapes(dag);
+    let out_precisions = out_precisions(dag);
+    let out_variances = out_variances(dag, &out_shapes);
+    let in_luts_variance = in_luts_variance(dag, &out_precisions, &out_variances);
+    let coeffs = in_luts_variance
+        .iter()
+        .map(|(_precision, symbolic_variance)| {
+            symbolic_variance.lut_coeff + symbolic_variance.input_coeff
+        })
+        .filter(|v| *v >= 1.0);
+    let worst = coeffs.fold(1.0, f64::max);
+    worst.log2()
 }
 
 pub fn analyze(

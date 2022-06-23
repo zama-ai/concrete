@@ -101,7 +101,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
                 .map(|&manp| {
                     let noise_scale = 2_f64.powi(manp);
                     let result = if args.wop_pbs {
-                        optimize_wop_atomic_pattern::optimize_one::<u64>(
+                        optimize_wop_atomic_pattern::optimize_one_compat::<u64>(
                             sum_size,
                             precision,
                             security_level,
@@ -217,7 +217,7 @@ mod tests {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
         for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
-            let ref_file: &str = &format!("ref/wop_pbs_2022-7-10_{}", security_level);
+            let ref_file: &str = &format!("ref/wop_pbs_2022-7-11_{}", security_level);
 
             let args = Args {
                 min_precision: 1,

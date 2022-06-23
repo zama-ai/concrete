@@ -1,7 +1,9 @@
 use crate::computing_cost::complexity::Complexity;
+use crate::computing_cost::operators::atomic_pattern as complexity_atomic_pattern;
+use crate::computing_cost::operators::cmux;
 use crate::computing_cost::operators::keyswitch_lwe::KeySwitchLWEComplexity;
 use crate::computing_cost::operators::pbs::PbsComplexity;
-use crate::computing_cost::operators::{atomic_pattern as complexity_atomic_pattern, cmux};
+use crate::dag::operator::Precision;
 use crate::noise_estimator::error::{
     error_probability_of_sigma_scale, safe_variance_bound_1bit_1padbit,
     sigma_scale_of_error_probability,
@@ -27,6 +29,8 @@ use crate::utils::square;
 use complexity_atomic_pattern::DEFAULT as DEFAULT_COMPLEXITY;
 use concrete_commons::dispersion::{DispersionParameter, Variance};
 use concrete_commons::numeric::UnsignedInteger;
+
+use super::crt_decomposition;
 
 pub fn find_p_error(kappa: f64, variance_bound: f64, current_maximum_noise: f64) -> f64 {
     let sigma = Variance(variance_bound).get_standard_dev() * kappa;
@@ -62,8 +66,8 @@ pub struct Solution {
     pub noise_max: f64,
     pub p_error: f64,
     // error probability
-    pub cb_decomposition_level_count: Option<u64>,
-    pub cb_decomposition_base_log: Option<u64>,
+    pub cb_decomposition_level_count: u64,
+    pub cb_decomposition_base_log: u64,
 }
 
 impl Solution {
@@ -80,8 +84,26 @@ impl Solution {
             complexity: 0.,
             noise_max: 0.0,
             p_error: 0.0,
-            cb_decomposition_level_count: None,
-            cb_decomposition_base_log: None,
+            cb_decomposition_level_count: 0,
+            cb_decomposition_base_log: 0,
+        }
+    }
+}
+
+impl From<Solution> for atomic_pattern::Solution {
+    fn from(sol: Solution) -> Self {
+        Self {
+            input_lwe_dimension: sol.input_lwe_dimension,
+            internal_ks_output_lwe_dimension: sol.internal_ks_output_lwe_dimension,
+            ks_decomposition_level_count: sol.ks_decomposition_level_count,
+            ks_decomposition_base_log: sol.ks_decomposition_base_log,
+            glwe_polynomial_size: sol.glwe_polynomial_size,
+            glwe_dimension: sol.glwe_dimension,
+            br_decomposition_level_count: sol.br_decomposition_level_count,
+            br_decomposition_base_log: sol.br_decomposition_base_log,
+            complexity: sol.complexity,
+            noise_max: sol.noise_max,
+            p_error: sol.p_error,
         }
     }
 }
@@ -409,8 +431,8 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     noise_max: variance_max,
                     complexity,
                     p_error,
-                    cb_decomposition_level_count: Some(circuit_pbs_decomposition_parameter.level),
-                    cb_decomposition_base_log: Some(circuit_pbs_decomposition_parameter.log2_base),
+                    cb_decomposition_level_count: circuit_pbs_decomposition_parameter.level,
+                    cb_decomposition_base_log: circuit_pbs_decomposition_parameter.log2_base,
                 });
             }
         }
@@ -420,7 +442,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
 #[allow(clippy::expect_fun_call)]
 #[allow(clippy::identity_op)]
 #[allow(clippy::too_many_lines)]
-pub fn optimise_one<W: UnsignedInteger>(
+fn optimize_raw<W: UnsignedInteger>(
     max_word_precision: u64, // max precision of a word
     log_norm: f64,           // ?? norm2 of noise multisum, complexity of multisum is neglected
     security_level: u64,
@@ -494,47 +516,22 @@ pub fn optimise_one<W: UnsignedInteger>(
     state
 }
 
-// Default heuristic to split in several word
-pub fn default_partitionning(precision: u64) -> Vec<u64> {
-    #[allow(clippy::match_same_arms)]
-    match precision {
-        1 => vec![1],
-        2 => vec![2],
-        3 => vec![2; 2],
-        4 => vec![3; 2],
-        5 => vec![3; 2],
-        6 => vec![3; 3],
-        7 => vec![3; 3],
-        8 => vec![3; 3],
-        9 => vec![4; 3],
-        10 => vec![4; 3],
-        11 => vec![4; 3],
-        12 => vec![4; 4],
-        13 => vec![4; 4],
-        14 => vec![4; 4],
-        15 => vec![4; 4],
-        16 => vec![5; 4],
-        _ => vec![5; (precision / 5) as usize],
-    }
-}
-
 #[allow(clippy::too_many_lines)]
 pub fn optimize_one<W: UnsignedInteger>(
-    _sum_size: u64,
     precision: u64,
     security_level: u64,
-    noise_factor: f64,
+    log_norm: f64,
     maximum_acceptable_error_probability: f64,
     glwe_log_polynomial_sizes: &[u64],
     glwe_dimensions: &[u64],
     internal_lwe_dimensions: &[u64],
-) -> atomic_pattern::OptimizationState {
-    let partitionning = default_partitionning(precision);
+) -> OptimizationState {
+    let coprimes = crt_decomposition::default_coprimes(precision as Precision);
+    let partitionning = crt_decomposition::precisions_from_coprimes(&coprimes);
     let nb_words = partitionning.len() as u64;
     let max_word_precision = *partitionning.iter().max().unwrap() as u64;
-    let log_norm = noise_factor.log2();
     let n_functions = 1;
-    let result = optimise_one::<W>(
+    optimize_raw::<W>(
         max_word_precision,
         log_norm,
         security_level,
@@ -544,22 +541,32 @@ pub fn optimize_one<W: UnsignedInteger>(
         internal_lwe_dimensions,
         n_functions,
         nb_words, // Tau
+    )
+}
+
+#[allow(clippy::too_many_lines)]
+pub fn optimize_one_compat<W: UnsignedInteger>(
+    _sum_size: u64,
+    precision: u64,
+    security_level: u64,
+    noise_factor: f64,
+    maximum_acceptable_error_probability: f64,
+    glwe_log_polynomial_sizes: &[u64],
+    glwe_dimensions: &[u64],
+    internal_lwe_dimensions: &[u64],
+) -> atomic_pattern::OptimizationState {
+    let log_norm = noise_factor.log2();
+    let result = optimize_one::<W>(
+        precision,
+        security_level,
+        log_norm,
+        maximum_acceptable_error_probability,
+        glwe_log_polynomial_sizes,
+        glwe_dimensions,
+        internal_lwe_dimensions,
     );
-    let best_solution = result.best_solution.map(|sol| atomic_pattern::Solution {
-        input_lwe_dimension: sol.input_lwe_dimension,
-        internal_ks_output_lwe_dimension: sol.internal_ks_output_lwe_dimension,
-        ks_decomposition_level_count: sol.ks_decomposition_level_count,
-        ks_decomposition_base_log: sol.ks_decomposition_base_log,
-        glwe_polynomial_size: sol.glwe_polynomial_size,
-        glwe_dimension: sol.glwe_dimension,
-        br_decomposition_level_count: sol.br_decomposition_level_count,
-        br_decomposition_base_log: sol.br_decomposition_base_log,
-        complexity: sol.complexity,
-        noise_max: sol.noise_max,
-        p_error: sol.p_error,
-    });
     atomic_pattern::OptimizationState {
-        best_solution,
+        best_solution: result.best_solution.map(Solution::into),
         count_domain: result.count_domain,
     }
 }
