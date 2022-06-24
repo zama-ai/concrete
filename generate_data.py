@@ -14,7 +14,7 @@ def old_models(security_level, sd, logq=32):
     """
 
     def evaluate_model(a, b, stddev=sd):
-        return (stddev - b)/a
+        return (stddev - b) / a
 
     models = dict()
 
@@ -102,9 +102,11 @@ def automated_param_select_n(params, target_security=128):
     security_level = get_security_level(costs2, 2)
     z = inequality(security_level, target_security)
 
-    # we keep n > 2 * target_security as a rough baseline for mitm security (on binary key guessing)
+    # we keep n > 2 * target_security as a rough baseline for mitm security
+    # (on binary key guessing)
     while z * security_level < z * target_security:
-        # TODO: fill in this case! For n > 1024 we only need to consider every 256 (optimization)
+        # TODO: fill in this case! For n > 1024 we only need to consider every
+        # 256 (optimization)
         params = params.updated(n=params.n + z * 8)
         costs = estimate(params)
         security_level = get_security_level(costs, 2)
@@ -121,12 +123,11 @@ def automated_param_select_n(params, target_security=128):
         costs = estimate(params)
         security_level = get_security_level(costs, 2)
 
-    print("the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(params.n,
-                                                                                                                      log2(
-                                                                                                                          params.Xe.stddev),
-                                                                                                                      log2(
-                                                                                                                          params.q),
-                                                                                                                      security_level))
+    print(
+        "the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(
+            params.n, log2(
+                params.Xe.stddev), log2(
+                params.q), security_level))
 
     if security_level < target_security:
         params.updated(n=None)
@@ -134,7 +135,8 @@ def automated_param_select_n(params, target_security=128):
     return params, security_level
 
 
-def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128], name="default_name"):
+def generate_parameter_matrix(params_in, sd_range, target_security_levels=[
+                              128], name="default_name"):
     """
     :param params_in: a initial set of LWE parameters
     :param sd_range: a tuple (sd_min, sd_max) giving the values of sd for which to generate parameters
@@ -152,7 +154,7 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128],
 
             try:
                 results = load("{}.sobj".format(name))
-            except:
+            except BaseException:
                 results = dict()
                 results["{}".format(lam)] = []
 
@@ -163,7 +165,8 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[128],
     return results
 
 
-def generate_zama_curves64(sd_range=[2, 58], target_security_levels=[128], name="default_name"):
+def generate_zama_curves64(sd_range=[2, 58], target_security_levels=[
+                           128], name="default_name"):
     """
     The top level function which we use to run the experiment
 
