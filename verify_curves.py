@@ -1,5 +1,6 @@
 import numpy as np
-from sage.all import save, load
+from sage.all import save, load, ceil
+
 
 def sort_data(security_level):
     from operator import itemgetter
@@ -14,6 +15,7 @@ def sort_data(security_level):
     X["{}".format(security_level)] = x
 
     return X
+
 
 def generate_curve(security_level):
 
@@ -90,6 +92,6 @@ def generate_and_verify(security_levels, log_q, name = "verified_curves"):
     
     return data
 
-# To verify the curves we use
-generate_and_verify([80, 96, 112, 128, 144, 160, 176, 192, 256], log_q = 64)
 
+data = generate_and_verify([80, 96, 112, 128, 144, 160, 176, 192, 256], log_q = 64)
+print(data)

@@ -1,5 +1,5 @@
 from estimator_new import *
-from sage.all import oo, save, load
+from sage.all import oo, save, load, ceil
 from math import log2
 import multiprocessing
 
