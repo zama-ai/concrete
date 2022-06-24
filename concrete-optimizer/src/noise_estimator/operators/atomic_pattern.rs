@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn golden_python_prototype_security_variance_keyswitch_1() {
-        let golden_modular_variance = 3.260_702_274_017_557e68;
+        let golden_modular_variance = 5.997_880_135_602_194e68;
         let internal_ks_output_lwe_dimension = 1024;
         let ciphertext_modulus_log = 128;
         let security = 128;
@@ -262,7 +262,7 @@ mod tests {
     fn golden_python_prototype_security_variance_keyswitch_2() {
         // let golden_modular_variance = 8.580795457940938e+66;
         // the full npe implements a part of the full estimation
-        let golden_modular_variance = 3.941_898_681_369_209e48; // full estimation
+        let golden_modular_variance = 7.407_691_550_271_225e48; // full estimation
         let internal_ks_output_lwe_dimension = 512;
         let ciphertext_modulus_log = 64;
         let security = 128;

@@ -12,6 +12,7 @@ rayon-cond = "0.2" # to avoid rayon code coloring
 # pprof = { version = "0.4", features = ["flamegraph"] }
 rayon = "1.5.1"
 text-diff = "0.4.0"
+chrono = "0.4.19"
 
 [dev-dependencies]
 criterion = "0.3"
@@ -23,6 +24,9 @@ crate-type= [
 
 [[bin]]
 name = "v0-parameters"
+
+[[bin]]
+name = "v0-parameters-by-level"
 
 [[bench]]
 name = "benchmark"

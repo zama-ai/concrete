@@ -58,6 +58,8 @@ in `concrete-compiler`.
 
 ## Advanced Usage
 
+### Playing with search spaces
+
 It is possible to choose the search space for each cryptographic parameters. For example, here we
 constrain the glwe dimension to be equal to 1:
 
@@ -65,4 +67,21 @@ constrain the glwe dimension to be equal to 1:
 cargo run --release -- --max-glwe-dim 1
 ```
 
+### Generating reference files
 
+Some of our tests are comparing parameters found by previous version of `concrete-optimizer` against
+the parameters found by the current state of `concrete-optimizer`.
+
+To generate those references, for the default AP, you can do:
+
+```bash
+cargo run --release --bin v0-parameters-by-level -- --wop-pbs
+```
+
+and for the new WoP-PBS AP
+
+```bash
+cargo run --release --bin v0-parameters-by-level
+```
+
+The reference files will be written in the `ref/` folder.

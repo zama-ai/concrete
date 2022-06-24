@@ -28,7 +28,7 @@ pub const MAX_GLWE_DIM: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension
 pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start as u64;
 pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end as u64 - 1;
 
-/// Simple program to greet a person
+/// Find parameters for classical PBS and new WoP-PBS
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
@@ -41,7 +41,11 @@ pub struct Args {
     #[clap(long, default_value_t = _4_SIGMA)]
     pub p_error: f64,
 
-    #[clap(long, default_value_t = 128, help = "Only 128 is supported")]
+    #[clap(
+        long,
+        default_value_t = 128,
+        help = "Supported values: 80, 96, 112, 128, 144, 160, 176, 192, 256"
+    )]
     pub security_level: u64,
 
     #[clap(long, default_value_t = MIN_LOG_POLY_SIZE, help = "8..16")]
@@ -50,10 +54,10 @@ pub struct Args {
     #[clap(long, default_value_t = MAX_LOG_POLY_SIZE, help = "8..16")]
     pub max_log_poly_size: u64,
 
-    #[clap(long, default_value_t = 1, help = "EXPERIMENTAL")]
+    #[clap(long, default_value_t = 1, help = "1..6")]
     pub min_glwe_dim: u64,
 
-    #[clap(long, default_value_t = MAX_GLWE_DIM, help = "EXPERIMENTAL")]
+    #[clap(long, default_value_t = MAX_GLWE_DIM, help = "1..6")]
     pub max_glwe_dim: u64,
 
     #[clap(long, default_value_t = MIN_LWE_DIM)]
@@ -76,8 +80,6 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
     let sum_size = args.sum_size;
     let p_error = args.p_error;
     let security_level = args.security_level;
-    assert_eq!(security_level, 128, "Only 128bits of security is supported");
-
     let glwe_log_polynomial_sizes: Vec<_> =
         (args.min_log_poly_size..=args.max_log_poly_size).collect();
     let glwe_dimensions: Vec<_> = (args.min_glwe_dim..=args.max_glwe_dim).collect();
@@ -135,11 +137,10 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
 
     let p_error = args.p_error;
     let security_level = args.security_level;
-    assert_eq!(security_level, 128, "Only 128bits of security is supported");
 
     let precisions = args.min_precision..=args.max_precision;
     let manps: Vec<_> = (0..=31).collect();
-
+    writeln!(writer, "{{ /* Security level: {} */", security_level)?;
     writeln!(writer, "{{ /* {:1.1e} errors */", p_error)?;
 
     for (precision_i, precision) in precisions.enumerate() {
@@ -147,15 +148,15 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
 
         for (manp_i, manp) in manps.clone().iter().enumerate() {
             if let Some(solution) = all_results[precision_i][manp_i].best_solution {
-                writeln!( writer,
-                        "    /* {:2} */ V0Parameter({:2}, {:2}, {:4}, {:2}, {:2}, {:2}, {:2}), \t\t // {:4} mops, {:1.1e} errors",
-                        manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
-                        solution.internal_ks_output_lwe_dimension,
-                        solution.br_decomposition_level_count, solution.br_decomposition_base_log,
-                        solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
-                        (solution.complexity / (1024.0 * 1024.0)) as u64,
-                        solution.p_error
-                    )?;
+                writeln!(writer,
+                         "    /* {:2} */ V0Parameter({:2}, {:2}, {:4}, {:2}, {:2}, {:2}, {:2}), \t\t // {:4} mops, {:1.1e} errors",
+                         manp, solution.glwe_dimension, (solution.glwe_polynomial_size as f64).log2() as u64,
+                         solution.internal_ks_output_lwe_dimension,
+                         solution.br_decomposition_level_count, solution.br_decomposition_base_log,
+                         solution.ks_decomposition_level_count, solution.ks_decomposition_base_log,
+                         (solution.complexity / (1024.0 * 1024.0)) as u64,
+                         solution.p_error
+                )?;
             } else {
                 writeln!(
                     writer,
@@ -174,70 +175,76 @@ pub fn compute_print_results(mut writer: impl Write, args: &Args) -> Result<(), 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use concrete_optimizer::security::security_weights::SECURITY_WEIGHTS_TABLE;
 
     #[test]
     fn test_reference_output() {
-        const REF_FILE: &str = "src/v0_parameters.ref-20-06-2022";
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
+        for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
+            let ref_file: &str = &format!("ref/v0_2022-6-27_{}", security_level);
+            let args: Args = Args {
+                min_precision: 1,
+                max_precision: 8,
+                p_error: _4_SIGMA,
+                security_level,
+                min_log_poly_size: MIN_LOG_POLY_SIZE,
+                max_log_poly_size: MAX_LOG_POLY_SIZE,
+                min_glwe_dim: 1,
+                max_glwe_dim: MAX_GLWE_DIM,
+                min_intern_lwe_dim: MIN_LWE_DIM,
+                max_intern_lwe_dim: MAX_LWE_DIM,
+                sum_size: 4096,
+                no_parallelize: false,
+                wop_pbs: false,
+            };
 
-        let args: Args = Args {
-            min_precision: 1,
-            max_precision: 8,
-            p_error: _4_SIGMA,
-            security_level: 128,
-            min_log_poly_size: MIN_LOG_POLY_SIZE,
-            max_log_poly_size: MAX_LOG_POLY_SIZE,
-            min_glwe_dim: 1,
-            max_glwe_dim: MAX_GLWE_DIM,
-            min_intern_lwe_dim: MIN_LWE_DIM,
-            max_intern_lwe_dim: MAX_LWE_DIM,
-            sum_size: 4096,
-            no_parallelize: false,
-            wop_pbs: false,
-        };
+            let mut actual_output = Vec::<u8>::new();
 
-        let mut actual_output = Vec::<u8>::new();
+            compute_print_results(&mut actual_output, &args).unwrap();
 
-        compute_print_results(&mut actual_output, &args).unwrap();
+            let actual_output = std::str::from_utf8(&actual_output).expect("Bad content");
 
-        let actual_output = std::str::from_utf8(&actual_output).expect("Bad content");
+            let expected_output =
+                std::fs::read_to_string(ref_file).expect("Can't read reference file");
 
-        let expected_output = std::fs::read_to_string(REF_FILE).expect("Can't read reference file");
-
-        text_diff::assert_diff(&expected_output, actual_output, CMP_LINES, EXACT_EQUALITY);
+            text_diff::assert_diff(&expected_output, actual_output, CMP_LINES, EXACT_EQUALITY);
+        }
     }
 
     #[test]
     fn test_reference_wop_output() {
-        const REF_FILE: &str = "src/wop_parameters.ref-20-06-2022";
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
+        for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
+            let ref_file: &str = &format!("ref/wop_pbs_2022-6-27_{}", security_level);
 
-        let args = Args {
-            min_precision: 1,
-            max_precision: 16,
-            p_error: _4_SIGMA,
-            security_level: 128,
-            min_log_poly_size: 10,
-            max_log_poly_size: 11,
-            min_glwe_dim: 1,
-            max_glwe_dim: MAX_GLWE_DIM,
-            min_intern_lwe_dim: 450,
-            max_intern_lwe_dim: 600,
-            sum_size: 4096,
-            no_parallelize: false,
-            wop_pbs: true,
-        };
+            let args = Args {
+                min_precision: 1,
+                max_precision: 16,
+                p_error: _4_SIGMA,
+                security_level,
+                min_log_poly_size: 10,
+                max_log_poly_size: 11,
+                min_glwe_dim: 1,
+                max_glwe_dim: MAX_GLWE_DIM,
+                min_intern_lwe_dim: 450,
+                max_intern_lwe_dim: MAX_LWE_DIM,
+                sum_size: 4096,
+                no_parallelize: false,
+                wop_pbs: true,
+            };
 
-        let mut actual_output = Vec::<u8>::new();
+            let mut actual_output = Vec::<u8>::new();
 
-        compute_print_results(&mut actual_output, &args).unwrap();
+            compute_print_results(&mut actual_output, &args).unwrap();
 
-        let actual_output = std::str::from_utf8(&actual_output).expect("Bad content");
+            let actual_output = std::str::from_utf8(&actual_output).expect("Bad content");
 
-        let expected_output = std::fs::read_to_string(REF_FILE).expect("Can't read reference file");
+            let expected_output =
+                std::fs::read_to_string(ref_file).expect("Can't read reference file");
 
-        text_diff::assert_diff(&expected_output, actual_output, CMP_LINES, EXACT_EQUALITY);
+            text_diff::assert_diff(&expected_output, actual_output, CMP_LINES, EXACT_EQUALITY);
+        }
     }
 }

@@ -501,7 +501,6 @@ pub fn optimize_one<W: UnsignedInteger>(
     restart_at: Option<Solution>,
 ) -> OptimizationState {
     assert!(0 < precision && precision <= 16);
-    assert_eq!(security_level, 128);
     assert!(1.0 <= noise_factor);
     assert!(0.0 < maximum_acceptable_error_probability);
     assert!(maximum_acceptable_error_probability < 1.0);
