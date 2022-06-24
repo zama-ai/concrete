@@ -66,7 +66,7 @@ $(BUILD_DIR)/configured.stamp:
 	-DCONCRETE_OPTIMIZER_DIR=${CONCRETE_OPTIMIZER_DIR}
 	touch $@
 
-all: concretecompiler python-bindings build-tests doc
+all: concretecompiler python-bindings build-tests build-benchmarks doc
 
 build-initialized: concrete-optimizer-lib $(BUILD_DIR)/configured.stamp
 
