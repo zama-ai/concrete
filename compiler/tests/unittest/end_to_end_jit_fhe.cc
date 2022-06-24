@@ -12,8 +12,16 @@
 template <typename LambdaSupport>
 void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
 
+  mlir::concretelang::CompilationOptions options("main");
+  if (desc.v0Constraint.hasValue()) {
+    options.v0FHEConstraints = *desc.v0Constraint;
+  }
+  if (desc.v0Parameter.hasValue()) {
+    options.v0Parameter = *desc.v0Parameter;
+  }
+
   /* 1 - Compile the program */
-  auto compilationResult = support.compile(desc.program);
+  auto compilationResult = support.compile(desc.program, options);
   ASSERT_EXPECTED_SUCCESS(compilationResult);
 
   /* 2 - Load the client parameters and build the keySet */

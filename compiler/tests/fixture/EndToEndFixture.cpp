@@ -181,6 +181,29 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
     io.mapRequired("description", desc.description);
     io.mapRequired("program", desc.program);
     io.mapRequired("tests", desc.tests);
+    std::vector<int64_t> v0parameter;
+    io.mapOptional("v0-parameter", v0parameter);
+    if (!v0parameter.empty()) {
+      if (v0parameter.size() != 7) {
+        io.setError("v0-parameter expect to be a list 7 elemnts "
+                    "[glweDimension, logPolynomialSize, nSmall, brLevel, "
+                    "brLobBase, ksLevel, ksLogBase]");
+      }
+      desc.v0Parameter = mlir::concretelang::V0Parameter(
+          v0parameter[0], v0parameter[1], v0parameter[2], v0parameter[3],
+          v0parameter[4], v0parameter[5], v0parameter[6]);
+    }
+    std::vector<int64_t> v0constraint;
+    io.mapOptional("v0-constraint", v0constraint);
+    if (!v0constraint.empty()) {
+      if (v0constraint.size() != 2) {
+        io.setError("v0-constraint expect to be a list 2 elemnts "
+                    "[p, norm2]");
+      }
+      desc.v0Constraint = mlir::concretelang::V0FHEConstraint();
+      desc.v0Constraint->p = v0constraint[0];
+      desc.v0Constraint->norm2 = v0constraint[1];
+    }
   }
 };
 

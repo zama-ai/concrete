@@ -41,6 +41,8 @@ struct EndToEndDesc {
   std::string description;
   std::string program;
   std::vector<TestDescription> tests;
+  llvm::Optional<mlir::concretelang::V0Parameter> v0Parameter;
+  llvm::Optional<mlir::concretelang::V0FHEConstraint> v0Constraint;
 };
 
 llvm::Expected<mlir::concretelang::LambdaArgument *>
