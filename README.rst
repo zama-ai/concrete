@@ -20,6 +20,7 @@ Example
 This is an example of how to generate the parameter curves, and save them to file.
 
 ::
+
     ./job.sh
 ::
 
@@ -50,7 +51,10 @@ FAIL of the verification, and n_min is the smallest reccomended value of `n` to 
 
 Each model outputs a value of sigma, and is of the form:
 
-`f(a, b, n) = max(ceil(a * n + b), -log2(q) + 2)`
+::
+
+   f(a, b, n) = max(ceil(a * n + b), -log2(q) + 2)
+::
 
 where the -log2(q) + 2 term ensures that we are always using at least two bits of noise.
 
@@ -66,12 +70,4 @@ Data for the curves are kept in /data. The following files are present:
     v0.2: generated using the lattice estimator
 ::
 
-TODO List
--------------------
 
-There are several updates which are still required.
-    1. Consider Hybrid attacks (WIP, Michael + Ben are coding up hybrid-dual/hybrid-decoding estimates)
-    2. CI/CD stuff for new pushes to the external LWE Estimator.
-    3. Fully automate the process of finding n_{alpha} for each curve.
-    4. Functionality for q =! 64? This is covered by the curve, but we currently don't account for it in the models, and it needs to be done manually.
-    5. cpp file generation
