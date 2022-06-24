@@ -19,4 +19,5 @@ jobs:
       - name: PEP8
         run: |
           pip install --upgrade pyproject-flake8
-          flake8 new_scripts.py
+          flake8 generate_data.py
+          flake8 verify_curves.py
