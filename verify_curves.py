@@ -63,7 +63,7 @@ def verify_curve(security_level, a=None, b=None):
     print(n_min)
     print(n_max)
 
-    for n in range(n_max, n_min, - 1):
+    for n in range(n_max, n_min, -1):
         model_sd = f_model(a, b, n)
         table_sd = f_table(X["{}".format(security_level)], n)
         print(n, table_sd, model_sd, model_sd >= table_sd)
@@ -92,6 +92,5 @@ def generate_and_verify(security_levels, log_q, name="verified_curves"):
     return data
 
 
-data = generate_and_verify(
-    [80, 96, 112, 128, 144, 160, 176, 192, 256], log_q=64)
+data = generate_and_verify([80, 96, 112, 128, 144, 160, 176, 192, 256], log_q=64)
 print(data)

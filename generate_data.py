@@ -67,7 +67,7 @@ def get_security_level(est, dp=2):
 
 
 def inequality(x, y):
-    """ A utility function which compresses the conditions x < y and x > y into a single condition via a multiplier
+    """A utility function which compresses the conditions x < y and x > y into a single condition via a multiplier
     :param x: the LHS of the inequality
     :param y: the RHS of the inequality
     """
@@ -79,7 +79,7 @@ def inequality(x, y):
 
 
 def automated_param_select_n(params, target_security=128):
-    """ A function used to generate the smallest value of n which allows for
+    """A function used to generate the smallest value of n which allows for
     target_security bits of security, for the input values of (params.Xe.stddev,params.q)
     :param params: the standard deviation of the error
     :param target_security: the target number of bits of security, 128 is default
@@ -92,8 +92,7 @@ def automated_param_select_n(params, target_security=128):
 
     # get an estimate based on the prev. model
     print("n = {}".format(params.n))
-    n_start = old_models(target_security, log2(
-        params.Xe.stddev), log2(params.q))
+    n_start = old_models(target_security, log2(params.Xe.stddev), log2(params.q))
     # n_start = max(n_start, 450)
     # TODO: think about throwing an error if the required n < 450
 
@@ -125,9 +124,9 @@ def automated_param_select_n(params, target_security=128):
 
     print(
         "the finalised parameters are n = {}, log2(sd) = {}, log2(q) = {}, with a security level of {}-bits".format(
-            params.n, log2(
-                params.Xe.stddev), log2(
-                params.q), security_level))
+            params.n, log2(params.Xe.stddev), log2(params.q), security_level
+        )
+    )
 
     if security_level < target_security:
         params.updated(n=None)
@@ -135,8 +134,9 @@ def automated_param_select_n(params, target_security=128):
     return params, security_level
 
 
-def generate_parameter_matrix(params_in, sd_range, target_security_levels=[
-                              128], name="default_name"):
+def generate_parameter_matrix(
+    params_in, sd_range, target_security_levels=[128], name="default_name"
+):
     """
     :param params_in: a initial set of LWE parameters
     :param sd_range: a tuple (sd_min, sd_max) giving the values of sd for which to generate parameters
@@ -148,9 +148,10 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[
     for lam in target_security_levels:
         for sd in range(sd_min, sd_max + 1):
             print("run for {}".format(lam, sd))
-            Xe_new = nd.NoiseDistribution.DiscreteGaussian(2**sd)
+            Xe_new = nd.NoiseDistribution.DiscreteGaussian(2 ** sd)
             (params_out, sec) = automated_param_select_n(
-                params_in.updated(Xe=Xe_new), target_security=lam)
+                params_in.updated(Xe=Xe_new), target_security=lam
+            )
 
             try:
                 results = load("{}.sobj".format(name))
@@ -159,14 +160,16 @@ def generate_parameter_matrix(params_in, sd_range, target_security_levels=[
                 results["{}".format(lam)] = []
 
             results["{}".format(lam)].append(
-                (params_out.n, log2(params_out.q), log2(params_out.Xe.stddev), sec))
+                (params_out.n, log2(params_out.q), log2(params_out.Xe.stddev), sec)
+            )
             save(results, "{}.sobj".format(name))
 
     return results
 
 
-def generate_zama_curves64(sd_range=[2, 58], target_security_levels=[
-                           128], name="default_name"):
+def generate_zama_curves64(
+    sd_range=[2, 58], target_security_levels=[128], name="default_name"
+):
     """
     The top level function which we use to run the experiment
 
@@ -174,15 +177,17 @@ def generate_zama_curves64(sd_range=[2, 58], target_security_levels=[
     :param target_security_levels: a list of the target number of bits of security, 128 is default
     :param name: a name to save the file
     """
-    if __name__ == '__main__':
+    if __name__ == "__main__":
 
         D = ND.DiscreteGaussian
         vals = range(sd_range[0], sd_range[1])
         pool = multiprocessing.Pool(2)
         init_params = LWE.Parameters(
-            n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(2 ** 55), m=oo, tag='params')
-        inputs = [(init_params, (val, val), target_security_levels, name)
-                  for val in vals]
+            n=1024, q=2 ** 64, Xs=D(0.50, -0.50), Xe=D(2 ** 55), m=oo, tag="params"
+        )
+        inputs = [
+            (init_params, (val, val), target_security_levels, name) for val in vals
+        ]
         res = pool.starmap(generate_parameter_matrix, inputs)
 
     return "done"
@@ -194,5 +199,4 @@ a = int(sys.argv[1])
 b = int(sys.argv[2])
 c = int(sys.argv[3])
 # run the code
-generate_zama_curves64(sd_range=(b, c), target_security_levels=[
-                       a], name="{}".format(a))
+generate_zama_curves64(sd_range=(b, c), target_security_levels=[a], name="{}".format(a))
