@@ -9,7 +9,7 @@ def sort_data(security_level):
     X = load("{}.sobj".format(security_level))
 
     # step 2. sort by SD
-    x = sorted(X["{}".format(security_level)], key = itemgetter(2))
+    x = sorted(X["{}".format(security_level)], key=itemgetter(2))
 
     # step3. replace the sorted value
     X["{}".format(security_level)] = x
@@ -28,14 +28,14 @@ def generate_curve(security_level):
     for x in X["{}".format(security_level)]:
         N.append(x[0])
         SD.append(x[2] + 0.5)
-    
+
     # step 3. perform interpolation and return coefficients
-    (a,b) = np.polyfit(N, SD, 1)
+    (a, b) = np.polyfit(N, SD, 1)
 
     return a, b
-    
 
-def verify_curve(security_level, a = None, b = None):
+
+def verify_curve(security_level, a=None, b=None):
 
     # step 1. get the table and max values of n, sd
     X = sort_data(security_level)
@@ -53,9 +53,9 @@ def verify_curve(security_level, a = None, b = None):
             if n < n_val:
                 pass
             else:
-                j = i 
+                j = i
                 break
-        
+
         # now j is the correct index, we return the corresponding sd
         return table[j][2]
 
@@ -67,7 +67,7 @@ def verify_curve(security_level, a = None, b = None):
     for n in range(n_max, n_min, - 1):
         model_sd = f_model(a, b, n)
         table_sd = f_table(X["{}".format(security_level)], n)
-        print(n , table_sd, model_sd, model_sd >= table_sd)
+        print(n, table_sd, model_sd, model_sd >= table_sd)
 
         if table_sd > model_sd:
             print("MODEL FAILS at n = {}".format(n))
@@ -76,7 +76,7 @@ def verify_curve(security_level, a = None, b = None):
     return "PASS", n_min
 
 
-def generate_and_verify(security_levels, log_q, name = "verified_curves"):
+def generate_and_verify(security_levels, log_q, name="verified_curves"):
 
     data = []
 
@@ -89,9 +89,10 @@ def generate_and_verify(security_levels, log_q, name = "verified_curves"):
         # append the information into a list
         data.append((a_sec, b_sec - log_q, sec, res[0], res[1]))
         save(data, "{}.sobj".format(name))
-    
+
     return data
 
 
-data = generate_and_verify([80, 96, 112, 128, 144, 160, 176, 192, 256], log_q = 64)
+data = generate_and_verify(
+    [80, 96, 112, 128, 144, 160, 176, 192, 256], log_q=64)
 print(data)
