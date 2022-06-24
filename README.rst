@@ -29,6 +29,7 @@ This is an example of how to generate the parameter curves, and save them to fil
 We can load results files, and find the interpolants.
 
 ::
+
 [(-0.04042633119364589, 1.6609788641436722, 80, 'PASS', 450),
  (-0.03414780360867051, 2.017310258660345, 96, 'PASS', 450),
  (-0.029670137081135885, 2.162463714083856, 112, 'PASS', 450),
@@ -38,6 +39,7 @@ We can load results files, and find the interpolants.
  (-0.019904056582117684, 2.8161252801542247, 176, 'PASS', 551),
  (-0.018610403247590085, 3.2996236848399008, 192, 'PASS', 606),
  (-0.014606812351714953, 3.8493629234693003, 256, 'PASS', 826)]
+ 
 ::
 
 Finding the value of n_{alpha} is done manually. We can also verify the interpolants which are generated at the same time:
