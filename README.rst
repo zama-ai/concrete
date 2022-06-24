@@ -53,7 +53,7 @@ Each model outputs a value of sigma, and is of the form:
 
 ::
 
-   f(a, b, n) = max(ceil(a * n + b), -log2(q) + 2)
+   f(a, b, n) = max(floor(a * n + b), -log2(q) + 2)
 ::
 
 where the -log2(q) + 2 term ensures that we are always using at least two bits of noise.
