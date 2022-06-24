@@ -40,7 +40,6 @@ def verify_curve(security_level, a=None, b=None):
     # step 1. get the table and max values of n, sd
     X = sort_data(security_level)
     n_max = X["{}".format(security_level)][0][0]
-    sd_max = X["{}".format(security_level)][-1][2]
 
     # step 2. a function to get model values
     def f_model(a, b, n):
