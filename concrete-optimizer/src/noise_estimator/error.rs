@@ -56,10 +56,10 @@ pub fn safe_variance_bound_1bit_1padbit(
     ciphertext_modulus_log: u64,
     maximum_acceptable_error_probability: f64,
 ) -> f64 {
-    #[allow(clippy::identity_op)]
-    let padding_bits = 0 + RIGHT_PADDING_BITS;
-    let precision = 1;
-    let fatal_noise_limit = fatal_variance_limit(padding_bits, precision, ciphertext_modulus_log);
+    // This is hardcoded and only valid for 16bit wop pbs
+    // Precision is 1
+    let noise_bits = 58;
+    let fatal_noise_limit = 2_f64.powi(noise_bits as i32);
     safe_variance_bound_from_p_error(
         fatal_noise_limit,
         ciphertext_modulus_log,
