@@ -96,8 +96,8 @@ createClientParametersForV0(V0FHEContext fheContext,
                             llvm::StringRef functionName,
                             mlir::ModuleOp module) {
   auto v0Param = fheContext.parameter;
-  Variance encryptionVariance =
-      v0Curve->getVariance(1, 1 << v0Param.logPolynomialSize, 64);
+  Variance encryptionVariance = v0Curve->getVariance(
+      v0Param.glweDimension, v0Param.getPolynomialSize(), 64);
   Variance keyswitchVariance = v0Curve->getVariance(1, v0Param.nSmall, 64);
   // Static client parameters from global parameters for v0
   ClientParameters c;
