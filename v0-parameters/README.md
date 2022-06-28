@@ -48,6 +48,12 @@ arguments is accessible by running in the `v0-parameters/` folder
 cargo run --release -- --help
 ```
 
+As an alternative you can use the `optimizer` script in the root directory:
+
+```bash
+./optimizer --help
+```
+
 By default, the optimization is done on the default AP (DotProduct -> Ks -> PBS) for every available
 precision and for every 2-norm. If not specified, the correctness of the computation is guaranteed
 up to a failure probability of 2^-13.9. This can be changed using the `--p-error`
