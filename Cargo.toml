@@ -5,6 +5,7 @@ members = [
     "concrete-tasks",
     "concrete-boolean",
     "concrete-shortint",
+    "concrete-integer",
     "concrete-utils",
 ]
 
