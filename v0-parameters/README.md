@@ -72,7 +72,8 @@ cargo run --release -- --max-glwe-dim 1
 Some of our tests are comparing parameters found by previous version of `concrete-optimizer` against
 the parameters found by the current state of `concrete-optimizer`.
 
-To generate those references, for the default AP, you can do:
+To generate those references, you must be in v0-parameters directory.
+For the default AP you can do:
 
 ```bash
 cargo run --release --bin v0-parameters-by-level -- --wop-pbs
