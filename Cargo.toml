@@ -4,6 +4,8 @@ members = [
     "concrete",
     "concrete-tasks",
     "concrete-boolean",
+    "concrete-shortint",
+    "concrete-utils",
 ]
 
 [profile.bench]

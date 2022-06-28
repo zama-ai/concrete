@@ -16,7 +16,7 @@ pub fn doc() -> Result<(), Error> {
 }
 
 pub fn clippy() -> Result<(), Error> {
-    cmd!("cargo +nightly clippy --all-targets --all-features -- --no-deps -D warnings")
+    cmd!("cargo +nightly clippy --all-targets --all-features -- --no-deps")
 }
 
 pub fn fmt() -> Result<(), Error> {
