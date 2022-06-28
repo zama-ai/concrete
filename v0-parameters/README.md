@@ -76,13 +76,13 @@ To generate those references, you must be in v0-parameters directory.
 For the default AP you can do:
 
 ```bash
-cargo run --release --bin v0-parameters-by-level -- --wop-pbs
+cargo run --release --bin v0-parameters-by-level
 ```
 
 and for the new WoP-PBS AP
 
 ```bash
-cargo run --release --bin v0-parameters-by-level
+cargo run --release --bin v0-parameters-by-level -- --wop-pbs
 ```
 
 The reference files will be written in the `ref/` folder.
