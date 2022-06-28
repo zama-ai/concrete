@@ -325,6 +325,26 @@ struct LowerDataflowTasksPass
                                      ArrayRef<NamedAttribute>());
       }
     });
+
+    // Delay memref deallocations when memrefs are made into futures
+    module.walk([&](Operation *op) {
+      if (isa<RT::MakeReadyFutureOp>(*op) &&
+          op->getOperand(0).getType().isa<mlir::MemRefType>()) {
+        for (auto &use :
+             llvm::make_early_inc_range(op->getOperand(0).getUses())) {
+          if (isa<mlir::memref::DeallocOp>(use.getOwner())) {
+            OpBuilder builder(use.getOwner()
+                                  ->getParentOfType<mlir::func::FuncOp>()
+                                  .getBody()
+                                  .back()
+                                  .getTerminator());
+            builder.clone(*use.getOwner());
+            use.getOwner()->erase();
+          }
+        }
+      }
+      return WalkResult::advance();
+    });
   }
   LowerDataflowTasksPass(bool debug) : debug(debug){};
 
