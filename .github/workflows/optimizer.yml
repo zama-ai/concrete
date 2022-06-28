@@ -41,5 +41,5 @@ jobs:
 
       - name: Tests
         run: |
-          cargo test --no-fail-fast --all-targets
+          cargo test --release --no-fail-fast --all-targets
           make -C concrete-optimizer-cpp test-ci
