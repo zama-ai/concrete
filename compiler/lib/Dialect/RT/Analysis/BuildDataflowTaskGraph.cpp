@@ -41,13 +41,15 @@ namespace {
 
 // TODO: adjust these two functions based on cost model
 static bool isCandidateForTask(Operation *op) {
-  return isa<FHE::AddEintIntOp, FHE::AddEintOp, FHE::SubIntEintOp,
-             FHE::MulEintIntOp, FHE::ApplyLookupTableEintOp,
-             FHELinalg::MatMulIntEintOp, FHELinalg::MatMulEintIntOp,
-             FHELinalg::AddEintIntOp, FHELinalg::AddEintOp,
-             FHELinalg::SubIntEintOp, FHELinalg::NegEintOp,
-             FHELinalg::MulEintIntOp, FHELinalg::ApplyLookupTableEintOp,
-             FHELinalg::ApplyMultiLookupTableEintOp, FHELinalg::Dot>(op);
+  return isa<
+      FHE::AddEintIntOp, FHE::AddEintOp, FHE::SubIntEintOp, FHE::MulEintIntOp,
+      FHE::ApplyLookupTableEintOp, FHELinalg::MatMulIntEintOp,
+      FHELinalg::MatMulEintIntOp, FHELinalg::AddEintIntOp, FHELinalg::AddEintOp,
+      FHELinalg::SubIntEintOp, FHELinalg::NegEintOp, FHELinalg::MulEintIntOp,
+      FHELinalg::ApplyLookupTableEintOp, FHELinalg::ApplyMultiLookupTableEintOp,
+      FHELinalg::ApplyMappedLookupTableEintOp, FHELinalg::Dot,
+      FHELinalg::MatMulEintIntOp, FHELinalg::MatMulIntEintOp, FHELinalg::SumOp,
+      FHELinalg::ConcatOp, FHELinalg::FhelinalgConv2DNchwFchwOp>(op);
 }
 
 // Identify operations that are beneficial to sink into tasks.  These
