@@ -1,217 +1,149 @@
-#![allow(clippy::upper_case_acronyms)]
-#![deny(rustdoc::broken_intra_doc_links)]
-//! Concrete
+#![allow(unused_doc_comments)]
+#![cfg_attr(fmt, rustfmt::skip)]
+#![cfg_attr(doc, feature(doc_auto_cfg))]
+#![cfg_attr(doc, feature(doc_cfg))]
+#![allow(clippy::bool_assert_comparison)]
+#![allow(clippy::assign_op_pattern)]
+#![allow(clippy::eq_op)]
+#![allow(clippy::assign_op_pattern)]
+
+
+//! Welcome to concrete documentation
 //!
-//! Welcome to the concrete documentation. If you are new to FHE, you may have a look at the
-//! [concrete book](https://concrete.zama.ai/).
+//! The goal of this crate is to make it as easy as possible to write FHE programs
+//! by abstracting away most of the FHE details and by providing data types which are as close as
+//! possible to the native ones (`bool`, `u8`, `u16`) that we are used to.
+//!
+//! # Cargo Features
+//!
+//! ## Data Types
+//!
+//! This crate exposes 3 kinds of data types, each kind is enabled by activating its corresponding
+//! feature. Each kind may have multiple types:
+//!
+//! | Kind      | Cargo Feature | Type(s)                                  |
+//! |-----------|---------------|------------------------------------------|
+//! | Booleans  | `booleans`    | [FheBool]                                |
+//! | ShortInts | `shortints`   | [FheUint2]<br>[FheUint3]<br>[FheUint4]   |
+//! | Integers  | `integers`    | [FheUint8]<br>[FheUint12]<br>[FheUint16] |
+//!
+//!
+//!
+//! ## Dynamic types
+//!
+//! To allow further customization, it is possible to create at runtime new data types
+//! which are based on a certain kind.
+//!
+//! For example it is possible to create your own 10 bits integer data type.
+//!
+//! ### Example
+//!
+//! Creating a 10-bits integer by combining 5 2-bits shortints
+//! ```rust
+//! // This requires the integers feature
+//! #[cfg(feature = "integers")]
+//! {
+//!     use concrete::prelude::*;
+//!     use concrete::{
+//!         generate_keys, set_server_key, ConfigBuilder, DynIntegerParameters, FheUint2Parameters,
+//!     };
+//!
+//!     let mut config = ConfigBuilder::all_disabled();
+//!     let uint10_type = config.add_integer_type(DynIntegerParameters {
+//!         block_parameters: FheUint2Parameters::default().into(),
+//!         num_block: 5,
+//!     });
+//!
+//!     let (client_key, server_key) = generate_keys(config);
+//!
+//!     set_server_key(server_key);
+//!
+//!     let a = uint10_type.encrypt(177, &client_key);
+//!     let b = uint10_type.encrypt(100, &client_key);
+//!
+//!     let c: u64 = (a + b).decrypt(&client_key);
+//!     assert_eq!(c, 277);
+//! }
+//! ```
+//!
+//! ## Serialization
+//!
+//! Most of the data types are `Serializable` and `Deserializable` via the serde crate
+//! and its corresponding feature: `serde`.
+//!
+//!
+//! ## Activating features
+//!
+//! To activate features, in your `Cargo.toml` add:
+//! ```toml
+//! concrete = { version = "0.2.0-beta", features = ["booleans", "serde"] }
+//! ```
+pub use config::ConfigBuilder;
+pub use global_state::set_server_key;
+pub use keys::{generate_keys, ClientKey, ServerKey};
 
-use std::error::Error;
-use std::fs::File;
-use std::io::{BufReader, BufWriter};
-use std::path::Path;
+#[cfg(feature = "booleans")]
+pub use crate::booleans::{DynFheBool, DynFheBoolEncryptor};
 
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+#[cfg(feature = "booleans")]
+pub use booleans::{if_then_else, FheBool, FheBoolParameters};
 
-pub use error::*;
 
-pub use crate::traits::GenericAdd;
+// GenericShortInt is exported only to produce better docs
+#[cfg(feature = "shortints")]
+pub use crate::shortints::{
+    FheUint2, FheUint2Parameters, FheUint3, FheUint3Parameters, FheUint4, FheUint4Parameters,
+    GenericShortInt,
+};
 
-pub mod traits;
+#[cfg(feature = "integers")]
+pub use crate::integers::{DynInteger, DynIntegerEncryptor, DynIntegerParameters};
+#[cfg(feature = "integers")]
+pub use crate::integers::{FheUint12, FheUint16, FheUint8, GenericInteger};
 
-pub type Torus = u64;
+#[cfg(feature = "shortints")]
+pub use crate::shortints::{DynShortInt, DynShortIntEncryptor, DynShortIntParameters};
 
-#[allow(unused_macros)]
-macro_rules! assert_eq_granularity {
-    ($A:expr, $B:expr, $ENC:expr) => {
-        assert!(
-            ($A - $B).abs() < $ENC.get_granularity(),
-            "{} != {} +- {} (|delta|={})-> encoder: {}",
-            $A,
-            $B,
-            $ENC.get_granularity(),
-            ($A - $B).abs(),
-            $ENC
-        );
-    };
-}
+pub use errors::OutOfRangeError;
 
-#[allow(unused_macros)]
-macro_rules! generate_random_interval {
-    () => {{
-        let coins: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
-            .random_uniform_tensor(3)
-            .into_container();
+mod config;
+pub mod errors;
 
-        let interval_type: usize = (coins[0] % 3) as usize;
-        let interval_size = ((coins[1] % (1000 * 1000)) as f64) / 1000.;
-        let interval_start = ((coins[2] % (1000 * 1000)) as f64) / 1000.;
-        match interval_type {
-            0 => {
-                // negative interval
-                (-interval_start - interval_size, -interval_start)
-            }
-            1 => {
-                // positive interval
-                (interval_start, interval_size + interval_start)
-            }
-            2 => {
-                // zero in the interval
-                let tmp = ((coins[2] % (1000 * 1000)) as f64) / (1000. * 1000.) * interval_size;
-                (-interval_size + tmp, tmp)
-            }
-            _ => (0., 0.),
-        }
-    }};
-}
-
-#[allow(unused_macros)]
-macro_rules! generate_random_centered_interval {
-    () => {{
-        let coins: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
-            .random_uniform_tensor(2)
-            .into_container();
-
-        let interval_size = ((coins[0] % (1000 * 1000)) as f64) / 1000.;
-
-        // zero in the interval
-        let tmp = ((coins[1] % (1000 * 1000)) as f64) / (1000. * 1000.) * interval_size;
-        (-interval_size + tmp, tmp)
-    }};
-}
-
-#[allow(unused_macros)]
-macro_rules! generate_precision_padding {
-    ($max_precision: expr, $max_padding: expr) => {{
-        let rs: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
-            .random_uniform_tensor(2)
-            .into_container();
-        (
-            ((rs[0] % $max_precision) as usize) + 1,
-            (rs[1] % $max_padding) as usize,
-        )
-    }};
-}
-
-#[allow(unused_macros)]
-macro_rules! random_index {
-    ($max: expr) => {{
-        if $max == 0 {
-            (0 as usize)
-        } else {
-            let rs: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
-                .random_uniform_tensor(1)
-                .into_container();
-            (rs[0] % ($max as u32)) as usize
-        }
-    }};
-}
-
-#[allow(unused_macros)]
-macro_rules! random_message {
-    ($min: expr, $max: expr) => {{
-        let rs: Vec<u64> = concrete_core::math::random::RandomGenerator::new(None)
-            .random_uniform_tensor(1)
-            .into_container();
-        (rs[0] as f64) / f64::powi(2., 64) * ($max - $min) + $min
-    }};
-}
-
-#[allow(unused_macros)]
-macro_rules! random_messages {
-    ($min: expr, $max: expr, $nb: expr) => {{
-        let mut res = vec![0 as f64; $nb];
-        for r in res.iter_mut() {
-            *r = random_message!($min, $max);
-        }
-        res
-    }};
-}
-
-macro_rules! deltas_eq {
-    ($delta1: expr, $delta2: expr) => {{
-        ($delta1 - $delta2).abs() <= 1e-10f64 * $delta1.abs().max($delta2.abs())
-    }};
-}
-
-pub fn write_to_file<P: AsRef<Path>, U: Serialize>(path: P, u: &U) -> Result<(), Box<dyn Error>> {
-    // Create the file
-    let file = File::create(path)?;
-    let writer = BufWriter::new(file);
-    serde_json::to_writer(writer, u)?;
-    Ok(())
-}
-
-fn read_from_file<P: AsRef<Path>, U: DeserializeOwned>(path: P) -> Result<U, Box<dyn Error>> {
-    // Open the file in read-only mode with buffer.
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    // Read the JSON contents of the file
-    let u = serde_json::from_reader(reader)?;
-    Ok(u)
-}
-
-// #[derive(Serialize, Deserialize)]
-// #[serde(remote = "Complex64")]
-// struct SerdeCtorus {
-//     re: f64,
-//     im: f64,
-// }
-
-// fn deserialize_vec_ctorus<'de, D>(deserializer: D) -> Result<Vec<Complex64>, D::Error>
-// where
-//     D: Deserializer<'de>,
-// {
-//     #[derive(Deserialize)]
-//     struct Wrapper(#[serde(with = "SerdeCtorus")] Complex64);
-//     let v: BootstrapKey<Vec<_>> = BootstrapKey::deserialize(deserializer)?;
-//     let vec: Vec<_> = v.into_tensor().into_cont();
-//     Ok(vec.into_iter().map(|Wrapper(a)| a).collect())
-// }
-
-// fn serialize_vec_ctorus<S>(x: &BootstrapKey<Vec<Complex64>>, s: S) -> Result<S::Ok, S::Error>
-// where
-//     S: Serializer,
-// {
-//     #[derive(Serialize)]
-//     struct Wrapper(#[serde(with = "SerdeCtorus")] Complex64);
-//     let mut seq = s.serialize_seq(Some(x.as_tensor().len()))?;
-//     for e in x.iter() {
-//         seq.serialize_element(&Wrapper(*e))?;
-//     }
-//     seq.end()
-// }
-
-#[allow(unused_macros)]
-macro_rules! assert_with_granularity {
-    ($before: expr, $after: expr, $encoders: expr) => {
-        for (b, (a, encoder)) in $before.iter().zip($after.iter().zip($encoders.iter())) {
-            if (b - a).abs() > encoder.get_granularity() / 2. {
-                panic!("a = {} ; b = {} ; granularity = ", a, b);
-            }
-        }
-    };
-}
-
-macro_rules! pub_mod_use {
-    ($I:ident) => {
-        pub mod $I;
-        pub use $I::*;
-    };
-}
 #[macro_use]
-pub mod error;
-pub_mod_use!(lwe_params);
-pub_mod_use!(encoder);
-pub_mod_use!(lwe);
-pub_mod_use!(plaintext);
-pub_mod_use!(vector_rlwe);
-pub_mod_use!(vector_lwe);
-pub_mod_use!(lwe_ksk);
-pub_mod_use!(lwe_bsk);
-pub_mod_use!(lwe_secret_key);
-pub_mod_use!(rlwe_params);
-pub_mod_use!(rlwe_secret_key);
+mod global_state;
+#[macro_use]
+mod keys;
+mod traits;
+/// The concrete prelude.
+pub mod prelude;
+#[cfg(feature = "booleans")]
+mod booleans;
+#[cfg(feature = "shortints")]
+mod shortints;
+#[cfg(feature = "integers")]
+mod integers;
+#[cfg(feature = "experimental_syntax_sugar")]
+mod syntax_sugar;
 
-#[cfg(test)]
-mod tests_serde;
+pub mod parameters {
+    #[cfg(all(feature = "booleans", feature = "__newer_booleans"))]
+    pub use concrete_boolean::parameters::{
+        DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
+        StandardDev,
+    };
+    #[cfg(feature = "shortints")]
+    pub use concrete_shortint::parameters::{CarryModulus, MessageModulus};
+    #[cfg(all(feature = "shortints", not(all(feature = "booleans", feature = "__newer_booleans"))))]
+    pub use concrete_shortint::parameters::{
+        DecompositionBaseLog, DecompositionLevelCount, DispersionParameter, GlweDimension,
+        LweDimension, PolynomialSize, StandardDev,
+    };
+}
+
+#[cfg(all(
+    doctest,
+    feature = "integers",
+    feature = "shortints",
+    feature = "booleans"
+))]
+mod user_doc_tests;

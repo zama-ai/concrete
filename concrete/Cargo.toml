@@ -1,34 +1,40 @@
 [package]
 name = "concrete"
-version = "0.1.11"
-edition = "2018"
-build = "build.rs"
-authors = ["D. Ligier", "J.B. Orfila", "A. Péré", "S. Tap", "Zama team"]
-license = "BSD-3-Clause-Clear"
-description = "Concrete is a fully homomorphic encryption (FHE) library that implements Zama's variant of TFHE."
-homepage = "https://crates.io/crates/concrete"
-documentation = "https://docs.zama.ai/concrete/lib"
-repository = "https://github.com/zama-ai/concrete"
+version = "0.2.0-beta.0"
+edition = "2021"
 readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
+homepage = "https://zama.ai/"
+documentation = "https://docs.zama.ai/concrete/"
+license = "BSD-3-Clause-Clear"
+description = "Concrete is a fully homomorphic encryption (FHE) library that implements Zama's variant of TFHE."
 
-[build-dependencies]
-cmake = { version = "0.1", optional = true}
+[dev-dependencies]
+criterion = "0.3.5"
+doc-comment = "0.3.3"
 
 [dependencies]
-concrete-core = "=0.1.10"
-concrete-npe = "=0.1.9"
-concrete-commons = "=0.1.1"
-itertools = "0.9.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.57"
-backtrace = "0.3"
-colored = "2.0.0"
+#concrete-boolean = { path = "../concrete-boolean", optional = true }
+concrete-boolean = { version = "0.1.0", optional = true }
+concrete-shortint = { path = "../concrete-shortint", version = "0.1.0-beta.0", optional = true}
+concrete-integer = { path = "../concrete-integer", version = "0.1.0-beta.0", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true}
+
 
 [features]
-gpu = ["cmake"]
-cloud-computing = []
-unsafe = []
+booleans = ["concrete-boolean"]
+shortints = ["concrete-shortint"]
+integers = ["concrete-integer", "shortints"]
+experimental_syntax_sugar = []
+internal-keycache = ["concrete-shortint/internal-keycache", "concrete-integer/internal-keycache"]
+#__newer_booleans = []
 
-[package.metadata.docs.rs]
-rustdoc-args = ["--html-in-header", "katex-header.html"]
+[[bench]]
+name = "booleans"
+harness = false
+required-features = ["booleans"]
+
+[[bench]]
+name = "shortints"
+harness = false
+required-features = ["shortints"]

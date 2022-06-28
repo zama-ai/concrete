@@ -1,83 +1,54 @@
 # Concrete Operates oN Ciphertexts Rapidly by Extending TfhE
 
-Concrete is
-a [fully homomorphic encryption (FHE)](https://en.wikipedia.org/wiki/Homomorphic_encryption) library
-that implements Zama's variant of [TFHE](https://eprint.iacr.org/2018/421.pdf). Concrete is based on
-the [Learning With Errors (LWE)](https://cims.nyu.edu/~regev/papers/lwesurvey.pdf) problem and on
-the [Ring Learning With Errors (RLWE)](https://eprint.iacr.org/2012/230.pdf) problem, which are well
-studied cryptographic hardness assumptions believed to be secure even against quantum computers.
+concrete is a Rust crate (library) meant to abstract away the details of Fully Homomorphic Encryption (FHE) to enable
+non-cryptographers to build applications that use FHE.
 
-## Use `concrete` in your own project
+FHE is a powerful cryptographic tool, which allows computation to be performed directly on encrypted data without
+needing to decrypt it first.
 
-You can use `cargo new play_with_fhe` to create a new project. You need to **add the Concrete
-library as a dependency** in your Rust project.
-
-To do so, simply add the dependency in the `Cargo.toml` file. Here is a **simple example**:
-
-```toml
-[package]
-name = "play_with_fhe"
-version = "0.1.0"
-authors = ["FHE Curious"]
-edition = "2018"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-concrete = "^0.1"
-```
-
-Now, you can **run** your project with the `RUSTFLAGS="-C target-cpu=native" cargo run --release`
-command.
-
-# Example
+## Example
 
 ```rust
-use concrete::*;
+use concrete::{ConfigBuilder, generate_keys, set_server_key, FheUint8};
+use concrete::prelude::*;
 
-fn main() -> Result<(), CryptoAPIError> {
-  // generate a secret key
-  let secret_key = LWESecretKey::new(&LWE128_630);
+fn main() {
+    let config = ConfigBuilder::all_disabled()
+        .enable_default_uint8()
+        .build();
 
-  // the two values to add
-  let m1 = 8.2;
-  let m2 = 5.6;
+    let (client_key, server_key) = generate_keys(config);
 
-  // specify the range and precision to encode messages into plaintexts
-  // here we encode in [0, 10[ with 8 bits of precision and 1 bit of padding
-  let encoder = Encoder::new(0., 10., 8, 1)?;
+    set_server_key(server_key);
 
-  // encode the messages into plaintexts
-  let p1 = encoder.encode_single(m1)?;
-  let p2 = encoder.encode_single(m2)?;
+    let clear_a = 27u8;
+    let clear_b = 128u8;
 
-  // encrypt plaintexts
-  let mut c1 = VectorLWE::encrypt(&secret_key, &p1)?;
-  let c2 = VectorLWE::encrypt(&secret_key, &p2)?;
+    let a = FheUint8::encrypt(clear_a, &client_key);
+    let b = FheUint8::encrypt(clear_b, &client_key);
 
-  // add the two ciphertexts homomorphically
-  c1.add_with_padding_inplace(&c2)?;
+    let result = a + b;
 
-  // decrypt and decode the result
-  let m3 = c1.decrypt_decode(&secret_key)?;
+    let decrypted_result: u8 = result.decrypt(&client_key);
 
-  // print the result and compare to non-FHE addition
-  println!("Real: {} + {} = {}", m1, m2, m1 + m2);
-  println!(
-    "FHE: {} + {} = {}",
-    p1.decode()?[0],
-    p2.decode()?[0],
-    m3[0]
-  );
-  Ok(())
+    let clear_result = clear_a + clear_b;
+
+    assert_eq!(decrypted_result, clear_result);
 }
 ```
+
 ## Links
 
 - [documentation](https://docs.zama.ai/concrete/lib)
 - [TFHE](https://eprint.iacr.org/2018/421.pdf)
 
-
 ## License
 
-This software is distributed under the BSD-3-Clause-Clear license. If you have any questions,
-please contact us at `hello@zama.ai`.
+This software is distributed under the **BSD-3-Clause-Clear** license with an 
+exemption that gives rights to use our patents for research,
+evaluation and prototyping purposes, as well as for your personal projects. 
+
+If you want to use Concrete in a commercial product however,
+you will need to purchase a separate commercial licence.
+
+If you have any questions, please contact us at `hello@zama.ai`.
