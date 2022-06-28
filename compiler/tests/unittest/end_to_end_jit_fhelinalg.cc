@@ -864,7 +864,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term_broadcast) {
   for (size_t i = 0; i < 4; i++) {
     for (size_t j = 0; j < 4; j++) {
       for (size_t k = 0; k < 4; k++) {
-        uint8_t expected = a1[i][0][k] - a0[0][j][k];
+        uint8_t expected = a1[0][j][k] - a0[i][0][k];
         EXPECT_EQ((*res)[i * 16 + j * 4 + k], (uint64_t)expected);
       }
     }
