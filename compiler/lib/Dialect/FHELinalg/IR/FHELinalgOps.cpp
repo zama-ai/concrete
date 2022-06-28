@@ -808,6 +808,13 @@ getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
   return dilationsInts;
 }
 
+int64_t getGroupFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp) {
+  llvm::Optional<uint64_t> optionalGroup = convOp.group();
+  if (optionalGroup.hasValue())
+    return optionalGroup.getValue();
+  return 1;
+}
+
 /// Verify the Conv2d shapes, attributes, and expected output dimensions
 mlir::LogicalResult Conv2dOp::verify() {
   auto inputTy =
@@ -920,6 +927,11 @@ mlir::LogicalResult Conv2dOp::verify() {
       }
     }
   }
+  int64_t group = getGroupFromConv2d(*this);
+  if (group < 1) {
+    this->emitOpError() << "group must be strictly positif, but got " << group;
+    return mlir::failure();
+  }
 
   // Extracting dimensions
   int64_t inputN = inputShape[0], inputC = inputShape[1],
@@ -960,10 +972,15 @@ mlir::LogicalResult Conv2dOp::verify() {
         << inputN << ") but got " << resultN;
     return mlir::failure();
   }
-  if (inputC != weightC) {
-    this->emitOpError() << "expected number of channels in weight to be equal "
-                           "to number of channels in input ("
-                        << inputC << ") but got " << weightC;
+  if (weightC != inputC / group) {
+    this->emitOpError()
+        << "expected number of channels in weight to be equal to "
+        << inputC / group << " (input_channels / group) but got " << weightC;
+    return mlir::failure();
+  }
+  if (weightF % group != 0) {
+    this->emitOpError() << "expected number of feature maps (" << weightF
+                        << ") to be a multiple of group (" << group << ")";
     return mlir::failure();
   }
   if (weightF != resultC) {

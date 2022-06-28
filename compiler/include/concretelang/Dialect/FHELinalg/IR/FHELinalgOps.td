@@ -937,7 +937,8 @@ def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
     // Since there is no U64ElementsAttr, we use I64 and make sure there is no neg values during verification
     OptionalAttr<I64ElementsAttr>:$padding,
     OptionalAttr<I64ElementsAttr>:$strides,
-    OptionalAttr<I64ElementsAttr>:$dilations
+    OptionalAttr<I64ElementsAttr>:$dilations,
+    OptionalAttr<I64Attr>:$group
   );
   let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
   let hasVerifier = 1;

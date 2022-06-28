@@ -214,6 +214,41 @@ func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x
 
 
 func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
+  // expected-error @+1 {{'FHELinalg.conv2d' op group must be strictly positif, but got 0}}
+  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){group = 0 : i64}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
+  return %1 : tensor<100x4x15x15x!FHE.eint<2>>
+}
+
+// -----
+
+
+func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
+  // expected-error @+1 {{'FHELinalg.conv2d' op expected number of channels in weight to be equal to 1 (input_channels / group) but got 3}}
+  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){group = 3 : i64}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
+  return %1 : tensor<100x4x15x15x!FHE.eint<2>>
+}
+
+// -----
+
+
+func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x1x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
+  // expected-error @+1 {{'FHELinalg.conv2d' op expected number of feature maps (4) to be a multiple of group (3)}}
+  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){group = 3 : i64}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x1x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
+  return %1 : tensor<100x4x15x15x!FHE.eint<2>>
+}
+
+// -----
+
+
+func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<6x1x14x14xi3>, %bias: tensor<6xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
+  // expected-error @+1 {{'FHELinalg.conv2d' op expected number of output channels to be equal to the number of filters (6) but got 4}}
+  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){group = 3 : i64}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<6x1x14x14xi3>, tensor<6xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
+  return %1 : tensor<100x4x15x15x!FHE.eint<2>>
+}
+
+// -----
+
+func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
   // expected-error @+1 {{'FHELinalg.conv2d' op expected height of output to be equal to 8 but got 15}}
   %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0 ,0, 0, 0]> : tensor<4xi64>}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
   return %1 : tensor<100x4x15x15x!FHE.eint<2>>
@@ -226,14 +261,6 @@ func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x
 func.func @conv2d(%input: tensor<101x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
   // expected-error @+1 {{'FHELinalg.conv2d' op expected result batch size to be equal to input batch size (101) but got 100}}
   %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0 ,0, 0, 0]> : tensor<4xi64>}: (tensor<101x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
-  return %1 : tensor<100x4x15x15x!FHE.eint<2>>
-}
-
-// -----
-
-func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x4x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.conv2d' op expected number of channels in weight to be equal to number of channels in input (3) but got 4}}
-  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0, 0, 0]> : tensor<4xi64>}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x4x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
   return %1 : tensor<100x4x15x15x!FHE.eint<2>>
 }
 

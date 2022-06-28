@@ -117,6 +117,9 @@ getStridesFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp);
 mlir::SmallVector<int64_t, 2>
 getDilationsFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp);
 
+/// Get group from the Conv2dOp if defined, or return default value
+int64_t getGroupFromConv2d(mlir::concretelang::FHELinalg::Conv2dOp &convOp);
+
 } // namespace FHELinalg
 } // namespace concretelang
 } // namespace mlir
