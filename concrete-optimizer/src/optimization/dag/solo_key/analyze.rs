@@ -349,6 +349,16 @@ fn levelled_complexity(
     levelled_complexity
 }
 
+fn lut_count(dag: &unparametrized::OperationDag, out_shapes: &[Shape]) -> u64 {
+    let mut count = 0;
+    for (i, op) in dag.operators.iter().enumerate() {
+        if let Op::Lut { .. } = op {
+            count += out_shapes[i].flat_size();
+        }
+    }
+    count
+}
+
 fn safe_noise_bound(precision: Precision, noise_config: &NoiseBoundConfig) -> f64 {
     error::safe_variance_bound_2padbits(
         precision as u64,
@@ -419,7 +429,7 @@ pub fn analyze(
     let out_precisions = out_precisions(dag);
     let out_variances = out_variances(dag, &out_shapes);
     let in_luts_variance = in_luts_variance(dag, &out_precisions, &out_variances);
-    let nb_luts = in_luts_variance.len() as u64;
+    let nb_luts = lut_count(dag, &out_shapes);
     let extra_final_variances = extra_final_variances(dag, &out_precisions, &out_variances);
     let levelled_complexity = levelled_complexity(dag, &out_shapes);
     let constraints_by_precisions = constraints_by_precisions(
