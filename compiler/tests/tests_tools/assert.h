@@ -1,14 +1,8 @@
-#ifndef END_TO_END_JIT_TEST_H
-#define END_TO_END_JIT_TEST_H
+#ifndef UINT_TESTS_COMMON_ASSERT_H
+#define UINT_TESTS_COMMON_ASSERT_H
 
+#include "llvm/ADT/StringExtras.h"
 #include <gtest/gtest.h>
-
-#include "../tests_tools/keySetCache.h"
-
-#include "concretelang/Support/CompilerEngine.h"
-#include "concretelang/Support/JITSupport.h"
-
-#include "globals.h"
 
 #define ASSERT_LLVM_ERROR(err)                                                 \
   if (err) {                                                                   \
@@ -95,7 +89,8 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
 #define ASSERT_EXPECTED_VALUE(val, exp)                                        \
   do {                                                                         \
     if (!assert_expected_value(val, exp)) {                                    \
-      GTEST_FATAL_FAILURE_("Expected<T> with wrong value");                    \
+      GTEST_FATAL_FAILURE_("Expected<T> with wrong value")                     \
+          << llvm::toString(val.takeError());                                  \
     }                                                                          \
   } while (0)
 
@@ -106,55 +101,21 @@ static bool assert_expected_value(llvm::Expected<T> &&val, const V &exp) {
   };                                                                           \
   ASSERT_EQ(val.value(), exp);
 
-// Jit-compiles the function specified by `func` from `src` and
-// returns the corresponding lambda. Any compilation errors are caught
-// and reult in abnormal termination.
-inline llvm::Expected<
-    mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>>
-internalCheckedJit(llvm::StringRef src, llvm::StringRef func = "main",
-                   bool useDefaultFHEConstraints = false,
-                   bool dataflowParallelize = false,
-                   bool loopParallelize = false) {
+#define ASSERT_ASSIGN_OUTCOME_VALUE(ident, val)                                \
+  auto ident__ = val;                                                          \
+  if (!ident__.has_value()) {                                                  \
+    std::string msg = "Outcome failure " + ident__.error().mesg;               \
+    GTEST_FATAL_FAILURE_(msg.c_str());                                         \
+  }                                                                            \
+  auto ident = std::move(ident__.value());
 
-  auto options =
-      mlir::concretelang::CompilationOptions(std::string(func.data()));
-  if (useDefaultFHEConstraints)
-    options.v0FHEConstraints = defaultV0Constraints;
-
-  // Allow loop parallelism in all cases
-  options.loopParallelize = loopParallelize;
-#ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
-#ifdef CONCRETELANG_PARALLEL_TESTING_ENABLED
-  options.dataflowParallelize = true;
-  options.loopParallelize = true;
-#else
-  options.dataflowParallelize = dataflowParallelize;
-#endif
-#endif
-
-  auto lambdaOrErr =
-      mlir::concretelang::ClientServer<mlir::concretelang::JITSupport>::create(
-          src, options, getTestKeySetCache(), mlir::concretelang::JITSupport());
-
-  return lambdaOrErr;
-}
-
-// Shorthands to create integer literals of a specific type
-static inline uint8_t operator"" _u8(unsigned long long int v) { return v; }
-static inline uint16_t operator"" _u16(unsigned long long int v) { return v; }
-static inline uint32_t operator"" _u32(unsigned long long int v) { return v; }
-static inline uint64_t operator"" _u64(unsigned long long int v) { return v; }
-
-// Evaluates to the number of elements of a statically initialized
-// array
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
-
-// Wrapper around `internalCheckedJit` that causes
-// `ASSERT_EXPECTED_SUCCESS` to use the file and line number of the
-// caller instead of `internalCheckedJit`.
-#define checkedJit(VARNAME, ...)                                               \
-  auto VARNAMEOrErr = internalCheckedJit(__VA_ARGS__);                         \
-  ASSERT_EXPECTED_SUCCESS(VARNAMEOrErr);                                       \
-  auto VARNAME = std::move(*VARNAMEOrErr);
+#define ASSERT_OUTCOME_HAS_VALUE(val)                                          \
+  {                                                                            \
+    auto tmp = val;                                                            \
+    if (!tmp.has_value()) {                                                    \
+      std::string msg = "Outcome failure " + tmp.error().mesg;                 \
+      GTEST_FATAL_FAILURE_(msg.c_str());                                       \
+    }                                                                          \
+  }
 
 #endif

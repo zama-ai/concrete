@@ -96,21 +96,7 @@ clientlib: build-initialized
 serverlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangServerLib
 
-build-benchmarks: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
 
-test-check: concretecompiler file-check not
-	$(BUILD_DIR)/bin/llvm-lit -v tests/
-
-test-python: python-bindings concretecompiler
-	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
-
-test-compiler-file-output: concretecompiler
-	pytest -vs tests/test_compiler_file_output
-
-test: test-check test-end-to-end-jit test-python test-compiler-file-output support-unit-test testlib-unit-test
-
-test-dataflow: test-end-to-end-jit-dfr test-end-to-end-jit-auto-parallelization
 
 GITHUB_URL=https://api.github.com/repos/zama-ai/concrete-compiler-internal
 GITHUB_URL_LIST_ARTIFACTS="${GITHUB_URL}/actions/artifacts"
@@ -130,28 +116,40 @@ keysetcache_populated: keysetcache.zip
 	du -sh ${KEYSETCACHEDEV}
 	rm keysetcache.zip
 
-# unit-test
 
-clientlib-unit-test: build-clientlib-unit-test
-	$(BUILD_DIR)/bin/clientlib_unit_test
+# test
 
-build-clientlib-unit-test:
-	cmake --build $(BUILD_DIR) --target clientlib_unit_test
+build-tests: build-unit-tests build-end-to-end-tests
 
-testlib-unit-test: build-testlib-unit-test
-	$(BUILD_DIR)/tools/concretelang/tests/TestLib/testlib_unit_test
+run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-python-tests
 
-build-testlib-unit-test: build-initialized
-	cmake --build $(BUILD_DIR) --target testlib_unit_test
+## check-tests
 
-support-unit-test: build-support-unit-test
-	$(BUILD_DIR)/tools/concretelang/tests/Support/support_unit_test
+run-check-tests: concretecompiler file-check not
+	$(BUILD_DIR)/bin/llvm-lit -v tests/
 
-build-support-unit-test: build-initialized
-	cmake --build $(BUILD_DIR) --target support_unit_test
+## unit-tests
 
+build-unit-tests:
+	cmake --build $(BUILD_DIR) --target ConcretelangUnitTests
 
-# test-end-to-end-jit
+run-unit-tests: build-unit-tests
+	find $(BUILD_DIR)/tools/concretelang/tests/unit_tests -name unit_tests_concretelang* -executable -type f -exec {} \;
+
+## python-tests
+
+run-python-tests: python-bindings concretecompiler
+	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
+
+test-compiler-file-output: concretecompiler
+	pytest -vs tests/test_compiler_file_output
+
+## end-to-end-tests
+
+build-end-to-end-tests: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-fhe build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+
+run-end-to-end-tests: build-end-to-end-tests
+	find $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests -name end_to_end* -executable -type f -exec {} \;
 
 build-end-to-end-jit-test: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_test
@@ -171,41 +169,23 @@ build-end-to-end-jit-fhelinalg: build-initialized
 build-end-to-end-jit-lambda: build-initialized
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_lambda
 
-build-end-to-end-jit-dfr: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_dfr
+## end-to-end-dataflow-tests
 
-build-end-to-end-jit-auto-parallelization: build-initialized
+build-end-to-end-dataflow-tests: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_jit_dfr
 	cmake --build $(BUILD_DIR) --target end_to_end_jit_auto_parallelization
 
-build-end-to-end-jit: build-end-to-end-jit-test build-end-to-end-jit-clear-tensor build-end-to-end-jit-encrypted-tensor build-end-to-end-jit-fhe build-end-to-end-jit-fhelinalg build-end-to-end-jit-lambda
+run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_dfr
+	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
 
-build-tests: build-end-to-end-jit build-support-unit-test build-testlib-unit-test
+# benchmark
 
-test-end-to-end-jit-test: build-end-to-end-jit-test
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_test
+build-benchmarks: build-initialized
+	cmake --build $(BUILD_DIR) --target end_to_end_benchmark
 
-test-end-to-end-jit-clear-tensor: build-end-to-end-jit-clear-tensor
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_clear_tensor
-
-test-end-to-end-jit-fhe: build-end-to-end-jit-fhe
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_fhe
-
-test-end-to-end-jit-encrypted-tensor: build-end-to-end-jit-encrypted-tensor
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_encrypted_tensor
-
-test-end-to-end-jit-fhelinalg: build-end-to-end-jit-fhelinalg
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_fhelinalg
-
-test-end-to-end-jit-lambda: build-initialized build-end-to-end-jit-lambda
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_lambda
-
-test-end-to-end-jit-dfr: build-end-to-end-jit-dfr
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_dfr
-
-test-end-to-end-jit-auto-parallelization: build-end-to-end-jit-auto-parallelization
-	$(BUILD_DIR)/tools/concretelang/tests/unittest/end_to_end_jit_auto_parallelization
-
-test-end-to-end-jit: test-end-to-end-jit-test test-end-to-end-jit-fhe test-end-to-end-jit-clear-tensor test-end-to-end-jit-encrypted-tensor test-end-to-end-jit-fhelinalg test-end-to-end-jit-lambda
+run-benchmarks: build-benchmarks
+	$(BUILD_DIR)/bin/end_to_end_benchmark
 
 show-stress-tests-summary:
 	@echo '------ Stress tests summary ------'
@@ -277,15 +257,6 @@ python_lint:
 	build-end-to-end-jit \
 	concretecompiler \
 	python-bindings \
-	test-check \
-	test-end-to-end-jit \
-	test-end-to-end-jit-test \
-	test-end-to-end-jit-clear-tensor \
-	test-end-to-end-jit-encrypted-tensor \
-	test-end-to-end-jit-fhelinalg \
-	test-python \
-	test \
-	build-tests \
 	add-deps \
 	file-check \
 	not \
@@ -299,4 +270,13 @@ python_lint:
 	python_lint \
 	python_format \
 	check_python_format \
-	concrete-optimizer-lib
+	concrete-optimizer-lib \
+	build-tests \
+	run-tests \
+	run-check-tests \
+	build-unit-tests \
+	run-unit-tests \
+	run-python-tests \
+	build-end-to-end-tests \
+	build-end-to-end-dataflow-tests \
+	run-end-to-end-dataflow-tests

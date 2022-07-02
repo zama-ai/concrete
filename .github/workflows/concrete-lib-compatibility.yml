@@ -54,7 +54,7 @@ jobs:
             pip install pytest
             export CONCRETE_PROJECT=/concrete
             make -B BUILD_DIR=/build build-initialized
-            make BUILD_DIR=/build test
+            make BUILD_DIR=/build run-tests
 
       - name: Send Slack Notification
         if: ${{ always() }}

@@ -1,9 +1,9 @@
-#include "../fixture/EndToEndFixture.h"
+#include "end_to_end_fixture/EndToEndFixture.h"
 #define BENCHMARK_HAS_CXX11
 #include "llvm/Support/Path.h"
 #include <benchmark/benchmark.h>
 
-#include "../tests_tools/keySetCache.h"
+#include "tests_tools/keySetCache.h"
 
 /// Benchmark time of the compilation
 template <typename LambdaSupport>
@@ -144,12 +144,14 @@ static int registerEndToEndTestFromFile(std::string prefix, std::string path) {
 }
 
 auto _ = {
-    registerEndToEndTestFromFile("FHE", "tests/fixture/end_to_end_fhe.yaml"),
     registerEndToEndTestFromFile(
-        "EncryptedTensor", "tests/fixture/end_to_end_encrypted_tensor.yaml"),
-    registerEndToEndTestFromFile("FHELinalg",
-                                 "tests/fixture/end_to_end_fhelinalg.yaml"),
-    registerEndToEndTestFromFile("FHELinalg",
-                                 "tests/fixture/end_to_end_programs.yaml")};
+        "FHE", "tests/end_to_end_fixture/end_to_end_fhe.yaml"),
+    registerEndToEndTestFromFile(
+        "EncryptedTensor",
+        "tests/end_to_end_fixture/end_to_end_encrypted_tensor.yaml"),
+    registerEndToEndTestFromFile(
+        "FHELinalg", "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml"),
+    registerEndToEndTestFromFile(
+        "FHELinalg", "tests/end_to_end_fixture/end_to_end_programs.yaml")};
 
 BENCHMARK_MAIN();

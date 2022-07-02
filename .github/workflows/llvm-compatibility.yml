@@ -39,7 +39,7 @@ jobs:
           run: |
             cd /compiler
             pip install pytest
-            make BUILD_DIR=/build test
+            make BUILD_DIR=/build run-tests
 
       - name: Update Custom LLVM
         uses: ad-m/github-push-action@master

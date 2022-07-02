@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "../unittest/end_to_end_jit_test.h"
 #include "concretelang/ClientLib/ClientParameters.h"
 #include "concretelang/ClientLib/EncryptedArguments.h"
+#include "tests_tools/assert.h"
 
 namespace clientlib = concretelang::clientlib;
 
@@ -32,25 +32,27 @@ TEST(Support, client_parameters_json_serde) {
   };
   params0.keyswitchKeys = {{"ksk_v0",
                             {
-                                /*.inputSecretKeyID = */ clientlib::BIG_KEY,
-                                /*.outputSecretKeyID = */ clientlib::SMALL_KEY,
+                                /*.inputSecretKeyID = */
+                                clientlib::BIG_KEY,
+                                /*.outputSecretKeyID = */
+                                clientlib::SMALL_KEY,
                                 /*.level = */ 1,
                                 /*.baseLog = */ 2,
                                 /*.variance = */ 3,
                             }}};
   params0.inputs = {
       {
-          /*.encryption = */ {{clientlib::SMALL_KEY, 0.01, {4}}},
+          /*.encryption = */ {{clientlib::SMALL_KEY, 0.00, {4}}},
           /*.shape = */ {32, {1, 2, 3, 4}, 1 * 2 * 3 * 4},
       },
       {
-          /*.encryption = */ {{clientlib::SMALL_KEY, 0.03, {5}}},
+          /*.encryption = */ {{clientlib::SMALL_KEY, 0.00, {5}}},
           /*.shape = */ {8, {4, 4, 4, 4}, 4 * 4 * 4 * 4},
       },
   };
   params0.outputs = {
       {
-          /*.encryption = */ {{clientlib::SMALL_KEY, 0.03, {5}}},
+          /*.encryption = */ {{clientlib::SMALL_KEY, 0.00, {5}}},
           /*.shape = */ {8, {4, 4, 4, 4}, 4 * 4 * 4 * 4},
       },
   };

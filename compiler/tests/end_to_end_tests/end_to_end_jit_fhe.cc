@@ -3,11 +3,11 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
-#include "../fixture/EndToEndFixture.h"
-#include "../tests_tools/keySetCache.h"
 #include "concretelang/Support/JITSupport.h"
 #include "concretelang/Support/LibrarySupport.h"
+#include "end_to_end_fixture/EndToEndFixture.h"
 #include "end_to_end_jit_test.h"
+#include "tests_tools/keySetCache.h"
 
 template <typename LambdaSupport>
 void compile_and_run(EndToEndDesc desc, LambdaSupport support) {
@@ -98,13 +98,14 @@ std::string printEndToEndDesc(const testing::TestParamInfo<EndToEndDesc> desc) {
   class suite : public testing::TestWithParam<EndToEndDesc> {};                \
   INSTANTIATE_END_TO_END_COMPILE_AND_RUN(suite, lambdasupport)                 \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
-      FHE, suite, lambdasupport, "tests/fixture/end_to_end_fhe.yaml")          \
+      FHE, suite, lambdasupport,                                               \
+      "tests/end_to_end_fixture/end_to_end_fhe.yaml")                          \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
       EncryptedTensor, suite, lambdasupport,                                   \
-      "tests/fixture/end_to_end_encrypted_tensor.yaml")                        \
+      "tests/end_to_end_fixture/end_to_end_encrypted_tensor.yaml")             \
   INSTANTIATE_END_TO_END_TEST_SUITE_FROM_FILE(                                 \
       FHELinalg, suite, lambdasupport,                                         \
-      "tests/fixture/end_to_end_fhelinalg.yaml")
+      "tests/end_to_end_fixture/end_to_end_fhelinalg.yaml")
 
 /// Instantiate the test suite for Jit
 INSTANTIATE_END_TO_END_TEST_SUITE_FROM_ALL_TEST_FILES(

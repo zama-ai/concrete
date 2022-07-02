@@ -6,10 +6,13 @@
 
 #include "boost/outcome.h"
 
-#include "../unittest/end_to_end_jit_test.h"
 #include "concretelang/ClientLib/ClientLambda.h"
 #include "concretelang/Common/Error.h"
+#include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/TestLib/TestTypedLambda.h"
+
+#include "tests_tools/assert.h"
+#include "tests_tools/keySetCache.h"
 
 #include "call_2t_1s_with_header-client.h.generated"
 
@@ -48,7 +51,7 @@ compile(std::string outputLib, std::string source,
 }
 
 static const std::string THIS_TEST_DIRECTORY = "tests/TestLib";
-static const std::string OUT_DIRECTORY = THIS_TEST_DIRECTORY + "/out";
+static const std::string OUT_DIRECTORY = "/tmp";
 
 template <typename Info> std::string outputLibFromThis(Info *info) {
   return OUT_DIRECTORY + "/" + std::string(info->name());
@@ -142,7 +145,7 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
         continue;
       }
       auto res = lambda.call(a, b);
-      ASSERT_EQ_OUTCOME(res, a + b);
+      ASSERT_EQ_OUTCOME(res, (int64_t)a + b);
     }
 }
 
