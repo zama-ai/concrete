@@ -59,7 +59,7 @@ def compile_run_assert(
 end_to_end_fixture = [
     pytest.param(
         """
-            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
                 %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
                 return %1: !FHE.eint<7>
             }
@@ -70,7 +70,7 @@ end_to_end_fixture = [
     ),
     pytest.param(
         """
-            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
                 %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
                 return %1: !FHE.eint<7>
             }
@@ -81,7 +81,7 @@ end_to_end_fixture = [
     ),
     pytest.param(
         """
-            func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+            func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
                 %tlu = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
                 %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<7>, tensor<128xi64>) -> (!FHE.eint<7>)
                 return %1: !FHE.eint<7>
@@ -93,7 +93,7 @@ end_to_end_fixture = [
     ),
     pytest.param(
         """
-            func @main(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
+            func.func @main(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
             {
                 %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
                     (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>
@@ -109,7 +109,7 @@ end_to_end_fixture = [
     ),
     pytest.param(
         """
-            func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+            func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
                 %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
                 return %res : tensor<4x!FHE.eint<6>>
             }
@@ -126,7 +126,7 @@ end_to_end_fixture = [
 end_to_end_parallel_fixture = [
     pytest.param(
         """
-            func @main(%x: tensor<3x4x!FHE.eint<7>>, %y: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+            func.func @main(%x: tensor<3x4x!FHE.eint<7>>, %y: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
                 %c = arith.constant dense<[[1, 2], [3, 4], [5, 0], [1, 2]]> : tensor<4x2xi8>
                 %0 = "FHELinalg.matmul_eint_int"(%x, %c): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
                 %1 = "FHELinalg.matmul_eint_int"(%y, %c): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
@@ -143,7 +143,7 @@ end_to_end_parallel_fixture = [
     ),
     pytest.param(
         """
-            func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>, %a2: tensor<4x!FHE.eint<6>>, %a3: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+            func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>, %a2: tensor<4x!FHE.eint<6>>, %a3: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
                 %1 = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
                 %2 = "FHELinalg.add_eint_int"(%a2, %a3) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
                 %res = "FHELinalg.add_eint"(%1, %2) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
@@ -191,7 +191,7 @@ def test_lib_compile_reload_and_run(mlir_input, args, expected_result, keyset_ca
 
 def test_lib_compilation_artifacts():
     mlir_str = """
-    func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+    func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
                 %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
                 return %res : tensor<4x!FHE.eint<6>>
     }
@@ -208,7 +208,7 @@ def test_lib_compilation_artifacts():
 
 def test_lib_compile_and_run_p_error(keyset_cache):
     mlir_input = """
-        func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+        func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
             %tlu = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
             %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<7>, tensor<128xi64>) -> (!FHE.eint<7>)
             return %1: !FHE.eint<7>
@@ -269,7 +269,7 @@ def test_compile_dataflow_and_fail_run(
     [
         pytest.param(
             """
-            func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+            func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
                 %y = arith.constant dense<[[1, 2], [3, 4], [5, 0], [1, 2]]> : tensor<4x2xi8>
                 %0 = "FHELinalg.matmul_eint_int"(%x, %y): (tensor<3x4x!FHE.eint<7>>, tensor<4x2xi8>) -> tensor<3x2x!FHE.eint<7>>
                 return %0 : tensor<3x2x!FHE.eint<7>>
@@ -304,7 +304,7 @@ def test_compile_and_run_loop_parallelize(
     [
         pytest.param(
             """
-            func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
                 %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
                 return %1: !FHE.eint<7>
             }
@@ -336,7 +336,7 @@ def test_compile_and_run_invalid_arg_number(
     [
         pytest.param(
             """
-            func @test(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
+            func.func @test(%arg0: tensor<4x!FHE.eint<7>>, %arg1: tensor<4xi8>) -> !FHE.eint<7>
             {
                 %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
                     (tensor<4x!FHE.eint<7>>, tensor<4xi8>) -> !FHE.eint<7>

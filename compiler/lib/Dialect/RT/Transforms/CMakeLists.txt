@@ -8,11 +8,11 @@ add_mlir_dialect_library(RTDialectTransforms
   mlir-headers
 
   LINK_LIBS PUBLIC
-  MLIRArithmetic
-  MLIRBufferization
+  MLIRArithmeticDialect
+  MLIRBufferizationDialect
   MLIRBufferizationTransforms
   MLIRIR
-  MLIRMemRef
+  MLIRMemRefDialect
   MLIRPass
   MLIRTransforms
 )

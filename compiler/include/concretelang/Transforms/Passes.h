@@ -7,8 +7,8 @@
 #define CONCRETELANG_TRANSFORMS_PASS_H
 
 #include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/SCF/SCF.h>
-#include <mlir/IR/BuiltinOps.h>
+#include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Pass/Pass.h>
 
 #define GEN_PASS_CLASSES

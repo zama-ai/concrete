@@ -2,7 +2,7 @@
 
 TEST(End2EndJit_EncryptedTensor_2D, extract_slice_parametric_2x2) {
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<8x4x!FHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!FHE.eint<6>> {
+func.func @main(%t: tensor<8x4x!FHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!FHE.eint<6>> {
   %r = tensor.extract_slice %t[%y, %x][2, 2][1, 1] : tensor<8x4x!FHE.eint<6>> to tensor<2x2x!FHE.eint<6>>
   return %r : tensor<2x2x!FHE.eint<6>>
 }
@@ -42,7 +42,7 @@ TEST(End2EndJit_EncryptedTensor_4D, extract_slice_parametric_2x2x2x2) {
   constexpr int64_t dimSizes[4] = {8, 4, 5, 3};
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<8x4x5x3x!FHE.eint<6>>, %d0: index, %d1: index, %d2: index, %d3: index) -> tensor<2x2x2x2x!FHE.eint<6>> {
+func.func @main(%t: tensor<8x4x5x3x!FHE.eint<6>>, %d0: index, %d1: index, %d2: index, %d3: index) -> tensor<2x2x2x2x!FHE.eint<6>> {
   %r = tensor.extract_slice %t[%d0, %d1, %d2, %d3][2, 2, 2, 2][1, 1, 1, 1] : tensor<8x4x5x3x!FHE.eint<6>> to tensor<2x2x2x2x!FHE.eint<6>>
   return %r : tensor<2x2x2x2x!FHE.eint<6>>
 }

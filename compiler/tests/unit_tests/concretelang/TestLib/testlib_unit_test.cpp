@@ -67,7 +67,7 @@ template <typename Lambda> Lambda load(std::string outputLib) {
 
 TEST(CompiledModule, call_1s_1s_client_view) {
   std::string source = R"(
-func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   return %arg0: !FHE.eint<7>
 }
 )";
@@ -96,7 +96,7 @@ func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
 
 TEST(CompiledModule, call_1s_1s) {
   std::string source = R"(
-func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
   return %arg0: !FHE.eint<7>
 }
 )";
@@ -111,7 +111,7 @@ func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
 
 TEST(CompiledModule, call_2s_1s_choose) {
   std::string source = R"(
-func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   return %arg0: !FHE.eint<7>
 }
 )";
@@ -132,7 +132,7 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
 TEST(CompiledModule, call_2s_1s) {
 
   std::string source = R"(
-func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
   return %1: !FHE.eint<7>
 }
@@ -153,7 +153,7 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
 
 TEST(CompiledModule, call_1s_1s_bad_call) {
   std::string source = R"(
-func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
   %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
   return %1: !FHE.eint<7>
 }
@@ -167,7 +167,7 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
 
 TEST(CompiledModule, call_1s_1t) {
   std::string source = R"(
-func @main(%arg0: !FHE.eint<7>) -> tensor<1x!FHE.eint<7>> {
+func.func @main(%arg0: !FHE.eint<7>) -> tensor<1x!FHE.eint<7>> {
   %1 = tensor.from_elements %arg0 : tensor<1x!FHE.eint<7>>
   return %1: tensor<1x!FHE.eint<7>>
 }
@@ -185,7 +185,7 @@ func @main(%arg0: !FHE.eint<7>) -> tensor<1x!FHE.eint<7>> {
 
 TEST(CompiledModule, call_2s_1t) {
   std::string source = R"(
-func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> tensor<2x!FHE.eint<7>> {
+func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> tensor<2x!FHE.eint<7>> {
   %1 = tensor.from_elements %arg0, %arg1 : tensor<2x!FHE.eint<7>>
   return %1: tensor<2x!FHE.eint<7>>
 }
@@ -205,7 +205,7 @@ func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> tensor<2x!FHE.eint<7>> {
 
 TEST(CompiledModule, call_1t_1s) {
   std::string source = R"(
-func @main(%arg0: tensor<1x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%arg0: tensor<1x!FHE.eint<7>>) -> !FHE.eint<7> {
   %c0 = arith.constant 0 : index
   %1 = tensor.extract %arg0[%c0] : tensor<1x!FHE.eint<7>>
   return %1: !FHE.eint<7>
@@ -223,7 +223,7 @@ func @main(%arg0: tensor<1x!FHE.eint<7>>) -> !FHE.eint<7> {
 
 TEST(CompiledModule, call_1t_1t) {
   std::string source = R"(
-func @main(%arg0: tensor<3x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+func.func @main(%arg0: tensor<3x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   return %arg0: tensor<3x!FHE.eint<7>>
 }
 )";
@@ -241,7 +241,7 @@ func @main(%arg0: tensor<3x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
 
 TEST(CompiledModule, call_2t_1s) {
   std::string source = R"(
-func @main(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !FHE.eint<7> {
   %1 = "FHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x!FHE.eint<7>>, tensor<3x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
   %c1 = arith.constant 1 : i8
   %2 = tensor.from_elements %c1, %c1, %c1 : tensor<3xi8>
@@ -264,7 +264,7 @@ func @main(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !FHE
 
 TEST(CompiledModule, call_1tr2_1tr2) {
   std::string source = R"(
-func @main(%arg0: tensor<2x3x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
+func.func @main(%arg0: tensor<2x3x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
   return %arg0: tensor<2x3x!FHE.eint<7>>
 }
 )";
@@ -285,7 +285,7 @@ func @main(%arg0: tensor<2x3x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
 
 TEST(CompiledModule, call_1tr3_1tr3) {
   std::string source = R"(
-func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>> {
+func.func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>> {
   return %arg0: tensor<2x3x1x!FHE.eint<7>>
 }
 )";
@@ -308,7 +308,7 @@ func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>> {
 
 TEST(CompiledModule, call_2tr3_1tr3) {
   std::string source = R"(
-func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>, %arg1: tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>> {
+func.func @main(%arg0: tensor<2x3x1x!FHE.eint<7>>, %arg1: tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>> {
   %1 = "FHELinalg.add_eint"(%arg0, %arg1): (tensor<2x3x1x!FHE.eint<7>>, tensor<2x3x1x!FHE.eint<7>>) -> tensor<2x3x1x!FHE.eint<7>>
   return %1: tensor<2x3x1x!FHE.eint<7>>
 }
@@ -340,7 +340,7 @@ static std::string fileContent(std::string path) {
 
 TEST(CompiledModule, call_2t_1s_with_header) {
   std::string source = R"(
-func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !FHE.eint<7> {
   %1 = "FHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x!FHE.eint<7>>, tensor<3x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
   %c1 = arith.constant 1 : i8
   %2 = tensor.from_elements %c1, %c1, %c1 : tensor<3xi8>
@@ -377,7 +377,7 @@ func @extract(%arg0: tensor<3x!FHE.eint<7>>, %arg1: tensor<3x!FHE.eint<7>>) -> !
 
 TEST(DISABLED_CompiledModule, call_2s_1s_lookup_table) {
   std::string source = R"(
-func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<3>) -> !FHE.eint<6> {
+func.func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<3>) -> !FHE.eint<6> {
     %tlu_7 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]> : tensor<64xi64>
     %tlu_3 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7]> : tensor<8xi64>
     %a = "FHE.apply_lookup_table"(%arg0, %tlu_7): (!FHE.eint<6>, tensor<64xi64>) -> (!FHE.eint<6>)

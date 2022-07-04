@@ -18,7 +18,7 @@ from concrete.compiler import (
         pytest.param(
             """
 
-func @main(%arg0: !FHE.eint<5>, %arg1: i6) -> !FHE.eint<5> {
+func.func @main(%arg0: !FHE.eint<5>, %arg1: i6) -> !FHE.eint<5> {
     %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<5>, i6) -> (!FHE.eint<5>)
     return %1: !FHE.eint<5>
 }
@@ -32,7 +32,7 @@ func @main(%arg0: !FHE.eint<5>, %arg1: i6) -> !FHE.eint<5> {
         pytest.param(
             """
 
-func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
+func.func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
     %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<5>, !FHE.eint<5>) -> (!FHE.eint<5>)
     return %1: !FHE.eint<5>
 }
@@ -45,7 +45,7 @@ func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
         pytest.param(
             """
             
-func @main(%arg0: tensor<4x!FHE.eint<5>>, %arg1: tensor<4xi6>) -> !FHE.eint<5> {
+func.func @main(%arg0: tensor<4x!FHE.eint<5>>, %arg1: tensor<4xi6>) -> !FHE.eint<5> {
     %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) : (tensor<4x!FHE.eint<5>>, tensor<4xi6>) -> !FHE.eint<5>
     return %ret : !FHE.eint<5>
 }
@@ -62,7 +62,7 @@ func @main(%arg0: tensor<4x!FHE.eint<5>>, %arg1: tensor<4xi6>) -> !FHE.eint<5> {
         pytest.param(
             """
 
-func @main(%a0: tensor<4x!FHE.eint<5>>, %a1: tensor<4x!FHE.eint<5>>) -> tensor<4x!FHE.eint<5>> {
+func.func @main(%a0: tensor<4x!FHE.eint<5>>, %a1: tensor<4x!FHE.eint<5>>) -> tensor<4x!FHE.eint<5>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x!FHE.eint<5>>, tensor<4x!FHE.eint<5>>) -> tensor<4x!FHE.eint<5>>
     return %res : tensor<4x!FHE.eint<5>>
 }

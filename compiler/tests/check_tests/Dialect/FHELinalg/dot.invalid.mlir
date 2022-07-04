@@ -1,7 +1,7 @@
 // RUN: concretecompiler --split-input-file --verify-diagnostics --action=roundtrip %s
 
 // Incompatible shapes
-func @dot_incompatible_shapes(
+func.func @dot_incompatible_shapes(
     %arg0: tensor<5x!FHE.eint<5>>,
     %arg1: tensor<4xi32>) -> !FHE.eint<5>
 {
@@ -15,7 +15,7 @@ func @dot_incompatible_shapes(
 // -----
 
 // Incompatible input types
-func @dot_incompatible_input_types(
+func.func @dot_incompatible_input_types(
     %arg0: tensor<5x!FHE.eint<2>>,
     %arg1: tensor<4xf32>) -> !FHE.eint<2>
 {
@@ -29,7 +29,7 @@ func @dot_incompatible_input_types(
 // -----
 
 // Wrong number of dimensions
-func @dot_num_dims(
+func.func @dot_num_dims(
     %arg0: tensor<2x4x!FHE.eint<2>>,
     %arg1: tensor<2x4xi3>) -> !FHE.eint<2>
 {
@@ -43,7 +43,7 @@ func @dot_num_dims(
 // -----
 
 // Wrong returns type
-func @dot_incompatible_return(
+func.func @dot_incompatible_return(
     %arg0: tensor<4x!FHE.eint<2>>,
     %arg1: tensor<4xi3>) -> !FHE.eint<3>
 {
@@ -57,7 +57,7 @@ func @dot_incompatible_return(
 // -----
 
 // Wrong integer size
-func @dot_incompatible_int(
+func.func @dot_incompatible_int(
     %arg0: tensor<4x!FHE.eint<2>>,
     %arg1: tensor<4xi4>) -> !FHE.eint<2>
 {

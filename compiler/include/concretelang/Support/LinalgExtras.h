@@ -7,6 +7,7 @@
 #define CONCRETELANG_SUPPORT_LINALG_EXTRAS_H_
 
 #include <llvm/ADT/TypeSwitch.h>
+#include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/Linalg/Transforms/Transforms.h>
 #include <mlir/Dialect/Linalg/Utils/Utils.h>

@@ -1,6 +1,6 @@
 // RUN: concretecompiler --action=dump-fhe %s 2>&1 --split-input-file | FileCheck %s
 
-// CHECK:      func @tiled_2x2(%[[Varg0:.*]]: tensor<8x4x!FHE.eint<6>>, %[[Varg1:.*]]: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+// CHECK:      func.func @tiled_2x2(%[[Varg0:.*]]: tensor<8x4x!FHE.eint<6>>, %[[Varg1:.*]]: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
 // CHECK-NEXT:    %[[Vc2:.*]] = arith.constant 2 : index
 // CHECK-NEXT:    %[[Vc0:.*]] = arith.constant 0 : index
 // CHECK-NEXT:    %[[Vc8:.*]] = arith.constant 8 : index
@@ -23,14 +23,14 @@
 // CHECK-NEXT:    }
 // CHECK-NEXT:    return %[[V1]] : tensor<8x2x!FHE.eint<6>>
 // CHECK-NEXT: }
-func @tiled_2x2(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+func.func @tiled_2x2(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
   %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [2,2,2] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
   return %0 : tensor<8x2x!FHE.eint<6>>
 }
 
 // -----
 
-// CHECK:      func @tiled_one_big_tile(%[[Varg0:.*]]: tensor<8x4x!FHE.eint<6>>, %[[Varg1:.*]]: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+// CHECK:      func.func @tiled_one_big_tile(%[[Varg0:.*]]: tensor<8x4x!FHE.eint<6>>, %[[Varg1:.*]]: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
 // CHECK-NEXT:   %[[Vc8:.*]] = arith.constant 8 : index
 // CHECK-NEXT:   %[[Vc4:.*]] = arith.constant 4 : index
 // CHECK-NEXT:   %[[Vc2:.*]] = arith.constant 2 : index
@@ -53,7 +53,7 @@ func @tiled_2x2(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x
 // CHECK-NEXT:   }
 // CHECK-NEXT:   return %[[V1]] : tensor<8x2x!FHE.eint<6>>
 // CHECK-NEXT: }
-func @tiled_one_big_tile(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+func.func @tiled_one_big_tile(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
   %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [8,4,2] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
   return %0 : tensor<8x2x!FHE.eint<6>>
 }

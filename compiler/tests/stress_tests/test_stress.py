@@ -82,7 +82,7 @@ def basic_multisum_identity(bitwidth, size):
 
     return (
 f"""
-func @main({components('v', size, v_ty)}) -> {v_ty} {{
+func.func @main({components('v', size, v_ty)}) -> {v_ty} {{
   %v = tensor.from_elements {components('v', size)} : {tv_ty}
 
   // Declare {size} %wX components

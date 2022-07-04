@@ -6,10 +6,12 @@
 #ifndef CONCRETELANG_TRANSFORMS_PASSES_H
 #define CONCRETELANG_TRANSFORMS_PASSES_H
 
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 
 #include "concretelang/Conversion/ConcreteToBConcrete/Pass.h"
 #include "concretelang/Conversion/FHETensorOpsToLinalg/Pass.h"

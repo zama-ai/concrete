@@ -63,7 +63,7 @@ Files are in json format but can easily be grepped (multi-lines).
     } # A failed replication when the result is wrong both directly and after truncation
     ...
   ],
-  "code": "\nfunc @main(...) { ... }",
+  "code": "\nfunc.func @main(...) { ... }",
   "success_rate": 99.0,
   "overflow_rate": 100.0
 }

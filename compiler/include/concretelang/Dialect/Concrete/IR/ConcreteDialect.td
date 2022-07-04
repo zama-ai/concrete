@@ -10,6 +10,7 @@ def Concrete_Dialect : Dialect {
     A dialect for representation of low level operation on fully homomorphic ciphertext.
   }];
   let cppNamespace = "::mlir::concretelang::Concrete";
+  let useDefaultTypePrinterParser = 1;
 }
 
 #endif

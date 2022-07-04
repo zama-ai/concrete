@@ -8,6 +8,6 @@ mlir_tablegen(FHELinalgOpsDialect.cpp.inc -gen-dialect-defs -dialect=FHELinalg)
 add_public_tablegen_target(MLIRFHELinalgOpsIncGen)
 add_dependencies(mlir-headers MLIRFHELinalgOpsIncGen)
 
-add_concretelang_doc(FHELinalgDialect FHELinalgDialect concretelang/ -gen-dialect-doc)
+add_concretelang_doc(FHELinalgOps FHELinalgDialect concretelang/ -gen-dialect-doc -dialect=FHELinalg)
 add_concretelang_doc(FHELinalgOps FHELinalgOps concretelang/ -gen-op-doc)
 add_concretelang_doc(FHELinalgTypes FHELinalgTypes concretelang/ -gen-typedef-doc)

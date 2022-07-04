@@ -6,10 +6,11 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator>
+#include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
-#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/IR/AffineExpr.h>
 #include <mlir/IR/AffineMap.h>
@@ -289,8 +290,9 @@ struct GlweFromTablePattern : public mlir::OpRewritePattern<
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
     // %0 = linalg.init_tensor [polynomialSize*(glweDimension+1)]
     //        : tensor<polynomialSize*(glweDimension+1), i64>
-    mlir::Value init = rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
-        op, newResultTy.getShape(), newResultTy.getElementType());
+    mlir::Value init =
+        rewriter.replaceOpWithNewOp<mlir::bufferization::AllocTensorOp>(
+            op, newResultTy, mlir::ValueRange{});
 
     // "BConcrete.fill_glwe_from_table" : (%0, polynomialSize, glweDimension,
     // %tlu)
@@ -672,9 +674,8 @@ struct FromElementsOpPattern
     auto newTensorResultTy =
         converter.convertType(resultTy).cast<mlir::RankedTensorType>();
 
-    mlir::Value tensor = rewriter.create<mlir::linalg::InitTensorOp>(
-        fromElementsOp.getLoc(), newTensorResultTy.getShape(),
-        newTensorResultTy.getElementType());
+    mlir::Value tensor = rewriter.create<mlir::bufferization::AllocTensorOp>(
+        fromElementsOp.getLoc(), newTensorResultTy, mlir::ValueRange{});
 
     llvm::SmallVector<mlir::OpFoldResult> sizes(1,
                                                 rewriter.getI64IntegerAttr(1));
@@ -788,39 +789,33 @@ void insertTensorShapeOpPattern(mlir::MLIRContext &context,
   });
 }
 
-/// Rewrites `linalg.init_tensor` ops for which the converted type in
+/// Rewrites `bufferization.alloc_tensor` ops for which the converted type in
 /// BConcrete is different from the original type.
 ///
 /// Example:
 ///
 /// ```
-/// linalg.init_tensor [4] : tensor<4x!Concrete.lwe_ciphertext<4096,6>>
+/// bufferization.alloc_tensor() : tensor<4x!Concrete.lwe_ciphertext<4096,6>>
 /// ```
 ///
-/// which has become after type conversion:
+/// becomes:
 ///
 /// ```
-/// linalg.init_tensor [4] : tensor<4x4097xi64>
+/// bufferization.alloc_tensor() : tensor<4x4097xi64>
 /// ```
-///
-/// is finally fixed:
-///
-/// ```
-/// linalg.init_tensor [4, 4097] : tensor<4x4097xi64>
-/// ```
-struct InitTensorOpPattern
-    : public mlir::OpRewritePattern<mlir::linalg::InitTensorOp> {
-  InitTensorOpPattern(::mlir::MLIRContext *context,
-                      mlir::PatternBenefit benefit = 1)
-      : ::mlir::OpRewritePattern<mlir::linalg::InitTensorOp>(context, benefit) {
-  }
+struct AllocTensorOpPattern
+    : public mlir::OpRewritePattern<mlir::bufferization::AllocTensorOp> {
+  AllocTensorOpPattern(::mlir::MLIRContext *context,
+                       mlir::PatternBenefit benefit = 1)
+      : ::mlir::OpRewritePattern<mlir::bufferization::AllocTensorOp>(context,
+                                                                     benefit) {}
 
   ::mlir::LogicalResult
-  matchAndRewrite(mlir::linalg::InitTensorOp initTensorOp,
+  matchAndRewrite(mlir::bufferization::AllocTensorOp allocTensorOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
     mlir::RankedTensorType resultTy =
-        initTensorOp.getType().dyn_cast<mlir::RankedTensorType>();
+        allocTensorOp.getType().dyn_cast<mlir::RankedTensorType>();
 
     if (!resultTy || !resultTy.hasStaticShape())
       return mlir::failure();
@@ -829,8 +824,8 @@ struct InitTensorOpPattern
         converter.convertType(resultTy).dyn_cast<mlir::RankedTensorType>();
 
     if (resultTy.getShape().size() != newResultTy.getShape().size()) {
-      rewriter.replaceOpWithNewOp<mlir::linalg::InitTensorOp>(
-          initTensorOp, newResultTy.getShape(), newResultTy.getElementType());
+      rewriter.replaceOpWithNewOp<mlir::bufferization::AllocTensorOp>(
+          allocTensorOp, newResultTy, mlir::ValueRange{});
     }
 
     return ::mlir::success();
@@ -935,11 +930,11 @@ void ConcreteToBConcretePass::runOnOperation() {
                  converter.isLegal(op->getOperandTypes());
         });
 
-    patterns.insert<InitTensorOpPattern>(&getContext());
+    patterns.insert<AllocTensorOpPattern>(&getContext());
 
     target.addDynamicallyLegalOp<mlir::tensor::InsertSliceOp,
                                  mlir::tensor::FromElementsOp,
-                                 mlir::linalg::InitTensorOp>(
+                                 mlir::bufferization::AllocTensorOp>(
         [&](mlir::Operation *op) {
           return converter.isLegal(op->getResult(0).getType());
         });

@@ -1,9 +1,3 @@
 set(LLVM_TARGET_DEFINITIONS Passes.td)
 mlir_tablegen(Passes.h.inc -gen-pass-decls -name Transforms)
 add_public_tablegen_target(ConcretelangTransformsBufferizePassIncGen)
-
-set(LLVM_TARGET_DEFINITIONS OneShotBufferizeDPSWrapper.td)
-mlir_tablegen(OneShotBufferizeDPSWrapper.h.inc -gen-pass-decls -name Transforms)
-add_public_tablegen_target(ConcretelangTransformsOneShotBufferizeDPSWrapperPassIncGen)
-add_public_tablegen_target(ConcretelangTransformsPassIncGen)
-add_dependencies(mlir-headers ConcretelangTransformsPassIncGen)

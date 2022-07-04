@@ -12,6 +12,6 @@ add_mlir_dialect_library(TFHEToConcrete
   LINK_LIBS PUBLIC
   MLIRIR
   MLIRTransforms
-  MLIRMath)
+  MLIRMathDialect)
 
 target_link_libraries(TFHEToConcrete PUBLIC MLIRIR)

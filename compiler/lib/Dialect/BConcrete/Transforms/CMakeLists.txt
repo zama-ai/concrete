@@ -10,11 +10,12 @@ add_mlir_dialect_library(ConcretelangBConcreteTransforms
   mlir-headers
 
   LINK_LIBS PUBLIC
-  MLIRArithmetic
-  MLIRBufferization
+  ConcretelangConversion
+  MLIRArithmeticDialect
+  MLIRBufferizationDialect
   MLIRBufferizationTransforms
   MLIRIR
-  MLIRMemRef
+  MLIRMemRefDialect
   MLIRPass
   MLIRTransforms
   )

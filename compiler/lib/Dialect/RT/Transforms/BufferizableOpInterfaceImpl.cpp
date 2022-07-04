@@ -45,7 +45,7 @@ struct DataflowTaskOpBufferizationInterface
   }
 
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
-                          BufferizationState &state) const {
+                          const BufferizationOptions &options) const {
     DataflowTaskOp taskOp = cast<DataflowTaskOp>(op);
 
     auto isTensorType = [](Type t) { return t.isa<TensorType>(); };
@@ -64,7 +64,8 @@ struct DataflowTaskOpBufferizationInterface
       Value oldOperandValue = opOperand.get();
 
       if (oldOperandValue.getType().isa<TensorType>()) {
-        FailureOr<Value> bufferOrErr = state.getBuffer(rewriter, opOperand);
+        FailureOr<Value> bufferOrErr =
+            bufferization::getBuffer(rewriter, opOperand.get(), options);
 
         if (failed(bufferOrErr))
           return failure();
@@ -87,7 +88,7 @@ struct DataflowTaskOpBufferizationInterface
         for (OpOperand &yieldOperand : yield.getOperation()->getOpOperands())
           if (yieldOperand.get().getType().isa<TensorType>()) {
             FailureOr<Value> bufferOrErr =
-                state.getBuffer(rewriter, yieldOperand);
+                bufferization::getBuffer(rewriter, yieldOperand.get(), options);
 
             if (failed(bufferOrErr))
               return WalkResult::interrupt();
@@ -112,7 +113,7 @@ struct DataflowTaskOpBufferizationInterface
 
     for (OpResult res : op->getResults()) {
       if (TensorType t = res.getType().dyn_cast<TensorType>()) {
-        BaseMemRefType memrefType = getMemRefType(t, state.getOptions());
+        BaseMemRefType memrefType = getMemRefType(t, options);
         newResultTypes.push_back(memrefType);
       } else {
         newResultTypes.push_back(res.getType());

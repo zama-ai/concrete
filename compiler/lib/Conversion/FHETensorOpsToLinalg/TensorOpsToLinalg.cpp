@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <unordered_set>
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -30,6 +31,7 @@
 namespace arith = mlir::arith;
 namespace linalg = mlir::linalg;
 namespace tensor = mlir::tensor;
+namespace bufferization = mlir::bufferization;
 
 namespace FHE = mlir::concretelang::FHE;
 namespace FHELinalg = mlir::concretelang::FHELinalg;
@@ -239,8 +241,8 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
     mlir::RankedTensorType rhsTy =
         ((mlir::Type)linalgOp.rhs().getType()).cast<mlir::RankedTensorType>();
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
-        linalgOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+        linalgOp.getLoc(), resultTy, mlir::ValueRange{});
 
     // Create the affine #maps_0
     llvm::SmallVector<mlir::AffineMap, 3> maps{
@@ -431,8 +433,8 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
       nestedBuilder.create<linalg::YieldOp>(loc, lookup.getResult());
     };
 
-    auto output =
-        rewriter.create<linalg::InitTensorOp>(loc, resultShape, elementTy);
+    auto output = rewriter.create<bufferization::AllocTensorOp>(
+        loc, resultTy, mlir::ValueRange{});
 
     // Create the `linalg.g eneric` op
     Types resTys{resultTy};
@@ -517,9 +519,8 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
         ((mlir::Type)fheLinalgLutOp.luts().getType())
             .cast<mlir::RankedTensorType>();
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
-        fheLinalgLutOp.getLoc(), resultTy.getShape(),
-        resultTy.getElementType());
+    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+        fheLinalgLutOp.getLoc(), resultTy, mlir::ValueRange{});
 
     auto lutsShape = lutsTy.getShape();
     auto lut_size = lutsShape[lutsShape.size() - 1];
@@ -635,8 +636,8 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
         ((mlir::Type)lutOp.t().getType()).cast<mlir::RankedTensorType>();
 
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
-        lutOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+        lutOp.getLoc(), resultTy, mlir::ValueRange{});
 
     // Create the affine #maps_0
     llvm::SmallVector<mlir::AffineMap, 2> maps{
@@ -733,8 +734,8 @@ struct FHELinalgNegEintToLinalgGeneric
                                           .cast<mlir::RankedTensorType>();
 
     //  linalg.init_tensor for initial value
-    mlir::Value init = rewriter.create<mlir::linalg::InitTensorOp>(
-        negEintOp.getLoc(), resultTy.getShape(), resultTy.getElementType());
+    mlir::Value init = rewriter.create<bufferization::AllocTensorOp>(
+        negEintOp.getLoc(), resultTy, mlir::ValueRange{});
 
     // Create the affine #maps_0
     llvm::SmallVector<mlir::AffineMap, 2> maps{
@@ -1632,6 +1633,8 @@ void FHETensorOpsToLinalg::runOnOperation() {
   // TODO: this should be removed when we no longer need a custom generated op
   // for conv that works on tensors of custom types
   target.addLegalOp<mlir::concretelang::FHELinalg::FhelinalgConv2DNchwFchwOp>();
+
+  target.addLegalOp<bufferization::AllocTensorOp>();
 
   mlir::RewritePatternSet patterns(&getContext());
   patterns.insert<DotToLinalgGeneric>(&getContext());

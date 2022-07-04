@@ -9,9 +9,9 @@ const mlir::concretelang::V0FHEConstraint defaultV0Constraints{10, 7};
 
 TEST(CompileAndRunDFR, start_stop) {
   checkedJit(lambda, R"XXX(
-func private @_dfr_stop()
-func private @_dfr_start()
-func @main() -> i64{
+func.func private @_dfr_stop()
+func.func private @_dfr_start()
+func.func @main() -> i64{
   call @_dfr_start() : () -> ()
   %1 = arith.constant 7 : i64
   call @_dfr_stop() : () -> ()
@@ -28,7 +28,7 @@ TEST(CompileAndRunDFR, 0in1out_task) {
   llvm.func @_dfr_create_async_task(...) attributes {sym_visibility = "private"}
   llvm.func @_dfr_stop()
   llvm.func @_dfr_start()
-  func @main() -> i64 {
+  func.func @main() -> i64 {
     %0 = llvm.mlir.addressof @_dfr_DFT_work_function__main0 : !llvm.ptr<func<void (ptr<i64>)>>
     %1 = llvm.mlir.constant(0 : i64) : i64
     %2 = llvm.mlir.constant(1 : i64) : i64
@@ -66,7 +66,7 @@ TEST(CompileAndRunDFR, 1in1out_task) {
   llvm.func @_dfr_make_ready_future(...) -> !llvm.ptr<i64> attributes {sym_visibility = "private"}
   llvm.func @_dfr_stop()
   llvm.func @_dfr_start()
-  func @main(%arg0: i64) -> i64 {
+  func.func @main(%arg0: i64) -> i64 {
     %0 = llvm.mlir.addressof @_dfr_DFT_work_function__main0 : !llvm.ptr<func<void (ptr<i64>, ptr<i64>)>>
     %1 = llvm.mlir.constant(1 : i64) : i64
     %2 = llvm.mlir.constant(8 : i64) : i64
@@ -112,7 +112,7 @@ TEST(CompileAndRunDFR, 2in1out_task) {
   llvm.func @_dfr_make_ready_future(...) -> !llvm.ptr<i64> attributes {sym_visibility = "private"}
   llvm.func @_dfr_stop()
   llvm.func @_dfr_start()
-  func @main(%arg0: i64, %arg1: i64) -> i64 {
+  func.func @main(%arg0: i64, %arg1: i64) -> i64 {
     %0 = llvm.mlir.addressof @_dfr_DFT_work_function__main0 : !llvm.ptr<func<void (ptr<i64>, ptr<i64>, ptr<i64>)>>
     %1 = llvm.mlir.constant(2 : i64) : i64
     %2 = llvm.mlir.constant(1 : i64) : i64
@@ -167,7 +167,7 @@ TEST(CompileAndRunDFR, taskgraph) {
   llvm.func @_dfr_make_ready_future(...) -> !llvm.ptr<i64> attributes {sym_visibility = "private"}
   llvm.func @_dfr_stop()
   llvm.func @_dfr_start()
-  func @main(%arg0: i64, %arg1: i64, %arg2: i64) -> i64 {
+  func.func @main(%arg0: i64, %arg1: i64, %arg2: i64) -> i64 {
     %0 = llvm.mlir.constant(7 : i64) : i64
     %1 = llvm.mlir.addressof @_dfr_DFT_work_function__main0 : !llvm.ptr<func<void (ptr<i64>, ptr<i64>, ptr<i64>)>>
     %2 = llvm.mlir.constant(2 : i64) : i64

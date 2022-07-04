@@ -7,7 +7,7 @@
 TEST(End2EndJit_ClearTensor_1D, DISABLED_identity) {
   checkedJit(lambda,
              R"XXX(
-func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
+func.func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
   return %t : tensor<10xi64>
 }
 )XXX",
@@ -38,7 +38,7 @@ func @main(%t: tensor<10xi64>) -> tensor<10xi64> {
 
 TEST(End2EndJit_ClearTensor_1D, extract_64) {
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10xi64>, %i: index) -> i64{
+func.func @main(%t: tensor<10xi64>, %i: index) -> i64{
   %c = tensor.extract %t[%i] : tensor<10xi64>
   return %c : i64
 }
@@ -63,7 +63,7 @@ func @main(%t: tensor<10xi64>, %i: index) -> i64{
 
 TEST(End2EndJit_ClearTensor_1D, extract_32) {
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10xi32>, %i: index) -> i32{
+func.func @main(%t: tensor<10xi32>, %i: index) -> i32{
   %c = tensor.extract %t[%i] : tensor<10xi32>
   return %c : i32
 }
@@ -81,7 +81,7 @@ func @main(%t: tensor<10xi32>, %i: index) -> i32{
 TEST(End2EndJit_ClearTensor_1D, extract_16) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10xi16>, %i: index) -> i16{
+func.func @main(%t: tensor<10xi16>, %i: index) -> i16{
   %c = tensor.extract %t[%i] : tensor<10xi16>
   return %c : i16
 }
@@ -99,7 +99,7 @@ func @main(%t: tensor<10xi16>, %i: index) -> i16{
 TEST(End2EndJit_ClearTensor_1D, extract_8) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10xi8>, %i: index) -> i8{
+func.func @main(%t: tensor<10xi8>, %i: index) -> i8{
   %c = tensor.extract %t[%i] : tensor<10xi8>
   return %c : i8
 }
@@ -116,7 +116,7 @@ func @main(%t: tensor<10xi8>, %i: index) -> i8{
 TEST(End2EndJit_ClearTensor_1D, extract_5) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10xi5>, %i: index) -> i5{
+func.func @main(%t: tensor<10xi5>, %i: index) -> i5{
   %c = tensor.extract %t[%i] : tensor<10xi5>
   return %c : i5
 }
@@ -133,7 +133,7 @@ func @main(%t: tensor<10xi5>, %i: index) -> i5{
 TEST(End2EndJit_ClearTensor_1D, extract_1) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10xi1>, %i: index) -> i1{
+func.func @main(%t: tensor<10xi1>, %i: index) -> i1{
   %c = tensor.extract %t[%i] : tensor<10xi1>
   return %c : i1
 }
@@ -186,7 +186,7 @@ const llvm::ArrayRef<int64_t> shape2D(dims, numDim);
 TEST(End2EndJit_ClearTensor_2D, DISABLED_identity) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
+func.func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
   return %t : tensor<2x10xi64>
 }
 )XXX",
@@ -211,7 +211,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<2x10xi64> {
 TEST(End2EndJit_ClearTensor_2D, extract) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
+func.func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
   %c = tensor.extract %t[%i, %j] : tensor<2x10xi64>
   return %c : i64
 }
@@ -234,7 +234,7 @@ func @main(%t: tensor<2x10xi64>, %i: index, %j: index) -> i64 {
 TEST(End2EndJit_ClearTensor_2D, extract_slice) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
+func.func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10xi64> to
   tensor<1x5xi64> return %r : tensor<1x5xi64>
 }
@@ -262,7 +262,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
 TEST(End2EndJit_ClearTensor_2D, extract_slice_stride) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
+func.func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
   %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10xi64> to
   tensor<1x5xi64> return %r : tensor<1x5xi64>
 }
@@ -290,7 +290,7 @@ func @main(%t: tensor<2x10xi64>) -> tensor<1x5xi64> {
 TEST(End2EndJit_ClearTensor_2D, insert_slice) {
 
   checkedJit(lambda, R"XXX(
-func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
+func.func @main(%t0: tensor<2x10xi64>, %t1: tensor<2x2xi64>) -> tensor<2x10xi64> {
   %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2xi64>
   into tensor<2x10xi64> return %r : tensor<2x10xi64>
 }
@@ -365,7 +365,7 @@ TEST_P(ReturnTensorWithPrecision, return_tensor) {
   uint64_t precision = GetParam();
   std::ostringstream mlirProgram;
 
-  mlirProgram << "func @main() -> tensor<5x3x2xi" << precision << "> {\n"
+  mlirProgram << "func.func @main() -> tensor<5x3x2xi" << precision << "> {\n"
               << "  %res = arith.constant dense<1> : tensor<5x3x2xi"
               << precision << ">\n"
               << "   return %res : tensor<5x3x2xi" << precision << ">\n"

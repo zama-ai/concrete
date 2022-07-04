@@ -1,6 +1,6 @@
 description: identity
 program: |
-  func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
+  func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
     return %t : tensor<2x10x!FHE.eint<6>>
   }
 tests:
@@ -16,7 +16,7 @@ tests:
 ---
 description: extract
 program: |
-  func @main(%t: tensor<2x10x!FHE.eint<6>>, %i: index, %j: index) ->
+  func.func @main(%t: tensor<2x10x!FHE.eint<6>>, %i: index, %j: index) ->
   !FHE.eint<6> {
     %c = tensor.extract %t[%i, %j] : tensor<2x10x!FHE.eint<6>>
     return %c : !FHE.eint<6>
@@ -61,7 +61,7 @@ tests:
 ---
 description: extract_slice
 program: |
-  func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
+  func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
     %r = tensor.extract_slice %t[1, 5][1, 5][1, 1] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
     return %r : tensor<1x5x!FHE.eint<6>>
   }
@@ -77,7 +77,7 @@ tests:
 ---
 description: extract_slice_stride
 program: |
-  func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
+  func.func @main(%t: tensor<2x10x!FHE.eint<6>>) -> tensor<1x5x!FHE.eint<6>> {
     %r = tensor.extract_slice %t[1, 0][1, 5][1, 2] : tensor<2x10x!FHE.eint<6>> to tensor<1x5x!FHE.eint<6>>
     return %r : tensor<1x5x!FHE.eint<6>>
   }
@@ -93,7 +93,7 @@ tests:
 ---
 description: insert_slice
 program: |
-  func @main(%t0: tensor<2x10x!FHE.eint<6>>, %t1: tensor<2x2x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
+  func.func @main(%t0: tensor<2x10x!FHE.eint<6>>, %t1: tensor<2x2x!FHE.eint<6>>) -> tensor<2x10x!FHE.eint<6>> {
     %r = tensor.insert_slice %t1 into %t0[0, 5][2, 2][1, 1] : tensor<2x2x!FHE.eint<6>> into tensor<2x10x!FHE.eint<6>>
     return %r : tensor<2x10x!FHE.eint<6>>
   }

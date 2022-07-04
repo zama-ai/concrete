@@ -8,6 +8,7 @@
 #include <llvm/Support/Error.h>
 #include <mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h>
 #include <mlir/Conversion/Passes.h>
+#include <mlir/Dialect/Bufferization/Transforms/Passes.h>
 #include <mlir/Dialect/Func/Transforms/Passes.h>
 #include <mlir/Transforms/Passes.h>
 
@@ -15,7 +16,7 @@
 #include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
 #include <mlir/Dialect/Bufferization/Transforms/Passes.h>
 #include <mlir/Dialect/Linalg/Passes.h>
-#include <mlir/Dialect/SCF/Passes.h>
+#include <mlir/Dialect/SCF/Transforms/Passes.h>
 #include <mlir/Dialect/Tensor/Transforms/Passes.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Pass/PassManager.h>
@@ -35,7 +36,6 @@
 #include <concretelang/Support/Pipeline.h>
 #include <concretelang/Support/logging.h>
 #include <concretelang/Support/math.h>
-#include <concretelang/Transforms/OneShotBufferizeDPSWrapper.h>
 #include <concretelang/Transforms/Passes.h>
 
 namespace mlir {
@@ -250,18 +250,16 @@ lowerStdToLLVMDialect(mlir::MLIRContext &context, mlir::ModuleOp &module,
   pipelinePrinting("StdToLLVM", pm, context);
 
   // Bufferize
-  addPotentiallyNestedPass(
-      pm, mlir::concretelang::createOneShotBufferizeDPSWrapperPass(),
-      enablePass);
-
   mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;
   bufferizationOptions.allowReturnAllocs = true;
   bufferizationOptions.printConflicts = true;
-  bufferizationOptions.fullyDynamicLayoutMaps = false;
+  bufferizationOptions.unknownTypeConversion = mlir::bufferization::
+      OneShotBufferizationOptions::LayoutMapOption::IdentityLayoutMap;
+  bufferizationOptions.bufferizeFunctionBoundaries = true;
   bufferizationOptions.createDeallocs = true;
 
   std::unique_ptr<mlir::Pass> comprBuffPass =
-      mlir::createLinalgComprehensiveModuleBufferizePass(bufferizationOptions);
+      mlir::bufferization::createOneShotBufferizePass(bufferizationOptions);
 
   addPotentiallyNestedPass(pm, std::move(comprBuffPass), enablePass);
   if (parallelizeLoops) {

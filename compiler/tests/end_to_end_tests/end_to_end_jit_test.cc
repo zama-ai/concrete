@@ -7,7 +7,7 @@
 
 TEST(CompileAndRunClear, add_u64) {
   checkedJit(lambda, R"XXX(
-func @main(%arg0: i64, %arg1: i64) -> i64 {
+func.func @main(%arg0: i64, %arg1: i64) -> i64 {
   %1 = arith.addi %arg0, %arg1 : i64
   return %1: i64
 }
@@ -21,7 +21,7 @@ func @main(%arg0: i64, %arg1: i64) -> i64 {
 
 TEST(CompileAndRunTensorEncrypted, extract_5) {
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10x!FHE.eint<5>>, %i: index) -> !FHE.eint<5>{
+func.func @main(%t: tensor<10x!FHE.eint<5>>, %i: index) -> !FHE.eint<5>{
   %c = tensor.extract %t[%i] : tensor<10x!FHE.eint<5>>
   return %c : !FHE.eint<5>
 }
@@ -35,7 +35,7 @@ func @main(%t: tensor<10x!FHE.eint<5>>, %i: index) -> !FHE.eint<5>{
 
 TEST(CompileAndRunTensorEncrypted, extract_twice_and_add_5) {
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
+func.func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
 !FHE.eint<5>{
   %ti = tensor.extract %t[%i] : tensor<10x!FHE.eint<5>>
   %tj = tensor.extract %t[%j] : tensor<10x!FHE.eint<5>>
@@ -54,7 +54,7 @@ func @main(%t: tensor<10x!FHE.eint<5>>, %i: index, %j: index) ->
 
 TEST(CompileAndRunTensorEncrypted, dim_5) {
   checkedJit(lambda, R"XXX(
-func @main(%t: tensor<10x!FHE.eint<5>>) -> index{
+func.func @main(%t: tensor<10x!FHE.eint<5>>) -> index{
   %c0 = arith.constant 0 : index
   %c = tensor.dim %t, %c0 : tensor<10x!FHE.eint<5>>
   return %c : index
@@ -67,7 +67,7 @@ func @main(%t: tensor<10x!FHE.eint<5>>) -> index{
 
 TEST(CompileAndRunTensorEncrypted, from_elements_5) {
   checkedJit(lambda, R"XXX(
-func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
+func.func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
   %t = tensor.from_elements %0 : tensor<1x!FHE.eint<5>>
   return %t: tensor<1x!FHE.eint<5>>
 }
@@ -83,7 +83,7 @@ func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
 
 TEST(CompileAndRunTensorEncrypted, from_elements_multiple_values) {
   checkedJit(lambda, R"XXX(
-func @main(%0: !FHE.eint<5>, %1: !FHE.eint<5>, %2: !FHE.eint<5>) -> tensor<3x!FHE.eint<5>> {
+func.func @main(%0: !FHE.eint<5>, %1: !FHE.eint<5>, %2: !FHE.eint<5>) -> tensor<3x!FHE.eint<5>> {
   %t = tensor.from_elements %0, %1, %2 : tensor<3x!FHE.eint<5>>
   return %t: tensor<3x!FHE.eint<5>>
 }
@@ -101,7 +101,7 @@ func @main(%0: !FHE.eint<5>, %1: !FHE.eint<5>, %2: !FHE.eint<5>) -> tensor<3x!FH
 
 TEST(CompileAndRunTensorEncrypted, from_elements_many_values) {
   checkedJit(lambda, R"XXX(
-func @main(%0: !FHE.eint<5>,
+func.func @main(%0: !FHE.eint<5>,
            %1: !FHE.eint<5>,
            %2: !FHE.eint<5>,
            %3: !FHE.eint<5>,
@@ -254,7 +254,7 @@ func @main(%0: !FHE.eint<5>,
 // `LambdaArgument` instances as arguments and as a result type
 TEST(CompileAndRunTensorEncrypted, from_elements_5_lambda_argument_res) {
   checkedJit(lambda, R"XXX(
-func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
+func.func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
   %t = tensor.from_elements %0 : tensor<1x!FHE.eint<5>>
   return %t: tensor<1x!FHE.eint<5>>
 }
@@ -285,7 +285,7 @@ func @main(%0: !FHE.eint<5>) -> tensor<1x!FHE.eint<5>> {
 
 TEST(CompileAndRunTensorEncrypted, in_out_tensor_with_op_5) {
   checkedJit(lambda, R"XXX(
-func @main(%in: tensor<2x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
+func.func @main(%in: tensor<2x!FHE.eint<5>>) -> tensor<3x!FHE.eint<5>> {
   %c_0 = arith.constant 0 : index
   %c_1 = arith.constant 1 : index
   %a = tensor.extract %in[%c_0] : tensor<2x!FHE.eint<5>>
@@ -318,7 +318,7 @@ TEST(CompileAndRunTensorEncrypted, DISABLED_linalg_generic) {
   checkedJit(lambda, R"XXX(
 #map0 = affine_map<(d0) -> (d0)>
 #map1 = affine_map<(d0) -> (0)>
-func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
+func.func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2xi8>, %acc:
 !FHE.eint<7>) -> !FHE.eint<7> {
   %tacc = tensor.from_elements %acc : tensor<1x!FHE.eint<7>>
   %2 = linalg.generic {indexing_maps = [#map0, #map0, #map1], iterator_types

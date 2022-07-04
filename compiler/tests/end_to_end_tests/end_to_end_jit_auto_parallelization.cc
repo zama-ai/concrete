@@ -11,7 +11,7 @@
 
 TEST(ParallelizeAndRunFHE, add_eint_tree) {
   checkedJit(lambda, R"XXX(
-func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %arg3: !FHE.eint<7>) -> !FHE.eint<7> {
+func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>, %arg2: !FHE.eint<7>, %arg3: !FHE.eint<7>) -> !FHE.eint<7> {
   %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
   %2 = "FHE.add_eint"(%arg0, %arg2): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
   %3 = "FHE.add_eint"(%arg0, %arg3): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)

@@ -15,7 +15,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
     return %res : tensor<4x!FHE.eint<6>>
   }
@@ -47,7 +47,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_ret_lambda_argument) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
     return %res : tensor<4x!FHE.eint<6>>
   }
@@ -90,7 +90,7 @@ TEST(End2EndJit_FHELinalg,
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x2x3x!FHE.eint<6>>, %a1: tensor<4x2x3xi7>) -> tensor<4x2x3x!FHE.eint<6>> {
+  func.func @main(%a0: tensor<4x2x3x!FHE.eint<6>>, %a1: tensor<4x2x3xi7>) -> tensor<4x2x3x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x2x3x!FHE.eint<6>>, tensor<4x2x3xi7>) -> tensor<4x2x3x!FHE.eint<6>>
     return %res : tensor<4x2x3x!FHE.eint<6>>
   }
@@ -134,7 +134,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term_broadcast) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4xi6>) -> tensor<4x4x4x!FHE.eint<5>> {
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4xi6>) -> tensor<4x4x4x!FHE.eint<5>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4xi6>) -> tensor<4x4x4x!FHE.eint<5>>
     return %res : tensor<4x4x4x!FHE.eint<5>>
   }
@@ -189,7 +189,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_matrix_column) {
   // [7,8,9]   [3]   [10,11,12]
   //
   // The dimension #1 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -235,7 +235,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line) {
   // [7,8,9]             [8,10,12]
   //
   // The dimension #2 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -273,7 +273,7 @@ TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line) {
 TEST(End2EndJit_FHELinalg, add_eint_int_matrix_line_missing_dim) {
   checkedJit(lambda, R"XXX(
    // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
-   func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+   func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
      %res = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>>
      return %res : tensor<3x3x!FHE.eint<4>>
    }
@@ -316,7 +316,7 @@ TEST(End2EndJit_FHELinalg, add_eint_term_to_term) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
     return %res : tensor<4x!FHE.eint<6>>
   }
@@ -350,7 +350,7 @@ TEST(End2EndJit_FHELinalg, add_eint_term_to_term_broadcast) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term addition of `%a0` with `%a1`
-  func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1:
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1:
   tensor<1x4x4x!FHE.eint<5>>) -> tensor<4x4x4x!FHE.eint<5>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) :
     (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4x!FHE.eint<5>>) ->
@@ -407,7 +407,7 @@ TEST(End2EndJit_FHELinalg, add_eint_matrix_column) {
   // [7,8,9]   [3]   [10,11,12]
   //
   // The dimension #1 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1:
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1:
   tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
@@ -455,7 +455,7 @@ TEST(End2EndJit_FHELinalg, add_eint_matrix_line) {
   // [7,8,9]             [8,10,12]
   //
   // The dimension #2 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1:
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1:
   tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>,
     tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> return %res :
@@ -496,7 +496,7 @@ TEST(End2EndJit_FHELinalg, add_eint_matrix_line_missing_dim) {
 
   checkedJit(lambda, R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.add_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -535,7 +535,7 @@ TEST(End2EndJit_FHELinalg, add_eint_tensor_dim_equals_1) {
 
   checkedJit(lambda, R"XXX(
   // Broadcasting shouldn't happen when some dimensions are equals to 1
-  func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
+  func.func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
     %1 = "FHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x1x2x!FHE.eint<5>>, tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>>
     return %1 : tensor<3x1x2x!FHE.eint<5>>
   }
@@ -582,7 +582,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_term_to_term) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term substraction of `%a0` with `%a1`
-  func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4xi5>, tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>>
     return %res : tensor<4x!FHE.eint<4>>
   }
@@ -613,7 +613,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_term_to_term_broadcast) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term substraction of `%a0` with `%a1`, where dimensions equals to one are stretched.
-  func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
+  func.func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<4x1x4xi8>, tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>>
     return %res : tensor<4x4x4x!FHE.eint<7>>
   }
@@ -666,7 +666,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_column) {
   // [7,8,9]   [3]   [4,5,6]
   //
   // The dimension #1 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3xi5>, %a1: tensor<3x1x!FHE.eint<4>>) ->
+  func.func @main(%a0: tensor<3x3xi5>, %a1: tensor<3x1x!FHE.eint<4>>) ->
   tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>,
     tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> return %res :
@@ -715,7 +715,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line) {
   // [7,8,9]             [6,6,6]
   //
   // The dimension #2 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3xi5>, %a1: tensor<1x3x!FHE.eint<4>>) ->
+  func.func @main(%a0: tensor<3x3xi5>, %a1: tensor<1x3x!FHE.eint<4>>) ->
   tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>,
     tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> return %res :
@@ -756,7 +756,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line_missing_dim) {
 
   checkedJit(lambda, R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
-  func @main(%a0: tensor<3x3xi5>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3xi5>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_int_eint"(%a0, %a1) : (tensor<3x3xi5>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -798,7 +798,7 @@ TEST(End2EndJit_FHELinalg, sub_int_eint_matrix_line_missing_dim) {
 TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<4xi5>, %a1: tensor<4x!FHE.eint<4>>) -> tensor<4x!FHE.eint<4>> {
     %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<4x!FHE.eint<4>>, tensor<4xi5>) -> tensor<4x!FHE.eint<4>>
     return %res : tensor<4x!FHE.eint<4>>
   }
@@ -828,7 +828,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term) {
 TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term_broadcast) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
+  func.func @main(%a0: tensor<4x1x4xi8>, %a1: tensor<1x4x4x!FHE.eint<7>>) -> tensor<4x4x4x!FHE.eint<7>> {
     %res = "FHELinalg.sub_eint_int"(%a1, %a0) : (tensor<1x4x4x!FHE.eint<7>>, tensor<4x1x4xi8>) -> tensor<4x4x4x!FHE.eint<7>>
     return %res : tensor<4x4x4x!FHE.eint<7>>
   }
@@ -874,7 +874,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_int_term_to_term_broadcast) {
 TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_column) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) ->
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) ->
   tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
@@ -915,7 +915,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_column) {
 TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_line) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) ->
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) ->
   tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
@@ -954,7 +954,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_line) {
 TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_line_missing_dim) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -996,7 +996,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_int_matrix_line_missing_dim) {
 TEST(End2EndJit_FHELinalg, sub_eint_term_to_term) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4x!FHE.eint<6>>) -> tensor<4x!FHE.eint<6>>
     return %res : tensor<4x!FHE.eint<6>>
   }
@@ -1029,7 +1029,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_term_to_term) {
 TEST(End2EndJit_FHELinalg, sub_eint_term_to_term_broadcast) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4x!FHE.eint<5>>) -> tensor<4x4x4x!FHE.eint<5>> {
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<5>>, %a1: tensor<1x4x4x!FHE.eint<5>>) -> tensor<4x4x4x!FHE.eint<5>> {
     %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<5>>, tensor<1x4x4x!FHE.eint<5>>) ->
     tensor<4x4x4x!FHE.eint<5>> return %res : tensor<4x4x4x!FHE.eint<5>>
   }
@@ -1077,7 +1077,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_term_to_term_broadcast) {
 TEST(End2EndJit_FHELinalg, sub_eint_matrix_column) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -1117,7 +1117,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_matrix_column) {
 TEST(End2EndJit_FHELinalg, sub_eint_matrix_line) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -1155,7 +1155,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_matrix_line) {
 TEST(End2EndJit_FHELinalg, sub_eint_matrix_line_missing_dim) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.sub_eint"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x!FHE.eint<4>>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -1193,7 +1193,7 @@ TEST(End2EndJit_FHELinalg, sub_eint_matrix_line_missing_dim) {
 TEST(End2EndJit_FHELinalg, sub_eint_tensor_dim_equals_1) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
+  func.func @main(%arg0: tensor<3x1x2x!FHE.eint<5>>, %arg1: tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>> {
     %1 = "FHELinalg.sub_eint"(%arg0, %arg1) : (tensor<3x1x2x!FHE.eint<5>>, tensor<3x1x2x!FHE.eint<5>>) -> tensor<3x1x2x!FHE.eint<5>>
     return %1 : tensor<3x1x2x!FHE.eint<5>>
   }
@@ -1240,7 +1240,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_term_to_term) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`
-  func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
+  func.func @main(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi7>) -> tensor<4x!FHE.eint<6>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi7>) -> tensor<4x!FHE.eint<6>>
     return %res : tensor<4x!FHE.eint<6>>
   }
@@ -1271,7 +1271,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_term_to_term_broadcast) {
 
   checkedJit(lambda, R"XXX(
   // Returns the term to term multiplication of `%a0` with `%a1`, where dimensions equals to one are stretched.
-  func @main(%a0: tensor<4x1x4x!FHE.eint<6>>, %a1: tensor<1x4x4xi7>) -> tensor<4x4x4x!FHE.eint<6>> {
+  func.func @main(%a0: tensor<4x1x4x!FHE.eint<6>>, %a1: tensor<1x4x4xi7>) -> tensor<4x4x4x!FHE.eint<6>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<4x1x4x!FHE.eint<6>>, tensor<1x4x4xi7>) -> tensor<4x4x4x!FHE.eint<6>>
     return %res : tensor<4x4x4x!FHE.eint<6>>
   }
@@ -1325,7 +1325,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_column) {
   // [7,8,9]   [3]   [21,24,27]
   //
   // The dimension #1 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3x1xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -1372,7 +1372,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_line) {
   // [7,8,9]             [8,10,12]
   //
   // The dimension #2 of operand #2 is stretched as it is equals to 1.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<1x3xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -1411,7 +1411,7 @@ TEST(End2EndJit_FHELinalg, mul_eint_int_matrix_line_missing_dim) {
 
   checkedJit(lambda, R"XXX(
   // Same behavior than the previous one, but as the dimension #2 of operand #2 is missing.
-  func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
+  func.func @main(%a0: tensor<3x3x!FHE.eint<4>>, %a1: tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>> {
     %res = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<3x3x!FHE.eint<4>>, tensor<3xi5>) -> tensor<3x3x!FHE.eint<4>>
     return %res : tensor<3x3x!FHE.eint<4>>
   }
@@ -1458,7 +1458,7 @@ TEST(End2EndJit_FHELinalg, apply_lookup_table) {
     // [0,1,2]                 [1,3,5]
     // [3,0,1] lut [1,3,5,7] = [7,1,3]
     // [2,3,0]                 [5,7,1]
-    func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<3>> {
       %lut = arith.constant dense<[1,3,5,7]> : tensor<4xi64>
       %res = "FHELinalg.apply_lookup_table"(%t, %lut) : (tensor<3x3x!FHE.eint<2>>, tensor<4xi64>) -> tensor<3x3x!FHE.eint<3>>
       return %res : tensor<3x3x!FHE.eint<3>>
@@ -1502,7 +1502,7 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table) {
 
   checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a 3x3 matrix of tables of size 4=2² of clear integers.
-    func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
+    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
     }
@@ -1551,7 +1551,7 @@ TEST(End2EndJit_FHELinalg, apply_multi_lookup_table_with_boradcast) {
 
   checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 on a vector of 3 tables of size 4=2² of clear integers.
-    func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
+    func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1): (tensor<3x3x!FHE.eint<2>>, tensor<3x4xi64>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
     }
@@ -1603,7 +1603,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_sequential) {
 
   checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
-    func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
         (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
@@ -1651,7 +1651,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_same_lut) {
 
   checkedJit(lambda, R"XXX(
     // Returns the lookup of 3x3 matrix of encrypted indices of width 2 of a 3x3 matrix of tables of size 4=2² of clear integers.
-    func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>, %luts: tensor<9x4xi64>, %map: tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>> {
       %1 = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map) :
         (tensor<3x3x!FHE.eint<2>>, tensor<9x4xi64>, tensor<3x3xindex>) -> tensor<3x3x!FHE.eint<2>>
       return %1: tensor<3x3x!FHE.eint<2>>
@@ -1701,7 +1701,7 @@ TEST(End2EndJit_FHELinalg, apply_mapped_lookup_table_same_lut) {
 
 TEST(CompileAndRunTensorEncrypted, dot_eint_int_7) {
   checkedJit(lambda, R"XXX(
-func @main(%arg0: tensor<4x!FHE.eint<7>>,
+func.func @main(%arg0: tensor<4x!FHE.eint<7>>,
                    %arg1: tensor<4xi8>) -> !FHE.eint<7>
 {
   %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
@@ -1730,7 +1730,7 @@ TEST(End2EndJit_FHELinalg, neg_eint) {
     //        ([0,1,2])   [0,7,6]
     // negate ([3,4,5]) = [5,4,3]
     //        ([6,7,0])   [2,1,0]
-    func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<2>> {
+    func.func @main(%t: tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<2>> {
       %res = "FHELinalg.neg_eint"(%t) : (tensor<3x3x!FHE.eint<2>>) -> tensor<3x3x!FHE.eint<2>>
       return %res : tensor<3x3x!FHE.eint<2>>
     }
@@ -1774,7 +1774,7 @@ TEST(End2EndJit_FHELinalg, matmul_eint_int_2d_2d) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
   %y = arith.constant dense<
 
   [
@@ -1832,7 +1832,7 @@ TEST(End2EndJit_FHELinalg, matmul_eint_int_1d_2d) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
   %y = arith.constant dense<
 
   [
@@ -1877,7 +1877,7 @@ TEST(End2EndJit_FHELinalg, matmul_eint_int_1d_3d) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
   %y = arith.constant dense<
 
   [
@@ -1948,7 +1948,7 @@ TEST(End2EndJit_FHELinalg, matmul_eint_int_2d_1d) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   %y = arith.constant dense<
 
   [1, 2, 3, 4]
@@ -1997,7 +1997,7 @@ TEST(End2EndJit_FHELinalg, matmul_eint_int_3d_1d) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
+func.func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x!FHE.eint<7>> {
   %y = arith.constant dense<
 
   [1, 2, 3, 4]
@@ -2056,7 +2056,7 @@ TEST(End2EndJit_FHELinalg, matmul_eint_int_3d_3d) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<2x3x4x!FHE.eint<7>>) -> tensor<2x3x2x!FHE.eint<7>> {
   %y = arith.constant dense<
 
   [
@@ -2139,7 +2139,7 @@ TEST(End2EndJit_FHELinalg, matmul_eint_int_4d_3d) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<2x1x3x4x!FHE.eint<7>>) -> tensor<2x5x3x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<2x1x3x4x!FHE.eint<7>>) -> tensor<2x5x3x2x!FHE.eint<7>> {
   %y = arith.constant dense<
 
   [
@@ -2301,7 +2301,7 @@ TEST(End2EndJit_FHELinalg, matmul_int_eint) {
   // [1,2]   [ 5, 8,11]
   // [3,4] = [11,18,25]
   // [5,6]   [17,28,39]
-  func @main(%a: tensor<3x2xi7>, %b: tensor<2x3x!FHE.eint<6>>) -> tensor<3x3x!FHE.eint<6>> {
+  func.func @main(%a: tensor<3x2xi7>, %b: tensor<2x3x!FHE.eint<6>>) -> tensor<3x3x!FHE.eint<6>> {
     %0 = "FHELinalg.matmul_int_eint"(%a, %b) : (tensor<3x2xi7>, tensor<2x3x!FHE.eint<6>>) -> tensor<3x3x!FHE.eint<6>>
     return %0 : tensor<3x3x!FHE.eint<6>>
   }
@@ -2350,7 +2350,7 @@ TEST(End2EndJit_FHELinalg, matmul_int_eint) {
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
     } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
@@ -2397,7 +2397,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22) {
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_const_kernel22) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %weight = arith.constant dense<[[[[1, 2], [2, 1]]]]> : tensor<1x1x2x2xi7>
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
@@ -2438,7 +2438,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_const_kernel22) {
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_const_bias) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %bias = arith.constant dense<[1]> : tensor<1xi7>
     %0 = "FHELinalg.conv2d"(%input, %weight, %bias){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
@@ -2486,7 +2486,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_const_bias) {
 TEST(End2EndJit_FHELinalg, conv2d_batched_input44_kernel22) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%input: tensor<3x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<3x1x2x2x!FHE.eint<6>> {
+  func.func @main(%input: tensor<3x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<3x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
     } : (tensor<3x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>) -> tensor<3x1x2x2x!FHE.eint<6>>
@@ -2556,7 +2556,7 @@ TEST(End2EndJit_FHELinalg, conv2d_batched_input44_kernel22) {
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel2122) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<2x1x2x2xi7>) -> tensor<1x2x2x2x!FHE.eint<6>> {
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<2x1x2x2xi7>) -> tensor<1x2x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
     } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<2x1x2x2xi7>) -> tensor<1x2x2x2x!FHE.eint<6>>
@@ -2616,7 +2616,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel2122) {
 TEST(End2EndJit_FHELinalg, conv2d_simple_input1244_kernel1222) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%input: tensor<1x2x4x4x!FHE.eint<6>>, %weight: tensor<1x2x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+  func.func @main(%input: tensor<1x2x4x4x!FHE.eint<6>>, %weight: tensor<1x2x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[2,2]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
     } : (tensor<1x2x4x4x!FHE.eint<6>>, tensor<1x2x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
@@ -2675,7 +2675,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input1244_kernel1222) {
 TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_dilation2) {
 
   checkedJit(lambda, R"XXX(
-  func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
+  func.func @main(%input: tensor<1x1x4x4x!FHE.eint<6>>, %weight: tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>> {
     %0 = "FHELinalg.conv2d"(%input, %weight){
       strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[2,2]> : tensor<2xi64>, padding = dense<[0,0,0,0]> : tensor<4xi64>
     } : (tensor<1x1x4x4x!FHE.eint<6>>, tensor<1x1x2x2xi7>) -> tensor<1x1x2x2x!FHE.eint<6>>
@@ -2726,7 +2726,7 @@ TEST(End2EndJit_FHELinalg, conv2d_simple_input44_kernel22_dilation2) {
 TEST(End2EndJit_Linalg, tensor_collapse_shape) {
 
   checkedJit(lambda, R"XXX(
-func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
+func.func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
   %0 = tensor.collapse_shape %a [[0],[1,2]] : tensor<2x2x4x!FHE.eint<6>> into tensor<2x8x!FHE.eint<6>>
   return %0 : tensor<2x8x!FHE.eint<6>>
 }
@@ -2776,7 +2776,7 @@ func @main(%a: tensor<2x2x4x!FHE.eint<6>>) -> tensor<2x8x!FHE.eint<6>> {
 TEST(End2EndJit_Linalg, tensor_expand_shape) {
 
   checkedJit(lambda, R"XXX(
-func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
+func.func @main(%a: tensor<2x8x!FHE.eint<6>>) -> tensor<2x2x4x!FHE.eint<6>> {
   %0 = tensor.expand_shape %a [[0],[1,2]] : tensor<2x8x!FHE.eint<6>> into tensor<2x2x4x!FHE.eint<6>>
   return %0 : tensor<2x2x4x!FHE.eint<6>>
 }
@@ -2832,7 +2832,7 @@ TEST(End2EndJit_FHELinalg, sum_empty) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%x: tensor<0x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<0x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
@@ -2856,7 +2856,7 @@ TEST(End2EndJit_FHELinalg, sum_1D_no_axes) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
@@ -2881,7 +2881,7 @@ TEST(End2EndJit_FHELinalg, sum_1D_axes_0) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%x: tensor<4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<4x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
@@ -2906,7 +2906,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_no_axes) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
@@ -2935,7 +2935,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_axes_0) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
   return %0 : tensor<4x!FHE.eint<7>>
 }
@@ -2976,7 +2976,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_axes_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
   return %0 : tensor<3x!FHE.eint<7>>
 }
@@ -3017,7 +3017,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_axes_0_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
@@ -3046,7 +3046,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_no_axes) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
@@ -3090,7 +3090,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_axes_0) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x2x!FHE.eint<7>>
   return %0 : tensor<4x2x!FHE.eint<7>>
 }
@@ -3155,7 +3155,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_axes_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x2x!FHE.eint<7>>
   return %0 : tensor<3x2x!FHE.eint<7>>
 }
@@ -3219,7 +3219,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_axes_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>>
   return %0 : tensor<3x4x!FHE.eint<7>>
 }
@@ -3283,7 +3283,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_axes_0_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<2x!FHE.eint<7>>
   return %0 : tensor<2x!FHE.eint<7>>
 }
@@ -3339,7 +3339,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_axes_1_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x!FHE.eint<7>>
   return %0 : tensor<3x!FHE.eint<7>>
 }
@@ -3395,7 +3395,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_axes_0_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
   return %0 : tensor<4x!FHE.eint<7>>
 }
@@ -3451,7 +3451,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_axes_0_1_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2] } : (tensor<3x4x2x!FHE.eint<7>>) -> !FHE.eint<7>
   return %0 : !FHE.eint<7>
 }
@@ -3495,7 +3495,7 @@ TEST(End2EndJit_FHELinalg, sum_keep_dims_empty) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+func.func @main(%x: tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<0x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
   return %0 : tensor<1x!FHE.eint<7>>
 }
@@ -3531,7 +3531,7 @@ TEST(End2EndJit_FHELinalg, sum_1D_keep_dims_no_axes) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+func.func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
   return %0 : tensor<1x!FHE.eint<7>>
 }
@@ -3568,7 +3568,7 @@ TEST(End2EndJit_FHELinalg, sum_1D_keep_dims_axes_0) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
+func.func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<4x!FHE.eint<7>>) -> tensor<1x!FHE.eint<7>>
   return %0 : tensor<1x!FHE.eint<7>>
 }
@@ -3605,7 +3605,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_no_axes) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
   return %0 : tensor<1x1x!FHE.eint<7>>
 }
@@ -3650,7 +3650,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_0) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x4x!FHE.eint<7>>
   return %0 : tensor<1x4x!FHE.eint<7>>
 }
@@ -3697,7 +3697,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<3x1x!FHE.eint<7>>
   return %0 : tensor<3x1x!FHE.eint<7>>
 }
@@ -3746,7 +3746,7 @@ TEST(End2EndJit_FHELinalg, sum_2D_keep_dims_axes_0_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x!FHE.eint<7>>) -> tensor<1x1x!FHE.eint<7>>
   return %0 : tensor<1x1x!FHE.eint<7>>
 }
@@ -3791,7 +3791,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_no_axes) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
   return %0 : tensor<1x1x1x!FHE.eint<7>>
 }
@@ -3854,7 +3854,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x2x!FHE.eint<7>>
   return %0 : tensor<1x4x2x!FHE.eint<7>>
 }
@@ -3922,7 +3922,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x2x!FHE.eint<7>>
   return %0 : tensor<3x1x2x!FHE.eint<7>>
 }
@@ -3989,7 +3989,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x4x1x!FHE.eint<7>>
   return %0 : tensor<3x4x1x!FHE.eint<7>>
 }
@@ -4056,7 +4056,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_1) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x2x!FHE.eint<7>>
   return %0 : tensor<1x1x2x!FHE.eint<7>>
 }
@@ -4119,7 +4119,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_1_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<3x1x1x!FHE.eint<7>>
   return %0 : tensor<3x1x1x!FHE.eint<7>>
 }
@@ -4182,7 +4182,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x4x1x!FHE.eint<7>>
   return %0 : tensor<1x4x1x!FHE.eint<7>>
 }
@@ -4245,7 +4245,7 @@ TEST(End2EndJit_FHELinalg, sum_3D_keep_dims_axes_0_1_2) {
 
   checkedJit(lambda, R"XXX(
 
-func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>> {
   %0 = "FHELinalg.sum"(%x) { axes = [0, 1, 2], keep_dims = true } : (tensor<3x4x2x!FHE.eint<7>>) -> tensor<1x1x1x!FHE.eint<7>>
   return %0 : tensor<1x1x1x!FHE.eint<7>>
 }
@@ -4307,7 +4307,7 @@ TEST(End2EndJit_FHELinalg, concat_1D_axis_0) {
   namespace concretelang = mlir::concretelang;
 
   checkedJit(lambda, R"XXX(
-func @main(%x: tensor<3x!FHE.eint<7>>, %y: tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x!FHE.eint<7>>, %y: tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<3x!FHE.eint<7>>, tensor<4x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>>
   return %0 : tensor<7x!FHE.eint<7>>
 }
@@ -4349,7 +4349,7 @@ TEST(End2EndJit_FHELinalg, concat_2D_axis_0) {
   namespace concretelang = mlir::concretelang;
 
   checkedJit(lambda, R"XXX(
-func @main(%x: tensor<2x3x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>> {
+func.func @main(%x: tensor<2x3x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x3x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<5x3x!FHE.eint<7>>
   return %0 : tensor<5x3x!FHE.eint<7>>
 }
@@ -4404,7 +4404,7 @@ TEST(End2EndJit_FHELinalg, concat_2D_axis_1) {
   namespace concretelang = mlir::concretelang;
 
   checkedJit(lambda, R"XXX(
-func @main(%x: tensor<3x2x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>> {
+func.func @main(%x: tensor<3x2x!FHE.eint<7>>, %y: tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<3x2x!FHE.eint<7>>, tensor<3x3x!FHE.eint<7>>) -> tensor<3x5x!FHE.eint<7>>
   return %0 : tensor<3x5x!FHE.eint<7>>
 }
@@ -4462,7 +4462,7 @@ TEST(End2EndJit_FHELinalg, concat_3D_axis_0) {
   namespace concretelang = mlir::concretelang;
 
   checkedJit(lambda, R"XXX(
-func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>> {
+func.func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 0 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<4x4x3x!FHE.eint<7>>
   return %0 : tensor<4x4x3x!FHE.eint<7>>
 }
@@ -4562,7 +4562,7 @@ TEST(End2EndJit_FHELinalg, concat_3D_axis_1) {
   namespace concretelang = mlir::concretelang;
 
   checkedJit(lambda, R"XXX(
-func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>> {
+func.func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 1 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x8x3x!FHE.eint<7>>
   return %0 : tensor<2x8x3x!FHE.eint<7>>
 }
@@ -4658,7 +4658,7 @@ TEST(End2EndJit_FHELinalg, concat_3D_axis_2) {
   namespace concretelang = mlir::concretelang;
 
   checkedJit(lambda, R"XXX(
-func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>> {
+func.func @main(%x: tensor<2x4x3x!FHE.eint<7>>, %y: tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>> {
   %0 = "FHELinalg.concat"(%x, %y) { axis = 2 } : (tensor<2x4x3x!FHE.eint<7>>, tensor<2x4x3x!FHE.eint<7>>) -> tensor<2x4x6x!FHE.eint<7>>
   return %0 : tensor<2x4x6x!FHE.eint<7>>
 }
@@ -4750,7 +4750,8 @@ TEST_P(TiledMatMulParametric, tiled_matmul_eint_int) {
   std::ostringstream mlirProgram;
 
   mlirProgram
-      << "func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) ->\n"
+      << "func.func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) "
+         "->\n"
       << "  tensor<8x2x!FHE.eint<6>> {\n"
       << "    %0 = \"FHELinalg.matmul_eint_int\"(%a, %b) { \"tile-sizes\" = "
       << "[" << tiling[0] << ", " << tiling[1] << ", " << tiling[2] << "]"

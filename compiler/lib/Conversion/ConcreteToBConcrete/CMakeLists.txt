@@ -13,6 +13,6 @@ add_mlir_dialect_library(ConcreteToBConcrete
   MLIRIR
   MLIRTransforms
   MLIRLinalgTransforms
-  MLIRMath)
+  MLIRMathDialect)
 
 target_link_libraries(ConcreteToBConcrete PUBLIC BConcreteDialect MLIRIR)

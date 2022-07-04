@@ -20,7 +20,7 @@ target_link_libraries(concretecompiler
   ConcretelangSupport
 
   MLIRIR
-  MLIRLLVMIR
+  MLIRLLVMIRTransforms
   MLIRLLVMToLLVMIRTranslation
   RTDialect
 

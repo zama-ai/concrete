@@ -8,6 +8,6 @@ mlir_tablegen(FHEOpsDialect.cpp.inc -gen-dialect-defs -dialect=FHE)
 add_public_tablegen_target(MLIRFHEOpsIncGen)
 add_dependencies(mlir-headers MLIRFHEOpsIncGen)
 
-add_concretelang_doc(FHEDialect FHEDialect concretelang/ -gen-dialect-doc)
+add_concretelang_doc(FHEOps FHEDialect concretelang/ -gen-dialect-doc -dialect=FHE)
 add_concretelang_doc(FHEOps FHEOps concretelang/ -gen-op-doc)
 add_concretelang_doc(FHETypes FHETypes concretelang/ -gen-typedef-doc)

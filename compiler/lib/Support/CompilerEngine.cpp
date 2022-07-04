@@ -5,19 +5,23 @@
 
 #include <fstream>
 #include <iostream>
+#include <mlir/Dialect/Arithmetic/Transforms/BufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
+#include <mlir/Dialect/SCF/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
 #include <stdio.h>
 #include <string>
 
 #include <llvm/Support/Error.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/SMLoc.h>
+#include <mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/OpenMP/OpenMPDialect.h>
-#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/Parser/Parser.h>
 
@@ -69,6 +73,11 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
                     mlir::scf::SCFDialect, mlir::omp::OpenMPDialect,
                     mlir::bufferization::BufferizationDialect>();
     BConcrete::registerBufferizableOpInterfaceExternalModels(registry);
+    arith::registerBufferizableOpInterfaceExternalModels(registry);
+    bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(
+        registry);
+    scf::registerBufferizableOpInterfaceExternalModels(registry);
+    tensor::registerBufferizableOpInterfaceExternalModels(registry);
     RT::registerBufferizableOpInterfaceExternalModels(registry);
     this->mlirContext = new mlir::MLIRContext();
     this->mlirContext->appendDialectRegistry(registry);

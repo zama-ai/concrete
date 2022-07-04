@@ -3,10 +3,11 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/Operation.h"
@@ -17,6 +18,7 @@
 #include "concretelang/Dialect/BConcrete/Transforms/BufferizableOpInterfaceImpl.h"
 #include <mlir/IR/AffineExpr.h>
 #include <mlir/IR/AffineMap.h>
+#include <mlir/IR/BuiltinTypes.h>
 
 using namespace mlir;
 using namespace mlir::bufferization;
@@ -164,14 +166,19 @@ struct BufferizableWithCallOpInterface
   }
 
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
-                          BufferizationState &state) const {
+                          const BufferizationOptions &options) const {
 
     auto loc = op->getLoc();
     auto castOp = cast<Op>(op);
 
     // For now we always alloc for the result, we didn't have the in place
     // operators yet.
-    auto outMemref = state.createAlloc(rewriter, loc, castOp.result());
+    auto resTensorType =
+        castOp.result().getType().template cast<mlir::TensorType>();
+
+    auto outMemrefType = MemRefType::get(resTensorType.getShape(),
+                                         resTensorType.getElementType());
+    auto outMemref = options.createAlloc(rewriter, loc, outMemrefType, {});
     if (mlir::failed(outMemref)) {
       return mlir::failure();
     }
@@ -185,9 +192,8 @@ struct BufferizableWithCallOpInterface
       if (!operand.get().getType().isa<mlir::RankedTensorType>()) {
         operands.push_back(operand.get());
       } else {
-        auto memrefOperand = *state.getBuffer(
-            rewriter, operand,
-            BufferizationState::ForceInPlacability::FORCE_INPLACE);
+        auto memrefOperand =
+            bufferization::getBuffer(rewriter, operand.get(), options);
         operands.push_back(getCasted1DMemRef(rewriter, loc, memrefOperand));
       }
     }
@@ -253,21 +259,19 @@ struct BufferizableGlweFromTableOpInterface
   ///   (tensor<?xi64>, i32, i32, tensor<?xi64>) -> ()
   /// ```
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
-                          BufferizationState &state) const {
+                          const BufferizationOptions &options) const {
 
     auto loc = op->getLoc();
     auto castOp = cast<BConcrete::FillGlweFromTable>(op);
 
     auto glweOp = getCasted1DMemRef(
         rewriter, loc,
-        *state.getBuffer(
-            rewriter, castOp->getOpOperand(0),
-            BufferizationState::ForceInPlacability::FORCE_INPLACE));
+        bufferization::getBuffer(rewriter, castOp->getOpOperand(0).get(),
+                                 options));
     auto lutOp = getCasted1DMemRef(
         rewriter, loc,
-        *state.getBuffer(
-            rewriter, castOp->getOpOperand(1),
-            BufferizationState::ForceInPlacability::FORCE_INPLACE));
+        bufferization::getBuffer(rewriter, castOp->getOpOperand(1).get(),
+                                 options));
 
     auto polySizeOp = rewriter.create<mlir::arith::ConstantOp>(
         op->getLoc(), rewriter.getI32IntegerAttr(castOp.polynomialSize()));

@@ -8,6 +8,6 @@ mlir_tablegen(ConcreteOpsDialect.cpp.inc -gen-dialect-defs -dialect=Concrete)
 add_public_tablegen_target(MLIRConcreteOpsIncGen)
 add_dependencies(mlir-headers MLIRConcreteOpsIncGen)
 
-add_concretelang_doc(ConcreteDialect ConcreteDialect concretelang/ -gen-dialect-doc)
+add_concretelang_doc(ConcreteOps ConcreteDialect concretelang/ -gen-dialect-doc -dialect=Concrete)
 add_concretelang_doc(ConcreteOps ConcreteOps concretelang/ -gen-op-doc)
 add_concretelang_doc(ConcreteTypes ConcreteTypes concretelang/ -gen-typedef-doc)

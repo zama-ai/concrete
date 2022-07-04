@@ -15,9 +15,9 @@ add_mlir_dialect_library(MLIRLowerableDialectsToLLVM
   ConcretelangConversion
   MLIRIR
   MLIRTransforms
-  MLIRLLVMIR
+  MLIRLLVMIRTransforms
   MLIRLLVMToLLVMIRTranslation
   MLIROpenMPToLLVMIRTranslation
-  MLIRMath)
+  MLIRMathDialect)
 
 target_link_libraries(MLIRLowerableDialectsToLLVM PUBLIC MLIRIR)

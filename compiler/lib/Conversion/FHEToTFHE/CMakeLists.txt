@@ -11,6 +11,6 @@ add_mlir_dialect_library(FHEToTFHE
   LINK_LIBS PUBLIC
   MLIRIR
   MLIRTransforms
-  MLIRMath)
+  MLIRMathDialect)
 
 target_link_libraries(FHEToTFHE PUBLIC MLIRIR)
