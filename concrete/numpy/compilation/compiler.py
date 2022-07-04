@@ -172,11 +172,16 @@ class Compiler:
         """
 
         if inputset is not None:
+            previous_inputset_length = len(self.inputset)
             for index, sample in enumerate(iter(inputset)):
+                self.inputset.append(sample)
+
                 if not isinstance(sample, tuple):
                     sample = (sample,)
 
                 if len(sample) != len(self.parameter_encryption_statuses):
+                    self.inputset = self.inputset[:previous_inputset_length]
+
                     expected = (
                         "a single value"
                         if len(self.parameter_encryption_statuses) == 1
@@ -190,9 +195,6 @@ class Compiler:
                         f"Input #{index} of your inputset is not well formed "
                         f"(expected {expected} got {actual})"
                     )
-
-            for input_ in inputset:
-                self.inputset.append(input_)
 
         if self.graph is None:
             try:

@@ -236,6 +236,8 @@ def test_compiler_virtual_compile(helpers):
         return x + 400
 
     compiler = Compiler(f, {"x": "encrypted"})
-    circuit = compiler.compile(inputset=range(400), configuration=configuration, virtual=True)
+
+    inputset = (i for i in range(400))
+    circuit = compiler.compile(inputset, configuration=configuration, virtual=True)
 
     assert circuit.encrypt_run_decrypt(200) == 600
