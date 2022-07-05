@@ -1031,6 +1031,18 @@ static llvm::APInt getSqMANP(
 }
 
 static llvm::APInt getSqMANP(
+    FHELinalg::FromElementOp op,
+    llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
+
+  auto manp = operandMANPs[0]->getValue().getMANP();
+  if (manp.hasValue()) {
+    return manp.getValue();
+  }
+
+  return llvm::APInt{1, 1, false};
+}
+
+static llvm::APInt getSqMANP(
     mlir::tensor::FromElementsOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
 
@@ -1367,6 +1379,10 @@ struct MANPAnalysis : public mlir::ForwardDataFlowAnalysis<MANPLatticeValue> {
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::Conv2dOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(conv2dOp, operands);
+    } else if (auto fromElementOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::FromElementOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(fromElementOp, operands);
     } else if (auto transposeOp =
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::TransposeOp>(
                        op)) {

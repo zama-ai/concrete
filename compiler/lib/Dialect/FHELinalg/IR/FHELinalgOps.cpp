@@ -999,6 +999,23 @@ mlir::LogicalResult Conv2dOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult FromElementOp::verify() {
+  mlir::Value in = this->getOperand();
+  mlir::Value out = this->getResult();
+
+  auto inType = in.getType();
+  auto outType = out.getType().dyn_cast<mlir::TensorType>();
+
+  auto expectedOutType = outType.cloneWith({1}, inType);
+  if (outType != expectedOutType) {
+    this->emitOpError() << "has invalid output type (expected "
+                        << expectedOutType << ", got " << outType << ")";
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 //===----------------------------------------------------------------------===//
 // Implementation of FhelinalgConv2DNchwFchwOp
 // This is a generated functions from `make generate_conv_op`, and some helpers

@@ -1119,5 +1119,21 @@ def TransposeOp : FHELinalg_Op<"transpose", []> {
     let hasVerifier = 1;
 }
 
+def FromElementOp : FHELinalg_Op<"from_element", []> {
+    let summary = "Creates a tensor with a single element.";
+
+    let description = [{
+        Creates a tensor with a single element.
+
+        ```mlir
+        "FHELinalg.from_element"(%a) : (Type) -> tensor<1xType>
+        ```
+    }];
+
+    let arguments = (ins AnyType);
+    let results = (outs Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>);
+
+    let hasVerifier = 1;
+}
 
 #endif

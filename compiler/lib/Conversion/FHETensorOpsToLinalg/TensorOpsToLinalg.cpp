@@ -1325,6 +1325,41 @@ struct TransposeToLinalgGeneric
 };
 
 /// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.from_element` to an instance of `tensor.from_elements`.
+///
+/// Example:
+///
+///   %result = "FHELinalg.from_element"(%x) : (Type) -> tensor<1xType>
+///
+/// becomes:
+///
+///   %result = tensor.from_elements %x : (Type) -> tensor<1xType>
+///
+struct FromElementToTensorFromElements
+    : public ::mlir::OpRewritePattern<
+          mlir::concretelang::FHELinalg::FromElementOp> {
+
+  FromElementToTensorFromElements(::mlir::MLIRContext *context)
+      : ::mlir::OpRewritePattern<
+            ::mlir::concretelang::FHELinalg::FromElementOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(::mlir::concretelang::FHELinalg::FromElementOp op,
+                  ::mlir::PatternRewriter &rewriter) const override {
+    auto in = op.getOperand();
+    auto out = op.getResult();
+
+    mlir::Value result =
+        rewriter.create<tensor::FromElementsOp>(op.getLoc(), out.getType(), in)
+            .getResult();
+
+    rewriter.replaceOp(op, {result});
+    return mlir::success();
+  };
+};
+
+/// This rewrite pattern transforms any instance of operators
 /// `FHELinalg.concat` to instances of `tensor.insert_slice`
 ///
 /// Example:
@@ -1647,6 +1682,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<ConcatRewritePattern>(&getContext());
   patterns.insert<FHELinalgConv2dToLinalgConv2d>(&getContext());
   patterns.insert<TransposeToLinalgGeneric>(&getContext());
+  patterns.insert<FromElementToTensorFromElements>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())
