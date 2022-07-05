@@ -1,6 +1,32 @@
 <p align="center">
-  <img width=170 height=170 src="logo.png">
-  <h1 align="center">Concrete</h1>
+<!-- product name logo -->
+  <img width=600 src="https://user-images.githubusercontent.com/5758427/177340641-f152edb7-1957-49a3-86ab-246774701aab.png">
+</p>
+<p align="center">
+<!-- Version badge using shields.io -->
+  <a href="https://github.com/zama-ai/concrete/releases">
+    <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
+  </a>
+<!-- Link to docs badge using shields.io -->
+  <a href="https://docs.zama.ai/concrete">
+    <img src="https://img.shields.io/badge/read-documentations-yellow?style=flat-square">
+  </a>
+<!-- Link to tutorials badge using shields.io -->
+  <a href="https://docs.zama.ai/concrete/tutorials">
+    <img src="https://img.shields.io/badge/tutorials-and%20demos-orange?style=flat-square">
+  </a>
+<!-- Community forum badge using shields.io -->
+  <a href="https://community.zama.ai">
+    <img src="https://img.shields.io/badge/community%20forum-online-brightgreen?style=flat-square">
+  </a>
+<!-- Open source badge using shields.io -->
+  <a href="https://docs.zama.ai/concrete/developer/contributing">
+    <img src="https://img.shields.io/badge/we're%20open%20source-contributing.md-blue?style=flat-square">
+  </a>
+<!-- Follow on twitter badge using shields.io -->
+  <a href="https://twitter.com/zama_fhe">
+    <img src="https://img.shields.io/twitter/follow/zama_fhe?color=blue&style=flat-square">
+  </a>
 </p>
 
 The `concrete` ecosystem is a set of crates that implements Zama's variant of
