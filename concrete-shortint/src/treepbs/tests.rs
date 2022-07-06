@@ -59,7 +59,7 @@ create_parametrized_test!(shortint_message_and_carry_extract);
 fn shortint_mul_treepbs(param: Parameters) {
     let keys = KEY_CACHE.get_from_param(param);
     let (cks, sks) = (keys.client_key(), keys.server_key());
-    let mut treepbs_key = TreepbsKey::new_tree_key(cks);
+    let mut treepbs_key = TreepbsKey::new_tree_key(&cks);
 
     //RNG
     let mut rng = rand::thread_rng();
@@ -79,7 +79,7 @@ fn shortint_mul_treepbs(param: Parameters) {
         let ctxt_one = cks.encrypt(clear_1);
 
         // multiply together the two ciphertexts
-        let ct_res = treepbs_key.mul_treepbs_with_multivalue(sks, &ctxt_zero, &ctxt_one);
+        let ct_res = treepbs_key.mul_treepbs_with_multivalue(&sks, &ctxt_zero, &ctxt_one);
 
         // decryption of ct_res
         let dec_res = cks.decrypt_message_and_carry(&ct_res);
