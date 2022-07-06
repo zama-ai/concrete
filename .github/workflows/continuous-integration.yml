@@ -440,8 +440,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [38, 39, 310]
+        python: [37, 38, 39, 310]
     outputs:
+      python-package-name-linux-py37: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY37 }}
       python-package-name-linux-py38: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY38 }}
       python-package-name-linux-py39: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY39 }}
       python-package-name-linux-py310: ${{ steps.build-wheel-linux.outputs.ASSET_NAME_PY310 }}
@@ -641,6 +642,8 @@ jobs:
     strategy:
       matrix:
         include:
+          - python: '3.7'
+            filename-index: 'python-package-name-linux-py37'
           - python: '3.8'
             filename-index: 'python-package-name-linux-py38'
           - python: '3.9'

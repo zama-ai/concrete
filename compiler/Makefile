@@ -240,6 +240,10 @@ define build_image_and_copy_wheels
 	docker container run --rm -v ${PWD}/../wheels:/wheels_volume concrete-compiler-manylinux:$(1) cp -r /wheels/. /wheels_volume/.
 endef
 
+
+package_py37: update_python_version
+	$(call build_image_and_copy_wheels,cp37-cp37m)
+
 package_py38: update_python_version
 	$(call build_image_and_copy_wheels,cp38-cp38)
 
@@ -285,6 +289,7 @@ python_lint:
 	add-deps \
 	file-check \
 	not \
+	package_py37 \
 	package_py38 \
 	package_py39 \
 	package_py310 \
