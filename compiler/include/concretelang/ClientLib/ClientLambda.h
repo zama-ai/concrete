@@ -29,8 +29,8 @@ using tensor1_out = std::vector<scalar_out>;
 using tensor2_out = std::vector<std::vector<scalar_out>>;
 using tensor3_out = std::vector<std::vector<std::vector<scalar_out>>>;
 
+/// Low-level class to create the client side view of a FHE function.
 class ClientLambda {
-  /// Low-level class to create the client side view of a FHE function.
 public:
   virtual ~ClientLambda() = default;
 

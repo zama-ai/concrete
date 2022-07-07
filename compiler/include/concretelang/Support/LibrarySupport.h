@@ -121,7 +121,7 @@ public:
 private:
   std::string outputPath;
   std::string runtimeLibraryPath;
-  // Flags to select generated artifacts
+  /// Flags to select generated artifacts
   bool generateSharedLib;
   bool generateStaticLib;
   bool generateClientParameters;

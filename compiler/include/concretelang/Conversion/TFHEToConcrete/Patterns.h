@@ -52,10 +52,10 @@ PlaintextType convertPlaintextTypeFromPType(mlir::MLIRContext *context,
   return PlaintextType::get(context, type.getP() + 1);
 }
 
-// convertPlaintextTypeFromType create a plaintext type according the
-// precision of the given type argument. The type should be a GLWECipherText
-// (if operand is not yet lowered) or a LWECipherTextType (if operand is
-// already lowered).
+/// convertPlaintextTypeFromType create a plaintext type according the
+/// precision of the given type argument. The type should be a GLWECipherText
+/// (if operand is not yet lowered) or a LWECipherTextType (if operand is
+/// already lowered).
 PlaintextType convertPlaintextTypeFromType(mlir::MLIRContext *context,
                                            mlir::Type &type) {
   auto glwe = type.dyn_cast_or_null<GLWECipherTextType>();
@@ -76,10 +76,10 @@ CleartextType convertCleartextTypeFromPType(mlir::MLIRContext *context,
   return CleartextType::get(context, type.getP() + 1);
 }
 
-// convertCleartextTypeFromType create a cleartext type according the
-// precision of the given type argument. The type should be a GLWECipherText
-// (if operand is not yet lowered) or a LWECipherTextType (if operand is
-// already lowered).
+/// convertCleartextTypeFromType create a cleartext type according the
+/// precision of the given type argument. The type should be a GLWECipherText
+/// (if operand is not yet lowered) or a LWECipherTextType (if operand is
+/// already lowered).
 CleartextType convertCleartextTypeFromType(mlir::MLIRContext *context,
                                            mlir::Type &type) {
   auto glwe = type.dyn_cast_or_null<GLWECipherTextType>();

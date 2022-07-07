@@ -17,7 +17,7 @@ get_bootstrap_key_u64(mlir::concretelang::RuntimeContext *context) {
   return context->evaluationKeys.getBsk();
 }
 
-// Instantiate one engine per thread on demand
+/// Instantiate one engine per thread on demand
 Engine *get_engine(mlir::concretelang::RuntimeContext *context) {
   pthread_t threadId = pthread_self();
   std::lock_guard<std::mutex> guard(context->engines_map_guard);

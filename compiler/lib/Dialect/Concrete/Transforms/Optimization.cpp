@@ -16,7 +16,7 @@ namespace concretelang {
 
 namespace {
 
-// Get the integer value that the cleartext was created from if it exists.
+/// Get the integer value that the cleartext was created from if it exists.
 llvm::Optional<mlir::Value>
 getIntegerFromCleartextIfExists(mlir::Value cleartext) {
   assert(
@@ -32,7 +32,7 @@ getIntegerFromCleartextIfExists(mlir::Value cleartext) {
   return {};
 }
 
-// Get the constant integer that the cleartext was created from if it exists.
+/// Get the constant integer that the cleartext was created from if it exists.
 llvm::Optional<IntegerAttr>
 getConstantIntFromCleartextIfExists(mlir::Value cleartext) {
   auto cleartextInt = getIntegerFromCleartextIfExists(cleartext);
@@ -49,9 +49,9 @@ getConstantIntFromCleartextIfExists(mlir::Value cleartext) {
   return {};
 }
 
-// Rewrite a `Concrete.mul_cleartext_lwe_ciphertext` operation as a
-// `Concrete.zero` operation if it's being multiplied with a constant 0, or as a
-// `Concrete.negate_lwe_ciphertext` if multiplied with a constant -1.
+/// Rewrite a `Concrete.mul_cleartext_lwe_ciphertext` operation as a
+/// `Concrete.zero` operation if it's being multiplied with a constant 0, or as
+/// a `Concrete.negate_lwe_ciphertext` if multiplied with a constant -1.
 class MulCleartextLweCiphertextOpPattern
     : public mlir::OpRewritePattern<
           mlir::concretelang::Concrete::MulCleartextLweCiphertextOp> {
@@ -85,8 +85,8 @@ public:
   }
 };
 
-// Optimization pass that should choose more efficient ways of performing crypto
-// operations.
+/// Optimization pass that should choose more efficient ways of performing
+/// crypto operations.
 class ConcreteOptimizationPass
     : public ConcreteOptimizationBase<ConcreteOptimizationPass> {
 public:

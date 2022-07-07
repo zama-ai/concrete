@@ -271,7 +271,7 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   DFTOp.erase();
 }
 
-// For documentation see Autopar.td
+/// For documentation see Autopar.td
 struct LowerDataflowTasksPass
     : public LowerDataflowTasksBase<LowerDataflowTasksPass> {
 

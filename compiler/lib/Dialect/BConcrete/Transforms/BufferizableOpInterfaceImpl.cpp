@@ -44,7 +44,7 @@ mlir::Type getDynamic1DMemrefWithUnknownOffset(mlir::RewriterBase &rewriter) {
                                mlir::getAffineSymbolExpr(0, ctx)));
 }
 
-// Returns `memref.cast %0 : memref<AxT> to memref<?xT>` if %0 a 1D memref
+/// Returns `memref.cast %0 : memref<AxT> to memref<?xT>` if %0 a 1D memref
 mlir::Value getCasted1DMemRef(mlir::RewriterBase &rewriter, mlir::Location loc,
                               mlir::Value value) {
   mlir::Type valueType = value.getType();
@@ -115,7 +115,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
   return insertForwardDeclaration(op, rewriter, funcName, funcType);
 }
 
-// Returns the value of the context argument from the enclosing func
+/// Returns the value of the context argument from the enclosing func
 mlir::Value getContextArgument(mlir::Operation *op) {
   mlir::Block *block = op->getBlock();
   while (block != nullptr) {
@@ -233,25 +233,25 @@ struct BufferizableGlweFromTableOpInterface
     return BufferRelation::None;
   }
 
-  // Bufferize GlweFromTable
-  // ```
-  // "BConcrete.fill_glwe_table"(%glwe, %lut) {glweDimension=1,
-  // polynomialSize=2048, outPrecision=3} :
-  //   (tensor<4096xi64>, tensor<32xi64>) -> ()
-  // ```
-  //
-  // to
-  //
-  // ```
-  // %glweDim = arith.constant 1 : i32
-  // %polySize = arith.constant 2048 : i32
-  // %outPrecision = arith.constant 3 : i32
-  // %glwe_ = memref.cast %glwe : memref<4096xi64> to memref<?xi64>
-  // %lut_ = memref.cast %lut : memref<32xi64> to memref<?xi64>
-  // call @expand_lut_in_trivial_glwe_ct(%glwe, %polySize, %glweDim,
-  // %outPrecision, %lut_) :
-  //   (tensor<?xi64>, i32, i32, tensor<?xi64>) -> ()
-  // ```
+  /// Bufferize GlweFromTable
+  /// ```
+  /// "BConcrete.fill_glwe_table"(%glwe, %lut) {glweDimension=1,
+  /// polynomialSize=2048, outPrecision=3} :
+  ///   (tensor<4096xi64>, tensor<32xi64>) -> ()
+  /// ```
+  ///
+  /// to
+  ///
+  /// ```
+  /// %glweDim = arith.constant 1 : i32
+  /// %polySize = arith.constant 2048 : i32
+  /// %outPrecision = arith.constant 3 : i32
+  /// %glwe_ = memref.cast %glwe : memref<4096xi64> to memref<?xi64>
+  /// %lut_ = memref.cast %lut : memref<32xi64> to memref<?xi64>
+  /// call @expand_lut_in_trivial_glwe_ct(%glwe, %polySize, %glweDim,
+  /// %outPrecision, %lut_) :
+  ///   (tensor<?xi64>, i32, i32, tensor<?xi64>) -> ()
+  /// ```
   LogicalResult bufferize(Operation *op, RewriterBase &rewriter,
                           BufferizationState &state) const {
 

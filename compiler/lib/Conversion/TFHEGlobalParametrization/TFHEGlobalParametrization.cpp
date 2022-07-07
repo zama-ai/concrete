@@ -147,25 +147,25 @@ private:
   mlir::concretelang::V0FHEContext &fheContext;
 };
 
-// This rewrite pattern transforms any instance of `TFHE.glwe_from_table` by
-// parametrize GLWE return type and pad the table if the precision has been
-// changed.
-//
-// Example:
-//
-// ```mlir
-// %lut = arith.constant dense<[0, 1, 2, 3]> : tensor<4xi64>
-// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<4xi64>) ->
-// !TFHE.glwe<{_,_,_}{2}>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %lut = arith.constant dense<[0, 1, 2, 3, 0, 1, 2, 3]> : tensor<8xi64>
-// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<8xi64>) ->
-// !TFHE.glwe<{_,_,_}{3}>
-// ```
+/// This rewrite pattern transforms any instance of `TFHE.glwe_from_table` by
+/// parametrize GLWE return type and pad the table if the precision has been
+/// changed.
+///
+/// Example:
+///
+/// ```mlir
+/// %lut = arith.constant dense<[0, 1, 2, 3]> : tensor<4xi64>
+/// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<4xi64>) ->
+/// !TFHE.glwe<{_,_,_}{2}>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %lut = arith.constant dense<[0, 1, 2, 3, 0, 1, 2, 3]> : tensor<8xi64>
+/// %0 = "TFHE.glwe_from_table" (%lut) : (tensor<8xi64>) ->
+/// !TFHE.glwe<{_,_,_}{3}>
+/// ```
 struct GLWEFromTablePattern
     : public mlir::OpRewritePattern<TFHE::GLWEFromTableOp> {
   GLWEFromTablePattern(mlir::MLIRContext *context,

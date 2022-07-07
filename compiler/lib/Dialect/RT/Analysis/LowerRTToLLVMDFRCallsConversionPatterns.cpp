@@ -79,8 +79,8 @@ LLVM::LLVMFuncOp getOrInsertFuncOpDecl(mlir::Operation *op,
   return funcOp;
 }
 
-// This function is only needed for debug purposes to inspect values
-// in the generated code - it is therefore not generally in use.
+/// This function is only needed for debug purposes to inspect values
+/// in the generated code - it is therefore not generally in use.
 LLVM_ATTRIBUTE_UNUSED void
 insertPrintDebugCall(ConversionPatternRewriter &rewriter, mlir::Operation *op,
                      Value val) {

@@ -271,32 +271,32 @@ cmdlineCompilationOptions() {
   return options;
 }
 
-// Process a single source buffer
-//
-// The parameter `action` specifies how the buffer should be processed
-// and thus defines the output.
-//
-// If the specified action involves JIT compilation, `funcName`
-// designates the function to JIT compile. This function is invoked
-// using the parameters given in `jitArgs`.
-//
-// The parameter `parametrizeTFHE` defines, whether the
-// parametrization pass for TFHE is executed. If the `action` does
-// not involve any MidlFHE manipulation, this parameter does not have
-// any effect.
-//
-// The parameters `overrideMaxEintPrecision` and `overrideMaxMANP`, if
-// set, override the values for the maximum required precision of
-// encrypted integers and the maximum value for the Minimum Arithmetic
-// Noise Padding otherwise determined automatically.
-//
-// If `verifyDiagnostics` is `true`, the procedure only checks if the
-// diagnostic messages provided in the source buffer using
-// `expected-error` are produced. If `verifyDiagnostics` is `false`,
-// the procedure checks if the parsed module is valid and if all
-// requested transformations succeeded.
-//
-// Compilation output is written to the stream specified by `os`.
+/// Process a single source buffer
+///
+/// The parameter `action` specifies how the buffer should be processed
+/// and thus defines the output.
+///
+/// If the specified action involves JIT compilation, `funcName`
+/// designates the function to JIT compile. This function is invoked
+/// using the parameters given in `jitArgs`.
+///
+/// The parameter `parametrizeTFHE` defines, whether the
+/// parametrization pass for TFHE is executed. If the `action` does
+/// not involve any MidlFHE manipulation, this parameter does not have
+/// any effect.
+///
+/// The parameters `overrideMaxEintPrecision` and `overrideMaxMANP`, if
+/// set, override the values for the maximum required precision of
+/// encrypted integers and the maximum value for the Minimum Arithmetic
+/// Noise Padding otherwise determined automatically.
+///
+/// If `verifyDiagnostics` is `true`, the procedure only checks if the
+/// diagnostic messages provided in the source buffer using
+/// `expected-error` are produced. If `verifyDiagnostics` is `false`,
+/// the procedure checks if the parsed module is valid and if all
+/// requested transformations succeeded.
+///
+/// Compilation output is written to the stream specified by `os`.
 mlir::LogicalResult processInputBuffer(
     std::unique_ptr<llvm::MemoryBuffer> buffer, std::string sourceFileName,
     mlir::concretelang::CompilationOptions &options, enum Action action,

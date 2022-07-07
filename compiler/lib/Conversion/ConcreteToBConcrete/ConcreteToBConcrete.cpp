@@ -155,26 +155,26 @@ struct ConcreteIntToCleartextOpPattern
   };
 };
 
-// This rewrite pattern transforms any instance of `Concrete.zero_tensor`
-// operators.
-//
-// Example:
-//
-// ```mlir
-// %0 = "Concrete.zero_tensor" () :
-// tensor<...x!Concrete.lwe_ciphertext<lweDim,p>>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %0 = tensor.generate {
-//   ^bb0(... : index):
-//     %c0 = arith.constant 0 : i64
-//     tensor.yield %z
-// }: tensor<...xlweDim+1xi64>
-// i64>
-// ```
+/// This rewrite pattern transforms any instance of `Concrete.zero_tensor`
+/// operators.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = "Concrete.zero_tensor" () :
+/// tensor<...x!Concrete.lwe_ciphertext<lweDim,p>>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %0 = tensor.generate {
+///   ^bb0(... : index):
+///     %c0 = arith.constant 0 : i64
+///     tensor.yield %z
+/// }: tensor<...xlweDim+1xi64>
+/// i64>
+/// ```
 template <typename ZeroOp>
 struct ZeroOpPattern : public mlir::OpRewritePattern<ZeroOp> {
   ZeroOpPattern(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
@@ -204,19 +204,19 @@ struct ZeroOpPattern : public mlir::OpRewritePattern<ZeroOp> {
   };
 };
 
-// This template rewrite pattern transforms any instance of
-// `ConcreteOp` to an instance of `BConcreteOp`.
-//
-// Example:
-//
-//   %0 = "ConcreteOp"(%arg0, ...) :
-//     (!Concrete.lwe_ciphertext<lwe_dimension, p>, ...) ->
-//     (!Concrete.lwe_ciphertext<lwe_dimension, p>)
-//
-// becomes:
-//
-//   %0 = "BConcreteOp"(%arg0, ...) : (tensor<dimension+1, i64>>, ..., ) ->
-//   (tensor<dimension+1, i64>>)
+/// This template rewrite pattern transforms any instance of
+/// `ConcreteOp` to an instance of `BConcreteOp`.
+///
+/// Example:
+///
+///   %0 = "ConcreteOp"(%arg0, ...) :
+///     (!Concrete.lwe_ciphertext<lwe_dimension, p>, ...) ->
+///     (!Concrete.lwe_ciphertext<lwe_dimension, p>)
+///
+/// becomes:
+///
+///   %0 = "BConcreteOp"(%arg0, ...) : (tensor<dimension+1, i64>>, ..., ) ->
+///   (tensor<dimension+1, i64>>)
 template <typename ConcreteOp, typename BConcreteOp>
 struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   LowToBConcrete(::mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
@@ -248,27 +248,27 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   };
 };
 
-// This rewrite pattern transforms any instance of
-// `Concrete.glwe_from_table` operators.
-//
-// Example:
-//
-// ```mlir
-// %0 = "Concrete.glwe_from_table"(%tlu)
-//   : (tensor<$Dxi64>) ->
-//   !Concrete.glwe_ciphertext<$polynomialSize,$glweDimension,$p>
-// ```
-//
-// with $D = 2^$p
-//
-// becomes:
-//
-// ```mlir
-// %0 = linalg.init_tensor [polynomialSize*(glweDimension+1)]
-//        : tensor<polynomialSize*(glweDimension+1), i64>
-// "BConcrete.fill_glwe_from_table" : (%0, polynomialSize, glweDimension, %tlu)
-//   : tensor<polynomialSize*(glweDimension+1), i64>, i64, i64, tensor<$Dxi64>
-// ```
+/// This rewrite pattern transforms any instance of
+/// `Concrete.glwe_from_table` operators.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = "Concrete.glwe_from_table"(%tlu)
+///   : (tensor<$Dxi64>) ->
+///   !Concrete.glwe_ciphertext<$polynomialSize,$glweDimension,$p>
+/// ```
+///
+/// with $D = 2^$p
+///
+/// becomes:
+///
+/// ```mlir
+/// %0 = linalg.init_tensor [polynomialSize*(glweDimension+1)]
+///        : tensor<polynomialSize*(glweDimension+1), i64>
+/// "BConcrete.fill_glwe_from_table" : (%0, polynomialSize, glweDimension, %tlu)
+///   : tensor<polynomialSize*(glweDimension+1), i64>, i64, i64, tensor<$Dxi64>
+/// ```
 struct GlweFromTablePattern : public mlir::OpRewritePattern<
                                   mlir::concretelang::Concrete::GlweFromTable> {
   GlweFromTablePattern(::mlir::MLIRContext *context,
@@ -305,26 +305,26 @@ struct GlweFromTablePattern : public mlir::OpRewritePattern<
   };
 };
 
-// This rewrite pattern transforms any instance of
-// `tensor.extract_slice` operators that operates on tensor of lwe ciphertext.
-//
-// Example:
-//
-// ```mlir
-// %0 = tensor.extract_slice %arg0
-//   [offsets...] [sizes...] [strides...]
-//   : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>> to
-//     tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %0 = tensor.extract_slice %arg0
-//   [offsets..., 0] [sizes..., lweDimension+1] [strides..., 1]
-//   : tensor<...xlweDimension+1,i64> to
-//     tensor<...xlweDimension+1,i64>
-// ```
+/// This rewrite pattern transforms any instance of
+/// `tensor.extract_slice` operators that operates on tensor of lwe ciphertext.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = tensor.extract_slice %arg0
+///   [offsets...] [sizes...] [strides...]
+///   : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>> to
+///     tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %0 = tensor.extract_slice %arg0
+///   [offsets..., 0] [sizes..., lweDimension+1] [strides..., 1]
+///   : tensor<...xlweDimension+1,i64> to
+///     tensor<...xlweDimension+1,i64>
+/// ```
 struct ExtractSliceOpPattern
     : public mlir::OpRewritePattern<mlir::tensor::ExtractSliceOp> {
   ExtractSliceOpPattern(::mlir::MLIRContext *context,
@@ -380,27 +380,26 @@ struct ExtractSliceOpPattern
   };
 };
 
-// This rewrite pattern transforms any instance of
-// `tensor.extract` operators that operates on tensor of lwe ciphertext.
-//
-// Example:
-//
-// ```mlir
-// %0 = tensor.extract %t[offsets...]
-//   : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %1 = tensor.extract_slice %arg0
-//   [offsets...] [1..., lweDimension+1] [1...]
-//   : tensor<...xlweDimension+1,i64> to
-//     tensor<1...xlweDimension+1,i64>
-// %0 = linalg.tensor_collapse_shape %0 [[...]]  :
-// tensor<1x1xlweDimension+1xi64> into tensor<lweDimension+1xi64>
-// ```
-//
+/// This rewrite pattern transforms any instance of
+/// `tensor.extract` operators that operates on tensor of lwe ciphertext.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = tensor.extract %t[offsets...]
+///   : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %1 = tensor.extract_slice %arg0
+///   [offsets...] [1..., lweDimension+1] [1...]
+///   : tensor<...xlweDimension+1,i64> to
+///     tensor<1...xlweDimension+1,i64>
+/// %0 = linalg.tensor_collapse_shape %0 [[...]]  :
+/// tensor<1x1xlweDimension+1xi64> into tensor<lweDimension+1xi64>
+/// ```
 // TODO: since they are a bug on lowering extract_slice with rank reduction we
 // add a linalg.tensor_collapse_shape after the extract_slice without rank
 // reduction. See
@@ -487,26 +486,26 @@ struct ExtractOpPattern
   };
 };
 
-// This rewrite pattern transforms any instance of
-// `tensor.insert_slice` operators that operates on tensor of lwe ciphertext.
-//
-// Example:
-//
-// ```mlir
-// %0 = tensor.insert_slice %arg1
-//        into %arg0[offsets...] [sizes...] [strides...]
-//        : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>> into
-//          tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %0 = tensor.insert_slice %arg1
-//        into %arg0[offsets..., 0] [sizes..., lweDimension+1] [strides..., 1]
-//        : tensor<...xlweDimension+1xi64> into
-//          tensor<...xlweDimension+1xi64>
-// ```
+/// This rewrite pattern transforms any instance of
+/// `tensor.insert_slice` operators that operates on tensor of lwe ciphertext.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = tensor.insert_slice %arg1
+///        into %arg0[offsets...] [sizes...] [strides...]
+///        : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>> into
+///          tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %0 = tensor.insert_slice %arg1
+///        into %arg0[offsets..., 0] [sizes..., lweDimension+1] [strides..., 1]
+///        : tensor<...xlweDimension+1xi64> into
+///          tensor<...xlweDimension+1xi64>
+/// ```
 struct InsertSliceOpPattern
     : public mlir::OpRewritePattern<mlir::tensor::InsertSliceOp> {
   InsertSliceOpPattern(::mlir::MLIRContext *context,
@@ -559,28 +558,28 @@ struct InsertSliceOpPattern
   };
 };
 
-// This rewrite pattern transforms any instance of `tensor.insert`
-// operators that operates on an lwe ciphertexts to a
-// `tensor.insert_slice` op operating on the bufferized representation
-// of the ciphertext.
-//
-// Example:
-//
-// ```mlir
-// %0 = tensor.insert %arg1
-//        into %arg0[offsets...]
-//        : !Concrete.lwe_ciphertext<lweDimension,p> into
-//          tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %0 = tensor.insert_slice %arg1
-//        into %arg0[offsets..., 0] [sizes..., lweDimension+1] [strides..., 1]
-//        : tensor<lweDimension+1xi64> into
-//          tensor<...xlweDimension+1xi64>
-// ```
+/// This rewrite pattern transforms any instance of `tensor.insert`
+/// operators that operates on an lwe ciphertexts to a
+/// `tensor.insert_slice` op operating on the bufferized representation
+/// of the ciphertext.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = tensor.insert %arg1
+///        into %arg0[offsets...]
+///        : !Concrete.lwe_ciphertext<lweDimension,p> into
+///          tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %0 = tensor.insert_slice %arg1
+///        into %arg0[offsets..., 0] [sizes..., lweDimension+1] [strides..., 1]
+///        : tensor<lweDimension+1xi64> into
+///          tensor<...xlweDimension+1xi64>
+/// ```
 struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
   InsertOpPattern(::mlir::MLIRContext *context,
                   mlir::PatternBenefit benefit = 1)
@@ -628,31 +627,31 @@ struct InsertOpPattern : public mlir::OpRewritePattern<mlir::tensor::InsertOp> {
   };
 };
 
-// This rewrite pattern transforms any instance of
-// `tensor.from_elements` operators that operates on tensor of lwe ciphertext.
-//
-// Example:
-//
-// ```mlir
-// %0 = tensor.from_elements %e0, ..., %e(n-1)
-//        : tensor<Nx!Concrete.lwe_ciphertext<lweDim,p>>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %m = memref.alloc() : memref<NxlweDim+1xi64>
-// %s0 = memref.subview %m[0, 0][1, lweDim+1][1, 1] : memref<lweDim+1xi64>
-// %m0 = memref.buffer_cast %e0 : memref<lweDim+1xi64>
-// memref.copy %m0, s0 : memref<lweDim+1xi64> to memref<lweDim+1xi64>
-// ...
-// %s(n-1) = memref.subview %m[(n-1), 0][1, lweDim+1][1, 1]
-//             : memref<lweDim+1xi64>
-// %m(n-1) = memref.buffer_cast %e(n-1) : memref<lweDim+1xi64>
-// memref.copy %e(n-1), s(n-1)
-//   : memref<lweDim+1xi64> to memref<lweDim+1xi64>
-// %0 = memref.tensor_load %m : memref<NxlweDim+1xi64>
-// ```
+/// This rewrite pattern transforms any instance of
+/// `tensor.from_elements` operators that operates on tensor of lwe ciphertext.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = tensor.from_elements %e0, ..., %e(n-1)
+///        : tensor<Nx!Concrete.lwe_ciphertext<lweDim,p>>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %m = memref.alloc() : memref<NxlweDim+1xi64>
+/// %s0 = memref.subview %m[0, 0][1, lweDim+1][1, 1] : memref<lweDim+1xi64>
+/// %m0 = memref.buffer_cast %e0 : memref<lweDim+1xi64>
+/// memref.copy %m0, s0 : memref<lweDim+1xi64> to memref<lweDim+1xi64>
+/// ...
+/// %s(n-1) = memref.subview %m[(n-1), 0][1, lweDim+1][1, 1]
+///             : memref<lweDim+1xi64>
+/// %m(n-1) = memref.buffer_cast %e(n-1) : memref<lweDim+1xi64>
+/// memref.copy %e(n-1), s(n-1)
+///   : memref<lweDim+1xi64> to memref<lweDim+1xi64>
+/// %0 = memref.tensor_load %m : memref<NxlweDim+1xi64>
+/// ```
 struct FromElementsOpPattern
     : public mlir::OpRewritePattern<mlir::tensor::FromElementsOp> {
   FromElementsOpPattern(::mlir::MLIRContext *context,
@@ -715,26 +714,26 @@ struct FromElementsOpPattern
   };
 };
 
-// This template rewrite pattern transforms any instance of
-// `ShapeOp` operators that operates on tensor of lwe ciphertext by adding the
-// lwe size as a size of the tensor result and by adding a trivial reassociation
-// at the end of the reassociations map.
-//
-// Example:
-//
-// ```mlir
-// %0 = "ShapeOp" %arg0 [reassocations...]
-//        : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>> into
-//          tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %0 = "ShapeOp" %arg0 [reassociations..., [inRank or outRank]]
-//        : tensor<...xlweDimesion+1xi64> into
-//          tensor<...xlweDimesion+1xi64>
-// ```
+/// This template rewrite pattern transforms any instance of
+/// `ShapeOp` operators that operates on tensor of lwe ciphertext by adding the
+/// lwe size as a size of the tensor result and by adding a trivial
+/// reassociation at the end of the reassociations map.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = "ShapeOp" %arg0 [reassocations...]
+///        : tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>> into
+///          tensor<...x!Concrete.lwe_ciphertext<lweDimension,p>>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %0 = "ShapeOp" %arg0 [reassociations..., [inRank or outRank]]
+///        : tensor<...xlweDimesion+1xi64> into
+///          tensor<...xlweDimesion+1xi64>
+/// ```
 template <typename ShapeOp, typename VecTy, bool inRank>
 struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
   TensorShapeOpPattern(::mlir::MLIRContext *context,
@@ -775,8 +774,8 @@ struct TensorShapeOpPattern : public mlir::OpRewritePattern<ShapeOp> {
   };
 };
 
-// Add the instantiated TensorShapeOpPattern rewrite pattern with the `ShapeOp`
-// to the patterns set and populate the conversion target.
+/// Add the instantiated TensorShapeOpPattern rewrite pattern with the `ShapeOp`
+/// to the patterns set and populate the conversion target.
 template <typename ShapeOp, typename VecTy, bool inRank>
 void insertTensorShapeOpPattern(mlir::MLIRContext &context,
                                 mlir::RewritePatternSet &patterns,
@@ -789,26 +788,26 @@ void insertTensorShapeOpPattern(mlir::MLIRContext &context,
   });
 }
 
-// Rewrites `linalg.init_tensor` ops for which the converted type in
-// BConcrete is different from the original type.
-//
-// Example:
-//
-// ```
-// linalg.init_tensor [4] : tensor<4x!Concrete.lwe_ciphertext<4096,6>>
-// ```
-//
-// which has become after type conversion:
-//
-// ```
-// linalg.init_tensor [4] : tensor<4x4097xi64>
-// ```
-//
-// is finally fixed:
-//
-// ```
-// linalg.init_tensor [4, 4097] : tensor<4x4097xi64>
-// ```
+/// Rewrites `linalg.init_tensor` ops for which the converted type in
+/// BConcrete is different from the original type.
+///
+/// Example:
+///
+/// ```
+/// linalg.init_tensor [4] : tensor<4x!Concrete.lwe_ciphertext<4096,6>>
+/// ```
+///
+/// which has become after type conversion:
+///
+/// ```
+/// linalg.init_tensor [4] : tensor<4x4097xi64>
+/// ```
+///
+/// is finally fixed:
+///
+/// ```
+/// linalg.init_tensor [4, 4097] : tensor<4x4097xi64>
+/// ```
 struct InitTensorOpPattern
     : public mlir::OpRewritePattern<mlir::linalg::InitTensorOp> {
   InitTensorOpPattern(::mlir::MLIRContext *context,

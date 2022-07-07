@@ -1717,7 +1717,7 @@ mlir::LogicalResult TransposeOp::verify() {
   return mlir::success();
 }
 
-// Avoid addition with constant tensor of 0s
+/// Avoid addition with constant tensor of 0s
 OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
   assert(operands.size() == 2);
   auto toAdd = operands[1].dyn_cast_or_null<mlir::DenseIntElementsAttr>();
@@ -1731,7 +1731,7 @@ OpFoldResult AddEintIntOp::fold(ArrayRef<Attribute> operands) {
   return getOperand(0);
 }
 
-// Avoid subtraction with constant tensor of 0s
+/// Avoid subtraction with constant tensor of 0s
 OpFoldResult SubEintIntOp::fold(ArrayRef<Attribute> operands) {
   assert(operands.size() == 2);
   auto toSub = operands[1].dyn_cast_or_null<mlir::DenseIntElementsAttr>();
@@ -1745,7 +1745,7 @@ OpFoldResult SubEintIntOp::fold(ArrayRef<Attribute> operands) {
   return getOperand(0);
 }
 
-// Avoid multiplication with constant tensor of 1s
+/// Avoid multiplication with constant tensor of 1s
 OpFoldResult MulEintIntOp::fold(ArrayRef<Attribute> operands) {
   assert(operands.size() == 2);
   auto toMul = operands[1].dyn_cast_or_null<mlir::DenseIntElementsAttr>();

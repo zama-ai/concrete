@@ -104,11 +104,11 @@ static inline bool operator==(const EncryptionGate &lhs,
 }
 
 struct CircuitGateShape {
-  // Width of the scalar value
+  /// Width of the scalar value
   size_t width;
-  // Dimensions of the tensor, empty if scalar
+  /// Dimensions of the tensor, empty if scalar
   std::vector<int64_t> dimensions;
-  // Size of the buffer containing the tensor
+  /// Size of the buffer containing the tensor
   size_t size;
 };
 static inline bool operator==(const CircuitGateShape &lhs,

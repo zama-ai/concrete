@@ -24,11 +24,10 @@ bool verifyEncryptedIntegerAndIntegerInputsConsistency(Operation &op,
                                                        EncryptedIntegerType &a,
                                                        IntegerType &b);
 
-/** Shared error message for all ApplyLookupTable variant Op (several Dialect)
- * E.g. FHE.apply_lookup_table(input, lut)
- * Message when the lut tensor has an invalid size,
- * i.e. it cannot accomodate the input elements bitwidth
- */
+/// Shared error message for all ApplyLookupTable variant Op (several Dialect)
+/// E.g. FHE.apply_lookup_table(input, lut)
+/// Message when the lut tensor has an invalid size,
+/// i.e. it cannot accomodate the input elements bitwidth
 template <class Op>
 void emitErrorBadLutSize(Op &op, std::string lutName, std::string inputName,
                          int expectedSize, int bitWidth) {

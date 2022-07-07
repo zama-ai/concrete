@@ -32,9 +32,10 @@ namespace clientlib {
 using concretelang::error::StringError;
 
 class EncryptedArguments;
+
+/// PublicArguments will be sended to the server. It includes encrypted
+/// arguments and public keys.
 class PublicArguments {
-  /// PublicArguments will be sended to the server. It includes encrypted
-  /// arguments and public keys.
 public:
   PublicArguments(const ClientParameters &clientParameters,
                   std::vector<void *> &&preparedArgs,
@@ -56,13 +57,13 @@ private:
 
   ClientParameters clientParameters;
   std::vector<void *> preparedArgs;
-  // Store buffers of ciphertexts
+  /// Store buffers of ciphertexts
   std::vector<TensorData> ciphertextBuffers;
 };
 
+/// PublicResult is a result of a ServerLambda call which contains encrypted
+/// results.
 struct PublicResult {
-  /// PublicResult is a result of a ServerLambda call which contains encrypted
-  /// results.
 
   PublicResult(const ClientParameters &clientParameters,
                std::vector<TensorData> buffers = {})

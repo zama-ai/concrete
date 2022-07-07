@@ -19,7 +19,7 @@ extern void *dl_handle;
 struct WorkFunctionRegistry;
 extern WorkFunctionRegistry *node_level_work_function_registry;
 
-// Recover the name of the work function
+/// Recover the name of the work function
 static inline const char *_dfr_get_function_name_from_address(void *fn) {
   Dl_info info;
 
@@ -38,8 +38,8 @@ static inline wfnptr _dfr_get_function_pointer_from_name(const char *fn_name) {
   return (wfnptr)ptr;
 }
 
-// Determine where new task should run.  For now just round-robin
-// distribution - TODO: optimise.
+/// Determine where new task should run.  For now just round-robin
+/// distribution - TODO: optimise.
 static inline size_t _dfr_find_next_execution_locality() {
   static size_t num_nodes = hpx::get_num_localities().get();
   static std::atomic<std::size_t> next_locality{0};

@@ -3,14 +3,11 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-/**
-   This file implements the dataflow runtime. It encapsulates all of
-   the underlying communication, parallelism, etc. and only exposes a
-   simplified interface for code generation in runtime_api.h
-
-   This hides the details of implementation, including of the HPX
-   framework currently used, from the code generation side.
- */
+/// This file implements the dataflow runtime. It encapsulates all of
+/// the underlying communication, parallelism, etc. and only exposes a
+/// simplified interface for code generation in runtime_api.h
+/// This hides the details of implementation, including of the HPX
+/// framework currently used, from the code generation side.
 
 #ifdef CONCRETELANG_PARALLEL_EXECUTION_ENABLED
 
@@ -55,11 +52,11 @@ void _dfr_deallocate_future(void *in) {
   delete (static_cast<hpx::shared_future<void *> *>(in));
 }
 
-// Runtime generic async_task.  Each first NUM_PARAMS pairs of
-// arguments in the variadic list corresponds to a void* pointer on a
-// hpx::future<void*> and the size of data within the future.  After
-// that come NUM_OUTPUTS pairs of hpx::future<void*>* and size_t for
-// the returns.
+/// Runtime generic async_task.  Each first NUM_PARAMS pairs of
+/// arguments in the variadic list corresponds to a void* pointer on a
+/// hpx::future<void*> and the size of data within the future.  After
+/// that come NUM_OUTPUTS pairs of hpx::future<void*>* and size_t for
+/// the returns.
 void _dfr_create_async_task(wfnptr wfn, size_t num_params, size_t num_outputs,
                             ...) {
   std::vector<void *> params;
@@ -776,7 +773,7 @@ void _dfr_debug_print_task(const char *name, int inputs, int outputs) {
   // clang-format on
 }
 
-// Generic utility function for printing debug info
+/// Generic utility function for printing debug info
 void _dfr_print_debug(size_t val) {
   hpx::cout << "_dfr_print_debug : " << val << "\n" << std::flush;
 }

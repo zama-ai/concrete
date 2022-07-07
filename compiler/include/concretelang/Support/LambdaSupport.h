@@ -27,13 +27,13 @@ namespace {
 // `typedResult` must be declared at namespace scope due to return
 // type template specialization
 
-// Helper function for implementing type-dependent preparation of the result.
+/// Helper function for implementing type-dependent preparation of the result.
 template <typename ResT>
 llvm::Expected<ResT> typedResult(clientlib::KeySet &keySet,
                                  clientlib::PublicResult &result);
 
-// Specialization of `typedResult()` for scalar results, forwarding
-// scalar value to caller
+/// Specialization of `typedResult()` for scalar results, forwarding
+/// scalar value to caller
 template <>
 inline llvm::Expected<uint64_t> typedResult(clientlib::KeySet &keySet,
                                             clientlib::PublicResult &result) {
@@ -60,14 +60,13 @@ typedVectorResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
   return std::move(clearResult.value());
 }
 
-// Specializations of `typedResult()` for vector results, initializing
-// an `std::vector` of the right size with the results and forwarding
-// it to the caller with move semantics.
-//
-// Cannot factor out into a template template <typename T> inline
-// llvm::Expected<std::vector<uint8_t>>
-// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result); due
-// to ambiguity with scalar template
+/// Specializations of `typedResult()` for vector results, initializing
+/// an `std::vector` of the right size with the results and forwarding
+/// it to the caller with move semantics.
+/// Cannot factor out into a template template <typename T> inline
+/// llvm::Expected<std::vector<uint8_t>>
+/// typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result); due
+/// to ambiguity with scalar template
 template <>
 inline llvm::Expected<std::vector<uint8_t>>
 typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
@@ -105,8 +104,8 @@ buildTensorLambdaResult(clientlib::KeySet &keySet,
       *tensorOrError, tensorDim);
 }
 
-// pecialization of `typedResult()` for a single result wrapped into
-// a `LambdaArgument`.
+/// pecialization of `typedResult()` for a single result wrapped into
+/// a `LambdaArgument`.
 template <>
 inline llvm::Expected<std::unique_ptr<LambdaArgument>>
 typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
@@ -138,18 +137,18 @@ typedResult(clientlib::KeySet &keySet, clientlib::PublicResult &result) {
 
 } // namespace
 
-// Adaptor class that push arguments specified as instances of
-// `LambdaArgument` to `clientlib::EncryptedArguments`.
+/// Adaptor class that push arguments specified as instances of
+/// `LambdaArgument` to `clientlib::EncryptedArguments`.
 class LambdaArgumentAdaptor {
 public:
-  // Checks if the argument `arg` is an plaintext / encrypted integer
-  // argument or a plaintext / encrypted tensor argument with a
-  // backing integer type `IntT` and push the argument to `encryptedArgs`.
-  //
-  // Returns `true` if `arg` has one of the types above and its value
-  // was successfully added to `encryptedArgs`, `false` if none of the types
-  // matches or an error if a type matched, but adding the argument to
-  // `encryptedArgs` failed.
+  /// Checks if the argument `arg` is an plaintext / encrypted integer
+  /// argument or a plaintext / encrypted tensor argument with a
+  /// backing integer type `IntT` and push the argument to `encryptedArgs`.
+  ///
+  /// Returns `true` if `arg` has one of the types above and its value
+  /// was successfully added to `encryptedArgs`, `false` if none of the types
+  /// matches or an error if a type matched, but adding the argument to
+  /// `encryptedArgs` failed.
   template <typename IntT>
   static inline llvm::Expected<bool>
   tryAddArg(clientlib::EncryptedArguments &encryptedArgs,
@@ -174,7 +173,7 @@ public:
     return false;
   }
 
-  // Recursive case for `tryAddArg<IntT>(...)`
+  /// Recursive case for `tryAddArg<IntT>(...)`
   template <typename IntT, typename NextIntT, typename... IntTs>
   static inline llvm::Expected<bool>
   tryAddArg(clientlib::EncryptedArguments &encryptedArgs,
@@ -191,9 +190,9 @@ public:
       return true;
   }
 
-  // Attempts to push a single argument `arg` to `encryptedArgs`. Returns an
-  // error if either the argument type is unsupported or if the argument types
-  // is supported, but adding it to `encryptedArgs` failed.
+  /// Attempts to push a single argument `arg` to `encryptedArgs`. Returns an
+  /// error if either the argument type is unsupported or if the argument types
+  /// is supported, but adding it to `encryptedArgs` failed.
   static inline llvm::Error
   addArgument(clientlib::EncryptedArguments &encryptedArgs,
               const LambdaArgument &arg, clientlib::KeySet &keySet) {

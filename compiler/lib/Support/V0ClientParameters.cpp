@@ -30,7 +30,7 @@ const auto securityLevel = SECURITY_LEVEL_128;
 const auto keyFormat = KEY_FORMAT_BINARY;
 const auto v0Curve = getV0Curves(securityLevel, keyFormat);
 
-// For the v0 the secretKeyID and precision are the same for all gates.
+/// For the v0 the secretKeyID and precision are the same for all gates.
 llvm::Expected<CircuitGate> gateFromMLIRType(LweSecretKeyID secretKeyID,
                                              Precision precision,
                                              Variance variance,

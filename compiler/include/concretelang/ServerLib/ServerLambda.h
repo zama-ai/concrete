@@ -45,7 +45,7 @@ public:
 protected:
   ClientParameters clientParameters;
   void *(*func)(void *...);
-  // Retain module and open shared lib alive
+  /// Retain module and open shared lib alive
   std::shared_ptr<DynamicModule> module;
 };
 

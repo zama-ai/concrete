@@ -23,11 +23,11 @@ using concretelang::error::StringError;
 
 class PublicArguments;
 
+/// Temporary object used to hold and encrypt parameters before calling a
+/// ClientLambda. Use preferably TypeClientLambda and serializeCall(Args...).
+/// Otherwise convert it to a PublicArguments and use
+/// serializeCall(PublicArguments, KeySet).
 class EncryptedArguments {
-  /// Temporary object used to hold and encrypt parameters before calling a
-  /// ClientLambda. Use preferably TypeClientLambda and serializeCall(Args...).
-  /// Otherwise convert it to a PublicArguments and use
-  /// serializeCall(PublicArguments, KeySet).
 public:
   EncryptedArguments() : currentPos(0) {}
 
@@ -64,18 +64,18 @@ public:
                         RuntimeContext runtimeContext);
 
   /// Check that all arguments as been pushed.
-  /// TODO: Remove public method here
+  // TODO: Remove public method here
   outcome::checked<void, StringError> checkAllArgs(KeySet &keySet);
 
 public:
-  // Add a uint64_t scalar argument.
+  /// Add a uint64_t scalar argument.
   outcome::checked<void, StringError> pushArg(uint64_t arg, KeySet &keySet);
 
   /// Add a vector-tensor argument.
   outcome::checked<void, StringError> pushArg(std::vector<uint8_t> arg,
                                               KeySet &keySet);
 
-  // Add a 1D tensor argument with data and size of the dimension.
+  /// Add a 1D tensor argument with data and size of the dimension.
   template <typename T>
   outcome::checked<void, StringError> pushArg(const T *data, int64_t dim1,
                                               KeySet &keySet) {
@@ -114,14 +114,14 @@ public:
 
   // Generalize by computing shape by template recursion
 
-  // Set a argument at the given pos as a 1D tensor of T.
+  /// Set a argument at the given pos as a 1D tensor of T.
   template <typename T>
   outcome::checked<void, StringError> pushArg(T *data, int64_t dim1,
                                               KeySet &keySet) {
     return pushArg<T>(data, llvm::ArrayRef<int64_t>(&dim1, 1), keySet);
   }
 
-  // Set a argument at the given pos as a tensor of T.
+  /// Set a argument at the given pos as a tensor of T.
   template <typename T>
   outcome::checked<void, StringError>
   pushArg(T *data, llvm::ArrayRef<int64_t> shape, KeySet &keySet) {
@@ -133,8 +133,8 @@ public:
                                               llvm::ArrayRef<int64_t> shape,
                                               KeySet &keySet);
 
-  // Recursive case for scalars: extract first scalar argument from
-  // parameter pack and forward rest
+  /// Recursive case for scalars: extract first scalar argument from
+  /// parameter pack and forward rest
   template <typename Arg0, typename... OtherArgs>
   outcome::checked<void, StringError> pushArgs(KeySet &keySet, Arg0 arg0,
                                                OtherArgs... others) {
@@ -142,8 +142,8 @@ public:
     return pushArgs(keySet, others...);
   }
 
-  // Recursive case for tensors: extract pointer and size from
-  // parameter pack and forward rest
+  /// Recursive case for tensors: extract pointer and size from
+  /// parameter pack and forward rest
   template <typename Arg0, typename... OtherArgs>
   outcome::checked<void, StringError>
   pushArgs(KeySet &keySet, Arg0 *arg0, size_t size, OtherArgs... others) {
@@ -151,7 +151,7 @@ public:
     return pushArgs(keySet, others...);
   }
 
-  // Terminal case of pushArgs
+  /// Terminal case of pushArgs
   outcome::checked<void, StringError> pushArgs(KeySet &keySet) {
     return checkAllArgs(keySet);
   }
@@ -160,11 +160,11 @@ private:
   outcome::checked<void, StringError> checkPushTooManyArgs(KeySet &keySet);
 
 private:
-  // Position of the next pushed argument
+  /// Position of the next pushed argument
   size_t currentPos;
   std::vector<void *> preparedArgs;
 
-  // Store buffers of ciphertexts
+  /// Store buffers of ciphertexts
   std::vector<TensorData> ciphertextBuffers;
 };
 

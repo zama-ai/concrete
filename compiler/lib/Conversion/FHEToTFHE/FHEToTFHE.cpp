@@ -60,30 +60,30 @@ public:
   }
 };
 
-// This rewrite pattern transforms any instance of `FHE.apply_lookup_table`
-// operators.
-//
-// Example:
-//
-// ```mlir
-// %0 = "FHE.apply_lookup_table"(%ct, %lut): (!FHE.eint<2>, tensor<4xi64>)
-//        ->(!FHE.eint<2>)
-// ```
-//
-// becomes:
-//
-// ```mlir
-//  %glwe_lut = "TFHE.glwe_from_table"(%lut)
-//                : (tensor<4xi64>) -> !TFHE.glwe<{_,_,_}{2}>
-//  %glwe_ks = "TFHE.keyswitch_glwe"(%ct)
-//               {baseLog = -1 : i32, level = -1 : i32}
-//               : (!TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
-//  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
-//         {baseLog = -1 : i32, glweDimension = -1 : i32, level = -1 : i32,
-//           polynomialSize = -1 : i32}
-//         : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) ->
-//         !TFHE.glwe<{_,_,_}{2}>
-// ```
+/// This rewrite pattern transforms any instance of `FHE.apply_lookup_table`
+/// operators.
+///
+/// Example:
+///
+/// ```mlir
+/// %0 = "FHE.apply_lookup_table"(%ct, %lut): (!FHE.eint<2>, tensor<4xi64>)
+///        ->(!FHE.eint<2>)
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+///  %glwe_lut = "TFHE.glwe_from_table"(%lut)
+///                : (tensor<4xi64>) -> !TFHE.glwe<{_,_,_}{2}>
+///  %glwe_ks = "TFHE.keyswitch_glwe"(%ct)
+///               {baseLog = -1 : i32, level = -1 : i32}
+///               : (!TFHE.glwe<{_,_,_}{2}>) -> !TFHE.glwe<{_,_,_}{2}>
+///  %0 = "TFHE.bootstrap_glwe"(%glwe_ks, %glwe_lut)
+///         {baseLog = -1 : i32, glweDimension = -1 : i32, level = -1 : i32,
+///           polynomialSize = -1 : i32}
+///         : (!TFHE.glwe<{_,_,_}{2}>, !TFHE.glwe<{_,_,_}{2}>) ->
+///         !TFHE.glwe<{_,_,_}{2}>
+/// ```
 struct ApplyLookupTableEintOpPattern
     : public mlir::OpRewritePattern<FHE::ApplyLookupTableEintOp> {
   ApplyLookupTableEintOpPattern(mlir::MLIRContext *context,
@@ -115,8 +115,8 @@ struct ApplyLookupTableEintOpPattern
   };
 };
 
-// This rewrite pattern transforms any instance of `FHE.sub_eint_int`
-// operators to a negation and an addition.
+/// This rewrite pattern transforms any instance of `FHE.sub_eint_int`
+/// operators to a negation and an addition.
 struct SubEintIntOpPattern : public mlir::OpRewritePattern<FHE::SubEintIntOp> {
   SubEintIntOpPattern(mlir::MLIRContext *context,
                       mlir::PatternBenefit benefit = 1)
@@ -156,8 +156,8 @@ struct SubEintIntOpPattern : public mlir::OpRewritePattern<FHE::SubEintIntOp> {
   };
 };
 
-// This rewrite pattern transforms any instance of `FHE.sub_eint`
-// operators to a negation and an addition.
+/// This rewrite pattern transforms any instance of `FHE.sub_eint`
+/// operators to a negation and an addition.
 struct SubEintOpPattern : public mlir::OpRewritePattern<FHE::SubEintOp> {
   SubEintOpPattern(mlir::MLIRContext *context, mlir::PatternBenefit benefit = 1)
       : ::mlir::OpRewritePattern<FHE::SubEintOp>(context, benefit) {}

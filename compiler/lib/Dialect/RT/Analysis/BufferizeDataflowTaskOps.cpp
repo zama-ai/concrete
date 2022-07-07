@@ -90,7 +90,7 @@ void populateRTBufferizePatterns(
 }
 
 namespace {
-// For documentation see Autopar.td
+/// For documentation see Autopar.td
 struct BufferizeDataflowTaskOpsPass
     : public BufferizeDataflowTaskOpsBase<BufferizeDataflowTaskOpsPass> {
 

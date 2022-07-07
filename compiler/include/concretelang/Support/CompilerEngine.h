@@ -18,9 +18,9 @@
 namespace mlir {
 namespace concretelang {
 
-// Compilation context that acts as the root owner of LLVM and MLIR
-// data structures directly and indirectly referenced by artefacts
-// produced by the `CompilerEngine`.
+/// Compilation context that acts as the root owner of LLVM and MLIR
+/// data structures directly and indirectly referenced by artefacts
+/// produced by the `CompilerEngine`.
 class CompilationContext {
 public:
   CompilationContext();
@@ -68,8 +68,8 @@ struct CompilationOptions {
 
 class CompilerEngine {
 public:
-  // Result of an invocation of the `CompilerEngine` with optional
-  // fields for the results produced by different stages.
+  /// Result of an invocation of the `CompilerEngine` with optional
+  /// fields for the results produced by different stages.
   class CompilationResult {
   public:
     CompilationResult(std::shared_ptr<CompilationContext> compilationContext =
@@ -89,37 +89,35 @@ public:
     std::string outputDirPath;
     std::vector<std::string> objectsPath;
     std::vector<mlir::concretelang::ClientParameters> clientParametersList;
-    /** Path to the runtime library. Will be linked to the output library if set
-     */
+    /// Path to the runtime library. Will be linked to the output library if set
     std::string runtimeLibraryPath;
     bool cleanUp;
 
   public:
-    /** Create a library instance on which you can add compilation results.
-     * Then you can emit a library file with the given path.
-     * cleanUp at false keeps intermediate .obj files for later use. */
+    /// Create a library instance on which you can add compilation results.
+    /// Then you can emit a library file with the given path.
+    /// cleanUp at false keeps intermediate .obj files for later use.
     Library(std::string outputDirPath, std::string runtimeLibraryPath = "",
             bool cleanUp = true)
         : outputDirPath(outputDirPath), runtimeLibraryPath(runtimeLibraryPath),
           cleanUp(cleanUp) {}
-    /** Add a compilation result to the library */
+    /// Add a compilation result to the library
     llvm::Expected<std::string> addCompilation(CompilationResult &compilation);
-    /** Emit the library artifacts with the previously added compilation result
-     */
+    /// Emit the library artifacts with the previously added compilation result
     llvm::Error emitArtifacts(bool sharedLib, bool staticLib,
                               bool clientParameters, bool cppHeader);
-    /** After a shared library has been emitted, its path is here */
+    /// After a shared library has been emitted, its path is here
     std::string sharedLibraryPath;
-    /** After a static library has been emitted, its path is here */
+    /// After a static library has been emitted, its path is here
     std::string staticLibraryPath;
 
-    /** Returns the path of the shared library */
+    /// Returns the path of the shared library
     static std::string getSharedLibraryPath(std::string outputDirPath);
 
-    /** Returns the path of the static library */
+    /// Returns the path of the static library
     static std::string getStaticLibraryPath(std::string outputDirPath);
 
-    /** Returns the path of the static library */
+    /// Returns the path of the static library
     static std::string getClientParametersPath(std::string outputDirPath);
 
     // For advanced use
@@ -132,56 +130,56 @@ public:
     ~Library();
 
   private:
-    /** Emit a shared library with the previously added compilation result */
+    /// Emit a shared library with the previously added compilation result
     llvm::Expected<std::string> emitStatic();
-    /** Emit a shared library with the previously added compilation result */
+    /// Emit a shared library with the previously added compilation result
     llvm::Expected<std::string> emitShared();
-    /** Emit a json ClientParameters corresponding to library content */
+    /// Emit a json ClientParameters corresponding to library content
     llvm::Expected<std::string> emitClientParametersJSON();
     /// Emit a client header file for this corresponding to library content
     llvm::Expected<std::string> emitCppHeader();
   };
 
-  // Specification of the exit stage of the compilation pipeline
+  /// Specification of the exit stage of the compilation pipeline
   enum class Target {
-    // Only read sources and produce corresponding MLIR module
+    /// Only read sources and produce corresponding MLIR module
     ROUND_TRIP,
 
-    // Read sources and exit before any lowering
+    /// Read sources and exit before any lowering
     FHE,
 
-    // Read sources and lower all FHE operations to TFHE
-    // operations
+    /// Read sources and lower all FHE operations to TFHE
+    /// operations
     TFHE,
 
-    // Read sources and lower all FHE and TFHE operations to Concrete
-    // operations
+    /// Read sources and lower all FHE and TFHE operations to Concrete
+    /// operations
     CONCRETE,
 
-    // Read sources and lower all FHE, TFHE and Concrete operations to BConcrete
-    // operations
+    /// Read sources and lower all FHE, TFHE and Concrete operations to
+    /// BConcrete operations
     BCONCRETE,
 
-    // Read sources and lower all FHE, TFHE and Concrete
-    // operations to canonical MLIR dialects. Cryptographic operations
-    // are lowered to invocations of the concrete library.
+    /// Read sources and lower all FHE, TFHE and Concrete
+    /// operations to canonical MLIR dialects. Cryptographic operations
+    /// are lowered to invocations of the concrete library.
     STD,
 
-    // Read sources and lower all FHE, TFHE and Concrete
-    // operations to operations from the LLVM dialect. Cryptographic
-    // operations are lowered to invocations of the concrete library.
+    /// Read sources and lower all FHE, TFHE and Concrete
+    /// operations to operations from the LLVM dialect. Cryptographic
+    /// operations are lowered to invocations of the concrete library.
     LLVM,
 
-    // Same as `LLVM`, but lowers to actual LLVM IR instead of the
-    // LLVM dialect
+    /// Same as `LLVM`, but lowers to actual LLVM IR instead of the
+    /// LLVM dialect
     LLVM_IR,
 
-    // Same as `LLVM_IR`, but invokes the LLVM optimization pipeline
-    // to produce optimized LLVM IR
+    /// Same as `LLVM_IR`, but invokes the LLVM optimization pipeline
+    /// to produce optimized LLVM IR
     OPTIMIZED_LLVM_IR,
 
-    // Same as `OPTIMIZED_LLVM_IR`, but compiles and add an object file to a
-    // futur library
+    /// Same as `OPTIMIZED_LLVM_IR`, but compiles and add an object file to a
+    /// futur library
     LIBRARY
   };
 

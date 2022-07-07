@@ -55,9 +55,9 @@ private:
   mlir::LLVM::LLVMFunctionType type;
   std::string name;
   std::unique_ptr<mlir::ExecutionEngine> engine;
-  // Tell if the DF parallelization was on or during compilation. This will be
-  // useful to abort execution if the runtime doesn't support dataflow
-  // execution, instead of having undefined symbol issues
+  /// Tell if the DF parallelization was on or during compilation. This will be
+  /// useful to abort execution if the runtime doesn't support dataflow
+  /// execution, instead of having undefined symbol issues
   bool useDataflow = false;
 };
 

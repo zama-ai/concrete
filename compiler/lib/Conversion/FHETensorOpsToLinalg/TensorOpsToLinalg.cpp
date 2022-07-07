@@ -40,41 +40,41 @@ struct DotToLinalgGeneric
       : ::mlir::OpRewritePattern<::mlir::concretelang::FHELinalg::Dot>(
             context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
 
-  // This rewrite pattern transforms any instance of
-  // `FHELinalg.dot_eint_int` to an instance of `linalg.generic` with an
-  // appropriate region using `FHE.mul_eint_int` and
-  // `FHE.add_eint` operations, an appropriate specification for the
-  // iteration dimensions and appropriate operations managing the
-  // accumulator of `linalg.generic`.
-  //
-  // Example:
-  //
-  //   %o = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
-  //     (tensor<4x!FHE.eint<0>>,
-  //      tensor<4xi32>) -> (!FHE.eint<0>)
-  //
-  // becomes:
-  //
-  //   %0 = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<0>>
-  //   %1 = linalg.generic {
-  //          indexing_maps = [#map0, #map0, #map1],
-  //          iterator_types = ["reduction"]
-  //        }
-  //        ins(%arg0, %arg1 : tensor<2x!FHE.eint<0>>, tensor<2xi32>)
-  //        outs(%0 : tensor<1x!FHE.eint<0>>) {
-  //          ^bb0(%arg2: !FHE.eint<0>, %arg3: i32, %arg4: !FHE.eint<0>):
-  //            %4 = "FHE.mul_eint_int"(%arg2, %arg3) :
-  //                    (!FHE.eint<0>, i32) -> !FHE.eint<0>
-  //
-  //            %5 = "FHE.add_eint"(%4, %arg4) :
-  //                    (!FHE.eint<0>, !FHE.eint<0>) -> !FHE.eint<0>
-  //
-  //            linalg.yield %5 : !FHE.eint<0>
-  //        } -> tensor<1x!FHE.eint<0>>
-  //
-  //   %c0 = constant 0 : index
-  //   %o = tensor.extract %1[%c0] : tensor<1x!FHE.eint<0>>
-  //
+  /// This rewrite pattern transforms any instance of
+  /// `FHELinalg.dot_eint_int` to an instance of `linalg.generic` with an
+  /// appropriate region using `FHE.mul_eint_int` and
+  /// `FHE.add_eint` operations, an appropriate specification for the
+  /// iteration dimensions and appropriate operations managing the
+  /// accumulator of `linalg.generic`.
+  ///
+  /// Example:
+  ///
+  ///   %o = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+  ///     (tensor<4x!FHE.eint<0>>,
+  ///      tensor<4xi32>) -> (!FHE.eint<0>)
+  ///
+  /// becomes:
+  ///
+  ///   %0 = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<0>>
+  ///   %1 = linalg.generic {
+  ///          indexing_maps = [#map0, #map0, #map1],
+  ///          iterator_types = ["reduction"]
+  ///        }
+  ///        ins(%arg0, %arg1 : tensor<2x!FHE.eint<0>>, tensor<2xi32>)
+  ///        outs(%0 : tensor<1x!FHE.eint<0>>) {
+  ///          ^bb0(%arg2: !FHE.eint<0>, %arg3: i32, %arg4: !FHE.eint<0>):
+  ///            %4 = "FHE.mul_eint_int"(%arg2, %arg3) :
+  ///                    (!FHE.eint<0>, i32) -> !FHE.eint<0>
+  ///
+  ///            %5 = "FHE.add_eint"(%4, %arg4) :
+  ///                    (!FHE.eint<0>, !FHE.eint<0>) -> !FHE.eint<0>
+  ///
+  ///            linalg.yield %5 : !FHE.eint<0>
+  ///        } -> tensor<1x!FHE.eint<0>>
+  ///
+  ///   %c0 = constant 0 : index
+  ///   %o = tensor.extract %1[%c0] : tensor<1x!FHE.eint<0>>
+  ///
   ::mlir::LogicalResult
   matchAndRewrite(::mlir::concretelang::FHELinalg::Dot dotOp,
                   ::mlir::PatternRewriter &rewriter) const override {
@@ -149,16 +149,16 @@ getBroadcastedAffineMap(const mlir::RankedTensorType &resultType,
                               rewriter.getContext());
 }
 
-// This create an affine map following the broadcasting rules, but also takes
-// out one specific element of the LUT from the LUT dimension, which should be
-// the last.
-//
-// Example:
-//
-// resultType: 4x2x5, operandType: 4x2x8, lut_index: 3
-// return: affine_map<(d0, d1, d2) -> (d0, d1, 3)
-// last dimension of the operand is the lut size, and we take the map takes out
-// the element at index 3
+/// This create an affine map following the broadcasting rules, but also takes
+/// out one specific element of the LUT from the LUT dimension, which should be
+/// the last.
+///
+/// Example:
+///
+/// resultType: 4x2x5, operandType: 4x2x8, lut_index: 3
+/// return: affine_map<(d0, d1, d2) -> (d0, d1, 3)
+/// last dimension of the operand is the lut size, and we take the map takes out
+/// the element at index 3
 mlir::AffineMap
 getBroadcastedAffineMapMultiLUT(const mlir::RankedTensorType &resultType,
                                 const mlir::RankedTensorType &operandType,
@@ -183,44 +183,44 @@ getBroadcastedAffineMapMultiLUT(const mlir::RankedTensorType &resultType,
                               rewriter.getContext());
 }
 
-// This template rewrite pattern transforms any instance of
-// operators `FHELinalgOp` that implements the broadasting rules to an
-// instance of `linalg.generic` with an appropriate region using `FHEOp`
-// operation, an appropriate specification for the iteration dimensions and
-// appropriate operations managing the accumulator of `linalg.generic`.
-//
-// Example:
-//
-// %res = FHELinalg.op(%lhs, %rhs):
-// (tensor<D$Ax...xD1x!FHE.eint<p>>, tensor<D$B'x...xD1'xT>)
-//    -> tensor<DR"x...xD1"x!FHE.eint<p>>
-//
-// becomes:
-//
-// #maps_0 = [
-//    affine_map<(a$R", ..., a$A, ..., a1) ->
-//        (dim(lhs, $A) == 1 ? 0 : a$A,..., dim(lhs, 1) == 1 ? 0 : a1)>,
-//    affine_map<(a$R", ..., a1) ->
-//        (dim(rhs, $B') == 1 ? 0 : a$B', ..., dim(rhs, 1) == 1 ? 0 : a1)>,
-//    affine_map<(a$R", ..., a1) -> (a$R", ..., a1)
-// ]
-// #attributes_0 {
-//     indexing_maps = #maps_0,
-//     iterator_types = ["parallel", ..., "parallel"], // $R" parallel
-// }
-// %init = linalg.init_tensor [DR",...,D1"]
-//            : tensor<DR"x...xD1"x!FHE.eint<p>>
-// %res = linalg.generic {
-//     ins(%lhs, %rhs: tensor<DAx...xD1x!FHE.eint<p>>,tensor<DB'x...xD1'xT>)
-//     outs(%init : tensor<DR"x...xD1"x!FHE.eint<p>>)
-//     {
-//         ^bb0(%arg0: !FHE.eint<p>, %arg1: T):
-//             %0 = FHE.op(%arg0, %arg1): !FHE.eint<p>, T ->
-//             !FHE.eint<p>
-//         linalg.yield %0 : !FHE.eint<p>
-//     }
-// }
-//
+/// This template rewrite pattern transforms any instance of
+/// operators `FHELinalgOp` that implements the broadasting rules to an
+/// instance of `linalg.generic` with an appropriate region using `FHEOp`
+/// operation, an appropriate specification for the iteration dimensions and
+/// appropriate operations managing the accumulator of `linalg.generic`.
+///
+/// Example:
+///
+/// %res = FHELinalg.op(%lhs, %rhs):
+/// (tensor<D$Ax...xD1x!FHE.eint<p>>, tensor<D$B'x...xD1'xT>)
+///    -> tensor<DR"x...xD1"x!FHE.eint<p>>
+///
+/// becomes:
+///
+/// #maps_0 = [
+///    affine_map<(a$R", ..., a$A, ..., a1) ->
+///        (dim(lhs, $A) == 1 ? 0 : a$A,..., dim(lhs, 1) == 1 ? 0 : a1)>,
+///    affine_map<(a$R", ..., a1) ->
+///        (dim(rhs, $B') == 1 ? 0 : a$B', ..., dim(rhs, 1) == 1 ? 0 : a1)>,
+///    affine_map<(a$R", ..., a1) -> (a$R", ..., a1)
+/// ]
+/// #attributes_0 {
+///     indexing_maps = #maps_0,
+///     iterator_types = ["parallel", ..., "parallel"], // $R" parallel
+/// }
+/// %init = linalg.init_tensor [DR",...,D1"]
+///            : tensor<DR"x...xD1"x!FHE.eint<p>>
+/// %res = linalg.generic {
+///     ins(%lhs, %rhs: tensor<DAx...xD1x!FHE.eint<p>>,tensor<DB'x...xD1'xT>)
+///     outs(%init : tensor<DR"x...xD1"x!FHE.eint<p>>)
+///     {
+///         ^bb0(%arg0: !FHE.eint<p>, %arg1: T):
+///             %0 = FHE.op(%arg0, %arg1): !FHE.eint<p>, T ->
+///             !FHE.eint<p>
+///         linalg.yield %0 : !FHE.eint<p>
+///     }
+/// }
+///
 template <typename FHELinalgOp, typename FHEOp>
 struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
   FHELinalgOpToLinalgGeneric(::mlir::MLIRContext *context,
@@ -290,51 +290,51 @@ llvm::SmallVector<llvm::StringRef> parallelIteratorType(int n) {
   return llvm::SmallVector<llvm::StringRef>(n, "parallel");
 }
 
-// This class rewrite pattern transforms any instance of
-// operators `FHELinalg.ApplyMappedLookupTableEintOp` that implements the
-// broadasting rules to an instance of `linalg.generic` with an appropriate
-// region using `FHE.ApplyLookupTableEintOp` operation, an appropriate
-// specification for the iteration dimensions and appropriate operations
-// managing the accumulator of `linalg.generic`.
-//
-// The current implementation does not rely on 'tensor.extract_slice'
-// because of a bug in lowering this operation.
-//
-// Example:
-// %res = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map)
-// : (tensor<2x3x!FHE.eint<2>>, tensor<5x4xi64>, tensor<2x3xindex>)
-// -> tensor<2x3x!FHE.eint<2>>
-//
-// becomes:
-//
-// #map = affine_map<(d0, d1) -> (d0, d1)>
-// %init = linalg.init_tensor [2, 3] : tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>
-// %output = linalg.generic {indexing_maps = [#map, #map, #map], iterator_types
-// = ["parallel", "parallel"]} ins(%arg0, %arg2 :
-// tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>, tensor<2x3xindex>) outs(%0 :
-// tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>) {
-//          ^bb0(%arg3: !TFHE.glwe<{_,_,_}{2}>, %lut_idx: index, %arg5:
-//          !TFHE.glwe<{_,_,_}{2}>):  // no predecessors
-//          // SHOULD BE
-//          %lut = tensor.extract_slice %arg1[%[[LUTIDX]], 0] [1,4] [1, 1]
-//                 : tensor<5x4xi64> to tensor<4xi64>
-//          // BUT IS
-//          %i0 = arith.constant 0 : index
-//          ...
-//          %i3 = arith.constant 3 : index
-//          %e0 = tensor.extract %arg5[%lut_idx, %i0] : tensor<5x4xi64>
-//          ...
-//          %e3 = tensor.extract %arg5[%lut_idx, %i3] : tensor<5x4xi64>
-//          %lut = tensor.from_elements %e0, ..., %e3 : tensor<4xi64>
-//          %res  = "TFHE.apply_lookup_table"(%arg3, %[[LUT]])
-//                    {baseLogBS = -1 : i32, baseLogKS = -1 : i32, glweDimension
-//                    = -1 : i32,
-//                      levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS =
-//                      -1 : i32, polynomialSize = -1 : i32}
-//                 : (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
-//          !TFHE.glwe<{_,_,_}{2}> linalg.yield %res :
-//          !TFHE.glwe<{_,_,_}{2}>
-// } -> tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>
+/// This class rewrite pattern transforms any instance of
+/// operators `FHELinalg.ApplyMappedLookupTableEintOp` that implements the
+/// broadasting rules to an instance of `linalg.generic` with an appropriate
+/// region using `FHE.ApplyLookupTableEintOp` operation, an appropriate
+/// specification for the iteration dimensions and appropriate operations
+/// managing the accumulator of `linalg.generic`.
+///
+/// The current implementation does not rely on 'tensor.extract_slice'
+/// because of a bug in lowering this operation.
+///
+/// Example:
+/// %res = "FHELinalg.apply_mapped_lookup_table"(%t, %luts, %map)
+/// : (tensor<2x3x!FHE.eint<2>>, tensor<5x4xi64>, tensor<2x3xindex>)
+/// -> tensor<2x3x!FHE.eint<2>>
+///
+/// becomes:
+///
+/// #map = affine_map<(d0, d1) -> (d0, d1)>
+/// %init = linalg.init_tensor [2, 3] : tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>
+/// %output = linalg.generic {indexing_maps = [#map, #map, #map], iterator_types
+/// = ["parallel", "parallel"]} ins(%arg0, %arg2 :
+/// tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>, tensor<2x3xindex>) outs(%0 :
+/// tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>) {
+///          ^bb0(%arg3: !TFHE.glwe<{_,_,_}{2}>, %lut_idx: index, %arg5:
+///          !TFHE.glwe<{_,_,_}{2}>):  // no predecessors
+///          // SHOULD BE
+///          %lut = tensor.extract_slice %arg1[%[[LUTIDX]], 0] [1,4] [1, 1]
+///                 : tensor<5x4xi64> to tensor<4xi64>
+///          // BUT IS
+///          %i0 = arith.constant 0 : index
+///          ...
+///          %i3 = arith.constant 3 : index
+///          %e0 = tensor.extract %arg5[%lut_idx, %i0] : tensor<5x4xi64>
+///          ...
+///          %e3 = tensor.extract %arg5[%lut_idx, %i3] : tensor<5x4xi64>
+///          %lut = tensor.from_elements %e0, ..., %e3 : tensor<4xi64>
+///          %res  = "TFHE.apply_lookup_table"(%arg3, %[[LUT]])
+///                    {baseLogBS = -1 : i32, baseLogKS = -1 : i32,
+///                    glweDimension = -1 : i32,
+///                      levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS =
+///                      -1 : i32, polynomialSize = -1 : i32}
+///                 : (!TFHE.glwe<{_,_,_}{2}>, tensor<4xi64>) ->
+///          !TFHE.glwe<{_,_,_}{2}> linalg.yield %res :
+///          !TFHE.glwe<{_,_,_}{2}>
+/// } -> tensor<2x3x!TFHE.glwe<{_,_,_}{2}>>
 
 namespace FHELinalg = mlir::concretelang::FHELinalg;
 
@@ -450,50 +450,50 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
   };
 };
 
-// This class rewrite pattern transforms any instance of
-// operators `FHELinalg.ApplyMultiLookupTableEintOp` that implements the
-// broadasting rules to an instance of `linalg.generic` with an appropriate
-// region using `FHE.ApplyLookupTableEintOp` operation, an appropriate
-// specification for the iteration dimensions and appropriate operaztions
-// managing the accumulator of `linalg.generic`.
-//
-// Example:
-//
-// %res = "FHELinalg.apply_multi_lookup_table"(%t, %luts):
-// (tensor<4x3x!FHE.eint<2>>, tensor<3x4xi64>) -> tensor<4x3x!FHE.eint<2>>
-//
-// becomes:
-//
-// #maps_0 = [
-//    affine_map<(d0, d1) -> (d0, d1)>
-//    affine_map<(d0, d1) -> (d1, 0)>
-//    affine_map<(d0, d1) -> (d1, 1)>
-//    affine_map<(d0, d1) -> (d1, 2)>
-//    affine_map<(d0, d1) -> (d1, 3)>
-// ]
-// #attributes_0 {
-//     indexing_maps = #maps_0,
-//     iterator_types = ["parallel", "parallel"],
-// }
-// %init = linalg.init_tensor [4, 3]
-//            : tensor<4x3x!FHE.eint<2>>
-// %res = linalg.generic {
-//     ins(%t, %luts, %luts, %luts, %luts: tensor<4x3x!FHE.eint<p>>,
-//     tensor<3x4xi64>, tensor<3x4xi64>, tensor<3x4xi64>, tensor<3x4xi64>)
-//     outs(%init : tensor<4x3x!FHE.eint<2>>)
-//     {
-//         ^bb0(%arg0: !FHE.eint<2>, %arg1: i64, %arg2: i64, %arg3: i64,
-//         %arg4: i64, %arg5: !FHE.eint<2>):
-//             %lut = tensor.from_elements %arg1, %arg2, %arg3, %arg4 :
-//             tensor<4xi64> %0 = "TFHE.apply_lookup_table"(%arg0, %lut)
-//             {baseLogBS = -1 : i32, baseLogKS = -1 : i32, glweDimension = -1 :
-//             i32, levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS = -1 :
-//             i32, polynomialSize = -1 : i32} : (!TFHE.glwe<{_,_,_}{2}>,
-//             tensor<4xi64>) -> !TFHE.glwe<{_,_,_}{2}>
-//         linalg.yield %0 : !FHE.eint<2>
-//     }
-// }
-//
+/// This class rewrite pattern transforms any instance of
+/// operators `FHELinalg.ApplyMultiLookupTableEintOp` that implements the
+/// broadasting rules to an instance of `linalg.generic` with an appropriate
+/// region using `FHE.ApplyLookupTableEintOp` operation, an appropriate
+/// specification for the iteration dimensions and appropriate operaztions
+/// managing the accumulator of `linalg.generic`.
+///
+/// Example:
+///
+/// %res = "FHELinalg.apply_multi_lookup_table"(%t, %luts):
+/// (tensor<4x3x!FHE.eint<2>>, tensor<3x4xi64>) -> tensor<4x3x!FHE.eint<2>>
+///
+/// becomes:
+///
+/// #maps_0 = [
+///    affine_map<(d0, d1) -> (d0, d1)>
+///    affine_map<(d0, d1) -> (d1, 0)>
+///    affine_map<(d0, d1) -> (d1, 1)>
+///    affine_map<(d0, d1) -> (d1, 2)>
+///    affine_map<(d0, d1) -> (d1, 3)>
+/// ]
+/// #attributes_0 {
+///     indexing_maps = #maps_0,
+///     iterator_types = ["parallel", "parallel"],
+/// }
+/// %init = linalg.init_tensor [4, 3]
+///            : tensor<4x3x!FHE.eint<2>>
+/// %res = linalg.generic {
+///     ins(%t, %luts, %luts, %luts, %luts: tensor<4x3x!FHE.eint<p>>,
+///     tensor<3x4xi64>, tensor<3x4xi64>, tensor<3x4xi64>, tensor<3x4xi64>)
+///     outs(%init : tensor<4x3x!FHE.eint<2>>)
+///     {
+///         ^bb0(%arg0: !FHE.eint<2>, %arg1: i64, %arg2: i64, %arg3: i64,
+///         %arg4: i64, %arg5: !FHE.eint<2>):
+///             %lut = tensor.from_elements %arg1, %arg2, %arg3, %arg4 :
+///             tensor<4xi64> %0 = "TFHE.apply_lookup_table"(%arg0, %lut)
+///             {baseLogBS = -1 : i32, baseLogKS = -1 : i32, glweDimension = -1
+///             : i32, levelBS = -1 : i32, levelKS = -1 : i32, outputSizeKS = -1
+///             : i32, polynomialSize = -1 : i32} : (!TFHE.glwe<{_,_,_}{2}>,
+///             tensor<4xi64>) -> !TFHE.glwe<{_,_,_}{2}>
+///         linalg.yield %0 : !FHE.eint<2>
+///     }
+/// }
+///
 struct FHELinalgApplyMultiLookupTableToLinalgGeneric
     : public mlir::OpRewritePattern<
           mlir::concretelang::FHELinalg::ApplyMultiLookupTableEintOp> {
@@ -578,42 +578,42 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
   };
 };
 
-// This template rewrite pattern transforms any instance of
-// operators `FHELinalg.apply_lookup_table` that implements the broadasting
-// rules to an instance of `linalg.generic` with an appropriate region using
-// `FHE.apply_lookup_table` operation, an appropriate specification for the
-// iteration dimensions and appropriate operations managing the accumulator of
-// `linalg.generic`.
-//
-// Example:
-//
-// FHELinalg.apply_lookup_table(%t, %lut):
-//  tensor<DNx...xD1x!FHE.eint<p>>, tensor<DAxi64>
-//      -> tensor<DNx...xD1x!FHE.eint<p'>>
-//
-// becomes:
-//
-// #maps_0 = [
-//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>,
-//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>
-// ]
-// #attributes_0 {
-//     indexing_maps = #maps_0,
-//     iterator_types = ["parallel",..],//N parallel
-// }
-// %init = linalg.init_tensor [DN,...,D1]
-//            : tensor<DNx...xD1x!FHE.eint<p'>>
-// %res = linalg.generic {
-//     ins(%t: tensor<DNx...xD1x!FHE.eint<p>>)
-//     outs(%init : tensor<DNx...xD1x!FHE.eint<p'>>)
-//     {
-//         ^bb0(%arg0: !FHE.eint<p>):
-//             %0 = FHE.apply_lookup_table(%arg0, %lut): !FHE.eint<p>,
-//             tensor<4xi64> -> !FHE.eint<p'>
-//         linalg.yield %0 : !FHE.eint<p'>
-//     }
-// }
-//
+/// This template rewrite pattern transforms any instance of
+/// operators `FHELinalg.apply_lookup_table` that implements the broadasting
+/// rules to an instance of `linalg.generic` with an appropriate region using
+/// `FHE.apply_lookup_table` operation, an appropriate specification for the
+/// iteration dimensions and appropriate operations managing the accumulator of
+/// `linalg.generic`.
+///
+/// Example:
+///
+/// FHELinalg.apply_lookup_table(%t, %lut):
+///  tensor<DNx...xD1x!FHE.eint<p>>, tensor<DAxi64>
+///      -> tensor<DNx...xD1x!FHE.eint<p'>>
+///
+/// becomes:
+///
+/// #maps_0 = [
+///    affine_map<(aN, ..., a1) -> (aN, ..., a1)>,
+///    affine_map<(aN, ..., a1) -> (aN, ..., a1)>
+/// ]
+/// #attributes_0 {
+///     indexing_maps = #maps_0,
+///     iterator_types = ["parallel",..],//N parallel
+/// }
+/// %init = linalg.init_tensor [DN,...,D1]
+///            : tensor<DNx...xD1x!FHE.eint<p'>>
+/// %res = linalg.generic {
+///     ins(%t: tensor<DNx...xD1x!FHE.eint<p>>)
+///     outs(%init : tensor<DNx...xD1x!FHE.eint<p'>>)
+///     {
+///         ^bb0(%arg0: !FHE.eint<p>):
+///             %0 = FHE.apply_lookup_table(%arg0, %lut): !FHE.eint<p>,
+///             tensor<4xi64> -> !FHE.eint<p'>
+///         linalg.yield %0 : !FHE.eint<p'>
+///     }
+/// }
+///
 struct FHELinalgApplyLookupTableToLinalgGeneric
     : public mlir::OpRewritePattern<
           mlir::concretelang::FHELinalg::ApplyLookupTableEintOp> {
@@ -681,39 +681,39 @@ struct FHELinalgApplyLookupTableToLinalgGeneric
   };
 };
 
-// This template rewrite pattern transforms any instance of
-// operators `FHELinalg.neg_eint` to an instance of `linalg.generic` with an
-// appropriate region using `FHE.neg_eint` operation, an appropriate
-// specification for the iteration dimensions and appropriate operations
-// managing the accumulator of `linalg.generic`.
-//
-// Example:
-//
-// FHELinalg.neg_eint(%tensor):
-//  tensor<DNx...xD1x!FHE.eint<p>> -> tensor<DNx...xD1x!FHE.eint<p'>>
-//
-// becomes:
-//
-// #maps_0 = [
-//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>,
-//    affine_map<(aN, ..., a1) -> (aN, ..., a1)>
-// ]
-// #attributes_0 {
-//     indexing_maps = #maps_0,
-//     iterator_types = ["parallel",..],//N parallel
-// }
-// %init = linalg.init_tensor [DN,...,D1]
-//            : tensor<DNx...xD1x!FHE.eint<p'>>
-// %res = linalg.generic {
-//     ins(%tensor: tensor<DNx...xD1x!FHE.eint<p>>)
-//     outs(%init : tensor<DNx...xD1x!FHE.eint<p'>>)
-//     {
-//         ^bb0(%arg0: !FHE.eint<p>):
-//             %0 = FHE.neg_eint(%arg0): !FHE.eint<p> -> !FHE.eint<p'>
-//         linalg.yield %0 : !FHE.eint<p'>
-//     }
-// }
-//
+/// This template rewrite pattern transforms any instance of
+/// operators `FHELinalg.neg_eint` to an instance of `linalg.generic` with an
+/// appropriate region using `FHE.neg_eint` operation, an appropriate
+/// specification for the iteration dimensions and appropriate operations
+/// managing the accumulator of `linalg.generic`.
+///
+/// Example:
+///
+/// FHELinalg.neg_eint(%tensor):
+///  tensor<DNx...xD1x!FHE.eint<p>> -> tensor<DNx...xD1x!FHE.eint<p'>>
+///
+/// becomes:
+///
+/// #maps_0 = [
+///    affine_map<(aN, ..., a1) -> (aN, ..., a1)>,
+///    affine_map<(aN, ..., a1) -> (aN, ..., a1)>
+/// ]
+/// #attributes_0 {
+///     indexing_maps = #maps_0,
+///     iterator_types = ["parallel",..],//N parallel
+/// }
+/// %init = linalg.init_tensor [DN,...,D1]
+///            : tensor<DNx...xD1x!FHE.eint<p'>>
+/// %res = linalg.generic {
+///     ins(%tensor: tensor<DNx...xD1x!FHE.eint<p>>)
+///     outs(%init : tensor<DNx...xD1x!FHE.eint<p'>>)
+///     {
+///         ^bb0(%arg0: !FHE.eint<p>):
+///             %0 = FHE.neg_eint(%arg0): !FHE.eint<p> -> !FHE.eint<p'>
+///         linalg.yield %0 : !FHE.eint<p'>
+///     }
+/// }
+///
 struct FHELinalgNegEintToLinalgGeneric
     : public mlir::OpRewritePattern<mlir::concretelang::FHELinalg::NegEintOp> {
   FHELinalgNegEintToLinalgGeneric(
@@ -778,44 +778,43 @@ struct FHELinalgNegEintToLinalgGeneric
   };
 };
 
-// This template rewrite pattern transforms any instance of
-// operators `FHELinalgMatmulOp` to an instance of `linalg.generic`
-// with an appropriate region using a builder that create the multiplication
-// operators and `FHE.add_eint` operation, an appropriate specification for
-// the iteration dimensions and appropriate operations managing the accumulator
-// of `linalg.generic`.
-//
-// Example:
-//
-//  "FHELinalg.matmul_eint_int(%a, %b) :
-//      (tensor<MxPx!FHE.eint<p>>, tensor<PxNxip'>) ->
-//          tensor<MxNx!FHE.eint<p>>"
-
-//
-// becomes:
-//
-// #maps_0 = [
-//   (m, n, p) -> (m, p),
-//   (m, n, p) -> (p, n),
-//   (m, n, p) -> (m, n)
-// ]
-// #attributes_0 = {
-//   indexing_maps = #maps_0,
-//   iterator_types = ["parallel", "parallel", "reduction"]
-// }
-// %init = FHE.zero_tensor : tensor<MxNx!FHE.eint<p>>
-// linalg.generic #attributes_0
-//   ins(%A, %B : tensor<MxPx!FHE.eint<p>>,
-//                tensor<PxNxip'>)
-//   outs(%C : tensor<MxNx!FHE.eint<p>>)
-//   {
-//      ^bb0(%a: !FHE.eint<p>, %b: ip', %c: !FHE.eint<p>) :
-//        %d = createMulOp(%a, %b): !FHE.eint<p>
-//        %e = "FHE.add_eint"(%c, %d):
-//              (!FHE.eint<p>, !FHE.eint<p>) -> !FHE.eint<p>
-//        linalg.yield %e : !FHE.eint<p>
-//   }
-//
+/// This template rewrite pattern transforms any instance of
+/// operators `FHELinalgMatmulOp` to an instance of `linalg.generic`
+/// with an appropriate region using a builder that create the multiplication
+/// operators and `FHE.add_eint` operation, an appropriate specification for
+/// the iteration dimensions and appropriate operations managing the accumulator
+/// of `linalg.generic`.
+///
+/// Example:
+///
+///  "FHELinalg.matmul_eint_int(%a, %b) :
+///      (tensor<MxPx!FHE.eint<p>>, tensor<PxNxip'>) ->
+///          tensor<MxNx!FHE.eint<p>>"
+///
+/// becomes:
+///
+/// #maps_0 = [
+///   (m, n, p) -> (m, p),
+///   (m, n, p) -> (p, n),
+///   (m, n, p) -> (m, n)
+/// ]
+/// #attributes_0 = {
+///   indexing_maps = #maps_0,
+///   iterator_types = ["parallel", "parallel", "reduction"]
+/// }
+/// %init = FHE.zero_tensor : tensor<MxNx!FHE.eint<p>>
+/// linalg.generic #attributes_0
+///   ins(%A, %B : tensor<MxPx!FHE.eint<p>>,
+///                tensor<PxNxip'>)
+///   outs(%C : tensor<MxNx!FHE.eint<p>>)
+///   {
+///      ^bb0(%a: !FHE.eint<p>, %b: ip', %c: !FHE.eint<p>) :
+///        %d = createMulOp(%a, %b): !FHE.eint<p>
+///        %e = "FHE.add_eint"(%c, %d):
+///              (!FHE.eint<p>, !FHE.eint<p>) -> !FHE.eint<p>
+///        linalg.yield %e : !FHE.eint<p>
+///   }
+///
 template <typename FHELinalgMatmulOp>
 struct FHELinalgMatmulToLinalgGeneric
     : public mlir::OpRewritePattern<FHELinalgMatmulOp> {
@@ -1089,37 +1088,37 @@ private:
       createMulOp;
 };
 
-// This rewrite pattern transforms any instance of operators
-// `FHELinalg.sum` to an instance of `linalg.generic`.
-//
-// Example:
-//
-//   %result = "FHELinalg.sum"(%input) :
-//     tensor<d0xd1x...xdNx!FHE.eint<p>>() -> !FHE.eint<p>
-//
-// becomes:
-//
-//   #map0 = affine_map<(i0, i1, ..., iN) -> (i0, i1, ..., iN)>
-//   #map1 = affine_map<(i0, i1, ..., iN) -> (0)>
-//
-//   %accumulator = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
-//   %accumulation = linalg.generic
-//     {
-//       indexing_maps = [#map0, #map1],
-//       iterator_types = ["reduction", "reduction", ..., "reduction"]
-//     }
-//     ins(%input : tensor<d0xd1x...xdNx!FHE.eint<7>>)
-//     outs(%accumulator : tensor<1x!FHE.eint<7>>)
-//     {
-//       ^bb0(%a: !FHE.eint<7>, %b: !FHE.eint<7>):
-//         %c = "FHE.add_eint"(%a, %b) :
-//           (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
-//         linalg.yield %c : !FHE.eint<7>
-//     } -> tensor<1x!FHE.eint<7>>
-//
-//   %index = arith.constant 0 : index
-//   %result = tensor.extract %index : tensor<1x!FHE.eint<7>>
-//
+/// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.sum` to an instance of `linalg.generic`.
+///
+/// Example:
+///
+///   %result = "FHELinalg.sum"(%input) :
+///     tensor<d0xd1x...xdNx!FHE.eint<p>>() -> !FHE.eint<p>
+///
+/// becomes:
+///
+///   #map0 = affine_map<(i0, i1, ..., iN) -> (i0, i1, ..., iN)>
+///   #map1 = affine_map<(i0, i1, ..., iN) -> (0)>
+///
+///   %accumulator = "FHE.zero_tensor"() : () -> tensor<1x!FHE.eint<7>>
+///   %accumulation = linalg.generic
+///     {
+///       indexing_maps = [#map0, #map1],
+///       iterator_types = ["reduction", "reduction", ..., "reduction"]
+///     }
+///     ins(%input : tensor<d0xd1x...xdNx!FHE.eint<7>>)
+///     outs(%accumulator : tensor<1x!FHE.eint<7>>)
+///     {
+///       ^bb0(%a: !FHE.eint<7>, %b: !FHE.eint<7>):
+///         %c = "FHE.add_eint"(%a, %b) :
+///           (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
+///         linalg.yield %c : !FHE.eint<7>
+///     } -> tensor<1x!FHE.eint<7>>
+///
+///   %index = arith.constant 0 : index
+///   %result = tensor.extract %index : tensor<1x!FHE.eint<7>>
+///
 struct SumToLinalgGeneric
     : public ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::SumOp> {
   SumToLinalgGeneric(::mlir::MLIRContext *context)
@@ -1245,32 +1244,32 @@ struct SumToLinalgGeneric
   };
 };
 
-// This rewrite pattern transforms any instance of operators
-// `FHELinalg.transpose` to an instance of `linalg.generic`.
-//
-// Example:
-//
-//   %result = "FHELinalg.transpose"(%input: tensor<d0xd1x...xdNx!FHE.eint<p>>)
-//   -> tensor<dNx...xd1xd0x!FHE.eint<p>
-//
-// becomes:
-//
-//   #map0 = affine_map<(i0, i1, ..., iN) -> (iN, ..., i1, i0)>
-//   #map1 = affine_map<(i0, i1, ..., iN) -> (i0, i1, ..., iN)>
-//
-//   %accumulator = "FHE.zero_tensor"() : () ->
-//   tensor<dNx...xd1xd0x!FHE.eint<6>> %result = linalg.generic
-//     {
-//       indexing_maps = [#map0, #map1],
-//       iterator_types = ["parallel", "parallel", ..., "parallel"]
-//     }
-//     ins(%input : tensor<d0xd1x...xdNx!FHE.eint<7>>)
-//     outs(%accumulator : tensor<dNx...xd1xd0x!FHE.eint<7>>)
-//     {
-//       ^bb0(%a: !FHE.eint<7>, %b: !FHE.eint<7>):
-//         linalg.yield %a : !FHE.eint<7>
-//     } -> tensor<dNx...xd1xd0x!FHE.eint<7>>
-//
+/// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.transpose` to an instance of `linalg.generic`.
+///
+/// Example:
+///
+///   %result = "FHELinalg.transpose"(%input: tensor<d0xd1x...xdNx!FHE.eint<p>>)
+///   -> tensor<dNx...xd1xd0x!FHE.eint<p>
+///
+/// becomes:
+///
+///   #map0 = affine_map<(i0, i1, ..., iN) -> (iN, ..., i1, i0)>
+///   #map1 = affine_map<(i0, i1, ..., iN) -> (i0, i1, ..., iN)>
+///
+///   %accumulator = "FHE.zero_tensor"() : () ->
+///   tensor<dNx...xd1xd0x!FHE.eint<6>> %result = linalg.generic
+///     {
+///       indexing_maps = [#map0, #map1],
+///       iterator_types = ["parallel", "parallel", ..., "parallel"]
+///     }
+///     ins(%input : tensor<d0xd1x...xdNx!FHE.eint<7>>)
+///     outs(%accumulator : tensor<dNx...xd1xd0x!FHE.eint<7>>)
+///     {
+///       ^bb0(%a: !FHE.eint<7>, %b: !FHE.eint<7>):
+///         linalg.yield %a : !FHE.eint<7>
+///     } -> tensor<dNx...xd1xd0x!FHE.eint<7>>
+///
 struct TransposeToLinalgGeneric
     : public ::mlir::OpRewritePattern<
           mlir::concretelang::FHELinalg::TransposeOp> {
@@ -1325,25 +1324,25 @@ struct TransposeToLinalgGeneric
   };
 };
 
-// This rewrite pattern transforms any instance of operators
-// `FHELinalg.concat` to instances of `tensor.insert_slice`
-//
-// Example:
-//
-//   %result = "FHELinalg.concat"(%x, %y) { axis = 1 } :
-//     (tensor<2x3x!FHE.eint<4>>, tensor<2x4x!FHE.eint<4>>)
-//       -> tensor<2x7x!FHE.eint<4>>
-//
-// becomes:
-//
-//   %empty = "FHE.zero_tensor"() : () -> tensor<2x7x!FHE.eint<4>>
-//
-//   %x_copied = tensor.insert_slice %x into %empty[0, 0] [2, 3] [1, 1]
-//     : tensor<2x3x!FHE.eint<4>> into tensor<2x7x!FHE.eint<4>>
-//
-//   %y_copied = tensor.insert_slice %y into %x_copied[0, 3] [2, 4] [1, 1]
-//     : tensor<2x4x!FHE.eint<4>> into tensor<2x7x!FHE.eint<4>>
-//
+/// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.concat` to instances of `tensor.insert_slice`
+///
+/// Example:
+///
+///   %result = "FHELinalg.concat"(%x, %y) { axis = 1 } :
+///     (tensor<2x3x!FHE.eint<4>>, tensor<2x4x!FHE.eint<4>>)
+///       -> tensor<2x7x!FHE.eint<4>>
+///
+/// becomes:
+///
+///   %empty = "FHE.zero_tensor"() : () -> tensor<2x7x!FHE.eint<4>>
+///
+///   %x_copied = tensor.insert_slice %x into %empty[0, 0] [2, 3] [1, 1]
+///     : tensor<2x3x!FHE.eint<4>> into tensor<2x7x!FHE.eint<4>>
+///
+///   %y_copied = tensor.insert_slice %y into %x_copied[0, 3] [2, 4] [1, 1]
+///     : tensor<2x4x!FHE.eint<4>> into tensor<2x7x!FHE.eint<4>>
+///
 struct ConcatRewritePattern
     : public mlir::OpRewritePattern<FHELinalg::ConcatOp> {
   ConcatRewritePattern(mlir::MLIRContext *context)
@@ -1449,8 +1448,8 @@ getAsOpFoldResult(mlir::OpBuilder &b, mlir::Location loc,
       }));
 }
 
-// Helper function to get the padding tensor given the padding int values, and
-// the value to pad with
+/// Helper function to get the padding tensor given the padding int values, and
+/// the value to pad with
 static mlir::Value
 getPaddedTensor(mlir::Operation *op, mlir::OpBuilder &b, mlir::Value &input,
                 mlir::SmallVectorImpl<int64_t> &lowPaddingInts,
@@ -1472,10 +1471,10 @@ getPaddedTensor(mlir::Operation *op, mlir::OpBuilder &b, mlir::Value &input,
   return paddedInput;
 }
 
-// This rewrite pattern transforms any instance of operators
-// `FHELinalg.conv2d` to an instance of `linalg.fhelinalg_conv_2d_nchw_fchw`.
-// The transformation consists of padding the input tensor, and initializing the
-// output tensor with bias values if any.
+/// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.conv2d` to an instance of `linalg.fhelinalg_conv_2d_nchw_fchw`.
+/// The transformation consists of padding the input tensor, and initializing
+/// the output tensor with bias values if any.
 struct FHELinalgConv2dToLinalgConv2d
     : public ::mlir::OpRewritePattern<mlir::concretelang::FHELinalg::Conv2dOp> {
   FHELinalgConv2dToLinalgConv2d(::mlir::MLIRContext *context)

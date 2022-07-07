@@ -57,8 +57,8 @@ struct AddRuntimeContextToFuncOpPattern
     return mlir::success();
   }
 
-  // Legal function are one that are private or has a Concrete.context as last
-  // arguments.
+  /// Legal function are one that are private or has a Concrete.context as last
+  /// arguments.
   static bool isLegal(mlir::func::FuncOp funcOp) {
     if (!funcOp.isPublic()) {
       return true;

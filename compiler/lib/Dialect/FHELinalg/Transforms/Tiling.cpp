@@ -22,9 +22,9 @@ namespace concretelang {
 
 namespace {
 
-// Creates a `tensor.extract_slice` operation that extracts a
-// contiguous, 2-dimensional slice with a static size specified by
-// `sizes` at the dynamic offset `offsets`.
+/// Creates a `tensor.extract_slice` operation that extracts a
+/// contiguous, 2-dimensional slice with a static size specified by
+/// `sizes` at the dynamic offset `offsets`.
 mlir::tensor::ExtractSliceOp
 extractContiguous2DSlice(mlir::OpBuilder &builder, mlir::Location loc,
                          mlir::Value T, llvm::ArrayRef<int64_t> sizes,
@@ -43,18 +43,18 @@ extractContiguous2DSlice(mlir::OpBuilder &builder, mlir::Location loc,
                                                builder.getI64IntegerAttr(1)});
 }
 
-// Creates a perfect loop nest of SCF for loops with the lower bounds
-// `lbs`, the upper bounds `ubs` and the steps `steps` in the order
-// from the outermost to the innermost loop. The values specified in
-// `loopCarriedDeps` are loop-carried dependencies carried across all
-// loops.
-//
-// The function `func` is called with a builder for the body of the
-// innermost loop, the original location `loc`, a vector with all
-// induction variables from the outermost to the innermost loop and the
-// loop-carried dependencies.
-//
-// Returns the outermost loop.
+/// Creates a perfect loop nest of SCF for loops with the lower bounds
+/// `lbs`, the upper bounds `ubs` and the steps `steps` in the order
+/// from the outermost to the innermost loop. The values specified in
+/// `loopCarriedDeps` are loop-carried dependencies carried across all
+/// loops.
+///
+/// The function `func` is called with a builder for the body of the
+/// innermost loop, the original location `loc`, a vector with all
+/// induction variables from the outermost to the innermost loop and the
+/// loop-carried dependencies.
+///
+/// Returns the outermost loop.
 mlir::scf::ForOp buildLoopNestWithLoopCarriedDependency(
     mlir::OpBuilder builder, mlir::Location loc,
     llvm::ArrayRef<mlir::Value> lbs, llvm::ArrayRef<mlir::Value> ubs,
@@ -104,28 +104,28 @@ mlir::scf::ForOp buildLoopNestWithLoopCarriedDependency(
   return fops[0];
 }
 
-// Marker to avoid infinite recursion of the rewriting pattern
+/// Marker to avoid infinite recursion of the rewriting pattern
 static const mlir::StringLiteral kTransformMarker =
     "__internal_fhe_linalg_tiling_marker__";
 
-// Rewrite an `FHELinalg.matmul_eint_int` operation as an equivalent
-// sequence of operations consisting of a perfect loop nest of SCF for
-// loops with a `FHELinalg.matmul_eint_int` operation that performs
-// a matrix multiplication on a single tile.
-//
-// The terminology is as follows:
-//
-//   - A: The input matrix of encrypted integers of size `NxM`
-//   - B: The input matrix of plaintext integers of size `MxK`
-//   - C: The output matrix of encrypted integers of size `NxK`
-//
-// At each iteration of the innermost loop, the generated
-// `FHELinalg.matmul_eint_int` operation performs a multiplication
-// of a matrix tile of size `TxU` and a matrix of size `UxV`,
-// producing a tile of size `UxV`.
-//
-// Partial tiles are currently not supported, i.e., `N` must be a
-// multiple of `T`, `M` a multiple of `U` and `K` a multiple of `V`.
+/// Rewrite an `FHELinalg.matmul_eint_int` operation as an equivalent
+/// sequence of operations consisting of a perfect loop nest of SCF for
+/// loops with a `FHELinalg.matmul_eint_int` operation that performs
+/// a matrix multiplication on a single tile.
+///
+/// The terminology is as follows:
+///
+///   - A: The input matrix of encrypted integers of size `NxM`
+///   - B: The input matrix of plaintext integers of size `MxK`
+///   - C: The output matrix of encrypted integers of size `NxK`
+///
+/// At each iteration of the innermost loop, the generated
+/// `FHELinalg.matmul_eint_int` operation performs a multiplication
+/// of a matrix tile of size `TxU` and a matrix of size `UxV`,
+/// producing a tile of size `UxV`.
+///
+/// Partial tiles are currently not supported, i.e., `N` must be a
+/// multiple of `T`, `M` a multiple of `U` and `K` a multiple of `V`.
 class MatMulTilingPattern
     : public mlir::OpRewritePattern<
           mlir::concretelang::FHELinalg::MatMulEintIntOp> {
@@ -312,8 +312,8 @@ public:
   }
 };
 
-// Perfoms the actual tiling of `FHELinalg.matmul_eint_int`
-// operations that have been marked with a "tile-sizes" attribute.
+/// Perfoms the actual tiling of `FHELinalg.matmul_eint_int`
+/// operations that have been marked with a "tile-sizes" attribute.
 class FHELinalgTilingPass : public FHELinalgTilingBase<FHELinalgTilingPass> {
 public:
   void runOnOperation() override {
@@ -332,8 +332,8 @@ public:
   }
 };
 
-// Marks all `FHELinalg.matmul_eint_int` operations that with a
-// "tile-sizes" attribute containing the specified tile sizes.
+/// Marks all `FHELinalg.matmul_eint_int` operations that with a
+/// "tile-sizes" attribute containing the specified tile sizes.
 class FHELinalgTilingMarkerPass
     : public FHELinalgTilingMarkerBase<FHELinalgTilingMarkerPass> {
 public:

@@ -52,8 +52,8 @@ static bool isCandidateForTask(Operation *op) {
       FHELinalg::ConcatOp, FHELinalg::FhelinalgConv2DNchwFchwOp>(op);
 }
 
-// Identify operations that are beneficial to sink into tasks.  These
-// operations must not have side-effects and not be `isCandidateForTask`
+/// Identify operations that are beneficial to sink into tasks.  These
+/// operations must not have side-effects and not be `isCandidateForTask`
 static bool isSinkingBeneficiary(Operation *op) {
   return isa<FHE::ZeroEintOp, arith::ConstantOp, memref::DimOp, arith::SelectOp,
              mlir::arith::CmpIOp>(op);
@@ -126,7 +126,7 @@ LogicalResult sinkOperationsIntoDFTask(RT::DataflowTaskOp taskOp) {
   return success();
 }
 
-// For documentation see Autopar.td
+/// For documentation see Autopar.td
 struct BuildDataflowTaskGraphPass
     : public BuildDataflowTaskGraphBase<BuildDataflowTaskGraphPass> {
 
@@ -194,7 +194,7 @@ std::unique_ptr<mlir::Pass> createBuildDataflowTaskGraphPass(bool debug) {
 }
 
 namespace {
-// Marker to avoid infinite recursion of the rewriting pattern
+/// Marker to avoid infinite recursion of the rewriting pattern
 static const mlir::StringLiteral kTransformMarker =
     "_internal_RT_FixDataflowTaskOpInputsPattern_marker__";
 
@@ -232,7 +232,7 @@ public:
 } // namespace
 
 namespace {
-// For documentation see Autopar.td
+/// For documentation see Autopar.td
 struct FixupDataflowTaskOpsPass
     : public FixupDataflowTaskOpsBase<FixupDataflowTaskOpsPass> {
 

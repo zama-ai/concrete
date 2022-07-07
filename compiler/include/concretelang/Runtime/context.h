@@ -26,7 +26,7 @@ typedef struct RuntimeContext {
 
   RuntimeContext() {}
 
-  // Ensure that the engines map is not copied
+  /// Ensure that the engines map is not copied
   RuntimeContext(const RuntimeContext &ctx)
       : evaluationKeys(ctx.evaluationKeys) {}
   RuntimeContext(const RuntimeContext &&other)

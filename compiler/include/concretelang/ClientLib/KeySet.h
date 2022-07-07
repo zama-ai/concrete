@@ -32,43 +32,43 @@ public:
   ~KeySet();
   KeySet(KeySet &other) = delete;
 
-  // allocate a KeySet according the ClientParameters.
+  /// allocate a KeySet according the ClientParameters.
   static outcome::checked<std::unique_ptr<KeySet>, StringError>
   generate(ClientParameters &params, uint64_t seed_msb, uint64_t seed_lsb);
 
-  // isInputEncrypted return true if the input at the given pos is encrypted.
+  /// isInputEncrypted return true if the input at the given pos is encrypted.
   bool isInputEncrypted(size_t pos);
 
-  // getInputLweSecretKeyParam returns the parameters of the lwe secret key for
-  // the input at the given `pos`.
-  // The input must be encrupted
+  /// getInputLweSecretKeyParam returns the parameters of the lwe secret key for
+  /// the input at the given `pos`.
+  /// The input must be encrupted
   LweSecretKeyParam getInputLweSecretKeyParam(size_t pos) {
     auto gate = inputGate(pos);
     auto inputSk = this->secretKeys.find(gate.encryption->secretKeyID);
     return inputSk->second.first;
   }
 
-  // getOutputLweSecretKeyParam returns the parameters of the lwe secret key for
-  // the given output.
+  /// getOutputLweSecretKeyParam returns the parameters of the lwe secret key
+  /// for the given output.
   LweSecretKeyParam getOutputLweSecretKeyParam(size_t pos) {
     auto gate = outputGate(pos);
     auto outputSk = this->secretKeys.find(gate.encryption->secretKeyID);
     return outputSk->second.first;
   }
 
-  // allocate a lwe ciphertext buffer for the argument at argPos, set the size
-  // of the allocated buffer.
+  /// allocate a lwe ciphertext buffer for the argument at argPos, set the size
+  /// of the allocated buffer.
   outcome::checked<void, StringError>
   allocate_lwe(size_t argPos, uint64_t **ciphertext, uint64_t &size);
 
-  // encrypt the input to the ciphertext for the argument at argPos.
+  /// encrypt the input to the ciphertext for the argument at argPos.
   outcome::checked<void, StringError>
   encrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t input);
 
-  // isOuputEncrypted return true if the output at the given pos is encrypted.
+  /// isOuputEncrypted return true if the output at the given pos is encrypted.
   bool isOutputEncrypted(size_t pos);
 
-  // decrypt the ciphertext to the output for the argument at argPos.
+  /// decrypt the ciphertext to the output for the argument at argPos.
   outcome::checked<void, StringError>
   decrypt_lwe(size_t argPos, uint64_t *ciphertext, uint64_t &output);
 

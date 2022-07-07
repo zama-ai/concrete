@@ -17,13 +17,13 @@
 extern "C" {
 #endif
 
-// C wrapper of the mlir::concretelang::LambdaArgument
+/// C wrapper of the mlir::concretelang::LambdaArgument
 struct lambdaArgument {
   std::shared_ptr<mlir::concretelang::LambdaArgument> ptr;
 };
 typedef struct lambdaArgument lambdaArgument;
 
-// Hold a list of lambdaArgument to represent execution arguments
+/// Hold a list of lambdaArgument to represent execution arguments
 struct executionArguments {
   lambdaArgument *data;
   size_t size;
@@ -136,13 +136,13 @@ evaluationKeysUnserialize(const std::string &buffer);
 MLIR_CAPI_EXPORTED std::string evaluationKeysSerialize(
     concretelang::clientlib::EvaluationKeys &evaluationKeys);
 
-// Parse then print a textual representation of an MLIR module
+/// Parse then print a textual representation of an MLIR module
 MLIR_CAPI_EXPORTED std::string roundTrip(const char *module);
 
-// Terminate parallelization
+/// Terminate parallelization
 MLIR_CAPI_EXPORTED void terminateParallelization();
 
-// Create a lambdaArgument from a tensor of different data types
+/// Create a lambdaArgument from a tensor of different data types
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU8(
     std::vector<uint8_t> data, std::vector<int64_t> dimensions);
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU16(
@@ -151,22 +151,22 @@ MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU32(
     std::vector<uint32_t> data, std::vector<int64_t> dimensions);
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromTensorU64(
     std::vector<uint64_t> data, std::vector<int64_t> dimensions);
-// Create a lambdaArgument from a scalar
+/// Create a lambdaArgument from a scalar
 MLIR_CAPI_EXPORTED lambdaArgument lambdaArgumentFromScalar(uint64_t scalar);
-// Check if a lambdaArgument holds a tensor
+/// Check if a lambdaArgument holds a tensor
 MLIR_CAPI_EXPORTED bool lambdaArgumentIsTensor(lambdaArgument &lambda_arg);
-// Get tensor data from lambdaArgument
+/// Get tensor data from lambdaArgument
 MLIR_CAPI_EXPORTED std::vector<uint64_t>
 lambdaArgumentGetTensorData(lambdaArgument &lambda_arg);
-// Get tensor dimensions from lambdaArgument
+/// Get tensor dimensions from lambdaArgument
 MLIR_CAPI_EXPORTED std::vector<int64_t>
 lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg);
-// Check if a lambdaArgument holds a scalar
+/// Check if a lambdaArgument holds a scalar
 MLIR_CAPI_EXPORTED bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg);
-// Get scalar value from lambdaArgument
+/// Get scalar value from lambdaArgument
 MLIR_CAPI_EXPORTED uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg);
 
-// Compile the textual representation of MLIR modules to a library.
+/// Compile the textual representation of MLIR modules to a library.
 MLIR_CAPI_EXPORTED std::string library(std::string libraryPath,
                                        std::vector<std::string> modules);
 

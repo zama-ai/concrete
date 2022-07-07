@@ -3,9 +3,7 @@
 // https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
 // for license information.
 
-/**
-   Define the API exposed to the compiler for code generation.
- */
+/// Define the API exposed to the compiler for code generation.
 
 #ifndef CONCRETELANG_DFR_RUNTIME_API_H
 #define CONCRETELANG_DFR_RUNTIME_API_H

@@ -32,8 +32,8 @@ namespace mlir {
 namespace concretelang {
 namespace {
 
-// Returns `true` if the given value is a scalar or tensor argument of
-// a function, for which a MANP of 1 can be assumed.
+/// Returns `true` if the given value is a scalar or tensor argument of
+/// a function, for which a MANP of 1 can be assumed.
 static bool isEncryptedFunctionParameter(mlir::Value value) {
   if (!value.isa<mlir::BlockArgument>())
     return false;
@@ -54,9 +54,9 @@ static bool isEncryptedFunctionParameter(mlir::Value value) {
            .isa<mlir::concretelang::FHE::EncryptedIntegerType>()));
 }
 
-// Returns the bit width of `value` if `value` is an encrypted integer
-// or the bit width of the elements if `value` is a tensor of
-// encrypted integers.
+/// Returns the bit width of `value` if `value` is an encrypted integer
+/// or the bit width of the elements if `value` is a tensor of
+/// encrypted integers.
 static unsigned int getEintPrecision(mlir::Value value) {
   if (auto ty = value.getType()
                     .dyn_cast_or_null<
@@ -77,11 +77,11 @@ static unsigned int getEintPrecision(mlir::Value value) {
   return 0;
 }
 
-// The `MANPLatticeValue` represents the squared Minimal Arithmetic
-// Noise Padding for an operation using the squared 2-norm of an
-// equivalent dot operation. This can either be an actual value if the
-// values for its predecessors have been calculated beforehand or an
-// unknown value otherwise.
+/// The `MANPLatticeValue` represents the squared Minimal Arithmetic
+/// Noise Padding for an operation using the squared 2-norm of an
+/// equivalent dot operation. This can either be an actual value if the
+/// values for its predecessors have been calculated beforehand or an
+/// unknown value otherwise.
 struct MANPLatticeValue {
   MANPLatticeValue(llvm::Optional<llvm::APInt> manp = {}) : manp(manp) {}
 
@@ -109,10 +109,10 @@ struct MANPLatticeValue {
     return this->manp == rhs.manp;
   }
 
-  // Required by `mlir::LatticeElement::join()`, but should never be
-  // invoked, as `MANPAnalysis::visitOperation()` takes care of
-  // combining the squared Minimal Arithmetic Noise Padding of
-  // operands into the Minimal Arithmetic Noise Padding of the result.
+  /// Required by `mlir::LatticeElement::join()`, but should never be
+  /// invoked, as `MANPAnalysis::visitOperation()` takes care of
+  /// combining the squared Minimal Arithmetic Noise Padding of
+  /// operands into the Minimal Arithmetic Noise Padding of the result.
   static MANPLatticeValue join(const MANPLatticeValue &lhs,
                                const MANPLatticeValue &rhs) {
     assert(false && "Minimal Arithmetic Noise Padding values can only be "
@@ -126,9 +126,9 @@ protected:
   llvm::Optional<llvm::APInt> manp;
 };
 
-// Checks if `lhs` is less than `rhs`, where both values are assumed
-// to be positive. The bit width of the smaller `APInt` is extended
-// before comparison via `APInt::ult`.
+/// Checks if `lhs` is less than `rhs`, where both values are assumed
+/// to be positive. The bit width of the smaller `APInt` is extended
+/// before comparison via `APInt::ult`.
 static bool APIntWidthExtendULT(const llvm::APInt &lhs,
                                 const llvm::APInt &rhs) {
   if (lhs.getBitWidth() < rhs.getBitWidth())
@@ -139,9 +139,9 @@ static bool APIntWidthExtendULT(const llvm::APInt &lhs,
     return lhs.ult(rhs);
 }
 
-// Adds two `APInt` values, where both values are assumed to be
-// positive. The bit width of the operands is extended in order to
-// guarantee that the sum fits into the resulting `APInt`.
+/// Adds two `APInt` values, where both values are assumed to be
+/// positive. The bit width of the operands is extended in order to
+/// guarantee that the sum fits into the resulting `APInt`.
 static llvm::APInt APIntWidthExtendUAdd(const llvm::APInt &lhs,
                                         const llvm::APInt &rhs) {
   unsigned maxBits = std::max(lhs.getBitWidth(), rhs.getBitWidth());
@@ -154,9 +154,9 @@ static llvm::APInt APIntWidthExtendUAdd(const llvm::APInt &lhs,
   return lhs.zext(targetWidth) + rhs.zext(targetWidth);
 }
 
-// Multiplies two `APInt` values, where both values are assumed to be
-// positive. The bit width of the operands is extended in order to
-// guarantee that the product fits into the resulting `APInt`.
+/// Multiplies two `APInt` values, where both values are assumed to be
+/// positive. The bit width of the operands is extended in order to
+/// guarantee that the product fits into the resulting `APInt`.
 static llvm::APInt APIntWidthExtendUMul(const llvm::APInt &lhs,
                                         const llvm::APInt &rhs) {
   // Make sure the required number of bits can be represented by the
@@ -170,9 +170,9 @@ static llvm::APInt APIntWidthExtendUMul(const llvm::APInt &lhs,
   return lhs.zext(targetWidth) * rhs.zext(targetWidth);
 }
 
-// Returns the maximum value beetwen `lhs` and `rhs`, where both values are
-// assumed to be positive. The bit width of the smaller `APInt` is extended
-// before comparison via `APInt::ult`.
+/// Returns the maximum value beetwen `lhs` and `rhs`, where both values are
+/// assumed to be positive. The bit width of the smaller `APInt` is extended
+/// before comparison via `APInt::ult`.
 static llvm::APInt APIntUMax(const llvm::APInt &lhs, const llvm::APInt &rhs) {
   if (APIntWidthExtendULT(lhs, rhs)) {
     return rhs;
@@ -180,9 +180,9 @@ static llvm::APInt APIntUMax(const llvm::APInt &lhs, const llvm::APInt &rhs) {
   return lhs;
 }
 
-// Calculates the square of `i`. The bit width `i` is extended in
-// order to guarantee that the product fits into the resulting
-// `APInt`.
+/// Calculates the square of `i`. The bit width `i` is extended in
+/// order to guarantee that the product fits into the resulting
+/// `APInt`.
 static llvm::APInt APIntWidthExtendUnsignedSq(const llvm::APInt &i) {
   // Make sure the required number of bits can be represented by the
   // `unsigned` argument of `zext`.
@@ -194,7 +194,7 @@ static llvm::APInt APIntWidthExtendUnsignedSq(const llvm::APInt &i) {
   return ie * ie;
 }
 
-// Calculates the square of the absolute value of `i`.
+/// Calculates the square of the absolute value of `i`.
 static llvm::APInt APIntWidthExtendSqForConstant(const llvm::APInt &i) {
   // Make sure the required number of bits can be represented by the
   // `unsigned` argument of `zext`.
@@ -204,9 +204,9 @@ static llvm::APInt APIntWidthExtendSqForConstant(const llvm::APInt &i) {
                      i.abs().getZExtValue() * i.abs().getZExtValue());
 }
 
-// Calculates the square root of `i` and rounds it to the next highest
-// integer value (i.e., the square of the result is guaranteed to be
-// greater or equal to `i`).
+/// Calculates the square root of `i` and rounds it to the next highest
+/// integer value (i.e., the square of the result is guaranteed to be
+/// greater or equal to `i`).
 static llvm::APInt APIntCeilSqrt(const llvm::APInt &i) {
   llvm::APInt res = i.sqrt();
   llvm::APInt resSq = APIntWidthExtendUnsignedSq(res);
@@ -217,17 +217,17 @@ static llvm::APInt APIntCeilSqrt(const llvm::APInt &i) {
     return res;
 }
 
-// Returns a string representation of `i` assuming that `i` is an
-// unsigned value.
+/// Returns a string representation of `i` assuming that `i` is an
+/// unsigned value.
 static std::string APIntToStringValUnsigned(const llvm::APInt &i) {
   llvm::SmallString<32> s;
   i.toStringUnsigned(s);
   return std::string(s.c_str());
 }
 
-// Calculates the square of the 2-norm of a tensor initialized with a
-// dense matrix of constant, signless integers. Aborts if the value
-// type or initialization of of `cstOp` is incorrect.
+/// Calculates the square of the 2-norm of a tensor initialized with a
+/// dense matrix of constant, signless integers. Aborts if the value
+/// type or initialization of of `cstOp` is incorrect.
 static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp,
                                          llvm::APInt eNorm) {
   mlir::DenseIntElementsAttr denseVals =
@@ -252,10 +252,10 @@ static llvm::APInt denseCstTensorNorm2Sq(mlir::arith::ConstantOp cstOp,
   return accu;
 }
 
-// Calculates the square of the 2-norm of a 1D tensor of signless
-// integers by conservatively assuming that the dynamic values are the
-// maximum for the integer width. Aborts if the tensor type `tTy` is
-// incorrect.
+/// Calculates the square of the 2-norm of a 1D tensor of signless
+/// integers by conservatively assuming that the dynamic values are the
+/// maximum for the integer width. Aborts if the tensor type `tTy` is
+/// incorrect.
 static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy,
                                          llvm::APInt eNorm) {
   assert(tTy && tTy.getElementType().isSignlessInteger() &&
@@ -283,7 +283,7 @@ static llvm::APInt denseDynTensorNorm2Sq(mlir::TensorType tTy,
   return APIntWidthExtendUMul(maxMulSqNorm, nEltsAP);
 }
 
-// Returns the squared 2-norm of the maximum value of the dense values.
+/// Returns the squared 2-norm of the maximum value of the dense values.
 static llvm::APInt maxIntNorm2Sq(mlir::DenseIntElementsAttr denseVals) {
   auto denseValsAP = denseVals.getValues<llvm::APInt>();
 
@@ -298,9 +298,9 @@ static llvm::APInt maxIntNorm2Sq(mlir::DenseIntElementsAttr denseVals) {
   return APIntWidthExtendSqForConstant(maxCst);
 }
 
-// Returns the squared 2-norm for a dynamic integer by conservatively
-// assuming that the integer's value is the maximum for the integer
-// width.
+/// Returns the squared 2-norm for a dynamic integer by conservatively
+/// assuming that the integer's value is the maximum for the integer
+/// width.
 static llvm::APInt conservativeIntNorm2Sq(mlir::Type t) {
   assert(t.isSignlessInteger() && "Type must be a signless integer type");
   assert(std::numeric_limits<unsigned>::max() - t.getIntOrFloatBitWidth() > 1);
@@ -309,8 +309,8 @@ static llvm::APInt conservativeIntNorm2Sq(mlir::Type t) {
   return APIntWidthExtendUnsignedSq(maxVal);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of an
-// `FHELinalg.dot_eint_int` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of an
+/// `FHELinalg.dot_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::Dot op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -343,8 +343,8 @@ static llvm::APInt getSqMANP(
   }
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of an
-// `FHE.add_eint_int` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of an
+/// `FHE.add_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::AddEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -378,8 +378,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUAdd(sqNorm, eNorm);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.add_eint` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.add_eint` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::AddEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -395,8 +395,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUAdd(a, b);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.sub_int_eint` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.sub_int_eint` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::SubIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -429,8 +429,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUAdd(sqNorm, eNorm);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.sub_eint_int` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.sub_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::SubEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -463,8 +463,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUAdd(sqNorm, eNorm);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.sub_eint` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.sub_eint` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::SubEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -480,8 +480,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUAdd(a, b);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.neg_eint` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.neg_eint` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::NegEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -496,8 +496,8 @@ static llvm::APInt getSqMANP(
   return eNorm;
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.mul_eint_int` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHE::MulEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -531,8 +531,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUMul(sqNorm, eNorm);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of an
-// `FHELinalg.add_eint_int` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of an
+/// `FHELinalg.add_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::AddEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -587,8 +587,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUAdd(a, b);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHELinalg.sub_int_eint` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHELinalg.sub_int_eint` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::SubIntEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -678,8 +678,8 @@ static llvm::APInt getSqMANP(
   return APIntWidthExtendUAdd(a, b);
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHELinalg.neg_eint` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHELinalg.neg_eint` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::NegEintOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -694,8 +694,8 @@ static llvm::APInt getSqMANP(
   return eNorm;
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.mul_eint_int` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::MulEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -804,8 +804,8 @@ static llvm::APInt calculateSqManpForMatMulWithDenseValues(
   return maximumNorm;
 }
 
-// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
-// that is equivalent to an `FHE.mul_eint_int` operation.
+/// Calculates the squared Minimal Arithmetic Noise Padding of a dot operation
+/// that is equivalent to an `FHE.mul_eint_int` operation.
 static llvm::APInt getSqMANP(
     mlir::concretelang::FHELinalg::MatMulEintIntOp op,
     llvm::ArrayRef<mlir::LatticeElement<MANPLatticeValue> *> operandMANPs) {
@@ -1508,7 +1508,7 @@ private:
 } // namespace
 
 namespace {
-// For documentation see MANP.td
+/// For documentation see MANP.td
 struct MANPPass : public MANPBase<MANPPass> {
   void runOnOperation() override {
     mlir::func::FuncOp func = getOperation();
@@ -1524,16 +1524,16 @@ protected:
 };
 } // end anonymous namespace
 
-// Create an instance of the Minimal Arithmetic Noise Padding analysis
-// pass. If `debug` is true, for each operation, the pass emits a
-// remark containing the squared Minimal Arithmetic Noise Padding of
-// the equivalent dot operation.
+/// Create an instance of the Minimal Arithmetic Noise Padding analysis
+/// pass. If `debug` is true, for each operation, the pass emits a
+/// remark containing the squared Minimal Arithmetic Noise Padding of
+/// the equivalent dot operation.
 std::unique_ptr<mlir::Pass> createMANPPass(bool debug) {
   return std::make_unique<MANPPass>(debug);
 }
 
 namespace {
-// For documentation see MANP.td
+/// For documentation see MANP.td
 struct MaxMANPPass : public MaxMANPBase<MaxMANPPass> {
   void runOnOperation() override {
     mlir::func::FuncOp func = getOperation();

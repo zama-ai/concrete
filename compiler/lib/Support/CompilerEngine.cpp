@@ -39,8 +39,8 @@
 namespace mlir {
 namespace concretelang {
 
-// Creates a new compilation context that can be shared across
-// compilation engines and results
+/// Creates a new compilation context that can be shared across
+/// compilation engines and results
 std::shared_ptr<CompilationContext> CompilationContext::createShared() {
   return std::make_shared<CompilationContext>();
 }
@@ -53,8 +53,8 @@ CompilationContext::~CompilationContext() {
   delete this->llvmContext;
 }
 
-// Returns the MLIR context for a compilation context. Creates and
-// initializes a new MLIR context if necessary.
+/// Returns the MLIR context for a compilation context. Creates and
+/// initializes a new MLIR context if necessary.
 mlir::MLIRContext *CompilationContext::getMLIRContext() {
   if (this->mlirContext == nullptr) {
     mlir::DialectRegistry registry;
@@ -79,8 +79,8 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
   return this->mlirContext;
 }
 
-// Returns the LLVM context for a compilation context. Creates and
-// initializes a new LLVM context if necessary.
+/// Returns the LLVM context for a compilation context. Creates and
+/// initializes a new LLVM context if necessary.
 llvm::LLVMContext *CompilationContext::getLLVMContext() {
   if (this->llvmContext == nullptr)
     this->llvmContext = new llvm::LLVMContext();
@@ -88,9 +88,9 @@ llvm::LLVMContext *CompilationContext::getLLVMContext() {
   return this->llvmContext;
 }
 
-// Sets the FHE constraints for the compilation. Overrides any
-// automatically detected configuration and prevents the autodetection
-// pass from running.
+/// Sets the FHE constraints for the compilation. Overrides any
+/// automatically detected configuration and prevents the autodetection
+/// pass from running.
 void CompilerEngine::setFHEConstraints(
     const mlir::concretelang::V0FHEConstraint &c) {
   this->overrideMaxEintPrecision = c.p;
@@ -112,7 +112,7 @@ void CompilerEngine::setEnablePass(
   this->enablePass = enablePass;
 }
 
-// Returns the overwritten V0FHEConstraint or try to compute them from FHE
+/// Returns the overwritten V0FHEConstraint or try to compute them from FHE
 llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
 CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
@@ -136,7 +136,7 @@ CompilerEngine::getV0FHEConstraint(CompilationResult &res) {
   return fheConstraintsOrErr.get();
 }
 
-// set the fheContext field if the v0Constraint can be computed
+/// set the fheContext field if the v0Constraint can be computed
 llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   auto fheConstraintOrErr = getV0FHEConstraint(res);
   if (auto err = fheConstraintOrErr.takeError())
@@ -165,10 +165,10 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
 }
 
 using OptionalLib = llvm::Optional<std::shared_ptr<CompilerEngine::Library>>;
-// Compile the sources managed by the source manager `sm` to the
-// target dialect `target`. If successful, the result can be retrieved
-// using `getModule()` and `getLLVMModule()`, respectively depending
-// on the target dialect.
+/// Compile the sources managed by the source manager `sm` to the
+/// target dialect `target`. If successful, the result can be retrieved
+/// using `getModule()` and `getLLVMModule()`, respectively depending
+/// on the target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   std::unique_ptr<mlir::SourceMgrDiagnosticVerifierHandler> smHandler;
@@ -371,19 +371,19 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   return std::move(res);
 }
 
-// Compile the source `s` to the target dialect `target`. If successful, the
-// result can be retrieved using `getModule()` and `getLLVMModule()`,
-// respectively depending on the target dialect.
+/// Compile the source `s` to the target dialect `target`. If successful, the
+/// result can be retrieved using `getModule()` and `getLLVMModule()`,
+/// respectively depending on the target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(llvm::StringRef s, Target target, OptionalLib lib) {
   std::unique_ptr<llvm::MemoryBuffer> mb = llvm::MemoryBuffer::getMemBuffer(s);
   return this->compile(std::move(mb), target, lib);
 }
 
-// Compile the contained in `buffer` to the target dialect
-// `target`. If successful, the result can be retrieved using
-// `getModule()` and `getLLVMModule()`, respectively depending on the
-// target dialect.
+/// Compile the contained in `buffer` to the target dialect
+/// `target`. If successful, the result can be retrieved using
+/// `getModule()` and `getLLVMModule()`, respectively depending on the
+/// target dialect.
 llvm::Expected<CompilerEngine::CompilationResult>
 CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
                         Target target, OptionalLib lib) {
@@ -442,7 +442,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
   return *outputLib.get();
 }
 
-/** Returns the path of the shared library */
+/// Returns the path of the shared library
 std::string
 CompilerEngine::Library::getSharedLibraryPath(std::string outputDirPath) {
   llvm::SmallString<0> sharedLibraryPath(outputDirPath);
@@ -450,7 +450,7 @@ CompilerEngine::Library::getSharedLibraryPath(std::string outputDirPath) {
   return sharedLibraryPath.str().str();
 }
 
-/** Returns the path of the static library */
+/// Returns the path of the static library
 std::string
 CompilerEngine::Library::getStaticLibraryPath(std::string outputDirPath) {
   llvm::SmallString<0> staticLibraryPath(outputDirPath);
@@ -458,7 +458,7 @@ CompilerEngine::Library::getStaticLibraryPath(std::string outputDirPath) {
   return staticLibraryPath.str().str();
 }
 
-/** Returns the path of the static library */
+/// Returns the path of the static library
 std::string
 CompilerEngine::Library::getClientParametersPath(std::string outputDirPath) {
   llvm::SmallString<0> clientParametersPath(outputDirPath);

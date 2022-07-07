@@ -51,9 +51,9 @@ mlir::LogicalResult _verifyGLWEIntegerOperator(mlir::OpState &op,
   return mlir::success();
 }
 
-// verifyGLWEIntegerOperator verify parameters of operators that has the
-// following signature (!TFHE.glwe<{dim,poly,bits}{p}>, ip+1) ->
-// (!TFHE.glwe<{dim,poly,bits}{p}>))
+/// verifyGLWEIntegerOperator verify parameters of operators that has the
+/// following signature (!TFHE.glwe<{dim,poly,bits}{p}>, ip+1) ->
+/// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyGLWEIntegerOperator(Operator &op) {
   auto a = ((mlir::Type)(op.a().getType())).cast<GLWECipherTextType>();
@@ -64,9 +64,9 @@ mlir::LogicalResult verifyGLWEIntegerOperator(Operator &op) {
   return _verifyGLWEIntegerOperator(op, a, b, result);
 }
 
-// verifyIntegerGLWEOperator verify parameters of operators that has the
-// following signature (ip+1, !TFHE.glwe<{dim,poly,bits}{p}>) ->
-// (!TFHE.glwe<{dim,poly,bits}{p}>))
+/// verifyIntegerGLWEOperator verify parameters of operators that has the
+/// following signature (ip+1, !TFHE.glwe<{dim,poly,bits}{p}>) ->
+/// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyIntegerGLWEOperator(Operator &op) {
   auto a = ((mlir::Type)(op.a().getType())).cast<IntegerType>();
@@ -77,10 +77,10 @@ mlir::LogicalResult verifyIntegerGLWEOperator(Operator &op) {
   return _verifyGLWEIntegerOperator(op, b, a, result);
 }
 
-// verifyBinaryGLWEOperator verify parameters of operators that has the
-// following signature (!TFHE.glwe<{dim,poly,bits}{p}>,
-// !TFHE.glwe<{dim,poly,bits}{p}>) ->
-// (!TFHE.glwe<{dim,poly,bits}{p}>))
+/// verifyBinaryGLWEOperator verify parameters of operators that has the
+/// following signature (!TFHE.glwe<{dim,poly,bits}{p}>,
+/// !TFHE.glwe<{dim,poly,bits}{p}>) ->
+/// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
   auto a = ((mlir::Type)(op.a().getType())).cast<GLWECipherTextType>();
@@ -111,9 +111,9 @@ mlir::LogicalResult verifyBinaryGLWEOperator(Operator &op) {
   return mlir::success();
 }
 
-// verifyUnaryGLWEOperator verify parameters of operators that has the following
-// signature (!TFHE.glwe<{dim,poly,bits}{p}>) ->
-// (!TFHE.glwe<{dim,poly,bits}{p}>))
+/// verifyUnaryGLWEOperator verify parameters of operators that has the
+/// following signature (!TFHE.glwe<{dim,poly,bits}{p}>) ->
+/// (!TFHE.glwe<{dim,poly,bits}{p}>))
 template <class Operator>
 mlir::LogicalResult verifyUnaryGLWEOperator(Operator &op) {
   auto a = ((mlir::Type)(op.a().getType())).cast<GLWECipherTextType>();

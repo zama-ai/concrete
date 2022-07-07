@@ -43,26 +43,26 @@ struct MLIRLowerableDialectsToLLVMPass
 };
 } // namespace
 
-// This rewrite pattern transforms any instance of `memref.copy`
-// operators on 1D memref.
-// This is introduced to avoid the MLIR lowering of `memref.copy` of ranked
-// memref that basically allocate unranked memref structure on the stack before
-// calling @memrefCopy.
-//
-// Example:
-//
-// ```mlir
-// memref.copy %src, %dst : memref<Xxi64> to memref<Xxi64>
-// ```
-//
-// becomes:
-//
-// ```mlir
-// %_src = memref.cast %src = memref<Xxi64> to memref<?xi64>
-// %_dst = memref.cast %dst = memref<Xxi64> to memref<?xi64>
-// call @memref_copy_one_rank(%_src, %_dst) : (tensor<?xi64>, tensor<?xi64>) ->
-// ()
-// ```
+/// This rewrite pattern transforms any instance of `memref.copy`
+/// operators on 1D memref.
+/// This is introduced to avoid the MLIR lowering of `memref.copy` of ranked
+/// memref that basically allocate unranked memref structure on the stack before
+/// calling @memrefCopy.
+///
+/// Example:
+///
+/// ```mlir
+/// memref.copy %src, %dst : memref<Xxi64> to memref<Xxi64>
+/// ```
+///
+/// becomes:
+///
+/// ```mlir
+/// %_src = memref.cast %src = memref<Xxi64> to memref<?xi64>
+/// %_dst = memref.cast %dst = memref<Xxi64> to memref<?xi64>
+/// call @memref_copy_one_rank(%_src, %_dst) : (tensor<?xi64>, tensor<?xi64>) ->
+/// ()
+/// ```
 struct Memref1DCopyOpPattern
     : public mlir::OpRewritePattern<mlir::memref::CopyOp> {
   Memref1DCopyOpPattern(mlir::MLIRContext *context,
