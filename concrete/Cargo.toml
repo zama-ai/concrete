@@ -38,3 +38,7 @@ required-features = ["booleans"]
 name = "shortints"
 harness = false
 required-features = ["shortints"]
+
+# https://docs.rs/about/metadata
+[package.metadata.docs.rs]
+features = ["serde", "booleans", "shortints", "integers"]
