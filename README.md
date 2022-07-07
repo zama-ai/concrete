@@ -64,7 +64,8 @@ The crates within this repository are:
   jmplementation.
 - [`concrete-boolean`](concrete-boolean): A high-level library, implementing homomorphic Boolean gates, making it easy
   to run any kind of circuits over encrypted data.
-
+- [`concrete-shortint`](concrete-shortint): A high-level library, implementing operations on short integers (about 1 to 4 bits).
+- [`concrete-integer`](concrete-integer): A high-level library, implementing operations on integers, construction on top of short integers for values in about 4 to 16 bits.
 
 ## Installation
 

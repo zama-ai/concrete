@@ -1,8 +1,8 @@
-# Introduction
+# What is Concrete?
 
-[<mark style="background-color:yellow;">⭐️ Star the repo on Github</mark>](https://github.com/zama-ai/concrete-numpy) <mark style="background-color:yellow;">| 🗣</mark> [<mark style="background-color:yellow;">Community support forum</mark>](https://community.zama.ai/c/concrete-numpy) <mark style="background-color:yellow;">| 📁</mark> [<mark style="background-color:yellow;">Contribute to the project</mark>](dev/contributing.md)
+<mark style="background-color:yellow;">⭐️</mark> [<mark style="background-color:yellow;">Star the repo on Github</mark>](https://github.com/zama-ai/concrete) <mark style="background-color:yellow;">| 🗣</mark> [<mark style="background-color:yellow;">Community support forum</mark> ](https://community.zama.ai)<mark style="background-color:yellow;">| 📁</mark> [<mark style="background-color:yellow;">Contribute to the project</mark>](https://docs.zama.ai/concrete/developers/contributing)<mark style="background-color:yellow;"></mark>
 
-## Welcome to Concrete!
+![](_static/zama\_concrete\_docs\_home.jpg)
 
 `concrete` is a Rust crate (library) meant to abstract away the details of Fully Homomorphic Encryption (FHE) to enable non-cryptographers to build applications that use FHE.
 
@@ -39,7 +39,7 @@ If you would like to know more about the problems that FHE solves, we suggest yo
 
 This crate provides different types which are the counterparts of native Rust types (such as `bool`, `u8`, `u16`) in the FHE domain.
 
-With `concrete`  crate, our goal is to let any developer without any prior cryptographic knowledge to build his own FHE application. To reach that goal, some of the complexity is hidden from the user.
+With `concrete` crate, our goal is to let any developer without any prior cryptographic knowledge to build his own FHE application. To reach that goal, some of the complexity is hidden from the user.
 
 Aside from the advanced customization options offered directly by `concrete`, an advanced user could also have a look at the underlying libraries.
 

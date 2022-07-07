@@ -1,6 +1,6 @@
 # Table of contents
 
-* [Introduction](README.md)
+* [What is Concrete?](README.md)
 
 ## Getting Started
 
@@ -8,7 +8,7 @@
 * [Quick Start](getting\_started/quick\_start.md)
 * [Operations and Examples](getting\_started/operations\_and\_examples.md)
 * [Limitations](getting\_started/limitations.md)
-* [Security and Cryptography](getting\_started/security_and_cryptography.md)
+* [Security and Cryptography](getting\_started/security\_and\_cryptography.md)
 
 ## Tutorials
 
