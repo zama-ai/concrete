@@ -103,14 +103,16 @@ class DebugArtifacts:
         textual_representation = graph.format()
         self.textual_representations_of_graphs[name].append(textual_representation)
 
-        try:
-            drawing = graph.draw()
-            self.drawings_of_graphs[name].append(str(drawing))
-        except ImportError as error:  # pragma: no cover
-            if "pygraphviz" in str(error):
-                pass
-            else:
-                raise error
+        # 100 is an arbitrary number after which the drawing would become too hard to follow
+        if len(graph.graph.nodes()) < 100:
+            try:
+                drawing = graph.draw()
+                self.drawings_of_graphs[name].append(str(drawing))
+            except ImportError as error:  # pragma: no cover
+                if "pygraphviz" in str(error):
+                    pass
+                else:
+                    raise error
 
         self.final_graph = graph
 
