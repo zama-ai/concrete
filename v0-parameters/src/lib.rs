@@ -94,7 +94,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
     };
 
     let precisions = args.min_precision..=args.max_precision;
-    let manps: Vec<_> = (0..=31).collect();
+    let log_norms2: Vec<_> = (0..=31).collect();
 
     // let guard = pprof::ProfilerGuard::new(100).unwrap();
 
@@ -110,10 +110,10 @@ pub fn all_results(args: &Args) -> Vec<Vec<OptimizationState>> {
     precisions_iter
         .map(|precision| {
             let mut last_solution = None;
-            manps
+            log_norms2
                 .iter()
-                .map(|&manp| {
-                    let noise_scale = 2_f64.powi(manp);
+                .map(|&log_norm2| {
+                    let noise_scale = 2_f64.powi(log_norm2);
                     let result = if args.wop_pbs {
                         optimize_wop_atomic_pattern::optimize_one_compat(
                             sum_size,

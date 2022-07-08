@@ -1,0 +1,22 @@
+[package]
+name = "charts"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+concrete-optimizer = { path ="../concrete-optimizer" }
+plotters = "0.3.1"
+
+[lib]
+crate-type= [
+    "lib",       # rust
+]
+
+[[bin]]
+name = "precision_complexity"
+
+[[bin]]
+name = "norm2_complexity"
+
