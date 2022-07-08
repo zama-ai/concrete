@@ -17,6 +17,7 @@ class Configuration:
     verbose: bool
     show_graph: bool
     show_mlir: bool
+    show_optimizer: bool
     dump_artifacts_on_unexpected_failures: bool
     enable_unsafe_features: bool
     virtual: bool
@@ -59,6 +60,7 @@ class Configuration:
         verbose: bool = False,
         show_graph: bool = False,
         show_mlir: bool = False,
+        show_optimizer: bool = False,
         dump_artifacts_on_unexpected_failures: bool = True,
         enable_unsafe_features: bool = False,
         virtual: bool = False,
@@ -73,6 +75,7 @@ class Configuration:
         self.verbose = verbose
         self.show_graph = show_graph
         self.show_mlir = show_mlir
+        self.show_optimizer = show_optimizer
         self.dump_artifacts_on_unexpected_failures = dump_artifacts_on_unexpected_failures
         self.enable_unsafe_features = enable_unsafe_features
         self.virtual = virtual

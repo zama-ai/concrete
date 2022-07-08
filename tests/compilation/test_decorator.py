@@ -66,10 +66,10 @@ def test_compiler_verbose_compile(helpers, capsys):
         return x + 42
 
     inputset = range(10)
-    function.compile(inputset, configuration, artifacts, show_graph=True, show_mlir=True)
+    function.compile(inputset, configuration, artifacts, verbose=True)
 
     captured = capsys.readouterr()
-    assert captured.out.strip() == (
+    assert captured.out.strip().startswith(
         f"""
 
 Computation Graph
@@ -81,6 +81,47 @@ MLIR
 --------------------------------------------------------------------------------
 {artifacts.mlir_to_compile}
 --------------------------------------------------------------------------------
+
+Optimizer
+--------------------------------------------------------------------------------
+
+        """.strip()
+    )
+
+
+def test_compiler_verbose_virtual_compile(helpers, capsys):
+    """
+    Test `compile` method of `compiler` decorator with verbose flag.
+    """
+
+    configuration = helpers.configuration()
+    artifacts = DebugArtifacts()
+
+    @compiler({"x": "encrypted"})
+    def function(x):
+        return x + 42
+
+    inputset = range(10)
+    function.compile(inputset, configuration, artifacts, verbose=True, virtual=True)
+
+    captured = capsys.readouterr()
+    assert captured.out.strip() == (
+        f"""
+
+Computation Graph
+------------------------------------------------
+{list(artifacts.textual_representations_of_graphs.values())[-1][-1]}
+------------------------------------------------
+
+MLIR
+------------------------------------------------
+Virtual circuits doesn't have MLIR.
+------------------------------------------------
+
+Optimizer
+------------------------------------------------
+Virtual circuits doesn't have optimizer output.
+------------------------------------------------
 
         """.strip()
     )

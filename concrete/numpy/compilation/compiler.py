@@ -374,11 +374,12 @@ class Compiler:
             if self.artifacts is not None:
                 self.artifacts.add_mlir_to_compile(mlir)
 
-            if (
-                self.configuration.verbose
-                or self.configuration.show_graph
-                or self.configuration.show_mlir
-            ):
+            show_graph = self.configuration.verbose or self.configuration.show_graph
+            show_mlir = self.configuration.verbose or self.configuration.show_mlir
+            show_optimizer = self.configuration.verbose or self.configuration.show_optimizer
+
+            columns = 0
+            if show_graph or show_mlir or show_optimizer:
 
                 graph = (
                     self.graph.format()
@@ -404,7 +405,7 @@ class Compiler:
                 except OSError:  # pragma: no cover
                     columns = min(longest_line, 80)
 
-                if self.configuration.verbose or self.configuration.show_graph:
+                if show_graph:
                     print()
 
                     print("Computation Graph")
@@ -414,13 +415,8 @@ class Compiler:
 
                     print()
 
-                if self.configuration.verbose or self.configuration.show_mlir:
-                    print(
-                        "\n"
-                        if not (self.configuration.verbose or self.configuration.show_graph)
-                        else "",
-                        end="",
-                    )
+                if show_mlir:
+                    print("\n" if not show_graph else "", end="")
 
                     print("MLIR")
                     print("-" * columns)
@@ -429,6 +425,12 @@ class Compiler:
 
                     print()
 
+                if show_optimizer:
+                    print("\n" if not (show_graph or show_mlir) else "", end="")
+
+                    print("Optimizer")
+                    print("-" * columns)
+
             circuit = Circuit(self.graph, mlir, self.configuration)
             if not self.configuration.virtual:
                 assert circuit.client.specs.client_parameters is not None
@@ -436,6 +438,14 @@ class Compiler:
                     self.artifacts.add_client_parameters(
                         circuit.client.specs.client_parameters.serialize()
                     )
+
+            if show_optimizer:
+                if self.configuration.virtual:
+                    print("Virtual circuits doesn't have optimizer output.")
+
+                print("-" * columns)
+                print()
+
             return circuit
 
         except Exception:  # pragma: no cover
