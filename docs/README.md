@@ -1,8 +1,6 @@
-# Introduction
+# What is Concrete Numpy?
 
 [<mark style="background-color:yellow;">⭐️ Star the repo on Github</mark>](https://github.com/zama-ai/concrete-numpy) <mark style="background-color:yellow;">| 🗣</mark> [<mark style="background-color:yellow;">Community support forum</mark>](https://community.zama.ai/c/concrete-numpy) <mark style="background-color:yellow;">| 📁</mark> [<mark style="background-color:yellow;">Contribute to the project</mark>](dev/contributing.md)
-
-## Welcome to Concrete Numpy!
 
 ![](\_static/zama\_home\_docs.jpeg)
 
@@ -21,6 +19,6 @@ This documentation is split into several sections:
 * **How to** section to help you perform specific tasks
 * **Developer** section to explain the inner workings of the library and everything related to contributing to the project
 
-## Looking for support? Join our community!
+## Looking for support? Ask our team!
 
 ![](\_static/zama\_support\_docs.jpeg)

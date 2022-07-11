@@ -1,12 +1,12 @@
 # Table of contents
 
-* [Introduction](README.md)
+* [What is Concrete Numpy?](README.md)
 
 ## Getting Started
 
-* [Installation](basics/installing.md)
-* [Quick start](basics/quick\_start.md)
-* [Compatibility](basics/compatibility.md)
+* [Installation](getting-started/installing.md)
+* [Quick start](getting-started/quick\_start.md)
+* [Compatibility](getting-started/compatibility.md)
 
 ## Tutorials
 

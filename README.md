@@ -58,7 +58,7 @@ You can get the concrete-numpy docker image by  pulling the latest docker image:
 docker pull zamafhe/concrete-numpy:v0.6.0
 ```
 
-You can find more detailed installation instructions in [installing.md](docs/basics/installing.md)
+You can find more detailed installation instructions in [installing.md](docs/getting-started/installing.md)
 
 ## Getting started
 

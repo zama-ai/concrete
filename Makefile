@@ -267,11 +267,11 @@ todo:
 
 .PHONY: supported_functions # Update docs with supported functions
 supported_functions:
-	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/basics/compatibility.md
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/getting-started/compatibility.md
 
 .PHONY: check_supported_functions # Check supported functions (for the doc)
 check_supported_functions:
-	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/basics/compatibility.md --check
+	poetry run python script/doc_utils/gen_supported_ufuncs.py docs/getting-started/compatibility.md --check
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:
