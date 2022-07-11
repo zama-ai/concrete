@@ -9,4 +9,4 @@ if ! [ -e "$EXE" ]; then
 fi
 
 cd $ROOT_DIR
-cargo run --release --quiet --bin v0-parameters
+cargo run --release --quiet --bin v0-parameters -- $@
