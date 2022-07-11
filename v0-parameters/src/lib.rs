@@ -177,11 +177,29 @@ mod tests {
     use super::*;
     use concrete_optimizer::security::security_weights::SECURITY_WEIGHTS_TABLE;
 
+    #[cfg(not(feature = "expensive_tests"))]
+    const ONLY_SOME_SECURITY_LEVELS: bool = true;
+
+    #[cfg(feature = "expensive_tests")]
+    const ONLY_SOME_SECURITY_LEVELS: bool = false;
+
+    fn security_levels_to_test() -> Vec<u64> {
+        if ONLY_SOME_SECURITY_LEVELS {
+            vec![128]
+        } else {
+            SECURITY_WEIGHTS_TABLE.keys().copied().collect()
+        }
+    }
+
     #[test]
     fn test_reference_output() {
+        check_reference_output_on_levels(&security_levels_to_test());
+    }
+
+    fn check_reference_output_on_levels(security_levels: &[u64]) {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
-        for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
+        for &security_level in security_levels {
             let ref_file: &str = &format!("ref/v0_2022-7-4_{}", security_level);
             let args: Args = Args {
                 min_precision: 1,
@@ -214,9 +232,13 @@ mod tests {
 
     #[test]
     fn test_reference_wop_output() {
+        check_reference_wop_output_on_levels(&security_levels_to_test());
+    }
+
+    fn check_reference_wop_output_on_levels(security_levels: &[u64]) {
         const CMP_LINES: &str = "\n";
         const EXACT_EQUALITY: i32 = 0;
-        for &security_level in SECURITY_WEIGHTS_TABLE.keys() {
+        for &security_level in security_levels {
             let ref_file: &str = &format!("ref/wop_pbs_2022-7-11_{}", security_level);
 
             let args = Args {

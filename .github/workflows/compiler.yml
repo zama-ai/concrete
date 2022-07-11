@@ -2,7 +2,7 @@ name: Continuous integration - compiler
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, testci ]
   pull_request:
 
 env:

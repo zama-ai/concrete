@@ -1,4 +1,4 @@
-name: Continuous integration
+name: Continuous integration - Extra tests
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  check-concrete-optimizer:
+  check-concrete-optimizer-expensive-tests:
     runs-on: ubuntu-20.04
     env:
       RUSTFLAGS: -D warnings
@@ -20,16 +20,7 @@ jobs:
         with:
           ssh_private_key: ${{ secrets.CONCRETE_COMPILER_CI_SSH_PRIVATE }}
 
-      - name: Formatting
-        run: cargo fmt --check
-
-      - name: Build
-        run: cargo build --all-targets
-
-      - name: Lint
-        run: cargo clippy --all-targets
-
       - name: Tests
         run: |
-          cargo test --release --no-fail-fast --all-targets
-          make -C concrete-optimizer-cpp test-ci
+          cd v0-parameters
+          cargo test --release --no-fail-fast --features=expensive_tests
