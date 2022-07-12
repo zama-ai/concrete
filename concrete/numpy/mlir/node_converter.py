@@ -51,9 +51,6 @@ class NodeConverter:
     all_of_the_inputs_are_tensors: bool
     one_of_the_inputs_is_a_tensor: bool
 
-    nodes_to_mlir_names: Dict[Node, str]
-    mlir_names_to_mlir_types: Dict[str, str]
-    scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]]
     direct_replacements: Dict[str, str]
 
     # pylint: enable=too-many-instance-attributes
@@ -115,9 +112,6 @@ class NodeConverter:
         graph: Graph,
         node: Node,
         preds: List[OpResult],
-        nodes_to_mlir_names: Dict[OpResult, str],
-        mlir_names_to_mlir_types: Dict[str, str],
-        scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]],
         direct_replacements: Dict[str, str],
     ):
         self.ctx = ctx
@@ -138,9 +132,6 @@ class NodeConverter:
             else:
                 self.one_of_the_inputs_is_a_tensor = True
 
-        self.nodes_to_mlir_names = nodes_to_mlir_names
-        self.mlir_names_to_mlir_types = mlir_names_to_mlir_types
-        self.scalar_to_1d_tensor_conversion_hacks = scalar_to_1d_tensor_conversion_hacks
         self.direct_replacements = direct_replacements
 
     def convert(self) -> OpResult:
@@ -216,21 +207,6 @@ class NodeConverter:
                 assert_that(self.node.converted_to_table_lookup)
                 result = self._convert_tlu()
 
-        mlir_name = NodeConverter.mlir_name(result)
-
-        self.nodes_to_mlir_names[self.node] = mlir_name
-        self.mlir_names_to_mlir_types[mlir_name] = str(result.type)
-
-        if self.node.operation == Operation.Generic:
-            name = self.node.properties["name"]
-            if name in ["add", "dot", "multiply", "subtract"]:
-                if self.one_of_the_inputs_is_a_tensor and not self.all_of_the_inputs_are_tensors:
-                    to_be_converted = []
-                    for pred in self.graph.ordered_preds_of(self.node):
-                        if pred.output.is_scalar:
-                            to_be_converted.append(self.nodes_to_mlir_names[pred])
-                    self.scalar_to_1d_tensor_conversion_hacks[mlir_name] = to_be_converted
-
         return result
 
         # pylint: enable=too-many-branches
@@ -284,7 +260,7 @@ class NodeConverter:
 
         pred_names = []
         for pred, value in zip(preds, self.node.inputs):
-            if value.is_encrypted:
+            if value.is_encrypted or self.node.output.is_clear:
                 pred_names.append(NodeConverter.mlir_name(pred))
                 continue
 
