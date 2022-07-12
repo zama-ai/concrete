@@ -78,7 +78,7 @@ class Tracer:
                 continue
 
             try:
-                sanitized_tracers.append(Tracer._sanitize(tracer))
+                sanitized_tracers.append(Tracer.sanitize(tracer))
             except Exception as error:
                 raise ValueError(
                     f"Function '{function.__name__}' "
@@ -149,9 +149,21 @@ class Tracer:
         return id(self)
 
     @staticmethod
-    def _sanitize(value: Any) -> Any:
+    def sanitize(value: Any) -> Any:
+        """
+        Try to create a tracer from a value.
+
+        Args:
+            value (Any):
+                value to use
+
+        Returns:
+            Any:
+                resulting tracer
+        """
+
         if isinstance(value, tuple):
-            return tuple(Tracer._sanitize(item) for item in value)
+            return tuple(Tracer.sanitize(item) for item in value)
 
         if isinstance(value, Tracer):
             return value
@@ -372,7 +384,7 @@ class Tracer:
         """
 
         if method == "__call__":
-            sanitized_args = [self._sanitize(arg) for arg in args]
+            sanitized_args = [self.sanitize(arg) for arg in args]
             return Tracer._trace_numpy_operation(ufunc, *sanitized_args, **kwargs)
 
         raise RuntimeError("Only __call__ hook is supported for numpy ufuncs")
@@ -385,65 +397,65 @@ class Tracer:
         """
 
         if func is np.reshape:
-            sanitized_args = [self._sanitize(args[0])]
+            sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
                 kwargs["newshape"] = args[1]
         elif func is np.transpose:
-            sanitized_args = [self._sanitize(args[0])]
+            sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
                 kwargs["axes"] = args[1]
         else:
-            sanitized_args = [self._sanitize(arg) for arg in args]
+            sanitized_args = [self.sanitize(arg) for arg in args]
 
         return Tracer._trace_numpy_operation(func, *sanitized_args, **kwargs)
 
     def __add__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.add, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.add, self, self.sanitize(other))
 
     def __radd__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.add, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.add, self.sanitize(other), self)
 
     def __sub__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.subtract, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.subtract, self, self.sanitize(other))
 
     def __rsub__(self, other) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.subtract, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.subtract, self.sanitize(other), self)
 
     def __mul__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.multiply, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.multiply, self, self.sanitize(other))
 
     def __rmul__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.multiply, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.multiply, self.sanitize(other), self)
 
     def __truediv__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.true_divide, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.true_divide, self, self.sanitize(other))
 
     def __rtruediv__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.true_divide, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.true_divide, self.sanitize(other), self)
 
     def __floordiv__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.floor_divide, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.floor_divide, self, self.sanitize(other))
 
     def __rfloordiv__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.floor_divide, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.floor_divide, self.sanitize(other), self)
 
     def __pow__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.power, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.power, self, self.sanitize(other))
 
     def __rpow__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.power, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.power, self.sanitize(other), self)
 
     def __mod__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.mod, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.mod, self, self.sanitize(other))
 
     def __rmod__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.mod, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.mod, self.sanitize(other), self)
 
     def __matmul__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.matmul, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.matmul, self, self.sanitize(other))
 
     def __rmatmul__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.matmul, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.matmul, self.sanitize(other), self)
 
     def __neg__(self) -> "Tracer":
         return Tracer._trace_numpy_operation(np.negative, self)
@@ -464,59 +476,59 @@ class Tracer:
         return Tracer._trace_numpy_operation(np.invert, self)
 
     def __and__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.bitwise_and, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.bitwise_and, self, self.sanitize(other))
 
     def __rand__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.bitwise_and, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.bitwise_and, self.sanitize(other), self)
 
     def __or__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.bitwise_or, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.bitwise_or, self, self.sanitize(other))
 
     def __ror__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.bitwise_or, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.bitwise_or, self.sanitize(other), self)
 
     def __xor__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.bitwise_xor, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.bitwise_xor, self, self.sanitize(other))
 
     def __rxor__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.bitwise_xor, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.bitwise_xor, self.sanitize(other), self)
 
     def __lshift__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.left_shift, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.left_shift, self, self.sanitize(other))
 
     def __rlshift__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.left_shift, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.left_shift, self.sanitize(other), self)
 
     def __rshift__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.right_shift, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.right_shift, self, self.sanitize(other))
 
     def __rrshift__(self, other: Any) -> "Tracer":
-        return Tracer._trace_numpy_operation(np.right_shift, self._sanitize(other), self)
+        return Tracer._trace_numpy_operation(np.right_shift, self.sanitize(other), self)
 
     def __gt__(self, other: Any) -> "Tracer":  # type: ignore
-        return Tracer._trace_numpy_operation(np.greater, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.greater, self, self.sanitize(other))
 
     def __ge__(self, other: Any) -> "Tracer":  # type: ignore
-        return Tracer._trace_numpy_operation(np.greater_equal, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.greater_equal, self, self.sanitize(other))
 
     def __lt__(self, other: Any) -> "Tracer":  # type: ignore
-        return Tracer._trace_numpy_operation(np.less, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.less, self, self.sanitize(other))
 
     def __le__(self, other: Any) -> "Tracer":  # type: ignore
-        return Tracer._trace_numpy_operation(np.less_equal, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.less_equal, self, self.sanitize(other))
 
     def __eq__(self, other: Any) -> Union[bool, "Tracer"]:  # type: ignore
         return (
             self is other
             if not self._is_tracing
-            else Tracer._trace_numpy_operation(np.equal, self, self._sanitize(other))
+            else Tracer._trace_numpy_operation(np.equal, self, self.sanitize(other))
         )
 
     def __ne__(self, other: Any) -> Union[bool, "Tracer"]:  # type: ignore
         return (
             self is not other
             if not self._is_tracing
-            else Tracer._trace_numpy_operation(np.not_equal, self, self._sanitize(other))
+            else Tracer._trace_numpy_operation(np.not_equal, self, self.sanitize(other))
         )
 
     def astype(self, dtype: DTypeLike) -> "Tracer":
@@ -552,7 +564,7 @@ class Tracer:
         """
 
         return Tracer._trace_numpy_operation(
-            np.clip, self, self._sanitize(minimum), self._sanitize(maximum)
+            np.clip, self, self.sanitize(minimum), self.sanitize(maximum)
         )
 
     def dot(self, other: Any) -> "Tracer":
@@ -560,7 +572,7 @@ class Tracer:
         Trace numpy.ndarray.dot().
         """
 
-        return Tracer._trace_numpy_operation(np.dot, self, self._sanitize(other))
+        return Tracer._trace_numpy_operation(np.dot, self, self.sanitize(other))
 
     def flatten(self) -> "Tracer":
         """

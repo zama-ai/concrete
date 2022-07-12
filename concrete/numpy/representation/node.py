@@ -257,6 +257,12 @@ class Node:
         else:
             args = deepcopy(predecessors)
 
+        if name == "array":
+            values = str(np.array(predecessors).reshape(self.output.shape).tolist()).replace(
+                "'", ""
+            )
+            return f"array({format_constant(values, maximum_constant_length)})"
+
         args.extend(
             format_constant(value, maximum_constant_length) for value in self.properties["args"]
         )
@@ -300,6 +306,7 @@ class Node:
 
         return self.operation == Operation.Generic and self.properties["name"] not in [
             "add",
+            "array",
             "concatenate",
             "conv1d",
             "conv2d",

@@ -83,6 +83,10 @@ class GraphConverter:
             if name == "add":
                 assert_that(len(inputs) == 2)
 
+            elif name == "array":
+                assert_that(len(inputs) > 0)
+                assert_that(all(input.is_scalar for input in inputs))
+
             elif name == "concatenate":
                 if not all(input.is_encrypted for input in inputs):
                     return "only all encrypted concatenate is supported"
@@ -416,6 +420,9 @@ class GraphConverter:
         # { "%0": ["%c1_i5"] } == for %0 we need to convert %c1_i5 to 1d tensor
         scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]] = {}
 
+        # { "%0": "tensor.from_elements ..." } == we need to convert the part after "=" for %0
+        direct_replacements: Dict[str, str] = {}
+
         with Context() as ctx, Location.unknown():
             concretelang.register_dialects(ctx)
 
@@ -455,6 +462,7 @@ class GraphConverter:
                             nodes_to_mlir_names,
                             mlir_names_to_mlir_types,
                             scalar_to_1d_tensor_conversion_hacks,
+                            direct_replacements,
                         )
                         ir_to_mlir[node] = node_converter.convert()
 
@@ -464,6 +472,12 @@ class GraphConverter:
         module_lines_after_hacks_are_applied = []
         for line in str(module).split("\n"):
             mlir_name = line.split("=")[0].strip()
+
+            if mlir_name in direct_replacements:
+                new_value = direct_replacements[mlir_name]
+                module_lines_after_hacks_are_applied.append(f"    {mlir_name} = {new_value}")
+                continue
+
             if mlir_name not in scalar_to_1d_tensor_conversion_hacks:
                 module_lines_after_hacks_are_applied.append(line)
                 continue

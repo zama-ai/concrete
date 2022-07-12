@@ -7,7 +7,7 @@ import pytest
 
 from concrete.numpy.dtypes import UnsignedInteger
 from concrete.numpy.representation import Node
-from concrete.numpy.values import EncryptedScalar, EncryptedTensor, Value
+from concrete.numpy.values import ClearScalar, EncryptedScalar, EncryptedTensor, Value
 
 
 @pytest.mark.parametrize(
@@ -190,6 +190,21 @@ def test_node_bad_call(node, args, expected_error, expected_message):
             ),
             ["%0", "%1", "%2"],
             "concatenate((%0, %1, %2), axis=1)",
+        ),
+        pytest.param(
+            Node.generic(
+                name="array",
+                inputs=[
+                    EncryptedScalar(UnsignedInteger(3)),
+                    ClearScalar(UnsignedInteger(3)),
+                    ClearScalar(UnsignedInteger(3)),
+                    EncryptedScalar(UnsignedInteger(3)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(3), shape=(2, 2)),
+                operation=lambda *args: np.array(args).reshape((2, 2)),
+            ),
+            ["%0", "%1", "%2", "%3"],
+            "array([[%0, %1], [%2, %3]])",
         ),
     ],
 )

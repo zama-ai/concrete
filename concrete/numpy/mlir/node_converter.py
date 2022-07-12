@@ -2,8 +2,9 @@
 Declaration of `NodeConverter` class.
 """
 
-# pylint: disable=no-member,no-name-in-module
+# pylint: disable=no-member,no-name-in-module,too-many-lines
 
+from copy import deepcopy
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -13,6 +14,7 @@ from mlir.dialects import arith, linalg, tensor
 from mlir.ir import (
     ArrayAttr,
     Attribute,
+    BlockArgument,
     BoolAttr,
     Context,
     DenseElementsAttr,
@@ -24,10 +26,10 @@ from mlir.ir import (
     Type,
 )
 
-from ..dtypes import Integer
+from ..dtypes import Integer, UnsignedInteger
 from ..internal.utils import assert_that
 from ..representation import Graph, Node, Operation
-from ..values import Value
+from ..values import EncryptedScalar, Value
 from .utils import construct_deduplicated_tables
 
 # pylint: enable=no-member,no-name-in-module
@@ -37,6 +39,8 @@ class NodeConverter:
     """
     NodeConverter class, to convert computation graph nodes to their MLIR equivalent.
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     ctx: Context
     graph: Graph
@@ -50,6 +54,9 @@ class NodeConverter:
     nodes_to_mlir_names: Dict[Node, str]
     mlir_names_to_mlir_types: Dict[str, str]
     scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]]
+    direct_replacements: Dict[str, str]
+
+    # pylint: enable=too-many-instance-attributes
 
     @staticmethod
     def value_to_mlir_type(ctx: Context, value: Value) -> Type:
@@ -83,6 +90,25 @@ class NodeConverter:
 
         raise ValueError(f"{value} cannot be converted to MLIR")  # pragma: no cover
 
+    @staticmethod
+    def mlir_name(result: OpResult) -> str:
+        """
+        Extract the MLIR variable name of an `OpResult`.
+
+        Args:
+            result (OpResult):
+                op result to extract the name
+
+        Returns:
+            str:
+                MLIR variable name of `result`
+        """
+
+        if isinstance(result, BlockArgument):
+            return f"%arg{result.arg_number}"
+
+        return str(result).replace("Value(", "").split("=", maxsplit=1)[0].strip()
+
     def __init__(
         self,
         ctx: Context,
@@ -92,6 +118,7 @@ class NodeConverter:
         nodes_to_mlir_names: Dict[OpResult, str],
         mlir_names_to_mlir_types: Dict[str, str],
         scalar_to_1d_tensor_conversion_hacks: Dict[str, List[str]],
+        direct_replacements: Dict[str, str],
     ):
         self.ctx = ctx
         self.graph = graph
@@ -114,6 +141,7 @@ class NodeConverter:
         self.nodes_to_mlir_names = nodes_to_mlir_names
         self.mlir_names_to_mlir_types = mlir_names_to_mlir_types
         self.scalar_to_1d_tensor_conversion_hacks = scalar_to_1d_tensor_conversion_hacks
+        self.direct_replacements = direct_replacements
 
     def convert(self) -> OpResult:
         """
@@ -127,65 +155,68 @@ class NodeConverter:
         # pylint: disable=too-many-branches,too-many-statements
 
         if self.node.operation == Operation.Constant:
-            result = self.convert_constant()
+            result = self._convert_constant()
         else:
             assert_that(self.node.operation == Operation.Generic)
 
             name = self.node.properties["name"]
 
             if name == "add":
-                result = self.convert_add()
+                result = self._convert_add()
+
+            elif name == "array":
+                result = self._convert_array()
 
             elif name == "concatenate":
-                result = self.convert_concat()
+                result = self._convert_concat()
 
             elif name == "conv1d":
-                result = self.convert_conv1d()
+                result = self._convert_conv1d()
 
             elif name == "conv2d":
-                result = self.convert_conv2d()
+                result = self._convert_conv2d()
 
             elif name == "conv3d":
-                result = self.convert_conv3d()
+                result = self._convert_conv3d()
 
             elif name == "dot":
-                result = self.convert_dot()
+                result = self._convert_dot()
 
             elif name == "index.static":
-                result = self.convert_static_indexing()
+                result = self._convert_static_indexing()
 
             elif name == "matmul":
-                result = self.convert_matmul()
+                result = self._convert_matmul()
 
             elif name == "multiply":
-                result = self.convert_mul()
+                result = self._convert_mul()
 
             elif name == "negative":
-                result = self.convert_neg()
+                result = self._convert_neg()
 
             elif name == "ones":
-                result = self.convert_ones()
+                result = self._convert_ones()
 
             elif name == "reshape":
-                result = self.convert_reshape()
+                result = self._convert_reshape()
 
             elif name == "subtract":
-                result = self.convert_sub()
+                result = self._convert_sub()
 
             elif name == "sum":
-                result = self.convert_sum()
+                result = self._convert_sum()
 
             elif name == "transpose":
-                result = self.convert_transpose()
+                result = self._convert_transpose()
 
             elif name == "zeros":
-                result = self.convert_zeros()
+                result = self._convert_zeros()
 
             else:
                 assert_that(self.node.converted_to_table_lookup)
-                result = self.convert_tlu()
+                result = self._convert_tlu()
 
-        mlir_name = str(result).replace("Value(", "").split("=", maxsplit=1)[0].strip()
+        mlir_name = NodeConverter.mlir_name(result)
 
         self.nodes_to_mlir_names[self.node] = mlir_name
         self.mlir_names_to_mlir_types[mlir_name] = str(result.type)
@@ -204,7 +235,7 @@ class NodeConverter:
 
         # pylint: enable=too-many-branches
 
-    def convert_add(self) -> OpResult:
+    def _convert_add(self) -> OpResult:
         """
         Convert "add" node to its corresponding MLIR representation.
 
@@ -232,7 +263,67 @@ class NodeConverter:
 
         return result
 
-    def convert_concat(self) -> OpResult:
+    def _convert_array(self) -> OpResult:
+        """
+        Convert "array" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
+        preds = self.preds
+
+        number_of_values = len(preds)
+
+        intermediate_value = deepcopy(self.node.output)
+        intermediate_value.shape = (number_of_values,)
+
+        intermediate_type = NodeConverter.value_to_mlir_type(self.ctx, intermediate_value)
+
+        pred_names = []
+        for pred, value in zip(preds, self.node.inputs):
+            if value.is_encrypted:
+                pred_names.append(NodeConverter.mlir_name(pred))
+                continue
+
+            assert isinstance(value.dtype, Integer)
+
+            zero_value = EncryptedScalar(UnsignedInteger(value.dtype.bit_width - 1))
+            zero_type = NodeConverter.value_to_mlir_type(self.ctx, zero_value)
+            zero = fhe.ZeroEintOp(zero_type).result
+
+            encrypted_pred = fhe.AddEintIntOp(zero_type, zero, pred).result
+            pred_names.append(NodeConverter.mlir_name(encrypted_pred))
+
+        # `placeholder_result` will be replaced textually by `actual_value` below in graph converter
+        # `tensor.from_elements` cannot be created from python bindings
+        # that's why we use placeholder values and text manipulation
+
+        placeholder_result = fhe.ZeroTensorOp(intermediate_type).result
+        placeholder_result_name = NodeConverter.mlir_name(placeholder_result)
+
+        actual_value = f"tensor.from_elements {', '.join(pred_names)} : {intermediate_type}"
+        self.direct_replacements[placeholder_result_name] = actual_value
+
+        if self.node.output.shape == (number_of_values,):
+            return placeholder_result
+
+        index_type = IndexType.parse("index")
+        return linalg.TensorExpandShapeOp(
+            resulting_type,
+            placeholder_result,
+            ArrayAttr.get(
+                [
+                    ArrayAttr.get(
+                        [IntegerAttr.get(index_type, i) for i in range(len(self.node.output.shape))]
+                    )
+                ]
+            ),
+        ).result
+
+    def _convert_concat(self) -> OpResult:
         """
         Convert "concatenate" node to its corresponding MLIR representation.
 
@@ -287,7 +378,7 @@ class NodeConverter:
             IntegerAttr.get(IntegerType.get_signless(64), 0),
         ).result
 
-    def convert_constant(self) -> OpResult:
+    def _convert_constant(self) -> OpResult:
         """
         Convert Operation.Constant node to its corresponding MLIR representation.
 
@@ -315,7 +406,7 @@ class NodeConverter:
 
         return arith.ConstantOp(resulting_type, attr).result
 
-    def convert_conv1d(self) -> OpResult:
+    def _convert_conv1d(self) -> OpResult:
         """
         Convert "conv1d" node to its corresponding MLIR representation.
 
@@ -326,7 +417,7 @@ class NodeConverter:
 
         raise NotImplementedError("conv1d conversion to MLIR is not yet implemented")
 
-    def convert_conv2d(self) -> OpResult:
+    def _convert_conv2d(self) -> OpResult:
         """
         Convert "conv2d" node to its corresponding MLIR representation.
 
@@ -362,7 +453,7 @@ class NodeConverter:
 
         return fhelinalg.Conv2dOp(resulting_type, *preds, pads, strides, dilations).result
 
-    def convert_conv3d(self) -> OpResult:
+    def _convert_conv3d(self) -> OpResult:
         """
         Convert "conv3d" node to its corresponding MLIR representation.
 
@@ -373,7 +464,7 @@ class NodeConverter:
 
         raise NotImplementedError("conv3d conversion to MLIR is not yet implemented")
 
-    def convert_dot(self) -> OpResult:
+    def _convert_dot(self) -> OpResult:
         """
         Convert "dot" node to its corresponding MLIR representation.
 
@@ -402,7 +493,7 @@ class NodeConverter:
 
         return result
 
-    def convert_matmul(self) -> OpResult:
+    def _convert_matmul(self) -> OpResult:
         """Convert a MatMul node to its corresponding MLIR representation.
 
         Returns:
@@ -424,7 +515,7 @@ class NodeConverter:
 
         return result
 
-    def convert_mul(self) -> OpResult:
+    def _convert_mul(self) -> OpResult:
         """
         Convert "multiply" node to its corresponding MLIR representation.
 
@@ -446,7 +537,7 @@ class NodeConverter:
 
         return result
 
-    def convert_neg(self) -> OpResult:
+    def _convert_neg(self) -> OpResult:
         """
         Convert "negative" node to its corresponding MLIR representation.
 
@@ -465,7 +556,7 @@ class NodeConverter:
 
         return result
 
-    def convert_ones(self) -> OpResult:
+    def _convert_ones(self) -> OpResult:
         """
         Convert "ones" node to its corresponding MLIR representation.
 
@@ -508,7 +599,7 @@ class NodeConverter:
 
         return result
 
-    def convert_reshape(self) -> OpResult:
+    def _convert_reshape(self) -> OpResult:
         """
         Convert "reshape" node to its corresponding MLIR representation.
 
@@ -627,7 +718,7 @@ class NodeConverter:
             ),
         ).result
 
-    def convert_static_indexing(self) -> OpResult:
+    def _convert_static_indexing(self) -> OpResult:
         """
         Convert "index.static" node to its corresponding MLIR representation.
 
@@ -749,7 +840,7 @@ class NodeConverter:
             ),
         ).result
 
-    def convert_sub(self) -> OpResult:
+    def _convert_sub(self) -> OpResult:
         """
         Convert "subtract" node to its corresponding MLIR representation.
 
@@ -768,7 +859,7 @@ class NodeConverter:
 
         return result
 
-    def convert_sum(self) -> OpResult:
+    def _convert_sum(self) -> OpResult:
         """
         Convert "sum" node to its corresponding MLIR representation.
 
@@ -799,7 +890,7 @@ class NodeConverter:
             BoolAttr.get(keep_dims),
         ).result
 
-    def convert_tlu(self) -> OpResult:
+    def _convert_tlu(self) -> OpResult:
         """
         Convert Operation.Generic node to its corresponding MLIR representation.
 
@@ -880,7 +971,7 @@ class NodeConverter:
 
         return result
 
-    def convert_transpose(self) -> OpResult:
+    def _convert_transpose(self) -> OpResult:
         """
         Convert "transpose" node to its corresponding MLIR representation.
 
@@ -894,7 +985,7 @@ class NodeConverter:
 
         return fhelinalg.TransposeOp(resulting_type, *preds).result
 
-    def convert_zeros(self) -> OpResult:
+    def _convert_zeros(self) -> OpResult:
         """
         Convert "zeros" node to its corresponding MLIR representation.
 
