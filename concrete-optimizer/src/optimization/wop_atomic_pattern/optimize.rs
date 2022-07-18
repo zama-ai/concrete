@@ -65,6 +65,7 @@ pub struct Solution {
     pub complexity: f64,
     pub noise_max: f64,
     pub p_error: f64,
+    pub global_p_error: f64,
     // error probability
     pub cb_decomposition_level_count: u64,
     pub cb_decomposition_base_log: u64,
@@ -84,6 +85,7 @@ impl Solution {
             complexity: 0.,
             noise_max: 0.0,
             p_error: 0.0,
+            global_p_error: 0.0,
             cb_decomposition_level_count: 0,
             cb_decomposition_base_log: 0,
         }
@@ -104,6 +106,7 @@ impl From<Solution> for atomic_pattern::Solution {
             complexity: sol.complexity,
             noise_max: sol.noise_max,
             p_error: sol.p_error,
+            global_p_error: sol.global_p_error,
         }
     }
 }
@@ -431,6 +434,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     noise_max: variance_max,
                     complexity,
                     p_error,
+                    global_p_error: f64::NAN,
                     cb_decomposition_level_count: circuit_pbs_decomposition_parameter.level,
                     cb_decomposition_base_log: circuit_pbs_decomposition_parameter.log2_base,
                 });

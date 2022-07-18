@@ -36,6 +36,7 @@ pub struct Solution {
     pub complexity: f64,
     pub noise_max: f64,
     pub p_error: f64, // error probability
+    pub global_p_error: f64,
 }
 
 // Constants during optimisation of decompositions
@@ -379,6 +380,7 @@ fn update_state_with_best_decompositions<W: UnsignedInteger>(
                     noise_max,
                     complexity,
                     p_error,
+                    global_p_error: f64::NAN,
                 });
             }
         }

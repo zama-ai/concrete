@@ -6,7 +6,7 @@ use crate::dag::unparametrized;
 use crate::noise_estimator::error;
 use crate::optimization::config::NoiseBoundConfig;
 use crate::utils::square;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 // private short convention
 use DotKind as DK;
@@ -107,52 +107,13 @@ pub struct VariancesAndBound {
     pub precision: Precision,
     pub safe_variance_bound: f64,
     pub nb_luts: u64,
-    // All final variance factor not entering a lut (usually final levelledOp)
+    // All dominating final variance factor not entering a lut (usually final levelledOp)
     pub pareto_output: Vec<SymbolicVariance>,
-    // All variance factor entering a lut
+    // All dominating variance factor entering a lut
     pub pareto_in_lut: Vec<SymbolicVariance>,
-}
-
-impl OperationDag {
-    pub fn peek_p_error(
-        &self,
-        input_noise_out: f64,
-        blind_rotate_noise_out: f64,
-        noise_keyswitch: f64,
-        noise_modulus_switching: f64,
-        kappa: f64,
-    ) -> (f64, f64) {
-        peak_p_error(
-            self,
-            input_noise_out,
-            blind_rotate_noise_out,
-            noise_keyswitch,
-            noise_modulus_switching,
-            kappa,
-        )
-    }
-
-    pub fn feasible(
-        &self,
-        input_noise_out: f64,
-        blind_rotate_noise_out: f64,
-        noise_keyswitch: f64,
-        noise_modulus_switching: f64,
-    ) -> bool {
-        feasible(
-            self,
-            input_noise_out,
-            blind_rotate_noise_out,
-            noise_keyswitch,
-            noise_modulus_switching,
-        )
-    }
-
-    pub fn complexity_cost(&self, input_lwe_dimension: u64, one_lut_cost: f64) -> f64 {
-        let luts_cost = one_lut_cost * (self.nb_luts as f64);
-        let levelled_cost = self.levelled_complexity.cost(input_lwe_dimension);
-        luts_cost + levelled_cost
-    }
+    // All counted variances for computing exact full dag error probability
+    pub all_output: Vec<(u64, SymbolicVariance)>,
+    pub all_in_lut: Vec<(u64, SymbolicVariance)>,
 }
 
 fn out_shape(op: &unparametrized::UnparameterizedOperator, out_shapes: &mut [Shape]) -> Shape {
@@ -294,15 +255,16 @@ fn extra_final_values_to_check(dag: &unparametrized::OperationDag) -> Vec<bool> 
 
 fn extra_final_variances(
     dag: &unparametrized::OperationDag,
+    out_shapes: &[Shape],
     out_precisions: &[Precision],
     out_variances: &[SymbolicVariance],
-) -> Vec<(Precision, SymbolicVariance)> {
+) -> Vec<(Precision, Shape, SymbolicVariance)> {
     extra_final_values_to_check(dag)
         .iter()
         .enumerate()
         .filter_map(|(i, &is_final)| {
             if is_final {
-                Some((out_precisions[i], out_variances[i]))
+                Some((out_precisions[i], out_shapes[i].clone(), out_variances[i]))
             } else {
                 None
             }
@@ -312,17 +274,25 @@ fn extra_final_variances(
 
 fn in_luts_variance(
     dag: &unparametrized::OperationDag,
+    out_shapes: &[Shape],
     out_precisions: &[Precision],
     out_variances: &[SymbolicVariance],
-) -> Vec<(Precision, SymbolicVariance)> {
-    let only_luts = |op| {
-        if let &Op::Lut { input, .. } = op {
-            Some((out_precisions[input.i], out_variances[input.i]))
-        } else {
-            None
-        }
-    };
-    dag.operators.iter().filter_map(only_luts).collect()
+) -> Vec<(Precision, Shape, SymbolicVariance)> {
+    dag.operators
+        .iter()
+        .enumerate()
+        .filter_map(|(i, op)| {
+            if let &Op::Lut { input, .. } = op {
+                Some((
+                    out_precisions[input.i],
+                    out_shapes[i].clone(),
+                    out_variances[input.i],
+                ))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn op_levelled_complexity(
@@ -378,8 +348,8 @@ fn safe_noise_bound(precision: Precision, noise_config: &NoiseBoundConfig) -> f6
 
 fn constraints_by_precisions(
     out_precisions: &[Precision],
-    final_variances: &[(Precision, SymbolicVariance)],
-    in_luts_variance: &[(Precision, SymbolicVariance)],
+    final_variances: &[(Precision, Shape, SymbolicVariance)],
+    in_luts_variance: &[(Precision, Shape, SymbolicVariance)],
     noise_config: &NoiseBoundConfig,
 ) -> Vec<VariancesAndBound> {
     let precisions: HashSet<Precision> = out_precisions.iter().copied().collect();
@@ -397,11 +367,14 @@ fn constraints_by_precisions(
     precisions.iter().rev().map(to_noise_summary).collect()
 }
 
-fn select_precision<T: Copy>(target_precision: Precision, v: &[(Precision, T)]) -> Vec<T> {
+fn select_precision<T1: Clone, T2: Copy>(
+    target_precision: Precision,
+    v: &[(Precision, T1, T2)],
+) -> Vec<(T1, T2)> {
     v.iter()
-        .filter_map(|(p, t)| {
+        .filter_map(|(p, s, t)| {
             if *p == target_precision {
-                Some(*t)
+                Some((s.clone(), *t))
             } else {
                 None
             }
@@ -409,16 +382,41 @@ fn select_precision<T: Copy>(target_precision: Precision, v: &[(Precision, T)]) 
         .collect()
 }
 
+fn counted_symbolic_variance(
+    symbolic_variances: &[(Shape, SymbolicVariance)],
+) -> Vec<(u64, SymbolicVariance)> {
+    pub fn exact_key(v: &SymbolicVariance) -> (u64, u64) {
+        (v.lut_coeff.to_bits(), v.input_coeff.to_bits())
+    }
+    let mut count: HashMap<(u64, u64), u64> = HashMap::new();
+    for (s, v) in symbolic_variances {
+        *count.entry(exact_key(v)).or_insert(0) += s.flat_size();
+    }
+    let mut res = Vec::new();
+    res.reserve_exact(count.len());
+    for (_s, v) in symbolic_variances {
+        if let Some(c) = count.remove(&exact_key(v)) {
+            res.push((c, *v));
+        }
+    }
+    res
+}
+
 fn constraint_for_one_precision(
     target_precision: Precision,
-    extra_final_variances: &[(Precision, SymbolicVariance)],
-    in_luts_variance: &[(Precision, SymbolicVariance)],
+    extra_final_variances: &[(Precision, Shape, SymbolicVariance)],
+    in_luts_variance: &[(Precision, Shape, SymbolicVariance)],
     safe_noise_bound: f64,
 ) -> VariancesAndBound {
-    let extra_final_variances = select_precision(target_precision, extra_final_variances);
+    let extra_finals_variance = select_precision(target_precision, extra_final_variances);
     let in_luts_variance = select_precision(target_precision, in_luts_variance);
     let nb_luts = in_luts_variance.len() as u64;
-    let pareto_vfs_final = SymbolicVariance::reduce_to_pareto_front(extra_final_variances);
+    let all_output = counted_symbolic_variance(&extra_finals_variance);
+    let all_in_lut = counted_symbolic_variance(&in_luts_variance);
+    let remove_shape = |t: &(Shape, SymbolicVariance)| t.1;
+    let extra_finals_variance = extra_finals_variance.iter().map(remove_shape).collect();
+    let in_luts_variance = in_luts_variance.iter().map(remove_shape).collect();
+    let pareto_vfs_final = SymbolicVariance::reduce_to_pareto_front(extra_finals_variance);
     let pareto_vfs_in_lut = SymbolicVariance::reduce_to_pareto_front(in_luts_variance);
     VariancesAndBound {
         precision: target_precision,
@@ -426,6 +424,8 @@ fn constraint_for_one_precision(
         nb_luts,
         pareto_output: pareto_vfs_final,
         pareto_in_lut: pareto_vfs_in_lut,
+        all_output,
+        all_in_lut,
     }
 }
 
@@ -434,15 +434,19 @@ pub fn worst_log_norm(dag: &unparametrized::OperationDag) -> f64 {
     let out_shapes = out_shapes(dag);
     let out_precisions = out_precisions(dag);
     let out_variances = out_variances(dag, &out_shapes);
-    let in_luts_variance = in_luts_variance(dag, &out_precisions, &out_variances);
+    let in_luts_variance = in_luts_variance(dag, &out_shapes, &out_precisions, &out_variances);
     let coeffs = in_luts_variance
         .iter()
-        .map(|(_precision, symbolic_variance)| {
+        .map(|(_precision, _shape, symbolic_variance)| {
             symbolic_variance.lut_coeff + symbolic_variance.input_coeff
         })
         .filter(|v| *v >= 1.0);
     let worst = coeffs.fold(1.0, f64::max);
     worst.log2()
+}
+
+pub fn lut_count_from_dag(dag: &unparametrized::OperationDag) -> u64 {
+    lut_count(dag, &out_shapes(dag))
 }
 
 pub fn analyze(
@@ -453,9 +457,10 @@ pub fn analyze(
     let out_shapes = out_shapes(dag);
     let out_precisions = out_precisions(dag);
     let out_variances = out_variances(dag, &out_shapes);
-    let in_luts_variance = in_luts_variance(dag, &out_precisions, &out_variances);
+    let in_luts_variance = in_luts_variance(dag, &out_shapes, &out_precisions, &out_variances);
     let nb_luts = lut_count(dag, &out_shapes);
-    let extra_final_variances = extra_final_variances(dag, &out_precisions, &out_variances);
+    let extra_final_variances =
+        extra_final_variances(dag, &out_shapes, &out_precisions, &out_variances);
     let levelled_complexity = levelled_complexity(dag, &out_shapes);
     let constraints_by_precisions = constraints_by_precisions(
         &out_precisions,
@@ -544,48 +549,111 @@ fn peak_relative_variance(
     (max_relative_var, safe_noise)
 }
 
-fn peak_p_error(
-    dag: &OperationDag,
+fn p_success_from_relative_variance(relative_variance: f64, kappa: f64) -> f64 {
+    let sigma_scale = kappa / relative_variance.sqrt();
+    error::success_probability_of_sigma_scale(sigma_scale)
+}
+
+fn p_success_per_constraint(
+    constraint: &VariancesAndBound,
     input_noise_out: f64,
     blind_rotate_noise_out: f64,
     noise_keyswitch: f64,
     noise_modulus_switching: f64,
     kappa: f64,
-) -> (f64, f64) {
-    let (relative_var, variance_bound) = peak_relative_variance(
-        dag,
-        input_noise_out,
-        blind_rotate_noise_out,
-        noise_keyswitch,
-        noise_modulus_switching,
-    );
-    let sigma_scale = kappa / relative_var.sqrt();
-    (
-        error::error_probability_of_sigma_scale(sigma_scale),
-        relative_var * variance_bound,
-    )
+) -> f64 {
+    // Note: no log probability to keep accuracy near 0, 0 is a fine answer when p_success is very small.
+    let mut p_success = 1.0;
+    for &(count, vf) in &constraint.all_output {
+        assert!(0 < count);
+        let variance = vf.eval(input_noise_out, blind_rotate_noise_out);
+        let relative_variance = variance / constraint.safe_variance_bound;
+        let vf_p_success = p_success_from_relative_variance(relative_variance, kappa);
+        p_success *= vf_p_success.powi(count as i32);
+    }
+    // the maximal variance encountered during a lut computation
+    for &(count, vf) in &constraint.all_in_lut {
+        assert!(0 < count);
+        let variance = vf.eval(input_noise_out, blind_rotate_noise_out);
+        let relative_variance =
+            (variance + noise_keyswitch + noise_modulus_switching) / constraint.safe_variance_bound;
+        let vf_p_success = p_success_from_relative_variance(relative_variance, kappa);
+        p_success *= vf_p_success.powi(count as i32);
+    }
+    p_success
 }
 
-fn feasible(
-    dag: &OperationDag,
-    input_noise_out: f64,
-    blind_rotate_noise_out: f64,
-    noise_keyswitch: f64,
-    noise_modulus_switching: f64,
-) -> bool {
-    for ns in &dag.constraints_by_precisions {
-        if peak_variance_per_constraint(
-            ns,
+impl OperationDag {
+    pub fn peek_p_error(
+        &self,
+        input_noise_out: f64,
+        blind_rotate_noise_out: f64,
+        noise_keyswitch: f64,
+        noise_modulus_switching: f64,
+        kappa: f64,
+    ) -> (f64, f64) {
+        let (relative_var, variance_bound) = peak_relative_variance(
+            self,
             input_noise_out,
             blind_rotate_noise_out,
             noise_keyswitch,
             noise_modulus_switching,
-        ) > ns.safe_variance_bound
-        {
-            return false;
-        }
+        );
+        (
+            1.0 - p_success_from_relative_variance(relative_var, kappa),
+            relative_var * variance_bound,
+        )
     }
-    true
+    pub fn global_p_error(
+        &self,
+        input_noise_out: f64,
+        blind_rotate_noise_out: f64,
+        noise_keyswitch: f64,
+        noise_modulus_switching: f64,
+        kappa: f64,
+    ) -> f64 {
+        let mut p_success = 1.0;
+        for ns in &self.constraints_by_precisions {
+            p_success *= p_success_per_constraint(
+                ns,
+                input_noise_out,
+                blind_rotate_noise_out,
+                noise_keyswitch,
+                noise_modulus_switching,
+                kappa,
+            );
+        }
+        assert!(0.0 <= p_success && p_success <= 1.0);
+        1.0 - p_success
+    }
+
+    pub fn feasible(
+        &self,
+        input_noise_out: f64,
+        blind_rotate_noise_out: f64,
+        noise_keyswitch: f64,
+        noise_modulus_switching: f64,
+    ) -> bool {
+        for ns in &self.constraints_by_precisions {
+            if peak_variance_per_constraint(
+                ns,
+                input_noise_out,
+                blind_rotate_noise_out,
+                noise_keyswitch,
+                noise_modulus_switching,
+            ) > ns.safe_variance_bound
+            {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn complexity_cost(&self, input_lwe_dimension: u64, one_lut_cost: f64) -> f64 {
+        let luts_cost = one_lut_cost * (self.nb_luts as f64);
+        let levelled_cost = self.levelled_complexity.cost(input_lwe_dimension);
+        luts_cost + levelled_cost
+    }
 }
 
 #[cfg(test)]

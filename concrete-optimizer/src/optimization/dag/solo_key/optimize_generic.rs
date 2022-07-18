@@ -34,6 +34,14 @@ fn max_precision(dag: &OperationDag) -> Precision {
         .unwrap_or(0)
 }
 
+fn updated_global_p_error(nb_luts: u64, sol: WopSolution) -> WopSolution {
+    let global_p_error = 1.0 - (1.0 - sol.p_error).powi(nb_luts as i32);
+    WopSolution {
+        global_p_error,
+        ..sol
+    }
+}
+
 pub fn optimize<W: UnsignedInteger>(
     dag: &OperationDag,
     security_level: u64,
@@ -61,6 +69,7 @@ pub fn optimize<W: UnsignedInteger>(
         let fallback_16b_precision = 16;
         let default_log_norm = default_log_norm2_woppbs;
         let worst_log_norm = analyze::worst_log_norm(dag);
+        let nb_luts = analyze::lut_count_from_dag(dag);
         let log_norm = default_log_norm.min(worst_log_norm);
         let opt_sol = wop_optimize::<W>(
             fallback_16b_precision,
@@ -72,6 +81,6 @@ pub fn optimize<W: UnsignedInteger>(
             internal_lwe_dimensions,
         )
         .best_solution;
-        opt_sol.map(Solution::WopSolution)
+        opt_sol.map(|sol| Solution::WopSolution(updated_global_p_error(nb_luts, sol)))
     }
 }

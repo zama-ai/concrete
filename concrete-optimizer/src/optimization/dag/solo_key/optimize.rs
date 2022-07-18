@@ -79,6 +79,8 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
     )
     .get_variance();
 
+    let mut best_br_noise = f64::INFINITY;
+    let mut best_ks_noise = f64::INFINITY;
     let mut best_br_i = 0;
     let mut best_ks_i = 0;
     let mut update_best_solution = false;
@@ -154,6 +156,8 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
             best_complexity = complexity;
             best_p_error = peek_p_error;
             best_variance = variance;
+            best_br_noise = br_quantity.noise;
+            best_ks_noise = ks_quantity.noise;
             best_br_i = br_quantity.index;
             best_ks_i = ks_quantity.index;
         }
@@ -180,6 +184,13 @@ fn update_best_solution_with_best_decompositions<W: UnsignedInteger>(
             br_decomposition_base_log: br_b,
             complexity: best_complexity,
             p_error: best_p_error,
+            global_p_error: dag.global_p_error(
+                input_noise_out,
+                best_br_noise,
+                best_ks_noise,
+                noise_modulus_switching,
+                consts.kappa,
+            ),
             noise_max: best_variance,
         });
     }
@@ -277,7 +288,9 @@ pub fn optimize<W: UnsignedInteger>(
 
     if let Some(sol) = state.best_solution {
         assert!(0.0 <= sol.p_error && sol.p_error <= 1.0);
+        assert!(0.0 <= sol.global_p_error && sol.global_p_error <= 1.0);
         assert!(sol.p_error <= maximum_acceptable_error_probability * REL_EPSILON_PROBA);
+        assert!(sol.p_error <= sol.global_p_error * REL_EPSILON_PROBA);
     }
 
     state
@@ -320,6 +333,7 @@ pub fn optimize_v0<W: UnsignedInteger>(
     state
 }
 
+#[allow(clippy::unnecessary_cast)] // unecessary warning on 'as Precision'
 #[cfg(test)]
 mod tests {
     use std::time::Instant;
@@ -336,8 +350,9 @@ mod tests {
     }
 
     impl Solution {
-        fn assert_same(&self, other: Self) -> bool {
+        fn assert_same_pbs_solution(&self, other: Self) -> bool {
             let mut other = other;
+            other.global_p_error = self.global_p_error;
             if small_relative_diff(self.noise_max, other.noise_max)
                 && small_relative_diff(self.p_error, other.p_error)
             {
@@ -444,7 +459,10 @@ mod tests {
         }
         let sol = state.best_solution.unwrap();
         let sol_ref = state_ref.best_solution.unwrap();
-        assert!(sol.assert_same(sol_ref));
+        assert!(sol.assert_same_pbs_solution(sol_ref));
+        assert!(!sol.global_p_error.is_nan());
+        assert!(sol.p_error <= sol.global_p_error);
+        assert!(sol.global_p_error <= 1.0);
     }
 
     #[test]
@@ -508,7 +526,10 @@ mod tests {
         let sol = state.best_solution.unwrap();
         let mut sol_ref = state_ref.best_solution.unwrap();
         sol_ref.complexity *= 2.0 /* number of luts */;
-        assert!(sol.assert_same(sol_ref));
+        assert!(sol.assert_same_pbs_solution(sol_ref));
+        assert!(!sol.global_p_error.is_nan());
+        assert!(sol.p_error <= sol.global_p_error);
+        assert!(sol.global_p_error <= 1.0);
     }
 
     fn no_lut_vs_lut(precision: Precision) {
@@ -619,10 +640,13 @@ mod tests {
         let mut sol_multi = state_multi.best_solution.unwrap();
         sol_multi.complexity /= 2.0;
         if sol_low.complexity < sol_high.complexity {
-            assert!(sol_high.assert_same(sol_multi));
+            assert!(sol_high.assert_same_pbs_solution(sol_multi));
             Some(true)
         } else {
-            assert!(sol_low.complexity < sol_multi.complexity || sol_low.assert_same(sol_multi));
+            assert!(
+                sol_low.complexity < sol_multi.complexity
+                    || sol_low.assert_same_pbs_solution(sol_multi)
+            );
             Some(false)
         }
     }
@@ -642,5 +666,152 @@ mod tests {
             assert!(authorized);
             prev = current;
         }
+    }
+
+    fn local_to_approx_global_p_error(local_p_error: f64, nb_pbs: u64) -> f64 {
+        #[allow(clippy::float_cmp)]
+        if local_p_error == 1f64 {
+            return 1.0;
+        }
+        #[allow(clippy::float_cmp)]
+        if local_p_error == 0f64 {
+            return 0.0;
+        }
+        let local_p_success = 1.0 - local_p_error;
+        assert!(local_p_success < 1.0);
+        let p_success = local_p_success.powi(nb_pbs as i32);
+        assert!(p_success < 1.0);
+        assert!(0.0 < p_success);
+        1.0 - p_success
+    }
+
+    #[test]
+    fn test_global_p_error_input() {
+        for precision in [4_u8, 8] {
+            for weight in [1, 3, 27, 243, 729] {
+                for dim in [1, 2, 16, 32] {
+                    let _ = check_global_p_error_input(dim, weight, precision);
+                }
+            }
+        }
+    }
+
+    fn check_global_p_error_input(dim: u64, weight: u64, precision: u8) -> f64 {
+        let shape = Shape::vector(dim);
+        let weights = Weights::number(weight);
+        let mut dag = unparametrized::OperationDag::new();
+        let input1 = dag.add_input(precision as u8, shape);
+        let _dot1 = dag.add_dot([input1], weights); // this is just several multiply
+        let state = optimize(&dag);
+        let sol = state.best_solution.unwrap();
+        let worst_expected_p_error_dim = local_to_approx_global_p_error(sol.p_error, dim);
+        approx::assert_relative_eq!(sol.global_p_error, worst_expected_p_error_dim);
+        sol.global_p_error
+    }
+
+    #[test]
+    fn test_global_p_error_lut() {
+        for precision in [4_u8, 8] {
+            for weight in [1, 3, 27, 243, 729] {
+                for depth in [2, 16, 32] {
+                    check_global_p_error_lut(depth, weight, precision);
+                }
+            }
+        }
+    }
+
+    fn check_global_p_error_lut(depth: u64, weight: u64, precision: u8) {
+        let shape = Shape::number();
+        let weights = Weights::number(weight);
+        let mut dag = unparametrized::OperationDag::new();
+        let mut last_val = dag.add_input(precision as u8, shape);
+        for _i in 0..depth {
+            let dot = dag.add_dot([last_val], &weights);
+            last_val = dag.add_lut(dot, FunctionTable::UNKWOWN, precision);
+        }
+        let state = optimize(&dag);
+        let sol = state.best_solution.unwrap();
+        // the first lut on input has reduced impact on error probability
+        let lower_nb_dominating_lut = depth - 1;
+        let lower_global_p_error =
+            local_to_approx_global_p_error(sol.p_error, lower_nb_dominating_lut);
+        let higher_global_p_error =
+            local_to_approx_global_p_error(sol.p_error, lower_nb_dominating_lut + 1);
+        assert!(lower_global_p_error <= sol.global_p_error);
+        assert!(sol.global_p_error <= higher_global_p_error);
+    }
+
+    fn dag_2_precisions_lut_chain(
+        depth: u64,
+        precision_low: Precision,
+        precision_high: Precision,
+        weight_low: u64,
+        weight_high: u64,
+    ) -> unparametrized::OperationDag {
+        let shape = Shape::number();
+        let mut dag = unparametrized::OperationDag::new();
+        let weights_low = Weights::number(weight_low);
+        let weights_high = Weights::number(weight_high);
+        let mut last_val_low = dag.add_input(precision_low as u8, &shape);
+        let mut last_val_high = dag.add_input(precision_high as u8, &shape);
+        for _i in 0..depth {
+            let dot_low = dag.add_dot([last_val_low], &weights_low);
+            last_val_low = dag.add_lut(dot_low, FunctionTable::UNKWOWN, precision_low);
+            let dot_high = dag.add_dot([last_val_high], &weights_high);
+            last_val_high = dag.add_lut(dot_high, FunctionTable::UNKWOWN, precision_high);
+        }
+        dag
+    }
+
+    #[test]
+    fn test_global_p_error_dominating_lut() {
+        let depth = 128;
+        let weights_low = 1;
+        let weights_high = 1;
+        let precision_low = 6 as Precision;
+        let precision_high = 8 as Precision;
+        let dag = dag_2_precisions_lut_chain(
+            depth,
+            precision_low,
+            precision_high,
+            weights_low,
+            weights_high,
+        );
+        let sol = optimize(&dag).best_solution.unwrap();
+        // the 2 first luts and low precision/weight luts have little impact on error probability
+        let nb_dominating_lut = depth - 1;
+        let approx_global_p_error = local_to_approx_global_p_error(sol.p_error, nb_dominating_lut);
+        // errors rate is approximated accurately
+        approx::assert_relative_eq!(
+            sol.global_p_error,
+            approx_global_p_error,
+            max_relative = 1e-01
+        );
+    }
+
+    #[test]
+    fn test_global_p_error_non_dominating_lut() {
+        let depth = 128;
+        let weights_low = 1024 * 1024 * 3;
+        let weights_high = 1;
+        let precision_low = 6 as Precision;
+        let precision_high = 8 as Precision;
+        let dag = dag_2_precisions_lut_chain(
+            depth,
+            precision_low,
+            precision_high,
+            weights_low,
+            weights_high,
+        );
+        let sol = optimize(&dag).best_solution.unwrap();
+        // all intern luts have an impact on error probability almost equaly
+        let nb_dominating_lut = (2 * depth) - 1;
+        let approx_global_p_error = local_to_approx_global_p_error(sol.p_error, nb_dominating_lut);
+        // errors rate is approximated accurately
+        approx::assert_relative_eq!(
+            sol.global_p_error,
+            approx_global_p_error,
+            max_relative = 0.05
+        );
     }
 }
