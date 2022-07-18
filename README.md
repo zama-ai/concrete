@@ -9,7 +9,7 @@
   </a>
 <!-- Link to docs badge using shields.io -->
   <a href="https://docs.zama.ai/concrete">
-    <img src="https://img.shields.io/badge/read-documentations-yellow?style=flat-square">
+    <img src="https://img.shields.io/badge/read-documentation-yellow?style=flat-square">
   </a>
 <!-- Link to tutorials badge using shields.io -->
   <a href="https://docs.zama.ai/concrete/tutorials">
@@ -41,7 +41,7 @@ studied cryptographic hardness assumptions believed to be secure even against qu
 
 ## Links
 
-- [documentation](https://docs.zama.ai/concrete/lib)
+- [documentation](https://docs.zama.ai/concrete)
 - [whitepaper](http://whitepaper.zama.ai)
 - [community website](https://community.zama.ai)
 
