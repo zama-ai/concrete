@@ -70,11 +70,11 @@ impl OperationDag {
         complexity: LevelledComplexity,
         manp: f64,
         out_shape: impl Into<Shape>,
-        comment: &str,
+        comment: impl Into<String>,
     ) -> OperatorIndex {
         let inputs = inputs.into();
         let out_shape = out_shape.into();
-        let comment = comment.to_string();
+        let comment = comment.into();
         let op = Operator::LevelledOp {
             inputs,
             complexity,
