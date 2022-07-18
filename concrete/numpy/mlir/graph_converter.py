@@ -473,6 +473,7 @@ class GraphConverter:
                     for arg_num, node in graph.input_nodes.items():
                         ir_to_mlir[node] = sanitized_args[arg_num]
 
+                    constant_cache = {}
                     for node in nx.topological_sort(graph.graph):
                         if node.operation == Operation.Input:
                             continue
@@ -483,6 +484,7 @@ class GraphConverter:
                             graph,
                             node,
                             preds,
+                            constant_cache,
                             direct_replacements,
                         )
                         ir_to_mlir[node] = node_converter.convert()

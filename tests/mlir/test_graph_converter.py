@@ -412,4 +412,43 @@ def test_graph_converter_bad_convert(
     helpers.check_str(expected_message, str(excinfo.value))
 
 
+@pytest.mark.parametrize(
+    "function,inputset,expected_mlir",
+    [
+        pytest.param(
+            lambda x: 1 + cnp.LookupTable([4, 1, 2, 3])[x] + cnp.LookupTable([4, 1, 2, 3])[x + 1],
+            range(3),
+            """
+
+module  {
+  func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+    %c1_i4 = arith.constant 1 : i4
+    %cst = arith.constant dense<[4, 1, 2, 3, 3, 3, 3, 3]> : tensor<8xi64>
+    %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<3>, tensor<8xi64>) -> !FHE.eint<3>
+    %1 = "FHE.add_eint_int"(%arg0, %c1_i4) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+    %2 = "FHE.add_eint_int"(%0, %c1_i4) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+    %3 = "FHE.apply_lookup_table"(%1, %cst) : (!FHE.eint<3>, tensor<8xi64>) -> !FHE.eint<3>
+    %4 = "FHE.add_eint"(%2, %3) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
+    return %4 : !FHE.eint<3>
+  }
+}
+
+            """,  # noqa: E501
+            # Notice that there is only a single 1 and a single table cst above
+        ),
+    ],
+)
+def test_constant_cache(function, inputset, expected_mlir, helpers):
+    """
+    Test caching MLIR constants.
+    """
+
+    configuration = helpers.configuration()
+
+    compiler = cnp.Compiler(function, {"x": "encrypted"})
+    circuit = compiler.compile(inputset, configuration)
+
+    helpers.check_str(expected_mlir, circuit.mlir)
+
+
 # pylint: enable=line-too-long
