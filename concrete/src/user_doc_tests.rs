@@ -12,3 +12,4 @@ doctest!("../docs/how_to/serialization.md", serialization);
 doctest!("../docs/tutorials/parity_bit.md", parity_bit);
 doctest!("../docs/tutorials/latin_string.md", latin_string);
 doctest!("../README.md", readme);
+doctest!("../../README.md", repo_readme);

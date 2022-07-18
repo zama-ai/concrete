@@ -56,6 +56,8 @@ As `concrete` relies on `concrete-core`, `concrete` is only supported on `x86_64
 
 Windows users can use `concrete` through the `WSL`.
 
+### Apple Silicon instructions
+
 {% hint style="info" %}
 macOS users who have Apple Silicon (`arm64`) devices can use `concrete` by cross-compiling to `x86_64` and running their program with Rosetta.
 {% endhint %}
