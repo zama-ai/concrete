@@ -10,90 +10,90 @@ include "concretelang/Dialect/Concrete/IR/ConcreteTypes.td"
 class Concrete_Op<string mnemonic, list<Trait> traits = []> :
     Op<Concrete_Dialect, mnemonic, traits>;
 
-def ZeroLWEOp : Concrete_Op<"zero"> {
+def Concrete_ZeroLWEOp : Concrete_Op<"zero"> {
     let summary = "Returns a trivial encyption of 0";
 
     let arguments = (ins);
-    let results = (outs LweCiphertextType:$out);
+    let results = (outs Concrete_LweCiphertextType:$out);
 }
 
-def ZeroTensorLWEOp : Concrete_Op<"zero_tensor"> {
+def Concrete_ZeroTensorLWEOp : Concrete_Op<"zero_tensor"> {
     let summary = "Returns a trivial encyption of 0";
 
     let arguments = (ins);
-    let results = (outs Type<And<[TensorOf<[LweCiphertextType]>.predicate, HasStaticShapePred]>>:$tensor);
+    let results = (outs Type<And<[TensorOf<[Concrete_LweCiphertextType]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def AddLweCiphertextsOp : Concrete_Op<"add_lwe_ciphertexts"> {
+def Concrete_AddLweCiphertextsOp : Concrete_Op<"add_lwe_ciphertexts"> {
     let summary = "Returns the sum of 2 lwe ciphertexts";
 
-    let arguments = (ins LweCiphertextType:$lhs, LweCiphertextType:$rhs);
-    let results = (outs LweCiphertextType:$result);
+    let arguments = (ins Concrete_LweCiphertextType:$lhs, Concrete_LweCiphertextType:$rhs);
+    let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def AddPlaintextLweCiphertextOp : Concrete_Op<"add_plaintext_lwe_ciphertext"> {
+def Concrete_AddPlaintextLweCiphertextOp : Concrete_Op<"add_plaintext_lwe_ciphertext"> {
     let summary = "Returns the sum of a clear integer and a lwe ciphertext";
 
-    let arguments = (ins LweCiphertextType:$lhs, PlaintextType:$rhs);
-    let results = (outs LweCiphertextType:$result);
+    let arguments = (ins Concrete_LweCiphertextType:$lhs, Concrete_PlaintextType:$rhs);
+    let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def MulCleartextLweCiphertextOp : Concrete_Op<"mul_cleartext_lwe_ciphertext"> {
+def Concrete_MulCleartextLweCiphertextOp : Concrete_Op<"mul_cleartext_lwe_ciphertext"> {
     let summary = "Returns the product of a clear integer and a lwe ciphertext";
 
-    let arguments = (ins LweCiphertextType:$lhs, CleartextType:$rhs);
-    let results = (outs LweCiphertextType:$result);
+    let arguments = (ins Concrete_LweCiphertextType:$lhs, Concrete_CleartextType:$rhs);
+    let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def NegateLweCiphertextOp : Concrete_Op<"negate_lwe_ciphertext"> {
+def Concrete_NegateLweCiphertextOp : Concrete_Op<"negate_lwe_ciphertext"> {
     let summary = "Negates a lwe ciphertext";
 
-    let arguments = (ins LweCiphertextType:$ciphertext);
-    let results = (outs LweCiphertextType:$result);
+    let arguments = (ins Concrete_LweCiphertextType:$ciphertext);
+    let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def GlweFromTable : Concrete_Op<"glwe_from_table"> {
+def Concrete_GlweFromTable : Concrete_Op<"glwe_from_table"> {
     let summary = "Creates a GLWE ciphertext which is the trivial encrytion of a the input table interpreted as a polynomial (to use later in a bootstrap)";
 
     let arguments = (ins 1DTensorOf<[I64]>:$table);
-    let results = (outs GlweCiphertextType:$result);
+    let results = (outs Concrete_GlweCiphertextType:$result);
 }
 
-def BootstrapLweOp : Concrete_Op<"bootstrap_lwe"> {
+def Concrete_BootstrapLweOp : Concrete_Op<"bootstrap_lwe"> {
     let summary = "Bootstraps a LWE ciphertext with a GLWE trivial encryption of the lookup table";
 
     let arguments = (ins 
-        LweCiphertextType:$input_ciphertext,
-        GlweCiphertextType:$accumulator,
+        Concrete_LweCiphertextType:$input_ciphertext,
+        Concrete_GlweCiphertextType:$accumulator,
         I32Attr:$level,
         I32Attr:$baseLog
     );
-    let results = (outs LweCiphertextType:$result);
+    let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def KeySwitchLweOp : Concrete_Op<"keyswitch_lwe"> {
+def Concrete_KeySwitchLweOp : Concrete_Op<"keyswitch_lwe"> {
     let summary = "Keyswitches a LWE ciphertext";
 
     let arguments = (ins
-        LweCiphertextType:$ciphertext,
+        Concrete_LweCiphertextType:$ciphertext,
         I32Attr:$level,
         I32Attr:$baseLog
     );
-    let results = (outs LweCiphertextType:$result);
+    let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def EncodeIntOp : Concrete_Op<"encode_int"> {
+def Concrete_EncodeIntOp : Concrete_Op<"encode_int"> {
     let summary = "Encodes an integer (for it to later be added to a LWE ciphertext)";
 
     let arguments = (ins AnyInteger:$i);
-    let results = (outs PlaintextType:$plaintext);
+    let results = (outs Concrete_PlaintextType:$plaintext);
 }
 
-def IntToCleartextOp : Concrete_Op<"int_to_cleartext", [NoSideEffect]> {
+def Concrete_IntToCleartextOp : Concrete_Op<"int_to_cleartext", [NoSideEffect]> {
     let summary = "Keyswitches a LWE ciphertext";
 
     let arguments = (ins AnyInteger:$i);
-    let results = (outs CleartextType:$cleartext);
+    let results = (outs Concrete_CleartextType:$cleartext);
 }
 
 #endif

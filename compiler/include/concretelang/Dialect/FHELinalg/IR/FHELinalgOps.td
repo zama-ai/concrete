@@ -21,7 +21,7 @@ def TensorBinaryEint : NativeOpTrait<"TensorBinaryEint">;
 def TensorUnaryEint : NativeOpTrait<"TensorUnaryEint">;
 
 
-def AddEintIntOp : FHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
+def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the addition of a tensor of encrypted integers and a tensor of clear integers.";
 
     let description = [{
@@ -61,11 +61,11 @@ def AddEintIntOp : FHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, Tensor
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let builders = [
         OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
@@ -76,7 +76,7 @@ def AddEintIntOp : FHELinalg_Op<"add_eint_int", [TensorBroadcastingRules, Tensor
     let hasFolder = 1;
 }
 
-def AddEintOp : FHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
+def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
     let summary = "Returns a tensor that contains the addition of two tensor of encrypted integers.";
 
     let description = [{
@@ -115,11 +115,11 @@ def AddEintOp : FHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinaryE
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let builders = [
         OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
@@ -128,7 +128,7 @@ def AddEintOp : FHELinalg_Op<"add_eint", [TensorBroadcastingRules, TensorBinaryE
     ];
 }
 
-def SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, TensorBinaryIntEint]> {
+def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, TensorBinaryIntEint]> {
     let summary = "Returns a tensor that contains the substraction of a tensor of clear integers and a tensor of encrypted integers.";
 
     let description = [{
@@ -169,10 +169,10 @@ def SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, Tensor
 
     let arguments = (ins
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$lhs,
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let builders = [
         OpBuilder<(ins "Value":$rhs, "Value":$lhs), [{
@@ -181,7 +181,7 @@ def SubIntEintOp : FHELinalg_Op<"sub_int_eint", [TensorBroadcastingRules, Tensor
     ];
 }
 
-def SubEintIntOp : FHELinalg_Op<"sub_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
+def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the substraction of a tensor of clear integers from a tensor of encrypted integers.";
 
     let description = [{
@@ -221,11 +221,11 @@ def SubEintIntOp : FHELinalg_Op<"sub_eint_int", [TensorBroadcastingRules, Tensor
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
@@ -237,7 +237,7 @@ def SubEintIntOp : FHELinalg_Op<"sub_eint_int", [TensorBroadcastingRules, Tensor
     let hasFolder = 1;
 }
 
-def SubEintOp : FHELinalg_Op<"sub_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
+def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [TensorBroadcastingRules, TensorBinaryEint]> {
     let summary = "Returns a tensor that contains the subtraction of two tensor of encrypted integers.";
 
     let description = [{
@@ -276,11 +276,11 @@ def SubEintOp : FHELinalg_Op<"sub_eint", [TensorBroadcastingRules, TensorBinaryE
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
@@ -289,7 +289,7 @@ def SubEintOp : FHELinalg_Op<"sub_eint", [TensorBroadcastingRules, TensorBinaryE
     ];
 }
 
-def NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
+def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
     let summary = "Returns a tensor that contains the negation of a tensor of encrypted integers.";
 
     let description = [{
@@ -309,10 +309,10 @@ def NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let builders = [
         OpBuilder<(ins "Value":$tensor), [{
@@ -321,7 +321,7 @@ def NegEintOp : FHELinalg_Op<"neg_eint", [TensorUnaryEint]> {
     ];
 }
 
-def MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
+def FHELinalg_MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the multiplication of a tensor of encrypted integers and a tensor of clear integers.";
 
     let description = [{
@@ -361,16 +361,16 @@ def MulEintIntOp : FHELinalg_Op<"mul_eint_int", [TensorBroadcastingRules, Tensor
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let hasFolder = 1;
 }
 
-def ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
+def FHELinalg_ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
     let summary = "Returns a tensor that contains the result of the lookup on a table.";
 
     let description = [{
@@ -397,16 +397,16 @@ def ApplyLookupTableEintOp : FHELinalg_Op<"apply_lookup_table", []> {
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$lut
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
 }
 
-def ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", []> {
+def FHELinalg_ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", []> {
     let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element.";
 
     let description = [{
@@ -444,16 +444,16 @@ def ApplyMultiLookupTableEintOp : FHELinalg_Op<"apply_multi_lookup_table", []> {
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$luts
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
 }
 
-def ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", []> {
+def FHELinalg_ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", []> {
     let summary = "Returns a tensor that contains the result of the lookup on a table, using a different lookup table for each element, specified by a map.";
 
     let description = [{
@@ -497,17 +497,17 @@ def ApplyMappedLookupTableEintOp : FHELinalg_Op<"apply_mapped_lookup_table", []>
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$t,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$luts,
         Type<And<[TensorOf<[Index]>.predicate, HasStaticShapePred]>>:$map
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
 }
 
-def Dot : FHELinalg_Op<"dot_eint_int"> {
+def FHELinalg_Dot : FHELinalg_Op<"dot_eint_int"> {
     let summary = "Returns the encrypted dot product between a vector of encrypted integers and a vector of clean integers.";
 
     let description = [{
@@ -522,15 +522,15 @@ def Dot : FHELinalg_Op<"dot_eint_int"> {
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$lhs,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$lhs,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred, HasAnyRankOfPred<[1]>]>>:$rhs);
 
-    let results = (outs EncryptedIntegerType:$out);
+    let results = (outs FHE_EncryptedIntegerType:$out);
 
     let hasVerifier = 1;
 }
 
-def MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
+def FHELinalg_MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
     let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of encrypted integers and a matrix of clear integers.";
 
     let description = [{
@@ -659,16 +659,16 @@ def MatMulEintIntOp : FHELinalg_Op<"matmul_eint_int", [TensorBinaryEintInt]> {
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$lhs,
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
 }
 
-def MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
+def FHELinalg_MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
     let summary = "Returns a tensor that contains the result of the matrix multiplication of a matrix of clear integers and a matrix of encrypted integers.";
 
     let description = [{
@@ -798,15 +798,15 @@ def MatMulIntEintOp : FHELinalg_Op<"matmul_int_eint", [TensorBinaryIntEint]> {
 
     let arguments = (ins
         Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$lhs,
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$rhs
     );
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
 
     let hasVerifier = 1;
 }
 
-def SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
+def FHELinalg_SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
     let summary = "Returns the sum of elements of a tensor of encrypted integers along specified axes.";
 
     let description = [{
@@ -874,22 +874,22 @@ def SumOp : FHELinalg_Op<"sum", [TensorUnaryEint]> {
     }];
 
     let arguments = (ins
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor,
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor,
         DefaultValuedAttr<I64ArrayAttr, "{}">:$axes,
         DefaultValuedAttr<BoolAttr, "false">:$keep_dims
     );
 
     let results = (outs
         TypeConstraint<Or<[
-            EncryptedIntegerType.predicate,
-            And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>
+            FHE_EncryptedIntegerType.predicate,
+            And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>
         ]>>:$out
     );
 
     let hasVerifier = 1;
 }
 
-def ConcatOp : FHELinalg_Op<"concat"> {
+def FHELinalg_ConcatOp : FHELinalg_Op<"concat"> {
     let summary = "Concatenates a sequence of tensors along an existing axis.";
 
     let description = [{
@@ -920,12 +920,12 @@ def ConcatOp : FHELinalg_Op<"concat"> {
     }];
 
     let arguments = (ins
-        Variadic<Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>>:$ins,
+        Variadic<Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>>:$ins,
         DefaultValuedAttr<I64Attr, "0">:$axis
     );
 
     let results = (outs
-        Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$out
+        Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$out
     );
 
     let hasVerifier = 1;
@@ -934,7 +934,7 @@ def ConcatOp : FHELinalg_Op<"concat"> {
 def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
   let summary = "Returns the 2D convolution of a tensor in the form NCHW with weights in the form FCHW";
   let arguments = (ins
-    Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$input,
+    Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$input,
     Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>:$weight,
     Optional<Type<And<[TensorOf<[AnyInteger]>.predicate, HasStaticShapePred]>>>:$bias,
     // Since there is no U64ElementsAttr, we use I64 and make sure there is no neg values during verification
@@ -942,7 +942,7 @@ def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", []> {
     OptionalAttr<I64ElementsAttr>:$strides,
     OptionalAttr<I64ElementsAttr>:$dilations
   );
-  let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
+  let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>);
   let hasVerifier = 1;
 }
 
@@ -1091,7 +1091,7 @@ $_state.addAttribute("dilations", dilations);
     }];
 }
 
-def TransposeOp : FHELinalg_Op<"transpose", []> {
+def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", []> {
     let summary = "Returns a tensor that contains the transposition of the input tensor.";
 
     let description = [{
@@ -1119,7 +1119,7 @@ def TransposeOp : FHELinalg_Op<"transpose", []> {
     let hasVerifier = 1;
 }
 
-def FromElementOp : FHELinalg_Op<"from_element", []> {
+def FHELinalg_FromElementOp : FHELinalg_Op<"from_element", []> {
     let summary = "Creates a tensor with a single element.";
 
     let description = [{

@@ -7,7 +7,7 @@ include "mlir/IR/BuiltinTypes.td"
 class FHE_Type<string name, list<Trait> traits = []> :
   TypeDef<FHE_Dialect, name, traits> { }
 
-def EncryptedIntegerType : FHE_Type<"EncryptedInteger",
+def FHE_EncryptedIntegerType : FHE_Type<"EncryptedInteger",
         [MemRefElementTypeInterface]> {
   let mnemonic = "eint";
 

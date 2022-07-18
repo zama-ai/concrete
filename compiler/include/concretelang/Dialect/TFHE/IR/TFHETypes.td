@@ -8,7 +8,7 @@ include "mlir/IR/BuiltinTypes.td"
 
 class TFHE_Type<string name, list<Trait> traits = []> : TypeDef<TFHE_Dialect, name, traits> { }
 
-def GLWECipherTextType : TFHE_Type<"GLWECipherText", [MemRefElementTypeInterface]> {
+def TFHE_GLWECipherTextType : TFHE_Type<"GLWECipherText", [MemRefElementTypeInterface]> {
     let mnemonic = "glwe";
 
     let summary = "A GLWE ciphertext";

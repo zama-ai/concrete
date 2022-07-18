@@ -18,7 +18,7 @@ include "concretelang/Dialect/FHE/IR/FHETypes.td"
 class FHE_Op<string mnemonic, list<Trait> traits = []> :
     Op<FHE_Dialect, mnemonic, traits>;
 
-def ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
+def FHE_ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
     let summary = "Returns a trivial encrypted integer of 0";
 
     let description = [{
@@ -31,11 +31,11 @@ def ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
     }];
 
     let arguments = (ins);
-    let results = (outs EncryptedIntegerType:$out);
+    let results = (outs FHE_EncryptedIntegerType:$out);
 }
 
 
-def ZeroTensorOp : FHE_Op<"zero_tensor", []> {
+def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", []> {
     let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
 
     let description = [{
@@ -49,10 +49,10 @@ def ZeroTensorOp : FHE_Op<"zero_tensor", []> {
 
     let arguments = (ins);
 
-    let results = (outs Type<And<[TensorOf<[EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor);
+    let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def AddEintIntOp : FHE_Op<"add_eint_int"> {
+def FHE_AddEintIntOp : FHE_Op<"add_eint_int"> {
 
     let summary = "Adds an encrypted integer and a clear integer";
 
@@ -72,8 +72,8 @@ def AddEintIntOp : FHE_Op<"add_eint_int"> {
         ```
     }];
 
-    let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
-    let results = (outs EncryptedIntegerType);
+    let arguments = (ins FHE_EncryptedIntegerType:$a, AnyInteger:$b);
+    let results = (outs FHE_EncryptedIntegerType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -85,7 +85,7 @@ def AddEintIntOp : FHE_Op<"add_eint_int"> {
     let hasFolder = 1;
 }
 
-def AddEintOp : FHE_Op<"add_eint"> {
+def FHE_AddEintOp : FHE_Op<"add_eint"> {
 
     let summary = "Adds two encrypted integers";
 
@@ -104,8 +104,8 @@ def AddEintOp : FHE_Op<"add_eint"> {
         ```
     }];
 
-    let arguments = (ins EncryptedIntegerType:$a, EncryptedIntegerType:$b);
-    let results = (outs EncryptedIntegerType);
+    let arguments = (ins FHE_EncryptedIntegerType:$a, FHE_EncryptedIntegerType:$b);
+    let results = (outs FHE_EncryptedIntegerType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -116,7 +116,7 @@ def AddEintOp : FHE_Op<"add_eint"> {
     let hasVerifier = 1;
 }
 
-def SubIntEintOp : FHE_Op<"sub_int_eint"> {
+def FHE_SubIntEintOp : FHE_Op<"sub_int_eint"> {
 
     let summary = "Substract a clear integer and an encrypted integer";
 
@@ -136,8 +136,8 @@ def SubIntEintOp : FHE_Op<"sub_int_eint"> {
         ```
     }];
 
-    let arguments = (ins AnyInteger:$a, EncryptedIntegerType:$b);
-    let results = (outs EncryptedIntegerType);
+    let arguments = (ins AnyInteger:$a, FHE_EncryptedIntegerType:$b);
+    let results = (outs FHE_EncryptedIntegerType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -148,7 +148,7 @@ def SubIntEintOp : FHE_Op<"sub_int_eint"> {
     let hasVerifier = 1;
 }
 
-def SubEintIntOp : FHE_Op<"sub_eint_int"> {
+def FHE_SubEintIntOp : FHE_Op<"sub_eint_int"> {
 
     let summary = "Substract a clear integer from an encrypted integer";
 
@@ -168,8 +168,8 @@ def SubEintIntOp : FHE_Op<"sub_eint_int"> {
         ```
     }];
 
-    let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
-    let results = (outs EncryptedIntegerType);
+    let arguments = (ins FHE_EncryptedIntegerType:$a, AnyInteger:$b);
+    let results = (outs FHE_EncryptedIntegerType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -182,7 +182,7 @@ def SubEintIntOp : FHE_Op<"sub_eint_int"> {
     let hasFolder = 1;
 }
 
-def SubEintOp : FHE_Op<"sub_eint"> {
+def FHE_SubEintOp : FHE_Op<"sub_eint"> {
 
     let summary = "Subtracts two encrypted integers";
 
@@ -201,8 +201,8 @@ def SubEintOp : FHE_Op<"sub_eint"> {
         ```
     }];
 
-    let arguments = (ins EncryptedIntegerType:$a, EncryptedIntegerType:$b);
-    let results = (outs EncryptedIntegerType);
+    let arguments = (ins FHE_EncryptedIntegerType:$a, FHE_EncryptedIntegerType:$b);
+    let results = (outs FHE_EncryptedIntegerType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -213,7 +213,7 @@ def SubEintOp : FHE_Op<"sub_eint"> {
     let hasVerifier = 1;
 }
 
-def NegEintOp : FHE_Op<"neg_eint"> {
+def FHE_NegEintOp : FHE_Op<"neg_eint"> {
 
     let summary = "Negates an encrypted integer";
 
@@ -231,8 +231,8 @@ def NegEintOp : FHE_Op<"neg_eint"> {
         ```
     }];
 
-    let arguments = (ins EncryptedIntegerType:$a);
-    let results = (outs EncryptedIntegerType);
+    let arguments = (ins FHE_EncryptedIntegerType:$a);
+    let results = (outs FHE_EncryptedIntegerType);
 
     let builders = [
         OpBuilder<(ins "Value":$a), [{
@@ -242,7 +242,7 @@ def NegEintOp : FHE_Op<"neg_eint"> {
     let hasVerifier = 1;
 }
 
-def MulEintIntOp : FHE_Op<"mul_eint_int"> {
+def FHE_MulEintIntOp : FHE_Op<"mul_eint_int"> {
 
     let summary = "Mulitplies an encrypted integer and a clear integer";
 
@@ -262,8 +262,8 @@ def MulEintIntOp : FHE_Op<"mul_eint_int"> {
         ```
     }];
 
-    let arguments = (ins EncryptedIntegerType:$a, AnyInteger:$b);
-    let results = (outs EncryptedIntegerType);
+    let arguments = (ins FHE_EncryptedIntegerType:$a, AnyInteger:$b);
+    let results = (outs FHE_EncryptedIntegerType);
 
     let builders = [
         OpBuilder<(ins "Value":$a, "Value":$b), [{
@@ -275,7 +275,7 @@ def MulEintIntOp : FHE_Op<"mul_eint_int"> {
     let hasFolder = 1;
 }
 
-def ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table"> {
+def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table"> {
 
     let summary = "Applies a clear lookup table to an encrypted integer";
 
@@ -295,9 +295,9 @@ def ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table"> {
         ```
     }];
 
-    let arguments = (ins EncryptedIntegerType:$a,
+    let arguments = (ins FHE_EncryptedIntegerType:$a,
         TensorOf<[AnyInteger]>:$lut);
-    let results = (outs EncryptedIntegerType);
+    let results = (outs FHE_EncryptedIntegerType);
     let hasVerifier = 1;
 }
 

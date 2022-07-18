@@ -13,7 +13,7 @@ include "concretelang/Dialect/RT/IR/RTTypes.td"
 class RT_Op<string mnemonic, list<Trait> traits = []> :
     Op<RT_Dialect, mnemonic, traits>;
 
-def DataflowTaskOp : RT_Op<"dataflow_task", [
+def RT_DataflowTaskOp : RT_Op<"dataflow_task", [
     DeclareOpInterfaceMethods<RegionBranchOpInterface>,
     SingleBlockImplicitTerminator<"DataflowYieldOp">]> {
     let arguments = (ins Variadic<AnyType>: $inputs);
@@ -67,7 +67,7 @@ func @test(%0 : i64): (i64, i64) {
     }];
 }
 
-def DataflowYieldOp : RT_Op<"dataflow_yield", [ReturnLike, Terminator]> {
+def RT_DataflowYieldOp : RT_Op<"dataflow_yield", [ReturnLike, Terminator]> {
     let arguments = (ins Variadic<AnyType>: $values);
 
     let summary = "Dataflow yield operation";
@@ -85,7 +85,7 @@ Example:
   }];
 }
 
-def MakeReadyFutureOp : RT_Op<"make_ready_future"> {
+def RT_MakeReadyFutureOp : RT_Op<"make_ready_future"> {
     let arguments = (ins AnyType: $input);
     let results = (outs RT_Future: $output);
     let summary = "Build a ready future.";
@@ -96,7 +96,7 @@ using `RT.make_ready_future`.
 }];
 }
 
-def AwaitFutureOp : RT_Op<"await_future"> {
+def RT_AwaitFutureOp : RT_Op<"await_future"> {
     let arguments = (ins RT_Future: $input);
     let results = (outs AnyType: $output);
     let summary = "Wait for a future and access its data.";
@@ -108,39 +108,39 @@ be synchronized and its data accessed using `RT.await_future`.
 }];
 }
 
-def CreateAsyncTaskOp : RT_Op<"create_async_task"> {
+def RT_CreateAsyncTaskOp : RT_Op<"create_async_task"> {
     let arguments = (ins SymbolRefAttr:$workfn,
     		    	 Variadic<AnyType>:$list);
     let results = (outs );
     let summary = "Create a dataflow task.";
 }
 
-def DeallocateFutureOp : RT_Op<"deallocate_future"> {
+def RT_DeallocateFutureOp : RT_Op<"deallocate_future"> {
     let arguments = (ins RT_Future: $input);
     let results = (outs );
 }
 
-def DeallocateFutureDataOp : RT_Op<"deallocate_future_data"> {
+def RT_DeallocateFutureDataOp : RT_Op<"deallocate_future_data"> {
     let arguments = (ins RT_Future: $input);
     let results = (outs );
 }
 
-def BuildReturnPtrPlaceholderOp : RT_Op<"build_return_ptr_placeholder"> {
+def RT_BuildReturnPtrPlaceholderOp : RT_Op<"build_return_ptr_placeholder"> {
     let arguments = (ins );
     let results = (outs RT_Pointer: $output);
 }
 
-def DerefReturnPtrPlaceholderOp : RT_Op<"deref_return_ptr_placeholder"> {
+def RT_DerefReturnPtrPlaceholderOp : RT_Op<"deref_return_ptr_placeholder"> {
     let arguments = (ins RT_Pointer: $input);
     let results = (outs RT_Future: $output);
 }
 
-def DerefWorkFunctionArgumentPtrPlaceholderOp : RT_Op<"deref_work_function_argument_ptr_placeholder"> {
+def RT_DerefWorkFunctionArgumentPtrPlaceholderOp : RT_Op<"deref_work_function_argument_ptr_placeholder"> {
     let arguments = (ins RT_Pointer: $input);
     let results = (outs AnyType: $output);
 }
 
-def WorkFunctionReturnOp : RT_Op<"work_function_return"> {
+def RT_WorkFunctionReturnOp : RT_Op<"work_function_return"> {
     let arguments = (ins AnyType:$in, AnyType:$out);
     let results = (outs );
 }

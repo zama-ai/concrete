@@ -12,7 +12,7 @@ include "concretelang/Dialect/Concrete/IR/ConcreteTypes.td"
 class BConcrete_Op<string mnemonic, list<Trait> traits = []> :
     Op<BConcrete_Dialect, mnemonic, traits>;
 
-def AddLweBuffersOp : BConcrete_Op<"add_lwe_buffer"> {
+def BConcrete_AddLweBuffersOp : BConcrete_Op<"add_lwe_buffer"> {
     let arguments = (ins  
         1DTensorOf<[I64]>:$lhs,
         1DTensorOf<[I64]>:$rhs
@@ -20,22 +20,22 @@ def AddLweBuffersOp : BConcrete_Op<"add_lwe_buffer"> {
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def AddPlaintextLweBufferOp : BConcrete_Op<"add_plaintext_lwe_buffer"> {
+def BConcrete_AddPlaintextLweBufferOp : BConcrete_Op<"add_plaintext_lwe_buffer"> {
     let arguments = (ins 1DTensorOf<[I64]>:$lhs, I64:$rhs);
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def MulCleartextLweBufferOp : BConcrete_Op<"mul_cleartext_lwe_buffer"> {
+def BConcrete_MulCleartextLweBufferOp : BConcrete_Op<"mul_cleartext_lwe_buffer"> {
     let arguments = (ins 1DTensorOf<[I64]>:$lhs, I64:$rhs);
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def NegateLweBufferOp : BConcrete_Op<"negate_lwe_buffer"> {
+def BConcrete_NegateLweBufferOp : BConcrete_Op<"negate_lwe_buffer"> {
     let arguments = (ins 1DTensorOf<[I64]>:$ciphertext);
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def FillGlweFromTable : BConcrete_Op<"fill_glwe_from_table"> {
+def BConcrete_FillGlweFromTable : BConcrete_Op<"fill_glwe_from_table"> {
     let arguments = (ins
         1DTensorOf<[I64]>:$glwe,
         I32Attr:$glweDimension,
@@ -46,7 +46,7 @@ def FillGlweFromTable : BConcrete_Op<"fill_glwe_from_table"> {
     let results = (outs);
 }
 
-def KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
+def BConcrete_KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
     let arguments = (ins
         // LweKeySwitchKeyType:$keyswitch_key,
         1DTensorOf<[I64]>:$ciphertext,
@@ -56,7 +56,7 @@ def KeySwitchLweBufferOp : BConcrete_Op<"keyswitch_lwe_buffer"> {
     let results = (outs 1DTensorOf<[I64]>:$result);
 }
 
-def BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
+def BConcrete_BootstrapLweBufferOp : BConcrete_Op<"bootstrap_lwe_buffer"> {
     let arguments = (ins
         // LweBootstrapKeyType:$bootstrap_key,
         1DTensorOf<[I64]>:$input_ciphertext,

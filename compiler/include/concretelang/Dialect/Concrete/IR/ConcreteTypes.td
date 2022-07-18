@@ -7,7 +7,7 @@ include "concretelang/Dialect/Concrete/IR/ConcreteDialect.td"
 
 class Concrete_Type<string name, list<Trait> traits = []> : TypeDef<Concrete_Dialect, name, traits> { }
 
-def GlweCiphertextType : Concrete_Type<"GlweCiphertext"> {
+def Concrete_GlweCiphertextType : Concrete_Type<"GlweCiphertext"> {
     let mnemonic = "glwe_ciphertext";
 
     let summary = "A GLWE ciphertext (encryption of a polynomial of fixed-precision integers)";
@@ -26,7 +26,7 @@ def GlweCiphertextType : Concrete_Type<"GlweCiphertext"> {
     );
 }
 
-def LweCiphertextType : Concrete_Type<"LweCiphertext", [MemRefElementTypeInterface]> {
+def Concrete_LweCiphertextType : Concrete_Type<"LweCiphertext", [MemRefElementTypeInterface]> {
     let mnemonic = "lwe_ciphertext";
 
     let summary = "A LWE ciphertext (encryption of a fixed-precision integer)";
@@ -46,7 +46,7 @@ def LweCiphertextType : Concrete_Type<"LweCiphertext", [MemRefElementTypeInterfa
     let hasCustomAssemblyFormat = 1;
 }
 
-def CleartextType : Concrete_Type<"Cleartext"> {
+def Concrete_CleartextType : Concrete_Type<"Cleartext"> {
     let mnemonic = "cleartext";
 
     let summary = "A cleartext (a fixed-precision integer) ready to be multiplied to a LWE ciphertext";
@@ -63,7 +63,7 @@ def CleartextType : Concrete_Type<"Cleartext"> {
     let hasCustomAssemblyFormat = 1;
 }
 
-def PlaintextType : Concrete_Type<"Plaintext"> {
+def Concrete_PlaintextType : Concrete_Type<"Plaintext"> {
     let mnemonic = "plaintext";
 
     let summary = "A Plaintext (a fixed-precision integer) ready to be added to a LWE ciphertext";
@@ -80,7 +80,7 @@ def PlaintextType : Concrete_Type<"Plaintext"> {
     let hasCustomAssemblyFormat = 1;
 }
 
-def Context : Concrete_Type<"Context"> {
+def Concrete_Context : Concrete_Type<"Context"> {
     let mnemonic = "context";
 
     let summary = "A runtime context";
