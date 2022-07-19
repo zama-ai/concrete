@@ -29,7 +29,7 @@ classifiers = [
     "Topic :: Security :: Cryptography",
     "Topic :: Software Development :: Compilers",
 ]
-readme = "pypi_readme.md"
+readme = "README.md"
 
 [tool.poetry.urls]
 "README" = "https://github.com/zama-ai/concrete-numpy/blob/main/README.md"

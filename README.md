@@ -11,16 +11,12 @@
   <a href="https://docs.zama.ai/concrete-numpy/">
     <img src="https://img.shields.io/badge/read-documentations-yellow?style=flat-square">
   </a>
-<!-- Link to tutorials badge using shields.io -->
-  <a href="https://docs.zama.ai/concrete-numpy/v/main/tutorials/">
-    <img src="https://img.shields.io/badge/tutorials-and%20demos-orange?style=flat-square">
-  </a>
 <!-- Community forum badge using shields.io -->
   <a href="https://community.zama.ai/c/concrete-numpy">
     <img src="https://img.shields.io/badge/community%20forum-available-brightgreen?style=flat-square">
   </a>
 <!-- Open source badge using shields.io -->
-  <a href="https://github.com/zama-ai/concrete-numpy/blob/main/docs/dev/contributing.md">
+  <a href="https://docs.zama.ai/concrete-numpy/developer/contributing">
     <img src="https://img.shields.io/badge/we're%20open%20source-contributing.md-blue?style=flat-square">
   </a>
 <!-- Follow on twitter badge using shields.io -->
@@ -29,7 +25,7 @@
   </a>
 </p>
 
-## Quick tour
+## Table of contents
 
 - [Introduction](#Introduction)
 - [Installation](#Installation)
