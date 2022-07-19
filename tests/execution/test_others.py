@@ -606,7 +606,7 @@ def test_others(function, parameters, helpers):
         circuit = compiler.compile(inputset, configuration)
 
         sample = helpers.generate_sample(parameters)
-        helpers.check_execution(circuit, function, sample, retries=10)
+        helpers.check_execution(circuit, function, sample)
 
     # tensor
     # ------
@@ -626,7 +626,7 @@ def test_others(function, parameters, helpers):
     circuit = compiler.compile(inputset, configuration)
 
     sample = helpers.generate_sample(parameters)
-    helpers.check_execution(circuit, function, sample, retries=10)
+    helpers.check_execution(circuit, function, sample)
 
 
 def test_others_bad_fusing(helpers):
