@@ -301,7 +301,7 @@ jobs:
           pip3 wheel --no-deps -w ${{ github.workspace }}/wheels .
           delocate-wheel -v `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
           pip3 install `find ${{ github.workspace }}/wheels/ -name *macosx*.whl`
-          make test
+          make run-tests
           echo "Debug: ccache statistics (after the tests):"
           ccache -s
 
