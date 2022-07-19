@@ -1014,6 +1014,7 @@ struct DagSolution final {
   double complexity;
   double noise_max;
   double p_error;
+  double global_p_error;
   bool use_wop_pbs;
   ::std::uint64_t cb_decomposition_level_count;
   ::std::uint64_t cb_decomposition_base_log;
