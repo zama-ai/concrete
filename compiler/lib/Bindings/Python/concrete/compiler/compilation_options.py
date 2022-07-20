@@ -135,7 +135,7 @@ class CompilationOptions(WrapperCpp):
         self.cpp().set_funcname(funcname)
 
     def set_p_error(self, p_error: float):
-        """Set global error probability for each pbs.
+        """Set error probability for shared by each pbs.
 
         Args:
             p_error (float): probability of error for each lut
@@ -177,3 +177,21 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(enable, bool):
             raise TypeError("enable should be a bool")
         self.cpp().set_strategy_v0(enable)
+
+    def set_global_p_error(self, global_p_error: float):
+        """Set global error probability for the full circuit.
+
+        Args:
+            global_p_error (float): probability of error for the full circuit
+
+        Raises:
+            TypeError: if the value to set is not float
+            ValueError: if the value to set is not in interval ]0; 1[
+        """
+        if not isinstance(global_p_error, float):
+            raise TypeError("can't set global_p_error to a non-float value")
+        if global_p_error in (0.0, 1.0):
+            raise ValueError("global_p_error cannot be 0 or 1")
+        if not 0.0 <= global_p_error <= 1.0:
+            raise ValueError("global_p_error be a probability in ]0; 1[")
+        self.cpp().set_global_p_error(global_p_error)

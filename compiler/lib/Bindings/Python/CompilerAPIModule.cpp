@@ -66,6 +66,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_strategy_v0",
            [](CompilationOptions &options, bool strategy_v0) {
              options.optimizerConfig.strategy_v0 = strategy_v0;
+           })
+      .def("set_global_p_error",
+           [](CompilationOptions &options, double global_p_error) {
+             options.optimizerConfig.global_p_error = global_p_error;
            });
 
   pybind11::class_<mlir::concretelang::JitCompilationResult>(

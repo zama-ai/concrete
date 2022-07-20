@@ -34,19 +34,52 @@ optimizer::DagSolution getV0Parameter(V0FHEConstraint constraint,
   return concrete_optimizer::utils::convert_to_dag_solution(solution);
 }
 
+const int MAXIMUM_OPTIMIZER_CALL = 5;
+optimizer::DagSolution getV1ParameterGlobalPError(optimizer::Dag &dag,
+                                                  optimizer::Config config) {
+  // We find the approximate translation between local and global error with a
+  // calibration call
+  auto ref_p_error = std::min(config.p_error, config.global_p_error);
+  auto ref_global_p_success = 1.0 - config.global_p_error;
+  auto sol = dag->optimize(config.security, ref_p_error,
+                           config.fallback_log_norm_woppbs);
+  for (int i = 2; i <= MAXIMUM_OPTIMIZER_CALL; i++) {
+    auto local_p_success = 1.0 - sol.p_error;
+    auto global_p_success = 1.0 - sol.global_p_error;
+    auto power_global_to_local = log(local_p_success) / log(global_p_success);
+    auto surrogate_p_local_success =
+        pow(ref_global_p_success, power_global_to_local);
+    config.p_error = 1.0 - surrogate_p_local_success;
+    sol = dag->optimize(config.security, config.p_error,
+                        config.fallback_log_norm_woppbs);
+    if (sol.global_p_error <= config.global_p_error) {
+      break;
+    }
+  }
+  return sol;
+}
+
 optimizer::DagSolution getV1Parameter(optimizer::Dag &dag,
                                       optimizer::Config config) {
+  if (!std::isnan(config.global_p_error)) {
+    return getV1ParameterGlobalPError(dag, config);
+  }
   return dag->optimize(config.security, config.p_error,
                        config.fallback_log_norm_woppbs);
 }
 
-static void display(V0FHEConstraint constraint,
+constexpr double WARN_ABOVE_GLOBAL_ERROR_RATE = 1.0 / 1000.0;
+
+static void display(optimizer::Description &descr,
                     optimizer::Config optimizerConfig,
-                    optimizer::DagSolution sol,
+                    optimizer::DagSolution sol, bool naive_user,
                     std::chrono::milliseconds duration) {
   if (!optimizerConfig.display && !mlir::concretelang::isVerbose()) {
     return;
   }
+  auto constraint = descr.constraint;
+  auto complexity_label =
+      descr.dag ? "for the full circuit" : "for each Pbs call";
   auto o = llvm::outs;
   o() << "--- Circuit\n"
       << "  " << constraint.p << " bits integers\n"
@@ -54,12 +87,19 @@ static void display(V0FHEConstraint constraint,
       << "  " << duration.count() << "ms to solve\n"
       << "--- Optimizer config\n"
       << "  " << optimizerConfig.p_error << " error per pbs call\n"
-      << "--- Complexity for each Pbs call\n"
+      << "  " << optimizerConfig.global_p_error << " error per circuit call\n"
+      << "--- Complexity " << complexity_label << "\n"
       << "  " << (long)sol.complexity / (1000 * 1000)
       << " Millions Operations\n"
       << "--- Correctness for each Pbs call\n"
-      << "  1/" << int(1.0 / sol.p_error) << " errors (" << sol.p_error << ")\n"
-      << "--- Parameters resolution\n"
+      << "  1/" << int(1.0 / sol.p_error) << " errors (" << sol.p_error
+      << ")\n";
+  if (descr.dag) {
+    o() << "--- Correctness for the full circuit\n"
+        << "  1/" << int(1.0 / sol.global_p_error) << " errors ("
+        << sol.global_p_error << ")\n";
+  }
+  o() << "--- Parameters resolution\n"
       << "  " << sol.glwe_dimension << "x glwe_dimension\n"
       << "  2**" << (size_t)std::log2l(sol.glwe_polynomial_size)
       << " polynomial (" << sol.glwe_polynomial_size << ")\n"
@@ -74,12 +114,36 @@ static void display(V0FHEConstraint constraint,
         << sol.cb_decomposition_base_log << "\n";
   }
   o() << "---\n";
+
+  if (descr.dag && naive_user &&
+      sol.global_p_error > WARN_ABOVE_GLOBAL_ERROR_RATE) {
+    auto dominating_pbs =
+        (int)(log(1.0 - sol.global_p_error) / log(1.0 - sol.p_error));
+    o() << "---\n"
+        << "!!!!! WARNING !!!!!\n"
+        << "\n"
+        << "HIGH ERROR RATE: 1/" << int(1.0 / sol.global_p_error)
+        << " errors \n\n"
+        << "Resolve by using command line option: \n"
+        << "--global-error-probability=" << WARN_ABOVE_GLOBAL_ERROR_RATE
+        << "\n\n"
+        << "Reason:\n"
+        << dominating_pbs << " pbs dominate at 1/" << int(1.0 / sol.p_error)
+        << " errors rate\n";
+    o() << "\n!!!!!!!!!!!!!!!!!!!\n";
+  }
 }
 
 llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
                                          optimizer::Config config) {
   namespace chrono = std::chrono;
   auto start = chrono::high_resolution_clock::now();
+
+  auto naive_user =
+      std::isnan(config.p_error) && std::isnan(config.global_p_error);
+  if (std::isnan(config.p_error)) {
+    config.p_error = optimizer::P_ERROR_4_SIGMA;
+  }
   auto sol = (!descr.dag || config.strategy_v0)
                  ? getV0Parameter(descr.constraint, config)
                  : getV1Parameter(descr.dag.getValue(), config);
@@ -91,11 +155,22 @@ llvm::Expected<V0Parameter> getParameter(optimizer::Description &descr,
     llvm::errs() << "concrete-optimizer time: " << duration_s.count() << "s\n";
   }
 
-  display(descr.constraint, config, sol, duration);
+  display(descr, config, sol, naive_user, duration);
 
-  if (sol.p_error == 1.0) {
-    // The optimizer return a p_error = 1 if there is no solution
+  // The optimizer return a p_error = 1 if there is no solution
+  bool no_solution = sol.p_error == 1.0;
+  // The global_p_error is best effort only, so we must verify
+  bool bad_solution = !std::isnan(config.global_p_error) &&
+                      config.global_p_error < sol.global_p_error;
+
+  if (no_solution || bad_solution) {
     return StreamStringError() << "Cannot find crypto parameters";
+  }
+
+  if (descr.dag && !config.display && naive_user &&
+      sol.global_p_error > WARN_ABOVE_GLOBAL_ERROR_RATE) {
+    llvm::errs() << "WARNING: high error rate, more details with "
+                    "--display-optimizer-choice\n";
   }
 
   V0Parameter params;

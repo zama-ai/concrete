@@ -182,6 +182,13 @@ llvm::cl::opt<double> pbsErrorProbability(
     llvm::cl::desc("Change the default probability of error for all pbs"),
     llvm::cl::init(mlir::concretelang::optimizer::DEFAULT_CONFIG.p_error));
 
+llvm::cl::opt<double> globalErrorProbability(
+    "global-error-probability",
+    llvm::cl::desc(
+        "Use global error probability (override pbs error probability)"),
+    llvm::cl::init(
+        mlir::concretelang::optimizer::DEFAULT_CONFIG.global_p_error));
+
 llvm::cl::opt<bool> displayOptimizerChoice(
     "display-optimizer-choice",
     llvm::cl::desc("Display the information returned by the optimizer"),
@@ -342,9 +349,17 @@ cmdlineCompilationOptions() {
         cmdline::largeIntegerCircuitBootstrap[1];
   }
 
+  options.optimizerConfig.global_p_error = cmdline::globalErrorProbability;
   options.optimizerConfig.p_error = cmdline::pbsErrorProbability;
   options.optimizerConfig.display = cmdline::displayOptimizerChoice;
   options.optimizerConfig.strategy_v0 = cmdline::optimizerV0;
+
+  if (!std::isnan(options.optimizerConfig.global_p_error) &&
+      options.optimizerConfig.strategy_v0) {
+    return llvm::make_error<llvm::StringError>(
+        "--global-error-probability is not compatible with --optimizer-v0",
+        llvm::inconvertibleErrorCode());
+  }
 
   return options;
 }
