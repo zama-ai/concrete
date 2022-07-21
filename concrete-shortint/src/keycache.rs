@@ -1,5 +1,6 @@
 use crate::parameters::parameters_wopbs::*;
 use crate::parameters::parameters_wopbs_message_carry::*;
+use crate::parameters::parameters_wopbs_prime_moduli::*;
 use crate::parameters::*;
 use crate::treepbs::TreepbsKey;
 use crate::wopbs::WopbsKey;
@@ -72,6 +73,7 @@ impl NamedParam for Parameters {
                 WOPBS_PARAM_MESSAGE_7_NORM2_8,
                 WOPBS_PARAM_MESSAGE_8_NORM2_2,
                 WOPBS_PARAM_MESSAGE_8_NORM2_4,
+                WOPBS_PARAM_MESSAGE_8_NORM2_5,
                 WOPBS_PARAM_MESSAGE_8_NORM2_6,
                 WOPBS_PARAM_MESSAGE_1_CARRY_0,
                 WOPBS_PARAM_MESSAGE_1_CARRY_1,
@@ -108,7 +110,56 @@ impl NamedParam for Parameters {
                 WOPBS_PARAM_MESSAGE_6_CARRY_2,
                 WOPBS_PARAM_MESSAGE_7_CARRY_0,
                 WOPBS_PARAM_MESSAGE_7_CARRY_1,
-                WOPBS_PARAM_MESSAGE_8_CARRY_0
+                WOPBS_PARAM_MESSAGE_8_CARRY_0,
+                WOPBS_PRIME_PARAM_MESSAGE_2_NORM2_2,
+                WOPBS_PRIME_PARAM_MESSAGE_2_NORM2_3,
+                WOPBS_PRIME_PARAM_MESSAGE_2_NORM2_4,
+                WOPBS_PRIME_PARAM_MESSAGE_2_NORM2_5,
+                WOPBS_PRIME_PARAM_MESSAGE_2_NORM2_6,
+                WOPBS_PRIME_PARAM_MESSAGE_2_NORM2_7,
+                WOPBS_PRIME_PARAM_MESSAGE_2_NORM2_8,
+                WOPBS_PRIME_PARAM_MESSAGE_3_NORM2_2,
+                WOPBS_PRIME_PARAM_MESSAGE_3_NORM2_3,
+                WOPBS_PRIME_PARAM_MESSAGE_3_NORM2_4,
+                WOPBS_PRIME_PARAM_MESSAGE_3_NORM2_5,
+                WOPBS_PRIME_PARAM_MESSAGE_3_NORM2_6,
+                WOPBS_PRIME_PARAM_MESSAGE_3_NORM2_7,
+                WOPBS_PRIME_PARAM_MESSAGE_3_NORM2_8,
+                WOPBS_PRIME_PARAM_MESSAGE_4_NORM2_2,
+                WOPBS_PRIME_PARAM_MESSAGE_4_NORM2_3,
+                WOPBS_PRIME_PARAM_MESSAGE_4_NORM2_4,
+                WOPBS_PRIME_PARAM_MESSAGE_4_NORM2_5,
+                WOPBS_PRIME_PARAM_MESSAGE_4_NORM2_6,
+                WOPBS_PRIME_PARAM_MESSAGE_4_NORM2_7,
+                WOPBS_PRIME_PARAM_MESSAGE_4_NORM2_8,
+                WOPBS_PRIME_PARAM_MESSAGE_5_NORM2_2,
+                WOPBS_PRIME_PARAM_MESSAGE_5_NORM2_3,
+                WOPBS_PRIME_PARAM_MESSAGE_5_NORM2_4,
+                WOPBS_PRIME_PARAM_MESSAGE_5_NORM2_5,
+                WOPBS_PRIME_PARAM_MESSAGE_5_NORM2_6,
+                WOPBS_PRIME_PARAM_MESSAGE_5_NORM2_7,
+                WOPBS_PRIME_PARAM_MESSAGE_5_NORM2_8,
+                WOPBS_PRIME_PARAM_MESSAGE_6_NORM2_2,
+                WOPBS_PRIME_PARAM_MESSAGE_6_NORM2_3,
+                WOPBS_PRIME_PARAM_MESSAGE_6_NORM2_4,
+                WOPBS_PRIME_PARAM_MESSAGE_6_NORM2_5,
+                WOPBS_PRIME_PARAM_MESSAGE_6_NORM2_6,
+                WOPBS_PRIME_PARAM_MESSAGE_6_NORM2_7,
+                WOPBS_PRIME_PARAM_MESSAGE_6_NORM2_8,
+                WOPBS_PRIME_PARAM_MESSAGE_7_NORM2_2,
+                WOPBS_PRIME_PARAM_MESSAGE_7_NORM2_3,
+                WOPBS_PRIME_PARAM_MESSAGE_7_NORM2_4,
+                WOPBS_PRIME_PARAM_MESSAGE_7_NORM2_5,
+                WOPBS_PRIME_PARAM_MESSAGE_7_NORM2_6,
+                WOPBS_PRIME_PARAM_MESSAGE_7_NORM2_7,
+                WOPBS_PRIME_PARAM_MESSAGE_7_NORM2_8,
+                WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_2,
+                WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_3,
+                WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_4,
+                WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_5,
+                WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_6,
+                WOPBS_PRIME_PARAM_MESSAGE_8_NORM2_7,
+                PARAM_NAWAK
             )
         );
     }

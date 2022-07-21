@@ -4,6 +4,10 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 use concrete_shortint::keycache::KEY_CACHE;
 use rand::Rng;
+use concrete_shortint::wopbs::*;
+
+use concrete_shortint::keycache::KEY_CACHE_WOPBS;
+use concrete_shortint::parameters::parameters_wopbs::WOPBS_PARAM_MESSAGE_8_NORM2_5;
 
 macro_rules! named_param {
     ($param:ident) => {
@@ -134,6 +138,35 @@ fn programmable_bootstrapping(c: &mut Criterion) {
     bench_group.finish();
 }
 
+
+fn bench_wopbs_param_message_8_norm2_5(c: &mut Criterion) {
+    let mut bench_group = c.benchmark_group("programmable_bootstrap");
+
+    let param = WOPBS_PARAM_MESSAGE_8_NORM2_5;
+
+    let (cks, sks, wopbs_key) = KEY_CACHE_WOPBS.get_from_param(param);
+
+    let mut rng = rand::thread_rng();
+
+
+    let clear = rng.gen::<usize>() % param.message_modulus.0;
+    let mut ct = cks.encrypt_without_padding(clear as u64);
+    let vec_lut = wopbs_key.generate_lut_without_padding_crt(&ct, |x|x);
+
+
+    let id = format!("Shortint WOPBS: {:?}", param);
+
+
+    bench_group.bench_function(&id, |b| {
+        b.iter(|| {
+            wopbs_key.programmable_bootstrapping_without_padding_crt(&sks, &mut ct, &vec_lut);
+        })
+    });
+
+
+    bench_group.finish();
+}
+
 macro_rules! define_server_key_bench_fn (
   ($server_key_method:ident) => {
       fn $server_key_method(c: &mut Criterion) {
@@ -177,22 +210,23 @@ define_server_key_scalar_bench_fn!(unchecked_scalar_mul);
 
 criterion_group!(
     arithmetic_operation,
-    unchecked_add,
-    unchecked_sub,
-    unchecked_mul_lsb,
-    unchecked_mul_msb,
-    smart_bitand,
-    smart_bitor,
-    smart_bitxor,
-    smart_add,
-    smart_sub,
-    smart_mul_lsb,
-    smart_mul_msb,
-    carry_extract,
-    programmable_bootstrapping,
+    //unchecked_add,
+    // unchecked_sub,
+    // unchecked_mul_lsb,
+    // unchecked_mul_msb,
+    // smart_bitand,
+    // smart_bitor,
+    // smart_bitxor,
+    // smart_add,
+    // smart_sub,
+    // smart_mul_lsb,
+    // smart_mul_msb,
+    // carry_extract,
+    // programmable_bootstrapping,
     // multivalue_programmable_bootstrapping
     //bench_two_block_pbs
     //wopbs_v0_norm2_2,
+    bench_wopbs_param_message_8_norm2_5,
 );
 
 criterion_group!(
@@ -201,4 +235,4 @@ criterion_group!(
     unchecked_scalar_mul,
 );
 
-criterion_main!(arithmetic_operation, arithmetic_scalar_operation,);
+criterion_main!(arithmetic_operation,);// arithmetic_scalar_operation,);

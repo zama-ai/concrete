@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod parameters_wopbs;
 pub mod parameters_wopbs_message_carry;
+pub(crate) mod parameters_wopbs_prime_moduli;
 
 /// The number of bits on which the message will be encoded.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]

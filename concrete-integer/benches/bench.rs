@@ -4,7 +4,7 @@ use concrete_integer::client_key::radix_decomposition;
 use concrete_integer::keycache::KEY_CACHE;
 use concrete_integer::parameters::*;
 use concrete_integer::treepbs::TreepbsKey;
-use concrete_integer::wopbs::WopbsKeyV0;
+use concrete_integer::wopbs::{WopbsKey, WopbsKeyV0};
 use concrete_integer::{
     gen_key_id, gen_keys, CrtMultiCiphertext, CrtMultiClientKey, CrtMultiServerKey,
     RadixCiphertext, ServerKey,
@@ -476,7 +476,8 @@ fn radmodint_wopbs(c: &mut Criterion) {
 
         let sks = concrete_integer::server_key::ServerKey::from_shortint(&cks, sks.clone());
 
-        let wopbs = concrete_integer::wopbs::WopbsKeyV0::new_from_shortint(wopbs_shortint);
+
+        let wopbs = concrete_integer::wopbs::WopbsKey::new_from_shortint(&wopbs_shortint);
         let mut rng = rand::thread_rng();
 
         let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
@@ -520,7 +521,7 @@ fn radmodint_wopbs(c: &mut Criterion) {
         );
 
         group.bench_function(&id, |b| {
-            b.iter(|| wopbs.circuit_bootstrap_vertical_packing_v0(&sks, &mut ctxt_1, &big_lut))
+            b.iter(|| wopbs.wopbs(&sks, &mut ctxt_1, &big_lut))
         });
     }
     //}
@@ -541,7 +542,7 @@ fn radmodint_wopbs_16bits_param_2_2_8_blocks(c: &mut Criterion) {
     );
 
     let (cks, sks) = gen_keys(&param);
-    let wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
     let mut rng = rand::thread_rng();
     let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
@@ -577,7 +578,7 @@ fn radmodint_wopbs_16bits_param_2_2_8_blocks(c: &mut Criterion) {
     );
 
     group.bench_function(&id, |b| {
-        b.iter(|| wopbs_key.circuit_bootstrap_vertical_packing_v0(&sks, &mut ctxt_1, &big_lut))
+        b.iter(|| wopbs_key.wopbs(&sks, &mut ctxt_1, &big_lut))
     });
 }
 
@@ -593,7 +594,7 @@ fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
     println!("Chosen Parameter Set: {:?}", param);
 
     let (cks, sks) = gen_keys(&param);
-    let wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
+    let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
     let mut rng = rand::thread_rng();
     let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
@@ -629,7 +630,7 @@ fn radmodint_wopbs_16bits_param_4_4_4_blocks(c: &mut Criterion) {
     );
 
     group.bench_function(&id, |b| {
-        b.iter(|| wopbs_key.circuit_bootstrap_vertical_packing_v0(&sks, &mut ctxt_1, &big_lut))
+        b.iter(|| wopbs_key.wopbs(&sks, &mut ctxt_1, &big_lut))
     });
 }
 
@@ -650,7 +651,7 @@ fn radmodint_wopbs_32_bits(c: &mut Criterion) {
         println!("Chosen Parameter Set: {:?}", param);
 
         let (cks, sks) = gen_keys(param);
-        let wopbs_key = WopbsKeyV0::new_wopbs_key(&cks, &sks);
+        let wopbs_key = WopbsKey::new_wopbs_key(&cks, &sks);
 
         let mut rng = rand::thread_rng();
         let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;
@@ -688,7 +689,7 @@ fn radmodint_wopbs_32_bits(c: &mut Criterion) {
         );
 
         group.bench_function(&id, |b| {
-            b.iter(|| wopbs_key.circuit_bootstrap_vertical_packing_v0(&sks, &mut ctxt_1, &big_lut))
+            b.iter(|| wopbs_key.wopbs(&sks, &mut ctxt_1, &big_lut))
         });
     }
 }

@@ -49,7 +49,7 @@
 //! ```
 pub mod ciphertext;
 pub mod client_key;
-mod engine;
+pub mod engine;
 #[cfg(any(test, feature = "internal-keycache"))]
 pub mod keycache;
 pub mod parameters;

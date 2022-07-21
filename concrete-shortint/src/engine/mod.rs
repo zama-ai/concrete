@@ -34,10 +34,10 @@ fn new_seeder() -> Box<dyn Seeder> {
 }
 
 /// Stores buffers associated to a ServerKey
-struct Buffers {
+pub struct Buffers {
     pub(crate) accumulator: GlweCiphertext64,
     pub(crate) buffer_lwe_after_ks: LweCiphertext64,
-    pub(crate) fourier: FourierBuffers<u64>,
+    pub fourier: FourierBuffers<u64>,
 }
 
 /// This allows to store and retrieve the `Buffers`
@@ -66,7 +66,7 @@ impl ServerKey {
 /// forward all the possible `EngineError` type from `concrete-core`
 #[allow(dead_code)]
 #[derive(Debug)]
-pub(crate) struct EngineError {
+pub struct EngineError {
     error: Box<dyn std::error::Error>,
 }
 
@@ -89,7 +89,7 @@ pub(crate) type EngineResult<T> = Result<T, EngineError>;
 /// as well as the buffers that we want to keep around to save processing time.
 ///
 /// This structs actually implements the logics into its methods.
-pub(crate) struct ShortintEngine {
+pub struct ShortintEngine {
     pub(crate) engine: DefaultEngine,
     pub(crate) fftw_engine: FftwEngine,
     pub(crate) par_engine: DefaultParallelEngine,
@@ -100,7 +100,7 @@ impl ShortintEngine {
     /// Safely gives access to the `thead_local` shortint engine
     /// to call one (or many) of its method.
     #[inline]
-    pub(crate) fn with_thread_local_mut<F, R>(func: F) -> R
+    pub fn with_thread_local_mut<F, R>(func: F) -> R
     where
         F: FnOnce(&mut Self) -> R,
     {
@@ -187,7 +187,7 @@ impl ShortintEngine {
     /// This also `&mut CoreEngine` to simply borrow checking for the caller
     /// (since returned buffers are borrowed from `self`, using the `self.engine`
     /// wouldn't be possible after calling `buffers_for_key`)
-    fn buffers_for_key(
+    pub fn buffers_for_key(
         &mut self,
         server_key: &ServerKey,
     ) -> (&mut Buffers, &mut DefaultEngine, &mut FftwEngine) {
