@@ -98,6 +98,12 @@ llvm::cl::opt<bool>
                                     "dialects. (Enabled by default)"),
                      llvm::cl::init<bool>(true));
 
+llvm::cl::opt<bool>
+    useGPU("use-gpu",
+           llvm::cl::desc("enable/disable generating concrete GPU "
+                          "operations (Disabled by default)"),
+           llvm::cl::init<bool>(false));
+
 llvm::cl::list<std::string> passes(
     "passes",
     llvm::cl::desc("Specify the passes to run (use only for compiler tests)"),
@@ -283,6 +289,7 @@ cmdlineCompilationOptions() {
   options.loopParallelize = cmdline::loopParallelize;
   options.dataflowParallelize = cmdline::dataflowParallelize;
   options.optimizeConcrete = cmdline::optimizeConcrete;
+  options.useGPU = cmdline::useGPU;
 
   if (!cmdline::v0Constraint.empty()) {
     if (cmdline::v0Constraint.size() != 2) {

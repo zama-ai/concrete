@@ -9,3 +9,9 @@ mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
                                              mlir::OpBuilder &rewriter,
                                              llvm::StringRef funcName,
                                              mlir::FunctionType funcType);
+
+/// \brief Returns the value of the context argument from the enclosing func
+///
+/// \param op initial operation to start the search from
+/// \return mlir::Value the context value
+mlir::Value getContextArgument(mlir::Operation *op);

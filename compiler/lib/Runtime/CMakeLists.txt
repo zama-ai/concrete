@@ -18,6 +18,16 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   )
 endif()
 
+if(CONCRETELANG_CUDA_SUPPORT)
+  target_link_libraries(
+    ConcretelangRuntime
+    PRIVATE
+    ConcreteCUDA
+    -L/usr/local/cuda/lib64
+    cudart
+  )
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(ConcretelangRuntime PUBLIC omp)
 else()

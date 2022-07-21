@@ -13,7 +13,9 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 
+#include "concretelang/Conversion/BConcreteToCAPI/Pass.h"
 #include "concretelang/Conversion/ConcreteToBConcrete/Pass.h"
+#include "concretelang/Conversion/ConcreteToGPU/Pass.h"
 #include "concretelang/Conversion/FHETensorOpsToLinalg/Pass.h"
 #include "concretelang/Conversion/FHEToTFHE/Pass.h"
 #include "concretelang/Conversion/LinalgExtras/Passes.h"

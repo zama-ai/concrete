@@ -47,6 +47,20 @@ def ConcreteToBConcrete : Pass<"concrete-to-bconcrete", "mlir::ModuleOp"> {
   let dependentDialects = ["mlir::linalg::LinalgDialect", "mlir::concretelang::Concrete::ConcreteDialect", "mlir::concretelang::BConcrete::BConcreteDialect"];
 }
 
+def BConcreteToCAPI : Pass<"bconcrete-to-capi", "mlir::ModuleOp"> {
+  let summary = "Lowers operations from the BConcrete dialect to CAPI calls";
+  let description = [{ Lowers operations from the BConcrete dialect to CAPI calls }];
+  let constructor = "mlir::concretelang::createConvertBConcreteToCAPIPass()";
+  let dependentDialects = ["mlir::concretelang::BConcrete::BConcreteDialect"];
+}
+
+def ConcreteToGPU : Pass<"concrete-to-gpu", "mlir::ModuleOp"> {
+  let summary = "Transforms operations in the Concrete dialect to GPU";
+  let description = [{ Transforms operations in the Concrete dialect to GPU }];
+  let constructor = "mlir::concretelang::createConvertConcreteToGPUPass()";
+  let dependentDialects = ["mlir::concretelang::Concrete::ConcreteDialect"];
+}
+
 def MLIRLowerableDialectsToLLVM : Pass<"mlir-lowerable-dialects-to-llvm", "mlir::ModuleOp"> {
   let summary = "Lowers operations from MLIR lowerable dialects to LLVM";
   let constructor = "mlir::concretelang::createConvertMLIRLowerableDialectsToLLVMPass()";

@@ -54,6 +54,8 @@ struct CompilationOptions {
   bool dataflowParallelize;
   bool asyncOffload;
   bool optimizeConcrete;
+  /// use GPU during execution by generating GPU operations if possible
+  bool useGPU;
   llvm::Optional<std::vector<int64_t>> fhelinalgTileSizes;
 
   llvm::Optional<std::string> clientParametersFuncName;
@@ -64,7 +66,7 @@ struct CompilationOptions {
       : v0FHEConstraints(llvm::None), verifyDiagnostics(false),
         autoParallelize(false), loopParallelize(false),
         dataflowParallelize(false), asyncOffload(false), optimizeConcrete(true),
-        clientParametersFuncName(llvm::None),
+        useGPU(false), clientParametersFuncName(llvm::None),
         optimizerConfig(optimizer::DEFAULT_CONFIG){};
 
   CompilationOptions(std::string funcname) : CompilationOptions() {

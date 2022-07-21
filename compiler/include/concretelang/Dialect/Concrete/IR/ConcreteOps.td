@@ -52,7 +52,7 @@ def Concrete_NegateLweCiphertextOp : Concrete_Op<"negate_lwe_ciphertext"> {
     let results = (outs Concrete_LweCiphertextType:$result);
 }
 
-def Concrete_GlweFromTable : Concrete_Op<"glwe_from_table"> {
+def Concrete_GlweFromTable : Concrete_Op<"glwe_from_table", [NoSideEffect]> {
     let summary = "Creates a GLWE ciphertext which is the trivial encrytion of a the input table interpreted as a polynomial (to use later in a bootstrap)";
 
     let arguments = (ins 1DTensorOf<[I64]>:$table);
@@ -69,6 +69,35 @@ def Concrete_BootstrapLweOp : Concrete_Op<"bootstrap_lwe"> {
         I32Attr:$baseLog
     );
     let results = (outs Concrete_LweCiphertextType:$result);
+}
+
+def Concrete_BootstrapLweGPUOp : Concrete_Op<"bootstrap_lwe_gpu"> {
+    let summary = "Bootstrap an LWE ciphertext in GPU using a lookup table";
+
+    let arguments = (ins
+        Concrete_LweCiphertextType:$input_ciphertext,
+        1DTensorOf<[I64]>:$table,
+        I32:$inputLweDim,
+        I32:$polySize,
+        I32:$level,
+        I32:$baseLog,
+        Concrete_GPUBsk:$bsk
+    );
+    let results = (outs Concrete_LweCiphertextType:$result);
+}
+
+def Concrete_MoveBskToGPUOp : Concrete_Op<"move_bsk_to_gpu"> {
+    let summary = "Move bsk to GPU";
+
+    let arguments = (ins);
+    let results = (outs Concrete_GPUBsk:$bsk);
+}
+
+def Concrete_FreeBskFromGPUOp : Concrete_Op<"free_bsk_from_gpu"> {
+    let summary = "Free bsk memory from GPU";
+
+    let arguments = (ins Concrete_GPUBsk:$bsk);
+    let results = (outs);
 }
 
 def Concrete_KeySwitchLweOp : Concrete_Op<"keyswitch_lwe"> {

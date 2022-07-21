@@ -105,6 +105,87 @@ void memref_copy_one_rank(uint64_t *src_allocated, uint64_t *src_aligned,
                           uint64_t src_stride, uint64_t *dst_allocated,
                           uint64_t *dst_aligned, uint64_t dst_offset,
                           uint64_t dst_size, uint64_t dst_stride);
-}
 
+/// \brief Run bootstrapping on GPU.
+///
+/// It handles memory copy of the different arguments from CPU to GPU, and
+/// freeing memory, except for the bootstrapping key, which should already be in
+/// GPU.
+///
+/// \param out_allocated
+/// \param out_aligned
+/// \param out_offset
+/// \param out_size
+/// \param out_stride
+/// \param ct0_allocated
+/// \param ct0_aligned
+/// \param ct0_offset
+/// \param ct0_size
+/// \param ct0_stride
+/// \param tlu_allocated
+/// \param tlu_aligned
+/// \param tlu_offset
+/// \param tlu_size
+/// \param tlu_stride
+/// \param input_lwe_dim LWE input dimension
+/// \param poly_size polynomial size
+/// \param level level
+/// \param base_log base log
+/// \param bsk pointer to bsk on GPU
+void memref_bootstrap_lwe_cuda_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
+    uint32_t base_log, void *bsk);
+
+/// \brief Copy ciphertext from CPU to GPU using a single stream.
+///
+/// It handles memory allocation on GPU.
+///
+/// \param ct_allocated
+/// \param ct_aligned
+/// \param ct_offset
+/// \param ct_size
+/// \param ct_stride
+/// \param gpu_idx index of the GPU to use
+/// \return void* pointer to the GPU ciphertext
+void *move_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
+                     uint64_t ct_offset, uint64_t ct_size, uint64_t ct_stride,
+                     uint32_t gpu_idx);
+
+/// \brief Copy ciphertext from GPU to CPU using a single stream.
+///
+/// Memory on GPU won't be freed after the copy.
+///
+/// \param out_allocated
+/// \param out_aligned
+/// \param out_offset
+/// \param out_size
+/// \param out_stride
+/// \param ct_gpu
+/// \param size
+/// \param gpu_idx index of the GPU to use
+void move_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
+                    uint64_t out_offset, uint64_t out_size, uint64_t out_stride,
+                    void *ct_gpu, size_t size, uint32_t gpu_idx);
+
+/// \brief Copy bootstrapping key from CPU to GPU using a single stream.
+///
+/// It handles memory allocation on GPU.
+///
+/// \param context
+/// \param gpu_idx index of the GPU to use
+/// \return void*  pointer to the GPU bsk
+void *move_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
+                      uint32_t gpu_idx);
+
+/// \brief Free gpu memory.
+///
+/// \param gpu_ptr pointer to the GPU memory to free
+/// \param gpu_idx index of the GPU to use
+void free_from_gpu(void *gpu_ptr, uint32_t gpu_idx);
+}
 #endif

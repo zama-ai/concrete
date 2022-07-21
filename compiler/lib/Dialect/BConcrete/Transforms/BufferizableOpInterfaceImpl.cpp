@@ -7,6 +7,7 @@
 #include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
 #include "mlir/Dialect/Bufferization/Transforms/BufferUtils.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
@@ -75,6 +76,7 @@ char memref_bootstrap_lwe_u64[] = "memref_bootstrap_lwe_u64";
 char memref_keyswitch_async_lwe_u64[] = "memref_keyswitch_async_lwe_u64";
 char memref_bootstrap_async_lwe_u64[] = "memref_bootstrap_async_lwe_u64";
 char memref_await_future[] = "memref_await_future";
+char memref_bootstrap_lwe_cuda_u64[] = "memref_bootstrap_lwe_cuda_u64";
 char memref_expand_lut_in_trivial_glwe_ct_u64[] =
     "memref_expand_lut_in_trivial_glwe_ct_u64";
 
@@ -89,6 +91,9 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
       mlir::concretelang::RT::FutureType::get(rewriter.getIndexType());
   auto contextType =
       mlir::concretelang::Concrete::ContextType::get(rewriter.getContext());
+  auto i32Type = rewriter.getI32Type();
+  auto i64PointerType = mlir::LLVM::LLVMPointerType::get(rewriter.getI64Type());
+
   mlir::FunctionType funcType;
 
   if (funcName == memref_add_lwe_ciphertexts_u64) {
@@ -124,6 +129,12 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
     funcType = mlir::FunctionType::get(
         rewriter.getContext(),
         {memref1DType, futureType, memref1DType, memref1DType}, {});
+  } else if (funcName == memref_bootstrap_lwe_cuda_u64) {
+    funcType = mlir::FunctionType::get(rewriter.getContext(),
+                                       {memref1DType, memref1DType,
+                                        memref1DType, i32Type, i32Type, i32Type,
+                                        i32Type, i64PointerType},
+                                       {});
   } else if (funcName == memref_expand_lut_in_trivial_glwe_ct_u64) {
     funcType = mlir::FunctionType::get(rewriter.getContext(),
                                        {
@@ -155,32 +166,6 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
 
   return insertForwardDeclaration(op, rewriter, funcName, funcType);
 }
-
-/// Returns the value of the context argument from the enclosing func
-mlir::Value getContextArgument(mlir::Operation *op) {
-  mlir::Block *block = op->getBlock();
-  while (block != nullptr) {
-    if (llvm::isa<mlir::func::FuncOp>(block->getParentOp())) {
-      block = &mlir::cast<mlir::func::FuncOp>(block->getParentOp())
-                   .getBody()
-                   .front();
-
-      auto context =
-          std::find_if(block->getArguments().rbegin(),
-                       block->getArguments().rend(), [](BlockArgument &arg) {
-                         return arg.getType()
-                             .isa<mlir::concretelang::Concrete::ContextType>();
-                       });
-      assert(context != block->getArguments().rend() &&
-             "Cannot find the Concrete.context");
-
-      return *context;
-    }
-    block = block->getParentOp()->getBlock();
-  }
-  assert("can't find a function that enclose the op");
-  return nullptr;
-};
 
 template <typename Op>
 void pushAdditionalArgs(Op op, mlir::SmallVector<mlir::Value> &operands,
@@ -577,6 +562,10 @@ void mlir::concretelang::BConcrete::
     BConcrete::NegateLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::NegateLweBufferOp,
                                         memref_negate_lwe_ciphertext_u64>>(
+        *ctx);
+    BConcrete::BootstrapLweGPUBufferOp::attachInterface<
+        BufferizableWithCallOpInterface<BConcrete::BootstrapLweGPUBufferOp,
+                                        memref_bootstrap_lwe_cuda_u64, false>>(
         *ctx);
     BConcrete::KeySwitchLweBufferOp::attachInterface<
         BufferizableWithCallOpInterface<BConcrete::KeySwitchLweBufferOp,

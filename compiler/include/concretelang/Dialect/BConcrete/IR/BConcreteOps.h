@@ -6,6 +6,7 @@
 #ifndef ZAMALANG_DIALECT_BConcrete_BConcrete_OPS_H
 #define ZAMALANG_DIALECT_BConcrete_BConcrete_OPS_H
 
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>

@@ -9,6 +9,7 @@
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
@@ -64,6 +65,10 @@ class ConcreteToBConcreteTypeConverter : public mlir::TypeConverter {
 public:
   ConcreteToBConcreteTypeConverter() {
     addConversion([](mlir::Type type) { return type; });
+    addConversion([&](mlir::concretelang::Concrete::GPUBskType type) {
+      return mlir::LLVM::LLVMPointerType::get(
+          mlir::IntegerType::get(type.getContext(), 64));
+    });
     addConversion([&](mlir::concretelang::Concrete::PlaintextType type) {
       return mlir::IntegerType::get(type.getContext(), 64);
     });
@@ -160,28 +165,34 @@ struct LowToBConcrete : public mlir::OpRewritePattern<ConcreteOp> {
   matchAndRewrite(ConcreteOp concreteOp,
                   ::mlir::PatternRewriter &rewriter) const override {
     ConcreteToBConcreteTypeConverter converter;
-    mlir::concretelang::Concrete::LweCiphertextType resultTy =
-        ((mlir::Type)concreteOp->getResult(0).getType())
-            .cast<mlir::concretelang::Concrete::LweCiphertextType>();
-    auto newResultTy =
-        converter.convertType(resultTy).cast<mlir::RankedTensorType>();
+    mlir::TypeRange resultTyRange = concreteOp->getResultTypes();
 
     llvm::ArrayRef<::mlir::NamedAttribute> attributes =
         concreteOp.getOperation()->getAttrs();
 
-    auto crt = resultTy.getCrtDecomposition();
     mlir::Operation *bConcreteOp;
-    if (crt.empty()) {
-      bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteOp>(
-          concreteOp, newResultTy, concreteOp.getOperation()->getOperands(),
-          attributes);
+    if (resultTyRange.size() == 1 &&
+        resultTyRange.front()
+            .isa<mlir::concretelang::Concrete::LweCiphertextType>()) {
+      auto crt = resultTyRange.front()
+                     .cast<mlir::concretelang::Concrete::LweCiphertextType>()
+                     .getCrtDecomposition();
+      if (crt.empty()) {
+        bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteOp>(
+            concreteOp, resultTyRange, concreteOp.getOperation()->getOperands(),
+            attributes);
+      } else {
+        auto newAttributes = attributes.vec();
+        newAttributes.push_back(rewriter.getNamedAttr(
+            "crtDecomposition", rewriter.getI64ArrayAttr(crt)));
+        bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteCRTOp>(
+            concreteOp, resultTyRange, concreteOp.getOperation()->getOperands(),
+            newAttributes);
+      }
     } else {
-      auto newAttributes = attributes.vec();
-      newAttributes.push_back(rewriter.getNamedAttr(
-          "crtDecomposition", rewriter.getI64ArrayAttr(crt)));
-      bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteCRTOp>(
-          concreteOp, newResultTy, concreteOp.getOperation()->getOperands(),
-          newAttributes);
+      bConcreteOp = rewriter.replaceOpWithNewOp<BConcreteOp>(
+          concreteOp, resultTyRange, concreteOp.getOperation()->getOperands(),
+          attributes);
     }
 
     mlir::concretelang::convertOperandAndResultTypes(
@@ -906,7 +917,16 @@ void ConcreteToBConcretePass::runOnOperation() {
                        mlir::concretelang::BConcrete::KeySwitchLweBufferOp>,
         LowToBConcrete<mlir::concretelang::Concrete::BootstrapLweOp,
                        mlir::concretelang::BConcrete::BootstrapLweBufferOp,
-                       mlir::concretelang::BConcrete::KeySwitchLweBufferOp>,
+                       mlir::concretelang::BConcrete::BootstrapLweBufferOp>,
+        LowToBConcrete<mlir::concretelang::Concrete::BootstrapLweGPUOp,
+                       mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp,
+                       mlir::concretelang::BConcrete::BootstrapLweGPUBufferOp>,
+        LowToBConcrete<mlir::concretelang::Concrete::MoveBskToGPUOp,
+                       mlir::concretelang::BConcrete::MoveBskToGPUOp,
+                       mlir::concretelang::BConcrete::MoveBskToGPUOp>,
+        LowToBConcrete<mlir::concretelang::Concrete::FreeBskFromGPUOp,
+                       mlir::concretelang::BConcrete::FreeBskFromGPUOp,
+                       mlir::concretelang::BConcrete::FreeBskFromGPUOp>,
         LowToBConcrete<Concrete::WopPBSLweOp, BConcrete::WopPBSCRTLweBufferOp,
                        BConcrete::WopPBSCRTLweBufferOp>>(&getContext());
 

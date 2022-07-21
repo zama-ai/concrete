@@ -6,6 +6,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
 #include "concretelang/Conversion/Tools.h"
+#include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 
 mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
                                              mlir::OpBuilder &rewriter,
@@ -34,4 +35,28 @@ mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
   assert(llvm::isa<mlir::FunctionOpInterface>(
       mlir::SymbolTable::lookupSymbolIn(module, funcName)));
   return mlir::success();
+}
+
+/// Returns the value of the context argument from the enclosing func
+mlir::Value getContextArgument(mlir::Operation *op) {
+  mlir::Block *block = op->getBlock();
+  while (block != nullptr) {
+    if (llvm::isa<mlir::func::FuncOp>(block->getParentOp())) {
+
+      auto context = std::find_if(
+          block->getArguments().rbegin(), block->getArguments().rend(),
+          [](mlir::BlockArgument &arg) {
+            return arg.getType()
+                .isa<mlir::concretelang::Concrete::ContextType>();
+          });
+
+      assert(context != block->getArguments().rend() &&
+             "Cannot find the Concrete.context");
+
+      return *context;
+    }
+    block = block->getParentOp()->getBlock();
+  }
+  assert("can't find a function that enclose the op");
+  return nullptr;
 }

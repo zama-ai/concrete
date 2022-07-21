@@ -5,6 +5,7 @@ include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/IR/BuiltinTypes.td"
 include "mlir/Dialect/MemRef/IR/MemRefBase.td"
+include "mlir/Dialect/LLVMIR/LLVMOpBase.td"
 
 include "concretelang/Dialect/BConcrete/IR/BConcreteDialect.td"
 include "concretelang/Dialect/Concrete/IR/ConcreteTypes.td"
@@ -155,6 +156,29 @@ def BConcrete_AwaitFutureOp :
     BConcrete_Op<"await_future"> {
     let arguments = (ins RT_Future : $future);
     let results = (outs 1DTensorOf<[I64]>:$result);
+}
+
+def BConcrete_BootstrapLweGPUBufferOp : BConcrete_Op<"bootstrap_lwe_gpu_buffer"> {
+    let arguments = (ins
+        1DTensorOf<[I64]>:$input_ciphertext,
+        1DTensorOf<[I64]>:$table,
+        I32:$inputLweDim,
+        I32:$polySize,
+        I32:$level,
+        I32:$baseLog,
+        LLVM_PointerTo<I64>:$bsk
+    );
+    let results = (outs 1DTensorOf<[I64]>:$result);
+}
+
+def BConcrete_MoveBskToGPUOp : BConcrete_Op<"move_bsk_to_gpu"> {
+    let arguments = (ins);
+    let results = (outs LLVM_PointerTo<I64>:$bsk);
+}
+
+def BConcrete_FreeBskFromGPUOp : BConcrete_Op<"free_bsk_from_gpu"> {
+    let arguments = (ins LLVM_PointerTo<I64>:$bsk);
+    let results = (outs);
 }
 
 #endif

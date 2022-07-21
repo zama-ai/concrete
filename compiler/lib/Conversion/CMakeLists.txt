@@ -3,6 +3,8 @@ add_subdirectory(TFHEGlobalParametrization)
 add_subdirectory(TFHEToConcrete)
 add_subdirectory(FHETensorOpsToLinalg)
 add_subdirectory(ConcreteToBConcrete)
+add_subdirectory(ConcreteToGPU)
+add_subdirectory(BConcreteToCAPI)
 add_subdirectory(MLIRLowerableDialectsToLLVM)
 add_subdirectory(LinalgExtras)
 

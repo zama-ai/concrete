@@ -57,6 +57,122 @@ void encode_and_expand_lut(uint64_t *output, size_t output_size,
 #include "concretelang/ClientLib/CRT.h"
 #include "concretelang/Runtime/wrappers.h"
 
+#ifdef CONCRETELANG_CUDA_SUPPORT
+
+// We need to define the double2 struct from the CUDA backend header files
+// This shouldn't be defined here, but included along with concrete-cuda header
+// files
+typedef struct double2 {
+  double x, y;
+} double2;
+
+#include "bootstrap.h"
+#include "device.h"
+
+void memref_keyswitch_lwe_cuda_u64(uint64_t *out_allocated,
+                                   uint64_t *out_aligned, uint64_t out_offset,
+                                   uint64_t out_size, uint64_t out_stride,
+                                   uint64_t *ct0_allocated,
+                                   uint64_t *ct0_aligned, uint64_t ct0_offset,
+                                   uint64_t ct0_size, uint64_t ct0_stride,
+                                   void *ksk_gpu) {
+  // TODO: GPU implementation
+}
+
+void *move_ct_to_gpu(uint64_t *ct_allocated, uint64_t *ct_aligned,
+                     uint64_t ct_offset, uint64_t ct_size, uint64_t ct_stride,
+                     uint32_t gpu_idx) {
+  void *stream = cuda_create_stream(gpu_idx);
+  void *ct_gpu = cuda_malloc(ct_size * sizeof(uint64_t), gpu_idx);
+  cuda_memcpy_async_to_gpu(ct_gpu, ct_aligned + ct_offset,
+                           ct_size * sizeof(uint64_t), stream, gpu_idx);
+  cuda_synchronize_device(gpu_idx);
+  cuda_destroy_stream(stream, gpu_idx);
+  return ct_gpu;
+}
+
+void *move_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
+                      uint32_t gpu_idx = 0) {
+  void *stream = cuda_create_stream(gpu_idx);
+  LweBootstrapKey_u64 *bsk = get_bootstrap_key_u64(context);
+  BufferView bskBuffer = bootstrap_buffer_lwe_u64(bsk);
+  void *bsk_gpu = cuda_malloc(bskBuffer.length, gpu_idx);
+  cuda_memcpy_async_to_gpu(bsk_gpu, (void *)bskBuffer.pointer, bskBuffer.length,
+                           stream, gpu_idx);
+  cuda_synchronize_device(gpu_idx);
+  cuda_destroy_stream(stream, gpu_idx);
+  return bsk_gpu;
+}
+
+void move_ct_to_cpu(uint64_t *out_allocated, uint64_t *out_aligned,
+                    uint64_t out_offset, uint64_t out_size, uint64_t out_stride,
+                    void *ct_gpu, size_t size, uint32_t gpu_idx) {
+  void *stream = cuda_create_stream(gpu_idx);
+  cuda_memcpy_async_to_cpu(out_aligned + out_offset, ct_gpu,
+                           size * sizeof(uint64_t), stream, gpu_idx);
+  cuda_synchronize_device(gpu_idx);
+  cuda_destroy_stream(stream, gpu_idx);
+}
+
+void free_from_gpu(void *gpu_ptr, uint32_t gpu_idx = 0) {
+  cuda_drop(gpu_ptr, gpu_idx);
+}
+
+void memref_bootstrap_lwe_cuda_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
+    uint32_t base_log, void *bsk_gpu) {
+
+  uint32_t gpu_idx = 0;
+  void *stream = cuda_create_stream(gpu_idx);
+
+  // move input ciphertext into gpu
+  void *ct0_gpu = move_ct_to_gpu(ct0_allocated, ct0_aligned, ct0_offset,
+                                 ct0_size, ct0_stride, gpu_idx);
+  // move output ciphertext into gpu
+  void *out_gpu = move_ct_to_gpu(out_allocated, out_aligned, out_offset,
+                                 out_size, out_stride, gpu_idx);
+  // hardcoded values
+  uint32_t num_samples = 1, num_test_vectors = 1, lwe_idx = 0;
+  void *test_vector_idxes = malloc(num_samples * sizeof(uint32_t));
+  ((uint32_t *)test_vector_idxes)[0] = 0;
+  void *test_vector = malloc(poly_size * sizeof(uint64_t));
+  for (size_t i = 0; i < poly_size; i++) {
+    ((uint64_t *)test_vector)[i] = (uint64_t)1 << 61;
+  }
+  // move test vector into gpu
+  void *test_vector_gpu = cuda_malloc(poly_size * sizeof(uint64_t), gpu_idx);
+  cuda_memcpy_async_to_gpu(test_vector_gpu, test_vector,
+                           poly_size * sizeof(uint64_t), stream, gpu_idx);
+  // move test vector indexes into gpu
+  void *test_vector_idxes_gpu =
+      cuda_malloc(num_samples * sizeof(uint32_t), gpu_idx);
+  cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, test_vector_idxes,
+                           num_samples * sizeof(uint32_t), stream, gpu_idx);
+  // run gpu bootstrap
+  cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
+      stream, out_gpu, test_vector_gpu, test_vector_idxes_gpu, ct0_gpu, bsk_gpu,
+      input_lwe_dim, poly_size, base_log, level, num_samples, num_test_vectors,
+      lwe_idx, cuda_get_max_shared_memory(gpu_idx));
+  // copy output ciphertext back to cpu
+  move_ct_to_cpu(out_allocated, out_aligned, out_offset, out_size, out_stride,
+                 out_gpu, out_size, gpu_idx);
+  cuda_synchronize_device(gpu_idx);
+  // free memory that we allocated on gpu
+  cuda_drop(ct0_gpu, gpu_idx);
+  cuda_drop(out_gpu, gpu_idx);
+  cuda_drop(test_vector_gpu, gpu_idx);
+  cuda_drop(test_vector_idxes_gpu, gpu_idx);
+
+  cuda_destroy_stream(stream, gpu_idx);
+}
+
+#endif
+
 void memref_expand_lut_in_trivial_glwe_ct_u64(
     uint64_t *glwe_ct_allocated, uint64_t *glwe_ct_aligned,
     uint64_t glwe_ct_offset, uint64_t glwe_ct_size, uint64_t glwe_ct_stride,

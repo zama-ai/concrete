@@ -55,7 +55,19 @@ include_directories(${CONCRETE_FFI_RELEASE})
 add_library(Concrete STATIC IMPORTED)
 set_target_properties(Concrete PROPERTIES IMPORTED_LOCATION ${CONCRETE_FFI_RELEASE}/libconcrete_core_ffi.a)
 
-# -------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+# Concrete Cuda Configuration
+#--------------------------------------------------------------------------------
+option(CONCRETELANG_CUDA_SUPPORT "Support Concrete CUDA Execution." OFF)
+if(CONCRETELANG_CUDA_SUPPORT)
+  message(STATUS "Building with Concrete CUDA execution support")
+  include_directories(${CONCRETE_CORE_PATH}/concrete-cuda/cuda/include)
+  add_library(ConcreteCUDA STATIC IMPORTED)
+  set_target_properties(ConcreteCUDA PROPERTIES IMPORTED_LOCATION ${CONCRETE_CORE_PATH}/concrete-cuda/cuda/build/src/libconcrete_cuda.a )
+  add_compile_options(-DCONCRETELANG_CUDA_SUPPORT)
+endif()
+
+#--------------------------------------------------------------------------------
 # Python Configuration
 # -------------------------------------------------------------------------------
 option(CONCRETELANG_BINDINGS_PYTHON_ENABLED "Enables ConcreteLang Python bindings." ON)

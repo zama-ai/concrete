@@ -317,6 +317,14 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
     return errorDiag("Optimizing Concrete failed");
   }
 
+  // Transforming into GPU
+  if (this->compilerOptions.useGPU &&
+      mlir::concretelang::pipeline::transformsConcreteToGPU(mlirContext, module,
+                                                            this->enablePass)
+          .failed()) {
+    return errorDiag("Transforming Concrete to GPU failed");
+  }
+
   if (target == Target::CONCRETE)
     return std::move(res);
 

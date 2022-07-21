@@ -58,6 +58,10 @@ mlir::LogicalResult asyncOffload(mlir::MLIRContext &context,
                                  std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
+transformsConcreteToGPU(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                        std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
 lowerBConcreteToStd(mlir::MLIRContext &context, mlir::ModuleOp &module,
                     std::function<bool(mlir::Pass *)> enablePass);
 
