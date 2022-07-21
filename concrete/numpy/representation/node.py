@@ -307,6 +307,7 @@ class Node:
         return self.operation == Operation.Generic and self.properties["name"] not in [
             "add",
             "array",
+            "broadcast_to",
             "concatenate",
             "conv1d",
             "conv2d",

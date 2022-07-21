@@ -186,6 +186,7 @@ class Tracer:
         np.bitwise_and,
         np.bitwise_or,
         np.bitwise_xor,
+        np.broadcast_to,
         np.cbrt,
         np.ceil,
         np.clip,
@@ -272,6 +273,9 @@ class Tracer:
     SUPPORTED_KWARGS: Dict[Any, Set[str]] = {
         np.around: {
             "decimals",
+        },
+        np.broadcast_to: {
+            "shape",
         },
         np.concatenate: {
             "axis",
@@ -396,7 +400,11 @@ class Tracer:
         (https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch)
         """
 
-        if func is np.reshape:
+        if func is np.broadcast_to:
+            sanitized_args = [self.sanitize(args[0])]
+            if len(args) > 1:
+                kwargs["shape"] = args[1]
+        elif func is np.reshape:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
                 kwargs["newshape"] = args[1]

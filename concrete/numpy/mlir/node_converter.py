@@ -161,6 +161,9 @@ class NodeConverter:
             elif name == "array":
                 result = self._convert_array()
 
+            elif name == "broadcast_to":
+                result = self._convert_broadcast_to()
+
             elif name == "concatenate":
                 result = self._convert_concat()
 
@@ -239,6 +242,25 @@ class NodeConverter:
                 result = fhelinalg.AddEintIntOp(resulting_type, *preds).result
             else:
                 result = fhe.AddEintIntOp(resulting_type, *preds).result
+
+        return result
+
+    def _convert_broadcast_to(self) -> OpResult:
+        """
+        Convert "broadcast_to" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
+
+        zeros = fhe.ZeroTensorOp(resulting_type).result
+        result = fhelinalg.AddEintOp(resulting_type, self.preds[0], zeros).result
+
+        # TODO: convert this to a single operation once it can be done
+        # (https://github.com/zama-ai/concrete-numpy-internal/issues/1610)
 
         return result
 

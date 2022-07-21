@@ -389,6 +389,22 @@ return %1
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: np.broadcast_to(x, shape=(3, 2)),
+            {"x": "clear"},
+            [np.random.randint(0, 2, size=(2,)) for _ in range(100)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x                                     # ClearTensor<uint1, shape=(2,)>
+%1 = broadcast_to(%0, shape=(3, 2))        # ClearTensor<uint1, shape=(3, 2)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted broadcasting is supported
+return %1
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_graph_converter_bad_convert(

@@ -66,6 +66,7 @@ Some of these operations are not supported between two encrypted values. A detai
 * [np.bitwise\_and](https://numpy.org/doc/stable/reference/generated/numpy.bitwise\_and.html)
 * [np.bitwise\_or](https://numpy.org/doc/stable/reference/generated/numpy.bitwise\_or.html)
 * [np.bitwise\_xor](https://numpy.org/doc/stable/reference/generated/numpy.bitwise\_xor.html)
+* [np.broadcast\_to](https://numpy.org/doc/stable/reference/generated/numpy.broadcast\_to.html)
 * [np.cbrt](https://numpy.org/doc/stable/reference/generated/numpy.cbrt.html)
 * [np.ceil](https://numpy.org/doc/stable/reference/generated/numpy.ceil.html)
 * [np.clip](https://numpy.org/doc/stable/reference/generated/numpy.clip.html)

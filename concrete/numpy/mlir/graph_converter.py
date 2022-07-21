@@ -87,6 +87,11 @@ class GraphConverter:
                 assert_that(len(inputs) > 0)
                 assert_that(all(input.is_scalar for input in inputs))
 
+            elif name == "broadcast_to":
+                assert_that(len(inputs) == 1)
+                if not inputs[0].is_encrypted:
+                    return "only encrypted broadcasting is supported"
+
             elif name == "concatenate":
                 if not all(input.is_encrypted for input in inputs):
                     return "only all encrypted concatenate is supported"
