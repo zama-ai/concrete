@@ -29,6 +29,38 @@ fn test_uint2() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+
+#[test]
+fn test_scalar_comparison_fhe_uint_3() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ConfigBuilder::all_disabled().enable_default_uint3().build();
+    let (keys, server_keys) = generate_keys(config);
+    set_server_key(server_keys);
+
+    let a = FheUint3::try_encrypt(2, &keys)?;
+
+    let mut  b = a.scalar_eq(2);
+    let decrypted = b.decrypt(&keys);
+    assert_eq!(decrypted, 1);
+
+    b = a.scalar_ge(2);
+    let decrypted = b.decrypt(&keys);
+    assert_eq!(decrypted, 1);
+
+    b = a.scalar_gt(2);
+    let decrypted = b.decrypt(&keys);
+    assert_eq!(decrypted, 0);
+
+    b = a.scalar_le(2);
+    let decrypted = b.decrypt(&keys);
+    assert_eq!(decrypted, 1);
+
+    b = a.scalar_lt(2);
+    let decrypted = b.decrypt(&keys);
+    assert_eq!(decrypted, 0);
+
+    Ok(())
+}
+
 #[test]
 fn test_programmable_bootstrap_fhe_uint2() -> Result<(), Box<dyn std::error::Error>> {
     let config = ConfigBuilder::all_disabled().enable_default_uint2().build();

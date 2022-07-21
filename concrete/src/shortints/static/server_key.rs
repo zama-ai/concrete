@@ -280,6 +280,71 @@ where
             .into()
     }
 
+    pub(crate) fn smart_scalar_equal(
+        &self,
+        lhs: &GenericShortInt<P>,
+        scalar: u8
+    ) -> GenericShortInt<P> {
+        self.key
+            .smart_scalar_equal(
+                &mut lhs.ciphertext.borrow_mut(),
+                scalar
+            )
+            .into()
+    }
+
+    pub(crate) fn smart_scalar_greater_or_equal(
+        &self,
+        lhs: &GenericShortInt<P>,
+        scalar: u8
+    ) -> GenericShortInt<P> {
+        self.key
+            .smart_scalar_greater_or_equal(
+                &mut lhs.ciphertext.borrow_mut(),
+                scalar
+            )
+            .into()
+    }
+
+    pub(crate) fn smart_scalar_less_or_equal(
+        &self,
+        lhs: &GenericShortInt<P>,
+        scalar: u8
+    ) -> GenericShortInt<P> {
+        self.key
+            .smart_scalar_less_or_equal(
+                &mut lhs.ciphertext.borrow_mut(),
+                scalar
+            )
+            .into()
+    }
+
+    pub(crate) fn smart_scalar_greater(
+        &self,
+        lhs: &GenericShortInt<P>,
+        scalar: u8
+    ) -> GenericShortInt<P> {
+        self.key
+            .smart_scalar_greater(
+                &mut lhs.ciphertext.borrow_mut(),
+                scalar
+            )
+            .into()
+    }
+
+    pub(crate) fn smart_scalar_less(
+        &self,
+        lhs: &GenericShortInt<P>,
+        scalar: u8
+    ) -> GenericShortInt<P> {
+        self.key
+            .smart_scalar_less(
+                &mut lhs.ciphertext.borrow_mut(),
+                scalar
+            )
+            .into()
+    }
+
     pub(crate) fn smart_scalar_left_shift(
         &self,
         lhs: &GenericShortInt<P>,

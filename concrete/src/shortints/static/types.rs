@@ -167,6 +167,49 @@ where
     }
 }
 
+
+impl<P> GenericShortInt<P>
+    where
+        P: ShortIntegerParameter,
+        ShortIntegerServerKey<P>: WithGlobalKey,
+{
+
+    pub fn scalar_ge(&self, rhs: u8) -> Self
+    {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_greater_or_equal(self, rhs)
+        })
+    }
+
+    pub fn scalar_gt(&self, rhs: u8) -> Self
+    {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_greater(self, rhs)
+        })
+    }
+
+    pub fn scalar_le(&self, rhs: u8) -> Self
+    {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_less_or_equal(self, rhs)
+        })
+    }
+
+    pub fn scalar_lt(&self, rhs: u8) -> Self
+    {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_less(self, rhs)
+        })
+    }
+
+    pub fn scalar_eq(&self, rhs: u8) -> Self
+    {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_equal(self, rhs)
+        })
+    }
+}
+
 impl<P> FheBootstrap for GenericShortInt<P>
 where
     P: ShortIntegerParameter,
