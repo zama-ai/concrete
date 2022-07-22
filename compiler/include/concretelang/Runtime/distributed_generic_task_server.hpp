@@ -69,21 +69,19 @@ struct OpaqueInputData {
                   std::vector<size_t> _param_sizes,
                   std::vector<uint64_t> _param_types,
                   std::vector<size_t> _output_sizes,
-                  std::vector<uint64_t> _output_types, bool _alloc_p = false)
+                  std::vector<uint64_t> _output_types)
       : wfn_name(_wfn_name), params(std::move(_params)),
         param_sizes(std::move(_param_sizes)),
         param_types(std::move(_param_types)),
         output_sizes(std::move(_output_sizes)),
-        output_types(std::move(_output_types)), alloc_p(_alloc_p),
-        source_locality(hpx::find_here()), ksk_id(0), bsk_id(0) {}
+        output_types(std::move(_output_types)), ksk_id(0), bsk_id(0) {}
 
   OpaqueInputData(const OpaqueInputData &oid)
       : wfn_name(std::move(oid.wfn_name)), params(std::move(oid.params)),
         param_sizes(std::move(oid.param_sizes)),
         param_types(std::move(oid.param_types)),
         output_sizes(std::move(oid.output_sizes)),
-        output_types(std::move(oid.output_types)), alloc_p(oid.alloc_p),
-        source_locality(oid.source_locality), ksk_id(oid.ksk_id),
+        output_types(std::move(oid.output_types)), ksk_id(oid.ksk_id),
         bsk_id(oid.bsk_id) {}
 
   friend class hpx::serialization::access;
@@ -91,7 +89,6 @@ struct OpaqueInputData {
     ar >> wfn_name;
     ar >> param_sizes >> param_types;
     ar >> output_sizes >> output_types;
-    ar >> source_locality;
     for (size_t p = 0; p < param_sizes.size(); ++p) {
       char *param;
       _dfr_checked_aligned_alloc((void **)&param, 64, param_sizes[p]);
@@ -118,15 +115,13 @@ struct OpaqueInputData {
         static_cast<StridedMemRefType<char, 1> *>(params[p])->data = data;
       } break;
       case _DFR_TASK_ARG_CONTEXT: {
-        ar >> bsk_id >> ksk_id;
-
+        // The copied pointer is meaningless - TODO: if the context
+        // can change dynamically (e.g., different evaluation keys)
+        // then this needs updating by passing key ids and retrieving
+        // adequate keys for the context.
         delete ((char *)params[p]);
-        // TODO: this might be relaxed with newer versions of HPX.
-        // Do not set the context here as remote operations are
-        // unstable when initiated within a HPX helper thread.
         params[p] =
-            (void *)
-                _dfr_node_level_runtime_context_manager->getContextAddress();
+            (void *)_dfr_node_level_runtime_context_manager->getContext();
       } break;
       case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
@@ -134,14 +129,12 @@ struct OpaqueInputData {
                             "Error: invalid task argument type.");
       }
     }
-    alloc_p = true;
   }
   template <class Archive>
   void save(Archive &ar, const unsigned int version) const {
     ar << wfn_name;
     ar << param_sizes << param_types;
     ar << output_sizes << output_types;
-    ar << source_locality;
     for (size_t p = 0; p < params.size(); ++p) {
       // Save the first level of the data structure - if the parameter
       // is a tensor/memref, there is a second level.
@@ -161,18 +154,8 @@ struct OpaqueInputData {
             mref.data + mref.offset * elementSize, size * elementSize);
       } break;
       case _DFR_TASK_ARG_CONTEXT: {
-        mlir::concretelang::RuntimeContext *context =
-            *static_cast<mlir::concretelang::RuntimeContext **>(params[p]);
-        LweKeyswitchKey_u64 *ksk = get_keyswitch_key_u64(context);
-        LweBootstrapKey_u64 *bsk = get_bootstrap_key_u64(context);
-
-        assert(bsk != nullptr && ksk != nullptr && "Missing context keys");
-        std::cout << "Registering Key ids " << (uint64_t)ksk << " "
-                  << (uint64_t)bsk << "\n"
-                  << std::flush;
-        _dfr_register_bsk(bsk, (uint64_t)bsk);
-        _dfr_register_ksk(ksk, (uint64_t)ksk);
-        ar << (uint64_t)bsk << (uint64_t)ksk;
+        // Nothing to do now - TODO: pass key ids if these are not
+        // unique for a computation.
       } break;
       case _DFR_TASK_ARG_UNRANKED_MEMREF:
       default:
@@ -189,8 +172,6 @@ struct OpaqueInputData {
   std::vector<uint64_t> param_types;
   std::vector<size_t> output_sizes;
   std::vector<uint64_t> output_types;
-  bool alloc_p = false;
-  hpx::naming::id_type source_locality;
   uint64_t ksk_id;
   uint64_t bsk_id;
 };
@@ -199,13 +180,13 @@ struct OpaqueOutputData {
   OpaqueOutputData() = default;
   OpaqueOutputData(std::vector<void *> outputs,
                    std::vector<size_t> output_sizes,
-                   std::vector<uint64_t> output_types, bool alloc_p = false)
+                   std::vector<uint64_t> output_types)
       : outputs(std::move(outputs)), output_sizes(std::move(output_sizes)),
-        output_types(std::move(output_types)), alloc_p(alloc_p) {}
+        output_types(std::move(output_types)) {}
   OpaqueOutputData(const OpaqueOutputData &ood)
       : outputs(std::move(ood.outputs)),
         output_sizes(std::move(ood.output_sizes)),
-        output_types(std::move(ood.output_types)), alloc_p(ood.alloc_p) {}
+        output_types(std::move(ood.output_types)) {}
 
   friend class hpx::serialization::access;
   template <class Archive> void load(Archive &ar, const unsigned int version) {
@@ -246,7 +227,6 @@ struct OpaqueOutputData {
                             "Error: invalid task argument type.");
       }
     }
-    alloc_p = true;
   }
   template <class Archive>
   void save(Archive &ar, const unsigned int version) const {
@@ -283,7 +263,6 @@ struct OpaqueOutputData {
   std::vector<void *> outputs;
   std::vector<size_t> output_sizes;
   std::vector<uint64_t> output_types;
-  bool alloc_p = false;
 };
 
 struct GenericComputeServer : component_base<GenericComputeServer> {
@@ -294,12 +273,6 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
     auto wfn = _dfr_node_level_work_function_registry->getWorkFunctionPointer(
         inputs.wfn_name);
     std::vector<void *> outputs;
-
-    if (inputs.source_locality != hpx::find_here() &&
-        (inputs.ksk_id || inputs.bsk_id)) {
-      _dfr_node_level_runtime_context_manager->getContext(
-          inputs.ksk_id, inputs.bsk_id, inputs.source_locality);
-    }
 
     _dfr_debug_print_task(inputs.wfn_name.c_str(), inputs.params.size(),
                           inputs.output_sizes.size());
@@ -735,7 +708,7 @@ struct GenericComputeServer : component_base<GenericComputeServer> {
     }
 
     return OpaqueOutputData(std::move(outputs), std::move(inputs.output_sizes),
-                            std::move(inputs.output_types), inputs.alloc_p);
+                            std::move(inputs.output_types));
   }
 
   HPX_DEFINE_COMPONENT_ACTION(GenericComputeServer, execute_task);

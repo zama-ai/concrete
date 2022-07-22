@@ -5,6 +5,7 @@
 
 #include <iostream>
 
+#include <concretelang/Conversion/Tools.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteTypes.h>
@@ -422,6 +423,17 @@ struct LowerDataflowTasksPass
     });
 
     for (auto entryPoint : entryPoints) {
+      // Check if this entry point uses a context - do this before we
+      // remove arguments in remote nodes
+      int ctxIndex = -1;
+      for (auto arg : llvm::enumerate(entryPoint.getArguments()))
+        if (arg.value()
+                .getType()
+                .isa<mlir::concretelang::Concrete::ContextType>()) {
+          ctxIndex = arg.index();
+          break;
+        }
+
       // If this is a JIT invocation and we're not on the root node,
       // we do not need to do any computation, only register all work
       // functions with the runtime system
@@ -455,20 +467,37 @@ struct LowerDataflowTasksPass
       if (!workFunctions.empty()) {
         OpBuilder builder(entryPoint.getBody());
         builder.setInsertionPointToStart(&entryPoint.getBody().front());
-        auto dfrStartFunOp = mlir::LLVM::lookupOrCreateFn(
-            module, "_dfr_start", {},
-            LLVM::LLVMVoidType::get(entryPoint->getContext()));
-        builder.create<LLVM::CallOp>(entryPoint.getLoc(), dfrStartFunOp,
-                                     mlir::ValueRange(),
-                                     ArrayRef<NamedAttribute>());
 
+        if (ctxIndex >= 0) {
+          auto startFunTy =
+              (dfr::_dfr_is_root_node())
+                  ? mlir::FunctionType::get(
+                        entryPoint->getContext(),
+                        {entryPoint.getArgument(ctxIndex).getType()}, {})
+                  : mlir::FunctionType::get(entryPoint->getContext(), {}, {});
+          (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start_c",
+                                         startFunTy);
+          builder.create<mlir::func::CallOp>(
+              entryPoint.getLoc(), "_dfr_start_c", mlir::TypeRange(),
+              (dfr::_dfr_is_root_node()) ? entryPoint.getArgument(ctxIndex)
+                                         : mlir::ValueRange());
+        } else {
+          auto startFunTy =
+              mlir::FunctionType::get(entryPoint->getContext(), {}, {});
+          (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start",
+                                         startFunTy);
+          builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_start",
+                                             mlir::TypeRange(),
+                                             mlir::ValueRange());
+        }
         builder.setInsertionPoint(entryPoint.getBody().back().getTerminator());
-        auto dfrStopFunOp = mlir::LLVM::lookupOrCreateFn(
-            module, "_dfr_stop", {},
-            LLVM::LLVMVoidType::get(entryPoint->getContext()));
-        builder.create<LLVM::CallOp>(entryPoint.getLoc(), dfrStopFunOp,
-                                     mlir::ValueRange(),
-                                     ArrayRef<NamedAttribute>());
+        auto stopFunTy =
+            mlir::FunctionType::get(entryPoint->getContext(), {}, {});
+        (void)insertForwardDeclaration(entryPoint, builder, "_dfr_stop",
+                                       stopFunTy);
+        builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_stop",
+                                           mlir::TypeRange(),
+                                           mlir::ValueRange());
       }
     }
   }
