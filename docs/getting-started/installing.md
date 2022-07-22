@@ -7,6 +7,7 @@
 You can install **Concrete Numpy** from PyPI:
 
 ```shell
+pip install -U pip wheel setuptools
 pip install concrete-numpy
 ```
 
@@ -17,6 +18,7 @@ Apple silicon users must use docker installation (explained below) as there is n
 You can install the extra python dependencies for drawing circuits:
 
 ```shell
+pip install -U pip wheel setuptools
 pip install concrete-numpy[full]
 ```
 
