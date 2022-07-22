@@ -677,7 +677,7 @@ class NodeConverter:
             self.ctx,
             Value(
                 dtype=self.node.inputs[0].dtype,
-                shape=(np.prod(input_shape),),
+                shape=(int(np.prod(input_shape)),),
                 is_encrypted=self.node.inputs[0].is_encrypted,
             ),
         )
