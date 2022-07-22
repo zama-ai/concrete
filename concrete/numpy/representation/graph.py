@@ -82,7 +82,14 @@ class Graph:
                 continue
 
             pred_results = [node_results[pred] for pred in self.ordered_preds_of(node)]
-            node_results[node] = node(*pred_results)
+            try:
+                node_results[node] = node(*pred_results)
+            except Exception as error:
+                raise RuntimeError(
+                    "Evaluation of the graph failed\n\n"
+                    + self.format(highlighted_nodes={node: ["evaluation of this node failed"]})
+                ) from error
+
         return node_results
 
     def draw(
@@ -364,23 +371,29 @@ class Graph:
         if not isinstance(sample, tuple):
             sample = (sample,)
 
-        evaluation = self.evaluate(*sample)
-        for node, value in evaluation.items():
-            bounds[node] = {
-                "min": value.min(),
-                "max": value.max(),
-            }
-
-        for sample in inputset_iterator:
-            if not isinstance(sample, tuple):
-                sample = (sample,)
-
+        index = 0
+        try:
             evaluation = self.evaluate(*sample)
             for node, value in evaluation.items():
                 bounds[node] = {
-                    "min": np.minimum(bounds[node]["min"], value.min()),
-                    "max": np.maximum(bounds[node]["max"], value.max()),
+                    "min": value.min(),
+                    "max": value.max(),
                 }
+
+            for sample in inputset_iterator:
+                index += 1
+                if not isinstance(sample, tuple):
+                    sample = (sample,)
+
+                evaluation = self.evaluate(*sample)
+                for node, value in evaluation.items():
+                    bounds[node] = {
+                        "min": np.minimum(bounds[node]["min"], value.min()),
+                        "max": np.maximum(bounds[node]["max"], value.max()),
+                    }
+
+        except Exception as error:
+            raise RuntimeError(f"Bound measurement using inputset[{index}] failed") from error
 
         return bounds
 

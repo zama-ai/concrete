@@ -557,11 +557,25 @@ class Tracer:
         output_value = deepcopy(self.output)
         output_value.dtype = Value.of(normalized_dtype.type(0)).dtype
 
+        if np.issubdtype(normalized_dtype.type, np.integer):
+
+            def evaluator(x, dtype):
+                if np.any(np.isnan(x)):
+                    raise ValueError("A `NaN` value is tried to be converted to integer")
+                if np.any(np.isinf(x)):
+                    raise ValueError("An `Inf` value is tried to be converted to integer")
+                return x.astype(dtype)
+
+        else:
+
+            def evaluator(x, dtype):
+                return x.astype(dtype)
+
         computation = Node.generic(
             "astype",
             [self.output],
             output_value,
-            lambda x, dtype: x.astype(dtype),
+            evaluator,
             kwargs={"dtype": normalized_dtype.type},
         )
         return Tracer(computation, [self])

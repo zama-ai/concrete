@@ -241,3 +241,125 @@ def test_compiler_virtual_compile(helpers):
     circuit = compiler.compile(inputset, configuration=configuration, virtual=True)
 
     assert circuit.encrypt_run_decrypt(200) == 600
+
+
+def test_compiler_compile_bad_inputset(helpers):
+    """
+    Test `compile` method of `Compiler` class with bad inputset.
+    """
+
+    configuration = helpers.configuration()
+
+    # with inf
+    # --------
+
+    def f(x):
+        return (x + np.inf).astype(np.int64)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        compiler = Compiler(f, {"x": "encrypted"})
+        compiler.compile(range(10), configuration=configuration)
+
+    assert str(excinfo.value) == "Bound measurement using inputset[0] failed"
+
+    assert (
+        str(excinfo.value.__cause__).strip()
+        == """
+
+Evaluation of the graph failed
+
+%0 = x                   # EncryptedScalar<uint1>
+%1 = subgraph(%0)        # EncryptedScalar<uint1>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of this node failed
+return %1
+
+Subgraphs:
+
+    %1 = subgraph(%0):
+
+        %0 = inf                           # ClearScalar<float64>
+        %1 = input                         # EncryptedScalar<uint1>
+        %2 = add(%1, %0)                   # EncryptedScalar<float64>
+        %3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
+        return %3
+
+    """.strip()
+    )
+
+    assert (
+        str(excinfo.value.__cause__.__cause__).strip()
+        == """
+
+Evaluation of the graph failed
+
+%0 = inf                           # ClearScalar<float64>
+%1 = input                         # EncryptedScalar<uint1>
+%2 = add(%1, %0)                   # EncryptedScalar<float64>
+%3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of this node failed
+return %3
+
+    """.strip()
+    )
+
+    assert (
+        str(excinfo.value.__cause__.__cause__.__cause__)
+        == "An `Inf` value is tried to be converted to integer"
+    )
+
+    # with nan
+    # --------
+
+    def g(x):
+        return (x + np.nan).astype(np.int64)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        compiler = Compiler(g, {"x": "encrypted"})
+        compiler.compile(range(10), configuration=configuration)
+
+    assert str(excinfo.value) == "Bound measurement using inputset[0] failed"
+
+    assert (
+        str(excinfo.value.__cause__).strip()
+        == """
+
+Evaluation of the graph failed
+
+%0 = x                   # EncryptedScalar<uint1>
+%1 = subgraph(%0)        # EncryptedScalar<uint1>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of this node failed
+return %1
+
+Subgraphs:
+
+    %1 = subgraph(%0):
+
+        %0 = nan                           # ClearScalar<float64>
+        %1 = input                         # EncryptedScalar<uint1>
+        %2 = add(%1, %0)                   # EncryptedScalar<float64>
+        %3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
+        return %3
+
+    """.strip()
+    )
+
+    assert (
+        str(excinfo.value.__cause__.__cause__).strip()
+        == """
+
+Evaluation of the graph failed
+
+%0 = nan                           # ClearScalar<float64>
+%1 = input                         # EncryptedScalar<uint1>
+%2 = add(%1, %0)                   # EncryptedScalar<float64>
+%3 = astype(%2, dtype=int_)        # EncryptedScalar<uint1>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of this node failed
+return %3
+
+    """.strip()
+    )
+
+    assert (
+        str(excinfo.value.__cause__.__cause__.__cause__)
+        == "A `NaN` value is tried to be converted to integer"
+    )
