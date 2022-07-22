@@ -55,8 +55,14 @@ int cuda_check_valid_malloc(uint64_t size, uint32_t gpu_index) {
 /// 0: success
 /// -1: error, invalid device pointer
 /// -2: error, gpu index doesn't exist
+/// -3: error, zero copy size
 int cuda_memcpy_async_to_gpu(void *dest, void *src, uint64_t size,
                              void *v_stream, uint32_t gpu_index) {
+  if (size == 0) {
+    // error code: zero copy size
+    return -3;
+  }
+  
   if (gpu_index >= cuda_get_number_of_gpus()) {
     // error code: invalid gpu_index
     return -2;
@@ -91,8 +97,14 @@ int cuda_synchronize_device(uint32_t gpu_index) {
 /// 0: success
 /// -1: error, invalid device pointer
 /// -2: error, gpu index doesn't exist
+/// -3: error, zero copy size
 int cuda_memcpy_async_to_cpu(void *dest, const void *src, uint64_t size,
                              void *v_stream, uint32_t gpu_index) {
+  if (size == 0) {
+    // error code: zero copy size
+    return -3;
+  }
+
   if (gpu_index >= cuda_get_number_of_gpus()) {
     // error code: invalid gpu_index
     return -2;
