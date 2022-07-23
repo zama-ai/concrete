@@ -6,6 +6,6 @@
 #include "mlir/IR/PatternMatch.h"
 
 mlir::LogicalResult insertForwardDeclaration(mlir::Operation *op,
-                                             mlir::RewriterBase &rewriter,
+                                             mlir::OpBuilder &rewriter,
                                              llvm::StringRef funcName,
                                              mlir::FunctionType funcType);
