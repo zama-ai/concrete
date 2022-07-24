@@ -69,4 +69,9 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
     end_to_end_jit_distributed.cc
     globals.cc
   )
+  add_concretecompiler_unittest(
+    end_to_end_jit_aes_short
+    end_to_end_jit_aes_short.cc
+    globals.cc
+  )
 endif()

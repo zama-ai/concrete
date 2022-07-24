@@ -2,6 +2,7 @@
 #define UINT_TESTS_COMMON_ASSERT_H
 
 #include "llvm/ADT/StringExtras.h"
+#include <concretelang/Runtime/DFRuntime.hpp>
 #include <gtest/gtest.h>
 
 #define ASSERT_LLVM_ERROR(err)                                                 \
