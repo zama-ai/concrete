@@ -725,7 +725,7 @@ class NodeConverter:
         input_value = self.node.inputs[0]
         input_shape = input_value.shape
 
-        index = list(self.node.properties["attributes"]["index"])
+        index = list(self.node.properties["kwargs"]["index"])
 
         while len(index) < input_value.ndim:
             index.append(slice(None, None, None))

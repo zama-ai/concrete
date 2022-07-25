@@ -248,7 +248,7 @@ class Node:
         name = self.properties["name"]
 
         if name == "index.static":
-            index = self.properties["attributes"]["index"]
+            index = self.properties["kwargs"]["index"]
             elements = [format_indexing_element(element) for element in index]
             return f"{predecessors[0]}[{', '.join(elements)}]"
 
@@ -292,7 +292,7 @@ class Node:
         assert_that(self.operation == Operation.Generic)
 
         name = self.properties["name"]
-        return name if name != "index.static" else self.format(["index"])
+        return name if name != "index.static" else self.format(["□"])
 
     @property
     def converted_to_table_lookup(self) -> bool:

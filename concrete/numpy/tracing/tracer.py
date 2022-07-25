@@ -666,8 +666,8 @@ class Tracer:
             "index.static",
             [self.output],
             output_value,
-            lambda x: x[index],
-            attributes={"index": index},
+            lambda x, index: x[index],
+            kwargs={"index": index},
         )
         return Tracer(computation, [self])
 
