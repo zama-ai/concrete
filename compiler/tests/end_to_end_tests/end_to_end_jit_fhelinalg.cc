@@ -11,6 +11,64 @@ using tensorArgTy = Z::TensorLambdaArgument<Z::IntLambdaArgument<Elmt>>;
 // FHELinalg add_eint_int////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+TEST(End2EndJit_FHELinalg, extract_slice_zero_offset_regression) {
+  checkedJit(lambda, R"XXX(
+func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>) -> tensor<3x!FHE.eint<4>> {
+  %0 = tensor.extract_slice %arg0[0, 0] [3, 1] [1, 1] : tensor<3x2x!FHE.eint<4>> to tensor<3x1x!FHE.eint<4>>
+  %1 = tensor.collapse_shape %0 [[0, 1]] : tensor<3x1x!FHE.eint<4>> into tensor<3x!FHE.eint<4>>
+  return %1 : tensor<3x!FHE.eint<4>>
+}
+
+)XXX");
+  std::vector<uint8_t> a0{
+      1, 2, 3, 4, 5, 6,
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(a0, {3, 2});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (size_t)3);
+
+  EXPECT_EQ((*res)[0], 1);
+  EXPECT_EQ((*res)[1], 3);
+  EXPECT_EQ((*res)[2], 5);
+}
+
+TEST(End2EndJit_FHELinalg, extract_slice_nonzero_offset_regression) {
+  checkedJit(lambda, R"XXX(
+func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>) -> tensor<3x!FHE.eint<4>> {
+  %0 = tensor.extract_slice %arg0[0, 1] [3, 1] [1, 1] : tensor<3x2x!FHE.eint<4>> to tensor<3x1x!FHE.eint<4>>
+  %1 = tensor.collapse_shape %0 [[0, 1]] : tensor<3x1x!FHE.eint<4>> into tensor<3x!FHE.eint<4>>
+  return %1 : tensor<3x!FHE.eint<4>>
+}
+
+)XXX");
+  std::vector<uint8_t> a0{
+      1, 2, 3, 4, 5, 6,
+  };
+
+  mlir::concretelang::TensorLambdaArgument<
+      mlir::concretelang::IntLambdaArgument<uint8_t>>
+      arg0(a0, {3, 2});
+
+  llvm::Expected<std::vector<uint64_t>> res =
+      lambda.operator()<std::vector<uint64_t>>({&arg0});
+
+  ASSERT_EXPECTED_SUCCESS(res);
+
+  ASSERT_EQ(res->size(), (size_t)3);
+
+  EXPECT_EQ((*res)[0], 2);
+  EXPECT_EQ((*res)[1], 4);
+  EXPECT_EQ((*res)[2], 6);
+}
+
 TEST(End2EndJit_FHELinalg, add_eint_int_term_to_term) {
 
   checkedJit(lambda, R"XXX(
