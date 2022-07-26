@@ -192,7 +192,7 @@ TensorData tensorDataFromMemRef(size_t memref_rank,
   // TODO: add a fast path for dense result (no real strides)
   for (size_t i = 0; i < len; i++) {
     int g_index = offset + global_index(index, sizes, strides, memref_rank);
-    result.values[i] = aligned[offset + g_index];
+    result.values[i] = aligned[g_index];
     next_coord_index(index, sizes, memref_rank);
   }
   delete[] index;
