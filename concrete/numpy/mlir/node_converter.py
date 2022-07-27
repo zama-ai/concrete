@@ -256,7 +256,10 @@ class NodeConverter:
         resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
 
         zeros = fhe.ZeroTensorOp(resulting_type).result
-        result = fhelinalg.AddEintOp(resulting_type, self.preds[0], zeros).result
+        if self.node.inputs[0].is_encrypted:
+            result = fhelinalg.AddEintOp(resulting_type, zeros, self.preds[0]).result
+        else:
+            result = fhelinalg.AddEintIntOp(resulting_type, zeros, self.preds[0]).result
 
         # TODO: convert this to a single operation once it can be done
         # (https://github.com/zama-ai/concrete-numpy-internal/issues/1610)

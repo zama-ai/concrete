@@ -314,7 +314,7 @@ class GraphConverter:
         """
 
         # pylint: disable=invalid-name
-        OPS_TO_TENSORIZE = ["add", "dot", "multiply", "subtract"]
+        OPS_TO_TENSORIZE = ["add", "broadcast_to", "dot", "multiply", "subtract"]
         # pylint: enable=invalid-name
 
         tensorized_scalars: Dict[Node, Node] = {}
@@ -322,10 +322,14 @@ class GraphConverter:
         nx_graph = graph.graph
         for node in list(nx_graph.nodes):
             if node.operation == Operation.Generic and node.properties["name"] in OPS_TO_TENSORIZE:
-                assert_that(len(node.inputs) == 2)
+                assert len(node.inputs) in {1, 2}
 
-                if set(inp.is_scalar for inp in node.inputs) != {True, False}:
-                    continue
+                if len(node.inputs) == 2:
+                    if set(inp.is_scalar for inp in node.inputs) != {True, False}:
+                        continue
+                else:
+                    if not node.inputs[0].is_scalar:
+                        continue
 
                 pred_to_tensorize: Optional[Node] = None
                 pred_to_tensorize_index = 0

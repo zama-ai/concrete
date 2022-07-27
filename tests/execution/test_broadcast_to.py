@@ -11,6 +11,8 @@ import concrete.numpy as cnp
 @pytest.mark.parametrize(
     "from_shape,to_shape",
     [
+        pytest.param((), (2,)),
+        pytest.param((), (2, 3)),
         pytest.param((3,), (2, 3)),
         pytest.param((3,), (4, 2, 3)),
         pytest.param((1, 2), (4, 3, 2)),
