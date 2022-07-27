@@ -252,6 +252,11 @@ class Node:
             elements = [format_indexing_element(element) for element in index]
             return f"{predecessors[0]}[{', '.join(elements)}]"
 
+        if name == "assign.static":
+            index = self.properties["kwargs"]["index"]
+            elements = [format_indexing_element(element) for element in index]
+            return f"({predecessors[0]}[{', '.join(elements)}] = {predecessors[1]})"
+
         if name == "concatenate":
             args = [f"({', '.join(predecessors)})"]
         else:
@@ -292,7 +297,14 @@ class Node:
         assert_that(self.operation == Operation.Generic)
 
         name = self.properties["name"]
-        return name if name != "index.static" else self.format(["□"])
+
+        if name == "index.static":
+            name = self.format(["□"])
+
+        if name == "assign.static":
+            name = self.format(["□", "□"])[1:-1]
+
+        return name
 
     @property
     def converted_to_table_lookup(self) -> bool:
@@ -307,6 +319,7 @@ class Node:
         return self.operation == Operation.Generic and self.properties["name"] not in [
             "add",
             "array",
+            "assign.static",
             "broadcast_to",
             "concatenate",
             "conv1d",

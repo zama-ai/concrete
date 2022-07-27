@@ -11,6 +11,15 @@ import concrete.onnx as connx
 # pylint: disable=line-too-long
 
 
+def assign(x):
+    """
+    Simple assignment to a vector.
+    """
+
+    x[0] = 0
+    return x
+
+
 @pytest.mark.parametrize(
     "function,encryption_statuses,inputset,expected_error,expected_message",
     [
@@ -385,6 +394,24 @@ Function you are trying to compile cannot be converted to MLIR
 %1 = broadcast_to(%0, shape=(3, 2))        # ClearTensor<uint1, shape=(3, 2)>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only encrypted broadcasting is supported
 return %1
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            assign,
+            {"x": "clear"},
+            [np.random.randint(0, 2, size=(3,)) for _ in range(100)],
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be converted to MLIR
+
+%0 = x                   # ClearTensor<uint1, shape=(3,)>
+%1 = 0                   # ClearScalar<uint1>
+%2 = (%0[0] = %1)        # ClearTensor<uint1, shape=(3,)>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only assignment to encrypted tensors are supported
+return %2
+
 
             """,  # noqa: E501
         ),

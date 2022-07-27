@@ -26,7 +26,7 @@ from mlir.ir import (
 from ..dtypes import Integer, SignedInteger
 from ..internal.utils import assert_that
 from ..representation import Graph, Node, Operation
-from ..values import ClearScalar
+from ..values import ClearScalar, EncryptedScalar
 from .node_converter import NodeConverter
 from .utils import MAXIMUM_BIT_WIDTH
 
@@ -87,6 +87,10 @@ class GraphConverter:
             elif name == "array":
                 assert_that(len(inputs) > 0)
                 assert_that(all(input.is_scalar for input in inputs))
+
+            elif name == "assign.static":
+                if not inputs[0].is_encrypted:
+                    return "only assignment to encrypted tensors are supported"
 
             elif name == "broadcast_to":
                 assert_that(len(inputs) == 1)
@@ -304,6 +308,116 @@ class GraphConverter:
                 nx_graph.add_edge(add_offset, node, input_idx=variable_input_index)
 
     @staticmethod
+    def _broadcast_assignments(graph: Graph):
+        """
+        Broadcast assignments.
+
+        Args:
+            graph (Graph):
+                computation graph to transform
+        """
+
+        nx_graph = graph.graph
+        for node in list(nx_graph.nodes):
+            if node.operation == Operation.Generic and node.properties["name"] == "assign.static":
+                shape = node.inputs[0].shape
+                index = node.properties["kwargs"]["index"]
+
+                assert_that(isinstance(index, tuple))
+                while len(index) < len(shape):
+                    index = (*index, slice(None, None, None))
+
+                required_value_shape_list = []
+
+                for i, indexing_element in enumerate(index):
+                    if isinstance(indexing_element, slice):
+                        n = len(np.zeros(shape[i])[indexing_element])
+                        required_value_shape_list.append(n)
+                    else:
+                        required_value_shape_list.append(1)
+
+                required_value_shape = tuple(required_value_shape_list)
+                actual_value_shape = node.inputs[1].shape
+
+                if required_value_shape != actual_value_shape:
+                    preds = graph.ordered_preds_of(node)
+                    pred_to_modify = preds[1]
+
+                    modified_value = deepcopy(pred_to_modify.output)
+                    modified_value.shape = required_value_shape
+
+                    try:
+                        np.broadcast_to(np.zeros(actual_value_shape), required_value_shape)
+                        modified_value.is_encrypted = True
+                        modified_value.dtype = node.output.dtype
+                        modified_pred = Node.generic(
+                            "broadcast_to",
+                            [pred_to_modify.output],
+                            modified_value,
+                            np.broadcast_to,
+                            kwargs={"shape": required_value_shape},
+                        )
+                    except Exception:  # pylint: disable=broad-except
+                        np.reshape(np.zeros(actual_value_shape), required_value_shape)
+                        modified_pred = Node.generic(
+                            "reshape",
+                            [pred_to_modify.output],
+                            modified_value,
+                            np.reshape,
+                            kwargs={"newshape": required_value_shape},
+                        )
+
+                    nx_graph.add_edge(pred_to_modify, modified_pred, input_idx=0)
+
+                    nx_graph.remove_edge(pred_to_modify, node)
+                    nx_graph.add_edge(modified_pred, node, input_idx=1)
+
+                    node.inputs[1] = modified_value
+
+    @staticmethod
+    def _encrypt_clear_assignments(graph: Graph):
+        """
+        Encrypt clear assignments.
+
+        Args:
+            graph (Graph):
+                computation graph to transform
+        """
+
+        nx_graph = graph.graph
+        for node in list(nx_graph.nodes):
+            if node.operation == Operation.Generic and node.properties["name"] == "assign.static":
+                assigned_value = node.inputs[1]
+                if assigned_value.is_clear:
+                    preds = graph.ordered_preds_of(node)
+                    assigned_pred = preds[1]
+
+                    new_assigned_pred_value = deepcopy(assigned_value)
+                    new_assigned_pred_value.is_encrypted = True
+                    new_assigned_pred_value.dtype = preds[0].output.dtype
+
+                    zero = Node.generic(
+                        "zeros",
+                        [],
+                        EncryptedScalar(new_assigned_pred_value.dtype),
+                        lambda: np.zeros((), dtype=np.int64),
+                    )
+
+                    new_assigned_pred = Node.generic(
+                        "add",
+                        [assigned_pred.output, zero.output],
+                        new_assigned_pred_value,
+                        np.add,
+                    )
+
+                    nx_graph.remove_edge(preds[1], node)
+
+                    nx_graph.add_edge(preds[1], new_assigned_pred, input_idx=0)
+                    nx_graph.add_edge(zero, new_assigned_pred, input_idx=1)
+
+                    nx_graph.add_edge(new_assigned_pred, node, input_idx=1)
+
+    @staticmethod
     def _tensorize_scalars_for_fhelinalg(graph: Graph):
         """
         Tensorize scalars if they are used within fhelinalg operations.
@@ -462,6 +576,8 @@ class GraphConverter:
 
         GraphConverter._update_bit_widths(graph)
         GraphConverter._offset_negative_lookup_table_inputs(graph)
+        GraphConverter._broadcast_assignments(graph)
+        GraphConverter._encrypt_clear_assignments(graph)
         GraphConverter._tensorize_scalars_for_fhelinalg(graph)
 
         from_elements_operations: Dict[OpResult, List[OpResult]] = {}

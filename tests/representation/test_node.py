@@ -206,6 +206,17 @@ def test_node_bad_call(node, args, expected_error, expected_message):
             ["%0", "%1", "%2", "%3"],
             "array([[%0, %1], [%2, %3]])",
         ),
+        pytest.param(
+            Node.generic(
+                name="assign.static",
+                inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3, 4))],
+                output=EncryptedTensor(UnsignedInteger(3), shape=(3, 4)),
+                operation=lambda *args: args,
+                kwargs={"index": (1, 2)},
+            ),
+            ["%0", "%1"],
+            "(%0[1, 2] = %1)",
+        ),
     ],
 )
 def test_node_format(node, predecessors, expected_result):
@@ -252,6 +263,26 @@ def test_node_format(node, predecessors, expected_result):
                 kwargs={"axis": -1},
             ),
             "concatenate",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index.static",
+                inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3, 4))],
+                output=EncryptedTensor(UnsignedInteger(3), shape=()),
+                operation=lambda *args: args,
+                kwargs={"index": (1, 2)},
+            ),
+            "□[1, 2]",
+        ),
+        pytest.param(
+            Node.generic(
+                name="assign.static",
+                inputs=[EncryptedTensor(UnsignedInteger(3), shape=(3, 4))],
+                output=EncryptedTensor(UnsignedInteger(3), shape=(3, 4)),
+                operation=lambda *args: args,
+                kwargs={"index": (1, 2)},
+            ),
+            "□[1, 2] = □",
         ),
     ],
 )

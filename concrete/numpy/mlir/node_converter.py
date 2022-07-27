@@ -157,6 +157,9 @@ class NodeConverter:
             if name == "add":
                 result = self._convert_add()
 
+            elif name == "assign.static":
+                result = self._convert_static_assignment()
+
             elif name == "array":
                 result = self._convert_array()
 
@@ -714,6 +717,68 @@ class NodeConverter:
             ArrayAttr.get(
                 [ArrayAttr.get([IntegerAttr.get(i64_type, i) for i in range(len(output_shape))])]
             ),
+        ).result
+
+    def _convert_static_assignment(self) -> OpResult:
+        """
+        Convert "assign.static" node to its corresponding MLIR representation.
+
+        Returns:
+            OpResult:
+                in-memory MLIR representation corresponding to `self.node`
+        """
+
+        input_value = self.node.inputs[0]
+        input_shape = input_value.shape
+
+        index = list(self.node.properties["kwargs"]["index"])
+
+        while len(index) < input_value.ndim:
+            index.append(slice(None, None, None))
+
+        output_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
+
+        offsets = []
+        sizes = []
+        strides = []
+
+        for indexing_element, dimension_size in zip(index, input_shape):
+
+            if isinstance(indexing_element, slice):
+                size = np.zeros(dimension_size)[indexing_element].shape[0]
+                stride = indexing_element.step if isinstance(indexing_element.step, int) else 1
+                offset = (
+                    (
+                        indexing_element.start
+                        if indexing_element.start >= 0
+                        else indexing_element.start + dimension_size
+                    )
+                    if isinstance(indexing_element.start, int)
+                    else (0 if stride > 0 else dimension_size - 1)
+                )
+
+            else:
+                size = 1
+                stride = 1
+                offset = int(
+                    indexing_element if indexing_element >= 0 else indexing_element + dimension_size
+                )
+
+            offsets.append(offset)
+            sizes.append(size)
+            strides.append(stride)
+
+        i64_type = IntegerType.get_signless(64)
+        return tensor.InsertSliceOp(
+            output_type,
+            self.preds[1],
+            self.preds[0],
+            [],
+            [],
+            [],
+            ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in offsets]),
+            ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in sizes]),
+            ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in strides]),
         ).result
 
     def _convert_static_indexing(self) -> OpResult:

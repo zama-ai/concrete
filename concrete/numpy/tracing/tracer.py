@@ -26,6 +26,9 @@ class Tracer:
     input_tracers: List["Tracer"]
     output: Value
 
+    # property to keep track of assignments
+    last_version: Optional["Tracer"] = None
+
     # variable to control the behavior of __eq__
     # so that it can be traced but still allow
     # using Tracers in dicts when not tracing
@@ -70,6 +73,12 @@ class Tracer:
 
         if not isinstance(output_tracers, tuple):
             output_tracers = (output_tracers,)
+
+        output_tracer_list = list(output_tracers)
+        for i, output_tracer in enumerate(output_tracer_list):
+            if isinstance(output_tracer, Tracer) and output_tracer.last_version is not None:
+                output_tracer_list[i] = output_tracer.last_version
+        output_tracers = tuple(output_tracer_list)
 
         sanitized_tracers = []
         for tracer in output_tracers:
@@ -144,6 +153,9 @@ class Tracer:
         self.computation = computation
         self.input_tracers = input_tracers
         self.output = computation.output
+
+        for i, tracer in enumerate(self.input_tracers):
+            self.input_tracers[i] = tracer if tracer.last_version is None else tracer.last_version
 
     def __hash__(self) -> int:
         return id(self)
@@ -670,6 +682,57 @@ class Tracer:
             kwargs={"index": index},
         )
         return Tracer(computation, [self])
+
+    def __setitem__(
+        self,
+        index: Union[int, np.integer, slice, Tuple[Union[int, np.integer, slice], ...]],
+        value: Any,
+    ):
+        if not isinstance(index, tuple):
+            index = (index,)
+
+        for indexing_element in index:
+            valid = isinstance(indexing_element, (int, np.integer, slice))
+
+            if isinstance(indexing_element, slice):
+                if (
+                    not (
+                        indexing_element.start is None
+                        or isinstance(indexing_element.start, (int, np.integer))
+                    )
+                    or not (
+                        indexing_element.stop is None
+                        or isinstance(indexing_element.stop, (int, np.integer))
+                    )
+                    or not (
+                        indexing_element.step is None
+                        or isinstance(indexing_element.step, (int, np.integer))
+                    )
+                ):
+                    valid = False
+
+            if not valid:
+                raise ValueError(
+                    f"Assigning to '{format_indexing_element(indexing_element)}' is not supported"
+                )
+
+        np.zeros(self.output.shape)[index] = 1
+
+        def assign(x, value, index):
+            x[index] = value
+            return x
+
+        sanitized_value = self.sanitize(value)
+        computation = Node.generic(
+            "assign.static",
+            [self.output, sanitized_value.output],
+            self.output,
+            assign,
+            kwargs={"index": index},
+        )
+        new_version = Tracer(computation, [self, sanitized_value])
+
+        self.last_version = new_version
 
     @property
     def shape(self) -> Tuple[int, ...]:
