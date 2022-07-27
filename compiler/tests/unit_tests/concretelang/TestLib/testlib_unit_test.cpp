@@ -50,7 +50,9 @@ compile(std::string outputLib, std::string source,
   return result.get();
 }
 
-static const std::string THIS_TEST_DIRECTORY = "tests/TestLib";
+static const std::string CURRENT_FILE = __FILE__;
+static const std::string THIS_TEST_DIRECTORY =
+    CURRENT_FILE.substr(0, CURRENT_FILE.find_last_of("/\\"));
 static const std::string OUT_DIRECTORY = "/tmp";
 
 template <typename Info> std::string outputLibFromThis(Info *info) {
