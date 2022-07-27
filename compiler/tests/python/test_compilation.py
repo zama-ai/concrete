@@ -350,6 +350,6 @@ def test_compile_and_run_invalid_arg_number(
 def test_compile_invalid(mlir_input):
     engine = JITSupport.new()
     with pytest.raises(
-        RuntimeError, match=r"Could not find existing crypto parameters for"
+        RuntimeError, match=r"cannot find the function for generate client parameters"
     ):
         engine.compile(mlir_input)

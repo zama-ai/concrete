@@ -7,7 +7,6 @@ function(add_concretecompiler_unittest test_name)
 endfunction()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp)
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   link_libraries(

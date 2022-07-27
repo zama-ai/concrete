@@ -165,7 +165,7 @@ template <> struct llvm::yaml::MappingTraits<ValueDescription> {
   }
 };
 
-LLVM_YAML_IS_SEQUENCE_VECTOR(ValueDescription)
+LLVM_YAML_IS_SEQUENCE_VECTOR(ValueDescription);
 
 template <> struct llvm::yaml::MappingTraits<TestDescription> {
   static void mapping(IO &io, TestDescription &desc) {
@@ -174,7 +174,7 @@ template <> struct llvm::yaml::MappingTraits<TestDescription> {
   }
 };
 
-LLVM_YAML_IS_SEQUENCE_VECTOR(TestDescription)
+LLVM_YAML_IS_SEQUENCE_VECTOR(TestDescription);
 
 template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
   static void mapping(IO &io, EndToEndDesc &desc) {

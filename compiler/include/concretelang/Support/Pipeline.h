@@ -20,10 +20,9 @@ namespace pipeline {
 mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
                             std::function<bool(mlir::Pass *)> enablePass);
 
-llvm::Expected<std::map<std::string, llvm::Optional<optimizer::Description>>>
-getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                     optimizer::Config config,
-                     std::function<bool(mlir::Pass *)> enablePass);
+llvm::Expected<llvm::Optional<mlir::concretelang::V0FHEConstraint>>
+getFHEConstraintsFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                         std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
 tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,

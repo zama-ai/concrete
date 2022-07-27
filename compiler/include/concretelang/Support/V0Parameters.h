@@ -8,7 +8,6 @@
 
 #include "llvm/ADT/Optional.h"
 
-#include "concrete-optimizer.hpp"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 
 namespace mlir {
@@ -16,30 +15,16 @@ namespace concretelang {
 
 namespace optimizer {
 constexpr double P_ERROR_4_SIGMA = 1.0 - 0.999936657516;
-constexpr uint DEFAULT_SECURITY = 128;
-
 struct Config {
   double p_error;
   bool display;
-  bool strategy_v0;
-  std::uint64_t security;
 };
-constexpr Config DEFAULT_CONFIG = {P_ERROR_4_SIGMA, false, false,
-                                   DEFAULT_SECURITY};
-
-using Dag = rust::Box<concrete_optimizer::OperationDag>;
-using Solution = concrete_optimizer::v0::Solution;
-
-/* Contains any circuit description usable by the concrete-optimizer */
-struct Description {
-  V0FHEConstraint constraint;
-  llvm::Optional<optimizer::Dag> dag;
-};
-
+constexpr Config DEFAULT_CONFIG = {P_ERROR_4_SIGMA, false};
 } // namespace optimizer
 
-llvm::Optional<V0Parameter> getParameter(optimizer::Description &descr,
-                                         optimizer::Config optimizerConfig);
+llvm::Optional<V0Parameter> getV0Parameter(V0FHEConstraint constraint,
+                                           optimizer::Config optimizerConfig);
+
 } // namespace concretelang
 } // namespace mlir
 #endif

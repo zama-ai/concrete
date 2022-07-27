@@ -4,7 +4,6 @@
 // for license information.
 
 #include <concretelang/Dialect/FHE/Analysis/MANP.h>
-#include <concretelang/Dialect/FHE/Analysis/utils.h>
 #include <concretelang/Dialect/FHE/IR/FHEDialect.h>
 #include <concretelang/Dialect/FHE/IR/FHEOps.h>
 #include <concretelang/Dialect/FHE/IR/FHETypes.h>
@@ -46,7 +45,36 @@ static bool isEncryptedFunctionParameter(mlir::Value value) {
     return false;
   }
 
-  return mlir::concretelang::fhe::utils::isEncryptedValue(value);
+  return (
+      value.getType().isa<mlir::concretelang::FHE::EncryptedIntegerType>() ||
+      (value.getType().isa<mlir::TensorType>() &&
+       value.getType()
+           .cast<mlir::TensorType>()
+           .getElementType()
+           .isa<mlir::concretelang::FHE::EncryptedIntegerType>()));
+}
+
+/// Returns the bit width of `value` if `value` is an encrypted integer
+/// or the bit width of the elements if `value` is a tensor of
+/// encrypted integers.
+static unsigned int getEintPrecision(mlir::Value value) {
+  if (auto ty = value.getType()
+                    .dyn_cast_or_null<
+                        mlir::concretelang::FHE::EncryptedIntegerType>()) {
+    return ty.getWidth();
+  } else if (auto tensorTy =
+                 value.getType().dyn_cast_or_null<mlir::TensorType>()) {
+    if (auto ty = tensorTy.getElementType()
+                      .dyn_cast_or_null<
+                          mlir::concretelang::FHE::EncryptedIntegerType>())
+      return ty.getWidth();
+  }
+
+  assert(false &&
+         "Value is neither an encrypted integer nor a tensor of encrypted "
+         "integers");
+
+  return 0;
 }
 
 /// The `MANPLatticeValue` represents the squared Minimal Arithmetic
@@ -1496,7 +1524,7 @@ private:
 } // namespace
 
 namespace {
-// For documentation see MANP.td
+/// For documentation see MANP.td
 struct MANPPass : public MANPBase<MANPPass> {
   void runOnOperation() override {
     mlir::func::FuncOp func = getOperation();
@@ -1545,7 +1573,7 @@ protected:
             llvm::dyn_cast_or_null<mlir::func::FuncOp>(op)) {
       for (mlir::BlockArgument blockArg : func.getBody().getArguments()) {
         if (isEncryptedFunctionParameter(blockArg)) {
-          unsigned int width = fhe::utils::getEintPrecision(blockArg);
+          unsigned int width = getEintPrecision(blockArg);
 
           if (this->maxEintWidth < width) {
             this->maxEintWidth = width;

@@ -138,8 +138,7 @@ createClientParametersForV0(V0FHEContext fheContext,
   });
   if (funcOp == rangeOps.end()) {
     return llvm::make_error<llvm::StringError>(
-        "cannot find the function for generate client parameters '" +
-            functionName + "'",
+        "cannot find the function for generate client parameters",
         llvm::inconvertibleErrorCode());
   }
 
