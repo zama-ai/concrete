@@ -1,5 +1,5 @@
 """
-Tests of executiwhere x.shape == of static indexing operation.
+Tests of execution of static indexing operation.
 """
 
 import numpy as np
