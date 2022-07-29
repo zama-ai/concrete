@@ -35,7 +35,7 @@ def FHE_ZeroEintOp : FHE_Op<"zero", [NoSideEffect]> {
 }
 
 
-def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", []> {
+def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [NoSideEffect]> {
     let summary = "Creates a new tensor with all elements initialized to an encrypted zero.";
 
     let description = [{
@@ -52,7 +52,7 @@ def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", []> {
     let results = (outs Type<And<[TensorOf<[FHE_EncryptedIntegerType]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def FHE_AddEintIntOp : FHE_Op<"add_eint_int"> {
+def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [NoSideEffect]> {
 
     let summary = "Adds an encrypted integer and a clear integer";
 
@@ -85,7 +85,7 @@ def FHE_AddEintIntOp : FHE_Op<"add_eint_int"> {
     let hasFolder = 1;
 }
 
-def FHE_AddEintOp : FHE_Op<"add_eint"> {
+def FHE_AddEintOp : FHE_Op<"add_eint", [NoSideEffect]> {
 
     let summary = "Adds two encrypted integers";
 
@@ -116,7 +116,7 @@ def FHE_AddEintOp : FHE_Op<"add_eint"> {
     let hasVerifier = 1;
 }
 
-def FHE_SubIntEintOp : FHE_Op<"sub_int_eint"> {
+def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [NoSideEffect]> {
 
     let summary = "Substract a clear integer and an encrypted integer";
 
@@ -148,7 +148,7 @@ def FHE_SubIntEintOp : FHE_Op<"sub_int_eint"> {
     let hasVerifier = 1;
 }
 
-def FHE_SubEintIntOp : FHE_Op<"sub_eint_int"> {
+def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [NoSideEffect]> {
 
     let summary = "Substract a clear integer from an encrypted integer";
 
@@ -182,7 +182,7 @@ def FHE_SubEintIntOp : FHE_Op<"sub_eint_int"> {
     let hasFolder = 1;
 }
 
-def FHE_SubEintOp : FHE_Op<"sub_eint"> {
+def FHE_SubEintOp : FHE_Op<"sub_eint", [NoSideEffect]> {
 
     let summary = "Subtracts two encrypted integers";
 
@@ -213,7 +213,7 @@ def FHE_SubEintOp : FHE_Op<"sub_eint"> {
     let hasVerifier = 1;
 }
 
-def FHE_NegEintOp : FHE_Op<"neg_eint"> {
+def FHE_NegEintOp : FHE_Op<"neg_eint", [NoSideEffect]> {
 
     let summary = "Negates an encrypted integer";
 
@@ -242,7 +242,7 @@ def FHE_NegEintOp : FHE_Op<"neg_eint"> {
     let hasVerifier = 1;
 }
 
-def FHE_MulEintIntOp : FHE_Op<"mul_eint_int"> {
+def FHE_MulEintIntOp : FHE_Op<"mul_eint_int", [NoSideEffect]> {
 
     let summary = "Mulitplies an encrypted integer and a clear integer";
 
@@ -275,7 +275,7 @@ def FHE_MulEintIntOp : FHE_Op<"mul_eint_int"> {
     let hasFolder = 1;
 }
 
-def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table"> {
+def FHE_ApplyLookupTableEintOp : FHE_Op<"apply_lookup_table", [NoSideEffect]> {
 
     let summary = "Applies a clear lookup table to an encrypted integer";
 
