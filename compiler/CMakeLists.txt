@@ -76,6 +76,7 @@ endif()
 #-------------------------------------------------------------------------------
 
 option(CONCRETELANG_PARALLEL_EXECUTION_ENABLED "Enables parallel execution for ConcreteLang." ON)
+option(CONCRETELANG_TIMING_ENABLED "Enables execution timing." ON)
 
 if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
   message(STATUS "ConcreteLang parallel execution enabled.")
@@ -90,6 +91,14 @@ if(CONCRETELANG_PARALLEL_EXECUTION_ENABLED)
 
 else()
   message(STATUS "ConcreteLang parallel execution disabled.")
+endif()
+
+if(CONCRETELANG_TIMING_ENABLED)
+  add_compile_options(
+    -DCONCRETELANG_TIMING_ENABLED
+  )
+else()
+  message(STATUS "ConcreteLang execution timing disabled.")
 endif()
 
 #-------------------------------------------------------------------------------

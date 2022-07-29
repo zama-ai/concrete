@@ -27,8 +27,8 @@ void _dfr_deallocate_future_data(void *);
 
 /*  Initialisation & termination.  */
 void _dfr_start_c(void *);
-void _dfr_start();
-void _dfr_stop();
+void _dfr_start(int);
+void _dfr_stop(int);
 
 void _dfr_terminate();
 }

@@ -464,41 +464,40 @@ struct LowerDataflowTasksPass
         registerWorkFunction(entryPoint, wf);
 
       // Issue _dfr_start/stop calls for this function
-      if (!workFunctions.empty()) {
-        OpBuilder builder(entryPoint.getBody());
-        builder.setInsertionPointToStart(&entryPoint.getBody().front());
+      OpBuilder builder(entryPoint.getBody());
+      builder.setInsertionPointToStart(&entryPoint.getBody().front());
+      int useDFR = (workFunctions.empty()) ? 0 : 1;
+      Value useDFRVal = builder.create<arith::ConstantOp>(
+          entryPoint.getLoc(), builder.getI64IntegerAttr(useDFR));
 
-        if (ctxIndex >= 0) {
-          auto startFunTy =
-              (dfr::_dfr_is_root_node())
-                  ? mlir::FunctionType::get(
-                        entryPoint->getContext(),
-                        {entryPoint.getArgument(ctxIndex).getType()}, {})
-                  : mlir::FunctionType::get(entryPoint->getContext(), {}, {});
-          (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start_c",
-                                         startFunTy);
-          builder.create<mlir::func::CallOp>(
-              entryPoint.getLoc(), "_dfr_start_c", mlir::TypeRange(),
-              (dfr::_dfr_is_root_node()) ? entryPoint.getArgument(ctxIndex)
-                                         : mlir::ValueRange());
-        } else {
-          auto startFunTy =
-              mlir::FunctionType::get(entryPoint->getContext(), {}, {});
-          (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start",
-                                         startFunTy);
-          builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_start",
-                                             mlir::TypeRange(),
-                                             mlir::ValueRange());
-        }
-        builder.setInsertionPoint(entryPoint.getBody().back().getTerminator());
-        auto stopFunTy =
-            mlir::FunctionType::get(entryPoint->getContext(), {}, {});
-        (void)insertForwardDeclaration(entryPoint, builder, "_dfr_stop",
-                                       stopFunTy);
-        builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_stop",
-                                           mlir::TypeRange(),
-                                           mlir::ValueRange());
+      if (ctxIndex >= 0) {
+        auto startFunTy =
+            (dfr::_dfr_is_root_node())
+                ? mlir::FunctionType::get(
+                      entryPoint->getContext(),
+                      {entryPoint.getArgument(ctxIndex).getType()}, {})
+                : mlir::FunctionType::get(entryPoint->getContext(), {}, {});
+        (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start_c",
+                                       startFunTy);
+        builder.create<mlir::func::CallOp>(
+            entryPoint.getLoc(), "_dfr_start_c", mlir::TypeRange(),
+            (dfr::_dfr_is_root_node()) ? entryPoint.getArgument(ctxIndex)
+                                       : mlir::ValueRange());
+      } else {
+        auto startFunTy = mlir::FunctionType::get(entryPoint->getContext(),
+                                                  {useDFRVal.getType()}, {});
+        (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start",
+                                       startFunTy);
+        builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_start",
+                                           mlir::TypeRange(), useDFRVal);
       }
+      builder.setInsertionPoint(entryPoint.getBody().back().getTerminator());
+      auto stopFunTy = mlir::FunctionType::get(entryPoint->getContext(),
+                                               {useDFRVal.getType()}, {});
+      (void)insertForwardDeclaration(entryPoint, builder, "_dfr_stop",
+                                     stopFunTy);
+      builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_stop",
+                                         mlir::TypeRange(), useDFRVal);
     }
   }
   LowerDataflowTasksPass(bool debug) : debug(debug){};
