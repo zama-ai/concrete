@@ -11,6 +11,7 @@ use super::dynamic::{
     IntegerTypeId,
 };
 
+#[derive(Clone, Debug)]
 pub(crate) struct IntegerConfig {
     pub(crate) uint8_params: Option<FheUint2Parameters>,
     pub(crate) uint12_params: Option<FheUint2Parameters>,

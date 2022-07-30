@@ -78,7 +78,7 @@
 //! ```toml
 //! concrete = { version = "0.2.0-beta", features = ["booleans", "serde"] }
 //! ```
-pub use config::ConfigBuilder;
+pub use config::{ConfigBuilder, Config};
 pub use global_state::set_server_key;
 pub use keys::{generate_keys, ClientKey, ServerKey};
 

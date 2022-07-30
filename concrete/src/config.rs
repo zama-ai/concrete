@@ -11,6 +11,7 @@ use crate::shortints::{
 use crate::integers::{DynIntegerEncryptor, DynIntegerParameters, IntegerConfig};
 
 /// The config type
+#[derive(Clone, Debug)]
 pub struct Config {
     #[cfg(feature = "booleans")]
     pub(crate) bool_config: BoolConfig,
