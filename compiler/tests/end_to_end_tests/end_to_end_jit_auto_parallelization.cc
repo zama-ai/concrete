@@ -85,7 +85,7 @@ std::vector<uint64_t> parallel_results;
 
 TEST(ParallelizeAndRunFHE, nn_small_parallel) {
   checkedJit(lambda, R"XXX(
-  func @main(%arg0: tensor<4x5x!FHE.eint<5>>) -> tensor<4x7x!FHE.eint<5>> {
+  func.func @main(%arg0: tensor<4x5x!FHE.eint<5>>) -> tensor<4x7x!FHE.eint<5>> {
     %cst = arith.constant dense<[[0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 1, 0, 0], [1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1]]> : tensor<4x7xi6>
     %cst_0 = arith.constant dense<[[1, 0, 1, 1, 0, 1, 1], [0, 1, 0, 0, 0, 0, 1], [0, 1, 1, 1, 1, 0, 0], [0, 1, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0, 1]]> : tensor<5x7xi6>
     %0 = "FHELinalg.matmul_eint_int"(%arg0, %cst_0) : (tensor<4x5x!FHE.eint<5>>, tensor<5x7xi6>) -> tensor<4x7x!FHE.eint<5>>
@@ -127,7 +127,7 @@ TEST(ParallelizeAndRunFHE, nn_small_parallel) {
 TEST(ParallelizeAndRunFHE, nn_small_sequential) {
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     checkedJit(lambda, R"XXX(
-  func @main(%arg0: tensor<4x5x!FHE.eint<5>>) -> tensor<4x7x!FHE.eint<5>> {
+  func.func @main(%arg0: tensor<4x5x!FHE.eint<5>>) -> tensor<4x7x!FHE.eint<5>> {
     %cst = arith.constant dense<[[0, 0, 1, 0, 1, 1, 0], [1, 1, 1, 0, 1, 0, 0], [1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1]]> : tensor<4x7xi6>
     %cst_0 = arith.constant dense<[[1, 0, 1, 1, 0, 1, 1], [0, 1, 0, 0, 0, 0, 1], [0, 1, 1, 1, 1, 0, 0], [0, 1, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0, 1]]> : tensor<5x7xi6>
     %0 = "FHELinalg.matmul_eint_int"(%arg0, %cst_0) : (tensor<4x5x!FHE.eint<5>>, tensor<5x7xi6>) -> tensor<4x7x!FHE.eint<5>>
