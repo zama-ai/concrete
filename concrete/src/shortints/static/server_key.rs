@@ -38,6 +38,10 @@ where
         }
     }
 
+    pub(crate) fn create_trivial(&self, value: u8) -> GenericShortInt<P> {
+        self.key.create_trivial(value).into()
+    }
+
     pub(crate) fn smart_add(
         &self,
         lhs: &GenericShortInt<P>,

@@ -13,8 +13,10 @@ use concrete_shortint::ciphertext::Ciphertext;
 use crate::errors::OutOfRangeError;
 use crate::global_state::WithGlobalKey;
 use crate::keys::{ClientKey, RefKeyFromKeyChain};
-use crate::traits::{FheBootstrap, FheDecrypt, FheNumberConstant, FheTryEncrypt};
 use crate::prelude::{FheEq, FheOrd};
+use crate::traits::{
+    FheBootstrap, FheDecrypt, FheNumberConstant, FheTryEncrypt, FheTryTrivialEncrypt,
+};
 
 use super::client_key::ShortIntegerClientKey;
 use super::server_key::ShortIntegerServerKey;
@@ -308,6 +310,25 @@ where
     }
 }
 
+impl<Clear, P> FheTryTrivialEncrypt<Clear> for GenericShortInt<P>
+where
+    Clear: TryInto<u8>,
+    P: ShortIntegerParameter,
+    ShortIntegerServerKey<P>: WithGlobalKey,
+{
+    type Error = OutOfRangeError;
+
+    fn try_encrypt_trivial(value: Clear) -> Result<Self, Self::Error> {
+        let value = value.try_into().map_err(|_err| OutOfRangeError)?;
+        if value > Self::MAX {
+            Err(OutOfRangeError)
+        } else {
+            Ok(ShortIntegerServerKey::<P>::with_unwrapped_global_mut(
+                |key| key.create_trivial(value),
+            ))
+        }
+    }
+}
 impl<P> FheDecrypt<u8> for GenericShortInt<P>
 where
     P: ShortIntegerParameter,
@@ -343,7 +364,7 @@ where
     }
 }
 
-macro_rules! short_int_impl_operation(
+macro_rules! short_int_impl_operation (
     ($trait_name:ident($trait_method:ident, $op:tt) => $key_method:ident) => {
         #[doc = concat!(" Allows using the `", stringify!($op), "` operator between a")]
         #[doc = " `GenericFheUint` and a `GenericFheUint` or a `&GenericFheUint`"]

@@ -8,4 +8,5 @@
 pub use crate::traits::{
     DynamicFheEncryptor, DynamicFheTrivialEncryptor, DynamicFheTryEncryptor, FheBootstrap,
     FheDecrypt, FheEncrypt, FheEq, FheNumberConstant, FheOrd, FheTrivialEncrypt, FheTryEncrypt,
+    FheTryTrivialEncrypt,
 };

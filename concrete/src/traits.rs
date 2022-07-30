@@ -49,6 +49,16 @@ where
     fn try_encrypt(value: T, key: &ClientKey) -> Result<Self, Self::Error>;
 }
 
+/// Trait for fallible trivial encryption.
+pub trait FheTryTrivialEncrypt<T>
+where
+    Self: Sized,
+{
+    type Error: std::error::Error;
+
+    fn try_encrypt_trivial(value: T) -> Result<Self, Self::Error>;
+}
+
 pub trait DynamicFheTryEncryptor<T> {
     type FheType;
     type Error;
@@ -91,6 +101,7 @@ pub trait FheOrd<Rhs = Self> {
     fn gt(&self, other: Rhs) -> Self::Output;
     fn ge(&self, other: Rhs) -> Self::Output;
 }
+
 /// Trait required to apply univariate function over homomorphic types.
 ///
 /// A `univariate function` is a function with one variable, e.g., of the form f(x).
