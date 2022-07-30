@@ -61,6 +61,36 @@ pub trait FheDecrypt<T> {
     fn decrypt(&self, key: &ClientKey) -> T;
 }
 
+/// Trait for fully homomorphic equality test.
+///
+/// The standard trait [std::cmp::PartialEq] can not be used
+/// has it requires to return a [bool].
+///
+/// This means that to compare ciphertext to another ciphertext or a scalar,
+/// for equality, one cannot use the standard operator `==` but rather, use
+/// the function directly.
+pub trait FheEq<Rhs = Self> {
+    type Output;
+
+    fn eq(&self, other: Rhs) -> Self::Output;
+}
+
+/// Trait for fully homomorphic comparisons.
+///
+/// The standard trait [std::cmp::PartialOrd] can not be used
+/// has it requires to return a [bool].
+///
+/// This means that to compare ciphertext to another ciphertext or a scalar,
+/// one cannot use the standard operators (`>`, `<`, etc) and must use
+/// the functions directly.
+pub trait FheOrd<Rhs = Self> {
+    type Output;
+
+    fn lt(&self, other: Rhs) -> Self::Output;
+    fn le(&self, other: Rhs) -> Self::Output;
+    fn gt(&self, other: Rhs) -> Self::Output;
+    fn ge(&self, other: Rhs) -> Self::Output;
+}
 /// Trait required to apply univariate function over homomorphic types.
 ///
 /// A `univariate function` is a function with one variable, e.g., of the form f(x).

@@ -283,65 +283,50 @@ where
     pub(crate) fn smart_scalar_equal(
         &self,
         lhs: &GenericShortInt<P>,
-        scalar: u8
+        scalar: u8,
     ) -> GenericShortInt<P> {
         self.key
-            .smart_scalar_equal(
-                &mut lhs.ciphertext.borrow_mut(),
-                scalar
-            )
+            .smart_scalar_equal(&lhs.ciphertext.borrow(), scalar)
             .into()
     }
 
     pub(crate) fn smart_scalar_greater_or_equal(
         &self,
         lhs: &GenericShortInt<P>,
-        scalar: u8
+        scalar: u8,
     ) -> GenericShortInt<P> {
         self.key
-            .smart_scalar_greater_or_equal(
-                &mut lhs.ciphertext.borrow_mut(),
-                scalar
-            )
+            .smart_scalar_greater_or_equal(&lhs.ciphertext.borrow(), scalar)
             .into()
     }
 
     pub(crate) fn smart_scalar_less_or_equal(
         &self,
         lhs: &GenericShortInt<P>,
-        scalar: u8
+        scalar: u8,
     ) -> GenericShortInt<P> {
         self.key
-            .smart_scalar_less_or_equal(
-                &mut lhs.ciphertext.borrow_mut(),
-                scalar
-            )
+            .smart_scalar_less_or_equal(&lhs.ciphertext.borrow(), scalar)
             .into()
     }
 
     pub(crate) fn smart_scalar_greater(
         &self,
         lhs: &GenericShortInt<P>,
-        scalar: u8
+        scalar: u8,
     ) -> GenericShortInt<P> {
         self.key
-            .smart_scalar_greater(
-                &mut lhs.ciphertext.borrow_mut(),
-                scalar
-            )
+            .smart_scalar_greater(&lhs.ciphertext.borrow(), scalar)
             .into()
     }
 
     pub(crate) fn smart_scalar_less(
         &self,
         lhs: &GenericShortInt<P>,
-        scalar: u8
+        scalar: u8,
     ) -> GenericShortInt<P> {
         self.key
-            .smart_scalar_less(
-                &mut lhs.ciphertext.borrow_mut(),
-                scalar
-            )
+            .smart_scalar_less(&lhs.ciphertext.borrow(), scalar)
             .into()
     }
 
@@ -430,6 +415,7 @@ where
 
             u64::from(func(lhs, rhs))
         };
+
         self.key
             .unchecked_functional_bivariate_pbs(
                 &lhs_ct.ciphertext.borrow(),

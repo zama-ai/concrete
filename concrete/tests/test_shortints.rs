@@ -29,7 +29,6 @@ fn test_uint2() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
 #[test]
 fn test_scalar_comparison_fhe_uint_3() -> Result<(), Box<dyn std::error::Error>> {
     let config = ConfigBuilder::all_disabled().enable_default_uint3().build();
@@ -38,25 +37,48 @@ fn test_scalar_comparison_fhe_uint_3() -> Result<(), Box<dyn std::error::Error>>
 
     let a = FheUint3::try_encrypt(2, &keys)?;
 
-    let mut  b = a.scalar_eq(2);
+    let mut b = a.eq(2);
     let decrypted = b.decrypt(&keys);
     assert_eq!(decrypted, 1);
 
-    b = a.scalar_ge(2);
+    b = a.ge(2);
     let decrypted = b.decrypt(&keys);
     assert_eq!(decrypted, 1);
 
-    b = a.scalar_gt(2);
+    b = a.gt(2);
     let decrypted = b.decrypt(&keys);
     assert_eq!(decrypted, 0);
 
-    b = a.scalar_le(2);
+    b = a.le(2);
     let decrypted = b.decrypt(&keys);
     assert_eq!(decrypted, 1);
 
-    b = a.scalar_lt(2);
+    b = a.lt(2);
     let decrypted = b.decrypt(&keys);
     assert_eq!(decrypted, 0);
+
+    Ok(())
+}
+
+#[test]
+fn test_sum_uint_3_vec() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ConfigBuilder::all_disabled().enable_default_uint3().build();
+    let (keys, server_keys) = generate_keys(config);
+    set_server_key(server_keys);
+
+    let data = vec![
+        FheUint3::try_encrypt(2, &keys)?,
+        FheUint3::try_encrypt(5, &keys)?,
+    ];
+
+    let result: FheUint3 = data.iter().sum();
+    let decrypted = result.decrypt(&keys);
+    assert_eq!(decrypted, 2 + 5);
+
+    let slc = &[&data[0], &data[1]];
+    let result: FheUint3 = slc.iter().map(|n| *n).sum();
+    let decrypted = result.decrypt(&keys);
+    assert_eq!(decrypted, 2 + 5);
 
     Ok(())
 }

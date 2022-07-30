@@ -14,6 +14,7 @@ use crate::errors::OutOfRangeError;
 use crate::global_state::WithGlobalKey;
 use crate::keys::{ClientKey, RefKeyFromKeyChain};
 use crate::traits::{FheBootstrap, FheDecrypt, FheNumberConstant, FheTryEncrypt};
+use crate::prelude::{FheEq, FheOrd};
 
 use super::client_key::ShortIntegerClientKey;
 use super::server_key::ShortIntegerServerKey;
@@ -127,36 +128,6 @@ where
     P: ShortIntegerParameter,
     ShortIntegerServerKey<P>: WithGlobalKey,
 {
-    pub fn lt(&self, other: &Self) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_less(self, other)
-        })
-    }
-
-    pub fn le(&self, other: &Self) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_less_or_equal(self, other)
-        })
-    }
-
-    pub fn gt(&self, other: &Self) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_greater(self, other)
-        })
-    }
-
-    pub fn ge(&self, other: &Self) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_greater_or_equal(self, other)
-        })
-    }
-
-    pub fn eq(&self, other: &Self) -> Self {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_equal(self, other)
-        })
-    }
-
     pub fn bivariate_pbs<F>(&self, other: &Self, func: F) -> Self
     where
         F: Fn(u8, u8) -> u8,
@@ -167,45 +138,96 @@ where
     }
 }
 
-
-impl<P> GenericShortInt<P>
-    where
-        P: ShortIntegerParameter,
-        ShortIntegerServerKey<P>: WithGlobalKey,
+impl<P> FheOrd<u8> for GenericShortInt<P>
+where
+    P: ShortIntegerParameter,
+    ShortIntegerServerKey<P>: WithGlobalKey,
 {
+    type Output = Self;
 
-    pub fn scalar_ge(&self, rhs: u8) -> Self
-    {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_greater_or_equal(self, rhs)
-        })
-    }
-
-    pub fn scalar_gt(&self, rhs: u8) -> Self
-    {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_greater(self, rhs)
-        })
-    }
-
-    pub fn scalar_le(&self, rhs: u8) -> Self
-    {
-        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
-            server_key.smart_scalar_less_or_equal(self, rhs)
-        })
-    }
-
-    pub fn scalar_lt(&self, rhs: u8) -> Self
-    {
+    fn lt(&self, rhs: u8) -> Self {
         ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
             server_key.smart_scalar_less(self, rhs)
         })
     }
 
-    pub fn scalar_eq(&self, rhs: u8) -> Self
-    {
+    fn le(&self, rhs: u8) -> Self {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_less_or_equal(self, rhs)
+        })
+    }
+
+    fn gt(&self, rhs: u8) -> Self {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_greater(self, rhs)
+        })
+    }
+
+    fn ge(&self, rhs: u8) -> Self {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_scalar_greater_or_equal(self, rhs)
+        })
+    }
+}
+
+impl<P> FheEq<u8> for GenericShortInt<P>
+where
+    P: ShortIntegerParameter,
+    ShortIntegerServerKey<P>: WithGlobalKey,
+{
+    type Output = Self;
+
+    fn eq(&self, rhs: u8) -> Self::Output {
         ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
             server_key.smart_scalar_equal(self, rhs)
+        })
+    }
+}
+
+impl<P, B> FheOrd<B> for GenericShortInt<P>
+where
+    B: Borrow<Self>,
+    P: ShortIntegerParameter,
+    ShortIntegerServerKey<P>: WithGlobalKey,
+{
+    type Output = Self;
+
+    fn lt(&self, other: B) -> Self::Output {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_less(self, other.borrow())
+        })
+    }
+
+    fn le(&self, other: B) -> Self::Output {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_less_or_equal(self, other.borrow())
+        })
+    }
+
+    fn gt(&self, other: B) -> Self::Output {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_greater(self, other.borrow())
+        })
+    }
+
+    fn ge(&self, other: B) -> Self::Output {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_greater_or_equal(self, other.borrow())
+        })
+    }
+}
+
+impl<P, B> FheEq<B> for GenericShortInt<P>
+where
+    B: Borrow<Self>,
+    P: ShortIntegerParameter,
+    ShortIntegerServerKey<P>: WithGlobalKey,
+{
+    type Output = Self;
+
+    fn eq(&self, other: B) -> Self {
+        ShortIntegerServerKey::<P>::with_unwrapped_global_mut(|server_key| {
+            server_key.smart_equal(self, other.borrow())
         })
     }
 }
