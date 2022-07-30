@@ -329,6 +329,38 @@ where
         }
     }
 }
+
+impl<P, B> std::iter::Sum<B> for GenericShortInt<P>
+where
+    B: Borrow<Self>,
+    P: ShortIntegerParameter,
+    ShortIntegerServerKey<P>: WithGlobalKey,
+    Self: FheTryTrivialEncrypt<u8> + AddAssign<B>,
+{
+    fn sum<I: Iterator<Item = B>>(iter: I) -> Self {
+        let mut sum = Self::try_encrypt_trivial(0u8).expect("Failed to trivially encrypt zero");
+        for item in iter {
+            sum += item;
+        }
+        sum
+    }
+}
+
+impl<P, B> std::iter::Product<B> for GenericShortInt<P>
+where
+    P: ShortIntegerParameter,
+    ShortIntegerServerKey<P>: WithGlobalKey,
+    Self: FheTryTrivialEncrypt<u8> + MulAssign<B>,
+{
+    fn product<I: Iterator<Item = B>>(iter: I) -> Self {
+        let mut product = Self::try_encrypt_trivial(1u8).expect("Failed to trivially encrypt one");
+        for item in iter {
+            product *= item;
+        }
+        product
+    }
+}
+
 impl<P> FheDecrypt<u8> for GenericShortInt<P>
 where
     P: ShortIntegerParameter,

@@ -66,19 +66,62 @@ fn test_sum_uint_3_vec() -> Result<(), Box<dyn std::error::Error>> {
     let (keys, server_keys) = generate_keys(config);
     set_server_key(server_keys);
 
-    let data = vec![
-        FheUint3::try_encrypt(2, &keys)?,
-        FheUint3::try_encrypt(5, &keys)?,
-    ];
+    let clear_vec = vec![2, 5];
+    let expected = clear_vec.iter().copied().sum();
 
-    let result: FheUint3 = data.iter().sum();
-    let decrypted = result.decrypt(&keys);
-    assert_eq!(decrypted, 2 + 5);
+    let fhe_vec: Vec<FheUint3> = clear_vec
+        .iter()
+        .copied()
+        .map(|v| FheUint3::try_encrypt(v, &keys).unwrap())
+        .collect();
 
-    let slc = &[&data[0], &data[1]];
-    let result: FheUint3 = slc.iter().map(|n| *n).sum();
+    let result: FheUint3 = fhe_vec.iter().sum();
     let decrypted = result.decrypt(&keys);
-    assert_eq!(decrypted, 2 + 5);
+    assert_eq!(decrypted, expected);
+
+    let slc = &[&fhe_vec[0], &fhe_vec[1]];
+    let result: FheUint3 = slc.iter().copied().sum();
+    let decrypted = result.decrypt(&keys);
+    assert_eq!(decrypted, expected);
+
+    let empty_res: u8 = Vec::<FheUint3>::new()
+        .into_iter()
+        .sum::<FheUint3>()
+        .decrypt(&keys);
+    assert_eq!(empty_res, Vec::<u8>::new().into_iter().sum::<u8>());
+
+    Ok(())
+}
+
+#[test]
+fn test_product_uint_4_vec() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ConfigBuilder::all_disabled().enable_default_uint4().build();
+    let (keys, server_keys) = generate_keys(config);
+    set_server_key(server_keys);
+
+    let clear_vec = vec![2, 5];
+    let expected = clear_vec.iter().copied().product();
+
+    let fhe_vec: Vec<FheUint4> = clear_vec
+        .iter()
+        .copied()
+        .map(|v| FheUint4::try_encrypt(v, &keys).unwrap())
+        .collect();
+
+    let result: FheUint4 = fhe_vec.iter().product();
+    let decrypted = result.decrypt(&keys);
+    assert_eq!(decrypted, expected);
+
+    let slc = &[&fhe_vec[0], &fhe_vec[1]];
+    let result: FheUint4 = slc.iter().copied().product();
+    let decrypted = result.decrypt(&keys);
+    assert_eq!(decrypted, expected);
+
+    let empty_res: u8 = Vec::<FheUint4>::new()
+        .into_iter()
+        .product::<FheUint4>()
+        .decrypt(&keys);
+    assert_eq!(empty_res, Vec::<u8>::new().into_iter().product::<u8>());
 
     Ok(())
 }
