@@ -134,8 +134,9 @@ impl Default for Keycache {
 }
 
 impl Keycache {
-    pub fn get_from_param(&self, param: Parameters) -> (ClientKey, ServerKey) {
-        self.inner.get(param)
+    pub fn get_from_param(&self, param: Parameters) -> (&'static ClientKey, &'static ServerKey) {
+        let &(ref cks, ref sks) = self.inner.get(param);
+        (cks, sks)
     }
 }
 
@@ -161,7 +162,10 @@ impl Default for KeycacheWopbsV0 {
 }
 
 impl KeycacheWopbsV0 {
-    pub fn get_from_param(&self, param: Parameters) -> (ClientKey, ServerKey, WopbsKey) {
+    pub fn get_from_param(
+        &self,
+        param: Parameters,
+    ) -> (&'static ClientKey, &'static ServerKey, &'static WopbsKey) {
         let (cks, sks) = KEY_CACHE.get_from_param(param);
         let wk = self.inner.get(param);
         (cks, sks, wk)
