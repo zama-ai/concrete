@@ -449,18 +449,19 @@ fn radmodint_wopbs(c: &mut Criterion) {
             1 << carry_space,
         );
         //let (mut cks, mut sks) = KEY_CACHE.get_from_params(param);
-        let (cks, sks, wopbs_shortint) = KEY_CACHE_WOPBS.get_from_param(param);
+        let keys = KEY_CACHE_WOPBS.get_from_param(param);
+        let (cks, sks, wopbs_shortint) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
         println!("Chosen Parameter Set: {:?}", param);
 
         let cks = concrete_integer::client_key::ClientKey::from_shortint(
-            cks,
+            cks.clone(),
             VecLength(rad_decomp.block_number),
         );
 
-        let sks = concrete_integer::server_key::ServerKey::from_shortint(&cks, sks);
+        let sks = concrete_integer::server_key::ServerKey::from_shortint(&cks, sks.clone());
 
-        let wopbs = concrete_integer::wopbs::WopbsKeyV0::new_from_shortint(&wopbs_shortint);
+        let wopbs = concrete_integer::wopbs::WopbsKeyV0::new_from_shortint(wopbs_shortint);
         let mut rng = rand::thread_rng();
 
         let delta = 63 - f64::log2((param.message_modulus.0 * param.carry_modulus.0) as f64) as u64;

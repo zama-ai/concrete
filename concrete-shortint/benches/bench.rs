@@ -25,7 +25,8 @@ where
     let mut bench_group = c.benchmark_group(bench_name);
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_param(param);
+        let keys = KEY_CACHE.get_from_param(param);
+        let (cks, sks) = (keys.client_key(), keys.server_key());
 
         let mut rng = rand::thread_rng();
 
@@ -40,7 +41,7 @@ where
         let bench_id = format!("{}::{}", bench_name, param_name);
         bench_group.bench_function(&bench_id, |b| {
             b.iter(|| {
-                binary_op(&sks, &mut ct_0, &mut ct_1);
+                binary_op(sks, &mut ct_0, &mut ct_1);
             })
         });
     }
@@ -55,7 +56,8 @@ where
     let mut bench_group = c.benchmark_group(bench_name);
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_param(param);
+        let keys = KEY_CACHE.get_from_param(param);
+        let (cks, sks) = (keys.client_key(), keys.server_key());
 
         let mut rng = rand::thread_rng();
 
@@ -69,7 +71,7 @@ where
         let bench_id = format!("{}::{}", bench_name, param_name);
         bench_group.bench_function(&bench_id, |b| {
             b.iter(|| {
-                binary_op(&sks, &mut ct_0, clear_1 as u8);
+                binary_op(sks, &mut ct_0, clear_1 as u8);
             })
         });
     }
@@ -81,7 +83,8 @@ fn carry_extract(c: &mut Criterion) {
     let mut bench_group = c.benchmark_group("carry_extract");
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_param(param);
+        let keys = KEY_CACHE.get_from_param(param);
+        let (cks, sks) = (keys.client_key(), keys.server_key());
 
         let mut rng = rand::thread_rng();
 
@@ -106,7 +109,8 @@ fn programmable_bootstrapping(c: &mut Criterion) {
     let mut bench_group = c.benchmark_group("programmable_bootstrap");
 
     for (param_name, param) in SERVER_KEY_BENCH_PARAMS {
-        let (cks, sks) = KEY_CACHE.get_from_param(param);
+        let keys = KEY_CACHE.get_from_param(param);
+        let (cks, sks) = (keys.client_key(), keys.server_key());
 
         let mut rng = rand::thread_rng();
 

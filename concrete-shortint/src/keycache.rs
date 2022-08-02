@@ -3,7 +3,9 @@ use crate::parameters::parameters_wopbs_message_carry::*;
 use crate::parameters::*;
 use crate::wopbs::WopbsKey;
 use crate::{ClientKey, ServerKey};
-use concrete_utils::keycache::{FileStorage, KeyCache as TKeyCache, NamedParam};
+use concrete_utils::keycache::{
+    FileStorage, KeyCache as TKeyCache, NamedParam, SharedKey as GenericSharedKey,
+};
 use concrete_utils::named_params_impl;
 use lazy_static::*;
 
@@ -133,9 +135,41 @@ impl Default for Keycache {
     }
 }
 
+pub struct SharedKey {
+    inner: GenericSharedKey<(ClientKey, ServerKey)>,
+}
+
+pub struct SharedWopbsKey {
+    inner: GenericSharedKey<(ClientKey, ServerKey)>,
+    wopbs: GenericSharedKey<WopbsKey>,
+}
+
+impl SharedKey {
+    pub fn client_key(&self) -> &ClientKey {
+        &self.inner.0
+    }
+    pub fn server_key(&self) -> &ServerKey {
+        &self.inner.1
+    }
+}
+
+impl SharedWopbsKey {
+    pub fn client_key(&self) -> &ClientKey {
+        &self.inner.0
+    }
+    pub fn server_key(&self) -> &ServerKey {
+        &self.inner.1
+    }
+    pub fn wopbs_key(&self) -> &WopbsKey {
+        &*self.wopbs
+    }
+}
+
 impl Keycache {
-    pub fn get_from_param(&self, param: Parameters) -> (ClientKey, ServerKey) {
-        self.inner.get(param)
+    pub fn get_from_param(&self, param: Parameters) -> SharedKey {
+        SharedKey {
+            inner: self.inner.get(param),
+        }
     }
 }
 
@@ -144,7 +178,7 @@ impl From<Parameters> for WopbsKey {
         // use with_key to avoid doing a temporary cloning
         KEY_CACHE
             .inner
-            .with_key(param, |(cks, sks)| WopbsKey::new_wopbs_key(cks, sks))
+            .with_key(param, |keys| WopbsKey::new_wopbs_key(&keys.0, &keys.1))
     }
 }
 
@@ -161,10 +195,13 @@ impl Default for KeycacheWopbsV0 {
 }
 
 impl KeycacheWopbsV0 {
-    pub fn get_from_param(&self, param: Parameters) -> (ClientKey, ServerKey, WopbsKey) {
-        let (cks, sks) = KEY_CACHE.get_from_param(param);
+    pub fn get_from_param(&self, param: Parameters) -> SharedWopbsKey {
+        let key = KEY_CACHE.get_from_param(param);
         let wk = self.inner.get(param);
-        (cks, sks, wk)
+        SharedWopbsKey {
+            inner: key.inner,
+            wopbs: wk,
+        }
     }
 }
 

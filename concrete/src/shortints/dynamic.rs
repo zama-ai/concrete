@@ -72,7 +72,7 @@ pub struct DynShortIntEncryptor {
 impl DynShortIntClientKey {
     pub(crate) fn new(parameters: DynShortIntParameters) -> Self {
         #[cfg(feature = "internal-keycache")]
-        let key = KEY_CACHE.get_from_param(parameters).0;
+        let key = KEY_CACHE.get_from_param(parameters).client_key().clone();
         #[cfg(not(feature = "internal-keycache"))]
         let key = ShortintClientKey::new(parameters);
 
@@ -155,7 +155,10 @@ impl From<ShortIntTypeId> for DynShortIntEncryptor {
 impl DynShortIntServerKey {
     pub(crate) fn new(client_key: &DynShortIntClientKey) -> Self {
         #[cfg(feature = "internal-keycache")]
-        let key = KEY_CACHE.get_from_param(client_key.key.parameters).1;
+        let key = KEY_CACHE
+            .get_from_param(client_key.key.parameters)
+            .server_key()
+            .clone();
         #[cfg(not(feature = "internal-keycache"))]
         let key = ServerKey::new(&client_key.key);
         Self { key }

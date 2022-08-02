@@ -26,7 +26,10 @@ where
 {
     pub(in crate::shortints) fn new(parameters: P) -> Self {
         #[cfg(feature = "internal-keycache")]
-        let key = KEY_CACHE.get_from_param(parameters.into()).0;
+        let key = KEY_CACHE
+            .get_from_param(parameters.into())
+            .client_key()
+            .clone();
         #[cfg(not(feature = "internal-keycache"))]
         let key = ClientKey::new(parameters.into());
 

@@ -28,7 +28,10 @@ where
 {
     pub(crate) fn new(client_key: &ShortIntegerClientKey<P>) -> Self {
         #[cfg(feature = "internal-keycache")]
-        let key = KEY_CACHE.get_from_param(client_key.key.parameters).1;
+        let key = KEY_CACHE
+            .get_from_param(client_key.key.parameters)
+            .server_key()
+            .clone();
         #[cfg(not(feature = "internal-keycache"))]
         let key = ServerKey::new(&client_key.key);
 

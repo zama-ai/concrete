@@ -95,7 +95,8 @@ create_parametrized_test!(wopbs_v0);
 create_parametrized_test!(wopbs_v0_norm2);
 
 fn wopbs_v0(param: Parameters) {
-    let (cks, sks, wopbs_key) = KEY_CACHE_WOPBS.get_from_param(param);
+    let keys = KEY_CACHE_WOPBS.get_from_param(param);
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
     let mut rng = rand::thread_rng();
 
@@ -114,14 +115,15 @@ fn wopbs_v0(param: Parameters) {
             );
         }
         let lut_res = lut.clone();
-        let ct_res = wopbs_key.circuit_bootstrap_vertical_packing(&sks, &mut ct, &[lut; 1]);
+        let ct_res = wopbs_key.circuit_bootstrap_vertical_packing(sks, &mut ct, &[lut; 1]);
         let res = cks.decrypt_message_and_carry(&ct_res[0]);
         assert_eq!(res, lut_res[clear] / (1 << delta));
     }
 }
 
 fn wopbs_v0_norm2(param: Parameters) {
-    let (cks, sks, wopbs_key) = KEY_CACHE_WOPBS.get_from_param(param);
+    let keys = KEY_CACHE_WOPBS.get_from_param(param);
+    let (cks, sks, wopbs_key) = (keys.client_key(), keys.server_key(), keys.wopbs_key());
 
     let mut rng = rand::thread_rng();
 
@@ -142,7 +144,7 @@ fn wopbs_v0_norm2(param: Parameters) {
         let lut_res = lut.clone();
         let vec_lut = vec![lut; 1];
         let ct_res =
-            wopbs_key.circuit_bootstrap_vertical_packing_without_padding(&sks, &mut ct, &vec_lut);
+            wopbs_key.circuit_bootstrap_vertical_packing_without_padding(sks, &mut ct, &vec_lut);
         let res = cks.decrypt_message_and_carry_without_padding(&ct_res[0]);
         assert_eq!(res, lut_res[clear] / (1 << delta));
     }
