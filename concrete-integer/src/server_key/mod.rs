@@ -5,6 +5,7 @@
 mod add;
 mod bitwise_op;
 mod crt;
+mod crt_parallel;
 mod mul;
 mod neg;
 mod scalar_add;

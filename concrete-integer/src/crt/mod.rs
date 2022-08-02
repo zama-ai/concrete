@@ -341,7 +341,7 @@ impl CRTVecServerKey {
     /// let mut ctxt_2 = cks.encrypt_crt_several_keys(&clear_2, &basis, &keys_id);
     ///
     /// // Compute homomorphically a multiplication
-    /// sks.unchecked_add_crt_many_keys_assign_parallelized(&mut ctxt_1, &mut ctxt_2);
+    /// sks.unchecked_add_crt_many_keys_assign(&mut ctxt_1, &mut ctxt_2);
     /// // Decrypt
     /// let res = cks.decrypt_crt_several_keys(&ctxt_1);
     /// assert_eq!((clear_1 + clear_2) % 30, res);
@@ -363,7 +363,9 @@ impl CRTVecServerKey {
 
     /// Computes an homomorphic addition.
     ///
-    /// # Warning Multithreaded
+    /// # Warning
+    ///
+    /// Multithreaded
     ///
     /// # Example
     ///
@@ -450,6 +452,56 @@ impl CRTVecServerKey {
         }
     }
 
+    /// Computes an homomorphic multiplication.
+    ///
+    /// # Warning
+    ///
+    /// Multithreaded
+    ///
+    /// # Example
+    ///
+    ///```rust
+    /// use concrete_integer::crt::{gen_key_id, gen_several_keys};
+    /// use concrete_shortint::parameters::{
+    ///     PARAM_MESSAGE_1_CARRY_1, PARAM_MESSAGE_2_CARRY_2, PARAM_MESSAGE_3_CARRY_3,
+    /// };
+    ///
+    /// // Generate the client key and the server key:
+    /// let (cks, sks) = gen_several_keys(&vec![
+    ///     PARAM_MESSAGE_1_CARRY_1,
+    ///     PARAM_MESSAGE_2_CARRY_2,
+    ///     PARAM_MESSAGE_3_CARRY_3,
+    /// ]);
+    ///
+    /// let clear_1 = 13;
+    /// let clear_2 = 11;
+    /// let basis = vec![2, 3, 5];
+    /// let keys_id = gen_key_id(&vec![0, 1, 2]);
+    /// // Encrypt two messages
+    /// let mut ctxt_1 = cks.encrypt_crt_several_keys(&clear_1, &basis, &keys_id);
+    /// let mut ctxt_2 = cks.encrypt_crt_several_keys(&clear_2, &basis, &keys_id);
+    ///
+    /// // Compute homomorphically a multiplication
+    /// sks.unchecked_mul_crt_many_keys_assign_parallelized(&mut ctxt_1, &mut ctxt_2);
+    /// // Decrypt
+    /// let res = cks.decrypt_crt_several_keys(&ctxt_1);
+    /// assert_eq!((clear_1 * clear_2) % 30, res);
+    /// ```
+    pub fn unchecked_mul_crt_many_keys_assign_parallelized(
+        &self,
+        ct_left: &mut Ciphertext,
+        ct_right: &mut Ciphertext,
+    ) {
+        ct_left
+            .ct_vec
+            .par_iter_mut()
+            .zip(ct_right.ct_vec.par_iter_mut())
+            .zip(ct_left.key_id_vec.par_iter())
+            .for_each(|((block_left, block_right), id)| {
+                self.key[id.0].unchecked_mul_lsb_assign(block_left, block_right);
+            });
+    }
+
     /// Computes an homomorphic evaluation of an CRT-compliant univariate function.
     ///
     /// # Warning The function has to be CRT-compliant.
@@ -487,11 +539,72 @@ impl CRTVecServerKey {
     where
         F: Fn(u64) -> u64,
     {
-        let basis = ct.message_modulus_vec.clone();
-        let keys_id = ct.key_id_vec.clone();
+        let basis = &ct.message_modulus_vec;
+        let keys_id = &ct.key_id_vec;
         for ((block, key_id), basis) in ct.ct_vec.iter_mut().zip(keys_id.iter()).zip(basis.iter()) {
             let acc = self.key[key_id.0].generate_accumulator(|x| f(x) % basis);
             self.key[key_id.0].keyswitch_programmable_bootstrap_assign(block, &acc);
         }
+    }
+
+    /// Computes an homomorphic evaluation of an CRT-compliant univariate function.
+    ///
+    /// # Warning
+    ///
+    /// - Multithreaded
+    /// - The function has to be CRT-compliant.
+    ///
+    /// # Example
+    ///
+    ///```rust
+    /// use concrete_integer::crt::{gen_key_id, gen_several_keys};
+    /// use concrete_shortint::parameters::{
+    ///     PARAM_MESSAGE_1_CARRY_1, PARAM_MESSAGE_2_CARRY_2, PARAM_MESSAGE_3_CARRY_3,
+    /// };
+    ///
+    /// // Generate the client key and the server key:
+    /// let (cks, sks) = gen_several_keys(&vec![
+    ///     PARAM_MESSAGE_1_CARRY_1,
+    ///     PARAM_MESSAGE_2_CARRY_2,
+    ///     PARAM_MESSAGE_3_CARRY_3,
+    /// ]);
+    ///
+    /// let clear_1 = 14;
+    /// let clear_2 = 11;
+    /// let basis = vec![2, 3, 5];
+    /// let keys_id = gen_key_id(&vec![0, 1, 2]);
+    /// // Encrypt two messages
+    /// let mut ctxt_1 = cks.encrypt_crt_several_keys(&clear_1, &basis, &keys_id);
+    /// let mut ctxt_2 = cks.encrypt_crt_several_keys(&clear_2, &basis, &keys_id);
+    ///
+    /// // Compute homomorphically a multiplication
+    /// sks.arithmetic_function_crt_many_keys_assign_parallelized(&mut ctxt_1, |x| x * x);
+    /// // Decrypt
+    /// let res = cks.decrypt_crt_several_keys(&ctxt_1);
+    /// assert_eq!((clear_1 * clear_1) % 30, res);
+    /// ```
+    pub fn arithmetic_function_crt_many_keys_assign_parallelized<F>(
+        &self,
+        ct: &mut Ciphertext,
+        f: F,
+    ) where
+        F: Fn(u64) -> u64,
+    {
+        let basis = &ct.message_modulus_vec;
+        let keys_id = &ct.key_id_vec;
+
+        let accumulators = keys_id
+            .iter()
+            .zip(basis.iter())
+            .map(|(key_id, basis)| self.key[key_id.0].generate_accumulator(|x| f(x) % basis))
+            .collect::<Vec<_>>();
+
+        ct.ct_vec
+            .par_iter_mut()
+            .zip(keys_id)
+            .zip(&accumulators)
+            .for_each(|((block, key_id), acc)| {
+                self.key[key_id.0].keyswitch_programmable_bootstrap_assign(block, acc);
+            });
     }
 }

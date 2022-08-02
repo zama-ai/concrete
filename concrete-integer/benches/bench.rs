@@ -19,6 +19,9 @@ criterion_group!(
     radmodint_unchecked_mul,
     radmodint_unchecked_mul_many_sizes,
     crt_unchecked_mul_many_sizes,
+    crt_unchecked_mul_many_sizes_parallelized,
+    crt_arithmetic_many_sizes,
+    crt_arithmetic_many_sizes_parallelized,
     crt,
     two_block_pbs,
     two_block_pbs,
@@ -334,7 +337,7 @@ fn crt(c: &mut Criterion) {
             sks.smart_mul_crt_assign(&mut ctxt_1, &mut ctxt_2);
         })
     });
-    c.bench_function("CRT : Smart_Add", |b| {
+    c.bench_function("CRT: Smart_Add", |b| {
         b.iter(|| {
             sks.smart_add_assign(&mut ctxt_1, &mut ctxt_2);
         })
@@ -920,7 +923,12 @@ fn concrete_integer_unchecked_clean_carry_crt_32_bits(c: &mut Criterion) {
     });
 }
 
-fn crt_unchecked_mul_many_sizes(c: &mut Criterion) {
+fn crt_op_many_sizes_generic(
+    c: &mut Criterion,
+    op: &dyn Fn(&CRTVecServerKey, &mut Ciphertext, &mut Ciphertext),
+    prefix: &str,
+    suffix: &str,
+) {
     //Change the number of sample
     let mut group = c.benchmark_group("smaller-sample-count");
     group.sample_size(10);
@@ -986,15 +994,53 @@ fn crt_unchecked_mul_many_sizes(c: &mut Criterion) {
         msg_space, carry_basis, basis,
     );
     let id = format!(
-        "(Mul_Propagate_In_{}_Carry_{:?}_Message_{:?}):",
-        msg_space, carry_basis, basis,
+        "(CRT_{}_In_{}_Carry_{:?}_Message_{:?}_{}):",
+        prefix, msg_space, carry_basis, basis, suffix,
     );
 
     group.bench_function(&id, |b| {
         b.iter(|| {
-            sks.unchecked_mul_crt_many_keys_assign(&mut ctxt_1, &mut ctxt_2);
+            op(&sks, &mut ctxt_1, &mut ctxt_2);
         })
     });
+}
+
+fn crt_arithmetic_many_sizes(c: &mut Criterion) {
+    crt_op_many_sizes_generic(
+        c,
+        &|sks, ct1, _ct2| sks.arithmetic_function_crt_many_keys_assign(ct1, |x| x + x * x),
+        "Arithmetic",
+        "serial",
+    )
+}
+
+fn crt_arithmetic_many_sizes_parallelized(c: &mut Criterion) {
+    crt_op_many_sizes_generic(
+        c,
+        &|sks, ct1, _ct2| {
+            sks.arithmetic_function_crt_many_keys_assign_parallelized(ct1, |x| x + x * x)
+        },
+        "Arithmetic",
+        "parallelized",
+    )
+}
+
+fn crt_unchecked_mul_many_sizes(c: &mut Criterion) {
+    crt_op_many_sizes_generic(
+        c,
+        &CRTVecServerKey::unchecked_mul_crt_many_keys_assign,
+        "Mul",
+        "serial",
+    )
+}
+
+fn crt_unchecked_mul_many_sizes_parallelized(c: &mut Criterion) {
+    crt_op_many_sizes_generic(
+        c,
+        &CRTVecServerKey::unchecked_mul_crt_many_keys_assign_parallelized,
+        "Mul",
+        "parallelized",
+    )
 }
 
 fn two_block_pbs(c: &mut Criterion) {

@@ -1,5 +1,6 @@
 use crate::ciphertext::Ciphertext;
 use crate::ServerKey;
+use rayon::prelude::*;
 
 impl ServerKey {
     /// Computes homomorphically an addition between two ciphertexts encrypting integer
@@ -23,21 +24,33 @@ impl ServerKey {
     /// let ctxt_2 = cks.encrypt_crt(clear_2, basis);
     ///
     /// // Compute homomorphically a multiplication
-    /// sks.unchecked_add_crt_assign(&mut ctxt_1, &ctxt_2);
+    /// sks.unchecked_add_crt_assign_parallelized(&mut ctxt_1, &ctxt_2);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 + clear_2) % 30, res);
     /// ```
-    pub fn unchecked_add_crt_assign(&self, ct_left: &mut Ciphertext, ct_right: &Ciphertext) {
-        for (ct_left, ct_right) in ct_left.ct_vec.iter_mut().zip(ct_right.ct_vec.iter()) {
-            self.key.unchecked_add_assign(ct_left, ct_right);
-        }
+    pub fn unchecked_add_crt_assign_parallelized(
+        &self,
+        ct_left: &mut Ciphertext,
+        ct_right: &Ciphertext,
+    ) {
+        ct_left
+            .ct_vec
+            .par_iter_mut()
+            .zip(&ct_right.ct_vec)
+            .for_each(|(ct_left, ct_right)| {
+                self.key.unchecked_add_assign(ct_left, ct_right);
+            });
     }
 
-    pub fn unchecked_add_crt(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+    pub fn unchecked_add_crt_parallelized(
+        &self,
+        ct_left: &Ciphertext,
+        ct_right: &Ciphertext,
+    ) -> Ciphertext {
         let mut ct_res = ct_left.clone();
-        self.unchecked_add_crt_assign(&mut ct_res, ct_right);
+        self.unchecked_add_crt_assign_parallelized(&mut ct_res, ct_right);
         ct_res
     }
 
@@ -65,21 +78,33 @@ impl ServerKey {
     /// let mut ctxt_2 = cks.encrypt_crt(clear_2, basis);
     ///
     /// // Compute homomorphically a multiplication
-    /// sks.smart_add_crt_assign(&mut ctxt_1, &mut ctxt_2);
+    /// sks.smart_add_crt_assign_parallelized(&mut ctxt_1, &mut ctxt_2);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 + clear_2) % 30, res);
     /// ```
-    pub fn smart_add_crt_assign(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) {
-        for (block_left, block_right) in ct_left.ct_vec.iter_mut().zip(ct_right.ct_vec.iter_mut()) {
-            self.key.smart_add_assign(block_left, block_right);
-        }
+    pub fn smart_add_crt_assign_parallelized(
+        &self,
+        ct_left: &mut Ciphertext,
+        ct_right: &mut Ciphertext,
+    ) {
+        ct_left
+            .ct_vec
+            .par_iter_mut()
+            .zip(&mut ct_right.ct_vec)
+            .for_each(|(block_left, block_right)| {
+                self.key.smart_add_assign(block_left, block_right);
+            });
     }
 
-    pub fn smart_add_crt(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) -> Ciphertext {
+    pub fn smart_add_crt_parallelized(
+        &self,
+        ct_left: &mut Ciphertext,
+        ct_right: &mut Ciphertext,
+    ) -> Ciphertext {
         let mut ct_res = ct_left.clone();
-        self.smart_add_crt_assign(&mut ct_res, ct_right);
+        self.smart_add_crt_assign_parallelized(&mut ct_res, ct_right);
         ct_res
     }
 
@@ -104,20 +129,32 @@ impl ServerKey {
     /// let ctxt_2 = cks.encrypt_crt(clear_2, basis);
     ///
     /// // Compute homomorphically a multiplication
-    /// sks.unchecked_mul_crt_assign(&mut ctxt_1, &ctxt_2);
+    /// sks.unchecked_mul_crt_assign_parallelized(&mut ctxt_1, &ctxt_2);
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 * clear_2) % 30, res);
     /// ```
-    pub fn unchecked_mul_crt_assign(&self, ct_left: &mut Ciphertext, ct_right: &Ciphertext) {
-        for (ct_left, ct_right) in ct_left.ct_vec.iter_mut().zip(ct_right.ct_vec.iter()) {
-            self.key.unchecked_mul_lsb_assign(ct_left, ct_right);
-        }
+    pub fn unchecked_mul_crt_assign_parallelized(
+        &self,
+        ct_left: &mut Ciphertext,
+        ct_right: &Ciphertext,
+    ) {
+        ct_left
+            .ct_vec
+            .par_iter_mut()
+            .zip(&ct_right.ct_vec)
+            .for_each(|(ct_left, ct_right)| {
+                self.key.unchecked_mul_lsb_assign(ct_left, ct_right);
+            });
     }
 
-    pub fn unchecked_mul_crt(&self, ct_left: &Ciphertext, ct_right: &Ciphertext) -> Ciphertext {
+    pub fn unchecked_mul_crt_parallelized(
+        &self,
+        ct_left: &Ciphertext,
+        ct_right: &Ciphertext,
+    ) -> Ciphertext {
         let mut ct_res = ct_left.clone();
-        self.unchecked_mul_crt_assign(&mut ct_res, ct_right);
+        self.unchecked_mul_crt_assign_parallelized(&mut ct_res, ct_right);
         ct_res
     }
 
@@ -145,26 +182,39 @@ impl ServerKey {
     /// let mut ctxt_2 = cks.encrypt_crt(clear_2, basis);
     ///
     /// // Compute homomorphically a multiplication
-    /// sks.smart_mul_crt_assign(&mut ctxt_1, &mut ctxt_2);
+    /// sks.smart_mul_crt_assign_parallelized(&mut ctxt_1, &mut ctxt_2);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 * clear_2) % 30, res);
     /// ```
-    pub fn smart_mul_crt_assign(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) {
-        for (block_left, block_right) in ct_left.ct_vec.iter_mut().zip(ct_right.ct_vec.iter_mut()) {
-            self.key.smart_mul_lsb_assign(block_left, block_right);
-        }
+    pub fn smart_mul_crt_assign_parallelized(
+        &self,
+        ct_left: &mut Ciphertext,
+        ct_right: &mut Ciphertext,
+    ) {
+        ct_left
+            .ct_vec
+            .par_iter_mut()
+            .zip(&mut ct_right.ct_vec)
+            .for_each(|(block_left, block_right)| {
+                self.key.smart_mul_lsb_assign(block_left, block_right);
+            });
     }
-    pub fn smart_mul_crt(&self, ct_left: &mut Ciphertext, ct_right: &mut Ciphertext) -> Ciphertext {
+    pub fn smart_mul_crt_parallelized(
+        &self,
+        ct_left: &mut Ciphertext,
+        ct_right: &mut Ciphertext,
+    ) -> Ciphertext {
         let mut ct_res = ct_left.clone();
-        self.smart_mul_crt_assign(&mut ct_res, ct_right);
+        self.smart_mul_crt_assign_parallelized(&mut ct_res, ct_right);
         ct_res
     }
 
     /// Computes a PBS for CRT-compliant functions.
     ///
     /// # Warning
+    ///
     /// This allows to compute programmable bootstrapping over integers under the condition that
     /// the function is said to be CRT-compliant. This means that the function should be correct
     /// when evaluated on each modular block independently (e.g. arithmetic functions).
@@ -185,13 +235,13 @@ impl ServerKey {
     /// let mut ctxt_1 = cks.encrypt_crt(clear_1, basis);
     ///
     /// // Compute homomorphically the crt-compliant PBS
-    /// sks.pbs_crt_compliant_function_assign(&mut ctxt_1, |x| x * x * x);
+    /// sks.pbs_crt_compliant_function_assign_parallelized(&mut ctxt_1, |x| x * x * x);
     ///
     /// // Decrypt
     /// let res = cks.decrypt_crt(&ctxt_1);
     /// assert_eq!((clear_1 * clear_1 * clear_1) % 30, res);
     /// ```
-    pub fn pbs_crt_compliant_function_assign<F>(&self, ct1: &mut Ciphertext, f: F)
+    pub fn pbs_crt_compliant_function_assign_parallelized<F>(&self, ct1: &mut Ciphertext, f: F)
     where
         F: Fn(u64) -> u64,
     {
@@ -200,20 +250,27 @@ impl ServerKey {
         let accumulators = basis
             .iter()
             .copied()
-            .map(|b| self.key.generate_accumulator(|x| f(x) % b));
+            .map(|b| self.key.generate_accumulator(|x| f(x) % b))
+            .collect::<Vec<_>>();
 
-        for (block, acc) in ct1.ct_vec.iter_mut().zip(accumulators) {
-            self.key
-                .keyswitch_programmable_bootstrap_assign(block, &acc);
-        }
+        ct1.ct_vec
+            .par_iter_mut()
+            .zip(&accumulators)
+            .for_each(|(block, acc)| {
+                self.key.keyswitch_programmable_bootstrap_assign(block, acc);
+            });
     }
 
-    pub fn pbs_crt_compliant_function<F>(&self, ct1: &mut Ciphertext, f: F) -> Ciphertext
+    pub fn pbs_crt_compliant_function_parallelized<F>(
+        &self,
+        ct1: &mut Ciphertext,
+        f: F,
+    ) -> Ciphertext
     where
         F: Fn(u64) -> u64,
     {
         let mut ct_res = ct1.clone();
-        self.pbs_crt_compliant_function_assign(&mut ct_res, f);
+        self.pbs_crt_compliant_function_assign_parallelized(&mut ct_res, f);
         ct_res
     }
 }
