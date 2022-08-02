@@ -168,9 +168,7 @@ impl ShortintEngine {
 
         Ok(Ciphertext {
             ct,
-            degree: Degree(
-                client_key.parameters.message_modulus.0 + client_key.parameters.carry_modulus.0 - 1,
-            ),
+            degree: Degree(client_key.parameters.message_modulus.0 - 1),
             message_modulus: client_key.parameters.message_modulus,
             carry_modulus: client_key.parameters.carry_modulus,
         })
