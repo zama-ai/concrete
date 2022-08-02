@@ -81,13 +81,16 @@
 pub use config::{ConfigBuilder, Config};
 pub use global_state::set_server_key;
 pub use keys::{generate_keys, ClientKey, ServerKey};
+pub use errors::OutOfRangeError;
+
+#[cfg(feature = "serde")]
+pub use keycache::KeyCacher;
 
 #[cfg(feature = "booleans")]
 pub use crate::booleans::{DynFheBool, DynFheBoolEncryptor};
 
 #[cfg(feature = "booleans")]
 pub use booleans::{if_then_else, FheBool, FheBoolParameters};
-
 
 // GenericShortInt is exported only to produce better docs
 #[cfg(feature = "shortints")]
@@ -97,25 +100,26 @@ pub use crate::shortints::{
 };
 
 #[cfg(feature = "integers")]
-pub use crate::integers::{DynInteger, DynIntegerEncryptor, DynIntegerParameters};
-#[cfg(feature = "integers")]
-pub use crate::integers::{FheUint12, FheUint16, FheUint8, GenericInteger};
+pub use crate::integers::{
+    DynInteger, DynIntegerEncryptor, DynIntegerParameters,
+    FheUint8, FheUint12, FheUint16, GenericInteger,
+};
 
 #[cfg(feature = "shortints")]
 pub use crate::shortints::{DynShortInt, DynShortIntEncryptor, DynShortIntParameters};
 
-pub use errors::OutOfRangeError;
-
-mod config;
-pub mod errors;
 
 #[macro_use]
 mod global_state;
 #[macro_use]
 mod keys;
+mod config;
 mod traits;
 /// The concrete prelude.
 pub mod prelude;
+pub mod errors;
+#[cfg(feature = "serde")]
+mod keycache;
 #[cfg(feature = "booleans")]
 mod booleans;
 #[cfg(feature = "shortints")]
@@ -141,9 +145,9 @@ pub mod parameters {
 }
 
 #[cfg(all(
-    doctest,
-    feature = "integers",
-    feature = "shortints",
-    feature = "booleans"
+doctest,
+feature = "integers",
+feature = "shortints",
+feature = "booleans"
 ))]
 mod user_doc_tests;
