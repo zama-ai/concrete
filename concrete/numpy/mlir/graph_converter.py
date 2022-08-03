@@ -11,7 +11,7 @@ import concrete.lang as concretelang
 import networkx as nx
 import numpy as np
 from concrete.lang.dialects import fhe, fhelinalg
-from mlir.dialects import arith, builtin
+from mlir.dialects import arith, func
 from mlir.ir import (
     Context,
     DenseElementsAttr,
@@ -416,8 +416,11 @@ class GraphConverter:
                     (2**n,), IntegerType.get_signless(64, context=ctx)
                 )
                 lut_attr = DenseElementsAttr.get(lut_values, context=ctx)
+                # ConstantOp is being decorated, and the init function is supposed to take more
+                # arguments than those pylint is considering
+                # pylint: disable=too-many-function-args
                 lut = arith.ConstantOp(lut_type, lut_attr).result
-
+                # pylint: enable=too-many-function-args
                 resulting_type = NodeConverter.value_to_mlir_type(ctx, input_value)
                 if input_value.is_scalar:
                     sanitized = fhe.ApplyLookupTableEintOp(resulting_type, arg, lut).result
@@ -470,7 +473,7 @@ class GraphConverter:
                     for input_node in graph.ordered_inputs()
                 ]
 
-                @builtin.FuncOp.from_py_func(*parameters)
+                @func.FuncOp.from_py_func(*parameters)
                 def main(*args):
                     sanitized_args = GraphConverter._sanitize_signed_inputs(graph, args, ctx)
 

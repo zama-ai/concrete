@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 from concrete.lang.dialects import fhe, fhelinalg
 from concrete.lang.dialects.fhe import EncryptedIntegerType
-from mlir.dialects import arith, linalg, tensor
+from mlir.dialects import arith, tensor
 from mlir.ir import (
     ArrayAttr,
     Attribute,
@@ -311,14 +311,16 @@ class NodeConverter:
         if self.node.output.shape == (number_of_values,):
             return placeholder_result
 
-        index_type = IndexType.parse("index")
-        return linalg.TensorExpandShapeOp(
+        return tensor.ExpandShapeOp(
             resulting_type,
             placeholder_result,
             ArrayAttr.get(
                 [
                     ArrayAttr.get(
-                        [IntegerAttr.get(index_type, i) for i in range(len(self.node.output.shape))]
+                        [
+                            IntegerAttr.get(IntegerType.get_signless(64), i)
+                            for i in range(len(self.node.output.shape))
+                        ]
                     )
                 ]
             ),
@@ -342,7 +344,7 @@ class NodeConverter:
             return fhelinalg.ConcatOp(
                 resulting_type,
                 self.preds,
-                IntegerAttr.get(IntegerType.get_signless(64), axis),
+                axis=IntegerAttr.get(IntegerType.get_signless(64), axis),
             ).result
 
         flattened_preds = []
@@ -357,14 +359,14 @@ class NodeConverter:
                     Value(input_value.dtype, shape=(), is_encrypted=input_value.is_encrypted),
                 ),
             )
-            flattened_pred = linalg.TensorCollapseShapeOp(
+            flattened_pred = tensor.CollapseShapeOp(
                 flattened_pred_type,
                 pred,
                 ArrayAttr.get(
                     [
                         ArrayAttr.get(
                             [
-                                IntegerAttr.get(IndexType.parse("index"), i)
+                                IntegerAttr.get(IntegerType.get_signless(64), i)
                                 for i in range(len(input_shape))
                             ]
                         )
@@ -376,7 +378,7 @@ class NodeConverter:
         return fhelinalg.ConcatOp(
             resulting_type,
             flattened_preds,
-            IntegerAttr.get(IntegerType.get_signless(64), 0),
+            axis=IntegerAttr.get(IntegerType.get_signless(64), 0),
         ).result
 
     def _convert_constant(self) -> OpResult:
@@ -428,7 +430,6 @@ class NodeConverter:
         """
 
         resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
-        preds = self.preds
 
         integer_type = IntegerType.get_signless(64, context=self.ctx)
 
@@ -449,10 +450,15 @@ class NodeConverter:
         )
 
         has_bias = len(self.node.inputs) == 3
-        if not has_bias:
-            preds.append(None)
-
-        return fhelinalg.Conv2dOp(resulting_type, *preds, pads, strides, dilations).result
+        if has_bias:
+            bias = self.preds[2]
+        else:
+            bias = None
+        # input and weight
+        preds = self.preds[:2]
+        return fhelinalg.Conv2dOp(
+            resulting_type, *preds, bias=bias, padding=pads, strides=strides, dilations=dilations
+        ).result
 
     def _convert_conv3d(self) -> OpResult:
         """
@@ -681,19 +687,19 @@ class NodeConverter:
                     # we cannot convert
                     can_be_converted_directly = False
 
-        index_type = IndexType.parse("index")
+        i64_type = IntegerType.get_signless(64)
         resulting_type = NodeConverter.value_to_mlir_type(self.ctx, self.node.output)
 
         if can_be_converted_directly:
             reassociation_attr = ArrayAttr.get(
                 [
-                    ArrayAttr.get([IntegerAttr.get(index_type, dimension) for dimension in group])
+                    ArrayAttr.get([IntegerAttr.get(i64_type, dimension) for dimension in group])
                     for group in reassociation
                 ]
             )
             if len(output_shape) < len(input_shape):
-                return linalg.TensorCollapseShapeOp(resulting_type, pred, reassociation_attr).result
-            return linalg.TensorExpandShapeOp(resulting_type, pred, reassociation_attr).result
+                return tensor.CollapseShapeOp(resulting_type, pred, reassociation_attr).result
+            return tensor.ExpandShapeOp(resulting_type, pred, reassociation_attr).result
 
         flattened_type = NodeConverter.value_to_mlir_type(
             self.ctx,
@@ -703,19 +709,19 @@ class NodeConverter:
                 is_encrypted=self.node.inputs[0].is_encrypted,
             ),
         )
-        flattened_result = linalg.TensorCollapseShapeOp(
+        flattened_result = tensor.CollapseShapeOp(
             flattened_type,
             pred,
             ArrayAttr.get(
-                [ArrayAttr.get([IntegerAttr.get(index_type, i) for i in range(len(input_shape))])]
+                [ArrayAttr.get([IntegerAttr.get(i64_type, i) for i in range(len(input_shape))])]
             ),
         ).result
 
-        return linalg.TensorExpandShapeOp(
+        return tensor.ExpandShapeOp(
             resulting_type,
             flattened_result,
             ArrayAttr.get(
-                [ArrayAttr.get([IntegerAttr.get(index_type, i) for i in range(len(output_shape))])]
+                [ArrayAttr.get([IntegerAttr.get(i64_type, i) for i in range(len(output_shape))])]
             ),
         ).result
 
@@ -732,7 +738,6 @@ class NodeConverter:
         input_shape = input_value.shape
 
         index = list(self.node.properties["attributes"]["index"])
-        index_type = IndexType.parse("index")
 
         while len(index) < input_value.ndim:
             index.append(slice(None, None, None))
@@ -742,8 +747,10 @@ class NodeConverter:
             indices = []
             for value, dimension_size in zip(index, input_shape):
                 value = int(value)
-                attr = IntegerAttr.get(index_type, value if value >= 0 else value + dimension_size)
-                indices.append(self._create_constant(index_type, attr).result)
+                attr = IntegerAttr.get(
+                    IndexType.parse("index"), value if value >= 0 else value + dimension_size
+                )
+                indices.append(self._create_constant(IndexType.parse("index"), attr).result)
             return tensor.ExtractOp(output_type, self.preds[0], indices).result
 
         offsets = []
@@ -778,6 +785,7 @@ class NodeConverter:
             sizes.append(size)
             strides.append(stride)
 
+        i64_type = IntegerType.get_signless(64)
         if len(destroyed_dimensions) == 0:
             return tensor.ExtractSliceOp(
                 output_type,
@@ -785,9 +793,9 @@ class NodeConverter:
                 [],
                 [],
                 [],
-                ArrayAttr.get([IntegerAttr.get(index_type, value) for value in offsets]),
-                ArrayAttr.get([IntegerAttr.get(index_type, value) for value in sizes]),
-                ArrayAttr.get([IntegerAttr.get(index_type, value) for value in strides]),
+                ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in offsets]),
+                ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in sizes]),
+                ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in strides]),
             ).result
 
         output_value = self.node.output
@@ -808,9 +816,9 @@ class NodeConverter:
             [],
             [],
             [],
-            ArrayAttr.get([IntegerAttr.get(index_type, value) for value in offsets]),
-            ArrayAttr.get([IntegerAttr.get(index_type, value) for value in sizes]),
-            ArrayAttr.get([IntegerAttr.get(index_type, value) for value in strides]),
+            ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in offsets]),
+            ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in sizes]),
+            ArrayAttr.get([IntegerAttr.get(i64_type, value) for value in strides]),
         ).result
 
         reassociaton = []
@@ -828,13 +836,13 @@ class NodeConverter:
             reassociaton[-1].append(current_intermediate_dimension)
             current_intermediate_dimension += 1
 
-        return linalg.TensorCollapseShapeOp(
+        return tensor.CollapseShapeOp(
             output_type,
             intermediate,
             ArrayAttr.get(
                 [
                     ArrayAttr.get(
-                        [IntegerAttr.get(index_type, index) for index in indices],
+                        [IntegerAttr.get(i64_type, index) for index in indices],
                     )
                     for indices in reassociaton
                 ],
@@ -887,8 +895,10 @@ class NodeConverter:
         return fhelinalg.SumOp(
             resulting_type,
             self.preds[0],
-            ArrayAttr.get([IntegerAttr.get(IntegerType.get_signless(64), axis) for axis in axes]),
-            BoolAttr.get(keep_dims),
+            axes=ArrayAttr.get(
+                [IntegerAttr.get(IntegerType.get_signless(64), axis) for axis in axes]
+            ),
+            keep_dims=BoolAttr.get(keep_dims),
         ).result
 
     def _convert_tlu(self) -> OpResult:
@@ -1007,6 +1017,10 @@ class NodeConverter:
     def _create_constant(self, mlir_type: Type, mlir_attribute: Attribute):
         result = self.constant_cache.get((mlir_type, mlir_attribute))
         if result is None:
+            # ConstantOp is being decorated, and the init function is supposed to take more
+            # arguments than those pylint is considering
+            # pylint: disable=too-many-function-args
             result = arith.ConstantOp(mlir_type, mlir_attribute)
+            # pylint: enable=too-many-function-args
             self.constant_cache[(mlir_type, mlir_attribute)] = result
         return result
