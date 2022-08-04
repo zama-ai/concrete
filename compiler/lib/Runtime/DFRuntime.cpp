@@ -1131,7 +1131,7 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
 /*  Start/stop functions to be called from within user code (or during
     JIT invocation).  These serve to pause/resume the runtime
     scheduler and to clean up used resources.  */
-void _dfr_start(int use_dfr_p) {
+void _dfr_start(int64_t use_dfr_p) {
   BEGIN_TIME(&mlir::concretelang::dfr::whole_timer);
   if (use_dfr_p) {
     BEGIN_TIME(&mlir::concretelang::dfr::init_timer);
@@ -1167,30 +1167,32 @@ void _dfr_start(int use_dfr_p) {
 }
 
 // Startup entry point when a RuntimeContext is used
-void _dfr_start_c(void *ctx) {
+void _dfr_start_c(int64_t use_dfr_p, void *ctx) {
   _dfr_start(2);
 
-  if (mlir::concretelang::dfr::num_nodes > 1) {
-    BEGIN_TIME(&mlir::concretelang::dfr::broadcast_timer);
-    new mlir::concretelang::dfr::RuntimeContextManager();
-    mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
-        ->setContext(ctx);
+  if (use_dfr_p) {
+    if (mlir::concretelang::dfr::num_nodes > 1) {
+      BEGIN_TIME(&mlir::concretelang::dfr::broadcast_timer);
+      new mlir::concretelang::dfr::RuntimeContextManager();
+      mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
+          ->setContext(ctx);
 
-    // If this is not JIT, then the remote nodes never reach _dfr_stop,
-    // so root should not instantiate this barrier.
-    if (mlir::concretelang::dfr::_dfr_is_root_node() &&
-        mlir::concretelang::dfr::_dfr_is_jit())
-      mlir::concretelang::dfr::_dfr_startup_barrier->wait();
-    END_TIME(&mlir::concretelang::dfr::broadcast_timer, "Key broadcasting");
+      // If this is not JIT, then the remote nodes never reach _dfr_stop,
+      // so root should not instantiate this barrier.
+      if (mlir::concretelang::dfr::_dfr_is_root_node() &&
+          mlir::concretelang::dfr::_dfr_is_jit())
+        mlir::concretelang::dfr::_dfr_startup_barrier->wait();
+      END_TIME(&mlir::concretelang::dfr::broadcast_timer, "Key broadcasting");
+    }
+    BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
   }
-  BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
 }
 
 // This function cannot be used to terminate the runtime as it is
 // non-decidable if another computation phase will follow. Instead the
 // _dfr_terminate function provides this facility and is normally
 // called on exit from "main" when not using the main wrapper library.
-void _dfr_stop(int use_dfr_p) {
+void _dfr_stop(int64_t use_dfr_p) {
   if (use_dfr_p) {
     if (mlir::concretelang::dfr::num_nodes > 1) {
       // Non-root nodes synchronize here with the root to mark the point
@@ -1310,11 +1312,11 @@ bool _dfr_use_omp() { return use_omp_p; }
 } // namespace concretelang
 } // namespace mlir
 
-void _dfr_start(int use_dfr_p) {
+void _dfr_start(int64_t use_dfr_p) {
   BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
 }
-void _dfr_start_c(void *ctx) { _dfr_start(2); }
-void _dfr_stop(int use_dfr_p) {
+void _dfr_start_c(int64_t use_dfr_p, void *ctx) { _dfr_start(2); }
+void _dfr_stop(int64_t use_dfr_p) {
   END_TIME(&mlir::concretelang::dfr::compute_timer, "Compute");
 }
 

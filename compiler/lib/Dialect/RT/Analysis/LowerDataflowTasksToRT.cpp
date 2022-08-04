@@ -468,14 +468,21 @@ struct LowerDataflowTasksPass
             (dfr::_dfr_is_root_node())
                 ? mlir::FunctionType::get(
                       entryPoint->getContext(),
-                      {entryPoint.getArgument(ctxIndex).getType()}, {})
-                : mlir::FunctionType::get(entryPoint->getContext(), {}, {});
+                      {useDFRVal.getType(),
+                       entryPoint.getArgument(ctxIndex).getType()},
+                      {})
+                : mlir::FunctionType::get(entryPoint->getContext(),
+                                          {useDFRVal.getType()}, {});
         (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start_c",
                                        startFunTy);
-        builder.create<mlir::func::CallOp>(
-            entryPoint.getLoc(), "_dfr_start_c", mlir::TypeRange(),
-            (dfr::_dfr_is_root_node()) ? entryPoint.getArgument(ctxIndex)
-                                       : mlir::ValueRange());
+        (dfr::_dfr_is_root_node())
+            ? builder.create<mlir::func::CallOp>(
+                  entryPoint.getLoc(), "_dfr_start_c", mlir::TypeRange(),
+                  mlir::ValueRange(
+                      {useDFRVal, entryPoint.getArgument(ctxIndex)}))
+            : builder.create<mlir::func::CallOp>(entryPoint.getLoc(),
+                                                 "_dfr_start_c",
+                                                 mlir::TypeRange(), useDFRVal);
       } else {
         auto startFunTy = mlir::FunctionType::get(entryPoint->getContext(),
                                                   {useDFRVal.getType()}, {});
