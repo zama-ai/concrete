@@ -13,6 +13,7 @@
 extern "C" {
 #include "concrete-ffi.h"
 }
+#include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/context.h"
 
 #include "concretelang/ClientLib/ClientParameters.h"
@@ -93,6 +94,8 @@ public:
       auto sharedBsk = std::get<1>(bskIt->second);
       return EvaluationKeys(sharedKsk, sharedBsk);
     }
+    assert(!mlir::concretelang::dfr::_dfr_is_root_node() &&
+           "Evaluation keys missing in KeySet (on root node).");
     return EvaluationKeys();
   }
 
