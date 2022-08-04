@@ -1596,12 +1596,28 @@ createGroupedConv2D(mlir::PatternRewriter &rewriter,
     auto mulOpAttr = rewriter.getNamedAttr(
         "mul", rewriter.getStringAttr(
                    mlir::concretelang::FHE::MulEintIntOp::getOperationName()));
+    // slices are currently causing issues during scf bufferization, so we are
+    // trying to avoid slices here by creating a new tensor and adding the bias
+    // to it
+    mlir::RankedTensorType biasSliceType =
+        biasSlice.getType().cast<mlir::RankedTensorType>();
+    mlir::Value biasUnsliced =
+        rewriter
+            .create<mlir::concretelang::FHE::ZeroTensorOp>(
+                conv2dOp.getLoc(),
+                mlir::RankedTensorType::get(biasSliceType.getShape(),
+                                            biasSliceType.getElementType()))
+            .getResult();
+    biasUnsliced = rewriter
+                       .create<mlir::concretelang::FHELinalg::AddEintOp>(
+                           conv2dOp.getLoc(), biasUnsliced, biasSlice)
+                       .getResult();
     // apply conv
     mlir::Value convResult =
         rewriter
             .create<mlir::linalg::Conv2DNchwFchwOp>(
                 conv2dOp.getLoc(), sliceResultType,
-                mlir::ValueRange{inputSlice, weightSlice}, biasSlice,
+                mlir::ValueRange{inputSlice, weightSlice}, biasUnsliced,
                 stridesAttr, dilationsAttr,
                 llvm::ArrayRef<mlir::NamedAttribute>({addOpAttr, mulOpAttr}))
             .getResult(0);
