@@ -128,7 +128,7 @@ static void replaceAllUsesInDFTsInRegionWith(Value orig, Value replacement,
 
 // TODO: Fix type sizes. For now we're using some default values.
 static std::pair<mlir::Value, mlir::Value>
-getSizeInBytes(Value val, Location loc, OpBuilder builder) {
+getTaskArgumentSizeAndType(Value val, Location loc, OpBuilder builder) {
   DataLayout dataLayout = DataLayout::closest(val.getDefiningOp());
   Type type = (val.getType().isa<RT::FutureType>())
                   ? val.getType().dyn_cast<RT::FutureType>().getElementType()
@@ -282,7 +282,7 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   catOperands.push_back(numIns.getResult());
   catOperands.push_back(numOuts.getResult());
   for (auto operand : DFTOp.getOperands()) {
-    auto op_size = getSizeInBytes(operand, DFTOp.getLoc(), builder);
+    auto op_size = getTaskArgumentSizeAndType(operand, DFTOp.getLoc(), builder);
     catOperands.push_back(operand);
     catOperands.push_back(op_size.first);
     catOperands.push_back(op_size.second);
@@ -299,7 +299,7 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
     Type futType = RT::PointerType::get(RT::FutureType::get(result.getType()));
     auto brpp = builder.create<RT::BuildReturnPtrPlaceholderOp>(DFTOp.getLoc(),
                                                                 futType);
-    auto op_size = getSizeInBytes(result, DFTOp.getLoc(), builder);
+    auto op_size = getTaskArgumentSizeAndType(result, DFTOp.getLoc(), builder);
     map.map(result, brpp->getResult(0));
     catOperands.push_back(brpp->getResult(0));
     catOperands.push_back(op_size.first);
