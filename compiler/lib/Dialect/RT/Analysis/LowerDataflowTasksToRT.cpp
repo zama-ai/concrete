@@ -199,14 +199,6 @@ getTaskArgumentSizeAndType(Value val, Location loc, OpBuilder builder) {
   return std::pair<mlir::Value, mlir::Value>(result, arg_type);
 }
 
-static void getAliasedUses(Value val, DenseSet<OpOperand *> &aliasedUses) {
-  for (auto &use : val.getUses()) {
-    aliasedUses.insert(&use);
-    if (isa<memref::CastOp, memref::ViewOp, memref::SubViewOp>(use.getOwner()))
-      getAliasedUses(use.getOwner()->getResult(0), aliasedUses);
-  }
-}
-
 static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
                                 func::FuncOp workFunction) {
   DataLayout dataLayout = DataLayout::closest(DFTOp);
