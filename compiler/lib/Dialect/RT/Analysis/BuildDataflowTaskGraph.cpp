@@ -15,7 +15,6 @@
 #include <concretelang/Dialect/RT/IR/RTTypes.h>
 #include <concretelang/Support/Constants.h>
 #include <concretelang/Support/math.h>
-#include <mlir/IR/BuiltinOps.h>
 
 #include <mlir/Dialect/Arithmetic/IR/Arithmetic.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -24,8 +23,10 @@
 #include <mlir/IR/BlockAndValueMapping.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinAttributes.h>
+#include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/OperationSupport.h>
 #include <mlir/IR/PatternMatch.h>
+#include <mlir/Interfaces/ViewLikeInterface.h>
 #include <mlir/Support/LLVM.h>
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Transforms/DialectConversion.h>
@@ -111,7 +112,7 @@ static bool isFunctionCallName(OpOperand *use, StringRef name) {
 static void getAliasedUses(Value val, DenseSet<OpOperand *> &aliasedUses) {
   for (auto &use : val.getUses()) {
     aliasedUses.insert(&use);
-    if (isa<memref::CastOp, memref::ViewOp, memref::SubViewOp>(use.getOwner()))
+    if (dyn_cast<ViewLikeOpInterface>(use.getOwner()))
       getAliasedUses(use.getOwner()->getResult(0), aliasedUses);
   }
 }
@@ -289,7 +290,6 @@ struct FixupDataflowTaskOpsPass
 
   void runOnOperation() override {
     auto module = getOperation();
-    auto *context = &getContext();
 
     module->walk([](RT::DataflowTaskOp op) {
       assert(!failed(coarsenDFTask(op)) &&
