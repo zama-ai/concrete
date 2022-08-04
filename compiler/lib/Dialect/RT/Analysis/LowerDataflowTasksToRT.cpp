@@ -436,16 +436,14 @@ struct LowerDataflowTasksPass
         if (!dfr::_dfr_is_root_node()) {
           entryPoint.eraseBody();
           Block *b = new Block;
-          SmallVector<Location, 4> locations;
-          for (auto input : entryPoint.getFunctionType().getInputs())
-            locations.push_back(entryPoint.getLoc());
-          b->addArguments(entryPoint.getFunctionType().getInputs(), locations);
+          FunctionType funTy = entryPoint.getFunctionType();
+          SmallVector<Location> locations(funTy.getInputs().size(),
+                                          entryPoint.getLoc());
+          b->addArguments(funTy.getInputs(), locations);
           entryPoint.getBody().push_front(b);
-          for (int i = entryPoint.getFunctionType().getNumInputs() - 1; i >= 0;
-               --i)
+          for (int i = funTy.getNumInputs() - 1; i >= 0; --i)
             entryPoint.eraseArgument(i);
-          for (int i = entryPoint.getFunctionType().getNumResults() - 1; i >= 0;
-               --i)
+          for (int i = funTy.getNumResults() - 1; i >= 0; --i)
             entryPoint.eraseResult(i);
           OpBuilder builder(entryPoint.getBody());
           builder.setInsertionPointToEnd(&entryPoint.getBody().front());
